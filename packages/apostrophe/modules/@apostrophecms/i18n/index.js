@@ -1262,32 +1262,59 @@ module.exports = {
         usage: 'Remove Latin accent characters from all document slugs. Usage: node app @apostrophecms/i18n:strip-slug-accents',
         async task() {
           let docChanged = 0;
+          const docErrors = [];
+          if (!self.shouldStripAccents()) {
+            self.apos.util.log('The option `stripUrlAccents` is not enabled. Aborting.');
+            return;
+          }
 
           await self.apos.migration.eachDoc({}, 5, async doc => {
-            const slug = doc.slug;
-            const req = self.apos.task.getAdminReq({
-              locale: doc.aposLocale?.split(':')[0] || self.defaultLocale
-            });
-            if (!self.shouldStripAccents()) {
-              return;
-            }
+            const oldSlug = doc.slug;
+            const newSlug = _.deburr(doc.slug);
 
-            doc.slug = _.deburr(doc.slug);
-            if (slug === doc.slug) {
-              return;
+            try {
+              if (oldSlug === newSlug) {
+                return;
+              }
+              await self.apos.doc.db.updateOne(
+                { _id: doc._id },
+                { $set: { slug: newSlug } }
+              );
+              docChanged++;
+              self.apos.util.log(`[${doc.type}] [${doc.aposLocale}] "${oldSlug}" -> "${newSlug}"`);
+            } catch (e) {
+              const isUniqueIndexError = (e && e.code === 11000) || /E11000/.test(e?.message || '');
+              const message = isUniqueIndexError
+                ? `[ERROR] Duplicate slug "${newSlug}"`
+                : `[ERROR] Failed "${newSlug}" slug update: ${e.message}`;
+              docErrors.push({
+                message,
+                data: {
+                  docId: doc._id,
+                  oldSlug,
+                  newSlug
+                },
+                stack: isUniqueIndexError
+                  ? ''
+                  : e.stack.split('\n').slice(1).map(line => line.trim())
+              });
             }
-            const manager = self.apos.doc.getManager(doc.type);
-            if (!manager) {
-              return;
-            }
-            await manager.update(req, doc, { permissions: false });
-            docChanged++;
-            self.apos.util.log(`Updated doc [${req.locale}] "${slug}" -> "${doc.slug}"`);
           });
 
+          if (docErrors.length) {
+            for (const err of docErrors) {
+              self.apos.util.error(err.message, err.data, err.stack);
+            }
+          }
+
           self.apos.util.log(
-            `Updated ${docChanged} document slug(s).`
+            `${docChanged} updated, ${docErrors.length} failed.`
           );
+
+          // Ensure proper exit code for the task runner
+          if (docErrors.length) {
+            throw new Error('Some documents failed to update their slugs.');
+          }
         }
       }
     };

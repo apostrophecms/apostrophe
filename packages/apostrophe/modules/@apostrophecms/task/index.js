@@ -87,7 +87,7 @@ module.exports = {
               await task.task(self.apos.argv);
               return self.exit(after, 0, span);
             } catch (e) {
-              console.error(e);
+              console.error(e.message);
               return self.exit(after, 1, span, e);
             }
           });
