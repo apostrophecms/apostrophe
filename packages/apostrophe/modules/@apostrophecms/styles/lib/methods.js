@@ -1,8 +1,55 @@
 const { createId } = require('@paralleldrive/cuid2');
 const _ = require('lodash');
+const presets = require('./presets');
+const { klona } = require('klona');
 
-module.exports = (self) => {
+module.exports = (self, options) => {
   return {
+    // Public APIs
+    setStandardPresets() {
+      for (const [ name, preset ] of Object.entries(presets(options))) {
+        self.setPreset(name, preset);
+      }
+    },
+    setPreset(name, preset) {
+      self.presets[name] = preset;
+    },
+    getPreset(name) {
+      return self.presets[name];
+    },
+    hasPreset(name) {
+      return !!self.presets[name];
+    },
+    expandStyles(stylesCascade) {
+      const expanded = {};
+      for (const [ key, value ] of Object.entries(stylesCascade)) {
+        // shorthand, example:
+        // border: 'border' -> border: { preset: 'border' }
+        if (typeof value === 'string') {
+          if (!self.hasPreset(value)) {
+            throw new Error(`Unknown preset "${value}" used in styles schema for field "${key}"`);
+          }
+          expanded[key] = klona(self.getPreset(value));
+          continue;
+        }
+
+        if (value?.preset) {
+          if (!self.hasPreset(value.preset)) {
+            throw new Error(`Unknown preset "${value.preset}" used in styles schema for field "${key}"`);
+          }
+          expanded[key] = Object.assign(
+            klona(self.getPreset(value.preset)),
+            value
+          );
+          delete expanded[key].preset;
+          continue;
+        }
+
+        expanded[key] = value;
+      }
+
+      return expanded;
+    },
     stylesheet(req) {
       // Stylesheet node should be created only for logged in users.
       if (!req.data.global) {
@@ -49,6 +96,20 @@ module.exports = (self) => {
     },
     getStylesheet(doc) {
       return self.stylesheetRender(self.schema, doc);
+    },
+    // Internal APIs
+    ensureNoFields() {
+      if (
+        Object.keys(self.fields || {}).length &&
+        Object.keys(self.styles || {}).length
+      ) {
+        throw new Error(
+          'The @apostrophecms/styles module does not support standard schema ' +
+          'fields and style fields at the same time. ' +
+          'Remove the "fields" property from the module configuration ' +
+          'and use the "styles" configuration only.'
+        );
+      }
     },
     addToAdminBar() {
       self.apos.adminBar.add(
