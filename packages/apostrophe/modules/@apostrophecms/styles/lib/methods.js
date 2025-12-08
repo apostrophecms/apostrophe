@@ -161,137 +161,16 @@ module.exports = (self) => {
       }
     },
     async migratePaletteIntoStyles() {
-      const locales = Object.keys(self.apos.i18n.locales);
-      const aposLocales = [
-        ...locales.map(locale => `${locale}:draft`),
-        ...locales.map(locale => `${locale}:previous`),
-        ...locales.map(locale => `${locale}:published`)
-      ];
-
-      const nonStylesFields = [
-        'archived',
-        ...Object
-          .values(self.fieldsGroups)
-          .flatMap(fieldsGroup => fieldsGroup.fields || [])
-      ];
-
-      const stylesFields = _.difference(Object.keys(self.fields), nonStylesFields);
-      console.dir(stylesFields, { depth: 9 });
-      if (!stylesFields.length) {
-        return;
-      }
-
-      await Promise.all(aposLocales.map(async aposLocale => {
-        const req = self.apos.task.getReq({ aposLocale });
-
-        // FIXME: singletons are created after migrations run, so this
-        // migration will not find any styles docs to update. We need
-        // to either run this migration later, or create the singleton
-        // docs earlier.
-        // Debug:
-        console.log({
-          type: self.name,
-          aposLocale
-        });
-        const doc = await self.apos.doc.db.findOne({
-          type: self.name,
-          aposLocale
-        });
-        console.log('existing styles doc:');
-        console.dir(doc, { depth: 9 });
-        // end Debug
-
-        const stylesDoc = await self.find(req).toObject();
-        if (!stylesDoc) {
-          return;
+      await self.apos.doc.db.updateMany(
+        { type: '@apostrophecms-pro/palette' },
+        {
+          $set: {
+            type: '@apostrophecms/styles',
+            slug: self.slug,
+            title: 'styles'
+          }
         }
-
-        const paletteDoc = await self.apos.doc.db.findOne({
-          type: '@apostrophecms-pro/palette',
-          aposLocale
-        });
-        if (!paletteDoc) {
-          return;
-        }
-
-        console.info('migrating existing palette into styles for aposLocale', aposLocale);
-
-        for (const fieldName of stylesFields) {
-          console.log('fieldName', fieldName);
-          stylesDoc[fieldName] = paletteDoc[fieldName];
-        }
-
-        console.dir(stylesDoc, { depth: 9 });
-
-        await self.update(req, stylesDoc);
-      }));
-
-      /* for (const aposLocale of aposLocales) { */
-      /*   const paletteDoc = await self.apos.doc.db.findOne({ */
-      /*     type: '@apostrophecms-pro/palette', */
-      /*     aposLocale */
-      /*   }); */
-      /**/
-      /*   if (!paletteDoc) { */
-      /*     continue; */
-      /*   } */
-      /**/
-      /*   const stylesDoc = await self.apos.doc.db.findOne({ */
-      /*     type: self.name, */
-      /*     aposLocale */
-      /*   }); */
-      /**/
-      /*   if (!stylesDoc) { */
-      /*     continue; */
-      /*   } */
-      /**/
-      /*   const updatedStylesDoc = { ...stylesDoc }; */
-      /**/
-      /*   for (const fieldName in self.fields) { */
-      /*     if (fieldName.startsWith('palette')) { */
-      /*       updatedStylesDoc[fieldName] = paletteDoc[fieldName]; */
-      /*     } */
-      /*   } */
-      /**/
-      /*   await self.apos.doc.db.updateOne( */
-      /*     { _id: stylesDoc._id }, */
-      /*     { $set: updatedStylesDoc } */
-      /*   ); */
-      /* } */
+      );
     }
   };
 };
-
-/*   await self.apos.doc.db.updateMany( */
-/*     { type: '@apostrophecms-pro/palette' }, */
-/*     { */
-/*       $set: { */
-/*         type: '@apostrophecms/styles', */
-/*         slug: self.slug, */
-/*         title: 'styles', */
-/*         highSearchText: { */
-/*           $replaceAll: { */
-/*             input: '$highSearchText', */
-/*             find: 'palette', */
-/*             replacement: 'styles' */
-/*           } */
-/*         }, */
-/*         highSearchWords: { */
-/*           $map: { */
-/*             input: '$highSearchWords', */
-/*             as: 'word', */
-/*             in: { $cond: [ { $eq: [ '$$word', 'palette' ] }, 'styles', '$$word' ] } */
-/*           } */
-/*         }, */
-/*         lowSearchText: { */
-/*           $replaceAll: { */
-/*             input: '$lowSearchText', */
-/*             find: 'palette', */
-/*             replacement: 'styles' */
-/*           } */
-/*         } */
-/*       } */
-/*     } */
-/*   ); */
-/* } */
-/**/
