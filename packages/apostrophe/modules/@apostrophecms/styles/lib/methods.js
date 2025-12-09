@@ -6,19 +6,51 @@ const { klona } = require('klona');
 module.exports = (self, options) => {
   return {
     // Public APIs
-    setStandardPresets() {
-      for (const [ name, preset ] of Object.entries(presets(options))) {
-        self.setPreset(name, preset);
-      }
+
+    // Extend this method to register custom presets,
+    // Do not call this method directly.
+    // Example (improve @apostrophecms/styles from npm package or project level):
+    // extendMethods(self) {
+    //   return {
+    //     registerPresets(_super) {
+    //       _super();
+    //       self.setPreset('customPreset', { ... })
+    //       // OR extend an existing one:
+    //       const borderPreset = self.getPreset('border');
+    //       borderPreset.fields.add.def = true;
+    //       self.setPreset('border', borderPreset);
+    //     }
+    //   }
+    // }
+    registerPresets() {
+      // noop by default
     },
+    // Preset management. Can be called only
+    // inside of extended registerPresets() method.
     setPreset(name, preset) {
+      if (self.schema) {
+        throw new Error(
+          `Attempt to set preset ${name} after initialization.` +
+          'Presets must be set inside of extended registerPresets() ' +
+          'method of @apostrophecms/styles module.'
+        );
+      }
+      self.valudatePreset(preset);
       self.presets[name] = preset;
     },
+    // Retrieve a preset by name.
+    // Call only after presets have been registered.
     getPreset(name) {
+      if (!self.presets) {
+        throw new Error(
+          'Presets have not been initialzed yet. ' +
+          'Presets can be retrieved only after registraion.'
+        );
+      }
       return self.presets[name];
     },
     hasPreset(name) {
-      return !!self.presets[name];
+      return !!self.getPreset(name);
     },
     expandStyles(stylesCascade) {
       const expanded = {};
@@ -97,7 +129,17 @@ module.exports = (self, options) => {
     getStylesheet(doc) {
       return self.stylesheetRender(self.schema, doc);
     },
+
     // Internal APIs
+
+    // Do not call this method directly.
+    // Called only once inside of composeSchema() method.
+    // Sets up standard presets.
+    setStandardPresets() {
+      for (const [ name, preset ] of Object.entries(presets(options))) {
+        self.setPreset(name, preset);
+      }
+    },
     ensureNoFields() {
       if (
         Object.keys(self.fields || {}).length &&
@@ -109,6 +151,12 @@ module.exports = (self, options) => {
           'Remove the "fields" property from the module configuration ' +
           'and use the "styles" configuration only.'
         );
+      }
+    },
+    // basic duck typing to help the developer do the right thing
+    valudatePreset(preset) {
+      if (!preset?.type) {
+        throw new Error('Preset must be an object with a "type" property.');
       }
     },
     addToAdminBar() {

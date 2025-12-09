@@ -120,6 +120,7 @@ module.exports = (options) => {
       label: 'apostrophe:styleShadow',
       type: 'object',
       valueTemplate: '%x% %y% %blur% %color%',
+      property: 'box-shadow',
       fields: {
         add: {
           active: {
