@@ -22,8 +22,9 @@
   },
   "devDependencies": {
     "@apostrophecms/blog": "^1.0.6",
+    "@apostrophecms/seo": "workspace:*",
     "apostrophe": "workspace:^",
-    "eslint": "^8.57.1",
+    "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
     "mocha": "^11.7.5",
     "nyc": "^17.1.0"
