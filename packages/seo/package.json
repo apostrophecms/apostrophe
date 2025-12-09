@@ -21,7 +21,7 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@apostrophecms/blog": "^1.0.6",
+    "@apostrophecms/blog": "workspace:^",
     "@apostrophecms/seo": "workspace:*",
     "apostrophe": "workspace:^",
     "eslint": "^9.39.1",
