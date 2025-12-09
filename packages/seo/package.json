@@ -6,21 +6,25 @@
   "scripts": {
     "lint": "npm run eslint",
     "eslint": "eslint .",
-    "test": "npm run lint"
+    "pretest": "npm run lint",
+    "test": "nyc mocha test/unit-tests.js -t 5000 && nyc mocha test/functional-tests.js -t 30000"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/apostrophecms/apostrophe.git",
-    "directory": "packages/seo"
+    "url": "git+https://github.com/apostrophecms/seo.git"
   },
-  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/seo",
+  "homepage": "https://github.com/apostrophecms/seo#readme",
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "dependencies": {
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*"
+    "@apostrophecms/blog": "^1.0.6",
+    "@apostrophecms/seo": "file:.",
+    "apostrophe": "^4.24.0",
+    "eslint-config-apostrophe": "^5.0.0",
+    "mocha": "^11.7.5",
+    "nyc": "^17.1.0"
   }
 }

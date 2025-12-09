@@ -21,16 +21,29 @@ module.exports = {
     self.appendNodes('head', 'tagManagerHead');
     self.prependNodes('body', 'tagManagerBody');
   },
-  methods(self) {
+  methods(self, options) {
     return {
       metaHead(req) {
-        return getMetaHead(req.data);
+        return getMetaHead(req.data, options);
       },
       tagManagerHead(req) {
         return getTagManagerHead(req.data);
       },
       tagManagerBody(req) {
         return getTagManagerBody(req.data);
+      },
+      // Register a custom JSON-LD schema generator
+      // schemaType: string - the schema type name (e.g., 'Book', 'SoftwareApplication')
+      // schemaGenerator: function(data) - function that returns a schema object or null
+      registerSchema(schemaType, schemaGenerator) {
+        if (!self.customSchemas) {
+          self.customSchemas = {};
+        }
+        self.customSchemas[schemaType] = schemaGenerator;
+      },
+      // Get all registered custom schemas
+      getCustomSchemas() {
+        return self.customSchemas || {};
       }
     };
   }

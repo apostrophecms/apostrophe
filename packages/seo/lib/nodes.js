@@ -1,4 +1,6 @@
-function getMetaHead(data) {
+const JsonLdSchemaHandler = require('./jsonld-schemas');
+
+function getMetaHead(data, options) {
   const nodes = [];
   const home = data.home;
   const piece = data.piece;
@@ -6,7 +8,51 @@ function getMetaHead(data) {
   const global = data.global;
   const document = piece || page;
 
+  // Theme color for mobile browsers
+  if (global?.seoThemeColor) {
+    const themeColorConfig = global.seoThemeColor;
+
+    if (themeColorConfig.mode === 'lightDark') {
+      // Light and dark mode support
+      if (themeColorConfig.light) {
+        nodes.push({
+          name: 'meta',
+          attrs: {
+            name: 'theme-color',
+            content: themeColorConfig.light,
+            media: '(prefers-color-scheme: light)'
+          }
+        });
+      }
+
+      if (themeColorConfig.dark) {
+        nodes.push({
+          name: 'meta',
+          attrs: {
+            name: 'theme-color',
+            content: themeColorConfig.dark,
+            media: '(prefers-color-scheme: dark)'
+          }
+        });
+      }
+    } else if (themeColorConfig.single) {
+      // Single color mode
+      nodes.push({
+        name: 'meta',
+        attrs: {
+          name: 'theme-color',
+          content: themeColorConfig.single
+        }
+      });
+    }
+  }
+
   // title
+  // NOTE: This uses <meta name="title"> instead of <title> to avoid conflicts.
+  // ApostropheCMS core templates typically provide their own <title> tag via
+  // template blocks. Using <meta name="title"> here is non-standard HTML but
+  // allows the SEO title to be set without creating duplicate <title> tags.
+
   const seoTitle = piece?.seoTitle ||
     page?.seoTitle ||
     home?.seoTitle;
@@ -41,7 +87,7 @@ function getMetaHead(data) {
       name: 'meta',
       attrs: {
         name: 'robots',
-        content: seoRobots
+        content: seoRobots.join(',')
       }
     });
   }
@@ -79,6 +125,112 @@ function getMetaHead(data) {
     });
   }
 
+  // Pagination support for listing pages and piece navigation
+  if (data.pagination) {
+    const {
+      currentPage,
+      totalPages,
+      baseUrl
+    } = data.pagination;
+
+    // Previous page link
+    if (currentPage > 1) {
+      const prevPage = currentPage - 1;
+      const prevUrl = prevPage === 1 ? baseUrl : `${baseUrl}?page=${prevPage}`;
+      nodes.push({
+        name: 'link',
+        attrs: {
+          rel: 'prev',
+          href: prevUrl
+        }
+      });
+    }
+
+    // Next page link
+    if (currentPage < totalPages) {
+      nodes.push({
+        name: 'link',
+        attrs: {
+          rel: 'next',
+          href: `${baseUrl}?page=${currentPage + 1}`
+        }
+      });
+    }
+  } else if (data.currentPage && data.totalPages && data.page?._url) {
+    const currentPage = data.currentPage;
+    const totalPages = data.totalPages;
+    const baseUrl = data.page._url;
+
+    // Previous page link
+    if (currentPage > 1) {
+      const prevPage = currentPage - 1;
+      // Page 1 should have clean URL (no query string)
+      const prevUrl = prevPage === 1 ? baseUrl : `${baseUrl}?page=${prevPage}`;
+      nodes.push({
+        name: 'link',
+        attrs: {
+          rel: 'prev',
+          href: prevUrl
+        }
+      });
+    }
+
+    // Next page link
+    if (currentPage < totalPages) {
+      nodes.push({
+        name: 'link',
+        attrs: {
+          rel: 'next',
+          href: `${baseUrl}?page=${currentPage + 1}`
+        }
+      });
+    }
+  } else if (data.next || data.previous) {
+    // Previous piece link
+    if (data.previous?._url) {
+      nodes.push({
+        name: 'link',
+        attrs: {
+          rel: 'prev',
+          href: data.previous._url
+        }
+      });
+    }
+
+    // Next piece link
+    if (data.next?._url) {
+      nodes.push({
+        name: 'link',
+        attrs: {
+          rel: 'next',
+          href: data.next._url
+        }
+      });
+    }
+  }
+
+  // Preload critical fonts
+  if (options.criticalFonts?.length) {
+    options.criticalFonts.forEach(font => {
+      const attrs = {
+        rel: 'preload',
+        href: font.url,
+        as: 'font',
+        type: font.type || 'font/woff2'
+      };
+
+      // Add crossorigin for absolute URLs (likely cross-origin)
+      if (font.url.startsWith('http')) {
+        attrs.crossorigin = font.crossorigin || 'anonymous';
+      }
+
+      nodes.push({
+        name: 'link',
+        attrs
+      });
+    });
+  }
+
   // Google Tracking ID
   if (global?.seoGoogleTrackingId) {
     nodes.push({
@@ -104,7 +256,125 @@ function getMetaHead(data) {
     });
   }
 
+  // JSON-LD Structured Data with error handling
+  if (shouldGenerateJsonLd(data)) {
+    try {
+      const seoModule = options.apos?.modules?.['@apostrophecms/seo'];
+      const customSchemas = seoModule?.getCustomSchemas?.() || {};
+
+      const seoFieldMappings = seoModule?.options?.seoFieldMappings || {};
+      const jsonLdHandler = new JsonLdSchemaHandler(customSchemas, seoFieldMappings);
+      const schemas = jsonLdHandler.generateSchemas(data);
+
+      if (schemas.length > 0) {
+        const jsonLdData = {
+          '@context': 'https://schema.org',
+          '@graph': schemas
+        };
+
+        const jsonLdString = JSON.stringify(jsonLdData, null, 2);
+
+        nodes.push({
+          comment: ' JSON-LD Structured Data '
+        });
+
+        const scriptNode = {
+          name: 'script',
+          attrs: { type: 'application/ld+json' },
+          body: [ {
+            raw: jsonLdString
+          } ]
+        };
+
+        nodes.push(scriptNode);
+      }
+    } catch (err) {
+      if (process.env.APOS_SEO_DEBUG) {
+        console.error('[SEO] Error generating JSON-LD:', err);
+        console.error('[SEO] Data that caused error:', JSON.stringify(data, null, 2));
+      }
+    }
+  }
+
+  // Add hreflang tags
+  const hreflangTags = getHreflangTags(data);
+  nodes.push(...hreflangTags);
+
   return nodes;
+}
+
+function getHreflangTags(data) {
+  const nodes = [];
+  const {
+    piece, page, req
+  } = data;
+  const document = piece || page;
+
+  // Only add hreflang if the site has i18n enabled
+  if (!req?.locale || !document?._url) {
+    return nodes;
+  }
+
+  // Get all locale versions of this document if they exist
+  // This assumes ApostropheCMS i18n structure
+  if (document.aposLocale && data.alternateLocales) {
+    // Add current page
+    nodes.push({
+      name: 'link',
+      attrs: {
+        rel: 'alternate',
+        hreflang: req.locale,
+        href: document._url
+      }
+    });
+
+    // Add alternate locales
+    data.alternateLocales.forEach(alt => {
+      if (alt.locale && alt.url) {
+        nodes.push({
+          name: 'link',
+          attrs: {
+            rel: 'alternate',
+            hreflang: alt.locale,
+            href: alt.url
+          }
+        });
+      }
+    });
+
+    // Add x-default for the primary locale
+    const defaultLocale = data.alternateLocales.find(alt => alt.isDefault);
+    if (defaultLocale) {
+      nodes.push({
+        name: 'link',
+        attrs: {
+          rel: 'alternate',
+          hreflang: 'x-default',
+          href: defaultLocale.url
+        }
+      });
+    }
+  }
+
+  return nodes;
+}
+
+// Helper function to determine if we should generate JSON-LD
+function shouldGenerateJsonLd(data) {
+  const {
+    global, piece, page, home
+  } = data;
+
+  const hasOrgData = global?.seoJsonLdOrganization?.name;
+
+  const hasSiteData = global?.seoSiteName || global?.title;
+
+  const document = piece || page;
+  const hasDocumentSchema = document?.seoJsonLdType;
+
+  const isHomepage = home || (!piece && page?.slug === '/');
+
+  return hasOrgData || hasSiteData || hasDocumentSchema || isHomepage;
 }
 
 function getTagManagerHead(data) {
@@ -171,5 +441,6 @@ function getTagManagerBody(data) {
 module.exports = {
   getMetaHead,
   getTagManagerHead,
-  getTagManagerBody
+  getTagManagerBody,
+  getHreflangTags
 };

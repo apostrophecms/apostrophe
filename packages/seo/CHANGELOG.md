@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+- Adds structured data and the related fields to page and piece types. Also adds basic organization information to all pages.
+- Adds unit tests.
+
 ## 1.3.2 (2025-09-03)
 
 ### Changes
