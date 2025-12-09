@@ -17,6 +17,12 @@ describe('expressCacheOnDemand', () => {
         return res.send('URL was: ' + req.url + ', work count is: ' + workCount);
       }, 100);
     });
+    app.get('/empty', expressCacheOnDemand, (req, res) => {
+      // Simulate time-consuming async work
+      setTimeout(() => {
+        return res.send('');
+      }, 100);
+    });
     app.get('/redirect', expressCacheOnDemand, (req, res) => {
       return res.redirect('/welcome');
     });
@@ -62,6 +68,26 @@ describe('expressCacheOnDemand', () => {
 
       done();
     });
+  });
+  it('replies correctly when res.send is given an empty string', (done) => {
+    let count = 0;
+
+    for (let i = 0; (i < 5); i++) {
+      attempt(i);
+    }
+
+    function attempt(i) {
+      request('http://localhost:9765/empty', (err, response, body) => {
+        assert(!err);
+        assert(response.statusCode === 200);
+        assert(body === '');
+        count++;
+
+        if (count === 5) {
+          done();
+        }
+      });
+    }
   });
   it('handles redirects successfully', (done) => {
     return request('http://localhost:9765/redirect', (err, response, body) => {
