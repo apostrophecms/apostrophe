@@ -17,7 +17,6 @@ describe('Anchors Wrapper', function () {
       modules: {
         '@apostrophecms/express': {
           options: {
-            port: 4242,
             // trustProxy: true,
             session: { secret: 'test-the-anchors' }
           }

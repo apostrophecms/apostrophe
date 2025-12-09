@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "pnpm run lint && (cd test; mocha .)",
+    "test": "mocha test",
     "eslint": "eslint .",
     "lint": "pnpm run eslint"
   },
@@ -37,5 +38,8 @@
     "express": "^4.9.8",
     "mocha": "^9.2.0",
     "request": "^2.45.0"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
   }
 }

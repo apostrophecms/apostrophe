@@ -30,5 +30,8 @@
   },
   "devDependencies": {
     "eslint": "^9.39.1"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
   }
 }

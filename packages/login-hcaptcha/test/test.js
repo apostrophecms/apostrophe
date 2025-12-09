@@ -15,7 +15,6 @@ const getAppConfig = function (siteConfig = getSiteConfig()) {
   return {
     '@apostrophecms/express': {
       options: {
-        port: 4242,
         // csrf: {
         //   exceptions: [ '/api/v1/@apostrophecms/form/submit' ]
         // },

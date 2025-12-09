@@ -552,7 +552,11 @@ export default {
           this.original = klona(docData);
           this.docFields.data = docData;
 
-          resetToSchema(this.schema, this.docFields.data);
+          resetToSchema(
+            // Never allow changing the type of a page here
+            this.schema.filter(f => f.name !== 'type'),
+            this.docFields.data
+          );
 
           function resetToSchema(schema, object) {
             for (const field of schema) {
@@ -566,7 +570,11 @@ export default {
                 resetToSchema(field.schema, object[field.name] || {});
               }
 
-              if (field.type === 'select' || field.type === 'radio') {
+              // FIXME: field choices might be a string (dynamic choices)
+              if (
+                (field.type === 'select' || field.type === 'radio') &&
+                Array.isArray(field.choices)
+              ) {
                 const validChoices = field.choices.map(choice => choice.value);
 
                 if (!validChoices.includes(object[field.name])) {
@@ -578,13 +586,14 @@ export default {
                 }
               }
 
-              if (field.type === 'checkboxes') {
+              // FIXME: field choices might be a string (dynamic choices)
+              if (field.type === 'checkboxes' && Array.isArray(field.choices)) {
                 const validChoices = field.choices.map(choice => choice.value);
 
                 const filteredValues = object[field.name]
-                  .filter(value => validChoices.includes(value));
+                  ?.filter(value => validChoices.includes(value));
 
-                if (filteredValues.length) {
+                if (filteredValues?.length) {
                   object[field.name] = filteredValues;
                   continue;
                 }
