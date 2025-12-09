@@ -142,7 +142,7 @@ describe('Styles', function () {
                 label: 'A Style'
               }
             },
-
+            // Explicit existing groups
             group: {
               basics: {
                 label: 'Basics',
@@ -155,6 +155,64 @@ describe('Styles', function () {
             }
           }
 
+        },
+        'test-empty-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Test Groups Widget'
+          }
+        },
+        'test-empty-styles-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Test Groups Widget'
+          },
+          fields: {
+            add: {
+              myField: {
+                type: 'string',
+                label: 'My Field'
+              }
+            }
+          }
+        },
+        'test-empty-fields-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Test Empty Fields Widget'
+          },
+          styles: {
+            add: {
+              width: {
+                preset: 'width',
+                label: 'Custom Width',
+                selector: '.card'
+              }
+            }
+          }
+        },
+        'test-nogroups-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Test No Groups Widget'
+          },
+          fields: {
+            add: {
+              myField: {
+                type: 'string',
+                label: 'A Style'
+              }
+            }
+          },
+          styles: {
+            add: {
+              width: {
+                preset: 'width',
+                label: 'Custom Width',
+                selector: '.card'
+              }
+            }
+          }
         }
       }
     });
@@ -225,6 +283,52 @@ describe('Styles', function () {
     assert.equal(titleField.group.name, 'basics', 'Title field should remain in basics group');
     assert.equal(aStyleField?.type, 'string', 'aStyle field should remain unchanged');
     assert.equal(aStyleField.group.name, 'styles', 'sStyle field should be in styles group');
+  });
+
+  it('should handle empty styles and fields groups (widgets)', async function () {
+    assert.deepEqual(
+      apos.modules['test-empty-widget'].fieldsGroups,
+      {},
+      'Fields groups should be empty'
+    );
+  });
+
+  it('should handle empty styles groups (widgets)', async function () {
+    assert.deepEqual(
+      apos.modules['test-empty-styles-widget'].fieldsGroups,
+      {},
+      'Fields groups should be empty'
+    );
+  });
+
+  it('should handle empty fields groups (widgets)', async function () {
+    assert.deepEqual(
+      apos.modules['test-empty-fields-widget'].fieldsGroups,
+      {
+        styles: {
+          label: 'apostrophe:styles',
+          fields: [ 'width' ]
+        }
+      },
+      'Fields groups should contain basics and styles groups'
+    );
+  });
+
+  it('should handle fields and styles groups (widgets)', async function () {
+    assert.deepEqual(
+      apos.modules['test-nogroups-widget'].fieldsGroups,
+      {
+        basics: {
+          label: 'apostrophe:basics',
+          fields: [ 'myField' ]
+        },
+        styles: {
+          label: 'apostrophe:styles',
+          fields: [ 'width' ]
+        }
+      },
+      'Fields groups should contain basics and styles groups'
+    );
   });
 
   it('should register and retrieve presets', async function () {

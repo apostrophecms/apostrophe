@@ -3,7 +3,6 @@ module.exports = self => {
     composeSchema(_super, ...args) {
       self.ensureNoFields();
 
-      console.log('SCHEMA NOT YET INITIALIZED', self.schema);
       self.presets = {};
       self.setStandardPresets();
       self.registerPresets();
