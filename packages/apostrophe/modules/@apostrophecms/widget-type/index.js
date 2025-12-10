@@ -362,7 +362,6 @@ module.exports = {
       // Apostrophe 3.x.
       async output(req, widget, options, _with) {
         console.log('---');
-        console.log('---');
         console.log(widget.type);
         console.log('---');
         req.widgetsBundles = {
@@ -424,20 +423,22 @@ module.exports = {
             classes.push(widget[styleName]);
           }
 
-          // TODO: refactor render util to use it here as well
+          // TODO: remove when https://github.com/apostrophecms/apostrophe/pull/5211 is merged
           if (styleField.property && widget[styleName] !== null) {
-            // TEMP:
             properties.push(`${styleField.property}: ${widget[styleName]}`);
           }
         }
 
-        console.log('classes', classes);
         const classesStr = classes.length ? ` class="${classes.join(' ')}"` : '';
         console.log('classesStr', classesStr);
 
+        // TODO: remove when https://github.com/apostrophecms/apostrophe/pull/5211 is merged
+        const propertiesStr = properties.length ? ` style="${properties.join('; ')}"` : '';
+        console.log('propertiesStr', propertiesStr);
+
         const styles = self.getStylesheet(widget, createId());
 
-        const output = `${styles}<div${classesStr}>${markup}</div>`;
+        const output = `<style>${styles}</style><div${classesStr}${propertiesStr}>${markup}</div>`;
         console.log('output', output);
 
         return output;
