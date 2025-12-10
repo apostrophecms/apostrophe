@@ -129,6 +129,9 @@ module.exports = (self, options) => {
     getStylesheet(doc) {
       return self.stylesheetRender(self.schema, doc);
     },
+    getWidgetStylesheet(schema, doc, options = {}) {
+      return self.stylesheetRender(schema, doc, options);
+    },
 
     // Internal APIs
 

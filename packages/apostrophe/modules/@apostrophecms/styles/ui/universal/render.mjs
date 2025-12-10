@@ -2,18 +2,33 @@ import customRenderers from './customRenderers.mjs';
 // Render a stylesheet from a given schema and doc. Returns
 // a string. No dependencies, so it can be used both front and back end
 
-export default function(schema, doc) {
+function renderStyles(schema, doc, {
+  rootSelector = null,
+  rootValueTemplate
+} = {}) {
   const styles = new Map();
 
-  const subset = schema.filter(field => field.selector);
-  for (let field of subset) {
+  for (let field of schema) {
     let selectors = field.selector;
     let properties = field.property;
     let fieldValue = doc[field.name];
     const fieldUnit = field.unit || '';
 
-    // FIXME: quick fix to handle render panic.
-    // Follow the tech design to support the style schema spec fully.
+    if (field.type === 'object') {
+      return renderStyles(
+        field.schema,
+        doc[field.name] || {},
+        {
+          rootValueTemplate: field.valueTemplate,
+          rootSelector: rootSelector
+            ? `${rootSelector} ${field.selector || ''}`.trim()
+            : field.selector
+        }
+      );
+    }
+
+    // TODO: objects can recursively ask for rendering without
+    // property if they own valueTemplate and property definitions.
     if (!properties) {
       continue;
     }
@@ -26,8 +41,22 @@ export default function(schema, doc) {
       fieldValue = `var(${fieldValue})`;
     }
 
-    if ((typeof selectors) === 'string') {
+    if (selectors && (typeof selectors) === 'string') {
       selectors = [ selectors ];
+    }
+    // Handle:
+    // - widget level rootSelector
+    // - object field level rootSelector
+    // - field level selector(s)
+    if (rootSelector) {
+      selectors = selectors
+        ? selectors.map(s => `${rootSelector} ${s}`)
+        : [ rootSelector ];
+    }
+    // FIXME: add support for widgets render without selectors.
+    if (!selectors) {
+      console.warn('FIXME: support inline styles?', field.name);
+      continue;
     }
 
     if ((typeof properties) === 'string') {
@@ -74,7 +103,7 @@ export default function(schema, doc) {
         const nestedRules = stringifyRules(value);
         rules.push(key.concat('{', nestedRules, '}'));
       } else {
-        rules.push(key.concat('{', [ ...value.values() ].join(';'), '}'));
+        rules.push(key.concat('{', [ ...value.values() ].join(';'), ';}'));
       }
     });
 
@@ -83,3 +112,5 @@ export default function(schema, doc) {
 
   return stringifyRules(styles);
 };
+
+export default renderStyles;
