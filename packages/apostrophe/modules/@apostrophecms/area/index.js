@@ -850,8 +850,8 @@ module.exports = {
         _.each(self.widgetManagers, function (manager, name) {
           const browserData = manager.getBrowserData(req);
 
-          widgets[name] = (browserData && browserData.components && browserData.components.widget) || 'AposWidget';
-          widgetEditors[name] = (browserData && browserData.components && browserData.components.widgetEditor) || 'AposWidgetEditor';
+          widgets[name] = browserData?.components?.widget || 'AposWidget';
+          widgetEditors[name] = browserData?.components?.widgetEditor || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
           widgetPreview[name] = manager.options.preview;
