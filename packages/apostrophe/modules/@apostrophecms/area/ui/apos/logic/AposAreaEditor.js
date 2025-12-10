@@ -2,6 +2,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { mapState, mapActions } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 
@@ -165,6 +166,7 @@ export default {
     }
   },
   mounted() {
+    this.modalStore = useModalStore();
     this.bindEventListeners();
   },
   beforeUnmount() {
@@ -179,7 +181,7 @@ export default {
       apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$on('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$on('command-menu-area-remove-widget', this.handleRemove);
-      window.addEventListener('keydown', this.focusParentEvent);
+      this.modalStore.onKeyDown(this.$el, this.focusParentEvent);
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
@@ -188,7 +190,7 @@ export default {
       apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$off('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$off('command-menu-area-remove-widget', this.handleRemove);
-      window.removeEventListener('keydown', this.focusParentEvent);
+      this.modalStore.offKeyDown(this.focusParentEvent);
     },
     isInsideContentEditable() {
       return document.activeElement.closest('[contenteditable]') !== null;

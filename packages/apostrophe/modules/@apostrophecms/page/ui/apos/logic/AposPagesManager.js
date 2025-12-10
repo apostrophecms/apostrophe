@@ -157,6 +157,7 @@ export default {
     });
   },
   async mounted() {
+    this.modalStore = useModalStore();
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
@@ -178,7 +179,8 @@ export default {
     async create() {
       const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
-        filterValues: this.filterValues
+        filterValues: this.filterValues,
+        hasRelationshipField: !!this.relationshipField
       });
       if (!doc) {
         // Cancel clicked
@@ -584,6 +586,11 @@ export default {
         this.getAllPagesTotal();
         if (action === 'archive') {
           this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
+        }
+        if (this.relationshipField && (action === 'insert') && this.modalStore.isTopManager(this)) {
+          const newDocs = [ ...this.checkedDocs, doc ];
+          const limit = this.relationshipField?.max || newDocs.length;
+          this.setCheckedDocs(newDocs.slice(0, limit));
         }
       }
     },

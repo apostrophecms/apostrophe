@@ -256,8 +256,8 @@ export default {
           }
           break;
         case 'Escape':
-          this.handleFocusOut();
           event.stopPropagation();
+          this.handleFocusOut();
           break;
       }
     },

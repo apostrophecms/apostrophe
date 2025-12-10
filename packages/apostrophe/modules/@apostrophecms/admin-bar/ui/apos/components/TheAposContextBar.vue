@@ -508,6 +508,10 @@ export default {
       }
     },
     async onContentChanged(e) {
+      if (apos.adminBar.disabledRefreshCount > 0) {
+        return;
+      }
+
       if (
         (e.doc && (e.doc._id === this.context._id)) ||
         (e.docIds && e.docIds.includes(this.context._id))
@@ -566,7 +570,6 @@ export default {
         this.rememberLastBaseContext();
         return;
       }
-
       const { action } = window.apos.modules[this.context.type];
       let doc;
       try {
