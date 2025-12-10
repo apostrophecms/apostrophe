@@ -35,7 +35,7 @@ module.exports = (self, options) => {
           'method of @apostrophecms/styles module.'
         );
       }
-      self.valudatePreset(preset);
+      self.validatePreset(preset);
       self.presets[name] = preset;
     },
     // Retrieve a preset by name.
@@ -44,7 +44,7 @@ module.exports = (self, options) => {
       if (!self.presets) {
         throw new Error(
           'Presets have not been initialzed yet. ' +
-          'Presets can be retrieved only after registraion.'
+          'Presets can be retrieved only after registration.'
         );
       }
       return self.presets[name];
@@ -154,7 +154,7 @@ module.exports = (self, options) => {
       }
     },
     // basic duck typing to help the developer do the right thing
-    valudatePreset(preset) {
+    validatePreset(preset) {
       if (!preset?.type) {
         throw new Error('Preset must be an object with a "type" property.');
       }
