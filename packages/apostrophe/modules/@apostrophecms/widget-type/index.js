@@ -435,10 +435,6 @@ module.exports = {
         const classesStr = classes.length ? ` class="${classes.join(' ')}"` : '';
         console.log('classesStr', classesStr);
 
-        /* console.log('properties', properties); */
-        /* const propertiesStr = properties.length ? ` style="${properties.join('; ')}"` : ''; */
-        /* console.log('propertiesStr', propertiesStr); */
-
         const styles = self.getStylesheet(widget, createId());
 
         const output = `${styles}<div${classesStr}>${markup}</div>`;
