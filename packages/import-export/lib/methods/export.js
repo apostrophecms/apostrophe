@@ -624,7 +624,7 @@ module.exports = self => {
       schema,
       related,
       rec = 0,
-      processedWidget = new Set()
+      processedWidgets = new Set()
     ) {
       const recursions = rec + 1;
       if (recursions >= MAX_RECURSION) {
@@ -637,14 +637,20 @@ module.exports = self => {
           self.canExport(req, field.withType) &&
           !related.includes(field.withType)
         ) {
-          self.pushRelatedType(req, related, field.withType, recursions, processedWidget);
+          self.pushRelatedType(
+            req,
+            related,
+            field.withType,
+            recursions,
+            processedWidgets
+          );
         } else if ([ 'array', 'object' ].includes(field.type)) {
           self.findSchemaRelatedTypes(
             req,
             field.schema,
             related,
             recursions,
-            processedWidget
+            processedWidgets
           );
         } else if (field.type === 'area') {
           const widgets = self.apos.area.getWidgets(field.options);
@@ -656,24 +662,24 @@ module.exports = self => {
                 options,
                 related,
                 recursions,
-                processedWidget
+                processedWidgets
               );
             }
-            if (!processedWidget.has(widget)) {
-              processedWidget.add(widget);
+            if (!processedWidgets.has(widget)) {
+              /* processedWidgets.add(widget); */
               self.findSchemaRelatedTypes(
                 req,
                 schema,
                 related,
                 recursions,
-                processedWidget
+                processedWidgets
               );
             }
           }
         }
       }
     },
-    pushRelatedType(req, related, type, recursions, processedWidget) {
+    pushRelatedType(req, related, type, recursions, processedWidgets) {
       if ((type === '@apostrophecms/page') || (type === '@apostrophecms/any-page-type')) {
         const pageTypes = Object.entries(self.apos.doc.managers).filter(
           ([ name, module ]) => self.apos.instanceOf(module, '@apostrophecms/page-type'))
@@ -685,7 +691,7 @@ module.exports = self => {
             // would have interesting content to export, just confusing to have it here
             continue;
           }
-          self.pushRelatedType(req, related, type, recursions, processedWidget);
+          self.pushRelatedType(req, related, type, recursions, processedWidgets);
         }
         return;
       }
@@ -697,7 +703,7 @@ module.exports = self => {
           relatedManager.schema,
           related,
           recursions,
-          processedWidget
+          processedWidgets
         );
       }
     },
@@ -708,7 +714,7 @@ module.exports = self => {
       options,
       related,
       recursions,
-      processedWidget
+      processedWidgets
     ) {
       const manager = self.apos.modules['@apostrophecms/rich-text-widget'];
       const rteOptions = {
@@ -719,13 +725,13 @@ module.exports = self => {
         (rteOptions.toolbar?.includes('image') || rteOptions.insert?.includes('image')) &&
         !related.includes('@apostrophecms/image')
       ) {
-        self.pushRelatedType(req, related, '@apostrophecms/image', recursions, processedWidget);
+        self.pushRelatedType(req, related, '@apostrophecms/image', recursions, processedWidgets);
       }
       if (rteOptions.toolbar?.includes('link')) {
         const choices = manager.linkFields.linkTo.choices.map(choice => choice.value);
         for (const name of choices) {
           if (self.apos.doc.getManager(name) && !related.includes(name)) {
-            self.pushRelatedType(req, related, name, recursions, processedWidget);
+            self.pushRelatedType(req, related, name, recursions, processedWidgets);
           }
         }
       }
