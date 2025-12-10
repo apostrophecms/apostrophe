@@ -286,7 +286,6 @@ module.exports = {
             'Please remove "groups" property from the "styles" configuration.'
           );
         }
-
         const fieldSchema = self.apos.styles.expandStyles(self.styles);
         if (Object.keys(fieldSchema).length === 0) {
           return;
@@ -304,10 +303,10 @@ module.exports = {
           !Object.keys(self.fieldsGroups).length &&
           Object.keys(self.fields).length
         ) {
-          self.fieldsGroups.basics = self
-            .apos.modules['@apostrophecms/any-doc-type']
-            .fieldsGroups
-            .basics;
+          self.fieldsGroups.basics = {
+            label: 'apostrophe:basics',
+            fields: []
+          };
           self.fieldsGroups.basics.fields = Object.keys(self.fields);
         }
         self.fieldsGroups.styles = stylesGroup;
