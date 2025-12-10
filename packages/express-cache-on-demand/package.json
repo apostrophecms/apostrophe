@@ -28,12 +28,12 @@
     "url": "https://github.com/punkave/express-cache-on-demand/issues"
   },
   "dependencies": {
-    "cache-on-demand": "workspace:*",
+    "cache-on-demand": "workspace:^",
     "lodash": "^4.0.0"
   },
   "devDependencies": {
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "workspace:^",
     "express": "^4.9.8",
     "mocha": "^9.2.0",
     "request": "^2.45.0"
