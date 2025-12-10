@@ -1,0 +1,37 @@
+{
+  "name": "random-words",
+  "version": "2.0.1",
+  "description": "Generate one or more common English words",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "scripts": {
+    "test": "mocha tests/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/random-words"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/random-words#readme",
+  "keywords": [
+    "random",
+    "words",
+    "words",
+    "word",
+    "generator",
+    "sample",
+    "text"
+  ],
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "dependencies": {
+    "seedrandom": "^3.0.5"
+  },
+  "devDependencies": {
+    "mocha": "^10.2.0"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
+  }
+}

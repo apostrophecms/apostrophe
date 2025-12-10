@@ -1,0 +1,40 @@
+// Colors
+$apos-form-red: #ea433a;
+
+// Spacing
+$apos-form-spacing: 20px;
+
+.apos-form-field-required {
+  color: $apos-form-red;
+}
+
+.apos-form-label {
+  display: block;
+
+  &-message {
+    padding-left: $apos-form-spacing;
+  }
+}
+
+.apos-form-input,
+.apos-form-group,
+.apos-form-fieldset {
+  margin-bottom: $apos-form-spacing;
+}
+
+.apos-form-input-error {
+  outline: 1px solid $apos-form-red;
+}
+
+.apos-form-error {
+  color: $apos-form-red;
+}
+
+.apos-form-conditional[disabled] {
+  display: none;
+
+  // Display the fieldset when in an editor modal.
+  .apos-modal & {
+    display: block;
+  }
+}

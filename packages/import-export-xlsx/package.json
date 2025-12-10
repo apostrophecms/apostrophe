@@ -1,0 +1,29 @@
+{
+  "name": "@apostrophecms/import-export-xlsx",
+  "version": "1.0.0",
+  "description": "XLSX format for Import Export module",
+  "main": "index.js",
+  "scripts": {
+    "eslint": "eslint --ext .js,.vue .",
+    "lint": "npm run eslint",
+    "test": "npm run lint && mocha --exit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/import-export-xlsx"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/import-export-xlsx#readme",
+  "author": "Apostrophe Technologies",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^10.2.0",
+    "stylelint": "^16.6.1",
+    "stylelint-config-apostrophe": "workspace:*"
+  },
+  "dependencies": {
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
+  }
+}

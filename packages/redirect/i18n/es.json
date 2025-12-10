@@ -1,0 +1,18 @@
+{
+    "label": "Redirección de URL",
+    "pluralLabel": "Redirecciones de URLs",
+    "originalSlug": "URL Previo",
+    "originalSlugHelp": "Formato con la barra (/) (ej., /url-previo)",
+    "title": "Descripción",
+    "urlType": "Tipo de Liga o Enlace",
+    "urlTypeInternal": "Página Interna",
+    "urlTypeExternal": "URL",
+    "ignoreQuery": "Ignorar la cadena de consulta al igualar el URL.",
+    "forwardQuery":  "Reenviar la cadena de consulta.",
+    "newPage": "Título de la Página",
+    "external": "URL",
+    "statusCode": "Tipo de Redirección",
+    "statusCodeHtmlHelp": "<ul><li>Use <strong>\"Temporalmente\"</strong> para redirecciones temporales o para propositos de evaluación y verificación.</li><li>Use <strong>\"Permanentemente\"</strong> despues de probar y evaluar, esta es considerada una buena práctica de SEO. ⚠️ Los buscadores guardan estos en su memoria, por lo cual es importante verficar detalladamente.</li>",
+    "302": "Temporalmente (Código de Estado 302)",
+    "301": "Permanentemente (Código de Estado 301)"
+  }

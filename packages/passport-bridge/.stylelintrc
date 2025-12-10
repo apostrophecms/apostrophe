@@ -1,0 +1,18 @@
+{
+  "extends": "stylelint-config-apostrophe",
+  "rules": {
+    "scale-unlimited/declaration-strict-value": null,
+    "scss/at-import-partial-extension": null,
+    "scss/at-mixin-named-arguments": null,
+    "scss/dollar-variable-first-in-block": null,
+    "scss/dollar-variable-pattern": null,
+    "scss/selector-nest-combinators": null,
+    "scss/no-duplicate-mixins": null,
+    "property-no-vendor-prefix": [
+      true,
+      {
+        "ignoreProperties": ["appearance"]
+      }
+    ]
+  }
+}

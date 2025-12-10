@@ -1,0 +1,9 @@
+{
+  "activateGoogleSubmit": "Enviar a Google Hojas de Cálculo",
+  "googleSheetId": "ID de Hojas de Cálculo de Google",
+  "googleSheetIdHtmlHelp": "<a href=\"https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id\">El ID se encuentra en la URL de la hoja de cálculo</a>: https://docs.google.com/spreadsheets/d/<strong>spreadsheetId</strong>/edit#gid=0",
+  "googleSheetName": "Nombre de la Hoja de Cálculo de Google",
+  "googleSheetNameHelp": "El nombre de la pestaña de la hoja en tu hoja de cálculo de Google donde deseas que se añadan las envíos. Si no se proporciona, se usará la primera hoja de la hoja de cálculo.",
+  "googleSheetRetrievalError": "Error al recuperar la información de Google Sheet. Por favor verifica el ID de la hoja de cálculo y la configuración de compartición de la hoja de cálculo.",
+  "googleSheetSubmissionError": "Hubo un error al enviar a Google Sheets."
+}

@@ -1,0 +1,28 @@
+---
+const { widget, options } = Astro.props;
+import AposArea from "../components/AposArea.astro";
+import LayoutColumn from "./LayoutColumn.astro";
+---
+
+<AposArea
+  area={widget.columns}
+  aposClassName="layout-widget"
+  aposStyle={{
+    "--grid-columns": options.columns,
+    "--grid-gap": options.gap || "0",
+    "--grid-rows": "auto",
+    "--mobile-grid-rows": "auto",
+    "--tablet-grid-rows": "auto",
+    "--justify-items": options.defaultCellHorizontalAlignment || "stretch",
+    "--align-items": options.defaultCellVerticalAlignment || "stretch",
+  }}
+  aposAttributes={{
+    "data-tablet-auto": true,
+    "data-mobile-auto": true,
+  }}
+  aposParentOptions={{
+    ...options,
+    widgetId: widget._id,
+  }}
+  widgetComponent={LayoutColumn}
+/>

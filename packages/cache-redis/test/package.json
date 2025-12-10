@@ -1,0 +1,9 @@
+{
+  "-//": "This package.json file is not actually installed.",
+  "/-/": "Apostrophe requires that all npm modules to be loaded by moog",
+  "//-": "exist in package.json at project level, which for a test is here",
+  "dependencies": {
+    "apostrophe": "^3.9.0",
+    "@apostrophecms/cache-redis": "git://github.com/apostrophecms/cache-redis.git"
+  }
+}

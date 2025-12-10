@@ -1,0 +1,5 @@
+{
+  "captchaErr": "Il sistema di verifica hCaptcha potrebbe essere inattivo o configurato in modo errato. Per favore, riprova o informa il proprietario del sito.",
+  "invalidToken": "Si è verificato un problema durante la convalida della tua sottomissione di verifica hCaptcha.",
+  "missingConfig": "Il token hCaptcha era mancante durante la verifica del login."
+}

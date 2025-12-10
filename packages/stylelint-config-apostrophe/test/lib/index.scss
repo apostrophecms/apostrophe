@@ -1,0 +1,55 @@
+$sans-serif: 'Helvetica';
+$grey: #666;
+$blue-20: #555;
+$blue-black: #000;
+$foo123: #123;
+
+@mixin square($size, $radius: 0) {
+  width: $size;
+  height: $size;
+
+  @if $radius != 0 {
+    border-radius: $radius;
+  }
+}
+
+.avatar {
+  @include square($size: 100px, $radius: 4px);
+}
+
+.inline {
+  $color: $grey;
+
+  display: inline;
+}
+
+html {
+  border: 1px solid #000;
+  font-family: $sans-serif;
+  font-size: 62.5%; // stylelint-disable-line
+  transition-timing-function: linear;
+  font-weight: $bold;
+}
+
+.one {
+  border-top: 1px solid #000;
+  font-size: 12rem;
+  transition: width 200ms, height 200ms, transform 200ms;
+  animation-delay: 100ms;
+  font-weight: 400;
+
+  &.active {
+    color: $grey;
+  }
+}
+
+.two {
+  border-width: 1px;
+  font-size: 1rem;
+}
+
+@media (320px < min-width) {
+  .one {
+    color: $grey;
+  }
+}

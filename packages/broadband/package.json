@@ -1,0 +1,40 @@
+{
+  "name": "broadband",
+  "version": "1.1.0",
+  "description": "Given a MongoDB query cursor, process the results in parallel, up to the specified limit.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint && npm run mocha",
+    "mocha": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/broadband"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/broadband#readme",
+  "keywords": [
+    "async",
+    "parallel",
+    "concurrency",
+    "limit",
+    "series",
+    "mongodb",
+    "mongo"
+  ],
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/broadband/issues"
+  },
+  "dependencies": {
+    "lodash": "^4.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^5.0.0"
+  }
+}

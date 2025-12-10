@@ -1,0 +1,15 @@
+{
+  "label": "Frase estática i18n",
+  "pluralLabel": "Frases estáticas i18n",
+  "locale": "Idioma",
+  "key": "Clave",
+  "namespace": "Espacio de nombres",
+  "valueSingular": "Singular",
+  "valuePlural": "Plural",
+  "valueZero": "Cero",
+  "valuePluralTwo": "Forma plural para \"dos\"",
+  "valuePluralFew": "Forma plural para \"pocos\"",
+  "valuePluralMany": "Forma plural para \"muchos\"",
+  "localeSpecificsForms": "Formas específicas del idioma",
+  "ifApplicableInThisLocale": "Si es aplicable en este idioma"
+}

@@ -1,0 +1,15 @@
+{
+  "label": "i18n statické frázy",
+  "pluralLabel": "i18n statických fráz",
+  "locale": "Jazyk",
+  "key": "Kľúč",
+  "namespace": "Meno priestoru",
+  "valueSingular": "Jednotné",
+  "valuePlural": "Množné",
+  "valueZero": "Nula",
+  "valuePluralTwo": "Množné formy pre \"dva\"",
+  "valuePluralFew": "Množné formy pre \"niekoľko\"",
+  "valuePluralMany": "Množné formy pre \"veľa\"",
+  "localeSpecificsForms": "Špecifické formy pre jazyk",
+  "ifApplicableInThisLocale": "Ak je to aplikovateľné v tomto jazyku"
+}

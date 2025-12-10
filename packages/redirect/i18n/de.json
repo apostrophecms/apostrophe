@@ -1,0 +1,18 @@
+{
+  "301": "Permanent (Statuscode 301)",
+  "302": "Vorübergehend (Statuscode 302)",
+  "label": "Weiterleitung",
+  "pluralLabel": "Weiterleitungen",
+  "originalSlug": "Alte URL",
+  "originalSlugHelp": "Format mit führendem Schrägstrich (z.B. /alte-url)",
+  "title": "Beschreibung",
+  "urlType": "Linktyp",
+  "urlTypeInternal": "Interne Seite",
+  "urlTypeExternal": "URL",
+  "ignoreQuery": "Query-String bei der Übereinstimmung ignorieren",
+  "forwardQuery": "Query-String weiterleiten",
+  "newPage": "Seitentitel",
+  "external": "URL",
+  "statusCode": "Weiterleitungstyp",
+  "statusCodeHtmlHelp": "<ul><li>Verwenden Sie <strong>\"Vorübergehend\"</strong> für vorübergehende Weiterleitungen oder zu Testzwecken.</li><li>Verwenden Sie <strong>\"Permanent\"</strong> nach dem Testen, dies ist eine bewährte SEO-Praxis. ⚠️ Suchmaschinen werden diese zwischenspeichern, also überprüfen Sie dies sorgfältig.</li>"
+}

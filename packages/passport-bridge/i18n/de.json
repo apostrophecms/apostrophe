@@ -1,0 +1,8 @@
+{
+  "rejected": "Ihre Anmeldeinformationen wurden nicht akzeptiert, Ihr Konto ist nicht mit dieser Website verbunden, oder ein vorhandenes Konto hat denselben Benutzernamen oder dieselbe E-Mail-Adresse.",
+  "logInWith": "Mit {{ label }} einloggen",
+  "errorHeading": "Ein Anmeldefehler ist aufgetreten",
+  "errorSubheading": "Beim Anmelden über {{ label }} ist ein Fehler aufgetreten",
+  "contactAdministrator": "Wenn Sie glauben, dass Sie diese Nachricht irrtümlich sehen, wenden Sie sich bitte an den Administrator.",
+  "connectionRequest": "{{ strategyName }} mit {{ site }} verbinden"
+}

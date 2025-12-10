@@ -1,0 +1,45 @@
+{%- macro here(url, changes) -%}
+  {{ url | build({
+    year: data.query.year,
+    month: data.query.month,
+    day: data.query.day
+  }, changes) }}
+{%- endmacro -%}
+
+{% fragment render(data) %}
+  <h3>{{ __t('aposBlog:filterYear') }}</h3>
+  <ul>
+    {% for year in data.filters.year %}
+      <li>
+        <a
+          style="{{ 'font-style: italic' if data.query.year == year.value }}"
+          href="{{ here(data.url, { year: year.value }) }}"
+        >{{ __t(year.label) }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <h3>{{ __t('aposBlog:filterMonth') }}</h3>
+  <ul>
+    {% for month in data.filters.month %}
+      <li>
+        <a
+          style="{{ 'font-style: italic' if data.query.month == month.value }}"
+          href="{{ here(data.url, { month: month.value }) }}"
+        >{{ __t(month.label) }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <h3>{{ __t('aposBlog:filterDay') }}</h3>
+  <ul>
+    {% for day in data.filters.day %}
+      <li>
+        <a
+          style="{{ 'font-style: italic' if data.query.day == day.value }}"
+          href="{{ here(data.url, { day: day.value }) }}"
+        >{{ __t(day.label) }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endfragment %}

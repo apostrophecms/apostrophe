@@ -1,0 +1,41 @@
+---
+const { canEdit, widget, area } = Astro.props;
+import AposArea from "../components/AposArea.astro";
+
+function detectLastTabletFullWidthItem(widgets) {
+  if (!Array.isArray(widgets)) {
+    return;
+  }
+  const items = widgets.filter((widget) => widget.tablet.show);
+  if (items.length % 2 === 0) {
+    return;
+  }
+  items.sort(
+    (a, b) =>
+      (a.tablet.order ?? a.desktop.order) - (b.tablet.order ?? b.desktop.order)
+  );
+  return items[items.length - 1]._id;
+}
+
+const lastId = detectLastTabletFullWidthItem(area?.items);
+
+const attributes = {
+  ...(canEdit ? { "data-apos-widget": widget._id } : {}),
+  "data-visible-tablet": widget.tablet.show,
+  "data-visible-mobile": widget.mobile.show,
+  ...(lastId && widget._id === lastId && { "data-tablet-full": true }),
+  style: {
+    "--colstart": widget.desktop.colstart,
+    "--colspan": widget.desktop.colspan,
+    "--rowstart": widget.desktop.rowstart,
+    "--rowspan": widget.desktop.rowspan,
+    "--justify": widget.desktop.justify,
+    "--align": widget.desktop.align,
+    "--order": widget.desktop.order,
+  },
+};
+---
+
+<div {...attributes}>
+  <AposArea area={widget.content} />
+</div>

@@ -1,0 +1,15 @@
+{
+  "generateImage": "Gerar Imagem",
+  "generateTextLabel": "Gerar Texto",
+  "generateTextDescription": "Gerar texto com IA",
+  "imagePlaceholderText": "Descreva a imagem que você deseja criar.",
+  "textPromptLabel": "Digite um prompt para gerar texto. Exemplo: \"100 palavras sobre queijo, no estilo de Anthony Bourdain, com subtítulos\"",
+  "variations": "Variações",
+  "select": "Selecionar",
+  "delete": "Excluir",
+  "generateTextAction": "Gerar",
+  "rateLimitExceeded": "Limite de taxa excedido, tente novamente mais tarde",
+  "invalidRequest": "Pedido inválido, por favor revise as regras da OpenAI",
+  "utilityOperationLabel": "Gerar uma imagem com IA",
+  "errorMessage": "Ocorreu um erro."
+}

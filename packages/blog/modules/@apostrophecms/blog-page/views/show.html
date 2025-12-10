@@ -1,0 +1,8 @@
+{% extends data.outerLayout %}
+
+{% block main %}
+  <h1>{{ data.piece.title }}</h1>
+  <p>
+    {{ data.piece.publishedAt | date('MMMM D, YYYY') }}
+  </p>
+{% endblock %}
