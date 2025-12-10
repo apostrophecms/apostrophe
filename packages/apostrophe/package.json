@@ -81,7 +81,7 @@
     "encodeurl": "^2.0.0",
     "express": "^4.16.4",
     "express-bearer-token": "^3.0.0",
-    "express-cache-on-demand": "^1.0.4",
+    "express-cache-on-demand": "workspace:^",
     "express-session": "^1.18.2",
     "fs-extra": "^7.0.1",
     "glob": "^10.4.5",
