@@ -11,6 +11,14 @@ const util = require('util');
 module.exports = {
   extend: '@apostrophecms/widget-type',
   cascades: [ 'linkFields' ],
+  styles(self, options) {
+    return {
+      add: {
+        myBorder: 'border',
+        alignment: 'alignment'
+      }
+    };
+  },
   linkFields(self, options) {
     const linkWithType = (Array.isArray(options.linkWithType)
       ? options.linkWithType

@@ -236,6 +236,12 @@ module.exports = {
             last: true
           }
         },
+        styles: {
+          label: 'apostrophe:styles',
+          icon: 'palette-icon',
+          tooltip: 'apostrophe:stylesWidget',
+          nativeAction: 'editStyles'
+        },
         ...!options.contextual && {
           edit: {
             label: 'apostrophe:edit',
@@ -320,14 +326,28 @@ module.exports = {
 
       composeWidgetOperations() {
         self.widgetOperations = Object.entries(self.widgetOperations)
-          .map(([ name, operation ]) => {
+          .reduce((acc, [ name, operation ]) => {
             self.validateWidgetOperation(name, operation);
 
-            return {
-              name,
-              ...operation
-            };
-          });
+            const disableOperation = self.disableWidgetOperation(name, operation);
+            if (disableOperation) {
+              return acc;
+            }
+
+            return [
+              ...acc,
+              {
+                name,
+                ...operation
+              }
+            ];
+          }, []);
+      },
+      disableWidgetOperation(opName, properties) {
+        if (opName === 'styles' && !Object.keys(self.styles).length) {
+          return true;
+        }
+        return false;
       },
 
       // Returns markup for the widget. Invoked via `{% widget ... %}` in the

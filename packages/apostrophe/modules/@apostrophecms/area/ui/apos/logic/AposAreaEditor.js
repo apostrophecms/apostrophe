@@ -271,6 +271,24 @@ export default {
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);
       }
     },
+    async editStyles({ widgetId, index }) {
+      const widget = this.next[index];
+      if (!widget) {
+        return;
+      }
+      const preview = this.widgetPreview(widget.type, index, false);
+      const res = await apos.modal.execute('AposWidgetEditor', {
+        modelValue: widget,
+        options: this.widgetOptionsByType(widget.type),
+        type: widget.type,
+        docId: this.docId,
+        parentFollowingValues: this.followingValues,
+        areaFieldId: this.fieldId,
+        meta: this.meta[widget._id]?.aposMeta,
+        preview
+      });
+      console.log('res', res);
+    },
     async up({ index }) {
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
