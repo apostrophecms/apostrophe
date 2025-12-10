@@ -156,6 +156,7 @@
 // widget for an example. This option works only for breadcrumb operations.
 
 const _ = require('lodash');
+const { createId } = require('@paralleldrive/cuid2');
 
 module.exports = {
   cascades: [ 'fields', 'styles', 'widgetOperations' ],
@@ -434,11 +435,13 @@ module.exports = {
         const classesStr = classes.length ? ` class="${classes.join(' ')}"` : '';
         console.log('classesStr', classesStr);
 
-        console.log('properties', properties);
-        const propertiesStr = properties.length ? ` style="${properties.join('; ')}"` : '';
-        console.log('propertiesStr', propertiesStr);
+        /* console.log('properties', properties); */
+        /* const propertiesStr = properties.length ? ` style="${properties.join('; ')}"` : ''; */
+        /* console.log('propertiesStr', propertiesStr); */
 
-        const output = `<div${classesStr}${propertiesStr}>${markup}</div>`;
+        const styles = self.getStylesheet(widget, createId());
+
+        const output = `${styles}<div${classesStr}>${markup}</div>`;
         console.log('output', output);
 
         return output;
