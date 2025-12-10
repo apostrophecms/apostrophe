@@ -1,0 +1,18 @@
+{
+  "label": "Redirect",
+  "pluralLabel": "Redirects",
+  "originalSlug": "Old URL",
+  "originalSlugHelp": "Format with leading slash (e.g., /old-url)",
+  "title": "Description",
+  "urlType": "Link Type",
+  "urlTypeInternal": "Internal Page",
+  "urlTypeExternal": "URL",
+  "ignoreQuery": "Ignore query string when matching",
+  "forwardQuery": "Forward query string",
+  "newPage": "Page Title",
+  "external": "URL",
+  "statusCode": "Redirect Type",
+  "statusCodeHtmlHelp": "<ul><li>Use <strong>\"Temporary\"</strong> for temporary redirects or for testing purposes.</li><li>Use <strong>\"Permanent\"</strong> after testing, this is an SEO best practice. ⚠️ Search engines will cache these, so check carefully.</li>",
+  "302": "Temporary (status code 302)",
+  "301": "Permanent (status code 301)"
+}

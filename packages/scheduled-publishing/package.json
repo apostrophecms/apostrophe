@@ -1,0 +1,27 @@
+{
+  "name": "@apostrophecms/scheduled-publishing",
+  "version": "1.0.5",
+  "description": "Scheduled publishing for ApostropheCMS 3.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "mocha": "mocha",
+    "test": "npm run lint && npm run mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/scheduled-publishing"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/scheduled-publishing#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "devDependencies": {
+    "apostrophe": "workspace:*",
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^10.3.0",
+    "stylelint": "^16.2.1",
+    "stylelint-config-apostrophe": "workspace:*"
+  }
+}

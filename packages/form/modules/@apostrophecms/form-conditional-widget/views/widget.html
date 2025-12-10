@@ -1,0 +1,6 @@
+{% set prependIfPrefix = apos.modules['@apostrophecms/form'].prependIfPrefix %}
+<fieldset
+  data-apos-form-condition="{{ data.widget.conditionName }}" data-apos-form-condition-value="{{ data.widget.conditionValue }}" class="apos-form-conditional {{ prependIfPrefix('__conditional') }}" disabled
+>
+  {% area data.widget, 'contents' %}
+</fieldset>

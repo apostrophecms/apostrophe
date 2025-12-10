@@ -1,0 +1,29 @@
+{# ids must be unique doc-wide #}
+{% set id = apos.util.generateId() %}
+{% set widget = data.widget %}
+{% set prependIfPrefix = apos.modules['@apostrophecms/form'].prependIfPrefix %}
+{% import "fragments/utility.html" as utils with context %}
+
+<fieldset
+  data-apos-form-radio
+  class="apos-form-fieldset {{ prependIfPrefix('__fieldset') }}"
+>
+  <legend class="{{ prependIfPrefix('__legend') }}">
+    {{ widget.fieldLabel}}
+  </legend>
+  {{ utils.optional(widget.required) }}
+  {{ utils.required(widget.required) }}
+  {% for choice in widget.choices %}
+    {% set choiceId = id + apos.util.slugify(choice.value) %}
+    <div class="{{ prependIfPrefix('__check-wrapper') }}">
+      <input
+        class="{{ prependIfPrefix('__input') }}"
+        type="radio" id="{{ choiceId }}" name="{{ widget.fieldName }}"
+        value="{{ choice.value }}">
+      <label class="{{ prependIfPrefix('__label') }}" for="{{ choiceId }}">
+        {{ choice.label }}
+      </label>
+    </div>
+  {% endfor %}
+  <p data-apos-input-message="{{ widget.fieldName }}" hidden></p>
+</fieldset>

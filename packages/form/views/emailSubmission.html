@@ -1,0 +1,7 @@
+<h3>New submission to form: {{ data.form.title }}</h3>
+
+<ul>
+  {% for name, value in data.input %}
+    <li><strong>{{ name }}</strong>: {{ value }}</li>
+  {% endfor %}
+</ul>

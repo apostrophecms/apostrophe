@@ -1,0 +1,37 @@
+---
+import AposWidget from "../components/AposWidget.astro";
+import aposRequest from "../lib/aposRequest.js";
+import aposResponse from "../lib/aposResponse.js";
+
+const request = aposRequest(Astro.request);
+const response = await aposResponse(request);
+const text = await response.text();
+const statusCode = response.status;
+
+let responseBody = { widget: null };
+let shouldRender = true;
+let renderWarn = false;
+try {
+  if (text === "aposLivePreviewSchemaNotYetValid") {
+    shouldRender = false;
+  } else {
+    responseBody = JSON.parse(text);
+  }
+  if (statusCode === 400) {
+    shouldRender = false;
+    renderWarn = true;
+  }
+} catch (error) {
+  console.error("Error:", error);
+  throw new Error("There was an issue while parsing a widget response.");
+}
+const { widget, ...props } = responseBody;
+if (!widget && shouldRender) {
+  throw new Error(
+    "There was an issue while rendering the widget in the renderWidget endpoint."
+  );
+}
+---
+
+{widget && !renderWarn && <AposWidget {widget} {...props} />}
+{renderWarn && <p>Unable to render this widget.</p>}

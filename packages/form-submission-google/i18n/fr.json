@@ -1,0 +1,9 @@
+{
+  "activateGoogleSubmit": "Soumettre à Google Spreadsheets",
+  "googleSheetId": "ID de la feuille de calcul Google",
+  "googleSheetIdHtmlHelp": "<a href=\"https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id\">L'ID se trouve dans l'URL de la feuille de calcul</a>: https://docs.google.com/spreadsheets/d/<strong>spreadsheetId</strong>/edit#gid=0",
+  "googleSheetName": "Nom de la feuille de calcul Google",
+  "googleSheetNameHelp": "Le nom de l'onglet de la feuille dans votre feuille de calcul Google où vous souhaitez que la soumission soit ajoutée. Si non fourni, la première feuille de la feuille de calcul sera utilisée.",
+  "googleSheetRetrievalError": "Erreur lors de la récupération des informations de la feuille de calcul Google. Veuillez vérifier l'ID de la feuille de calcul et les paramètres de partage de la feuille de calcul.",
+  "googleSheetSubmissionError": "Une erreur s'est produite lors de la soumission aux Google Sheets."
+}

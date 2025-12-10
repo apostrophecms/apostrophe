@@ -1,0 +1,10 @@
+---
+const { widget } = Astro.props;
+import AposArea from "../components/AposArea.astro";
+
+// This component is used only when rendering the Admin UI.
+// The public facing rendering is handled by LayoutColumn.astro
+// via the newly introduced widgetComponent prop on AposArea.
+---
+
+<AposArea area={widget.content} />

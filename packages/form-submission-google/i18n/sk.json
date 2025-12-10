@@ -1,0 +1,9 @@
+{
+  "activateGoogleSubmit": "Odoslať do Google Tabuliek",
+  "googleSheetId": "ID Google Tabuliek",
+  "googleSheetIdHtmlHelp": "<a href=\"https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id\">ID sa nachádza v URL tabuliek</a>: https://docs.google.com/spreadsheets/d/<strong>spreadsheetId</strong>/edit#gid=0",
+  "googleSheetName": "Názov hárku Google Tabuliek",
+  "googleSheetNameHelp": "Názov hárku v vašich Google tabulkách, kam chcete pridať odoslanie. Ak nie je zadaný, bude sa používať prvý hárok tabuliek.",
+  "googleSheetRetrievalError": "Chyba pri získavaní informácií o Google tabuľkách. Skontrolujte prosím ID tabuliek a nastavenia zdieľania tabuliek.",
+  "googleSheetSubmissionError": "Pri odosielaní do Google Tabuliek došlo k chybe."
+}

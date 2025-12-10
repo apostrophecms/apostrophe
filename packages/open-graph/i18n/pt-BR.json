@@ -1,0 +1,10 @@
+{
+  "title": "Título do Open Graph",
+  "titleHelp": "O título do seu conteúdo sem nenhuma marca, como o nome do seu site.",
+  "description": "Descrição do Open Graph",
+  "descriptionHelp": "Uma breve descrição do conteúdo, geralmente entre 2 e 4 frases. Isso será exibido abaixo do título do post.",
+  "type": "Tipo do Open Graph",
+  "typeHelp": "O tipo de mídia do seu conteúdo. Veja <a href=\"https://ogp.me/#types\" target=\"_blank\">https://ogp.me/#types</a>.",
+  "image": "Imagem do Open Graph",
+  "group": "Open Graph"
+}

@@ -1,0 +1,18 @@
+{
+    "label": "Presmerovať",
+    "pluralLabel": "Presmerovania",
+    "originalSlug": "Pôvodná URL",
+    "originalSlugHelp": "Formát s lomítkom (napr., /povodna-url)",
+    "title": "Popis",
+    "urlType": "Typ odkazu",
+    "urlTypeInternal": "Interná URL stránka",
+    "urlTypeExternal": "URL",
+    "ignoreQuery": "Ignorovať reťazec dotazu pri zhode.",
+    "forwardQuery": "Presmerovať reťazec dotazu.",
+    "newPage": "Názov stránky",
+    "external": "URL",
+    "statusCode": "Typ presmerovania",
+    "statusCodeHtmlHelp": "<ul><li>Použite <strong>\"Dočasný\"</strong> na dočasné presmerovanie alebo na testovacie účely.</li><li>Použite <strong>\"Trvalý\"</strong> až po testovaní - je to osvedčený postup SEO. ⚠️ Vyhľadávače ich zaznamenávajú, preto ich starostlivo skontrolujte.</li>",
+    "302": "Dočasný (stavový kód 302)",
+    "301": "Trvalý (stavový kód 301)"
+  }

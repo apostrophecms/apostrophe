@@ -1,0 +1,16 @@
+---
+import getAreaForApi from '../lib/getAreaForApi.js';
+import AposWidget from './AposWidget.astro';
+
+const items = await getAreaForApi(Astro);
+
+---
+{
+  items?.map(({ widget, options, props }) => {
+    return (
+      <div data-widget-id={widget._id}>
+        <AposWidget widget={widget} options={options} {...props}/>
+      </div>
+    );
+  })
+}

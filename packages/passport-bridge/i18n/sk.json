@@ -1,0 +1,8 @@
+{
+  "rejected": "Vaše prihlasovacie údaje neboli akceptované, váš účet nie je priradený k tejto stránke alebo existujúci účet má rovnaké užívateľské meno alebo e-mailovú adresu.",
+  "logInWith": "Prihláste sa pomocou {{ label }}",
+  "errorHeading": "Pri prihlásení došlo k chybe",
+  "errorSubheading": "Počas prihlásenia cez {{ label }} sa vyskytla chyba",
+  "contactAdministrator": "Ak sa domnievate, že túto správu vidíte omylom, kontaktujte administrátora.",
+  "connectionRequest": "Pripojenie {{ strategyName }} k {{ site }}"
+}

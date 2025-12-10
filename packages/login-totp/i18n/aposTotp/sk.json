@@ -1,0 +1,19 @@
+{
+  "missingSecret": "Mali by ste poskytnúť tajomstvo s dĺžkou 10 znakov vo svojej konfigurácii modulu @apostrophecms/login.",
+  "badSecretSize": "Vaše tajomstvo by malo mať dĺžku 10 znakov.",
+  "invalidToken": "Neplatný kód, skúste znova.",
+  "updateError": "Pri nastavovaní vášho TOTP účtu sa vyskytla chyba.",
+  "verify": "Overiť",
+  "loginTitleSetup": "Povoliť podporu autentifikátora",
+  "loginTitle": "Zadajte šesť miestny kód zo svojho autentifikačného aplikácie.",
+  "setupText1": "Nainštalujte Google Authenticator alebo podobnú aplikáciu TOTP, potom",
+  "setupText2": "Oscanovať tento QR kód",
+  "setupText3": "Alebo zadajte tento kľúč ručne",
+  "loginText": "Potom zadajte overovací kód zo svojho autentifikačného aplikácie",
+  "copyKey": "Skopírovať kľúč",
+  "successMessage": "Úspech! Dokončovanie procesu prihlásenia...",
+  "notConfigured": "Nastavené nie je, obnovte prihlasovaciu stránku na konfiguráciu TOTP",
+  "resetTotpLabel": "Obnoviť TOTP",
+  "resetTotpHelp": "Vyberte túto možnosť a uložte ju na obnovenie TOTP (Google Authenticator) konfigurácie používateľa jedenkrát, aby si ju mohli nastaviť znova.",
+  "totpLabel": "TOTP"
+}

@@ -1,0 +1,37 @@
+{
+  "name": "csv-to-zone-file",
+  "version": "1.0.0",
+  "description": "Converts CSV to a zone-file just good enough to import into Amazon Route 53",
+  "main": "app.js",
+  "scripts": {
+    "test": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/csv-to-zone-file"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/csv-to-zone-file#readme",
+  "keywords": [
+    "zone",
+    "file"
+  ],
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/csv-to-zone-file/issues"
+  },
+  "bin": {
+    "csv-to-zone-file": "./bin/csv-to-zone-file"
+  },
+  "dependencies": {
+    "csv-parse": "^4.16.3",
+    "eslint-config-apostrophe": "workspace:*"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
+  }
+}

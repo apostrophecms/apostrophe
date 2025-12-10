@@ -1,0 +1,5 @@
+{
+  "test": "test singular",
+  "test_plural": "test plural",
+  "test 2": "test of the second translation key"
+}

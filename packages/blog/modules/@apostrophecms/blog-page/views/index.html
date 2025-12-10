@@ -1,0 +1,29 @@
+{% extends data.outerLayout %}
+
+{% import "filters.html" as filters %}
+{% import "@apostrophecms/pager:macros.html" as pager with context %}
+
+{% block main %}
+  <h2>{{ __t('aposBlog:filters') }}</h2>
+
+  {% render filters.render({
+    filters: data.piecesFilters,
+    query: data.query,
+    url: data.page._url
+  }) %}
+
+  <h2>{{ __t('aposBlog:pluralLabel') }}</h2>
+
+  {% for piece in data.pieces %}
+    <div class="apos-blog-post-preview">
+      <h6 class="apos-blog-post-date">
+        {{ __t('aposBlog:releasedOn') }} {{ piece.publishedAt | date('MMMM D, YYYY') }}
+      </h6>
+      <h4 class="apos-blog-post-title">
+        <a href="{{ piece._url }}">{{ piece.title }}</a>
+      </h4>
+    </div>
+  {% endfor %}
+
+  {{ pager.render({ page: data.currentPage, total: data.totalPages }, data.url) }}
+{% endblock %}

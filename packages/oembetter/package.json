@@ -1,0 +1,44 @@
+{
+  "name": "oembetter",
+  "version": "1.1.4",
+  "description": "A modern oembed client. Allows you to register filters to improve or supply oembed support for sites that don't normally have it. You can also supply a allowlist of services you trust to prevent XSS attacks.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run lint && npm run mocha",
+    "eslint": "eslint --ext .js .",
+    "lint": "npm run eslint",
+    "mocha": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/oembetter"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/oembetter#readme",
+  "keywords": [
+    "oembed",
+    "oembetter",
+    "media",
+    "embed"
+  ],
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/oembetter/issues"
+  },
+  "dependencies": {
+    "async": "^0.9.0",
+    "cheerio": "^1.0.0-rc.10",
+    "fast-xml-parser": "^4.2.2",
+    "node-fetch": "^2.6.7",
+    "urls": "0.0.4"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^10.0.0"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
+  }
+}
