@@ -666,7 +666,7 @@ module.exports = self => {
               );
             }
             if (!processedWidgets.has(widget)) {
-              /* processedWidgets.add(widget); */
+              processedWidgets.add(widget);
               self.findSchemaRelatedTypes(
                 req,
                 schema,
