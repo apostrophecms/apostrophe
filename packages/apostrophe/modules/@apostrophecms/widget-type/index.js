@@ -360,6 +360,10 @@ module.exports = {
       // async, as are all functions that invoke a nunjucks render in
       // Apostrophe 3.x.
       async output(req, widget, options, _with) {
+        console.log('---');
+        console.log('---');
+        console.log(widget.type);
+        console.log('---');
         req.widgetsBundles = {
           ...req.widgetsBundles || {},
           ...self.getWidgetsBundles(`${widget.type}-widget`)
@@ -381,12 +385,63 @@ module.exports = {
           });
         }
 
-        return self.render(req, self.template, {
+        console.log('self.styles', self.styles);
+        console.log('self.apos.styles.presets', self.apos.styles.presets);
+        console.log('widget', widget);
+
+        const markup = await self.render(req, self.template, {
           widget: effectiveWidget,
           options,
           manager: self,
           contextOptions: _with
         });
+
+        if (self.styles && self.options.stylesWrapper !== false) {
+          return self.renderStyles(widget, markup);
+        }
+
+        return markup;
+      },
+
+      renderStyles(widget, markup) {
+        const classes = [];
+        const properties = [];
+
+        for (const styleName in self.styles) {
+          const styleField = typeof self.styles[styleName] === 'string'
+            ? self.apos.styles.presets[self.styles[styleName]]
+            : self.styles[styleName];
+
+          if (!styleField) {
+            continue;
+          }
+
+          console.log('---');
+          console.log(styleName, styleField);
+
+          if (styleField.class === true && widget[styleName]) {
+            classes.push(widget[styleName]);
+          }
+
+          // TODO: refactor render util to use it here as well
+          if (styleField.property && widget[styleName] !== null) {
+            // TEMP:
+            properties.push(`${styleField.property}: ${widget[styleName]}`);
+          }
+        }
+
+        console.log('classes', classes);
+        const classesStr = classes.length ? ` class="${classes.join(' ')}"` : '';
+        console.log('classesStr', classesStr);
+
+        console.log('properties', properties);
+        const propertiesStr = properties.length ? ` style="${properties.join('; ')}"` : '';
+        console.log('propertiesStr', propertiesStr);
+
+        const output = `<div${classesStr}${propertiesStr}>${markup}</div>`;
+        console.log('output', output);
+
+        return output;
       },
 
       getWidgetsBundles(widgetType) {
