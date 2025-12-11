@@ -614,13 +614,13 @@ describe('Styles', function () {
             y: 2,
             blur: 5,
             color: 'rgba(0,0,0,0.3)'
-          },
-          styleId: 'randomStyleId'
-        }
+          }
+        },
+        'randomStyleId'
       );
 
       const expected = {
-        selector: styles.startsWith('#styleId .border-style{'),
+        selector: styles.startsWith('#randomStyleId .border-style{'),
         selectorEnd: styles.endsWith('}'),
         borderWidthTop: styles.includes('border-width-top: 3px'),
         borderWidthRight: styles.includes('border-width-right: 3px'),
