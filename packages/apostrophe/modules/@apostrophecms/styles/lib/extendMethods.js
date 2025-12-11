@@ -1,9 +1,11 @@
 module.exports = self => {
   return {
     composeSchema(_super, ...args) {
+      self.ensureNoFields();
+
       self.presets = {};
       self.setStandardPresets();
-      self.ensureNoFields();
+      self.registerPresets();
 
       // Required only if the legacy fields schema is used.
       // Styles-flavored schema doesn't play well with all the things schemas need

@@ -1,4 +1,5 @@
-module.exports = (options) => {
+module.exports = (moduleOptions) => {
+  const options = moduleOptions.defaultStyles;
   return {
     width: {
       label: 'apostrophe:styleWidth',
@@ -120,6 +121,7 @@ module.exports = (options) => {
       label: 'apostrophe:styleShadow',
       type: 'object',
       valueTemplate: '%x% %y% %blur% %color%',
+      property: 'box-shadow',
       fields: {
         add: {
           active: {

@@ -47,6 +47,68 @@ describe('Styles', function () {
                 }
               }
             };
+          },
+          extendMethods(self) {
+            return {
+              registerPresets(_super) {
+                _super();
+                // Extend an existing one:
+                const widthPreset = self.getPreset('width');
+
+                // Ensure we really change the default
+                assert.equal(
+                  widthPreset.step,
+                  10,
+                  'Width preset should have step 10 by default'
+                );
+                widthPreset.step = 1;
+                self.setPreset('width', widthPreset);
+
+                // Add a custom one:
+                self.setPreset('customPreset', {
+                  label: 'Custom Preset',
+                  type: 'string',
+                  def: 'custom',
+                  property: 'customProperty'
+                });
+
+                // Test validation
+                assert.throws(
+                  () => {
+                    self.setPreset('invalidPreset', {
+                      label: 'Invalid Preset'
+                    });
+                  },
+                  {
+                    message: /Preset must be an object with a "type" property/i
+                  },
+                  'Should validate preset type while registering'
+                );
+                assert.throws(
+                  () => {
+                    self.setPreset('anotherInvalidPreset', null);
+                  },
+                  {
+                    message: /Preset must be an object with a "type" property/i
+                  },
+                  'Should validate null preset while registering'
+                );
+              },
+
+              // Test that presets getter fails before registration.
+              composeSchema(_super, ...args) {
+                assert.throws(
+                  () => {
+                    self.getPreset('width');
+                  },
+                  {
+                    message: /Presets have not been initialzed yet/i
+                  },
+                  'Should not be able to get presets before they are registered'
+                );
+                return _super(...args);
+              }
+            };
           }
         },
         'test-widget': {
@@ -80,7 +142,7 @@ describe('Styles', function () {
                 label: 'A Style'
               }
             },
-
+            // Explicit existing groups
             group: {
               basics: {
                 label: 'Basics',
@@ -93,6 +155,64 @@ describe('Styles', function () {
             }
           }
 
+        },
+        'test-empty-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Test Groups Widget'
+          }
+        },
+        'test-empty-styles-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Test Groups Widget'
+          },
+          fields: {
+            add: {
+              myField: {
+                type: 'string',
+                label: 'My Field'
+              }
+            }
+          }
+        },
+        'test-empty-fields-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Test Empty Fields Widget'
+          },
+          styles: {
+            add: {
+              width: {
+                preset: 'width',
+                label: 'Custom Width',
+                selector: '.card'
+              }
+            }
+          }
+        },
+        'test-nogroups-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Test No Groups Widget'
+          },
+          fields: {
+            add: {
+              myField: {
+                type: 'string',
+                label: 'A Style'
+              }
+            }
+          },
+          styles: {
+            add: {
+              width: {
+                preset: 'width',
+                label: 'Custom Width',
+                selector: '.card'
+              }
+            }
+          }
         }
       }
     });
@@ -163,5 +283,89 @@ describe('Styles', function () {
     assert.equal(titleField.group.name, 'basics', 'Title field should remain in basics group');
     assert.equal(aStyleField?.type, 'string', 'aStyle field should remain unchanged');
     assert.equal(aStyleField.group.name, 'styles', 'sStyle field should be in styles group');
+  });
+
+  it('should handle empty styles and fields groups (widgets)', async function () {
+    assert.deepEqual(
+      apos.modules['test-empty-widget'].fieldsGroups,
+      {},
+      'Fields groups should be empty'
+    );
+  });
+
+  it('should handle empty styles groups (widgets)', async function () {
+    assert.deepEqual(
+      apos.modules['test-empty-styles-widget'].fieldsGroups,
+      {},
+      'Fields groups should be empty'
+    );
+  });
+
+  it('should handle empty fields groups (widgets)', async function () {
+    assert.deepEqual(
+      apos.modules['test-empty-fields-widget'].fieldsGroups,
+      {
+        styles: {
+          label: 'apostrophe:styles',
+          fields: [ 'width' ]
+        }
+      },
+      'Fields groups should contain basics and styles groups'
+    );
+  });
+
+  it('should handle fields and styles groups (widgets)', async function () {
+    assert.deepEqual(
+      apos.modules['test-nogroups-widget'].fieldsGroups,
+      {
+        basics: {
+          label: 'apostrophe:basics',
+          fields: [ 'myField' ]
+        },
+        styles: {
+          label: 'apostrophe:styles',
+          fields: [ 'width' ]
+        }
+      },
+      'Fields groups should contain basics and styles groups'
+    );
+  });
+
+  it('should register and retrieve presets', async function () {
+    const borderPreset = apos.styles.getPreset('border');
+    const widthPreset = apos.styles.getPreset('width');
+    const customPreset = apos.styles.getPreset('customPreset');
+
+    assert(borderPreset, 'Border preset should be registered');
+
+    assert(widthPreset, 'Width preset should be registered');
+    assert.equal(
+      widthPreset.step,
+      1,
+      'Width preset should be modified correctly'
+    );
+
+    assert(customPreset, 'Custom preset should be registered');
+    assert.equal(
+      customPreset.type,
+      'string',
+      'Custom preset should be registered correctly'
+    );
+  });
+
+  it('should fail to set presets after initialization', async function () {
+    assert.throws(
+      () => {
+        apos.styles.setPreset('anotherPreset', {
+          label: 'Another Preset',
+          type: 'string',
+          property: 'anotherProperty'
+        });
+      },
+      {
+        message: /Attempt to set preset anotherPreset after initialization/i
+      },
+      'Should throw an error when trying to set a preset after initialization'
+    );
   });
 });

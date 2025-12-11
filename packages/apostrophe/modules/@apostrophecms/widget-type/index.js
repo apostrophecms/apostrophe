@@ -287,6 +287,9 @@ module.exports = {
           );
         }
         const fieldSchema = self.apos.styles.expandStyles(self.styles);
+        if (Object.keys(fieldSchema).length === 0) {
+          return;
+        }
         const groupFields = [ ...new Set([
           ...Object.keys(fieldSchema),
           ...self.fieldsGroups.styles?.fields || []
@@ -295,11 +298,21 @@ module.exports = {
           label: 'apostrophe:styles',
           fields: groupFields
         };
+        // Create a default group if none exist
+        if (
+          !Object.keys(self.fieldsGroups).length &&
+          Object.keys(self.fields).length
+        ) {
+          self.fieldsGroups.basics = {
+            label: 'apostrophe:basics',
+            fields: Object.keys(self.fields)
+          };
+        }
+        self.fieldsGroups.styles = stylesGroup;
         self.fields = {
           ...fieldSchema,
           ...self.fields
         };
-        self.fieldsGroups.styles = stylesGroup;
       },
       composeSchema() {
         self.addStylesFields();

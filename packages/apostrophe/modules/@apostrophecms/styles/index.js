@@ -21,7 +21,11 @@ module.exports = {
     },
     // If true, always render CSS server side during editing, which slows
     // down the UI slightly but allows the use of a custom render function
-    serverRendered: false
+    serverRendered: false,
+    defaultStyles: {
+      borderColor: 'black',
+      shadowColor: 'gray'
+    }
   },
   cascades: [ 'styles' ],
   commands(self) {
