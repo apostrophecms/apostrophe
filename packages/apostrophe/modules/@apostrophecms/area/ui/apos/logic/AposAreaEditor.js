@@ -272,14 +272,20 @@ export default {
       }
     },
     async editStyles({ widgetId, index }) {
+      if (this.foreign) {
+        return;
+      }
       const widget = this.next[index];
       if (!widget) {
         return;
       }
+
+      apos.area.activeEditor = this;
+      apos.bus.$on('apos-refreshing', cancelRefresh);
       const preview = this.widgetPreview(widget.type, index, false);
       const stylesEditorComponent = this.widgetStylesEditorComponent(widget.type);
 
-      await apos.modal.execute(stylesEditorComponent, {
+      const result = await apos.modal.execute(stylesEditorComponent, {
         modelValue: widget,
         options: this.widgetOptionsByType(widget.type),
         type: widget.type,
@@ -290,6 +296,11 @@ export default {
         preview,
         defaultTab: 'styles'
       });
+      apos.area.activeEditor = null;
+      apos.bus.$off('apos-refreshing', cancelRefresh);
+      if (result) {
+        return this.update(result);
+      }
     },
     async up({ index }) {
       if (this.docId === window.apos.adminBar.contextId) {
