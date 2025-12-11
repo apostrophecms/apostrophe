@@ -7,6 +7,7 @@
       :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
+      @keyup-enter="onKeyupEnter"
     >
       <div
         class="apos-link-control__dialog"
@@ -54,7 +55,9 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposTiptapLink',
@@ -150,6 +153,7 @@ export default {
     await this.evaluateExternalConditions();
   },
   methods: {
+    ...mapActions(useModalStore, [ 'isOnTop' ]),
     removeLink() {
       this.docFields.data = {};
       this.editor.commands.unsetLink();
@@ -218,16 +222,18 @@ export default {
       this.editor.chain().focus().blur().run();
       this.close();
     },
-    keyboardHandler(e) {
-      if (e.key === 'Escape') {
-        this.close();
-      }
-      if (e.key === 'Enter') {
-        if (this.docFields.data.href || e.metaKey) {
+    onKeyupEnter(event) {
+      console.log('AposTiptapLink', this.isOnTop(this.$el), this.name, event.key);
+      // if (!this.isOnTop(this.$el)) {
+      //   return;
+      // }
+      //
+      if (event.key === 'Enter') {
+        if (this.docFields.data.href || event.metaKey) {
           this.save();
           this.close();
         }
-        e.preventDefault();
+        event.preventDefault();
       }
     },
     async populateFields() {
@@ -298,13 +304,11 @@ export default {
     },
     async openPopover() {
       this.hasLinkOnOpen = Boolean(this.attributes.href);
-      window.addEventListener('keydown', this.keyboardHandler);
       await this.populateFields();
       this.evaluateConditions();
       this.$emit('open-popover');
     },
     closePopover() {
-      window.removeEventListener('keydown', this.keyboardHandler);
       this.$emit('close');
     }
   }

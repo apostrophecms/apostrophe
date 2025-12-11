@@ -7,6 +7,7 @@
       :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
+      @keyup-enter="onKeyupEnter"
     >
       <div
         class="apos-popover apos-anchor-control__dialog"
@@ -53,7 +54,9 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposTiptapAnchor',
@@ -142,6 +145,7 @@ export default {
     await this.evaluateExternalConditions();
   },
   methods: {
+    ...mapActions(useModalStore, [ 'isOnTop' ]),
     removeAnchor() {
       this.docFields.data = {};
       this.editor.commands.unsetAnchor();
@@ -164,16 +168,17 @@ export default {
       this.editor.chain().focus().blur().run();
       this.close();
     },
-    keyboardHandler(e) {
-      if (e.key === 'Escape') {
-        this.close();
-      }
-      if (e.key === 'Enter') {
+    onKeyupEnter(event) {
+      console.log('AposTiptapAnchor', this.isOnTop(this.$el), this.name);
+      // if (!this.isOnTop(this.$el)) {
+      //   return;
+      // }
+      if (event.key === 'Enter') {
         if (this.docFields.data.anchor) {
           this.save();
           this.close();
         }
-        e.preventDefault();
+        event.preventDefault();
       }
     },
     async populateFields() {
@@ -193,10 +198,8 @@ export default {
       await this.populateFields();
       this.evaluateConditions();
       this.hasAnchorOnOpen = Boolean(this.docFields.data.anchor);
-      window.addEventListener('keydown', this.keyboardHandler);
     },
     closePopover() {
-      window.removeEventListener('keydown', this.keyboardHandler);
       this.$emit('close');
     }
   }

@@ -62,15 +62,16 @@ export default {
 
   methods: {
     async handleUtilityOperation(item) {
-      const operation = [
+
+      const sources = [
         ...this.utilityOperations.menu,
         ...this.utilityOperations.buttons
-      ]
+      ];
+      const operation = sources
         .find((op) => op.action === item.action);
-
       if (!operation) {
         // eslint-disable-next-line no-console
-        console.error('utility operation definition was not found');
+        console.error('utility operation definition was not found:', item);
         return;
       }
 
@@ -89,9 +90,13 @@ export default {
           action: item.action,
           labels: this.moduleLabels,
           messages: operation.messages,
+          // Indicates the operation is taking place as
+          // part of editing a relationship
+          hasRelationshipField: this.hasRelationshipField,
           ...modalOptions
         });
       } else if (event) {
+        payload.hasRelationshipField = this.hasRelationshipField;
         apos.bus.$emit(event, payload);
       } else {
         // For backwards compatibility, because it did nothing before we should
