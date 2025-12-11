@@ -13,9 +13,10 @@
       aria-modal="true"
       :aria-labelledby="props.modalData.id"
       data-apos-modal
+      tabindex="0"
       @focus.capture="captureFocus"
-      @esc="close"
-      @keydown.tab="onTab"
+      @keyup.tab="onKeyup"
+      @keyup.esc="onKeyup"
     >
       <transition :name="transitionType">
         <div
@@ -143,7 +144,7 @@
 // transition.
 
 import {
-  ref, onMounted, onBeforeUnmount, computed, watch, nextTick, useSlots, useTemplateRef
+  ref, onMounted, computed, watch, nextTick, useSlots, useTemplateRef
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -265,28 +266,25 @@ onMounted(async () => {
     renderingElements.value = false;
   }
   store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
-  window.addEventListener('keydown', onKeydown);
 });
 
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown);
-});
-
-function onKeydown(e) {
+function onKeyup(event) {
+  console.log('AposModal', store.isOnTop(modalEl.value), props.modalTitle, event.key);
   if (!store.isOnTop(modalEl.value)) {
     return;
   }
 
-  const hasPressedEsc = e.key === 'Escape';
-  if (hasPressedEsc) {
-    // Don't confuse escape key handlers in other modal layers etc.
-    e.stopPropagation();
-    close(e);
+  if (event.key === 'Tab') {
+    cycleElementsToFocus(event, props.modalData.elementsToFocus);
+    return;
   }
-}
 
-function onTab(e) {
-  cycleElementsToFocus(e, props.modalData.elementsToFocus);
+  if (event.key === 'Escape') {
+    // Don't confuse escape key handlers in other modal layers etc.
+    event.stopPropagation();
+
+    close();
+  }
 }
 
 async function onEnter() {

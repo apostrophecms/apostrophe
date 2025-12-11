@@ -1,7 +1,7 @@
 <template>
   <div
     :aria-controls="`insert-menu-${modelValue._id}`"
-    @keydown.stop="handleUIKeydown"
+    @keyup="handleUIKeyup"
   >
     <bubble-menu
       v-if="editor"
@@ -520,8 +520,8 @@ export default {
     onBubbleHide() {
       apos.bus.$emit('close-context-menus', 'richText');
     },
-    handleUIKeydown(e) {
-      if (e.key === 'Escape') {
+    handleUIKeyup(event) {
+      if (event.key === 'Escape') {
         this.doSuppressInsertMenu();
       } else {
         this.suppressInsertMenu = false;

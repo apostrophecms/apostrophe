@@ -255,8 +255,8 @@ export default {
         }
 
         case 'Escape': {
-          // Don't confuse escape key handlers in other modal layers etc.
-          e.stopPropagation();
+          // // Don't confuse escape key handlers in other modal layers etc.
+          // e.stopPropagation();
           stop();
           this.closeList(null, true);
           break;

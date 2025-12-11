@@ -18,7 +18,9 @@
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
       @click="getFocus($event, widget._id);"
-      @keydown="handleKeyboardFocus"
+      @keyup.esc="onKeyup"
+      @keyup.space="onKeyup"
+      @keyup.enter="onKeyup"
       @blur="unfocus"
     >
       <div
@@ -704,21 +706,20 @@ export default {
       }
     },
 
-    handleKeyboardFocus($event) {
+    onKeyup(event) {
       if (!this.isFocused) {
         return;
       }
-      if ($event.key === 'Enter' || $event.code === 'Space') {
-        $event.preventDefault();
-        this.getFocus($event, this.widget._id);
-        this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardFocus);
+
+      if (event.key === 'Enter' || event.key === 'Space') {
+        event.preventDefault();
+        this.getFocus(event, this.widget._id);
       }
-      if ($event.key === 'Escape') {
-        this.getFocus($event, null);
+
+      if (event.key === 'Escape') {
+        this.getFocus(event, null);
         document.activeElement.blur();
         this.$refs.wrapper.focus();
-        // Don't confuse escape key handlers in other modal layers etc.
-        $event.stopPropagation();
       }
     },
 

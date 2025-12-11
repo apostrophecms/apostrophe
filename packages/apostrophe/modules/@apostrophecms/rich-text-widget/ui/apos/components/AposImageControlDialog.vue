@@ -2,6 +2,9 @@
   <div
     class="apos-popover apos-image-control__dialog"
     :class="{ 'apos-has-selection': hasSelection }"
+    tabindex="0"
+    @keyup.esc="onKeyup"
+    @keyup.enter="onKeyup"
   >
     <AposSchema
       :key="lastSelectionTime"
@@ -155,10 +158,6 @@ export default {
     this.populateFields();
     await this.evaluateExternalConditions();
     this.evaluateConditions();
-    window.addEventListener('keydown', this.keyboardHandler);
-  },
-  beforeUnmount() {
-    window.removeEventListener('keydown', this.keyboardHandler);
   },
   methods: {
     ...mapActions(useModalStore, [ 'isOnTop' ]),
@@ -249,22 +248,22 @@ export default {
       }
       return attrs;
     },
-    keyboardHandler(e) {
+    onKeyup(event) {
+      console.log('AposImageControlDialog', this.isOnTop(this.$el), '??', event.key);
       if (!this.isOnTop(this.$el)) {
         return;
       }
 
-      if (e.key === 'Escape') {
-        // Don't confuse escape key handlers in other modal layers etc.
-        e.stopPropagation();
+      if (event.key === 'Escape') {
         this.close();
       }
-      if (e.key === 'Enter') {
-        if (this.docFields.data._image?.length || e.metaKey) {
+
+      if (event.key === 'Enter') {
+        if (this.docFields.data._image?.length || event.metaKey) {
           this.save();
           this.close();
         }
-        e.preventDefault();
+        event.preventDefault();
       }
     },
     async populateFields() {
