@@ -16,7 +16,7 @@ const {
   extractFileNames
 } = require('./util/index.js');
 
-describe('@apostrophecms/import-export', function () {
+describe('@apostrophecms/import-export', function() {
   let apos;
   let importExportManager;
   let tempPath;
@@ -925,12 +925,15 @@ describe('@apostrophecms/import-export', function () {
     }), true, `expected imported docs 'lastPublishedAt' value to be of '${lastPublishedAt}'`);
   });
 
-  it('should get related types of a given doc type', async function() {
+  it('should get related types of a given doc type', function() {
     const req = apos.task.getReq();
+
+    const start = performance.now();
     const relatedTypesArticles = importExportManager
       .getRelatedTypes(req, apos.article.schema);
     const relatedTypesTopics = importExportManager
       .getRelatedTypes(req, apos.topic.schema);
+    const duration = performance.now() - start;
 
     const actual = {
       relatedTypesArticles: relatedTypesArticles.sort(),
@@ -960,8 +963,8 @@ describe('@apostrophecms/import-export', function () {
       ]
     };
 
+    assert(duration < 1000);
     assert.deepEqual(actual, expected);
-
   });
 
   describe('#getFirstDifferentLocale', function () {

@@ -615,37 +615,71 @@ module.exports = self => {
     // The entry point. Modifies `related`, also returns `related` because code elsewhere
     // expects that
     getRelatedTypes(req, schema = [], related = []) {
-      self.findSchemaRelatedTypes(req, schema, related, 0);
+      self.findSchemaRelatedTypes(req, schema, related);
       return related;
     },
     // Called recursively for you. Modifies `related`, has no useful return value
-    findSchemaRelatedTypes(req, schema, related, recursions) {
-      recursions++;
+    findSchemaRelatedTypes(
+      req,
+      schema,
+      related,
+      rec = 0,
+      processedWidgets = new Set()
+    ) {
+      const recursions = rec + 1;
       if (recursions >= MAX_RECURSION) {
         return;
       }
+
       for (const field of schema) {
         if (
           field.type === 'relationship' &&
           self.canExport(req, field.withType) &&
           !related.includes(field.withType)
         ) {
-          self.pushRelatedType(req, related, field.withType, recursions);
+          self.pushRelatedType(
+            req,
+            related,
+            field.withType,
+            recursions,
+            processedWidgets
+          );
         } else if ([ 'array', 'object' ].includes(field.type)) {
-          self.findSchemaRelatedTypes(req, field.schema, related, recursions);
+          self.findSchemaRelatedTypes(
+            req,
+            field.schema,
+            related,
+            recursions,
+            processedWidgets
+          );
         } else if (field.type === 'area') {
           const widgets = self.apos.area.getWidgets(field.options);
           for (const [ widget, options ] of Object.entries(widgets)) {
             const schema = self.apos.area.getWidgetManager(widget).schema || [];
             if (widget === '@apostrophecms/rich-text') {
-              self.getRelatedTypesFromRichTextWidget(req, options, related, recursions);
+              self.getRelatedTypesFromRichTextWidget(
+                req,
+                options,
+                related,
+                recursions,
+                processedWidgets
+              );
             }
-            self.findSchemaRelatedTypes(req, schema, related, recursions);
+            if (!processedWidgets.has(widget)) {
+              processedWidgets.add(widget);
+              self.findSchemaRelatedTypes(
+                req,
+                schema,
+                related,
+                recursions,
+                processedWidgets
+              );
+            }
           }
         }
       }
     },
-    pushRelatedType(req, related, type, recursions) {
+    pushRelatedType(req, related, type, recursions, processedWidgets) {
       if ((type === '@apostrophecms/page') || (type === '@apostrophecms/any-page-type')) {
         const pageTypes = Object.entries(self.apos.doc.managers).filter(
           ([ name, module ]) => self.apos.instanceOf(module, '@apostrophecms/page-type'))
@@ -657,19 +691,31 @@ module.exports = self => {
             // would have interesting content to export, just confusing to have it here
             continue;
           }
-          self.pushRelatedType(req, related, type, recursions);
+          self.pushRelatedType(req, related, type, recursions, processedWidgets);
         }
         return;
       }
       if (!related.includes(type)) {
         related.push(type);
         const relatedManager = self.apos.doc.getManager(type);
-        self.findSchemaRelatedTypes(req, relatedManager.schema, related, recursions);
+        self.findSchemaRelatedTypes(
+          req,
+          relatedManager.schema,
+          related,
+          recursions,
+          processedWidgets
+        );
       }
     },
     // Does not currently utilize req, but it could be relevant in overrides and is
     // always the first argument by convention, so it is included in the signature
-    getRelatedTypesFromRichTextWidget(req, options, related, recursions) {
+    getRelatedTypesFromRichTextWidget(
+      req,
+      options,
+      related,
+      recursions,
+      processedWidgets
+    ) {
       const manager = self.apos.modules['@apostrophecms/rich-text-widget'];
       const rteOptions = {
         ...manager.options.defaultOptions,
@@ -679,13 +725,13 @@ module.exports = self => {
         (rteOptions.toolbar?.includes('image') || rteOptions.insert?.includes('image')) &&
         !related.includes('@apostrophecms/image')
       ) {
-        self.pushRelatedType(req, related, '@apostrophecms/image', recursions);
+        self.pushRelatedType(req, related, '@apostrophecms/image', recursions, processedWidgets);
       }
       if (rteOptions.toolbar?.includes('link')) {
         const choices = manager.linkFields.linkTo.choices.map(choice => choice.value);
         for (const name of choices) {
           if (self.apos.doc.getManager(name) && !related.includes(name)) {
-            self.pushRelatedType(req, related, name, recursions);
+            self.pushRelatedType(req, related, name, recursions, processedWidgets);
           }
         }
       }
