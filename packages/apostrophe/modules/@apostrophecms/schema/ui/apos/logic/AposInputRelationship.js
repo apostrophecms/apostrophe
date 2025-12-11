@@ -3,7 +3,7 @@ import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin'
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { getPostprocessedRelationship } from 'Modules/@apostrophecms/piece-type/lib/postprocessRelationships.js';
 import {
-  computePosition, offset, shift, flip, arrow
+  computePosition, shift, flip
 } from '@floating-ui/dom';
 
 export default {
