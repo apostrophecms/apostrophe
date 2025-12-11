@@ -11,6 +11,7 @@ const {
   writeBundlesImportFiles,
   findNodeModulesSymlinks
 } = require('../webpack/utils');
+const Concat = require('concat-with-sourcemaps');
 
 // The internal Webpack build task.
 module.exports = (self) => ({
@@ -544,22 +545,52 @@ module.exports = (self) => ({
                 scenes.includes(scene);
       };
 
-      const filesContent = Object.entries(self.builds)
+      const files = Object.entries(self.builds)
         .filter(([ _, options ]) => filterBuilds(options))
-        .map(([ name ]) => {
-          const file = `${bundleDir}/${name}-build.${fileExt}`;
-          const readFile = (n, f) => `/* BUILD: ${n} */\n${fs.readFileSync(f, 'utf8')}`;
+        .map(([ name ]) => `${bundleDir}/${name}-build.${fileExt}`)
+        .filter(file => {
+          return (!checkForFile) || fs.existsSync(file);
+        });
 
-          if (checkForFile) {
-            return fs.existsSync(file)
-              ? readFile(name, file)
-              : '';
-          }
+      const bundlePath = `${bundleDir}/${filePath}`;
+      const sourceMapDir = self.options.productionSourceMapDir || bundleDir;
+      const sourceMapPath = `${sourceMapDir}/${filePath}.map`;
 
-          return readFile(name, file);
-        }).join('\n');
+      const needSourcemap = (process.env.NODE_ENV !== 'production') || self.options.productionSourceMaps;
 
-      fs.writeFileSync(`${bundleDir}/${filePath}`, filesContent);
+      if (!needSourcemap) {
+        return fs.writeFileSync(bundlePath, files.map(file => fs.readFileSync(file, 'utf8')).join('\n'));
+      }
+
+      // Concatenate in a way that preserves sitemaps
+      const concat = new Concat(true, bundlePath, '\n');
+
+      for (const file of files) {
+        const map = `${file}.map`;
+        // concat-with-sourcemaps does not strip old sourcemap comments for us
+        const source = stripSourceMapComment(fs.readFileSync(file, 'utf8'));
+        if (!fs.existsSync(map)) {
+          concat.add(
+            file,
+            source
+          );
+        } else {
+          concat.add(
+            file,
+            source,
+            // Per docs for concat-source-maps: this one should be read as a string
+            fs.readFileSync(map, 'utf8')
+          );
+        }
+      }
+
+      // Normally a production build does not include a sourcemap in the
+      // final deliverable
+
+      // concat-with-sourcemaps does not do this either
+      const content = concat.content.toString('utf8') + `\n//# sourceMappingURL=${filePath}.map\n`;
+      fs.writeFileSync(bundlePath, content);
+      fs.writeFileSync(sourceMapPath, concat.sourceMap);
     }
 
     // If NODE_ENV is production, this function will copy the given
@@ -596,7 +627,12 @@ module.exports = (self) => ({
       for (const file of files) {
         const src = `${bundleDir}/${file}`;
         await copyIn(src, `${releaseDir}/${file}`);
+        const srcMap = `${src}.map`;
+        if (fs.existsSync(srcMap)) {
+          await copyIn(srcMap, `${releaseDir}/${file}.map`);
+        }
         await fs.remove(src);
+        await fs.remove(srcMap);
       }
     }
 
@@ -864,3 +900,8 @@ module.exports = (self) => ({
     }
   }
 });
+
+// Helper to remove existing sourceMappingURL comments
+function stripSourceMapComment(code) {
+  return code.replace(/\/\/[@#]\s*sourceMappingURL=.*$/gm, '');
+}

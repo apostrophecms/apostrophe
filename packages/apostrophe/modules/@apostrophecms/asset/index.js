@@ -582,13 +582,12 @@ module.exports = {
         const deployableArtefacts = await self.copyBuildArtefacts(
           self.currentBuildManifest
         );
-        // Copy the source maps to the bundle root.
-        const sourceMaps = await self.copyBuildSourceMaps(self.currentBuildManifest);
         // Save the build manifest in the bundle root.
         await self.saveBuildManifest(self.currentBuildManifest);
 
         // Deploy everything to the release location.
         // All paths are relative to the bundle root.
+
         const deployFiles = [
           ...new Set(
             [
@@ -599,7 +598,7 @@ module.exports = {
           )
         ];
         if (self.options.productionSourceMaps) {
-          deployFiles.push(...sourceMaps || []);
+          deployFiles.push(...bundles.map(bundle => `${bundle}.map`));
         }
 
         await self.deploy(deployFiles);

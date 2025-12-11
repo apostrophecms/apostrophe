@@ -70,6 +70,7 @@
     "cheerio": "^1.0.0-rc.10",
     "chokidar": "^3.5.2",
     "common-tags": "^1.8.0",
+    "concat-with-sourcemaps": "^1.1.0",
     "connect-mongo": "^5.1.0",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
