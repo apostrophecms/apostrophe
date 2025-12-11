@@ -593,6 +593,9 @@ export default {
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
     },
+    widgetStylesEditorComponent(type) {
+      return this.moduleOptions.components.widgetStylesEditors[type];
+    },
     widgetPreview(type, index, create) {
       return this.moduleOptions.widgetPreview[type]
         ? {
