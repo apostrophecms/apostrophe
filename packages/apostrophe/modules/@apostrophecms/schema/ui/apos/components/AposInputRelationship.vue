@@ -106,10 +106,10 @@ export default {
 <style lang="scss" scoped>
   .apos-input-relationship__search-list {
     z-index: $z-index-notifications;
-    width: max-content;
     position: fixed;
     top: 0;
     left: 0;
+    width: max-content;
   }
 
   .apos-input-relationship__input-wrapper {
