@@ -123,7 +123,7 @@ export default {
     }
   },
   watch: {
-    async searchList(after, before) {
+    searchList(after, before) {
       if (!before.length && after.length) {
         this.setDropdownPosition();
       }
