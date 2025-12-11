@@ -277,7 +277,9 @@ export default {
         return;
       }
       const preview = this.widgetPreview(widget.type, index, false);
-      const res = await apos.modal.execute('AposWidgetEditor', {
+      const stylesEditorComponent = this.widgetStylesEditorComponent(widget.type);
+
+      await apos.modal.execute(stylesEditorComponent, {
         modelValue: widget,
         options: this.widgetOptionsByType(widget.type),
         type: widget.type,
@@ -285,9 +287,9 @@ export default {
         parentFollowingValues: this.followingValues,
         areaFieldId: this.fieldId,
         meta: this.meta[widget._id]?.aposMeta,
-        preview
+        preview,
+        defaultTab: 'styles'
       });
-      console.log('res', res);
     },
     async up({ index }) {
       if (this.docId === window.apos.adminBar.contextId) {
