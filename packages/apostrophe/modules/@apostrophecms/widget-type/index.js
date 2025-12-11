@@ -419,8 +419,13 @@ module.exports = {
           console.log('---');
           console.log(styleName, styleField);
 
-          if (styleField.class === true && widget[styleName]) {
-            classes.push(widget[styleName]);
+          if (styleField.class && widget[styleName]) {
+            const classToAdd = styleField.type === 'boolean'
+              ? styleField.class
+              : widget[styleName];
+
+            console.log('classToAdd', classToAdd);
+            classes.push(classToAdd);
           }
 
           // TODO: remove when https://github.com/apostrophecms/apostrophe/pull/5211 is merged
