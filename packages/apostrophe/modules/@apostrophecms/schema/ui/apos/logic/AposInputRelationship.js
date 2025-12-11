@@ -2,6 +2,9 @@ import { klona } from 'klona';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { getPostprocessedRelationship } from 'Modules/@apostrophecms/piece-type/lib/postprocessRelationships.js';
+import {
+  computePosition, offset, shift, flip, arrow
+} from '@floating-ui/dom';
 
 export default {
   name: 'AposInputRelationship',
@@ -54,10 +57,14 @@ export default {
     },
     // TODO get 'Browse' for better i18n
     browseLabel() {
-      return {
-        key: 'apostrophe:browseDocType',
-        type: this.$t(this.pluralLabel)
-      };
+      return this.modifiers.some(m => [ 'small', 'micro' ].includes(m))
+        ? {
+          key: 'apostrophe:browse'
+        }
+        : {
+          key: 'apostrophe:browseDocType',
+          type: this.$t(this.pluralLabel)
+        };
     },
     suggestion() {
       return {
@@ -116,6 +123,11 @@ export default {
     }
   },
   watch: {
+    async searchList(after, before) {
+      if (!before.length && after.length) {
+        this.setDropdownPosition();
+      }
+    },
     next(after, before) {
       for (const doc of before) {
         this.subfields[doc._id] = doc._fields;
@@ -308,6 +320,22 @@ export default {
         this.field,
         this.widgetOptions
       );
+    },
+    setDropdownPosition() {
+      computePosition(
+        this.$refs.input,
+        this.$refs.floatingList,
+        {
+          placement: 'bottom-start',
+          middleware: [ flip(), shift() ],
+          strategy: 'fixed'
+        }
+      ).then(({ x, y }) => {
+        Object.assign(this.$refs.floatingList.style, {
+          left: `${x}px`,
+          top: `${y}px`
+        });
+      });
     }
   }
 };

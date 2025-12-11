@@ -88,6 +88,7 @@
   "breakpointPreviewMobile": "Móvil",
   "breakpointPreviewSelect": "Seleccione el punto de interrupción",
   "breakpointPreviewTablet": "Tableta",
+  "browse": "Navegar",
   "browseDocType": "Navegar {{ type }}",
   "cancel": "Cancelar",
   "cannotChangeSlugPrefix": "No se puede cambiar el prefijo del slug",
