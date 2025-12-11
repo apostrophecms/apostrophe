@@ -90,6 +90,7 @@
   "breakpointPreviewMobile": "Mobile",
   "breakpointPreviewSelect": "Select Breakpoint",
   "breakpointPreviewTablet": "Tablet",
+  "browse": "Browse",
   "browseDocType": "Browse {{ type }}",
   "cancel": "Cancel",
   "cannotChangeSlugPrefix": "cannot change the slug prefix",
