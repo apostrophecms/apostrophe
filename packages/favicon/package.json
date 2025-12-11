@@ -18,8 +18,8 @@
   "license": "MIT",
   "devDependencies": {
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "workspace:^",
     "stylelint": "^16.5.0",
-    "stylelint-config-apostrophe": "workspace:*"
+    "stylelint-config-apostrophe": "workspace:^"
   }
 }

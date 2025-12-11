@@ -8,6 +8,7 @@
 ### Fixes
 
 * Fixes an issue where the frontend was caching stale choices for `select`, `radio` and `checkboxes` fields that were saved but no longer valid (i.e removed from the schema).
+* When we reach the max in a widget area, the `Add Content` button is now disabled.
 
 ### Changes
 
@@ -21,6 +22,10 @@ fields that were saved but no longer valid (i.e removed from the schema).
 ### Fixes
 
 * Fixes soft-redirect module to decode the URL path before matching historic URLs, ensuring proper matching of accents, Cyrillic, and other non-ASCII characters in old URLs. While this was not a new issue, the fix is of new importance now that a migration path to eliminate accent marks in existing slugs has been introduced in version 4.24.0.
+
+### Adds
+
+* Adds a new `isAdmin` method to the `permission` module.
 
 ## 4.24.0 (2025-11-25)
 

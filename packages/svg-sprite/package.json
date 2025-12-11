@@ -18,9 +18,9 @@
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "devDependencies": {
-    "apostrophe": "workspace:*",
+    "apostrophe": "workspace:^",
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "workspace:^",
     "mocha": "^10.4.0"
   },
   "publishConfig": {
