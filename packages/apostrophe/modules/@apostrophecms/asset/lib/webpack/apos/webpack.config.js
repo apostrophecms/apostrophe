@@ -24,8 +24,6 @@ module.exports = ({
 
   const mode = process.env.NODE_ENV || 'development';
   const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
-  const dev = (mode === 'development');
-  const csp = apos.modules['@apostrophecms/security-headers'];
   const config = {
     performance: {
       hints: false
