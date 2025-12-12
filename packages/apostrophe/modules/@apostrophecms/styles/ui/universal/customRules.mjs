@@ -33,9 +33,9 @@ export default {
 
     for (const [ side, val ] of Object.entries(sides)) {
       if (val != null) {
-        parts.push(`${property}-${side}: ${val}${unit}${important ? ' !important' : ''};`);
+        parts.push(`${property}-${side}: ${val}${unit}${important ? ' !important' : ''}`);
       }
-      rule = parts.join(' ');
+      rule = parts.join(';');
     }
 
     field.important = false;

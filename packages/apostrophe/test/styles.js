@@ -862,6 +862,63 @@ describe('Styles', function () {
         }
       }
     });
+    const inlineStyleConfig = (options) => ({
+      border: {
+        label: 'apostrophe:styleBorder',
+        type: 'object',
+        fields: {
+          add: {
+            width: {
+              label: 'apostrophe:styleWidth',
+              type: 'box',
+              def: {
+                top: 1,
+                right: 1,
+                bottom: 1,
+                left: 1
+              },
+              unit: 'px',
+              property: 'border-width'
+            },
+            radius: {
+              label: 'apostrophe:styleRadius',
+              type: 'range',
+              min: 0,
+              max: 32,
+              def: 0,
+              property: 'border-radius',
+              unit: 'px'
+            },
+            color: {
+              label: 'apostrophe:styleColor',
+              type: 'color',
+              def: options.borderColor,
+              property: 'border-color'
+            },
+            style: {
+              label: 'apostrophe:styleStyle',
+              type: 'select',
+              def: 'solid',
+              choices: [
+                {
+                  label: 'apostrophe:styleSolid',
+                  value: 'solid'
+                },
+                {
+                  label: 'apostrophe:styleDotted',
+                  value: 'dotted'
+                },
+                {
+                  label: 'apostrophe:styleDashed',
+                  value: 'dashed'
+                }
+              ],
+              property: 'border-style'
+            }
+          }
+        }
+      }
+    });
     // A multi-field with valueTemplate
     // const styleTemlateConfig = (options) => ({
     //   boxShadow: {
@@ -948,6 +1005,18 @@ describe('Styles', function () {
                 }).border
               }
             }
+          },
+          'test-inline-style-widget': {
+            extend: '@apostrophecms/widget-type',
+            options: {
+              label: 'Test Inline Style Widget'
+            },
+            styles: {
+              add: inlineStyleConfig({
+                borderColor: 'black',
+                shadowColor: 'gray'
+              })
+            }
           }
         }
       });
@@ -958,7 +1027,7 @@ describe('Styles', function () {
     });
 
     it('should render object styles correctly (@apstrophecms/styles)', async function () {
-      const styles = await apos.styles.getStylesheet(
+      const actual = await apos.styles.getStylesheet(
         {
           border: {
             active: true,
@@ -981,6 +1050,7 @@ describe('Styles', function () {
           }
         }
       );
+      const styles = actual.css;
       const expected = {
         selector: styles.startsWith('.border-style{'),
         selectorEnd: styles.endsWith('}'),
@@ -1006,7 +1076,7 @@ describe('Styles', function () {
     });
 
     it('should render object with selector correctly (widgets)', async function () {
-      const styles = await apos.modules['test-widget'].getStylesheet(
+      const actual = await apos.modules['test-widget'].getStylesheet(
         {
           border: {
             active: true,
@@ -1030,7 +1100,7 @@ describe('Styles', function () {
         },
         'randomStyleId'
       );
-
+      const styles = actual.css;
       const expected = {
         selector: styles.startsWith('#randomStyleId .border-style{'),
         selectorEnd: styles.endsWith('}'),
@@ -1045,6 +1115,58 @@ describe('Styles', function () {
       assert.deepEqual(expected, {
         selector: true,
         selectorEnd: true,
+        borderWidthTop: true,
+        borderWidthRight: true,
+        borderWidthBottom: true,
+        borderWidthLeft: true,
+        borderRadius: true,
+        borderColor: true,
+        borderStyle: true
+      });
+    });
+
+    it('should render object as inline style correctly (widgets)', async function () {
+      const actual = await apos.modules['test-inline-style-widget'].getStylesheet(
+        {
+          border: {
+            active: true,
+            width: {
+              top: 3,
+              right: 3,
+              bottom: 3,
+              left: 3
+            },
+            radius: 12,
+            color: 'blue',
+            style: 'dotted'
+          },
+          boxShadow: {
+            active: true,
+            x: 2,
+            y: 2,
+            blur: 5,
+            color: 'rgba(0,0,0,0.3)'
+          }
+        },
+        'randomStyleId'
+      );
+      assert.equal(actual.css, '');
+
+      const styles = actual.inline;
+      const expected = {
+        selector: !styles.includes('#randomStyleId{'),
+        isInline: !styles.includes('{') && !styles.includes('}'),
+        borderWidthTop: styles.includes('border-width-top: 3px'),
+        borderWidthRight: styles.includes('border-width-right: 3px'),
+        borderWidthBottom: styles.includes('border-width-bottom: 3px'),
+        borderWidthLeft: styles.includes('border-width-left: 3px'),
+        borderRadius: styles.includes('border-radius: 12px;'),
+        borderColor: styles.includes('border-color: blue;'),
+        borderStyle: styles.includes('border-style: dotted;')
+      };
+      assert.deepEqual(expected, {
+        selector: true,
+        isInline: true,
         borderWidthTop: true,
         borderWidthRight: true,
         borderWidthBottom: true,

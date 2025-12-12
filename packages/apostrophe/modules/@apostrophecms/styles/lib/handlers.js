@@ -12,7 +12,7 @@ module.exports = self => {
     afterSave: {
       async mirrorToGlobal(req, doc, options) {
         // mirror the stylesheet to @apostrophecms/global
-        const stylesheet = await self.getStylesheet(doc);
+        const stylesheet = self.getStylesheet(doc).css;
         const $set = {
           stylesStylesheet: stylesheet,
           stylesStylesheetVersion: createId()

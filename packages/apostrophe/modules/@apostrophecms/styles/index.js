@@ -60,8 +60,10 @@ module.exports = {
     };
   },
   async init(self, options) {
-    const { default: render } = await import('./ui/universal/render.mjs');
-    self.stylesheetRender = render;
+    const { renderGlobalStyles, renderScopedStyles } =
+      await import('./ui/universal/render.mjs');
+    self.stylesheetGlobalRender = renderGlobalStyles;
+    self.stylesheetScopedRender = renderScopedStyles;
 
     self.apos.doc.addContextOperation({
       action: 'reset-styles-position',
