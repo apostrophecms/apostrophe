@@ -272,7 +272,8 @@ module.exports = (self) => {
 
         for (const [ target, files ] of Object.entries(bundles)) {
 
-          let content = null; let sourceMap = null;
+          let content = null;
+          let sourceMap = null;
 
           if (!files.length) {
             delete bundles[target];
