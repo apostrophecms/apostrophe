@@ -1,4 +1,5 @@
-module.exports = (options) => {
+module.exports = (moduleOptions) => {
+  const options = moduleOptions.defaultStyles;
   return {
     width: {
       label: 'apostrophe:styleWidth',

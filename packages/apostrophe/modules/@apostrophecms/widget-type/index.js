@@ -305,9 +305,8 @@ module.exports = {
         ) {
           self.fieldsGroups.basics = {
             label: 'apostrophe:basics',
-            fields: []
+            fields: Object.keys(self.fields)
           };
-          self.fieldsGroups.basics.fields = Object.keys(self.fields);
         }
         self.fieldsGroups.styles = stylesGroup;
         self.fields = {
