@@ -22,7 +22,7 @@ module.exports = self => {
 
         req.res.setHeader('Content-Type', 'text/css');
 
-        return self.getStylesheet(piece);
+        return self.getStylesheet(piece).css;
       }
     }
   };

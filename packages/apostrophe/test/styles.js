@@ -1,8 +1,420 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
+const universal = import(
+  '../modules/@apostrophecms/styles/ui/universal/render.mjs'
+);
 
 describe('Styles', function () {
   this.timeout(t.timeout);
+
+  describe('Universal Renderer', function () {
+    let apos;
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/styles': {}
+        }
+      });
+    });
+
+    after(async function () {
+      return t.destroy(apos);
+    });
+
+    it('should export renderStyles function', async function () {
+      const { default: renderStyles } = await universal;
+      assert.equal(
+        typeof renderStyles,
+        'function',
+        'renderStyles should be a function'
+      );
+    });
+
+    it('should normalize field', async function () {
+      const { NORMALIZERS } = await universal;
+      // Basic field
+      {
+        const field = {
+          name: 'testField',
+          type: 'string',
+          selector: '.test-class',
+          property: 'color',
+          unit: 'px'
+        };
+        const actual = NORMALIZERS._(
+          field,
+          {
+            testField: 'red'
+          }
+        );
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [ '.test-class' ],
+            properties: [ 'color' ],
+            value: 'red',
+            unit: 'px'
+          },
+          'Basic field should be normalized correctly'
+        );
+      }
+
+      // Basic field with rootSelector
+      {
+        const field = {
+          name: 'testField',
+          type: 'string',
+          selector: '.test-class',
+          property: 'color',
+          unit: 'px'
+        };
+        const actual = NORMALIZERS._(
+          field,
+          {
+            testField: 'red'
+          },
+          {
+            rootSelector: '#root'
+          }
+        );
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [ '#root .test-class' ],
+            properties: [ 'color' ],
+            value: 'red',
+            unit: 'px'
+          },
+          'Basic field with rootSelector should be normalized correctly'
+        );
+      }
+
+      // Basic field with array selector
+      {
+        const field = {
+          name: 'testField',
+          type: 'string',
+          selector: [ '.class1', '.class2' ],
+          property: 'color',
+          unit: 'px'
+        };
+        const actual = NORMALIZERS._(
+          field,
+          {
+            testField: 'red'
+          }
+        );
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [ '.class1', '.class2' ],
+            properties: [ 'color' ],
+            value: 'red',
+            unit: 'px'
+          },
+          'Basic field with array selector should be normalized correctly'
+        );
+      }
+
+      // Basic field with array property
+      {
+        const field = {
+          name: 'testField',
+          type: 'string',
+          selector: '.test-class',
+          property: [ 'color', 'background-color' ],
+          unit: 'px'
+        };
+        const actual = NORMALIZERS._(
+          field,
+          {
+            testField: 'red'
+          }
+        );
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [ '.test-class' ],
+            properties: [ 'color', 'background-color' ],
+            value: 'red',
+            unit: 'px'
+          },
+          'Basic field with array property should be normalized correctly'
+        );
+      }
+
+      // Basic field with rootSelector and without field selector
+      {
+        const field = {
+          name: 'testField',
+          type: 'string',
+          property: 'color',
+          unit: 'px'
+        };
+        const actual = NORMALIZERS._(
+          field,
+          {
+            testField: 'red'
+          },
+          {
+            rootSelector: '#root'
+          }
+        );
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [ '#root' ],
+            properties: [ 'color' ],
+            value: 'red',
+            unit: 'px'
+          },
+          'Basic field with rootSelector and without field selector should be normalized correctly'
+        );
+      }
+
+      // Empty, not relevant to styles field, that will be skipped later
+      {
+        const field = {
+          name: 'hasBorder',
+          type: 'boolean'
+        };
+        const actual = NORMALIZERS._(
+          field,
+          {
+            hasBorder: true
+          }
+        );
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [],
+            properties: [],
+            value: true,
+            unit: ''
+          },
+          'Empty field should be normalized correctly'
+        );
+      }
+    });
+
+    it('should normalize object field (UI container)', async function () {
+      const { NORMALIZERS } = await universal;
+      const subField1 = {
+        name: 'subField1',
+        type: 'string',
+        selector: '.sub-class1',
+        property: 'color',
+        unit: 'px'
+      };
+      const subField2 = {
+        name: 'subField2',
+        type: 'string',
+        selector: '.sub-class2',
+        property: 'background-color',
+        unit: 'px'
+      };
+      const field = {
+        name: 'testObjectField',
+        type: 'object',
+        schema: [ subField1, subField2 ]
+      };
+      const { subfields: actualSubfields, ...actualObject } = NORMALIZERS.object(
+        field,
+        {
+          testObjectField: {
+            subField1: 'blue',
+            subField2: 'green'
+          }
+        }
+      );
+      assert.deepEqual(
+        actualObject,
+        {
+          raw: field,
+          selectors: [],
+          properties: [],
+          value: {
+            subField1: 'blue',
+            subField2: 'green'
+          }
+        },
+        'Object field container should be normalized correctly'
+      );
+      assert.deepEqual(
+        actualSubfields.length,
+        2,
+        'Object field should have two subfields'
+      );
+      assert.deepEqual(
+        actualSubfields[0],
+        {
+          raw: subField1,
+          selectors: [ '.sub-class1' ],
+          properties: [ 'color' ],
+          value: 'blue',
+          unit: 'px'
+        },
+        'First subfield should be normalized correctly'
+      );
+      assert.deepEqual(
+        actualSubfields[1],
+        {
+          raw: subField2,
+          selectors: [ '.sub-class2' ],
+          properties: [ 'background-color' ],
+          value: 'green',
+          unit: 'px'
+        },
+        'Second subfield should be normalized correctly'
+      );
+    });
+
+    it('should normalize object field with deep selectors', async function () {
+      const { NORMALIZERS } = await universal;
+      const isEnabled = {
+        name: 'isEnabled',
+        type: 'boolean'
+      };
+      const subField1 = {
+        name: 'subField1',
+        type: 'string',
+        selector: '.sub-class1',
+        property: 'color',
+        unit: 'px'
+      };
+      const subField2 = {
+        name: 'subField2',
+        type: 'string',
+        property: 'background-color',
+        unit: 'px'
+      };
+      const field = {
+        name: 'testObjectField',
+        type: 'object',
+        selector: '.object-class',
+        valueTemplate: '%subField1% %subField2%',
+        schema: [ isEnabled, subField1, subField2 ]
+      };
+      const actual = NORMALIZERS.object(
+        field,
+        {
+          testObjectField: {
+            isEnabled: true,
+            subField1: 'blue',
+            subField2: 'green'
+          }
+        },
+        {
+          rootSelector: '#root'
+        }
+      );
+
+      const { subfields: actualSubfieds, ...actualObject } = actual;
+      assert.deepEqual(
+        actualObject,
+        {
+          raw: field,
+          selectors: [ '#root .object-class' ],
+          properties: [],
+          value: {
+            isEnabled: true,
+            subField1: 'blue',
+            subField2: 'green'
+          },
+          valueTemplate: '%subField1% %subField2%'
+        },
+        'Object field root field should be normalized correctly'
+      );
+      assert.equal(
+        actualSubfieds.length,
+        2,
+        'Object field should have two subfields'
+      );
+      assert.deepEqual(
+        actualSubfieds[0],
+        {
+          raw: subField1,
+          selectors: [ '#root .object-class .sub-class1' ],
+          properties: [ 'color' ],
+          value: 'blue',
+          unit: 'px'
+        },
+        'First subfield should be normalized correctly'
+      );
+      assert.deepEqual(
+        actualSubfieds[1],
+        {
+          raw: subField2,
+          selectors: [ '#root .object-class' ],
+          properties: [ 'background-color' ],
+          value: 'green',
+          unit: 'px'
+        },
+        'Second subfield should be normalized correctly'
+      );
+    });
+
+    it('should normalize object field with only root selector', async function () {
+      const { NORMALIZERS } = await universal;
+      const subField1 = {
+        name: 'subField1',
+        type: 'string',
+        property: '--primary-color'
+      };
+      const field = {
+        name: 'testObjectField',
+        type: 'object',
+        schema: [ subField1 ]
+      };
+      const actual = NORMALIZERS.object(
+        field,
+        {
+          testObjectField: {
+            subField1: 'blue'
+          }
+        },
+        {
+          rootSelector: ':root'
+        }
+      );
+      const { subfields: actualSubfieds, ...actualObject } = actual;
+      assert.deepEqual(
+        actualObject,
+        {
+          raw: field,
+          selectors: [ ':root' ],
+          properties: [],
+          value: {
+            subField1: 'blue'
+          }
+        },
+        'Object field root field should be normalized correctly'
+      );
+      assert.equal(
+        actualSubfieds.length,
+        1,
+        'Object field should have one subfield'
+      );
+      assert.deepEqual(
+        actualSubfieds[0],
+        {
+          raw: subField1,
+          selectors: [ ':root' ],
+          properties: [ '--primary-color' ],
+          value: 'blue',
+          unit: ''
+        },
+        'First subfield should be normalized correctly'
+      );
+    });
+  });
 
   describe('Setup', function () {
     let apos;
@@ -450,6 +862,63 @@ describe('Styles', function () {
         }
       }
     });
+    const inlineStyleConfig = (options) => ({
+      border: {
+        label: 'apostrophe:styleBorder',
+        type: 'object',
+        fields: {
+          add: {
+            width: {
+              label: 'apostrophe:styleWidth',
+              type: 'box',
+              def: {
+                top: 1,
+                right: 1,
+                bottom: 1,
+                left: 1
+              },
+              unit: 'px',
+              property: 'border-width'
+            },
+            radius: {
+              label: 'apostrophe:styleRadius',
+              type: 'range',
+              min: 0,
+              max: 32,
+              def: 0,
+              property: 'border-radius',
+              unit: 'px'
+            },
+            color: {
+              label: 'apostrophe:styleColor',
+              type: 'color',
+              def: options.borderColor,
+              property: 'border-color'
+            },
+            style: {
+              label: 'apostrophe:styleStyle',
+              type: 'select',
+              def: 'solid',
+              choices: [
+                {
+                  label: 'apostrophe:styleSolid',
+                  value: 'solid'
+                },
+                {
+                  label: 'apostrophe:styleDotted',
+                  value: 'dotted'
+                },
+                {
+                  label: 'apostrophe:styleDashed',
+                  value: 'dashed'
+                }
+              ],
+              property: 'border-style'
+            }
+          }
+        }
+      }
+    });
     // A multi-field with valueTemplate
     // const styleTemlateConfig = (options) => ({
     //   boxShadow: {
@@ -536,6 +1005,18 @@ describe('Styles', function () {
                 }).border
               }
             }
+          },
+          'test-inline-style-widget': {
+            extend: '@apostrophecms/widget-type',
+            options: {
+              label: 'Test Inline Style Widget'
+            },
+            styles: {
+              add: inlineStyleConfig({
+                borderColor: 'black',
+                shadowColor: 'gray'
+              })
+            }
           }
         }
       });
@@ -546,7 +1027,7 @@ describe('Styles', function () {
     });
 
     it('should render object styles correctly (@apstrophecms/styles)', async function () {
-      const styles = await apos.styles.getStylesheet(
+      const actual = await apos.styles.getStylesheet(
         {
           border: {
             active: true,
@@ -569,6 +1050,7 @@ describe('Styles', function () {
           }
         }
       );
+      const styles = actual.css;
       const expected = {
         selector: styles.startsWith('.border-style{'),
         selectorEnd: styles.endsWith('}'),
@@ -594,7 +1076,7 @@ describe('Styles', function () {
     });
 
     it('should render object with selector correctly (widgets)', async function () {
-      const styles = await apos.modules['test-widget'].getStylesheet(
+      const actual = await apos.modules['test-widget'].getStylesheet(
         {
           border: {
             active: true,
@@ -614,13 +1096,13 @@ describe('Styles', function () {
             y: 2,
             blur: 5,
             color: 'rgba(0,0,0,0.3)'
-          },
-          styleId: 'randomStyleId'
-        }
+          }
+        },
+        'randomStyleId'
       );
-
+      const styles = actual.css;
       const expected = {
-        selector: styles.startsWith('#styleId .border-style{'),
+        selector: styles.startsWith('#randomStyleId .border-style{'),
         selectorEnd: styles.endsWith('}'),
         borderWidthTop: styles.includes('border-width-top: 3px'),
         borderWidthRight: styles.includes('border-width-right: 3px'),
@@ -633,6 +1115,58 @@ describe('Styles', function () {
       assert.deepEqual(expected, {
         selector: true,
         selectorEnd: true,
+        borderWidthTop: true,
+        borderWidthRight: true,
+        borderWidthBottom: true,
+        borderWidthLeft: true,
+        borderRadius: true,
+        borderColor: true,
+        borderStyle: true
+      });
+    });
+
+    it('should render object as inline style correctly (widgets)', async function () {
+      const actual = await apos.modules['test-inline-style-widget'].getStylesheet(
+        {
+          border: {
+            active: true,
+            width: {
+              top: 3,
+              right: 3,
+              bottom: 3,
+              left: 3
+            },
+            radius: 12,
+            color: 'blue',
+            style: 'dotted'
+          },
+          boxShadow: {
+            active: true,
+            x: 2,
+            y: 2,
+            blur: 5,
+            color: 'rgba(0,0,0,0.3)'
+          }
+        },
+        'randomStyleId'
+      );
+      assert.equal(actual.css, '');
+
+      const styles = actual.inline;
+      const expected = {
+        selector: !styles.includes('#randomStyleId{'),
+        isInline: !styles.includes('{') && !styles.includes('}'),
+        borderWidthTop: styles.includes('border-width-top: 3px'),
+        borderWidthRight: styles.includes('border-width-right: 3px'),
+        borderWidthBottom: styles.includes('border-width-bottom: 3px'),
+        borderWidthLeft: styles.includes('border-width-left: 3px'),
+        borderRadius: styles.includes('border-radius: 12px;'),
+        borderColor: styles.includes('border-color: blue;'),
+        borderStyle: styles.includes('border-style: dotted;')
+      };
+      assert.deepEqual(expected, {
+        selector: true,
+        isInline: true,
         borderWidthTop: true,
         borderWidthRight: true,
         borderWidthBottom: true,

@@ -1,15 +1,14 @@
 export default {
   /**
    * Custom render functions for fields with nuanced data structures
-   * @param {object} field - the original schema field
-   * @param {*} value - the value of the schema field
-   * @returns {{ field: object, rule: string }}
-   *  - object containing the (un)modified field and CSS rules
+   * @param {import('./render.mjs').NormalizedField} field - the normalized schema field
+   * @param {String} property - the currently interated CSS property to render
+   * @returns {{ field: NormalizedField, rule: string }}
    */
-  box: function(field, value) {
+  box: function ({ field, property }) {
     let rule;
     const {
-      property, unit, important
+      unit, important, value
     } = field;
     const {
       top, right, bottom, left
@@ -34,9 +33,9 @@ export default {
 
     for (const [ side, val ] of Object.entries(sides)) {
       if (val != null) {
-        parts.push(`${property}-${side}: ${val}${unit}${important ? ' !important' : ''};`);
+        parts.push(`${property}-${side}: ${val}${unit}${important ? ' !important' : ''}`);
       }
-      rule = parts.join(' ');
+      rule = parts.join(';');
     }
 
     field.important = false;

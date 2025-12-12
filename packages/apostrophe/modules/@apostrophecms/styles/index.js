@@ -22,9 +22,10 @@ module.exports = {
     // If true, always render CSS server side during editing, which slows
     // down the UI slightly but allows the use of a custom render function
     serverRendered: false,
-    // '
-    borderColor: 'black',
-    shadowColor: 'gray'
+    defaultStyles: {
+      borderColor: 'black',
+      shadowColor: 'gray'
+    }
   },
   cascades: [ 'styles' ],
   commands(self) {
@@ -60,8 +61,10 @@ module.exports = {
     };
   },
   async init(self, options) {
-    const { default: render } = await import('./ui/universal/render.mjs');
-    self.stylesheetRender = render;
+    const { renderGlobalStyles, renderScopedStyles } =
+      await import('./ui/universal/render.mjs');
+    self.stylesheetGlobalRender = renderGlobalStyles;
+    self.stylesheetScopedRender = renderScopedStyles;
 
     self.apos.doc.addContextOperation({
       action: 'reset-styles-position',

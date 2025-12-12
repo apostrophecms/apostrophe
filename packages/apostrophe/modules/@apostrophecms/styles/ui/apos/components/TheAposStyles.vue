@@ -424,7 +424,7 @@ export default {
     },
     async renderBrowserSide() {
       await this.setStyleMarkup(
-        renderCss(this.schema, this.docFields.data)
+        renderCss(this.schema, this.docFields.data).css
       );
     },
     async setStyleMarkup(markup) {

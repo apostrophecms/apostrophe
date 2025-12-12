@@ -35,7 +35,7 @@ module.exports = (self, options) => {
           'method of @apostrophecms/styles module.'
         );
       }
-      self.valudatePreset(preset);
+      self.validatePreset(preset);
       self.presets[name] = preset;
     },
     // Retrieve a preset by name.
@@ -44,7 +44,7 @@ module.exports = (self, options) => {
       if (!self.presets) {
         throw new Error(
           'Presets have not been initialzed yet. ' +
-          'Presets can be retrieved only after registraion.'
+          'Presets can be retrieved only after registration.'
         );
       }
       return self.presets[name];
@@ -126,11 +126,26 @@ module.exports = (self, options) => {
         }
       ];
     },
+    // Returns object with `css` (string) and `classes` (array) properties.
+    // `css` contains full stylesheet that should be wrapped in
+    // <style> tag.
+    // `classes` contains array of class names that should be applied
+    // to the <body> element (`class` attribute).
     getStylesheet(doc) {
-      return self.stylesheetRender(self.schema, doc);
+      return self.stylesheetGlobalRender(self.schema, doc);
     },
+    // Returns object with `css` (string), `inline` (string) and `classes` (array)
+    // properties.
+    // `css` contains full stylesheet that should be wrapped in
+    // <style> tag.
+    // `inline` contains inline styles that should be applied to the
+    // widget's wrapper element (`style` attribute).
+    // `classes` contains array of class names that should be applied
+    // to the widget's wrapper element (`class` attribute).
+    // Options:
+    // - rootSelector: string - custom root selector for scoped styles
     getWidgetStylesheet(schema, doc, options = {}) {
-      return self.stylesheetRender(schema, doc, options);
+      return self.stylesheetScopedRender(schema, doc, options);
     },
 
     // Internal APIs
@@ -157,7 +172,7 @@ module.exports = (self, options) => {
       }
     },
     // basic duck typing to help the developer do the right thing
-    valudatePreset(preset) {
+    validatePreset(preset) {
       if (!preset?.type) {
         throw new Error('Preset must be an object with a "type" property.');
       }
@@ -264,7 +279,7 @@ module.exports = (self, options) => {
         );
 
         const $set = {
-          stylesStylesheet: await self.getStylesheet(globalDoc),
+          stylesStylesheet: await self.getStylesheet(globalDoc).css,
           stylesStylesheetVersion: createId()
         };
 
