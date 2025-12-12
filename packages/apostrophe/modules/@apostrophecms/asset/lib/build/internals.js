@@ -272,7 +272,7 @@ module.exports = (self) => {
 
         for (const [ target, files ] of Object.entries(bundles)) {
 
-          let content = null, sourceMap = null;
+          let content = null; let sourceMap = null;
 
           if (!files.length) {
             delete bundles[target];
@@ -308,8 +308,8 @@ module.exports = (self) => {
             sourceMap = concat.sourceMap;
           } else {
             content = files.map(f => fs.readFileSync(f, 'utf-8')
-                .join('\n')
-                .trim()
+              .join('\n')
+              .trim()
             );
           }
           if (!content.trim().length) {
@@ -322,7 +322,7 @@ module.exports = (self) => {
           );
           if (sourceMap != null) {
             const dir = self.options.productionSourceMapsDir;
-            const sourceMapPath = dir ? `${dir}/${fileName}.map`: `${filePath}.map`;
+            const sourceMapPath = dir ? `${dir}/${fileName}.map` : `${filePath}.map`;
             fs.writeFileSync(
               sourceMapPath,
               sourceMap
