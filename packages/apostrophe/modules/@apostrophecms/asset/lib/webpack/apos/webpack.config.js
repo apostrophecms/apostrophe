@@ -25,14 +25,7 @@ module.exports = ({
   const mode = process.env.NODE_ENV || 'development';
   const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const dev = (mode === 'development');
-  // The default behavior of the security-headers module
-  // blocks eval, and only eval-source-map currently associates
-  // errors with the right file. With regular source-map the
-  // results are worse than no source map. A developer who wishes
-  // to experiment can set the devSourceMap option of the asset module
   const csp = apos.modules['@apostrophecms/security-headers'];
-  const fallbackSourceMap = csp ? false : 'eval-source-map';
-  const devtool = dev ? (apos.asset.options.devSourceMap || fallbackSourceMap) : false;
   const config = {
     performance: {
       hints: false
@@ -44,7 +37,7 @@ module.exports = ({
     optimization: {
       minimize: process.env.NODE_ENV === 'production'
     },
-    devtool,
+    devtool: 'source-map',
     output: {
       path: outputPath,
       filename: outputFilename
