@@ -553,7 +553,7 @@ module.exports = (self) => ({
         });
 
       const bundlePath = `${bundleDir}/${filePath}`;
-      const sourceMapDir = self.options.productionSourceMapDir || bundleDir;
+      const sourceMapDir = self.options.productionSourceMapsDir || bundleDir;
       const sourceMapPath = `${sourceMapDir}/${filePath}.map`;
 
       const needSourcemap = (process.env.NODE_ENV !== 'production') || self.options.productionSourceMaps;

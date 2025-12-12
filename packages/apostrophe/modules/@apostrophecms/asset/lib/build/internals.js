@@ -321,8 +321,8 @@ module.exports = (self) => {
             content
           );
           if (sourceMap != null) {
-            const dir = self.options.productionSourceMapDir;
-            const sourceMapPath = dir ? `${dir}${fileName}.map`: `${filePath}.map`;
+            const dir = self.options.productionSourceMapsDir;
+            const sourceMapPath = dir ? `${dir}/${fileName}.map`: `${filePath}.map`;
             fs.writeFileSync(
               sourceMapPath,
               sourceMap

@@ -84,10 +84,14 @@ module.exports = {
       transform: null
     },
     // If true, the source maps will be generated in production.
-    // This option is useful for debugging in production and is only
-    // available when an external build module is registered (it doesn't
-    // with the internal webpack build).
+    // This option is useful for debugging in production
     productionSourceMaps: false,
+    // By default, productionSourceMaps: true will push the source maps live right
+    // alongside the bundle files, allowing sources to be inspected in production.
+    // If you would like to send your production sourcemaps somewhere else,
+    // specify productionSourceMapsDir. After that, doing something with the
+    // sourcemaps is entirely up to you
+    productionSourceMapsDir: null,
     // The configuration to control the development server and HMR when
     // supported. The value can be: - boolean `false`: disable the dev server and
     // HMR. - boolean `true`: same as `public` (default). - string `public`:
@@ -597,7 +601,7 @@ module.exports = {
             ]
           )
         ];
-        if (self.options.productionSourceMaps) {
+        if (self.options.productionSourceMaps && !self.options.productionSourceMapsDir) {
           deployFiles.push(...bundles.map(bundle => `${bundle}.map`));
         }
 
