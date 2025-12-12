@@ -308,10 +308,9 @@ module.exports = (self) => {
             content = concat.content.toString('utf8') + `\n//# sourceMappingURL=${fileName}.map\n`;
             sourceMap = concat.sourceMap;
           } else {
-            content = files.map(f => fs.readFileSync(f, 'utf-8')
+            content = files.map(f => fs.readFileSync(f, 'utf-8'))
               .join('\n')
-              .trim()
-            );
+              .trim();
           }
           if (!content.trim().length) {
             delete bundles[target];
