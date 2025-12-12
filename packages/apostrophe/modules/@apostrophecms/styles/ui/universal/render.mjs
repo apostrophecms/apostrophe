@@ -267,7 +267,16 @@ function normalize(field, doc, {
   let canBeInline = true;
   const fieldUnit = field.unit || '';
 
-  // FIXME: compute and store classes here when appropriate
+  if (field.class) {
+    applyFieldClass(field.class, fieldValue, storage);
+    return {
+      raw: field,
+      selectors,
+      properties,
+      value: fieldValue,
+      unit: ''
+    };
+  }
 
   if (!properties) {
     properties = [];
@@ -327,7 +336,6 @@ function normalize(field, doc, {
     unit: fieldUnit,
     ...field.valueTemplate && { valueTemplate: field.valueTemplate },
     ...field.mediaQuery && { mediaQuery: field.mediaQuery },
-    ...field.class && { class: field.class },
     ...field.important && { important: field.important }
   };
 }
@@ -470,3 +478,40 @@ function stringifyRules(styles, inline = false) {
 
   return rules.join('');
 };
+
+/**
+ * Prepare a field for rendering by normalizing it to a standard structure.
+ *
+ * @param {string|null} [fieldClass] The value of the class property from the field schema
+ * @param {any} value
+ * @param {RuntimeStorage} [storage]
+ * @returns {NormalizedField}
+ */
+function applyFieldClass(fieldClass, value, storage) {
+  if (!value || !fieldClass || !storage?.classes) {
+    return false;
+  }
+
+  if (typeof fieldClass === 'string' && !!value) {
+    storage.classes.add(fieldClass);
+    return true;
+  }
+
+  if (fieldClass !== true) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      if (typeof v === 'string') {
+        storage.classes.add(v);
+      }
+    }
+    return value.length > 0;
+  } else if (typeof value === 'string') {
+    storage.classes.add(value);
+    return true;
+  }
+
+  return false;
+}

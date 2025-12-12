@@ -22,12 +22,24 @@ describe('Styles', function () {
       return t.destroy(apos);
     });
 
-    it('should export renderStyles function', async function () {
-      const { default: renderStyles } = await universal;
+    it('should export render styles functions', async function () {
+      const {
+        default: renderStyles, renderGlobalStyles, renderScopedStyles
+      } = await universal;
       assert.equal(
         typeof renderStyles,
         'function',
-        'renderStyles should be a function'
+        'Default export should be a function'
+      );
+      assert.equal(
+        typeof renderGlobalStyles,
+        'function',
+        'renderGlobalStyles should be a function'
+      );
+      assert.equal(
+        typeof renderScopedStyles,
+        'function',
+        'renderScopedStyles should be a function'
       );
     });
 
@@ -919,6 +931,54 @@ describe('Styles', function () {
         }
       }
     });
+    const classesStyleConfig = () => ({
+      alignSelect: {
+        type: 'select',
+        class: true,
+        choices: [
+          {
+            label: 'None',
+            value: ''
+          },
+          {
+            label: 'Left',
+            value: 'apos-left'
+          },
+          {
+            label: 'Center',
+            value: 'apos-center'
+          },
+          {
+            label: 'Right',
+            value: 'apos-right'
+          }
+        ],
+        def: ''
+      },
+      leftBoolean: {
+        type: 'boolean',
+        class: 'apos-left',
+        def: false
+      },
+      checkboxes: {
+        type: 'checkboxes',
+        class: true,
+        choices: [
+          {
+            label: 'Rounded Corners',
+            value: 'rounded-corners'
+          },
+          {
+            label: 'Shadow',
+            value: 'shadow'
+          },
+          {
+            label: 'Border',
+            value: 'border'
+          }
+        ]
+      }
+    });
     // A multi-field with valueTemplate
     // const styleTemlateConfig = (options) => ({
     //   boxShadow: {
@@ -987,7 +1047,8 @@ describe('Styles', function () {
             styles(self, options) {
               return {
                 add: {
-                  border: styleSelectorConfig(options).border
+                  border: styleSelectorConfig(options).border,
+                  ...classesStyleConfig()
                 }
               };
             }
@@ -1016,6 +1077,15 @@ describe('Styles', function () {
                 borderColor: 'black',
                 shadowColor: 'gray'
               })
+            }
+          },
+          'test-classes-style-widget': {
+            extend: '@apostrophecms/widget-type',
+            options: {
+              label: 'Test Classes Style Widget'
+            },
+            styles: {
+              add: classesStyleConfig()
             }
           }
         }
@@ -1175,6 +1245,46 @@ describe('Styles', function () {
         borderColor: true,
         borderStyle: true
       });
+    });
+
+    it('should extract classes from the styles schema (@apostrophecms/styles)', async function () {
+      const actual = apos.styles.getStylesheet(
+        {
+          alignSelect: 'apos-center',
+          leftBoolean: true,
+          checkboxes: [ 'rounded-corners', 'shadow' ]
+        }
+      );
+      const classes = actual.classes;
+      assert.deepEqual(classes.sort(), [
+        'apos-center',
+        'apos-left',
+        'rounded-corners',
+        'shadow'
+      ].sort()
+      );
+    });
+
+    it('should extract classes from the styles schema (widget)', async function () {
+      const actual = apos.modules['test-classes-style-widget'].getStylesheet(
+        {
+          alignSelect: 'apos-center',
+          leftBoolean: true,
+          checkboxes: [ 'rounded-corners', 'shadow' ]
+        },
+        'randomStyleId'
+      );
+      assert.equal(actual.css, '');
+      assert.equal(actual.inline, '');
+
+      const classes = actual.classes;
+      assert.deepEqual(classes.sort(), [
+        'apos-center',
+        'apos-left',
+        'rounded-corners',
+        'shadow'
+      ].sort()
+      );
     });
   });
 });
