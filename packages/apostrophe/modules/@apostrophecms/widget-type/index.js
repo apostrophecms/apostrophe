@@ -403,46 +403,17 @@ module.exports = {
       },
 
       renderStyles(widget, markup) {
-        const classes = [];
-        const properties = [];
+        const {
+          css, classes, inline
+        } = self.getStylesheet(widget, createId());
 
-        for (const styleName in self.styles) {
-          const styleField = typeof self.styles[styleName] === 'string'
-            ? self.apos.styles.presets[self.styles[styleName]]
-            : self.styles[styleName];
+        console.log({
+          css,
+          classes,
+          inline
+        });
 
-          if (!styleField) {
-            continue;
-          }
-
-          console.log('---');
-          console.log(styleName, styleField);
-
-          if (styleField.class && widget[styleName]) {
-            const classToAdd = styleField.type === 'boolean'
-              ? styleField.class
-              : widget[styleName];
-
-            console.log('classToAdd', classToAdd);
-            classes.push(classToAdd);
-          }
-
-          // TODO: remove when https://github.com/apostrophecms/apostrophe/pull/5211 is merged
-          if (styleField.property && widget[styleName] !== null) {
-            properties.push(`${styleField.property}: ${widget[styleName]}`);
-          }
-        }
-
-        const classesStr = classes.length ? ` class="${classes.join(' ')}"` : '';
-        console.log('classesStr', classesStr);
-
-        // TODO: remove when https://github.com/apostrophecms/apostrophe/pull/5211 is merged
-        const propertiesStr = properties.length ? ` style="${properties.join('; ')}"` : '';
-        console.log('propertiesStr', propertiesStr);
-
-        const styles = self.getStylesheet(widget, createId());
-
-        const output = `<style>${styles}</style><div${classesStr}${propertiesStr}>${markup}</div>`;
+        const output = `<style>${css}</style><div class="${classes.join(' ')}" style="${inline}">${markup}</div>`;
         console.log('output', output);
 
         return output;
