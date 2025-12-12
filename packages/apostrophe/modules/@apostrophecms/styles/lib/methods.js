@@ -126,8 +126,26 @@ module.exports = (self, options) => {
         }
       ];
     },
+    // Returns object with `css` (string) and `classes` (array) properties.
+    // `css` contains full stylesheet that should be wrapped in
+    // <style> tag.
+    // `classes` contains array of class names that should be applied
+    // to the <body> element (`class` attribute).
     getStylesheet(doc) {
-      return self.stylesheetRender(self.schema, doc);
+      return self.stylesheetGlobalRender(self.schema, doc);
+    },
+    // Returns object with `css` (string), `inline` (string) and `classes` (array)
+    // properties.
+    // `css` contains full stylesheet that should be wrapped in
+    // <style> tag.
+    // `inline` contains inline styles that should be applied to the
+    // widget's wrapper element (`style` attribute).
+    // `classes` contains array of class names that should be applied
+    // to the widget's wrapper element (`class` attribute).
+    // Options:
+    // - rootSelector: string - custom root selector for scoped styles
+    getWidgetStylesheet(schema, doc, options = {}) {
+      return self.stylesheetScopedRender(schema, doc, options);
     },
 
     // Internal APIs
@@ -261,7 +279,7 @@ module.exports = (self, options) => {
         );
 
         const $set = {
-          stylesStylesheet: await self.getStylesheet(globalDoc),
+          stylesStylesheet: await self.getStylesheet(globalDoc).css,
           stylesStylesheetVersion: createId()
         };
 
