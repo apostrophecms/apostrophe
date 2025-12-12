@@ -156,6 +156,7 @@
 // widget for an example. This option works only for breadcrumb operations.
 
 const _ = require('lodash');
+const { createId } = require('@paralleldrive/cuid2');
 
 module.exports = {
   cascades: [ 'fields', 'styles', 'widgetOperations' ],
@@ -359,6 +360,9 @@ module.exports = {
       // async, as are all functions that invoke a nunjucks render in
       // Apostrophe 3.x.
       async output(req, widget, options, _with) {
+        console.log('---');
+        console.log(widget.type);
+        console.log('---');
         req.widgetsBundles = {
           ...req.widgetsBundles || {},
           ...self.getWidgetsBundles(`${widget.type}-widget`)
@@ -380,12 +384,39 @@ module.exports = {
           });
         }
 
-        return self.render(req, self.template, {
+        console.log('self.styles', self.styles);
+        console.log('self.apos.styles.presets', self.apos.styles.presets);
+        console.log('widget', widget);
+
+        const markup = await self.render(req, self.template, {
           widget: effectiveWidget,
           options,
           manager: self,
           contextOptions: _with
         });
+
+        if (self.styles && self.options.stylesWrapper !== false) {
+          return self.renderStyles(widget, markup);
+        }
+
+        return markup;
+      },
+
+      renderStyles(widget, markup) {
+        const {
+          css, classes, inline
+        } = self.getStylesheet(widget, createId());
+
+        console.log({
+          css,
+          classes,
+          inline
+        });
+
+        const output = `<style>${css}</style><div class="${classes.join(' ')}" style="${inline}">${markup}</div>`;
+        console.log('output', output);
+
+        return output;
       },
 
       getWidgetsBundles(widgetType) {
