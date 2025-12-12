@@ -575,9 +575,9 @@ export default {
 
               if (
                 [ 'select', 'radio', 'checkboxes' ].includes(field.type) &&
-                  !object[field.name] &&
-                  !field.def &&
-                  !field.required
+                  !field.required &&
+                  field.def === undefined &&
+                  (object[field.name] === undefined || object[field.name] === null)
               ) {
                 continue;
               }
