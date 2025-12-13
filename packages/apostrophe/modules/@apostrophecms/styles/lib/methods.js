@@ -132,7 +132,9 @@ module.exports = (self, options) => {
     // `classes` contains array of class names that should be applied
     // to the <body> element (`class` attribute).
     getStylesheet(doc) {
-      return self.stylesheetGlobalRender(self.schema, doc);
+      return self.stylesheetGlobalRender(self.schema, doc, {
+        checkIfConditionsFn: self.styleCheckIfConditions
+      });
     },
     // Returns object with `css` (string), `inline` (string) and `classes` (array)
     // properties.
@@ -145,7 +147,10 @@ module.exports = (self, options) => {
     // Options:
     // - rootSelector: string - custom root selector for scoped styles
     getWidgetStylesheet(schema, doc, options = {}) {
-      return self.stylesheetScopedRender(schema, doc, options);
+      return self.stylesheetScopedRender(schema, doc, {
+        ...options,
+        checkIfConditionsFn: self.styleCheckIfConditions
+      });
     },
 
     // Internal APIs

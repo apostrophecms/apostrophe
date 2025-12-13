@@ -1174,6 +1174,7 @@ describe('Styles', function () {
       const expected = {
         selector: styles.startsWith('#randomStyleId .border-style{'),
         selectorEnd: styles.endsWith('}'),
+        borderWidth: styles.includes('border-width: 3px'),
         borderWidthTop: styles.includes('border-width-top: 3px'),
         borderWidthRight: styles.includes('border-width-right: 3px'),
         borderWidthBottom: styles.includes('border-width-bottom: 3px'),
@@ -1185,10 +1186,11 @@ describe('Styles', function () {
       assert.deepEqual(expected, {
         selector: true,
         selectorEnd: true,
-        borderWidthTop: true,
-        borderWidthRight: true,
-        borderWidthBottom: true,
-        borderWidthLeft: true,
+        borderWidth: true,
+        borderWidthTop: false,
+        borderWidthRight: false,
+        borderWidthBottom: false,
+        borderWidthLeft: false,
         borderRadius: true,
         borderColor: true,
         borderStyle: true
@@ -1226,10 +1228,7 @@ describe('Styles', function () {
       const expected = {
         selector: !styles.includes('#randomStyleId{'),
         isInline: !styles.includes('{') && !styles.includes('}'),
-        borderWidthTop: styles.includes('border-width-top: 3px'),
-        borderWidthRight: styles.includes('border-width-right: 3px'),
-        borderWidthBottom: styles.includes('border-width-bottom: 3px'),
-        borderWidthLeft: styles.includes('border-width-left: 3px'),
+        borderWidth: styles.includes('border-width: 3px'),
         borderRadius: styles.includes('border-radius: 12px;'),
         borderColor: styles.includes('border-color: blue;'),
         borderStyle: styles.includes('border-style: dotted;')
@@ -1237,10 +1236,7 @@ describe('Styles', function () {
       assert.deepEqual(expected, {
         selector: true,
         isInline: true,
-        borderWidthTop: true,
-        borderWidthRight: true,
-        borderWidthBottom: true,
-        borderWidthLeft: true,
+        borderWidth: true,
         borderRadius: true,
         borderColor: true,
         borderStyle: true
@@ -1285,6 +1281,365 @@ describe('Styles', function () {
         'shadow'
       ].sort()
       );
+    });
+  });
+
+  describe('Conditional styles', function () {
+    let apos;
+
+    const conditionalStylesSchema = () => ({
+      parentActive: {
+        type: 'boolean',
+        def: false
+      },
+      textColor: {
+        label: 'Text Color',
+        type: 'color',
+        property: '--color',
+        selector: ':root'
+      },
+      backgroundColor: {
+        label: 'Background Color',
+        type: 'color',
+        property: '--background-color',
+        selector: ':root',
+        if: {
+          parentActive: true
+        }
+      },
+      highlightColor: {
+        label: 'Highlight Color',
+        type: 'color',
+        property: '--highlight-color',
+        selector: ':root',
+        if: {
+          backgroundColor: '#000000'
+        }
+      },
+      border: {
+        type: 'object',
+        selector: '.border-style',
+        fields: {
+          add: {
+            active: {
+              type: 'boolean',
+              def: false
+            },
+            width: {
+              type: 'box',
+              def: {
+                top: 1,
+                right: 1,
+                bottom: 1,
+                left: 1
+              },
+              if: {
+                active: true,
+                '<parentActive': true
+              },
+              unit: 'px',
+              property: 'border-width'
+            },
+            color: {
+              type: 'color',
+              if: {
+                active: true
+              },
+              property: 'border-color'
+            }
+          }
+        }
+      },
+      anotherBorder: {
+        type: 'object',
+        selector: '.another-border-style',
+        fields: {
+          add: {
+            color: {
+              type: 'color',
+              property: 'border-color',
+              if: {
+                '<border.active': true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/styles': {
+            styles: {
+              add: conditionalStylesSchema()
+            }
+          },
+          'test-widget': {
+            extend: '@apostrophecms/widget-type',
+            options: {
+              label: 'Test Widget'
+            },
+            styles: {
+              add: conditionalStylesSchema()
+            }
+          }
+        }
+      });
+    });
+
+    after(async function () {
+      return t.destroy(apos);
+    });
+
+    it('should support conditional style fields (@apostrophecms/styles)', async function () {
+      {
+        const actual = await apos.styles.getStylesheet(
+          {
+            parentActive: false,
+            border: {
+              active: false,
+              width: {
+                top: 2,
+                right: 4,
+                bottom: 2,
+                left: 4
+              },
+              color: 'red'
+            },
+            anotherBorder: {
+              color: 'green'
+            },
+            textColor: 'blue',
+            backgroundColor: '#000000',
+            highlightColor: 'yellow'
+          }
+        );
+        assert.equal(
+          actual.css,
+          ':root{--color: blue;--highlight-color: yellow;}',
+          'Output CSS does not match expected with `parentActive: false` and `border.active: false`'
+        );
+      }
+
+      {
+        const actual = await apos.styles.getStylesheet(
+          {
+            parentActive: true,
+            border: {
+              active: false,
+              width: {
+                top: 2,
+                right: 2,
+                bottom: 2,
+                left: 2
+              },
+              color: 'red'
+            },
+            anotherBorder: {
+              color: 'green'
+            },
+            textColor: 'blue',
+            backgroundColor: '#ffffff',
+            highlightColor: 'yellow'
+          }
+        );
+        assert.equal(
+          actual.css,
+          ':root{--color: blue;--background-color: #ffffff;}',
+          'Output CSS does not match expected with `parentActive: true` and `border.active: false`'
+        );
+      }
+
+      {
+        const actual = await apos.styles.getStylesheet(
+          {
+            parentActive: false,
+            border: {
+              active: true,
+              width: {
+                top: 3,
+                right: 3,
+                bottom: 3,
+                left: 3
+              },
+              color: 'red'
+            },
+            anotherBorder: {
+              color: 'green'
+            },
+            textColor: 'blue',
+            backgroundColor: '#000000',
+            highlightColor: 'yellow'
+          }
+        );
+        assert.equal(
+          actual.css,
+          ':root{--color: blue;--highlight-color: yellow;}.border-style{border-color: red;}.another-border-style{border-color: green;}',
+          'Output CSS does not match expected with `parentActive: false` and `border.active: true`'
+        );
+      }
+
+      {
+        const actual = await apos.styles.getStylesheet(
+          {
+            parentActive: true,
+            border: {
+              active: true,
+              width: {
+                top: 4,
+                right: 4,
+                bottom: 4,
+                left: 4
+              },
+              color: 'red'
+            },
+            anotherBorder: {
+              color: 'green'
+            },
+            textColor: 'blue',
+            backgroundColor: '#000000',
+            highlightColor: 'yellow'
+          }
+        );
+        assert.equal(
+          actual.css,
+          ':root{--color: blue;--background-color: #000000;--highlight-color: yellow;}' +
+          '.border-style{border-width: 4px;border-color: red;}' +
+          '.another-border-style{border-color: green;}',
+          'Output CSS does not match expected with `parentActive: true` and `border.active: true`'
+        );
+      }
+    });
+
+    it('should support conditional style fields (widgets)', async function () {
+      const rootId = 'testWidgetId';
+      const rootSelector = `#${rootId}`;
+
+      {
+        const actual = await apos.modules['test-widget'].getStylesheet(
+          {
+            parentActive: false,
+            border: {
+              active: false,
+              width: {
+                top: 2,
+                right: 4,
+                bottom: 2,
+                left: 4
+              },
+              color: 'red'
+            },
+            anotherBorder: {
+              color: 'green'
+            },
+            textColor: 'blue',
+            backgroundColor: '#000000',
+            highlightColor: 'yellow'
+          },
+          rootId
+        );
+        assert.equal(
+          actual.css,
+          `${rootSelector} :root{--color: blue;--highlight-color: yellow;}`,
+          'Output CSS does not match expected with `parentActive: false` and `border.active: false`'
+        );
+      }
+
+      {
+        const actual = await apos.modules['test-widget'].getStylesheet(
+          {
+            parentActive: true,
+            border: {
+              active: false,
+              width: {
+                top: 2,
+                right: 2,
+                bottom: 2,
+                left: 2
+              },
+              color: 'red'
+            },
+            anotherBorder: {
+              color: 'green'
+            },
+            textColor: 'blue',
+            backgroundColor: '#ffffff',
+            highlightColor: 'yellow'
+          },
+          rootId
+        );
+        assert.equal(
+          actual.css,
+          `${rootSelector} :root{--color: blue;--background-color: #ffffff;}`,
+          'Output CSS does not match expected with `parentActive: true` and `border.active: false`'
+        );
+      }
+
+      {
+        const actual = await apos.modules['test-widget'].getStylesheet(
+          {
+            parentActive: false,
+            border: {
+              active: true,
+              width: {
+                top: 3,
+                right: 3,
+                bottom: 3,
+                left: 3
+              },
+              color: 'red'
+            },
+            anotherBorder: {
+              color: 'green'
+            },
+            textColor: 'blue',
+            backgroundColor: '#000000',
+            highlightColor: 'yellow'
+          },
+          rootId
+        );
+        assert.equal(
+          actual.css,
+          `${rootSelector} :root{--color: blue;--highlight-color: yellow;}` +
+          `${rootSelector} .border-style{border-color: red;}` +
+          `${rootSelector} .another-border-style{border-color: green;}`,
+          'Output CSS does not match expected with `parentActive: false` and `border.active: true`'
+        );
+      }
+
+      {
+        const actual = await apos.modules['test-widget'].getStylesheet(
+          {
+            parentActive: true,
+            border: {
+              active: true,
+              width: {
+                top: 4,
+                right: 4,
+                bottom: 4,
+                left: 4
+              },
+              color: 'red'
+            },
+            anotherBorder: {
+              color: 'green'
+            },
+            textColor: 'blue',
+            backgroundColor: '#000000',
+            highlightColor: 'yellow'
+          },
+          rootId
+        );
+        assert.equal(
+          actual.css,
+          `${rootSelector} :root{--color: blue;--background-color: #000000;--highlight-color: yellow;}` +
+          `${rootSelector} .border-style{border-width: 4px;border-color: red;}` +
+          `${rootSelector} .another-border-style{border-color: green;}`,
+          'Output CSS does not match expected with `parentActive: true` and `border.active: true`'
+        );
+      }
     });
   });
 });
