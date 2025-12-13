@@ -979,6 +979,43 @@ describe('Styles', function () {
         ]
       }
     });
+    const mediaQueryStyleConfig = () => ({
+      responsivePadding: {
+        type: 'object',
+        mediaQuery: '(width > 1200px)',
+        selector: '.responsive-padding',
+        fields: {
+          add: {
+            desktop: {
+              type: 'range',
+              min: 0,
+              max: 32,
+              def: 0,
+              property: 'padding',
+              unit: 'px'
+            },
+            tablet: {
+              type: 'range',
+              min: 0,
+              max: 32,
+              def: 0,
+              property: 'padding',
+              unit: 'px',
+              mediaQuery: '(560px < width <= 1200px)'
+            },
+            mobile: {
+              type: 'range',
+              min: 0,
+              max: 32,
+              def: 0,
+              property: 'padding',
+              unit: 'px',
+              mediaQuery: '(width <= 560px)'
+            }
+          }
+        }
+      }
+    });
     // A multi-field with valueTemplate
     // const styleTemlateConfig = (options) => ({
     //   boxShadow: {
@@ -1048,7 +1085,8 @@ describe('Styles', function () {
               return {
                 add: {
                   border: styleSelectorConfig(options).border,
-                  ...classesStyleConfig()
+                  ...classesStyleConfig(),
+                  ...mediaQueryStyleConfig()
                 }
               };
             }
@@ -1086,6 +1124,15 @@ describe('Styles', function () {
             },
             styles: {
               add: classesStyleConfig()
+            }
+          },
+          'test-media-query-style-widget': {
+            extend: '@apostrophecms/widget-type',
+            options: {
+              label: 'Test Media Query Style Widget'
+            },
+            styles: {
+              add: mediaQueryStyleConfig()
             }
           }
         }
@@ -1280,6 +1327,49 @@ describe('Styles', function () {
         'rounded-corners',
         'shadow'
       ].sort()
+      );
+    });
+
+    it('should render media query styles correctly (@apostrophecms/styles)', async function () {
+      const actual = apos.styles.getStylesheet(
+        {
+          responsivePadding: {
+            mobile: 4,
+            tablet: 8,
+            desktop: 12
+          }
+        }
+      );
+      assert.equal(actual.inline, undefined);
+      assert.deepEqual(actual.classes, []);
+      const styles = actual.css;
+      assert.equal(
+        styles,
+        '@media (width > 1200px){.responsive-padding{padding: 12px;}}' +
+        '@media (560px < width <= 1200px){.responsive-padding{padding: 8px;}}' +
+        '@media (width <= 560px){.responsive-padding{padding: 4px;}}'
+      );
+    });
+
+    it('should render media query styles correctly (widget)', async function () {
+      const actual = apos.modules['test-media-query-style-widget'].getStylesheet(
+        {
+          responsivePadding: {
+            mobile: 2,
+            tablet: 6,
+            desktop: 10
+          }
+        },
+        'randomStyleId'
+      );
+      assert.equal(actual.inline, '');
+      assert.deepEqual(actual.classes, []);
+      const styles = actual.css;
+      assert.equal(
+        styles,
+        '@media (width > 1200px){#randomStyleId .responsive-padding{padding: 10px;}}' +
+        '@media (560px < width <= 1200px){#randomStyleId .responsive-padding{padding: 6px;}}' +
+        '@media (width <= 560px){#randomStyleId .responsive-padding{padding: 2px;}}'
       );
     });
   });

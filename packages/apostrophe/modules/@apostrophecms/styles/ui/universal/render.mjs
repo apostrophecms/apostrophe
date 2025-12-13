@@ -338,13 +338,16 @@ function filterObject(field, doc) {
  * @param {SchemaField} field
  * @param {Object} doc
  * @param {Object} options
- * @param {String} options.rootSelector
+ * @param {String} options.rootSelector - Root selector from parent object field or
+ *   root scope.
  * @param {Boolean} [options.forceRoot] - Whether to force attach root selector
+ * @param {String} [options.rootMediaQuery] - Media query from parent object field
  * @param {RuntimeStorage} [options.storage]
  * @returns {NormalizedField}
  */
 function normalize(field, doc, {
   rootSelector,
+  rootMediaQuery,
   forceRoot = false,
   storage
 } = {}) {
@@ -353,6 +356,7 @@ function normalize(field, doc, {
   let fieldValue = doc[field.name];
   let canBeInline = true;
   const fieldUnit = field.unit || '';
+  const fieldMediaQuery = field.mediaQuery || rootMediaQuery;
 
   if (field.class) {
     applyFieldClass(field.class, fieldValue, storage);
@@ -422,7 +426,7 @@ function normalize(field, doc, {
     value: fieldValue,
     unit: fieldUnit,
     ...field.valueTemplate && { valueTemplate: field.valueTemplate },
-    ...field.mediaQuery && { mediaQuery: field.mediaQuery },
+    ...fieldMediaQuery && { mediaQuery: fieldMediaQuery },
     ...field.important && { important: field.important }
   };
 }
@@ -433,7 +437,7 @@ function normalize(field, doc, {
  * @param {SchemaField} field
  * @param {Object} doc
  * @param {Object} options
- * @param {String} options.rootSelector
+ * @param {String} options.rootSelector - Root selector from root scope.
  * @param {RuntimeStorage} options.storage
  * @returns {NormalizedObjectField}
  */
@@ -460,6 +464,7 @@ function normalizeObject(field, doc, {
         doc[field.name] || {},
         {
           rootSelector: normalized.selectors,
+          rootMediaQuery: normalized.mediaQuery,
           storage
         }
       )
