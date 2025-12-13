@@ -510,11 +510,17 @@ function extract(normalized, storage) {
       } else {
         rule = `${property}: ${normalized.value}${normalized.unit}`;
         if (normalized.valueTemplate) {
-          const regex = /%VALUE%/gi;
-          const value = normalized.valueTemplate.replace(
-            regex,
-            normalized.value + normalized.unit
+          const value = interpolate(
+            normalized.valueTemplate,
+            normalized.value,
+            {
+              unit: normalized.unit,
+              subfields: normalized.raw.schema
+            }
           );
+          if (!value) {
+            return;
+          }
           rule = `${property}: ${value}`;
         }
       }
@@ -539,9 +545,74 @@ function extract(normalized, storage) {
  * @param {RuntimeStorage} storage
  */
 function extractObject(normalized, storage) {
+  if (normalized.valueTemplate) {
+    extract(normalized, storage);
+  }
   normalized.subfields.forEach(subfield => {
     extract(subfield, storage);
   });
+}
+
+/**
+ * Interpolate values into a template string.
+ * Simple mode replaces %VALUE% with primitive values. The mode is determined
+ * by the absence of subfields in options.
+ * Advanced mode replaces %key% placeholders with corresponding values from
+ * the value object, validating that all referenced keys exist in the
+ * provided schema.
+ *
+ * @param {string} template - Template string with placeholders
+ * @param {any} value - Primitive value or object with key-value pairs
+ * @param {Object} options - Interpolation options
+ * @param {string} [options.unit=''] - Unit to append to value (simple mode only)
+ * @param {SchemaField[]} [options.subfields] - Schema to validate object keys against
+ * @returns {string} Interpolated string, or empty string if required keys are missing
+ */
+function interpolate(template, value, {
+  unit = '', subfields
+} = {}) {
+  if (!Array.isArray(subfields)) {
+    return template.replace(/%VALUE%/gi, String(value ?? '') + unit);
+  }
+
+  if (!subfields.length) {
+    return '';
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return '';
+  }
+
+  const keyPattern = /%([^%]+)%/g;
+  const referencedKeys = new Set();
+  let match;
+
+  while ((match = keyPattern.exec(template)) !== null) {
+    referencedKeys.add(match[1]);
+  }
+
+  const subfieldsByName = new Map(subfields.map(field => [ field.name, field ]));
+  for (const key of referencedKeys) {
+    if (!subfieldsByName.has(key)) {
+      return '';
+    }
+  }
+
+  return template
+    .replace(/%([^%]+)%/g, (_, key) => {
+      const subfield = subfieldsByName.get(key);
+      const subfieldValue = value[key] ?? '';
+      const subfieldUnit = subfield.unit || '';
+
+      // Recursively interpolate if subfield has a valueTemplate
+      if (subfield.valueTemplate) {
+        return interpolate(subfield.valueTemplate, subfieldValue, {
+          unit: subfieldUnit
+        });
+      }
+
+      return String(subfieldValue) + subfieldUnit;
+    });
 }
 
 /**
