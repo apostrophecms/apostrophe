@@ -263,6 +263,7 @@ jobs:
       - name: Restore docker image cache
         id: docker-cache-restore
         uses: actions/cache/restore@v4
+        if: matrix.needsMongo || matrix.needsRedis
         with:
           path: .github/docker-cache
           key: ${{ needs.shared-runtime.outputs.docker-cache-key }}
