@@ -48,14 +48,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Debug force-all inputs
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "inputs.run_all=${{ inputs.run_all }}"
-          echo "FORCE_ALL=$FORCE_ALL"
-          echo "DEFAULT_BRANCH=$DEFAULT_BRANCH"
-          echo "BASE_SHA=$BASE_SHA"
-
       - name: Prepare merge-base context
         run: git fetch origin "$DEFAULT_BRANCH" --depth=1 || true
 
@@ -199,7 +191,6 @@ jobs:
         with:
           path: |
             ~/.npm/_libvips
-            ~/.cache/sharp
           key: sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-
@@ -216,9 +207,6 @@ jobs:
           echo "-- ~/.npm/_libvips"
           ls -alh ~/.npm/_libvips || true
           du -sh ~/.npm/_libvips || true
-          echo "-- ~/.cache/sharp"
-          ls -alh ~/.cache/sharp || true
-          du -sh ~/.cache/sharp || true
 
   package-tests:
     name: ${{ format('{0} ({1}, {2})', matrix.package, matrix.nodeVersion, matrix.needsMongo && matrix.mongodbVersion || 'n/a') }}
@@ -261,7 +249,6 @@ jobs:
         with:
           path: |
             ~/.npm/_libvips
-            ~/.cache/sharp
           key: sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-
