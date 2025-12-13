@@ -1,6 +1,5 @@
 <template>
   <ul
-    v-show="list.length"
     :id="ariaId"
     :aria-hidden="!list.length"
     role="listbox"
@@ -99,8 +98,6 @@ export default {
 
 <style lang="scss" scoped>
 .apos-search {
-  z-index: calc(#{$z-index-widget-focused-controls} + 1);
-  position: absolute;
   overflow: auto;
   box-sizing: border-box;
   width: 100%;
