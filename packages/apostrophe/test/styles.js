@@ -1016,65 +1016,77 @@ describe('Styles', function () {
         }
       }
     });
-    // A multi-field with valueTemplate
-    // const styleTemlateConfig = (options) => ({
-    //   boxShadow: {
-    //     label: 'apostrophe:styleShadow',
-    //     type: 'object',
-    //     valueTemplate: '%x% %y% %blur% %color%',
-    //     property: 'box-shadow',
-    //     fields: {
-    //       add: {
-    //         active: {
-    //           label: 'apostrophe:styleShadow',
-    //           type: 'boolean',
-    //           def: false
-    //         },
-    //         x: {
-    //           label: 'apostrophe:styleXOffset',
-    //           type: 'range',
-    //           min: -32,
-    //           max: 32,
-    //           def: 4,
-    //           if: {
-    //             active: true
-    //           },
-    //           unit: 'px'
-    //         },
-    //         y: {
-    //           label: 'apostrophe:styleYOffset',
-    //           type: 'range',
-    //           min: -32,
-    //           max: 32,
-    //           def: 4,
-    //           unit: 'px',
-    //           if: {
-    //             active: true
-    //           }
-    //         },
-    //         blur: {
-    //           label: 'apostrophe:styleShadowBlur',
-    //           type: 'range',
-    //           min: 0,
-    //           max: 32,
-    //           def: 2,
-    //           if: {
-    //             active: true
-    //           },
-    //           unit: 'px'
-    //         },
-    //         color: {
-    //           label: 'apostrophe:styleShadowColor',
-    //           type: 'color',
-    //           def: options.shadowColor,
-    //           if: {
-    //             active: true
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    // });
+    const valueTemplateStyleConfig = () => ({
+      boxShadow: {
+        type: 'object',
+        valueTemplate: '%x% %y% %blur% %color%',
+        property: 'box-shadow',
+        selector: '.box-shadow',
+        fields: {
+          add: {
+            active: {
+              type: 'boolean'
+            },
+            // Assert no output when one of the fields is missing
+            x: {
+              type: 'range',
+              min: -32,
+              max: 32,
+              def: 4,
+              unit: 'px',
+              if: {
+                active: true
+              }
+            },
+            y: {
+              type: 'range',
+              min: -32,
+              max: 32,
+              def: 4,
+              unit: 'px'
+            },
+            blur: {
+              type: 'range',
+              min: 0,
+              max: 32,
+              def: 2,
+              unit: 'px'
+            },
+            color: {
+              type: 'color'
+            },
+            standalone: {
+              type: 'integer',
+              property: 'width',
+              // No unit to test interpolation in valueTemplate
+              valueTemplate: '%VALUE%px'
+            }
+          }
+        }
+      }
+    });
+    const boxValueTemplateConfig = (options) => ({
+      position: {
+        type: 'object',
+        valueTemplate: '%box.top% %box.right% %box.bottom% %box.left%',
+        property: 'inset',
+        selector: '.box-position',
+        fields: {
+          add: {
+            active: {
+              type: 'boolean'
+            },
+            box: {
+              type: 'box',
+              unit: 'px',
+              if: {
+                active: true
+              }
+            }
+          }
+        }
+      }
+    });
 
     before(async function () {
       apos = await t.create({
@@ -1086,7 +1098,9 @@ describe('Styles', function () {
                 add: {
                   border: styleSelectorConfig(options).border,
                   ...classesStyleConfig(),
-                  ...mediaQueryStyleConfig()
+                  ...mediaQueryStyleConfig(),
+                  ...valueTemplateStyleConfig(),
+                  ...boxValueTemplateConfig()
                 }
               };
             }
@@ -1133,6 +1147,18 @@ describe('Styles', function () {
             },
             styles: {
               add: mediaQueryStyleConfig()
+            }
+          },
+          'test-value-template-style-widget': {
+            extend: '@apostrophecms/widget-type',
+            options: {
+              label: 'Test Value Template Style Widget'
+            },
+            styles: {
+              add: {
+                ...valueTemplateStyleConfig(),
+                ...boxValueTemplateConfig()
+              }
             }
           }
         }
@@ -1371,6 +1397,198 @@ describe('Styles', function () {
         '@media (560px < width <= 1200px){#randomStyleId .responsive-padding{padding: 6px;}}' +
         '@media (width <= 560px){#randomStyleId .responsive-padding{padding: 2px;}}'
       );
+    });
+
+    it('should render value template styles correctly (@apostrophecms/styles)', async function () {
+      {
+        const actual = apos.styles.getStylesheet(
+          {
+            boxShadow: {
+              active: true,
+              x: 3,
+              y: 3,
+              blur: 6,
+              color: 'rgba(0,0,0,0.4)',
+              standalone: 10
+            }
+          }
+        );
+        const styles = actual.css;
+        assert.deepEqual(actual.classes, []);
+        assert.equal(
+          styles,
+          '.box-shadow{box-shadow: 3px 3px 6px rgba(0,0,0,0.4);width: 10px;}',
+          'Output CSS does not match expected value template output when active'
+        );
+      }
+
+      {
+        const actual = apos.styles.getStylesheet(
+          {
+            boxShadow: {
+              active: false,
+              x: 5,
+              y: 5,
+              blur: 10,
+              color: 'rgba(0,0,0,0.5)',
+              standalone: 15
+            }
+          }
+        );
+        const styles = actual.css;
+        assert.deepEqual(actual.classes, []);
+        assert.equal(
+          styles,
+          '.box-shadow{width: 15px;}',
+          'Output CSS does not match expected value template output when inactive'
+        );
+      }
+
+      // Test `%box.value%` interpolation support
+      {
+        const actual = apos.styles.getStylesheet(
+          {
+            position: {
+              active: true,
+              box: {
+                top: 10,
+                right: 15,
+                bottom: 20,
+                left: 25
+              }
+            }
+          }
+        );
+        const styles = actual.css;
+        assert.deepEqual(actual.classes, []);
+        assert.equal(
+          styles,
+          '.box-position{inset: 10px 15px 20px 25px;}',
+          'Output CSS does not match expected %box.value% template output'
+        );
+      }
+
+      // Test `%box.value%` interpolation when inactive
+      {
+        const actual = apos.styles.getStylesheet(
+          {
+            position: {
+              active: false,
+              box: {
+                top: 10,
+                right: 15,
+                bottom: 20,
+                left: 25
+              }
+            }
+          }
+        );
+        const styles = actual.css;
+        assert.deepEqual(actual.classes, []);
+        assert.equal(
+          styles,
+          '',
+          'Output CSS does not match expected %box.value% template output'
+        );
+      }
+    });
+
+    it('should render value template styles correctly (widget)', async function () {
+      {
+        const actual = apos.modules['test-value-template-style-widget'].getStylesheet(
+          {
+            boxShadow: {
+              active: true,
+              x: 4,
+              y: 5,
+              blur: 8,
+              color: 'rgba(0,0,0,0.6)',
+              standalone: 12
+            }
+          },
+          'randomStyleId'
+        );
+        const styles = actual.css;
+        assert.deepEqual(actual.classes, []);
+        assert.equal(
+          styles,
+          '#randomStyleId .box-shadow{box-shadow: 4px 5px 8px rgba(0,0,0,0.6);width: 12px;}',
+          'Output CSS does not match expected value template output when active'
+        );
+      }
+
+      {
+        const actual = apos.modules['test-value-template-style-widget'].getStylesheet(
+          {
+            boxShadow: {
+              active: false,
+              x: 6,
+              y: 7,
+              blur: 12,
+              color: 'rgba(0,0,0,0.7)',
+              standalone: 18
+            }
+          },
+          'randomStyleId'
+        );
+        const styles = actual.css;
+        assert.deepEqual(actual.classes, []);
+        assert.equal(
+          styles,
+          '#randomStyleId .box-shadow{width: 18px;}',
+          'Output CSS does not match expected value template output when inactive'
+        );
+      }
+
+      // Test `%box.value%` interpolation support
+      {
+        const actual = apos.modules['test-value-template-style-widget'].getStylesheet(
+          {
+            position: {
+              active: true,
+              box: {
+                top: 10,
+                right: 15,
+                bottom: 20,
+                left: 25
+              }
+            }
+          },
+          'randomStyleId'
+        );
+        const styles = actual.css;
+        assert.deepEqual(actual.classes, []);
+        assert.equal(
+          styles,
+          '#randomStyleId .box-position{inset: 10px 15px 20px 25px;}',
+          'Output CSS does not match expected %box.value% template output'
+        );
+      }
+
+      // Test `%box.value%` interpolation disabled when inactive
+      {
+        const actual = apos.modules['test-value-template-style-widget'].getStylesheet(
+          {
+            position: {
+              active: false,
+              box: {
+                top: 10,
+                right: 15,
+                bottom: 20,
+                left: 25
+              }
+            }
+          },
+          'randomStyleId'
+        );
+        const styles = actual.css;
+        assert.deepEqual(actual.classes, []);
+        assert.equal(
+          styles,
+          '',
+          'Output CSS does not match expected %box.value% template output when inactive'
+        );
+      }
     });
   });
 
