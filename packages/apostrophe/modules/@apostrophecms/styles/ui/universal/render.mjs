@@ -80,14 +80,11 @@ const FILTERS = {
  * @param {SchemaField[]} schema - Array of field schema definitions
  * @param {Object} doc - Document containing field values
  * @param {Object} options - Rendering options
- * @param {string} [options.rootSelector] - Root selector to prepend to
- *  all selectors
  * @param {Function} [options.checkIfConditionsFn] - Universal function to
  *  evaluate field conditions
  * @returns {{ css: string; classes: string[] }} Compiled CSS stylesheet and classes
  */
 function renderGlobalStyles(schema, doc, {
-  rootSelector = null,
   checkIfConditionsFn
 } = {}) {
   const storage = {
@@ -95,9 +92,11 @@ function renderGlobalStyles(schema, doc, {
     styles: new Map()
   };
   const withConditions = filterConditionalFields(
-    checkIfConditionsFn,
     klona(schema),
-    doc
+    doc,
+    {
+      checkFn: checkIfConditionsFn
+    }
   );
 
   for (const field of withConditions.schema) {
@@ -108,7 +107,6 @@ function renderGlobalStyles(schema, doc, {
     const normalizer = NORMALIZERS[field.type] || NORMALIZERS._;
     const extractor = EXTRACTORS[field.type] || EXTRACTORS._;
     const normalzied = normalizer(field, doc, {
-      rootSelector,
       storage
     });
     extractor(normalzied, storage);
@@ -135,7 +133,8 @@ function renderGlobalStyles(schema, doc, {
  */
 function renderScopedStyles(schema, doc, {
   rootSelector = null,
-  checkIfConditionsFn
+  checkIfConditionsFn,
+  subset = null
 } = {}) {
   const storage = {
     classes: new Set(),
@@ -143,9 +142,12 @@ function renderScopedStyles(schema, doc, {
     inlineVotes: new Set()
   };
   const withConditions = filterConditionalFields(
-    checkIfConditionsFn,
     klona(schema),
-    doc
+    doc,
+    {
+      checkFn: checkIfConditionsFn,
+      subset
+    }
   );
 
   for (const field of withConditions.schema) {
@@ -183,23 +185,31 @@ function renderScopedStyles(schema, doc, {
  * Filters schema fields based on conditional logic, removing fields
  * whose conditions evaluate to false.
  *
- * @param {Function} checkIfConditions - The universal core function to evaluate
- *   field conditions
  * @param {SchemaField[]} schema - Array of field schema definitions
  * @param {Object} doc - Document containing field values
+ * @param {Object} options
+ * @param {Function} options.checkFn - Function to evaluate field conditions,
+ *   usually the universal core function
+ * @param {string[]|null} [options.subset] - Optional subset of field names used
+ *   to reduce the original schema before evaluating conditions
  * @returns {{ conditions: Object<string, boolean>; schema: SchemaField[] }}
  *   Object containing the evaluated conditions map and filtered schema
  */
 function filterConditionalFields(
-  checkIfConditions, schema, doc
+  schema, doc, { checkFn, subset }
 ) {
+  const subsetSchema = Array.isArray(subset)
+    ? schema.filter(field => subset.includes(field.name))
+    : schema;
   const conditions = getConditions(
-    checkIfConditions, schema, doc
+    checkFn,
+    subsetSchema,
+    doc
   );
 
   return {
     conditions,
-    schema: schema.filter(field => {
+    schema: subsetSchema.filter(field => {
       if (conditions[field.name] === false) {
         return false;
       }
