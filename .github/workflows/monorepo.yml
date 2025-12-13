@@ -36,7 +36,7 @@ jobs:
       # BASE_SHA narrows the diff to the merge-base (PR) or latest push SHA for branch builds.
       BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before || '' }}
       # FORCE_ALL flips to true when the workflow_dispatch input is toggled so every package runs.
-      FORCE_ALL: ${{ (github.event_name == 'schedule' || inputs.run_all == 'true') && 'true' || 'false' }}
+      FORCE_ALL: ${{ (github.event_name == 'schedule' || inputs.run_all == true || inputs.run_all == 'true') && 'true' || 'false' }}
     outputs:
       matrix: ${{ steps.impact.outputs.matrix }}
       runtime-matrix: ${{ steps.runtime-matrix.outputs.runtime_matrix }}
@@ -47,6 +47,14 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+
+      - name: Debug force-all inputs
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "inputs.run_all=${{ inputs.run_all }}"
+          echo "FORCE_ALL=$FORCE_ALL"
+          echo "DEFAULT_BRANCH=$DEFAULT_BRANCH"
+          echo "BASE_SHA=$BASE_SHA"
 
       - name: Prepare merge-base context
         run: git fetch origin "$DEFAULT_BRANCH" --depth=1 || true
