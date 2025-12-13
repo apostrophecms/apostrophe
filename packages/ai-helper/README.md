@@ -1,133 +1,170 @@
-# ai-helper: AI for content creation in Apostrophe 3
+# @apostrophecms/ai-helper
 
-## Purpose
+AI-powered content generation for Apostrophe CMS 3.x using pluggable AI providers.
 
-This module enhances Apostrophe with AI-driven helpers. Currently this module offers:
+## Features
 
-* A button to generate an image from a text prompt via OpenAI.
-* An insert menu option to generate rich text from a prompt via OpenAI.
+- 🤖 Generate images from text prompts
+- ✍️ Generate rich text content from prompts
+- 🔌 Pluggable provider architecture
+- 🎯 Mix and match providers (e.g., Claude for text, DALL-E for images)
 
-You will need to [obtain your own API key from OpenAI](https://openai.com/api/). To generate images using the default
-model you will need to verify your organization in your OpenAI account.
+## Installation
 
-## Caveats
-
-This is a beta module where we are experimenting with simple ways to integrate generative AI in the
-content creation process. AI systems can generate surprising and sometimes inappropriate results.
-The OpenAI API itself is subject to change.
-
-## Install
-
+### 1. Install the module
 ```bash
 npm install @apostrophecms/ai-helper
 ```
 
+All providers (OpenAI, Anthropic, Gemini) are bundled with the main package.
+
+### 2. Configure in your project (defaults shown)
 ```javascript
-// in app.js
-modules: {
-  '@apostrophecms/ai-helper': {
-    // Optional: specify a particular GPT model name.
-    // This is the default:
-    textModel: 'gpt-5.1',
-    // Optional: specify a particular image generation model.
-    // This is the default:
-    imageModel: 'gpt-image-1-mini',
-    // Optional: override the maximum number of tokens,
-    // up to GPT's limit for the model. This is the default:
-    textMaxTokens: 1000
+// app.js
+module.exports = {
+  modules: {
+    // Core AI helper module
+    '@apostrophecms/ai-helper': {
+      // Which providers to use
+      textProvider: 'openai',    // 'openai', 'anthropic', or 'gemini'
+      imageProvider: 'openai',   // 'openai' or 'gemini'
+      // Optional: override text generation token limit
+      textMaxTokens: 1000
+    },
+
+    // OpenAI provider
+    '@apostrophecms/ai-helper-openai': {
+      apiKey: process.env.APOS_OPENAI_KEY,  // or export APOS_OPENAI_KEY env var
+      textModel: 'gpt-5.1',
+      imageModel: 'gpt-image-1-mini'
+      size: '1024x1024',
+      imageQuality: 'medium'
+    },
+
+    // Anthropic provider
+    '@apostrophecms/ai-helper-anthropic': {
+      apiKey: process.env.APOS_ANTHROPIC_KEY,    // or export APOS_ANTHROPIC_KEY env var
+      textModel: 'claude-sonnet-4-20250514'
+    },
+
+    // Gemini provider
+    '@apostrophecms/ai-helper-gemini': {
+      apiKey: process.env.APOS_GEMINI_KEY,       // or export APOS_GEMINI_KEY env var
+      textModel: 'gemini-2.5-flash-lite',
+      imageModel: 'gemini-2.5-flash-image',
+      aspectRatio: '1:1'
+    }
   }
-}
+};
 ```
 
+**Note:** You only need to register and configure the providers you plan to use. Each provider requires its own API key.
+
+### 3. Configure rich text widgets
 ```javascript
-// Anywhere you have a rich text widget that should support
-// AI-generated rich text
-someAreaName: {
+// In any area configuration
+someArea: {
   widgets: {
     '@apostrophecms/rich-text': {
-      toolbar: [
-        'styles',
-        'bold'
-      ],
-      insert: [
-        'ai'
-      ],
-      // Generated text includes headings if asked for
+      toolbar: [ 'styles', 'bold' ],
+      insert: [ 'ai' ],  // Enable AI text generation
       styles: [
-        {
-          name: 'Heading',
-          tag: 'h2'
-        },
-        {
-          name: 'Subheading',
-          tag: 'h3'
-        },
-        {
-          name: 'Paragraph',
-          tag: 'p'
-        }
+        { name: 'Heading', tag: 'h2' },
+        { name: 'Subheading', tag: 'h3' },
+        { name: 'Paragraph', tag: 'p' }
       ]
     }
   }
 }
 ```
 
-
+### 4. (Optional) Configure security headers for images
 ```javascript
-// in modules/@apostrophecms/security-headers/index.js,
-// only if you are using that module in your project
+// modules/@apostrophecms/security-headers/index.js
+// Only needed if you use the security-headers module
 module.exports = {
   options: {
     policies: {
       ai: {
-        // Images served by OpenAI, for editing purposes only
-        'img-src': '*.blob.core.windows.net'
+        'img-src': '*.blob.core.windows.net'  // OpenAI image URLs
       }
     }
   }
 };
 ```
 
-## Run
-
-```bash
-export APOS_OPENAI_KEY=get-your-own-key-from-openai
-node app
-```
-
 ## Usage
 
 ### Image Generation
 
-Add an image widget to the page. Click the edit pencil, then "Browse" as you normally would.
+1. Add an image widget to your page
+2. Click "Browse" to open the media manager
+3. Click the 🤖 robot button in the upper right
+4. Enter a description and click "Generate"
+5. Review the generated image(s) (1 is the default)
+6. Click "Select" to import to media library, "Variants" for variations, or "Delete"
 
-When the media manager appears, click the "🤖" (robot) button in the upper right corner.
-
-When the "Generate Image" dialog appears, follow the instructions to enter a plain English
-description of the image you want. Then click "Generate." After a pause, four images
-will appear. You can do this as many times as you wish.
-
-When you are happy with the results, click on the best of the four images to review it
-and click "Select" to bring it into the media library, "Variants" to generate
-variants of it, or "Delete" to discard it.
-
-The image helper generates 1024x1024 images. This is the maximum size supported by OpenAI.
-As of this writing, smaller images are not much cheaper, and are unlikely to look good
-in various placements on a website.
-
-Note that generated images not selected for use in the media library after one hour will
-be discarded by OpenAI. Those you select are permanently imported to the media library.
+**Note:** Generated images expire after 1 hour if not imported.
 
 ### Text Generation
 
-Configure a rich text widget with the `insert` subproperty configured as shown above.
+> [!NOTE]
+> Generated content may include headings, bullet lists, bold, italic, and other markdown formatting. Make sure your rich-text-widget toolbar includes the formatting options you want to preserve (e.g., `toolbar: [ 'styles', 'bold', 'italic', 'bulletList', 'orderedList' ]`). Unsupported formatting will be stripped when inserted.
 
-Now press the "/" (slash) key at the start of any line to bring up the insert menu.
-Choose "Generate Text" to generate text.
+1. In a rich text widget, press `/` at the start of a line
+2. Choose "Generate Text"
+3. Enter your prompt (be specific!)
+4. Click "Generate"
 
-Enter a prompt as suggested and click "Generate." After a pause, the generated text
-is inserted into the rich text widget.
+**Tips:**
+- Specify a word count: "Write 200 words about..."
+- Request specific formats: "Write a bulleted list of..."
+- Ask for headings: "Write an article with 3 sections about..."
 
-Note that the generated text can include headings and links if you so request.
-It is also a good idea to specify a word count. You can make your request using
-ordinary conversational language.
+## Mixed Providers
+
+Use different providers for text and images:
+```javascript
+modules: {
+  '@apostrophecms/ai-helper': {
+    textProvider: 'anthropic',   // Claude for text
+    imageProvider: 'gemini'      // Gemini for images
+  },
+  '@apostrophecms/ai-helper-anthropic': {
+    apiKey: process.env.APOS_ANTHROPIC_KEY
+  },
+  '@apostrophecms/ai-helper-gemini': {
+    apiKey: process.env.APOS_GEMINI_KEY,
+    aspectRatio: '16:9'  // Gemini uses aspectRatio instead of size
+  }
+}
+```
+
+## Creating Custom Providers
+
+See [Creating Custom Providers](./custom-providers.md) for a guide on building your own AI provider modules.
+
+## Available Providers
+
+### Bundled Providers
+
+All of these providers are included with `@apostrophecms/ai-helper` - no separate installation needed.
+
+- **@apostrophecms/ai-helper-openai**
+  - Text generation (GPT models)
+  - Image generation (GPT Image models)
+  - Image variations
+  - Uses `size` parameter (e.g., '1024x1024')
+
+- **@apostrophecms/ai-helper-anthropic**
+  - Text generation (Claude models)
+
+- **@apostrophecms/ai-helper-gemini**
+  - Text generation (Gemini models)
+  - Image generation (Gemini Image models)
+  - Image variations
+  - Uses `aspectRatio` parameter (e.g., '1:1', '16:9', '9:16')
+
+## License
+
+MIT

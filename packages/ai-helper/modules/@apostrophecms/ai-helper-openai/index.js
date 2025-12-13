@@ -1,0 +1,220 @@
+const fs = require('node:fs');
+const FormData = require('form-data');
+
+module.exports = {
+  options: {
+    // API key - can be set via option or APOS_OPENAI_KEY env var
+    apiKey: process.env.APOS_OPENAI_KEY || null,
+    // Default models
+    textModel: 'gpt-5.1',
+    // Default text generation settings
+    textMaxTokens: 1000,
+    imageModel: 'gpt-image-1-mini',
+    size: '1024x1024',
+    imageQuality: 'medium'
+  },
+
+  async init(self) {
+    // Validate configuration (unless in mock mode)
+    if (!self.options.apiKey && !process.env.APOS_AI_HELPER_MOCK) {
+      throw new Error(
+        'Configure the `apiKey` option for the OpenAI provider' +
+        ` in the "${self.__meta.name}" module or` +
+        ' export APOS_OPENAI_KEY environment variable.'
+      );
+    }
+
+    // Register this provider with the ai-helper module
+    self.apos.modules['@apostrophecms/ai-helper'].registerProvider(self, {
+      name: 'openai',
+      label: 'OpenAI',
+      text: true,
+      image: true,
+      imageVariation: true
+    });
+  },
+
+  methods(self) {
+    return {
+      /**
+       * Generate text from a prompt
+       * @param {Object} req - Apostrophe request object
+       * @param {string} prompt - The text prompt
+       * @param {Object} options - Generation options
+       * @param {number} [options.maxTokens] - Maximum tokens to generate
+       * @param {string} [options.model] - Model to use
+       * @returns {Promise<string>} Generated text
+      */
+      async generateText(req, prompt, options = {}) {
+        const maxTokens = options.maxTokens || self.options.textMaxTokens;
+        const model = options.model || self.options.textModel;
+
+        const body = {
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful text-generation assistant for CMS content. You generate text in Markdown format based on the given prompt. Do not include any meta-commentary, explanations, or offers to create additional versions. Output the content directly without preamble or postamble.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          model,
+          max_completion_tokens: maxTokens
+        };
+
+        // Retry logic for transient failures
+        let lastError;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const result = await self.apos.http.post('https://api.openai.com/v1/chat/completions', {
+              headers: {
+                Authorization: `Bearer ${self.options.apiKey}`
+              },
+              body
+            });
+
+            const message = result?.choices?.[0]?.message;
+            const content = message?.content;
+            const refusal = message?.refusal;
+
+            if (refusal) {
+              // Don't retry refusals
+              const error = self.apos.error('invalid', `OpenAI refused: ${refusal}`);
+              error.userMessage = 'Content policy violation. Please try a different prompt.';
+              throw error;
+            }
+
+            if (!content) {
+              throw self.apos.error('error', 'No content returned from OpenAI');
+            }
+
+            return content;
+
+          } catch (e) {
+            lastError = e;
+
+            // Log for debugging
+            console.error(`OpenAI request failed (attempt ${attempt}/3):`, e.message);
+
+            // Don't retry on client errors (bad request, auth issues, etc.)
+            if (e.status === 400 || e.status === 401 || e.status === 403) {
+              e.userMessage = 'Invalid request. Please check your prompt and try again.';
+              throw e;
+            }
+
+            // Don't retry on content policy violations
+            if (e.userMessage) {
+              throw e;
+            }
+
+            // Don't retry on last attempt
+            if (attempt === 3) {
+              e.userMessage = 'AI service temporarily unavailable. Please try again in a moment.';
+              throw e;
+            }
+
+            // Wait before retrying (exponential backoff: 1s, 2s)
+            await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+            console.log(`Retrying OpenAI request (attempt ${attempt + 1}/3)...`);
+          }
+        }
+
+        lastError.userMessage = 'AI service temporarily unavailable. Please try again in a moment.';
+        throw lastError;
+      },
+
+      /**
+       * Generate images from a prompt
+       * @param {Object} req - Apostrophe request object
+       * @param {string} prompt - The image description
+       * @param {Object} options - Generation options
+       * @param {string} [options.userPrompt] - the generation prompt
+       * @param {number} [options.count] - Number of images to generate
+       * @param {string} [options.size] - Image size
+       * @param {string} [options.imageQuality] - image resolution
+       * @param {string} [options.model] - Model to use
+       * @returns {Promise<Array<string>>} Array of image URLs
+       */
+      async generateImage(req, prompt, options = {}) {
+        const count = options.count || 1;
+        const size = options.size || self.options.size;
+        const imageQuality = options.imageQuality || self.options.imageQuality;
+        const model = options.model || self.options.imageModel;
+
+        const body = {
+          prompt,
+          n: count,
+          size,
+          quality: imageQuality,
+          model
+        };
+
+        const result = await self.apos.http.post('https://api.openai.com/v1/images/generations', {
+          headers: {
+            Authorization: `Bearer ${self.options.apiKey}`
+          },
+          body
+        });
+
+        if (!result.data) {
+          throw self.apos.error('error', 'No image data returned from OpenAI');
+        }
+
+        // Return the data items directly - they'll have either url or b64_json
+        return result.data;
+      },
+
+      /**
+       * Generate variations of an existing image
+       * @param {Object} req - Apostrophe request object
+       * @param {string} imagePath - Path to the source image file
+       * @param {string} [prompt] - the variant prompt
+       * @param {Object} options - Generation options
+       * @param {number} [options.count] - Number of variations to generate
+       * @param {string} [options.size] - Image size
+       * @param {string} [options.imageQuality] - image resolution
+       * @param {string} [options.model] - Model to use
+       * @returns {Promise<Array<string>>} Array of image URLs
+       */
+      async generateImageVariation(req, imagePath, prompt, options = {}) {
+        const count = options.count || 1;
+        const size = options.size || self.options.size;
+        const imageQuality = options.imageQuality || self.options.imageQuality;
+        const model = options.model || self.options.imageModel;
+
+        // Build the variation prompt
+        let variationPrompt;
+        if (prompt) {
+          variationPrompt = `Using the provided image, please modify it as following: ${prompt}`;
+        } else {
+          variationPrompt = 'Using the provided image, please provide a creative reinterpretation with different style, colors, composition, or details.';
+        }
+
+        const formData = new FormData();
+        formData.append('image', fs.createReadStream(imagePath));
+        formData.append('prompt', variationPrompt);
+        formData.append('n', count);
+        formData.append('size', size);
+        formData.append('quality', imageQuality);
+        formData.append('model', model);
+        formData.append('output_format', 'png');
+
+        const result = await self.apos.http.post('https://api.openai.com/v1/images/edits', {
+          headers: {
+            Authorization: `Bearer ${self.options.apiKey}`,
+            ...formData.getHeaders()
+          },
+          body: formData
+        });
+
+        if (!result.data) {
+          throw self.apos.error('error', 'No image data returned from OpenAI');
+        }
+
+        return result.data;
+      }
+    };
+  }
+};

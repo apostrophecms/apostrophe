@@ -20,10 +20,22 @@
         <template #bodyMain>
           <div class="apos-ai-helper-form">
             <img
+              v-if="image"
               class="apos-ai-helper-image"
               :src="image.url"
             >
-            <div class="apos-ai-helper-image-buttons">
+            <div v-if="image && showVariantInput" class="apos-ai-helper-image-editor__variant-input">
+              <label class="apos-ai-helper-image-editor__label">
+                How should this image be different?
+              </label>
+              <textarea
+                v-model="variantPrompt"
+                class="apos-ai-helper-image-editor__textarea"
+                placeholder="Example: make it blue, add a sunset, change the angle, different artistic style"
+                rows="3"
+              />
+            </div>
+            <div v-if="image" class="apos-ai-helper-image-buttons">
               <AposButton
                 :disabled="image.accepted"
                 icon="plus-icon"
@@ -32,9 +44,17 @@
                 @click.prevent="action('save')"
               />
               <AposButton
+                v-if="!showVariantInput"
                 icon="group-icon"
                 :label="$t('aposAiHelper:variations')"
-                @click.prevent="action('variations')"
+                @click.prevent="showVariantInput = true"
+              />
+              <AposButton
+                v-if="showVariantInput"
+                type="primary"
+                :label="$t('aposAiHelper:generateVariant')"
+                :disabled="!variantPrompt.trim()"
+                @click="createVariant"
               />
               <AposButton
                 icon="delete-icon"
@@ -58,7 +78,8 @@ export default {
   props: {
     image: {
       type: Object,
-      required: true
+      required: false,
+      default: null
     }
   },
   emits: [ 'modal-result', 'safe-close' ],
@@ -69,15 +90,19 @@ export default {
         type: 'overlay',
         showModal: true
       },
-      error: false
+      error: false,
+      showVariantInput: false,
+      variantPrompt: ''
     };
   },
   mounted() {
     this.modal.active = true;
-    const expireMs = new Date(this.image.createdAt).getTime() + 1000 * 60 * 60;
-    const nowMs = Date.now();
-    const timeout = expireMs - nowMs;
-    this.expireTimeout = setTimeout(this.expire, Math.max(timeout, 0));
+    if (this.image) {
+      const expireMs = new Date(this.image.createdAt).getTime() + 1000 * 60 * 60;
+      const nowMs = Date.now();
+      const timeout = expireMs - nowMs;
+      this.expireTimeout = setTimeout(this.expire, Math.max(timeout, 0));
+    }
   },
   unmounted() {
     clearTimeout(this.expireTimeout);
@@ -94,15 +119,21 @@ export default {
       this.$emit('modal-result', {
         action
       });
+    },
+    createVariant() {
+      if (!this.variantPrompt.trim()) return;
+      this.modal.showModal = false;
+      this.$emit('modal-result', {
+        action: 'variant',
+        prompt: this.variantPrompt.trim()
+      });
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-// Prevent scrollbar and ensure image shrinks to box rather than growing
-// in proportion to 100% width
-:deep(apos-modal__main), :deep(.apos-modal__body-inner), :deep(.apos-modal__body-main) {
+:deep(.apos-modal__main), :deep(.apos-modal__body-inner), :deep(.apos-modal__body-main) {
   height: 100%;
   min-height: 0;
 }
@@ -121,5 +152,20 @@ export default {
   flex-direction: row;
   justify-content: center;
   gap: 32px;
+}
+.apos-ai-helper-image-editor__variant-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.apos-ai-helper-image-editor__label {
+  font-weight: 600;
+}
+.apos-ai-helper-image-editor__textarea {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
 }
 </style>

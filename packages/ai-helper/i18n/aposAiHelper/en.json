@@ -11,5 +11,7 @@
   "rateLimitExceeded": "Rate limit exceeded, try again later",
   "invalidRequest": "Invalid request, please review OpenAI's rules",
   "utilityOperationLabel": "Generate an image with AI",
-  "errorMessage": "An error occurred."
+  "errorMessage": "An error occurred.",
+  "generateVariant": "Generate Variant",
+  "generationFailed": "Image generation failed. Please try again."
 }
