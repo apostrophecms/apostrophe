@@ -78,6 +78,14 @@
 </template>
 
 <script>
+// FIXME: move universal/check-if-conditions.mjs to the schema ui/apos folder.
+// Keep the old import, but re-export from the schema ui/apos folder
+// for backwards compatibility.
+// Replace all UI imports in the codebase to import from the schema ui/apos folder
+// via alias `Modules/@apostrophecms/ui/schema/universal/check-if-conditions.mjs`.
+// Replace the backend imports to import
+// from `../path-to/@apostrophecms/ui/apos/schema/universal/check-if-conditions.mjs`.
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import renderCss from '../../universal/render.mjs';
 import { klona } from 'klona';
@@ -424,7 +432,9 @@ export default {
     },
     async renderBrowserSide() {
       await this.setStyleMarkup(
-        renderCss(this.schema, this.docFields.data).css
+        renderCss(this.schema, this.docFields.data, {
+          checkIfConditionsFn: checkIfConditions
+        }).css
       );
     },
     async setStyleMarkup(markup) {

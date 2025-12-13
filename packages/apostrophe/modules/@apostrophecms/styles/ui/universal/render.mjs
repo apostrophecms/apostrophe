@@ -18,6 +18,7 @@
  * @property {string} [class] - Class reference
  * @property {boolean} [important] - Whether to add !important flag
  * @property {SchemaField[]} [schema] - Optional subfields for some types
+ * @property {Object} [if] - Conditional logic for field rendering
  */
 
 /**
@@ -29,7 +30,6 @@
  * @property {SchemaField} raw - The original field object
  * @property {string} [valueTemplate] - Optional template for the value
  * @property {string} [mediaQuery] - Optional media query condition
- * @property {string} [class] - Optional class reference
  * @property {boolean} [important] - Whether to add !important flag
  */
 
@@ -54,6 +54,7 @@
  *   if styles should be inline (only used in scoped styles)
  */
 
+import { klona } from 'klona';
 import customRules from './customRules.mjs';
 
 export default renderGlobalStyles;
@@ -72,10 +73,6 @@ const FILTERS = {
   _: filter,
   object: filterObject
 };
-
-const conditionTypes = [ 'if', 'requiredIf' ];
-export const getConditionTypesObject = () => Object
-  .fromEntries(conditionTypes.map((key) => ([ key, {} ])));
 
 /**
  * Renders CSS stylesheet from a schema and document object.
@@ -97,8 +94,13 @@ function renderGlobalStyles(schema, doc, {
     classes: new Set(),
     styles: new Map()
   };
+  const withConditions = filterConditionalFields(
+    checkIfConditionsFn,
+    klona(schema),
+    doc
+  );
 
-  for (const field of schema) {
+  for (const field of withConditions.schema) {
     const filter = FILTERS[field.type] || FILTERS._;
     if (!filter(field, doc)) {
       continue;
@@ -140,8 +142,13 @@ function renderScopedStyles(schema, doc, {
     styles: new Map(),
     inlineVotes: new Set()
   };
+  const withConditions = filterConditionalFields(
+    checkIfConditionsFn,
+    klona(schema),
+    doc
+  );
 
-  for (const field of schema) {
+  for (const field of withConditions.schema) {
     const filter = FILTERS[field.type] || FILTERS._;
     if (!filter(field, doc)) {
       continue;
@@ -172,25 +179,95 @@ function renderScopedStyles(schema, doc, {
   };
 };
 
-// FIXME: filter the schema by conditionals here in the next ticket
-// function filterConditionalFields(
-//   checkIfConditions, schema, doc, parentConditions = {}
-// ) {
-//   const result = getConditionTypesObject();
+/**
+ * Filters schema fields based on conditional logic, removing fields
+ * whose conditions evaluate to false.
+ *
+ * @param {Function} checkIfConditions - The universal core function to evaluate
+ *   field conditions
+ * @param {SchemaField[]} schema - Array of field schema definitions
+ * @param {Object} doc - Document containing field values
+ * @returns {{ conditions: Object<string, boolean>; schema: SchemaField[] }}
+ *   Object containing the evaluated conditions map and filtered schema
+ */
+function filterConditionalFields(
+  checkIfConditions, schema, doc
+) {
+  const conditions = getConditions(
+    checkIfConditions, schema, doc
+  );
 
-//   for (const field of schema) {
-//     for (const conditionType of conditionTypes) {
-//       if (field[conditionType]) {
-//         result[conditionType][field.name] = checkIfConditions(
-//           doc,
-//           field[conditionType]
-//         );
-//       }
-//     }
-//   }
+  return {
+    conditions,
+    schema: schema.filter(field => {
+      if (conditions[field.name] === false) {
+        return false;
+      }
+      if (field.schema?.length > 0) {
+        field.schema = field.schema.filter(subfield => {
+          if (conditions[`${field.name}.${subfield.name}`] === false) {
+            return false;
+          }
+          return true;
+        });
+        if (field.schema.length === 0) {
+          return false;
+        }
+      }
 
-//   return result;
-// }
+      return true;
+    })
+  };
+}
+
+/**
+ * Evaluates conditional expressions for each field in the schema.
+ * Supports one level of nesting for object fields with subfields.
+ *
+ * @param {Function} checkIfConditions - The universal core function to evaluate
+ *   field conditions
+ * @param {SchemaField[]} schema - Array of field schema definitions
+ * @param {Object} doc - Document containing field values
+ * @returns {Object<string, boolean>} Map of field names (or "field.subfield"
+ *   for nested fields) to their evaluated condition results
+ */
+function getConditions(
+  checkIfConditions, schema, doc
+) {
+  const conditionType = 'if';
+
+  // Simulate parent values
+  const parentValues = Object.fromEntries(
+    Object.entries(doc).map(([ key, value ]) => {
+      return [ `<${key}`, value ];
+    })
+  );
+  const result = {};
+
+  for (const field of schema) {
+    if (field[conditionType]) {
+      result[field.name] = checkIfConditions(
+        doc,
+        field[conditionType]
+      );
+    }
+    if (field.schema?.length > 0) {
+      for (const subfield of field.schema) {
+        if (subfield[conditionType]) {
+          result[`${field.name}.${subfield.name}`] = checkIfConditions(
+            {
+              ...parentValues,
+              ...doc[field.name] || {}
+            },
+            subfield[conditionType]
+          );
+        }
+      }
+    }
+  }
+
+  return result;
+}
 
 /**
  * For a given field (schema) and doc, determine if it should be processed
@@ -286,7 +363,7 @@ function normalize(field, doc, {
     fieldValue = null;
   }
 
-  if (fieldValue && typeof fieldValue === 'string' && fieldValue.startsWith('--')) {
+  if (typeof fieldValue === 'string' && fieldValue.startsWith('--')) {
     fieldValue = `var(${fieldValue})`;
   }
 
@@ -361,7 +438,6 @@ function normalizeObject(field, doc, {
     storage
   });
   delete normalized.unit;
-  delete normalized.class;
 
   const schema = field.schema.filter(subfield => {
     return filter(subfield, doc[field.name] || {});
@@ -465,18 +541,26 @@ function stringifyRules(styles, inline = false) {
 
   styles.forEach((value, key) => {
     if (inline) {
-      rules.push([ ...value.values() ].join(';') + ';');
+      rules.push(normalizeRules(value.values()).join(';') + ';');
       return;
     }
     if (key.startsWith('@media')) {
       const nestedRules = stringifyRules(value);
       rules.push(key.concat('{', nestedRules, '}'));
     } else {
-      rules.push(key.concat('{', [ ...value.values() ].join(';'), ';}'));
+      rules.push(key.concat('{', normalizeRules(value.values()).join(';'), ';}'));
     }
   });
 
   return rules.join('');
+
+  // Remove any trailing `;` from each rule
+  function normalizeRules(rules) {
+    return [ ...rules ].map(rule => {
+      return (rule.endsWith(';') ? rule.slice(0, -1) : rule).trim();
+    })
+      .filter(rule => rule.length > 0);
+  }
 };
 
 /**
