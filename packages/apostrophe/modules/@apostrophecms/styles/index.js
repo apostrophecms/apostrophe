@@ -2,6 +2,7 @@ const methods = require('./lib/methods');
 const extendMethods = require('./lib/extendMethods');
 const handlers = require('./lib/handlers');
 const apiRoutes = require('./lib/apiRoutes');
+const helpers = require('./lib/helpers');
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
@@ -113,5 +114,6 @@ module.exports = {
   methods,
   extendMethods,
   handlers,
-  apiRoutes
+  apiRoutes,
+  helpers
 };

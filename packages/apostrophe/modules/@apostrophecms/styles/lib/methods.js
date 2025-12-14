@@ -152,6 +152,114 @@ module.exports = (self, options) => {
         checkIfConditionsFn: self.styleCheckIfConditions
       });
     },
+    // Generate unique ID, Invoke the widget owned `getStylesheet` method
+    // and return object:
+    // {
+    //   css: '...',       // full stylesheet to go in <style> tag
+    //   classes: [ ... ], // array of classes to go in wrapper `class` attribute
+    //   inline: '...'     // inline styles to go in wrapper `style` attribute
+    //   styleId: '...',   // ID for the style element and wrapper `id` attribute
+    //   widgetId: '...'   // the widget's _id
+    // }
+    // It's used directly by @apostrophecms/widget-type module and it's proxied
+    // as a styles helper for use in widget templates that opt out of
+    // automatic stylesWrapper.
+    prepareWidgetStyles(widget) {
+      const widgetManager = self.apos.area.getWidgetManager(widget.type);
+      if (!widgetManager) {
+        return {
+          css: '',
+          classes: [],
+          inline: '',
+          styleId: '',
+          widgetId: ''
+        };
+      }
+      const styleId = self.apos.util.generateId();
+      const styles = widgetManager.getStylesheet(
+        widget,
+        styleId
+      );
+      styles.styleId = styleId;
+      styles.widgetId = widget._id;
+
+      return styles;
+    },
+    // Renders style element for use inside widget templates.
+    // Expects the result of prepareWidgetStyles() method as input.
+    // Proxied as a style helper for use in widget templates that
+    // opt out of automatic stylesWrapper.
+    getWidgetElements(styles) {
+      const { css, styleId } = styles || {};
+      if (!css || !styleId) {
+        return '';
+      }
+      return `<style data-apos-widget-style-for="${styleId}">\n` +
+        css +
+        '\n</style>';
+    },
+    // Renders attributes string for use inside widget templates.
+    // Expects the result of prepareWidgetStyles() method as input.
+    // Proxied as a style helper for use in widget templates that
+    // opt out of automatic stylesWrapper.
+    // Optional second argument `additionalAttrs` is an object with
+    // additional attributes to merge. `class` and `style` attributes
+    // are merged with the styles values, keeping classes unique.
+    getWidgetAttributes(styles, additionalAttrs = {}) {
+      const {
+        classes, inline, styleId, widgetId
+      } = styles || {};
+      if (!styleId) {
+        return '';
+      }
+
+      // Separate class and style from other additional attributes
+      const {
+        class: additionalClasses,
+        style: additionalStyle,
+        ...otherAttrs
+      } = additionalAttrs;
+
+      const attrs = [ `id="${styleId}"` ];
+      attrs.push(
+        `data-apos-widget-style-wrapper-for="${widgetId || ''}"`
+      );
+
+      // Merge classes, keeping them unique
+      const classSet = new Set(classes || []);
+      if (additionalClasses) {
+        const extraClasses = Array.isArray(additionalClasses)
+          ? additionalClasses
+          : additionalClasses.split(/\s+/).filter(Boolean);
+        extraClasses.forEach(cls => classSet.add(cls));
+      }
+      if (classSet.size) {
+        attrs.push(`class="${[ ...classSet ].join(' ')}"`);
+      }
+
+      // Merge inline styles
+      const styleParts = [];
+      if (inline) {
+        // Remove trailing semicolon to avoid double semicolons when joining
+        styleParts.push(inline.replace(/;$/, ''));
+      }
+      if (additionalStyle) {
+        // Remove trailing semicolon from additional style as well
+        styleParts.push(additionalStyle.replace(/;$/, ''));
+      }
+      if (styleParts.length) {
+        attrs.push(`style="${styleParts.join(';')};"`);
+      }
+
+      // Add other additional attributes
+      for (const [ key, value ] of Object.entries(otherAttrs)) {
+        if (value !== undefined && value !== null) {
+          attrs.push(`${key}="${value}"`);
+        }
+      }
+
+      return attrs.join(' ');
+    },
 
     // Internal APIs
 
