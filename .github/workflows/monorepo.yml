@@ -202,8 +202,6 @@ jobs:
       - name: Debug sharp/libvips cache contents
         if: always()
         run: |
-          echo "sharp/libvips cache-hit: ${{ steps.sharp-cache.outputs.cache-hit }}"
-          echo "npm_config_cache=${npm_config_cache:-}" 
           echo "-- ~/.npm/_libvips"
           ls -alh ~/.npm/_libvips || true
           du -sh ~/.npm/_libvips || true
