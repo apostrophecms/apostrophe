@@ -31,6 +31,7 @@
           <input
             v-if="!modifiers.includes('no-search')"
             :id="uid"
+            ref="input"
             v-model="searchTerm"
             class="apos-input apos-input--text apos-input--relationship"
             type="text"
@@ -70,19 +71,25 @@
           @update:model-value="updateSelected"
           @item-clicked="editRelationship"
         />
-        <AposSearchList
-          :aria-id="`apos-relationship-${field._id}`"
-          :list="searchList"
-          :selected-items="next"
-          :icon="field.suggestionIcon"
-          :icon-size="field.suggestionIconSize"
-          :fields="suggestionFields"
-          :focus-index="searchFocusIndex"
-          :suggestion="searchSuggestion"
-          :hint="searchHint"
-          disabled-tooltip="apostrophe:publishBeforeUsingTooltip"
-          @select="updateSelected"
-        />
+        <div
+          v-show="searchList.length"
+          ref="floatingList"
+          class="apos-input-relationship__search-list"
+        >
+          <AposSearchList
+            :aria-id="`apos-relationship-${field._id}`"
+            :list="searchList"
+            :selected-items="next"
+            :icon="field.suggestionIcon"
+            :icon-size="field.suggestionIconSize"
+            :fields="suggestionFields"
+            :focus-index="searchFocusIndex"
+            :suggestion="searchSuggestion"
+            :hint="searchHint"
+            disabled-tooltip="apostrophe:publishBeforeUsingTooltip"
+            @select="updateSelected"
+          />
+        </div>
       </div>
     </template>
   </AposInputWrapper>
@@ -97,6 +104,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-input-relationship__search-list {
+    z-index: $z-index-notifications;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: max-content;
+  }
+
   .apos-input-relationship__input-wrapper {
     // Disable z-index because it breaks context menus that originate from
     // a fixed position elements (AposModalLip).
