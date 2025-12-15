@@ -88,6 +88,7 @@
   "breakpointPreviewMobile": "Mobile",
   "breakpointPreviewSelect": "Seleziona Breakpoint",
   "breakpointPreviewTablet": "Tablet",
+  "browse": "Sfoglia",
   "browseDocType": "Sfoglia {{ type }}",
   "cancel": "Annulla",
   "cannotChangeSlugPrefix": "impossibile cambiare il prefisso dello slug",

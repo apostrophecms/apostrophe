@@ -208,6 +208,53 @@ describe('Permissions', function() {
         assert.deepEqual(actual, expected);
       });
     });
+
+    describe('isAdmin', function () {
+      it('should says that an admin is an admin', function () {
+        const req = apos.task.getAdminReq();
+
+        const actual = apos.permission.isAdmin(req);
+        const expected = true;
+
+        assert.equal(actual, expected, 'An admin is in fact... an admin');
+      });
+
+      it('should says that an editor is not an admin', function () {
+        const req = apos.task.getEditorReq();
+
+        const actual = apos.permission.isAdmin(req);
+        const expected = false;
+
+        assert.equal(actual, expected, 'An editor is not an admin');
+      });
+
+      it('should says that a contributor is not an admin', function () {
+        const req = apos.task.getContributorReq();
+
+        const actual = apos.permission.isAdmin(req);
+        const expected = false;
+
+        assert.equal(actual, expected, 'A contributor is not an admin');
+      });
+
+      it('should says that a guest is not an admin', function () {
+        const req = apos.task.getContributorReq();
+
+        const actual = apos.permission.isAdmin(req);
+        const expected = false;
+
+        assert.equal(actual, expected, 'A guest is not an admin');
+      });
+
+      it('should says that an anonymous user is not an admin', function () {
+        const req = apos.task.getAnonReq();
+
+        const actual = apos.permission.isAdmin(req);
+        const expected = false;
+
+        assert.equal(actual, expected, 'An anonymous user is not an admin');
+      });
+    });
   });
 
   describe('apiRoutes', function() {
