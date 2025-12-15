@@ -418,7 +418,9 @@ module.exports = {
           contextOptions: _with
         });
 
-        if (self.styles && self.options.stylesWrapper !== false) {
+        const hasStyles = Object.keys(self.styles || {}).length > 0;
+
+        if (hasStyles && self.options.stylesWrapper !== false) {
           const styles = self.apos.styles.prepareWidgetStyles(widget);
           const styleTag = self.apos.styles.getWidgetElements(styles);
           const wrapperAttrs = self.apos.styles.getWidgetAttributes(styles);
