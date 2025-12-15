@@ -314,7 +314,7 @@ module.exports = {
           ...self.fields
         };
       },
-      // Return rednered styles object for a given widget instance.
+      // Return rendered styles object for a given widget instance.
       // This shouldn't be used directly, instead use the
       // `apos.styles.prepareWidgetStyles(widgetData)` helper method or
       // the corresponding Nunjucks helper `apos.styles.render(widget)`.
