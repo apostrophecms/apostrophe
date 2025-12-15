@@ -1,19 +1,17 @@
 {
   "name": "express-cache-on-demand",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Express middleware providing on-demand caching in high traffic situations.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test",
-    "eslint": "eslint .",
-    "lint": "pnpm run eslint"
+    "test": "npm run lint && npm run mocha",
+    "mocha": "mocha",
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/apostrophecms/apostrophe.git",
-    "directory": "packages/express-cache-on-demand"
+    "url": "https://github.com/punkave/express-cache-on-demand"
   },
-  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/express-cache-on-demand#readme",
   "keywords": [
     "express",
     "cache",
@@ -27,6 +25,7 @@
   "bugs": {
     "url": "https://github.com/punkave/express-cache-on-demand/issues"
   },
+  "homepage": "https://github.com/punkave/express-cache-on-demand",
   "dependencies": {
     "cache-on-demand": "workspace:^",
     "lodash": "^4.0.0"
@@ -37,8 +36,5 @@
     "express": "^4.9.8",
     "mocha": "^9.2.0",
     "request": "^2.45.0"
-  },
-  "apostropheTestConfig": {
-    "requiresMongo": false
   }
 }
