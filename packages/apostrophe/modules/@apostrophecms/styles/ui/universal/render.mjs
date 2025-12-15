@@ -18,6 +18,7 @@
  * @property {string} [class] - Class reference
  * @property {boolean} [important] - Whether to add !important flag
  * @property {SchemaField[]} [schema] - Optional subfields for some types
+ * @property {Object} [if] - Conditional logic for field rendering
  */
 
 /**
@@ -29,7 +30,6 @@
  * @property {SchemaField} raw - The original field object
  * @property {string} [valueTemplate] - Optional template for the value
  * @property {string} [mediaQuery] - Optional media query condition
- * @property {string} [class] - Optional class reference
  * @property {boolean} [important] - Whether to add !important flag
  */
 
@@ -54,6 +54,7 @@
  *   if styles should be inline (only used in scoped styles)
  */
 
+import { klona } from 'klona';
 import customRules from './customRules.mjs';
 
 export default renderGlobalStyles;
@@ -73,32 +74,33 @@ const FILTERS = {
   object: filterObject
 };
 
-const conditionTypes = [ 'if', 'requiredIf' ];
-export const getConditionTypesObject = () => Object
-  .fromEntries(conditionTypes.map((key) => ([ key, {} ])));
-
 /**
  * Renders CSS stylesheet from a schema and document object.
  *
  * @param {SchemaField[]} schema - Array of field schema definitions
  * @param {Object} doc - Document containing field values
  * @param {Object} options - Rendering options
- * @param {string} [options.rootSelector] - Root selector to prepend to
- *  all selectors
  * @param {Function} [options.checkIfConditionsFn] - Universal function to
  *  evaluate field conditions
  * @returns {{ css: string; classes: string[] }} Compiled CSS stylesheet and classes
  */
 function renderGlobalStyles(schema, doc, {
-  rootSelector = null,
   checkIfConditionsFn
 } = {}) {
+  const withConditions = filterConditionalFields(
+    klona(schema),
+    doc,
+    {
+      checkFn: checkIfConditionsFn
+    }
+  );
   const storage = {
     classes: new Set(),
-    styles: new Map()
+    styles: new Map(),
+    conditions: withConditions.conditions
   };
 
-  for (const field of schema) {
+  for (const field of withConditions.schema) {
     const filter = FILTERS[field.type] || FILTERS._;
     if (!filter(field, doc)) {
       continue;
@@ -106,7 +108,6 @@ function renderGlobalStyles(schema, doc, {
     const normalizer = NORMALIZERS[field.type] || NORMALIZERS._;
     const extractor = EXTRACTORS[field.type] || EXTRACTORS._;
     const normalzied = normalizer(field, doc, {
-      rootSelector,
       storage
     });
     extractor(normalzied, storage);
@@ -133,15 +134,25 @@ function renderGlobalStyles(schema, doc, {
  */
 function renderScopedStyles(schema, doc, {
   rootSelector = null,
-  checkIfConditionsFn
+  checkIfConditionsFn,
+  subset = null
 } = {}) {
+  const withConditions = filterConditionalFields(
+    klona(schema),
+    doc,
+    {
+      checkFn: checkIfConditionsFn,
+      subset
+    }
+  );
   const storage = {
     classes: new Set(),
     styles: new Map(),
-    inlineVotes: new Set()
+    inlineVotes: new Set(),
+    conditions: withConditions.conditions
   };
 
-  for (const field of schema) {
+  for (const field of withConditions.schema) {
     const filter = FILTERS[field.type] || FILTERS._;
     if (!filter(field, doc)) {
       continue;
@@ -172,25 +183,103 @@ function renderScopedStyles(schema, doc, {
   };
 };
 
-// FIXME: filter the schema by conditionals here in the next ticket
-// function filterConditionalFields(
-//   checkIfConditions, schema, doc, parentConditions = {}
-// ) {
-//   const result = getConditionTypesObject();
+/**
+ * Filters schema fields based on conditional logic, removing fields
+ * whose conditions evaluate to false.
+ *
+ * @param {SchemaField[]} schema - Array of field schema definitions
+ * @param {Object} doc - Document containing field values
+ * @param {Object} options
+ * @param {Function} options.checkFn - Function to evaluate field conditions,
+ *   usually the universal core function
+ * @param {string[]|null} [options.subset] - Optional subset of field names used
+ *   to reduce the original schema before evaluating conditions
+ * @returns {{ conditions: Object<string, boolean>; schema: SchemaField[] }}
+ *   Object containing the evaluated conditions map and filtered schema
+ */
+function filterConditionalFields(
+  schema, doc, { checkFn, subset }
+) {
+  const subsetSchema = Array.isArray(subset)
+    ? schema.filter(field => subset.includes(field.name))
+    : schema;
+  const conditions = getConditions(
+    checkFn,
+    subsetSchema,
+    doc
+  );
 
-//   for (const field of schema) {
-//     for (const conditionType of conditionTypes) {
-//       if (field[conditionType]) {
-//         result[conditionType][field.name] = checkIfConditions(
-//           doc,
-//           field[conditionType]
-//         );
-//       }
-//     }
-//   }
+  return {
+    conditions,
+    schema: subsetSchema.filter(field => {
+      if (conditions[field.name] === false) {
+        return false;
+      }
+      if (field.schema?.length > 0) {
+        field.schema = field.schema.filter(subfield => {
+          if (conditions[`${field.name}.${subfield.name}`] === false) {
+            return false;
+          }
+          return true;
+        });
+        if (field.schema.length === 0) {
+          return false;
+        }
+      }
 
-//   return result;
-// }
+      return true;
+    })
+  };
+}
+
+/**
+ * Evaluates conditional expressions for each field in the schema.
+ * Supports one level of nesting for object fields with subfields.
+ *
+ * @param {Function} checkIfConditions - The universal core function to evaluate
+ *   field conditions
+ * @param {SchemaField[]} schema - Array of field schema definitions
+ * @param {Object} doc - Document containing field values
+ * @returns {Object<string, boolean>} Map of field names (or "field.subfield"
+ *   for nested fields) to their evaluated condition results
+ */
+function getConditions(
+  checkIfConditions, schema, doc
+) {
+  const conditionType = 'if';
+
+  // Simulate parent values
+  const parentValues = Object.fromEntries(
+    Object.entries(doc).map(([ key, value ]) => {
+      return [ `<${key}`, value ];
+    })
+  );
+  const result = {};
+
+  for (const field of schema) {
+    if (field[conditionType]) {
+      result[field.name] = checkIfConditions(
+        doc,
+        field[conditionType]
+      );
+    }
+    if (field.schema?.length > 0) {
+      for (const subfield of field.schema) {
+        if (subfield[conditionType]) {
+          result[`${field.name}.${subfield.name}`] = checkIfConditions(
+            {
+              ...parentValues,
+              ...doc[field.name] || {}
+            },
+            subfield[conditionType]
+          );
+        }
+      }
+    }
+  }
+
+  return result;
+}
 
 /**
  * For a given field (schema) and doc, determine if it should be processed
@@ -251,13 +340,16 @@ function filterObject(field, doc) {
  * @param {SchemaField} field
  * @param {Object} doc
  * @param {Object} options
- * @param {String} options.rootSelector
+ * @param {String} options.rootSelector - Root selector from parent object field or
+ *   root scope.
  * @param {Boolean} [options.forceRoot] - Whether to force attach root selector
+ * @param {String} [options.rootMediaQuery] - Media query from parent object field
  * @param {RuntimeStorage} [options.storage]
  * @returns {NormalizedField}
  */
 function normalize(field, doc, {
   rootSelector,
+  rootMediaQuery,
   forceRoot = false,
   storage
 } = {}) {
@@ -266,8 +358,18 @@ function normalize(field, doc, {
   let fieldValue = doc[field.name];
   let canBeInline = true;
   const fieldUnit = field.unit || '';
+  const fieldMediaQuery = field.mediaQuery || rootMediaQuery;
 
-  // FIXME: compute and store classes here when appropriate
+  if (field.class) {
+    applyFieldClass(field.class, fieldValue, storage);
+    return {
+      raw: field,
+      selectors,
+      properties,
+      value: fieldValue,
+      unit: ''
+    };
+  }
 
   if (!properties) {
     properties = [];
@@ -277,7 +379,7 @@ function normalize(field, doc, {
     fieldValue = null;
   }
 
-  if (fieldValue && typeof fieldValue === 'string' && fieldValue.startsWith('--')) {
+  if (typeof fieldValue === 'string' && fieldValue.startsWith('--')) {
     fieldValue = `var(${fieldValue})`;
   }
 
@@ -326,8 +428,7 @@ function normalize(field, doc, {
     value: fieldValue,
     unit: fieldUnit,
     ...field.valueTemplate && { valueTemplate: field.valueTemplate },
-    ...field.mediaQuery && { mediaQuery: field.mediaQuery },
-    ...field.class && { class: field.class },
+    ...fieldMediaQuery && { mediaQuery: fieldMediaQuery },
     ...field.important && { important: field.important }
   };
 }
@@ -338,7 +439,7 @@ function normalize(field, doc, {
  * @param {SchemaField} field
  * @param {Object} doc
  * @param {Object} options
- * @param {String} options.rootSelector
+ * @param {String} options.rootSelector - Root selector from root scope.
  * @param {RuntimeStorage} options.storage
  * @returns {NormalizedObjectField}
  */
@@ -353,7 +454,6 @@ function normalizeObject(field, doc, {
     storage
   });
   delete normalized.unit;
-  delete normalized.class;
 
   const schema = field.schema.filter(subfield => {
     return filter(subfield, doc[field.name] || {});
@@ -366,6 +466,7 @@ function normalizeObject(field, doc, {
         doc[field.name] || {},
         {
           rootSelector: normalized.selectors,
+          rootMediaQuery: normalized.mediaQuery,
           storage
         }
       )
@@ -411,11 +512,19 @@ function extract(normalized, storage) {
       } else {
         rule = `${property}: ${normalized.value}${normalized.unit}`;
         if (normalized.valueTemplate) {
-          const regex = /%VALUE%/gi;
-          const value = normalized.valueTemplate.replace(
-            regex,
-            normalized.value + normalized.unit
+          const value = interpolate(
+            normalized.valueTemplate,
+            normalized.value,
+            {
+              unit: normalized.unit,
+              subfields: normalized.raw.schema,
+              conditions: storage.conditions,
+              fieldName: normalized.raw.name
+            }
           );
+          if (!value) {
+            return;
+          }
           rule = `${property}: ${value}`;
         }
       }
@@ -440,9 +549,134 @@ function extract(normalized, storage) {
  * @param {RuntimeStorage} storage
  */
 function extractObject(normalized, storage) {
+  if (normalized.valueTemplate) {
+    extract(normalized, storage);
+  }
   normalized.subfields.forEach(subfield => {
     extract(subfield, storage);
   });
+}
+
+/**
+ * Interpolate values into a template string.
+ * Simple mode replaces %VALUE% with primitive values. The mode is determined
+ * by the absence of subfields in options.
+ * Advanced mode replaces %key% placeholders with corresponding values from
+ * the value object. Keys can be simple (e.g., %width%) or dotted for accessing
+ * nested object values (e.g., %box.top%).
+ *
+ * Interpolate will return an empty string if:
+ * - In simple mode, the value is not a primitive.
+ * - In advanced mode, any referenced key does not exist in the value object.
+ * - In advanced mode with subfields, any referenced key corresponds to a
+ *  subfield that is disabled by conditions.
+ * - In advanced mode with subfields, any referenced key does not match
+ * a defined subfield.
+ *
+ * @param {string} template - Template string with placeholders
+ * @param {any} value - Primitive value or object with key-value pairs
+ * @param {Object} options - Interpolation options
+ * @param {string} [options.unit=''] - Unit to append to value (simple mode only)
+ * @param {SchemaField[]} [options.subfields] - Schema for subfield definitions
+ * @param {Object} [options.conditions] - Conditions map from filterConditionalFields
+ * @param {string} [options.fieldName] - Parent field name for condition key lookup
+ * @returns {string} Interpolated string, or empty string if required keys are missing
+ */
+function interpolate(template, value, {
+  unit = '', subfields, conditions, fieldName
+} = {}) {
+  // Not interested in null/undefined values
+  if (value == null) {
+    return '';
+  }
+  if (!Array.isArray(subfields)) {
+    // Simple mode for primitive values: replace %VALUE% placeholder
+    if (typeof value !== 'object') {
+      return template.replace(/%VALUE%/gi, String(value ?? '') + unit);
+    }
+
+    // Arrays are not supported as input values, so we ignore that check.
+    // Object value mode without subfields: replace %key% placeholders
+    // This handles values like {top, right, bottom, left}
+    return template.replace(/%([^%]+)%/g, (_, key) => {
+      if (key.toUpperCase() === 'VALUE') {
+        return '';
+      }
+      const keyValue = value[key];
+      return String(keyValue ?? '') + unit;
+    });
+  }
+
+  if (!subfields.length) {
+    return '';
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return '';
+  }
+
+  const subfieldsByName = new Map(subfields.map(field => [ field.name, field ]));
+  const keyPattern = /%([^%]+)%/g;
+  const referencedKeys = [];
+  let match;
+  while ((match = keyPattern.exec(template)) !== null) {
+    referencedKeys.push(match[1]);
+  }
+
+  // If any referenced key is disabled by conditions, return empty
+  for (const key of referencedKeys) {
+    const subfieldName = key.includes('.') ? key.split('.')[0] : key;
+    const conditionKey = fieldName ? `${fieldName}.${subfieldName}` : subfieldName;
+    if (conditions?.[conditionKey] === false) {
+      return '';
+    }
+  }
+
+  let replaceFailed = false;
+  const result = template
+    .replace(/%([^%]+)%/g, (_, key) => {
+      // Handle dotted keys for nested object values (e.g., %box.top%)
+      // The first part must match a subfield name.
+      if (key.includes('.')) {
+        const [ subfieldName, valueKey ] = key.split('.');
+        const subfield = subfieldsByName.get(subfieldName);
+        if (!subfield) {
+          replaceFailed = true;
+          return '';
+        }
+        const nestedValue = value[subfieldName];
+        if (typeof nestedValue !== 'object' ||
+          nestedValue == null ||
+          nestedValue[valueKey] == null
+        ) {
+          replaceFailed = true;
+          return '';
+        }
+        const subfieldUnit = subfield.unit || '';
+        return String(nestedValue[valueKey] ?? '') + subfieldUnit;
+      }
+
+      // Simple key - must match a subfield (e.g., %top%)
+      const subfield = subfieldsByName.get(key);
+      if (!subfield || value[key] == null) {
+        replaceFailed = true;
+        return '';
+      }
+      const subfieldValue = value[key];
+      const subfieldUnit = subfield.unit || '';
+
+      if (subfield.valueTemplate) {
+        return interpolate(subfield.valueTemplate, subfieldValue, {
+          unit: subfieldUnit,
+          conditions
+        });
+      }
+
+      return String(subfieldValue) + subfieldUnit;
+    })
+    .trim();
+
+  return replaceFailed ? '' : result;
 }
 
 /**
@@ -457,16 +691,61 @@ function stringifyRules(styles, inline = false) {
 
   styles.forEach((value, key) => {
     if (inline) {
-      rules.push([ ...value.values() ].join(';') + ';');
+      rules.push(normalizeRules(value.values()).join(';') + ';');
       return;
     }
     if (key.startsWith('@media')) {
       const nestedRules = stringifyRules(value);
       rules.push(key.concat('{', nestedRules, '}'));
     } else {
-      rules.push(key.concat('{', [ ...value.values() ].join(';'), ';}'));
+      rules.push(key.concat('{', normalizeRules(value.values()).join(';'), ';}'));
     }
   });
 
   return rules.join('');
+
+  // Remove any trailing `;` from each rule
+  function normalizeRules(rules) {
+    return [ ...rules ].map(rule => {
+      return (rule.endsWith(';') ? rule.slice(0, -1) : rule).trim();
+    })
+      .filter(rule => rule.length > 0);
+  }
 };
+
+/**
+ * Prepare a field for rendering by normalizing it to a standard structure.
+ *
+ * @param {string|null} [fieldClass] The value of the class property from the field schema
+ * @param {any} value
+ * @param {RuntimeStorage} [storage]
+ * @returns {NormalizedField}
+ */
+function applyFieldClass(fieldClass, value, storage) {
+  if (!value || !fieldClass || !storage?.classes) {
+    return false;
+  }
+
+  if (typeof fieldClass === 'string' && !!value) {
+    storage.classes.add(fieldClass);
+    return true;
+  }
+
+  if (fieldClass !== true) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      if (typeof v === 'string') {
+        storage.classes.add(v);
+      }
+    }
+    return value.length > 0;
+  } else if (typeof value === 'string') {
+    storage.classes.add(value);
+    return true;
+  }
+
+  return false;
+}

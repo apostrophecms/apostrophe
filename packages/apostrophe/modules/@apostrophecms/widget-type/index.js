@@ -236,6 +236,12 @@ module.exports = {
             last: true
           }
         },
+        styles: {
+          label: 'apostrophe:styles',
+          icon: 'palette-icon',
+          tooltip: 'apostrophe:stylesWidget',
+          nativeAction: 'editStyles'
+        },
         ...!options.contextual && {
           edit: {
             label: 'apostrophe:edit',
@@ -314,11 +320,22 @@ module.exports = {
           ...self.fields
         };
       },
-      getStylesheet(doc, styleId) {
-        // FIXME: support inline styles for widgets when the rendering
-        // system is ready.
-        return self.apos.styles.getWidgetStylesheet(self.schema, doc, {
-          rootSelector: `#${styleId}`
+      // Return rendered styles object for a given widget instance.
+      // This shouldn't be used directly, instead use the
+      // `apos.styles.prepareWidgetStyles(widgetData)` helper method or
+      // the corresponding Nunjucks helper `apos.styles.render(widget)`.
+      // The `styleId` parameter is required to scope the styles
+      // to the specific widget instance.
+      // The returned object:
+      // {
+      //   css: '...', // The complete stylesheet text
+      //   inline: '...', // The inline styles to add to the widget element
+      //   classes: '...' // The classes to add to the widget element
+      // }
+      getStylesheet(widget, styleId) {
+        return self.apos.styles.getWidgetStylesheet(self.schema, widget, {
+          rootSelector: `#${styleId}`,
+          subset: self.fieldsGroups.styles?.fields || []
         });
       },
       composeSchema() {
@@ -340,14 +357,28 @@ module.exports = {
 
       composeWidgetOperations() {
         self.widgetOperations = Object.entries(self.widgetOperations)
-          .map(([ name, operation ]) => {
+          .reduce((acc, [ name, operation ]) => {
             self.validateWidgetOperation(name, operation);
 
-            return {
-              name,
-              ...operation
-            };
-          });
+            const disableOperation = self.disableWidgetOperation(name, operation);
+            if (disableOperation) {
+              return acc;
+            }
+
+            return [
+              ...acc,
+              {
+                name,
+                ...operation
+              }
+            ];
+          }, []);
+      },
+      disableWidgetOperation(opName, properties) {
+        if (opName === 'styles' && !Object.keys(self.styles).length) {
+          return true;
+        }
+        return false;
       },
 
       // Returns markup for the widget. Invoked via `{% widget ... %}` in the

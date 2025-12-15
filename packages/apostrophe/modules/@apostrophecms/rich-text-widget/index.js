@@ -205,11 +205,11 @@ module.exports = {
         'importTable',
         'horizontalRule'
       ]
-
     },
     defaultOptions: {},
     components: {
-      widgetEditor: 'AposRichTextWidgetEditor'
+      widgetEditor: 'AposRichTextWidgetEditor',
+      widgetStylesEditor: 'AposWidgetEditor'
     },
     editorTools: {
       nodes: {

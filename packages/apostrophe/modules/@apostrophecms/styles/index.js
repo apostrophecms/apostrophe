@@ -2,6 +2,7 @@ const methods = require('./lib/methods');
 const extendMethods = require('./lib/extendMethods');
 const handlers = require('./lib/handlers');
 const apiRoutes = require('./lib/apiRoutes');
+const helpers = require('./lib/helpers');
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
@@ -63,8 +64,11 @@ module.exports = {
   async init(self, options) {
     const { renderGlobalStyles, renderScopedStyles } =
       await import('./ui/universal/render.mjs');
+    const { default: checkIfConditions } =
+      await import('../../../lib/universal/check-if-conditions.mjs');
     self.stylesheetGlobalRender = renderGlobalStyles;
     self.stylesheetScopedRender = renderScopedStyles;
+    self.styleCheckIfConditions = checkIfConditions;
 
     self.apos.doc.addContextOperation({
       action: 'reset-styles-position',
@@ -110,5 +114,6 @@ module.exports = {
   methods,
   extendMethods,
   handlers,
-  apiRoutes
+  apiRoutes,
+  helpers
 };

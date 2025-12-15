@@ -271,6 +271,37 @@ export default {
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);
       }
     },
+    async editStyles({ widgetId, index }) {
+      if (this.foreign) {
+        return;
+      }
+      const widget = this.next[index];
+      if (!widget) {
+        return;
+      }
+
+      apos.area.activeEditor = this;
+      apos.bus.$on('apos-refreshing', cancelRefresh);
+      const preview = this.widgetPreview(widget.type, index, false);
+      const stylesEditorComponent = this.widgetStylesEditorComponent(widget.type);
+
+      const result = await apos.modal.execute(stylesEditorComponent, {
+        modelValue: widget,
+        options: this.widgetOptionsByType(widget.type),
+        type: widget.type,
+        docId: this.docId,
+        parentFollowingValues: this.followingValues,
+        areaFieldId: this.fieldId,
+        meta: this.meta[widget._id]?.aposMeta,
+        preview,
+        defaultTab: 'styles'
+      });
+      apos.area.activeEditor = null;
+      apos.bus.$off('apos-refreshing', cancelRefresh);
+      if (result) {
+        return this.update(result);
+      }
+    },
     async up({ index }) {
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
@@ -574,6 +605,9 @@ export default {
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
+    },
+    widgetStylesEditorComponent(type) {
+      return this.moduleOptions.components.widgetStylesEditors[type];
     },
     widgetPreview(type, index, create) {
       return this.moduleOptions.widgetPreview[type]
