@@ -4,7 +4,7 @@
 
 ### Fixes
 
-* Fixes an issue where the frontend was caching stale choices for `select`, `radio` and `checkboxes` fields that were saved but no longer valid (i.e removed from the schema).
+* Fixes an issue where an image widget could fail to display its placeholder after the selected image is archived, leaving an empty `_image` relationship.
 
 ## 4.24.1 (2025-12-04)
 
