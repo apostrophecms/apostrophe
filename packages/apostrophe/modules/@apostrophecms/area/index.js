@@ -840,6 +840,7 @@ module.exports = {
       getBrowserData(req) {
         const widgets = {};
         const widgetEditors = {};
+        const widgetStylesEditors = {};
         const widgetManagers = {};
         const widgetIsContextual = {};
         const widgetPreview = {};
@@ -850,8 +851,9 @@ module.exports = {
         _.each(self.widgetManagers, function (manager, name) {
           const browserData = manager.getBrowserData(req);
 
-          widgets[name] = (browserData && browserData.components && browserData.components.widget) || 'AposWidget';
-          widgetEditors[name] = (browserData && browserData.components && browserData.components.widgetEditor) || 'AposWidgetEditor';
+          widgets[name] = browserData?.components?.widget || 'AposWidget';
+          widgetEditors[name] = browserData?.components?.widgetEditor || 'AposWidgetEditor';
+          widgetStylesEditors[name] = browserData?.components?.widgetStylesEditor || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
           widgetPreview[name] = manager.options.preview;
@@ -864,7 +866,8 @@ module.exports = {
           components: {
             editor: 'AposAreaEditor',
             widgets,
-            widgetEditors
+            widgetEditors,
+            widgetStylesEditors
           },
           widgetIsContextual,
           widgetHasPlaceholder,
