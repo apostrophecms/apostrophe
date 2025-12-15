@@ -87,10 +87,6 @@ const FILTERS = {
 function renderGlobalStyles(schema, doc, {
   checkIfConditionsFn
 } = {}) {
-  const storage = {
-    classes: new Set(),
-    styles: new Map()
-  };
   const withConditions = filterConditionalFields(
     klona(schema),
     doc,
@@ -98,6 +94,11 @@ function renderGlobalStyles(schema, doc, {
       checkFn: checkIfConditionsFn
     }
   );
+  const storage = {
+    classes: new Set(),
+    styles: new Map(),
+    conditions: withConditions.conditions
+  };
 
   for (const field of withConditions.schema) {
     const filter = FILTERS[field.type] || FILTERS._;
@@ -136,11 +137,6 @@ function renderScopedStyles(schema, doc, {
   checkIfConditionsFn,
   subset = null
 } = {}) {
-  const storage = {
-    classes: new Set(),
-    styles: new Map(),
-    inlineVotes: new Set()
-  };
   const withConditions = filterConditionalFields(
     klona(schema),
     doc,
@@ -149,6 +145,12 @@ function renderScopedStyles(schema, doc, {
       subset
     }
   );
+  const storage = {
+    classes: new Set(),
+    styles: new Map(),
+    inlineVotes: new Set(),
+    conditions: withConditions.conditions
+  };
 
   for (const field of withConditions.schema) {
     const filter = FILTERS[field.type] || FILTERS._;
@@ -510,11 +512,19 @@ function extract(normalized, storage) {
       } else {
         rule = `${property}: ${normalized.value}${normalized.unit}`;
         if (normalized.valueTemplate) {
-          const regex = /%VALUE%/gi;
-          const value = normalized.valueTemplate.replace(
-            regex,
-            normalized.value + normalized.unit
+          const value = interpolate(
+            normalized.valueTemplate,
+            normalized.value,
+            {
+              unit: normalized.unit,
+              subfields: normalized.raw.schema,
+              conditions: storage.conditions,
+              fieldName: normalized.raw.name
+            }
           );
+          if (!value) {
+            return;
+          }
           rule = `${property}: ${value}`;
         }
       }
@@ -539,9 +549,134 @@ function extract(normalized, storage) {
  * @param {RuntimeStorage} storage
  */
 function extractObject(normalized, storage) {
+  if (normalized.valueTemplate) {
+    extract(normalized, storage);
+  }
   normalized.subfields.forEach(subfield => {
     extract(subfield, storage);
   });
+}
+
+/**
+ * Interpolate values into a template string.
+ * Simple mode replaces %VALUE% with primitive values. The mode is determined
+ * by the absence of subfields in options.
+ * Advanced mode replaces %key% placeholders with corresponding values from
+ * the value object. Keys can be simple (e.g., %width%) or dotted for accessing
+ * nested object values (e.g., %box.top%).
+ *
+ * Interpolate will return an empty string if:
+ * - In simple mode, the value is not a primitive.
+ * - In advanced mode, any referenced key does not exist in the value object.
+ * - In advanced mode with subfields, any referenced key corresponds to a
+ *  subfield that is disabled by conditions.
+ * - In advanced mode with subfields, any referenced key does not match
+ * a defined subfield.
+ *
+ * @param {string} template - Template string with placeholders
+ * @param {any} value - Primitive value or object with key-value pairs
+ * @param {Object} options - Interpolation options
+ * @param {string} [options.unit=''] - Unit to append to value (simple mode only)
+ * @param {SchemaField[]} [options.subfields] - Schema for subfield definitions
+ * @param {Object} [options.conditions] - Conditions map from filterConditionalFields
+ * @param {string} [options.fieldName] - Parent field name for condition key lookup
+ * @returns {string} Interpolated string, or empty string if required keys are missing
+ */
+function interpolate(template, value, {
+  unit = '', subfields, conditions, fieldName
+} = {}) {
+  // Not interested in null/undefined values
+  if (value == null) {
+    return '';
+  }
+  if (!Array.isArray(subfields)) {
+    // Simple mode for primitive values: replace %VALUE% placeholder
+    if (typeof value !== 'object') {
+      return template.replace(/%VALUE%/gi, String(value ?? '') + unit);
+    }
+
+    // Arrays are not supported as input values, so we ignore that check.
+    // Object value mode without subfields: replace %key% placeholders
+    // This handles values like {top, right, bottom, left}
+    return template.replace(/%([^%]+)%/g, (_, key) => {
+      if (key.toUpperCase() === 'VALUE') {
+        return '';
+      }
+      const keyValue = value[key];
+      return String(keyValue ?? '') + unit;
+    });
+  }
+
+  if (!subfields.length) {
+    return '';
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return '';
+  }
+
+  const subfieldsByName = new Map(subfields.map(field => [ field.name, field ]));
+  const keyPattern = /%([^%]+)%/g;
+  const referencedKeys = [];
+  let match;
+  while ((match = keyPattern.exec(template)) !== null) {
+    referencedKeys.push(match[1]);
+  }
+
+  // If any referenced key is disabled by conditions, return empty
+  for (const key of referencedKeys) {
+    const subfieldName = key.includes('.') ? key.split('.')[0] : key;
+    const conditionKey = fieldName ? `${fieldName}.${subfieldName}` : subfieldName;
+    if (conditions?.[conditionKey] === false) {
+      return '';
+    }
+  }
+
+  let replaceFailed = false;
+  const result = template
+    .replace(/%([^%]+)%/g, (_, key) => {
+      // Handle dotted keys for nested object values (e.g., %box.top%)
+      // The first part must match a subfield name.
+      if (key.includes('.')) {
+        const [ subfieldName, valueKey ] = key.split('.');
+        const subfield = subfieldsByName.get(subfieldName);
+        if (!subfield) {
+          replaceFailed = true;
+          return '';
+        }
+        const nestedValue = value[subfieldName];
+        if (typeof nestedValue !== 'object' ||
+          nestedValue == null ||
+          nestedValue[valueKey] == null
+        ) {
+          replaceFailed = true;
+          return '';
+        }
+        const subfieldUnit = subfield.unit || '';
+        return String(nestedValue[valueKey] ?? '') + subfieldUnit;
+      }
+
+      // Simple key - must match a subfield (e.g., %top%)
+      const subfield = subfieldsByName.get(key);
+      if (!subfield || value[key] == null) {
+        replaceFailed = true;
+        return '';
+      }
+      const subfieldValue = value[key];
+      const subfieldUnit = subfield.unit || '';
+
+      if (subfield.valueTemplate) {
+        return interpolate(subfield.valueTemplate, subfieldValue, {
+          unit: subfieldUnit,
+          conditions
+        });
+      }
+
+      return String(subfieldValue) + subfieldUnit;
+    })
+    .trim();
+
+  return replaceFailed ? '' : result;
 }
 
 /**
