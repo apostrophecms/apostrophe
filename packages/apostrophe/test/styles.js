@@ -798,6 +798,7 @@ describe('Styles', function () {
 
   describe('Object styles', function () {
     let apos;
+
     // A multi-field as selector
     const styleSelectorConfig = (options) => ({
       border: {
@@ -2410,6 +2411,214 @@ describe('Styles', function () {
           'should include inline style'
         );
       });
+    });
+  });
+
+  describe('Nunjucks helpers (stylesWrapper: false)', function () {
+    let apos;
+    let page;
+    let jar;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          // A page that uses the test-style-widget
+          'test-style-page': {},
+          'test-style-widget': {
+            options: {
+              stylesWrapper: false
+            },
+            styles: {
+              add: {
+                // Produces CSS output
+                borderColor: {
+                  type: 'color',
+                  property: 'border-color',
+                  selector: '.border'
+                },
+                // Produces inline output (no selector)
+                backgroundColor: {
+                  type: 'color',
+                  property: 'background-color'
+                },
+                // Produces class output
+                alignment: {
+                  type: 'select',
+                  class: true,
+                  choices: [
+                    {
+                      label: 'None',
+                      value: ''
+                    },
+                    {
+                      label: 'Left',
+                      value: 'align-left'
+                    },
+                    {
+                      label: 'Center',
+                      value: 'align-center'
+                    }
+                  ],
+                  def: ''
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Add a test page to work with
+      const req = apos.task.getReq();
+      const input = {
+        slug: '/test-styles',
+        type: 'test-style-page',
+        title: 'Test Styles Page',
+        metaType: 'doc'
+      };
+      const instance = apos.util.getManagerOf(input).newInstance();
+      page = await apos.doc.insert(req, {
+        ...instance,
+        ...input
+      });
+      assert.equal(page.aposMode, 'published');
+      assert.equal(page.slug, input.slug);
+
+      jar = apos.http.jar();
+    });
+
+    after(async function () {
+      return t.destroy(apos);
+    });
+
+    it('should render styles helpers correctly in widget template (css)', async function () {
+      const updated = await apos.doc.update(apos.task.getReq(), {
+        ...page,
+        body: {
+          ...page.body,
+          items: [
+            {
+              type: 'test-style',
+              borderColor: 'red',
+              backgroundColor: 'blue',
+              alignment: 'align-left',
+              metaType: 'widget'
+            }
+          ]
+        }
+      });
+      const widget = updated.body.items[0];
+      const res = await apos.http.get('/test-styles', { jar });
+      const styleIdMatch = res.match(/data-apos-widget-style-for="([^"]+)"/);
+      const styleId = styleIdMatch ? styleIdMatch[1] : null;
+
+      const actual = {
+        hasStyleId: !!styleId,
+        hasWidgetId: !!widget._id,
+        hasStyleElement: res
+          .includes(`<style data-apos-widget-style-for="${styleId}">`),
+        hasBorderCss: res
+          .includes(`#${styleId} .border{border-color: red;}`),
+        hasBackgroundColorCss: res
+          .includes(`#${styleId}{background-color: blue;}`),
+        hasWrapper: res
+          .includes(`<article id="${styleId}" data-apos-widget-style-wrapper-for="${widget._id}" class="align-left fancy-article">`),
+        closesWrapper: res
+          .includes('</article>')
+      };
+
+      assert.deepEqual(actual, {
+        hasStyleId: true,
+        hasWidgetId: true,
+        hasStyleElement: true,
+        hasBorderCss: true,
+        hasBackgroundColorCss: true,
+        hasWrapper: true,
+        closesWrapper: true
+      }, 'Nunjucks helpers should render correctly in widget template');
+    });
+
+    it('should render styles helpers correctly in widget template (no styles)', async function () {
+      const updated = await apos.doc.update(apos.task.getReq(), {
+        ...page,
+        body: {
+          ...page.body,
+          items: [
+            {
+              type: 'test-style',
+              metaType: 'widget'
+            }
+          ]
+        }
+      });
+      const widget = updated.body.items[0];
+      const res = await apos.http.get('/test-styles', { jar });
+      const styleIdMatch = res.match(/id="([^"]+)"/);
+      const styleId = styleIdMatch ? styleIdMatch[1] : null;
+
+      const actual = {
+        hasStyleId: !!styleId,
+        hasWidgetId: !!widget._id,
+        hasStyleElement: res
+          .includes(`<style data-apos-widget-style-for="${styleId}">`),
+        hasWrapper: res
+          .includes(`<article id="${styleId}" data-apos-widget-style-wrapper-for="${widget._id}" class="fancy-article">`),
+        closesWrapper: res
+          .includes('</article>')
+      };
+
+      assert.deepEqual(actual, {
+        hasStyleId: true,
+        hasWidgetId: true,
+        hasStyleElement: false,
+        hasWrapper: true,
+        closesWrapper: true
+      }, 'Nunjucks helpers should render correctly in widget template with no styles');
+    });
+
+    it('should render styles helpers correctly in widget template (inline)', async function () {
+      const updated = await apos.doc.update(apos.task.getReq(), {
+        ...page,
+        body: {
+          ...page.body,
+          items: [
+            {
+              type: 'test-style',
+              backgroundColor: 'blue',
+              metaType: 'widget'
+            }
+          ]
+        }
+      });
+      const widget = updated.body.items[0];
+      const res = await apos.http.get('/test-styles', { jar });
+      const styleIdMatch = res.match(/id="([^"]+)"/);
+      const styleId = styleIdMatch ? styleIdMatch[1] : null;
+
+      const actual = {
+        hasStyleId: !!styleId,
+        hasWidgetId: !!widget._id,
+        hasStyleElement: res
+          .includes(`<style data-apos-widget-style-for="${styleId}">`),
+        hasBackgroundColorCss: res
+          .includes(`#${styleId}{background-color: blue;}`),
+        hasBackgroundColorInline: res
+          .includes('style="background-color: blue;"'),
+        hasWrapper: res
+          .includes(`<article id="${styleId}" data-apos-widget-style-wrapper-for="${widget._id}" class="fancy-article" style="background-color: blue;">`),
+        closesWrapper: res
+          .includes('</article>')
+      };
+
+      assert.deepEqual(actual, {
+        hasStyleId: true,
+        hasWidgetId: true,
+        hasStyleElement: false,
+        hasBackgroundColorCss: false,
+        hasBackgroundColorInline: true,
+        hasWrapper: true,
+        closesWrapper: true
+      }, 'Nunjucks helpers should render correctly in widget template with inline styles');
     });
   });
 });
