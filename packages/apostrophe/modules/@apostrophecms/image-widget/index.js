@@ -182,6 +182,15 @@ module.exports = {
   },
   extendMethods(self) {
     return {
+      async load(_super, req, widgets) {
+        await _super(req, widgets);
+
+        for (const widget of widgets) {
+          if (widget.aposPlaceholder === false && Array.isArray(widget._image) && widget._image.length === 0) {
+            widget.aposPlaceholder = true;
+          }
+        }
+      },
       getBrowserData(_super, req) {
         return {
           ..._super(req),
