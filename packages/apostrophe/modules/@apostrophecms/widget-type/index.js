@@ -156,7 +156,6 @@
 // widget for an example. This option works only for breadcrumb operations.
 
 const _ = require('lodash');
-const { createId } = require('@paralleldrive/cuid2');
 
 module.exports = {
   cascades: [ 'fields', 'styles', 'widgetOperations' ],
@@ -405,7 +404,7 @@ module.exports = {
       renderStyles(widget, markup) {
         const {
           css, classes, inline
-        } = self.getStylesheet(widget, createId());
+        } = self.getStylesheet(widget, self.apos.util.generateId());
 
         console.log({
           css,
