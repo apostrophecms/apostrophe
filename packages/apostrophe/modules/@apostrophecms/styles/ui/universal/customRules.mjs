@@ -14,13 +14,18 @@ export default {
       top, right, bottom, left
     } = value;
     const vals = [ top, right, bottom, left ];
+    field.important = false;
 
     if (vals.every(v => v == null)) {
       rule = '';
     };
 
     if (vals.every(v => v === top && v != null)) {
-      rule = `${property}: ${top}${unit}${important ? ' !important' : ''};`;
+      rule = `${property}: ${top}${unit}${important ? ' !important' : ''}`;
+      return {
+        field,
+        rule
+      };
     }
 
     const sides = {
@@ -38,7 +43,6 @@ export default {
       rule = parts.join(';');
     }
 
-    field.important = false;
     return {
       field,
       rule

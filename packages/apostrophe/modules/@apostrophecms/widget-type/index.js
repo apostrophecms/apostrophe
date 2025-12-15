@@ -321,10 +321,9 @@ module.exports = {
         };
       },
       getStylesheet(doc, styleId) {
-        // FIXME: support inline styles for widgets when the rendering
-        // system is ready.
         return self.apos.styles.getWidgetStylesheet(self.schema, doc, {
-          rootSelector: `#${styleId}`
+          rootSelector: `#${styleId}`,
+          subset: self.fieldsGroups.styles?.fields || []
         });
       },
       composeSchema() {
