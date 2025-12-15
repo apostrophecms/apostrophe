@@ -825,7 +825,7 @@ describe('Styles', function () {
                 active: true
               },
               unit: 'px',
-              property: 'border-width'
+              property: 'border-%key%-width'
             },
             radius: {
               label: 'apostrophe:styleRadius',
@@ -891,7 +891,7 @@ describe('Styles', function () {
                 left: 1
               },
               unit: 'px',
-              property: 'border-width'
+              property: 'border-%key%-width'
             },
             radius: {
               label: 'apostrophe:styleRadius',
@@ -1647,7 +1647,7 @@ describe('Styles', function () {
                 '<parentActive': true
               },
               unit: 'px',
-              property: 'border-width'
+              property: 'border-%key%-width'
             },
             color: {
               type: 'color',
