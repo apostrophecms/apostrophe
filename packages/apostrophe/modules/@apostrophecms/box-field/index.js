@@ -133,7 +133,11 @@ module.exports = {
         };
 
         if (vals.every(v => v === top && v != null)) {
-          return `${property}: ${top}${unit};`;
+          const normalizedProperty = property
+            .replaceAll('-%key%', '')
+            .replaceAll('%key%-', '');
+
+          return `${normalizedProperty}: ${top}${unit};`;
         }
 
         const sides = {
@@ -149,11 +153,13 @@ module.exports = {
             continue;
           }
 
-          if (property.includes('%key%')) {
-            parts.push(`${property.replace('%key%', side)}: ${val}${unit};`);
-          } else {
-            parts.push(`${property}-${side}: ${val}${unit};`);
-          }
+          const normalizedProperty = property.includes('%key%')
+            ? property
+              .replaceAll('-%key%', `-${side}`)
+              .replaceAll('%key%-', `${side}-`)
+            : `property-${side}`;
+
+          parts.push(`${normalizedProperty}: ${val}${unit}`);
         }
 
         return parts.join(' ');
