@@ -36,10 +36,11 @@ jobs:
       # BASE_SHA narrows the diff to the merge-base (PR) or latest push SHA for branch builds.
       BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before || '' }}
       # FORCE_ALL flips to true when the workflow_dispatch input is toggled so every package runs.
-      FORCE_ALL: ${{ (github.event_name == 'schedule' || inputs.run_all == 'true') && 'true' || 'false' }}
+      FORCE_ALL: ${{ (github.event_name == 'schedule' || inputs.run_all == true || inputs.run_all == 'true') && 'true' || 'false' }}
     outputs:
       matrix: ${{ steps.impact.outputs.matrix }}
       runtime-matrix: ${{ steps.runtime-matrix.outputs.runtime_matrix }}
+      node-versions: ${{ steps.node-versions.outputs.node_versions }}
       has-packages: ${{ steps.impact.outputs.has_packages }}
     steps:
       - name: Git checkout
@@ -70,6 +71,10 @@ jobs:
           matrix_json=${matrix_json//$'\n'/'%0A'}
           matrix_json=${matrix_json//$'\r'/'%0D'}
           echo "runtime_matrix=$matrix_json" >> "$GITHUB_OUTPUT"
+
+      - name: Export node versions
+        id: node-versions
+        run: echo "node_versions=${{ env.NODE_VERSIONS_JSON }}" >> "$GITHUB_OUTPUT"
 
   shared-runtime:
     name: Shared runtime
@@ -139,16 +144,17 @@ jobs:
           docker pull "redis:${{ env.REDIS_VERSION }}"
           docker save "redis:${{ env.REDIS_VERSION }}" -o ".github/docker-cache/redis-${{ env.REDIS_VERSION }}.tar"
 
-  package-tests:
-    name: ${{ format('{0} ({1}, {2})', matrix.package, matrix.nodeVersion, matrix.needsMongo && matrix.mongodbVersion || 'n/a') }}
+  warm-sharp-cache:
+    name: Warm sharp/libvips cache (Node ${{ matrix.nodeVersion }})
+    runs-on: ubuntu-latest
     needs:
       - setup
       - shared-runtime
     if: needs.setup.outputs.has-packages == 'true'
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup.outputs['runtime-matrix']) }}
+      matrix:
+        nodeVersion: ${{ fromJson(needs.setup.outputs['node-versions']) }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v5
@@ -179,9 +185,83 @@ jobs:
           ssh-private-key: |
             ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY }}
 
+      - name: Cache sharp/libvips downloads
+        id: sharp-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm/_libvips
+          key: sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-
+            sharp-libvips-${{ runner.os }}-
+
+      - name: Warm cache by installing dependencies once
+        run: pnpm install --frozen-lockfile
+
+      - name: Debug sharp/libvips cache contents
+        if: always()
+        run: |
+          echo "-- ~/.npm/_libvips"
+          ls -alh ~/.npm/_libvips || true
+          du -sh ~/.npm/_libvips || true
+
+  package-tests:
+    name: ${{ format('{0} ({1}, {2})', matrix.package, matrix.nodeVersion, matrix.needsMongo && matrix.mongodbVersion || 'n/a') }}
+    needs:
+      - setup
+      - shared-runtime
+      - warm-sharp-cache
+    if: needs.setup.outputs.has-packages == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs['runtime-matrix']) }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download pnpm lockfile
+        uses: actions/download-artifact@v4
+        with:
+          name: pnpm-lock
+          path: .
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.0
+
+      - name: Use Node.js ${{ matrix.nodeVersion }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.nodeVersion }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Cache sharp/libvips downloads
+        id: sharp-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm/_libvips
+          key: sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-
+            sharp-libvips-${{ runner.os }}-
+
+      - name: Grant private repositories access
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY }}
+
       - name: Restore docker image cache
         id: docker-cache-restore
         uses: actions/cache/restore@v4
+        if: matrix.needsMongo || matrix.needsRedis
         with:
           path: .github/docker-cache
           key: ${{ needs.shared-runtime.outputs.docker-cache-key }}
