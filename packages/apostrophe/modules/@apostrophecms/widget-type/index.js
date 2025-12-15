@@ -411,12 +411,24 @@ module.exports = {
           });
         }
 
-        return self.render(req, self.template, {
+        const markup = await self.render(req, self.template, {
           widget: effectiveWidget,
           options,
           manager: self,
           contextOptions: _with
         });
+
+        const hasStyles = Object.keys(self.styles || {}).length > 0;
+
+        if (hasStyles && self.options.stylesWrapper !== false) {
+          const styles = self.apos.styles.prepareWidgetStyles(widget);
+          const styleTag = self.apos.styles.getWidgetElements(styles);
+          const wrapperAttrs = self.apos.styles.getWidgetAttributes(styles);
+
+          return `${styleTag}<div${wrapperAttrs ? ' ' + wrapperAttrs : ''}>${markup}</div>`;
+        }
+
+        return markup;
       },
 
       getWidgetsBundles(widgetType) {
