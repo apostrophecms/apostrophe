@@ -1,0 +1,5 @@
+{%- set styles = apos.styles.render(data.widget) -%}
+{{ apos.styles.elements(styles) }}
+<article {{ apos.styles.attributes(styles, { class: 'fancy-article' }) }}>
+  ...content...
+</article>

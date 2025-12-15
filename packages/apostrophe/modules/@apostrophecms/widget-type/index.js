@@ -320,8 +320,20 @@ module.exports = {
           ...self.fields
         };
       },
-      getStylesheet(doc, styleId) {
-        return self.apos.styles.getWidgetStylesheet(self.schema, doc, {
+      // Return rendered styles object for a given widget instance.
+      // This shouldn't be used directly, instead use the
+      // `apos.styles.prepareWidgetStyles(widgetData)` helper method or
+      // the corresponding Nunjucks helper `apos.styles.render(widget)`.
+      // The `styleId` parameter is required to scope the styles
+      // to the specific widget instance.
+      // The returned object:
+      // {
+      //   css: '...', // The complete stylesheet text
+      //   inline: '...', // The inline styles to add to the widget element
+      //   classes: '...' // The classes to add to the widget element
+      // }
+      getStylesheet(widget, styleId) {
+        return self.apos.styles.getWidgetStylesheet(self.schema, widget, {
           rootSelector: `#${styleId}`,
           subset: self.fieldsGroups.styles?.fields || []
         });
