@@ -390,9 +390,6 @@ module.exports = {
       // async, as are all functions that invoke a nunjucks render in
       // Apostrophe 3.x.
       async output(req, widget, options, _with) {
-        console.log('---');
-        console.log(widget.type);
-        console.log('---');
         req.widgetsBundles = {
           ...req.widgetsBundles || {},
           ...self.getWidgetsBundles(`${widget.type}-widget`)
@@ -414,10 +411,6 @@ module.exports = {
           });
         }
 
-        console.log('self.styles', self.styles);
-        console.log('self.apos.styles.presets', self.apos.styles.presets);
-        console.log('widget', widget);
-
         const markup = await self.render(req, self.template, {
           widget: effectiveWidget,
           options,
@@ -426,27 +419,14 @@ module.exports = {
         });
 
         if (self.styles && self.options.stylesWrapper !== false) {
-          return self.renderStyles(widget, markup);
+          const styles = self.apos.styles.prepareWidgetStyles(widget);
+          const styleTag = self.apos.styles.getWidgetElements(styles);
+          const wrapperAttrs = self.apos.styles.getWidgetAttributes(styles);
+
+          return `${styleTag}<div${wrapperAttrs ? ' ' + wrapperAttrs : ''}>${markup}</div>`;
         }
 
         return markup;
-      },
-
-      renderStyles(widget, markup) {
-        const {
-          css, classes, inline
-        } = self.getStylesheet(widget, self.apos.util.generateId());
-
-        console.log({
-          css,
-          classes,
-          inline
-        });
-
-        const output = `<style>${css}</style><div class="${classes.join(' ')}" style="${inline}">${markup}</div>`;
-        console.log('output', output);
-
-        return output;
       },
 
       getWidgetsBundles(widgetType) {
