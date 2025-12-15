@@ -37,11 +37,18 @@ export default {
     const parts = [];
 
     for (const [ side, val ] of Object.entries(sides)) {
-      if (val != null) {
+      if (val == null) {
+        continue;
+      }
+
+      if (property.includes('%key%')) {
+        parts.push(`${property.replace('%key%', side)}: ${val}${unit}${important ? ' !important' : ''}`);
+      } else {
         parts.push(`${property}-${side}: ${val}${unit}${important ? ' !important' : ''}`);
       }
-      rule = parts.join(';');
     }
+
+    rule = parts.join(';');
 
     return {
       field,
