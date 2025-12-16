@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*"
+    "eslint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.0.4",

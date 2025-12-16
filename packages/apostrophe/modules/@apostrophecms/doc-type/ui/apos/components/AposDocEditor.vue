@@ -552,14 +552,17 @@ export default {
           this.original = klona(docData);
           this.docFields.data = docData;
 
-          resetToSchema(
-            // Never allow changing the type of a page here
-            this.schema.filter(f => f.name !== 'type'),
-            this.docFields.data
-          );
+          resetToSchema(this.schema, this.docFields.data);
 
           function resetToSchema(schema, object) {
             for (const field of schema) {
+              // First-level check for parked fields of a parked page:
+              // Skip the following logic for fields marked as parked
+              const isPage = object.slug?.startsWith('/');
+              if (isPage && object.parked?.includes(field.name)) {
+                continue;
+              }
+
               if (field.type === 'array') {
                 for (const item of (object[field.name] || [])) {
                   resetToSchema(field.schema, item);
@@ -568,6 +571,15 @@ export default {
 
               if (field.type === 'object') {
                 resetToSchema(field.schema, object[field.name] || {});
+              }
+
+              if (
+                [ 'select', 'radio', 'checkboxes' ].includes(field.type) &&
+                  !field.required &&
+                  field.def === undefined &&
+                  (object[field.name] === undefined || object[field.name] === null)
+              ) {
+                continue;
               }
 
               // FIXME: field choices might be a string (dynamic choices)
