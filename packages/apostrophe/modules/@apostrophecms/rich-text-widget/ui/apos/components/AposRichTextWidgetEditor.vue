@@ -1,6 +1,8 @@
 <template>
   <div
     :aria-controls="`insert-menu-${modelValue._id}`"
+    :style="widgetStyles.inline"
+    :class="widgetStyles.classes"
     @keydown="handleUIKeydown"
   >
     <bubble-menu
@@ -147,7 +149,10 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
+import { isEqual } from 'lodash';
 
+import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import { klona } from 'klona';
 
 export default {
@@ -212,7 +217,12 @@ export default {
       suppressWidgetControls: false,
       hasSelection: false,
       insertMenuKey: null,
-      openedPopover: false
+      openedPopover: false,
+      widgetStyles: {
+        inline: '',
+        classes: [],
+        css: ''
+      }
     };
   },
   computed: {
@@ -329,6 +339,31 @@ export default {
     }
   },
   watch: {
+    modelValue(newVal) {
+      const [ modelValueStyles, docFieldsStyles ] = Object.entries(newVal)
+        .reduce((acc, [ fieldName, value ]) => {
+          const styleFields = this.moduleOptions.fieldsGroupStyle?.fields || [];
+          if (!styleFields.includes(fieldName)) {
+            return acc;
+          }
+          return [
+            {
+              ...acc[0],
+              [fieldName]: value
+            },
+            {
+              ...acc[1],
+              [fieldName]: this.docFields.data[fieldName]
+            }
+          ];
+        }, [ {}, {} ]);
+
+      if (isEqual(modelValueStyles, docFieldsStyles)) {
+        return;
+      }
+
+      this.getWidgetStyles(newVal);
+    },
     suppressWidgetControls(newVal) {
       if (newVal) {
         this.$emit('suppressWidgetControls');
@@ -352,6 +387,7 @@ export default {
   },
   mounted() {
     this.insertMenuKey = this.generateKey();
+    this.getWidgetStyles(this.docFields.data);
     this.instantiateEditor();
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
@@ -361,6 +397,19 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    getWidgetStyles(doc) {
+      const { schema, fieldsGroupStyle } = this.moduleOptions;
+      if (!schema || !fieldsGroupStyle) {
+        return;
+      }
+
+      this.widgetStyles = renderScopedStyles(schema, doc, {
+        // Needed to return inline styles, we pass a fake one
+        rootSelector: '#rich-text',
+        checkIfConditionsFn: checkIfConditions,
+        subset: fieldsGroupStyle.fields
+      });
+    },
     instantiateEditor() {
     // Cleanly namespace it so we don't conflict with other uses and instances
       const CustomPlaceholder = Placeholder.extend();
