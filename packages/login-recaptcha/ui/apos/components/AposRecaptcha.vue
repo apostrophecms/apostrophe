@@ -24,6 +24,13 @@ export default {
         : this.$emit('block');
     }
   },
+  mounted() {
+    if (!window.grecaptcha) {
+      this.addScript();
+    }
+
+    this.executeRecaptcha();
+  },
   methods: {
     addScript() {
       const scriptElem = document.createElement('script');

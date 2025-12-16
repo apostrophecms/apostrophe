@@ -3,6 +3,7 @@ const path = require('node:path');
 const util = require('node:util');
 const { glob } = require('../../lib/path');
 const { getBuildExtensions, fillExtraBundles } = require('./utils');
+const Concat = require('concat-with-sourcemaps');
 
 // Internal build interface.
 module.exports = (self) => {
@@ -207,6 +208,8 @@ module.exports = (self) => {
     // external build module build method (see `self.build()` and
     // `configureBuildModule()`).
     async computeBuildScenes(metadata, { write = true } = {}) {
+
+      const needSourceMap = self.options.productionSourceMaps;
       const bundlePath = self.getBundleRootDir();
       const buildRoot = self.getBuildRootDir();
 
@@ -266,26 +269,65 @@ module.exports = (self) => {
         if (!write) {
           return Object.keys(bundles);
         }
+
         for (const [ target, files ] of Object.entries(bundles)) {
+
+          let content = null;
+          let sourceMap = null;
+
           if (!files.length) {
             delete bundles[target];
             continue;
           }
-          const content = files.map(f =>
-            fs.existsSync(f)
-              ? `\n\n/** ${path.basename(f)} **/\n\n` + fs.readFileSync(f, 'utf-8')
-              : ''
-          )
-            .join('\n')
-            .trim();
+
+          const filePath = path.join(bundlePath, target);
+
+          const fileName = filePath.split('/').at(-1);
+          if (needSourceMap) {
+
+            // Concatenate in a way that preserves sitemaps
+            const concat = new Concat(true, bundlePath, '\n');
+            for (const file of files) {
+              const map = `${file}.map`;
+              // concat-with-sourcemaps does not strip old sourcemap comments for us
+              const source = stripSourceMapComment(fs.readFileSync(file, 'utf8'));
+              if (!fs.existsSync(map)) {
+                concat.add(
+                  file,
+                  source
+                );
+              } else {
+                concat.add(
+                  file,
+                  source,
+                  // Per docs for concat-source-maps: this one should be read as a string
+                  fs.readFileSync(map, 'utf8')
+                );
+              }
+            }
+            content = concat.content.toString('utf8') + `\n//# sourceMappingURL=${fileName}.map\n`;
+            sourceMap = concat.sourceMap;
+          } else {
+            content = files.map(f => fs.readFileSync(f, 'utf-8'))
+              .join('\n')
+              .trim();
+          }
           if (!content.trim().length) {
             delete bundles[target];
             continue;
           }
-          fs.outputFileSync(
-            path.join(bundlePath, target),
+          fs.writeFileSync(
+            filePath,
             content
           );
+          if (sourceMap != null) {
+            const dir = self.options.productionSourceMapsDir;
+            const sourceMapPath = dir ? `${dir}/${fileName}.map` : `${filePath}.map`;
+            fs.writeFileSync(
+              sourceMapPath,
+              sourceMap
+            );
+          }
         }
 
         return Object.keys(bundles);
@@ -550,3 +592,8 @@ module.exports = (self) => {
     }
   };
 };
+
+// Helper to remove existing sourceMappingURL comments
+function stripSourceMapComment(code) {
+  return code.replace(/\/\/[@#]\s*sourceMappingURL=.*$/gm, '');
+}
