@@ -1171,7 +1171,8 @@ module.exports = {
           linkSchema: self.linkSchema,
           imageStyles: self.options.imageStyles,
           color: self.options.color,
-          tableOptions: self.options.tableOptions
+          tableOptions: self.options.tableOptions,
+          fieldsGroupStyle: self.fieldsGroups.styles || []
         };
         return finalData;
       }
