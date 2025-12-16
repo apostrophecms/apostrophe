@@ -83,7 +83,6 @@ module.exports = {
     self.enableBrowserData();
     self.prependNodes('body', 'stylesheet');
     self.prependNodes('body', 'ui');
-    self.addMigrations();
 
     // Removes some automatically added top level groups and
     // provides a default group if none are provided.
