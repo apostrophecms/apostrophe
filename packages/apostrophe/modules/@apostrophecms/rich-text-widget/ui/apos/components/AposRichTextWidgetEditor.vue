@@ -1,5 +1,6 @@
 <template>
   <div
+    :id="widgetId"
     :aria-controls="`insert-menu-${modelValue._id}`"
     :style="widgetStyles.inline"
     :class="widgetStyles.classes"
@@ -151,6 +152,7 @@ import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
 import { isEqual } from 'lodash';
 
+import { createId } from '@paralleldrive/cuid2';
 import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import { klona } from 'klona';
@@ -201,6 +203,8 @@ export default {
   emits: [ 'update', 'suppressWidgetControls' ],
   data() {
     return {
+      widgetId: createId(),
+      styleTagId: createId(),
       editor: null,
       docFields: {
         data: {
@@ -394,6 +398,7 @@ export default {
 
   beforeUnmount() {
     this.editor.destroy();
+    this.removeStyleTag();
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
@@ -404,11 +409,35 @@ export default {
       }
 
       this.widgetStyles = renderScopedStyles(schema, doc, {
-        // Needed to return inline styles, we pass a fake one
-        rootSelector: '#rich-text',
+        rootSelector: `#${this.widgetId}`,
         checkIfConditionsFn: checkIfConditions,
         subset: fieldsGroupStyle.fields
       });
+
+      this.injectStyleTag();
+    },
+    injectStyleTag() {
+      const css = this.widgetStyles.css;
+      if (!css) {
+        this.removeStyleTag();
+        return;
+      }
+
+      const styleEl = document.getElementById(this.styleTagId);
+      if (!styleEl) {
+        const newStyle = document.createElement('style');
+        newStyle.id = this.styleTagId;
+        newStyle.textContent = css;
+        document.head.appendChild(newStyle);
+      } else {
+        styleEl.textContent = css;
+      }
+    },
+    removeStyleTag() {
+      const styleEl = document.getElementById(this.styleTagId);
+      if (styleEl) {
+        styleEl.remove();
+      }
     },
     instantiateEditor() {
     // Cleanly namespace it so we don't conflict with other uses and instances
@@ -857,7 +886,6 @@ function traverseNextNode(node) {
 </script>
 
 <style lang="scss" scoped>
-
   $z-index-button-background: 1;
   $z-index-button-foreground: 2;
 
