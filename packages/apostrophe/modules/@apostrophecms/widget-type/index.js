@@ -710,8 +710,15 @@ module.exports = {
         });
       },
 
-      annotateWidgetForExternalFront() {
-        return {};
+      annotateWidgetForExternalFront(widget) {
+        const styles = self.apos.styles.prepareWidgetStyles(widget);
+
+        return {
+          stylesElements: self.apos.styles.getWidgetElements(styles),
+
+          // TODO: how to pass additional attributes from astro templates?
+          stylesAttributes: self.apos.styles.getWidgetAttributes(styles)
+        };
       }
     };
   },
