@@ -109,7 +109,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { useAposTheme } from '../composables/AposTheme.js';
 import { useFocusTrap } from '../composables/AposFocusTrap.js';
 
-import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
 
 const props = defineProps({
   richTextMenu: {
@@ -551,14 +551,14 @@ function onKeyup(event) {
   const target = event.target;
 
   if (event.key === 'Tab' && target?.nodeName?.toLowerCase() !== 'textarea') {
-    onTab(event);
     event.stopImmediatePropagation();
+    onTab(event);
     return;
   }
 
   if (event.key === 'Enter' && target?.nodeName?.toLowerCase() !== 'textarea') {
-    emit('keyup-enter', event);
     event.stopImmediatePropagation();
+    emit('keyup-enter', event);
     return;
   }
 

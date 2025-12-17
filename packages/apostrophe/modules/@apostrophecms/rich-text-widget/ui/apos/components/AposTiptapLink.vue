@@ -55,9 +55,7 @@
 </template>
 
 <script>
-import { mapActions } from 'pinia';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
-import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposTiptapLink',
@@ -153,7 +151,6 @@ export default {
     await this.evaluateExternalConditions();
   },
   methods: {
-    ...mapActions(useModalStore, [ 'isOnTop' ]),
     removeLink() {
       this.docFields.data = {};
       this.editor.commands.unsetLink();
@@ -223,17 +220,9 @@ export default {
       this.close();
     },
     onKeyupEnter(event) {
-      console.log('AposTiptapLink', this.isOnTop(this.$el), this.name, event.key);
-      // if (!this.isOnTop(this.$el)) {
-      //   return;
-      // }
-      //
-      if (event.key === 'Enter') {
-        if (this.docFields.data.href || event.metaKey) {
-          this.save();
-          this.close();
-        }
-        event.preventDefault();
+      if (event.key === 'Enter' && (this.docFields.data.href || event.metaKey)) {
+        this.save();
+        this.close();
       }
     },
     async populateFields() {

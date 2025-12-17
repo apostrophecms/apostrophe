@@ -21,7 +21,6 @@
       @keyup.esc="onKeyup"
       @keyup.space="onKeyup"
       @keyup.enter="onKeyup"
-      @blur="unfocus"
     >
       <div
         v-if="!breadcrumbDisabled"
@@ -312,6 +311,7 @@ export default {
       mounted: false, // hack around needing DOM to be rendered for computed classes
       menuOpen: null,
       isSuppressingWidgetControls: false,
+      hasClickOutsideListener: false,
       classes: {
         show: 'apos-is-visible',
         open: 'apos-is-open',
@@ -477,9 +477,12 @@ export default {
   },
   watch: {
     isFocused(newVal) {
-      if (newVal === false) {
+      if (newVal) {
+        this.addClickOutsideListener();
+      } else {
         this.menuOpen = null;
         this.isSuppressingWidgetControls = false;
+        this.removeClickOutsideListener();
       }
       // Helps get scroll tracking unstuck on new/modified widgets
       this.scrollTicking = false;
@@ -702,8 +705,22 @@ export default {
     },
     unfocus(event) {
       if (!this.$el.contains(event.target)) {
+        this.removeClickOutsideListener();
+
         this.setFocusedWidget(null, null);
       }
+    },
+
+    addClickOutsideListener() {
+      if (!this.hasClickOutsideListener) {
+        document.addEventListener('click', this.unfocus);
+        this.hasClickOutsideListener = true;
+      }
+    },
+
+    removeClickOutsideListener() {
+      document.removeEventListener('click', this.unfocus);
+      this.hasClickOutsideListener = false;
     },
 
     onKeyup(event) {
