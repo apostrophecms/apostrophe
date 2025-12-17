@@ -185,6 +185,10 @@ module.exports = {
       async load(_super, req, widgets) {
         await _super(req, widgets);
 
+        if (!req.query || String(req.query.aposEdit) !== '1') {
+          return;
+        }
+
         for (const widget of widgets) {
           if (widget.aposPlaceholder === false && Array.isArray(widget._image) && widget._image.length === 0) {
             widget.aposPlaceholder = true;
