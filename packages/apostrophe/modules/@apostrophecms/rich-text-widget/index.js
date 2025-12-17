@@ -208,8 +208,7 @@ module.exports = {
     },
     defaultOptions: {},
     components: {
-      widgetEditor: 'AposRichTextWidgetEditor',
-      widgetStylesEditor: 'AposWidgetEditor'
+      widgetEditor: 'AposRichTextWidgetEditor'
     },
     editorTools: {
       nodes: {

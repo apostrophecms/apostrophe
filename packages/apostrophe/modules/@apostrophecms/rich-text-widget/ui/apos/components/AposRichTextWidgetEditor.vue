@@ -1,6 +1,9 @@
 <template>
   <div
+    :id="widgetId"
     :aria-controls="`insert-menu-${modelValue._id}`"
+    :style="widgetStyles.inline"
+    :class="widgetStyles.classes"
     @keydown="handleUIKeydown"
   >
     <bubble-menu
@@ -147,7 +150,11 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
+import { isEqual } from 'lodash';
 
+import { createId } from '@paralleldrive/cuid2';
+import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import { klona } from 'klona';
 
 export default {
@@ -196,6 +203,8 @@ export default {
   emits: [ 'update', 'suppressWidgetControls' ],
   data() {
     return {
+      widgetId: createId(),
+      styleTagId: createId(),
       editor: null,
       docFields: {
         data: {
@@ -212,7 +221,12 @@ export default {
       suppressWidgetControls: false,
       hasSelection: false,
       insertMenuKey: null,
-      openedPopover: false
+      openedPopover: false,
+      widgetStyles: {
+        inline: '',
+        classes: [],
+        css: ''
+      }
     };
   },
   computed: {
@@ -329,6 +343,31 @@ export default {
     }
   },
   watch: {
+    modelValue(newVal, oldVal) {
+      const [ newValStyles, oldValStyles ] = Object.entries(newVal)
+        .reduce((acc, [ fieldName, value ]) => {
+          const styleFields = this.moduleOptions.stylesFields || [];
+          if (!styleFields.includes(fieldName)) {
+            return acc;
+          }
+          return [
+            {
+              ...acc[0],
+              [fieldName]: value
+            },
+            {
+              ...acc[1],
+              [fieldName]: oldVal[fieldName]
+            }
+          ];
+        }, [ {}, {} ]);
+
+      if (isEqual(newValStyles, oldValStyles)) {
+        return;
+      }
+
+      this.getWidgetStyles(newVal);
+    },
     suppressWidgetControls(newVal) {
       if (newVal) {
         this.$emit('suppressWidgetControls');
@@ -352,95 +391,137 @@ export default {
   },
   mounted() {
     this.insertMenuKey = this.generateKey();
-    // Cleanly namespace it so we don't conflict with other uses and instances
-    const CustomPlaceholder = Placeholder.extend();
-    const extensions = [
-      BlockQuote,
-      Bold,
-      BulletList,
-      Code,
-      CodeBlock,
-      Dropcursor,
-      Gapcursor,
-      HardBreak,
-      History,
-      HorizontalRule,
-      Italic,
-      OrderedList,
-      Paragraph,
-      Strike,
-      Text,
-      TextAlign.configure({
-        types: [ 'heading', 'paragraph', 'defaultNode' ]
-      }),
-      Highlight,
-      Underline,
-      Superscript,
-      Subscript,
-      Table.configure(this.tableOptions),
-      TableCell,
-      TableHeader,
-      TableRow,
-      CustomPlaceholder.configure({
-        placeholder: () => {
-          const text = this.$t(this.placeholderText);
-          return text;
-        },
-        emptyNodeClass: 'apos-is-empty'
-      }),
-      FloatingMenu
-    ]
-      .filter(Boolean)
-      .concat(this.aposTiptapExtensions());
-
-    this.ensureExtensionsPriority(extensions);
-    this.editor = new Editor({
-      content: this.initialContent,
-      autofocus: this.autofocus,
-      onUpdate: this.editorUpdate,
-      extensions,
-
-      // The following events are triggered:
-      //  - before the placeholder configuration function, when loading the page
-      //  - after it, once the page is loaded and we interact with the editors
-      // To solve this issue, use another `this.showPlaceholder` variable
-      // and toggle it after the placeholder configuration function is called,
-      // thanks to nextTick.
-      // The proper thing would be to call nextTick inside the placeholder
-      // function so that it can rely on the focus state set by these event
-      // listeners, but the placeholder function is called synchronously...
-      // When not autofocusing, we want to show the "Empty" placeholder right away.
-      onCreate: () => {
-        this.showPlaceholder = true;
-      },
-      onFocus: () => {
-        this.isFocused = true;
-        this.$nextTick(() => {
-          this.showPlaceholder = false;
-        });
-      },
-      onBlur: () => {
-        this.isFocused = false;
-        this.$nextTick(() => {
-          this.showPlaceholder = true;
-        });
-      },
-      onSelectionUpdate: ({ editor }) => {
-        this.$nextTick(() => {
-          if (!editor.view.state.selection.empty) {
-            this.suppressWidgetControls = true;
-          }
-        });
-      }
-    });
+    this.getWidgetStyles(this.docFields.data);
+    this.instantiateEditor();
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
 
   beforeUnmount() {
     this.editor.destroy();
+    this.removeStyleTag();
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    getWidgetStyles(doc) {
+      const { schema, stylesFields } = this.moduleOptions;
+      if (!schema || !stylesFields) {
+        return;
+      }
+
+      this.widgetStyles = renderScopedStyles(schema, doc, {
+        rootSelector: `#${this.widgetId}`,
+        checkIfConditionsFn: checkIfConditions,
+        subset: stylesFields
+      });
+
+      this.injectStyleTag();
+    },
+    injectStyleTag() {
+      const css = this.widgetStyles.css;
+      if (!css) {
+        this.removeStyleTag();
+        return;
+      }
+
+      const styleEl = document.getElementById(this.styleTagId);
+      if (!styleEl) {
+        const newStyle = document.createElement('style');
+        newStyle.id = this.styleTagId;
+        newStyle.textContent = css;
+        document.head.appendChild(newStyle);
+      } else {
+        styleEl.textContent = css;
+      }
+    },
+    removeStyleTag() {
+      const styleEl = document.getElementById(this.styleTagId);
+      if (styleEl) {
+        styleEl.remove();
+      }
+    },
+    instantiateEditor() {
+    // Cleanly namespace it so we don't conflict with other uses and instances
+      const CustomPlaceholder = Placeholder.extend();
+      const extensions = [
+        BlockQuote,
+        Bold,
+        BulletList,
+        Code,
+        CodeBlock,
+        Dropcursor,
+        Gapcursor,
+        HardBreak,
+        History,
+        HorizontalRule,
+        Italic,
+        OrderedList,
+        Paragraph,
+        Strike,
+        Text,
+        TextAlign.configure({
+          types: [ 'heading', 'paragraph', 'defaultNode' ]
+        }),
+        Highlight,
+        Underline,
+        Superscript,
+        Subscript,
+        Table.configure(this.tableOptions),
+        TableCell,
+        TableHeader,
+        TableRow,
+        CustomPlaceholder.configure({
+          placeholder: () => {
+            const text = this.$t(this.placeholderText);
+            return text;
+          },
+          emptyNodeClass: 'apos-is-empty'
+        }),
+        FloatingMenu
+      ]
+        .filter(Boolean)
+        .concat(this.aposTiptapExtensions());
+
+      this.ensureExtensionsPriority(extensions);
+      this.editor = new Editor({
+        content: this.initialContent,
+        autofocus: this.autofocus,
+        onUpdate: this.editorUpdate,
+        extensions,
+
+        // The following events are triggered:
+        //  - before the placeholder configuration function, when loading the page
+        //  - after it, once the page is loaded and we interact with the editors
+        // To solve this issue, use another `this.showPlaceholder` variable
+        // and toggle it after the placeholder configuration function is called,
+        // thanks to nextTick.
+        // The proper thing would be to call nextTick inside the placeholder
+        // function so that it can rely on the focus state set by these event
+        // listeners, but the placeholder function is called synchronously...
+        // When not autofocusing, we want to show the "Empty" placeholder right away.
+        onCreate: () => {
+          this.showPlaceholder = true;
+        },
+        onFocus: () => {
+          this.isFocused = true;
+          this.$nextTick(() => {
+            this.showPlaceholder = false;
+          });
+        },
+        onBlur: () => {
+          this.isFocused = false;
+          this.$nextTick(() => {
+            this.showPlaceholder = true;
+          });
+        },
+        onSelectionUpdate: ({ editor }) => {
+          this.$nextTick(() => {
+            if (!editor.view.state.selection.empty) {
+              this.suppressWidgetControls = true;
+            }
+          });
+        }
+      });
+    },
     // Insert menu items just want to know what the original options were,
     // while "editorOptions" has morphed into a different, internal
     // representation
@@ -805,7 +886,6 @@ function traverseNextNode(node) {
 </script>
 
 <style lang="scss" scoped>
-
   $z-index-button-background: 1;
   $z-index-button-foreground: 2;
 
