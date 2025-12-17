@@ -480,7 +480,7 @@ module.exports = {
       //
       // Given an image attachment, return a string that can be used as the
       // value of a `srcset` HTML attribute.
-      srcset(attachment, cropFields) {
+      srcset(attachment, cropFields, context) {
         if (!self.apos.attachment.isSized(attachment)) {
           return '';
         }
@@ -500,7 +500,10 @@ module.exports = {
         }).map(function (imageSize) {
           const src = self.apos.attachment.url(attachment, {
             size: imageSize.name,
-            crop: cropFields
+            crop: cropFields,
+            _docId: context?._docId,
+            _widgetType: context?._widgetType,
+            _widgetId: context?._widgetId
           });
           const width = Math.min(imageSize.width, attachment.width);
           return src + ' ' + width + 'w';

@@ -33,8 +33,17 @@
 <img{% if className %} class="{{ className }}"{% endif %}
   {% if loadingType %} loading="{{ loadingType }}"{% endif %}
   data-apos-test="image-widget"
-  srcset="{{ apos.image.srcset(attachment) }}"
-  src="{{ apos.attachment.url(attachment, { size: size }) }}"
+  srcset="{{ apos.image.srcset(attachment, null, {
+    _docId: widget._docId,
+    _widgetType: widget.type,
+    _widgetId: widget._id
+  }) }}"
+  src="{{ apos.attachment.url(attachment, {
+    size: size,
+    _docId: widget._docId,
+    _widgetType: widget.type,
+    _widgetId: widget._id
+  }) }}"
   alt="{{ attachment._alt or '' }}"
   {% if dimensionAttrs %}
     {% if attachment.width %} width="{{ apos.attachment.getWidth(attachment) }}" {% endif %}

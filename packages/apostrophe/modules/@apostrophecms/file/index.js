@@ -94,7 +94,10 @@ module.exports = {
     return {
       addUrls(req, files) {
         _.each(files, function (file) {
-          file._url = self.apos.attachment.url(file.attachment);
+          file._url = self.apos.attachment.url(file.attachment, {
+            _docId: file._id,
+            _widgetType: '@apostrophecms/file'
+          });
         });
       }
     };

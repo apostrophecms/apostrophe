@@ -610,9 +610,28 @@ module.exports = {
       },
       // This method return a default icon url if an attachment is missing
       // to avoid template errors
-      getMissingAttachmentUrl() {
+      getMissingAttachmentUrl(context = {}) {
         const defaultIconUrl = '/modules/@apostrophecms/attachment/img/missing-icon.svg';
-        self.apos.util.warn('Template warning: Impossible to retrieve the attachment url since it is missing, a default icon has been set. Please fix this ASAP!');
+
+        // Build a more informative warning message with available context
+        const parts = ['Template warning: Missing attachment detected'];
+
+        if (context._docId) {
+          parts.push(`Document ID: ${context._docId}`);
+        }
+
+        if (context._widgetType) {
+          parts.push(`Widget Type: ${context._widgetType}`);
+        }
+
+        if (context._widgetId) {
+          parts.push(`Widget ID: ${context._widgetId}`);
+        }
+
+        parts.push('A default icon has been set. Please fix this ASAP!');
+
+        self.apos.util.warn(parts.join(' | '));
+
         // Convert static asset path to full URL, which matters when static
         // assets are in uploadfs
         return self.apos.asset.url(defaultIconUrl);
@@ -631,7 +650,13 @@ module.exports = {
       url(attachment, options) {
         options = options || {};
         if (!attachment) {
-          return self.getMissingAttachmentUrl();
+          // Pass context information if available
+          const context = {
+            _docId: options._docId,
+            _widgetType: options._widgetType,
+            _widgetId: options._widgetId
+          };
+          return self.getMissingAttachmentUrl(context);
         }
         let path = '/attachments/' + attachment._id + '-' + attachment.name;
         if (!options.uploadfsPath) {
