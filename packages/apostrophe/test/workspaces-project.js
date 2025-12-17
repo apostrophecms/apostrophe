@@ -16,24 +16,7 @@ describe('workspaces dependencies', function() {
     let apos;
 
     try {
-      apos = await t.create({
-        ...app,
-        modules: {
-          ...app.modules,
-          '@apostrophecms/styles': {
-            handlers(self) {
-              return {
-                'apostrophe:modulesRegistered': {
-                  warnDeprecatedPalette() {
-                    // Override to do nothing for test
-                  }
-                }
-              };
-            }
-          }
-        }
-      });
-
+      apos = await t.create(app);
       const { server } = apos.modules['@apostrophecms/express'];
       const { address, port } = server.address();
 
