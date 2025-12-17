@@ -267,7 +267,8 @@ export default {
       if (styleOnlyChanged) {
         const styles = renderScopedStyles(this.schema, value.data, {
           rootSelector: '__placeholder_root_selector__',
-          checkIfConditionsFn: checkIfConditions
+          checkIfConditionsFn: checkIfConditions,
+          subset: this.moduleOptions.stylesFields
         });
         this.applyPreviewStyles(styles, value.data);
 
