@@ -190,11 +190,13 @@ module.exports = (self, options) => {
     // Proxied as a style helper for use in widget templates that
     // opt out of automatic stylesWrapper.
     getWidgetElements(styles) {
-      const { css, styleId } = styles || {};
+      const {
+        css, styleId, widgetId
+      } = styles || {};
       if (!css || !styleId) {
         return '';
       }
-      return `<style data-apos-widget-style-for="${styleId}">\n` +
+      return `<style data-apos-widget-style-for="${widgetId}" data-apos-widget-style-id="${styleId}">\n` +
         css +
         '\n</style>';
     },
@@ -207,7 +209,7 @@ module.exports = (self, options) => {
     // are merged with the styles values, keeping classes unique.
     getWidgetAttributes(styles, additionalAttrs = {}) {
       const {
-        classes, inline, styleId, widgetId
+        classes = [], inline, styleId, widgetId
       } = styles || {};
       if (!styleId) {
         return '';
@@ -224,9 +226,12 @@ module.exports = (self, options) => {
       attrs.push(
         `data-apos-widget-style-wrapper-for="${widgetId || ''}"`
       );
+      attrs.push(
+        `data-apos-widget-style-classes="${classes.join(' ')}"`
+      );
 
       // Merge classes, keeping them unique
-      const classSet = new Set(classes || []);
+      const classSet = new Set(classes);
       if (additionalClasses) {
         const extraClasses = Array.isArray(additionalClasses)
           ? additionalClasses

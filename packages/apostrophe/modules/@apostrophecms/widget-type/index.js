@@ -742,6 +742,7 @@ module.exports = {
           contextual: self.options.contextual,
           placeholderClass: self.options.placeholderClass,
           className: self.options.className,
+          stylesFields: Object.keys(self.styles),
           components: self.options.components,
           width: self.options.width,
           origin: self.options.origin,
