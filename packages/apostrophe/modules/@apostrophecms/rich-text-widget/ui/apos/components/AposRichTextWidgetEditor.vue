@@ -339,8 +339,8 @@ export default {
     }
   },
   watch: {
-    modelValue(newVal) {
-      const [ modelValueStyles, docFieldsStyles ] = Object.entries(newVal)
+    modelValue(newVal, oldVal) {
+      const [ newValStyles, oldValStyles ] = Object.entries(newVal)
         .reduce((acc, [ fieldName, value ]) => {
           const styleFields = this.moduleOptions.fieldsGroupStyle?.fields || [];
           if (!styleFields.includes(fieldName)) {
@@ -353,12 +353,12 @@ export default {
             },
             {
               ...acc[1],
-              [fieldName]: this.docFields.data[fieldName]
+              [fieldName]: oldVal[fieldName]
             }
           ];
         }, [ {}, {} ]);
 
-      if (isEqual(modelValueStyles, docFieldsStyles)) {
+      if (isEqual(newValStyles, oldValStyles)) {
         return;
       }
 
