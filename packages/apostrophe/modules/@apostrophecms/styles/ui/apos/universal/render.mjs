@@ -159,11 +159,11 @@ function renderScopedStyles(schema, doc, {
     }
     const normalizer = NORMALIZERS[field.type] || NORMALIZERS._;
     const extractor = EXTRACTORS[field.type] || EXTRACTORS._;
-    const normalzied = normalizer(field, doc, {
+    const normalized = normalizer(field, doc, {
       rootSelector,
       storage
     });
-    extractor(normalzied, storage);
+    extractor(normalized, storage);
   }
 
   const isInline = [ ...storage.inlineVotes ].every(vote => vote === true);

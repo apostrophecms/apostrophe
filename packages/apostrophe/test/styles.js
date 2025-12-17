@@ -1,7 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 const universal = import(
-  '../modules/@apostrophecms/styles/ui/universal/render.mjs'
+  '../modules/@apostrophecms/styles/ui/apos/universal/render.mjs'
 );
 
 describe('Styles', function () {
