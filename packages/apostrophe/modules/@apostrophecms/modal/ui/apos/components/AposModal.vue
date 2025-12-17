@@ -269,7 +269,6 @@ onMounted(async () => {
 });
 
 function onKeyup(event) {
-  console.log('AposModal', store.isOnTop(modalEl.value), props.modalTitle, event.key);
   if (!store.isOnTop(modalEl.value)) {
     return;
   }

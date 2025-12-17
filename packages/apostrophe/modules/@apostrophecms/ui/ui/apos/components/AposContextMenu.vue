@@ -542,7 +542,6 @@ const ignoreInputTypes = [
  * @param {KeyboardEvent} event
  */
 function onKeyup(event) {
-  console.log('AposContextMenu', modalDepth.value, modalStore.getDepth(), event.key);
   if (modalDepth.value !== modalStore.getDepth() || !isOpen.value) {
     return;
   }

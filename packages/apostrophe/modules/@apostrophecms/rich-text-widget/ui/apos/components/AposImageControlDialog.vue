@@ -249,7 +249,6 @@ export default {
       return attrs;
     },
     onKeyup(event) {
-      console.log('AposImageControlDialog', this.isOnTop(this.$el), '??', event.key);
       if (!this.isOnTop(this.$el)) {
         return;
       }
