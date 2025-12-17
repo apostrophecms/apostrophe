@@ -87,7 +87,7 @@
 // from `../path-to/@apostrophecms/ui/apos/schema/universal/check-if-conditions.mjs`.
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
-import renderCss from '../../universal/render.mjs';
+import renderCss from 'Modules/@apostrophecms/styles/universal/render.mjs';
 import { klona } from 'klona';
 import postcss from 'postcss';
 import postcssPlugin from 'postcss-viewport-to-container-toggle';
