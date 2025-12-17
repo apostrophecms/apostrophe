@@ -5,7 +5,7 @@ module.exports = self => {
     'apostrophe:modulesRegistered': {
       warnDeprecatedPalette() {
         const paletteModule = self.apos.modules['@apostrophecms-pro/palette'];
-        if (!paletteModule?.tasks?.['migrate-to-styles']) {
+        if (paletteModule && !paletteModule?.tasks?.['migrate-to-styles']) {
           self.apos.util.warn(
             `
                        🎨
