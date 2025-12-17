@@ -346,7 +346,7 @@ export default {
     modelValue(newVal, oldVal) {
       const [ newValStyles, oldValStyles ] = Object.entries(newVal)
         .reduce((acc, [ fieldName, value ]) => {
-          const styleFields = this.moduleOptions.fieldsGroupStyle?.fields || [];
+          const styleFields = this.moduleOptions.stylesFields || [];
           if (!styleFields.includes(fieldName)) {
             return acc;
           }
@@ -403,15 +403,15 @@ export default {
   },
   methods: {
     getWidgetStyles(doc) {
-      const { schema, fieldsGroupStyle } = this.moduleOptions;
-      if (!schema || !fieldsGroupStyle) {
+      const { schema, stylesFields } = this.moduleOptions;
+      if (!schema || !stylesFields) {
         return;
       }
 
       this.widgetStyles = renderScopedStyles(schema, doc, {
         rootSelector: `#${this.widgetId}`,
         checkIfConditionsFn: checkIfConditions,
-        subset: fieldsGroupStyle.fields
+        subset: stylesFields
       });
 
       this.injectStyleTag();
