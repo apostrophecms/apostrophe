@@ -722,7 +722,8 @@ module.exports = {
       now() {
         return now();
       },
-      // Given a widget or doc, return the appropriate manager module.
+      // Given a widget or doc, return the appropriate manager module. If the manager
+      // cannot be determined for any reason, undefined is returned.
       getManagerOf(object) {
         if (object.metaType === 'doc') {
           return self.apos.doc.getManager(object.type);
@@ -733,7 +734,8 @@ module.exports = {
         } else if (object.metaType === 'object') {
           return self.apos.schema.getObjectManager(object.scopedObjectName);
         } else {
-          throw new Error(`Unsupported metaType in getManagerOf: ${object.metaType}`);
+          self.apos.util.error(`Unsupported metaType in getManagerOf: ${object.metaType}`);
+          return undefined;
         }
       },
       // fetch the value at the given path from the object or
