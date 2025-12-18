@@ -240,7 +240,7 @@ module.exports = {
           label: 'apostrophe:styles',
           icon: 'palette-icon',
           tooltip: 'apostrophe:stylesWidget',
-          nativeAction: 'editStyles'
+          nativeAction: 'edit-styles'
         },
         ...!options.contextual && {
           edit: {
