@@ -14,12 +14,10 @@
 
 ### Changes
 
-- Fixes an issue where the frontend was caching stale choices for `select`, `radio` and `checkboxes`fields that were saved but no longer valid (i.e removed from the schema).
 - Bumped dependency on `express-cache-on-demand` to guarantee installation of recent fixes for edge cases that could share a response between two locales of a single-site project, report errors without a process restart, and correctly handle `res.send('')` with an empty string.
 - Restores relative import paths inside Vite-generated entrypoints on *nix builds so dev server HMR works again, while keeping the Windows-specific absolute path workaround.
 - The `productionSourceMaps` option is now fully supported in both Vite and Webpack. Previously this feature did not work fully in Vite, and was not supported with Webpack. Enabling this feature completes the task of making sourcemaps fully available in the browser in production.
 - Relationship input's autocomplete list now positioned with floating-ui
-- When we reach the max in a widget area, the `Add Content` button is now disabled.
 
 ## 4.24.1 (2025-12-04)
 
