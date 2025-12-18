@@ -10,10 +10,9 @@ module.exports = self => {
             `
                        🎨
 ⚠️ @apostrophecms-pro/palette has been deprecated.
+Please install the latest version of @apostrophecms-pro/palette and run the following migration task:
 
-Please install the latest version of @apostrophecms-pro/palette and run the following migration task to move your existing palette configuration to
-@apostrophecms/styles: \`node app @apostrophecms-pro/palette:migrate-to-styles\`.
-Then remove @apostrophecms-pro/palette from your project to avoid conflicts.
+node app @apostrophecms-pro/palette:migrate-to-styles
                        🎨
 
 `
