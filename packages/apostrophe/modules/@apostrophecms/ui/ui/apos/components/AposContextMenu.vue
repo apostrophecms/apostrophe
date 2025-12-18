@@ -3,7 +3,6 @@
   <section
     ref="contextMenuRef"
     class="apos-context-menu"
-    @keydown.tab="onTab"
   >
     <slot name="prebutton" />
     <div
@@ -41,6 +40,10 @@
         :style="dropdownContentStyle"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
+        tabindex="0"
+        @keyup.tab="onKeyup"
+        @keyup.esc="onKeyup"
+        @keyup.enter="onKeyup"
       >
         <AposContextMenuDialog
           :menu-placement="placement"
@@ -71,8 +74,10 @@
             'apos-context-menu__dropdown-content--teleported',
             ...popoverClass
           ]"
-          @keydown.tab="onTab"
-          @keydown.esc="handleKeyboard"
+          tabindex="0"
+          @keyup.tab="onKeyup"
+          @keyup.esc="onKeyup"
+          @keyup.enter="onKeyup"
         >
           <AposContextMenuDialog
             :menu-placement="placement"
@@ -104,10 +109,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { useAposTheme } from '../composables/AposTheme.js';
 import { useFocusTrap } from '../composables/AposFocusTrap.js';
 
-import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-
-let modalStore = null;
-let modalDepth = null;
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
 
 const props = defineProps({
   richTextMenu: {
@@ -211,7 +213,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
+const emit = defineEmits([ 'open', 'close', 'item-clicked', 'keyup-enter' ]);
 const slots = useSlots();
 
 const isOpen = ref(false);
@@ -231,6 +233,9 @@ const iconToCenterTo = ref(null);
 const mOffset = getMenuOffset();
 const otherMenuOpened = ref(false);
 const positionUpdateScheduled = ref(false);
+const modalDepth = ref(null);
+
+const modalStore = useModalStore();
 
 const {
   onTab, runTrap, hasRunningTrap, resetTrap
@@ -308,8 +313,7 @@ const { themeClass } = useAposTheme();
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
   apos.bus.$on('close-context-menus', hideContextMenu);
-  modalStore = useModalStore();
-  modalDepth = modalStore.getDepth();
+  modalDepth.value = modalStore.getDepth();
 });
 
 onBeforeUnmount(() => {
@@ -328,7 +332,7 @@ function getMenuOffset() {
 }
 
 function hideWhenOtherOpen({ menuId }) {
-  if ((modalDepth === modalStore.getDepth()) && (props.menuId !== menuId)) {
+  if ((modalDepth.value === modalStore.getDepth()) && (props.menuId !== menuId)) {
     otherMenuOpened.value = true;
     hide();
   }
@@ -341,7 +345,7 @@ function setIconToCenterTo(el) {
 }
 
 function hideContextMenu(type) {
-  if (modalDepth !== modalStore.getDepth()) {
+  if (modalDepth.value !== modalStore.getDepth()) {
     return;
   }
   if (type === 'richText' && props.richTextMenu) {
@@ -378,7 +382,6 @@ async function hide(e) {
   if (props.teleportContent) {
     document.removeEventListener('scroll', positionHandler, true);
   }
-  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
   if (!otherMenuOpened.value && !props.trapFocus) {
     dropdown.value.querySelector('[tabindex]').focus();
   }
@@ -405,7 +408,6 @@ async function show(e) {
   } else {
     window.addEventListener('scroll', positionHandler);
   }
-  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
   // Focus trap is now handled by watcher
   if (!props.trapFocus) {
     dropdownContent.value.querySelector('[tabindex]')?.focus();
@@ -451,7 +453,7 @@ function buttonClicked(e) {
   }
   otherMenuOpened.value = false;
   apos.bus.$emit('context-menu-toggled', {
-    modalDepth,
+    modalDepth: modalDepth.value,
     menuId: props.menuId,
     isOpen: isOpen.value
   });
@@ -539,15 +541,25 @@ const ignoreInputTypes = [
 /**
  * @param {KeyboardEvent} event
  */
-function handleKeyboard(event) {
-  if (modalDepth !== modalStore.getDepth()) {
+function onKeyup(event) {
+  if (modalDepth.value !== modalStore.getDepth() || !isOpen.value) {
     return;
   }
-  if (event.key !== 'Escape' || !isOpen.value) {
-    return;
-  }
+
   /** @type {HTMLElement} */
   const target = event.target;
+
+  if (event.key === 'Tab' && target?.nodeName?.toLowerCase() !== 'textarea') {
+    event.stopImmediatePropagation();
+    onTab(event);
+    return;
+  }
+
+  if (event.key === 'Enter' && target?.nodeName?.toLowerCase() !== 'textarea') {
+    event.stopImmediatePropagation();
+    emit('keyup-enter', event);
+    return;
+  }
 
   // If inside of an input or textarea, don't close the dropdown
   // and don't allow other event listeners to close it either (e.g. modals)

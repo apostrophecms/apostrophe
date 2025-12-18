@@ -7,6 +7,7 @@
       :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
+      @keyup-enter="onKeyupEnter"
     >
       <div
         class="apos-popover apos-anchor-control__dialog"
@@ -54,7 +55,6 @@
 
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
-import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposTiptapAnchor',
@@ -140,7 +140,6 @@ export default {
     }
   },
   async mounted() {
-    this.modalStore = useModalStore();
     await this.evaluateExternalConditions();
   },
   methods: {
@@ -166,18 +165,10 @@ export default {
       this.editor.chain().focus().blur().run();
       this.close();
     },
-    keyboardHandler(e) {
-      if (e.key === 'Escape') {
-        // Don't confuse escape key handlers in other modal layers etc.
-        e.stopPropagation();
+    onKeyupEnter(event) {
+      if (event.key === 'Enter' && this.docFields.data.anchor) {
+        this.save();
         this.close();
-      }
-      if (e.key === 'Enter') {
-        if (this.docFields.data.anchor) {
-          this.save();
-          this.close();
-        }
-        e.preventDefault();
       }
     },
     async populateFields() {
@@ -197,10 +188,8 @@ export default {
       await this.populateFields();
       this.evaluateConditions();
       this.hasAnchorOnOpen = Boolean(this.docFields.data.anchor);
-      this.modalStore.onKeyDown(this.$el, this.keyboardHandler);
     },
     closePopover() {
-      this.modalStore.offKeyDown(this.keyboardHandler);
       this.$emit('close');
     }
   }

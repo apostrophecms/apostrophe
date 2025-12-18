@@ -2,6 +2,9 @@
   <div
     class="apos-popover apos-image-control__dialog"
     :class="{ 'apos-has-selection': hasSelection }"
+    tabindex="0"
+    @keyup.esc="onKeyup"
+    @keyup.enter="onKeyup"
   >
     <AposSchema
       :key="lastSelectionTime"
@@ -33,6 +36,7 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { klona } from 'klona';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -151,18 +155,12 @@ export default {
     }
   },
   async mounted() {
-    this.modalStore = useModalStore();
-    apos.adminBar.disableRefresh();
     this.populateFields();
     await this.evaluateExternalConditions();
     this.evaluateConditions();
-    this.modalStore.onKeyDown(this.$el, this.keyboardHandler);
-  },
-  beforeUnmount() {
-    apos.adminBar.enableRefresh();
-    this.modalStore.offKeyDown(this.keyboardHandler);
   },
   methods: {
+    ...mapActions(useModalStore, [ 'isOnTop' ]),
     close() {
       this.$emit('close');
     },
@@ -250,18 +248,21 @@ export default {
       }
       return attrs;
     },
-    keyboardHandler(e) {
-      if (e.key === 'Escape') {
-        // Don't confuse escape key handlers in other modal layers etc.
-        e.stopPropagation();
+    onKeyup(event) {
+      if (!this.isOnTop(this.$el)) {
+        return;
+      }
+
+      if (event.key === 'Escape') {
         this.close();
       }
-      if (e.key === 'Enter') {
-        if (this.docFields.data._image?.length || e.metaKey) {
+
+      if (event.key === 'Enter') {
+        if (this.docFields.data._image?.length || event.metaKey) {
           this.save();
           this.close();
         }
-        e.preventDefault();
+        event.preventDefault();
       }
     },
     async populateFields() {

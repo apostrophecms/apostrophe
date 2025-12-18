@@ -7,6 +7,7 @@
       :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
+      @keyup-enter="onKeyupEnter"
     >
       <div
         class="apos-link-control__dialog"
@@ -55,7 +56,6 @@
 
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
-import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposTiptapLink',
@@ -148,7 +148,6 @@ export default {
     }
   },
   async mounted() {
-    this.modalStore = useModalStore();
     await this.evaluateExternalConditions();
   },
   methods: {
@@ -220,18 +219,10 @@ export default {
       this.editor.chain().focus().blur().run();
       this.close();
     },
-    keyboardHandler(e) {
-      if (e.key === 'Escape') {
-        // Don't confuse escape key handlers in other modal layers etc.
-        e.stopPropagation();
+    onKeyupEnter(event) {
+      if (event.key === 'Enter' && (this.docFields.data.href || event.metaKey)) {
+        this.save();
         this.close();
-      }
-      if (e.key === 'Enter') {
-        if (this.docFields.data.href || e.metaKey) {
-          this.save();
-          this.close();
-        }
-        e.preventDefault();
       }
     },
     async populateFields() {
@@ -302,15 +293,11 @@ export default {
     },
     async openPopover() {
       this.hasLinkOnOpen = Boolean(this.attributes.href);
-      this.modalStore.onKeyDown(this.$el, this.keyboardHandler);
       await this.populateFields();
       this.evaluateConditions();
-      apos.adminBar.disableRefresh();
       this.$emit('open-popover');
     },
     closePopover() {
-      this.modalStore.offKeyDown(this.keyboardHandler);
-      apos.adminBar.enableRefresh();
       this.$emit('close');
     }
   }
