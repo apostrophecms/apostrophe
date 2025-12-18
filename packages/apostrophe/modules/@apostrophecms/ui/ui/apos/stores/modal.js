@@ -156,7 +156,7 @@ export const useModalStore = defineStore('modal', () => {
     // information about them. Locate the right record in the stack by
     // its modalEl
     const manager = stack.value.find(c => c.modalEl === component.$el);
-    const topManager = stack.value.toReversed().find(c => {
+    const topManager = stack.value.findLast(c => {
       return (c.componentName || '').endsWith('Manager');
     });
     return manager?.id === topManager?.id;
