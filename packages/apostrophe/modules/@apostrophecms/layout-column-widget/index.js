@@ -76,6 +76,12 @@ module.exports = {
           placement: 'breadcrumb',
           icon: 'delete-icon',
           tooltip: 'apostrophe:delete'
+        },
+        layoutColEditStyles: {
+          nativeAction: 'edit-styles',
+          placement: 'breadcrumb',
+          icon: 'palette-icon',
+          tooltip: 'apostrophe:stylesWidget'
         }
       }
     };
