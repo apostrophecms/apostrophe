@@ -2050,11 +2050,13 @@ describe('Styles', function () {
       const elements = apos.styles.getWidgetElements(styles);
 
       const elementsExpected = {
-        referencesStyleId: elements.includes(`data-apos-widget-style-for="${styles.styleId}"`),
+        referencesStyleId: elements.includes(`data-apos-widget-style-id="${styles.styleId}"`),
+        referencesWidgetId: elements.includes(`data-apos-widget-style-for="${styles.widgetId}"`),
         containsCss: elements.includes('border-color: red')
       };
       assert.deepEqual(elementsExpected, {
         referencesStyleId: true,
+        referencesWidgetId: true,
         containsCss: true
       }, 'getWidgetElements should render style element correctly');
 
@@ -2063,13 +2065,15 @@ describe('Styles', function () {
 
       const attributesExpected = {
         hasId: attributes.includes(`id="${styles.styleId}"`),
-        hasDataAttr: attributes.includes(`data-apos-widget-style-wrapper-for="${styles.widgetId}"`),
+        hasDataWrapperFor: attributes.includes(`data-apos-widget-style-wrapper-for="${styles.widgetId}"`),
+        hasDataWrapperClasses: attributes.includes(`data-apos-widget-style-classes="${styles.classes.join(' ')}"`),
         hasClasses: attributes.includes('class="align-left"'),
         hasNoInlineStyle: !attributes.includes('style=')
       };
       assert.deepEqual(attributesExpected, {
         hasId: true,
-        hasDataAttr: true,
+        hasDataWrapperFor: true,
+        hasDataWrapperClasses: true,
         hasClasses: true,
         hasNoInlineStyle: true
       }, 'getWidgetAttributes should render attributes correctly');
@@ -2243,12 +2247,15 @@ describe('Styles', function () {
       };
 
       const attributes = apos.styles.getWidgetAttributes(styles, additionalAttrs);
-
       assert(attributes.includes('class="align-left extra-class"'), 'should deduplicate classes');
+      assert(
+        attributes.includes('data-apos-widget-style-classes="align-left"'),
+        'should save classes reference correctly'
+      );
       assert.equal(
         (attributes.match(/align-left/g) || []).length,
-        1,
-        'align-left should appear only once'
+        2,
+        'align-left should appear twice'
       );
     });
 
@@ -2509,20 +2516,19 @@ describe('Styles', function () {
       });
       const widget = updated.body.items[0];
       const res = await apos.http.get('/test-styles', { jar });
-      const styleIdMatch = res.match(/data-apos-widget-style-for="([^"]+)"/);
+      const styleIdMatch = res.match(/data-apos-widget-style-id="([^"]+)"/);
       const styleId = styleIdMatch ? styleIdMatch[1] : null;
-
       const actual = {
         hasStyleId: !!styleId,
         hasWidgetId: !!widget._id,
         hasStyleElement: res
-          .includes(`<style data-apos-widget-style-for="${styleId}">`),
+          .includes(`<style data-apos-widget-style-for="${widget._id}" data-apos-widget-style-id="${styleId}">`),
         hasBorderCss: res
           .includes(`#${styleId} .border{border-color: red;}`),
         hasBackgroundColorCss: res
           .includes(`#${styleId}{background-color: blue;}`),
         hasWrapper: res
-          .includes(`<article id="${styleId}" data-apos-widget-style-wrapper-for="${widget._id}" class="align-left fancy-article">`),
+          .includes(`<article id="${styleId}" data-apos-widget-style-wrapper-for="${widget._id}" data-apos-widget-style-classes="align-left" class="align-left fancy-article">`),
         closesWrapper: res
           .includes('</article>')
       };
@@ -2562,7 +2568,7 @@ describe('Styles', function () {
         hasStyleElement: res
           .includes(`<style data-apos-widget-style-for="${styleId}">`),
         hasWrapper: res
-          .includes(`<article id="${styleId}" data-apos-widget-style-wrapper-for="${widget._id}" class="fancy-article">`),
+          .includes(`<article id="${styleId}" data-apos-widget-style-wrapper-for="${widget._id}" data-apos-widget-style-classes="" class="fancy-article">`),
         closesWrapper: res
           .includes('</article>')
       };
@@ -2605,7 +2611,7 @@ describe('Styles', function () {
         hasBackgroundColorInline: res
           .includes('style="background-color: blue;"'),
         hasWrapper: res
-          .includes(`<article id="${styleId}" data-apos-widget-style-wrapper-for="${widget._id}" class="fancy-article" style="background-color: blue;">`),
+          .includes(`<article id="${styleId}" data-apos-widget-style-wrapper-for="${widget._id}" data-apos-widget-style-classes="" class="fancy-article" style="background-color: blue;">`),
         closesWrapper: res
           .includes('</article>')
       };
