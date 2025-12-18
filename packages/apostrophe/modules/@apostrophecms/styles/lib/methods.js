@@ -85,7 +85,7 @@ module.exports = (self, options) => {
     stylesheet(req) {
       // Stylesheet node should be created only for logged in users.
       if (!req.data.global) {
-        return;
+        return [];
       }
 
       const nodes = [];
@@ -110,7 +110,7 @@ module.exports = (self, options) => {
         },
         body: [
           {
-            text: req.data.global.stylesStylesheet
+            text: req.data.global.stylesStylesheet || ''
           }
         ]
       });
@@ -276,6 +276,8 @@ module.exports = (self, options) => {
         self.setPreset(name, preset);
       }
     },
+    // FIXME: currently deprecated, a subject to removal.
+    // See extendMethods.js:composeSchema()
     ensureNoFields() {
       if (
         Object.keys(self.fields || {}).length &&
