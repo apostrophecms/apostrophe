@@ -276,7 +276,7 @@ export default {
       if (this.foreign) {
         return;
       }
-      const widget = this.next[index];
+      const widget = this.next.find(({ _id }) => _id === widgetId);
       if (!widget) {
         return;
       }

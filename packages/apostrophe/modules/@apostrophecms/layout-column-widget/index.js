@@ -59,7 +59,6 @@ module.exports = {
     return {
       add: {
         layoutColMove: {
-          // to fix
           nativeAction: 'move',
           placement: 'breadcrumb',
           icon: 'cursor-move-icon',
@@ -71,17 +70,17 @@ module.exports = {
           type: 'menu',
           modal: 'AposLayoutColControlDialog'
         },
+        layoutColEditStyles: {
+          action: 'apos-edit-styles',
+          placement: 'breadcrumb',
+          icon: 'palette-icon',
+          tooltip: 'apostrophe:stylesWidget'
+        },
         layoutColDelete: {
           action: 'apos-layout-col-delete',
           placement: 'breadcrumb',
           icon: 'delete-icon',
           tooltip: 'apostrophe:delete'
-        },
-        layoutColEditStyles: {
-          nativeAction: 'edit-styles',
-          placement: 'breadcrumb',
-          icon: 'palette-icon',
-          tooltip: 'apostrophe:stylesWidget'
         }
       }
     };
