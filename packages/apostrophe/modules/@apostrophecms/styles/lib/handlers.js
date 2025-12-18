@@ -12,9 +12,10 @@ module.exports = self => {
     afterSave: {
       async mirrorToGlobal(req, doc, options) {
         // mirror the stylesheet to @apostrophecms/global
-        const stylesheet = self.getStylesheet(doc).css;
+        const { css, classes } = self.getStylesheet(doc);
         const $set = {
-          stylesStylesheet: stylesheet,
+          stylesStylesheet: css,
+          stylesClasses: classes,
           stylesStylesheetVersion: createId()
         };
         return self.apos.doc.db.updateOne({
@@ -23,6 +24,15 @@ module.exports = self => {
         }, {
           $set
         });
+      }
+    },
+    '@apostrophecms/page:beforeSend': {
+      async addBodyClasses(req) {
+        const classes = req.data.global?.stylesClasses || [];
+        if (!classes.length) {
+          return;
+        }
+        self.apos.template.addBodyClass(req, classes.join(' '));
       }
     }
   };

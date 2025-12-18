@@ -125,7 +125,8 @@ export default {
         x: 0,
         y: 0
       },
-      slideBack: false
+      slideBack: false,
+      bodyAttr: 'data-apos-body-styles-classes'
     };
   },
   computed: {
@@ -180,6 +181,7 @@ export default {
   },
   async mounted() {
     await this.load();
+    this.prepareBodyClasses();
 
     apos.bus.$on('admin-menu-height-changed', this.setPosition);
     apos.bus.$on('admin-menu-click', async (itemName) => {
@@ -357,6 +359,17 @@ export default {
         console.error(error);
       }
     },
+    // Execute once, on mounting, to assign the current computed classes
+    // to a body data attribute for later processing.
+    prepareBodyClasses() {
+      if (Object.keys(this.docFields.data).length === 0) {
+        return;
+      }
+      const { classes } = renderCss(this.schema, this.docFields.data, {
+        checkIfConditionsFn: checkIfConditions
+      });
+      document.body.setAttribute(this.bodyAttr, classes.join(' '));
+    },
     fillGroupData(group) {
       const schema = this.getGroupSchema(group);
       return {
@@ -415,12 +428,15 @@ export default {
         this.ssrTimeout = null;
         this.ssrBusy = true;
         try {
-          const styleMarkup = await apos.http.post(`${this.moduleOptions.action}/render`, {
+          const { css, classes } = await apos.http.post(`${this.moduleOptions.action}/render`, {
             body: {
               data: this.docFields.data
             }
           });
-          await this.setStyleMarkup(styleMarkup);
+          await this.setStyleMarkup({
+            css,
+            classes
+          });
         } finally {
           this.ssrBusy = false;
           if (this.ssrPending) {
@@ -434,10 +450,11 @@ export default {
       await this.setStyleMarkup(
         renderCss(this.schema, this.docFields.data, {
           checkIfConditionsFn: checkIfConditions
-        }).css
+        })
       );
     },
-    async setStyleMarkup(markup) {
+    async setStyleMarkup({ css, classes }) {
+      this.setBodyClasses(classes);
       if (apos.adminBar.breakpointPreviewMode?.enable) {
         const processed = await postcss([
           postcssPlugin({
@@ -446,7 +463,7 @@ export default {
             transform: apos.adminBar.breakpointPreviewMode?.transform || null
           })
         ])
-          .process(markup, {
+          .process(css, {
             from: undefined,
             to: undefined
           });
@@ -454,7 +471,20 @@ export default {
         return;
       }
 
-      document.querySelector('#apos-styles-stylesheet').innerHTML = markup;
+      document.querySelector('#apos-styles-stylesheet').innerHTML = css;
+    },
+    setBodyClasses(classes) {
+      const previousClasses = document.body
+        .getAttribute(this.bodyAttr)
+        ?.split(' ')
+        .filter((cls) => cls.length) || [];
+      if (previousClasses.length) {
+        document.body.classList.remove(...previousClasses);
+      }
+      if (classes.length) {
+        document.body.classList.add(...classes);
+      }
+      document.body.setAttribute(this.bodyAttr, classes.join(' '));
     },
     resetPosition() {
       localStorage.removeItem('aposStylesPosition');
