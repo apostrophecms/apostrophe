@@ -1,0 +1,13 @@
+{
+  "name": "test",
+  "dependencies": {
+    "apostrophe": "^4.0.0",
+    "@company/bundle": "1.0.0",
+    "before-global": "1.0.0",
+    "improve-global": "1.0.0",
+    "improve-piece-type": "1.0.0"
+  },
+  "devDependencies": {
+    "test-bundle": "1.0.0"
+  }
+}
