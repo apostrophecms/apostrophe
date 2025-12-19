@@ -36,6 +36,12 @@ module.exports = {
       }
     };
   },
+  styles: {
+    add: {
+      width: 'width',
+      alignment: 'alignment'
+    }
+  },
   fields(self, options) {
     const slugify = options.apos.util.slugify;
     const linkWithType = options.linkWithType;
