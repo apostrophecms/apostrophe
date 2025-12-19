@@ -265,11 +265,9 @@ module.exports = (self, options) => {
       }
 
       if (asObject) {
-        const regex = new RegExp(`^${quotes}|${quotes}$`, 'g');
-
         return attrs.reduce((acc, attr) => {
-          const [ key, ...rest ] = attr.split('=');
-          acc[key] = rest.join('=').replace(regex, '');
+          const [ key, rest ] = attr.split('=');
+          acc[key] = rest.replaceAll(quotes, '');
           return acc;
         }, {});
       }
