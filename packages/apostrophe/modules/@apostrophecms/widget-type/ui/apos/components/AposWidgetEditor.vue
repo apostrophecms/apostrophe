@@ -323,9 +323,14 @@ export default {
           .split(' ')
           .map(c => c.trim())
           .filter(Boolean);
+
         // remove previous style classes (based on previously applied classes)
-        el.classList.remove(previousClasses);
-        el.classList.add(...classes);
+        if (previousClasses.length) {
+          el.classList.remove(previousClasses);
+        }
+        if (classes.length) {
+          el.classList.add(...classes);
+        }
         el.dataset.aposWidgetStyleClasses = classes.join(' ');
 
         // Inline styles handling
