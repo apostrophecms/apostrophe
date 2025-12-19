@@ -711,10 +711,6 @@ module.exports = {
       annotateWidgetForExternalFront(widget) {
         const styles = self.apos.styles.prepareWidgetStyles(widget);
 
-        console.dir(styles, { depth: 9 });
-        // FIXME: color isn't scopped to the widget
-        styles.css = `#${styles.styleId} { color: green }`;
-
         return {
           stylesWrapper: self.options.stylesWrapper,
           stylesElements: self.apos.styles.getWidgetElements(styles),
