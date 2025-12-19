@@ -1597,9 +1597,21 @@ describe('Styles', function () {
     let apos;
 
     const conditionalStylesSchema = () => ({
-      parentActive: {
-        type: 'boolean',
-        def: false
+      // This is first to show that order does not matter
+      anotherBorder: {
+        type: 'object',
+        selector: '.another-border-style',
+        fields: {
+          add: {
+            color: {
+              type: 'color',
+              property: 'border-color',
+              if: {
+                '<border.active': true
+              }
+            }
+          }
+        }
       },
       textColor: {
         label: 'Text Color',
@@ -1616,6 +1628,9 @@ describe('Styles', function () {
           parentActive: true
         }
       },
+      // When background is not visible, highlight is not either,
+      // no matter the condition value of backgroundColor
+      // matches.
       highlightColor: {
         label: 'Highlight Color',
         type: 'color',
@@ -1630,10 +1645,6 @@ describe('Styles', function () {
         selector: '.border-style',
         fields: {
           add: {
-            active: {
-              type: 'boolean',
-              def: false
-            },
             width: {
               type: 'box',
               def: {
@@ -1655,24 +1666,19 @@ describe('Styles', function () {
                 active: true
               },
               property: 'border-color'
+            },
+            // Last to show order does not matter
+            active: {
+              type: 'boolean',
+              def: false
             }
           }
         }
       },
-      anotherBorder: {
-        type: 'object',
-        selector: '.another-border-style',
-        fields: {
-          add: {
-            color: {
-              type: 'color',
-              property: 'border-color',
-              if: {
-                '<border.active': true
-              }
-            }
-          }
-        }
+      // Last to show order does not matter
+      parentActive: {
+        type: 'boolean',
+        def: false
       }
     });
 
@@ -1727,7 +1733,7 @@ describe('Styles', function () {
         );
         assert.equal(
           actual.css,
-          ':root{--color: blue;--highlight-color: yellow;}',
+          ':root{--color: blue;}',
           'Output CSS does not match expected with `parentActive: false` and `border.active: false`'
         );
       }
@@ -1783,9 +1789,11 @@ describe('Styles', function () {
             highlightColor: 'yellow'
           }
         );
+        // Key point:
+        // - `highlightColor` should be omitted because backgroundColor is not visible.
         assert.equal(
           actual.css,
-          ':root{--color: blue;--highlight-color: yellow;}.border-style{border-color: red;}.another-border-style{border-color: green;}',
+          '.another-border-style{border-color: green;}:root{--color: blue;}.border-style{border-color: red;}',
           'Output CSS does not match expected with `parentActive: false` and `border.active: true`'
         );
       }
@@ -1814,9 +1822,9 @@ describe('Styles', function () {
         );
         assert.equal(
           actual.css,
+          '.another-border-style{border-color: green;}' +
           ':root{--color: blue;--background-color: #000000;--highlight-color: yellow;}' +
-          '.border-style{border-width: 4px;border-color: red;}' +
-          '.another-border-style{border-color: green;}',
+          '.border-style{border-width: 4px;border-color: red;}',
           'Output CSS does not match expected with `parentActive: true` and `border.active: true`'
         );
       }
@@ -1851,7 +1859,7 @@ describe('Styles', function () {
         );
         assert.equal(
           actual.css,
-          `${rootSelector} :root{--color: blue;--highlight-color: yellow;}`,
+          `${rootSelector} :root{--color: blue;}`,
           'Output CSS does not match expected with `parentActive: false` and `border.active: false`'
         );
       }
@@ -1887,6 +1895,10 @@ describe('Styles', function () {
       }
 
       {
+        // Key point:
+        // - `--highlight-color: yellow;` should be omitted because backgroundColor
+        //   is not visible. Demonstrates that conditional logic based on other
+        //   conditional fields is working.
         const actual = await apos.modules['test-widget'].getStylesheet(
           {
             parentActive: false,
@@ -1911,9 +1923,9 @@ describe('Styles', function () {
         );
         assert.equal(
           actual.css,
-          `${rootSelector} :root{--color: blue;--highlight-color: yellow;}` +
-          `${rootSelector} .border-style{border-color: red;}` +
-          `${rootSelector} .another-border-style{border-color: green;}`,
+          `${rootSelector} .another-border-style{border-color: green;}` +
+          `${rootSelector} :root{--color: blue;}` +
+          `${rootSelector} .border-style{border-color: red;}`,
           'Output CSS does not match expected with `parentActive: false` and `border.active: true`'
         );
       }
@@ -1943,9 +1955,9 @@ describe('Styles', function () {
         );
         assert.equal(
           actual.css,
+          `${rootSelector} .another-border-style{border-color: green;}` +
           `${rootSelector} :root{--color: blue;--background-color: #000000;--highlight-color: yellow;}` +
-          `${rootSelector} .border-style{border-width: 4px;border-color: red;}` +
-          `${rootSelector} .another-border-style{border-color: green;}`,
+          `${rootSelector} .border-style{border-width: 4px;border-color: red;}`,
           'Output CSS does not match expected with `parentActive: true` and `border.active: true`'
         );
       }
