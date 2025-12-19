@@ -2,10 +2,21 @@ const { createId } = require('@paralleldrive/cuid2');
 
 module.exports = self => {
   return {
-    '@apostrophecms/doc:afterReplicate': {
-      async migrateLegacyGlobalPaletteFields() {
-        if (self.shouldMigrateLegacyGlobalPaletteFields) {
-          await self.migrateLegacyGlobalPaletteFields();
+    'apostrophe:modulesRegistered': {
+      warnDeprecatedPalette() {
+        const paletteModule = self.apos.modules['@apostrophecms-pro/palette'];
+        if (paletteModule && !paletteModule?.tasks?.['migrate-to-styles']) {
+          self.apos.util.warn(
+            `
+                       🎨
+⚠️ @apostrophecms-pro/palette has been deprecated.
+Please install the latest version of @apostrophecms-pro/palette and run the following migration task:
+
+node app @apostrophecms-pro/palette:migrate-to-styles
+                       🎨
+
+`
+          );
         }
       }
     },
