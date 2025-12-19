@@ -40,7 +40,7 @@
       <component
         :is="fieldComponentMap[field.type]"
         :ref="field.name"
-        v-model="fieldState[field.name]"
+        :model-value="fieldState[field.name]"
         :class="{ 'apos-field__wrapper--highlight': highlight(field.name) }"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
@@ -52,6 +52,7 @@
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
         :generation="generation"
+        @update:model-value="handleFieldUpdate(field.name, $event)"
         @update-doc-data="onUpdateDocData"
         @validate="emitValidate()"
       />

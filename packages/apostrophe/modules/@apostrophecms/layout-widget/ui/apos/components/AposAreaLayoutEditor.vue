@@ -102,6 +102,7 @@
             @update="update"
             @add="add"
             @paste="paste"
+            @edit-styles="editStyles"
           />
         </template>
       </AposGridLayout>

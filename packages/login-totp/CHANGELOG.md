@@ -1,11 +1,5 @@
 # Changelog
 
-## UNRELEASED
-
-### Changes
-
-* Bumbs `eslint-config-apostrophe` to `5`, fixes errors, removes unused dependencies.
-
 ## 1.3.2 (2025-03-19)
 
 * Fix pasting on MacOS.

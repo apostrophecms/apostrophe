@@ -63,7 +63,7 @@ module.exports = {
   },
   async init(self, options) {
     const { renderGlobalStyles, renderScopedStyles } =
-      await import('./ui/universal/render.mjs');
+      await import('./ui/apos/universal/render.mjs');
     const { default: checkIfConditions } =
       await import('../../../lib/universal/check-if-conditions.mjs');
     self.stylesheetGlobalRender = renderGlobalStyles;
@@ -83,7 +83,6 @@ module.exports = {
     self.enableBrowserData();
     self.prependNodes('body', 'stylesheet');
     self.prependNodes('body', 'ui');
-    self.addMigrations();
 
     // Removes some automatically added top level groups and
     // provides a default group if none are provided.

@@ -159,11 +159,11 @@ function renderScopedStyles(schema, doc, {
     }
     const normalizer = NORMALIZERS[field.type] || NORMALIZERS._;
     const extractor = EXTRACTORS[field.type] || EXTRACTORS._;
-    const normalzied = normalizer(field, doc, {
+    const normalized = normalizer(field, doc, {
       rootSelector,
       storage
     });
-    extractor(normalzied, storage);
+    extractor(normalized, storage);
   }
 
   const isInline = [ ...storage.inlineVotes ].every(vote => vote === true);
@@ -235,6 +235,8 @@ function filterConditionalFields(
 /**
  * Evaluates conditional expressions for each field in the schema.
  * Supports one level of nesting for object fields with subfields.
+ * Iterates until no condition changes are detected to support
+ * conditions that depend on other conditions.
  *
  * @param {Function} checkIfConditions - The universal core function to evaluate
  *   field conditions
@@ -247,6 +249,9 @@ function getConditions(
   checkIfConditions, schema, doc
 ) {
   const conditionType = 'if';
+  // Not a random number but the "sweet spot" for complex condition graphs
+  // in a large schema while preventing infinite loops.
+  const maxIterations = 20;
 
   // Simulate parent values
   const parentValues = Object.fromEntries(
@@ -256,23 +261,48 @@ function getConditions(
   );
   const result = {};
 
-  for (const field of schema) {
-    if (field[conditionType]) {
-      result[field.name] = checkIfConditions(
-        doc,
-        field[conditionType]
-      );
+  let hasChanges = true;
+  let iterations = 0;
+  function voter(propName, conditionValue, docValue) {
+    const name = propName.startsWith('<') ? propName.slice(1) : propName;
+    if (result[name] === false) {
+      return false;
     }
-    if (field.schema?.length > 0) {
-      for (const subfield of field.schema) {
-        if (subfield[conditionType]) {
-          result[`${field.name}.${subfield.name}`] = checkIfConditions(
-            {
-              ...parentValues,
-              ...doc[field.name] || {}
-            },
-            subfield[conditionType]
-          );
+  }
+
+  while (hasChanges && iterations < maxIterations) {
+    hasChanges = false;
+    iterations++;
+
+    for (const field of schema) {
+      if (field[conditionType]) {
+        const newValue = checkIfConditions(
+          doc,
+          field[conditionType],
+          voter
+        );
+        if (result[field.name] !== newValue) {
+          result[field.name] = newValue;
+          hasChanges = true;
+        }
+      }
+      if (field.schema?.length > 0) {
+        for (const subfield of field.schema) {
+          if (subfield[conditionType]) {
+            const key = `${field.name}.${subfield.name}`;
+            const newValue = checkIfConditions(
+              {
+                ...parentValues,
+                ...doc[field.name] || {}
+              },
+              subfield[conditionType],
+              voter
+            );
+            if (result[key] !== newValue) {
+              result[key] = newValue;
+              hasChanges = true;
+            }
+          }
         }
       }
     }
