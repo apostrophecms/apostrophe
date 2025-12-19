@@ -206,7 +206,7 @@ module.exports = (self, options) => {
     // Optional second argument `additionalAttrs` is an object with
     // additional attributes to merge. `class` and `style` attributes
     // are merged with the styles values, keeping classes unique.
-    getWidgetAttributes(styles, additionalAttrs = {}) {
+    getWidgetAttributes(styles, additionalAttrs = {}, asObject = false) {
       const {
         classes = [], inline, styleId, widgetId
       } = styles || {};
@@ -221,12 +221,14 @@ module.exports = (self, options) => {
         ...otherAttrs
       } = additionalAttrs;
 
-      const attrs = [ `id="${styleId}"` ];
+      const quotes = '"';
+
+      const attrs = [ `id=${quotes}${styleId}${quotes}` ];
       attrs.push(
-        `data-apos-widget-style-wrapper-for="${widgetId || ''}"`
+        `data-apos-widget-style-wrapper-for=${quotes}${widgetId || ''}${quotes}`
       );
       attrs.push(
-        `data-apos-widget-style-classes="${classes.join(' ')}"`
+        `data-apos-widget-style-classes=${quotes}${classes.join(' ')}${quotes}`
       );
 
       // Merge classes, keeping them unique
@@ -238,7 +240,7 @@ module.exports = (self, options) => {
         extraClasses.forEach(cls => classSet.add(cls));
       }
       if (classSet.size) {
-        attrs.push(`class="${[ ...classSet ].join(' ')}"`);
+        attrs.push(`class=${quotes}${[ ...classSet ].join(' ')}${quotes}`);
       }
 
       // Merge inline styles
@@ -252,14 +254,24 @@ module.exports = (self, options) => {
         styleParts.push(additionalStyle.replace(/;$/, ''));
       }
       if (styleParts.length) {
-        attrs.push(`style="${styleParts.join(';')};"`);
+        attrs.push(`style=${quotes}${styleParts.join(';')};${quotes}`);
       }
 
       // Add other additional attributes
       for (const [ key, value ] of Object.entries(otherAttrs)) {
         if (value !== undefined && value !== null) {
-          attrs.push(`${key}="${value}"`);
+          attrs.push(`${key}=${quotes}${value}${quotes}`);
         }
+      }
+
+      if (asObject) {
+        const regex = new RegExp(`^${quotes}|${quotes}$`, 'g');
+
+        return attrs.reduce((acc, attr) => {
+          const [ key, ...rest ] = attr.split('=');
+          acc[key] = rest.join('=').replace(regex, '');
+          return acc;
+        }, {});
       }
 
       return attrs.join(' ');

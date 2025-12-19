@@ -418,9 +418,7 @@ module.exports = {
           contextOptions: _with
         });
 
-        const hasStyles = Object.keys(self.styles || {}).length > 0;
-
-        if (hasStyles && self.options.stylesWrapper !== false) {
+        if (self.options.stylesWrapper !== false) {
           const styles = self.apos.styles.prepareWidgetStyles(widget);
           const styleTag = self.apos.styles.getWidgetElements(styles);
           const wrapperAttrs = self.apos.styles.getWidgetAttributes(styles);
@@ -713,11 +711,13 @@ module.exports = {
       annotateWidgetForExternalFront(widget) {
         const styles = self.apos.styles.prepareWidgetStyles(widget);
 
-        return {
-          stylesElements: self.apos.styles.getWidgetElements(styles),
+        // FIXME: color isn't scopped to the widget
+        styles.css = 'div { color: green }';
 
-          // TODO: how to pass additional attributes from astro templates?
-          stylesAttributes: self.apos.styles.getWidgetAttributes(styles)
+        return {
+          stylesWrapper: self.options.stylesWrapper,
+          stylesElements: self.apos.styles.getWidgetElements(styles),
+          stylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, true)
         };
       }
     };
