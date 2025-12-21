@@ -614,7 +614,7 @@ module.exports = {
         const defaultIconUrl = '/modules/@apostrophecms/attachment/img/missing-icon.svg';
 
         // Build a more informative warning message with available context
-        const parts = ['Template warning: Missing attachment detected'];
+        const parts = [ 'Template warning: Missing attachment detected' ];
 
         if (context._docId) {
           parts.push(`Document ID: ${context._docId}`);
@@ -650,6 +650,9 @@ module.exports = {
       url(attachment, options) {
         options = options || {};
         if (!attachment) {
+          self.apos.util.warn('DEBUG url(): called with null attachment');
+          self.apos.util.warn('DEBUG url(): options =', options);
+
           // Pass context information if available
           const context = {
             _docId: options._docId,
@@ -766,6 +769,10 @@ module.exports = {
       // For non-images, a `._url` property is set.
       all(within, options) {
         options = options || {};
+        if (options._useImageContext) {
+          self.apos.util.warn('DEBUG all(): called with _useImageContext');
+          self.apos.util.warn('DEBUG all(): options =', options);
+        }
         function test(attachment) {
           if (!attachment || typeof attachment !== 'object') {
             return false;
@@ -837,25 +844,81 @@ module.exports = {
               if (value._crop) {
                 value._urls.uncropped = {};
               }
+
+              // Build context for URL generation from options or by finding
+              // the closest parent document in the ancestors
+              const urlContext = {
+                _docId: options._docId,
+                _widgetType: options._widgetType,
+                _widgetId: options._widgetId
+              };
+
+              // If no context provided in options, try to get it from ancestors
+              if (!urlContext._docId && ancestors && ancestors.length > 0) {
+                // Walk backwards through ancestors to find the closest document
+                for (let i = ancestors.length - 1; i >= 0; i--) {
+                  const ancestor = ancestors[i];
+                  if (ancestor._id) {
+                    urlContext._docId = ancestor._id;
+                    urlContext._widgetType = ancestor.type;
+                    // Check if this is a widget (has aposPlaceholder property)
+                    if (ancestor._id && ancestor.type) {
+                      urlContext._widgetId = ancestor._id;
+                    }
+                    break;
+                  }
+                }
+              }
+
+              // Fallback to within if it's a single document
+              if (!urlContext._docId && within && !Array.isArray(within)) {
+                urlContext._docId = within._id;
+                urlContext._widgetType = within.type;
+              }
+
+              // Special case: if _useImageContext is set and we're walking
+              // through image pieces, use the image piece's context for
+              // its attachment
+              if (!urlContext._docId && options._useImageContext &&
+                ancestors && ancestors.length > 0) {
+                // Find the closest ancestor that looks like an image piece
+                for (let i = ancestors.length - 1; i >= 0; i--) {
+                  const ancestor = ancestors[i];
+                  if (ancestor._id && ancestor.type === '@apostrophecms/image') {
+                    urlContext._docId = ancestor._id;
+                    urlContext._widgetType = ancestor.type;
+                    break;
+                  }
+                }
+              }
+
               if (value.group === 'images') {
                 _.each(self.imageSizes, function (size) {
-                  value._urls[size.name] = self.url(value, { size: size.name });
+                  value._urls[size.name] = self.url(value, {
+                    size: size.name,
+                    ...urlContext
+                  });
                   if (value._crop) {
                     value._urls.uncropped[size.name] = self.url(value, {
                       size: size.name,
-                      crop: false
+                      crop: false,
+                      ...urlContext
                     });
                   }
                 });
-                value._urls.original = self.url(value, { size: 'original' });
+                value._urls.original = self.url(value, {
+                  size: 'original',
+                  ...urlContext
+                });
                 if (value._crop) {
                   value._urls.uncropped.original = self.url(value, {
                     size: 'original',
-                    crop: false
+                    crop: false,
+                    ...urlContext
                   });
                 }
               } else {
-                value._url = self.url(value);
+                value._url = self.url(value, urlContext);
               }
             }
 

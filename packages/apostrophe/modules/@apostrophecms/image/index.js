@@ -785,6 +785,27 @@ module.exports = {
               }
             }
           }
+        },
+        // Annotate image attachments with context about the image piece
+        // so that missing attachment warnings can provide useful information
+        annotateAttachmentContext: {
+          after(results) {
+            self.apos.util.warn('DEBUG annotateAttachmentContext: results count =', results.length);
+            if (results.length > 0) {
+              self.apos.util.warn('DEBUG annotateAttachmentContext: first result =', {
+                _id: results[0]._id,
+                type: results[0].type,
+                hasAttachment: !!results[0].attachment,
+                attachmentValue: results[0].attachment
+              });
+            }
+            self.apos.attachment.all(results, {
+              annotate: true,
+              // Pass the image piece context so attachment URLs know
+              // which image they belong to
+              _useImageContext: true
+            });
+          }
         }
       }
     };
