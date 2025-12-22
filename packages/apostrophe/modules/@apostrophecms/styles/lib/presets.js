@@ -15,7 +15,6 @@ module.exports = (moduleOptions) => {
       label: 'apostrophe:styleAlignment',
       type: 'select',
       class: true,
-      def: 'apos-center',
       choices: [
         {
           label: 'apostrophe:styleLeft',
@@ -67,7 +66,7 @@ module.exports = (moduleOptions) => {
               active: true
             },
             unit: 'px',
-            property: 'border-width'
+            property: 'border-%key%-width'
           },
           radius: {
             label: 'apostrophe:styleRadius',

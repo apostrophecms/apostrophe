@@ -172,7 +172,9 @@ module.exports = {
     // left or right, or null for no explicit origin (internally set
     // to 'right'):
     origin: null,
-    preview: true
+    preview: true,
+    // Set to false to opt out of the automatic styling wrapping of widget output
+    stylesWrapper: true
   },
   init(self) {
     self.isExplicitOrigin = self.options.origin !== null;

@@ -825,7 +825,7 @@ describe('Styles', function () {
                 active: true
               },
               unit: 'px',
-              property: 'border-width'
+              property: 'border-%key%-width'
             },
             radius: {
               label: 'apostrophe:styleRadius',
@@ -891,7 +891,7 @@ describe('Styles', function () {
                 left: 1
               },
               unit: 'px',
-              property: 'border-width'
+              property: 'border-%key%-width'
             },
             radius: {
               label: 'apostrophe:styleRadius',
@@ -1170,7 +1170,7 @@ describe('Styles', function () {
       return t.destroy(apos);
     });
 
-    it('should render object styles correctly (@apstrophecms/styles)', async function () {
+    it('should render object styles correctly (@apostrophecms/styles)', async function () {
       const actual = await apos.styles.getStylesheet(
         {
           border: {
@@ -1198,10 +1198,10 @@ describe('Styles', function () {
       const actualChecks = {
         selector: styles.startsWith('.border-style{'),
         selectorEnd: styles.endsWith('}'),
-        borderWidthTop: styles.includes('border-width-top: 2px'),
-        borderWidthRight: styles.includes('border-width-right: 4px'),
-        borderWidthBottom: styles.includes('border-width-bottom: 2px'),
-        borderWidthLeft: styles.includes('border-width-left: 4px'),
+        borderTopWidth: styles.includes('border-top-width: 2px'),
+        borderRightWidth: styles.includes('border-right-width: 4px'),
+        borderBottomWidth: styles.includes('border-bottom-width: 2px'),
+        borderLeftWidth: styles.includes('border-left-width: 4px'),
         borderRadius: styles.includes('border-radius: 8px;'),
         borderColor: styles.includes('border-color: red;'),
         borderStyle: styles.includes('border-style: dashed;')
@@ -1209,10 +1209,10 @@ describe('Styles', function () {
       assert.deepEqual(actualChecks, {
         selector: true,
         selectorEnd: true,
-        borderWidthTop: true,
-        borderWidthRight: true,
-        borderWidthBottom: true,
-        borderWidthLeft: true,
+        borderTopWidth: true,
+        borderRightWidth: true,
+        borderBottomWidth: true,
+        borderLeftWidth: true,
         borderRadius: true,
         borderColor: true,
         borderStyle: true
@@ -1249,10 +1249,10 @@ describe('Styles', function () {
         selector: styles.startsWith('#randomStyleId .border-style{'),
         selectorEnd: styles.endsWith('}'),
         borderWidth: styles.includes('border-width: 3px'),
-        borderWidthTop: styles.includes('border-width-top: 3px'),
-        borderWidthRight: styles.includes('border-width-right: 3px'),
-        borderWidthBottom: styles.includes('border-width-bottom: 3px'),
-        borderWidthLeft: styles.includes('border-width-left: 3px'),
+        borderTopWidth: styles.includes('border-top-width: 3px'),
+        borderRightWidth: styles.includes('border-right-width: 3px'),
+        borderBottomWidth: styles.includes('border-bottom-width: 3px'),
+        borderLeftWidth: styles.includes('border-left-width: 3px'),
         borderRadius: styles.includes('border-radius: 12px;'),
         borderColor: styles.includes('border-color: blue;'),
         borderStyle: styles.includes('border-style: dotted;')
@@ -1261,10 +1261,10 @@ describe('Styles', function () {
         selector: true,
         selectorEnd: true,
         borderWidth: true,
-        borderWidthTop: false,
-        borderWidthRight: false,
-        borderWidthBottom: false,
-        borderWidthLeft: false,
+        borderTopWidth: false,
+        borderRightWidth: false,
+        borderBottomWidth: false,
+        borderLeftWidth: false,
         borderRadius: true,
         borderColor: true,
         borderStyle: true
@@ -1658,7 +1658,7 @@ describe('Styles', function () {
                 '<parentActive': true
               },
               unit: 'px',
-              property: 'border-width'
+              property: 'border-%key%-width'
             },
             color: {
               type: 'color',
@@ -2430,6 +2430,100 @@ describe('Styles', function () {
           'should include inline style'
         );
       });
+    });
+  });
+
+  describe('Widgets auto wrapper opt-out', function () {
+    let apos;
+    let page;
+    let jar;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          'test-style-page': {
+            fields: {
+              add: {
+                body: {
+                  type: 'area',
+                  options: {
+                    widgets: {
+                      'test-nostyle': {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          'test-nostyle-widget': {
+            options: {
+              stylesWrapper: false
+            },
+            styles: {
+              add: {
+                textColor: {
+                  type: 'color',
+                  property: 'color',
+                  selector: '.whatever'
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Add a test page to work with
+      const req = apos.task.getReq();
+      const input = {
+        slug: '/test-styles',
+        type: 'test-style-page',
+        title: 'Test Styles Page',
+        metaType: 'doc'
+      };
+      const instance = apos.util.getManagerOf(input).newInstance();
+      input.body = {
+        ...instance.body,
+        items: [
+          {
+            metaType: 'widget',
+            type: 'test-nostyle',
+            textColor: 'purple'
+          }
+        ]
+      };
+      page = await apos.doc.insert(req, {
+        ...instance,
+        ...input
+      });
+      assert.equal(page.aposMode, 'published');
+      assert.equal(page.slug, input.slug);
+
+      jar = apos.http.jar();
+    });
+
+    after(async function () {
+      return t.destroy(apos);
+    });
+
+    it('should not wrap widget output in styles wrapper', async function () {
+      const [ widget ] = page.body.items;
+      assert.equal(apos.modules['test-nostyle-widget']?.options?.stylesWrapper, false);
+      assert.equal(widget?.type, 'test-nostyle');
+      assert.equal(widget.textColor, 'purple');
+
+      const result = await apos.http.get('/test-styles', { jar });
+
+      assert.equal(
+        result.includes('<style'),
+        false,
+        'No style tag should be rendered for widget'
+      );
+      assert.equal(
+        result.includes('<article class="no-style-widget">content</article>'),
+        true,
+        'Widget output should not be wrapped in styles wrapper'
+      );
     });
   });
 
