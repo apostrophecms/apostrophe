@@ -15,7 +15,6 @@ module.exports = (moduleOptions) => {
       label: 'apostrophe:styleAlignment',
       type: 'select',
       class: true,
-      def: 'apos-center',
       choices: [
         {
           label: 'apostrophe:styleLeft',
