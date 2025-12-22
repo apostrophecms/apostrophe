@@ -70,7 +70,7 @@ describe('Relationships', function() {
 });
 
 describe('Utils', function() {
-  it.only('should properly retrieve schema relationships for post processing', () => {
+  it('should properly retrieve schema relationships for post processing', () => {
     const schema = [
       {
         name: '_image',
