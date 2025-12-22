@@ -10,19 +10,27 @@ module.exports = self => {
     //   ...content ...
     // </article>
     render(widget) {
-      return self.apos.template.safe(
+      const prepared = self.apos.template.safe(
         self.prepareWidgetStyles(widget)
       );
+      console.log('prepared', prepared);
+      return prepared;
     },
     elements(styles) {
-      return self.apos.template.safe(
+      const elem = self.apos.template.safe(
         self.getWidgetElements(styles)
       );
+
+      console.log('elem', elem);
+      return elem;
     },
     attributes(styles, additionalAttributes = {}) {
-      return self.apos.template.safe(
+      const attr = self.apos.template.safe(
         self.getWidgetAttributes(styles, additionalAttributes)
       );
+
+      console.log('attr', attr);
+      return attr;
     }
   };
 };
