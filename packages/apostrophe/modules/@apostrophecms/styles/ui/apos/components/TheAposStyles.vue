@@ -89,8 +89,7 @@ import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs'
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import renderCss from 'Modules/@apostrophecms/styles/universal/render.mjs';
 import { klona } from 'klona';
-import postcss from 'postcss';
-import postcssPlugin from 'postcss-viewport-to-container-toggle';
+import mobilePreviewTransformer from 'postcss-viewport-to-container-toggle/browser';
 
 export default {
   name: 'TheAposStyles',
@@ -456,22 +455,16 @@ export default {
     async setStyleMarkup({ css, classes }) {
       this.setBodyClasses(classes);
       if (apos.adminBar.breakpointPreviewMode?.enable) {
-        const processed = await postcss([
-          postcssPlugin({
-            modifierAttr: 'data-breakpoint-preview-mode',
-            debug: apos.adminBar.breakpointPreviewMode?.debug === true,
-            transform: apos.adminBar.breakpointPreviewMode?.transform || null
-          })
-        ])
-          .process(css, {
-            from: undefined,
-            to: undefined
-          });
-        document.querySelector('#apos-styles-stylesheet').innerHTML = processed.css;
+        const processed = mobilePreviewTransformer(css, {
+          modifierAttr: 'data-breakpoint-preview-mode',
+          debug: apos.adminBar.breakpointPreviewMode?.debug === true,
+          transform: apos.adminBar.breakpointPreviewMode?.transform || null
+        });
+        document.querySelector('#apos-styles-stylesheet').textContent = processed.css;
         return;
       }
 
-      document.querySelector('#apos-styles-stylesheet').innerHTML = css;
+      document.querySelector('#apos-styles-stylesheet').textContent = css;
     },
     setBodyClasses(classes) {
       const previousClasses = document.body
