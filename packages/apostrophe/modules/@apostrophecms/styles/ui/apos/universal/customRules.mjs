@@ -21,7 +21,11 @@ export default {
     };
 
     if (vals.every(v => v === top && v != null)) {
-      rule = `${property}: ${top}${unit}${important ? ' !important' : ''}`;
+      const normalizedProperty = property
+        .replaceAll('-%key%', '')
+        .replaceAll('%key%-', '');
+
+      rule = `${normalizedProperty}: ${top}${unit}${important ? ' !important' : ''}`;
       return {
         field,
         rule
@@ -37,11 +41,20 @@ export default {
     const parts = [];
 
     for (const [ side, val ] of Object.entries(sides)) {
-      if (val != null) {
-        parts.push(`${property}-${side}: ${val}${unit}${important ? ' !important' : ''}`);
+      if (val == null) {
+        continue;
       }
-      rule = parts.join(';');
+
+      const normalizedProperty = property.includes('%key%')
+        ? property
+          .replaceAll('-%key%', `-${side}`)
+          .replaceAll('%key%-', `${side}-`)
+        : `property-${side}`;
+
+      parts.push(`${normalizedProperty}: ${val}${unit}${important ? ' !important' : ''}`);
     }
+
+    rule = parts.join(';');
 
     return {
       field,

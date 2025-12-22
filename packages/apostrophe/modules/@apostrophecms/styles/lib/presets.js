@@ -66,7 +66,7 @@ module.exports = (moduleOptions) => {
               active: true
             },
             unit: 'px',
-            property: 'border-width'
+            property: 'border-%key%-width'
           },
           radius: {
             label: 'apostrophe:styleRadius',
