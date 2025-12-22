@@ -41,7 +41,7 @@ export async function getPostprocessedRelationship(
   return response.relationship;
 }
 
-function findRelationships(schema, object) {
+export function findRelationships(schema, object) {
   return schema.reduce((acc, field) => {
     if (field.type === 'relationship') {
       return [
