@@ -460,7 +460,7 @@ export default {
           debug: apos.adminBar.breakpointPreviewMode?.debug === true,
           transform: apos.adminBar.breakpointPreviewMode?.transform || null
         });
-        document.querySelector('#apos-styles-stylesheet').textContent = processed.css;
+        document.querySelector('#apos-styles-stylesheet').textContent = processed;
         return;
       }
 
