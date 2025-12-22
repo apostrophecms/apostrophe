@@ -1,10 +1,10 @@
 
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
+import { nextTick } from 'vue';
 
 export default function() {
-
+  const mountedApps = new Map();
   let widgetsRendering = 0;
-
   apos.area.widgetOptions = [];
 
   createWidgetClipboardApp();
@@ -20,6 +20,7 @@ export default function() {
   apos.bus.$on('widget-rendered', options => {
     widgetsRendering--;
     createAreaAppsAndRunPlayersIfDone(options);
+
   });
 
   apos.bus.$on('refreshed', function() {
@@ -29,6 +30,9 @@ export default function() {
   function createAreaAppsAndRunPlayersIfDone({ edit = true } = {}) {
     if (edit) {
       createAreaApps();
+      nextTick(() => {
+        cleanupOrphanedApps();
+      });
     }
     if (widgetsRendering === 0) {
       apos.util.runPlayers();
@@ -104,11 +108,11 @@ export default function() {
     el.removeAttribute('data-apos-area-newly-editable');
 
     if (apos.area.activeEditor && (apos.area.activeEditor.id === data._id)) {
-    // Editing a piece causes a refresh of the main content area,
-    // but this may contain the area we originally intended to add
-    // a widget to when we created a piece for that purpose. Preserve
-    // the editing experience by restoring that widget's editor to the DOM
-    // rather than creating a new one.
+      // Editing a piece causes a refresh of the main content area,
+      // but this may contain the area we originally intended to add
+      // a widget to when we created a piece for that purpose. Preserve
+      // the editing experience by restoring that widget's editor to the DOM
+      // rather than creating a new one.
 
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
@@ -125,6 +129,7 @@ export default function() {
       });
 
       app.mount(el);
+      mountedApps.set(el, app);
     }
   }
 
@@ -144,5 +149,28 @@ export default function() {
     }
 
     apos.area.widgetClipboard = new Clipboard();
+
+  }
+
+  function cleanupOrphanedApps() {
+    // Check all tracked apps and unmount those whose elements are no longer in the DOM
+    for (const el of mountedApps.keys()) {
+      if (!document.body.contains(el)) {
+        unmountApp(el);
+      }
+    }
+  }
+
+  function unmountApp(el) {
+    const app = mountedApps.get(el);
+    if (app) {
+      try {
+        app.unmount();
+      } catch (error) {
+      // eslint-disable-next-line no-console
+        console.error('Error unmounting Vue app:', error);
+      }
+      mountedApps.delete(el);
+    }
   }
 }
