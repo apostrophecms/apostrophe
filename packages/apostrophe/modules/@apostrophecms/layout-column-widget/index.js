@@ -85,6 +85,19 @@ module.exports = {
       }
     };
   },
+  extendMethods(self, options) {
+    return {
+      disableWidgetOperation(_super, opName, properties) {
+        if (
+          _super() ||
+          (opName === 'layoutColEditStyles' && !Object.keys(self.styles).length)
+        ) {
+          return true;
+        }
+        return false;
+      }
+    };
+  },
   fields(self, options) {
     return {
       add: {
