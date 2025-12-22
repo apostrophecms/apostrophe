@@ -712,9 +712,9 @@ module.exports = {
         const styles = self.apos.styles.prepareWidgetStyles(widget);
 
         return {
-          stylesWrapper: self.options.stylesWrapper,
-          stylesElements: self.apos.styles.getWidgetElements(styles),
-          stylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, true)
+          aposStylesWrapper: self.options.stylesWrapper,
+          aposStylesElements: self.apos.styles.getWidgetElements(styles),
+          aposStylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, true)
         };
       }
     };
