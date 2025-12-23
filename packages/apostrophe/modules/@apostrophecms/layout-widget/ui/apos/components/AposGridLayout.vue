@@ -24,26 +24,16 @@
         '--align-items': gridState.options.defaultCellVerticalAlignment || 'stretch',
       }"
     >
-      <div
+      <AposGridColumn
         v-for="(item, i) in renderItems"
         :key="item._id"
         ref="contentItems"
-        class="apos-layout__item"
-        role="gridcell"
-        data-apos-test="aposLayoutItem"
+        :item="item"
+        :tablet-full-items="tabletFullItems"
         :data-tablet-full="tabletFullItems[item._id] || false"
         :data-visible-tablet="item.tablet?.show"
         :data-visible-mobile="item.mobile?.show"
         :data-id="`${ item._id }`"
-        :style="{
-          '--colstart': item.colstart,
-          '--colspan': item.colspan,
-          '--rowstart': item.rowstart,
-          '--rowspan': item.rowspan,
-          '--order': item.order,
-          '--justify': item.justify,
-          '--align': item.align,
-        }"
       >
         <div
           data-content
@@ -69,7 +59,7 @@
             </div>
           </template>
         </div>
-      </div>
+      </AposGridColumn>
     </TransitionGroup>
     <AposGridManager
       v-if="isManageMode"
