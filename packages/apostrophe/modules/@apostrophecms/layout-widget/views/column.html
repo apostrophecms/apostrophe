@@ -8,7 +8,7 @@ The area related `data.*` is available plus `item` and `widgetOptions`. #}
 {{ apos.log('styles', styles) }}
 {{ apos.log('wrapperAttrs', wrapperAttrs) }}
 <div
-  {{ wrapperAttrs | dump }}
+  {{ wrapperAttrs | safe }}
   {% if data.canEdit %} data-apos-widget="{{ item._id }}"{% endif %}
   data-visible-tablet="{{ item.tablet.show }}"
   data-visible-mobile="{{ item.mobile.show }}"
@@ -22,5 +22,6 @@ The area related `data.*` is available plus `item` and `widgetOptions`. #}
     --align: {{ item.desktop.align }};
     --order: {{ item.desktop.order }};
 ">
+  {{ styleTag | safe }}
   {% area item, 'content' %}
 </div>
