@@ -223,7 +223,10 @@ module.exports = (self, options) => {
         ...otherAttrs
       } = additionalAttrs;
 
-      const attrs = [ [ 'id', styleId ] ];
+      const attrs = [
+        [ 'id', styleId ]
+      ];
+
       attrs.push(
         [ 'data-apos-widget-style-wrapper-for', widgetId || '' ]
       );
