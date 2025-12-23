@@ -151,11 +151,8 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
 import { isEqual } from 'lodash';
-
-import { createId } from '@paralleldrive/cuid2';
-import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
-import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import { klona } from 'klona';
+import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 
 export default {
   name: 'AposRichTextWidgetEditor',
@@ -201,10 +198,11 @@ export default {
     }
   },
   emits: [ 'update', 'suppressWidgetControls' ],
+  setup() {
+    return useAposStyles();
+  },
   data() {
     return {
-      widgetId: createId(),
-      styleTagId: createId(),
       editor: null,
       docFields: {
         data: {
@@ -221,12 +219,7 @@ export default {
       suppressWidgetControls: false,
       hasSelection: false,
       insertMenuKey: null,
-      openedPopover: false,
-      widgetStyles: {
-        inline: '',
-        classes: [],
-        css: ''
-      }
+      openedPopover: false
     };
   },
   computed: {
@@ -362,11 +355,15 @@ export default {
           ];
         }, [ {}, {} ]);
 
+      console.log('newValStyles', newValStyles);
+      console.log('oldValStyles', oldValStyles);
+
       if (isEqual(newValStyles, oldValStyles)) {
         return;
       }
 
-      this.getWidgetStyles(newVal);
+      console.log('=====> reload <=====');
+      this.getWidgetStyles(newVal, this.moduleOptions);
     },
     suppressWidgetControls(newVal) {
       if (newVal) {
@@ -391,54 +388,16 @@ export default {
   },
   mounted() {
     this.insertMenuKey = this.generateKey();
-    this.getWidgetStyles(this.docFields.data);
+    this.getWidgetStyles(this.docFields.data, this.moduleOptions);
     this.instantiateEditor();
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
 
   beforeUnmount() {
     this.editor.destroy();
-    this.removeStyleTag();
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
-    getWidgetStyles(doc) {
-      const { schema, stylesFields } = this.moduleOptions;
-      if (!schema || !stylesFields) {
-        return;
-      }
-
-      this.widgetStyles = renderScopedStyles(schema, doc, {
-        rootSelector: `#${this.widgetId}`,
-        checkIfConditionsFn: checkIfConditions,
-        subset: stylesFields
-      });
-
-      this.injectStyleTag();
-    },
-    injectStyleTag() {
-      const css = this.widgetStyles.css;
-      if (!css) {
-        this.removeStyleTag();
-        return;
-      }
-
-      const styleEl = document.getElementById(this.styleTagId);
-      if (!styleEl) {
-        const newStyle = document.createElement('style');
-        newStyle.id = this.styleTagId;
-        newStyle.textContent = css;
-        document.head.appendChild(newStyle);
-      } else {
-        styleEl.textContent = css;
-      }
-    },
-    removeStyleTag() {
-      const styleEl = document.getElementById(this.styleTagId);
-      if (styleEl) {
-        styleEl.remove();
-      }
-    },
     instantiateEditor() {
     // Cleanly namespace it so we don't conflict with other uses and instances
       const CustomPlaceholder = Placeholder.extend();
