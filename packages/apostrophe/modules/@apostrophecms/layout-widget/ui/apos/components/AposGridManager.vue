@@ -248,6 +248,7 @@
 
 <script>
 import { GridManager } from '../lib/grid-manager.js';
+import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 import {
   getReorderPatch, prepareMoveIndex
 } from '../lib/grid-state.mjs';
@@ -298,6 +299,9 @@ export default {
     'remove-item',
     'patch-item'
   ],
+  /* setup() { */
+  /*   return useAposStyles(); */
+  /* }, */
   data() {
     return {
       manager: new GridManager(),
@@ -444,6 +448,7 @@ export default {
     document.addEventListener('keydown', this.onGlobalKeyDown);
     document.addEventListener('mouseup', this.onMouseUp);
     document.addEventListener('touchend', this.onMouseUp);
+    this.getWidgetStyles(this.docFields.data, this.moduleOptions);
 
     const rootEl = this.$parent.$refs.root?.$el || this.$parent.$refs.root;
     const gridRef = this.$parent.$refs.grid;
