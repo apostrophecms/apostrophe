@@ -65,6 +65,7 @@ module.exports = {
         new: {
           canCreate: true,
           relationship: true,
+          button: true,
           label: {
             key: 'apostrophe:newDocType',
             type: '$t(apostrophe:page)'

@@ -2,6 +2,16 @@
 
 ## 4.25.0
 
+### Changes
+
+* When selecting pieces or pages to populate a relationship, the "New Piece" / "New Page" buttons are easier to find. They are no longer hidden away in a context menu.
+* When you create a new item while editing a relationship, that item is automatically selected, as long as you have not already reached `max` for that relationship.
+* When the user chooses to create a new document while selecting pieces or pages to populate a relationship, the "save draft and preview" and "publish and view" options are no longer offered. This ensures that the user is able to complete the selection process. The page or piece can still be edited in context later.
+* Bump nodemailer to v7.x.
+* `@apostrophecms/migration:requirements` handler now runs the migration requirements like `insertIfMissing`, `implementParkAllInDefaultLocale`, `replicate` and `implementParkAllInOtherLocales`.
+* Improves client error log when unable to render a widget.
+* Rich text `styles` are once again available to insert menu items, such as our optional `@apostrophecms/ai-helper` module.
+
 ### Adds
 
 - If you want production sourcemaps to be created but not actually uploaded for the public, you can combine `productionSourceMaps: true` with the new `productionSourceMapsDir` option to specify an alternate location where the `@apostrophecms/asset:build` task should place them. By using this option, you take responsibility for delivering the sourcemaps to their final home. Creating and/or erasing the folder between builds is also up to you. Most people will not need this option.

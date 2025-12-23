@@ -294,7 +294,7 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
-    ...mapActions(useModalStore, [ 'updateModalData' ]),
+    ...mapActions(useModalStore, [ 'updateModalData', 'isTopManager', 'isOnTop' ]),
     async create() {
       await this.edit(null);
     },
@@ -311,7 +311,8 @@ export default {
       await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
         moduleName,
         docId: piece && piece._id,
-        filterValues: this.filterValues
+        filterValues: this.filterValues,
+        hasRelationshipField: !!this.relationshipField
       });
     },
     async finishSaved() {
@@ -479,6 +480,10 @@ export default {
       this.setCheckedDocs([]);
     },
     shortcutNew(event) {
+      if (!this.isOnTop(this.$el)) {
+        return;
+      }
+
       const interesting = event.keyCode === 78; // N(ew)
       if (
         interesting &&
@@ -571,6 +576,11 @@ export default {
       const types = this.getContentChangedTypes(doc, docTypes);
       if (!types.includes(this.moduleName)) {
         return;
+      }
+      if (this.relationshipField && (action === 'insert') && this.isTopManager(this)) {
+        const newDocs = [ ...this.checkedDocs, doc ];
+        const limit = this.relationshipField?.max || newDocs.length;
+        this.setCheckedDocs(newDocs.slice(0, limit));
       }
       if (
         docIds ||

@@ -7,6 +7,7 @@
       :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
+      @keyup-enter="onKeyupEnter"
     >
       <div
         class="apos-link-control__dialog"
@@ -218,16 +219,10 @@ export default {
       this.editor.chain().focus().blur().run();
       this.close();
     },
-    keyboardHandler(e) {
-      if (e.key === 'Escape') {
+    onKeyupEnter(event) {
+      if (event.key === 'Enter' && (this.docFields.data.href || event.metaKey)) {
+        this.save();
         this.close();
-      }
-      if (e.key === 'Enter') {
-        if (this.docFields.data.href || e.metaKey) {
-          this.save();
-          this.close();
-        }
-        e.preventDefault();
       }
     },
     async populateFields() {
@@ -298,13 +293,11 @@ export default {
     },
     async openPopover() {
       this.hasLinkOnOpen = Boolean(this.attributes.href);
-      window.addEventListener('keydown', this.keyboardHandler);
       await this.populateFields();
       this.evaluateConditions();
       this.$emit('open-popover');
     },
     closePopover() {
-      window.removeEventListener('keydown', this.keyboardHandler);
       this.$emit('close');
     }
   }
