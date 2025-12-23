@@ -206,7 +206,9 @@ module.exports = (self, options) => {
     // Optional second argument `additionalAttrs` is an object with
     // additional attributes to merge. `class` and `style` attributes
     // are merged with the styles values, keeping classes unique.
-    getWidgetAttributes(styles, additionalAttrs = {}, asObject = false) {
+    // Optional third argument `options`:
+    // - asObject: boolean - if true, returns attributes as an object
+    getWidgetAttributes(styles, additionalAttrs = {}, options = {}) {
       const {
         classes = [], inline, styleId, widgetId
       } = styles || {};
@@ -221,14 +223,12 @@ module.exports = (self, options) => {
         ...otherAttrs
       } = additionalAttrs;
 
-      const quotes = '"';
-
-      const attrs = [ `id=${quotes}${styleId}${quotes}` ];
+      const attrs = [ [ 'id', styleId ] ];
       attrs.push(
-        `data-apos-widget-style-wrapper-for=${quotes}${widgetId || ''}${quotes}`
+        [ 'data-apos-widget-style-wrapper-for', widgetId || '' ]
       );
       attrs.push(
-        `data-apos-widget-style-classes=${quotes}${classes.join(' ')}${quotes}`
+        [ 'data-apos-widget-style-classes', classes.join(' ') ]
       );
 
       // Merge classes, keeping them unique
@@ -240,7 +240,9 @@ module.exports = (self, options) => {
         extraClasses.forEach(cls => classSet.add(cls));
       }
       if (classSet.size) {
-        attrs.push(`class=${quotes}${[ ...classSet ].join(' ')}${quotes}`);
+        attrs.push(
+          [ 'class', Array.from(classSet).join(' ') ]
+        );
       }
 
       // Merge inline styles
@@ -254,25 +256,27 @@ module.exports = (self, options) => {
         styleParts.push(additionalStyle.replace(/;$/, ''));
       }
       if (styleParts.length) {
-        attrs.push(`style=${quotes}${styleParts.join(';')};${quotes}`);
+        attrs.push(
+          [ 'style', `${styleParts.join(';')};` ]
+        );
       }
 
       // Add other additional attributes
       for (const [ key, value ] of Object.entries(otherAttrs)) {
         if (value !== undefined && value !== null) {
-          attrs.push(`${key}=${quotes}${value}${quotes}`);
+          attrs.push(
+            [ key, value ]
+          );
         }
       }
 
-      if (asObject) {
-        return attrs.reduce((acc, attr) => {
-          const [ key, rest ] = attr.split('=');
-          acc[key] = rest.replaceAll(quotes, '');
-          return acc;
-        }, {});
+      if (options.asObject) {
+        return Object.fromEntries(attrs);
       }
 
-      return attrs.join(' ');
+      return attrs
+        .map(([ key, value ]) => `${key}="${value}"`)
+        .join(' ');
     },
 
     // Internal APIs
