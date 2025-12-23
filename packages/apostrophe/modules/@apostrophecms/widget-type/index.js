@@ -716,7 +716,9 @@ module.exports = {
         return {
           aposStylesWrapper: self.options.stylesWrapper,
           aposStylesElements: self.apos.styles.getWidgetElements(styles),
-          aposStylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, true)
+          aposStylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, {
+            asObject: true
+          })
         };
       }
     };
