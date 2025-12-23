@@ -55,6 +55,56 @@ module.exports = {
       mobile: 600
     }
   },
+  styles(self, options) {
+    return {
+      add: {
+        myBorder: 'border',
+        alignment: 'alignment',
+        backgroundColor: {
+          type: 'color',
+          property: 'background-color'
+        },
+        isBold: {
+          type: 'boolean',
+          class: 'bold-text'
+        },
+        responsivePadding: {
+          type: 'object',
+          mediaQuery: '(width > 1200px)',
+          fields: {
+            add: {
+              desktop: {
+                type: 'range',
+                min: 0,
+                max: 32,
+                def: 0,
+                property: 'padding',
+                unit: 'px'
+              },
+              tablet: {
+                type: 'range',
+                min: 0,
+                max: 32,
+                def: 0,
+                property: 'padding',
+                unit: 'px',
+                mediaQuery: '(560px < width <= 1200px)'
+              },
+              mobile: {
+                type: 'range',
+                min: 0,
+                max: 32,
+                def: 0,
+                property: 'padding',
+                unit: 'px',
+                mediaQuery: '(width <= 560px)'
+              }
+            }
+          }
+        }
+      }
+    };
+  },
   widgetOperations(self, options) {
     return {
       add: {
