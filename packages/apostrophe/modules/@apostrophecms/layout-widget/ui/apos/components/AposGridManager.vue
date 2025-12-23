@@ -248,7 +248,6 @@
 
 <script>
 import { GridManager } from '../lib/grid-manager.js';
-import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 import {
   getReorderPatch, prepareMoveIndex
 } from '../lib/grid-state.mjs';
@@ -286,6 +285,18 @@ export default {
         patches: null,
         key: null
       })
+    },
+    rootEl: {
+      type: Object,
+      required: true
+    },
+    gridEl: {
+      type: Object,
+      required: true
+    },
+    contentItems: {
+      type: Object,
+      required: true
     }
   },
   emits: [
@@ -439,24 +450,17 @@ export default {
       if (this.cloneCalculateIndex === 0) {
         return new Map();
       }
-      return this.manager.getGridContentStyles(
-        this.$parent.$refs.contentItems
-      );
+      return this.manager.getGridContentStyles(this.contentItems);
     }
   },
   async mounted() {
     document.addEventListener('keydown', this.onGlobalKeyDown);
     document.addEventListener('mouseup', this.onMouseUp);
     document.addEventListener('touchend', this.onMouseUp);
-    this.getWidgetStyles(this.docFields.data, this.moduleOptions);
-
-    const rootEl = this.$parent.$refs.root?.$el || this.$parent.$refs.root;
-    const gridRef = this.$parent.$refs.grid;
-    const gridEl = gridRef && gridRef.$el ? gridRef.$el : gridRef;
 
     this.manager.init(
-      rootEl,
-      gridEl,
+      this.rootEl,
+      this.gridEl,
       (type, obj) => {
         if (type === 'resize') {
           this.sceneResizeIndex += 1;
@@ -473,8 +477,8 @@ export default {
       // without the resize observer being properly cleaned up.
       this.manager.onSceneResizeDebounced(entries);
     });
-    if (gridEl) {
-      this.resizeObserver.observe(gridEl);
+    if (this.gridEl) {
+      this.resizeObserver.observe(this.gridEl);
     }
 
     await this.$nextTick();
@@ -520,7 +524,7 @@ export default {
       this.$emit('add-fit-item', patches);
     },
     onStartResize(item, side, event) {
-      const element = this.$refs.items.find(el => el.dataset.id === item._id);
+      const element = this.getColumnEl(item._id);
       const itemData = this.gridState.lookup.get(item._id);
       if (!itemData || !element) {
         return;
@@ -583,8 +587,11 @@ export default {
         this.updateGhostResizeGrip(this.ghostData.side, pointerY);
       }
     },
+    getColumnEl(id) {
+      return this.contentItems.find((el) => el.dataset.id === id);
+    },
     onStartMove(item, event) {
-      const element = this.$refs.items.find(el => el.dataset.id === item._id);
+      const element = this.getColumnEl(item._id);
       const itemData = this.gridState.lookup.get(item._id);
       if (!itemData || !element) {
         return;

@@ -68,6 +68,9 @@
       :meta-id="meta._id"
       :opstate="opstate"
       :preview="preview"
+      :root-el="$refs.root?.$el || $refs.root"
+      :grid-el="$refs.grid?.$el || $refs.grid"
+      :content-items="contentItems"
       @resize-start="onResizeStart"
       @resize-end="onResizeEnd"
       @move-start="onMoveStart"
@@ -136,6 +139,11 @@ export default {
     };
   },
   computed: {
+    contentItems() {
+      const items = this.$refs.contentItems.map(({ columnEl }) => columnEl);
+      console.log('items', items);
+      return items;
+    },
     gridState() {
       return itemsToState({
         items: this.items,
@@ -211,6 +219,9 @@ export default {
         'is-moving': this.isMoving
       };
     }
+  },
+  mounted() {
+    /* this.getWidgetStyles(this.docFields.data, this.moduleOptions); */
   },
   methods: {
     onResizeStart() {
