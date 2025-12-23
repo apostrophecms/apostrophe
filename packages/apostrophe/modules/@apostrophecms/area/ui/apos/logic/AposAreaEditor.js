@@ -116,7 +116,8 @@ export default {
       return Object.keys(this.widgets);
     },
     maxReached() {
-      return this.options.max && this.next.length >= this.options.max;
+      const max = this.options.max || this.field.max;
+      return max && this.next.length >= max;
     },
     foreign() {
       // Cast to boolean is necessary to satisfy prop typing

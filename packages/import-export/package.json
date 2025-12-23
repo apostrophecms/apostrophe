@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/import-export",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "description": "Import Export Documents for ApostropheCMS",
   "main": "index.js",
   "scripts": {
@@ -20,13 +20,13 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@apostrophecms-pro/automatic-translation": "github:apostrophecms/automatic-translation",
-    "apostrophe": "workspace:*",
+    "apostrophe": "workspace:^",
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "workspace:^",
     "form-data": "^4.0.0",
     "mocha": "^10.2.0",
     "stylelint": "^16.0.0",
-    "stylelint-config-apostrophe": "workspace:*"
+    "stylelint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
     "bluebird": "^3.7.2",

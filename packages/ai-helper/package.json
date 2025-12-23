@@ -24,13 +24,13 @@
   },
   "devDependencies": {
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*"
+    "eslint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.0.4",
     "form-data": "^4.0.0",
     "marked": "^4.3.0",
     "node-fetch": "^2.6.9",
-    "sharp": "^0.30.7"
+    "sharp": "^0.32.6"
   }
 }

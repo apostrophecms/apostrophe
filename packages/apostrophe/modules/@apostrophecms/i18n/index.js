@@ -29,6 +29,9 @@
 // in the same language as the website content.
 // Example: `defaultLocale: 'fr'`.
 //
+// ### `encoding`
+//
+// Defaults to `'utf-8'`. You almost certainly do not want to change this.
 
 const i18next = require('i18next');
 const fs = require('fs');
@@ -72,7 +75,9 @@ module.exports = {
       browser: true
     },
     // If true, slugifying will strip accents from Latin characters
-    stripUrlAccents: false
+    stripUrlAccents: false,
+    // You almost certainly do not want to change this
+    encoding: 'utf-8'
   },
   async init(self) {
     self.defaultNamespace = 'default';
@@ -149,6 +154,7 @@ module.exports = {
     await self.i18next.init(i18nextOptions);
     self.addInitialResources();
     self.enableBrowserData();
+    self.encoding = self.options.encoding;
   },
   handlers(self) {
     return {
@@ -1316,6 +1322,13 @@ module.exports = {
             throw new Error('Some documents failed to update their slugs.');
           }
         }
+      }
+    };
+  },
+  helpers(self) {
+    return {
+      encoding() {
+        return self.encoding;
       }
     };
   }

@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/login-totp",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Adds totp (time-based one-time password) to Apostrophe login pages",
   "main": "index.js",
   "scripts": {
@@ -26,12 +26,12 @@
     "url": "https://github.com/apostrophecms/login-totp/issues"
   },
   "devDependencies": {
-    "apostrophe": "workspace:*",
+    "apostrophe": "workspace:^",
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "workspace:^",
     "mocha": "^7.2.0",
     "stylelint": "^16.0.0",
-    "stylelint-config-apostrophe": "workspace:*"
+    "stylelint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
     "qrcode": "^1.5.0",
