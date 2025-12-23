@@ -297,7 +297,7 @@ export default {
     'down',
     'remove',
     'edit',
-    'editStyles',
+    'edit-styles',
     'cut',
     'copy',
     'update',
