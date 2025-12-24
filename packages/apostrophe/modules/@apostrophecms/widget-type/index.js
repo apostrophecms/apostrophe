@@ -420,9 +420,7 @@ module.exports = {
           contextOptions: _with
         });
 
-        const hasStyles = Object.keys(self.styles || {}).length > 0;
-
-        if (hasStyles && self.options.stylesWrapper !== false) {
+        if (self.options.stylesWrapper !== false) {
           const styles = self.apos.styles.prepareWidgetStyles(widget);
           const styleTag = self.apos.styles.getWidgetElements(styles);
           const wrapperAttrs = self.apos.styles.getWidgetAttributes(styles);
@@ -712,8 +710,16 @@ module.exports = {
         });
       },
 
-      annotateWidgetForExternalFront() {
-        return {};
+      annotateWidgetForExternalFront(widget) {
+        const styles = self.apos.styles.prepareWidgetStyles(widget);
+
+        return {
+          aposStylesWrapper: self.options.stylesWrapper,
+          aposStylesElements: self.apos.styles.getWidgetElements(styles),
+          aposStylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, {
+            asObject: true
+          })
+        };
       }
     };
   },

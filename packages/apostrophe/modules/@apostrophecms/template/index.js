@@ -1320,7 +1320,7 @@ module.exports = {
           // `annotateWidgetForExternalFront() method.
           const manager = self.apos.area.getWidgetManager(item.type);
           if (manager) {
-            const widgetOptions = manager.annotateWidgetForExternalFront();
+            const widgetOptions = manager.annotateWidgetForExternalFront(item);
             item._options = widgetOptions;
           } else {
             self.apos.area.warnMissingWidgetType(item.type);

@@ -19,9 +19,9 @@ module.exports = self => {
         self.getWidgetElements(styles)
       );
     },
-    attributes(styles, additionalAttributes = {}) {
+    attributes(styles, additionalAttributes = {}, options = {}) {
       return self.apos.template.safe(
-        self.getWidgetAttributes(styles, additionalAttributes)
+        self.getWidgetAttributes(styles, additionalAttributes, options)
       );
     }
   };
