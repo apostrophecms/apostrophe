@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ -z "$TEST_WITH_PRO" ]; then
+  echo "Not testing with Pro modules"
+  exit 0
+fi
+
+echo "Installing dependencies on Pro modules for testing"
+
+pnpm add git+ssh://git@github.com:apostrophecms/automatic-translation || exit 1
