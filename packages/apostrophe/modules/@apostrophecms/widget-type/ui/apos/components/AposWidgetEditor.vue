@@ -124,6 +124,10 @@ export default {
     areaFieldId: {
       type: String,
       default: null
+    },
+    contextualStyles: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'modal-result' ],
@@ -260,11 +264,12 @@ export default {
         return;
       }
 
-      const styleOnlyChanged = value.changed?.length &&
+      const recomputeOnlyStyles = !this.contextualStyles &&
+        value.changed?.length &&
         value.changed.every(fieldName => {
           return this.moduleOptions.stylesFields?.includes(fieldName) || false;
         });
-      if (styleOnlyChanged) {
+      if (recomputeOnlyStyles) {
         const styles = renderScopedStyles(this.schema, value.data, {
           rootSelector: '__placeholder_root_selector__',
           checkIfConditionsFn: checkIfConditions,

@@ -49,6 +49,7 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'apostrophe:layoutColumn',
+    contextualStyles: true,
     operationsInBreadcrumb: true,
     breakpoints: {
       tablet: 900,
@@ -59,7 +60,6 @@ module.exports = {
     return {
       add: {
         myBorder: 'border',
-        alignment: 'alignment',
         backgroundColor: {
           type: 'color',
           property: 'background-color'

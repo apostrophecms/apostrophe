@@ -285,6 +285,9 @@ export default {
       apos.bus.$on('apos-refreshing', cancelRefresh);
       const preview = this.widgetPreview(widget.type, index, false);
       const stylesEditorComponent = this.widgetStylesEditorComponent(widget.type);
+      const contextualStyles = apos.modules[
+        apos.area.widgetManagers[widget.type]
+      ]?.contextualStyles;
 
       const result = await apos.modal.execute(stylesEditorComponent, {
         modelValue: widget,
@@ -295,6 +298,7 @@ export default {
         areaFieldId: this.fieldId,
         meta: this.meta[widget._id]?.aposMeta,
         preview,
+        contextualStyles,
         defaultTab: 'styles'
       });
       apos.area.activeEditor = null;
@@ -423,6 +427,7 @@ export default {
         const componentName = this.widgetEditorComponent(widget.type);
         apos.area.activeEditor = this;
         apos.bus.$on('apos-refreshing', cancelRefresh);
+
         const preview = this.widgetPreview(widget.type, index, false);
         const result = await apos.modal.execute(componentName, {
           modelValue: widget,
@@ -476,6 +481,7 @@ export default {
         });
       }
 
+      console.log('=====> update next <=====');
       this.next = this.next.map((widget) => {
         if (widget._id === updated._id) {
           return updated;
