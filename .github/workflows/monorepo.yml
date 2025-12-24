@@ -365,6 +365,8 @@ jobs:
         run: pnpm run --filter "${{ matrix.package }}" --if-present test
         env:
           CI: true
+          # Yes we want import-export to test with automatic-translation
+          TEST_WITH_PRO: "1"
 
       - name: Stop Redis
         if: always() && matrix.needsRedis

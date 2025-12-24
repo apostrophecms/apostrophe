@@ -8,7 +8,7 @@
     "stylelint": "stylelint ui/**/*.{scss,vue}",
     "lint": "npm run eslint && npm run stylelint",
     "mocha": "mocha",
-    "test": "npm run lint && mocha --ignore=test/import-page.js && mocha test/import-page.js"
+    "test": "(../../scripts/pro-if-needed && npm run lint && mocha --ignore=test/import-page.js && mocha test/import-page.js) ; ../../scripts/undo-pro-if-needed"
   },
   "repository": {
     "type": "git",
@@ -19,7 +19,6 @@
   "author": "Apostrophe Technologies",
   "license": "UNLICENSED",
   "devDependencies": {
-    "@apostrophecms-pro/automatic-translation": "github:apostrophecms/automatic-translation",
     "apostrophe": "workspace:^",
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
