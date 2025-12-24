@@ -19,7 +19,7 @@ export function useAposStyles() {
     removeStyleTag();
   });
 
-  function getWidgetStyles(doc, moduleOptions) {
+  function getWidgetStyles(doc, moduleOptions = {}) {
     const { schema, stylesFields } = moduleOptions;
     if (!schema || !stylesFields) {
       return;
@@ -61,10 +61,13 @@ export function useAposStyles() {
     }
   }
 
-  function recomputeChangedStyles(newVal, oldVal, { moduleOptions }) {
+  function recomputeChangedStyles(newVal, oldVal, { moduleOptions = {} }) {
+    const stylesFields = moduleOptions.stylesFields || [];
+    if (!stylesFields.length) {
+      return;
+    }
     const [ newValStyles, oldValStyles ] = Object.entries(newVal)
       .reduce((acc, [ fieldName, value ]) => {
-        const stylesFields = moduleOptions.stylesFields || [];
         if (!stylesFields.includes(fieldName)) {
           return acc;
         }
