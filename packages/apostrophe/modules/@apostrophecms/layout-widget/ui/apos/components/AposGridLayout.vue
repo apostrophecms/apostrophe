@@ -220,9 +220,6 @@ export default {
       };
     }
   },
-  mounted() {
-    /* this.getWidgetStyles(this.docFields.data, this.moduleOptions); */
-  },
   methods: {
     onResizeStart() {
       this.isResizing = true;
