@@ -98,6 +98,12 @@ were applicable. For Apostrophe core, that should be in the
 and for other modules, add it in their README files (unless the README directs
 you elsewhere).
 
+### Working with the monorepo
+
+All of our public npm modules are contained in this single monorepo. You can find the individual packages in the `packages/` subdirectory. This means you will not be using `npm link` in the way you may be used to.
+
+See MONOREPO.md for more information about how to work with the monorepo.
+
 ### Contributing to Apostrophe Core
 
 This is assuming you are interacting with the ApostropheCMS repositories on the GitHub website. If you are using GitHub Desktop you can read about how to fork a repository in the [GitHub docs.](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-and-forking-repositories-from-github-desktop)

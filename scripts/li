@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+const cp = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+const exceptions = {
+  apostrophe: `${process.env.HOME}/apostrophecms/apostrophe/packages/apostrophe`
+};
+
+const moduleName = process.argv[2];
+if (!moduleName) {
+  fail(`Usage: li moduleName-name`);
+}
+
+const from = `node_modules/${moduleName}`;
+if (!fs.existsSync(from)) {
+  fs.mkdirSync(path.dirname(from), { recursive: true });
+}
+const subdir = moduleName.replace(/@apostrophecms(-pro)?\//, '');
+// Favor the monorepo to save lazy developers time
+const to = exceptions[moduleName] || check(`${process.env.HOME}/apostrophecms/apostrophe/packages/${subdir}`) || check(`${process.env.HOME}/apostrophecms/${subdir}`);
+
+if (!to) {
+  fail(`I don't see ${to} in a checkout or the monorepo, nowhere to link to`);
+}
+
+const stat = fs.lstatSync(from, { throwIfNoEntry: false });
+
+if (stat) {
+  if (stat.isDirectory()) {
+    fs.rmSync(from, { force: true, recursive: true, throwIfNoEntry: false });
+  } else {
+    fs.rmSync(from); 
+  }
+}
+
+fs.symlinkSync(to, from);
+
+function fail(m) {
+  console.error(m);
+  process.exit(1);
+}
+
+function check(path) {
+  if (fs.existsSync(path)) {
+    return path;
+  }
+  return false;
+}
