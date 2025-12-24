@@ -70,7 +70,7 @@
       :preview="preview"
       :root-el="$refs.root?.$el || $refs.root"
       :grid-el="$refs.grid?.$el || $refs.grid"
-      :content-items="contentItems"
+      :content-items="getContentItems()"
       @resize-start="onResizeStart"
       @resize-end="onResizeEnd"
       @move-start="onMoveStart"
@@ -139,11 +139,6 @@ export default {
     };
   },
   computed: {
-    contentItems() {
-      const items = this.$refs.contentItems.map(({ columnEl }) => columnEl);
-      console.log('items', items);
-      return items;
-    },
     gridState() {
       return itemsToState({
         items: this.items,
@@ -221,6 +216,12 @@ export default {
     }
   },
   methods: {
+    getContentItems() {
+      if (!this.$refs.contentItems) {
+        return [];
+      }
+      return this.$refs.contentItems.map(({ columnEl }) => columnEl);
+    },
     onResizeStart() {
       this.isResizing = true;
       this.$emit('resize-start');
