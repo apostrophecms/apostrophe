@@ -150,7 +150,6 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
-import { isEqual } from 'lodash';
 import { klona } from 'klona';
 import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 
@@ -337,33 +336,9 @@ export default {
   },
   watch: {
     modelValue(newVal, oldVal) {
-      const [ newValStyles, oldValStyles ] = Object.entries(newVal)
-        .reduce((acc, [ fieldName, value ]) => {
-          const styleFields = this.moduleOptions.stylesFields || [];
-          if (!styleFields.includes(fieldName)) {
-            return acc;
-          }
-          return [
-            {
-              ...acc[0],
-              [fieldName]: value
-            },
-            {
-              ...acc[1],
-              [fieldName]: oldVal[fieldName]
-            }
-          ];
-        }, [ {}, {} ]);
-
-      console.log('newValStyles', newValStyles);
-      console.log('oldValStyles', oldValStyles);
-
-      if (isEqual(newValStyles, oldValStyles)) {
-        return;
-      }
-
-      console.log('=====> reload <=====');
-      this.getWidgetStyles(newVal, this.moduleOptions);
+      this.recomputeChangedStyles(newVal, oldVal, {
+        moduleOptions: this.moduleOptions
+      });
     },
     suppressWidgetControls(newVal) {
       if (newVal) {

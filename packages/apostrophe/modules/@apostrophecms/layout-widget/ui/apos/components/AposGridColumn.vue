@@ -19,7 +19,7 @@
 
 <script setup>
 import {
-  useTemplateRef, computed, onMounted
+  useTemplateRef, computed, onMounted, watch
 } from 'vue';
 import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 
@@ -56,8 +56,13 @@ const moduleOptions = apos.modules[apos.area.widgetManagers[props.item.type]];
 const {
   widgetStyles,
   widgetId,
-  getWidgetStyles
+  getWidgetStyles,
+  recomputeChangedStyles
 } = useAposStyles();
+
+watch(() => props.item, (newVal, oldVal) => {
+  recomputeChangedStyles(newVal, oldVal, { moduleOptions });
+});
 
 defineExpose({
   columnEl

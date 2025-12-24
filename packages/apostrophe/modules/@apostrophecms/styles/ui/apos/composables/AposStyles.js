@@ -4,6 +4,7 @@ import {
 import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import { createId } from '@paralleldrive/cuid2';
+import { isEqual } from 'lodash';
 
 export function useAposStyles() {
   const widgetStyles = reactive({
@@ -60,11 +61,36 @@ export function useAposStyles() {
     }
   }
 
+  function recomputeChangedStyles(newVal, oldVal, { moduleOptions }) {
+    const [ newValStyles, oldValStyles ] = Object.entries(newVal)
+      .reduce((acc, [ fieldName, value ]) => {
+        const stylesFields = moduleOptions.stylesFields || [];
+        if (!stylesFields.includes(fieldName)) {
+          return acc;
+        }
+        return [
+          {
+            ...acc[0],
+            [fieldName]: value
+          },
+          {
+            ...acc[1],
+            [fieldName]: oldVal[fieldName]
+          }
+        ];
+      }, [ {}, {} ]);
+
+    if (isEqual(newValStyles, oldValStyles)) {
+      return;
+    }
+
+    getWidgetStyles(newVal, moduleOptions);
+  }
+
   return {
     widgetStyles,
-    styleTagId,
     widgetId,
     getWidgetStyles,
-    removeStyleTag
+    recomputeChangedStyles
   };
 }
