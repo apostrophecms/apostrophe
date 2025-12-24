@@ -481,7 +481,6 @@ export default {
         });
       }
 
-      console.log('=====> update next <=====');
       this.next = this.next.map((widget) => {
         if (widget._id === updated._id) {
           return updated;

@@ -310,9 +310,6 @@ export default {
     'remove-item',
     'patch-item'
   ],
-  /* setup() { */
-  /*   return useAposStyles(); */
-  /* }, */
   data() {
     return {
       manager: new GridManager(),

@@ -71,9 +71,4 @@ defineExpose({
 onMounted(() => {
   getWidgetStyles(props.item, moduleOptions);
 });
-
 </script>
-
-<style lang="scss">
-
-</style>
