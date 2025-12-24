@@ -49,6 +49,7 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'apostrophe:layoutColumn',
+    contextualStyles: true,
     operationsInBreadcrumb: true,
     breakpoints: {
       tablet: 900,
