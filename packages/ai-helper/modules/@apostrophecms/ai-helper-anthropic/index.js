@@ -37,7 +37,7 @@ module.exports = {
        * @param {Object} options - Generation options
        * @param {number} [options.maxTokens] - Maximum tokens to generate
        * @param {string} [options.model] - Model to use
-       * @returns {Promise<string>} Generated text
+       * @returns {Promise<Object>} {content: string, metadata: object}
        */
       async generateText(req, prompt, options = {}) {
         const maxTokens = options.maxTokens || self.options.textMaxTokens;
@@ -73,7 +73,14 @@ module.exports = {
               throw self.apos.error('error', 'No content returned from Anthropic');
             }
 
-            return content;
+            return {
+              content,
+              metadata: {
+                usage: result.usage,
+                model: result.model,
+                ...(result.stop_reason && { stop_reason: result.stop_reason })
+              }
+            };
 
           } catch (e) {
             lastError = e;

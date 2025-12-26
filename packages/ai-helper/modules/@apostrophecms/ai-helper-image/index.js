@@ -1,6 +1,5 @@
 const { createId } = require('@paralleldrive/cuid2');
 const path = require('node:path');
-const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const sharp = require('sharp');
 
@@ -47,9 +46,7 @@ module.exports = {
       async cleanup() {
         const images = await self.aiHelperImages.find({
           createdAt: {
-            // OpenAI image URLs were originally only good for an hour, and
-            // it's not a bad policy: the ones you don't use are
-            // kept for an hour
+            // Images are kept for an hour if not used
             $lt: new Date(Date.now() - 1000 * 60 * 60)
           }
         }).toArray();
@@ -58,52 +55,30 @@ module.exports = {
         }
       },
 
-      // Fetch the image to a temporary file and return the path to that file
+      async getTempImagePath(image) {
+        const dir = path.join(self.apos.rootDir, 'data', 'temp');
+        await fsp.mkdir(dir, { recursive: true });
+        return path.join(dir, `${image._id}.png`);
+      },
+
       async aiHelperFetchImage(req, image) {
         const response = await fetch(self.aiHelperImageUrl(req, image));
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        const buffer = Buffer.from(await response.arrayBuffer());
 
-        const tempDir = self.getTempDir(self);
-        await fsp.mkdir(tempDir, { recursive: true });
-
-        const temp = path.join(tempDir, `${image._id}.png`);
+        const temp = await self.getTempImagePath(image);
         await fsp.writeFile(temp, buffer);
         return temp;
       },
 
-      async aiHelperFetchImageForEdits(req, image) {
-        const response = await fetch(self.aiHelperImageUrl(req, image));
-        const arrayBuf = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuf);
-
-        const tempDir = self.getTempDir(self);
-        await fsp.mkdir(tempDir, { recursive: true });
-
-        const temp = path.join(tempDir, `${image._id}.png`);
-
-        await sharp(buffer)
-          .ensureAlpha()
-          .png()
-          .toFile(temp);
-
-        return temp;
-      },
-
-      // Write a base64 image to uploadfs
-      async aiHelperWriteImageToUploadfs(_id, base64) {
-        const tempDir = self.getTempDir(self);
-        await fsp.mkdir(tempDir, { recursive: true });
-
-        const temp = path.join(tempDir, `${_id}.png`);
+      async aiHelperWriteImageToUploadfs(image, base64) {
+        const temp = await self.getTempImagePath(image);
         try {
           await fsp.writeFile(temp, Buffer.from(base64, 'base64'));
           await new Promise((resolve, reject) => {
-            self.uploadfs.copyIn(temp, `/ai-helper-images/${_id}.png`, err =>
+            self.uploadfs.copyIn(temp, `/ai-helper-images/${image._id}.png`, err =>
               err ? reject(err) : resolve()
             );
           });
-
         } finally {
           try {
             await fsp.unlink(temp);
@@ -134,7 +109,6 @@ module.exports = {
                 err ? reject(err) : resolve()
               );
             });
-
           } catch (e) {
             // Probably already deleted
             self.apos.util.warn(e);
@@ -143,10 +117,25 @@ module.exports = {
         await self.aiHelperImages.deleteOne({ _id });
       },
 
-      getTempDir(self) {
-        return path.join(self.apos.rootDir, 'data', 'temp');
-      }
+      validateProviderResponse(providerResponse) {
+        if (!Array.isArray(providerResponse)) {
+          throw new Error('Provider must return an array of image results');
+        }
 
+        for (const item of providerResponse) {
+          if (!item.type || !item.data) {
+            throw new Error(
+              'Provider response must include "type" and "data" fields. ' +
+              'Expected format: {type: "url"|"base64", data: string, metadata?: object}'
+            );
+          }
+          if (![ 'url', 'base64' ].includes(item.type)) {
+            throw new Error(`Invalid type "${item.type}". Must be "url" or "base64"`);
+          }
+        }
+
+        return providerResponse;
+      }
     };
   },
 
@@ -193,8 +182,6 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          let temp = null;
-
           // Fake results for cheap & offline testing
           if (process.env.APOS_AI_HELPER_MOCK) {
             const now = new Date();
@@ -214,55 +201,91 @@ module.exports = {
             // Get the configured image provider
             const provider = aiHelper.getImageProvider();
 
+            // Options for future expansion (masks, seeds, styles, etc.)
+            const options = {};
+
             let result;
 
             if (variantOf) {
-              // Check if provider supports edits/variations
+              // Check if provider supports variations
               if (!provider.capabilities.imageVariation) {
                 throw self.apos.error('invalid',
                   `Provider "${aiHelper.options.imageProvider}" does not support image variations`
                 );
               }
 
-              // Generate variations (edits)
+              // Generate variations
               const existing = await self.aiHelperImages.findOne({ _id: variantOf });
               if (!existing) {
                 throw self.apos.error('notfound');
               }
 
-              // Use the special method that ensures RGBA format
-              temp = await self.aiHelperFetchImageForEdits(req, existing);
-
-              result = await provider.module.generateImageVariation(req, temp, prompt);
+              /**
+               * Pass the image record to the provider so it can prepare it as needed.
+               *
+               * The provider is responsible for:
+               * - Fetching the image (using self.aiHelperImageUrl(req, existing))
+               * - Converting to required format
+               * (e.g., OpenAI needs RGBA PNG, others may differ)
+               * - Resizing if needed (e.g., Ollama might want 512x512)
+               *
+               * This keeps provider-specific requirements in the provider modules.
+               *
+               * Future options could include:
+               * - mask: base64 image for inpainting
+               * - maskArea: {x, y, width, height} for region editing
+               * - negativePrompt: what to avoid in the generation
+               * - seed: for reproducible results
+               * - style: provider-specific style hints
+               */
+              result = await provider.module.generateImageVariation(
+                req, existing, prompt, options
+              );
             } else {
-              // Generate new images
-              result = await provider.module.generateImage(req, prompt);
+              /**
+               * Generate new images from prompt
+               *
+               * Future options could include:
+               * - numberOfImages: override default count
+               * - size: image dimensions
+               * - quality: generation quality level
+               * - style: artistic style hints
+               * - negativePrompt: what to avoid
+               */
+              result = await provider.module.generateImage(req, prompt, options);
             }
 
-            // Result can be either URLs or base64
+            // Validate provider response is in standard format
+            const validatedResults = self.validateProviderResponse(result);
+
+            // Store results in database and prepare response
             const images = [];
             const now = new Date();
 
-            for (const item of result) {
+            for (const item of validatedResults) {
               const id = createId();
               const image = {
                 _id: id,
                 userId: req.user._id,
                 createdAt: now,
-                uploadfs: !!item.b64_json,
-                prompt
+                uploadfs: item.type === 'base64',
+                prompt,
+                // Store any provider-specific metadata
+                ...(item.metadata && Object.keys(item.metadata).length > 0 && {
+                  providerMetadata: item.metadata
+                })
               };
 
               // If base64, store in uploadfs
-              if (item.b64_json) {
-                await self.aiHelperWriteImageToUploadfs(id, item.b64_json);
-              }
-
-              // Don't write url to the database if using uploadfs
-              if (!item.b64_json) {
-                await self.aiHelperImages.insertOne({ ...image, url: item.url });
-              } else {
+              if (item.type === 'base64') {
+                await self.aiHelperWriteImageToUploadfs(image, item.data);
                 await self.aiHelperImages.insertOne(image);
+              } else {
+                // URL-based image
+                await self.aiHelperImages.insertOne({
+                  ...image,
+                  url: item.data
+                });
               }
 
               // Ensure URL for response
@@ -282,15 +305,6 @@ module.exports = {
               self.apos.util.error(e);
             }
             throw e;
-          } finally {
-            // Clean up temporary file if it exists
-            if (temp) {
-              try {
-                await fsp.unlink(temp);
-              } catch (e) {
-                // Don't care if cleanup fails
-              }
-            }
           }
         }
       },
@@ -347,8 +361,12 @@ module.exports = {
 
           } finally {
             try {
-              if (temp) await fsp.unlink(temp);
-              if (tempJpg) await fsp.unlink(tempJpg);
+              if (temp) {
+                await fsp.unlink(temp);
+              }
+              if (tempJpg) {
+                await fsp.unlink(tempJpg);
+              }
             } catch (e) {
               // We don't care if it never got there
             }

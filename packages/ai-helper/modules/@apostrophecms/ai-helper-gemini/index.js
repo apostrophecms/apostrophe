@@ -4,13 +4,11 @@ module.exports = {
   options: {
     // API key - set via option or APOS_GEMINI_KEY env var
     apiKey: process.env.APOS_GEMINI_KEY || null,
-    // Default Text Model (Gemini 2.5 Flash lite is fast and cheap)
     textModel: 'gemini-2.5-flash-lite',
     textMaxTokens: 1000,
-    // Default Image Model (Gemini 2.5 Flash image is fast and cheap)
     imageModel: 'gemini-2.5-flash-image',
     imageCount: 1,
-    aspectRatio: '1x1'
+    aspectRatio: '1:1'
   },
 
   async init(self) {
@@ -85,7 +83,13 @@ module.exports = {
               throw self.apos.error('error', 'No content returned from Gemini');
             }
 
-            return content;
+            return {
+              content,
+              metadata: {
+                ...(result.usageMetadata && { usage: result.usageMetadata }),
+                ...(result.modelVersion && { model: result.modelVersion })
+              }
+            };
 
           } catch (e) {
             lastError = e;
@@ -132,7 +136,7 @@ module.exports = {
        * @param {string} [options.aspectRatio] - Image size
        * @param {number} [options.imageCount] - Number of images to generate
        * @param {string} [options.model] - Model to use
-       * @returns {Promise<Array<string>>} Array of image URLs
+       * @returns {Promise<Array<Object>>} Array of standardized image objects
        */
       async generateImage(req, prompt, options = {}) {
         // Gemini supports specific aspect ratios, but we default to square
@@ -177,8 +181,17 @@ module.exports = {
               throw self.apos.error('error', 'No image data returned from Gemini');
             }
 
+            // Transform Gemini response to standardized format
             allImages.push({
-              b64_json: imageData.data
+              type: 'base64',
+              data: imageData.data,
+              metadata: {
+                ...(imageData.mimeType && { mimeType: imageData.mimeType }),
+                ...(result.usageMetadata && { usage: result.usageMetadata }),
+                ...(result.modelVersion && { model: result.modelVersion }),
+                aspectRatio,
+                provider: 'gemini'
+              }
             });
           }
 
@@ -198,15 +211,15 @@ module.exports = {
       /**
        * Generate variations of an existing image
        * @param {Object} req - Apostrophe request object
-       * @param {string} imagePath - Path to the source image file
+       * @param {Object} existing - The existing image record from database
        * @param {string} prompt - the variant prompt
        * @param {Object} options - Generation options
        * @param {number} [options.count] - Number of variations to generate
        * @param {string} [options.aspectRatio] - Image size
        * @param {string} [options.model] - Model to use
-       * @returns {Promise<Array<string>>} Array of image URLs
+       * @returns {Promise<Array<Object>>} Array of standardized image objects
        */
-      async generateImageVariation(req, imagePath, prompt, options = {}) {
+      async generateImageVariation(req, existing, prompt, options = {}) {
         const aspectRatio = options.aspectRatio || self.options.aspectRatio || '1:1';
         const count = options.count || 1;
         const model = options.model || self.options.imageModel;
@@ -218,6 +231,10 @@ module.exports = {
         } else {
           variationPrompt = 'Using the provided image, please provide a creative reinterpretation with different style, colors, composition, or details.';
         }
+
+        // Fetch and prepare the image
+        const imageModule = self.apos.image;
+        const imagePath = await imageModule.aiHelperFetchImage(req, existing);
         const imageData = fs.readFileSync(imagePath);
         const base64Image = imageData.toString('base64');
 
@@ -264,8 +281,17 @@ module.exports = {
               throw self.apos.error('error', 'No image data returned from Gemini');
             }
 
+            // Transform Gemini response to standardized format
             allImages.push({
-              b64_json: imageData.data
+              type: 'base64',
+              data: imageData.data,
+              metadata: {
+                ...(imageData.mimeType && { mimeType: imageData.mimeType }),
+                ...(result.usageMetadata && { usage: result.usageMetadata }),
+                ...(result.modelVersion && { model: result.modelVersion }),
+                aspectRatio,
+                provider: 'gemini'
+              }
             });
           }
 

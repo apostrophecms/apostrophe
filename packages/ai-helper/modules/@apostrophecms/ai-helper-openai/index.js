@@ -90,7 +90,18 @@ module.exports = {
               throw self.apos.error('error', 'No content returned from OpenAI');
             }
 
-            return content;
+            return {
+              content,
+              metadata: {
+                usage: result.usage,
+                model: result.model,
+                ...(
+                  result.system_fingerprint && {
+                    system_fingerprint: result.system_fingerprint
+                  }),
+                ...(result.created && { created: result.created })
+              }
+            };
 
           } catch (e) {
             lastError = e;
@@ -135,7 +146,7 @@ module.exports = {
        * @param {string} [options.size] - Image size
        * @param {string} [options.imageQuality] - image resolution
        * @param {string} [options.model] - Model to use
-       * @returns {Promise<Array<string>>} Array of image URLs
+       * @returns {Promise<Array<Object>>} Array of standardized image objects
        */
       async generateImage(req, prompt, options = {}) {
         const count = options.count || 1;
@@ -162,23 +173,35 @@ module.exports = {
           throw self.apos.error('error', 'No image data returned from OpenAI');
         }
 
-        // Return the data items directly - they'll have either url or b64_json
-        return result.data;
+        // Transform OpenAI response to standardized format
+        return result.data.map(item => ({
+          type: item.url ? 'url' : 'base64',
+          data: item.url || item.b64_json,
+          metadata: {
+            ...(item.revised_prompt && { revised_prompt: item.revised_prompt }),
+            ...(result.usage && { usage: result.usage }),
+            ...(result.created && { created: result.created }),
+            ...(result.model && { model: result.model }),
+            ...(result.size && { size: result.size }),
+            ...(result.quality && { quality: result.quality }),
+            ...(result.output_format && { output_format: result.output_format })
+          }
+        }));
       },
 
       /**
        * Generate variations of an existing image
        * @param {Object} req - Apostrophe request object
-       * @param {string} imagePath - Path to the source image file
+       * @param {Object} existing - The existing image record from database
        * @param {string} [prompt] - the variant prompt
        * @param {Object} options - Generation options
        * @param {number} [options.count] - Number of variations to generate
        * @param {string} [options.size] - Image size
        * @param {string} [options.imageQuality] - image resolution
        * @param {string} [options.model] - Model to use
-       * @returns {Promise<Array<string>>} Array of image URLs
+       * @returns {Promise<Array<Object>>} Array of standardized image objects
        */
-      async generateImageVariation(req, imagePath, prompt, options = {}) {
+      async generateImageVariation(req, existing, prompt, options = {}) {
         const count = options.count || 1;
         const size = options.size || self.options.size;
         const imageQuality = options.imageQuality || self.options.imageQuality;
@@ -192,6 +215,10 @@ module.exports = {
           variationPrompt = 'Using the provided image, please provide a creative reinterpretation with different style, colors, composition, or details.';
         }
 
+        // Fetch and prepare the image
+        const imageModule = self.apos.image;
+        const imagePath = await imageModule.aiHelperFetchImage(req, existing);
+
         const formData = new FormData();
         formData.append('image', fs.createReadStream(imagePath));
         formData.append('prompt', variationPrompt);
@@ -199,7 +226,6 @@ module.exports = {
         formData.append('size', size);
         formData.append('quality', imageQuality);
         formData.append('model', model);
-        formData.append('output_format', 'png');
 
         const result = await self.apos.http.post('https://api.openai.com/v1/images/edits', {
           headers: {
@@ -213,7 +239,20 @@ module.exports = {
           throw self.apos.error('error', 'No image data returned from OpenAI');
         }
 
-        return result.data;
+        // Transform OpenAI response to standardized format
+        return result.data.map(item => ({
+          type: item.url ? 'url' : 'base64',
+          data: item.url || item.b64_json,
+          metadata: {
+            ...(item.revised_prompt && { revised_prompt: item.revised_prompt }),
+            ...(result.usage && { usage: result.usage }),
+            ...(result.created && { created: result.created }),
+            ...(result.model && { model: result.model }),
+            ...(result.size && { size: result.size }),
+            ...(result.quality && { quality: result.quality }),
+            ...(result.output_format && { output_format: result.output_format })
+          }
+        }));
       }
     };
   }

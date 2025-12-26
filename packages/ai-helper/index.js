@@ -7,12 +7,21 @@ module.exports = {
     textProvider: 'openai',
     imageProvider: 'openai',
     // Legacy option support
-    textMaxTokens: 1000
+    textMaxTokens: 1000,
+    // Debug logging for usage tracking
+    logUsage: process.env.APOS_AI_HELPER_LOG_USAGE === 'true' || false
   },
 
-  init(self) {
+  async init(self) {
     // Storage for registered providers
     self.providers = new Map();
+
+    // Collection for text generation tracking
+    self.aiHelperTextGenerations = self.apos.db.collection('aposAiHelperTextGenerations');
+    await self.aiHelperTextGenerations.createIndex({
+      userId: 1,
+      timestamp: -1
+    });
   },
 
   i18n: {
@@ -155,6 +164,48 @@ module.exports = {
           self.apos.permission.can(req, 'edit', type)
         )) {
           throw self.apos.error('forbidden');
+        }
+      },
+
+      /**
+       * Store text generation record
+       * @param {Object} req - Request object
+       * @param {string} prompt - The prompt used
+       * @param {string} provider - Provider name
+       * @param {Object} metadata - Generation metadata (usage, model, etc.)
+       */
+      async storeTextGeneration(req, prompt, provider, metadata) {
+        await self.aiHelperTextGenerations.insertOne({
+          userId: req.user._id,
+          timestamp: new Date(),
+          prompt,
+          provider,
+          ...metadata
+        });
+      }
+    };
+  },
+
+  apiRoutes(self) {
+    return {
+      get: {
+        /**
+         * List all registered providers and current configuration
+         * Useful for admin UI, debugging, and future provider switching
+         */
+        async providers(req) {
+          // Require authenticated user
+          if (!req.user) {
+            throw self.apos.error('forbidden');
+          }
+
+          return {
+            providers: self.listProviders(),
+            configured: {
+              text: self.options.textProvider,
+              image: self.options.imageProvider
+            }
+          };
         }
       }
     };

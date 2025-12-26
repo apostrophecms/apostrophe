@@ -16,7 +16,13 @@ module.exports = {
       }
     };
   },
-
+  init(self) {
+    const defaultOptions = self.options.defaultOptions;
+    defaultOptions.insert ||= [];
+    if (!defaultOptions.insert.includes('ai')) {
+      defaultOptions.insert.push('ai');
+    }
+  },
   apiRoutes(self) {
     return {
       post: {
@@ -33,22 +39,48 @@ module.exports = {
               throw self.apos.error('invalid');
             }
 
-            // Use mock results if in test mode
-            let content;
+            // Generate content and metadata (mock or real)
+            let content, metadata, providerName;
+
             if (process.env.APOS_AI_HELPER_MOCK) {
               content = mockContent;
+              metadata = {
+                model: 'mock-model',
+                usage: {
+                  prompt_tokens: 32,
+                  completion_tokens: 342,
+                  total_tokens: 374
+                }
+              };
+              providerName = 'mock';
             } else {
-              // Get the configured text provider
               const provider = aiHelper.getTextProvider();
-
-              // Generate text using the provider
-              content = await provider.module.generateText(req, prompt, {
+              const result = await provider.module.generateText(req, prompt, {
                 maxTokens: aiHelper.options.textMaxTokens
               });
+
+              content = result.content;
+              metadata = result.metadata || {};
+              providerName = provider.module.__meta.name;
             }
 
             if (!content) {
               throw self.apos.error('error');
+            }
+
+            // Store generation record
+            if (aiHelper.storeTextGeneration) {
+              await aiHelper.storeTextGeneration(req, prompt, providerName, metadata);
+            }
+
+            // Log usage if enabled
+            if (aiHelper.options.logUsage) {
+              console.log(`[AI Usage] Text generation by ${req.user.username || req.user._id}:`, {
+                provider: providerName,
+                model: metadata.model,
+                usage: metadata.usage,
+                prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : '')
+              });
             }
 
             // Remap headings to levels actually available in this widget
@@ -67,12 +99,10 @@ module.exports = {
           } catch (e) {
             console.error('AI Helper Error:', e);
 
-            // Use the userMessage if available, otherwise fall back to defaults
             let notificationMessage;
             let notificationType = 'danger';
 
             if (e.userMessage) {
-              // Provider set a user-friendly message
               notificationMessage = e.userMessage;
               notificationType = e.status === 429 ? 'warning' : 'danger';
             } else if (e.status === 429) {
