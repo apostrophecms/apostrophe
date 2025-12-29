@@ -115,6 +115,29 @@ module.exports = {
           },
           columnWidgetName: self.columnWidgetName
         };
+      },
+      annotateWidgetForExternalFront(_super, widget) {
+        const {
+          columns,
+          minSpan,
+          defaultSpan,
+          mobile,
+          tablet,
+          gap,
+          defaultCellHorizontalAlignment,
+          defaultCellVerticalAlignment
+        } = self.options;
+        return {
+          ..._super(widget),
+          columns,
+          minSpan,
+          defaultSpan,
+          mobile,
+          tablet,
+          gap,
+          defaultCellHorizontalAlignment,
+          defaultCellVerticalAlignment
+        };
       }
     };
   },
@@ -326,28 +349,6 @@ module.exports = {
             public: cssContent
           };
         }
-      },
-      annotateWidgetForExternalFront() {
-        const {
-          columns,
-          minSpan,
-          defaultSpan,
-          mobile,
-          tablet,
-          gap,
-          defaultCellHorizontalAlignment,
-          defaultCellVerticalAlignment
-        } = self.options;
-        return {
-          columns,
-          minSpan,
-          defaultSpan,
-          mobile,
-          tablet,
-          gap,
-          defaultCellHorizontalAlignment,
-          defaultCellVerticalAlignment
-        };
       }
     };
   },

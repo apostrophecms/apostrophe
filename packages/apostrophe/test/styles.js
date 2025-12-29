@@ -2430,6 +2430,22 @@ describe('Styles', function () {
           'should include inline style'
         );
       });
+
+      it('should return the attributes as an object when specified', function () {
+        const result = apos.styles.getWidgetAttributes({
+          classes: [ 'c1' ],
+          inline: 'color: red',
+          styleId: 'test',
+          widgetId: 'w1'
+        }, {}, { asObject: true });
+        assert.deepEqual(result, {
+          id: 'test',
+          class: 'c1',
+          style: 'color: red;',
+          'data-apos-widget-style-wrapper-for': 'w1',
+          'data-apos-widget-style-classes': 'c1'
+        });
+      });
     });
   });
 
