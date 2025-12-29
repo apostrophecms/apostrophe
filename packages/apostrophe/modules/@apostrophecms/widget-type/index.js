@@ -712,8 +712,26 @@ module.exports = {
         });
       },
 
-      annotateWidgetForExternalFront() {
-        return {};
+      annotateWidgetForExternalFront(widget) {
+        const hasStyles = Object.keys(self.styles || {}).length > 0;
+
+        if (!hasStyles) {
+          return {
+            aposStylesWrapper: false,
+            aposStylesElements: '',
+            aposStylesAttributes: {}
+          };
+        }
+
+        const styles = self.apos.styles.prepareWidgetStyles(widget);
+
+        return {
+          aposStylesWrapper: self.options.stylesWrapper,
+          aposStylesElements: self.apos.styles.getWidgetElements(styles),
+          aposStylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, {
+            asObject: true
+          })
+        };
       }
     };
   },
