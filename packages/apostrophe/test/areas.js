@@ -360,35 +360,25 @@ describe('Areas', function() {
   let secondRendered;
 
   it('renders an area passed to the `renderArea` method', async function () {
-    const _generateId = apos.util.generateId;
     const req = apos.task.getReq();
-
-    apos.util.generateId = () => 'test-id';
     firstRendered = await apos.area.renderArea(req, rteArea, areaDocs[0]);
-    apos.util.generateId = _generateId;
-
-    const expected = `
-<div
+    assert(firstRendered);
+    assert.equal(firstRendered.trim(),
+`<div 
   class="apos-area"
-  ><div id="test-id" data-apos-widget-style-wrapper-for="ckjyvagy9000p2a67fbf8nwd3" data-apos-widget-style-classes="">
+  >
 <div data-rich-text>
   <p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We're fighting for our right to live, to exist.</p>
 </div>
-</div></div>
-`;
-
-    assert(firstRendered);
-    assert.equal(firstRendered.replaceAll(/\s/g, ''), expected.replaceAll(/\s/g, ''));
+</div>
+`.trim());
   });
 
   it('returns rendered HTML from the `renderArea` method for a mixed widget area', async function() {
-    const _generateId = apos.util.generateId;
     const req = apos.task.getReq();
     apos.area.prepForRender(mixedArea, areaDocs[1], 'main');
 
-    apos.util.generateId = () => 'test-id';
     secondRendered = await apos.area.renderArea(req, mixedArea, areaDocs[1]);
-    apos.util.generateId = _generateId;
 
     assert(secondRendered.includes(`<div data-rich-text>
   <p>Good morning.`));
@@ -396,16 +386,13 @@ describe('Areas', function() {
   });
 
   it('populates a document object with rendered HTML areas using the renderDocsAreas method.', async function () {
-    const _generateId = apos.util.generateId;
     const req = apos.task.getReq();
     areaDocs.forEach(doc => {
       // No rendered HTML yet.
       assert(!doc.main._rendered);
     });
 
-    apos.util.generateId = () => 'test-id';
     await apos.area.renderDocsAreas(req, areaDocs);
-    apos.util.generateId = _generateId;
 
     areaDocs.forEach(doc => {
       // Now they're there.
