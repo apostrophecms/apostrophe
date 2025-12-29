@@ -8,20 +8,45 @@ module.exports = {
     imageProvider: 'openai',
     // Legacy option support
     textMaxTokens: 1000,
-    // Debug logging for usage tracking
-    logUsage: process.env.APOS_AI_HELPER_LOG_USAGE === 'true' || false
+    // Usage tracking - can be set via option or
+    // APOS_AI_HELPER_LOG_USAGE env var
+    // When true, usage data is logged to the console
+    // for cost tracking and auditing
+    logUsage: process.env.APOS_AI_HELPER_LOG_USAGE === 'true' || false,
+    // Usage storage - when true,
+    // usage data is permanently stored in MongoDB
+    // separate from logUsage to allow console logging
+    // without database bloat
+    storeUsage: process.env.APOS_AI_HELPER_STORE_USAGE === 'true' || false
   },
 
   async init(self) {
     // Storage for registered providers
     self.providers = new Map();
 
-    // Collection for text generation tracking
-    self.aiHelperTextGenerations = self.apos.db.collection('aposAiHelperTextGenerations');
-    await self.aiHelperTextGenerations.createIndex({
-      userId: 1,
-      timestamp: -1
-    });
+    // Initialize usage storage collection if enabled
+    if (self.options.storeUsage) {
+      self.aposAiHelperUsage = self.apos.db.collection('aposAiHelperUsage');
+      await self.aposAiHelperUsage.createIndex(
+        { createdAt: -1 },
+        { name: 'createdAt_-1' }
+      );
+
+      // Index for per-user usage timelines
+      await self.aposAiHelperUsage.createIndex(
+        {
+          userId: 1,
+          createdAt: -1
+        },
+        { name: 'userId_1_createdAt_-1' }
+      );
+      self.apos.util.log('AI Helper usage storage enabled');
+    }
+
+    // Initialize usage tracking if enabled
+    if (self.options.logUsage) {
+      self.apos.util.log('AI Helper usage tracking enabled');
+    }
   },
 
   i18n: {
@@ -168,44 +193,69 @@ module.exports = {
       },
 
       /**
-       * Store text generation record
+       * Log AI usage to console for monitoring and debugging
        * @param {Object} req - Request object
-       * @param {string} prompt - The prompt used
-       * @param {string} provider - Provider name
-       * @param {Object} metadata - Generation metadata (usage, model, etc.)
+       * @param {Object} data - Usage data to log
+       * @param {string} data.type - 'text' or 'image'
+       * @param {string} data.provider - Provider name
+       * @param {string} data.model - Model used
+       * @param {string} data.prompt - User prompt
+       * @param {Object} [data.usage] - Token usage data
+       * @param {Object} [data.metadata] - Additional metadata
        */
-      async storeTextGeneration(req, prompt, provider, metadata) {
-        await self.aiHelperTextGenerations.insertOne({
-          userId: req.user._id,
-          timestamp: new Date(),
-          prompt,
+      logUsage(req, data) {
+        if (!self.options.logUsage) {
+          return;
+        }
+
+        const username = req.user?.username || 'unknown';
+        const {
+          type, provider, prompt, metadata
+        } = data;
+
+        console.log(`\n[AI Usage] ${type} generation by ${username}:`);
+        console.log({
+          type,
           provider,
-          ...metadata
+          ...metadata,
+          prompt: prompt.length > 100 ? prompt.substring(0, 100) + '...' : prompt
         });
-      }
-    };
-  },
+      },
 
-  apiRoutes(self) {
-    return {
-      get: {
-        /**
-         * List all registered providers and current configuration
-         * Useful for admin UI, debugging, and future provider switching
-         */
-        async providers(req) {
-          // Require authenticated user
-          if (!req.user) {
-            throw self.apos.error('forbidden');
-          }
+      /**
+       * Store AI usage to MongoDB for permanent audit trail
+       * @param {Object} req - Request object
+       * @param {Object} data - Usage data to store
+       * @param {string} data.type - 'text' or 'image'
+       * @param {string} data.provider - Provider name
+       * @param {string} data.prompt - User prompt
+       * @param {Object} [data.metadata] - Additional metadata (usage, model, etc.)
+       */
+      async storeUsage(req, data) {
+        if (!self.options.storeUsage) {
+          return;
+        }
 
-          return {
-            providers: self.listProviders(),
-            configured: {
-              text: self.options.textProvider,
-              image: self.options.imageProvider
-            }
-          };
+        const {
+          type, provider, prompt, metadata = {}
+        } = data;
+
+        const document = {
+          _id: self.apos.util.generateId(),
+          userId: req.user._id,
+          username: req.user.username || req.user._id,
+          createdAt: new Date(),
+          type,
+          provider,
+          prompt,
+          ...metadata
+        };
+
+        try {
+          await self.aposAiHelperUsage.insertOne(document);
+        } catch (e) {
+          // Log error but don't fail the request
+          self.apos.util.error('Failed to store AI usage:', e);
         }
       }
     };

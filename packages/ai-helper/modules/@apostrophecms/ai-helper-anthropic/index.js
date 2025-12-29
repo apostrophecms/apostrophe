@@ -37,6 +37,7 @@ module.exports = {
        * @param {Object} options - Generation options
        * @param {number} [options.maxTokens] - Maximum tokens to generate
        * @param {string} [options.model] - Model to use
+       * @param {string} [options.systemPrompt] - System prompt to guide the model
        * @returns {Promise<Object>} {content: string, metadata: object}
        */
       async generateText(req, prompt, options = {}) {
@@ -52,7 +53,7 @@ module.exports = {
               content: prompt
             }
           ],
-          system: 'You are a helpful text-generation assistant for CMS content. You generate text in Markdown format based on the given prompt. Do not include any meta-commentary, explanations, or offers to create additional versions. Output the content directly without preamble or postamble.'
+          system: options.systemPrompt || 'You are a helpful AI assistant.'
         };
 
         // Retry logic for transient failures

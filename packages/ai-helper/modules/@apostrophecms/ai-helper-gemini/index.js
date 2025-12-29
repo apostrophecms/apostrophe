@@ -8,7 +8,7 @@ module.exports = {
     textMaxTokens: 1000,
     imageModel: 'gemini-2.5-flash-image',
     imageCount: 1,
-    aspectRatio: '1:1'
+    imageAspectRatio: '1:1'
   },
 
   async init(self) {
@@ -39,6 +39,7 @@ module.exports = {
        * @param {Object} options - Generation options
        * @param {number} [options.maxTokens] - Maximum tokens to generate
        * @param {string} [options.model] - Model to use
+       * @param {string} [options.systemPrompt] - System prompt to guide the model
        * @returns {Promise<string>} Generated text
       */
       async generateText(req, prompt, options = {}) {
@@ -48,7 +49,7 @@ module.exports = {
         const body = {
           system_instruction: {
             parts: [ {
-              text: 'You are a helpful text-generation assistant for CMS content. You generate text in Markdown format based on the given prompt. Do not include any meta-commentary, explanations, or offers to create additional versions. Output the content directly without preamble or postamble.'
+              text: options.systemPrompt || 'You are a helpful AI assistant.'
             } ]
           },
           contents: [ {
@@ -133,16 +134,16 @@ module.exports = {
        * @param {string} prompt - The image description
        * @param {Object} options - Generation options
        * @param {string} [options.userPrompt] - the generation prompt
-       * @param {string} [options.aspectRatio] - Image size
+       * @param {string} [options.imageAspectRatio] - Image size
        * @param {number} [options.imageCount] - Number of images to generate
-       * @param {string} [options.model] - Model to use
+       * @param {string} [options.imageModel] - Model to use
        * @returns {Promise<Array<Object>>} Array of standardized image objects
        */
       async generateImage(req, prompt, options = {}) {
         // Gemini supports specific aspect ratios, but we default to square
-        const aspectRatio = options.aspectRatio || self.options.aspectRatio || '1:1';
+        const aspectRatio = options.imageAspectRatio || self.options.imageAspectRatio || '1:1';
         const imageCount = options.imageCount || self.options.imageCount || 1;
-        const model = options.model || self.options.imageModel;
+        const model = options.imageModel || self.options.imageModel;
 
         const body = {
           contents: [ {
@@ -165,6 +166,9 @@ module.exports = {
         // so make multiple requests for multiple images
         const allImages = [];
 
+        // Track aggregate usage across all API calls
+        let aggregateUsage = null;
+
         try {
           for (let i = 0; i < imageCount; i++) {
             const result = await self.apos.http.post(url, {
@@ -174,11 +178,28 @@ module.exports = {
               },
               body
             });
+
             const content = result?.candidates?.[0]?.content;
             const imageData = content?.parts?.[0]?.inlineData;
 
             if (!imageData?.data) {
               throw self.apos.error('error', 'No image data returned from Gemini');
+            }
+
+            // Accumulate usage across all API calls
+            if (result.usageMetadata) {
+              if (!aggregateUsage) {
+                aggregateUsage = { ...result.usageMetadata };
+              } else {
+                const usage = result.usageMetadata;
+                aggregateUsage.promptTokenCount =
+                  (aggregateUsage.promptTokenCount || 0) + (usage.promptTokenCount || 0);
+                aggregateUsage.candidatesTokenCount =
+                  (aggregateUsage.candidatesTokenCount || 0) +
+                  (usage.candidatesTokenCount || 0);
+                aggregateUsage.totalTokenCount =
+                  (aggregateUsage.totalTokenCount || 0) + (usage.totalTokenCount || 0);
+              }
             }
 
             // Transform Gemini response to standardized format
@@ -187,11 +208,17 @@ module.exports = {
               data: imageData.data,
               metadata: {
                 ...(imageData.mimeType && { mimeType: imageData.mimeType }),
-                ...(result.usageMetadata && { usage: result.usageMetadata }),
                 ...(result.modelVersion && { model: result.modelVersion }),
                 aspectRatio,
                 provider: 'gemini'
               }
+            });
+          }
+
+          // Add aggregate usage to all images so route can use images[0] for total cost
+          if (aggregateUsage) {
+            allImages.forEach(img => {
+              img.metadata.usage = aggregateUsage;
             });
           }
 
@@ -209,20 +236,20 @@ module.exports = {
       },
 
       /**
-       * Generate variations of an existing image
-       * @param {Object} req - Apostrophe request object
-       * @param {Object} existing - The existing image record from database
-       * @param {string} prompt - the variant prompt
-       * @param {Object} options - Generation options
-       * @param {number} [options.count] - Number of variations to generate
-       * @param {string} [options.aspectRatio] - Image size
-       * @param {string} [options.model] - Model to use
-       * @returns {Promise<Array<Object>>} Array of standardized image objects
-       */
+      * Generate variations of an existing image
+      * @param {Object} req - Apostrophe request object
+      * @param {Object} existing - The existing image record from database
+      * @param {string} prompt - the variant prompt
+      * @param {Object} options - Generation options
+      * @param {number} [options.imageCount] - Number of variations to generate
+      * @param {string} [options.imageAspectRatio] - Image size
+      * @param {string} [options.imageModel] - Model to use
+      * @returns {Promise<Array<Object>>} Array of standardized image objects
+      */
       async generateImageVariation(req, existing, prompt, options = {}) {
-        const aspectRatio = options.aspectRatio || self.options.aspectRatio || '1:1';
-        const count = options.count || 1;
-        const model = options.model || self.options.imageModel;
+        const aspectRatio = options.imageAspectRatio || self.options.imageAspectRatio || '1:1';
+        const count = options.imageCount || self.options.imageCount || 1;
+        const model = options.imageModel || self.options.imageModel;
 
         // Build the variation prompt
         let variationPrompt;
@@ -264,6 +291,9 @@ module.exports = {
         // so make multiple requests for multiple variations
         const allImages = [];
 
+        // Track aggregate usage across all API calls
+        let aggregateUsage = null;
+
         try {
           for (let i = 0; i < count; i++) {
             const result = await self.apos.http.post(url, {
@@ -281,17 +311,39 @@ module.exports = {
               throw self.apos.error('error', 'No image data returned from Gemini');
             }
 
+            // Accumulate usage across all API calls
+            if (result.usageMetadata) {
+              if (!aggregateUsage) {
+                aggregateUsage = { ...result.usageMetadata };
+              } else {
+                aggregateUsage.promptTokenCount =
+                  (aggregateUsage.promptTokenCount || 0) +
+                  (result.usageMetadata.promptTokenCount || 0);
+                aggregateUsage.candidatesTokenCount =
+                  (aggregateUsage.candidatesTokenCount || 0) +
+                  (result.usageMetadata.candidatesTokenCount || 0);
+                aggregateUsage.totalTokenCount =
+                  (aggregateUsage.totalTokenCount || 0) +
+                  (result.usageMetadata.totalTokenCount || 0);
+              }
+            }
+
             // Transform Gemini response to standardized format
             allImages.push({
               type: 'base64',
               data: imageData.data,
               metadata: {
                 ...(imageData.mimeType && { mimeType: imageData.mimeType }),
-                ...(result.usageMetadata && { usage: result.usageMetadata }),
                 ...(result.modelVersion && { model: result.modelVersion }),
-                aspectRatio,
-                provider: 'gemini'
+                aspectRatio
               }
+            });
+          }
+
+          // Add aggregate usage to all images so route can use images[0] for total cost
+          if (aggregateUsage) {
+            allImages.forEach(img => {
+              img.metadata.usage = aggregateUsage;
             });
           }
 

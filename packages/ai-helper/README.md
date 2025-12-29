@@ -28,15 +28,22 @@
 - [Installation](#installation)
 - [Configuration](#configuration)
   - [Enable AI Text Generation](#enable-ai-text-generation)
+  - [(Optional) Customize System Prompt](#optional-customize-system-prompt)
   - [(Optional) Configure Security Headers](#optional-configure-security-headers)
 - [Usage](#usage)
   - [Generating Images](#generating-images)
   - [Generating Text](#generating-text)
+- [Provider Configuration Options](#provider-configuration-options)
+  - [OpenAI Provider](#openai-provider)
+  - [Anthropic Provider](#anthropic-provider)
+  - [Gemini Provider](#gemini-provider)
 - [Mix and Match Providers](#mix-and-match-providers)
 - [Bundled Providers](#bundled-providers)
-- [Usage Tracking and Cost Monitoring](#usage-tracking-and-cost-monitoring)
-  - [Automatic Usage Tracking](#automatic-usage-tracking)
-  - [Debug Logging](#debug-logging)
+- [Optional Usage Tracking](#optional-usage-tracking)
+  - [Database Storage (Permanent Audit Trail)](#database-storage-permanent-audit-trail)
+  - [Console Logging (Development \& Debugging)](#console-logging-development--debugging)
+  - [Using Both Together](#using-both-together)
+  - [Mock Testing](#mock-testing)
 - [API Endpoints](#api-endpoints)
   - [List Available Providers](#list-available-providers)
 - [Custom AI Providers](#custom-ai-providers)
@@ -134,6 +141,52 @@ export default {
 };
 ```
 
+### (Optional) Customize System Prompt
+
+Customize how the AI generates text by modifying the system prompt in your rich text widget configuration:
+
+```javascript
+// modules/article/index.js
+export default {
+  extend: '@apostrophecms/piece-type',
+  fields: {
+    add: {
+      main: {
+        type: 'area',
+        options: {
+          widgets: {
+            '@apostrophecms/rich-text': {
+              toolbar: [ 'styles', 'bold', 'italic', 'bulletList', 'orderedList' ],
+              insert: [ 'ai' ],
+              // Customize AI behavior
+              customSystemPrompt: 'Write in a professional, technical tone suitable for enterprise documentation.',
+              appendSystemPrompt: true  // Append to default guardrails instead of replacing
+            }
+          }
+        }
+      }
+    }
+  }
+};
+```
+
+**Options:**
+- `customSystemPrompt` - Your custom instructions for the AI
+- `appendSystemPrompt` - When `true`, appends your prompt to the default guardrails. When `false`, replaces them entirely.
+
+**Default System Prompt (guardrails):**
+```
+You are a helpful text-generation assistant for CMS content. You generate text in Markdown format based on the given prompt. Do not include any meta-commentary, explanations, or offers to create additional versions. Output the content directly without preamble or postamble.
+```
+
+**Use Cases:**
+- **Brand Voice**: "Write in a casual, friendly tone with occasional humor"
+- **Technical Content**: "Write in precise, technical language suitable for developers"
+- **Marketing**: "Write persuasive, benefit-focused copy that drives action"
+- **SEO**: "Include relevant keywords naturally while maintaining readability"
+
+> **Tip:** Set `appendSystemPrompt: true` to keep the default guardrails (Markdown formatting, no meta-commentary) while adding your brand voice or style requirements.
+
 ### (Optional) Configure Security Headers
 
 If using the `@apostrophecms/security-headers` module, add AI image sources:
@@ -178,6 +231,46 @@ export default {
 - Request specific formats: "Write a bulleted list of 5 benefits of..."
 - Ask for structure: "Write an article with 3 sections about cloud migration"
 - Include tone: "Write a friendly, conversational guide to..."
+
+## Provider Configuration Options
+
+Each provider supports specific configuration parameters that can be set in `app.js`:
+
+### OpenAI Provider
+```javascript
+'@apostrophecms/ai-helper-openai': {
+  apiKey: process.env.APOS_OPENAI_KEY,
+  textModel: 'gpt-5.1',            // Text model to use
+  textMaxTokens: 1000,             // Max tokens for text generation
+  imageModel: 'gpt-image-1-mini',  // Image model to use
+    imageCount: 1,                 // Number of images to generate
+  imageSize: '1024x1024',          // Image dimensions
+  imageQuality: 'medium'           // 'low', 'medium', or 'high'
+}
+```
+
+### Anthropic Provider
+```javascript
+'@apostrophecms/ai-helper-anthropic': {
+  apiKey: process.env.APOS_ANTHROPIC_KEY,
+  textModel: 'claude-sonnet-4-20250514',  // Claude model to use
+  textMaxTokens: 1000                      // Max tokens for text generation
+}
+```
+
+### Gemini Provider
+```javascript
+'@apostrophecms/ai-helper-gemini': {
+  apiKey: process.env.APOS_GEMINI_KEY,
+  textModel: 'gemini-2.5-flash-lite',     // Text model to use
+  textMaxTokens: 1000,                    // Max tokens for text generation
+  imageModel: 'gemini-2.5-flash-image',   // Image model to use
+  imageCount: 1,                          // Number of images to generate
+  imageAspectRatio: '1:1'                 // '1:1', '16:9', or '9:16'
+}
+```
+
+> **Note:** These are default values used for all generations. Future versions may support per-request options through the UI.
 
 ## Mix and Match Providers
 
@@ -225,32 +318,13 @@ All providers are included with `@apostrophecms/ai-helper` - no separate install
 - Image variations
 - Uses `aspectRatio` parameter (e.g., '1:1', '16:9', '9:16')
 
-## Usage Tracking and Cost Monitoring
+## Optional Usage Tracking
 
-### Automatic Usage Tracking
+AI Helper provides two independent usage tracking options - both disabled by default:
 
-All AI generations are automatically tracked in MongoDB collections for cost monitoring and analysis:
+### Database Storage (Permanent Audit Trail)
 
-**Text Generations** - `aposAiHelperTextGenerations` collection
-- `userId` - User who generated the content
-- `provider` - Provider module name (e.g., '@apostrophecms/ai-helper-openai')
-- `timestamp` - Generation timestamp
-- `metadata.usage` - Token usage from provider (prompt_tokens, completion_tokens, total_tokens)
-- `metadata.model` - Model used
-- `prompt` - The generation prompt
-
-**Image Generations** - `aposAiHelperImages` collection
-- `userId` - User who generated the image
-- `createdAt` - Generation timestamp
-- `prompt` - The generation prompt
-- `providerMetadata` - Optional provider-specific data (may include token usage, model, revised_prompt, etc.)
-
-You can query these collections directly for cost analysis and reporting based on your organization's needs.
-
-### Debug Logging
-
-Enable console logging of AI usage for development and monitoring:
-
+Store all AI generations in MongoDB for permanent cost analysis and auditing:
 ```javascript
 import apostrophe from 'apostrophe';
 
@@ -258,7 +332,7 @@ apostrophe({
   root: import.meta,
   modules: {
     '@apostrophecms/ai-helper': {
-      logUsage: true,  // or set APOS_AI_HELPER_LOG_USAGE=true
+      storeUsage: true,  // Enable database storage
       textProvider: 'openai',
       imageProvider: 'gemini'
     }
@@ -266,10 +340,52 @@ apostrophe({
 });
 ```
 
+Alternatively, enable via environment variable:
+```bash
+export APOS_AI_HELPER_STORE_USAGE=true
+```
+
+When enabled, all generations are stored in the `aposAiHelperUsage` MongoDB collection with:
+- `userId` - User who generated the content
+- `username` - Username for easier reporting
+- `createdAt` - Generation timestamp (indexed)
+- `type` - 'text' or 'image'
+- `provider` - Provider name (e.g., 'OpenAI', 'Anthropic (Claude)')
+- `prompt` - The generation prompt
+- `model` - Model used (if available from provider)
+- `usage` - Token/usage statistics (if available from provider)
+- Additional provider-specific metadata
+
+Query this collection directly for cost analysis and reporting based on your organization's needs.
+
+### Console Logging (Development & Debugging)
+
+Log AI usage to the console for real-time monitoring during development:
+```javascript
+import apostrophe from 'apostrophe';
+
+apostrophe({
+  root: import.meta,
+  modules: {
+    '@apostrophecms/ai-helper': {
+      logUsage: true,  // Enable console logging
+      textProvider: 'openai',
+      imageProvider: 'gemini'
+    }
+  }
+});
+```
+
+Alternatively, enable via environment variable:
+```bash
+export APOS_AI_HELPER_LOG_USAGE=true
+```
+
 When enabled, each generation logs details to the console:
 ```
-[AI Usage] Text generation by admin:
+[AI Usage] text generation by admin:
 {
+  type: 'text',
   provider: 'OpenAI',
   model: 'gpt-5.1',
   usage: { prompt_tokens: 45, completion_tokens: 234, total_tokens: 279 },
@@ -277,7 +393,40 @@ When enabled, each generation logs details to the console:
 }
 ```
 
-**Note:** Token usage and cost vary by provider and model. Check your provider's pricing for current rates.
+### Using Both Together
+
+Enable both for comprehensive tracking:
+```javascript
+'@apostrophecms/ai-helper': {
+  storeUsage: true,   // Permanent database storage
+  logUsage: true,     // Real-time console output
+  textProvider: 'openai',
+  imageProvider: 'gemini'
+}
+```
+
+Or via environment variables:
+```bash
+export APOS_AI_HELPER_STORE_USAGE=true
+export APOS_AI_HELPER_LOG_USAGE=true
+```
+
+### Mock Testing
+
+For offline development and testing without API calls or costs:
+```bash
+export APOS_AI_HELPER_MOCK=true
+```
+
+When enabled:
+- Text generation returns pre-defined sample content
+- Image generation returns placeholder images
+- No API keys required
+- No external network calls made
+- Instant responses for rapid iteration
+
+> [!Note]
+> The usage returned by a mock call may not match the actual info returned by any selected provider.
 
 ## API Endpoints
 

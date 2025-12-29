@@ -10,8 +10,9 @@ module.exports = {
     // Default text generation settings
     textMaxTokens: 1000,
     imageModel: 'gpt-image-1-mini',
-    size: '1024x1024',
-    imageQuality: 'medium'
+    imageSize: '1024x1024',
+    imageQuality: 'medium',
+    imageCount: 1
   },
 
   async init(self) {
@@ -53,7 +54,7 @@ module.exports = {
           messages: [
             {
               role: 'system',
-              content: 'You are a helpful text-generation assistant for CMS content. You generate text in Markdown format based on the given prompt. Do not include any meta-commentary, explanations, or offers to create additional versions. Output the content directly without preamble or postamble.'
+              content: options.systemPrompt || 'You are a helpful AI assistant.'
             },
             {
               role: 'user',
@@ -142,17 +143,17 @@ module.exports = {
        * @param {string} prompt - The image description
        * @param {Object} options - Generation options
        * @param {string} [options.userPrompt] - the generation prompt
-       * @param {number} [options.count] - Number of images to generate
-       * @param {string} [options.size] - Image size
+       * @param {number} [options.imageCount] - Number of images to generate
+       * @param {string} [options.imageSize] - Image size
        * @param {string} [options.imageQuality] - image resolution
-       * @param {string} [options.model] - Model to use
+       * @param {string} [options.imageModel] - Model to use
        * @returns {Promise<Array<Object>>} Array of standardized image objects
        */
       async generateImage(req, prompt, options = {}) {
-        const count = options.count || 1;
-        const size = options.size || self.options.size;
-        const imageQuality = options.imageQuality || self.options.imageQuality;
-        const model = options.model || self.options.imageModel;
+        const count = options.imageCount || self.options.imageCount || 1;
+        const size = options.imageSize || self.options.imageSize || '1024x1024';
+        const imageQuality = options.imageQuality || self.options.imageQuality || 'medium';
+        const model = options.imageModel || self.options.imageModel;
 
         const body = {
           prompt,
@@ -178,7 +179,6 @@ module.exports = {
           type: item.url ? 'url' : 'base64',
           data: item.url || item.b64_json,
           metadata: {
-            ...(item.revised_prompt && { revised_prompt: item.revised_prompt }),
             ...(result.usage && { usage: result.usage }),
             ...(result.created && { created: result.created }),
             ...(result.model && { model: result.model }),
@@ -195,17 +195,17 @@ module.exports = {
        * @param {Object} existing - The existing image record from database
        * @param {string} [prompt] - the variant prompt
        * @param {Object} options - Generation options
-       * @param {number} [options.count] - Number of variations to generate
-       * @param {string} [options.size] - Image size
+       * @param {number} [options.imageCount] - Number of variations to generate
+       * @param {string} [options.imageSize] - Image size
        * @param {string} [options.imageQuality] - image resolution
-       * @param {string} [options.model] - Model to use
+       * @param {string} [options.imageModel] - Model to use
        * @returns {Promise<Array<Object>>} Array of standardized image objects
        */
       async generateImageVariation(req, existing, prompt, options = {}) {
-        const count = options.count || 1;
-        const size = options.size || self.options.size;
+        const count = options.imageCount || self.options.imageCount || 1;
+        const size = options.imageSize || self.options.imageSize;
         const imageQuality = options.imageQuality || self.options.imageQuality;
-        const model = options.model || self.options.imageModel;
+        const model = options.imageModel || self.options.imageModel;
 
         // Build the variation prompt
         let variationPrompt;
@@ -244,7 +244,6 @@ module.exports = {
           type: item.url ? 'url' : 'base64',
           data: item.url || item.b64_json,
           metadata: {
-            ...(item.revised_prompt && { revised_prompt: item.revised_prompt }),
             ...(result.usage && { usage: result.usage }),
             ...(result.created && { created: result.created }),
             ...(result.model && { model: result.model }),

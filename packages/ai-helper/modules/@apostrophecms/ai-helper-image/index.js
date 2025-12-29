@@ -178,6 +178,33 @@ module.exports = {
           const prompt = self.apos.launder.string(req.body.prompt);
           const variantOf = self.apos.launder.id(req.body.variantOf);
 
+          const emitUsage = async ({
+            providerLabel,
+            providerMetadata,
+            count,
+            variantOfId
+          }) => {
+            if (!(aiHelper.options.storeUsage || aiHelper.options.logUsage)) {
+              return;
+            }
+            const usage = {
+              type: 'image',
+              provider: providerLabel,
+              prompt,
+              metadata: {
+                ...(providerMetadata || {}),
+                count,
+                ...(variantOfId ? { variantOf: variantOfId } : {})
+              }
+            };
+            if (aiHelper.options.storeUsage) {
+              await aiHelper.storeUsage(req, usage);
+            }
+            if (aiHelper.options.logUsage) {
+              aiHelper.logUsage(req, usage);
+            }
+          };
+
           if (!prompt.length) {
             throw self.apos.error('invalid');
           }
@@ -191,9 +218,28 @@ module.exports = {
                 _id: createId(),
                 userId: req.user._id,
                 createdAt: now,
-                url: self.apos.asset.url('/modules/@apostrophecms/ai-helper-image/placeholder.jpg')
+                prompt,
+                url: self.apos.asset.url('/modules/@apostrophecms/ai-helper-image/placeholder.jpg'),
+                // Mock metadata to simulate real provider responses
+                providerMetadata: {
+                  model: 'mock-image-1',
+                  usage: {
+                    prompt_tokens: 12,
+                    total_tokens: 12
+                  },
+                  size: '1024x1024',
+                  quality: 'standard'
+                }
               });
             }
+
+            await emitUsage({
+              providerLabel: 'Mock Provider',
+              providerMetadata: images[0] && images[0].providerMetadata,
+              count: images.length,
+              variantOfId: variantOf || null
+            });
+
             return { images };
           }
 
@@ -291,6 +337,15 @@ module.exports = {
               // Ensure URL for response
               image.url = self.aiHelperImageUrl(req, image);
               images.push(image);
+            }
+
+            if (images.length > 0) {
+              await emitUsage({
+                providerLabel: provider.label,
+                providerMetadata: images[0].providerMetadata || {},
+                count: images.length,
+                variantOfId: variantOf || null
+              });
             }
 
             return { images };

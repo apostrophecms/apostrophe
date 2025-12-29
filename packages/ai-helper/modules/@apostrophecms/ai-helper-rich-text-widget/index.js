@@ -5,6 +5,14 @@ const mockContent = '\n# Glamping Cats\n\n## The Feline Appeal\nGlamping cats ha
 
 module.exports = {
   improve: '@apostrophecms/rich-text-widget',
+  options: {
+    // Default system prompt with guardrails for text generation
+    systemPrompt: 'You are a helpful text-generation assistant for CMS content. You generate text in Markdown format based on the given prompt. Do not include any meta-commentary, explanations, or offers to create additional versions. Output the content directly without preamble or postamble.',
+    // If true, append customSystemPrompt to default instead of replacing
+    appendSystemPrompt: false,
+    // Custom system prompt (replaces or appends to default based on appendSystemPrompt)
+    customSystemPrompt: null
+  },
   beforeSuperClass(self) {
     self.options.editorInsertMenu = {
       ...self.options.editorInsertMenu,
@@ -44,42 +52,61 @@ module.exports = {
 
             if (process.env.APOS_AI_HELPER_MOCK) {
               content = mockContent;
+              const promptTokens = Math.ceil(prompt.length / 4);
+              const completionTokens = Math.ceil(content.length / 4);
               metadata = {
                 model: 'mock-model',
                 usage: {
-                  prompt_tokens: 32,
-                  completion_tokens: 342,
-                  total_tokens: 374
+                  prompt_tokens: promptTokens,
+                  completion_tokens: completionTokens,
+                  total_tokens: promptTokens + completionTokens
                 }
               };
-              providerName = 'mock';
+              providerName = 'Mock Provider';
             } else {
               const provider = aiHelper.getTextProvider();
+
+              // Build system prompt in rich text widget
+              let systemPrompt = self.options.systemPrompt;
+              if (self.options.customSystemPrompt) {
+                if (self.options.appendSystemPrompt) {
+                  systemPrompt = `${systemPrompt} ${self.options.customSystemPrompt}`;
+                } else {
+                  systemPrompt = self.options.customSystemPrompt;
+                }
+              }
+
               const result = await provider.module.generateText(req, prompt, {
-                maxTokens: aiHelper.options.textMaxTokens
+                maxTokens: aiHelper.options.textMaxTokens,
+                systemPrompt
               });
 
               content = result.content;
               metadata = result.metadata || {};
-              providerName = provider.module.__meta.name;
+              providerName = provider.label;
             }
 
             if (!content) {
               throw self.apos.error('error');
             }
 
-            // Store generation record
-            if (aiHelper.storeTextGeneration) {
-              await aiHelper.storeTextGeneration(req, prompt, providerName, metadata);
+            // Store usage if enabled
+            if (aiHelper.options.storeUsage) {
+              await aiHelper.storeUsage(req, {
+                type: 'text',
+                provider: providerName,
+                prompt,
+                metadata
+              });
             }
 
             // Log usage if enabled
             if (aiHelper.options.logUsage) {
-              console.log(`[AI Usage] Text generation by ${req.user.username || req.user._id}:`, {
+              aiHelper.logUsage(req, {
+                type: 'text',
                 provider: providerName,
-                model: metadata.model,
-                usage: metadata.usage,
-                prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : '')
+                prompt,
+                metadata
               });
             }
 
