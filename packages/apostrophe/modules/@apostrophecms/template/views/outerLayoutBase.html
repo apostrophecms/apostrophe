@@ -12,6 +12,7 @@
 
     {% block standardHead %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="{{ apos.i18n.encoding() }}">
     {% endblock %}
     {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append', when: 'hmr' } %}
     {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append' } %}

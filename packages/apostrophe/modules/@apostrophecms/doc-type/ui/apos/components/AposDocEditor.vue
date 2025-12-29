@@ -183,6 +183,12 @@ export default {
       type: Object,
       required: true
     },
+    // If true, we're creating this document to be included
+    // in a relationship
+    hasRelationshipField: {
+      type: Boolean,
+      default: false
+    },
     // Optional. If present, properties of this object
     // override the defaults for the corresponding fields.
     // Currently supported only for new instances, not
@@ -552,14 +558,17 @@ export default {
           this.original = klona(docData);
           this.docFields.data = docData;
 
-          resetToSchema(
-            // Never allow changing the type of a page here
-            this.schema.filter(f => f.name !== 'type'),
-            this.docFields.data
-          );
+          resetToSchema(this.schema, this.docFields.data);
 
           function resetToSchema(schema, object) {
             for (const field of schema) {
+              // First-level check for parked fields of a parked page:
+              // Skip the following logic for fields marked as parked
+              const isPage = object.slug?.startsWith('/');
+              if (isPage && object.parked?.includes(field.name)) {
+                continue;
+              }
+
               if (field.type === 'array') {
                 for (const item of (object[field.name] || [])) {
                   resetToSchema(field.schema, item);
@@ -568,6 +577,15 @@ export default {
 
               if (field.type === 'object') {
                 resetToSchema(field.schema, object[field.name] || {});
+              }
+
+              if (
+                [ 'select', 'radio', 'checkboxes' ].includes(field.type) &&
+                  !field.required &&
+                  field.def === undefined &&
+                  (object[field.name] === undefined || object[field.name] === null)
+              ) {
+                continue;
               }
 
               // FIXME: field choices might be a string (dynamic choices)
@@ -840,7 +858,7 @@ export default {
           def: true
         }
       ];
-      if (canPreview) {
+      if (canPreview && !this.hasRelationshipField) {
         menu.push({
           label: {
             key: 'apostrophe:takeActionAndView',
@@ -853,7 +871,7 @@ export default {
           }
         });
       }
-      if (canNew) {
+      if (canNew && !this.hasRelationshipField) {
         menu.push({
           label: {
             key: 'apostrophe:takeActionAndCreateNew',
@@ -874,7 +892,7 @@ export default {
           description: 'apostrophe:saveDraftDescription'
         });
       }
-      if (this.manuallyPublished && canPreview) {
+      if (this.manuallyPublished && canPreview && !this.hasRelationshipField) {
         menu.push({
           label: {
             key: 'apostrophe:saveDraftAndPreview',
@@ -887,7 +905,7 @@ export default {
           }
         });
       };
-      if (this.manuallyPublished && canNew) {
+      if (this.manuallyPublished && canNew && !this.hasRelationshipField) {
         menu.push({
           label: 'apostrophe:saveDraftAndCreateNew',
           action: 'onSaveDraftAndNew',

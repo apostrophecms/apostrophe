@@ -2,8 +2,9 @@ import { createId } from '@paralleldrive/cuid2';
 import { mapState, mapActions } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
-import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 
 export default {
   mixins: [ AposThemeMixin ],
@@ -115,7 +116,8 @@ export default {
       return Object.keys(this.widgets);
     },
     maxReached() {
-      return this.options.max && this.next.length >= this.options.max;
+      const max = this.options.max || this.field.max;
+      return max && this.next.length >= max;
     },
     foreign() {
       // Cast to boolean is necessary to satisfy prop typing
@@ -172,6 +174,7 @@ export default {
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedArea', 'setFocusedWidget' ]),
+    ...mapActions(useModalStore, [ 'isOnTop' ]),
     bindEventListeners() {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
       apos.bus.$on('command-menu-area-copy-widget', this.handleCopy);
@@ -266,6 +269,10 @@ export default {
       }
     },
     focusParentEvent(event) {
+      if (!this.isOnTop(this.$el)) {
+        return;
+      }
+
       if (event.metaKey && event.keyCode === 8) {
         // meta + backspace
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);

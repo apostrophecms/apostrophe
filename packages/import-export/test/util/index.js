@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const { createReadStream } = require('node:fs');
 const FormData = require('form-data');
 const { output: gzip } = require('../../lib/formats/gzip.js');
+const widgetConfig = require('../lib/widgets.js');
 
 module.exports = {
   getAppConfig,
@@ -44,11 +45,7 @@ function getAppConfig(modules = {}, options = {}) {
             label: 'Main',
             type: 'area',
             options: {
-              widgets: {
-                '@apostrophecms/rich-text': {},
-                '@apostrophecms/image': {},
-                '@apostrophecms/video': {}
-              },
+              widgets: widgetConfig,
               importAsRichText: true
             }
           },
@@ -96,9 +93,7 @@ function getAppConfig(modules = {}, options = {}) {
             label: '',
             type: 'area',
             options: {
-              widgets: {
-                '@apostrophecms/image': {}
-              }
+              widgets: widgetConfig
             }
           }
         }
@@ -120,9 +115,7 @@ function getAppConfig(modules = {}, options = {}) {
             label: 'Main',
             type: 'area',
             options: {
-              widgets: {
-                '@apostrophecms/rich-text': {}
-              },
+              widgets: widgetConfig,
               importAsRichText: true
             }
           },
@@ -135,6 +128,46 @@ function getAppConfig(modules = {}, options = {}) {
         }
       }
     },
+    'test_1-widget': {},
+    'test_2-widget': {},
+    'test_3-widget': {},
+    'test_4-widget': {},
+    'test_5-widget': {},
+    'test_6-widget': {},
+    'test_7-widget': {},
+    'test_8-widget': {},
+    'test_9-widget': {},
+    'test_10-widget': {},
+    'test_11-widget': {},
+    'test_12-widget': {},
+    'test_13-widget': {},
+    'test_14-widget': {},
+    'test_15-widget': {},
+    'test_16-widget': {},
+    'test_17-widget': {},
+    'test_18-widget': {},
+    'test_19-widget': {},
+    'test_20-widget': {},
+    'test_21-widget': {},
+    'test_22-widget': {},
+    'test_23-widget': {},
+    'test_24-widget': {},
+    'test_25-widget': {},
+    'test_26-widget': {},
+    'test_27-widget': {},
+    'test_28-widget': {},
+    'test_29-widget': {},
+    'test_30-widget': {},
+    'test_31-widget': {},
+    'test_32-widget': {},
+    'test_33-widget': {},
+    'test_34-widget': {},
+    'test_35-widget': {},
+    'test_36-widget': {},
+    'test_37-widget': {},
+    'test_38-widget': {},
+    'test_39-widget': {},
+    'test_40-widget': {},
 
     ...modules
   };

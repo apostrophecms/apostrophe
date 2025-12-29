@@ -174,11 +174,12 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
-    ...mapActions(useModalStore, [ 'updateModalData' ]),
+    ...mapActions(useModalStore, [ 'updateModalData', 'isTopManager' ]),
     async create() {
       const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
-        filterValues: this.filterValues
+        filterValues: this.filterValues,
+        hasRelationshipField: !!this.relationshipField
       });
       if (!doc) {
         // Cancel clicked
@@ -584,6 +585,11 @@ export default {
         this.getAllPagesTotal();
         if (action === 'archive') {
           this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
+        }
+        if (this.relationshipField && (action === 'insert') && this.isTopManager(this)) {
+          const newDocs = [ ...this.checkedDocs, doc ];
+          const limit = this.relationshipField?.max || newDocs.length;
+          this.setCheckedDocs(newDocs.slice(0, limit));
         }
       }
     },

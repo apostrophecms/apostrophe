@@ -1,32 +1,32 @@
 # Changelog
 
-## UNRELEASED
+## 1.3.3
 
-### Changes
+### Patch Changes
 
-* Bumbs `eslint-config-apostrophe` to `5`, fixes errors, removes unused dependencies.
+- 43a68dd: Bumbs `eslint-config-apostrophe` to `5`, fixes errors, removes unused dependencies.
 
 ## 1.3.2 (2025-03-19)
 
-* Fix pasting on MacOS.
-* Add stylelint.
-* Add data-test attributes.
+- Fix pasting on MacOS.
+- Add stylelint.
+- Add data-test attributes.
 
 ## 1.3.1 (2024-10-31)
 
-* Adds AI-generated and community-reviewed missing translations
+- Adds AI-generated and community-reviewed missing translations
 
 ## 1.3.0 (2024-07-10)
 
 ### Adds
 
-* Add missing UI translation keys.
+- Add missing UI translation keys.
 
 ## 1.2.0 (2024-03-12)
 
 ### Changes
 
-* Compatible with both Apostrophe 3.x and Apostrophe 4.x (both Vue 2 and Vue 3).
+- Compatible with both Apostrophe 3.x and Apostrophe 4.x (both Vue 2 and Vue 3).
 
 ## 1.1.0 (2023-08-16)
 
