@@ -420,7 +420,9 @@ module.exports = {
           contextOptions: _with
         });
 
-        if (self.options.stylesWrapper !== false) {
+        const hasStyles = Object.keys(self.styles || {}).length > 0;
+
+        if (hasStyles && self.options.stylesWrapper !== false) {
           const styles = self.apos.styles.prepareWidgetStyles(widget);
           const styleTag = self.apos.styles.getWidgetElements(styles);
           const wrapperAttrs = self.apos.styles.getWidgetAttributes(styles);
@@ -711,6 +713,16 @@ module.exports = {
       },
 
       annotateWidgetForExternalFront(widget) {
+        const hasStyles = Object.keys(self.styles || {}).length > 0;
+
+        if (!hasStyles) {
+          return {
+            aposStylesWrapper: false,
+            aposStylesElements: '',
+            aposStylesAttributes: {}
+          };
+        }
+
         const styles = self.apos.styles.prepareWidgetStyles(widget);
 
         return {
