@@ -760,6 +760,7 @@ module.exports = {
           action: self.action,
           schema,
           contextual: self.options.contextual,
+          contextualStyles: Boolean(self.options.contextualStyles),
           placeholderClass: self.options.placeholderClass,
           className: self.options.className,
           stylesFields: Object.keys(self.styles),
