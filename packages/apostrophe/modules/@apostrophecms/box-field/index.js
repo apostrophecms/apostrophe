@@ -25,7 +25,7 @@ module.exports = {
 
             // All values to numbers or null
             defProps.forEach(side => {
-              const int = parseInt(data[field.name][side]);
+              const int = parseInt(data[field.name]?.[side]);
               if (int || int === 0) {
                 temp[side] = int;
               } else {
