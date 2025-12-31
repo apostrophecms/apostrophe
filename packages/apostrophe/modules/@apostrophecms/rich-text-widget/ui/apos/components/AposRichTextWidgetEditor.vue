@@ -334,6 +334,13 @@ export default {
   },
   watch: {
     modelValue(newVal, oldVal) {
+      // Accept any changes that were made to regular schema fields (like styles)
+      // so that we don't blow them away later when we emit changes to the rich text
+      const schema = this.moduleOptions.schema;
+      for (const field of schema) {
+        this.docFields.data[field.name] = newVal[field.name];
+      }
+      // Recompute the visualization of the styles
       this.recomputeChangedStyles(newVal, oldVal, {
         moduleOptions: this.moduleOptions
       });
