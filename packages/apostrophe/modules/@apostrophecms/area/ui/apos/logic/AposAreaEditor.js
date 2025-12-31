@@ -5,6 +5,7 @@ import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstanc
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
+import { klona } from 'klona';
 
 export default {
   mixins: [ AposThemeMixin ],
@@ -521,7 +522,7 @@ export default {
       if (this.widgetIsContextual(name)) {
         return this.insert({
           widget: {
-            type: name,
+            ...this.newWidget(name),
             ...this.contextualWidgetDefaultData(name),
             aposPlaceholder: this.widgetHasPlaceholder(name)
           },
@@ -572,7 +573,7 @@ export default {
       return null;
     },
     contextualWidgetDefaultData(type) {
-      return this.moduleOptions.contextualWidgetDefaultData[type];
+      return klona(this.moduleOptions.contextualWidgetDefaultData[type]);
     },
     async insert({
       index, widget, autosave = true
