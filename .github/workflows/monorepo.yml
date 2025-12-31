@@ -179,6 +179,15 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      # Provide headers so sharp can compile from source when
+      # prebuilt binaries fail to download.
+      # Disabled for now as it adds time for each job. If we
+      # keep seeing related issues we can re-enable it.
+      # - name: Install libvips build dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y --no-install-recommends libvips-dev
+
       - name: Grant private repositories access
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -257,6 +266,15 @@ jobs:
         with:
           ssh-private-key: |
             ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY }}
+
+      # Same safety net: ensures node-gyp builds succeed when
+      # sharp's prebuild-install hits the network fallback.
+      # Disabled for now as it adds time for each job. If we
+      # keep seeing related issues we can re-enable it.
+      # - name: Install libvips build dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y --no-install-recommends libvips-dev
 
       - name: Restore docker image cache
         id: docker-cache-restore

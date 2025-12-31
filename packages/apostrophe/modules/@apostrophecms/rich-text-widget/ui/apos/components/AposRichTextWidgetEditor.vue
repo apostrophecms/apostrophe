@@ -4,7 +4,7 @@
     :aria-controls="`insert-menu-${modelValue._id}`"
     :style="widgetStyles.inline"
     :class="widgetStyles.classes"
-    @keydown="handleUIKeydown"
+    @keyup="handleUIKeyup"
   >
     <bubble-menu
       v-if="editor"
@@ -50,7 +50,6 @@
       v-if="editor"
       :id="`insert-menu-${modelValue._id}`"
       ref="insertMenu"
-      :key="insertMenuKey"
       plugin-key="insertMenu"
       class="apos-rich-text-insert-menu"
       :tippy-options="{ duration: 100, zIndex: 999, placement: 'bottom-start' }"
@@ -217,7 +216,6 @@ export default {
       suppressInsertMenu: false,
       suppressWidgetControls: false,
       hasSelection: false,
-      insertMenuKey: null,
       openedPopover: false
     };
   },
@@ -362,7 +360,6 @@ export default {
     }
   },
   mounted() {
-    this.insertMenuKey = this.generateKey();
     this.getWidgetStyles(this.docFields.data, this.moduleOptions);
     this.instantiateEditor();
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
@@ -538,12 +535,8 @@ export default {
     onBubbleHide() {
       apos.bus.$emit('close-context-menus', 'richText');
     },
-    generateKey() {
-      return Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15);
-    },
-    handleUIKeydown(e) {
-      if (e.key === 'Escape') {
+    handleUIKeyup(event) {
+      if (event.key === 'Escape') {
         this.doSuppressInsertMenu();
       } else {
         this.suppressInsertMenu = false;
@@ -553,7 +546,6 @@ export default {
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;
       this.activeInsertMenuComponent = false;
-      this.insertMenuKey = this.generateKey();
       this.editor.commands.focus();
     },
     onAposRefreshing(refreshOptions) {

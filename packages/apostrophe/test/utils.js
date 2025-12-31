@@ -876,6 +876,18 @@ describe('Utils', async function() {
       assert.deepEqual(results, [ 'task1', 'task2', 'task3' ]);
       assert.deepEqual(resolved, [ 'task1', 'task2', 'task3' ]);
     });
+
+    it('getManagerOf should log an error and politely return null if there is no metaType', function() {
+      assert.strictEqual(undefined, apos.util.getManagerOf({}));
+      assert.strictEqual(undefined, apos.util.getManagerOf({
+        metaType: 'widget',
+        type: 'unknown-type'
+      }));
+      assert.strictEqual(apos.modules['@apostrophecms/rich-text-widget'], apos.util.getManagerOf({
+        metaType: 'widget',
+        type: '@apostrophecms/rich-text'
+      }));
+    });
   });
 });
 

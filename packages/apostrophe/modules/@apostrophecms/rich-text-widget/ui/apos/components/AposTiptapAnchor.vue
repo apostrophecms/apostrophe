@@ -7,6 +7,7 @@
       :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
+      @keyup-enter="onKeyupEnter"
     >
       <div
         class="apos-popover apos-anchor-control__dialog"
@@ -164,16 +165,10 @@ export default {
       this.editor.chain().focus().blur().run();
       this.close();
     },
-    keyboardHandler(e) {
-      if (e.key === 'Escape') {
+    onKeyupEnter(event) {
+      if (event.key === 'Enter' && this.docFields.data.anchor) {
+        this.save();
         this.close();
-      }
-      if (e.key === 'Enter') {
-        if (this.docFields.data.anchor) {
-          this.save();
-          this.close();
-        }
-        e.preventDefault();
       }
     },
     async populateFields() {
@@ -193,10 +188,8 @@ export default {
       await this.populateFields();
       this.evaluateConditions();
       this.hasAnchorOnOpen = Boolean(this.docFields.data.anchor);
-      window.addEventListener('keydown', this.keyboardHandler);
     },
     closePopover() {
-      window.removeEventListener('keydown', this.keyboardHandler);
       this.$emit('close');
     }
   }
