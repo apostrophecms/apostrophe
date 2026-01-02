@@ -70,7 +70,7 @@ We also have `pnpm` configuration inside `package.json`. We have to tell pnpm wh
 
 `workspace:` allows us to install a package of the monorepo as a dependency of another package of the monorepo. It’s automatically resolved to the right versionwhen running `pnpm publish`.
 
-There is just onen issue with this, in `testbed` for example we install dependencies this way, directly from the monorepo.
+There is just one issue with this, in `testbed`, for example, we install dependencies this way, directly from the monorepo.
 
 ```jsx
 "apostrophe": "github:apostrophecms/apostrophe#main&path:packages/apostrophe"
