@@ -1630,28 +1630,24 @@ describe('@apostrophecms/import-export', function() {
                 }
               }
             },
-            ...(process.env.TEST_WITH_PRO
-              ? {
-                '@apostrophecms-pro/automatic-translation': {
-                  options: {
-                    provider: 'deepl'
-                  }
-                },
-                '@apostrophecms-pro/automatic-translation-deepl': {
-                  options: {
-                    apiSecret: 'test'
-                  },
-                  extendMethods: (self) => ({
-                    async requestTranslation(_super, req, text, source, target) {
-                      if (text.some((t) => t.toLowerCase().includes('test error'))) {
-                        throw new Error('Translate test error');
-                      }
-                      return text.map((t) => `${t}-${source}-${target}-translated`);
-                    }
-                  })
-                }
+            '@apostrophecms-pro/automatic-translation': {
+              options: {
+                provider: 'deepl'
               }
-              : {})
+            },
+            '@apostrophecms-pro/automatic-translation-deepl': {
+              options: {
+                apiSecret: 'test'
+              },
+              extendMethods: (self) => ({
+                async requestTranslation(_super, req, text, source, target) {
+                  if (text.some((t) => t.toLowerCase().includes('test error'))) {
+                    throw new Error('Translate test error');
+                  }
+                  return text.map((t) => `${t}-${source}-${target}-translated`);
+                }
+              })
+            }
           }
         });
 
