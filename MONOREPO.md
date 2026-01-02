@@ -26,7 +26,7 @@ That’s why we use this option. It still installs very fast because it uses sym
 
 (In local development, pnpm has a global store where it stores dependencies and symlinks them in projects, that’s why it’s very fast.)
 
-- `pnpm-workspace.yaml` file. This file defines the structure of the monorepo to pnpm. It’s very simple for us, because we only have packages, bu we could have `apps` too for example with starter kits.
+- `pnpm-workspace.yaml` file. This file defines the structure of the monorepo to pnpm. It’s very simple for us, because we only have packages, but we could have `apps` too, for example, with starter kits.
 
 ```jsx
 packages:
