@@ -102,7 +102,7 @@ you elsewhere).
 
 All of our public npm modules are contained in this single monorepo. You can find the individual packages in the `packages/` subdirectory. This means you will not be using `npm link` in the way you may be used to.
 
-See MONOREPO.md for more information about how to work with the monorepo.
+See [MONOREPO.md](./MONOREPO.md) for more information about how to work with the monorepo.
 
 ### Contributing to Apostrophe Core
 
