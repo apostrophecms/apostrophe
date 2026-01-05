@@ -35,6 +35,7 @@ module.exports = {
     return {
       post: {
         async aiHelper(req) {
+          console.log('req.body', req.body);
           try {
             const aiHelper = self.apos.modules['@apostrophecms/ai-helper'];
             aiHelper.checkPermissions(req);
@@ -68,46 +69,30 @@ module.exports = {
 
               // Build system prompt in rich text widget
               let systemPrompt = self.options.systemPrompt;
-              if (self.options.customSystemPrompt) {
-                if (self.options.appendSystemPrompt) {
-                  systemPrompt = `${systemPrompt} ${self.options.customSystemPrompt}`;
+              const customPrompt =
+              req.body.customSystemPrompt || self.options.customSystemPrompt;
+              const shouldAppend = req.body.appendSystemPrompt !== undefined
+                ? req.body.appendSystemPrompt
+                : self.options.appendSystemPrompt;
+
+              if (customPrompt) {
+                if (shouldAppend) {
+                  systemPrompt = `${systemPrompt} ${customPrompt}`;
                 } else {
-                  systemPrompt = self.options.customSystemPrompt;
+                  systemPrompt = customPrompt;
                 }
               }
 
-              const result = await provider.module.generateText(req, prompt, {
+              const result = await provider.generateText(req, prompt, {
                 maxTokens: aiHelper.options.textMaxTokens,
                 systemPrompt
               });
 
               content = result.content;
-              metadata = result.metadata || {};
-              providerName = provider.label;
             }
 
             if (!content) {
               throw self.apos.error('error');
-            }
-
-            // Store usage if enabled
-            if (aiHelper.options.storeUsage) {
-              await aiHelper.storeUsage(req, {
-                type: 'text',
-                provider: providerName,
-                prompt,
-                metadata
-              });
-            }
-
-            // Log usage if enabled
-            if (aiHelper.options.logUsage) {
-              aiHelper.logUsage(req, {
-                type: 'text',
-                provider: providerName,
-                prompt,
-                metadata
-              });
             }
 
             // Remap headings to levels actually available in this widget
@@ -121,23 +106,25 @@ module.exports = {
 
             const html = marked.parse(markdown);
 
-            return { html };
+            return {
+              html,
+              metadata,
+              provider: providerName
+            };
 
           } catch (e) {
-            console.error('AI Helper Error:', e);
-
             let notificationMessage;
             let notificationType = 'danger';
 
-            if (e.userMessage) {
-              notificationMessage = e.userMessage;
-              notificationType = e.status === 429 ? 'warning' : 'danger';
+            if (e.refusal) {
+              notificationMessage = 'aposAiHelper:contentPolicyViolation';
             } else if (e.status === 429) {
               notificationMessage = 'aposAiHelper:rateLimitExceeded';
-            } else if (e.status === 400) {
+              notificationType = 'warning';
+            } else if (e.status === 400 || e.status === 401 || e.status === 403) {
               notificationMessage = 'aposAiHelper:invalidRequest';
             } else {
-              notificationMessage = 'AI generation failed. Please try again.';
+              notificationMessage = 'aposAiHelper:generationFailed';
               notificationType = 'warning';
             }
 
@@ -145,6 +132,24 @@ module.exports = {
             throw e;
           }
         }
+      }
+    };
+  },
+  extendMethods(self) {
+    return {
+      getBrowserData(_super, req) {
+        const initialData = _super(req);
+        const finalData = {
+          ...initialData
+        };
+        if (self.options.customSystemPrompt) {
+          finalData.customSystemPrompt = self.options.customSystemPrompt;
+        }
+        if (self.options.appendSystemPrompt !== undefined) {
+          finalData.appendSystemPrompt = self.options.appendSystemPrompt;
+        }
+        finalData.systemPrompt = self.options.systemPrompt;
+        return finalData;
       }
     };
   }

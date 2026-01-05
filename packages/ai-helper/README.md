@@ -30,6 +30,7 @@
   - [Enable AI Text Generation](#enable-ai-text-generation)
   - [(Optional) Customize System Prompt](#optional-customize-system-prompt)
   - [(Optional) Configure Security Headers](#optional-configure-security-headers)
+  - [Mock Mode for Testing](#mock-mode-for-testing)
 - [Usage](#usage)
   - [Generating Images](#generating-images)
   - [Generating Text](#generating-text)
@@ -39,14 +40,15 @@
   - [Gemini Provider](#gemini-provider)
 - [Mix and Match Providers](#mix-and-match-providers)
 - [Bundled Providers](#bundled-providers)
-- [Optional Usage Tracking](#optional-usage-tracking)
-  - [Database Storage (Permanent Audit Trail)](#database-storage-permanent-audit-trail)
-  - [Console Logging (Development \& Debugging)](#console-logging-development--debugging)
-  - [Using Both Together](#using-both-together)
-  - [Mock Testing](#mock-testing)
+- [Provider Metadata](#provider-metadata)
 - [API Endpoints](#api-endpoints)
   - [List Available Providers](#list-available-providers)
 - [Custom AI Providers](#custom-ai-providers)
+  - [Provider Registration](#provider-registration)
+  - [Custom Provider Contract](#custom-provider-contract)
+  - [Error Handling](#error-handling)
+  - [Metadata](#metadata)
+  - [Implementation Guidance](#implementation-guidance)
 - [💎 Ready for Enterprise AI Features?](#-ready-for-enterprise-ai-features)
   - [🚀 Pro AI Features](#-pro-ai-features)
 - [Need Help?](#need-help)
@@ -73,42 +75,40 @@ apostrophe({
   root: import.meta,
   shortName: 'my-project',
   modules: {
-    // Core AI helper module
     '@apostrophecms/ai-helper': {
-      // Choose which providers to use
-      textProvider: 'openai',    // 'openai', 'anthropic', or 'gemini'
-      imageProvider: 'openai',   // 'openai' or 'gemini'
-      // Optional: override text generation token limit
-      textMaxTokens: 1000
-    },
+      options: {
+        // Choose which providers to use
+        textProvider: 'openai',  // 'openai', 'anthropic', or 'gemini'
+        imageProvider: 'openai',  // 'openai' or 'gemini'
 
-    // OpenAI provider configuration
-    '@apostrophecms/ai-helper-openai': {
-      apiKey: process.env.APOS_OPENAI_KEY,  // or export APOS_OPENAI_KEY env var
-      textModel: 'gpt-5.1',
-      imageModel: 'gpt-image-1-mini',
-      size: '1024x1024',
-      imageQuality: 'medium'
-    },
+        // Configure your text provider
+        textProviderOptions: {
+          apiKey: process.env.APOS_OPENAI_KEY,  // or export APOS_OPENAI_KEY
+          textModel: 'gpt-5.1',
+          textMaxTokens: 1000
+        },
 
-    // Anthropic (Claude) provider configuration
-    '@apostrophecms/ai-helper-anthropic': {
-      apiKey: process.env.APOS_ANTHROPIC_KEY,  // or export APOS_ANTHROPIC_KEY env var
-      textModel: 'claude-sonnet-4-20250514'
-    },
-
-    // Google Gemini provider configuration
-    '@apostrophecms/ai-helper-gemini': {
-      apiKey: process.env.APOS_GEMINI_KEY,  // or export APOS_GEMINI_KEY env var
-      textModel: 'gemini-2.5-flash-lite',
-      imageModel: 'gemini-2.5-flash-image',
-      aspectRatio: '1:1'  // or '16:9', '9:16'
+        // Configure your image provider
+        imageProviderOptions: {
+          apiKey: process.env.APOS_OPENAI_KEY,  // or export APOS_OPENAI_KEY
+          imageModel: 'gpt-image-1-mini',
+          imageSize: '1024x1024',
+          imageQuality: 'medium',
+          imageCount: 1
+        }
+      }
     }
   }
 });
 ```
 
-You only need to register and configure the providers you plan to use. Each provider requires its own API key from the respective service.
+**API Keys:**
+Each provider requires its own API key. You can set them via:
+- Environment variables: `APOS_OPENAI_KEY`, `APOS_ANTHROPIC_KEY`, `APOS_GEMINI_KEY`
+- Configuration options: `textProviderOptions.apiKey` or `imageProviderOptions.apiKey`
+
+> Note:
+> You only need to provide keys for the services you will be using.
 
 ### Enable AI Text Generation
 
@@ -143,8 +143,31 @@ export default {
 
 ### (Optional) Customize System Prompt
 
-Customize how the AI generates text by modifying the system prompt in your rich text widget configuration:
+>**Default System Prompt (with guardrails):**
+>```
+>You are a helpful text-generation assistant for CMS content. You generate text in Markdown format based on the given prompt. Do not include any meta-commentary, explanations, or offers to create additional versions. Output the content directly without preamble or postamble.
+>```
 
+Customize how the AI generates text by modifying the system prompt. This can be configured **globally** (affects all rich text widgets) or **per-area** (specific areas only). Note that any prompt passed to a widget in an area will override the prompt set globally.
+
+**Global Configuration (in app.js):**
+```javascript
+import apostrophe from 'apostrophe';
+
+apostrophe({
+  root: import.meta,
+  modules: {
+    '@apostrophecms/rich-text-widget': {
+      options: {
+        customSystemPrompt: 'Write in a professional, technical tone suitable for enterprise documentation.',
+        appendSystemPrompt: true  // Append to default guardrails instead of replacing
+      }
+    }
+  }
+});
+```
+
+**Per-Area Configuration:**
 ```javascript
 // modules/article/index.js
 export default {
@@ -158,9 +181,9 @@ export default {
             '@apostrophecms/rich-text': {
               toolbar: [ 'styles', 'bold', 'italic', 'bulletList', 'orderedList' ],
               insert: [ 'ai' ],
-              // Customize AI behavior
-              customSystemPrompt: 'Write in a professional, technical tone suitable for enterprise documentation.',
-              appendSystemPrompt: true  // Append to default guardrails instead of replacing
+              // Customize AI behavior for this specific area
+              customSystemPrompt: 'Write in a casual, conversational tone for blog content.',
+              appendSystemPrompt: true
             }
           }
         }
@@ -174,18 +197,7 @@ export default {
 - `customSystemPrompt` - Your custom instructions for the AI
 - `appendSystemPrompt` - When `true`, appends your prompt to the default guardrails. When `false`, replaces them entirely.
 
-**Default System Prompt (guardrails):**
-```
-You are a helpful text-generation assistant for CMS content. You generate text in Markdown format based on the given prompt. Do not include any meta-commentary, explanations, or offers to create additional versions. Output the content directly without preamble or postamble.
-```
-
-**Use Cases:**
-- **Brand Voice**: "Write in a casual, friendly tone with occasional humor"
-- **Technical Content**: "Write in precise, technical language suitable for developers"
-- **Marketing**: "Write persuasive, benefit-focused copy that drives action"
-- **SEO**: "Include relevant keywords naturally while maintaining readability"
-
-> **Tip:** Set `appendSystemPrompt: true` to keep the default guardrails (Markdown formatting, no meta-commentary) while adding your brand voice or style requirements.
+> **Tip:** Set `appendSystemPrompt: true` to keep the default guardrails (Markdown formatting, no meta-commentary) while adding your brand voice or style requirements. Per-area configuration overrides global settings.
 
 ### (Optional) Configure Security Headers
 
@@ -203,6 +215,23 @@ export default {
   }
 };
 ```
+
+### Mock Mode for Testing
+
+For offline development and testing without API calls or costs:
+
+```bash
+export APOS_AI_HELPER_MOCK=true
+```
+
+When enabled:
+- Text generation returns pre-defined sample content
+- Image generation returns placeholder images
+- No API keys required
+- No external network calls made
+- Instant responses for rapid iteration
+
+> **Note:** Mock mode metadata may not match actual provider responses exactly.
 
 ## Usage
 
@@ -234,43 +263,78 @@ export default {
 
 ## Provider Configuration Options
 
-Each provider supports specific configuration parameters that can be set in `app.js`:
+Each provider supports specific configuration parameters through `textProviderOptions` and `imageProviderOptions`:
 
 ### OpenAI Provider
 ```javascript
-'@apostrophecms/ai-helper-openai': {
-  apiKey: process.env.APOS_OPENAI_KEY,
-  textModel: 'gpt-5.1',            // Text model to use
-  textMaxTokens: 1000,             // Max tokens for text generation
-  imageModel: 'gpt-image-1-mini',  // Image model to use
-    imageCount: 1,                 // Number of images to generate
-  imageSize: '1024x1024',          // Image dimensions
-  imageQuality: 'medium'           // 'low', 'medium', or 'high'
+'@apostrophecms/ai-helper': {
+  options: {
+    textProvider: 'openai',
+    imageProvider: 'openai',
+
+    textProviderOptions: {
+      apiKey: process.env.APOS_OPENAI_KEY,
+      textModel: 'gpt-5.1', //  Text model to use
+      textMaxTokens: 1000, //  Max tokens for text generation
+      textRetries: 3 //  Times to reattempt generation on timeout
+    },
+
+    imageProviderOptions: {
+      apiKey: process.env.APOS_OPENAI_KEY,
+      imageModel: 'gpt-image-1-mini',  // Image model to use
+      imageSize: '1024x1024',  // Image dimensions
+      imageQuality: 'medium',  // 'low', 'medium', or 'high'
+      imageCount: 1  //  Number of images to generate
+    }
+  }
 }
 ```
 
 ### Anthropic Provider
 ```javascript
-'@apostrophecms/ai-helper-anthropic': {
-  apiKey: process.env.APOS_ANTHROPIC_KEY,
-  textModel: 'claude-sonnet-4-20250514',  // Claude model to use
-  textMaxTokens: 1000                      // Max tokens for text generation
+'@apostrophecms/ai-helper': {
+  options: {
+    textProvider: 'anthropic',
+
+    textProviderOptions: {
+      apiKey: process.env.APOS_ANTHROPIC_KEY,
+      textModel: 'claude-sonnet-4-20250514',  // Claude model to use
+      textMaxTokens: 1000,  // Max tokens for text generation
+      textRetries: 3  // Times to reattempt generation on timeout
+    }
+  }
 }
 ```
+
+**Note:** Anthropic does not support image generation. Use OpenAI or Gemini for images.
 
 ### Gemini Provider
 ```javascript
-'@apostrophecms/ai-helper-gemini': {
-  apiKey: process.env.APOS_GEMINI_KEY,
-  textModel: 'gemini-2.5-flash-lite',     // Text model to use
-  textMaxTokens: 1000,                    // Max tokens for text generation
-  imageModel: 'gemini-2.5-flash-image',   // Image model to use
-  imageCount: 1,                          // Number of images to generate
-  imageAspectRatio: '1:1'                 // '1:1', '16:9', or '9:16'
+'@apostrophecms/ai-helper': {
+  options: {
+    textProvider: 'gemini',
+    imageProvider: 'gemini',
+
+    textProviderOptions: {
+      apiKey: process.env.APOS_GEMINI_KEY,
+      textModel: 'gemini-2.5-flash-lite',  // Text model to use
+      textMaxTokens: 1000,  // Max tokens for text generation
+      textRetries: 3  // Times to reattempt generation on timeout
+    },
+
+    imageProviderOptions: {
+      apiKey: process.env.APOS_GEMINI_KEY,
+      imageModel: 'gemini-2.5-flash-image',   // Image model to use
+      imageAspectRatio: '1:1',                // '1:1', '16:9', or '9:16'
+      imageCount: 1                           // Number of images to generate
+    }
+  }
 }
 ```
 
-> **Note:** These are default values used for all generations. Future versions may support per-request options through the UI.
+**Note:** Gemini uses `imageAspectRatio` instead of `imageSize`.
+
+> The values shown are default values used for all generations. Future versions may support per-request options through the UI.
 
 ## Mix and Match Providers
 
@@ -283,15 +347,21 @@ apostrophe({
   root: import.meta,
   modules: {
     '@apostrophecms/ai-helper': {
-      textProvider: 'anthropic',   // Use Claude for text generation
-      imageProvider: 'gemini'      // Use Gemini for image generation
-    },
-    '@apostrophecms/ai-helper-anthropic': {
-      apiKey: process.env.APOS_ANTHROPIC_KEY
-    },
-    '@apostrophecms/ai-helper-gemini': {
-      apiKey: process.env.APOS_GEMINI_KEY,
-      aspectRatio: '16:9'  // Gemini uses aspectRatio instead of size
+      options: {
+        textProvider: 'anthropic',  // Use Claude for text generation
+        imageProvider: 'gemini',  // Use Gemini for image generation
+
+        textProviderOptions: {
+          apiKey: process.env.APOS_ANTHROPIC_KEY,
+          textModel: 'claude-sonnet-4-20250514'
+        },
+
+        imageProviderOptions: {
+          apiKey: process.env.APOS_GEMINI_KEY,
+          imageModel: 'gemini-2.5-flash-image',
+          imageAspectRatio: '16:9'
+        }
+      }
     }
   }
 });
@@ -301,132 +371,36 @@ apostrophe({
 
 ## Bundled Providers
 
-All providers are included with `@apostrophecms/ai-helper` - no separate installation needed.
+All providers are included with `@apostrophecms/ai-helper` - no separate installation needed. They are implemented as lightweight factory functions and configured through `textProviderOptions` and `imageProviderOptions`.
 
-**@apostrophecms/ai-helper-openai**
+**OpenAI** (`textProvider: 'openai'` / `imageProvider: 'openai'`)
 - Text generation (GPT models)
 - Image generation (GPT Image models)
 - Image variations
-- Uses `size` parameter (e.g., '1024x1024')
+- Uses `imageSize` parameter (e.g., '1024x1024')
 
-**@apostrophecms/ai-helper-anthropic**
+**Anthropic** (`textProvider: 'anthropic'`)
 - Text generation (Claude models)
+- No image generation support
 
-**@apostrophecms/ai-helper-gemini**
+**Gemini** (`textProvider: 'gemini'` / `imageProvider: 'gemini'`)
 - Text generation (Gemini models)
 - Image generation (Gemini Image models)
 - Image variations
-- Uses `aspectRatio` parameter (e.g., '1:1', '16:9', '9:16')
+- Uses `imageAspectRatio` parameter (e.g., '1:1', '16:9', '9:16')
 
-## Optional Usage Tracking
+## Provider Metadata
 
-AI Helper provides two independent usage tracking options - both disabled by default:
+All providers return metadata with each generation, including:
+- Model used
+- Token counts and usage statistics
+- Provider-specific details (stop reasons, timestamps, etc.)
 
-### Database Storage (Permanent Audit Trail)
+**For text generation**, metadata is returned alongside the generated content in the API response. This allows you to capture usage information if needed for custom auditing or analytics at the project level.
 
-Store all AI generations in MongoDB for permanent cost analysis and auditing:
-```javascript
-import apostrophe from 'apostrophe';
+**For image generation**, metadata is stored temporarily in the `aposAiHelperImages` collection as `providerMetadata` on each generated image. This data persists for 1 hour (until cleanup) or until the image is imported to your media library.
 
-apostrophe({
-  root: import.meta,
-  modules: {
-    '@apostrophecms/ai-helper': {
-      storeUsage: true,  // Enable database storage
-      textProvider: 'openai',
-      imageProvider: 'gemini'
-    }
-  }
-});
-```
-
-Alternatively, enable via environment variable:
-```bash
-export APOS_AI_HELPER_STORE_USAGE=true
-```
-
-When enabled, all generations are stored in the `aposAiHelperUsage` MongoDB collection with:
-- `userId` - User who generated the content
-- `username` - Username for easier reporting
-- `createdAt` - Generation timestamp (indexed)
-- `type` - 'text' or 'image'
-- `provider` - Provider name (e.g., 'OpenAI', 'Anthropic (Claude)')
-- `prompt` - The generation prompt
-- `model` - Model used (if available from provider)
-- `usage` - Token/usage statistics (if available from provider)
-- Additional provider-specific metadata
-
-Query this collection directly for cost analysis and reporting based on your organization's needs.
-
-### Console Logging (Development & Debugging)
-
-Log AI usage to the console for real-time monitoring during development:
-```javascript
-import apostrophe from 'apostrophe';
-
-apostrophe({
-  root: import.meta,
-  modules: {
-    '@apostrophecms/ai-helper': {
-      logUsage: true,  // Enable console logging
-      textProvider: 'openai',
-      imageProvider: 'gemini'
-    }
-  }
-});
-```
-
-Alternatively, enable via environment variable:
-```bash
-export APOS_AI_HELPER_LOG_USAGE=true
-```
-
-When enabled, each generation logs details to the console:
-```
-[AI Usage] text generation by admin:
-{
-  type: 'text',
-  provider: 'OpenAI',
-  model: 'gpt-5.1',
-  usage: { prompt_tokens: 45, completion_tokens: 234, total_tokens: 279 },
-  prompt: 'Write an article about...'
-}
-```
-
-### Using Both Together
-
-Enable both for comprehensive tracking:
-```javascript
-'@apostrophecms/ai-helper': {
-  storeUsage: true,   // Permanent database storage
-  logUsage: true,     // Real-time console output
-  textProvider: 'openai',
-  imageProvider: 'gemini'
-}
-```
-
-Or via environment variables:
-```bash
-export APOS_AI_HELPER_STORE_USAGE=true
-export APOS_AI_HELPER_LOG_USAGE=true
-```
-
-### Mock Testing
-
-For offline development and testing without API calls or costs:
-```bash
-export APOS_AI_HELPER_MOCK=true
-```
-
-When enabled:
-- Text generation returns pre-defined sample content
-- Image generation returns placeholder images
-- No API keys required
-- No external network calls made
-- Instant responses for rapid iteration
-
-> [!Note]
-> The usage returned by a mock call may not match the actual info returned by any selected provider.
+The module does not automatically log or persist this metadata beyond what's needed for operation. If you need detailed auditing, cost tracking, or analytics, you can extend the relevant modules to capture and process this data according to your requirements.
 
 ## API Endpoints
 
@@ -474,15 +448,163 @@ This endpoint is useful for:
 
 ## Custom AI Providers
 
-Beyond the built-in OpenAI, Anthropic, and Gemini integrations, `@apostrophecms/ai-helper` supports custom AI providers.
+In addition to the bundled OpenAI, Anthropic, and Gemini providers,
+`@apostrophecms/ai-helper` supports **custom AI providers** for organizations
+that need to integrate enterprise platforms or internal AI services
+(e.g. AWS Bedrock, Azure OpenAI, self-hosted models).
 
-This is useful for:
-- **AWS Bedrock** - Use Amazon's managed AI services
-- **Azure OpenAI** - Connect to Microsoft's enterprise OpenAI offering
-- **Private AI Services** - Integrate with self-hosted or enterprise AI models
-- **Custom LLMs** - Connect to specialized or fine-tuned models
+### Provider Registration
 
-Advanced users can implement additional providers by following the provider contract defined in `node_modules/@apostrophecms/ai-helper/skills/provider-creator.md`. The guide documents required exports, capability flags, error handling, and testing expectations to ensure consistent behavior across providers. You can copy this file into your AI code assistant's context folder (e.g., Claude Projects skills, Cursor workspace) to help with provider development.
+Custom providers are registered with the AI Helper at runtime using
+`registerProvider()`.
+
+Providers can be implemented either:
+
+- As a **dedicated ApostropheCMS module** (recommended), or
+- As a **factory function** registered during another module’s initialization
+
+The exact registration mechanism is flexible, but **all providers must conform
+to the same contract** described below.
+
+---
+
+### Custom Provider Contract
+
+Custom providers must implement a well-defined contract so the AI Helper
+can normalize behavior across different AI services.
+
+> **Streaming responses are not currently supported.**
+> Providers must return complete results for text and image generation.
+> Partial or incremental responses will be ignored.
+
+---
+
+#### Required Provider Properties
+
+Each provider must supply the following metadata when registering:
+
+| Property | Type | Description |
+|--------|------|-------------|
+| `name` | `string` | Unique provider identifier (e.g. `"openai"`, `"bedrock"`) |
+| `label` | `string` | Human-readable name for admin UI |
+| `capabilities` | `object` | Declares supported features |
+
+Example:
+
+```js
+capabilities: {
+  text: true,
+  image: false,
+  imageVariation: false
+}
+```
+
+---
+
+#### Required Methods
+
+Providers must implement methods that correspond to their declared capabilities.
+
+---
+
+##### `validate()`
+
+* Called during provider initialization
+* Must throw an error if required configuration is missing
+* Should be a no-op when `APOS_AI_HELPER_MOCK` is enabled
+
+Used to:
+
+* Verify API keys or credentials
+* Validate required options
+* Fail fast on misconfiguration
+
+---
+
+##### `generateText(req, prompt, options)`
+
+**Required if `capabilities.text === true`**
+
+* Generates text content from a prompt
+* Must return the full generated result
+
+Expected return shape:
+
+```ts
+{
+  content: string,       // Markdown or HTML
+  metadata?: object      // Usage, model, provider-specific data
+}
+```
+
+---
+
+##### `generateImage(req, prompt, options)`
+
+**Required if `capabilities.image === true`**
+
+* Generates one or more images from a prompt
+* Must return complete image URLs or references
+
+Expected return shape:
+
+```ts
+{
+  images: Array<{
+    url: string,
+    metadata?: object
+  }>
+}
+```
+
+---
+
+##### `generateImageVariant(req, image, prompt, options)`
+
+**Required if `capabilities.imageVariation === true`**
+
+* Generates a variant of an existing image based on an additional prompt or default
+
+Expected return shape is the same as `generateImage`.
+
+---
+
+### Error Handling
+
+* Providers should throw standard JavaScript `Error` objects
+* The AI Helper will normalize errors into user-facing messages
+* Provider-specific error details may be included in metadata when available
+
+---
+
+### Metadata
+
+Providers may return provider-specific metadata, such as:
+
+* Model name
+* Token usage
+* Stop reasons
+* Timestamps or request IDs
+
+Metadata is:
+
+* Returned with text generation responses
+* Temporarily stored for image generation (until import or cleanup)
+
+---
+
+### Implementation Guidance
+
+Detailed implementation examples, testing guidance, and edge-case handling
+are intentionally excluded from this README.
+
+For full implementation details, see:
+
+* **`provider-creator.md`** in this repository
+
+This file can also be added to AI-assisted development tools
+(e.g. Claude Projects, Cursor workspaces) to help generate
+provider implementations safely and consistently.
 
 ## 💎 Ready for Enterprise AI Features?
 

@@ -24,18 +24,24 @@
               class="apos-ai-helper-image"
               :src="image.url"
             >
-            <div v-if="image && showVariantInput" class="apos-ai-helper-image-editor__variant-input">
+            <div
+              v-if="image && showVariantInput"
+              class="apos-ai-helper-image-editor__variant-input"
+            >
               <label class="apos-ai-helper-image-editor__label">
-                How should this image be different?
+                {{ $t('aposAiHelper:variantPromptLabel') }}
               </label>
               <textarea
                 v-model="variantPrompt"
                 class="apos-ai-helper-image-editor__textarea"
-                placeholder="Example: make it blue, add a sunset, change the angle, different artistic style"
+                :placeholder="$t('aposAiHelper:variantPromptPlaceholder')"
                 rows="3"
               />
             </div>
-            <div v-if="image" class="apos-ai-helper-image-buttons">
+            <div
+              v-if="image"
+              class="apos-ai-helper-image-buttons"
+            >
               <AposButton
                 :disabled="image.accepted"
                 icon="plus-icon"

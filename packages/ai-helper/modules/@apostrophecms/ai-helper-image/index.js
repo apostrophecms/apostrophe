@@ -284,7 +284,7 @@ module.exports = {
                * - seed: for reproducible results
                * - style: provider-specific style hints
                */
-              result = await provider.module.generateImageVariation(
+              result = await provider.generateImageVariation(
                 req, existing, prompt, options
               );
             } else {
@@ -298,7 +298,7 @@ module.exports = {
                * - style: artistic style hints
                * - negativePrompt: what to avoid
                */
-              result = await provider.module.generateImage(req, prompt, options);
+              result = await provider.generateImage(req, prompt, options);
             }
 
             // Validate provider response is in standard format

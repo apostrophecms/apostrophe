@@ -9,9 +9,13 @@
   "delete": "Delete",
   "generateTextAction": "Generate",
   "rateLimitExceeded": "Rate limit exceeded, try again later",
-  "invalidRequest": "Invalid request, please review OpenAI's rules",
   "utilityOperationLabel": "Generate an image with AI",
   "errorMessage": "An error occurred.",
   "generateVariant": "Generate Variant",
-  "generationFailed": "Image generation failed. Please try again."
+  "variantPromptLabel": "How should this image be different?",
+  "variantPromptPlaceholder": "Describe how to modify the image (optional)",
+  "generationFailed": "AI generation failed. Please try again.",
+  "invalidRequest": "Invalid request, please check your prompt and try again.",
+  "contentPolicyViolation": "Content policy violation. Please try a different prompt.",
+  "serviceUnavailable": "AI service temporarily unavailable. Please try again in a moment."
 }

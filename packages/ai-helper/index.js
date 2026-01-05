@@ -1,51 +1,114 @@
 const fs = require('fs');
 const path = require('path');
 
+// Import provider factories
+const openaiProvider = require('./providers/openai');
+const anthropicProvider = require('./providers/anthropic');
+const geminiProvider = require('./providers/gemini');
+
 module.exports = {
   options: {
     // Default providers for text and image generation
     textProvider: 'openai',
     imageProvider: 'openai',
-    // Legacy option support
-    textMaxTokens: 1000,
-    // Usage tracking - can be set via option or
-    // APOS_AI_HELPER_LOG_USAGE env var
-    // When true, usage data is logged to the console
-    // for cost tracking and auditing
-    logUsage: process.env.APOS_AI_HELPER_LOG_USAGE === 'true' || false,
-    // Usage storage - when true,
-    // usage data is permanently stored in MongoDB
-    // separate from logUsage to allow console logging
-    // without database bloat
-    storeUsage: process.env.APOS_AI_HELPER_STORE_USAGE === 'true' || false
+    // Provider-specific options
+    textProviderOptions: {},
+    imageProviderOptions: {},
+    // Legacy option support (BC)
+    textModel: null,
+    imageModel: null,
+    textMaxTokens: 1000
   },
 
   async init(self) {
     // Storage for registered providers
     self.providers = new Map();
 
-    // Initialize usage storage collection if enabled
-    if (self.options.storeUsage) {
-      self.aposAiHelperUsage = self.apos.db.collection('aposAiHelperUsage');
-      await self.aposAiHelperUsage.createIndex(
-        { createdAt: -1 },
-        { name: 'createdAt_-1' }
-      );
+    const textOpts = { ...self.options.textProviderOptions };
+    const imageOpts = { ...self.options.imageProviderOptions };
 
-      // Index for per-user usage timelines
-      await self.aposAiHelperUsage.createIndex(
-        {
-          userId: 1,
-          createdAt: -1
-        },
-        { name: 'userId_1_createdAt_-1' }
+    if (self.options.textModel) {
+      self.apos.util.warn(
+        'The "textModel" option is deprecated. ' +
+        'Use "textProviderOptions.textModel" instead.'
       );
-      self.apos.util.log('AI Helper usage storage enabled');
+      textOpts.textModel = self.options.textModel;
     }
+    if (self.options.imageModel) {
+      self.apos.util.warn(
+        'The "imageModel" option is deprecated. ' +
+        'Use "imageProviderOptions.imageModel" instead.'
+      );
+      imageOpts.imageModel = self.options.imageModel;
+    }
+    if (self.options.textMaxTokens) {
+      self.apos.util.warn(
+        'The "textMaxTokens" option is deprecated. ' +
+        'Use "textProviderOptions.textMaxTokens" instead.'
+      );
+      textOpts.textMaxTokens = self.options.textMaxTokens;
+    }
+    const textProvider = self.options.textProvider;
+    const imageProvider = self.options.imageProvider;
 
-    // Initialize usage tracking if enabled
-    if (self.options.logUsage) {
-      self.apos.util.log('AI Helper usage tracking enabled');
+    // Register bundled providers
+    self.registerProvider(openaiProvider(
+      self.apos,
+      textProvider === 'openai' ? textOpts : {},
+      imageProvider === 'openai' ? imageOpts : {}
+    ));
+
+    self.registerProvider(anthropicProvider(
+      self.apos,
+      textProvider === 'anthropic' ? textOpts : {}
+    ));
+
+    self.registerProvider(geminiProvider(
+      self.apos,
+      textProvider === 'gemini' ? textOpts : {},
+      imageProvider === 'gemini' ? imageOpts : {}
+    ));
+
+    // Validate configured providers
+    if (!process.env.APOS_AI_HELPER_MOCK) {
+      const textProviderInfo = self.providers.get(self.options.textProvider);
+      if (!textProviderInfo) {
+        throw new Error(
+          `Text provider "${self.options.textProvider}" is not registered. ` +
+          `Available providers: ${Array.from(self.providers.keys()).join(', ')}`
+        );
+      }
+      if (!textProviderInfo.capabilities.text) {
+        throw new Error(
+          `Provider "${self.options.textProvider}" does not support text generation`
+        );
+      }
+
+      // Check image provider
+      const imageProviderInfo = self.providers.get(self.options.imageProvider);
+      if (!imageProviderInfo) {
+        throw new Error(
+          `Image provider "${self.options.imageProvider}" is not registered. ` +
+          `Available providers: ${Array.from(self.providers.keys()).join(', ')}`
+        );
+      }
+      if (!imageProviderInfo.capabilities.image) {
+        throw new Error(
+          `Provider "${self.options.imageProvider}" does not support image generation`
+        );
+      }
+
+      const providersToValidate = new Set([
+        self.options.textProvider,
+        self.options.imageProvider
+      ]);
+
+      for (const providerName of providersToValidate) {
+        const providerInfo = self.providers.get(providerName);
+        if (providerInfo?.provider.validate) {
+          providerInfo.provider.validate();
+        }
+      }
     }
   },
 
@@ -63,23 +126,16 @@ module.exports = {
   methods(self) {
     return {
       /**
-       * Register an AI provider module
-       * @param {Object} provider - The provider module (self)
-       * @param {Object} config - Provider configuration
-       * @param {string} config.name - Unique provider name (e.g., 'openai', 'anthropic')
-       * @param {string} config.label - Human-readable label
-       * @param {boolean} [config.text] - Supports text generation
-       * @param {boolean} [config.image] - Supports image generation
-       * @param {boolean} [config.imageVariation] - Supports image variations
+       * Register an AI provider
+       * @param {Object} provider -
+       * Provider object with name, label, capabilities, and methods
        */
-      registerProvider(provider, config) {
+      registerProvider(provider) {
         const {
           name,
           label,
-          text = false,
-          image = false,
-          imageVariation = false
-        } = config;
+          capabilities = {}
+        } = provider;
 
         if (!name) {
           throw new Error('Provider must have a name');
@@ -90,29 +146,28 @@ module.exports = {
         }
 
         // Validate that the provider implements required methods
-        if (text && typeof provider.generateText !== 'function') {
+        if (capabilities.text && typeof provider.generateText !== 'function') {
           throw new Error(`Provider "${name}" claims text support but doesn't implement generateText()`);
         }
 
-        if (image && typeof provider.generateImage !== 'function') {
+        if (capabilities.image && typeof provider.generateImage !== 'function') {
           throw new Error(`Provider "${name}" claims image support but doesn't implement generateImage()`);
         }
 
-        if (imageVariation && typeof provider.generateImageVariation !== 'function') {
+        if (capabilities.imageVariation && typeof provider.generateImageVariation !== 'function') {
           throw new Error(`Provider "${name}" claims imageVariation support but doesn't implement generateImageVariation()`);
         }
 
         self.providers.set(name, {
-          module: provider,
+          provider,
           label,
-          capabilities: {
-            text,
-            image,
-            imageVariation
-          }
+          capabilities
         });
 
-        self.apos.util.log(`AI provider registered: ${name} (${label})`);
+        self.apos.util.info('ai-helper:provider-registered', {
+          name,
+          label
+        });
       },
 
       /**
@@ -121,50 +176,50 @@ module.exports = {
        * @returns {Object} Provider info
        */
       getProvider(name) {
-        const provider = self.providers.get(name);
+        const providerInfo = self.providers.get(name);
 
-        if (!provider) {
+        if (!providerInfo) {
           const available = Array.from(self.providers.keys()).join(', ');
           throw self.apos.error('notfound',
             `AI provider "${name}" not found. Available providers: ${available || 'none'}`
           );
         }
 
-        return provider;
+        return providerInfo;
       },
 
       /**
        * Get the configured text provider
-       * @returns {Object} Provider module and capabilities
+       * @returns {Object} Provider info and capabilities
        */
       getTextProvider() {
         const providerName = self.options.textProvider;
-        const provider = self.getProvider(providerName);
+        const providerInfo = self.getProvider(providerName);
 
-        if (!provider.capabilities.text) {
+        if (!providerInfo.capabilities.text) {
           throw self.apos.error('invalid',
             `Provider "${providerName}" does not support text generation`
           );
         }
 
-        return provider;
+        return providerInfo.provider;
       },
 
       /**
        * Get the configured image provider
-       * @returns {Object} Provider module and capabilities
+       * @returns {Object} Provider info and capabilities
        */
       getImageProvider() {
         const providerName = self.options.imageProvider;
-        const provider = self.getProvider(providerName);
+        const providerInfo = self.getProvider(providerName);
 
-        if (!provider.capabilities.image) {
+        if (!providerInfo.capabilities.image) {
           throw self.apos.error('invalid',
             `Provider "${providerName}" does not support image generation`
           );
         }
 
-        return provider;
+        return providerInfo.provider;
       },
 
       /**
@@ -172,7 +227,7 @@ module.exports = {
        * @returns {Array} Array of provider info
        */
       listProviders() {
-        return Array.from(self.providers.entries()).map(([ name, info ]) => ({
+        return Array.from(self.providers.entries()).map(([name, info]) => ({
           name,
           label: info.label,
           capabilities: info.capabilities
@@ -189,73 +244,6 @@ module.exports = {
           self.apos.permission.can(req, 'edit', type)
         )) {
           throw self.apos.error('forbidden');
-        }
-      },
-
-      /**
-       * Log AI usage to console for monitoring and debugging
-       * @param {Object} req - Request object
-       * @param {Object} data - Usage data to log
-       * @param {string} data.type - 'text' or 'image'
-       * @param {string} data.provider - Provider name
-       * @param {string} data.model - Model used
-       * @param {string} data.prompt - User prompt
-       * @param {Object} [data.usage] - Token usage data
-       * @param {Object} [data.metadata] - Additional metadata
-       */
-      logUsage(req, data) {
-        if (!self.options.logUsage) {
-          return;
-        }
-
-        const username = req.user?.username || 'unknown';
-        const {
-          type, provider, prompt, metadata
-        } = data;
-
-        console.log(`\n[AI Usage] ${type} generation by ${username}:`);
-        console.log({
-          type,
-          provider,
-          ...metadata,
-          prompt: prompt.length > 100 ? prompt.substring(0, 100) + '...' : prompt
-        });
-      },
-
-      /**
-       * Store AI usage to MongoDB for permanent audit trail
-       * @param {Object} req - Request object
-       * @param {Object} data - Usage data to store
-       * @param {string} data.type - 'text' or 'image'
-       * @param {string} data.provider - Provider name
-       * @param {string} data.prompt - User prompt
-       * @param {Object} [data.metadata] - Additional metadata (usage, model, etc.)
-       */
-      async storeUsage(req, data) {
-        if (!self.options.storeUsage) {
-          return;
-        }
-
-        const {
-          type, provider, prompt, metadata = {}
-        } = data;
-
-        const document = {
-          _id: self.apos.util.generateId(),
-          userId: req.user._id,
-          username: req.user.username || req.user._id,
-          createdAt: new Date(),
-          type,
-          provider,
-          prompt,
-          ...metadata
-        };
-
-        try {
-          await self.aposAiHelperUsage.insertOne(document);
-        } catch (e) {
-          // Log error but don't fail the request
-          self.apos.util.error('Failed to store AI usage:', e);
         }
       }
     };
