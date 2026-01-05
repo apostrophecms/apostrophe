@@ -141,10 +141,6 @@ module.exports = {
           throw new Error('Provider must have a name');
         }
 
-        if (self.providers.has(name)) {
-          throw new Error(`Provider "${name}" is already registered`);
-        }
-
         // Validate that the provider implements required methods
         if (capabilities.text && typeof provider.generateText !== 'function') {
           throw new Error(`Provider "${name}" claims text support but doesn't implement generateText()`);
