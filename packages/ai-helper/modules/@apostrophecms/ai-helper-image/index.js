@@ -245,7 +245,7 @@ module.exports = {
 
           try {
             // Get the configured image provider
-            const provider = aiHelper.getImageProvider();
+            const { provider } = aiHelper.getImageProvider();
 
             // Options for future expansion (masks, seeds, styles, etc.)
             const options = {};

@@ -65,7 +65,7 @@ module.exports = {
               };
               providerName = 'Mock Provider';
             } else {
-              const provider = aiHelper.getTextProvider();
+              const { provider } = aiHelper.getTextProvider();
 
               // Build system prompt in rich text widget
               let systemPrompt = self.options.systemPrompt;

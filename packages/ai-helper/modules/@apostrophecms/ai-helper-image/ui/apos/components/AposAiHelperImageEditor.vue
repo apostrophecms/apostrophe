@@ -127,7 +127,9 @@ export default {
       });
     },
     createVariant() {
-      if (!this.variantPrompt.trim()) return;
+      if (!this.variantPrompt.trim()) {
+        return;
+      }
       this.modal.showModal = false;
       this.$emit('modal-result', {
         action: 'variant',

@@ -21,119 +21,206 @@ Support for streaming may be added in a future major version.
 
 ## Two Implementation Patterns
 
+Both patterns follow the same principle: **register a factory function**, not an instantiated provider. The AI Helper core calls your factory during activation.
+
 ### Module Pattern (Recommended)
 Self-contained, full lifecycle access, reusable across projects.
-
 ```javascript
 // modules/@my-org/ai-helper-bedrock/index.js
-module.exports = {
-  options: {
-    apiKey: process.env.BEDROCK_API_KEY || null,
-    textModel: 'anthropic.claude-v2',
-    textMaxTokens: 1000
-  },
 
-  async init(self) {
-    if (!self.options.apiKey && !process.env.APOS_AI_HELPER_MOCK) {
-      throw new Error('API key required');
-    }
+/**
+ * Bedrock provider factory
+ * @param {Object} apos - Apostrophe instance
+ * @param {Object} textOptions - Text generation options
+ * @param {Object} imageOptions - Image generation options
+ * @returns {Object} Provider object
+ */
+const bedrockFactory = (apos, textOptions = {}, imageOptions = {}) => {
+  const apiKey = textOptions.apiKey || process.env.BEDROCK_API_KEY;
+  const textModel = textOptions.textModel || 'anthropic.claude-v2';
+  const textMaxTokens = textOptions.textMaxTokens || 1000;
+  const textRetries = textOptions.textRetries || 3;
 
-    // Register with ai-helper
-    const aiHelper = self.apos.modules['@apostrophecms/ai-helper'];
-    aiHelper.registerProvider({
-      name: 'bedrock',
-      label: 'AWS Bedrock',
-      capabilities: { text: true, image: false, imageVariation: false },
-      validate: self.validate,
-      generateText: self.generateText
-    });
-  },
+  // Warn about invalid options
+  const validTextOptions = ['apiKey', 'textModel', 'textMaxTokens', 'textRetries'];
+  const invalidOpts = Object.keys(textOptions).filter(k => !validTextOptions.includes(k));
+  if (invalidOpts.length > 0) {
+    apos.util.warn(`Bedrock provider received invalid options: ${invalidOpts.join(', ')}`);
+  }
 
-  methods(self) {
-    return {
-      validate() {
-        if (!self.options.apiKey && !process.env.APOS_AI_HELPER_MOCK) {
-          throw new Error('Bedrock provider requires an API key.');
-        }
-      },
+  return {
+    name: 'bedrock',
+    label: 'AWS Bedrock',
+    capabilities: {
+      text: true,
+      image: false,
+      imageVariation: false
+    },
 
-      async generateText(req, prompt, options = {}) {
-        const maxTokens = options.maxTokens || self.options.textMaxTokens;
-        const model = options.model || self.options.textModel;
-        
-        // Mock mode
-        if (process.env.APOS_AI_HELPER_MOCK) {
+    validate() {
+      if (!apiKey && !process.env.APOS_AI_HELPER_MOCK) {
+        throw new Error(
+          'Bedrock provider requires an API key. ' +
+          'Set it via textProviderOptions.apiKey or export BEDROCK_API_KEY environment variable.'
+        );
+      }
+    },
+
+    async generateText(req, prompt, options = {}) {
+      const maxTokens = options.maxTokens || textMaxTokens;
+      const retries = options.textRetries || textRetries;
+      const model = options.model || textModel;
+
+      // Mock mode support
+      if (process.env.APOS_AI_HELPER_MOCK) {
+        return {
+          content: '# Sample Content\n\nThis is mock content for testing.',
+          metadata: {
+            model: 'mock-model',
+            usage: {
+              prompt_tokens: Math.ceil(prompt.length / 4),
+              completion_tokens: 250,
+              total_tokens: Math.ceil(prompt.length / 4) + 250
+            }
+          }
+        };
+      }
+
+      // Real implementation with retry logic
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          // PSEUDOCODE: AWS Bedrock requests require AWS SDK + SigV4 signing.
+          // This example shows response handling only, not a real endpoint.
+          const result = await apos.http.post('https://example-bedrock-endpoint.invalid', {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: {
+              model,
+              max_tokens: maxTokens,
+              messages: [
+                {
+                  role: 'user',
+                  content: prompt
+                }
+              ],
+              system: options.systemPrompt || 'You are a helpful AI assistant.'
+            }
+          });
+
+          const content = result?.content?.[0]?.text;
+
+          if (!content) {
+            throw apos.error('error', 'No content returned from Bedrock');
+          }
+
           return {
-            content: 'Sample text...',
+            content,
             metadata: {
-              model: 'mock-model',
-              usage: {
-                prompt_tokens: Math.ceil(prompt.length / 4),
-                completion_tokens: 250,
-                total_tokens: Math.ceil(prompt.length / 4) + 250
-              }
+              usage: result.usage,
+              model: result.model,
+              ...(result.stop_reason && { stop_reason: result.stop_reason })
             }
           };
-        }
 
-        // Real implementation with retry logic
-        let lastError;
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          try {
-            const result = await self.apos.http.post(/* ... */);
-            return {
-              content: result.content,
-              metadata: {
-                usage: result.usage,
-                model: result.model
-              }
-            };
-          } catch (e) {
-            lastError = e;
-            self.apos.util.error(`Request failed (attempt ${attempt}/3):`, e.message);
-            
-            if (e.status === 400 || e.status === 401 || e.status === 403) {
-              e.userMessage = 'Invalid request. Please check your prompt and try again.';
-              throw e;
-            }
-            if (e.userMessage || attempt === 3) {
-              e.userMessage = e.userMessage || 'AI service temporarily unavailable. Please try again in a moment.';
-              throw e;
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        } catch (e) {
+          apos.util.error(`Bedrock request failed (attempt ${attempt}/${retries}):`, e.message);
+
+          // Don't retry on client errors
+          if (e.status === 400 || e.status === 401 || e.status === 403) {
+            throw e;
           }
+
+          // Don't retry on last attempt
+          if (attempt === retries) {
+            throw e;
+          }
+
+          // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+          apos.util.info(`Retrying Bedrock request (attempt ${attempt + 1}/${retries})...`);
         }
-        
-        throw lastError;
       }
-    };
+    }
+  };
+};
+
+module.exports = {
+  async init(self) {
+    // Register the factory function with AI Helper
+    const aiHelper = self.apos.modules['@apostrophecms/ai-helper'];
+    
+    aiHelper.registerProvider('bedrock', {
+      factory: bedrockFactory,
+      label: 'AWS Bedrock',
+      capabilities: {
+        text: true,
+        image: false,
+        imageVariation: false
+      }
+    });
   }
 };
 ```
 
 **Enable in app.js:**
 ```javascript
-modules: {
-  '@my-org/ai-helper-bedrock': {},
-  '@apostrophecms/ai-helper': { textProvider: 'bedrock' }
-}
+import apostrophe from 'apostrophe';
+
+apostrophe({
+  root: import.meta,
+  modules: {
+    '@my-org/ai-helper-bedrock': {},
+    '@apostrophecms/ai-helper': {
+      options: {
+        textProvider: 'bedrock',
+        textProviderOptions: {
+          apiKey: process.env.BEDROCK_API_KEY,
+          textModel: 'anthropic.claude-v2',
+          textMaxTokens: 2000
+        }
+      }
+    }
+  }
+});
 ```
 
-### Factory Pattern
-Lightweight, minimal overhead, follows bundled provider pattern.
+**How it works:**
+1. Your module registers the factory function during `init()`
+2. AI Helper stores the factory and metadata
+3. When `textProvider: 'bedrock'` is configured, AI Helper calls your factory with the options
+4. Your factory returns the instantiated provider
+5. AI Helper calls `validate()` and uses the provider for text generation
 
+---
+
+### Factory Pattern
+Lightweight, minimal overhead, follows bundled provider pattern. Good for simple integrations.
 ```javascript
 // lib/providers/bedrock.js
+
+/**
+ * Bedrock provider factory
+ * @param {Object} apos - Apostrophe instance
+ * @param {Object} textOptions - Text generation options
+ * @param {Object} imageOptions - Image generation options
+ * @returns {Object} Provider object
+ */
 module.exports = (apos, textOptions = {}, imageOptions = {}) => {
   const apiKey = textOptions.apiKey || process.env.BEDROCK_API_KEY;
   const textModel = textOptions.textModel || 'anthropic.claude-v2';
   const textMaxTokens = textOptions.textMaxTokens || 1000;
+  const textRetries = textOptions.textRetries || 3;
 
   return {
     name: 'bedrock',
     label: 'AWS Bedrock',
-    capabilities: { text: true, image: false, imageVariation: false },
+    capabilities: {
+      text: true,
+      image: false,
+      imageVariation: false
+    },
 
     validate() {
       if (!apiKey && !process.env.APOS_AI_HELPER_MOCK) {
@@ -143,29 +230,113 @@ module.exports = (apos, textOptions = {}, imageOptions = {}) => {
 
     async generateText(req, prompt, options = {}) {
       // Same implementation as module pattern
+      // ...
     }
   };
 };
 ```
 
-**Register in your module:**
+**Register in your project-level module:**
 ```javascript
-const bedrockProvider = require('../../lib/providers/bedrock');
+// modules/my-custom-module/index.js
+const bedrockFactory = require('../../lib/providers/bedrock');
 
 module.exports = {
   async init(self) {
     const aiHelper = self.apos.modules['@apostrophecms/ai-helper'];
-    const provider = bedrockProvider(
-      self.apos,
-      aiHelper.options.textProviderOptions || {},
-      aiHelper.options.imageProviderOptions || {}
-    );
-    aiHelper.registerProvider(provider);
+    
+    // Register the factory function (not an instance!)
+    aiHelper.registerProvider('bedrock', {
+      factory: bedrockFactory,
+      label: 'AWS Bedrock',
+      capabilities: {
+        text: true,
+        image: false,
+        imageVariation: false
+      }
+    });
   }
 };
 ```
 
+**Enable in app.js:**
+```javascript
+import apostrophe from 'apostrophe';
+
+apostrophe({
+  root: import.meta,
+  modules: {
+    'my-custom-module': {},
+    '@apostrophecms/ai-helper': {
+      options: {
+        textProvider: 'bedrock',
+        textProviderOptions: {
+          apiKey: process.env.BEDROCK_API_KEY
+        }
+      }
+    }
+  }
+});
+```
+
+**Key difference from module pattern:**
+- Factory is in a separate file (`lib/providers/`)
+- Registration happens in an existing module
+- No separate npm package needed
+- Good for one-off integrations
+
 ---
+
+## Critical Architectural Concepts
+
+### Why Register Factories, Not Instances?
+
+**Two-phase system benefits:**
+
+1. **No wasted instantiation** - Unused providers aren't created
+2. **Clean separation** - Registration (metadata) vs activation (instantiation)
+3. **Consistent interface** - All providers receive the same options from `textProviderOptions` / `imageProviderOptions`
+4. **Fail fast** - Configuration errors caught during activation, not at generation time
+
+**What happens when:**
+```javascript
+// Registration phase (during init)
+aiHelper.registerProvider('bedrock', {
+  factory: bedrockFactory,  // Just storing the function
+  label: 'AWS Bedrock',
+  capabilities: { text: true }
+});
+
+// Activation phase (after all modules loaded)
+// Only if textProvider: 'bedrock' or imageProvider: 'bedrock'
+const provider = factoryInfo.factory(apos, textOpts, imageOpts);
+provider.validate();  // Fail fast if misconfigured
+```
+
+**Common mistake:**
+```javascript
+// ❌ WRONG - Calling factory during registration
+const provider = bedrockFactory(self.apos, {}, {});
+aiHelper.registerProvider('bedrock', {
+  factory: provider,  // This is an instance, not a factory!
+  // ...
+});
+```
+
+This breaks because:
+- Provider is instantiated even if never used
+- Can't receive options from `textProviderOptions` / `imageProviderOptions`
+- Validation happens at wrong time
+
+**Correct approach:**
+```javascript
+// ✅ RIGHT - Registering the factory function
+aiHelper.registerProvider('bedrock', {
+  factory: bedrockFactory,  // Function reference
+  label: 'AWS Bedrock',
+  capabilities: { text: true }
+});
+```
 
 ## Required Signatures
 

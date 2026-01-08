@@ -41,14 +41,16 @@
 - [Mix and Match Providers](#mix-and-match-providers)
 - [Bundled Providers](#bundled-providers)
 - [Provider Metadata](#provider-metadata)
-- [API Endpoints](#api-endpoints)
-  - [List Available Providers](#list-available-providers)
 - [Custom AI Providers](#custom-ai-providers)
+  - [Provider Architecture](#provider-architecture)
   - [Provider Registration](#provider-registration)
   - [Custom Provider Contract](#custom-provider-contract)
+- [If a custom provider registers using the same name as a bundled provider, it will override the bundled implementation.](#if-a-custom-provider-registers-using-the-same-name-as-a-bundled-provider-it-will-override-the-bundled-implementation)
   - [Error Handling](#error-handling)
   - [Metadata](#metadata)
   - [Implementation Guidance](#implementation-guidance)
+- [API Endpoints](#api-endpoints)
+  - [List Registered Providers](#list-registered-providers)
 - [💎 Ready for Enterprise AI Features?](#-ready-for-enterprise-ai-features)
   - [🚀 Pro AI Features](#-pro-ai-features)
 - [Need Help?](#need-help)
@@ -101,6 +103,9 @@ apostrophe({
   }
 });
 ```
+> **Note:** Providers are selected at application startup via `app.js` configuration.
+> Switching providers at runtime via an admin UI is not currently supported.
+
 
 **API Keys:**
 Each provider requires its own API key. You can set them via:
@@ -149,6 +154,11 @@ export default {
 >```
 
 Customize how the AI generates text by modifying the system prompt. This can be configured **globally** (affects all rich text widgets) or **per-area** (specific areas only). Note that any prompt passed to a widget in an area will override the prompt set globally.
+
+**Precedence order:**
+1. Per-area prompt
+2. Global prompt
+3. Default guardrails
 
 **Global Configuration (in app.js):**
 ```javascript
@@ -215,6 +225,7 @@ export default {
   }
 };
 ```
+**Note:** This is an example only. The exact `img-src` value depends on the AI provider and region you are using.
 
 ### Mock Mode for Testing
 
@@ -402,76 +413,37 @@ All providers return metadata with each generation, including:
 
 The module does not automatically log or persist this metadata beyond what's needed for operation. If you need detailed auditing, cost tracking, or analytics, you can extend the relevant modules to capture and process this data according to your requirements.
 
-## API Endpoints
-
-### List Available Providers
-
-Query the available AI providers and current configuration:
-
-```javascript
-// GET /api/v1/@apostrophecms/ai-helper/providers
-const response = await apos.http.get(
-  `${apos.modules['@apostrophecms/ai-helper'].action}/providers`
-);
-
-console.log(response);
-// {
-//   providers: [
-//     {
-//       name: 'openai',
-//       label: 'OpenAI',
-//       capabilities: { text: true, image: true, imageVariation: true }
-//     },
-//     {
-//       name: 'anthropic',
-//       label: 'Anthropic (Claude)',
-//       capabilities: { text: true, image: false, imageVariation: false }
-//     },
-//     {
-//       name: 'gemini',
-//       label: 'Google Gemini',
-//       capabilities: { text: true, image: true, imageVariation: true }
-//     }
-//   ],
-//   configured: {
-//     text: 'openai',
-//     image: 'gemini'
-//   }
-// }
-```
-
-This endpoint is useful for:
-- Admin UI to show/switch providers
-- Debugging provider registration
-- Health checks
-- Auto-generating documentation
-
 ## Custom AI Providers
 
-In addition to the bundled OpenAI, Anthropic, and Gemini providers,
-`@apostrophecms/ai-helper` supports **custom AI providers** for organizations
-that need to integrate enterprise platforms or internal AI services
+In addition to the bundled OpenAI, Anthropic, and Gemini providers, `@apostrophecms/ai-helper` supports **custom AI providers** for organizations that need to integrate enterprise platforms or internal AI services
 (e.g. AWS Bedrock, Azure OpenAI, self-hosted models).
+
+### Provider Architecture
+
+The AI Helper uses a two-phase provider system:
+
+1. **Registration** - Providers register their factory function and metadata (capabilities, label)
+2. **Activation** - The core module instantiates only the providers actually configured for use
+
+This means you can register multiple providers without the overhead of instantiating unused services.
 
 ### Provider Registration
 
-Custom providers are registered with the AI Helper at runtime using
-`registerProvider()`.
+Custom providers register a **factory function** along with metadata. The factory function
+will be called by the core module during activation if the provider is configured for use.
 
 Providers can be implemented either:
 
-- As a **dedicated ApostropheCMS module** (recommended), or
-- As a **factory function** registered during another module’s initialization
+- As a **dedicated ApostropheCMS module**, or
+- As a **factory function** registered during another module's initialization
 
-The exact registration mechanism is flexible, but **all providers must conform
-to the same contract** described below.
+Both patterns must register a factory function - the AI Helper core handles instantiation.
 
 ---
 
 ### Custom Provider Contract
 
-Custom providers must implement a well-defined contract so the AI Helper
-can normalize behavior across different AI services.
+Custom providers must implement a well-defined contract so the AI Helper can normalize behavior across different AI services.
 
 > **Streaming responses are not currently supported.**
 > Providers must return complete results for text and image generation.
@@ -479,25 +451,50 @@ can normalize behavior across different AI services.
 
 ---
 
+#### Provider Registration API
+
+Providers register using `registerProvider(name, factoryInfo)`:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `string` | Unique provider identifier (e.g. `"bedrock"`) |
+| `factoryInfo.factory` | `function` | Factory function `(apos, textOpts, imageOpts) => provider` |
+| `factoryInfo.label` | `string` | Human-readable name for admin UI |
+| `factoryInfo.capabilities` | `object` | Declares supported features |
+
+Example:
+```javascript
+aiHelper.registerProvider('bedrock', {
+  factory: bedrockFactory,
+  label: 'AWS Bedrock',
+  capabilities: {
+    text: true,
+    image: false,
+    imageVariation: false
+  }
+});
+```
+
+The factory function will be called with:
+- `apos` - ApostropheCMS instance
+- `textOpts` - Options from `textProviderOptions`
+- `imageOpts` - Options from `imageProviderOptions`
+
+If a custom provider registers using the same name as a bundled provider, it will override the bundled implementation.
+---
+
 #### Required Provider Properties
 
-Each provider must supply the following metadata when registering:
+The provider object **returned by the factory** must include:
 
 | Property | Type | Description |
 |--------|------|-------------|
-| `name` | `string` | Unique provider identifier (e.g. `"openai"`, `"bedrock"`) |
-| `label` | `string` | Human-readable name for admin UI |
-| `capabilities` | `object` | Declares supported features |
+| `name` | `string` | Provider identifier (should match registration name) |
+| `label` | `string` | Human-readable name |
+| `capabilities` | `object` | Supported features |
+| `validate` | `function` | Configuration validation method |
 
-Example:
-
-```js
-capabilities: {
-  text: true,
-  image: false,
-  imageVariation: false
-}
-```
+Plus methods for each declared capability (see below).
 
 ---
 
@@ -509,7 +506,7 @@ Providers must implement methods that correspond to their declared capabilities.
 
 ##### `validate()`
 
-* Called during provider initialization
+* Called during provider activation (after factory instantiation)
 * Must throw an error if required configuration is missing
 * Should be a no-op when `APOS_AI_HELPER_MOCK` is enabled
 
@@ -529,7 +526,6 @@ Used to:
 * Must return the full generated result
 
 Expected return shape:
-
 ```ts
 {
   content: string,       // Markdown or HTML
@@ -544,22 +540,22 @@ Expected return shape:
 **Required if `capabilities.image === true`**
 
 * Generates one or more images from a prompt
-* Must return complete image URLs or references
+* Must return complete image data
 
 Expected return shape:
-
 ```ts
-{
-  images: Array<{
-    url: string,
+[
+  {
+    type: 'url' | 'base64',
+    data: string,
     metadata?: object
-  }>
-}
+  }
+]
 ```
 
 ---
 
-##### `generateImageVariant(req, image, prompt, options)`
+##### `generateImageVariation(req, image, prompt, options)`
 
 **Required if `capabilities.imageVariation === true`**
 
@@ -605,6 +601,37 @@ For full implementation details, see:
 This file can also be added to AI-assisted development tools
 (e.g. Claude Projects, Cursor workspaces) to help generate
 provider implementations safely and consistently.
+
+## API Endpoints
+
+### List Registered Providers
+
+Query which AI providers are available for registration (whether currently active or not):
+```javascript
+const aiHelper = apos.modules['@apostrophecms/ai-helper'];
+const providers = aiHelper.listRegisteredProviders();
+
+console.log(providers);
+// [
+//   {
+//     name: 'openai',
+//     label: 'OpenAI',
+//     capabilities: { text: true, image: true, imageVariation: true }
+//   },
+//   {
+//     name: 'anthropic',
+//     label: 'Anthropic (Claude)',
+//     capabilities: { text: true, image: false, imageVariation: false }
+//   },
+//   {
+//     name: 'gemini',
+//     label: 'Google Gemini',
+//     capabilities: { text: true, image: true, imageVariation: true }
+//   }
+// ]
+```
+
+This is useful for debugging provider registration, building admin UIs, or when creating custom providers that need to check what's already available.
 
 ## 💎 Ready for Enterprise AI Features?
 
