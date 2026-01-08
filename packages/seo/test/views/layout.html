@@ -1,0 +1,13 @@
+{# Automatically extends the right outer layout and also handles AJAX siutations #}
+{% extends data.outerLayout %}
+
+{% set title = data.piece.title or data.page %}
+
+{% block extraHead %}
+  {% component '@apostrophecms/template:inject' with { where: 'head', end: 'prepend', when: 'dev' } %}
+  <meta name="condition-separator-test" />
+  {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append', when: 'dev' } %}
+{% endblock %}
+
+<h4>Test page with layout</h4>
+
