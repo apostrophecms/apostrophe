@@ -7,6 +7,7 @@
       :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
+      @keyup-enter="onKeyupEnter"
     >
       <template #button="btnProps">
         <AposButton
@@ -117,15 +118,13 @@ watch(
 );
 
 function openPopover() {
-  addEventListener('keydown', keyboardHandler);
   emit('open-popover');
 }
 function closePopover() {
-  removeEventListener('keydown', keyboardHandler);
   emit('close');
 }
-function keyboardHandler(e) {
-  if ([ 'Escape', 'Enter' ].includes(e.key)) {
+function onKeyupEnter(event) {
+  if (event.key === 'Enter') {
     close();
   }
 }

@@ -16,7 +16,7 @@ const {
   extractFileNames
 } = require('./util/index.js');
 
-describe('@apostrophecms/import-export', function () {
+describe('@apostrophecms/import-export', function() {
   let apos;
   let importExportManager;
   let tempPath;
@@ -925,12 +925,15 @@ describe('@apostrophecms/import-export', function () {
     }), true, `expected imported docs 'lastPublishedAt' value to be of '${lastPublishedAt}'`);
   });
 
-  it('should get related types of a given doc type', async function() {
+  it('should get related types of a given doc type', function() {
     const req = apos.task.getReq();
+
+    const start = performance.now();
     const relatedTypesArticles = importExportManager
       .getRelatedTypes(req, apos.article.schema);
     const relatedTypesTopics = importExportManager
       .getRelatedTypes(req, apos.topic.schema);
+    const duration = performance.now() - start;
 
     const actual = {
       relatedTypesArticles: relatedTypesArticles.sort(),
@@ -960,8 +963,8 @@ describe('@apostrophecms/import-export', function () {
       ]
     };
 
+    assert(duration < 1000);
     assert.deepEqual(actual, expected);
-
   });
 
   describe('#getFirstDifferentLocale', function () {
@@ -1597,289 +1600,135 @@ describe('@apostrophecms/import-export', function () {
 
   });
 
-  describe('#import - translations', function () {
-    before(async function () {
-      await t.destroy(apos);
-      apos = await t.create({
-        root: module,
-        testModule: true,
-        modules: {
-          ...getAppConfig({}, { autopublish: false }),
-          '@apostrophecms/i18n': {
-            options: {
-              defaultLocale: 'en',
-              locales: {
-                en: { label: 'English' },
-                fr: {
-                  label: 'French',
-                  prefix: '/fr'
+  if (process.env.TEST_WITH_PRO) {
+    describe('#import - translations', function () {
+      before(async function () {
+        await t.destroy(apos);
+        apos = await t.create({
+          root: module,
+          testModule: true,
+          modules: {
+            ...getAppConfig({}, { autopublish: false }),
+            '@apostrophecms/i18n': {
+              options: {
+                defaultLocale: 'en',
+                locales: {
+                  en: { label: 'English' },
+                  fr: {
+                    label: 'French',
+                    prefix: '/fr'
+                  }
                 }
               }
-            }
-          },
-          '@apostrophecms/import-export': {
-            options: {
-              importExport: {
-                export: {
-                  expiration: 10 * 1000
-                }
-              }
-            }
-          },
-          '@apostrophecms-pro/automatic-translation': {
-            options: {
-              provider: 'deepl'
-            }
-          },
-          '@apostrophecms-pro/automatic-translation-deepl': {
-            options: {
-              apiSecret: 'test'
             },
-            extendMethods: (self) => ({
-              async requestTranslation(_super, req, text, source, target) {
-                if (text.some((t) => t.toLowerCase().includes('test error'))) {
-                  throw new Error('Translate test error');
+            '@apostrophecms/import-export': {
+              options: {
+                importExport: {
+                  export: {
+                    expiration: 10 * 1000
+                  }
                 }
-                return text.map((t) => `${t}-${source}-${target}-translated`);
               }
-            })
+            },
+            '@apostrophecms-pro/automatic-translation': {
+              options: {
+                provider: 'deepl'
+              }
+            },
+            '@apostrophecms-pro/automatic-translation-deepl': {
+              options: {
+                apiSecret: 'test'
+              },
+              extendMethods: (self) => ({
+                async requestTranslation(_super, req, text, source, target) {
+                  if (text.some((t) => t.toLowerCase().includes('test error'))) {
+                    throw new Error('Translate test error');
+                  }
+                  return text.map((t) => `${t}-${source}-${target}-translated`);
+                }
+              })
+            }
           }
-        }
+        });
+
+        tempPath = path.join(apos.rootDir, 'data/temp/uploadfs');
+        attachmentPath = path.join(apos.rootDir, 'public/uploads/attachments');
+        exportsPath = path.join(apos.rootDir, 'public/uploads/exports');
+        importExportManager = apos.modules['@apostrophecms/import-export'];
+
+        await insertAdminUser(apos);
       });
 
-      tempPath = path.join(apos.rootDir, 'data/temp/uploadfs');
-      attachmentPath = path.join(apos.rootDir, 'public/uploads/attachments');
-      exportsPath = path.join(apos.rootDir, 'public/uploads/exports');
-      importExportManager = apos.modules['@apostrophecms/import-export'];
+      it('should import and translate', async function() {
+        const req = apos.task.getReq();
+        const articles = await apos.article.find(req).toArray();
+        const manager = apos.article;
 
-      await insertAdminUser(apos);
-    });
+        req.body = {
+          _ids: articles.map(({ _id }) => _id),
+          extension: 'gzip',
+          relatedTypes: [ 'topic' ],
+          type: req.t(manager.options.pluralLabel)
+        };
 
-    it('should import and translate', async function() {
-      const req = apos.task.getReq();
-      const articles = await apos.article.find(req).toArray();
-      const manager = apos.article;
+        const { url } = await importExportManager.export(req, manager);
+        const fileName = path.basename(url);
+        const exportFilePath = path.join(exportsPath, fileName);
+        const importFilePath = path.join(tempPath, fileName);
+        await fs.copyFile(exportFilePath, importFilePath);
 
-      req.body = {
-        _ids: articles.map(({ _id }) => _id),
-        extension: 'gzip',
-        relatedTypes: [ 'topic' ],
-        type: req.t(manager.options.pluralLabel)
-      };
-
-      const { url } = await importExportManager.export(req, manager);
-      const fileName = path.basename(url);
-      const exportFilePath = path.join(exportsPath, fileName);
-      const importFilePath = path.join(tempPath, fileName);
-      await fs.copyFile(exportFilePath, importFilePath);
-
-      req.body = {
-        translate: true
-      };
-      req.files = {
-        file: {
-          path: importFilePath,
-          type: importExportManager.formats.gzip.allowedTypes[0]
-        }
-      };
-      const params = await importExportManager.import(req);
-      await deletePiecesAndPages(apos);
-      await deleteAttachments(apos, attachmentPath);
-
-      req.body = {
-        ...params,
-        duplicatedDocs: [],
-        importedAttachments: [],
-        overrideLocale: true,
-        translate: true
-      };
-      req.locale = 'fr';
-      await importExportManager.import(req);
-
-      const importedDocs = await apos.doc.db
-        .find({
-          type: /article|topic/,
-          aposLocale: {
-            $in: [
-              'fr:published', 'fr:draft'
-            ]
+        req.body = {
+          translate: true
+        };
+        req.files = {
+          file: {
+            path: importFilePath,
+            type: importExportManager.formats.gzip.allowedTypes[0]
           }
-        })
-        .toArray();
-
-      const actual = importedDocs.map(doc => {
-        return {
-          title: doc.title,
-          type: doc.type,
-          aposLocale: doc.aposLocale,
-          modified: doc.modified ?? false
         };
-      });
+        const params = await importExportManager.import(req);
+        await deletePiecesAndPages(apos);
+        await deleteAttachments(apos, attachmentPath);
 
-      const expected = [
-        {
-          title: 'article2-en-fr-translated',
-          type: 'article',
-          aposLocale: 'fr:draft',
-          modified: true
-        },
-        {
-          title: 'article1-en-fr-translated',
-          type: 'article',
-          aposLocale: 'fr:draft',
-          modified: true
-        },
-        {
-          title: 'article2',
-          type: 'article',
-          aposLocale: 'fr:published',
-          modified: false
-        },
-        {
-          title: 'article1',
-          type: 'article',
-          aposLocale: 'fr:published',
-          modified: false
-        },
-        {
-          title: 'topic1-en-fr-translated',
-          type: 'topic',
-          aposLocale: 'fr:draft',
-          modified: true
-        },
-        {
-          title: 'topic3-en-fr-translated',
-          type: 'topic',
-          aposLocale: 'fr:draft',
-          modified: true
-        },
-        {
-          title: 'topic2-en-fr-translated',
-          type: 'topic',
-          aposLocale: 'fr:draft',
-          modified: true
-        },
-        {
-          title: 'topic3',
-          type: 'topic',
-          aposLocale: 'fr:published',
-          modified: false
-        },
-        {
-          title: 'topic1',
-          type: 'topic',
-          aposLocale: 'fr:published',
-          modified: false
-        },
-        {
-          title: 'topic2',
-          type: 'topic',
-          aposLocale: 'fr:published',
-          modified: false
-        }
-      ];
-
-      assert.deepEqual(actual, expected);
-    });
-
-    it('should import and translate duplicated docs', async function () {
-      const req = apos.task.getReq();
-      const page1 = await apos.page.find(req, { title: 'page1' }).toObject();
-
-      req.body = {
-        _ids: [ page1._id ],
-        extension: 'gzip',
-        relatedTypes: [ 'article' ],
-        type: page1.type
-      };
-
-      const { url } = await importExportManager.export(req, apos.page);
-      const fileName = path.basename(url);
-      const exportFilePath = path.join(exportsPath, fileName);
-      const importFilePath = path.join(tempPath, fileName);
-      await fs.copyFile(exportFilePath, importFilePath);
-
-      req.body = {
-        translate: true
-      };
-      req.files = {
-        file: {
-          path: importFilePath,
-          type: importExportManager.formats.gzip.allowedTypes[0]
-        }
-      };
-
-      const {
-        duplicatedDocs,
-        importedAttachments,
-        exportId,
-        jobId,
-        notificationId,
-        formatLabel
-      } = await importExportManager.import(req);
-
-      // Copy the existing docs to the fr locale
-      const frReq = req.clone({
-        locale: 'fr'
-      });
-      for (const doc of duplicatedDocs) {
-        const manager = doc.type === 'default-page' ? apos.page : apos.article;
-        const orig = await manager.find(req, {
-          aposDocId: doc.aposDocId
-        }).toObject();
-        const localized = await manager.localize(req, orig, 'fr');
-        await manager.publish(frReq, localized);
-      }
-
-      delete req.files;
-      req.locale = 'fr';
-      req.body = {
-        docIds: duplicatedDocs.map(({ aposDocId }) => aposDocId),
-        duplicatedDocs,
-        importedAttachments,
-        exportId,
-        jobId,
-        notificationId,
-        formatLabel,
-        translate: true,
-        overrideLocale: true
-      };
-
-      await importExportManager.overrideDuplicates(req);
-
-      const updatedDocs = await apos.doc.db
-        .find({
-          aposDocId: { $in: duplicatedDocs.map(({ aposDocId }) => aposDocId) },
-          aposMode: { $ne: 'previous' },
-          aposLocale: { $in: [ 'fr:draft', 'fr:published' ] }
-        })
-        .sort({
-          type: 1,
-          aposLocale: 1
-        })
-        .toArray();
-      const actualDocs = updatedDocs.map(doc => {
-        return {
-          title: doc.title,
-          type: doc.type,
-          aposLocale: doc.aposLocale,
-          modified: doc.modified ?? false
+        req.body = {
+          ...params,
+          duplicatedDocs: [],
+          importedAttachments: [],
+          overrideLocale: true,
+          translate: true
         };
-      });
-      const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: jobId });
+        req.locale = 'fr';
+        await importExportManager.import(req);
 
-      const actual = {
-        docs: actualDocs,
-        job: {
-          good: job.good,
-          total: job.total
-        }
-      };
+        const importedDocs = await apos.doc.db
+          .find({
+            type: /article|topic/,
+            aposLocale: {
+              $in: [
+                'fr:published', 'fr:draft'
+              ]
+            }
+          })
+          .toArray();
 
-      const expected = {
-        docs: [
+        const actual = importedDocs.map(doc => {
+          return {
+            title: doc.title,
+            type: doc.type,
+            aposLocale: doc.aposLocale,
+            modified: doc.modified ?? false
+          };
+        });
+
+        const expected = [
           {
             title: 'article2-en-fr-translated',
+            type: 'article',
+            aposLocale: 'fr:draft',
+            modified: true
+          },
+          {
+            title: 'article1-en-fr-translated',
             type: 'article',
             aposLocale: 'fr:draft',
             modified: true
@@ -1891,211 +1740,371 @@ describe('@apostrophecms/import-export', function () {
             modified: false
           },
           {
-            title: 'page1-en-fr-translated',
-            type: 'default-page',
+            title: 'article1',
+            type: 'article',
+            aposLocale: 'fr:published',
+            modified: false
+          },
+          {
+            title: 'topic1-en-fr-translated',
+            type: 'topic',
             aposLocale: 'fr:draft',
             modified: true
           },
           {
-            title: 'page1',
-            type: 'default-page',
+            title: 'topic3-en-fr-translated',
+            type: 'topic',
+            aposLocale: 'fr:draft',
+            modified: true
+          },
+          {
+            title: 'topic2-en-fr-translated',
+            type: 'topic',
+            aposLocale: 'fr:draft',
+            modified: true
+          },
+          {
+            title: 'topic3',
+            type: 'topic',
+            aposLocale: 'fr:published',
+            modified: false
+          },
+          {
+            title: 'topic1',
+            type: 'topic',
+            aposLocale: 'fr:published',
+            modified: false
+          },
+          {
+            title: 'topic2',
+            type: 'topic',
             aposLocale: 'fr:published',
             modified: false
           }
-        ],
-        job: {
-          good: 4,
-          total: 4
-        }
-      };
+        ];
 
-      assert.deepEqual(actual, expected);
-    });
-  });
-
-  describe('#import - translations autopublish', function () {
-    before(async function () {
-      await t.destroy(apos);
-      apos = await t.create({
-        root: module,
-        testModule: true,
-        modules: {
-          ...getAppConfig(),
-          '@apostrophecms/i18n': {
-            options: {
-              defaultLocale: 'en',
-              locales: {
-                en: { label: 'English' },
-                fr: {
-                  label: 'French',
-                  prefix: '/fr'
-                }
-              }
-            }
-          },
-          '@apostrophecms/import-export': {
-            options: {
-              importExport: {
-                export: {
-                  expiration: 10 * 1000
-                }
-              }
-            }
-          },
-          '@apostrophecms-pro/automatic-translation': {
-            options: {
-              provider: 'deepl'
-            }
-          },
-          '@apostrophecms-pro/automatic-translation-deepl': {
-            options: {
-              apiSecret: 'test'
-            },
-            extendMethods: (self) => ({
-              async requestTranslation(_super, req, text, source, target) {
-                if (text.some((t) => t.toLowerCase().includes('test error'))) {
-                  throw new Error('Translate test error');
-                }
-                return text.map((t) => `${t}-${source}-${target}-translated`);
-              }
-            })
-          }
-        }
+        assert.deepEqual(actual, expected);
       });
 
-      tempPath = path.join(apos.rootDir, 'data/temp/uploadfs');
-      attachmentPath = path.join(apos.rootDir, 'public/uploads/attachments');
-      exportsPath = path.join(apos.rootDir, 'public/uploads/exports');
-      importExportManager = apos.modules['@apostrophecms/import-export'];
+      it('should import and translate duplicated docs', async function () {
+        const req = apos.task.getReq();
+        const page1 = await apos.page.find(req, { title: 'page1' }).toObject();
 
-      await insertAdminUser(apos);
-    });
-
-    it('should import, translate and autopublish', async function() {
-      const req = apos.task.getReq();
-      const articles = await apos.article.find(req).toArray();
-      const manager = apos.article;
-
-      req.body = {
-        _ids: articles.map(({ _id }) => _id),
-        extension: 'gzip',
-        relatedTypes: [ 'topic' ],
-        type: req.t(manager.options.pluralLabel)
-      };
-
-      const { url } = await importExportManager.export(req, manager);
-      const fileName = path.basename(url);
-      const exportFilePath = path.join(exportsPath, fileName);
-      const importFilePath = path.join(tempPath, fileName);
-      await fs.copyFile(exportFilePath, importFilePath);
-
-      req.body = {
-        translate: true
-      };
-      req.files = {
-        file: {
-          path: importFilePath,
-          type: importExportManager.formats.gzip.allowedTypes[0]
-        }
-      };
-      const params = await importExportManager.import(req);
-      await deletePiecesAndPages(apos);
-      await deleteAttachments(apos, attachmentPath);
-
-      req.body = {
-        ...params,
-        duplicatedDocs: [],
-        importedAttachments: [],
-        overrideLocale: true,
-        translate: true
-      };
-      req.locale = 'fr';
-      await importExportManager.import(req);
-
-      const importedDocs = await apos.doc.db
-        .find({
-          type: /article|topic/,
-          aposLocale: {
-            $in: [
-              'fr:published', 'fr:draft'
-            ]
-          }
-        })
-        .toArray();
-
-      const actual = importedDocs.map(doc => {
-        return {
-          title: doc.title,
-          type: doc.type,
-          aposLocale: doc.aposLocale,
-          modified: doc.modified ?? false
+        req.body = {
+          _ids: [ page1._id ],
+          extension: 'gzip',
+          relatedTypes: [ 'article' ],
+          type: page1.type
         };
+
+        const { url } = await importExportManager.export(req, apos.page);
+        const fileName = path.basename(url);
+        const exportFilePath = path.join(exportsPath, fileName);
+        const importFilePath = path.join(tempPath, fileName);
+        await fs.copyFile(exportFilePath, importFilePath);
+
+        req.body = {
+          translate: true
+        };
+        req.files = {
+          file: {
+            path: importFilePath,
+            type: importExportManager.formats.gzip.allowedTypes[0]
+          }
+        };
+
+        const {
+          duplicatedDocs,
+          importedAttachments,
+          exportId,
+          jobId,
+          notificationId,
+          formatLabel
+        } = await importExportManager.import(req);
+
+        // Copy the existing docs to the fr locale
+        const frReq = req.clone({
+          locale: 'fr'
+        });
+        for (const doc of duplicatedDocs) {
+          const manager = doc.type === 'default-page' ? apos.page : apos.article;
+          const orig = await manager.find(req, {
+            aposDocId: doc.aposDocId
+          }).toObject();
+          const localized = await manager.localize(req, orig, 'fr');
+          await manager.publish(frReq, localized);
+        }
+
+        delete req.files;
+        req.locale = 'fr';
+        req.body = {
+          docIds: duplicatedDocs.map(({ aposDocId }) => aposDocId),
+          duplicatedDocs,
+          importedAttachments,
+          exportId,
+          jobId,
+          notificationId,
+          formatLabel,
+          translate: true,
+          overrideLocale: true
+        };
+
+        await importExportManager.overrideDuplicates(req);
+
+        const updatedDocs = await apos.doc.db
+          .find({
+            aposDocId: { $in: duplicatedDocs.map(({ aposDocId }) => aposDocId) },
+            aposMode: { $ne: 'previous' },
+            aposLocale: { $in: [ 'fr:draft', 'fr:published' ] }
+          })
+          .sort({
+            type: 1,
+            aposLocale: 1
+          })
+          .toArray();
+        const actualDocs = updatedDocs.map(doc => {
+          return {
+            title: doc.title,
+            type: doc.type,
+            aposLocale: doc.aposLocale,
+            modified: doc.modified ?? false
+          };
+        });
+        const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: jobId });
+
+        const actual = {
+          docs: actualDocs,
+          job: {
+            good: job.good,
+            total: job.total
+          }
+        };
+
+        const expected = {
+          docs: [
+            {
+              title: 'article2-en-fr-translated',
+              type: 'article',
+              aposLocale: 'fr:draft',
+              modified: true
+            },
+            {
+              title: 'article2',
+              type: 'article',
+              aposLocale: 'fr:published',
+              modified: false
+            },
+            {
+              title: 'page1-en-fr-translated',
+              type: 'default-page',
+              aposLocale: 'fr:draft',
+              modified: true
+            },
+            {
+              title: 'page1',
+              type: 'default-page',
+              aposLocale: 'fr:published',
+              modified: false
+            }
+          ],
+          job: {
+            good: 4,
+            total: 4
+          }
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+    });
+
+    describe('#import - translations autopublish', function () {
+      before(async function () {
+        await t.destroy(apos);
+        apos = await t.create({
+          root: module,
+          testModule: true,
+          modules: {
+            ...getAppConfig(),
+            '@apostrophecms/i18n': {
+              options: {
+                defaultLocale: 'en',
+                locales: {
+                  en: { label: 'English' },
+                  fr: {
+                    label: 'French',
+                    prefix: '/fr'
+                  }
+                }
+              }
+            },
+            '@apostrophecms/import-export': {
+              options: {
+                importExport: {
+                  export: {
+                    expiration: 10 * 1000
+                  }
+                }
+              }
+            },
+            ...(process.env.TEST_WITH_PRO
+              ? {
+                '@apostrophecms-pro/automatic-translation': {
+                  options: {
+                    provider: 'deepl'
+                  }
+                },
+                '@apostrophecms-pro/automatic-translation-deepl': {
+                  options: {
+                    apiSecret: 'test'
+                  },
+                  extendMethods: (self) => ({
+                    async requestTranslation(_super, req, text, source, target) {
+                      if (text.some((t) => t.toLowerCase().includes('test error'))) {
+                        throw new Error('Translate test error');
+                      }
+                      return text.map((t) => `${t}-${source}-${target}-translated`);
+                    }
+                  })
+                }
+              }
+              : {})
+          }
+        });
+
+        tempPath = path.join(apos.rootDir, 'data/temp/uploadfs');
+        attachmentPath = path.join(apos.rootDir, 'public/uploads/attachments');
+        exportsPath = path.join(apos.rootDir, 'public/uploads/exports');
+        importExportManager = apos.modules['@apostrophecms/import-export'];
+
+        await insertAdminUser(apos);
       });
 
-      const expected = [
-        {
-          title: 'article2-en-fr-translated',
-          type: 'article',
-          aposLocale: 'fr:draft',
-          modified: false
-        },
-        {
-          title: 'article1-en-fr-translated',
-          type: 'article',
-          aposLocale: 'fr:draft',
-          modified: false
-        },
-        {
-          title: 'article2-en-fr-translated',
-          type: 'article',
-          aposLocale: 'fr:published',
-          modified: false
-        },
-        {
-          title: 'article1-en-fr-translated',
-          type: 'article',
-          aposLocale: 'fr:published',
-          modified: false
-        },
-        {
-          title: 'topic1-en-fr-translated',
-          type: 'topic',
-          aposLocale: 'fr:draft',
-          modified: true
-        },
-        {
-          title: 'topic3-en-fr-translated',
-          type: 'topic',
-          aposLocale: 'fr:draft',
-          modified: true
-        },
-        {
-          title: 'topic2-en-fr-translated',
-          type: 'topic',
-          aposLocale: 'fr:draft',
-          modified: true
-        },
-        {
-          title: 'topic3',
-          type: 'topic',
-          aposLocale: 'fr:published',
-          modified: false
-        },
-        {
-          title: 'topic1',
-          type: 'topic',
-          aposLocale: 'fr:published',
-          modified: false
-        },
-        {
-          title: 'topic2',
-          type: 'topic',
-          aposLocale: 'fr:published',
-          modified: false
-        }
-      ];
+      it('should import, translate and autopublish', async function() {
+        const req = apos.task.getReq();
+        const articles = await apos.article.find(req).toArray();
+        const manager = apos.article;
 
-      assert.deepEqual(actual, expected);
+        req.body = {
+          _ids: articles.map(({ _id }) => _id),
+          extension: 'gzip',
+          relatedTypes: [ 'topic' ],
+          type: req.t(manager.options.pluralLabel)
+        };
+
+        const { url } = await importExportManager.export(req, manager);
+        const fileName = path.basename(url);
+        const exportFilePath = path.join(exportsPath, fileName);
+        const importFilePath = path.join(tempPath, fileName);
+        await fs.copyFile(exportFilePath, importFilePath);
+
+        req.body = {
+          translate: true
+        };
+        req.files = {
+          file: {
+            path: importFilePath,
+            type: importExportManager.formats.gzip.allowedTypes[0]
+          }
+        };
+        const params = await importExportManager.import(req);
+        await deletePiecesAndPages(apos);
+        await deleteAttachments(apos, attachmentPath);
+
+        req.body = {
+          ...params,
+          duplicatedDocs: [],
+          importedAttachments: [],
+          overrideLocale: true,
+          translate: true
+        };
+        req.locale = 'fr';
+        await importExportManager.import(req);
+
+        const importedDocs = await apos.doc.db
+          .find({
+            type: /article|topic/,
+            aposLocale: {
+              $in: [
+                'fr:published', 'fr:draft'
+              ]
+            }
+          })
+          .toArray();
+
+        const actual = importedDocs.map(doc => {
+          return {
+            title: doc.title,
+            type: doc.type,
+            aposLocale: doc.aposLocale,
+            modified: doc.modified ?? false
+          };
+        });
+
+        const expected = [
+          {
+            title: 'article2-en-fr-translated',
+            type: 'article',
+            aposLocale: 'fr:draft',
+            modified: false
+          },
+          {
+            title: 'article1-en-fr-translated',
+            type: 'article',
+            aposLocale: 'fr:draft',
+            modified: false
+          },
+          {
+            title: 'article2-en-fr-translated',
+            type: 'article',
+            aposLocale: 'fr:published',
+            modified: false
+          },
+          {
+            title: 'article1-en-fr-translated',
+            type: 'article',
+            aposLocale: 'fr:published',
+            modified: false
+          },
+          {
+            title: 'topic1-en-fr-translated',
+            type: 'topic',
+            aposLocale: 'fr:draft',
+            modified: true
+          },
+          {
+            title: 'topic3-en-fr-translated',
+            type: 'topic',
+            aposLocale: 'fr:draft',
+            modified: true
+          },
+          {
+            title: 'topic2-en-fr-translated',
+            type: 'topic',
+            aposLocale: 'fr:draft',
+            modified: true
+          },
+          {
+            title: 'topic3',
+            type: 'topic',
+            aposLocale: 'fr:published',
+            modified: false
+          },
+          {
+            title: 'topic1',
+            type: 'topic',
+            aposLocale: 'fr:published',
+            modified: false
+          },
+          {
+            title: 'topic2',
+            type: 'topic',
+            aposLocale: 'fr:published',
+            modified: false
+          }
+        ];
+
+        assert.deepEqual(actual, expected);
+      });
     });
-  });
+  }
 });

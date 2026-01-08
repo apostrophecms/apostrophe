@@ -4,4 +4,5 @@ package-lock.json
 public/uploads
 public/apos-frontend
 .DS_Store
+coverage/
 .nyc_output

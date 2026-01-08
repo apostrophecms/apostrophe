@@ -44,7 +44,7 @@
       :class="{'apos-combo__list--showed': showedList}"
       :style="{top: boxHeight + 'px'}"
       tabindex="0"
-      @keydown="onListKey"
+      @keyup="onListKey"
       @blur="closeList()"
     >
       <li

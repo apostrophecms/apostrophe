@@ -18,8 +18,9 @@
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
       @click="getFocus($event, widget._id);"
-      @focus="attachKeyboardFocusHandler"
-      @blur="removeKeyboardFocusHandler"
+      @keyup.esc="onKeyup"
+      @keyup.space="onKeyup"
+      @keyup.enter="onKeyup"
     >
       <div
         v-if="!breadcrumbDisabled"
@@ -477,11 +478,9 @@ export default {
   watch: {
     isFocused(newVal) {
       if (newVal) {
-        this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardUnfocus);
         this.addClickOutsideListener();
       } else {
         this.menuOpen = null;
-        this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
         this.isSuppressingWidgetControls = false;
         this.removeClickOutsideListener();
       }
@@ -663,14 +662,6 @@ export default {
       return offsetTop - labelHeight < adminBarHeight;
     },
 
-    attachKeyboardFocusHandler() {
-      this.$refs.wrapper?.addEventListener('keydown', this.handleKeyboardFocus);
-    },
-
-    removeKeyboardFocusHandler() {
-      this.$refs.wrapper?.removeEventListener('keydown', this.handleKeyboardFocus);
-    },
-
     // Focus parent, useful for obtrusive UI
     focusParent() {
       // Something above us asked the focused widget to try and focus its parent
@@ -732,17 +723,18 @@ export default {
       this.hasClickOutsideListener = false;
     },
 
-    handleKeyboardFocus($event) {
-      if ($event.key === 'Enter' || $event.code === 'Space') {
-        $event.preventDefault();
-        this.getFocus($event, this.widget._id);
-        this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardFocus);
+    onKeyup(event) {
+      if (!this.isFocused) {
+        return;
       }
-    },
 
-    handleKeyboardUnfocus($event) {
-      if ($event.key === 'Escape') {
-        this.getFocus($event, null);
+      if (event.key === 'Enter' || event.key === 'Space') {
+        event.preventDefault();
+        this.getFocus(event, this.widget._id);
+      }
+
+      if (event.key === 'Escape') {
+        this.getFocus(event, null);
         document.activeElement.blur();
         this.$refs.wrapper.focus();
       }

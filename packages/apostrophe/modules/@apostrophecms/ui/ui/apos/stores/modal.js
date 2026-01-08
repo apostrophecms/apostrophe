@@ -10,6 +10,12 @@ export const useModalStore = defineStore('modal', () => {
     return stack.value.find(modal => activeId.value === modal.id);
   });
 
+  const hasChooserModal = computed(() => {
+    return stack.value.some(modal =>
+      modal.props.hasRelationshipField === true || !!modal.props.relationshipField
+    );
+  });
+
   function add(modal) {
     stack.value.push(modal);
   }
@@ -35,6 +41,10 @@ export const useModalStore = defineStore('modal', () => {
     return id
       ? stack.value.find(modal => id === modal.id)
       : stack.value;
+  }
+
+  function getDepth() {
+    return stack.value.length;
   }
 
   function getAt(index) {
@@ -141,6 +151,17 @@ export const useModalStore = defineStore('modal', () => {
     });
   }
 
+  function isTopManager(component) {
+    // The stack doesn't contain actual components, it contains records of
+    // information about them. Locate the right record in the stack by
+    // its modalEl
+    const manager = stack.value.find(c => c.modalEl === component.$el);
+    const topManager = stack.value.findLast(c => {
+      return (c.componentName || '').endsWith('Manager');
+    });
+    return manager?.id === topManager?.id;
+  }
+
   // Returns true if el1 is "on top of" el2 in the
   // modal stack, as viewed by the user. If el1 is a
   // modal that appears later in the stack than el2
@@ -148,8 +169,7 @@ export const useModalStore = defineStore('modal', () => {
   // If el2 is `document` and el1 is a modal, this
   // method returns true. For convenenience, if el1
   // or el2 is not a modal, it is treated as its DOM
-  // parent modal, or as `document`. If el1 has no
-  // parent modal this method always returns false.
+  // parent modal, or as `document`.
   //
   // If el1 is no longer connected to the DOM then it
   // is also considered to be "on top" e.g. not something
@@ -157,48 +177,63 @@ export const useModalStore = defineStore('modal', () => {
   // similar functionality. This is necessary because
   // sometimes Vue removes elements from the DOM before
   // we can examine their relationships.
+  //
+  // If el1 is part of a notification, it is always considered
+  // to be on top of el2. This prevents unwanted dismissals of
+  // intermediate modals beneath notifications.
   function onTopOf(el1, el2) {
+    if (el1.closest('[data-apos-notification]')) {
+      return true;
+    }
+    // Why is this here? Things can be stacked above context menus.
+    // But, I'm afraid to remove it -Tom
     if (el2.matches('[data-apos-menu]')) {
       return false;
     }
     if (!el1.isConnected) {
-    // If el1 is no longer in the DOM we can't make a proper determination,
-    // returning true prevents unwanted things like click-outside-element
-    // events from firing
+      // If el1 is no longer in the DOM we can't make a proper determination,
+      // returning true prevents unwanted things like click-outside-element
+      // events from firing
       return true;
     }
-    if (!el1.matches('[data-apos-modal]')) {
-      el1 = el1.closest('[data-apos-modal]') || document;
-    }
-    if (!el2.matches('[data-apos-modal]')) {
-      el2 = el2.closest('[data-apos-modal]') || document;
-    }
-    if (el1 === document) {
-      return false;
-    }
-    if (el2 === document) {
-      return true;
-    }
-    const index1 = stack.value.findIndex(modal => modal.modalEl === el1);
-    const index2 = stack.value.findIndex(modal => modal.modalEl === el2);
-    if (index1 === -1) {
-      throw new Error('apos.modal.onTopOf: el1 is not in the modal stack');
-    }
-    if (index2 === -1) {
-      throw new Error('apos.modal.onTopOf: el2 is not in the modal stack');
-    }
+    const index1 = getDepthOf(el1);
+    const index2 = getDepthOf(el2);
     return index1 > index2;
+  }
+
+  // Returns the depth of el in the modal stack, where higher numbers
+  // are higher in the stack ("on top"). Returns -1 if el is not
+  // in any modal. If el is not in the DOM -1 is always returned
+  function getDepthOf(el) {
+    if (!el.isConnected) {
+      return -1;
+    }
+    if (!el.matches('[data-apos-modal]')) {
+      el = el.closest('[data-apos-modal]') || document;
+    }
+    if (el === document) {
+      return -1;
+    }
+    return stack.value.findIndex(modal => modal.modalEl === el);
+  }
+
+  function isOnTop(el) {
+    const top = stack.value.at(-1)?.modalEl;
+
+    return (top && getDepthOf(el) === getDepthOf(top)) || false;
   }
 
   return {
     stack,
     activeId,
     activeModal,
+    hasChooserModal,
     getActiveLocale,
     add,
     remove,
     get,
     getAt,
+    getDepth,
     getProperties,
     execute,
     updateModalData,
@@ -206,6 +241,8 @@ export const useModalStore = defineStore('modal', () => {
     confirm,
     alert,
     report,
-    onTopOf
+    onTopOf,
+    isOnTop,
+    isTopManager
   };
 });
