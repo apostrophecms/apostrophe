@@ -66,8 +66,6 @@
 <script>
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
-import { mapState } from 'pinia';
-import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
@@ -155,11 +153,6 @@ export default {
     };
   },
   computed: {
-    // When creating a widget, we don't have access to the widget._id yet.
-    // The focusedWidget is a fallback to find the correct style wrapper(s).
-    ...mapState(useWidgetStore, [
-      'focusedWidget'
-    ]),
     moduleOptions() {
       return window.apos.modules[apos.area.widgetManagers[this.type]];
     },
@@ -314,7 +307,7 @@ export default {
     applyPreviewStyles({
       inline = '', css = '', classes = []
     }, widget) {
-      const targetId = widget._id || this.id || this.focusedWidget;
+      const targetId = widget._id || this.id;
       if (!targetId) {
         return;
       }

@@ -49,7 +49,7 @@ export default {
         ? property
           .replaceAll('-%key%', `-${side}`)
           .replaceAll('%key%-', `${side}-`)
-        : `property-${side}`;
+        : `${property}-${side}`;
 
       parts.push(`${normalizedProperty}: ${val}${unit}${important ? ' !important' : ''}`);
     }
