@@ -275,7 +275,7 @@ export default {
           checkIfConditionsFn: checkIfConditions,
           subset: this.moduleOptions.stylesFields
         });
-        this.applyPreviewStyles(styles, value.data);
+        this.applyPreviewStyles(styles);
 
         return;
       }
@@ -306,11 +306,8 @@ export default {
     },
     applyPreviewStyles({
       inline = '', css = '', classes = []
-    }, widget) {
-      const targetId = widget._id || this.id;
-      if (!targetId) {
-        return;
-      }
+    }) {
+      const targetId = this.getPreviewWidgetId();
 
       // Multiple elements may exist - e.g. in-context and in a modal.
       const widgetElements = document.querySelectorAll(
@@ -421,7 +418,7 @@ export default {
         ...props
       };
     },
-    getPreviewWidgetObject() {
+    getPreviewWidgetId() {
       if (!this.previewWidgetId) {
         if (this.preview.create) {
           // Deliberately different from the final widget's id, which will
@@ -431,9 +428,13 @@ export default {
           this.previewWidgetId = this.id;
         }
       }
+      return this.previewWidgetId;
+    },
+    getPreviewWidgetObject() {
+      const _id = this.getPreviewWidgetId();
       return {
         ...this.getWidgetObject({
-          _id: this.previewWidgetId
+          _id
         }),
         aposLivePreview: true
       };
