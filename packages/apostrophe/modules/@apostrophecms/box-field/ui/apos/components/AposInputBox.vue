@@ -335,12 +335,11 @@ export default {
   .apos-input-box__unit {
     align-self: center;
     margin-right: $spacing-base + $spacing-half;
-    font-size: var(--a-type-small);
+    color: var(--a-base-3);
     font-family: var(--a-family-default);
     font-size: var(--a-type-base);
     font-weight: var(--a-weight-base);
     text-transform: uppercase;
-    color: var(--a-base-3);
 
     &--individual {
       position: relative;
