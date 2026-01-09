@@ -49,6 +49,7 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'apostrophe:layoutColumn',
+    contextualStyles: true,
     operationsInBreadcrumb: true,
     breakpoints: {
       tablet: 900,
@@ -59,7 +60,6 @@ module.exports = {
     return {
       add: {
         layoutColMove: {
-          // to fix
           nativeAction: 'move',
           placement: 'breadcrumb',
           icon: 'cursor-move-icon',
@@ -71,12 +71,31 @@ module.exports = {
           type: 'menu',
           modal: 'AposLayoutColControlDialog'
         },
+        layoutColEditStyles: {
+          action: 'apos-edit-styles',
+          placement: 'breadcrumb',
+          icon: 'palette-icon',
+          tooltip: 'apostrophe:stylesWidget'
+        },
         layoutColDelete: {
           action: 'apos-layout-col-delete',
           placement: 'breadcrumb',
           icon: 'delete-icon',
           tooltip: 'apostrophe:delete'
         }
+      }
+    };
+  },
+  extendMethods(self, options) {
+    return {
+      disableWidgetOperation(_super, opName, properties) {
+        if (
+          _super() ||
+          (opName === 'layoutColEditStyles' && !Object.keys(self.styles).length)
+        ) {
+          return true;
+        }
+        return false;
       }
     };
   },

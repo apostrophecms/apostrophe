@@ -113,7 +113,8 @@ export default {
         fieldErrors: {}
       },
       fieldState: {},
-      fieldComponentMap: window.apos.schema.components.fields || {}
+      fieldComponentMap: window.apos.schema.components.fields || {},
+      changedFields: new Set()
     };
   },
   computed: {
@@ -285,9 +286,16 @@ export default {
           }
           this.next.data[field.name] = this.fieldState[field.name].data;
         });
-
       this.next.fieldState = { ...this.fieldState };
-      this.$emit('update:model-value', { ...this.next });
+      this.$emit('update:model-value', {
+        ...this.next,
+        changed: [ ...this.changedFields ]
+      });
+      this.changedFields = new Set();
+    },
+    handleFieldUpdate(name, val) {
+      this.fieldState[name] = val;
+      this.changedFields.add(name);
     },
     displayComponent({ name, hidden = false }) {
       if (hidden === true) {

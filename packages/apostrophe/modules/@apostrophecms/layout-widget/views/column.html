@@ -1,19 +1,28 @@
 {# Included directly from the `area.html` template.
 The area related `data.*` is available plus `item` and `widgetOptions`. #}
 {%- set lastId = apos.modules['@apostrophecms/layout-widget'].detectLastTabletFullWidthItem(data.area.items) -%}
+{% set styles = apos.styles.render(item) %}
+{% set styleTag = apos.styles.elements(styles) %}
+{% set wrapperAttrs = apos.styles.attributes(styles, {}, {asObject: true}) %}
+
+{{ styleTag | safe }}
 <div
+  {% for key, value in wrapperAttrs %}
+    {% if key != 'style' %}{{ key }}="{{ value }}"{% endif %}
+  {% endfor %}
   {% if data.canEdit %} data-apos-widget="{{ item._id }}"{% endif %}
   data-visible-tablet="{{ item.tablet.show }}"
   data-visible-mobile="{{ item.mobile.show }}"
   {% if lastId and item._id === lastId %}data-tablet-full="true"{% endif %}
   style="
-    --colstart: {{ item.desktop.colstart }}; 
-    --colspan: {{ item.desktop.colspan }}; 
-    --rowstart: {{ item.desktop.rowstart }}; 
-    --rowspan: {{ item.desktop.rowspan }}; 
+    --colstart: {{ item.desktop.colstart }};
+    --colspan: {{ item.desktop.colspan }};
+    --rowstart: {{ item.desktop.rowstart }};
+    --rowspan: {{ item.desktop.rowspan }};
     --justify: {{ item.desktop.justify }};
     --align: {{ item.desktop.align }};
     --order: {{ item.desktop.order }};
+    {{ wrapperAttrs.style or '' }}
 ">
   {% area item, 'content' %}
 </div>

@@ -99,7 +99,7 @@ function normalizeWidget(widgetInstance, self) {
     }
   }
 
-  // Contextual default data
+  // Contextual default data other than schema fields
   let contextData = {};
   if (self) {
     const manager = getManager(widgetInstance.type, self);

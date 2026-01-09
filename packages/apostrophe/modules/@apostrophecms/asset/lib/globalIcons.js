@@ -125,6 +125,7 @@ module.exports = {
   'refresh-icon': 'Refresh',
   'shape-icon': 'Shape',
   'sign-text-icon': 'SignText',
+  'palette-icon': 'Palette',
   'tablet-icon': 'Tablet',
   'tag-icon': 'Tag',
   'text-box-icon': 'TextBox',

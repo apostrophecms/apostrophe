@@ -27,6 +27,10 @@ const anchorAttribute = options?.anchorAttribute || 'id';
 let WrapperElement = 'div';
 let wrapperAttributes = {};
 
+let StylesWrapperElement = 'div';
+let stylesElements = options?.aposStylesElements || null;
+let stylesAttributes = options?.aposStylesAttributes || {};
+
 if (isEdit) {
   WrapperElement = 'div';
   wrapperAttributes['data-apos-widget'] = widget._id;
@@ -37,19 +41,22 @@ if (isEdit) {
 } else if (shouldWrapWithAnchor) {
   WrapperElement = 'div';
   wrapperAttributes[anchorAttribute] = widget.anchorId;
+} else {
+  WrapperElement = Fragment;
 }
 
-const shouldWrap = isEdit || shouldWrapWithAnchor;
----
+if (options?.aposStylesWrapper === false) {
+  StylesWrapperElement = Fragment;
+  stylesElements = null;
+  stylesAttributes = {};
+}
 
-{ Component &&
-  <>
-    {shouldWrap ? (
-      <WrapperElement {...wrapperAttributes}>
-        <Component {widget} {options} {...props}/>
-      </WrapperElement>
-    ) : (
+---
+{Component &&
+  <WrapperElement {...wrapperAttributes}>
+    <Fragment set:html={stylesElements} is:inline />
+    <StylesWrapperElement {...stylesAttributes}>
       <Component {widget} {options} {...props}/>
-    )}
-  </>
+    </StylesWrapperElement>
+  </WrapperElement>
 }

@@ -5,6 +5,7 @@ import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstanc
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
+import { klona } from 'klona';
 
 export default {
   mixins: [ AposThemeMixin ],
@@ -278,6 +279,41 @@ export default {
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);
       }
     },
+    async editStyles({ widgetId, index }) {
+      if (this.foreign) {
+        return;
+      }
+      const widget = this.next.find(({ _id }) => _id === widgetId);
+      if (!widget) {
+        return;
+      }
+
+      apos.area.activeEditor = this;
+      apos.bus.$on('apos-refreshing', cancelRefresh);
+      const preview = this.widgetPreview(widget.type, index, false);
+      const stylesEditorComponent = this.widgetStylesEditorComponent(widget.type);
+      const contextualStyles = apos.modules[
+        apos.area.widgetManagers[widget.type]
+      ]?.contextualStyles;
+
+      const result = await apos.modal.execute(stylesEditorComponent, {
+        modelValue: widget,
+        options: this.widgetOptionsByType(widget.type),
+        type: widget.type,
+        docId: this.docId,
+        parentFollowingValues: this.followingValues,
+        areaFieldId: this.fieldId,
+        meta: this.meta[widget._id]?.aposMeta,
+        preview,
+        contextualStyles,
+        defaultTab: 'styles'
+      });
+      apos.area.activeEditor = null;
+      apos.bus.$off('apos-refreshing', cancelRefresh);
+      if (result) {
+        return this.update(result);
+      }
+    },
     async up({ index }) {
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
@@ -398,6 +434,7 @@ export default {
         const componentName = this.widgetEditorComponent(widget.type);
         apos.area.activeEditor = this;
         apos.bus.$on('apos-refreshing', cancelRefresh);
+
         const preview = this.widgetPreview(widget.type, index, false);
         const result = await apos.modal.execute(componentName, {
           modelValue: widget,
@@ -485,7 +522,7 @@ export default {
       if (this.widgetIsContextual(name)) {
         return this.insert({
           widget: {
-            type: name,
+            ...this.newWidget(name),
             ...this.contextualWidgetDefaultData(name),
             aposPlaceholder: this.widgetHasPlaceholder(name)
           },
@@ -536,7 +573,7 @@ export default {
       return null;
     },
     contextualWidgetDefaultData(type) {
-      return this.moduleOptions.contextualWidgetDefaultData[type];
+      return klona(this.moduleOptions.contextualWidgetDefaultData[type]);
     },
     async insert({
       index, widget, autosave = true
@@ -581,6 +618,9 @@ export default {
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
+    },
+    widgetStylesEditorComponent(type) {
+      return this.moduleOptions.components.widgetStylesEditors[type];
     },
     widgetPreview(type, index, create) {
       return this.moduleOptions.widgetPreview[type]

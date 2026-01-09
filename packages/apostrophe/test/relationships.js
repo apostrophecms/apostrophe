@@ -1,5 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
+const { findRelationships } = require('../modules/@apostrophecms/piece-type/ui/apos/lib/postprocessRelationships.js');
 
 describe('Relationships', function() {
 
@@ -65,6 +66,104 @@ describe('Relationships', function() {
     };
 
     assert.deepEqual(actual, expected);
+  });
+});
+
+describe('Utils', function() {
+  it('should properly retrieve schema relationships for post processing', () => {
+    const schema = [
+      {
+        name: '_image',
+        type: 'relationship',
+        withType: '@apostrophecms/image'
+      },
+
+      {
+        name: 'obj',
+        type: 'object',
+        schema: [
+          {
+            name: '_page',
+            type: 'relationship',
+            withType: '@apostrophecms/any-page-type'
+          }
+        ]
+      },
+
+      {
+        name: 'arr',
+        type: 'array',
+        schema: [
+          {
+            name: 'title',
+            type: 'string'
+          },
+          {
+            name: 'piece',
+            type: 'relationship',
+            withType: '@apostrophecms/piece'
+          }
+        ]
+      }
+    ];
+
+    const doc = {
+      _image: [ { title: 'Image' } ],
+      obj: {
+        _page: [ { title: 'page' } ]
+      },
+      arr: [
+        {
+          title: 'coucou',
+          piece: [ { title: 'piece' } ]
+        }
+      ]
+    };
+
+    const expected = [
+      {
+        context: {
+          _image: [ { title: 'Image' } ],
+          obj: { _page: [ { title: 'page' } ] },
+          arr: [
+            {
+              title: 'coucou',
+              piece: [ { title: 'piece' } ]
+            }
+          ]
+        },
+        field: {
+          name: '_image',
+          type: 'relationship',
+          withType: '@apostrophecms/image'
+        },
+        value: [ { title: 'Image' } ]
+      },
+      {
+        context: { _page: [ { title: 'page' } ] },
+        field: {
+          name: '_page',
+          type: 'relationship',
+          withType: '@apostrophecms/any-page-type'
+        },
+        value: [ { title: 'page' } ]
+      },
+      {
+        context: {
+          title: 'coucou',
+          piece: [ { title: 'piece' } ]
+        },
+        field: {
+          name: 'piece',
+          type: 'relationship',
+          withType: '@apostrophecms/piece'
+        },
+        value: [ { title: 'piece' } ]
+      }
+    ];
+    const actual = findRelationships(schema, doc);
+
+    assert.deepEqual(expected, actual);
   });
 });
 

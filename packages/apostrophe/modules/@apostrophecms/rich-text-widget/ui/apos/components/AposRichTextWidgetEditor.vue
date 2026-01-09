@@ -1,6 +1,9 @@
 <template>
   <div
+    :id="widgetId"
     :aria-controls="`insert-menu-${modelValue._id}`"
+    :style="widgetStyles.inline"
+    :class="widgetStyles.classes"
     @keyup="handleUIKeyup"
   >
     <bubble-menu
@@ -146,8 +149,8 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
-
 import { klona } from 'klona';
+import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 
 export default {
   name: 'AposRichTextWidgetEditor',
@@ -193,6 +196,9 @@ export default {
     }
   },
   emits: [ 'update', 'suppressWidgetControls' ],
+  setup() {
+    return useAposStyles();
+  },
   data() {
     return {
       editor: null,
@@ -327,6 +333,18 @@ export default {
     }
   },
   watch: {
+    modelValue(newVal, oldVal) {
+      // Accept any changes that were made to regular schema fields (like styles)
+      // so that we don't blow them away later when we emit changes to the rich text
+      const schema = this.moduleOptions.schema;
+      for (const field of schema) {
+        this.docFields.data[field.name] = newVal[field.name];
+      }
+      // Recompute the visualization of the styles
+      this.recomputeChangedStyles(newVal, oldVal, {
+        moduleOptions: this.moduleOptions
+      });
+    },
     suppressWidgetControls(newVal) {
       if (newVal) {
         this.$emit('suppressWidgetControls');
@@ -349,87 +367,8 @@ export default {
     }
   },
   mounted() {
-    // Cleanly namespace it so we don't conflict with other uses and instances
-    const CustomPlaceholder = Placeholder.extend();
-    const extensions = [
-      BlockQuote,
-      Bold,
-      BulletList,
-      Code,
-      CodeBlock,
-      Dropcursor,
-      Gapcursor,
-      HardBreak,
-      History,
-      HorizontalRule,
-      Italic,
-      OrderedList,
-      Paragraph,
-      Strike,
-      Text,
-      TextAlign.configure({
-        types: [ 'heading', 'paragraph', 'defaultNode' ]
-      }),
-      Highlight,
-      Underline,
-      Superscript,
-      Subscript,
-      Table.configure(this.tableOptions),
-      TableCell,
-      TableHeader,
-      TableRow,
-      CustomPlaceholder.configure({
-        placeholder: () => {
-          const text = this.$t(this.placeholderText);
-          return text;
-        },
-        emptyNodeClass: 'apos-is-empty'
-      }),
-      FloatingMenu
-    ]
-      .filter(Boolean)
-      .concat(this.aposTiptapExtensions());
-
-    this.ensureExtensionsPriority(extensions);
-    this.editor = new Editor({
-      content: this.initialContent,
-      autofocus: this.autofocus,
-      onUpdate: this.editorUpdate,
-      extensions,
-
-      // The following events are triggered:
-      //  - before the placeholder configuration function, when loading the page
-      //  - after it, once the page is loaded and we interact with the editors
-      // To solve this issue, use another `this.showPlaceholder` variable
-      // and toggle it after the placeholder configuration function is called,
-      // thanks to nextTick.
-      // The proper thing would be to call nextTick inside the placeholder
-      // function so that it can rely on the focus state set by these event
-      // listeners, but the placeholder function is called synchronously...
-      // When not autofocusing, we want to show the "Empty" placeholder right away.
-      onCreate: () => {
-        this.showPlaceholder = true;
-      },
-      onFocus: () => {
-        this.isFocused = true;
-        this.$nextTick(() => {
-          this.showPlaceholder = false;
-        });
-      },
-      onBlur: () => {
-        this.isFocused = false;
-        this.$nextTick(() => {
-          this.showPlaceholder = true;
-        });
-      },
-      onSelectionUpdate: ({ editor }) => {
-        this.$nextTick(() => {
-          if (!editor.view.state.selection.empty) {
-            this.suppressWidgetControls = true;
-          }
-        });
-      }
-    });
+    this.getWidgetStyles(this.docFields.data, this.moduleOptions);
+    this.instantiateEditor();
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
 
@@ -438,6 +377,89 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    instantiateEditor() {
+    // Cleanly namespace it so we don't conflict with other uses and instances
+      const CustomPlaceholder = Placeholder.extend();
+      const extensions = [
+        BlockQuote,
+        Bold,
+        BulletList,
+        Code,
+        CodeBlock,
+        Dropcursor,
+        Gapcursor,
+        HardBreak,
+        History,
+        HorizontalRule,
+        Italic,
+        OrderedList,
+        Paragraph,
+        Strike,
+        Text,
+        TextAlign.configure({
+          types: [ 'heading', 'paragraph', 'defaultNode' ]
+        }),
+        Highlight,
+        Underline,
+        Superscript,
+        Subscript,
+        Table.configure(this.tableOptions),
+        TableCell,
+        TableHeader,
+        TableRow,
+        CustomPlaceholder.configure({
+          placeholder: () => {
+            const text = this.$t(this.placeholderText);
+            return text;
+          },
+          emptyNodeClass: 'apos-is-empty'
+        }),
+        FloatingMenu
+      ]
+        .filter(Boolean)
+        .concat(this.aposTiptapExtensions());
+
+      this.ensureExtensionsPriority(extensions);
+      this.editor = new Editor({
+        content: this.initialContent,
+        autofocus: this.autofocus,
+        onUpdate: this.editorUpdate,
+        extensions,
+
+        // The following events are triggered:
+        //  - before the placeholder configuration function, when loading the page
+        //  - after it, once the page is loaded and we interact with the editors
+        // To solve this issue, use another `this.showPlaceholder` variable
+        // and toggle it after the placeholder configuration function is called,
+        // thanks to nextTick.
+        // The proper thing would be to call nextTick inside the placeholder
+        // function so that it can rely on the focus state set by these event
+        // listeners, but the placeholder function is called synchronously...
+        // When not autofocusing, we want to show the "Empty" placeholder right away.
+        onCreate: () => {
+          this.showPlaceholder = true;
+        },
+        onFocus: () => {
+          this.isFocused = true;
+          this.$nextTick(() => {
+            this.showPlaceholder = false;
+          });
+        },
+        onBlur: () => {
+          this.isFocused = false;
+          this.$nextTick(() => {
+            this.showPlaceholder = true;
+          });
+        },
+        onSelectionUpdate: ({ editor }) => {
+          this.$nextTick(() => {
+            if (!editor.view.state.selection.empty) {
+              this.suppressWidgetControls = true;
+            }
+          });
+        }
+      });
+    },
     // Insert menu items just want to know what the original options were,
     // while "editorOptions" has morphed into a different, internal
     // representation
@@ -797,7 +819,6 @@ function traverseNextNode(node) {
 </script>
 
 <style lang="scss" scoped>
-
   $z-index-button-background: 1;
   $z-index-button-foreground: 2;
 

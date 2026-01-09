@@ -41,28 +41,30 @@ export async function getPostprocessedRelationship(
   return response.relationship;
 }
 
-function findRelationships(schema, object) {
-  let relationships = [];
-  for (const field of schema) {
+export function findRelationships(schema, object) {
+  return schema.reduce((acc, field) => {
     if (field.type === 'relationship') {
-      relationships.push({
-        context: object,
-        field,
-        value: object[field.name]
-      });
+      return [
+        ...acc,
+        {
+          context: object,
+          field,
+          value: object[field.name]
+        }
+      ];
     } else if (field.type === 'array') {
-      for (const value of (object[field.name] || [])) {
-        relationships = [
-          ...relationships,
-          findRelationships(field.schema, value)
-        ];
-      }
+      return [
+        ...acc,
+        ...(object[field.name] || [])
+          .flatMap((value) => findRelationships(field.schema, value))
+      ];
     } else if (field.type === 'object') {
-      relationships = [
-        ...relationships,
-        findRelationships(field.schema, object[field.name] || {})
+      return [
+        ...acc,
+        ...findRelationships(field.schema, object[field.name] || {})
       ];
     }
-  }
-  return relationships;
+
+    return acc;
+  }, []);
 }
