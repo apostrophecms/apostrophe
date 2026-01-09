@@ -2,6 +2,7 @@
 import AposWidget from "../components/AposWidget.astro";
 import aposRequest from "../lib/aposRequest.js";
 import aposResponse from "../lib/aposResponse.js";
+import { onBeforeWidgetRenderHook } from 'virtual:apostrophe-doctypes';
 
 const request = aposRequest(Astro.request);
 const response = await aposResponse(request);
@@ -26,6 +27,11 @@ try {
   throw new Error("There was an issue while parsing a widget response.");
 }
 const { widget, ...props } = responseBody;
+
+if (widget && shouldRender && onBeforeWidgetRenderHook) {
+  await onBeforeWidgetRenderHook({ widget, props, Astro });
+}
+
 if (!widget && shouldRender) {
   throw new Error(
     "There was an issue while rendering the widget in the renderWidget endpoint."
