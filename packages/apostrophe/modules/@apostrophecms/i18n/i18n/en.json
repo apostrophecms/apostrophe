@@ -596,6 +596,7 @@
   "style": "Style",
   "styleAlignment": "Alignment",
   "styleBorder": "Border",
+  "styleBorderWidth": "Width",
   "styleCenter": "Center",
   "styleColor": "Color",
   "styleDashed": "Dashed",

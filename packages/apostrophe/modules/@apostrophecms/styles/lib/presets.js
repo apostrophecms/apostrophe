@@ -54,7 +54,7 @@ module.exports = (moduleOptions) => {
             def: false
           },
           width: {
-            label: 'apostrophe:styleWidth',
+            label: 'apostrophe:styleBorderWidth',
             type: 'box',
             def: {
               top: 1,
