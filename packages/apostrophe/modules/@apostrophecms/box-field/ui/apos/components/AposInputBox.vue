@@ -27,6 +27,12 @@
             :tabindex="tabindex"
             @change="reflectShorthand"
           >
+          <div
+            v-if="field.unit"
+            class="apos-input-box__unit"
+          >
+            {{ field.unit }}
+          </div>
           <div class="apos-input-box__switch">
             <button
               v-apos-tooltip="$t('apostrophe:boxFieldEditAll')"
@@ -108,6 +114,12 @@
               {{ $t(`apostrophe:boxField${side.charAt(0).toUpperCase() + side.slice(1)}`) }}
             </label>
           </div>
+          <div
+            v-if="field.unit"
+            class="apos-input-box__unit apos-input-box__unit--individual"
+          >
+            {{ field.unit }}
+          </div>
         </div>
       </div>
     </template>
@@ -161,18 +173,18 @@ export default {
   .apos-input-box__wrapper {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: $spacing-base;
     max-width: 350px;
   }
 
   .apos-input--number {
     height: 36px;
-    padding: 10px 3px 10px 10px;
+    padding: $spacing-base 3px $spacing-base $spacing-base;
   }
 
   .apos-input-box__shorthand {
     display: flex;
-    gap: 10px;
+    gap: $spacing-half;
   }
 
   .apos-input-box__shorthand-input {
@@ -185,7 +197,7 @@ export default {
     height: 36px;
     padding: 3px;
     background-color: var(--a-base-9);
-    gap: 5px;
+    gap: $spacing-half;
     border-radius: var(--a-border-radius);
   }
 
@@ -302,7 +314,7 @@ export default {
 
   .apos-input-box__individual {
     display: flex;
-    gap: 10px;
+    gap: $spacing-base;
   }
 
   .apos-input-box__individual-label {
@@ -316,8 +328,25 @@ export default {
   .apos-input-box__individual-input-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: $spacing-half;
     align-items: center;
+  }
+
+  .apos-input-box__unit {
+    align-self: center;
+    margin-right: $spacing-base + $spacing-half;
+    font-size: var(--a-type-small);
+    font-family: var(--a-family-default);
+    font-size: var(--a-type-base);
+    font-weight: var(--a-weight-base);
+    text-transform: uppercase;
+    color: var(--a-base-3);
+
+    &--individual {
+      position: relative;
+      top: -5px;
+      left: -3px;
+    }
   }
 
 </style>
