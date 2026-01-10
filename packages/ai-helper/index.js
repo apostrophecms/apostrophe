@@ -232,6 +232,18 @@ module.exports = {
       },
 
       /**
+       * Generate text using the configured provider
+       * @param {Object} req - Request object
+       * @param {string} prompt - Text prompt
+       * @param {Object} options - Generation options
+       * @returns {Promise<Object>} {content: string, metadata: object}
+       */
+      async generateText(req, prompt, options = {}) {
+        const providerInfo = self.getTextProvider();
+        return providerInfo.provider.generateText(req, prompt, options);
+      },
+
+      /**
        * Get the configured image provider
        * @returns {Object} Provider info and capabilities
        */
@@ -246,6 +258,41 @@ module.exports = {
         }
 
         return providerInfo;
+      },
+
+      /**
+      * Generate images using the configured provider
+      * @param {Object} req - Request object
+      * @param {string} prompt - Image prompt
+      * @param {Object} options - Generation options
+      * @returns {Promise<Array>} Array of image objects
+      */
+      async generateImage(req, prompt, options = {}) {
+        const providerInfo = self.getImageProvider();
+        return providerInfo.provider.generateImage(req, prompt, options);
+      },
+
+      /**
+ * Generate image variation using the configured provider
+ * @param {Object} req - Request object
+ * @param {Object} existing - Existing image record
+ * @param {string} prompt - Variation prompt
+ * @param {Object} options - Generation options
+ * @returns {Promise<Array>} Array of image objects
+ */
+      async generateImageVariation(req, existing, prompt, options = {}) {
+        const providerInfo = self.getImageProvider();
+
+        // Check if provider supports variations
+        if (!providerInfo.capabilities.imageVariation) {
+          throw self.apos.error('invalid',
+            `Provider "${self.options.imageProvider}" does not support image variations`
+          );
+        }
+
+        return providerInfo.provider.generateImageVariation(
+          req, existing, prompt, options
+        );
       },
 
       /**

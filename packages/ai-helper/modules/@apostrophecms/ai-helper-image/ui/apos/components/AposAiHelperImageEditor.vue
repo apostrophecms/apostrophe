@@ -57,6 +57,7 @@
               />
               <AposButton
                 v-if="showVariantInput"
+                icon="robot-icon"
                 type="primary"
                 :label="$t('aposAiHelper:generateVariant')"
                 :disabled="!variantPrompt.trim()"

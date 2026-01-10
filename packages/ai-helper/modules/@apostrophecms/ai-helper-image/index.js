@@ -178,33 +178,6 @@ module.exports = {
           const prompt = self.apos.launder.string(req.body.prompt);
           const variantOf = self.apos.launder.id(req.body.variantOf);
 
-          const emitUsage = async ({
-            providerLabel,
-            providerMetadata,
-            count,
-            variantOfId
-          }) => {
-            if (!(aiHelper.options.storeUsage || aiHelper.options.logUsage)) {
-              return;
-            }
-            const usage = {
-              type: 'image',
-              provider: providerLabel,
-              prompt,
-              metadata: {
-                ...(providerMetadata || {}),
-                count,
-                ...(variantOfId ? { variantOf: variantOfId } : {})
-              }
-            };
-            if (aiHelper.options.storeUsage) {
-              await aiHelper.storeUsage(req, usage);
-            }
-            if (aiHelper.options.logUsage) {
-              aiHelper.logUsage(req, usage);
-            }
-          };
-
           if (!prompt.length) {
             throw self.apos.error('invalid');
           }
@@ -233,33 +206,16 @@ module.exports = {
               });
             }
 
-            await emitUsage({
-              providerLabel: 'Mock Provider',
-              providerMetadata: images[0] && images[0].providerMetadata,
-              count: images.length,
-              variantOfId: variantOf || null
-            });
-
             return { images };
           }
 
           try {
-            // Get the configured image provider
-            const { provider } = aiHelper.getImageProvider();
-
             // Options for future expansion (masks, seeds, styles, etc.)
             const options = {};
 
             let result;
 
             if (variantOf) {
-              // Check if provider supports variations
-              if (!provider.capabilities.imageVariation) {
-                throw self.apos.error('invalid',
-                  `Provider "${aiHelper.options.imageProvider}" does not support image variations`
-                );
-              }
-
               // Generate variations
               const existing = await self.aiHelperImages.findOne({ _id: variantOf });
               if (!existing) {
@@ -284,7 +240,7 @@ module.exports = {
                * - seed: for reproducible results
                * - style: provider-specific style hints
                */
-              result = await provider.generateImageVariation(
+              result = await aiHelper.generateImageVariation(
                 req, existing, prompt, options
               );
             } else {
@@ -298,7 +254,7 @@ module.exports = {
                * - style: artistic style hints
                * - negativePrompt: what to avoid
                */
-              result = await provider.generateImage(req, prompt, options);
+              result = await aiHelper.generateImage(req, prompt, options);
             }
 
             // Validate provider response is in standard format
@@ -337,15 +293,6 @@ module.exports = {
               // Ensure URL for response
               image.url = self.aiHelperImageUrl(req, image);
               images.push(image);
-            }
-
-            if (images.length > 0) {
-              await emitUsage({
-                providerLabel: provider.label,
-                providerMetadata: images[0].providerMetadata || {},
-                count: images.length,
-                variantOfId: variantOf || null
-              });
             }
 
             return { images };

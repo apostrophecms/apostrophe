@@ -65,8 +65,6 @@ module.exports = {
               };
               providerName = 'Mock Provider';
             } else {
-              const { provider } = aiHelper.getTextProvider();
-
               // Build system prompt in rich text widget
               let systemPrompt = self.options.systemPrompt;
               const customPrompt =
@@ -83,7 +81,7 @@ module.exports = {
                 }
               }
 
-              const result = await provider.generateText(req, prompt, {
+              const result = await aiHelper.generateText(req, prompt, {
                 maxTokens: aiHelper.options.textMaxTokens,
                 systemPrompt
               });
