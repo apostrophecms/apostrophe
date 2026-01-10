@@ -85,13 +85,13 @@ export default {
         image
       });
       const action = result?.action;
-      // If I do this as !action: return I get a linter error 🤷‍♂️
       if (action) {
         if (action === 'save') {
           await this.save(image);
-        } else if (action === 'variations') {
+        } else if (action === 'variant') {
           await this.generate({
-            variantOf: image
+            variantOf: image,
+            variantPrompt: result.prompt
           });
         } else if (action === 'delete') {
           await this.remove(image);
@@ -100,12 +100,12 @@ export default {
         }
       }
     },
-    async generate({ variantOf }) {
+    async generate({ variantOf, variantPrompt }) {
       this.error = false;
       try {
         const result = await apos.http.post(`${apos.image.action}/ai-helper`, {
           body: {
-            prompt: variantOf?.prompt || this.prompt,
+            prompt: variantPrompt || variantOf?.prompt || this.prompt,
             variantOf: variantOf?._id
           },
           busy: true
