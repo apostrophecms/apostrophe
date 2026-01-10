@@ -1,4 +1,4 @@
-export function vitePluginApostropheDoctype(widgetsMapping, templatesMapping) {
+export function vitePluginApostropheDoctype(widgetsMapping, templatesMapping, onBeforeWidgetRender = null) {
 
   const virtualModuleId = "virtual:apostrophe-doctypes";
   const resolvedVirtualModuleId = "\0" + virtualModuleId;
@@ -28,9 +28,23 @@ export function vitePluginApostropheDoctype(widgetsMapping, templatesMapping) {
           /**
            * if the component can be resolved, add it to the imports array
            */
+
+          let hookImport = '';
+          let hookExport = 'undefined';
+
+          if (onBeforeWidgetRender) {
+            const resolvedHookId = await this.resolve(onBeforeWidgetRender);
+            if (resolvedHookId) {
+              hookImport = `import onBeforeWidgetRenderHookFn from "${resolvedHookId.id}";`;
+              hookExport = 'onBeforeWidgetRenderHookFn';
+            }
+          }
+
           return `import { default as widgets } from "${resolvedWidgetsId.id}";
           import { default as templates } from "${resolvedTemplatesId.id}";
-          export { widgets, templates }`
+          ${hookImport}
+          export { widgets, templates };
+          export const onBeforeWidgetRenderHook = ${hookExport};`
         }
       }
     },

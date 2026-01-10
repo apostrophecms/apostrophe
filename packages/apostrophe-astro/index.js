@@ -14,7 +14,8 @@ export default function apostropheIntegration(options) {
             plugins: [
               vitePluginApostropheDoctype(
                 options.widgetsMapping,
-                options.templatesMapping
+                options.templatesMapping,
+                options.onBeforeWidgetRender
               ),
               vitePluginApostropheConfig(
                 options.aposHost,
