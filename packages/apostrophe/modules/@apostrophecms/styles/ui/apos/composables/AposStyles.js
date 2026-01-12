@@ -1,10 +1,11 @@
 import {
   ref, reactive, onBeforeUnmount
 } from 'vue';
-import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
-import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import { createId } from '@paralleldrive/cuid2';
 import { isEqual } from 'lodash';
+import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
+import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 
 export function useAposStyles() {
   const widgetStyles = reactive({
@@ -43,14 +44,16 @@ export function useAposStyles() {
       return;
     }
 
+    const processed = transformForBreakpointPreview(css);
+
     const styleEl = document.getElementById(styleTagId.value);
     if (!styleEl) {
       const newStyle = document.createElement('style');
       newStyle.id = styleTagId.value;
-      newStyle.textContent = css;
+      newStyle.textContent = processed;
       document.head.appendChild(newStyle);
     } else {
-      styleEl.textContent = css;
+      styleEl.textContent = processed;
     }
   }
 
@@ -88,6 +91,17 @@ export function useAposStyles() {
     }
 
     getWidgetStyles(newVal, moduleOptions);
+  }
+
+  function transformForBreakpointPreview(css) {
+    if (apos.adminBar.breakpointPreviewMode?.enable) {
+      return breakpointPreviewTransformer(css, {
+        modifierAttr: 'data-breakpoint-preview-mode',
+        debug: apos.adminBar.breakpointPreviewMode?.debug === true,
+        transform: apos.adminBar.breakpointPreviewMode?.transform || null
+      });
+    }
+    return css;
   }
 
   return {

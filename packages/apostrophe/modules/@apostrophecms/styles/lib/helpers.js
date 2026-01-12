@@ -5,7 +5,7 @@ module.exports = self => {
     // via option `stylesWrapper: false`.
     // Example usage in widget.html:
     // {%- set styles = apos.styles.render(data.widget) -%}
-    // {{ apos.styles.elements(styles) }}
+    // {{ apos.styles.elements(styles, data.scene) }}
     // <article {{ apos.styles.attributes(styles, { class: 'fancy-article' }) }}>
     //   ...content ...
     // </article>
@@ -14,9 +14,9 @@ module.exports = self => {
         self.prepareWidgetStyles(widget)
       );
     },
-    elements(styles) {
+    elements(styles, scene) {
       return self.apos.template.safe(
-        self.getWidgetElements(styles)
+        self.getWidgetElements(styles, { scene })
       );
     },
     attributes(styles, additionalAttributes = {}, options = {}) {

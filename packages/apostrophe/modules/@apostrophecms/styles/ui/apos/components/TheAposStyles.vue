@@ -89,7 +89,7 @@ import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs'
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import renderCss from 'Modules/@apostrophecms/styles/universal/render.mjs';
 import { klona } from 'klona';
-import mobilePreviewTransformer from 'postcss-viewport-to-container-toggle/browser';
+import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 
 export default {
   name: 'TheAposStyles',
@@ -455,7 +455,7 @@ export default {
     async setStyleMarkup({ css, classes }) {
       this.setBodyClasses(classes);
       if (apos.adminBar.breakpointPreviewMode?.enable) {
-        const processed = mobilePreviewTransformer(css, {
+        const processed = breakpointPreviewTransformer(css, {
           modifierAttr: 'data-breakpoint-preview-mode',
           debug: apos.adminBar.breakpointPreviewMode?.debug === true,
           transform: apos.adminBar.breakpointPreviewMode?.transform || null

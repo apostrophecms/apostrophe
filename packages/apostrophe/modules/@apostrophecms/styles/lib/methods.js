@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const presets = require('./presets');
 const { klona } = require('klona');
+const breakpointPreviewTransformer = require('postcss-viewport-to-container-toggle/standalone');
 
 module.exports = (self, options) => {
   return {
@@ -188,12 +189,22 @@ module.exports = (self, options) => {
     // Expects the result of prepareWidgetStyles() method as input.
     // Proxied as a style helper for use in widget templates that
     // opt out of automatic stylesWrapper.
-    getWidgetElements(styles) {
-      const {
+    // Options:
+    // - scene: string - scene name, required for the mobile preview support
+    getWidgetElements(styles, { scene } = {}) {
+      let {
         css, styleId, widgetId
       } = styles || {};
       if (!css || !styleId) {
         return '';
+      }
+      const assetOptions = self.apos.asset.options.breakpointPreviewMode || {};
+      if (css && assetOptions.enable && scene === 'apos') {
+        css = breakpointPreviewTransformer(css, {
+          modifierAttr: 'data-breakpoint-preview-mode',
+          debug: assetOptions.debug === true,
+          transform: assetOptions.transform || null
+        });
       }
       return `<style data-apos-widget-style-for="${widgetId}" data-apos-widget-style-id="${styleId}">\n` +
         css +

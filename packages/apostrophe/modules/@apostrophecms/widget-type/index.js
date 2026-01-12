@@ -417,14 +417,16 @@ module.exports = {
           widget: effectiveWidget,
           options,
           manager: self,
-          contextOptions: _with
+          contextOptions: _with,
+          scene: req.scene
         });
 
         const hasStyles = Object.keys(self.styles || {}).length > 0;
 
         if (hasStyles && self.options.stylesWrapper !== false) {
           const styles = self.apos.styles.prepareWidgetStyles(widget);
-          const styleTag = self.apos.styles.getWidgetElements(styles);
+          const styleTag = self.apos.styles
+            .getWidgetElements(styles, { scene: req.scene });
           const wrapperAttrs = self.apos.styles.getWidgetAttributes(styles);
 
           return `${styleTag}<div${wrapperAttrs ? ' ' + wrapperAttrs : ''}>${markup}</div>`;
@@ -712,7 +714,7 @@ module.exports = {
         });
       },
 
-      annotateWidgetForExternalFront(widget) {
+      annotateWidgetForExternalFront(widget, { scene } = {}) {
         const hasStyles = Object.keys(self.styles || {}).length > 0;
 
         if (!hasStyles) {
@@ -727,7 +729,7 @@ module.exports = {
 
         return {
           aposStylesWrapper: self.options.stylesWrapper,
-          aposStylesElements: self.apos.styles.getWidgetElements(styles),
+          aposStylesElements: self.apos.styles.getWidgetElements(styles, { scene }),
           aposStylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, {
             asObject: true
           })

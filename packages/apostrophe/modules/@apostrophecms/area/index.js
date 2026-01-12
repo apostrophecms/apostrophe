@@ -95,6 +95,7 @@ module.exports = {
     return {
       post: {
         async renderWidget(req) {
+          req.scene = 'apos';
           const _docId = self.apos.launder.id(req.body._docId);
           const livePreview = self.apos.launder.boolean(req.body.livePreview);
           const {
@@ -128,7 +129,8 @@ module.exports = {
                 items: [ widget ],
                 _docId
               };
-              self.apos.template.annotateAreaForExternalFront(field, area);
+              self.apos.template
+                .annotateAreaForExternalFront(field, area, { scene: req.scene });
               // Annotate sub-areas. It's like annotating a doc, but not quite,
               // so this logic is reproduced partially
               self.apos.doc.walk(area, (o, k, v) => {
@@ -143,7 +145,8 @@ module.exports = {
                   }
                   const field = manager.schema.find(f => f.name === k);
                   v._docId = _docId;
-                  self.apos.template.annotateAreaForExternalFront(field, v);
+                  self.apos.template
+                    .annotateAreaForExternalFront(field, v, { scene: req.scene });
                 }
               });
               const result = {
@@ -422,7 +425,8 @@ module.exports = {
               options,
               choices,
               _with,
-              canEdit
+              canEdit,
+              scene: req.scene
             });
           }
         }
@@ -442,7 +446,7 @@ module.exports = {
         // Loop over the docs in the array passed in.
         for (const doc of within) {
           if (self.apos.externalFrontKey) {
-            self.apos.template.annotateDocForExternalFront(doc);
+            self.apos.template.annotateDocForExternalFront(doc, { scene: req.scene });
           }
 
           const rendered = [];

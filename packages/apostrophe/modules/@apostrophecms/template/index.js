@@ -1216,7 +1216,7 @@ module.exports = {
       async annotateDataForExternalFront(req, template, data, moduleName) {
         const docs = self.getDocsForExternalFront(req, template, data, moduleName);
         for (const doc of docs) {
-          self.annotateDocForExternalFront(doc);
+          self.annotateDocForExternalFront(doc, { scene: req.scene });
         }
         data.aposBodyData = await self.getBodyData(req);
         // Already contains module name too
@@ -1267,7 +1267,7 @@ module.exports = {
         ].filter(doc => !!doc);
       },
 
-      annotateDocForExternalFront(doc) {
+      annotateDocForExternalFront(doc, { scene } = {}) {
         self.apos.doc.walk(doc, (o, k, v) => {
           if (v && v.metaType === 'area') {
             const manager = self.apos.util.getManagerOf(o);
@@ -1283,7 +1283,7 @@ module.exports = {
               );
               return;
             }
-            return self.annotateAreaForExternalFront(field, v);
+            return self.annotateAreaForExternalFront(field, v, { scene });
           }
         });
       },
@@ -1293,7 +1293,7 @@ module.exports = {
       // and `choices` properties, and guaranteeing that `items` exists,
       // at least as an empty array.
 
-      annotateAreaForExternalFront(field, area) {
+      annotateAreaForExternalFront(field, area, { scene } = {}) {
         area.field = field;
         area.options = field.options;
         // Really widget configurations, but the method name is already set in
@@ -1320,7 +1320,7 @@ module.exports = {
           // `annotateWidgetForExternalFront() method.
           const manager = self.apos.area.getWidgetManager(item.type);
           if (manager) {
-            const widgetOptions = manager.annotateWidgetForExternalFront(item);
+            const widgetOptions = manager.annotateWidgetForExternalFront(item, { scene });
             item._options = widgetOptions;
           } else {
             self.apos.area.warnMissingWidgetType(item.type);
