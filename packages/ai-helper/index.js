@@ -149,6 +149,42 @@ module.exports = {
             label: factoryInfo.label
           });
         }
+
+        // Text provider validation
+        const textProviderName = self.options.textProvider;
+        const textProviderInfo = self.activeProviders.get(textProviderName);
+
+        if (!textProviderInfo) {
+          const available = Array.from(self.activeProviders.keys()).join(', ');
+          throw self.apos.error('notfound',
+            `Text provider "${textProviderName}" not activated. Available providers: ${available || 'none'}`
+          );
+        }
+
+        if (!textProviderInfo.capabilities.text) {
+          throw self.apos.error('invalid',
+            `Provider "${textProviderName}" does not support text generation. ` +
+            'Choose a different textProvider.'
+          );
+        }
+
+        // Image provider validation
+        const imageProviderName = self.options.imageProvider;
+        const imageProviderInfo = self.activeProviders.get(imageProviderName);
+
+        if (!imageProviderInfo) {
+          const available = Array.from(self.activeProviders.keys()).join(', ');
+          throw self.apos.error('notfound',
+            `Image provider "${imageProviderName}" not activated. Available providers: ${available || 'none'}`
+          );
+        }
+
+        if (!imageProviderInfo.capabilities.image) {
+          throw self.apos.error('invalid',
+            `Provider "${imageProviderName}" does not support image generation. ` +
+            'Choose a different imageProvider.'
+          );
+        }
       },
 
       /**
@@ -220,15 +256,7 @@ module.exports = {
        */
       getTextProvider() {
         const providerName = self.options.textProvider;
-        const providerInfo = self.getProvider(providerName);
-
-        if (!providerInfo.capabilities.text) {
-          throw self.apos.error('invalid',
-            `Provider "${providerName}" does not support text generation`
-          );
-        }
-
-        return providerInfo;
+        return self.getProvider(providerName);
       },
 
       /**
@@ -249,15 +277,7 @@ module.exports = {
        */
       getImageProvider() {
         const providerName = self.options.imageProvider;
-        const providerInfo = self.getProvider(providerName);
-
-        if (!providerInfo.capabilities.image) {
-          throw self.apos.error('invalid',
-            `Provider "${providerName}" does not support image generation`
-          );
-        }
-
-        return providerInfo;
+        return self.getProvider(providerName);
       },
 
       /**
