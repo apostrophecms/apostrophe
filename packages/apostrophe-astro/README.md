@@ -12,6 +12,46 @@
   </p>
 </div>
 
+- [Astro integration for ApostropheCMS](#astro-integration-for-apostrophecms)
+  - [About Astro](#about-astro)
+  - [Bringing ApostropheCMS and Astro together](#bringing-apostrophecms-and-astro-together)
+  - [Installation](#installation)
+  - [Security](#security)
+  - [Configuration (Astro)](#configuration-astro)
+  - [Options](#options)
+    - [`aposHost` (mandatory)](#aposhost-mandatory)
+    - [`widgetsMapping` (mandatory)](#widgetsmapping-mandatory)
+    - [`templatesMapping` (mandatory)](#templatesmapping-mandatory)
+    - [`onBeforeWidgetRender` (optional)](#onbeforewidgetrender-optional)
+    - [`viewTransitionWorkaround` (optional)](#viewtransitionworkaround-optional)
+    - [`includeResponseHeaders`](#includeresponseheaders)
+    - [`excludeRequestHeaders`](#excluderequestheaders)
+    - [`forwardHeaders` (deprecated)](#forwardheaders-deprecated)
+    - [Mapping Apostrophe templates to Astro components](#mapping-apostrophe-templates-to-astro-components)
+    - [Mapping Apostrophe widgets to Astro components](#mapping-apostrophe-widgets-to-astro-components)
+    - [Creating the `[...slug.astro]` component and fetching Apostrophe data](#creating-the-slugastro-component-and-fetching-apostrophe-data)
+    - [Creating Astro page components](#creating-astro-page-components)
+    - [Creating Astro widget components](#creating-astro-widget-components)
+    - [Accessing image and URLs](#accessing-image-and-urls)
+  - [What to change in your Apostrophe project](#what-to-change-in-your-apostrophe-project)
+  - [Starting up your combined project](#starting-up-your-combined-project)
+  - [Logging in](#logging-in)
+  - [Redirections](#redirections)
+  - [404 Not Found](#404-not-found)
+  - [Reserved routes](#reserved-routes)
+  - [What about widget players?](#what-about-widget-players)
+  - [`aposSetQueryParameter`: working with query parameters](#apossetqueryparameter-working-with-query-parameters)
+  - [What about Vue, React, SvelteJS, etc.?](#what-about-vue-react-sveltejs-etc)
+  - [A note on production use](#a-note-on-production-use)
+  - [Debugging](#debugging)
+    - [Widget Render Hook](#widget-render-hook)
+  - [Enabling the `render-area` option to ApostropheCMS REST APIs](#enabling-the-render-area-option-to-apostrophecms-rest-apis)
+  - [Enabling the `@apostrophecms/layout-widget` in an existing project](#enabling-the-apostrophecmslayout-widget-in-an-existing-project)
+    - [Backend updates](#backend-updates)
+    - [Frontend updates](#frontend-updates)
+  - [Conclusion](#conclusion)
+  - [Acknowledgements](#acknowledgements)
+
 # Astro integration for ApostropheCMS
 
 This module integrates ApostropheCMS into your [Astro](https://astro.build/) application.
@@ -101,10 +141,11 @@ export default defineConfig({
       aposHost: 'http://localhost:3000',
       widgetsMapping: './src/widgets',
       templatesMapping: './src/templates',
+      onBeforeWidgetRender: './src/hooks/before-widget-render.js', // Optional
       viewTransitionWorkaround: false,
       includeResponseHeaders: [
-        'content-security-policy', 
-        'strict-transport-security', 
+        'content-security-policy',
+        'strict-transport-security',
         'x-frame-options',
         'referrer-policy',
         'cache-control'
@@ -132,7 +173,7 @@ export default defineConfig({
 
 ## Options
 
-### `aposHost` (mandatory)  
+### `aposHost` (mandatory)
 
 This option is the base URL of your Apostrophe instance. It must contain the
 port number if testing locally and/or communicating directly with another instance
@@ -141,13 +182,17 @@ at runtime with the `APOS_HOST` environment variable.
 
 During development it defaults automatically to: `http://localhost:3000`
 
-### `widgetsMapping` (mandatory)  
+### `widgetsMapping` (mandatory)
 
 The file in your project that contains the mapping between Apostrophe widget types and your Astro components (see below).
 
 ### `templatesMapping` (mandatory)
 
 The file in your project that contains the mapping between Apostrophe templates and your Astro templates (see below).
+
+### `onBeforeWidgetRender` (optional)
+
+Path to a hook function that runs before rendering widgets in edit mode. See [Widget Render Hook](#widget-render-hook) for details.
 
 ### `viewTransitionWorkaround` (optional)
 
@@ -337,7 +382,7 @@ To override any aspect of the global layout, take advantage of the following Ast
 which are closely related to what ApostropheCMS offers in Nunjucks:
 
 * `startHead`: slot in the very beginning of the `<head>`
-* `standardHead`: slot in the middle of `<head>`, just after `<title>`  
+* `standardHead`: slot in the middle of `<head>`, just after `<title>`
 * `extraHead`: still in the HTML `<head>`, at the very end
 * `startBody`: at the very beginning of the `<body>` - this is not part of the refresh zone in edit mode
 * `beforeMain`: at the very beginning of the main body zone - part of the refresh zone in edit mode
@@ -706,6 +751,53 @@ export default defineConfig({
 
 Without this logic, the `virtual:` URLs used to access configuration information
 will cause the build to fail.
+
+### Widget Render Hook
+
+When using patterns that require per-request initialization (like `AsyncLocalStorage` for request-scoped state), normal page rendering works fine because the page component can run setup code before rendering widgets. However, in edit mode, the widget render endpoint renders widgets directly without any extension point for initialization.
+
+The `onBeforeWidgetRender` hook solves this by providing a function that runs before each widget renders in edit mode.
+
+**Setup**
+
+Using this hook requires two steps: configuring the path in your integration options and creating the hook file.
+
+#### 1. Configure the Integration
+
+Add the `onBeforeWidgetRender` option to your `astro.config.mjs`:
+```javascript
+// astro.config.mjs
+export default defineConfig({
+  integrations: [
+    apostrophe({
+      widgetsMapping: './src/widgets',
+      templatesMapping: './src/templates',
+      onBeforeWidgetRender: './src/hooks/before-widget-render.js'
+    })
+  ]
+});
+```
+
+#### 2. Create the Hook File
+```javascript
+// src/hooks/before-widget-render.js
+/**
+ * Runs before rendering each widget in edit mode
+ * @param {Object} context.widget - The widget being rendered
+ * @param {Object} context.props - Props including global data
+ * @param {Object} context.Astro - Astro global object
+ */
+export default function({ widget, props, Astro }) {
+  // Your initialization logic
+  console.log('Rendering widget:', widget.type);
+}
+```
+#### Notes
+
+- The hook **only runs in edit mode** (when rendering via `/api/v1/@apostrophecms/area/render-widget`)
+- The hook can be synchronous or asynchronous (return a Promise)
+- Errors in the hook are logged but don't prevent widget rendering
+- The hook receives the same `props` that would be passed to the widget component
 
 ## Enabling the `render-area` option to ApostropheCMS REST APIs
 
