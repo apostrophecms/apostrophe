@@ -20,12 +20,13 @@ module.exports = {
     placeholderClass: false,
     placeholderUrl: 'https://youtu.be/Q5UX9yexEyM'
   },
-  styles: {
-    add: {
-      width: 'width',
-      alignment: 'alignment'
-    }
-  },
+  // NOTE: Disabled until we are out of beta
+  // styles: {
+  //   add: {
+  //     width: 'width',
+  //     alignment: 'alignment'
+  //   }
+  // },
   fields: {
     add: {
       video: {

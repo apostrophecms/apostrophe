@@ -116,7 +116,7 @@ module.exports = {
           columnWidgetName: self.columnWidgetName
         };
       },
-      annotateWidgetForExternalFront(_super, widget) {
+      annotateWidgetForExternalFront(_super, widget, { scene } = {}) {
         const {
           columns,
           minSpan,
@@ -128,7 +128,7 @@ module.exports = {
           defaultCellVerticalAlignment
         } = self.options;
         return {
-          ..._super(widget),
+          ..._super(widget, { scene }),
           columns,
           minSpan,
           defaultSpan,

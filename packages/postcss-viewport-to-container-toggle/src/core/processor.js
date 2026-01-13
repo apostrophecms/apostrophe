@@ -25,7 +25,7 @@ const createCoreProcessor = (opts = {}) => {
   // Actually ruleProcessor uses `walkDecls` which is standard PostCSS.
   // If our adapter exposes the node as something that has `walkDecls`,
   // we might be fine.
-  // But for "pure JS" browser implementation, our custom nodes need to have
+  // But for "pure JS" standalone implementation, our custom nodes need to have
   // `walkDecls`.
   const ruleProcessor = createRuleProcessor({
     ...options,

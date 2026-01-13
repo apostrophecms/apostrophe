@@ -250,7 +250,7 @@ export default {
   beforeUnmount() {
     apos.bus.$off('apos-switch-layout-mode', this.switchLayoutMode);
     apos.bus.$off('apos-layout-col-delete', this.onRemoveLayoutColumn);
-    apos.bus.$off('apos-edit-styles', this.edistStyles);
+    apos.bus.$off('apos-edit-styles', this.editStyles);
   },
   methods: {
     ...mapActions(useWidgetStore, [

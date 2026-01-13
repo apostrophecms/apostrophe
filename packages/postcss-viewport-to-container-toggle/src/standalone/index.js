@@ -1,6 +1,6 @@
 const parse = require('./parser');
 const serialize = require('./serializer');
-const createBrowserAdapter = require('./adapter');
+const createStandaloneAdapter = require('./adapter');
 const createCoreProcessor = require('../core/processor');
 
 /**
@@ -23,7 +23,7 @@ const createCoreProcessor = require('../core/processor');
  */
 const process = (css, options = {}) => {
   const root = parse(css);
-  const adapter = createBrowserAdapter();
+  const adapter = createStandaloneAdapter();
   const processor = createCoreProcessor(options);
 
   processor.processRoot(root, adapter);

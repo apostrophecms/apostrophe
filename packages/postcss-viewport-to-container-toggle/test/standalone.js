@@ -1,7 +1,7 @@
 const postcss = require('postcss');
 const cssnano = require('cssnano');
 const { equal } = require('node:assert');
-const browserProcess = require('../browser.js');
+const standaloneProcess = require('../standalone.js');
 const opts = { modifierAttr: 'data-breakpoint-preview-mode' };
 
 let currentFileName = '';
@@ -21,7 +21,7 @@ async function formatCSS(css) {
 
 // Enhanced run helper with detailed output on failure
 async function run(input, output, opts = {}) {
-  const resultCSS = browserProcess(input, opts);
+  const resultCSS = standaloneProcess(input, opts);
 
   try {
     // Normalize both expected and actual CSS before comparison

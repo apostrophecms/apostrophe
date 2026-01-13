@@ -4,7 +4,7 @@ const {
 
 const processed = Symbol('processed');
 
-const createBrowserAdapter = () => {
+const createStandaloneAdapter = () => {
   return {
     // Node creation
     createRule: (props) => new Rule(props),
@@ -56,4 +56,4 @@ const createBrowserAdapter = () => {
   };
 };
 
-module.exports = createBrowserAdapter;
+module.exports = createStandaloneAdapter;

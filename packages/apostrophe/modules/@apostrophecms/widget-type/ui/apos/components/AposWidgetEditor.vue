@@ -75,6 +75,7 @@ import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstanc
 import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
+import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 
 export default {
   name: 'AposWidgetEditor',
@@ -343,7 +344,7 @@ export default {
         }
 
         // Element <style> handling.
-        const scopedCss = css.replace(
+        let scopedCss = css.replace(
           /__placeholder_root_selector__/g,
           `#${styleId}`
         );
@@ -351,6 +352,7 @@ export default {
         const styleElement = document.querySelector(
           `style[data-apos-widget-style-id="${styleId}"]`
         );
+        scopedCss = this.transformForBreakpointPreview(scopedCss);
 
         if (styleElement) {
           styleElement.textContent = scopedCss;
@@ -362,6 +364,16 @@ export default {
           el.parentNode.insertBefore(newStyleElement, el);
         }
       });
+    },
+    transformForBreakpointPreview(css) {
+      if (css && apos.adminBar.breakpointPreviewMode?.enable) {
+        return breakpointPreviewTransformer(css, {
+          modifierAttr: 'data-breakpoint-preview-mode',
+          debug: apos.adminBar.breakpointPreviewMode?.debug === true,
+          transform: apos.adminBar.breakpointPreviewMode?.transform || null
+        });
+      }
+      return css;
     },
     async save() {
       this.triggerValidation = true;
