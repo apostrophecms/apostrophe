@@ -15,6 +15,7 @@
   /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
   align-self: var(--align);
   order: var(--order, 0);
+  min-width: 0;
 }
 
 /* Tablet rules. Override $layout-breakpoint-tablet to change. */
