@@ -1,8 +1,8 @@
 ---
-import { widgets } from 'virtual:apostrophe-doctypes'
+import { widgets } from "virtual:apostrophe-doctypes";
 
 const { widget, options, ...props } = Astro.props;
-const isEdit = widget._edit && Astro.url.searchParams.get('aposEdit');
+const isEdit = widget._edit && Astro.url.searchParams.get("aposEdit");
 
 const key = widget.type;
 const componentFound = key in widgets;
@@ -21,25 +21,25 @@ const anchorsDisabled = options?.anchors === false;
 const shouldWrapWithAnchor = hasAnchor && !anchorsDisabled;
 
 // Get anchor attribute from backend options (defaults to 'id')
-const anchorAttribute = options?.anchorAttribute || 'id';
+const anchorAttribute = options?.anchorAttribute || "id";
 
 // Determine wrapper element and attributes
-let WrapperElement = 'div';
+let WrapperElement = "div";
 let wrapperAttributes = {};
 
-let StylesWrapperElement = 'div';
+let StylesWrapperElement = "div";
 let stylesElements = options?.aposStylesElements || null;
 let stylesAttributes = options?.aposStylesAttributes || {};
 
 if (isEdit) {
-  WrapperElement = 'div';
-  wrapperAttributes['data-apos-widget'] = widget._id;
+  WrapperElement = "div";
+  wrapperAttributes["data-apos-widget"] = widget._id;
   // Also add anchor if present to maintain consistent layout
   if (shouldWrapWithAnchor) {
     wrapperAttributes[anchorAttribute] = widget.anchorId;
   }
 } else if (shouldWrapWithAnchor) {
-  WrapperElement = 'div';
+  WrapperElement = "div";
   wrapperAttributes[anchorAttribute] = widget.anchorId;
 } else {
   WrapperElement = Fragment;
@@ -50,13 +50,15 @@ if (options?.aposStylesWrapper === false) {
   stylesElements = null;
   stylesAttributes = {};
 }
-
 ---
-{Component &&
-  <WrapperElement {...wrapperAttributes}>
-    <Fragment set:html={stylesElements} is:inline />
-    <StylesWrapperElement {...stylesAttributes}>
-      <Component {widget} {options} {...props}/>
-    </StylesWrapperElement>
-  </WrapperElement>
+
+{
+  Component && (
+    <WrapperElement {...wrapperAttributes}>
+      <Fragment set:html={stylesElements} is:inline />
+      <StylesWrapperElement {...stylesAttributes}>
+        <Component {widget} {options} {...props} />
+      </StylesWrapperElement>
+    </WrapperElement>
+  )
 }

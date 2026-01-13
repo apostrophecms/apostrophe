@@ -507,6 +507,10 @@ module.exports = {
         await self.apos.page.emit('beforeSend', req);
         await self.apos.area.loadDeferredWidgets(req);
         if (req.aposExternalFront) {
+          // Use the correct scene downstream
+          if (!req.scene && req.user) {
+            req.scene = 'apos';
+          }
           data = self.apos.template.getRenderDataArgs(req, data, self);
           await self.apos.template.annotateDataForExternalFront(
             req,

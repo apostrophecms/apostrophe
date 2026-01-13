@@ -25,7 +25,10 @@ try {
   console.error("Error:", error);
   throw new Error("There was an issue while parsing a widget response.");
 }
-const { widget, ...props } = responseBody;
+
+const { widget, options, ...props } = responseBody;
+const widgetOptions = { ...(widget?._options || {}), ...(options || {}) };
+
 if (!widget && shouldRender) {
   throw new Error(
     "There was an issue while rendering the widget in the renderWidget endpoint."
@@ -33,5 +36,9 @@ if (!widget && shouldRender) {
 }
 ---
 
-{widget && !renderWarn && <AposWidget {widget} {...props} />}
+{
+  widget && !renderWarn && (
+    <AposWidget {widget} options={widgetOptions} {...props} />
+  )
+}
 {renderWarn && <p>Unable to render this widget.</p>}
