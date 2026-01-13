@@ -1,5 +1,5 @@
 ---
-const { canEdit, widget, area } = Astro.props;
+const { canEdit, widget, options, area } = Astro.props;
 import AposArea from "../components/AposArea.astro";
 
 function detectLastTabletFullWidthItem(widgets) {
@@ -19,23 +19,37 @@ function detectLastTabletFullWidthItem(widgets) {
 
 const lastId = detectLastTabletFullWidthItem(area?.items);
 
+let styleAttributes = {},
+  tagAttributes = {},
+  styleElements = null;
+
+if (options?.aposStylesWrapper) {
+  const { style = {}, ...restAttrs } = options.aposStylesAttributes || {};
+  styleAttributes = style;
+  tagAttributes = restAttrs;
+  styleElements = options.aposStylesElements || null;
+}
+
 const attributes = {
   ...(canEdit ? { "data-apos-widget": widget._id } : {}),
+  ...tagAttributes,
   "data-visible-tablet": widget.tablet.show,
   "data-visible-mobile": widget.mobile.show,
   ...(lastId && widget._id === lastId && { "data-tablet-full": true }),
   style: {
+    "--justify": widget.desktop.justify,
+    "--align": widget.desktop.align,
+    ...styleAttributes,
     "--colstart": widget.desktop.colstart,
     "--colspan": widget.desktop.colspan,
     "--rowstart": widget.desktop.rowstart,
     "--rowspan": widget.desktop.rowspan,
-    "--justify": widget.desktop.justify,
-    "--align": widget.desktop.align,
     "--order": widget.desktop.order,
   },
 };
 ---
 
+<Fragment set:html={styleElements} is:inline />
 <div {...attributes}>
   <AposArea area={widget.content} />
 </div>

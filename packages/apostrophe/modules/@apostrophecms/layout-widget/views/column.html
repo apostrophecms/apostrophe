@@ -15,13 +15,13 @@ The area related `data.*` is available plus `item` and `widgetOptions`. #}
   data-visible-mobile="{{ item.mobile.show }}"
   {% if lastId and item._id === lastId %}data-tablet-full="true"{% endif %}
   style="
+    --justify: {{ item.desktop.justify }};
+    --align: {{ item.desktop.align }};
     {{ wrapperAttrs.style or '' }}
     --colstart: {{ item.desktop.colstart }};
     --colspan: {{ item.desktop.colspan }};
     --rowstart: {{ item.desktop.rowstart }};
     --rowspan: {{ item.desktop.rowspan }};
-    --justify: {{ item.desktop.justify }};
-    --align: {{ item.desktop.align }};
     --order: {{ item.desktop.order }};
 ">
   {% area item, 'content' %}
