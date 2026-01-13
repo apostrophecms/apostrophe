@@ -201,10 +201,6 @@ module.exports = {
           throw new Error('Provider must have a name');
         }
 
-        if (self.registeredProviders.has(name)) {
-          throw new Error(`Provider "${name}" is already registered`);
-        }
-
         const {
           factory,
           label,
