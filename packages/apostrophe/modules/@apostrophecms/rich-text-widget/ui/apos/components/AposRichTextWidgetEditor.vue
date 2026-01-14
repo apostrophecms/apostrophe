@@ -648,6 +648,8 @@ export default {
         // Handle custom attributes
         if (style.class) {
           style.options.class = style.class;
+        } else {
+          style.options.class = null;
         }
 
         if (!style.type) {
