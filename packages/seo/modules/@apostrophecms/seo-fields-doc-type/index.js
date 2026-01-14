@@ -193,8 +193,7 @@ module.exports = {
               name: {
                 label: 'aposSeo:eventName',
                 type: 'string',
-                help: 'aposSeo:eventNameHelp',
-                required: true
+                help: 'aposSeo:eventNameHelp'
               },
               description: {
                 label: 'aposSeo:eventDescription',
