@@ -1,602 +1,277 @@
 # AI Provider Creator (ApostropheCMS)
 
-**Purpose:** Define contract for custom AI providers integrating with `@apostrophecms/ai-helper`
+Create a **project-level** provider registration module + a provider **factory** for `@apostrophecms/ai-helper`.
 
-## Scope & Non-Goals
-
-This contract defines the **minimum required behavior** for AI providers
-integrating with `@apostrophecms/ai-helper`.
-
-> **Streaming responses are not currently supported.**
-> Providers must return complete results for text and image generation.
-> Partial or incremental responses will be ignored.
-
-Support for streaming may be added in a future major version.
-
-**Use for:** AWS Bedrock, Azure OpenAI, private LLM gateways, custom models
-
-**Reference implementations:** See bundled providers in `modules/@apostrophecms/ai-helper/providers/`
+This guide is optimized for an LLM to generate files.
 
 ---
 
-## Two Implementation Patterns
+## What you are generating
 
-Both patterns follow the same principle: **register a factory function**, not an instantiated provider. The AI Helper core calls your factory during activation.
+You will generate **two files**:
 
-### Module Pattern (Recommended)
-Self-contained, full lifecycle access, reusable across projects.
-```javascript
-// modules/@my-org/ai-helper-bedrock/index.js
+1. **Provider factory file** (ESM)
 
-/**
- * Bedrock provider factory
- * @param {Object} apos - Apostrophe instance
- * @param {Object} textOptions - Text generation options
- * @param {Object} imageOptions - Image generation options
- * @returns {Object} Provider object
- */
-const bedrockFactory = (apos, textOptions = {}, imageOptions = {}) => {
-  const apiKey = textOptions.apiKey || process.env.BEDROCK_API_KEY;
-  const textModel = textOptions.textModel || 'anthropic.claude-v2';
-  const textMaxTokens = textOptions.textMaxTokens || 1000;
-  const textRetries = textOptions.textRetries || 3;
+* Exports a function that returns a provider object (text/image methods + optional `validate`).
 
-  // Warn about invalid options
-  const validTextOptions = ['apiKey', 'textModel', 'textMaxTokens', 'textRetries'];
-  const invalidOpts = Object.keys(textOptions).filter(k => !validTextOptions.includes(k));
-  if (invalidOpts.length > 0) {
-    apos.util.warn(`Bedrock provider received invalid options: ${invalidOpts.join(', ')}`);
-  }
+2. **Provider registration module** (ESM Apostrophe module)
 
-  return {
-    name: 'bedrock',
-    label: 'AWS Bedrock',
-    capabilities: {
-      text: true,
-      image: false,
-      imageVariation: false
-    },
+* Extends `registerProviders()` and calls `self.registerProvider(...)` to register the factory.
 
-    validate() {
-      if (!apiKey && !process.env.APOS_AI_HELPER_MOCK) {
-        throw new Error(
-          'Bedrock provider requires an API key. ' +
-          'Set it via textProviderOptions.apiKey or export BEDROCK_API_KEY environment variable.'
-        );
-      }
-    },
-
-    async generateText(req, prompt, options = {}) {
-      const maxTokens = options.maxTokens || textMaxTokens;
-      const retries = options.textRetries || textRetries;
-      const model = options.model || textModel;
-
-      // Mock mode support
-      if (process.env.APOS_AI_HELPER_MOCK) {
-        return {
-          content: '# Sample Content\n\nThis is mock content for testing.',
-          metadata: {
-            model: 'mock-model',
-            usage: {
-              prompt_tokens: Math.ceil(prompt.length / 4),
-              completion_tokens: 250,
-              total_tokens: Math.ceil(prompt.length / 4) + 250
-            }
-          }
-        };
-      }
-
-      // Real implementation with retry logic
-      for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-          // PSEUDOCODE: AWS Bedrock requests require AWS SDK + SigV4 signing.
-          // This example shows response handling only, not a real endpoint.
-          const result = await apos.http.post('https://example-bedrock-endpoint.invalid', {
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json'
-            },
-            body: {
-              model,
-              max_tokens: maxTokens,
-              messages: [
-                {
-                  role: 'user',
-                  content: prompt
-                }
-              ],
-              system: options.systemPrompt || 'You are a helpful AI assistant.'
-            }
-          });
-
-          const content = result?.content?.[0]?.text;
-
-          if (!content) {
-            throw apos.error('error', 'No content returned from Bedrock');
-          }
-
-          return {
-            content,
-            metadata: {
-              usage: result.usage,
-              model: result.model,
-              ...(result.stop_reason && { stop_reason: result.stop_reason })
-            }
-          };
-
-        } catch (e) {
-          apos.util.error(`Bedrock request failed (attempt ${attempt}/${retries}):`, e.message);
-
-          // Don't retry on client errors
-          if (e.status === 400 || e.status === 401 || e.status === 403) {
-            throw e;
-          }
-
-          // Don't retry on last attempt
-          if (attempt === retries) {
-            throw e;
-          }
-
-          // Exponential backoff
-          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
-          apos.util.info(`Retrying Bedrock request (attempt ${attempt + 1}/${retries})...`);
-        }
-      }
-    }
-  };
-};
-
-module.exports = {
-  async init(self) {
-    // Register the factory function with AI Helper
-    const aiHelper = self.apos.modules['@apostrophecms/ai-helper'];
-    
-    aiHelper.registerProvider('bedrock', {
-      factory: bedrockFactory,
-      label: 'AWS Bedrock',
-      capabilities: {
-        text: true,
-        image: false,
-        imageVariation: false
-      }
-    });
-  }
-};
-```
-
-**Enable in app.js:**
-```javascript
-import apostrophe from 'apostrophe';
-
-apostrophe({
-  root: import.meta,
-  modules: {
-    '@my-org/ai-helper-bedrock': {},
-    '@apostrophecms/ai-helper': {
-      options: {
-        textProvider: 'bedrock',
-        textProviderOptions: {
-          apiKey: process.env.BEDROCK_API_KEY,
-          textModel: 'anthropic.claude-v2',
-          textMaxTokens: 2000
-        }
-      }
-    }
-  }
-});
-```
-
-**How it works:**
-1. Your module registers the factory function during `init()`
-2. AI Helper stores the factory and metadata
-3. When `textProvider: 'bedrock'` is configured, AI Helper calls your factory with the options
-4. Your factory returns the instantiated provider
-5. AI Helper calls `validate()` and uses the provider for text generation
+> Note: `@apostrophecms/ai-helper` is CommonJS internally, but **project-level code examples here are ESM**.
 
 ---
 
-### Factory Pattern
-Lightweight, minimal overhead, follows bundled provider pattern. Good for simple integrations.
-```javascript
-// lib/providers/bedrock.js
+## Core behavior you must match
 
-/**
- * Bedrock provider factory
- * @param {Object} apos - Apostrophe instance
- * @param {Object} textOptions - Text generation options
- * @param {Object} imageOptions - Image generation options
- * @returns {Object} Provider object
- */
-module.exports = (apos, textOptions = {}, imageOptions = {}) => {
-  const apiKey = textOptions.apiKey || process.env.BEDROCK_API_KEY;
-  const textModel = textOptions.textModel || 'anthropic.claude-v2';
-  const textMaxTokens = textOptions.textMaxTokens || 1000;
-  const textRetries = textOptions.textRetries || 3;
+### Two-phase provider flow
 
-  return {
-    name: 'bedrock',
-    label: 'AWS Bedrock',
-    capabilities: {
-      text: true,
-      image: false,
-      imageVariation: false
-    },
+1. **Registration phase**
+   You register provider factories with metadata using:
 
-    validate() {
-      if (!apiKey && !process.env.APOS_AI_HELPER_MOCK) {
-        throw new Error('Bedrock provider requires an API key.');
-      }
-    },
+* `self.registerProvider(name, factory, capabilities)`
 
-    async generateText(req, prompt, options = {}) {
-      // Same implementation as module pattern
-      // ...
-    }
-  };
-};
-```
+2. **Activation phase**
+   `@apostrophecms/ai-helper` instantiates only the providers named in project options and (optionally) calls `provider.validate()`.
 
-**Register in your project-level module:**
-```javascript
-// modules/my-custom-module/index.js
-const bedrockFactory = require('../../lib/providers/bedrock');
+### Capabilities: source of truth
 
-module.exports = {
-  async init(self) {
-    const aiHelper = self.apos.modules['@apostrophecms/ai-helper'];
-    
-    // Register the factory function (not an instance!)
-    aiHelper.registerProvider('bedrock', {
-      factory: bedrockFactory,
-      label: 'AWS Bedrock',
-      capabilities: {
-        text: true,
-        image: false,
-        imageVariation: false
-      }
-    });
-  }
-};
-```
+Capabilities are taken from the **registration metadata** (the `capabilities` argument to `registerProvider`), not from any `provider.capabilities` property.
 
-**Enable in app.js:**
-```javascript
-import apostrophe from 'apostrophe';
+Capabilities shape:
 
-apostrophe({
-  root: import.meta,
-  modules: {
-    'my-custom-module': {},
-    '@apostrophecms/ai-helper': {
-      options: {
-        textProvider: 'bedrock',
-        textProviderOptions: {
-          apiKey: process.env.BEDROCK_API_KEY
-        }
-      }
-    }
-  }
-});
-```
-
-**Key difference from module pattern:**
-- Factory is in a separate file (`lib/providers/`)
-- Registration happens in an existing module
-- No separate npm package needed
-- Good for one-off integrations
-
----
-
-## Critical Architectural Concepts
-
-### Why Register Factories, Not Instances?
-
-**Two-phase system benefits:**
-
-1. **No wasted instantiation** - Unused providers aren't created
-2. **Clean separation** - Registration (metadata) vs activation (instantiation)
-3. **Consistent interface** - All providers receive the same options from `textProviderOptions` / `imageProviderOptions`
-4. **Fail fast** - Configuration errors caught during activation, not at generation time
-
-**What happens when:**
-```javascript
-// Registration phase (during init)
-aiHelper.registerProvider('bedrock', {
-  factory: bedrockFactory,  // Just storing the function
-  label: 'AWS Bedrock',
-  capabilities: { text: true }
-});
-
-// Activation phase (after all modules loaded)
-// Only if textProvider: 'bedrock' or imageProvider: 'bedrock'
-const provider = factoryInfo.factory(apos, textOpts, imageOpts);
-provider.validate();  // Fail fast if misconfigured
-```
-
-**Common mistake:**
-```javascript
-// ❌ WRONG - Calling factory during registration
-const provider = bedrockFactory(self.apos, {}, {});
-aiHelper.registerProvider('bedrock', {
-  factory: provider,  // This is an instance, not a factory!
-  // ...
-});
-```
-
-This breaks because:
-- Provider is instantiated even if never used
-- Can't receive options from `textProviderOptions` / `imageProviderOptions`
-- Validation happens at wrong time
-
-**Correct approach:**
-```javascript
-// ✅ RIGHT - Registering the factory function
-aiHelper.registerProvider('bedrock', {
-  factory: bedrockFactory,  // Function reference
-  label: 'AWS Bedrock',
-  capabilities: { text: true }
-});
-```
-
-## Required Signatures
-
-### Options Handling
-
-The `options` object is intentionally flexible and provider-specific.
-
-Providers should:
-- Accept relevant options when provided
-- Ignore unknown options gracefully
-- Warn (but not throw) on invalid configuration keys
-
-### Text Generation
-```javascript
-async generateText(req, prompt, options = {})
-```
-
-**Parameters:**
-- `options.maxTokens` - Max tokens to generate
-- `options.model` - Model to use
-- `options.systemPrompt` - System instructions
-
-**Returns:**
 ```js
 {
-  content: string,
-  metadata?: {
-    usage?: object,
-    model?: string,
-    // provider-specific fields allowed
-  }
+  text: boolean,
+  image: boolean,
+  imageVariation: boolean
 }
 ```
-**Notes**:
-- content should ideally be Markdown, but plain text is acceptable
-- Formatting expectations are enforced by the system prompt, not the provider
-- metadata is optional but strongly recommended for usage tracking
 
-**System Prompt Examples:**
-```javascript
-// OpenAI: system message in array
-messages: [
-  { role: 'system', content: options.systemPrompt || 'You are a helpful AI assistant.' },
-  { role: 'user', content: prompt }
-]
+### validate(): optional
 
-// Anthropic: separate system field
-system: options.systemPrompt || 'You are a helpful AI assistant.',
-messages: [{ role: 'user', content: prompt }]
-
-// Gemini: system_instruction object
-system_instruction: {
-  parts: [{ text: options.systemPrompt || 'You are a helpful AI assistant.' }]
-},
-contents: [{ parts: [{ text: prompt }] }]
-```
-
-### Image Generation
-```javascript
-async generateImage(req, prompt, options = {})
-```
-
-**Parameters:**
-- `options.imageCount` - Number of images
-- `options.imageSize` - Dimensions (e.g., '1024x1024')
-- `options.imageAspectRatio` - Ratio (e.g., '1:1', '16:9')
-- `options.imageQuality` - Quality level
-- `options.imageModel` - Model to use
-
-Providers may generate images using a single API call or multiple parallel calls. If multiple calls are made, usage **must be aggregated** and attached to all images.
-
-**Returns:**
-```javascript
-[
-  {
-    type: 'url' | 'base64',
-    data: string,  // URL or base64 string
-    metadata: {
-      usage: {
-        prompt_tokens: number,
-        total_tokens: number
-      },
-      model: string,
-      mimeType: string,  // for base64
-      size: string,      // or aspectRatio
-    }
-  }
-]
-```
-
-### Image Variation
-```javascript
-async generateImageVariation(req, existing, prompt, options = {})
-```
-**Notes**:
-- Providers may return one or more variant images
-- The number of variants is controlled by `options.imageCount`
-- Providers should reuse the same standardized image return format as `generateImage`
-- Usage must be aggregated if multiple API calls are made
-
-**Fetch existing image:**
-```javascript
-const imageModule = apos.image;
-const imagePath = await imageModule.aiHelperFetchImage(req, existing);
-const imageData = fs.readFileSync(imagePath);
-const base64Image = imageData.toString('base64');
-```
-
-**Build variation prompt:**
-```javascript
-let variationPrompt;
-if (prompt) {
-  variationPrompt = `Using the provided image, please modify it as following: ${prompt}`;
-} else {
-  variationPrompt = 'Using the provided image, please provide a creative reinterpretation with different style, colors, composition, or details.';
-}
-```
+`validate()` is optional. If you provide it, it will be called at activation time **unless** mock mode is enabled (`APOS_AI_HELPER_MOCK`).
 
 ---
 
-## Critical Rules
+## Where the files live (recommended)
 
-### 1. Usage Aggregation for Multi-Image Generation
-**If your provider makes multiple API calls for multiple images, MUST accumulate usage:**
+* Provider factory: `lib/ai-providers/<provider-name>.js`
+* Registration module: `modules/<provider-name>-provider/index.js`
 
-```javascript
-async generateImage(req, prompt, options = {}) {
-  const count = options.imageCount || imageCount;
-  const allImages = [];
-  let aggregateUsage = null;
+---
 
-  // Parallel requests recommended
-  const requests = Array.from({ length: count }, () =>
-    apos.http.post(url, { /* ... */ })
-  );
-  const results = await Promise.all(requests);
+## Step 1 — Create the provider factory (ESM)
 
-  for (const result of results) {
-    // Accumulate usage
-    if (result.usage) {
-      if (!aggregateUsage) {
-        aggregateUsage = { ...result.usage };
-      } else {
-        aggregateUsage.prompt_tokens = 
-          (aggregateUsage.prompt_tokens || 0) + (result.usage.prompt_tokens || 0);
-        aggregateUsage.total_tokens = 
-          (aggregateUsage.total_tokens || 0) + (result.usage.total_tokens || 0);
-      }
-    }
+Create `lib/ai-providers/<provider-name>.js`
 
-    allImages.push({
-      type: 'base64',
-      data: result.image_data,
-      metadata: { model: result.model }
-    });
-  }
+### Factory signature (required)
 
-  // CRITICAL: Add aggregate to ALL images
-  if (aggregateUsage) {
-    allImages.forEach(img => {
-      img.metadata.usage = aggregateUsage;
-    });
-  }
+```js
+export default function createProvider(apos, textOptions = {}, imageOptions = {}) {
+  return {
+    // optional
+    validate() {},
 
-  return allImages;
+    // optional depending on capabilities
+    async generateText(req, prompt, options) {},
+    async generateImage(req, prompt, options) {},
+    async generateImageVariation(req, image, prompt, options) {}
+  };
 }
 ```
 
-### 2. Error Handling Pattern (i18n-friendly)
+### Method return formats (required)
 
-Providers must **not** embed user-facing strings (e.g. `e.userMessage`) because the AI Helper core is responsible for converting errors into translated UI messages.
+#### Text
 
-Providers should:
+`generateText()` must resolve to:
 
-- Throw standard JavaScript `Error` objects, or use `apos.error(code, message)`
-- Use **error codes** that the AI Helper core can map to translated messages
-- Avoid placing user-facing English text in errors
-
-**Recommended error codes:**
-- `invalid` — bad request (malformed prompt/options) or provider rejected the request
-- `policy` — content policy violation / safety rejection (if detectable)
-- `unavailable` — transient provider outage / timeouts / 5xx
-- `error` — everything else (unexpected failures)
-
-**Retry guidance:**
-- Do **not** retry for `400/401/403` responses
-- Retry transient failures (`429`, `408`, `5xx`, network errors) with backoff
-
-### 3. Mock Mode Support
-```javascript
-validate() {
-  if (!apiKey && !process.env.APOS_AI_HELPER_MOCK) {
-    throw new Error('API key required');
+```js
+{
+  content: "string",
+  metadata: {
+    model: "string?",
+    usage: {
+      inputTokens: number?,
+      outputTokens: number?
+    }
   }
 }
+```
 
-async generateText(req, prompt, options = {}) {
-  if (process.env.APOS_AI_HELPER_MOCK) {
+#### Images
+
+`generateImage()` and `generateImageVariation()` must resolve to an **array** of:
+
+```js
+[
+  {
+    type: "png" | "jpg" | "webp" | "gif",
+    data: "<base64 string>",   // base64 of the image bytes
+    metadata: {
+      model: "string?",
+      usage: {
+        inputTokens: number?,
+        outputTokens: number?
+      }
+    }
+  }
+]
+```
+
+> If your upstream API returns a URL or binary data, you must convert it to base64 and return the standardized object(s).
+
+### Error rules (recommended, not enforced)
+
+* Prefer `throw apos.error(code, message)` so callers can classify errors.
+* Recommended codes:
+
+  * `invalid` (bad input/options)
+  * `forbidden` (auth/permission)
+  * `notfound` (model/asset missing)
+  * `error` (generic)
+* Messages can be developer-facing; UI should map codes to i18n strings.
+
+### Retry rules (recommended)
+
+* Retry: network errors, timeouts, 408, 429, 5xx
+* Do not retry: 400, 401, 403 (and other non-transient 4xx)
+
+---
+
+## Step 2 — Create the provider registration module (ESM)
+
+Create `modules/<provider-name>-provider/index.js`
+
+This module’s job is only to **register** the provider factory under a unique name.
+
+```js
+import createProvider from '../../lib/ai-providers/<provider-name>.js';
+
+export default {
+  improve: '@apostrophecms/ai-helper',
+
+  extendMethods(self) {
     return {
-      content: 'Sample text...',
-      metadata: {
-        model: 'mock-model',
-        usage: {
-          prompt_tokens: Math.ceil(prompt.length / 4),
-          completion_tokens: 250,
-          total_tokens: Math.ceil(prompt.length / 4) + 250
-        }
+      registerProviders(_super) {
+        _super();
+
+        self.registerProvider(
+          '<providerName>',       // the name used in project options
+          createProvider,         // factory(apos, textOptions, imageOptions) => provider
+          {
+            text: true,           // set to true if provider supports text
+            image: true,          // set to true if provider supports image generation
+            imageVariation: true  // set true only if provider supports variations/edits
+          }
+        );
       }
     };
   }
-  // Real implementation
-}
+};
+```
+
+### Override behavior (required knowledge)
+
+If a project registers a provider with the same name as a built-in provider, it **replaces** that provider for activation purposes.
+
+---
+
+## Step 3 — Enable the registration module in the project (ESM)
+
+In your project’s `app.js` (ESM), include the module:
+
+```js
+export default {
+  modules: {
+    '<provider-name>-provider': {}
+  }
+};
 ```
 
 ---
 
-## Common Gotchas
+## Step 4 — Configure `@apostrophecms/ai-helper` to use it (ESM)
 
-**❌ Each image has only its API call's usage** → Total cost understated
-**✅ All images have aggregated usage** → Accurate cost tracking
+In `app.js`, configure the provider name(s) and options:
 
-**❌ Throwing user-facing English strings from providers** → breaks i18n
-**✅ Throwing typed errors (`invalid`, `policy`, `unavailable`)** → core can translate consistently
+```js
+export default {
+  modules: {
+    '@apostrophecms/ai-helper': {
+      options: {
+        // pick names registered via registerProvider(...)
+        textProvider: '<providerName>',
+        imageProvider: '<providerName>',
 
-**❌ Retrying client errors (400/401/403)** → Wastes time
-**✅ Only retry transient failures** → Fast failure on bad requests
+        // passed into the provider factory as:
+        // createProvider(apos, textProviderOptions, imageProviderOptions)
+        textProviderOptions: {
+          // provider-specific
+        },
+        imageProviderOptions: {
+          // provider-specific
+        }
+      }
+    },
 
-**❌ Sequential image generation** → Slow
-**✅ Parallel with `Promise.all()`** → Fast
+    '<provider-name>-provider': {}
+  }
+};
+```
 
-**❌ Hardcoded system prompts** → Inflexible
-**✅ Accept `options.systemPrompt`** → Customizable per widget
-
-**❌ Forgetting mock mode** → Can't test offline
-**✅ Check `APOS_AI_HELPER_MOCK`** → Offline testing
+> `textProviderOptions` and `imageProviderOptions` are provider-defined. Your factory must read these and/or environment variables.
 
 ---
 
-## Testing Checklist
+## Minimal template you can emit (copy/paste)
 
-**Text:**
-- [ ] Basic generation works
-- [ ] System prompt respected
-- [ ] Token limits enforced
-- [ ] Metadata includes usage
-- [ ] Retry logic works
-- [ ] Mock mode works
+### `lib/ai-providers/<provider-name>.js`
 
-**Images (if supported):**
-- [ ] Single image works
-- [ ] Multiple images work
-- [ ] **Usage accumulates across calls**
-- [ ] **All images have aggregate usage**
-- [ ] URL and base64 formats work
-- [ ] Variations work (if supported)
-- [ ] Parallel requests used
-- [ ] Mock mode works
+```js
+export default function createProvider(apos, textOptions = {}, imageOptions = {}) {
+  const { apiKey } = textOptions;
 
-**Integration:**
-- [ ] Registers successfully
-- [ ] Works as textProvider/imageProvider
-- [ ] User-friendly error messages
-- [ ] Works alongside other providers
+  return {
+    validate() {
+      if (!process.env.APOS_AI_HELPER_MOCK && !apiKey) {
+        throw apos.error('invalid', 'Missing required apiKey for <providerName>.');
+      }
+    },
+
+    async generateText(req, prompt, options = {}) {
+      // TODO call upstream API
+      return {
+        content: 'TODO',
+        metadata: {
+          model: options.model,
+          usage: {}
+        }
+      };
+    }
+  };
+}
+```
+
+### `modules/<provider-name>-provider/index.js`
+
+```js
+import createProvider from '../../lib/ai-providers/<provider-name>.js';
+
+export default {
+  improve: '@apostrophecms/ai-helper',
+  extendMethods(self) {
+    return {
+      registerProviders(_super) {
+        _super();
+        self.registerProvider('<providerName>', createProvider, {
+          text: true,
+          image: false,
+          imageVariation: false
+        });
+      }
+    };
+  }
+};
+```
