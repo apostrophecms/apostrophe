@@ -1806,7 +1806,6 @@ Example configuration:
 |Name |Description  | Module Affected | Module Option |
 --- | --- | --- | ---
 |`seoTitle`|Title attribute for search results|`@apostrophecms/doc-type`|_Enabled by default_|
-|`seoThemeColor`|Theme color for mobile browsers (PWA support)|`@apostrophecms/global`|_Enabled by default_|
 |`seoDescription`|Description for search results|`@apostrophecms/doc-type`|_Enabled by default_|
 |`seoRobots`|Robots indexing behavior|`@apostrophecms/doc-type`|_Enabled by default_|
 |`_seoCanonical`|[Canonical URL](https://moz.com/learn/seo/canonicalization) reference|`@apostrophecms/page-type`|_Enabled by default_|

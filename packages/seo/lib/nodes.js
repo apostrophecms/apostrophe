@@ -8,45 +8,6 @@ function getMetaHead(data, options) {
   const global = data.global;
   const document = piece || page;
 
-  // Theme color for mobile browsers
-  if (global?.seoThemeColor) {
-    const themeColorConfig = global.seoThemeColor;
-
-    if (themeColorConfig.mode === 'lightDark') {
-      // Light and dark mode support
-      if (themeColorConfig.light) {
-        nodes.push({
-          name: 'meta',
-          attrs: {
-            name: 'theme-color',
-            content: themeColorConfig.light,
-            media: '(prefers-color-scheme: light)'
-          }
-        });
-      }
-
-      if (themeColorConfig.dark) {
-        nodes.push({
-          name: 'meta',
-          attrs: {
-            name: 'theme-color',
-            content: themeColorConfig.dark,
-            media: '(prefers-color-scheme: dark)'
-          }
-        });
-      }
-    } else if (themeColorConfig.single) {
-      // Single color mode
-      nodes.push({
-        name: 'meta',
-        attrs: {
-          name: 'theme-color',
-          content: themeColorConfig.single
-        }
-      });
-    }
-  }
-
   // title
   // NOTE: This uses <meta name="title"> instead of <title> to avoid conflicts.
   // ApostropheCMS core templates typically provide their own <title> tag via

@@ -147,54 +147,6 @@ module.exports = {
         required: true,
         help: 'aposSeo:siteCanonicalUrlHelp'
       },
-      seoThemeColor: {
-        label: 'aposSeo:themeColor',
-        type: 'object',
-        help: 'aposSeo:themeColorHelp',
-        fields: {
-          add: {
-            mode: {
-              label: 'aposSeo:themeColorMode',
-              type: 'select',
-              def: 'single',
-              choices: [
-                {
-                  label: 'aposSeo:singleColor',
-                  value: 'single'
-                },
-                {
-                  label: 'aposSeo:lightAndDark',
-                  value: 'lightDark'
-                }
-              ]
-            },
-            single: {
-              label: 'aposSeo:themeColorSingle',
-              type: 'color',
-              help: 'aposSeo:themeColorSingleHelp',
-              if: {
-                mode: 'single'
-              }
-            },
-            light: {
-              label: 'aposSeo:themeColorLight',
-              type: 'color',
-              help: 'aposSeo:themeColorLightHelp',
-              if: {
-                mode: 'lightDark'
-              }
-            },
-            dark: {
-              label: 'aposSeo:themeColorDark',
-              type: 'color',
-              help: 'aposSeo:themeColorDarkHelp',
-              if: {
-                mode: 'lightDark'
-              }
-            }
-          }
-        }
-      },
       seoJsonLdOrganization: {
         label: 'aposSeo:organizationInfo',
         type: 'object',
@@ -382,7 +334,6 @@ module.exports = {
           'seoSiteName',
           'seoSiteDescription',
           'seoSiteCanonicalUrl',
-          'seoThemeColor',
           'seoJsonLdOrganization',
           'seoSocialProfiles',
           'seoSearchQueryParam'

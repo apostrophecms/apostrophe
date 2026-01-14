@@ -1619,41 +1619,6 @@ describe('@apostrophecms/seo', function () {
       assert(nextNode, 'next link should exist');
       assert.strictEqual(nextNode.attrs.href, 'https://example.com/blog?page=3');
     });
-
-    it('should generate theme-color meta tags', function () {
-      const { getMetaHead } = require('../lib/nodes');
-
-      const data = {
-        page: {},
-        global: {
-          seoThemeColor: {
-            mode: 'lightDark',
-            light: '#ffffff',
-            dark: '#121212'
-          }
-        }
-      };
-
-      const nodes = getMetaHead(data, { apos: {} });
-
-      const lightThemeNode = nodes.find(n =>
-        n.attrs &&
-        n.attrs.name === 'theme-color' &&
-        n.attrs.media === '(prefers-color-scheme: light)'
-      );
-
-      const darkThemeNode = nodes.find(n =>
-        n.attrs &&
-        n.attrs.name === 'theme-color' &&
-        n.attrs.media === '(prefers-color-scheme: dark)'
-      );
-
-      assert(lightThemeNode, 'light theme-color should exist');
-      assert.strictEqual(lightThemeNode.attrs.content, '#ffffff');
-
-      assert(darkThemeNode, 'dark theme-color should exist');
-      assert.strictEqual(darkThemeNode.attrs.content, '#121212');
-    });
   });
 
   describe('Utils', function () {
