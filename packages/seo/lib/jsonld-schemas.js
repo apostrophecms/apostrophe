@@ -1003,7 +1003,7 @@ class JsonLdSchemaHandler {
 
     return {
       '@type': 'ItemList',
-      itemListOrder: 'http://schema.org/ItemListOrderAscending',
+      itemListOrder: 'https://schema.org/ItemListOrderAscending',
       numberOfItems: items.length,
       itemListElement: items.map((d, i) => {
         const listItem = {
