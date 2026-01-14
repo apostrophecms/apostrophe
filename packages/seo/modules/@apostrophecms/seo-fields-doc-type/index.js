@@ -1646,6 +1646,10 @@ module.exports = {
             value: 'Article'
           },
           {
+            label: 'Blog Post',
+            value: 'BlogPosting'
+          },
+          {
             label: 'Product',
             value: 'Product'
           },

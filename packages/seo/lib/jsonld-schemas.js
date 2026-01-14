@@ -6,6 +6,7 @@ class JsonLdSchemaHandler {
       WebSite: this.getWebsiteSchema,
       Organization: this.getOrganizationSchema,
       Article: this.getArticleSchema,
+      BlogPosting: this.getBlogPostingSchema,
       WebPage: this.getWebPageSchema,
       CollectionPage: this.getCollectionPageSchema,
       Product: this.getProductSchema,
@@ -565,6 +566,19 @@ class JsonLdSchemaHandler {
     return schema;
   }
 
+  getBlogPostingSchema(data) {
+    const schema = this.getArticleSchema(data);
+
+    if (schema) {
+      schema['@type'] = 'BlogPosting';
+      if (schema['@id']) {
+        schema['@id'] = schema['@id'].replace('#article', '#blogposting');
+      }
+    }
+
+    return schema;
+  }
+
   getWebPageSchema(data) {
     const { piece, page } = data;
     const baseUrl = this.getBaseUrl(data);
@@ -996,7 +1010,7 @@ class JsonLdSchemaHandler {
           '@type': 'ListItem',
           position: i + 1,
           item: {
-            '@type': d.type || 'Thing', // Use actual doc type if available
+            '@type': this.getSchemaTypeForListItem(d),
             name: d.seoTitle || d.title,
             url: d._url || d.url
           }
@@ -1016,6 +1030,31 @@ class JsonLdSchemaHandler {
         return listItem;
       })
     };
+  }
+
+  getSchemaTypeForListItem(doc) {
+    if (doc.seoJsonLdType) {
+      return doc.seoJsonLdType;
+    }
+
+    const typeMap = {
+      article: 'Article',
+      'blog-post': 'BlogPosting',
+      product: 'Product',
+      event: 'Event',
+      person: 'Person',
+      '@apostrophecms/page': 'WebPage'
+    };
+
+    if (doc.type && typeMap[doc.type]) {
+      return typeMap[doc.type];
+    }
+
+    if (doc.type && typeof doc.type === 'string') {
+      return doc.type.charAt(0).toUpperCase() + doc.type.slice(1);
+    }
+
+    return 'Thing';
   }
 
   getBreadcrumbListSchema(data) {
