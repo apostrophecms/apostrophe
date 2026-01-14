@@ -1,5 +1,5 @@
 {
-  "group": "SEO",
+  "group": "SEO/AEO",
   "title": "Titre SEO",
   "titleHtmlHelp": "<strong>Laisser vide dans la plupart des cas.</strong> Le titre de votre page sera utilisé automatiquement.<br><br><strong>⚠️ Attention :</strong> Si vous utilisez un titre SEO personnalisé, assurez-vous qu’il décrit précisément le contenu de votre page. Les moteurs de recherche comparent votre titre SEO au contenu réel de la page et aux données structurées. Les divergences peuvent nuire à votre classement.",
   "description": "Méta description",

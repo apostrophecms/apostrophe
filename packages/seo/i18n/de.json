@@ -1,5 +1,5 @@
 {
-  "group": "SEO",
+  "group": "SEO/AEO",
   "title": "SEO-Titel",
   "titleHtmlHelp": "<strong>In den meisten Fällen leer lassen.</strong> Der Seitentitel wird automatisch verwendet.<br><br><strong>⚠️ Warnung:</strong> Wenn Sie einen benutzerdefinierten SEO-Titel verwenden, stellen Sie sicher, dass er den Seiteninhalt genau beschreibt. Suchmaschinen vergleichen Ihren SEO-Titel mit dem tatsächlichen Seiteninhalt und den strukturierten Daten. Abweichungen können Ihr Ranking verschlechtern.",
   "description": "Meta-Beschreibung",

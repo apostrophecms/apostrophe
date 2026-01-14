@@ -1,5 +1,5 @@
 {
-  "group": "SEO",
+  "group": "SEO/AEO",
   "title": "Titolo SEO",
   "titleHtmlHelp": "<strong>Lascia vuoto nella maggior parte dei casi.</strong> Il titolo della pagina verrà utilizzato automaticamente.<br><br><strong>⚠️ Avviso :</strong> Se utilizzi un titolo SEO personalizzato, assicurati che descriva accuratamente il contenuto della pagina. I motori di ricerca confrontano il titolo SEO con il contenuto effettivo della pagina e i dati strutturati. Le discrepanze possono influire negativamente sul posizionamento.",
   "description": "Meta descrizione",
