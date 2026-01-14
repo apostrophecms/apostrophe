@@ -22,7 +22,7 @@
           }"
           :for="uid"
           :data-apos-test-name="field.name"
-          :data-apos-test-label="field.label"
+          :data-apos-test-label="$t(label)"
           data-apos-test="field-label"
         >
           <span class="apos-field_label-info">
