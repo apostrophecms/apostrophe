@@ -332,7 +332,31 @@ class JsonLdSchemaHandler {
     if (document?.seoJsonLdType) {
       const schemaGenerator = this.schemas[document.seoJsonLdType];
       if (schemaGenerator) {
-        const documentSchema = schemaGenerator.call(this, data);
+        // Special handling for CollectionPage - check if we'll also generate ItemList
+        let documentSchema;
+        if (document.seoJsonLdType === 'CollectionPage') {
+          const items = this.getListingItems(data);
+          const isDetailDoc = !!piece;
+          const includeItemList = !isDetailDoc && items.length > 0 && (
+            document?.seoIncludeItemList === true ||
+            (document?.seoIncludeItemList === undefined && document?.seoJsonLdType === 'CollectionPage')
+          );
+
+          // Generate ItemListId if we're going to create one
+          let itemListId = null;
+          if (includeItemList) {
+            if (document._url) {
+              itemListId = `${document._url}#itemlist`;
+            } else if (this.getBaseUrl(data) && document.slug) {
+              itemListId = `${this.getBaseUrl(data)}${document.slug}#itemlist`;
+            }
+          }
+
+          documentSchema = schemaGenerator.call(this, data, itemListId);
+        } else {
+          documentSchema = schemaGenerator.call(this, data);
+        }
+
         if (documentSchema) {
           schemas.push(documentSchema);
         }
@@ -633,7 +657,7 @@ class JsonLdSchemaHandler {
     return schema;
   }
 
-  getCollectionPageSchema(data) {
+  getCollectionPageSchema(data, itemListId = null) {
     const { piece, page } = data;
     const baseUrl = this.getBaseUrl(data);
     const document = piece || page;
@@ -673,6 +697,10 @@ class JsonLdSchemaHandler {
 
     if (document.updatedAt || document.createdAt) {
       schema.dateModified = document.updatedAt || document.createdAt;
+    }
+
+    if (itemListId) {
+      schema.mainEntity = { '@id': itemListId };
     }
 
     return schema;
@@ -1001,7 +1029,19 @@ class JsonLdSchemaHandler {
       return null;
     }
 
-    return {
+    const { piece, page } = data;
+    const document = piece || page;
+    const baseUrl = this.getBaseUrl(data);
+
+    // Generate @id for the ItemList
+    let itemListId;
+    if (document?._url) {
+      itemListId = `${document._url}#itemlist`;
+    } else if (baseUrl && document?.slug) {
+      itemListId = `${baseUrl}${document.slug}#itemlist`;
+    }
+
+    const schema = {
       '@type': 'ItemList',
       itemListOrder: 'https://schema.org/ItemListOrderAscending',
       numberOfItems: items.length,
@@ -1010,7 +1050,7 @@ class JsonLdSchemaHandler {
           '@type': 'ListItem',
           position: i + 1,
           item: {
-            '@type': this.getSchemaTypeForListItem(d),
+            '@type': d.seoJsonLdType || 'Thing', // Use actual doc type if available
             name: d.seoTitle || d.title,
             url: d._url || d.url
           }
@@ -1030,6 +1070,13 @@ class JsonLdSchemaHandler {
         return listItem;
       })
     };
+
+    // Add @id if we generated one
+    if (itemListId) {
+      schema['@id'] = itemListId;
+    }
+
+    return schema;
   }
 
   getSchemaTypeForListItem(doc) {
