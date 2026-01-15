@@ -5,9 +5,9 @@ module.exports = {
   },
   extendMethods(self) {
     return {
-      annotateWidgetForExternalFront(_super) {
+      annotateWidgetForExternalFront(_super, widget, { scene } = {}) {
         return {
-          ..._super(),
+          ..._super(widget, { scene }),
           anchorAttribute: self.options.anchorAttribute,
           anchors: self.options.anchors,
           anchorDefault: self.options.anchorDefault

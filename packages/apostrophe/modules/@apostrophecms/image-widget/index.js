@@ -36,6 +36,13 @@ module.exports = {
       }
     };
   },
+  // NOTE: Disabled until we are out of beta
+  // styles: {
+  //   add: {
+  //     width: 'width',
+  //     alignment: 'alignment'
+  //   }
+  // },
   fields(self, options) {
     const slugify = options.apos.util.slugify;
     const linkWithType = options.linkWithType;

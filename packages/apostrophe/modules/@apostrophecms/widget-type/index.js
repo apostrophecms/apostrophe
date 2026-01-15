@@ -158,7 +158,7 @@
 const _ = require('lodash');
 
 module.exports = {
-  cascades: [ 'fields', 'widgetOperations' ],
+  cascades: [ 'fields', 'styles', 'widgetOperations' ],
   options: {
     neverLoadSelf: true,
     initialModal: true,
@@ -172,7 +172,9 @@ module.exports = {
     // left or right, or null for no explicit origin (internally set
     // to 'right'):
     origin: null,
-    preview: true
+    preview: true,
+    // Set to false to opt out of the automatic styling wrapping of widget output
+    stylesWrapper: true
   },
   init(self) {
     self.isExplicitOrigin = self.options.origin !== null;
@@ -236,6 +238,12 @@ module.exports = {
             last: true
           }
         },
+        styles: {
+          label: 'apostrophe:styles',
+          icon: 'palette-icon',
+          tooltip: 'apostrophe:stylesWidget',
+          nativeAction: 'edit-styles'
+        },
         ...!options.contextual && {
           edit: {
             label: 'apostrophe:edit',
@@ -279,8 +287,61 @@ module.exports = {
 
   methods(self) {
     return {
-
+      addStylesFields() {
+        if (Object.keys(self.stylesGroups).length) {
+          throw new Error(
+            'Widget "' + self.name + '": "styles" do not support groups. ' +
+            'Please remove "groups" property from the "styles" configuration.'
+          );
+        }
+        const fieldSchema = self.apos.styles.expandStyles(self.styles);
+        if (Object.keys(fieldSchema).length === 0) {
+          return;
+        }
+        const groupFields = [ ...new Set([
+          ...Object.keys(fieldSchema),
+          ...self.fieldsGroups.styles?.fields || []
+        ]) ];
+        const stylesGroup = {
+          label: 'apostrophe:styles',
+          fields: groupFields
+        };
+        // Create a default group if none exist
+        if (
+          !Object.keys(self.fieldsGroups).length &&
+          Object.keys(self.fields).length
+        ) {
+          self.fieldsGroups.basics = {
+            label: 'apostrophe:basics',
+            fields: Object.keys(self.fields)
+          };
+        }
+        self.fieldsGroups.styles = stylesGroup;
+        self.fields = {
+          ...fieldSchema,
+          ...self.fields
+        };
+      },
+      // Return rendered styles object for a given widget instance.
+      // This shouldn't be used directly, instead use the
+      // `apos.styles.prepareWidgetStyles(widgetData)` helper method or
+      // the corresponding Nunjucks helper `apos.styles.render(widget)`.
+      // The `styleId` parameter is required to scope the styles
+      // to the specific widget instance.
+      // The returned object:
+      // {
+      //   css: '...', // The complete stylesheet text
+      //   inline: '...', // The inline styles to add to the widget element
+      //   classes: '...' // The classes to add to the widget element
+      // }
+      getStylesheet(widget, styleId) {
+        return self.apos.styles.getWidgetStylesheet(self.schema, widget, {
+          rootSelector: `#${styleId}`,
+          subset: self.fieldsGroups.styles?.fields || []
+        });
+      },
       composeSchema() {
+        self.addStylesFields();
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
           arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
@@ -298,14 +359,28 @@ module.exports = {
 
       composeWidgetOperations() {
         self.widgetOperations = Object.entries(self.widgetOperations)
-          .map(([ name, operation ]) => {
+          .reduce((acc, [ name, operation ]) => {
             self.validateWidgetOperation(name, operation);
 
-            return {
-              name,
-              ...operation
-            };
-          });
+            const disableOperation = self.disableWidgetOperation(name, operation);
+            if (disableOperation) {
+              return acc;
+            }
+
+            return [
+              ...acc,
+              {
+                name,
+                ...operation
+              }
+            ];
+          }, []);
+      },
+      disableWidgetOperation(opName, properties) {
+        if (opName === 'styles' && !Object.keys(self.styles).length) {
+          return true;
+        }
+        return false;
       },
 
       // Returns markup for the widget. Invoked via `{% widget ... %}` in the
@@ -338,12 +413,26 @@ module.exports = {
           });
         }
 
-        return self.render(req, self.template, {
+        const markup = await self.render(req, self.template, {
           widget: effectiveWidget,
           options,
           manager: self,
-          contextOptions: _with
+          contextOptions: _with,
+          scene: req.scene
         });
+
+        const hasStyles = Object.keys(self.styles || {}).length > 0;
+
+        if (hasStyles && self.options.stylesWrapper !== false) {
+          const styles = self.apos.styles.prepareWidgetStyles(widget);
+          const styleTag = self.apos.styles
+            .getWidgetElements(styles, { scene: req.scene });
+          const wrapperAttrs = self.apos.styles.getWidgetAttributes(styles);
+
+          return `${styleTag}<div${wrapperAttrs ? ' ' + wrapperAttrs : ''}>${markup}</div>`;
+        }
+
+        return markup;
       },
 
       getWidgetsBundles(widgetType) {
@@ -625,8 +714,26 @@ module.exports = {
         });
       },
 
-      annotateWidgetForExternalFront() {
-        return {};
+      annotateWidgetForExternalFront(widget, { scene } = {}) {
+        const hasStyles = Object.keys(self.styles || {}).length > 0;
+
+        if (!hasStyles) {
+          return {
+            aposStylesWrapper: false,
+            aposStylesElements: '',
+            aposStylesAttributes: {}
+          };
+        }
+
+        const styles = self.apos.styles.prepareWidgetStyles(widget);
+
+        return {
+          aposStylesWrapper: self.options.stylesWrapper,
+          aposStylesElements: self.apos.styles.getWidgetElements(styles, { scene }),
+          aposStylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, {
+            asObject: true
+          })
+        };
       }
     };
   },
@@ -655,8 +762,10 @@ module.exports = {
           action: self.action,
           schema,
           contextual: self.options.contextual,
+          contextualStyles: Boolean(self.options.contextualStyles),
           placeholderClass: self.options.placeholderClass,
           className: self.options.className,
+          stylesFields: Object.keys(self.styles),
           components: self.options.components,
           width: self.options.width,
           origin: self.options.origin,

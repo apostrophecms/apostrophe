@@ -183,6 +183,7 @@ describe('Permissions', function() {
           aposMode: { $in: [ null, 'draft' ] },
           type: {
             $nin: [
+              '@apostrophecms/styles',
               '@apostrophecms/user',
               '@apostrophecms/image',
               '@apostrophecms/image-tag',

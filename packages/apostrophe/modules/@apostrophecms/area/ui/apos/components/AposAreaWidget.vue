@@ -298,6 +298,7 @@ export default {
     'down',
     'remove',
     'edit',
+    'edit-styles',
     'cut',
     'copy',
     'update',
