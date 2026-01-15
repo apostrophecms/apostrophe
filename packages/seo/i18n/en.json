@@ -1,5 +1,5 @@
 {
-  "group": "SEO",
+  "group": "SEO/AEO",
   "title": "SEO Title",
   "titleHtmlHelp": "<strong>Leave blank in most cases.</strong> Your page title will be used automatically.<br><br><strong>⚠️ Warning:</strong> If you use a custom SEO title, make sure it accurately describes your page content. Search engines compare your SEO title against your actual page content and structured data. Mismatches can harm your rankings.",
   "description": "Meta Description",

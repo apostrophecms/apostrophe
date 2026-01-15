@@ -1,5 +1,5 @@
 {
-  "group": "SEO",
+  "group": "SEO/AEO",
   "title": "SEO nadpis",
   "titleHtmlHelp": "<strong>Vo väčšine prípadov nechajte prázdne.</strong> Názov stránky sa použije automaticky.<br><br><strong>⚠️ Upozornenie :</strong> Ak použijete vlastný SEO názov, uistite sa, že presne opisuje obsah stránky. Vyhľadávače porovnávajú SEO názov so skutočným obsahom stránky a štruktúrovanými údajmi. Nezhody môžu negatívne ovplyvniť vaše hodnotenie.",
   "description": "Meta popis",

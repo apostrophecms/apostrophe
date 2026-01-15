@@ -6,6 +6,7 @@ class JsonLdSchemaHandler {
       WebSite: this.getWebsiteSchema,
       Organization: this.getOrganizationSchema,
       Article: this.getArticleSchema,
+      BlogPosting: this.getBlogPostingSchema,
       WebPage: this.getWebPageSchema,
       CollectionPage: this.getCollectionPageSchema,
       Product: this.getProductSchema,
@@ -331,7 +332,31 @@ class JsonLdSchemaHandler {
     if (document?.seoJsonLdType) {
       const schemaGenerator = this.schemas[document.seoJsonLdType];
       if (schemaGenerator) {
-        const documentSchema = schemaGenerator.call(this, data);
+        // Special handling for CollectionPage - check if we'll also generate ItemList
+        let documentSchema;
+        if (document.seoJsonLdType === 'CollectionPage') {
+          const items = this.getListingItems(data);
+          const isDetailDoc = !!piece;
+          const includeItemList = !isDetailDoc && items.length > 0 && (
+            document?.seoIncludeItemList === true ||
+            (document?.seoIncludeItemList === undefined && document?.seoJsonLdType === 'CollectionPage')
+          );
+
+          // Generate ItemListId if we're going to create one
+          let itemListId = null;
+          if (includeItemList) {
+            if (document._url) {
+              itemListId = `${document._url}#itemlist`;
+            } else if (this.getBaseUrl(data) && document.slug) {
+              itemListId = `${this.getBaseUrl(data)}${document.slug}#itemlist`;
+            }
+          }
+
+          documentSchema = schemaGenerator.call(this, data, itemListId);
+        } else {
+          documentSchema = schemaGenerator.call(this, data);
+        }
+
         if (documentSchema) {
           schemas.push(documentSchema);
         }
@@ -565,6 +590,19 @@ class JsonLdSchemaHandler {
     return schema;
   }
 
+  getBlogPostingSchema(data) {
+    const schema = this.getArticleSchema(data);
+
+    if (schema) {
+      schema['@type'] = 'BlogPosting';
+      if (schema['@id']) {
+        schema['@id'] = schema['@id'].replace('#article', '#blogposting');
+      }
+    }
+
+    return schema;
+  }
+
   getWebPageSchema(data) {
     const { piece, page } = data;
     const baseUrl = this.getBaseUrl(data);
@@ -619,7 +657,7 @@ class JsonLdSchemaHandler {
     return schema;
   }
 
-  getCollectionPageSchema(data) {
+  getCollectionPageSchema(data, itemListId = null) {
     const { piece, page } = data;
     const baseUrl = this.getBaseUrl(data);
     const document = piece || page;
@@ -659,6 +697,10 @@ class JsonLdSchemaHandler {
 
     if (document.updatedAt || document.createdAt) {
       schema.dateModified = document.updatedAt || document.createdAt;
+    }
+
+    if (itemListId) {
+      schema.mainEntity = { '@id': itemListId };
     }
 
     return schema;
@@ -987,16 +1029,28 @@ class JsonLdSchemaHandler {
       return null;
     }
 
-    return {
+    const { piece, page } = data;
+    const document = piece || page;
+    const baseUrl = this.getBaseUrl(data);
+
+    // Generate @id for the ItemList
+    let itemListId;
+    if (document?._url) {
+      itemListId = `${document._url}#itemlist`;
+    } else if (baseUrl && document?.slug) {
+      itemListId = `${baseUrl}${document.slug}#itemlist`;
+    }
+
+    const schema = {
       '@type': 'ItemList',
-      itemListOrder: 'http://schema.org/ItemListOrderAscending',
+      itemListOrder: 'https://schema.org/ItemListOrderAscending',
       numberOfItems: items.length,
       itemListElement: items.map((d, i) => {
         const listItem = {
           '@type': 'ListItem',
           position: i + 1,
           item: {
-            '@type': d.type || 'Thing', // Use actual doc type if available
+            '@type': d.seoJsonLdType || 'Thing', // Use actual doc type if available
             name: d.seoTitle || d.title,
             url: d._url || d.url
           }
@@ -1016,6 +1070,38 @@ class JsonLdSchemaHandler {
         return listItem;
       })
     };
+
+    // Add @id if we generated one
+    if (itemListId) {
+      schema['@id'] = itemListId;
+    }
+
+    return schema;
+  }
+
+  getSchemaTypeForListItem(doc) {
+    if (doc.seoJsonLdType) {
+      return doc.seoJsonLdType;
+    }
+
+    const typeMap = {
+      article: 'Article',
+      'blog-post': 'BlogPosting',
+      product: 'Product',
+      event: 'Event',
+      person: 'Person',
+      '@apostrophecms/page': 'WebPage'
+    };
+
+    if (doc.type && typeMap[doc.type]) {
+      return typeMap[doc.type];
+    }
+
+    if (doc.type && typeof doc.type === 'string') {
+      return doc.type.charAt(0).toUpperCase() + doc.type.slice(1);
+    }
+
+    return 'Thing';
   }
 
   getBreadcrumbListSchema(data) {
