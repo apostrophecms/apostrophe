@@ -121,6 +121,7 @@ module.exports = {
     icon: 'format-text-icon',
     label: 'apostrophe:richText',
     contextual: true,
+    contextualStyles: true,
     placeholder: true,
     placeholderText: 'apostrophe:richTextPlaceholder',
     placeholderTextWithInsertMenu: 'apostrophe:richTextPlaceholderWithInsertMenu',
@@ -205,7 +206,6 @@ module.exports = {
         'importTable',
         'horizontalRule'
       ]
-
     },
     defaultOptions: {},
     components: {

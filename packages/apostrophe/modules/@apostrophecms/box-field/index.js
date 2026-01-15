@@ -25,7 +25,7 @@ module.exports = {
 
             // All values to numbers or null
             defProps.forEach(side => {
-              const int = parseInt(data[field.name][side]);
+              const int = parseInt(data[field.name]?.[side]);
               if (int || int === 0) {
                 temp[side] = int;
               } else {
@@ -133,7 +133,11 @@ module.exports = {
         };
 
         if (vals.every(v => v === top && v != null)) {
-          return `${property}: ${top}${unit};`;
+          const normalizedProperty = property
+            .replaceAll('-%key%', '')
+            .replaceAll('%key%-', '');
+
+          return `${normalizedProperty}: ${top}${unit};`;
         }
 
         const sides = {
@@ -145,9 +149,17 @@ module.exports = {
         const parts = [];
 
         for (const [ side, val ] of Object.entries(sides)) {
-          if (val != null) {
-            parts.push(`${property}-${side}: ${val}${unit};`);
+          if (val == null) {
+            continue;
           }
+
+          const normalizedProperty = property.includes('%key%')
+            ? property
+              .replaceAll('-%key%', `-${side}`)
+              .replaceAll('%key%-', `${side}-`)
+            : `property-${side}`;
+
+          parts.push(`${normalizedProperty}: ${val}${unit}`);
         }
 
         return parts.join(' ');

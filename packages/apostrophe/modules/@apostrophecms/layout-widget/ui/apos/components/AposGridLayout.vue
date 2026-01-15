@@ -24,26 +24,16 @@
         '--align-items': gridState.options.defaultCellVerticalAlignment || 'stretch',
       }"
     >
-      <div
+      <AposGridColumn
         v-for="(item, i) in renderItems"
         :key="item._id"
         ref="contentItems"
-        class="apos-layout__item"
-        role="gridcell"
-        data-apos-test="aposLayoutItem"
+        :item="item"
+        :tablet-full-items="tabletFullItems"
         :data-tablet-full="tabletFullItems[item._id] || false"
         :data-visible-tablet="item.tablet?.show"
         :data-visible-mobile="item.mobile?.show"
         :data-id="`${ item._id }`"
-        :style="{
-          '--colstart': item.colstart,
-          '--colspan': item.colspan,
-          '--rowstart': item.rowstart,
-          '--rowspan': item.rowspan,
-          '--order': item.order,
-          '--justify': item.justify,
-          '--align': item.align,
-        }"
       >
         <div
           data-content
@@ -69,7 +59,7 @@
             </div>
           </template>
         </div>
-      </div>
+      </AposGridColumn>
     </TransitionGroup>
     <AposGridManager
       v-if="isManageMode"
@@ -78,6 +68,9 @@
       :meta-id="meta._id"
       :opstate="opstate"
       :preview="preview"
+      :root-el="$refs.root?.$el || $refs.root"
+      :grid-el="$refs.grid?.$el || $refs.grid"
+      :content-items="getContentItems()"
       @resize-start="onResizeStart"
       @resize-end="onResizeEnd"
       @move-start="onMoveStart"
@@ -223,6 +216,12 @@ export default {
     }
   },
   methods: {
+    getContentItems() {
+      if (!this.$refs.contentItems) {
+        return [];
+      }
+      return this.$refs.contentItems.map(({ columnEl }) => columnEl);
+    },
     onResizeStart() {
       this.isResizing = true;
       this.$emit('resize-start');
@@ -326,6 +325,7 @@ export default {
   grid-row: var(--rowstart, auto) / span var(--rowspan, 1);
   /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
   justify-self: var(--justify, inherit);
+  min-width: 0;
 }
 
 .apos-layout__item-content {

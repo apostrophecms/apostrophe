@@ -102,6 +102,7 @@
             @update="update"
             @add="add"
             @paste="paste"
+            @edit-styles="editStyles"
           />
         </template>
       </AposGridLayout>
@@ -240,6 +241,7 @@ export default {
   mounted() {
     apos.bus.$on('apos-switch-layout-mode', this.switchLayoutMode);
     apos.bus.$on('apos-layout-col-delete', this.onRemoveLayoutColumn);
+    apos.bus.$on('apos-edit-styles', this.editStyles);
     if (!this.hasLayoutColumnWidgets) {
       this.onCreateProvision();
     }
@@ -248,6 +250,7 @@ export default {
   beforeUnmount() {
     apos.bus.$off('apos-switch-layout-mode', this.switchLayoutMode);
     apos.bus.$off('apos-layout-col-delete', this.onRemoveLayoutColumn);
+    apos.bus.$off('apos-edit-styles', this.editStyles);
   },
   methods: {
     ...mapActions(useWidgetStore, [
