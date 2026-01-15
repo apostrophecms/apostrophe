@@ -70,15 +70,18 @@ module.exports = {
     self.stylesheetScopedRender = renderScopedStyles;
     self.styleCheckIfConditions = checkIfConditions;
 
-    self.apos.doc.addContextOperation({
-      action: 'reset-styles-position',
-      label: 'apostrophe:stylesResetPosition',
-      context: 'update',
-      type: 'event',
-      if: {
-        type: self.__meta.name
-      }
-    });
+    if (Object.keys(self.styles).length > 0) {
+      self.apos.doc.addContextOperation({
+        action: 'reset-styles-position',
+        label: 'apostrophe:stylesResetPosition',
+        context: 'update',
+        type: 'event',
+        if: {
+          type: self.__meta.name
+        }
+      });
+    }
+
     self.slug = options.slug || 'apostrophecms-styles';
     self.enableBrowserData();
     self.prependNodes('body', 'stylesheet');

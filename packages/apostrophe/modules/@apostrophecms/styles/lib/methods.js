@@ -325,6 +325,9 @@ module.exports = (self, options) => {
       }
     },
     addToAdminBar() {
+      if (Object.keys(self.styles).length === 0) {
+        return;
+      }
       self.apos.adminBar.add(
         '@apostrophecms/styles',
         'apostrophe:stylesToggle',
