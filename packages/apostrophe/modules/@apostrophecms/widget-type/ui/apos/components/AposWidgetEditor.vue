@@ -64,15 +64,18 @@
 </template>
 
 <script>
+import { createId } from '@paralleldrive/cuid2';
+import { klona } from 'klona';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { createId } from '@paralleldrive/cuid2';
-import { klona } from 'klona';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
+import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
+import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 
 export default {
   name: 'AposWidgetEditor',
@@ -122,6 +125,10 @@ export default {
     areaFieldId: {
       type: String,
       default: null
+    },
+    contextualStyles: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'modal-result' ],
@@ -236,7 +243,7 @@ export default {
         ...value.data
       };
       this.evaluateConditions();
-      this.updatePreview();
+      this.updatePreview(value);
     },
     initPreview() {
       if (!this.preview) {
@@ -253,8 +260,24 @@ export default {
         this.previewSnapshot = this.getWidgetObject();
       }
     },
-    updatePreview() {
+    updatePreview(value) {
       if (!this.preview) {
+        return;
+      }
+
+      const recomputeOnlyStyles = !this.contextualStyles &&
+        value.changed?.length &&
+        value.changed.every(fieldName => {
+          return this.moduleOptions.stylesFields?.includes(fieldName) || false;
+        });
+      if (recomputeOnlyStyles) {
+        const styles = renderScopedStyles(this.schema, value.data, {
+          rootSelector: '__placeholder_root_selector__',
+          checkIfConditionsFn: checkIfConditions,
+          subset: this.moduleOptions.stylesFields
+        });
+        this.applyPreviewStyles(styles);
+
         return;
       }
       const now = Date.now();
@@ -281,6 +304,76 @@ export default {
           reverting: true
         });
       }
+    },
+    applyPreviewStyles({
+      inline = '', css = '', classes = []
+    }) {
+      const targetId = this.getPreviewWidgetId();
+
+      // Multiple elements may exist - e.g. in-context and in a modal.
+      const widgetElements = document.querySelectorAll(
+        `[data-apos-widget-style-wrapper-for="${targetId}"]`
+      );
+
+      widgetElements.forEach((el) => {
+        const styleId = el.getAttribute('id');
+        if (!styleId) {
+          return;
+        }
+
+        // Classes handling
+        const previousClasses = (el.dataset.aposWidgetStyleClasses || '')
+          .split(' ')
+          .map(c => c.trim())
+          .filter(Boolean);
+
+        // remove previous style classes (based on previously applied classes)
+        if (previousClasses.length) {
+          el.classList.remove(previousClasses);
+        }
+        if (classes.length) {
+          el.classList.add(...classes);
+        }
+        el.dataset.aposWidgetStyleClasses = classes.join(' ');
+
+        // Inline styles handling
+        if (inline) {
+          el.style.cssText = inline;
+        } else {
+          el.removeAttribute('style');
+        }
+
+        // Element <style> handling.
+        let scopedCss = css.replace(
+          /__placeholder_root_selector__/g,
+          `#${styleId}`
+        );
+        // Direct query for the style element by unique styleId
+        const styleElement = document.querySelector(
+          `style[data-apos-widget-style-id="${styleId}"]`
+        );
+        scopedCss = this.transformForBreakpointPreview(scopedCss);
+
+        if (styleElement) {
+          styleElement.textContent = scopedCss;
+        } else {
+          const newStyleElement = document.createElement('style');
+          newStyleElement.setAttribute('data-apos-widget-style-for', targetId);
+          newStyleElement.setAttribute('data-apos-widget-style-id', styleId);
+          newStyleElement.textContent = scopedCss;
+          el.parentNode.insertBefore(newStyleElement, el);
+        }
+      });
+    },
+    transformForBreakpointPreview(css) {
+      if (css && apos.adminBar.breakpointPreviewMode?.enable) {
+        return breakpointPreviewTransformer(css, {
+          modifierAttr: 'data-breakpoint-preview-mode',
+          debug: apos.adminBar.breakpointPreviewMode?.debug === true,
+          transform: apos.adminBar.breakpointPreviewMode?.transform || null
+        });
+      }
+      return css;
     },
     async save() {
       this.triggerValidation = true;
@@ -337,7 +430,7 @@ export default {
         ...props
       };
     },
-    getPreviewWidgetObject() {
+    getPreviewWidgetId() {
       if (!this.previewWidgetId) {
         if (this.preview.create) {
           // Deliberately different from the final widget's id, which will
@@ -347,9 +440,13 @@ export default {
           this.previewWidgetId = this.id;
         }
       }
+      return this.previewWidgetId;
+    },
+    getPreviewWidgetObject() {
+      const _id = this.getPreviewWidgetId();
       return {
         ...this.getWidgetObject({
-          _id: this.previewWidgetId
+          _id
         }),
         aposLivePreview: true
       };

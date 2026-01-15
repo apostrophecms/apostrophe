@@ -2,7 +2,7 @@
 import AposWidget from "../components/AposWidget.astro";
 import aposRequest from "../lib/aposRequest.js";
 import aposResponse from "../lib/aposResponse.js";
-import { onBeforeWidgetRenderHook } from 'virtual:apostrophe-doctypes';
+import { onBeforeWidgetRenderHook } from "virtual:apostrophe-doctypes";
 
 const request = aposRequest(Astro.request);
 const response = await aposResponse(request);
@@ -26,10 +26,17 @@ try {
   console.error("Error:", error);
   throw new Error("There was an issue while parsing a widget response.");
 }
-const { widget, ...props } = responseBody;
+
+const { widget, options, ...props } = responseBody;
+const widgetOptions = { ...(options || {}), ...(widget?._options || {}) };
 
 if (widget && shouldRender && onBeforeWidgetRenderHook) {
-  await onBeforeWidgetRenderHook({ widget, props, Astro });
+  await onBeforeWidgetRenderHook({
+    widget,
+    props,
+    options: widgetOptions,
+    Astro,
+  });
 }
 
 if (!widget && shouldRender) {
@@ -39,5 +46,9 @@ if (!widget && shouldRender) {
 }
 ---
 
-{widget && !renderWarn && <AposWidget {widget} {...props} />}
+{
+  widget && !renderWarn && (
+    <AposWidget {widget} options={widgetOptions} {...props} />
+  )
+}
 {renderWarn && <p>Unable to render this widget.</p>}

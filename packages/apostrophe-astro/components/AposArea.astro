@@ -67,10 +67,9 @@ function getWidgetOptions(options) {
         ...item._options,
         ...widgetOptions[item.type],
       };
-      const { _options, ...cleanItem } = item;
       return (
         <WidgetComponent
-          widget={cleanItem}
+          widget={item}
           options={options}
           area={area}
           canEdit={isEdit}
