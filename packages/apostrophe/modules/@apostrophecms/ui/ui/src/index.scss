@@ -1,0 +1,33 @@
+// .apos-rich-text-table is the public rendered class,
+// the other selectors are admin UI specific.
+// The styles here are the single source of truth for table visuals.
+// Additional admin UI styles are taking care of only the management aspects.
+[data-rich-text] table:not([class]),
+.tiptap table:not([class]),
+.tableWrapper table, /* stylelint-disable-line selector-class-pattern */
+.apos-rich-text-table {
+  overflow: hidden;
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  td,
+  th {
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid var(--a-base-4, #939393);
+    min-width: 1em;
+    vertical-align: top;
+
+    > * { /* stylelint-disable-line max-nesting-depth */
+      margin-bottom: 0;
+    }
+  }
+
+  th {
+    background-color: var(--a-base-8, #dbdbdb);
+    font-weight: 700;
+    text-align: start;
+  }
+}
