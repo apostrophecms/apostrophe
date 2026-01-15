@@ -20,14 +20,14 @@ export function useAposWidget(props) {
     })
   };
 
-  async function renderContent() {
+  async function renderContent(el) {
     const result = await _renderContent(props);
     if (Object.hasOwn(result, 'data')) {
       rendered.value = result.data;
     }
     if (!result.error) {
       nextTick(() => {
-        _emitWidgetRendered(props.modelValue.aposLivePreview);
+        _emitWidgetRendered(props.modelValue.aposLivePreview, { el });
       });
     }
   }
@@ -99,6 +99,6 @@ export async function _renderContent(props) {
 // Wait for reactivity to render v-html so that markup is
 // in the DOM before hinting that it might be time to prepare
 // sub-area editors and run players (done in mixin and composable)
-export function _emitWidgetRendered(aposLivePreview) {
-  apos.bus.$emit('widget-rendered', { edit: !aposLivePreview });
+export function _emitWidgetRendered(aposLivePreview, options = {}) {
+  apos.bus.$emit('widget-rendered', { edit: !aposLivePreview, ...options });
 }
