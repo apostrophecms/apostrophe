@@ -100,5 +100,8 @@ export async function _renderContent(props) {
 // in the DOM before hinting that it might be time to prepare
 // sub-area editors and run players (done in mixin and composable)
 export function _emitWidgetRendered(aposLivePreview, options = {}) {
-  apos.bus.$emit('widget-rendered', { edit: !aposLivePreview, ...options });
+  apos.bus.$emit('widget-rendered', {
+    edit: !aposLivePreview,
+    ...options
+  });
 }

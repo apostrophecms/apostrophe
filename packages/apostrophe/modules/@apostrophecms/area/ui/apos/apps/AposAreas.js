@@ -45,7 +45,7 @@ export default function() {
     // cause more invocations later, avoiding double invocations,
     // orphaned apps and wasted time. -Tom
     const els = Array.from((el || document).querySelectorAll('[data-apos-area-newly-editable]'));
-    let lowest = Math.min(...els.map(el => depth(el)));
+    const lowest = Math.min(...els.map(el => depth(el)));
     els.filter(el => depth(el) === lowest).forEach(el => createAreaApp(el));
   }
 
