@@ -2,6 +2,7 @@
 import AposWidget from "../components/AposWidget.astro";
 import aposRequest from "../lib/aposRequest.js";
 import aposResponse from "../lib/aposResponse.js";
+import { onBeforeWidgetRenderHook } from "virtual:apostrophe-doctypes";
 
 const request = aposRequest(Astro.request);
 const response = await aposResponse(request);
@@ -27,7 +28,16 @@ try {
 }
 
 const { widget, options, ...props } = responseBody;
-const widgetOptions = { ...(widget?._options || {}), ...(options || {}) };
+const widgetOptions = { ...(options || {}), ...(widget?._options || {}) };
+
+if (widget && shouldRender && onBeforeWidgetRenderHook) {
+  await onBeforeWidgetRenderHook({
+    widget,
+    props,
+    options: widgetOptions,
+    Astro,
+  });
+}
 
 if (!widget && shouldRender) {
   throw new Error(

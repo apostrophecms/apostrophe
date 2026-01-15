@@ -325,6 +325,7 @@ export default {
   grid-row: var(--rowstart, auto) / span var(--rowspan, 1);
   /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
   justify-self: var(--justify, inherit);
+  min-width: 0;
 }
 
 .apos-layout__item-content {
