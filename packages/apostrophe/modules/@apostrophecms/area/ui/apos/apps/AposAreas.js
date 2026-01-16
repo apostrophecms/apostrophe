@@ -27,9 +27,9 @@ export default function() {
     createAreaAppsAndRunPlayersIfDone();
   });
 
-  function createAreaAppsAndRunPlayersIfDone({ edit = true } = {}) {
+  function createAreaAppsAndRunPlayersIfDone({ edit = true, el = null } = {}) {
     if (edit) {
-      createAreaApps();
+      createAreaApps(el);
       nextTick(() => {
         cleanupOrphanedApps();
       });
@@ -39,23 +39,14 @@ export default function() {
     }
   }
 
-  function createAreaApps() {
-    // Sort the areas by DOM depth to ensure parents light up before children
-    const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]'));
-    els.sort((a, b) => {
-      const da = depth(a);
-      const db = depth(b);
-      if (da < db) {
-        return -1;
-      } else if (db > da) {
-        return 1;
-      } else {
-        return 0;
-      }
-    });
-    for (const el of els) {
-      createAreaApp(el);
-    }
+  function createAreaApps(el) {
+    // Create apps only for the areas at the top of the nesting
+    // hierarchy in the given context. widget-rendered events will
+    // cause more invocations later, avoiding double invocations,
+    // orphaned apps and wasted time. -Tom
+    const els = Array.from((el || document).querySelectorAll('[data-apos-area-newly-editable]'));
+    const lowest = Math.min(...els.map(el => depth(el)));
+    els.filter(el => depth(el) === lowest).forEach(el => createAreaApp(el));
   }
 
   function depth(el) {

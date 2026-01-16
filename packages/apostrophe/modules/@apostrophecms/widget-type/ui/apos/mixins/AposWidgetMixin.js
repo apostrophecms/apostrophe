@@ -38,7 +38,7 @@ export default {
       }
       if (!result.error) {
         this.$nextTick(() => {
-          _emitWidgetRendered(this.modelValue.aposLivePreview);
+          _emitWidgetRendered(this.modelValue.aposLivePreview, { el: this.$el });
         });
       }
     }
