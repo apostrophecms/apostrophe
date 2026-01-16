@@ -175,6 +175,12 @@ module.exports = {
         // The array is provided in the order in which locales are configured.
         // The current locale is included and has the property `current: true`.
         async addLocalizations(req) {
+          const locale = req.locale || self.defaultLocale;
+          req.data.i18n = {
+            locale,
+            direction: self.locales[locale]?.direction || 'ltr',
+            label: self.locales[locale]?.label || locale
+          };
           const context = req.data.piece || req.data.page;
           if (!context) {
             return;
@@ -212,6 +218,7 @@ module.exports = {
             const info = doc || {};
             info.locale = name;
             info.label = self.locales[name].label;
+            info.direction = self.locales[name].direction;
             info.homePageUrl = `${localeReq.prefix}/`;
             req.data.localizations.push(info);
           }
@@ -715,11 +722,13 @@ module.exports = {
       getLocales() {
         const locales = self.options.locales || {
           en: {
-            label: 'English'
+            label: 'English',
+            direction: 'ltr'
           }
         };
         for (const locale in locales) {
           locales[locale]._edit = true;
+          locales[locale].direction ??= 'ltr';
         }
         verifyLocales(locales, self.apos.options.baseUrl);
         return locales;

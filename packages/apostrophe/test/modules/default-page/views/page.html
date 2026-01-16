@@ -14,6 +14,6 @@
 <h2>Translations</h2>
 <ul>
   {% for localization in data.localizations %}
-    <li><a href="{{ localization._url or localization.homePageUrl }}">{{ localization.label }} ({{ localization.locale }})</a></li>
+    <li><a href="{{ localization._url or localization.homePageUrl }}">{{ localization.label }} ({{ localization.locale }})({{ localization.direction }})</a></li>
   {% endfor %}
 </ul>
