@@ -98,6 +98,9 @@ export default function() {
     }
     el.removeAttribute('data-apos-area-newly-editable');
 
+    let created = false;
+    let observer;
+
     if (apos.area.activeEditor && (apos.area.activeEditor.id === data._id)) {
       // Editing a piece causes a refresh of the main content area,
       // but this may contain the area we originally intended to add
@@ -107,6 +110,20 @@ export default function() {
 
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
+      observer = new IntersectionObserver(observed, {
+        rootMargin: '600px'
+      });
+      observer.observe(el);
+    }
+
+    function observed(entries) {
+      const intersects = entries[0].isIntersecting;
+      if (!intersects) {
+        return;
+      }
+      if (created) {
+        return;
+      }
       const app = createApp(component, {
         options,
         id: data._id,
@@ -118,9 +135,10 @@ export default function() {
         parentOptions,
         renderings
       });
-
       app.mount(el);
       mountedApps.set(el, app);
+      created = true;
+      observer.disconnect();
     }
   }
 
