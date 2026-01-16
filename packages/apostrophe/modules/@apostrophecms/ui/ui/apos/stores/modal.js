@@ -37,6 +37,17 @@ export const useModalStore = defineStore('modal', () => {
     return activeModal.value?.locale || apos.i18n.locale;
   }
 
+  function getAdminDirectionClass() {
+    const locale = getActiveLocale();
+    const direction = apos.i18n.locales[locale]?.direction || 'ltr';
+
+    if (direction === 'rtl') {
+      return 'apos-ltr';
+    }
+
+    return null;
+  }
+
   function get(id) {
     return id
       ? stack.value.find(modal => id === modal.id)
@@ -229,6 +240,7 @@ export const useModalStore = defineStore('modal', () => {
     activeModal,
     hasChooserModal,
     getActiveLocale,
+    getAdminDirectionClass,
     add,
     remove,
     get,

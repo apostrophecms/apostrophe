@@ -10,7 +10,7 @@
     />
     <nav
       ref="adminBar"
-      class="apos-admin-bar"
+      :class="classes"
       role="menubar"
       aria-label="Apostrophe Admin Bar"
     >
@@ -36,7 +36,9 @@
 </template>
 
 <script>
+import { mapState } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'TheAposAdminBar',
@@ -48,6 +50,7 @@ export default {
     }
   },
   computed: {
+    ...mapState(useModalStore, [ 'getAdminDirectionClass' ]),
     menuItems() {
       return this.items.filter(item => !item.options?.user);
     },
@@ -59,6 +62,13 @@ export default {
     },
     bars() {
       return this.moduleOptions.bars;
+    },
+    classes() {
+      const directionClass = this.getAdminDirectionClass();
+      return {
+        'apos-admin-bar': true,
+        [directionClass]: !!directionClass
+      };
     }
   },
   mounted() {
