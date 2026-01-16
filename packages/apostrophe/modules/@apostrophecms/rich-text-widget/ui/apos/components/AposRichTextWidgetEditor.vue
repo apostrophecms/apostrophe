@@ -24,7 +24,7 @@
     >
       <AposContextMenuDialog
         menu-placement="top"
-        class-list="apos-rich-text-toolbar"
+        :class-list="contextMenuClasses"
         :has-tip="false"
       >
         <div
@@ -51,7 +51,7 @@
       :id="`insert-menu-${modelValue._id}`"
       ref="insertMenu"
       plugin-key="insertMenu"
-      class="apos-rich-text-insert-menu"
+      :class="insertMenuClasses"
       :tippy-options="{ duration: 100, zIndex: 999, placement: 'bottom-start' }"
       :should-show="showFloatingMenu"
       :editor="editor"
@@ -115,6 +115,7 @@
 </template>
 
 <script>
+import { mapState } from 'pinia';
 import {
   Editor,
   EditorContent,
@@ -151,6 +152,7 @@ import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
 import { klona } from 'klona';
 import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposRichTextWidgetEditor',
@@ -220,6 +222,23 @@ export default {
     };
   },
   computed: {
+    ...mapState(useModalStore, [ 'getAdminDirectionClass' ]),
+    // Note that context menu class-list expects a string
+    contextMenuClasses() {
+      const directionClass = this.getAdminDirectionClass();
+      const classes = [ 'apos-rich-text-toolbar' ];
+      if (directionClass) {
+        classes.push(directionClass);
+      }
+      return classes.join(' ');
+    },
+    insertMenuClasses() {
+      const directionClass = this.getAdminDirectionClass();
+      return {
+        'apos-rich-text-insert-menu': true,
+        [directionClass]: !!directionClass
+      };
+    },
     tableOptions() {
       const options = this.moduleOptions.tableOptions || {};
 
