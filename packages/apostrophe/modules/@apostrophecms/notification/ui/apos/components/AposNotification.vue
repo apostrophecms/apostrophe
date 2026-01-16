@@ -66,6 +66,7 @@ import {
 } from 'vue';
 import Close from '@apostrophecms/vue-material-design-icons/Close.vue';
 import { useNotificationStore } from 'Modules/@apostrophecms/ui/stores/notification.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
 
 const props = defineProps({
   notification: {
@@ -77,6 +78,7 @@ const props = defineProps({
 const $t = inject('i18n');
 const emit = defineEmits([ 'close' ]);
 const store = useNotificationStore();
+const modalStore = useModalStore();
 
 const hasJob = props.notification.job && props.notification.job._id;
 const job = ref(
@@ -96,6 +98,7 @@ const process = computed(() => {
 
 const classList = computed(() => {
   const classes = [ 'apos-notification' ];
+  const directionClass = modalStore.getAdminDirectionClass();
 
   if (Array.isArray(props.notification.classes) && props.notification.classes.length) {
     classes.push(...props.notification.classes);
@@ -119,7 +122,11 @@ const classList = computed(() => {
     classes.push('apos-notification--long');
   }
 
-  return classes.join(' ');
+  if (directionClass) {
+    classes.push(directionClass);
+  }
+
+  return classes;
 });
 
 const iconComponent = computed(() => {
