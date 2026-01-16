@@ -18,6 +18,11 @@ describe('static i18n', function() {
               en: {},
               fr: {
                 prefix: '/fr'
+              },
+              he: {
+                label: 'Hebrew',
+                prefix: '/he',
+                direction: 'rtl'
               }
             }
           }
@@ -82,6 +87,52 @@ describe('static i18n', function() {
     const lang = $html.attr('lang');
 
     assert.equal(lang, 'fr');
+  });
+
+  it('should set `data.i18n` to "en" by default', async function() {
+    const req = apos.task.getReq();
+    const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+    const $ = cheerio.load(result);
+    const locale = $('#locale').text();
+    const label = $('#label').text();
+    const direction = $('#direction').text();
+
+    assert.equal(locale, 'en');
+    assert.equal(label, 'en');
+    assert.equal(direction, 'ltr');
+  });
+
+  it('should set `data.i18n` when direction is not specified', async function() {
+    const req = apos.task.getReq({
+      locale: 'fr'
+    });
+    const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+    const $ = cheerio.load(result);
+    const locale = $('#locale').text();
+    const label = $('#label').text();
+    const direction = $('#direction').text();
+
+    assert.equal(locale, 'fr');
+    assert.equal(label, 'fr');
+    assert.equal(direction, 'ltr');
+  });
+
+  it('should set `data.i18n` when direction is specified', async function() {
+    const req = apos.task.getReq({
+      locale: 'he'
+    });
+    const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+    const $ = cheerio.load(result);
+    const locale = $('#locale').text();
+    const label = $('#label').text();
+    const direction = $('#direction').text();
+
+    assert.equal(locale, 'he');
+    assert.equal(label, 'Hebrew');
+    assert.equal(direction, 'rtl');
   });
 
   it('should localize apostrophe namespace phrases in the default locale', function() {
