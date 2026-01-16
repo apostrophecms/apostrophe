@@ -65,31 +65,52 @@ describe('static i18n', function() {
     assert(apos.i18n.i18next);
   });
 
-  it('should set the lang attribute to "en" by default', async function() {
+  it('should set the lang and dir attributes by default', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
 
     const $ = cheerio.load(result);
     const $html = $('html');
     const lang = $html.attr('lang');
+    const dir = $html.attr('dir');
 
     assert.equal(lang, 'en');
+    assert.equal(dir, 'ltr');
   });
 
-  it('should set the lang attribute to the current locale', async function() {
-    const req = apos.task.getReq({
-      locale: 'fr'
-    });
-    const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+  it('should set the lang and dir attributes to the current locale', async function() {
+    {
+      const req = apos.task.getReq({
+        locale: 'fr'
+      });
+      const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
 
-    const $ = cheerio.load(result);
-    const $html = $('html');
-    const lang = $html.attr('lang');
+      const $ = cheerio.load(result);
+      const $html = $('html');
+      const lang = $html.attr('lang');
+      const dir = $html.attr('dir');
 
-    assert.equal(lang, 'fr');
+      assert.equal(lang, 'fr', 'fr locale should set lang="fr"');
+      assert.equal(dir, 'ltr', 'fr locale should set dir="ltr"');
+    }
+
+    {
+      const req = apos.task.getReq({
+        locale: 'he'
+      });
+      const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+      const $ = cheerio.load(result);
+      const $html = $('html');
+      const lang = $html.attr('lang');
+      const dir = $html.attr('dir');
+
+      assert.equal(lang, 'he', 'he locale should set lang="he"');
+      assert.equal(dir, 'rtl', 'he locale should set dir="rtl"');
+    }
   });
 
-  it('should set `data.i18n` to "en" by default', async function() {
+  it('should set `data.i18n` by default', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
 
