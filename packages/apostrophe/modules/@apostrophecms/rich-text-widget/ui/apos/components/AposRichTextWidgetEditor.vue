@@ -334,6 +334,9 @@ export default {
   },
   watch: {
     modelValue(newVal, oldVal) {
+      if (newVal.content !== oldVal.content) {
+        return;
+      }
       // Accept any changes that were made to regular schema fields (like styles)
       // so that we don't blow them away later when we emit changes to the rich text
       const schema = this.moduleOptions.schema;
