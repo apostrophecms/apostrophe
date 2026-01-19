@@ -150,6 +150,8 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
 import { klona } from 'klona';
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import merge from 'lodash/merge';
 import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 
 export default {
@@ -370,6 +372,12 @@ export default {
     }
   },
   mounted() {
+    const widgetInstance = newInstance(
+      this.moduleOptions.schema
+    );
+    merge(widgetInstance, this.docFields.data);
+    this.docFields.data = widgetInstance;
+
     this.getWidgetStyles(this.docFields.data, this.moduleOptions);
     this.instantiateEditor();
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
