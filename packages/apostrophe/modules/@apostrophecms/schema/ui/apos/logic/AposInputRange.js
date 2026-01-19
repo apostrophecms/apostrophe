@@ -1,8 +1,9 @@
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposFieldDirectionMixin from 'Modules/@apostrophecms/schema/mixins/AposFieldDirection.js';
 
 export default {
   name: 'AposInputRange',
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposFieldDirectionMixin ],
   data() {
     return {
       next: this.initNext(),
@@ -34,6 +35,9 @@ export default {
       } else {
         return false;
       }
+    },
+    classes() {
+      return [ 'apos-range__input', this.directionClass ].filter(Boolean);
     }
   },
   methods: {
@@ -57,7 +61,8 @@ export default {
       const min = this.$refs.range.min;
       const max = this.$refs.range.max;
       const val = this.next < min ? min : this.next;
-      this.$refs.range.style.backgroundSize = (val - min) * 100 / (max - min) + '% 100%';
+      this.$refs.range.style.backgroundSize =
+        ((val - min) * 100) / (max - min) + '% 100%';
     },
     validate(value) {
       if (this.field.required) {

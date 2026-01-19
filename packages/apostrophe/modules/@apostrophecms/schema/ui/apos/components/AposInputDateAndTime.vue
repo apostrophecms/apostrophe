@@ -17,7 +17,7 @@
         <input
           v-model="date"
           class="apos-input apos-input--date"
-          :class="{'apos-input--disabled': disabled}"
+          :class="classes"
           type="date"
           @change="setDateAndTime"
         >
@@ -27,7 +27,7 @@
         <input
           v-model="time"
           class="apos-input apos-input--time"
-          :class="{'apos-input--disabled': disabled}"
+          :class="classes"
           type="time"
           @change="setDateAndTime"
         >
@@ -44,28 +44,28 @@ export default {
 };
 </script>
 <style scoped lang='scss'>
-  .apos-input-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
+.apos-input-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.apos-toggle {
+  margin-right: 12px;
+}
+
+.apos-input {
+  padding: 10px;
+
+  &--disabled {
+    background-color: var(--a-white);
+    border-color: var(--a-base-8);
+    color: var(--a-base-4);
   }
 
-  .apos-toggle {
-    margin-right: 12px;
+  &--label {
+    margin: 0 12px;
+    font-family: var(--a-family-default);
   }
-
-  .apos-input {
-    padding: 10px;
-
-    &--disabled {
-      background-color: var(--a-white);
-      border-color: var(--a-base-8);
-      color: var(--a-base-4);
-    }
-
-    &--label {
-      margin: 0 12px;
-      font-family: var(--a-family-default);
-    }
-  }
+}
 </style>
