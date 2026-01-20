@@ -802,6 +802,26 @@ module.exports = (self) => {
       ) {
         destination[field.name] = null;
       }
+    },
+    validate: function (field, options, warn, fail) {
+      if (!field.min && field.min !== 0) {
+        fail('Property "min" must be set.');
+      }
+      if (!field.max && field.max !== 0) {
+        fail('Property "max" must be set.');
+      }
+      if (typeof field.max !== 'number') {
+        fail('Property "max" must be a number');
+      }
+      if (typeof field.min !== 'number') {
+        fail('Property "min" must be a number');
+      }
+      if (field.step && typeof field.step !== 'number') {
+        fail('Property "step" must be a number.');
+      }
+      if (field.unit && typeof field.unit !== 'string') {
+        fail('Property "unit" must be a string.');
+      }
     }
   });
 
