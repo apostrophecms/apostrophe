@@ -4,12 +4,13 @@
 import { klona } from 'klona';
 import sluggo from 'sluggo';
 import { deburr } from 'lodash';
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposFieldDirectionMixin from 'Modules/@apostrophecms/schema/mixins/AposFieldDirection.js';
 
 export default {
   name: 'AposInputSlug',
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposFieldDirectionMixin ],
   emits: [ 'return' ],
   data() {
     return {
@@ -19,23 +20,30 @@ export default {
     };
   },
   computed: {
-    tabindex () {
+    tabindex() {
       return this.field.disableFocus ? '-1' : '0';
     },
-    type () {
+    type() {
       if (this.field.type) {
         return this.field.type;
       } else {
         return 'text';
       }
     },
-    classes () {
-      return [ 'apos-input', 'apos-input--text', 'apos-input--slug' ];
+    classes() {
+      return [
+        'apos-input',
+        'apos-input--text',
+        'apos-input--slug',
+        this.directionClass
+      ].filter(Boolean);
     },
-    wrapperClasses () {
-      return [ 'apos-input-wrapper' ].concat(this.localePrefix ? [ 'apos-input-wrapper--with-prefix' ] : []);
+    wrapperClasses() {
+      return [ 'apos-input-wrapper' ].concat(
+        this.localePrefix ? [ 'apos-input-wrapper--with-prefix' ] : []
+      );
     },
-    icon () {
+    icon() {
       if (this.error) {
         return 'circle-medium-icon';
       } else if (this.field.icon) {
@@ -44,7 +52,7 @@ export default {
         return null;
       }
     },
-    prefix () {
+    prefix() {
       return this.field.prefix || '';
     },
     localePrefix() {
@@ -191,7 +199,11 @@ export default {
       // When you are typing a slug it feels wrong for hyphens you typed
       // to disappear as you go, so if the last character is not valid in a
       // slug, restore it after we call sluggo for the full string
-      if (this.focus && s.length && (sluggo(s.charAt(s.length - 1), options) === '')) {
+      if (
+        this.focus &&
+        s.length &&
+        sluggo(s.charAt(s.length - 1), options) === ''
+      ) {
         preserveDash = true;
       }
 
@@ -216,7 +228,7 @@ export default {
 
       return slug;
     },
-    setPrefix (slug) {
+    setPrefix(slug) {
       // Get a fresh clone of the slug.
       let updated = slug;
       const archivedRegexp = new RegExp(`^deduplicate-[a-z0-9]+-${this.prefix}`);
@@ -240,12 +252,17 @@ export default {
           updated = this.prefix;
         } else {
           // Make sure we're not double prefixing archived slugs.
-          updated = updated.startsWith(this.prefix) ? updated : this.prefix + updated;
+          updated = updated.startsWith(this.prefix)
+            ? updated
+            : this.prefix + updated;
         }
         // Reapply the dedupe pattern if archived. If being restored from the
         // doc editor modal it will momentarily be tracked as archived but
         // without not have the archive prefix, so check that too.
-        updated = this.isArchived && archivePrefix ? `${archivePrefix}${updated}` : updated;
+        updated =
+          this.isArchived && archivePrefix
+            ? `${archivePrefix}${updated}`
+            : updated;
       }
 
       return updated;
