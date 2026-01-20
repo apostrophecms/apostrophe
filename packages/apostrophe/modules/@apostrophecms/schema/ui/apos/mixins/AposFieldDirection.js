@@ -8,6 +8,9 @@ export default {
     }
   },
   methods: {
-    ...mapActions(useModalStore, [ 'getAdminFieldDirectionClass' ])
+    ...mapActions(useModalStore, [ 'getAdminFieldDirectionClass' ]),
+    getAdminManualFieldDirectionClass(direction) {
+      return this.getAdminFieldDirectionClass(direction);
+    }
   }
 };
