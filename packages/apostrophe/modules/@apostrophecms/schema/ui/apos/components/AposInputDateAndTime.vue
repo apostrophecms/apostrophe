@@ -44,28 +44,28 @@ export default {
 };
 </script>
 <style scoped lang='scss'>
-.apos-input-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-}
-
-.apos-toggle {
-  margin-right: 12px;
-}
-
-.apos-input {
-  padding: 10px;
-
-  &--disabled {
-    background-color: var(--a-white);
-    border-color: var(--a-base-8);
-    color: var(--a-base-4);
+  .apos-input-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
   }
 
-  &--label {
-    margin: 0 12px;
-    font-family: var(--a-family-default);
+  .apos-toggle {
+    margin-right: 12px;
   }
-}
+
+  .apos-input {
+    padding: 10px;
+
+    &--disabled {
+      background-color: var(--a-white);
+      border-color: var(--a-base-8);
+      color: var(--a-base-4);
+    }
+
+    &--label {
+      margin: 0 12px;
+      font-family: var(--a-family-default);
+    }
+  }
 </style>
