@@ -37,9 +37,23 @@ export const useModalStore = defineStore('modal', () => {
     return activeModal.value?.locale || apos.i18n.locale;
   }
 
-  function getAdminDirectionClass() {
+  function getActiveDirection() {
     const locale = getActiveLocale();
-    const direction = apos.i18n.locales[locale]?.direction;
+    return apos.i18n.locales[locale]?.direction;
+  }
+
+  function getAdminContentDirectionClass() {
+    const direction = getActiveDirection();
+
+    if (direction === 'rtl') {
+      return 'apos-rtl';
+    }
+
+    return null;
+  }
+
+  function getAdminDirectionClass() {
+    const direction = getActiveDirection();
 
     if (direction === 'rtl') {
       return 'apos-ltr';
@@ -57,8 +71,7 @@ export const useModalStore = defineStore('modal', () => {
   // Only force RTL, the input fields are already LTR by default
   // (because the admin UI is always LTR)
   function getAdminFieldDirectionClass(overrideDirection) {
-    const locale = getActiveLocale();
-    const direction = apos.i18n.locales[locale]?.direction || 'ltr';
+    const direction = getActiveDirection() || 'ltr';
 
     if (overrideDirection) {
       return overrideDirection === 'rtl' ? 'apos-rtl' : null;
@@ -263,7 +276,9 @@ export const useModalStore = defineStore('modal', () => {
     activeModal,
     hasChooserModal,
     getActiveLocale,
+    getActiveDirection,
     getAdminDirectionClass,
+    getAdminContentDirectionClass,
     getAdminFieldDirectionClass,
     add,
     remove,

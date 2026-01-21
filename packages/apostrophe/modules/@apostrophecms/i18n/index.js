@@ -32,6 +32,11 @@
 // ### `encoding`
 //
 // Defaults to `'utf-8'`. You almost certainly do not want to change this.
+//
+// ### `slugDirection`
+//
+// Controls the default `direction` value of slug schema. Can be `ltr`, `rtl` or
+// `undefined|null` to not set a default. Defaults to `ltr`.
 
 const i18next = require('i18next');
 const fs = require('fs');
@@ -77,7 +82,8 @@ module.exports = {
     // If true, slugifying will strip accents from Latin characters
     stripUrlAccents: false,
     // You almost certainly do not want to change this
-    encoding: 'utf-8'
+    encoding: 'utf-8',
+    slugDirection: 'ltr'
   },
   async init(self) {
     self.defaultNamespace = 'default';
@@ -93,6 +99,12 @@ module.exports = {
     // If adminLocales are configured, it should be one of them. Otherwise,
     // it can be any valid locale string identifier.
     self.defaultAdminLocale = self.options.defaultAdminLocale || null;
+    if (self.options.slugDirection && ![ 'ltr', 'rtl' ].includes(self.options.slugDirection)) {
+      throw self.apos.error(
+        'invalid',
+        `The "slugDirection" option of "${self.__meta.name}" module must be "ltr", "rtl" or "null".`
+      );
+    }
     // Lint the locale configurations
     for (const [ key, options ] of Object.entries(self.locales)) {
       if (!options) {
@@ -693,7 +705,8 @@ module.exports = {
           show: self.show,
           action: self.action,
           crossDomainClipboard: req.session && req.session.aposCrossDomainClipboard,
-          stripUrlAccents: self.options.stripUrlAccents
+          stripUrlAccents: self.options.stripUrlAccents,
+          slugDirection: self.options.slugDirection
         };
         if (req.session && req.session.aposCrossDomainClipboard) {
           req.session.aposCrossDomainClipboard = null;
