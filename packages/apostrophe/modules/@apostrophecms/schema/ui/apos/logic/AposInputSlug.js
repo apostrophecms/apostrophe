@@ -31,11 +31,14 @@ export default {
       }
     },
     classes() {
+      const directionClass = this.getAdminManualFieldDirectionClass(
+        this.field.direction || window.apos.i18n?.slugDirection
+      );
       return [
         'apos-input',
         'apos-input--text',
         'apos-input--slug',
-        this.directionClass
+        directionClass
       ].filter(Boolean);
     },
     wrapperClasses() {

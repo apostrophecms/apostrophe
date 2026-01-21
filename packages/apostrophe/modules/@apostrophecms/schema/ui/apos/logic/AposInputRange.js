@@ -1,9 +1,8 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
-import AposFieldDirectionMixin from 'Modules/@apostrophecms/schema/mixins/AposFieldDirection.js';
 
 export default {
   name: 'AposInputRange',
-  mixins: [ AposInputMixin, AposFieldDirectionMixin ],
+  mixins: [ AposInputMixin ],
   data() {
     return {
       next: this.initNext(),
@@ -37,7 +36,7 @@ export default {
       }
     },
     classes() {
-      return [ 'apos-range__input', this.directionClass ].filter(Boolean);
+      return [ 'apos-range__input' ];
     }
   },
   methods: {
