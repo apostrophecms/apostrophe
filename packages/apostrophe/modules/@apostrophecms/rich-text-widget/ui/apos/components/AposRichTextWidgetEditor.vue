@@ -151,6 +151,8 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
 import { klona } from 'klona';
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import merge from 'lodash/merge';
 import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
@@ -353,6 +355,9 @@ export default {
   },
   watch: {
     modelValue(newVal, oldVal) {
+      if (newVal.content !== oldVal.content) {
+        return;
+      }
       // Accept any changes that were made to regular schema fields (like styles)
       // so that we don't blow them away later when we emit changes to the rich text
       const schema = this.moduleOptions.schema;
@@ -386,6 +391,12 @@ export default {
     }
   },
   mounted() {
+    const widgetInstance = newInstance(
+      this.moduleOptions.schema
+    );
+    merge(widgetInstance, this.docFields.data);
+    this.docFields.data = widgetInstance;
+
     this.getWidgetStyles(this.docFields.data, this.moduleOptions);
     this.instantiateEditor();
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
