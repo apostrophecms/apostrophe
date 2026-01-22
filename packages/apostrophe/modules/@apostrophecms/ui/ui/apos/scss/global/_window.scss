@@ -27,3 +27,17 @@
     }
   }
 }
+
+.apos-window-is-dragging {
+  [data-apos-refreshable] {
+    filter: blur(2px);
+  }
+
+  [data-apos-refreshable]::after {
+    opacity: 0.3;
+  }
+
+  & *::selection {
+    background-color: transparent;
+  }
+}

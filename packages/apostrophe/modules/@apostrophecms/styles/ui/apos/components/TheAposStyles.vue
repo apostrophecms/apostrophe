@@ -90,10 +90,56 @@ import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import renderCss from 'Modules/@apostrophecms/styles/universal/render.mjs';
 import { klona } from 'klona';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
+import { useDraggableWindow } from 'Modules/@apostrophecms/ui/composables/useDraggableWindow.js';
+import { ref } from 'vue';
 
 export default {
   name: 'TheAposStyles',
   mixins: [ AposThemeMixin ],
+  setup() {
+    const size = ref({
+      height: 0,
+      width: 340
+    });
+
+    const getDefaultPosition = () => {
+      const adminBarHeight = window.apos.adminBar.height;
+      const windowSize = window.innerWidth;
+      const spacing = 30;
+
+      return {
+        left: windowSize - size.value.width - spacing,
+        top: adminBarHeight + spacing
+      };
+    };
+
+    const {
+      position,
+      dragging,
+      style: windowStyle,
+      startDragging,
+      stopDragging,
+      setPosition: setWindowPosition,
+      resetPosition: resetWindowPosition,
+      constrainPosition
+    } = useDraggableWindow({
+      size,
+      storageKey: 'aposStylesPosition',
+      getDefaultPosition
+    });
+
+    return {
+      size,
+      position,
+      dragging,
+      windowStyle,
+      startDragging,
+      stopDragging,
+      setWindowPosition,
+      resetWindowPosition,
+      constrainPosition
+    };
+  },
   data() {
     const moduleOptions = apos.modules['@apostrophecms/styles'];
     const groups = moduleOptions.groups ? klona(moduleOptions.groups) : {};
@@ -110,19 +156,6 @@ export default {
       docFields: {
         hasErrors: false,
         data: {}
-      },
-      dragging: false,
-      position: {
-        left: 0,
-        top: 0
-      },
-      size: {
-        height: 0,
-        width: 340
-      },
-      offset: {
-        x: 0,
-        y: 0
       },
       slideBack: false,
       bodyAttr: 'data-apos-body-styles-classes'
@@ -161,12 +194,7 @@ export default {
       ];
     },
     style() {
-      return {
-        left: `${this.position.left}px`,
-        top: `${this.position.top}px`,
-        width: `${this.size.width}px`,
-        height: `${this.size.height}px`
-      };
+      return this.windowStyle;
     }
   },
   watch: {
@@ -264,47 +292,6 @@ export default {
       await this.$nextTick();
       this.currentPath.push(name);
     },
-    startDragging({ clientX, clientY }) {
-      this.dragging = true;
-      this.offset.x = clientX - this.position.left;
-      this.offset.y = clientY - this.position.top;
-
-      document.body.classList.add('apos-styles-is-dragging');
-
-      addEventListener('mousemove', this.drag);
-      addEventListener('mouseup', this.stopDragging);
-    },
-    stopDragging() {
-      this.dragging = false;
-
-      document.body.classList.remove('apos-styles-is-dragging');
-      // This will remove any selections made during dragging
-      document.getSelection().removeAllRanges();
-
-      localStorage.setItem('aposStylesPosition', JSON.stringify(this.position));
-
-      removeEventListener('mousemove', this.drag);
-      removeEventListener('mouseup', this.stopDragging);
-    },
-    drag({ clientX, clientY }) {
-      const x = this.getAxisPos('x', clientX - this.offset.x);
-      const y = this.getAxisPos('y', clientY - this.offset.y);
-
-      this.position.left = x;
-      this.position.top = y;
-    },
-    getAxisPos(axis, value) {
-      if (value < 0) {
-        return 0;
-      }
-      const containerSize = axis === 'x' ? window.innerWidth : window.innerHeight;
-      const stylesOffset = axis === 'x' ? this.size.width : this.size.height;
-
-      if ((value + stylesOffset) > containerSize) {
-        return containerSize - stylesOffset;
-      }
-      return value;
-    },
     async load() {
       await this.get();
       this.setPosition();
@@ -331,17 +318,8 @@ export default {
       }
     },
     positionOnResize() {
-      const x = this.getAxisPos('x', this.position.left);
-      const y = this.getAxisPos('y', this.position.top);
-
       this.resetSize();
-      if (x !== this.position.left) {
-        this.position.left = x;
-      }
-      if (y !== this.position.top) {
-        this.position.top = y;
-      }
-
+      this.constrainPosition();
     },
     async get() {
       // Fetch styles doc from the REST API
@@ -480,13 +458,7 @@ export default {
       document.body.setAttribute(this.bodyAttr, classes.join(' '));
     },
     resetPosition() {
-      localStorage.removeItem('aposStylesPosition');
-      const adminBarHeight = window.apos.adminBar.height;
-      const windowSize = window.innerWidth;
-      const spacing = 30;
-
-      this.position.left = windowSize - this.size.width - spacing;
-      this.position.top = adminBarHeight + spacing;
+      this.resetWindowPosition();
     },
     resetSize() {
       const adminBarHeight = window.apos.adminBar.height;
@@ -495,23 +467,8 @@ export default {
       this.size.height = height;
     },
     setPosition() {
-      const storedPosition = localStorage.getItem('aposStylesPosition');
-
       this.resetSize();
-      if (!storedPosition) {
-        this.resetPosition();
-        return;
-      }
-
-      const { left, top } = JSON.parse(storedPosition);
-      if ([ left, top ].some((num) => typeof num !== 'number')) {
-        this.resetPosition();
-        return;
-      }
-
-      // Prevent styles from appearing out of the window
-      this.position.left = this.getAxisPos('x', left);
-      this.position.top = this.getAxisPos('y', top);
+      this.setWindowPosition();
     },
     async save() {
       try {
@@ -542,7 +499,7 @@ export default {
 
 </script>
 
-<style>
+<style lang="scss">
   .apos-styles-is-open {
     [data-apos-refreshable]::after {
       content: '';
@@ -555,20 +512,6 @@ export default {
       opacity: 0;
       pointer-events: none;
       transition: opacity 200ms ease, filter 200ms ease;
-    }
-  }
-
-  .apos-styles-is-dragging {
-    [data-apos-refreshable] {
-      filter: blur(2px);
-    }
-
-    [data-apos-refreshable]::after {
-      opacity: 0.3;
-    }
-
-    & *::selection {
-      background-color: transparent;
     }
   }
 </style>

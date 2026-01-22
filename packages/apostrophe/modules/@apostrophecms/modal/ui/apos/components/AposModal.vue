@@ -34,9 +34,12 @@
       >
         <div
           v-if="modal.showModal"
+          ref="modalInnerEl"
           class="apos-modal__inner"
           :class="innerClasses"
+          :style="isWindowModal ? windowStyle : {}"
           data-apos-modal-inner
+          @mousedown="startDragging"
         >
           <template v-if="modal.busy">
             <div class="apos-modal__busy">
@@ -142,10 +145,11 @@
 // transition.
 
 import {
-  ref, onMounted, computed, watch, nextTick, useSlots, useTemplateRef
+  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots, useTemplateRef
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useDraggableWindow } from 'Modules/@apostrophecms/ui/composables/useDraggableWindow.js';
 
 const {
   cycleElementsToFocus,
@@ -175,9 +179,49 @@ const store = useModalStore();
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = useTemplateRef('modalEl');
+const modalInnerEl = useTemplateRef('modalInnerEl');
 const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
+
+const isWindowModal = computed(() => {
+  return props.modal.type === 'window';
+});
+
+// Set up draggable window composable (always called, but only used for window modals)
+const size = ref({
+  height: 500,
+  width: 340
+});
+
+const getDefaultPosition = () => {
+  const adminBarHeight = window.apos?.adminBar?.height || 0;
+  const windowSize = window.innerWidth;
+  const spacing = 30;
+
+  return {
+    left: windowSize - size.value.width - spacing,
+    top: adminBarHeight + spacing
+  };
+};
+
+const {
+  style: windowStyle,
+  startDragging: composableStartDragging,
+  setPosition: setWindowPosition,
+  constrainPosition
+} = useDraggableWindow({
+  size,
+  storageKey: props.modal.type === 'window' ? `aposModalPosition-${props.modalData.id}` : null,
+  getDefaultPosition
+});
+
+// Wrap handler to only work for window modals
+const startDragging = (e) => {
+  if (isWindowModal.value) {
+    composableStartDragging(e);
+  }
+};
 
 const transitionType = computed(() => {
   if (props.modal.type !== 'slide') {
@@ -267,6 +311,45 @@ onMounted(async () => {
     renderingElements.value = false;
   }
   store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
+
+  // Set up window modal positioning and size
+  if (isWindowModal.value && modalInnerEl.value) {
+    await nextTick();
+    const rect = modalInnerEl.value.getBoundingClientRect();
+    size.value = {
+      width: rect.width || 340,
+      height: rect.height || 500
+    };
+    setWindowPosition();
+
+    // Add resize handler for window modals
+    window.addEventListener('resize', handleResize);
+  }
+});
+
+// Watch for modal show/hide to update position
+watch(() => props.modal.showModal, async (showModal) => {
+  if (isWindowModal.value && showModal && modalInnerEl.value) {
+    await nextTick();
+    const rect = modalInnerEl.value.getBoundingClientRect();
+    size.value = {
+      width: rect.width || 340,
+      height: rect.height || 500
+    };
+    setWindowPosition();
+  }
+});
+
+function handleResize() {
+  if (isWindowModal.value) {
+    constrainPosition();
+  }
+}
+
+onUnmounted(() => {
+  if (isWindowModal.value) {
+    window.removeEventListener('resize', handleResize);
+  }
 });
 
 function onKeyup(event) {
