@@ -4,7 +4,7 @@
       v-if="ready"
       v-show="isOpen"
       ref="styles"
-      class="apos-styles"
+      class="apos-window apos-styles"
       :style="style"
       :class="modifiers"
     >
@@ -575,38 +575,8 @@ export default {
 
 <style lang="scss" scoped>
 $padding-unit: 10px;
-$width: 360px;
-$duration: 0.2s;
-$timing: cubic-bezier(.175,.885,.32,1.15);
 $slide-duration: 250ms;
 $slide-timing: cubic-bezier(0.45, 0, 0.55, 1);
-
-.apos-styles {
-  @include type-base;
-
-  & {
-    z-index: $z-index-modal;
-    position: fixed;
-    display: flex;
-    box-sizing: border-box;
-    flex-direction: column;
-    width: $width;
-    border: 1px solid var(--a-base-9);
-    transition:
-      opacity $duration $timing,
-      transform $duration $timing;
-    box-shadow: var(--a-box-shadow);
-    border-radius: 10px;
-    background-color: var(--a-background-primary);
-  }
-
-  &--dragging {
-    .apos-styles__top,
-    .apos-styles__body {
-      cursor: grabbing;
-    }
-  }
-}
 
 .apos-styles__top {
   display: flex;

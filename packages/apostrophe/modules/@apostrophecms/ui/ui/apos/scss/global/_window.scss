@@ -1,0 +1,29 @@
+.apos-window {
+  $width: 360px;
+  $duration: 0.2s;
+  $timing: cubic-bezier(.175,.885,.32,1.15);
+  @include type-base;
+
+  & {
+    z-index: $z-index-modal;
+    position: fixed;
+    display: flex;
+    box-sizing: border-box;
+    flex-direction: column;
+    width: $width;
+    border: 1px solid var(--a-base-9);
+    transition:
+      opacity $duration $timing,
+      transform $duration $timing;
+    box-shadow: var(--a-box-shadow);
+    border-radius: 10px;
+    background-color: var(--a-background-primary);
+  }
+
+  &--dragging {
+    .apos-styles__top,
+    .apos-styles__body {
+      cursor: grabbing;
+    }
+  }
+}

@@ -120,6 +120,14 @@ export default {
       margin-left: 0;
     }
 
+    .apos-choice-label-text {
+      margin: 0;
+    }
+
+    .apos-choice-label-icon + .apos-choice-label-text {
+      margin-left: $spacing-half
+    }
+
     .apos-choice-label:first-of-type {
       border-radius: var(--a-border-radius) 0 0 var(--a-border-radius);
       border-left: 1px solid var(--a-base-8);

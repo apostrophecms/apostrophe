@@ -144,7 +144,9 @@ export default {
       fieldErrors: {},
       modal: {
         active: false,
-        type: 'slide',
+        type: 'window',
+        disableHeader: true,
+        overlay: 'transparent',
         width: moduleOptions.width,
         origin: guessOrigin(this.preview?.area, moduleOptions),
         showModal: false

@@ -21,7 +21,10 @@
       <transition :name="transitionType">
         <div
           v-if="modal.showModal"
-          class="apos-modal__overlay"
+          :class="[
+            'apos-modal__overlay',
+            { [`apos-modal__overlay--${modal.overlay}`]: modal.overlay }
+          ]"
           @click="emit('esc')"
         />
       </transition>
@@ -31,8 +34,8 @@
       >
         <div
           v-if="modal.showModal"
-          :class="innerClasses"
           class="apos-modal__inner"
+          :class="innerClasses"
           data-apos-modal-inner
         >
           <template v-if="modal.busy">
@@ -86,11 +89,6 @@
                   >
                     <slot name="localeDisplay" />
                   </div>
-                  <AposLocale
-                    v-else-if="hasBeenLocalized"
-                    class="apos-modal__locale"
-                    :locale="currentLocale"
-                  />
                   <div
                     v-if="hasSlot('primaryControls')"
                     class="apos-modal__controls--primary"
@@ -99,16 +97,16 @@
                   </div>
                 </div>
               </div>
-              <div
-                v-if="hasSlot('breadcrumbs')"
-                class="apos-modal__breadcrumbs"
-              >
-                <slot
-                  class="apos-modal__breadcrumbs"
-                  name="breadcrumbs"
-                />
-              </div>
             </header>
+            <div
+              v-if="hasSlot('breadcrumbs')"
+              class="apos-modal__breadcrumbs"
+            >
+              <slot
+                class="apos-modal__breadcrumbs"
+                name="breadcrumbs"
+              />
+            </div>
             <div
               class="apos-modal__main"
               :class="gridModifier"
@@ -180,7 +178,6 @@ const modalEl = useTemplateRef('modalEl');
 const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
-const currentLocale = ref(store.activeModal?.locale || apos.i18n.locale);
 
 const transitionType = computed(() => {
   if (props.modal.type !== 'slide') {
@@ -231,6 +228,10 @@ const innerClasses = computed(() => {
   const classes = [];
   if (props.modal.width) {
     classes.push(`apos-modal__inner--${props.modal.width}`);
+  };
+
+  if (props.modal.type === 'window') {
+    classes.push('apos-window');
   };
 
   return classes;
@@ -371,6 +372,7 @@ function close() {
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-base-9);
     color: var(--a-text-primary);
+    overflow: hidden;
 
     @include media-up(lap) {
       inset: $spacing-double $spacing-double $spacing-double $spacing-double;
@@ -442,6 +444,14 @@ function close() {
     }
   }
 
+  .apos-modal--window {
+    .apos-modal__inner {
+      width: 340px;
+      height: 500px;
+      border-radius: 10px;
+    }
+  }
+
   .apos-modal--full-height .apos-modal__inner {
     height: 100%;
   }
@@ -464,10 +474,14 @@ function close() {
     inset: 0;
     background-color: var(--a-overlay-modal);
 
-    .apos-modal--slide &,
-    .apos-modal--overlay & {
-      transition: opacity 200ms ease;
+    &--transparent {
+      background-color: transparent;
     }
+
+    // .apos-modal--slide &,
+    // .apos-modal--overlay & {
+    //   transition: opacity 200ms ease;
+    // }
 
     &.slide-left-enter-from,
     &.slide-left-leave-to,

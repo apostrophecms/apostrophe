@@ -165,14 +165,24 @@
   }
 
   &.apos-field--radio {
+
     .apos-radio-wrapper--buttons {
       width: 100%;
-    }
 
-    .apos-radio-wrapper--buttons .apos-choice-label {
-      flex: 1;
-      height: 27px;
-      place-content: center;
+      .apos-choice-label {
+        flex: 1;
+        height: 27px;
+        place-content: center;
+      }
+
+      .apos-choice-label-text {
+        margin: 0;
+      }
+
+      .apos-choice-label-icon + .apos-choice-label-text {
+        margin-left: $spacing-half
+      }
+
     }
   }
 
