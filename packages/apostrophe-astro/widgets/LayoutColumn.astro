@@ -12,23 +12,46 @@ function detectLastTabletFullWidthItem(widgets) {
   }
   items.sort(
     (a, b) =>
-      (a.tablet.order ?? a.desktop.order) - (b.tablet.order ?? b.desktop.order)
+      (a.tablet.order ?? a.desktop.order) - (b.tablet.order ?? b.desktop.order),
   );
   return items[items.length - 1]._id;
 }
 
 const lastId = detectLastTabletFullWidthItem(area?.items);
 
-let styleAttributes = {},
+let styleAttribute = "",
   tagAttributes = {},
   styleElements = null;
 
 if (options?.aposStylesWrapper) {
-  const { style = {}, ...restAttrs } = options.aposStylesAttributes || {};
-  styleAttributes = style;
+  const { style = "", ...restAttrs } = options.aposStylesAttributes || {};
+  styleAttribute = style;
   tagAttributes = restAttrs;
   styleElements = options.aposStylesElements || null;
 }
+
+// Convert internal style to string and merge it with the external style.
+const styleVars = {
+  "--justify": widget.desktop.justify,
+  "--align": widget.desktop.align,
+  "--colstart": widget.desktop.colstart,
+  "--colspan": widget.desktop.colspan,
+  "--rowstart": widget.desktop.rowstart,
+  "--rowspan": widget.desktop.rowspan,
+  "--order": widget.desktop.order,
+};
+
+// The core style string ALWAYS contains finishing semicolon if not empty,
+// so we don't need to add one when merging.
+const style = [
+  styleAttribute,
+  Object.entries(styleVars)
+    .filter(([_, v]) => !!v)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(";"),
+]
+  .filter(Boolean)
+  .join("");
 
 const attributes = {
   ...(canEdit ? { "data-apos-widget": widget._id } : {}),
@@ -36,16 +59,7 @@ const attributes = {
   "data-visible-tablet": widget.tablet.show,
   "data-visible-mobile": widget.mobile.show,
   ...(lastId && widget._id === lastId && { "data-tablet-full": true }),
-  style: {
-    "--justify": widget.desktop.justify,
-    "--align": widget.desktop.align,
-    ...styleAttributes,
-    "--colstart": widget.desktop.colstart,
-    "--colspan": widget.desktop.colspan,
-    "--rowstart": widget.desktop.rowstart,
-    "--rowspan": widget.desktop.rowspan,
-    "--order": widget.desktop.order,
-  },
+  style,
 };
 ---
 
