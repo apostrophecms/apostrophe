@@ -105,6 +105,8 @@ tags:
     description: Built-in user management and authentication
   - name: Global Content
     description: Site-wide settings and content that appears across pages
+  - name: Styles
+    description: Site-wide styling controls
   - name: Submitted Drafts
     description: Draft submission workflow and review queue management
   - name: Media
@@ -1651,6 +1653,10 @@ components:
           type: boolean
           description: Whether current user can publish this page
           example: true
+        copyOfId:
+          type: string
+          description: "The `_id` of the piece/page that was copied to create this document (only present if created via `_copyingId`)"
+          example: "ckhdscx5900054z9k88uqs16w:en:published"
         _publishedDoc:
           allOf:
           - $ref: '#/components/schemas/Page'
@@ -1770,6 +1776,10 @@ components:
           type: string
           format: date-time
           description: Last update date
+        copyOfId:
+          type: string
+          description: "The `_id` of the piece/page that was copied to create this document (only present if created via `_copyingId`)"
+          example: "ckhdscx5900054z9k88uqs16w:en:published"
       title: User
     Global:
       type: object
@@ -1797,6 +1807,10 @@ components:
           type: string
           example: '@apostrophecms/global'
           readOnly: true
+        copyOfId:
+          type: string
+          description: "The `_id` of the piece/page that was copied to create this document (only present if created via `_copyingId`)"
+          example: "ckhdscx5900054z9k88uqs16w:en:published"
       additionalProperties: true
       title: Global
     GlobalPatch:
@@ -1819,6 +1833,62 @@ components:
           type: string
           example: '@apostrophecms/global'
           readOnly: true
+      additionalProperties: true
+    Styles:
+      type: object
+      description: >
+        Site-wide style configurations that allow content creators to modify CSS properties
+        through the admin interface. Style field values are stored based on project-specific
+        configuration defined in the styles cascade.
+      properties:
+        _id:
+          type: string
+          description: Unique document identifier
+          example: "ckn1234567890:en:published"
+        type:
+          type: string
+          description: Document type identifier
+          example: "@apostrophecms/styles"
+        slug:
+          type: string
+          description: URL-friendly identifier (typically 'styles' for singleton)
+          example: "styles"
+        title:
+          type: string
+          description: Display title for the styles document
+          example: "Site Styles"
+        createdAt:
+          type: string
+          format: date-time
+          description: Document creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+        aposLocale:
+          type: string
+          description: Locale identifier for this version
+          example: "en"
+        aposMode:
+          type: string
+          enum:
+            - draft
+            - published
+          description: Document mode (draft or published)
+          example: "published"
+        archived:
+          type: boolean
+          description: Whether the document is archived
+          default: false
+        copyOfId:
+          type: string
+          description: "The `_id` of the piece/page that was copied to create this document (only present if created via `_copyingId`)"
+          example: "ckhdscx5900054z9k88uqs16w:en:published"
+      required:
+        - _id
+        - type
+        - slug
+        - title
       additionalProperties: true
     Attachment:
       type: object
@@ -1955,6 +2025,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        copyOfId:
+          type: string
+          description: "The `_id` of the piece/page that was copied to create this document (only present if created via `_copyingId`)"
+          example: "ckhdscx5900054z9k88uqs16w:en:published"
       title: Image
     FileObject:
       type: object
@@ -2017,6 +2091,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        copyOfId:
+          type: string
+          description: "The `_id` of the piece/page that was copied to create this document (only present if created via `_copyingId`)"
+          example: "ckhdscx5900054z9k88uqs16w:en:published"
       title: File
     ImageTag:
       type: object
@@ -2045,6 +2123,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        copyOfId:
+          type: string
+          description: "The `_id` of the piece/page that was copied to create this document (only present if created via `_copyingId`)"
+          example: "ckhdscx5900054z9k88uqs16w:en:published"
       title: ImageTag
     FileTag:
       type: object
@@ -2073,6 +2155,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        copyOfId:
+          type: string
+          description: "The `_id` of the piece/page that was copied to create this document (only present if created via `_copyingId`)"
+          example: "ckhdscx5900054z9k88uqs16w:en:published"
       title: FileTag
     SubmittedDraft:
       type: object
@@ -2181,6 +2267,10 @@ components:
           - published
           description: Content mode (draft or published)
           example: draft
+        copyOfId:
+          type: string
+          description: "The `_id` of the piece/page that was copied to create this document (only present if created via `_copyingId`)"
+          example: "ckhdscx5900054z9k88uqs16w:en:published"
       required:
       - _id
       - type
@@ -4639,14 +4729,6 @@ paths:
                   format: password
                   description: User's password
                   example: "securePassword123"
-                firstName:
-                  type: string
-                  description: User's first name
-                  example: "John"
-                lastName:
-                  type: string
-                  description: User's last name
-                  example: "Doe"
                 role:
                   type: string
                   description: User's role/permission level
@@ -4655,6 +4737,9 @@ paths:
                   type: boolean
                   description: Whether the user account is disabled
                   default: false
+                _copyingId:
+                  type: string
+                  description: Optional ID of existing piece to copy properties from
       responses:
         '200':
           description: User created successfully
@@ -4896,14 +4981,6 @@ paths:
                   format: email
                   description: User's email address
                   example: "john.doe@example.com"
-                firstName:
-                  type: string
-                  description: User's first name
-                  example: "John"
-                lastName:
-                  type: string
-                  description: User's last name
-                  example: "Doe"
                 role:
                   type: string
                   description: User's role/permission level
@@ -4967,14 +5044,6 @@ paths:
                   format: email
                   description: User's email address
                   example: "john.doe@example.com"
-                firstName:
-                  type: string
-                  description: User's first name
-                  example: "John"
-                lastName:
-                  type: string
-                  description: User's last name
-                  example: "Doe"
                 role:
                   type: string
                   description: User's role/permission level
@@ -5369,58 +5438,26 @@ paths:
           application/json:
             schema:
               type: object
+              description: |
+                Update global content. The global piece type is typically customized with 
+                project-specific fields (e.g., footer content, contact info, site-wide settings).
+                Only standard piece fields are shown below - actual available fields depend on
+                your project's global piece configuration.
               properties:
+                _copyingId:
+                  type: string
+                  description: Optional ID of existing global document to copy properties from
+                  example: "ckhdscx5900054z9k88uqs16w:en:published"
                 title:
                   type: string
-                  description: Global content title
-                  example: "Site Global Settings"
-                footerContent:
-                  type: string
-                  description: Footer content that appears on all pages
-                  example: "© 2024 My Website. All rights reserved."
-                contactInfo:
-                  type: object
-                  description: Site-wide contact information
-                  properties:
-                    email:
-                      type: string
-                      format: email
-                      example: "contact@example.com"
-                    phone:
-                      type: string
-                      example: "+1 (555) 123-4567"
-                    address:
-                      type: string
-                      example: "123 Main St, City, State 12345"
-                socialMedia:
-                  type: object
-                  description: Social media links
-                  properties:
-                    facebook:
-                      type: string
-                      format: uri
-                      example: "https://facebook.com/mysite"
-                    twitter:
-                      type: string
-                      format: uri
-                      example: "https://twitter.com/mysite"
-                    linkedin:
-                      type: string
-                      format: uri
-                      example: "https://linkedin.com/company/mysite"
-                siteSettings:
-                  type: object
-                  description: Global site configuration
-                  properties:
-                    siteName:
-                      type: string
-                      example: "My Website"
-                    tagline:
-                      type: string
-                      example: "Welcome to our amazing site"
-                    maintenanceMode:
-                      type: boolean
-                      default: false
+                  description: Global content title (typically "Global" by default)
+                  example: "Global"
+              additionalProperties: true
+              example:
+                title: "Global"
+                # Example custom fields (project-specific):
+                footerContent: "© 2024 My Website"
+                contactEmail: "contact@example.com"
       responses:
         '200':
           description: Global content updated successfully
@@ -6013,6 +6050,625 @@ paths:
         - BearerAuth: []
         - SessionAuth: []
 
+# Styles
+  /@apostrophecms/styles:
+    get:
+      tags:
+        - Styles
+      summary: Get styles content
+      description: Retrieve the styles document that contains site-wide style configurations and custom CSS
+      operationId: StylesGet
+      parameters:
+        - $ref: '#/components/parameters/AposMode'
+        - $ref: '#/components/parameters/AposLocale'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Styles'
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+    post:
+      tags:
+        - Styles
+      summary: Update styles content
+      description: Update site-wide style configurations and custom CSS (requires editor permissions or higher)
+      operationId: StylesPost
+      parameters:
+        - $ref: '#/components/parameters/AposMode'
+        - $ref: '#/components/parameters/AposLocale'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: Styles document title
+                  example: "Site Styles"
+                _copyingId:
+                  type: string
+                  description: Optional ID of existing piece to copy properties from
+      responses:
+        '200':
+          description: Styles content updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/archive:
+    post:
+      tags:
+        - Styles
+      summary: Archive styles document
+      description: Archive the styles document, making it inactive while preserving its data
+      operationId: StylesArchive
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
+      responses:
+        '200':
+          description: Archive job started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    description: ID of the background job processing the archive operation
+                    example: "b4kef9mgstbi5trzsw5dyfqm"
+                required:
+                  - jobId
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/localize:
+    post:
+      tags:
+        - Styles
+      summary: Localize styles document
+      description: Create or update localized versions of the styles document for different languages/regions
+      operationId: StylesLocalize
+      responses:
+        '200':
+          description: Styles localized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/publish:
+    post:
+      tags:
+        - Styles
+      summary: Publish styles document
+      description: Publish the styles document, making it live and visible to end users
+      operationId: StylesPublish
+      responses:
+        '200':
+          description: Styles published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/restore:
+    post:
+      tags:
+        - Styles
+      summary: Restore styles document
+      description: Restore a previously archived styles document, making it active again
+      operationId: StylesRestore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
+      responses:
+        '200':
+          description: Styles restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/stylesheet:
+    get:
+      tags:
+        - Styles
+      summary: Get compiled styles stylesheet
+      description: Retrieve the compiled CSS stylesheet constructed from the styles document. This endpoint is heavily cached (one year) for browser performance.
+      operationId: StylesGetStylesheet
+      responses:
+        '200':
+          description: CSS stylesheet
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=31557600
+              description: Caching directive for one year
+          content:
+            text/css:
+              schema:
+                type: string
+                description: Compiled CSS stylesheet
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/render:
+    post:
+      tags:
+        - Styles
+      summary: Render styles from data
+      description: Render a CSS stylesheet from provided style data. Requires authentication to prevent DOS attacks. The styles are not saved, only rendered for preview purposes.
+      operationId: StylesRender
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  description: Style data to render into CSS
+                  additionalProperties: true
+              required:
+                - data
+      responses:
+        '200':
+          description: Rendered CSS stylesheet
+          content:
+            text/css:
+              schema:
+                type: string
+                description: Rendered CSS from the provided data
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/{_id}:
+    delete:
+      tags:
+        - Styles
+      summary: Delete styles document
+      description: Permanently delete the specified styles document
+      operationId: StylesDeleteById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '204':
+          description: Styles deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+    get:
+      tags:
+        - Styles
+      summary: Get styles document by ID
+      description: Retrieve a specific styles document by its unique identifier
+      operationId: StylesGetById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/AposMode'
+      responses:
+        '200':
+          description: Styles document retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+    patch:
+      tags:
+        - Styles
+      summary: Update styles document by ID
+      description: Update specific fields of the styles document identified by ID
+      operationId: StylesPatchById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Styles'
+      responses:
+        '200':
+          description: Styles updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/{_id}/locales:
+    get:
+      tags:
+        - Styles
+      summary: Get styles document locales
+      description: Retrieve all available locales for the specified styles document
+      operationId: StylesGetLocalesById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Styles locales retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["en", "es", "fr", "de"]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/{_id}/localize:
+    post:
+      tags:
+        - Styles
+      summary: Localize styles document
+      description: Create a localized version of the specified styles document for a specific language/region
+      operationId: StylesLocalizeById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Styles localized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/{_id}/publish:
+    post:
+      tags:
+        - Styles
+      summary: Publish styles document
+      description: Publish the specified styles document, making it live and visible to end users
+      operationId: StylesPublishById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Styles published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/{_id}/revert-draft-to-published:
+    post:
+      tags:
+        - Styles
+      summary: Revert draft to published
+      description: Revert the draft version of the specified styles document back to its published state
+      operationId: StylesRevertDraftToPublishedById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Styles draft reverted to published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/{_id}/revert-published-to-previous:
+    post:
+      tags:
+        - Styles
+      summary: Revert published to previous
+      description: Revert the published version of the specified styles document to its previous published state
+      operationId: StylesRevertPublishedToPreviousById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Styles published version reverted to previous successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/{_id}/share:
+    post:
+      tags:
+        - Styles
+      summary: Share styles document
+      description: Generate a sharing link or configure sharing permissions for the specified styles document
+      operationId: StylesShareById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Styles shared successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/{_id}/submit:
+    post:
+      tags:
+        - Styles
+      summary: Submit styles document
+      description: Submit the specified styles document for review and approval workflow
+      operationId: StylesSubmitById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Styles submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/styles/{_id}/unpublish:
+    post:
+      tags:
+        - Styles
+      summary: Unpublish styles document
+      description: Unpublish the specified styles document, removing it from public visibility while preserving the content
+      operationId: StylesUnpublishById
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Styles unpublished successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Styles'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
   # Image
   /@apostrophecms/image:
     get:
@@ -6092,6 +6748,9 @@ paths:
                   type: string
                   description: Photo credit
                   example: "Photo by John Doe"
+                _copyingId:
+                  type: string
+                  description: Optional ID of existing piece to copy properties from
       responses:
         '200':
           description: Image created successfully
@@ -7012,6 +7671,9 @@ paths:
                   type: string
                   description: File description
                   example: "Quarterly report PDF"
+                _copyingId:
+                  type: string
+                  description: Optional ID of existing piece to copy properties from
       responses:
         '200':
           description: File created successfully
@@ -7717,6 +8379,9 @@ paths:
                   type: string
                   example: "hero-images"
                   description: URL-friendly identifier (auto-generated if not provided)
+                _copyingId:
+                  type: string
+                  description: Optional ID of existing piece to copy properties from
       responses:
         '200':
           description: Image tag created successfully
@@ -8408,15 +9073,9 @@ paths:
                   type: string
                   description: File tag name
                   example: "Documents"
-                description:
+                _copyingId:
                   type: string
-                  description: Optional description of the file tag
-                  example: "For organizing PDF documents and text files"
-                color:
-                  type: string
-                  description: Color code for visual organization
-                  pattern: "^#[0-9A-Fa-f]{6}$"
-                  example: "#3498db"
+                  description: Optional ID of existing piece to copy properties from
       responses:
         '200':
           description: File tag created successfully
@@ -8678,15 +9337,6 @@ paths:
                   type: string
                   description: File tag name
                   example: "Updated Documents"
-                description:
-                  type: string
-                  description: Optional description of the file tag
-                  example: "Updated description for organizing files"
-                color:
-                  type: string
-                  description: Color code for visual organization
-                  pattern: "^#[0-9A-Fa-f]{6}$"
-                  example: "#e74c3c"
       responses:
         '200':
           description: File tag updated successfully
@@ -9165,6 +9815,9 @@ paths:
                   type: string
                   description: Category or type of content being submitted
                   example: "blog-post"
+                _copyingId:
+                  type: string
+                  description: Optional ID of existing piece to copy properties from
       responses:
         '200':
           description: Submitted draft created successfully
