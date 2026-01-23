@@ -1,3 +1,5 @@
+const { klona } = require('klona');
+
 module.exports = self => {
   return {
     composeSchema(_super, ...args) {
@@ -14,9 +16,9 @@ module.exports = self => {
       // Styles-flavored schema doesn't play well with all the things schemas need
       // Copy it out to another property and ungroup the fields
       if (Object.keys(self.fieldsGroups).length) {
-        const defaultGroups = self.apos.modules['@apostrophecms/any-doc-type']
-          .fieldsGroups;
-        const stylesGroups = { ...self.fieldsGroups };
+        const defaultGroups = klona(self.apos.modules['@apostrophecms/any-doc-type']
+          .fieldsGroups);
+        const stylesGroups = { ...klona(self.fieldsGroups) };
         for (const group in defaultGroups) {
           delete stylesGroups[group];
         }
