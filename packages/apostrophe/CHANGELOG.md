@@ -2,21 +2,20 @@
 
 ## 4.26.0
 
-### Minor Changes
+### Adds
 
-- 54d2991: Add new Global Styles module and styles per widget feature
-- 54d2991: Fix box field type to generate valid css properties
-- 99799dc: Explicitly specify meta encoding="utf-8" to ensure browser auto-detection does not inadvertently cause problems in a very small percentage of cases. Note that utf-8 is the only official encoding supported for html5.
+- Add new Global Styles and Widget Styles features
+- Explicitly specify `meta encoding="utf-8"` to ensure browser auto-detection does not inadvertently cause problems in a very small percentage of cases. Note that utf-8 is the only official encoding supported for html5.
+- Adds field unit to box input UI if provided
+- When editing a relationship it is now much easier to create and select new content for that purpose. A "New" button is directly exposed in the manager, a newly created document is automatically selected for the relationship, and several relevant bugs were fixed.
+- Rich text table styles are now available in the public build and can be overridden by project level `modules/@apostrophecms/ui/ui/src/index.scss` file
 
-### Patch Changes
+### Changes
 
-- 6a37dc7: set layout columns to min-width 0 to prevent automatic overflowing
-- 1c720af: Adds field unit to box input UI if provided
-- 6d14b77: if no class provided for a rt style set it to null to ensure removal
-- ef273f3: When editing a relationship it is now much easier to create and select new content for that purpose. A "New" button is directly exposed in the manager, a newly created document is automatically selected for the relationship, and several relevant bugs were fixed.
-- 5aa0cee: Rich text table styles are now available in the public build and can be overridden by project level `modules/@apostrophecms/ui/ui/src/index.scss` file
-- Updated dependencies [54d2991]
-  - postcss-viewport-to-container-toggle@2.2.0
+- Fix box field type to generate valid css properties
+- set layout columns to min-width 0 to prevent automatic overflowing
+- if no class provided for a rt style set it to null to ensure removal
+- Updated dependencies
 
 ## 4.25.0
 
