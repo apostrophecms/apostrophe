@@ -2,10 +2,10 @@
 
 ## 1.8.0
 
-### Minor Changes
+### Adds
 
-- 54d2991: Add global styles and widget styles support
-- 9cf30fe: Adds `onBeforeWidgetRender` hook
+- Add global styles and widget styles support
+- Adds `onBeforeWidgetRender` hook
 
 ## 1.7.1 (2025-11-25)
 

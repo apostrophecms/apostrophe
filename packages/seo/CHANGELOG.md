@@ -4,10 +4,9 @@
 
 ### Minor Changes
 
-- 9cfd745: - Adds Structured data and the related fields to page and piece types.
-  - Adds basic organization information to all pages.
-  - Adds unit tests.
-    An empty message aborts the editor.
+- Adds Structured data and the related fields to page and piece types.
+- Adds basic organization information to all pages.
+- Adds unit tests.
 
 ## 1.3.2 (2025-09-03)
 

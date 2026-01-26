@@ -2,15 +2,15 @@
 
 ## 3.5.2
 
-### Patch Changes
+### Adds
 
-- f0f278c: Support for testing with or without pro modules available (without, by default)
+- Support for testing with or without pro modules available (without, by default)
 
 ## 3.5.1
 
-### Patch Changes
+### Fixes
 
-- f51cb42: Fixes possible infinite loop when getting related types by storing processed widgets.
+- Fixes possible infinite loop when getting related types by storing processed widgets.
 
 ## 3.5.0 (2025-11-25)
 
