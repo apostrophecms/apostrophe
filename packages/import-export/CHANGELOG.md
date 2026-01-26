@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.5.2
+
+### Patch Changes
+
+- f0f278c: Support for testing with or without pro modules available (without, by default)
+
 ## 3.5.1
 
 ### Patch Changes

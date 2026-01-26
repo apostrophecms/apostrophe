@@ -1,18 +1,27 @@
 # Changelog
 
+## 1.4.0
+
+### Minor Changes
+
+- 9cfd745: - Adds Structured data and the related fields to page and piece types.
+  - Adds basic organization information to all pages.
+  - Adds unit tests.
+    An empty message aborts the editor.
+
 ## 1.3.2 (2025-09-03)
 
 ### Changes
 
-* README improved
+- README improved
 
 ## 1.3.1 (2025-08-06)
 
 ### Changes
 
-* Bumps `eslint-config-apostrophe` to `5`, fixes errors, removes unused dependencies.
-* Removes circle ci, adds github actions.
-* Inject nodes instead of async Nunjucks component to support external frontends.
+- Bumps `eslint-config-apostrophe` to `5`, fixes errors, removes unused dependencies.
+- Removes circle ci, adds github actions.
+- Inject nodes instead of async Nunjucks component to support external frontends.
 
 ## 1.3.0 (2024-10-31)
 
@@ -20,12 +29,12 @@
 
 ## 1.2.3 (2024-09-05)
 
-* Add AI and community-reviewed translation strings.
+- Add AI and community-reviewed translation strings.
 
 ## 1.2.2 (2024-08-08)
 
 - Corrected inaccurate information about enabling the module for piece types.
-It is enabled by default and can be expressly disabled via `seoFields: false`.
+  It is enabled by default and can be expressly disabled via `seoFields: false`.
 - Edits package description.
 
 ## 1.2.1 (2023-11-03)
@@ -37,11 +46,13 @@ It is enabled by default and can be expressly disabled via `seoFields: false`.
 ## 1.2.0 (2023-03-29)
 
 ### Adds
+
 - Canonical links for pieces, not only for pages from now on.
 
 ## 1.1.2 (2023-02-13)
 
 ### Changes
+
 - Remove `apostrophe` as a peer dependency.
 
 ## 1.1.1 (2021-12-21)
@@ -60,7 +71,7 @@ It is enabled by default and can be expressly disabled via `seoFields: false`.
 
 ### Fixes
 
-* Fixes the `_seoCanonical` projection option property, previously using Apostrophe 2 syntax.
+- Fixes the `_seoCanonical` projection option property, previously using Apostrophe 2 syntax.
 
 ## 1.0.0 (2021-06-16)
 
