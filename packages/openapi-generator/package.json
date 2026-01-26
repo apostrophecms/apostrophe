@@ -1,0 +1,67 @@
+{
+  "name": "@apostrophecms/openapi-generator",
+  "version": "1.0.0",
+  "description": "Automatically generate comprehensive OpenAPI 3.0 specifications for your ApostropheCMS project. Discovers routes and schemas at runtime, and outputs clean YAML for Swagger UI, Redoc, or VS Code OpenAPI tools.",
+  "scripts": {},
+  "keywords": [
+    "apostrophecms",
+    "cms",
+    "openapi",
+    "swagger",
+    "openapi-generator",
+    "api",
+    "documentation",
+    "specification",
+    "yaml",
+    "swagger-ui",
+    "redoc"
+  ],
+  "license": "MIT",
+  "author": "Apostrophe Technologies, Inc.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apostrophecms/openapi-generator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/apostrophecms/openapi-generator/issues"
+  },
+  "homepage": "https://github.com/apostrophecms/openapi-generator#readme",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "lib/",
+    "templates/",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^12.0.0",
+    "@openapitools/openapi-generator-cli": "^2.23.4",
+    "express": "^5.1.0",
+    "js-yaml": "^4.1.0",
+    "open": "^10.2.0",
+    "swagger-ui-dist": "^5.29.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@stoplight/spectral-cli": "^6.15.0",
+    "eslint": "^8.57.1",
+    "eslint-config-apostrophe": "^6.0.2",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsdoc": "^59.0.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^7.2.1",
+    "stylelint": "^16.24.0",
+    "stylelint-config-apostrophe": "^4.3.0",
+    "swagger-cli": "^4.0.4"
+  }
+}
