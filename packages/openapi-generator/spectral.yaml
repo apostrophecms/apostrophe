@@ -1,0 +1,5 @@
+# .spectral.yaml
+extends: "spectral:oas"
+rules:
+  oas3-unused-component: off
+  info-contact: off
