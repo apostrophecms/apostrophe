@@ -2,9 +2,9 @@
 
 ## 2.2.0
 
-### Minor Changes
+### Adds
 
-- 54d2991: Add standalone pure JS transformer export (no postcss dependencies)
+- Add standalone pure JS transformer export (no postcss dependencies)
 
 ## 2.1.0 (2025-11-25)
 
