@@ -1,6 +1,6 @@
 {
   "name": "apostrophecms-openapi",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "OpenAPI 3.0 specification for the ApostropheCMS REST API",
   "main": "apostrophecms-openapi.yaml",
   "scripts": {
