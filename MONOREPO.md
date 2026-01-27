@@ -98,6 +98,44 @@ To run **all** of the tests for one module, try:
 pnpm -C packages/apostrophe test
 ```
 
+## Configuring tests for CI
+
+The monorepo CI workflow automatically detects packages that need testing. It looks for specific configurations in each package's `package.json`.
+
+### Enabling tests
+
+To enable testing for a package in CI, add a `test` script to its `package.json`:
+
+```json
+"scripts": {
+  "test": "mocha"
+}
+```
+
+If this script is present, the CI will include the package in the test matrix when it or its dependencies change.
+
+### Service dependencies
+
+You can configure which services (containers) are spun up for the package tests using the `apostropheTestConfig` object.
+
+* **`requiresMongo`**: Defaults to `true`. Set to `false` if the package does not require a MongoDB instance.
+* **`requiresRedis`**: Defaults to `false`. Set to `true` if the package requires a Redis instance.
+
+Example `package.json` configuration:
+
+```json
+{
+  "name": "@apostrophecms/some-package",
+  "scripts": {
+    "test": "mocha"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false,
+    "requiresRedis": true
+  }
+}
+```
+
 ## Working locally
 
 ### Basic symlinks
