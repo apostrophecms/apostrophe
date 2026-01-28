@@ -1,8 +1,9 @@
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposFieldDirectionMixin from 'Modules/@apostrophecms/schema/mixins/AposFieldDirection.js';
 
 export default {
   name: 'AposInputString',
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposFieldDirectionMixin ],
   emits: [ 'return' ],
   props: {
     rows: {
@@ -10,17 +11,17 @@ export default {
       default: 5
     }
   },
-  data () {
+  data() {
     return {
       step: undefined,
       wasPopulated: false
     };
   },
   computed: {
-    tabindex () {
+    tabindex() {
       return this.field.disableFocus ? '-1' : '0';
     },
-    type () {
+    type() {
       if (this.field.type) {
         if (this.field.type === 'float' || this.field.type === 'integer') {
           return 'number';
@@ -37,9 +38,14 @@ export default {
       }
     },
     classes() {
-      return [ 'apos-input', `apos-input--${this.type}`, this.modelValue?.duplicate && 'apos-input--error' ];
+      return [
+        'apos-input',
+        `apos-input--${this.type}`,
+        this.directionClass,
+        this.modelValue?.duplicate && 'apos-input--error'
+      ].filter(Boolean);
     },
-    icon () {
+    icon() {
       if (this.error) {
         return 'circle-medium-icon';
       } else if (this.field.icon) {
@@ -192,7 +198,9 @@ export default {
     },
     minMaxComparable(s) {
       const converted = this.convert(s);
-      if ([ 'integer', 'float', 'date', 'range', 'time' ].includes(this.field.type)) {
+      if (
+        [ 'integer', 'float', 'date', 'range', 'time' ].includes(this.field.type)
+      ) {
         // Compare the actual values for these types
         return converted;
       } else {

@@ -41,7 +41,7 @@
             :min="field.min"
             :max="field.max"
             :step="field.step"
-            class="apos-range__input"
+            :class="classes"
             :disabled="field.readOnly"
           >
           <div

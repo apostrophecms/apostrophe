@@ -1,8 +1,9 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import AposFieldDirectionMixin from 'Modules/@apostrophecms/schema/mixins/AposFieldDirection.js';
 
 export default {
   name: 'AposInputBox',
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposFieldDirectionMixin ],
   emits: [ 'return' ],
   props: {
   },
@@ -38,11 +39,18 @@ export default {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
     },
-    classes() {
+    classesShorthand() {
       return [
+        'apos-input-box__shorthand-input',
         'apos-input',
-        'apos-input--box'
-      ];
+        'apos-input--number',
+        this.directionClass
+      ].filter(Boolean);
+    },
+    classesIndividual() {
+      return [
+        this.directionClass
+      ].filter(Boolean);
     }
   },
   mounted() {

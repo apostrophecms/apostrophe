@@ -1,7 +1,6 @@
 <template>
   <div
-    class="apos-command-menu"
-    :class="themeClass"
+    :class="classes"
   >
     <!-- nothing for the moment -->
   </div>
@@ -30,7 +29,16 @@ export default {
     };
   },
   computed: {
-    ...mapState(useModalStore, [ 'stack' ]),
+    ...mapState(useModalStore, [ 'stack', 'getAdminDirectionClass' ]),
+    classes() {
+      const directionClass = this.getAdminDirectionClass();
+      const classes = this.themeClass;
+      classes.push('apos-command-menu');
+      if (directionClass) {
+        classes.push(directionClass);
+      }
+      return classes;
+    },
     shortcuts() {
       const modals = Object.values(this.modals[this.modal] || {});
 

@@ -2,7 +2,7 @@
   <!-- onTab only triggered when not teleported -->
   <section
     ref="contextMenuRef"
-    class="apos-context-menu"
+    :class="rootClasses"
   >
     <slot name="prebutton" />
     <div
@@ -260,17 +260,30 @@ defineExpose({
   setDropdownPosition
 });
 
+const rootClasses = computed(() => {
+  const directionClass = modalStore.getAdminDirectionClass();
+  return {
+    'apos-context-menu': true,
+    [directionClass]: !!directionClass
+  };
+});
+
 const popoverClass = computed(() => {
+  const directionClass = modalStore.getAdminDirectionClass();
   const classes = [ 'apos-popover' ].concat(themeClass.value);
   props.popoverModifiers.forEach(m => {
     classes.push(`apos-popover--${m}`);
   });
+  if (directionClass) {
+    classes.push(directionClass);
+  }
   return classes;
 });
 
 const classList = computed(() => {
   const classes = [];
   const baseClass = 'apos-context-menu__popup';
+  const directionClass = modalStore.getAdminDirectionClass();
   classes.push(`${baseClass}--tip-alignment-${props.menuPlacement}`);
   if (props.modifiers) {
     props.modifiers.forEach((m) => {
@@ -279,6 +292,9 @@ const classList = computed(() => {
   }
   if (props.menu || props.unpadded) {
     classes.push(`${baseClass}--unpadded`);
+  }
+  if (directionClass) {
+    classes.push(directionClass);
   }
   return classes.join(' ');
 });

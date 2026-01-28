@@ -1,3 +1,9 @@
 {% extends data.outerLayout %}
 
+{% block main %}
 <h4>Test page for i18n tests</h4>
+
+<p id="locale">{{ data.i18n.locale }}</p>
+<p id="label">{{ data.i18n.label }}</p>
+<p id="direction">{{ data.i18n.direction }}</p>
+{% endblock %}

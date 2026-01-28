@@ -64,6 +64,10 @@ module.exports = {
             const defProps = [ 'top', 'right', 'bottom', 'left' ];
             let defMin = 0;
 
+            if (field.direction && ![ 'ltr', 'rtl' ].includes(field.direction)) {
+              fail('The direction property must be "ltr" or "rtl" if specified');
+            }
+
             if (field.max && typeof field.max !== 'number') {
               fail('Property "max" must be a number');
             }

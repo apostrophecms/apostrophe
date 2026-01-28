@@ -13,6 +13,7 @@
           v-model="next"
           type="password"
           class="apos-input apos-input--password"
+          :class="classes"
           :placeholder="$t(field.placeholder)"
           :disabled="field.readOnly"
           :required="field.required"

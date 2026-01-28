@@ -3,7 +3,7 @@ const { title, bodyClass, aposData } = Astro.props;
 ---
 
 <!doctype html>
-<html lang={aposData.locale}>
+<html lang={aposData.locale} dir={aposData.i18n?.direction || "ltr"}>
   <head>
     <slot name="startHead" />
     <Fragment set:html={aposData.prependHead} is:inline />

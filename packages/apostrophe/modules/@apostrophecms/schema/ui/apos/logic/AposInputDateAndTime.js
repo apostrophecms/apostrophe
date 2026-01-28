@@ -1,8 +1,9 @@
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import dayjs from 'dayjs';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
+import AposFieldDirectionMixin from 'Modules/@apostrophecms/schema/mixins/AposFieldDirection.js';
 
 export default {
-  mixins: [ AposInputMixin ],
+  mixins: [ AposInputMixin, AposFieldDirectionMixin ],
   emits: [ 'return' ],
   data() {
     return {
@@ -12,7 +13,7 @@ export default {
       disabled: !this.field.required
     };
   },
-  mounted () {
+  mounted() {
     this.initDateAndTime();
   },
   watch: {
@@ -23,6 +24,14 @@ export default {
           this.setDateAndTime();
         }
       }
+    }
+  },
+  computed: {
+    classes() {
+      return [
+        { 'apos-input--disabled': this.disabled },
+        this.directionClass
+      ].filter(Boolean);
     }
   },
   methods: {

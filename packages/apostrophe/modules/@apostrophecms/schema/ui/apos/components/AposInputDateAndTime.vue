@@ -17,7 +17,7 @@
         <input
           v-model="date"
           class="apos-input apos-input--date"
-          :class="{'apos-input--disabled': disabled}"
+          :class="classes"
           type="date"
           @change="setDateAndTime"
         >
@@ -27,7 +27,7 @@
         <input
           v-model="time"
           class="apos-input apos-input--time"
-          :class="{'apos-input--disabled': disabled}"
+          :class="classes"
           type="time"
           @change="setDateAndTime"
         >
