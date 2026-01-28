@@ -9,7 +9,12 @@
   "delete": "Elimina",
   "generateTextAction": "Genera",
   "rateLimitExceeded": "Limite di richieste superato, riprova più tardi",
-  "invalidRequest": "Richiesta non valida, per favore rivedi le regole di OpenAI",
   "utilityOperationLabel": "Genera un'immagine con AI",
-  "errorMessage": "Si è verificato un errore."
+  "errorMessage": "Si è verificato un errore.",
+  "variantPromptLabel": "In che modo questa immagine dovrebbe essere diversa?",
+  "variantPromptPlaceholder": "Descrivi come modificare l’immagine (facoltativo)",
+  "generationFailed": "La generazione AI non è riuscita. Riprova.",
+  "invalidRequest": "Richiesta non valida. Controlla il prompt e riprova.",
+  "contentPolicyViolation": "Violazione delle norme sui contenuti. Prova con un prompt diverso.",
+  "serviceUnavailable": "Il servizio AI non è temporaneamente disponibile. Riprova tra un momento."
 }

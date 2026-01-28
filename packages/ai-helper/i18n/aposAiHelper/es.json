@@ -9,7 +9,12 @@
   "delete": "Eliminar",
   "generateTextAction": "Generar",
   "rateLimitExceeded": "Límite de tasa excedido, intenta de nuevo más tarde",
-  "invalidRequest": "Solicitud inválida, revisa las reglas de OpenAI",
   "utilityOperationLabel": "Generar una imagen con IA",
-  "errorMessage": "Ocurrió un error."
+  "errorMessage": "Ocurrió un error.",
+  "variantPromptLabel": "¿Cómo debería ser diferente esta imagen?",
+  "variantPromptPlaceholder": "Describe cómo modificar la imagen (opcional)",
+  "generationFailed": "La generación con IA falló. Inténtalo de nuevo.",
+  "invalidRequest": "Solicitud no válida. Comprueba tu indicación e inténtalo de nuevo.",
+  "contentPolicyViolation": "Infracción de la política de contenido. Prueba con otra indicación.",
+  "serviceUnavailable": "El servicio de IA no está disponible temporalmente. Inténtalo de nuevo en un momento."
 }

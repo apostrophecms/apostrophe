@@ -9,7 +9,12 @@
   "delete": "Löschen",
   "generateTextAction": "Generieren",
   "rateLimitExceeded": "Die Ratebegrenzung wurde überschritten, versuchen Sie es später erneut",
-  "invalidRequest": "Ungültige Anfrage, bitte überprüfen Sie die Regeln von OpenAI",
   "utilityOperationLabel": "Ein Bild mit KI generieren",
-  "errorMessage": "Ein Fehler ist aufgetreten."
+  "errorMessage": "Ein Fehler ist aufgetreten.",
+  "variantPromptLabel": "Wie soll dieses Bild verändert werden?",
+  "variantPromptPlaceholder": "Beschreiben Sie, wie das Bild geändert werden soll (optional)",
+  "generationFailed": "Die KI-Generierung ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
+  "invalidRequest": "Ungültige Anfrage. Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es erneut.",
+  "contentPolicyViolation": "Verstoß gegen die Inhaltsrichtlinien. Bitte versuchen Sie eine andere Eingabe.",
+  "serviceUnavailable": "Der KI-Dienst ist vorübergehend nicht verfügbar. Bitte versuchen Sie es gleich noch einmal."
 }
