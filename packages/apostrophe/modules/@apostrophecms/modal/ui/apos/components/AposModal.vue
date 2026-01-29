@@ -69,6 +69,7 @@
                   <slot name="secondaryControls" />
                 </div>
                 <h2
+                  v-if="modalTitle"
                   :id="props.modalData.id"
                   class="apos-modal__heading"
                 >
@@ -166,7 +167,7 @@ const props = defineProps({
   },
   modalTitle: {
     type: [ String, Object ],
-    default: ''
+    default: null
   },
   modalData: {
     type: Object,
@@ -183,6 +184,9 @@ const modalInnerEl = useTemplateRef('modalInnerEl');
 const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
+const nonDraggableElements = [
+  '.apos-input-wrapper'
+];
 
 const isWindowModal = computed(() => {
   return props.modal.type === 'window';
@@ -218,7 +222,12 @@ const {
 
 // Wrap handler to only work for window modals
 const startDragging = (e) => {
-  if (isWindowModal.value) {
+  console.log(e.target);
+  const nonDraggable = nonDraggableElements.some(
+    sel => e.target.closest(sel)
+  );
+
+  if (isWindowModal.value && !nonDraggable) {
     composableStartDragging(e);
   }
 };
@@ -532,6 +541,14 @@ function close() {
       width: 340px;
       height: 500px;
       border-radius: 10px;
+    }
+
+    :deep(.apos-modal__body) {
+      padding: 15px 12.5px;
+    }
+
+    :deep(.apos-modal__footer__inner) {
+      padding: 10px;
     }
   }
 

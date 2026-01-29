@@ -8,6 +8,17 @@
     @esc="confirmAndCancel"
     @no-modal="removePreview"
   >
+    <template #secondaryControls>
+      <AposButton
+        type="subtle"
+        :modifiers="['small', 'no-motion']"
+        tooltip="hi"
+        class="apos-widget-editor__dock-button"
+        :icon="changeDisplayIcon"
+        :icon-only="true"
+        @click="updateEditorDisplay"
+      />
+    </template>
     <template #breadcrumbs>
       <AposModalBreadcrumbs
         v-if="breadcrumbs && breadcrumbs.length"
@@ -37,6 +48,7 @@
               :current-fields="groups[tab.name].fields"
               :schema="groups[tab.name].schema"
               :model-value="docFields"
+              :modifiers="[ 'micro' ]"
               :meta="meta"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
@@ -142,20 +154,26 @@ export default {
         hasErrors: false
       },
       fieldErrors: {},
+      triggerValidation: false,
+      lastPreview: null,
+      displayPrefName: `apos-${this.type}-display-pref`,
+      displayPref: null,
       modal: {
         active: false,
-        type: 'window',
-        disableHeader: true,
-        overlay: 'transparent',
         width: moduleOptions.width,
         origin: guessOrigin(this.preview?.area, moduleOptions),
         showModal: false
-      },
-      triggerValidation: false,
-      lastPreview: null
+      }
     };
   },
   computed: {
+    changeDisplayIcon() {
+      const name = this.isDisplayWindow ? this.modal.origin || 'right' : 'window';
+      return `dock-${name}-icon`;
+    },
+    // modal() {
+    //   return 
+    // },
     moduleOptions() {
       return window.apos.modules[apos.area.widgetManagers[this.type]];
     },
@@ -163,6 +181,9 @@ export default {
       return this.moduleOptions.label;
     },
     editLabel() {
+      if (this.isDisplayWindow) {
+        return null;
+      }
       if (this.moduleOptions.editLabel) {
         return this.moduleOptions.editLabel;
       } else {
@@ -188,9 +209,22 @@ export default {
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
+    },
+    isDisplayWindow() {
+      return this.displayPref === 'window';
+    }
+  },
+  watch: {
+    displayPref(newVal) {
+      this.setDisplayPref(newVal);
+      this.modal.type = this.isDisplayWindow ? 'window' : 'slide';
+      this.modal.overlay = this.isDisplayWindow ? 'transparent' : null;
     }
   },
   async mounted() {
+    this.displayPref = this.getDisplayPref();
+    this.modal.type = this.isDisplayWindow ? 'window' : 'slide';
+    this.modal.overlay = this.isDisplayWindow ? 'transparent' : null;
     this.modal.active = true;
     await this.evaluateExternalConditions();
     this.evaluateConditions();
@@ -238,6 +272,20 @@ export default {
     this.initPreview();
   },
   methods: {
+    updateEditorDisplay() {
+      console.log('click clack');
+      this.displayPref = this.displayPref === 'window' ? 'sidebar' : 'window';
+    },
+    setDisplayPref(pref) {
+      window.localStorage.setItem(this.displayPrefName, pref);
+    },
+    getDisplayPref() {
+      let pref = window.localStorage.getItem(this.displayPrefName);
+      if (typeof pref !== 'string') {
+        pref = this.moduleOptions.editorDisplayPreference;
+      }
+      return pref;
+    },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
       this.docFields.data = {
@@ -486,3 +534,37 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.apos-modal--window {
+  &:deep(.apos-modal__header__main) {
+    padding: 2.5px 10px 0;
+    border-top: 1px solid var(--a-base-9);
+  }
+
+  &:deep(.apos-modal__controls--header) {
+    display: none;
+  }
+
+  &:deep(.apos-modal__controls--secondary) {
+    margin-right: 0;
+  }
+
+  &:deep(.apos-widget-editor__dock-button .apos-button--icon-only.apos-button--subtle) {
+    padding: 7.5px 0px;
+    &:hover,
+    &:focus,
+    &:active {
+      background-color: transparent;
+      border: none;
+      outline: none;
+    }
+  }
+  // &:deep(.apos-rich-text-editor__editor *) {
+    // font-size: clamp(14px, 1em, 80px);
+    // letter-spacing: initial;
+    // line-height: initial;
+  // }
+}
+
+</style>

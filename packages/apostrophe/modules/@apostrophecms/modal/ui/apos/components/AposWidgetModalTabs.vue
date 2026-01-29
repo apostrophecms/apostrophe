@@ -1,11 +1,13 @@
 <template>
   <div
+    ref="containerEl"
     class="apos-modal-tabs"
-    :class="{ 'apos-modal-tabs--horizontal': orientation === 'horizontal' }"
   >
     <ul
       class="apos-modal-tabs__tabs"
       data-apos-test="widget-tabs"
+      :class="{ 'apos-modal-tabs__tabs--with-menu': hasMenu }"
+      :style="menuPaddingStyle"
     >
       <li
         v-for="tab in visibleTabs"
@@ -32,14 +34,39 @@
           </span>
         </button>
       </li>
-      <li
-        v-if="menuTabs.length"
-        key="placeholder-for-hidden-tabs"
-        class="apos-modal-tabs__tab apos-modal-tabs__tab--small"
-      />
     </ul>
+
+    <!-- Offscreen render for measuring tab widths -->
+    <ul
+      class="apos-modal-tabs__tabs apos-modal-tabs__tabs--measure"
+      aria-hidden="true"
+    >
+      <li
+        v-for="tab in renderableTabs"
+        :key="`measure-${tab.name}`"
+        :ref="(el) => setMeasureTabEl(tab.name, el)"
+        class="apos-modal-tabs__tab"
+      >
+        <button
+          class="apos-modal-tabs__btn"
+          tabindex="-1"
+          type="button"
+        >
+          {{ $t(tab.label) }}
+          <span
+            v-if="tabErrors[tab.name] && tabErrors[tab.name].length"
+            class="apos-modal-tabs__label apos-modal-tabs__label--error"
+          >
+            {{ tabErrors[tab.name].length }}&nbsp;{{
+              generateErrorLabel(tabErrors[tab.name].length) }}
+          </span>
+        </button>
+      </li>
+    </ul>
+
     <AposContextMenu
-      v-if="menuTabs.length"
+      v-show="hasMenu && menuTabs.length"
+      ref="moreMenuEl"
       :menu="menuTabs"
       menu-placement="bottom-end"
       :button="moreMenuButton"
@@ -50,6 +77,8 @@
 </template>
 
 <script>
+const MENU_WIDTH_FALLBACK_PX = 45;
+
 export default {
   name: 'AposWidgetModalTabs',
   props: {
@@ -74,20 +103,13 @@ export default {
   },
   emits: [ 'select-tab' ],
   data() {
-    const visibleTabs = [];
-
-    for (let i = 0; i < this.tabs.length; i++) {
-      // Shallow clone is sufficient to make mutating
-      // a top-level property safe
-      const tab = { ...this.tabs[i] };
-      tab.action = tab.name;
-      if (i < 5) {
-        visibleTabs.push(tab);
-      }
-    }
-
     return {
-      visibleTabs,
+      // Measured tab layout state
+      hasMenu: false,
+      menuButtonWidth: MENU_WIDTH_FALLBACK_PX,
+      visibleTabNames: null,
+      measureTabEls: {},
+      resizeObserver: null,
       moreMenuButton: {
         icon: 'dots-vertical-icon',
         iconOnly: true,
@@ -96,6 +118,9 @@ export default {
     };
   },
   computed: {
+    renderableTabs() {
+      return (this.tabs || []).filter(tab => tab.isVisible !== false);
+    },
     tabErrors() {
       const errors = {};
       for (const key in this.errors) {
@@ -108,8 +133,25 @@ export default {
       }
       return errors;
     },
+    visibleTabs() {
+      if (!this.hasMenu) {
+        return this.renderableTabs;
+      }
+      if (!Array.isArray(this.visibleTabNames) || !this.visibleTabNames.length) {
+        return this.renderableTabs;
+      }
+      const visible = new Set(this.visibleTabNames);
+      return this.renderableTabs.filter(tab => visible.has(tab.name));
+    },
+    hiddenTabs() {
+      if (!this.hasMenu) {
+        return [];
+      }
+      const visible = new Set((this.visibleTabs || []).map(t => t.name));
+      return this.renderableTabs.filter(tab => !visible.has(tab.name));
+    },
     menuTabs() {
-      return this.tabs.map((tab) => {
+      return this.hiddenTabs.map((tab) => {
         const modifiers = [];
         if (tab.name === this.current) {
           modifiers.push('selected');
@@ -126,17 +168,140 @@ export default {
           modifiers
         };
       });
+    },
+    menuPaddingStyle() {
+      if (!this.hasMenu) {
+        return null;
+      }
+      const width = this.menuButtonWidth || MENU_WIDTH_FALLBACK_PX;
+      return { paddingRight: `${width}px` };
+    }
+  },
+  watch: {
+    tabs: {
+      handler() {
+        this.recalculateLayout();
+      },
+      deep: true
+    },
+    current() {
+      // Ensure current tab stays visible when possible
+      this.recalculateLayout();
+    }
+  },
+  async mounted() {
+    this.resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => this.recalculateLayout())
+      : null;
+
+    if (this.resizeObserver && this.$refs.containerEl) {
+      this.resizeObserver.observe(this.$refs.containerEl);
+    } else {
+      window.addEventListener('resize', this.recalculateLayout);
+    }
+
+    await this.recalculateLayout();
+  },
+  beforeUnmount() {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    } else {
+      window.removeEventListener('resize', this.recalculateLayout);
     }
   },
   methods: {
+    setMeasureTabEl(name, el) {
+      if (!name) {
+        return;
+      }
+      if (!el) {
+        delete this.measureTabEls[name];
+        return;
+      }
+      this.measureTabEls[name] = el;
+    },
     generateErrorLabel(errorCount) {
       return errorCount > 1
         ? this.$t('apostrophe:modalTabsErrors')
         : this.$t('apostrophe:modalTabsError');
     },
-    selectTab: function (e) {
-      const tab = e.target;
-      const id = tab.id;
+    getMenuButtonWidth() {
+      const menuRoot = this.$refs.moreMenuEl?.$el;
+      const button = menuRoot?.querySelector?.('.apos-button');
+      const width = button?.getBoundingClientRect?.().width || button?.offsetWidth;
+      return width || MENU_WIDTH_FALLBACK_PX;
+    },
+    async recalculateLayout() {
+      await this.$nextTick();
+
+      const container = this.$refs.containerEl;
+      const containerRectWidth = container?.getBoundingClientRect?.().width;
+      const containerWidth = containerRectWidth || container?.clientWidth || 0;
+      if (!containerWidth) {
+        return;
+      }
+
+      const tabs = this.renderableTabs;
+      if (!tabs.length) {
+        this.hasMenu = false;
+        this.visibleTabNames = [];
+        return;
+      }
+
+      // Measure each tab width from the offscreen list.
+      const widths = tabs.map((tab) => {
+        const el = this.measureTabEls[tab.name];
+        return el?.getBoundingClientRect?.().width || el?.offsetWidth || 0;
+      });
+      const totalTabsWidth = widths.reduce((sum, w) => sum + w, 0);
+
+      // First pass: if everything fits, show all tabs and hide menu.
+      if (totalTabsWidth <= containerWidth) {
+        this.hasMenu = false;
+        this.visibleTabNames = tabs.map(t => t.name);
+        return;
+      }
+
+      // We need the menu; render it so we can measure the real button width.
+      this.hasMenu = true;
+      await this.$nextTick();
+      this.menuButtonWidth = this.getMenuButtonWidth();
+
+      const availableWidth = Math.max(
+        0,
+        containerWidth - (this.menuButtonWidth || MENU_WIDTH_FALLBACK_PX)
+      );
+
+      // Determine how many tabs fit (in order).
+      const visibleNames = [];
+      let used = 0;
+      for (let i = 0; i < tabs.length; i++) {
+        const w = widths[i] || 0;
+        // Always show at least one tab.
+        if (!visibleNames.length || (used + w) <= availableWidth) {
+          visibleNames.push(tabs[i].name);
+          used += w;
+        } else {
+          break;
+        }
+      }
+
+      // Keep the current tab visible when possible.
+      if (this.current && !visibleNames.includes(this.current)) {
+        if (visibleNames.length) {
+          visibleNames[visibleNames.length - 1] = this.current;
+        } else {
+          visibleNames.push(this.current);
+        }
+      }
+
+      // De-dup in case current replaced something already present.
+      this.visibleTabNames = Array.from(new Set(visibleNames));
+    },
+    selectTab (e) {
+      // Use currentTarget so clicks on nested elements still resolve the button id.
+      const id = e.currentTarget?.id;
       this.$emit('select-tab', id);
     },
     moreMenuHandler(item) {
@@ -148,13 +313,16 @@ export default {
 
 <style lang="scss" scoped>
 .apos-modal-tabs {
+  position: relative;
   display: flex;
   height: 100%;
+  background-color: var(--a-base-10);
+  // box-shadow: 0 6px 13px -5px rgba(0,0,0,0.10);
 }
 
 :deep(.apos-context-menu) {
   position: absolute;
-  top: 10px;
+  top: 0;
   right: 0;
 
   svg {
@@ -163,67 +331,39 @@ export default {
     color: var(--a-base-1);
   }
 
+  .apos-button {
+    height: 45px;
+    box-sizing: border-box;
+  }
+
   .apos-button--subtle:hover {
     background-color: initial;
   }
 }
 
-.apos-modal-tabs--horizontal {
-  position: relative;
-
-  .apos-modal-tabs__tabs {
-    flex-direction: row;
-    border-top: 1px solid var(--a-base-7);
-    border-bottom: 1px solid var(--a-base-7);
-  }
-
-  .apos-modal-tabs__tab {
-    display: flex;
-    width: 100%;
-  }
-
-  .apos-modal-tabs__tab--small {
-    width: 50%;
-    border-bottom: 1px solid var(--a-base-7);
-    color: var(--a-base-1);
-    background-color: var(--a-base-10);
-  }
-
-  .apos-modal-tabs__btn {
-    justify-content: center;
-    color: var(--a-base-1);
-    background-color: var(--a-base-10);
-
-    &:hover, &:focus {
-      color: var(--a-primary-light-40);
-      background-color: var(--a-base-10);
-    }
-
-    &[aria-selected='true'],
-    &[aria-selected='true']:hover,
-    &[aria-selected='true']:focus {
-      border-bottom: 3px solid var(--a-primary);
-      color: var(--a-primary);
-      background-color: var(--a-base-10);
-    }
-  }
-
-  .apos-modal-tabs__btn::before {
-    content: none;
-  }
-}
-
 .apos-modal-tabs__tabs {
+  position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   width: 100%;
   margin: 0;
   padding: 0;
-  background-color: var(--a-base-9);
+  border-bottom: 1px solid var(--a-base-9);
+}
+
+.apos-modal-tabs__tabs--measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .apos-modal-tabs__tab {
-  display: block;
+  display: flex;
 }
 
 .apos-modal-tabs__label {
@@ -247,61 +387,45 @@ export default {
   @include type-base;
 
   & {
-    position: relative;
     display: flex;
+    position: relative;
     box-sizing: border-box;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     width: 100%;
-    height: 60px;
-    padding: 25px 10px;
-    border-bottom: 1px solid var(--a-base-7);
-    color: var(--a-text-primary);
-    text-align: left;
+    height: 45px;
+    padding: 0 7.5px;
+    color: var(--a-base-3);
     transition: all 200ms ease;
-    background-color: var(--a-base-9);
     cursor: pointer;
-  }
 
-  @include media-up(lap) {
-    padding: 25px 10px 25px 20px;
-  }
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    background-color: var(--a-primary);
-    transition: width 250ms cubic-bezier(0, 1.61, 1, 1.23);
-  }
-
-  &[aria-selected='true'],
-  &[aria-selected='true']:hover,
-  &[aria-selected='true']:focus {
-    padding-left: 15px;
-    background-color: var(--a-background-primary);
-
-    &::before {
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 0px;
+      background-color: var(--a-base-3);
       background-color: var(--a-primary);
+      transition: height 200ms ease;
     }
-  }
 
-  &:hover,
-  &:focus {
-    background-color: var(--a-base-10);
-
-    &::before {
-      width: 3px;
-      background-color: var(--a-base-5);
+    &:hover, &:focus {
+      color: var(--a-text-primary);
     }
-  }
 
-  &[aria-selected='true'] {
-    &::before {
-      width: 6px;
+    &[aria-selected='true'] {
+
+      &:after {
+        height: 2px;
+      }
+    }
+
+    &[aria-selected='true'],
+    &[aria-selected='true']:hover,
+    &[aria-selected='true']:focus {
+      color: var(--a-text-primary);
     }
   }
 }
