@@ -1,0 +1,51 @@
+{
+  "name": "apostrophecms-openapi",
+  "version": "1.1.0",
+  "description": "OpenAPI 3.0 specification for the ApostropheCMS REST API",
+  "main": "apostrophecms-openapi.yaml",
+  "scripts": {
+    "docs": "node scripts/serve-docs.js",
+    "docs:open": "node scripts/serve-docs.js --open",
+    "example-docs": "node scripts/serve-example-docs.js",
+    "example-docs:open": "node scripts/serve-example-docs.js --open",
+    "validate": "swagger-cli validate apostrophecms-openapi.yaml",
+    "lint": "spectral lint apostrophecms-openapi.yaml",
+    "test": "npm run validate && npm run lint",
+    "generate:typescript": "openapi-generator-cli generate -i apostrophecms-openapi.yaml -g typescript-axios -o ./examples/typescript --additional-properties=npmName=apostrophecms-client,supportsES6=true",
+    "generate:python": "openapi-generator-cli generate -i apostrophecms-openapi.yaml -g python -o ./examples/python --additional-properties=packageName=apostrophecms_client",
+    "generate:php": "openapi-generator-cli generate -i apostrophecms-openapi.yaml -g php -o ./examples/php --additional-properties=packageName=ApostropheCMS,invokerPackage=ApostropheCMS,composerVendorName=apostrophecms,composerPackageName=api-client"
+  },
+  "keywords": [
+    "openapi",
+    "api",
+    "rest",
+    "apostrophecms",
+    "cms",
+    "headless",
+    "specification",
+    "swagger"
+  ],
+  "author": "ApostropheCMS Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophecms-openapi.git"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophecms-openapi#readme",
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.7.0",
+    "@stoplight/spectral-cli": "^6.11.0",
+    "express": "^4.18.2",
+    "open": "^8.4.2",
+    "swagger-cli": "^4.0.4",
+    "swagger-ui-dist": "^5.9.0"
+  },
+  "files": [
+    "apostrophecms-openapi.yaml",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "apostropheTestConfig": {
+    "requiresMongo": false
+  }
+}
