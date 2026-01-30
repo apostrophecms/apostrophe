@@ -12,7 +12,7 @@
       <AposButton
         type="subtle"
         :modifiers="['small', 'no-motion']"
-        tooltip="hi"
+        :tooltip="changeDisplayTooltip"
         class="apos-widget-editor__dock-button"
         :icon="changeDisplayIcon"
         :icon-only="true"
@@ -48,7 +48,7 @@
               :current-fields="groups[tab.name].fields"
               :schema="groups[tab.name].schema"
               :model-value="docFields"
-              :modifiers="[ 'micro' ]"
+              :modifiers="isDisplayWindow ? [ 'micro'] : []"
               :meta="meta"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
@@ -171,9 +171,15 @@ export default {
       const name = this.isDisplayWindow ? this.modal.origin || 'right' : 'window';
       return `dock-${name}-icon`;
     },
-    // modal() {
-    //   return 
-    // },
+    changeDisplayTooltip() {
+      const where = this.isDisplayWindow ? this.modal.origin || 'right' : 'window';
+      return where === 'window'
+        ? 'apostrophe:dockSeparate'
+        : where === 'left'
+          ? 'apostrophe:dockLeft'
+          : 'apostrophe:dockRight';
+      // return `dock-${name}-icon`;
+    },
     moduleOptions() {
       return window.apos.modules[apos.area.widgetManagers[this.type]];
     },

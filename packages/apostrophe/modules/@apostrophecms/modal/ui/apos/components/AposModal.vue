@@ -192,20 +192,28 @@ const isWindowModal = computed(() => {
   return props.modal.type === 'window';
 });
 
+// Default dimensions for window modals
+const DEFAULT_WINDOW_SIZE = {
+  width: 380,
+  height: 500
+};
+
 // Set up draggable window composable (always called, but only used for window modals)
 const size = ref({
-  height: 500,
-  width: 340
+  width: DEFAULT_WINDOW_SIZE.width,
+  height: DEFAULT_WINDOW_SIZE.height
 });
 
-const getDefaultPosition = () => {
+const getDefaultPosition = (origin = 'right') => {
   const adminBarHeight = window.apos?.adminBar?.height || 0;
   const windowSize = window.innerWidth;
   const spacing = 30;
+  const left = origin === 'left' ? spacing : windowSize - size.value.width - spacing;
+  const top = adminBarHeight + spacing;
 
   return {
-    left: windowSize - size.value.width - spacing,
-    top: adminBarHeight + spacing
+    left,
+    top
   };
 };
 
@@ -216,13 +224,11 @@ const {
   constrainPosition
 } = useDraggableWindow({
   size,
-  storageKey: props.modal.type === 'window' ? `aposModalPosition-${props.modalData.id}` : null,
-  getDefaultPosition
+  getDefaultPosition: () => getDefaultPosition(props.modal.origin)
 });
 
 // Wrap handler to only work for window modals
 const startDragging = (e) => {
-  console.log(e.target);
   const nonDraggable = nonDraggableElements.some(
     sel => e.target.closest(sel)
   );
@@ -326,8 +332,8 @@ onMounted(async () => {
     await nextTick();
     const rect = modalInnerEl.value.getBoundingClientRect();
     size.value = {
-      width: rect.width || 340,
-      height: rect.height || 500
+      width: rect.width || DEFAULT_WINDOW_SIZE.width,
+      height: rect.height || DEFAULT_WINDOW_SIZE.height
     };
     setWindowPosition();
 
@@ -342,8 +348,21 @@ watch(() => props.modal.showModal, async (showModal) => {
     await nextTick();
     const rect = modalInnerEl.value.getBoundingClientRect();
     size.value = {
-      width: rect.width || 340,
-      height: rect.height || 500
+      width: rect.width || DEFAULT_WINDOW_SIZE.width,
+      height: rect.height || DEFAULT_WINDOW_SIZE.height
+    };
+    setWindowPosition();
+  }
+});
+
+// Watch for switch to window modal (e.g. dock → window) and compute position
+watch(isWindowModal, async (isWindow) => {
+  if (isWindow && modalInnerEl.value) {
+    await nextTick();
+    const rect = modalInnerEl.value.getBoundingClientRect();
+    size.value = {
+      width: rect.width || DEFAULT_WINDOW_SIZE.width,
+      height: rect.height || DEFAULT_WINDOW_SIZE.height
     };
     setWindowPosition();
   }
@@ -380,6 +399,11 @@ function onKeyup(event) {
 }
 
 async function onEnter() {
+  // For window modals, calculate position before showing so the modal
+  // appears in the correct place (avoids flash from 0,0).
+  if (isWindowModal.value) {
+    setWindowPosition();
+  }
   emit('show-modal');
 
   await nextTick();
@@ -537,9 +561,8 @@ function close() {
   }
 
   .apos-modal--window {
+    // Default dimensions are set via inline styles from DEFAULT_WINDOW_SIZE constant
     .apos-modal__inner {
-      width: 340px;
-      height: 500px;
       border-radius: 10px;
     }
 

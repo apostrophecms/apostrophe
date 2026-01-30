@@ -105,7 +105,14 @@
 }
 
 .apos-field.apos-field--micro {
+
   &.apos-field--box {
+
+    .apos-input-box__wrapper {
+      justify-content: space-between;
+      gap: $spacing-base;
+    }
+
     .apos-input-box__shorthand-input[disabled] {
       background: var(--a-base-7);
       opacity: 0.5;
@@ -119,6 +126,46 @@
     .apos-input-box__individual-input {
       min-width: 100%;
       max-width: 100%;
+    }
+
+    .apos-input-box__shorthand {
+      flex: 0.85;
+    }
+
+    .apos-input-box__shorthand-input,
+    .apos-input-box__individual-input,
+    .apos-input-box__switch,
+    .apos-input-box__controls {
+      height: 27px;
+    }
+
+    .apos-input-box__reset {
+      position: absolute;
+      display: block;
+      top: -24px;
+      right: 0;
+    }
+
+    .apos-input-box__reset .apos-button__label {
+      font-size: var(--a-type-smaller);
+    }
+
+    .apos-input-box__individual-input {
+      width: 46px;
+      padding: 7.5px 0 7.5px 7.5px;
+    }
+
+    .apos-input-box__switch__button {
+      aspect-ratio: auto;
+    }
+
+    .apos-input-box__unit--individual {
+      top: -7px;
+      left: -5px;
+    }
+
+    .apos-input-box__unit {
+      font-size: var(--a-type-small);
     }
   }
 
@@ -141,12 +188,17 @@
 
   .apos-field__label {
     margin-bottom: $spacing-three-quarters;
-    font-size: var(--a-type-small);
+    font-size: var(--a-type-smaller);
     font-weight: 500;
 
     &:has(+ .apos-field__help) {
       margin-bottom: $spacing-one-quarter;
     }
+  }
+
+  .apos-choice-label,
+  .apos-choice-label-text {
+    font-size: var(--a-type-smaller);
   }
 
   .apos-field__error {
@@ -158,10 +210,6 @@
     margin-bottom: $spacing-half;
     color: var(--a-base-2);
     font-size: var(--a-type-small);
-  }
-
-  .apos-choice-label-text {
-    font-size: var(--a-type-smaller);
   }
 
   &.apos-field--radio {
@@ -263,10 +311,14 @@
       display: flex;
       place-content: center;
       margin-left: 0;
-      font-size: var(--a-type-base);
+      font-size: var(--a-type-smaller);
       white-space: nowrap;
-      transform: translateY(-23.5px);
+      transform: translateY(-20.5px);
       line-height: 1.3;
+    }
+
+    .apos-button__label {
+      font-size: var(--a-type-smaller);
     }
   }
 

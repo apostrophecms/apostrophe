@@ -141,6 +141,9 @@ export default {
         : this.field.def;
     },
     adjustWidth(side) {
+      if (this.modifiers.includes('micro')) {
+        return;
+      }
       if (this.$refs[`input-side-${side}`]) {
         const length = this.$refs[`input-side-${side}`][0].value.length;
         this.$refs[`input-side-${side}`][0].style.width = `${length * 20}px`;
