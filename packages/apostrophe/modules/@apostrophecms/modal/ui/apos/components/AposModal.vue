@@ -491,13 +491,13 @@ function close() {
     position: fixed;
     inset: $spacing-base $spacing-base $spacing-base $spacing-base;
     display: flex;
+    overflow: hidden;
     flex-direction: column;
     height: calc(100vh - $spacing-base * 2);
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-base-9);
     color: var(--a-text-primary);
-    overflow: hidden;
 
     @include media-up(lap) {
       inset: $spacing-double $spacing-double $spacing-double $spacing-double;

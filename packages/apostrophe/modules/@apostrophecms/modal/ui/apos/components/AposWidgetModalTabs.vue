@@ -331,8 +331,8 @@ export default {
   }
 
   .apos-button {
-    height: 45px;
     box-sizing: border-box;
+    height: 45px;
   }
 
   .apos-button--subtle:hover {
@@ -354,10 +354,10 @@ export default {
   position: absolute;
   top: 0;
   left: 0;
+  overflow: hidden;
   visibility: hidden;
   pointer-events: none;
   height: 0;
-  overflow: hidden;
   white-space: nowrap;
 }
 
@@ -386,8 +386,8 @@ export default {
   @include type-base;
 
   & {
-    display: flex;
     position: relative;
+    display: flex;
     box-sizing: border-box;
     align-items: center;
     justify-content: center;
@@ -398,14 +398,13 @@ export default {
     transition: all 200ms ease;
     cursor: pointer;
 
-    &:after {
+    &::after {
       content: '';
       position: absolute;
       bottom: -1px;
       left: 0;
       width: 100%;
-      height: 0px;
-      background-color: var(--a-base-3);
+      height: 0;
       background-color: var(--a-primary);
       transition: height 200ms ease;
     }
@@ -414,11 +413,8 @@ export default {
       color: var(--a-text-primary);
     }
 
-    &[aria-selected='true'] {
-
-      &:after {
-        height: 2px;
-      }
+    &[aria-selected='true']::after {
+      height: 2px;
     }
 
     &[aria-selected='true'],

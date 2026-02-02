@@ -105,7 +105,6 @@
 }
 
 .apos-field.apos-field--micro {
-
   .apos-button,
   .apos-button--small,
   .apos-combo__selected,
@@ -122,15 +121,15 @@
     font-size: var(--a-type-smaller);
   }
 
-  &.apos-field--objectField {
+  &.apos-field--object-field {
     .apos-input-object:not(.apos-input-object--flat) > .apos-input-wrapper {
       margin: 10px 0 0 10px
     }
   }
 
-  &.apos-field--inlineArrayField,
-  &.apos-field--inlineArrayTableWithRemoveButtonField,
-  &.apos-field--inlineArrayTableField {
+  &.apos-field--inline-array-field,
+  &.apos-field--inline-array-table-with-remove-button-field,
+  &.apos-field--inline-array-table-field {
     .apos-input-array-inline-empty {
       padding: 15px 0;
       gap: 5px;
@@ -139,8 +138,8 @@
     }
 
     .apos-input-array-inline-standard .apos-schema {
-      padding: 10px 0;
       margin: 0 10px;
+      padding: 10px 0;
     }
 
     .apos-input-array-inline-label {
@@ -154,11 +153,9 @@
       width: 20px;
       height: 20px;
     }
-
   }
 
   &.apos-field--box {
-
     .apos-input-box__wrapper {
       justify-content: space-between;
       gap: $spacing-base;
@@ -193,9 +190,9 @@
 
     .apos-input-box__reset {
       position: absolute;
-      display: block;
       top: -24px;
       right: 0;
+      display: block;
     }
 
     .apos-input-box__individual-input {
@@ -252,25 +249,21 @@
     color: var(--a-base-2);
   }
 
-  &.apos-field--radio {
+  &.apos-field--radio .apos-radio-wrapper--buttons {
+    width: 100%;
 
-    .apos-radio-wrapper--buttons {
-      width: 100%;
+    .apos-choice-label {
+      flex: 1;
+      height: 27px;
+      place-content: center;
+    }
 
-      .apos-choice-label {
-        flex: 1;
-        height: 27px;
-        place-content: center;
-      }
+    .apos-choice-label-text {
+      margin: 0;
+    }
 
-      .apos-choice-label-text {
-        margin: 0;
-      }
-
-      .apos-choice-label-icon + .apos-choice-label-text {
-        margin-left: $spacing-half
-      }
-
+    .apos-choice-label-icon + .apos-choice-label-text {
+      margin-left: $spacing-half
     }
   }
 

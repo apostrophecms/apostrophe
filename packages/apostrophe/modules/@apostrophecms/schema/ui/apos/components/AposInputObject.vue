@@ -44,7 +44,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped lang="scss">
   .apos-input-object:not(.apos-input-object--flat) {
     border-left: 1px solid var(--a-base-9);
 
@@ -52,6 +52,7 @@ export default {
       margin: 20px 0 0 19px;
     }
   }
+
   .apos-input-object :deep(.apos-schema .apos-field) {
     margin-bottom: 30px;
   }

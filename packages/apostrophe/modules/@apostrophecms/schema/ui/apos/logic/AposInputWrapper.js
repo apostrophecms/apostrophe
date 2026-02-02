@@ -71,8 +71,8 @@ export default {
     classList: function () {
       const classes = [
         'apos-field',
-        `apos-field--${this.field.type}`,
-        `apos-field--${this.field.name}`
+        `apos-field--${this.camelToBem(this.field.type)}`,
+        `apos-field--${this.camelToBem(this.field.name)}`
       ];
       if (this.field.classes) {
         classes.push(this.field.classes);
@@ -157,6 +157,12 @@ export default {
     // Notify about a value, suggested by meta components or their children.
     replaceFieldValue(value) {
       this.$emit('replace-field-value', value);
+    },
+    camelToBem(str) {
+      return str
+        .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+        .toLowerCase();
     }
   }
 };

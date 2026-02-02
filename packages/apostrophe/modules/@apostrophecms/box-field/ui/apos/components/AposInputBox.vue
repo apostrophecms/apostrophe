@@ -222,7 +222,7 @@ export default {
     cursor: pointer;
     color: var(--a-base-4);
     background-color: transparent;
-    transition: background-color .3s ease-in;
+    transition: background-color 300ms ease-in;
 
     &:active, &:focus {
       outline: 2px solid var(--a-primary-transparent-25);

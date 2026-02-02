@@ -552,6 +552,7 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
   align-items: center;
   gap: 15px;
 }
+
 .apos-modal--window {
   &:deep(.apos-modal__header__main) {
     padding: 2.5px 10px 0;
@@ -567,7 +568,8 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
   }
 
   &:deep(.apos-widget-editor__dock-button .apos-button--icon-only.apos-button--subtle) {
-    padding: 7.5px 0px;
+    padding: 7.5px 0;
+
     &:hover,
     &:focus,
     &:active {

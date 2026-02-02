@@ -1,10 +1,11 @@
 .apos-window {
-  $width: 360px;
-  $duration: 0.2s;
-  $timing: cubic-bezier(.175,.885,.32,1.15);
   @include type-base;
 
   & {
+    $width: 360px;
+    $duration: 0.2s;
+    $timing: cubic-bezier(.175,.885,.32,1.15);
+
     z-index: $z-index-modal;
     position: fixed;
     display: flex;
@@ -15,7 +16,7 @@
     transition:
       opacity $duration $timing,
       transform $duration $timing;
-    box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+    box-shadow: rgb(0 0 0 / 19%) 0 10px 20px, rgb(0 0 0 / 23%) 0 6px 6px;
     border-radius: 10px;
     background-color: var(--a-background-primary);
   }

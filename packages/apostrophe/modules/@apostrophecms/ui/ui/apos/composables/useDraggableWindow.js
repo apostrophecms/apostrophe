@@ -1,4 +1,8 @@
-import { ref, computed, unref } from 'vue';
+import {
+  ref,
+  computed,
+  unref
+} from 'vue';
 
 /**
  * Draggable, positionable window logic. Handles mousedown → mousemove → mouseup
@@ -6,7 +10,8 @@ import { ref, computed, unref } from 'vue';
  * body class while dragging.
  *
  * @param {{
- *   size: import('vue').Ref<{ width: number; height: number }> | { width: number; height: number };
+ *   size: import('vue').Ref<{ width: number; height: number }>
+ *   | { width: number; height: number };
  *   storageKey?: string;
  *   bodyDragClass?: string;
  *   getDefaultPosition?: () => { left: number; top: number };
@@ -14,7 +19,8 @@ import { ref, computed, unref } from 'vue';
  * @returns {{
  *   position: import('vue').Ref<{ left: number; top: number }>;
  *   dragging: import('vue').Ref<boolean>;
- *   style: import('vue').ComputedRef<{ left: string; top: string; width: string; height: string }>;
+ *   style: import('vue').ComputedRef<
+ *   { left: string; top: string; width: string; height: string }>;
  *   startDragging: (e: MouseEvent) => void;
  *   stopDragging: () => void;
  *   setPosition: () => void;
@@ -27,11 +33,20 @@ export function useDraggableWindow({
   storageKey = null,
   getDefaultPosition = null
 }) {
-  const position = ref({ left: 0, top: 0 });
+  const position = ref({
+    left: 0,
+    top: 0
+  });
   const dragging = ref(false);
   const bodyDragClass = 'apos-window-is-dragging';
-  let offset = { x: 0, y: 0 };
-  let initialMousePos = { x: 0, y: 0 };
+  const offset = {
+    x: 0,
+    y: 0
+  };
+  let initialMousePos = {
+    x: 0,
+    y: 0
+  };
   let dragClassApplied = false;
 
   function getAxisPos(axis, value) {
@@ -64,14 +79,20 @@ export function useDraggableWindow({
     }
     const x = getAxisPos('x', e.clientX - offset.x);
     const y = getAxisPos('y', e.clientY - offset.y);
-    position.value = { left: x, top: y };
+    position.value = {
+      left: x,
+      top: y
+    };
   }
 
   function startDragging(e) {
     dragging.value = true;
     offset.x = e.clientX - position.value.left;
     offset.y = e.clientY - position.value.top;
-    initialMousePos = { x: e.clientX, y: e.clientY };
+    initialMousePos = {
+      x: e.clientX,
+      y: e.clientY
+    };
     dragClassApplied = false;
     window.addEventListener('mousemove', drag);
     window.addEventListener('mouseup', stopDragging);
@@ -144,7 +165,10 @@ export function useDraggableWindow({
     const x = getAxisPos('x', position.value.left);
     const y = getAxisPos('y', position.value.top);
     if (x !== position.value.left || y !== position.value.top) {
-      position.value = { left: x, top: y };
+      position.value = {
+        left: x,
+        top: y
+      };
     }
   }
 
