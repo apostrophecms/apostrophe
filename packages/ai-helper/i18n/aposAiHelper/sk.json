@@ -9,7 +9,12 @@
   "delete": "Odstrániť",
   "generateTextAction": "Vygenerovať",
   "rateLimitExceeded": "Prekročený limit požiadaviek, skúste to znova neskôr",
-  "invalidRequest": "Neplatná požiadavka, prosím skontrolujte pravidlá OpenAI",
   "utilityOperationLabel": "Vygenerovať obrázok s AI",
-  "errorMessage": "Vyskytla sa chyba."
+  "errorMessage": "Vyskytla sa chyba.",
+  "variantPromptLabel": "Ako by mal byť tento obrázok odlišný?",
+  "variantPromptPlaceholder": "Popíšte, ako upraviť obrázok (voliteľné)",
+  "generationFailed": "Generovanie pomocou AI zlyhalo. Skúste to znova.",
+  "invalidRequest": "Neplatná požiadavka. Skontrolujte zadanie a skúste to znova.",
+  "contentPolicyViolation": "Porušenie pravidiel obsahu. Skúste iné zadanie.",
+  "serviceUnavailable": "Služba AI je dočasne nedostupná. Skúste to znova o chvíľu."
 }
