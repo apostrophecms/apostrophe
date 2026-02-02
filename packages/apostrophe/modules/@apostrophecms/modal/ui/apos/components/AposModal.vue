@@ -185,7 +185,11 @@ const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
 const nonDraggableElements = [
-  '.apos-input-wrapper'
+  '.apos-input-wrapper',
+  '.apos-field--inlineArrayField',
+  '.apos-field--inlineArrayTableWithRemoveButtonField',
+  '.apos-field--inlineArrayTableField',
+  '.apos-input-color__sample-picker'
 ];
 
 const isWindowModal = computed(() => {

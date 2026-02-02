@@ -9,15 +9,18 @@
     @no-modal="removePreview"
   >
     <template #secondaryControls>
-      <AposButton
-        type="subtle"
-        :modifiers="['small', 'no-motion']"
-        :tooltip="changeDisplayTooltip"
-        class="apos-widget-editor__dock-button"
-        :icon="changeDisplayIcon"
-        :icon-only="true"
-        @click="updateEditorDisplay"
-      />
+      <div class="apos-widget-editor__controls">
+        <AposButton
+          type="subtle"
+          :modifiers="['small', 'no-motion']"
+          :tooltip="changeDisplayTooltip"
+          class="apos-widget-editor__dock-button"
+          :icon="changeDisplayIcon"
+          :icon-size=" isDisplayWindow? 18 : 24"
+          :icon-only="true"
+          @click="updateEditorDisplay"
+        />
+      </div>
     </template>
     <template #breadcrumbs>
       <AposModalBreadcrumbs
@@ -35,7 +38,7 @@
       />
     </template>
     <template #main>
-      <AposModalBody>
+      <AposModalBody :current-tab="currentTab">
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
@@ -225,6 +228,9 @@ export default {
       this.setDisplayPref(newVal);
       this.modal.type = this.isDisplayWindow ? 'window' : 'slide';
       this.modal.overlay = this.isDisplayWindow ? 'transparent' : null;
+    },
+    currentTab() {
+
     }
   },
   async mounted() {
@@ -279,7 +285,6 @@ export default {
   },
   methods: {
     updateEditorDisplay() {
-      console.log('click clack');
       this.displayPref = this.displayPref === 'window' ? 'sidebar' : 'window';
     },
     setDisplayPref(pref) {
@@ -542,6 +547,11 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
 </script>
 
 <style lang="scss" scoped>
+.apos-widget-editor__controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
 .apos-modal--window {
   &:deep(.apos-modal__header__main) {
     padding: 2.5px 10px 0;
@@ -566,11 +576,6 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
       outline: none;
     }
   }
-  // &:deep(.apos-rich-text-editor__editor *) {
-    // font-size: clamp(14px, 1em, 80px);
-    // letter-spacing: initial;
-    // line-height: initial;
-  // }
 }
 
 </style>

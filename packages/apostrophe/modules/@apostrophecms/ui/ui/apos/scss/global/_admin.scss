@@ -13,6 +13,10 @@
   background-color: var(--a-background-primary);
 }
 
+.apos-page-locked {
+  overflow: hidden;
+}
+
 // TODO: remove these forced focus styles after keyboard accessibility is done.
 // This is useful for testing to visually see focused elements
 // that may not have the browser-native blue outline when focused.

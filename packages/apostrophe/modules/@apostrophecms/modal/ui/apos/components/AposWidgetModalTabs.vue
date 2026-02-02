@@ -317,7 +317,6 @@ export default {
   display: flex;
   height: 100%;
   background-color: var(--a-base-10);
-  // box-shadow: 0 6px 13px -5px rgba(0,0,0,0.10);
 }
 
 :deep(.apos-context-menu) {
