@@ -271,6 +271,7 @@ function hasSlot(slotName) {
 }
 
 const classes = computed(() => {
+  const directionClass = store.getAdminDirectionClass();
   const classes = [ 'apos-modal' ];
   classes.push(`apos-modal--${props.modal.type}`);
   if (props.modal.type === 'slide') {
@@ -284,7 +285,11 @@ const classes = computed(() => {
   if (props.modal.busy) {
     classes.push('apos-modal--busy');
   }
-  return classes.join(' ');
+  if (directionClass) {
+    classes.push(directionClass);
+  }
+
+  return classes;
 });
 
 const innerClasses = computed(() => {

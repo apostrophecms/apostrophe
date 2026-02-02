@@ -19,7 +19,7 @@
             v-model="shorthand"
             type="number"
             placeholder="--"
-            class="apos-input-box__shorthand-input apos-input apos-input--number"
+            :class="classesShorthand"
             data-apos-test="box-input-all"
             :aria-label="`${$t(field.label)} ${$t('apostrophe:boxFieldAriaLabelAll')}`"
             :disabled="field.readOnly || field.disabled || mode === 'individual'"
@@ -126,8 +126,6 @@
             @click="clearOrReset"
           />
         </div>
-
-
       </div>
     </template>
     <template

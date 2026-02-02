@@ -147,6 +147,10 @@ module.exports = (self) => {
       return !value.length;
     },
     validate(field, options, warn, fail) {
+      if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
+        fail('The direction property must be "ltr" or "rtl" if specified');
+      }
+
       if (!field.pattern) {
         return;
       }
@@ -567,6 +571,11 @@ module.exports = (self) => {
         }
       }
       destination[field.name] = data[field.name];
+    },
+    validate(field, options, warn, fail) {
+      if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
+        fail('The direction property must be "ltr" or "rtl" if specified');
+      }
     }
   });
 
@@ -600,6 +609,10 @@ module.exports = (self) => {
       return '';
     },
     validate(field, options, warn, fail) {
+      if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
+        fail('The direction property must be "ltr" or "rtl" if specified');
+      }
+
       if (!field.pattern) {
         return;
       }
@@ -659,6 +672,9 @@ module.exports = (self) => {
       destination[field.name] = self.apos.launder.date(newDateVal);
     },
     validate: function (field, options, warn, fail) {
+      if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
+        fail('The direction property must be "ltr" or "rtl" if specified');
+      }
       if (field.max && !field.max.match(dateRegex)) {
         fail('Property "max" must be in the date format, YYYY-MM-DD');
       }
@@ -723,6 +739,11 @@ module.exports = (self) => {
       destination[field.name] = data[field.name]
         ? self.apos.launder.date(data[field.name])
         : null;
+    },
+    validate: function (field, options, warn, fail) {
+      if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
+        fail('The direction property must be "ltr" or "rtl" if specified');
+      }
     }
   });
 
@@ -739,6 +760,11 @@ module.exports = (self) => {
           field.min,
           field.max
         );
+      }
+    },
+    validate: function (field, options, warn, fail) {
+      if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
+        fail('The direction property must be "ltr" or "rtl" if specified');
       }
     },
     def: ''
