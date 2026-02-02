@@ -340,7 +340,6 @@ export default {
 
   .apos-input-box__unit {
     align-self: center;
-    // margin-right: $spacing-base + $spacing-half;
     color: var(--a-base-3);
     font-family: var(--a-family-default);
     font-size: var(--a-type-base);

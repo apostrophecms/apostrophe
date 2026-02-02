@@ -181,7 +181,6 @@ export default {
         : where === 'left'
           ? 'apostrophe:dockLeft'
           : 'apostrophe:dockRight';
-      // return `dock-${name}-icon`;
     },
     moduleOptions() {
       return window.apos.modules[apos.area.widgetManagers[this.type]];

@@ -6,7 +6,7 @@
     :uid="uid"
     :items="next"
     :display-options="displayOptions"
-    :modifiers="[...(isInlineTable ? ['full-width', ...modifiers] : modifiers)]"
+    :modifiers="[...(isInlineTable ? ['full-width', ...(modifiers ?? [])] : (modifiers ?? []))]"
     :meta="arrayMeta"
   >
     <template #additional>
@@ -49,7 +49,7 @@
       >
         <component
           :is="emptyWhenIcon"
-          :size="modifiers.includes('micro') ? 20 : 50"
+          :size="(modifiers ?? []).includes('micro') ? 20 : 50"
         />
         <label class="apos-input-array-inline-empty-label">
           {{ $t(emptyWhenLabel) }}

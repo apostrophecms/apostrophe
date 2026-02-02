@@ -186,9 +186,9 @@ const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
 const nonDraggableElements = [
   '.apos-input-wrapper',
-  '.apos-field--inlineArrayField',
-  '.apos-field--inlineArrayTableWithRemoveButtonField',
-  '.apos-field--inlineArrayTableField',
+  '.apos-field--inline-array-field',
+  '.apos-field--inline-array-table-with-remove-button-field',
+  '.apos-field--inline-array-table-field',
   '.apos-input-color__sample-picker'
 ];
 
@@ -196,13 +196,11 @@ const isWindowModal = computed(() => {
   return props.modal.type === 'window';
 });
 
-// Default dimensions for window modals
 const DEFAULT_WINDOW_SIZE = {
   width: 380,
   height: 500
 };
 
-// Set up draggable window composable (always called, but only used for window modals)
 const size = ref({
   width: DEFAULT_WINDOW_SIZE.width,
   height: DEFAULT_WINDOW_SIZE.height
@@ -336,7 +334,6 @@ onMounted(async () => {
   }
   store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
 
-  // Set up window modal positioning and size
   if (isWindowModal.value && modalInnerEl.value) {
     await nextTick();
     const rect = modalInnerEl.value.getBoundingClientRect();
@@ -345,8 +342,6 @@ onMounted(async () => {
       height: rect.height || DEFAULT_WINDOW_SIZE.height
     };
     setWindowPosition();
-
-    // Add resize handler for window modals
     window.addEventListener('resize', handleResize);
   }
 });
@@ -609,11 +604,6 @@ function close() {
     &--transparent {
       background-color: transparent;
     }
-
-    // .apos-modal--slide &,
-    // .apos-modal--overlay & {
-    //   transition: opacity 200ms ease;
-    // }
 
     &.slide-left-enter-from,
     &.slide-left-leave-to,

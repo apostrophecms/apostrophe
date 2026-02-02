@@ -694,7 +694,6 @@ module.exports = {
             }
           }
         }
-        console.log(allowedAttributes);
         return allowedAttributes;
       },
 
