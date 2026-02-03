@@ -544,7 +544,7 @@ module.exports = {
       },
       getFileGroup(extension) {
         return _.find(self.fileGroups, function (group) {
-          const candidate = group.extensionMaps[extension] || extension;
+          const candidate = group.extensionMaps?.[extension] || extension;
           if (_.includes(group.extensions, candidate)) {
             return true;
           }
