@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="apos-toggle__container"
-    :class="modifiers.map(m => `apos-toggle--${m}`)"
-  >
+  <div class="apos-toggle__container">
     <div
       class="apos-toggle__slider"
       :tabindex="disableFocus ? null : '0'"
@@ -25,12 +22,6 @@ export default {
     disableFocus: {
       type: Boolean,
       default: false
-    },
-    modifiers: {
-      type: Array,
-      default() {
-        return [];
-      }
     }
   },
   emits: [ 'toggle' ],
@@ -47,23 +38,16 @@ export default {
 };
 </script>
 <style scoped lang='scss'>
-  .apos-toggle__container {
-    --toggle-height: 13px;
-    --toggle-width: calc(var(--toggle-height) * 1.7);
-    --toggle-btn-size: var(--toggle-height);
-  }
-
-  .apos-toggle--small {
-    --toggle-height: 5px;
-    --toggle-width: calc(var(--toggle-height) * 2.4);
-  }
+  $toggle-height: 13px;
+  $toggle-width: $toggle-height * 1.7;
+  $btn-size: $toggle-height;
 
   .apos-toggle {
     &__slider {
       position: relative;
       box-sizing: content-box;
-      width: var(--toggle-width);
-      height: var(--toggle-height);
+      width: $toggle-width;
+      height: $toggle-height;
       padding: 4px;
       border-radius: 34px;
       cursor: pointer;
@@ -79,8 +63,8 @@ export default {
       &::before {
         content: '';
         position: absolute;
-        width: var(--toggle-btn-size);
-        height: var(--toggle-btn-size);
+        width: $btn-size;
+        height: $btn-size;
         border-radius: 50%;
         background-color: var(--a-white);
         transition: all 300ms ease-out;
@@ -97,7 +81,7 @@ export default {
       }
 
       &::before {
-        transform: translateX(calc(var(--toggle-width) - var(--toggle-btn-size)));
+        transform: translateX(calc($toggle-width - $btn-size));
       }
     }
   }
