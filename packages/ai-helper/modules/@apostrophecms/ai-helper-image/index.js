@@ -27,6 +27,17 @@ module.exports = {
     }
   },
 
+  batchOperations: {
+    add: {
+      aiVariant: {
+        label: 'aposAiHelper:generateVariant',
+        icon: 'robot-icon',
+        modal: 'AposAiHelperMediaVariant',
+        permission: 'edit'
+      }
+    }
+  },
+
   async init(self) {
     self.uploadfs = self.apos.uploadfs;
     self.aiHelperImages = self.apos.db.collection('aposAiHelperImages');
@@ -89,6 +100,10 @@ module.exports = {
       },
 
       aiHelperImageUrl(req, image) {
+        // Handle media library images (have attachment._urls)
+        if (image.attachment && image.attachment._urls) {
+          return image.attachment._urls.original;
+        }
         return image.url || (new URL(self.uploadfs.getUrl() + `/ai-helper-images/${image._id}.png`, req.baseUrl)).toString();
       },
 
@@ -291,6 +306,110 @@ module.exports = {
               }
 
               // Ensure URL for response
+              image.url = self.aiHelperImageUrl(req, image);
+              images.push(image);
+            }
+
+            return { images };
+
+          } catch (e) {
+            if (e.status === 429) {
+              self.apos.notify(req, 'aposAiHelper:rateLimitExceeded');
+            } else if (e.status === 400) {
+              self.apos.util.error(e);
+              self.apos.notify(req, 'aposAiHelper:invalidRequest');
+            } else {
+              self.apos.util.error(e);
+            }
+            throw e;
+          }
+        },
+
+        // Generate variant from existing media library image
+        async 'ai-helper/media-variant'(req) {
+          const aiHelper = self.apos.modules['@apostrophecms/ai-helper'];
+          aiHelper.checkPermissions(req);
+
+          const mediaImageId = self.apos.launder.id(req.body.mediaImageId);
+          const prompt = self.apos.launder.string(req.body.prompt);
+
+          if (!mediaImageId) {
+            throw self.apos.error('invalid');
+          }
+
+          // Fetch the media library image
+          const mediaImage = await self.find(req, { _id: mediaImageId }).toObject();
+          if (!mediaImage) {
+            throw self.apos.error('notfound');
+          }
+
+          if (!mediaImage.attachment || !mediaImage.attachment._urls) {
+            throw self.apos.error('invalid', 'Image has no attachment');
+          }
+
+          // Fake results for cheap & offline testing
+          if (process.env.APOS_AI_HELPER_MOCK) {
+            const now = new Date();
+            const images = [];
+            for (let i = 0; i < 4; i++) {
+              images.push({
+                _id: createId(),
+                userId: req.user._id,
+                createdAt: now,
+                prompt: prompt || 'Variant of existing image',
+                url: self.apos.asset.url('/modules/@apostrophecms/ai-helper-image/placeholder.jpg'),
+                providerMetadata: {
+                  model: 'mock-image-1',
+                  usage: {
+                    prompt_tokens: 12,
+                    total_tokens: 12
+                  },
+                  size: '1024x1024',
+                  quality: 'standard'
+                }
+              });
+            }
+            return { images };
+          }
+
+          try {
+            const options = {};
+
+            // Generate variation using the media library image
+            const result = await aiHelper.generateImageVariation(
+              req, mediaImage, prompt || 'Create a variant of this image', options
+            );
+
+            // Validate provider response is in standard format
+            const validatedResults = self.validateProviderResponse(result);
+
+            // Store results in database and prepare response
+            const images = [];
+            const now = new Date();
+
+            for (const item of validatedResults) {
+              const id = createId();
+              const image = {
+                _id: id,
+                userId: req.user._id,
+                createdAt: now,
+                uploadfs: item.type === 'base64',
+                prompt: prompt || 'Variant of existing image',
+                ...(item.metadata && Object.keys(item.metadata).length > 0 && {
+                  providerMetadata: item.metadata
+                })
+              };
+
+              if (item.type === 'base64') {
+                await self.aiHelperWriteImageToUploadfs(image, item.data);
+                await self.aiHelperImages.insertOne(image);
+              } else {
+                await self.aiHelperImages.insertOne({
+                  ...image,
+                  url: item.data
+                });
+              }
+
               image.url = self.aiHelperImageUrl(req, image);
               images.push(image);
             }

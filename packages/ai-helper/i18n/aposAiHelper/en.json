@@ -12,6 +12,7 @@
   "utilityOperationLabel": "Generate an image with AI",
   "errorMessage": "An error occurred.",
   "generateVariant": "Generate Variant",
+  "sourceImage": "Source Image",
   "variantPromptLabel": "How should this image be different?",
   "variantPromptPlaceholder": "Describe how to modify the image (optional)",
   "generationFailed": "AI generation failed. Please try again.",
