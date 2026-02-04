@@ -256,8 +256,16 @@ export default {
       });
       const totalTabsWidth = widths.reduce((sum, w) => sum + w, 0);
 
-      // First pass: if everything fits, show all tabs and hide menu.
-      if (totalTabsWidth <= containerWidth) {
+      // Reserve space for the menu button so tabs never overlap it.
+      // Use fallback until we can measure the real button (after menu is shown).
+      const reservedForMenu = this.menuButtonWidth || MENU_WIDTH_FALLBACK_PX;
+      const availableWidth = Math.max(
+        0,
+        containerWidth - reservedForMenu
+      );
+
+      // First pass: if everything fits in the space left for the menu, no menu needed.
+      if (totalTabsWidth <= availableWidth) {
         this.hasMenu = false;
         this.visibleTabNames = tabs.map(t => t.name);
         return;
@@ -268,9 +276,11 @@ export default {
       await this.$nextTick();
       this.menuButtonWidth = this.getMenuButtonWidth();
 
-      const availableWidth = Math.max(
+      // Recompute available width with measured button width for accurate tab count.
+      const effectiveMenuWidth = this.menuButtonWidth || MENU_WIDTH_FALLBACK_PX;
+      const fitAvailableWidth = Math.max(
         0,
-        containerWidth - (this.menuButtonWidth || MENU_WIDTH_FALLBACK_PX)
+        containerWidth - effectiveMenuWidth
       );
 
       // Determine how many tabs fit (in order).
@@ -279,7 +289,7 @@ export default {
       for (let i = 0; i < tabs.length; i++) {
         const w = widths[i] || 0;
         // Always show at least one tab.
-        if (!visibleNames.length || (used + w) <= availableWidth) {
+        if (!visibleNames.length || (used + w) <= fitAvailableWidth) {
           visibleNames.push(tabs[i].name);
           used += w;
         } else {
@@ -287,7 +297,7 @@ export default {
         }
       }
 
-      // Keep the current tab visible when possible.
+      // Keep the current tab visible when possible (e.g. after selecting from menu).
       if (this.current && !visibleNames.includes(this.current)) {
         if (visibleNames.length) {
           visibleNames[visibleNames.length - 1] = this.current;
@@ -296,8 +306,29 @@ export default {
         }
       }
 
-      // De-dup in case current replaced something already present.
-      this.visibleTabNames = Array.from(new Set(visibleNames));
+      // After swapping in current, the new tab may be wider and exceed fit space.
+      // Trim from the end (never remove current) until we fit within menu-reserved space.
+      const visibleNamesSet = Array.from(new Set(visibleNames));
+      const widthFor = (name) =>
+        widths[tabs.findIndex(t => t.name === name)] ?? 0;
+      let totalVisibleWidth =
+        visibleNamesSet.reduce((sum, name) => sum + widthFor(name), 0);
+      while (totalVisibleWidth > fitAvailableWidth && visibleNamesSet.length > 1) {
+        let removed = false;
+        for (let i = visibleNamesSet.length - 1; i >= 0; i--) {
+          if (visibleNamesSet[i] !== this.current) {
+            totalVisibleWidth -= widthFor(visibleNamesSet[i]);
+            visibleNamesSet.splice(i, 1);
+            removed = true;
+            break;
+          }
+        }
+        if (!removed) {
+          break;
+        }
+      }
+
+      this.visibleTabNames = visibleNamesSet;
     },
     selectTab (e) {
       // Use currentTarget so clicks on nested elements still resolve the button id.

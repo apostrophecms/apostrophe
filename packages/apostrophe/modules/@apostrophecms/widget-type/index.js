@@ -168,15 +168,15 @@ module.exports = {
     placeholder: false,
     placeholderClass: 'apos-placeholder',
     // two-thirds, half or full:
-    width: '',
+    width: 'window',
     // left or right, or null for no explicit origin (internally set
     // to 'right'):
     origin: null,
     preview: true,
     // Set to false to opt out of the automatic styling wrapping of widget output
-    stylesWrapper: true,
+    stylesWrapper: true
     // Default display pref for editor modals. 'window' or 'sidebar'
-    editorDisplayPreference: 'window'
+    // editorDisplayPreference: 'window'
   },
   init(self) {
     self.isExplicitOrigin = self.options.origin !== null;
@@ -775,7 +775,7 @@ module.exports = {
           isExplicitOrigin: self.isExplicitOrigin,
           widgetOperations: self.getWidgetOperations(req),
           widgetBreadcrumbOperations: self.getWidgetBreadcrumbOperations(req),
-          editorDisplayPreference: self.options.editorDisplayPreference
+          // editorDisplayPreference: self.options.editorDisplayPreference
         });
         return result;
       }

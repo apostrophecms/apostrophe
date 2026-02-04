@@ -11,10 +11,12 @@
     <template #secondaryControls>
       <div class="apos-widget-editor__controls">
         <AposButton
+          v-if="!disabledChangeDisplay"
           type="subtle"
           :modifiers="['small', 'no-motion']"
           :tooltip="changeDisplayTooltip"
           class="apos-widget-editor__dock-button"
+          action="changeDisplay"
           :icon="changeDisplayIcon"
           :icon-size=" isDisplayWindow? 18 : 24"
           :icon-only="true"
@@ -66,10 +68,12 @@
       <AposButton
         type="default"
         label="apostrophe:cancel"
+        action="cancel"
         @click="confirmAndCancel"
       />
       <AposButton
         type="primary"
+        action="save"
         :label="saveLabel"
         :disabled="errorCount > 0"
         @click="save"
@@ -81,6 +85,7 @@
 <script>
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
+import { mapState } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
@@ -91,6 +96,7 @@ import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposWidgetEditor',
@@ -160,7 +166,7 @@ export default {
       triggerValidation: false,
       lastPreview: null,
       displayPrefName: `apos-${this.type}-display-pref`,
-      displayPref: null,
+      defaultSidebarWidth: 'one-third',
       modal: {
         active: false,
         width: moduleOptions.width,
@@ -170,6 +176,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(useModalStore, [ 'stack' ]),
     changeDisplayIcon() {
       const name = this.isDisplayWindow ? this.modal.origin || 'right' : 'window';
       return `dock-${name}-icon`;
@@ -181,6 +188,9 @@ export default {
         : where === 'left'
           ? 'apostrophe:dockLeft'
           : 'apostrophe:dockRight';
+    },
+    disabledChangeDisplay() {
+      return this.stack.length > 1;
     },
     moduleOptions() {
       return window.apos.modules[apos.area.widgetManagers[this.type]];
@@ -219,21 +229,17 @@ export default {
       return detectDocChange(this.schema, this.original, this.docFields.data);
     },
     isDisplayWindow() {
-      return this.displayPref === 'window';
-    }
-  },
-  watch: {
-    displayPref(newVal) {
-      this.setDisplayPref(newVal);
-      this.modal.type = this.isDisplayWindow ? 'window' : 'slide';
-      this.modal.overlay = this.isDisplayWindow ? 'transparent' : null;
-    },
-    currentTab() {
-
+      return this.modal.width === 'window';
     }
   },
   async mounted() {
-    this.displayPref = this.getDisplayPref();
+    // If there are other modals open, force a slide modal
+    if (this.stack.length > 1) {
+      this.modal.width =
+        this.moduleOptions.width === 'window'
+          ? this.defaultSidebarWidth
+          : this.moduleOptions.width;
+    }
     this.modal.type = this.isDisplayWindow ? 'window' : 'slide';
     this.modal.overlay = this.isDisplayWindow ? 'transparent' : null;
     this.modal.active = true;
@@ -284,7 +290,20 @@ export default {
   },
   methods: {
     updateEditorDisplay() {
-      this.displayPref = this.displayPref === 'window' ? 'sidebar' : 'window';
+      if (this.modal.width === 'window') {
+        if (this.moduleOptions.width === 'window') {
+          this.modal.width = this.defaultSidebarWidth;
+        } else {
+          this.modal.width = this.moduleOptions.width;
+        }
+        this.modal.type = 'slide';
+        this.modal.overlay = null;
+      } else {
+        this.modal.width = 'window';
+        this.modal.type = 'window';
+        this.modal.overlay = 'transparent';
+      }
+      this.setDisplayPref(this.modal.width);
     },
     setDisplayPref(pref) {
       window.localStorage.setItem(this.displayPrefName, pref);
@@ -292,7 +311,7 @@ export default {
     getDisplayPref() {
       let pref = window.localStorage.getItem(this.displayPrefName);
       if (typeof pref !== 'string') {
-        pref = this.moduleOptions.editorDisplayPreference;
+        pref = this.moduleOptions.width;
       }
       return pref;
     },

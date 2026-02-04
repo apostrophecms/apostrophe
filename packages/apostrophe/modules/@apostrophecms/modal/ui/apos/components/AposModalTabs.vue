@@ -98,7 +98,6 @@ export default {
   }
 }
 
-// TODO WHERE IS THIS USED?
 .apos-modal-tabs--horizontal {
   position: relative;
 
