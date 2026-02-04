@@ -167,7 +167,7 @@ module.exports = {
     // 'up', 'down', 'cut', 'copy', 'clone'.
     placeholder: false,
     placeholderClass: 'apos-placeholder',
-    // two-thirds, half or full:
+    // window, one-third, two-thirds, half or full:
     width: 'window',
     // left or right, or null for no explicit origin (internally set
     // to 'right'):
@@ -175,8 +175,6 @@ module.exports = {
     preview: true,
     // Set to false to opt out of the automatic styling wrapping of widget output
     stylesWrapper: true
-    // Default display pref for editor modals. 'window' or 'sidebar'
-    // editorDisplayPreference: 'window'
   },
   init(self) {
     self.isExplicitOrigin = self.options.origin !== null;
@@ -774,8 +772,7 @@ module.exports = {
           preview: self.options.preview,
           isExplicitOrigin: self.isExplicitOrigin,
           widgetOperations: self.getWidgetOperations(req),
-          widgetBreadcrumbOperations: self.getWidgetBreadcrumbOperations(req),
-          // editorDisplayPreference: self.options.editorDisplayPreference
+          widgetBreadcrumbOperations: self.getWidgetBreadcrumbOperations(req)
         });
         return result;
       }
