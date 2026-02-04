@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.26.1-alpha.1
+
+### Fixes
+
+- Fix a bug where rich text images and permalinks are not properly rendered in public external front (e.g. Astro) views.
+
 ## 4.26.0
 
 ### Adds
