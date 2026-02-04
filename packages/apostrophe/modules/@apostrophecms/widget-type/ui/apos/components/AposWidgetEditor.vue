@@ -199,9 +199,6 @@ export default {
       return this.moduleOptions.label;
     },
     editLabel() {
-      if (this.isDisplayWindow) {
-        return null;
-      }
       if (this.moduleOptions.editLabel) {
         return this.moduleOptions.editLabel;
       } else {
@@ -577,12 +574,12 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
     border-top: 1px solid var(--a-base-9);
   }
 
-  &:deep(.apos-modal__controls--header) {
-    display: none;
+  &:deep(.apos-modal__heading) {
+    font-size: var(--a-type-label);
   }
 
   &:deep(.apos-modal__controls--secondary) {
-    margin-right: 0;
+    margin-right: 10px;
   }
 
   &:deep(.apos-widget-editor__dock-button .apos-button--icon-only.apos-button--subtle) {
