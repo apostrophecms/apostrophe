@@ -955,7 +955,7 @@ module.exports = {
       resolveExtension(extension) {
         const group = self.getFileGroup(extension);
         if (group) {
-          return group.extensionMaps[extension] || extension;
+          return group.extensionMaps?.[extension] || extension;
         }
         return extension;
       },
