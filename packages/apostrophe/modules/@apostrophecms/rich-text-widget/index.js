@@ -1152,6 +1152,18 @@ module.exports = {
         };
         return _super(req, _widget, options, _with);
       },
+      annotateWidgetForExternalFront(_super, widget, { scene } = {}) {
+        if (scene !== 'apos') {
+          let content = widget.content || '';
+          content = self.linkPermalinks(widget, content);
+          content = self.linkImages(widget, content);
+          // It should be safe to modify the widget data here because
+          // the external front-end data is read-only. The Admin UI
+          // and actual data is not affected.
+          widget.content = content;
+        }
+        return _super(widget, { scene });
+      },
       // Add on the core default options to use, if needed.
       getBrowserData(_super, req) {
         const initialData = _super(req);
