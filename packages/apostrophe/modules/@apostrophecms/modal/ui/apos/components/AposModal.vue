@@ -69,7 +69,6 @@
                   <slot name="secondaryControls" />
                 </div>
                 <h2
-                  v-if="modalTitle"
                   :id="props.modalData.id"
                   class="apos-modal__heading"
                 >
@@ -93,6 +92,11 @@
                   >
                     <slot name="localeDisplay" />
                   </div>
+                  <AposLocale
+                    v-else-if="hasBeenLocalized"
+                    class="apos-modal__locale"
+                    :locale="currentLocale"
+                  />
                   <div
                     v-if="hasSlot('primaryControls')"
                     class="apos-modal__controls--primary"
@@ -167,7 +171,7 @@ const props = defineProps({
   },
   modalTitle: {
     type: [ String, Object ],
-    default: null
+    default: ''
   },
   modalData: {
     type: Object,

@@ -39,6 +39,7 @@
         @select-tab="switchPane"
       />
     </template>
+    <template #localeDisplay />
     <template #main>
       <AposModalBody :current-tab="currentTab">
         <template #bodyMain>
