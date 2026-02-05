@@ -2,3 +2,5 @@
 /package-lock.json
 /test/test.snapshot
 .claude
+.gemini
+.codex

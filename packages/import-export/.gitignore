@@ -20,3 +20,5 @@ test/public/css/master-*.less
 /test/public/exports
 /test/public/uploads
 .claude
+.gemini
+.codex

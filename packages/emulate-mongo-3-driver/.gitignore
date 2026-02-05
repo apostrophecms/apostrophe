@@ -1,2 +1,4 @@
 node_modules
 .claude
+.gemini
+.codex

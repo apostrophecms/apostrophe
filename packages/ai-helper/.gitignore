@@ -3,3 +3,5 @@ npm-debug.log
 .DS_Store
 package-lock.json
 .claude
+.gemini
+.codex

@@ -13,3 +13,5 @@ node_modules
 test/data
 test/public
 .claude
+.gemini
+.codex

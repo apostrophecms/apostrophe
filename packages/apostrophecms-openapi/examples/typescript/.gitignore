@@ -3,3 +3,5 @@ node_modules
 typings
 dist
 .claude
+.gemini
+.codex

@@ -1,3 +1,5 @@
 node_modules
 .vscode
 .claude
+.gemini
+.codex
