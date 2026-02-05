@@ -60,7 +60,7 @@ export default {
       return !!this.$slots[name];
     },
     scrollToTop() {
-      this.$refs.bodyEl.scrollTo({
+      this.$refs?.bodyEl?.scrollTo({
         top: 0,
         left: 0
       });
