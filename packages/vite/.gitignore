@@ -13,3 +13,4 @@ test/data
 
 # vim swp files
 .*.sw*
+.claude

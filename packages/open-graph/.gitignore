@@ -6,3 +6,4 @@ node_modules
 
 # vim swp files
 .*.sw*
+.claude

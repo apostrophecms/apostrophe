@@ -12,3 +12,4 @@ node_modules
 
 test/data
 test/public
+.claude

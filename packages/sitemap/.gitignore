@@ -11,3 +11,4 @@ node_modules
 /test/apos-build
 /test/public
 /test/locales
+.claude

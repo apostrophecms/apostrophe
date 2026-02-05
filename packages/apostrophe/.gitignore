@@ -42,3 +42,4 @@ test/public/uploads
 
 # vim swp files
 .*.sw*
+.claude

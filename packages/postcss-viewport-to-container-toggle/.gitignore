@@ -18,3 +18,4 @@ test/public/css/master-*.less
 /test/data
 /test/public/exports
 /test/public/uploads
+.claude

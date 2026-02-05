@@ -19,3 +19,4 @@ test/public/css/master-*.less
 /test/fixtures/*.tar.gz
 /test/public/exports
 /test/public/uploads
+.claude

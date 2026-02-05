@@ -13,3 +13,4 @@ node_modules
 
 # Test files
 test/public/uploads
+.claude
