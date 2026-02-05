@@ -424,7 +424,7 @@ export default {
     justify-content: center;
     width: 100%;
     height: 45px;
-    padding: 0 15px;
+    padding: 0 10px;
     color: var(--a-base-3);
     transition: all 200ms ease;
     cursor: pointer;

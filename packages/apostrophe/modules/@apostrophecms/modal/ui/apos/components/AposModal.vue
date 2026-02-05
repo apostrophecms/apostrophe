@@ -188,6 +188,7 @@ const modalInnerEl = useTemplateRef('modalInnerEl');
 const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
+const currentLocale = ref(store.activeModal?.locale || apos.i18n.locale);
 const nonDraggableElements = [
   '.apos-input-wrapper',
   '.apos-field--inline-array-field',
