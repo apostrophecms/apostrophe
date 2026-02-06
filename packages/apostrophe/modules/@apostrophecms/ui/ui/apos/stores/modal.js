@@ -80,7 +80,7 @@ export const useModalStore = defineStore('modal', () => {
     if (direction === 'rtl') {
       return 'apos-rtl';
     }
-    
+
     return null;
   }
 
