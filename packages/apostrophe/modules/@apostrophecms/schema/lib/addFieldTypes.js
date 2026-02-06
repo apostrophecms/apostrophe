@@ -459,6 +459,11 @@ module.exports = (self) => {
         destination[field.name] = null;
       }
     },
+    validate(field, options, warn, fail) {
+      if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
+        fail('The direction property must be "ltr" or "rtl" if specified');
+      }
+    },
     addQueryBuilder(field, query) {
       return query.addBuilder(field.name, {
         finalize: function () {
@@ -516,6 +521,11 @@ module.exports = (self) => {
       }
       if (!data[field.name] && data[field.name] !== 0) {
         destination[field.name] = null;
+      }
+    },
+    validate(field, options, warn, fail) {
+      if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
+        fail('The direction property must be "ltr" or "rtl" if specified');
       }
     },
     addQueryBuilder(field, query) {
