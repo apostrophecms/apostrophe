@@ -75,7 +75,9 @@ export default {
         const result = await apos.http.post(`${getOptions().action}/ai-helper`, {
           body: {
             prompt: this.prompt,
-            headingLevels
+            headingLevels,
+            customSystemPrompt: this.options.customSystemPrompt,
+            appendSystemPrompt: this.options.appendSystemPrompt
           },
           busy: true
         });

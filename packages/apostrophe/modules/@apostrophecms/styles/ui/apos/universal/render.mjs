@@ -721,7 +721,10 @@ function stringifyRules(styles, inline = false) {
 
   styles.forEach((value, key) => {
     if (inline) {
-      rules.push(normalizeRules(value.values()).join(';') + ';');
+      const normalized = normalizeRules(value.values());
+      if (normalized.length) {
+        rules.push(normalized.join(';') + ';');
+      }
       return;
     }
     if (key.startsWith('@media')) {

@@ -80,12 +80,7 @@ export const useModalStore = defineStore('modal', () => {
     if (direction === 'rtl') {
       return 'apos-rtl';
     }
-
-<<<<<<< ours
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
+    
     return null;
   }
 
@@ -285,7 +280,6 @@ export const useModalStore = defineStore('modal', () => {
     getAdminDirectionClass,
     getAdminContentDirectionClass,
     getAdminFieldDirectionClass,
->>>>>>> theirs
     add,
     remove,
     get,

@@ -32,8 +32,8 @@ if (options?.aposStylesWrapper) {
 
 // Convert internal style to string and merge it with the external style.
 const styleVars = {
-  "--justify": widget.desktop.justify,
-  "--align": widget.desktop.align,
+  "--justify": widget.desktop.justify || "auto",
+  "--align": widget.desktop.align || "auto",
   "--colstart": widget.desktop.colstart,
   "--colspan": widget.desktop.colspan,
   "--rowstart": widget.desktop.rowstart,

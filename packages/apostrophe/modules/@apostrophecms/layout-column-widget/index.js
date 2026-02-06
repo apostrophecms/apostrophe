@@ -51,10 +51,14 @@ module.exports = {
     label: 'apostrophe:layoutColumn',
     contextualStyles: true,
     operationsInBreadcrumb: true,
-    breakpoints: {
-      tablet: 900,
-      mobile: 600
-    }
+    // The breakpoints used in the breakpoint visibility fields
+    // help text for the layout column
+    labelBreakpoints: {
+      mobile: 600,
+      tablet: 900
+    },
+    // Whether to show help text for the breakpoint visibility fields
+    showBreakpointsHelp: true
   },
   widgetOperations(self, options) {
     return {
@@ -100,6 +104,9 @@ module.exports = {
     };
   },
   fields(self, options) {
+    const breakpoints = options?.labelBreakpoints ||
+      options?.breakpoints || // BC, derpecated
+      {};
     return {
       add: {
         desktop: {
@@ -153,7 +160,15 @@ module.exports = {
               show: {
                 type: 'boolean',
                 label: 'apostrophe:layoutTabletShow',
-                help: `Less than ${options?.breakpoints?.tablet || 900}px`,
+                ...(options?.showBreakpointsHelp
+                  ? {
+                    help: 'apostrophe:layoutTabletShowHelp',
+                    helpInterpolation: {
+                      mobile: breakpoints.mobile || 600,
+                      tablet: breakpoints.tablet || 900
+                    }
+                  }
+                  : {}),
                 def: true
               },
               ...alignSchema
@@ -184,7 +199,14 @@ module.exports = {
               show: {
                 type: 'boolean',
                 label: 'apostrophe:layoutMobileShow',
-                help: `Less than ${options?.breakpoints?.mobile || 600}px`,
+                ...(options?.showBreakpointsHelp
+                  ? {
+                    help: 'apostrophe:layoutMobileShowHelp',
+                    helpInterpolation: {
+                      mobile: breakpoints.mobile || 600
+                    }
+                  }
+                  : {}),
                 def: true
               },
               ...alignSchema
