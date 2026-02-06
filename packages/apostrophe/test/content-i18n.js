@@ -26,7 +26,9 @@ describe('content-i18n', function() {
             },
             'es-MX': {
               label: 'Mexico',
-              hostname: 'example.mx'
+              hostname: 'example.mx',
+              // Yup, it's not RTL, but this is just a test
+              direction: 'rtl'
             }
           }
         }
@@ -226,10 +228,10 @@ describe('content-i18n', function() {
     // Locale-switching links are present for locales that are available
     // and fall back to home page for locales that are not
     const childPageId = enCA._id.replace(':draft', ':published');
-    assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en">English (en)</a></li>`));
-    assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en-CA">Canadian English (en-CA)</a></li>`));
-    assert(childPage.includes('"http://localhost:3000/ca-fr/">Canadian French (fr-CA)</a></li>'));
-    assert(childPage.includes('"http://example.mx/">Mexico (es-MX)</a></li>'));
+    assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en">English (en)(ltr)</a></li>`));
+    assert(childPage.includes(`"/api/v1/@apostrophecms/page/${childPageId}/locale/en-CA">Canadian English (en-CA)(ltr)</a></li>`));
+    assert(childPage.includes('"http://localhost:3000/ca-fr/">Canadian French (fr-CA)(ltr)</a></li>'));
+    assert(childPage.includes('"http://example.mx/">Mexico (es-MX)(rtl)</a></li>'));
 
     // And the home page should be reachable
     const home = await apos.http.get('/ca-en/');

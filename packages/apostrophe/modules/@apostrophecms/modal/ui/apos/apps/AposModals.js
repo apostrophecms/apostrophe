@@ -18,6 +18,7 @@ export default function() {
   apos.modal.getProperties = modalStore.getProperties;
   apos.modal.onTopOf = modalStore.onTopOf;
   apos.modal.getActiveLocale = modalStore.getActiveLocale;
+  apos.modal.getAdminDirectionClass = modalStore.getAdminDirectionClass;
   apos.confirm = modalStore.confirm;
   apos.alert = modalStore.alert;
   apos.report = modalStore.report;
