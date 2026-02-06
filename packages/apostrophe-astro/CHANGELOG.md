@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.0-alpha.1
+
+### Adds
+
+- Add RTL support for Astro applications
+
 ## 1.8.0
 
 ### Adds
