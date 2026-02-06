@@ -149,6 +149,7 @@
         :is="widgetEditorComponent(widget.type)"
         v-if="isContextual && !foreign"
         :key="generation"
+        :class="adminContentDirectionClass"
         :options="widgetOptions"
         :type="widget.type"
         :model-value="widget"
@@ -163,6 +164,7 @@
         v-else
         :id="widget._id"
         :key="`${generation}-preview`"
+        :class="adminContentDirectionClass"
         :options="widgetOptions"
         :type="widget.type"
         :area-field-id="fieldId"
@@ -209,6 +211,8 @@
 import { mapState, mapActions } from 'pinia';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useBreakpointPreviewStore } from 'Modules/@apostrophecms/ui/stores/breakpointPreview.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
+
 export default {
   name: 'AposAreaWidget',
   props: {
@@ -356,6 +360,9 @@ export default {
       'emphasizedWidgets'
     ]),
     ...mapState(useBreakpointPreviewStore, { breakpointPreviewMode: 'mode' }),
+    adminContentDirectionClass() {
+      return this.getAdminContentDirectionClass();
+    },
     // Passed only to the preview layer (custom preview components).
     followingValuesWithParent() {
       return Object.entries(this.followingValues || {})
@@ -440,7 +447,10 @@ export default {
     },
     labelsClasses() {
       return {
-        [this.classes.show]: this.isHovered || this.isFocused || this.isEmphasized
+        [this.classes.show]: this.isHovered || this.isFocused || this.isEmphasized,
+        // Force LTR for breadcrumbs for now so that nested AreaWidgets
+        // behave properly.
+        'apos-ltr': true
       };
     },
     addClasses() {
@@ -544,6 +554,7 @@ export default {
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
+    ...mapActions(useModalStore, [ 'getAdminContentDirectionClass' ]),
     // Emits same actions as the native operations,
     // e.g ('edit', { index }), ('remove', { index }), etc.
     onOperation({ name, payload }) {
