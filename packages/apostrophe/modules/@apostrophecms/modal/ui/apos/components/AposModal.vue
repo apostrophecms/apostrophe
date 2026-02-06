@@ -21,7 +21,10 @@
       <transition :name="transitionType">
         <div
           v-if="modal.showModal"
-          class="apos-modal__overlay"
+          :class="[
+            'apos-modal__overlay',
+            { [`apos-modal__overlay--${modal.overlay}`]: modal.overlay }
+          ]"
           @click="emit('esc')"
         />
       </transition>
@@ -31,9 +34,12 @@
       >
         <div
           v-if="modal.showModal"
-          :class="innerClasses"
+          ref="modalInnerEl"
           class="apos-modal__inner"
+          :class="innerClasses"
+          :style="isWindowModal ? windowStyle : {}"
           data-apos-modal-inner
+          @mousedown="startDragging"
         >
           <template v-if="modal.busy">
             <div class="apos-modal__busy">
@@ -99,16 +105,16 @@
                   </div>
                 </div>
               </div>
-              <div
-                v-if="hasSlot('breadcrumbs')"
-                class="apos-modal__breadcrumbs"
-              >
-                <slot
-                  class="apos-modal__breadcrumbs"
-                  name="breadcrumbs"
-                />
-              </div>
             </header>
+            <div
+              v-if="hasSlot('breadcrumbs')"
+              class="apos-modal__breadcrumbs"
+            >
+              <slot
+                class="apos-modal__breadcrumbs"
+                name="breadcrumbs"
+              />
+            </div>
             <div
               class="apos-modal__main"
               :class="gridModifier"
@@ -144,10 +150,11 @@
 // transition.
 
 import {
-  ref, onMounted, computed, watch, nextTick, useSlots, useTemplateRef
+  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots, useTemplateRef
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useDraggableWindow } from 'Modules/@apostrophecms/ui/composables/useDraggableWindow.js';
 
 const {
   cycleElementsToFocus,
@@ -177,10 +184,66 @@ const store = useModalStore();
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = useTemplateRef('modalEl');
+const modalInnerEl = useTemplateRef('modalInnerEl');
 const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
 const currentLocale = ref(store.activeModal?.locale || apos.i18n.locale);
+const nonDraggableElements = [
+  '.apos-input-wrapper',
+  '.apos-field--inline-array-field',
+  '.apos-field--inline-array-table-with-remove-button-field',
+  '.apos-field--inline-array-table-field',
+  '.apos-input-color__sample-picker'
+];
+
+const isWindowModal = computed(() => {
+  return props.modal.type === 'window';
+});
+
+const DEFAULT_WINDOW_SIZE = {
+  width: 380,
+  height: 500
+};
+
+const size = ref({
+  width: DEFAULT_WINDOW_SIZE.width,
+  height: DEFAULT_WINDOW_SIZE.height
+});
+
+const getDefaultPosition = (origin = 'right') => {
+  const adminBarHeight = window.apos?.adminBar?.height || 0;
+  const windowSize = window.innerWidth;
+  const spacing = 30;
+  const left = origin === 'left' ? spacing : windowSize - size.value.width - spacing;
+  const top = adminBarHeight + spacing;
+
+  return {
+    left,
+    top
+  };
+};
+
+const {
+  style: windowStyle,
+  startDragging: composableStartDragging,
+  setPosition: setWindowPosition,
+  constrainPosition
+} = useDraggableWindow({
+  size,
+  getDefaultPosition: () => getDefaultPosition(props.modal.origin)
+});
+
+// Wrap handler to only work for window modals
+const startDragging = (e) => {
+  const nonDraggable = nonDraggableElements.some(
+    sel => e.target.closest(sel)
+  );
+
+  if (isWindowModal.value && !nonDraggable) {
+    composableStartDragging(e);
+  }
+};
 
 const transitionType = computed(() => {
   if (props.modal.type !== 'slide') {
@@ -238,6 +301,10 @@ const innerClasses = computed(() => {
     classes.push(`apos-modal__inner--${props.modal.width}`);
   };
 
+  if (props.modal.type === 'window') {
+    classes.push('apos-window');
+  };
+
   return classes;
 });
 
@@ -271,6 +338,55 @@ onMounted(async () => {
     renderingElements.value = false;
   }
   store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
+
+  if (isWindowModal.value && modalInnerEl.value) {
+    await nextTick();
+    const rect = modalInnerEl.value.getBoundingClientRect();
+    size.value = {
+      width: rect.width || DEFAULT_WINDOW_SIZE.width,
+      height: rect.height || DEFAULT_WINDOW_SIZE.height
+    };
+    setWindowPosition();
+    window.addEventListener('resize', handleResize);
+  }
+});
+
+// Watch for modal show/hide to update position
+watch(() => props.modal.showModal, async (showModal) => {
+  if (isWindowModal.value && showModal && modalInnerEl.value) {
+    await nextTick();
+    const rect = modalInnerEl.value.getBoundingClientRect();
+    size.value = {
+      width: rect.width || DEFAULT_WINDOW_SIZE.width,
+      height: rect.height || DEFAULT_WINDOW_SIZE.height
+    };
+    setWindowPosition();
+  }
+});
+
+// Watch for switch to window modal (e.g. dock → window) and compute position
+watch(isWindowModal, async (isWindow) => {
+  if (isWindow && modalInnerEl.value) {
+    await nextTick();
+    const rect = modalInnerEl.value.getBoundingClientRect();
+    size.value = {
+      width: rect.width || DEFAULT_WINDOW_SIZE.width,
+      height: rect.height || DEFAULT_WINDOW_SIZE.height
+    };
+    setWindowPosition();
+  }
+});
+
+function handleResize() {
+  if (isWindowModal.value) {
+    constrainPosition();
+  }
+}
+
+onUnmounted(() => {
+  if (isWindowModal.value) {
+    window.removeEventListener('resize', handleResize);
+  }
 });
 
 function onKeyup(event) {
@@ -292,6 +408,11 @@ function onKeyup(event) {
 }
 
 async function onEnter() {
+  // For window modals, calculate position before showing so the modal
+  // appears in the correct place (avoids flash from 0,0).
+  if (isWindowModal.value) {
+    setWindowPosition();
+  }
   emit('show-modal');
 
   await nextTick();
@@ -370,6 +491,7 @@ function close() {
     position: fixed;
     inset: $spacing-base $spacing-base $spacing-base $spacing-base;
     display: flex;
+    overflow: hidden;
     flex-direction: column;
     height: calc(100vh - $spacing-base * 2);
     border-radius: var(--a-border-radius);
@@ -447,6 +569,21 @@ function close() {
     }
   }
 
+  .apos-modal--window {
+    // Default dimensions are set via inline styles from DEFAULT_WINDOW_SIZE constant
+    .apos-modal__inner {
+      border-radius: 10px;
+    }
+
+    :deep(.apos-modal__body) {
+      padding: 15px 12.5px;
+    }
+
+    :deep(.apos-modal__footer__inner) {
+      padding: 10px;
+    }
+  }
+
   .apos-modal--full-height .apos-modal__inner {
     height: 100%;
   }
@@ -469,9 +606,8 @@ function close() {
     inset: 0;
     background-color: var(--a-overlay-modal);
 
-    .apos-modal--slide &,
-    .apos-modal--overlay & {
-      transition: opacity 200ms ease;
+    &--transparent {
+      background-color: transparent;
     }
 
     &.slide-left-enter-from,

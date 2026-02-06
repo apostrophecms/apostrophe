@@ -46,6 +46,10 @@ module.exports = (moduleOptions) => {
     border: {
       label: 'apostrophe:styleBorder',
       type: 'object',
+      options: {
+        flat: true,
+        hideLabel: true
+      },
       fields: {
         add: {
           active: {
@@ -121,6 +125,10 @@ module.exports = (moduleOptions) => {
       type: 'object',
       valueTemplate: '%x% %y% %blur% %color%',
       property: 'box-shadow',
+      options: {
+        flat: true,
+        hideLabel: true
+      },
       fields: {
         add: {
           active: {

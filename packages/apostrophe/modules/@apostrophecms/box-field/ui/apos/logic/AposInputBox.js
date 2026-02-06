@@ -46,11 +46,6 @@ export default {
         'apos-input--number',
         this.directionClass
       ].filter(Boolean);
-    },
-    classesIndividual() {
-      return [
-        this.directionClass
-      ].filter(Boolean);
     }
   },
   mounted() {
@@ -61,6 +56,15 @@ export default {
     });
   },
   methods: {
+    getClassesIndividual(side) {
+      return [
+        'apos-input',
+        'apos-input--number',
+        'apos-input-box__individual-input',
+        `apos-input-box__individual-input--${side}`,
+        this.directionClass
+      ].filter(Boolean);
+    },
     getShorthand() {
       const values = Object.values(this.next);
 
@@ -149,6 +153,9 @@ export default {
         : this.field.def;
     },
     adjustWidth(side) {
+      if (this.modifiers.includes('micro')) {
+        return;
+      }
       if (this.$refs[`input-side-${side}`]) {
         const length = this.$refs[`input-side-${side}`][0].value.length;
         this.$refs[`input-side-${side}`][0].style.width = `${length * 20}px`;

@@ -10,7 +10,10 @@
   >
     <template #body>
       <div class="apos-input-wrapper apos-input-box__wrapper">
-        <div class="apos-input-box__shorthand">
+        <div
+          v-if="mode === 'shorthand'"
+          class="apos-input-box__shorthand"
+        >
           <input
             :id="`${uid}-shorthand`"
             v-model="shorthand"
@@ -33,6 +36,50 @@
           >
             {{ field.unit }}
           </div>
+        </div>
+        <div
+          v-else
+          class="apos-input-box__individual"
+        >
+          <div
+            v-for="side in Object.keys(defValue)"
+            :key="side"
+            class="apos-input-box__individual-input-wrapper"
+          >
+            <input
+              :id="`${uid}-${side}`"
+              :ref="`input-side-${side}`"
+              v-model="next[side]"
+              type="number"
+              placeholder="--"
+              :class="getClassesIndividual(side)"
+              :data-apos-test="`box-input-side-${side}`"
+              :aria-label="`${$t(field.label)} ${$t('apostrophe:boxFieldAriaLabelIndividual', { side })}`"
+              :disabled="field.readOnly || field.disabled"
+              :min="field.min"
+              :max="field.max ? field.max : null"
+              :step="field.step ? field.step : null"
+              :required="field.required"
+              tabindex="0"
+              @focus="individualFocus = side"
+              @blur="individualFocus = undefined"
+              @input="adjustWidth(side)"
+            >
+            <label
+              class="apos-input-box__individual-label"
+              :for="`${uid}-${side}`"
+            >
+              {{ $t(`apostrophe:boxField${side.charAt(0).toUpperCase() + side.slice(1)}`) }}
+            </label>
+          </div>
+          <div
+            v-if="field.unit"
+            class="apos-input-box__unit apos-input-box__unit--individual"
+          >
+            {{ field.unit }}
+          </div>
+        </div>
+        <div class="apos-input-box__controls">
           <div class="apos-input-box__switch">
             <button
               v-apos-tooltip="$t('apostrophe:boxFieldEditAll')"
@@ -77,49 +124,6 @@
             :modifiers="['no-motion']"
             @click="clearOrReset"
           />
-        </div>
-        <div
-          v-show="mode === 'individual'"
-          class="apos-input-box__individual"
-        >
-          <div
-            v-for="side in Object.keys(defValue)"
-            :key="side"
-            class="apos-input-box__individual-input-wrapper"
-          >
-            <input
-              :id="`${uid}-${side}`"
-              :ref="`input-side-${side}`"
-              v-model="next[side]"
-              type="number"
-              placeholder="--"
-              class="apos-input-box__individual-input apos-input apos-input--number"
-              :data-apos-test="`box-input-side-${side}`"
-              :aria-label="`${$t(field.label)} ${$t('apostrophe:boxFieldAriaLabelIndividual', { side })}`"
-              :class="[ `apos-input-box__individual-input--${side}`, ...classesIndividual ]"
-              :disabled="field.readOnly || field.disabled"
-              :min="field.min"
-              :max="field.max ? field.max : null"
-              :step="field.step ? field.step : null"
-              :required="field.required"
-              tabindex="0"
-              @focus="individualFocus = side"
-              @blur="individualFocus = undefined"
-              @input="adjustWidth(side)"
-            >
-            <label
-              class="apos-input-box__individual-label"
-              :for="`${uid}-${side}`"
-            >
-              {{ $t(`apostrophe:boxField${side.charAt(0).toUpperCase() + side.slice(1)}`) }}
-            </label>
-          </div>
-          <div
-            v-if="field.unit"
-            class="apos-input-box__unit apos-input-box__unit--individual"
-          >
-            {{ field.unit }}
-          </div>
         </div>
       </div>
     </template>
@@ -170,10 +174,14 @@ export default {
     }
   }
 
+  .apos-input-box__controls {
+    display: flex;
+    gap: 7.5px;
+  }
+
   .apos-input-box__wrapper {
     display: flex;
-    flex-direction: column;
-    gap: $spacing-base;
+    gap: $spacing-triple;
     max-width: 350px;
   }
 
@@ -202,37 +210,34 @@ export default {
   }
 
   .apos-input-box__switch__button {
-    @include apos-transition();
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    border: none;
+    border-radius: var(--a-border-radius);
+    cursor: pointer;
+    color: var(--a-base-4);
+    background-color: transparent;
+    transition: background-color 300ms ease-in;
 
-    & {
-      display: flex;
-      box-sizing: border-box;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      aspect-ratio: 1 / 1;
-      border: none;
-      border-radius: var(--a-border-radius);
-      cursor: pointer;
-      color: var(--a-base-4);
-      background-color: transparent;
+    &:active, &:focus {
+      outline: 2px solid var(--a-primary-transparent-25);
+      background-color: var(--a-base-9)
+    }
 
-      &:active, &:focus {
-        outline: 2px solid var(--a-primary-transparent-25);
-        background-color: var(--a-base-9)
-      }
+    &:hover:not(.active) {
+      background-color: var(--a-base-10);
+      outline: 1px solid var(--a-base-6);
+    }
 
-      &:hover:not(.active) {
-        background-color: var(--a-base-10);
-        border: 1px solid var(--a-base-6);
-      }
-
-      &.active {
-        border: 1px solid var(--a-base-7);
-        color: var(--a-primary);
-        background-color: var(--a-base-10);
-        box-shadow: rgb(50 50 93 / 25%) 0 13px 27px -5px, rgb(0 0 0 / 30%) 0 8px 16px -8px;
-      }
+    &.active {
+      outline: 1px solid var(--a-base-7);
+      color: var(--a-primary);
+      background-color: var(--a-base-10);
+      box-shadow: rgb(50 50 93 / 25%) 0 13px 27px -5px, rgb(0 0 0 / 30%) 0 8px 16px -8px;
     }
   }
 
@@ -334,7 +339,6 @@ export default {
 
   .apos-input-box__unit {
     align-self: center;
-    margin-right: $spacing-base + $spacing-half;
     color: var(--a-base-3);
     font-family: var(--a-family-default);
     font-size: var(--a-type-base);

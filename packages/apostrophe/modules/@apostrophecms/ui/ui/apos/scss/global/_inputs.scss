@@ -105,7 +105,62 @@
 }
 
 .apos-field.apos-field--micro {
+  .apos-button,
+  .apos-button--small,
+  .apos-combo__selected,
+  .apos-input-array-inline-empty-label,
+  .apos-input-array-inline-all-controls .apos-button__label,
+  .apos-input-box__reset .apos-button__label,
+  .apos-input,
+  .apos-field__label,
+  .apos-choice-label,
+  .apos-choice-label-text,
+  .apos-field__help,
+  .apos-input-color__info,
+  .apos-button__label {
+    font-size: var(--a-type-smaller);
+  }
+
+  &.apos-field--object-field {
+    .apos-input-object:not(.apos-input-object--flat) > .apos-input-wrapper {
+      margin: 10px 0 0 10px
+    }
+  }
+
+  &.apos-field--inline-array-field,
+  &.apos-field--inline-array-table-with-remove-button-field,
+  &.apos-field--inline-array-table-field {
+    .apos-input-array-inline-empty {
+      padding: 15px 0;
+      gap: 5px;
+      color: var(--a-base-5);
+      background-color: var(--a-base-10);
+    }
+
+    .apos-input-array-inline-standard .apos-schema {
+      margin: 0 10px;
+      padding: 10px 0;
+    }
+
+    .apos-input-array-inline-label {
+      padding: 7.5px 0;
+      font-size: var(--a-type-label);
+    }
+
+    .apos-input-array-inline-header-ui-element.apos-indicator,
+    .apos-input-array-inline-header-ui-element .apos-button,
+    .apos-input-array-inline-header-ui-element .apos-button--icon-only.apos-button--small {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
   &.apos-field--box {
+    .apos-input-box__wrapper {
+      justify-content: space-between;
+      gap: $spacing-base;
+    }
+
     .apos-input-box__shorthand-input[disabled] {
       background: var(--a-base-7);
       opacity: 0.5;
@@ -120,11 +175,48 @@
       min-width: 100%;
       max-width: 100%;
     }
+
+    .apos-input-box__shorthand,
+    .apos-input-box__individual {
+      flex: 1;
+    }
+
+    .apos-input-box__shorthand-input,
+    .apos-input-box__individual-input,
+    .apos-input-box__switch,
+    .apos-input-box__controls {
+      height: 27px;
+    }
+
+    .apos-input-box__reset {
+      position: absolute;
+      top: -24px;
+      right: 0;
+      display: block;
+    }
+
+    .apos-input-box__individual-input {
+      width: 46px;
+      padding: 7.5px 0 7.5px 7.5px;
+    }
+
+    .apos-input-box__switch__button {
+      aspect-ratio: auto;
+    }
+
+    .apos-input-box__unit--individual {
+      top: -7px;
+      left: -5px;
+    }
+
+    .apos-input-box__unit {
+      font-size: var(--a-type-small);
+    }
   }
 
   .apos-input {
+    height: auto;
     padding: $spacing-three-quarters;
-    font-size: var(--a-type-small);
   }
 
   .apos-input-icon {
@@ -141,7 +233,6 @@
 
   .apos-field__label {
     margin-bottom: $spacing-three-quarters;
-    font-size: var(--a-type-small);
     font-weight: 500;
 
     &:has(+ .apos-field__help) {
@@ -157,22 +248,23 @@
   .apos-field__help {
     margin-bottom: $spacing-half;
     color: var(--a-base-2);
-    font-size: var(--a-type-small);
   }
 
-  .apos-choice-label-text {
-    font-size: var(--a-type-smaller);
-  }
+  &.apos-field--radio .apos-radio-wrapper--buttons {
+    width: 100%;
 
-  &.apos-field--radio {
-    .apos-radio-wrapper--buttons {
-      width: 100%;
-    }
-
-    .apos-radio-wrapper--buttons .apos-choice-label {
+    .apos-choice-label {
       flex: 1;
       height: 27px;
       place-content: center;
+    }
+
+    .apos-choice-label-text {
+      margin: 0;
+    }
+
+    .apos-choice-label-icon + .apos-choice-label-text {
+      margin-left: $spacing-half
     }
   }
 
@@ -180,11 +272,6 @@
     .apos-input-relationship__button {
       top: 1px;
       padding: 0;
-    }
-
-    .apos-button,
-    .apos-button--small {
-      font-size: var(--a-type-small);
     }
 
     .apos-search__item:not(.apos-search__item--disabled) .apos-indicator svg {
@@ -253,9 +340,8 @@
       display: flex;
       place-content: center;
       margin-left: 0;
-      font-size: var(--a-type-base);
       white-space: nowrap;
-      transform: translateY(-23.5px);
+      transform: translateY(-20.5px);
       line-height: 1.3;
     }
   }

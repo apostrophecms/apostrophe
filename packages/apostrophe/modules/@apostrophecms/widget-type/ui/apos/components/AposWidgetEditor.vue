@@ -8,6 +8,22 @@
     @esc="confirmAndCancel"
     @no-modal="removePreview"
   >
+    <template #secondaryControls>
+      <div class="apos-widget-editor__controls">
+        <AposButton
+          v-if="!disabledChangeDisplay"
+          type="subtle"
+          :modifiers="['small', 'no-motion']"
+          :tooltip="changeDisplayTooltip"
+          class="apos-widget-editor__dock-button"
+          action="changeDisplay"
+          :icon="changeDisplayIcon"
+          :icon-size=" isDisplayWindow? 18 : 24"
+          :icon-only="true"
+          @click="updateEditorDisplay"
+        />
+      </div>
+    </template>
     <template #breadcrumbs>
       <AposModalBreadcrumbs
         v-if="breadcrumbs && breadcrumbs.length"
@@ -23,8 +39,9 @@
         @select-tab="switchPane"
       />
     </template>
+    <template #localeDisplay />
     <template #main>
-      <AposModalBody>
+      <AposModalBody :current-tab="currentTab">
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
@@ -37,6 +54,7 @@
               :current-fields="groups[tab.name].fields"
               :schema="groups[tab.name].schema"
               :model-value="docFields"
+              :modifiers="isDisplayWindow ? [ 'micro'] : []"
               :meta="meta"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
@@ -51,10 +69,12 @@
       <AposButton
         type="default"
         label="apostrophe:cancel"
+        action="cancel"
         @click="confirmAndCancel"
       />
       <AposButton
         type="primary"
+        action="save"
         :label="saveLabel"
         :disabled="errorCount > 0"
         @click="save"
@@ -66,6 +86,7 @@
 <script>
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
+import { mapState } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
@@ -76,6 +97,7 @@ import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposWidgetEditor',
@@ -142,18 +164,35 @@ export default {
         hasErrors: false
       },
       fieldErrors: {},
+      triggerValidation: false,
+      lastPreview: null,
+      displayPrefName: `apos-${this.type}-display-pref`,
+      defaultSidebarWidth: 'one-third',
       modal: {
         active: false,
-        type: 'slide',
         width: moduleOptions.width,
         origin: guessOrigin(this.preview?.area, moduleOptions),
         showModal: false
-      },
-      triggerValidation: false,
-      lastPreview: null
+      }
     };
   },
   computed: {
+    ...mapState(useModalStore, [ 'stack' ]),
+    changeDisplayIcon() {
+      const name = this.isDisplayWindow ? this.modal.origin || 'right' : 'window';
+      return `dock-${name}-icon`;
+    },
+    changeDisplayTooltip() {
+      const where = this.isDisplayWindow ? this.modal.origin || 'right' : 'window';
+      return where === 'window'
+        ? 'apostrophe:dockSeparate'
+        : where === 'left'
+          ? 'apostrophe:dockLeft'
+          : 'apostrophe:dockRight';
+    },
+    disabledChangeDisplay() {
+      return this.stack.length > 1;
+    },
     moduleOptions() {
       return window.apos.modules[apos.area.widgetManagers[this.type]];
     },
@@ -186,9 +225,21 @@ export default {
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
+    },
+    isDisplayWindow() {
+      return this.modal.width === 'window';
     }
   },
   async mounted() {
+    // If there are other modals open, force a slide modal
+    if (this.stack.length > 1) {
+      this.modal.width =
+        this.moduleOptions.width === 'window'
+          ? this.defaultSidebarWidth
+          : this.moduleOptions.width;
+    }
+    this.modal.type = this.isDisplayWindow ? 'window' : 'slide';
+    this.modal.overlay = this.isDisplayWindow ? 'transparent' : null;
     this.modal.active = true;
     await this.evaluateExternalConditions();
     this.evaluateConditions();
@@ -236,6 +287,32 @@ export default {
     this.initPreview();
   },
   methods: {
+    updateEditorDisplay() {
+      if (this.modal.width === 'window') {
+        if (this.moduleOptions.width === 'window') {
+          this.modal.width = this.defaultSidebarWidth;
+        } else {
+          this.modal.width = this.moduleOptions.width;
+        }
+        this.modal.type = 'slide';
+        this.modal.overlay = null;
+      } else {
+        this.modal.width = 'window';
+        this.modal.type = 'window';
+        this.modal.overlay = 'transparent';
+      }
+      this.setDisplayPref(this.modal.width);
+    },
+    setDisplayPref(pref) {
+      window.localStorage.setItem(this.displayPrefName, pref);
+    },
+    getDisplayPref() {
+      let pref = window.localStorage.getItem(this.displayPrefName);
+      if (typeof pref !== 'string') {
+        pref = this.moduleOptions.width;
+      }
+      return pref;
+    },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
       this.docFields.data = {
@@ -484,3 +561,39 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.apos-widget-editor__controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.apos-modal--window {
+  &:deep(.apos-modal__header__main) {
+    padding: 2.5px 10px 0;
+    border-top: 1px solid var(--a-base-9);
+  }
+
+  &:deep(.apos-modal__heading) {
+    font-size: var(--a-type-label);
+  }
+
+  &:deep(.apos-modal__controls--secondary) {
+    margin-right: 10px;
+  }
+
+  &:deep(.apos-widget-editor__dock-button .apos-button--icon-only.apos-button--subtle) {
+    padding: 7.5px 0;
+
+    &:hover,
+    &:focus,
+    &:active {
+      background-color: transparent;
+      border: none;
+      outline: none;
+    }
+  }
+}
+
+</style>
