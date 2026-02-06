@@ -46,11 +46,6 @@ export default {
         'apos-input--number',
         this.directionClass
       ].filter(Boolean);
-    },
-    classesIndividual() {
-      return [
-        this.directionClass
-      ].filter(Boolean);
     }
   },
   mounted() {
@@ -61,6 +56,15 @@ export default {
     });
   },
   methods: {
+    getClassesIndividual(side) {
+      return [
+        'apos-input',
+        'apos-input--number',
+        'apos-input-box__individual-input',
+        `apos-input-box__individual-input--${side}`,
+        this.directionClass
+      ].filter(Boolean);
+    },
     getShorthand() {
       const values = Object.values(this.next);
 
