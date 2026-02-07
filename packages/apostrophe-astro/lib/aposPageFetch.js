@@ -4,7 +4,12 @@ import aposRequest from './aposRequest.js';
 export default async function aposPageFetch(req) {
   let aposData = {};
   try {
-    const request = aposRequest(req);
+    let request = aposRequest(req);
+    if (request.method === 'HEAD') {
+      request = new Request(request, {
+        method: 'GET'
+      });
+    }
     const response = await aposResponse(request);
     aposData = await response.json();
     aposData.aposResponseHeaders = response.headers;
