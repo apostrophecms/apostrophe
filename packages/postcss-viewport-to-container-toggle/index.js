@@ -1,3 +1,6 @@
+const createCoreProcessor = require('./src/core/processor');
+const createPostcssAdapter = require('./src/core/postcssAdapter');
+
 /**
  * PostCSS plugin to toggle viewport units into container query units.
  *
@@ -19,9 +22,6 @@
  * logs to specific files.
  * @returns {Object} The PostCSS plugin.
  */
-const createCoreProcessor = require('./src/core/processor');
-const createPostcssAdapter = require('./src/core/postcssAdapter');
-
 const plugin = (opts = {}) => {
   const coreProcessor = createCoreProcessor(opts);
 
