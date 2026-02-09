@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.27.0-alpha.2
+
+### Changes
+
+- Removes commit resolution markers that were left behind in the previous version
+
 ## 4.27.0-alpha.1
 
 ### Adds
