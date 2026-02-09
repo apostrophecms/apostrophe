@@ -171,6 +171,14 @@ export default {
     moduleOptions() {
       return window.apos.modules[this.activeMedia.type] || {};
     },
+    intlLocale() {
+      const locale = window.apos.locale;
+      const locales = window.apos.i18n.locales;
+      if (locales?.[locale]?.intlMapping) {
+        return locales[locale].intlMapping;
+      }
+      return locale;
+    },
     canLocalize() {
       return this.moduleOptions.canLocalize && this.activeMedia._id;
     },
@@ -201,19 +209,31 @@ export default {
         return '';
       }
       const size = this.activeMedia.attachment.length;
-      const formatter = new Intl.NumberFormat(apos.locale, {
-        maximumFractionDigits: 2
-      });
-      if (size >= 1000000) {
-        const formatted = formatter.format(size / 1000000);
-        return this.$t('apostrophe:mediaMB', {
-          size: formatted
+      try {
+        const formatter = new Intl.NumberFormat(this.intlLocale, {
+          maximumFractionDigits: 2
         });
-      } else {
-        const formatted = formatter.format(size / 1000);
-        return this.$t('apostrophe:mediaKB', {
-          size: formatted
-        });
+        if (size >= 1000000) {
+          const formatted = formatter.format(size / 1000000);
+          return this.$t('apostrophe:mediaMB', {
+            size: formatted
+          });
+        } else {
+          const formatted = formatter.format(size / 1000);
+          return this.$t('apostrophe:mediaKB', {
+            size: formatted
+          });
+        }
+      } catch (e) {
+        if (size >= 1000000) {
+          return this.$t('apostrophe:mediaMB', {
+            size: (size / 1000000).toFixed(2)
+          });
+        } else {
+          return this.$t('apostrophe:mediaKB', {
+            size: (size / 1000).toFixed(2)
+          });
+        }
       }
     },
     createdDate() {

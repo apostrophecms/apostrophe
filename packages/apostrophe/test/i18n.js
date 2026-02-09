@@ -17,7 +17,8 @@ describe('static i18n', function() {
             locales: {
               en: {},
               fr: {
-                prefix: '/fr'
+                prefix: '/fr',
+                intlMapping: 'fr-FR'
               },
               he: {
                 label: 'Hebrew',
@@ -63,6 +64,11 @@ describe('static i18n', function() {
   it('should should exist on the apos object', async function() {
     assert(apos.i18n);
     assert(apos.i18n.i18next);
+  });
+
+  it('should preserve intlMapping property on locales', async function() {
+    assert.equal(apos.i18n.locales.fr.intlMapping, 'fr-FR');
+    assert.equal(apos.i18n.locales.en.intlMapping, undefined);
   });
 
   it('should set the lang and dir attributes by default', async function() {
