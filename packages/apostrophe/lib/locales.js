@@ -11,6 +11,14 @@ module.exports = {
       const prefix = options.prefix || '__none';
       const key = `${hostname}:${prefix}`;
       const direction = options.direction;
+      const intlMapping = options.intlMapping;
+
+      if (intlMapping && (typeof intlMapping !== 'string')) {
+        throw new Error(stripIndent`
+          The locale "${name}" has an invalid intlMapping option "${intlMapping}".
+          The intlMapping option must be a string.
+        `);
+      }
 
       // Note that default `ltr` directions should have been set
       // already by the `getLocales` method in the i18n module.
