@@ -36,7 +36,13 @@
           v-if="modal.showModal"
           ref="modalInnerEl"
           class="apos-modal__inner"
-          :class="innerClasses"
+          :class="[
+            innerClasses,
+            {
+              'apos-window--resizing': isWindowModal && windowResizing,
+              'apos-window--dragging': isWindowModal && windowDragging
+            }
+          ]"
           :style="isWindowModal ? windowStyle : {}"
           data-apos-modal-inner
           @mousedown="startDragging"
@@ -132,6 +138,30 @@
               </div>
             </footer>
           </div>
+          <template v-if="isWindowModal">
+            <div
+              v-for="side in resizeSides"
+              :key="side.direction"
+              class="apos-window__resize-handle"
+              :class="`apos-window__resize-handle--${side.edge}`"
+              role="presentation"
+              aria-hidden="true"
+              @mousedown.stop="(e) => startResizing(e, side.direction)"
+            />
+          </template>
+          <div
+            v-if="isWindowModal"
+            class="apos-window__resize-handle apos-window__resize-handle--corner"
+            role="presentation"
+            aria-hidden="true"
+            @mousedown.stop="(e) => startResizing(e, 'se')"
+          >
+            <AposIndicator
+              icon="resize-bottom-right-icon"
+              :icon-size="18"
+              icon-color="var(--a-base-0)"
+            />
+          </div>
         </div>
       </transition>
     </section>
@@ -197,6 +227,25 @@ const nonDraggableElements = [
   '.apos-input-color__sample-picker'
 ];
 
+const resizeSides = [
+  {
+    edge: 'top',
+    direction: 'n'
+  },
+  {
+    edge: 'right',
+    direction: 'e'
+  },
+  {
+    edge: 'bottom',
+    direction: 's'
+  },
+  {
+    edge: 'left',
+    direction: 'w'
+  }
+];
+
 const isWindowModal = computed(() => {
   return props.modal.type === 'window';
 });
@@ -226,12 +275,19 @@ const getDefaultPosition = (origin = 'right') => {
 
 const {
   style: windowStyle,
+  dragging: windowDragging,
+  resizing: windowResizing,
   startDragging: composableStartDragging,
+  startResizing,
   setPosition: setWindowPosition,
   constrainPosition
 } = useDraggableWindow({
   size,
-  getDefaultPosition: () => getDefaultPosition(props.modal.origin)
+  getDefaultPosition: () => getDefaultPosition(props.modal.origin),
+  minWidth: props.modal.minWidth !== undefined ? props.modal.minWidth : 280,
+  maxWidth: props.modal.maxWidth !== undefined ? props.modal.maxWidth : null,
+  minHeight: props.modal.minHeight !== undefined ? props.modal.minHeight : 200,
+  maxHeight: props.modal.maxHeight !== undefined ? props.modal.maxHeight : null
 });
 
 // Wrap handler to only work for window modals
@@ -573,6 +629,63 @@ function close() {
     // Default dimensions are set via inline styles from DEFAULT_WINDOW_SIZE constant
     .apos-modal__inner {
       border-radius: 10px;
+    }
+
+    .apos-window__resize-handle {
+      $handle-size: 4px;
+
+      z-index: $z-index-default;
+      position: absolute;
+      transition: background-color 200ms ease;
+
+      .apos-window--resizing & {
+        background-color: var(--a-base-4);
+      }
+
+      &--top,
+      &--bottom {
+        right: 0;
+        left: 0;
+        height: $handle-size;
+        cursor: ns-resize;
+      }
+
+      &--top {
+        top: 0;
+      }
+
+      &--bottom {
+        bottom: 0;
+      }
+
+      &--left,
+      &--right {
+        top: 0;
+        bottom: 0;
+        width: $handle-size;
+        cursor: ew-resize;
+      }
+
+      &--right {
+        right: 0;
+      }
+
+      &--left {
+        left: 0;
+      }
+
+      &--corner {
+        right: 2px;
+        bottom: 2px;
+        width: 18px;
+        height: 18px;
+        cursor: nwse-resize;
+      }
+    }
+
+    .apos-modal__inner.apos-window--resizing {
+      outline: 2px solid var(--a-base-5);
+      outline-offset: -2px;
     }
 
     :deep(.apos-modal__body) {

@@ -37,7 +37,10 @@
   [data-apos-refreshable]::after {
     opacity: 0.3;
   }
+}
 
+.apos-window-is-dragging,
+.apos-window-is-resizing {
   & *::selection {
     background-color: transparent;
   }

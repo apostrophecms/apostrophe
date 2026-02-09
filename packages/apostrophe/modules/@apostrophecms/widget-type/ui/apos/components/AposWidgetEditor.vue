@@ -313,7 +313,6 @@ export default {
     },
     getDisplayPref() {
       let pref = window.localStorage.getItem(this.displayPrefName);
-      console.log(pref);
       if (typeof pref !== 'string') {
         pref = this.moduleOptions.width;
       }

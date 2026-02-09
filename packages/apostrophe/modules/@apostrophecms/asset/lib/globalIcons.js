@@ -126,6 +126,7 @@ module.exports = {
   'plus-icon': 'Plus',
   'redo-icon': 'RedoVariant',
   'refresh-icon': 'Refresh',
+  'resize-bottom-right-icon': 'ResizeBottomRight',
   'shape-icon': 'Shape',
   'sign-text-icon': 'SignText',
   'palette-icon': 'Palette',
