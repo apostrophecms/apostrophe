@@ -60,7 +60,6 @@
   - [Provider Architecture](#provider-architecture)
   - [Provider Registration](#provider-registration)
   - [Custom Provider Contract](#custom-provider-contract)
-- [If a custom provider registers using the same name as a bundled provider, it will override the bundled implementation.](#if-a-custom-provider-registers-using-the-same-name-as-a-bundled-provider-it-will-override-the-bundled-implementation)
   - [Error Handling](#error-handling)
   - [Metadata](#metadata)
   - [Implementation Guidance](#implementation-guidance)
@@ -496,6 +495,7 @@ The factory function will be called with:
 - `imageOpts` - Options from `imageProviderOptions`
 
 If a custom provider registers using the same name as a bundled provider, it will override the bundled implementation.
+
 ---
 
 #### Required Provider Properties
