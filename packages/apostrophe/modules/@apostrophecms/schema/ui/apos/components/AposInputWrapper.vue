@@ -22,11 +22,11 @@
           }"
           :for="uid"
           :data-apos-test-name="field.name"
-          :data-apos-test-label="$t(label)"
+          :data-apos-test-label="$t(label, field.labelInterpolation)"
           data-apos-test="field-label"
         >
           <span class="apos-field_label-info">
-            {{ $t(label) }}
+            {{ $t(label, field.labelInterpolation) }}
             <span
               v-if="field.required"
               class="apos-field__required"
@@ -102,7 +102,7 @@
         <p
           v-if="(field.help || field.htmlHelp) && !displayOptions.helpTooltip"
           class="apos-field__help"
-          v-html="$t(field.help || field.htmlHelp)"
+          v-html="$t(field.help || field.htmlHelp, field.helpInterpolation)"
         />
         <slot name="additional" />
       </div>

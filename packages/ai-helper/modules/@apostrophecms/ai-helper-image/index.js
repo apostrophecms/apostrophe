@@ -1,19 +1,16 @@
-const fetch = require('node-fetch');
 const { createId } = require('@paralleldrive/cuid2');
-const path = require('path');
-const util = require('util');
-const FormData = require('form-data');
-const fs = require('fs');
+const path = require('node:path');
+const fsp = require('node:fs/promises');
 const sharp = require('sharp');
-const unlink = util.promisify(fs.unlink);
-const writeFile = util.promisify(fs.writeFile);
 
 module.exports = {
   improve: '@apostrophecms/image',
+
   icons: {
     'robot-icon': 'Robot',
     'group-icon': 'Group'
   },
+
   utilityOperations: {
     add: {
       aiInsertImage: {
@@ -29,6 +26,7 @@ module.exports = {
       }
     }
   },
+
   async init(self) {
     self.uploadfs = self.apos.uploadfs;
     self.aiHelperImages = self.apos.db.collection('aposAiHelperImages');
@@ -38,17 +36,17 @@ module.exports = {
     });
     self.scheduleCleanup();
   },
+
   methods(self) {
     return {
       scheduleCleanup() {
         setInterval(self.cleanup, 1000 * 60 * 60);
       },
+
       async cleanup() {
         const images = await self.aiHelperImages.find({
           createdAt: {
-            // OpenAI image URLs were originally only good for an hour, and
-            // it's not a bad policy: the ones you don't use are
-            // kept for an hour
+            // Images are kept for an hour if not used
             $lt: new Date(Date.now() - 1000 * 60 * 60)
           }
         }).toArray();
@@ -56,32 +54,44 @@ module.exports = {
           await self.aiHelperRemoveImage(image._id);
         }
       },
-      // Fetch the image to a temporary file and return the path to that file
+
+      async getTempImagePath(image) {
+        const dir = path.join(self.apos.rootDir, 'data', 'temp');
+        await fsp.mkdir(dir, { recursive: true });
+        return path.join(dir, `${image._id}.png`);
+      },
+
       async aiHelperFetchImage(req, image) {
         const response = await fetch(self.aiHelperImageUrl(req, image));
-        const buffer = await response.buffer();
-        const temp = path.join(self.apos.rootDir, `data/temp/${image._id}.png`);
-        await writeFile(temp, buffer);
+        const buffer = Buffer.from(await response.arrayBuffer());
+
+        const temp = await self.getTempImagePath(image);
+        await fsp.writeFile(temp, buffer);
         return temp;
       },
-      // Write a base64 image to uploadfs
-      async aiHelperWriteImageToUploadfs(_id, base64) {
-        const temp = path.join(self.apos.rootDir, `data/temp/${_id}.png`);
+
+      async aiHelperWriteImageToUploadfs(image, base64) {
+        const temp = await self.getTempImagePath(image);
         try {
-          await writeFile(temp, Buffer.from(base64, 'base64'));
-          await util.promisify(self.uploadfs.copyIn)(temp, `/ai-helper-images/${_id}.png`);
+          await fsp.writeFile(temp, Buffer.from(base64, 'base64'));
+          await new Promise((resolve, reject) => {
+            self.uploadfs.copyIn(temp, `/ai-helper-images/${image._id}.png`, err =>
+              err ? reject(err) : resolve()
+            );
+          });
         } finally {
           try {
-            await unlink(temp);
+            await fsp.unlink(temp);
           } catch (e) {
             self.apos.util.warn(e);
-            // never got that far
           }
         }
       },
+
       aiHelperImageUrl(req, image) {
         return image.url || (new URL(self.uploadfs.getUrl() + `/ai-helper-images/${image._id}.png`, req.baseUrl)).toString();
       },
+
       async aiHelperRemoveImage(_id, criteria = {}) {
         const aiImage = await self.aiHelperImages.findOne({
           _id,
@@ -94,16 +104,41 @@ module.exports = {
         if (!aiImage.url) {
           // Newer image, received as base64, now in uploadfs waiting to be removed
           try {
-            await util.promisify(self.uploadfs.remove)(`/ai-helper-images/${_id}.png`);
+            await new Promise((resolve, reject) => {
+              self.uploadfs.remove(`/ai-helper-images/${_id}.png`, err =>
+                err ? reject(err) : resolve()
+              );
+            });
           } catch (e) {
             // Probably already deleted
             self.apos.util.warn(e);
           }
         }
         await self.aiHelperImages.deleteOne({ _id });
+      },
+
+      validateProviderResponse(providerResponse) {
+        if (!Array.isArray(providerResponse)) {
+          throw new Error('Provider must return an array of image results');
+        }
+
+        for (const item of providerResponse) {
+          if (!item.type || !item.data) {
+            throw new Error(
+              'Provider response must include "type" and "data" fields. ' +
+              'Expected format: {type: "url"|"base64", data: string, metadata?: object}'
+            );
+          }
+          if (![ 'url', 'base64' ].includes(item.type)) {
+            throw new Error(`Invalid type "${item.type}". Must be "url" or "base64"`);
+          }
+        }
+
+        return providerResponse;
       }
     };
   },
+
   apiRoutes(self) {
     return {
       get: {
@@ -111,22 +146,21 @@ module.exports = {
           const images = await self.aiHelperImages.find({
             userId: req.user._id,
             createdAt: {
-              // OpenAI image URLs were originally only good for an hour, and
-              // it's not a bad policy: the ones you don't use are
-              // kept for an hour
               $gte: new Date(Date.now() - 1000 * 60 * 60)
             }
           }).sort({
             createdAt: -1
           }).toArray();
+
+          // Ensure all images have URLs
           for (const image of images) {
             image.url ||= self.aiHelperImageUrl(req, image);
           }
-          return {
-            images
-          };
+
+          return { images };
         }
       },
+
       delete: {
         async 'ai-helper/:_id'(req) {
           await self.aiHelperRemoveImage(req.params._id, {
@@ -135,91 +169,134 @@ module.exports = {
           return {};
         }
       },
+
       post: {
         async 'ai-helper'(req) {
           const aiHelper = self.apos.modules['@apostrophecms/ai-helper'];
           aiHelper.checkPermissions(req);
+
           const prompt = self.apos.launder.string(req.body.prompt);
           const variantOf = self.apos.launder.id(req.body.variantOf);
+
           if (!prompt.length) {
             throw self.apos.error('invalid');
           }
-          const body = variantOf ? new FormData() : {};
-          if (!variantOf) {
-            set('prompt', prompt);
-          } else {
-            set('prompt', `${prompt} (but a little different this time)`);
-          }
-          // The modern models are slow and tend to nail it, so don't make things
-          // even slower by generating multiples every time
-          set('n', 1);
-          set('size', '1024x1024');
-          set('model', aiHelper.options.imageModel);
-          let temp;
+
           // Fake results for cheap & offline testing
           if (process.env.APOS_AI_HELPER_MOCK) {
             const now = new Date();
             const images = [];
-            for (let i = 0; (i < 4); i++) {
+            for (let i = 0; i < 4; i++) {
               images.push({
                 _id: createId(),
                 userId: req.user._id,
                 createdAt: now,
-                url: self.apos.asset.url('/modules/@apostrophecms/ai-helper-image/placeholder.jpg')
+                prompt,
+                url: self.apos.asset.url('/modules/@apostrophecms/ai-helper-image/placeholder.jpg'),
+                // Mock metadata to simulate real provider responses
+                providerMetadata: {
+                  model: 'mock-image-1',
+                  usage: {
+                    prompt_tokens: 12,
+                    total_tokens: 12
+                  },
+                  size: '1024x1024',
+                  quality: 'standard'
+                }
               });
             }
-            return {
-              images
-            };
+
+            return { images };
           }
+
           try {
+            // Options for future expansion (masks, seeds, styles, etc.)
+            const options = {};
+
+            let result;
+
             if (variantOf) {
-              const existing = await self.aiHelperImages.findOne({
-                _id: variantOf
-              });
+              // Generate variations
+              const existing = await self.aiHelperImages.findOne({ _id: variantOf });
               if (!existing) {
                 throw self.apos.error('notfound');
               }
-              temp = await self.aiHelperFetchImage(req, existing);
-              body.append('image', fs.createReadStream(temp));
+
+              /**
+               * Pass the image record to the provider so it can prepare it as needed.
+               *
+               * The provider is responsible for:
+               * - Fetching the image (using self.aiHelperImageUrl(req, existing))
+               * - Converting to required format
+               * (e.g., OpenAI needs RGBA PNG, others may differ)
+               * - Resizing if needed (e.g., Ollama might want 512x512)
+               *
+               * This keeps provider-specific requirements in the provider modules.
+               *
+               * Future options could include:
+               * - mask: base64 image for inpainting
+               * - maskArea: {x, y, width, height} for region editing
+               * - negativePrompt: what to avoid in the generation
+               * - seed: for reproducible results
+               * - style: provider-specific style hints
+               */
+              result = await aiHelper.generateImageVariation(
+                req, existing, prompt, options
+              );
+            } else {
+              /**
+               * Generate new images from prompt
+               *
+               * Future options could include:
+               * - numberOfImages: override default count
+               * - size: image dimensions
+               * - quality: generation quality level
+               * - style: artistic style hints
+               * - negativePrompt: what to avoid
+               */
+              result = await aiHelper.generateImage(req, prompt, options);
             }
-            const command = variantOf ? 'edits' : 'generations';
-            const result = await self.apos.http.post(`https://api.openai.com/v1/images/${command}`, {
-              headers: {
-                Authorization: `Bearer ${process.env.APOS_OPENAI_KEY}`
-              },
-              body
-            });
-            if (temp) {
-              fs.unlinkSync(temp);
-            }
-            if (!result.data) {
-              throw self.apos.error('error');
-            }
+
+            // Validate provider response is in standard format
+            const validatedResults = self.validateProviderResponse(result);
+
+            // Store results in database and prepare response
             const images = [];
             const now = new Date();
-            for (const item of result.data) {
+
+            for (const item of validatedResults) {
               const id = createId();
               const image = {
                 _id: id,
                 userId: req.user._id,
                 createdAt: now,
-                uploadfs: !!item.b64_json,
-                prompt
+                uploadfs: item.type === 'base64',
+                prompt,
+                // Store any provider-specific metadata
+                ...(item.metadata && Object.keys(item.metadata).length > 0 && {
+                  providerMetadata: item.metadata
+                })
               };
-              if (item.b64_json) {
-                await self.aiHelperWriteImageToUploadfs(id, item.b64_json);
+
+              // If base64, store in uploadfs
+              if (item.type === 'base64') {
+                await self.aiHelperWriteImageToUploadfs(image, item.data);
+                await self.aiHelperImages.insertOne(image);
+              } else {
+                // URL-based image
+                await self.aiHelperImages.insertOne({
+                  ...image,
+                  url: item.data
+                });
               }
-              item.b64_json = true;
-              // Do not write url to the database, that's our cue that it has
-              // to be loaded on demand
-              await self.aiHelperImages.insertOne(image);
+
+              // Ensure URL for response
               image.url = self.aiHelperImageUrl(req, image);
               images.push(image);
             }
-            return {
-              images
-            };
+
+            return { images };
+
           } catch (e) {
             if (e.status === 429) {
               self.apos.notify(req, 'aposAiHelper:rateLimitExceeded');
@@ -230,75 +307,67 @@ module.exports = {
               self.apos.util.error(e);
             }
             throw e;
-          } finally {
-            if (temp) {
-              try {
-                await unlink(temp);
-              } catch (e) {
-                // Don't care if it never got there
-              }
-            }
-          }
-          function set(key, value) {
-            if (variantOf) {
-              body.append(key, value);
-            } else {
-              body[key] = value;
-            }
           }
         }
       },
+
       patch: {
         async 'ai-helper/:_id'(req) {
           const _id = req.params._id;
+
           if (!req.body.accepted) {
-            // Currently the only property that can be PATCHed is "accepted"
             throw self.apos.error('invalid');
           }
-          if (!_id.length) {
-            throw self.apos.error('invalid');
-          }
+
           const helperImage = await self.aiHelperImages.findOne({ _id });
           if (!helperImage) {
             throw self.apos.error('notfound');
           }
+
           const { prompt } = helperImage;
-          // apos.http has a bug with binary data, use node-fetch
           let temp;
           let tempJpg;
+
           try {
             temp = await self.aiHelperFetchImage(req, helperImage);
-            const tempJpg = temp.replace(/\.\w+$/, '') + '.jpg';
+            tempJpg = temp.replace(/\.\w+$/, '') + '.jpg';
             await sharp(temp).toFile(tempJpg);
+
             const attachment = await self.apos.attachment.insert(req, {
               name: self.apos.util.slugify(prompt) + '.jpg',
               path: tempJpg
             });
+
             const image = await self.apos.image.insert(req, {
               title: prompt,
               attachment
             });
+
             self.apos.attachment.all(image, { annotate: true });
+
             const updated = {
               ...image,
               accepted: true,
               imageId: image._id,
               _image: image
             };
+
             await self.aiHelperImages.updateOne({ _id }, {
               $set: {
                 accepted: true,
                 imageId: image._id
               }
             });
+
             return updated;
+
           } finally {
             try {
               if (temp) {
-                await unlink(temp);
+                await fsp.unlink(temp);
               }
               if (tempJpg) {
-                await unlink(tempJpg);
+                await fsp.unlink(tempJpg);
               }
             } catch (e) {
               // We don't care if it never got there

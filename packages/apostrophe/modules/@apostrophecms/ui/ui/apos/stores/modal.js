@@ -280,7 +280,6 @@ export const useModalStore = defineStore('modal', () => {
     getAdminDirectionClass,
     getAdminContentDirectionClass,
     getAdminFieldDirectionClass,
->>>>>>> theirs
     add,
     remove,
     get,
