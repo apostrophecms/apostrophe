@@ -8,6 +8,36 @@
     @esc="confirmAndCancel"
     @no-modal="removePreview"
   >
+    <template
+      v-if="isDisplayWindow"
+      #windowChrome="{ resizeSides, startResizing }"
+    >
+      <div
+        v-for="side in resizeSides"
+        :key="side.direction"
+        class="apos-window__resize-handle"
+        :class="`apos-window__resize-handle--${side.edge}`"
+        role="presentation"
+        aria-hidden="true"
+        @mousedown.stop="(e) => startResizing(e, side.direction)"
+      />
+      <div
+        :class="[
+          'apos-window__resize-handle',
+          'apos-window__resize-handle--corner',
+          cornerHandleClass
+        ]"
+        role="presentation"
+        aria-hidden="true"
+        @mousedown.stop="(e) => startResizing(e, cornerResizeEdge)"
+      >
+        <AposIndicator
+          icon="resize-bottom-right-icon"
+          :icon-size="18"
+          icon-color="var(--a-base-0)"
+        />
+      </div>
+    </template>
     <template #secondaryControls>
       <div class="apos-widget-editor__controls">
         <AposButton
@@ -228,6 +258,14 @@ export default {
     },
     isDisplayWindow() {
       return this.modal.width === 'window';
+    },
+    cornerResizeEdge() {
+      return this.modal.origin === 'left' ? 'se' : 'sw';
+    },
+    cornerHandleClass() {
+      return this.modal.origin === 'left'
+        ? 'apos-window__resize-handle--corner-se'
+        : 'apos-window__resize-handle--corner-sw';
     },
     isForceSlide() {
       // If there are other modals open, force a slide modal
@@ -575,6 +613,71 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
 }
 
 .apos-modal--window {
+  $handle-size: 4px;
+
+  &:deep(.apos-modal__inner.apos-window--resizing) {
+    outline: 2px solid var(--a-base-5);
+    outline-offset: -2px;
+  }
+
+  &:deep(.apos-window__resize-handle) {
+    z-index: $z-index-default;
+    position: absolute;
+    transition: background-color 200ms ease;
+  }
+
+  &:deep(.apos-window__resize-handle--top),
+  &:deep(.apos-window__resize-handle--bottom) {
+    right: 0;
+    left: 0;
+    height: $handle-size;
+    cursor: ns-resize;
+  }
+
+  &:deep(.apos-window__resize-handle--top) {
+    top: 0;
+  }
+
+  &:deep(.apos-window__resize-handle--bottom) {
+    bottom: 0;
+  }
+
+  &:deep(.apos-window__resize-handle--left),
+  &:deep(.apos-window__resize-handle--right) {
+    top: 0;
+    bottom: 0;
+    width: $handle-size;
+    cursor: ew-resize;
+  }
+
+  &:deep(.apos-window__resize-handle--right) {
+    right: 0;
+  }
+
+  &:deep(.apos-window__resize-handle--left) {
+    left: 0;
+  }
+
+  &:deep(.apos-window__resize-handle--corner-se) {
+    right: 2px;
+    bottom: 2px;
+    width: 18px;
+    height: 18px;
+    cursor: nwse-resize;
+  }
+
+  &:deep(.apos-window__resize-handle--corner-sw) {
+    bottom: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    cursor: nesw-resize;
+
+    .apos-indicator {
+      transform: scaleX(-1);
+    }
+  }
+
   &:deep(.apos-modal__header__main) {
     padding: 2.5px 10px 0;
     border-top: 1px solid var(--a-base-9);

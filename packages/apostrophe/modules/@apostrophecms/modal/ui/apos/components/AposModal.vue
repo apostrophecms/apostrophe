@@ -138,30 +138,12 @@
               </div>
             </footer>
           </div>
-          <template v-if="isWindowModal">
-            <div
-              v-for="side in resizeSides"
-              :key="side.direction"
-              class="apos-window__resize-handle"
-              :class="`apos-window__resize-handle--${side.edge}`"
-              role="presentation"
-              aria-hidden="true"
-              @mousedown.stop="(e) => startResizing(e, side.direction)"
-            />
-          </template>
-          <div
+          <slot
             v-if="isWindowModal"
-            class="apos-window__resize-handle apos-window__resize-handle--corner"
-            role="presentation"
-            aria-hidden="true"
-            @mousedown.stop="(e) => startResizing(e, 'se')"
-          >
-            <AposIndicator
-              icon="resize-bottom-right-icon"
-              :icon-size="18"
-              icon-color="var(--a-base-0)"
-            />
-          </div>
+            name="windowChrome"
+            :resize-sides="resizeSides"
+            :start-resizing="startResizing"
+          />
         </div>
       </transition>
     </section>
@@ -629,63 +611,6 @@ function close() {
     // Default dimensions are set via inline styles from DEFAULT_WINDOW_SIZE constant
     .apos-modal__inner {
       border-radius: 10px;
-    }
-
-    .apos-window__resize-handle {
-      $handle-size: 4px;
-
-      z-index: $z-index-default;
-      position: absolute;
-      transition: background-color 200ms ease;
-
-      .apos-window--resizing & {
-        background-color: var(--a-base-4);
-      }
-
-      &--top,
-      &--bottom {
-        right: 0;
-        left: 0;
-        height: $handle-size;
-        cursor: ns-resize;
-      }
-
-      &--top {
-        top: 0;
-      }
-
-      &--bottom {
-        bottom: 0;
-      }
-
-      &--left,
-      &--right {
-        top: 0;
-        bottom: 0;
-        width: $handle-size;
-        cursor: ew-resize;
-      }
-
-      &--right {
-        right: 0;
-      }
-
-      &--left {
-        left: 0;
-      }
-
-      &--corner {
-        right: 2px;
-        bottom: 2px;
-        width: 18px;
-        height: 18px;
-        cursor: nwse-resize;
-      }
-    }
-
-    .apos-modal__inner.apos-window--resizing {
-      outline: 2px solid var(--a-base-5);
-      outline-offset: -2px;
     }
 
     :deep(.apos-modal__body) {

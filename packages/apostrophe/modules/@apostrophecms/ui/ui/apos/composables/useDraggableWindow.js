@@ -31,7 +31,7 @@ import {
  *   { left: string; top: string; width: string; height: string }>;
  *   startDragging: (e: MouseEvent) => void;
  *   stopDragging: () => void;
- *   startResizing: (e: MouseEvent, edge: 'n'|'s'|'e'|'w'|'se') => void;
+ *   startResizing: (e: MouseEvent, edge: 'n'|'s'|'e'|'w'|'se'|'sw') => void;
  *   stopResizing: () => void;
  *   setPosition: () => void;
  *   resetPosition: () => void;
@@ -183,6 +183,13 @@ export function useDraggableWindow({
       w = Math.min(w, vw - l);
       h = clampDimension(height, minHeight, maxHeight);
       h = Math.min(h, vh - t);
+    } else if (edge === 'sw') {
+      const rightEdge = left + width;
+      w = clampDimension(width, minWidth, maxWidth);
+      w = Math.min(w, vw, rightEdge);
+      l = rightEdge - w;
+      h = clampDimension(height, minHeight, maxHeight);
+      h = Math.min(h, vh - t);
     }
     return {
       width: w,
@@ -222,6 +229,10 @@ export function useDraggableWindow({
     } else if (edge === 'se') {
       width = resizeInitial.width + deltaX;
       height = resizeInitial.height + deltaY;
+    } else if (edge === 'sw') {
+      width = resizeInitial.width - deltaX;
+      left = resizeInitial.left + deltaX;
+      height = resizeInitial.height + deltaY;
     }
     const result = applyResizeConstraints(edge, width, height, left, top);
     if (!isRef(size)) {
@@ -238,7 +249,7 @@ export function useDraggableWindow({
   }
 
   function startResizing(e, edge) {
-    if (!isRef(size) || !edge || ![ 'n', 's', 'e', 'w', 'se' ].includes(edge)) {
+    if (!isRef(size) || !edge || ![ 'n', 's', 'e', 'w', 'se', 'sw' ].includes(edge)) {
       return;
     }
     resizing.value = true;

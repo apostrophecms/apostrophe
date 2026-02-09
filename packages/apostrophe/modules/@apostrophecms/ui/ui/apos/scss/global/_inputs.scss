@@ -106,6 +106,13 @@
 // stylelint-disable max-nesting-depth
 .apos-field.apos-field--micro {
   container-type: inline-size;
+  
+  @container (width > 420px) {
+    .apos-button.apos-button--color-micro {
+      width: 40px;
+      height: 40px;
+    }
+  }
 
   @container (width < 420px) {
     .apos-button,
@@ -122,6 +129,103 @@
     .apos-input-color__info,
     .apos-button__label {
       font-size: var(--a-type-smaller);
+    }
+
+    &.apos-field--box {
+      .apos-input-box__wrapper {
+        justify-content: space-between;
+        gap: $spacing-base;
+      }
+  
+      .apos-input-box__shorthand-input[disabled] {
+        background: var(--a-base-7);
+        opacity: 0.5;
+      }
+  
+      .apos-input-box__shorthand-input,
+      .apos-input-box__individual-input-wrapper {
+        flex: 1;
+      }
+  
+      .apos-input-box__individual-input {
+        min-width: 100%;
+        max-width: 100%;
+      }
+  
+      .apos-input-box__shorthand,
+      .apos-input-box__individual {
+        flex: 1;
+      }
+  
+      .apos-input-box__shorthand-input,
+      .apos-input-box__individual-input,
+      .apos-input-box__switch,
+      .apos-input-box__controls {
+        height: 27px;
+      }
+  
+      .apos-input-box__reset {
+        position: absolute;
+        top: -24px;
+        right: 0;
+        display: block;
+      }
+  
+      .apos-input-box__individual-input {
+        width: 46px;
+        padding: 7.5px 0 7.5px 7.5px;
+      }
+  
+      .apos-input-box__switch__button {
+        aspect-ratio: auto;
+      }
+  
+      .apos-input-box__unit--individual {
+        top: -7px;
+        left: -5px;
+      }
+  
+      .apos-input-box__unit {
+        font-size: var(--a-type-small);
+      }
+    }
+  
+    &.apos-field--color {
+      position: relative;
+  
+      .apos-input-color__preset-button {
+        width: 20px;
+        height: 20px;
+      }
+  
+      .apos-input-color {
+        gap: $spacing-half;
+      }
+  
+      .apos-input-color__ui {
+        gap: 3px;
+      }
+  
+      .apos-button.apos-button--color {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+      }
+  
+      .apos-field__label {
+        max-width: 200px;
+      }
+  
+      .apos-input-color__info {
+        position: absolute;
+        right: 0;
+        display: flex;
+        place-content: center;
+        margin-left: 0;
+        white-space: nowrap;
+        transform: translateY(-20.5px);
+        line-height: 1.3;
+      }
     }
 
     &.apos-field--object-field {
@@ -155,65 +259,6 @@
       .apos-input-array-inline-header-ui-element .apos-button--icon-only.apos-button--small {
         width: 20px;
         height: 20px;
-      }
-    }
-
-    &.apos-field--box {
-      .apos-input-box__wrapper {
-        justify-content: space-between;
-        gap: $spacing-base;
-      }
-
-      .apos-input-box__shorthand-input[disabled] {
-        background: var(--a-base-7);
-        opacity: 0.5;
-      }
-
-      .apos-input-box__shorthand-input,
-      .apos-input-box__individual-input-wrapper {
-        flex: 1;
-      }
-
-      .apos-input-box__individual-input {
-        min-width: 100%;
-        max-width: 100%;
-      }
-
-      .apos-input-box__shorthand,
-      .apos-input-box__individual {
-        flex: 1;
-      }
-
-      .apos-input-box__shorthand-input,
-      .apos-input-box__individual-input,
-      .apos-input-box__switch,
-      .apos-input-box__controls {
-        height: 27px;
-      }
-
-      .apos-input-box__reset {
-        position: absolute;
-        top: -24px;
-        right: 0;
-        display: block;
-      }
-
-      .apos-input-box__individual-input {
-        width: 46px;
-        padding: 7.5px 0 7.5px 7.5px;
-      }
-
-      .apos-input-box__switch__button {
-        aspect-ratio: auto;
-      }
-
-      .apos-input-box__unit--individual {
-        top: -7px;
-        left: -5px;
-      }
-
-      .apos-input-box__unit {
-        font-size: var(--a-type-small);
       }
     }
 
@@ -305,44 +350,6 @@
             max-height: 25px;
           }
         }
-      }
-    }
-
-    &.apos-field--color {
-      position: relative;
-
-      .apos-input-color__preset-button {
-        width: 20px;
-        height: 20px;
-      }
-
-      .apos-input-color {
-        gap: $spacing-half;
-      }
-
-      .apos-input-color__ui {
-        gap: 3px;
-      }
-
-      .apos-button.apos-button--color {
-        width: 30px;
-        height: 30px;
-        padding: 0;
-      }
-
-      .apos-field__label {
-        max-width: 200px;
-      }
-
-      .apos-input-color__info {
-        position: absolute;
-        right: 0;
-        display: flex;
-        place-content: center;
-        margin-left: 0;
-        white-space: nowrap;
-        transform: translateY(-20.5px);
-        line-height: 1.3;
       }
     }
 
