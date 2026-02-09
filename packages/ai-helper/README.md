@@ -18,6 +18,21 @@
 
 **Bring AI-powered content generation directly into your ApostropheCMS editing workflow.** Generate compelling text and stunning images from simple prompts, all without leaving the CMS. Choose your preferred AI provider (OpenAI, Anthropic Claude, or Google Gemini) or connect to enterprise AI services.
 
+## ⚠️ Beta / Experimental Module <!-- omit in toc -->
+
+**This module is experimental and will remain in beta status.** It provides early access to AI-powered content generation features in ApostropheCMS, but you should expect:
+
+- **Functional but evolving**: Core features work well and are production-ready, but the UI/UX may not have the polish of finished ApostropheCMS modules
+- **Active development**: Features and APIs may change as we refine the AI integration experience
+- **Future migration**: Much of this functionality will eventually move into ApostropheCMS core as part of a comprehensive AI coordination system
+
+**Who should use this module:**
+- Developers comfortable with experimental features who want early access to AI capabilities
+- Teams willing to provide feedback to help shape ApostropheCMS AI features
+- Projects that can adapt to potential UI/API changes in future updates
+
+**Stability note:** While the module is marked as beta, it is used in production environments. The "experimental" designation reflects ongoing UI refinement rather than fundamental instability.
+
 ## Why AI Helper? <!-- omit in toc -->
 
 - **⚡ Accelerate Content Creation**: Generate high-quality text and images in seconds, not hours
@@ -650,7 +665,7 @@ This is useful for debugging provider registration, building admin UIs, or when 
 - **Documentation**: [ApostropheCMS Documentation](https://apostrophecms.com/docs/)
 - **Community Support**: [Join our Discord](https://discord.com/invite/HwntQpADJr)
 - **Professional Support**: [Contact us](https://apostrophecms.com/contact-us) for dedicated support packages
-- **Issues**: [GitHub Issues](https://github.com/apostrophecms/apostrophe/issues)
+- **Issues & Feedback**: [GitHub Issues](https://github.com/apostrophecms/apostrophe/issues) - Your feedback helps shape future AI features!
 
 ## License
 
