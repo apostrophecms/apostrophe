@@ -81,11 +81,6 @@ export const useModalStore = defineStore('modal', () => {
       return 'apos-rtl';
     }
 
-<<<<<<< ours
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
     return null;
   }
 
