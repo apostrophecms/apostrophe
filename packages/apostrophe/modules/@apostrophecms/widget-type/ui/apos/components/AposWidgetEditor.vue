@@ -228,15 +228,20 @@ export default {
     },
     isDisplayWindow() {
       return this.modal.width === 'window';
+    },
+    isForceSlide() {
+      // If there are other modals open, force a slide modal
+      return this.stack.length > 1;
     }
   },
   async mounted() {
-    // If there are other modals open, force a slide modal
-    if (this.stack.length > 1) {
+    if (this.isForceSlide) {
       this.modal.width =
         this.moduleOptions.width === 'window'
           ? this.defaultSidebarWidth
           : this.moduleOptions.width;
+    } else {
+      this.modal.width = this.getDisplayPref();
     }
     this.modal.type = this.isDisplayWindow ? 'window' : 'slide';
     this.modal.overlay = this.isDisplayWindow ? 'transparent' : null;
@@ -288,7 +293,7 @@ export default {
   },
   methods: {
     updateEditorDisplay() {
-      if (this.modal.width === 'window') {
+      if (this.isDisplayWindow) {
         if (this.moduleOptions.width === 'window') {
           this.modal.width = this.defaultSidebarWidth;
         } else {
@@ -308,6 +313,7 @@ export default {
     },
     getDisplayPref() {
       let pref = window.localStorage.getItem(this.displayPrefName);
+      console.log(pref);
       if (typeof pref !== 'string') {
         pref = this.moduleOptions.width;
       }
