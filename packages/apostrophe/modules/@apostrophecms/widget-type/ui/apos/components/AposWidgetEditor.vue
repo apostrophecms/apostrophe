@@ -23,6 +23,7 @@
         ]"
         role="presentation"
         aria-hidden="true"
+        :data-apos-test="`resize-handle-${handle.edge}`"
         @mousedown.stop="(e) => startResizing(e, handle.edge)"
       >
         <AposIndicator
