@@ -237,10 +237,12 @@ const DEFAULT_WINDOW_SIZE = {
   height: 500
 };
 
-const size = ref({
-  width: DEFAULT_WINDOW_SIZE.width,
-  height: DEFAULT_WINDOW_SIZE.height
-});
+const size = ref(
+  props.modal.initialSize || {
+    width: DEFAULT_WINDOW_SIZE.width,
+    height: DEFAULT_WINDOW_SIZE.height
+  }
+);
 
 const getDefaultPosition = (origin = 'right') => {
   const adminBarHeight = window.apos?.adminBar?.height || 0;
@@ -266,9 +268,9 @@ const {
 } = useDraggableWindow({
   size,
   getDefaultPosition: () => getDefaultPosition(props.modal.origin),
-  minWidth: props.modal.minWidth !== undefined ? props.modal.minWidth : 280,
-  maxWidth: props.modal.maxWidth !== undefined ? props.modal.maxWidth : null,
-  minHeight: props.modal.minHeight !== undefined ? props.modal.minHeight : 200,
+  minWidth: props.modal.minWidth !== undefined ? props.modal.minWidth : 300,
+  maxWidth: props.modal.maxWidth !== undefined ? props.modal.maxWidth : 800,
+  minHeight: props.modal.minHeight !== undefined ? props.modal.minHeight : 300,
   maxHeight: props.modal.maxHeight !== undefined ? props.modal.maxHeight : null
 });
 
@@ -379,11 +381,19 @@ onMounted(async () => {
 
   if (isWindowModal.value && modalInnerEl.value) {
     await nextTick();
-    const rect = modalInnerEl.value.getBoundingClientRect();
-    size.value = {
-      width: rect.width || DEFAULT_WINDOW_SIZE.width,
-      height: rect.height || DEFAULT_WINDOW_SIZE.height
-    };
+    // Use initialSize if provided, otherwise measure from DOM
+    if (props.modal.initialSize) {
+      size.value = {
+        width: props.modal.initialSize.width || DEFAULT_WINDOW_SIZE.width,
+        height: props.modal.initialSize.height || DEFAULT_WINDOW_SIZE.height
+      };
+    } else {
+      const rect = modalInnerEl.value.getBoundingClientRect();
+      size.value = {
+        width: rect.width || DEFAULT_WINDOW_SIZE.width,
+        height: rect.height || DEFAULT_WINDOW_SIZE.height
+      };
+    }
     setWindowPosition();
     window.addEventListener('resize', handleResize);
   }
@@ -393,11 +403,19 @@ onMounted(async () => {
 watch(() => props.modal.showModal, async (showModal) => {
   if (isWindowModal.value && showModal && modalInnerEl.value) {
     await nextTick();
-    const rect = modalInnerEl.value.getBoundingClientRect();
-    size.value = {
-      width: rect.width || DEFAULT_WINDOW_SIZE.width,
-      height: rect.height || DEFAULT_WINDOW_SIZE.height
-    };
+    // Use initialSize if provided, otherwise measure from DOM
+    if (props.modal.initialSize) {
+      size.value = {
+        width: props.modal.initialSize.width || DEFAULT_WINDOW_SIZE.width,
+        height: props.modal.initialSize.height || DEFAULT_WINDOW_SIZE.height
+      };
+    } else {
+      const rect = modalInnerEl.value.getBoundingClientRect();
+      size.value = {
+        width: rect.width || DEFAULT_WINDOW_SIZE.width,
+        height: rect.height || DEFAULT_WINDOW_SIZE.height
+      };
+    }
     setWindowPosition();
   }
 });
@@ -406,14 +424,33 @@ watch(() => props.modal.showModal, async (showModal) => {
 watch(isWindowModal, async (isWindow) => {
   if (isWindow && modalInnerEl.value) {
     await nextTick();
-    const rect = modalInnerEl.value.getBoundingClientRect();
-    size.value = {
-      width: rect.width || DEFAULT_WINDOW_SIZE.width,
-      height: rect.height || DEFAULT_WINDOW_SIZE.height
-    };
+    // Use initialSize if provided, otherwise measure from DOM
+    if (props.modal.initialSize) {
+      size.value = {
+        width: props.modal.initialSize.width || DEFAULT_WINDOW_SIZE.width,
+        height: props.modal.initialSize.height || DEFAULT_WINDOW_SIZE.height
+      };
+    } else {
+      const rect = modalInnerEl.value.getBoundingClientRect();
+      size.value = {
+        width: rect.width || DEFAULT_WINDOW_SIZE.width,
+        height: rect.height || DEFAULT_WINDOW_SIZE.height
+      };
+    }
     setWindowPosition();
   }
 });
+
+// Watch for changes to initialSize (e.g. when switching to window mode)
+watch(() => props.modal.initialSize, (newSize) => {
+  if (isWindowModal.value && newSize) {
+    size.value = {
+      width: newSize.width || DEFAULT_WINDOW_SIZE.width,
+      height: newSize.height || DEFAULT_WINDOW_SIZE.height
+    };
+    setWindowPosition();
+  }
+}, { deep: true });
 
 function handleResize() {
   if (isWindowModal.value) {
@@ -618,7 +655,7 @@ function close() {
     }
 
     :deep(.apos-modal__footer__inner) {
-      padding: 10px;
+      padding: 10px 10px 12.5px;
     }
   }
 

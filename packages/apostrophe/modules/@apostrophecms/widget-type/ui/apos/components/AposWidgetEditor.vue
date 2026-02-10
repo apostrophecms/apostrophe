@@ -10,28 +10,23 @@
   >
     <template
       v-if="isDisplayWindow"
-      #windowChrome="{ resizeSides, startResizing }"
+      #windowChrome="{ startResizing }"
     >
       <div
-        v-for="side in resizeSides"
-        :key="side.direction"
-        class="apos-window__resize-handle"
-        :class="`apos-window__resize-handle--${side.edge}`"
-        role="presentation"
-        aria-hidden="true"
-        @mousedown.stop="(e) => startResizing(e, side.direction)"
-      />
-      <div
+        v-for="handle in resizeHandles"
+        :key="handle.edge"
         :class="[
           'apos-window__resize-handle',
-          'apos-window__resize-handle--corner',
-          cornerHandleClass
+          handle.type === 'corner'
+            ? `apos-window__resize-handle--corner apos-window__resize-handle--corner-${handle.edge}`
+            : `apos-window__resize-handle--${handle.edge}`
         ]"
         role="presentation"
         aria-hidden="true"
-        @mousedown.stop="(e) => startResizing(e, cornerResizeEdge)"
+        @mousedown.stop="(e) => startResizing(e, handle.edge)"
       >
         <AposIndicator
+          v-if="handle.showIcon"
           icon="resize-bottom-right-icon"
           :icon-size="18"
           icon-color="var(--a-base-0)"
@@ -203,7 +198,12 @@ export default {
         width: moduleOptions.width,
         origin: guessOrigin(this.preview?.area, moduleOptions),
         showModal: false
-      }
+      },
+      windowSize: {
+        width: null,
+        height: null
+      },
+      resizeObserver: null
     };
   },
   computed: {
@@ -259,13 +259,51 @@ export default {
     isDisplayWindow() {
       return this.modal.width === 'window';
     },
-    cornerResizeEdge() {
-      return this.modal.origin === 'left' ? 'se' : 'sw';
-    },
-    cornerHandleClass() {
-      return this.modal.origin === 'left'
-        ? 'apos-window__resize-handle--corner-se'
-        : 'apos-window__resize-handle--corner-sw';
+    resizeHandles() {
+      return [
+        // Edge handles
+        {
+          type: 'edge',
+          edge: 'n',
+          showIcon: false
+        },
+        {
+          type: 'edge',
+          edge: 'e',
+          showIcon: false
+        },
+        {
+          type: 'edge',
+          edge: 's',
+          showIcon: false
+        },
+        {
+          type: 'edge',
+          edge: 'w',
+          showIcon: false
+        },
+        // Corner handles
+        {
+          type: 'corner',
+          edge: 'nw',
+          showIcon: false
+        },
+        {
+          type: 'corner',
+          edge: 'ne',
+          showIcon: false
+        },
+        {
+          type: 'corner',
+          edge: 'sw',
+          showIcon: this.modal.origin === 'right'
+        },
+        {
+          type: 'corner',
+          edge: 'se',
+          showIcon: this.modal.origin === 'left'
+        }
+      ];
     },
     isForceSlide() {
       // If there are other modals open, force a slide modal
@@ -273,16 +311,30 @@ export default {
     }
   },
   async mounted() {
+    const pref = this.getDisplayPref();
     if (this.isForceSlide) {
       this.modal.width =
         this.moduleOptions.width === 'window'
           ? this.defaultSidebarWidth
           : this.moduleOptions.width;
     } else {
-      this.modal.width = this.getDisplayPref();
+      this.modal.width = pref.preference;
     }
     this.modal.type = this.isDisplayWindow ? 'window' : 'slide';
     this.modal.overlay = this.isDisplayWindow ? 'transparent' : null;
+
+    // Load window size from preferences if available
+    if (this.isDisplayWindow && pref.width && pref.height) {
+      this.modal.initialSize = {
+        width: pref.width,
+        height: pref.height
+      };
+      this.windowSize = {
+        width: pref.width,
+        height: pref.height
+      };
+    }
+
     this.modal.active = true;
     await this.evaluateExternalConditions();
     this.evaluateConditions();
@@ -290,10 +342,29 @@ export default {
       klona(this.options),
       ...apos.area.widgetOptions
     ];
+
+    // Watch for window size changes if it's a window modal
+    if (this.isDisplayWindow) {
+      this.$nextTick(() => {
+        this.watchWindowSize();
+      });
+    }
+
+    // Watch for changes between window and slide modes
+    this.$watch('isDisplayWindow', (isWindow) => {
+      if (isWindow) {
+        this.$nextTick(() => {
+          this.watchWindowSize();
+        });
+      } else {
+        this.stopWatchingWindowSize();
+      }
+    });
   },
   unmounted() {
     this.areaDebounceUpdate.cancel?.();
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
+    this.stopWatchingWindowSize();
   },
   created() {
     const defaults = this.getDefault();
@@ -339,22 +410,110 @@ export default {
         }
         this.modal.type = 'slide';
         this.modal.overlay = null;
+        // Clear window size when switching away from window
+        this.windowSize = {
+          width: null,
+          height: null
+        };
       } else {
         this.modal.width = 'window';
         this.modal.type = 'window';
         this.modal.overlay = 'transparent';
+        // Restore window size from preferences if available
+        const pref = this.getDisplayPref();
+        if (pref.width && pref.height) {
+          this.modal.initialSize = {
+            width: pref.width,
+            height: pref.height
+          };
+          this.windowSize = {
+            width: pref.width,
+            height: pref.height
+          };
+        }
       }
       this.setDisplayPref(this.modal.width);
     },
     setDisplayPref(pref) {
-      window.localStorage.setItem(this.displayPrefName, pref);
+      const prefObj = this.getDisplayPref();
+      prefObj.preference = pref;
+
+      // If switching to window and we have size data, preserve it
+      if (pref === 'window' && this.windowSize.width && this.windowSize.height) {
+        prefObj.width = this.windowSize.width;
+        prefObj.height = this.windowSize.height;
+      } else if (pref !== 'window') {
+        // Clear size data when not a window
+        delete prefObj.width;
+        delete prefObj.height;
+      }
+
+      try {
+        window.localStorage.setItem(this.displayPrefName, JSON.stringify(prefObj));
+      } catch (err) {
+        // Ignore storage errors (e.g. private mode)
+      }
     },
     getDisplayPref() {
-      let pref = window.localStorage.getItem(this.displayPrefName);
-      if (typeof pref !== 'string') {
-        pref = this.moduleOptions.width;
+      try {
+        const stored = window.localStorage.getItem(this.displayPrefName);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // Handle migration from old string format
+          if (typeof parsed === 'string') {
+            return {
+              preference: parsed
+            };
+          }
+          // Validate parsed object
+          if (parsed && typeof parsed === 'object' && parsed.preference) {
+            return parsed;
+          }
+        }
+      } catch (err) {
+        // If parsing fails, fall back to default
       }
-      return pref;
+      // Default preference
+      return {
+        preference: this.moduleOptions.width
+      };
+    },
+    watchWindowSize() {
+      // Stop any existing observer
+      this.stopWatchingWindowSize();
+
+      // Watch for size changes by observing the modal element's dimensions
+      this.$nextTick(() => {
+        const modalInner = this.$el?.querySelector('.apos-modal__inner');
+        if (!modalInner || !this.isDisplayWindow) {
+          return;
+        }
+
+        this.resizeObserver = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            if (width > 0 && height > 0 && this.isDisplayWindow) {
+              // Only update if size actually changed to avoid unnecessary saves
+              if (this.windowSize.width !== width || this.windowSize.height !== height) {
+                this.windowSize = {
+                  width,
+                  height
+                };
+                // Save the preference with updated size
+                this.setDisplayPref('window');
+              }
+            }
+          }
+        });
+
+        this.resizeObserver.observe(modalInner);
+      });
+    },
+    stopWatchingWindowSize() {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+        this.resizeObserver = null;
+      }
     },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
@@ -613,7 +772,8 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
 }
 
 .apos-modal--window {
-  $handle-size: 4px;
+  $corner-handle-size: 18px;
+  $edge-handle-size: 2px;
 
   &:deep(.apos-modal__inner.apos-window--resizing) {
     outline: 2px solid var(--a-base-5);
@@ -626,56 +786,75 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
     transition: background-color 200ms ease;
   }
 
-  &:deep(.apos-window__resize-handle--top),
-  &:deep(.apos-window__resize-handle--bottom) {
+  // Edge handles
+  &:deep(.apos-window__resize-handle--n),
+  &:deep(.apos-window__resize-handle--s) {
     right: 0;
     left: 0;
-    height: $handle-size;
+    height: $edge-handle-size;
     cursor: ns-resize;
   }
 
-  &:deep(.apos-window__resize-handle--top) {
+  &:deep(.apos-window__resize-handle--n) {
     top: 0;
   }
 
-  &:deep(.apos-window__resize-handle--bottom) {
+  &:deep(.apos-window__resize-handle--s) {
     bottom: 0;
   }
 
-  &:deep(.apos-window__resize-handle--left),
-  &:deep(.apos-window__resize-handle--right) {
+  &:deep(.apos-window__resize-handle--w),
+  &:deep(.apos-window__resize-handle--e) {
     top: 0;
     bottom: 0;
-    width: $handle-size;
+    width: $edge-handle-size;
     cursor: ew-resize;
   }
 
-  &:deep(.apos-window__resize-handle--right) {
-    right: 0;
-  }
-
-  &:deep(.apos-window__resize-handle--left) {
+  &:deep(.apos-window__resize-handle--w) {
     left: 0;
   }
 
-  &:deep(.apos-window__resize-handle--corner-se) {
-    right: 2px;
-    bottom: 2px;
-    width: 18px;
-    height: 18px;
+  &:deep(.apos-window__resize-handle--e) {
+    right: 0;
+  }
+
+  // Corner handles
+  &:deep(.apos-window__resize-handle--corner) {
+    width: $corner-handle-size;
+    height: $corner-handle-size;
+
+    &:hover {
+      border-radius: 2px;
+    }
+  }
+
+  &:deep(.apos-window__resize-handle--corner-nw) {
+    top: 2px;
+    left: 2px;
     cursor: nwse-resize;
+  }
+
+  &:deep(.apos-window__resize-handle--corner-ne) {
+    top: 2px;
+    right: 2px;
+    cursor: nesw-resize;
   }
 
   &:deep(.apos-window__resize-handle--corner-sw) {
     bottom: 2px;
     left: 2px;
-    width: 18px;
-    height: 18px;
     cursor: nesw-resize;
 
     .apos-indicator {
       transform: scaleX(-1);
     }
+  }
+
+  &:deep(.apos-window__resize-handle--corner-se) {
+    right: 2px;
+    bottom: 2px;
+    cursor: nwse-resize;
   }
 
   &:deep(.apos-modal__header__main) {

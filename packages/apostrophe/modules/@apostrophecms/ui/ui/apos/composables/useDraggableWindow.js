@@ -5,18 +5,76 @@ import {
   isRef
 } from 'vue';
 
+// Constants
+const DRAG_THRESHOLD = 5; // pixels
+const RESIZE_THRESHOLD = 5; // pixels
+const VALID_EDGES = [ 'n', 's', 'e', 'w', 'se', 'sw', 'ne', 'nw' ];
+
+// Edge configuration for resize calculations
+// Each edge defines multipliers for how deltaX and deltaY affect
+// width, height, left, and top
+const EDGE_DELTAS = {
+  e: {
+    width: 1,
+    height: 0,
+    left: 0,
+    top: 0
+  },
+  w: {
+    width: -1,
+    height: 0,
+    left: 1,
+    top: 0
+  },
+  s: {
+    width: 0,
+    height: 1,
+    left: 0,
+    top: 0
+  },
+  n: {
+    width: 0,
+    height: -1,
+    left: 0,
+    top: 1
+  },
+  se: {
+    width: 1,
+    height: 1,
+    left: 0,
+    top: 0
+  },
+  sw: {
+    width: -1,
+    height: 1,
+    left: 1,
+    top: 0
+  },
+  ne: {
+    width: 1,
+    height: -1,
+    left: 0,
+    top: 1
+  },
+  nw: {
+    width: -1,
+    height: -1,
+    left: 1,
+    top: 1
+  }
+};
+
 /**
  * Draggable, positionable window logic. Handles mousedown → mousemove → mouseup
  * drag flow, viewport clamping, optional localStorage persistence, and optional
  * body class while dragging. Supports an optional corner resize handle with
  * developer-set min/max width and height. Use startResizing(e, edge) with
- * edge 'n'|'s'|'e'|'w' for top, right, bottom, left handles.
+ * edge 'n'|'s'|'e'|'w'|'se'|'sw'|'ne'|'nw' for top, right, bottom, left handles.
  *
  * @param {{
  *   size: import('vue').Ref<{ width: number; height: number }>
  *   | { width: number; height: number };
  *   storageKey?: string;
- *   bodyDragClass?: string;
  *   getDefaultPosition?: () => { left: number; top: number };
  *   minWidth?: number;
  *   maxWidth?: number;
@@ -31,12 +89,13 @@ import {
  *   { left: string; top: string; width: string; height: string }>;
  *   startDragging: (e: MouseEvent) => void;
  *   stopDragging: () => void;
- *   startResizing: (e: MouseEvent, edge: 'n'|'s'|'e'|'w'|'se'|'sw') => void;
+ *   startResizing: (e: MouseEvent, edge: 'n'|'s'|'e'|'w'|'se'|'sw'|'ne'|'nw') => void;
  *   stopResizing: () => void;
  *   setPosition: () => void;
  *   resetPosition: () => void;
  *   constrainPosition: () => void;
  *   constrainSize: () => void;
+ *   cleanup: () => void;
  * }}
  */
 export function useDraggableWindow({
@@ -54,6 +113,8 @@ export function useDraggableWindow({
   });
   const dragging = ref(false);
   const resizing = ref(false);
+  const dragClassApplied = ref(false);
+  const resizeClassApplied = ref(false);
   const bodyDragClass = 'apos-window-is-dragging';
   const bodyResizeClass = 'apos-window-is-resizing';
   const offset = {
@@ -64,7 +125,6 @@ export function useDraggableWindow({
     x: 0,
     y: 0
   };
-  let dragClassApplied = false;
   let resizeInitial = {
     width: 0,
     height: 0,
@@ -74,8 +134,13 @@ export function useDraggableWindow({
     mouseY: 0,
     edge: null
   };
-  let resizeClassApplied = false;
 
+  /**
+   * Clamps a position value to ensure the element stays within the viewport
+   * @param {string} axis - 'x' or 'y'
+   * @param {number} value - The position value to clamp
+   * @returns {number} The clamped position value
+   */
   function getAxisPos(axis, value) {
     const s = unref(size);
     if (!s) {
@@ -93,15 +158,41 @@ export function useDraggableWindow({
     return value;
   }
 
+  /**
+   * Checks if the mouse has moved enough to apply the drag/resize class
+   * @param {{ x: number; y: number }} currentPos - Current mouse position
+   * @param {{ x: number; y: number }} initialPos - Initial mouse position
+   * @param {number} threshold - Threshold in pixels
+   * @returns {boolean} True if threshold exceeded
+   */
+  function shouldApplyClass(currentPos, initialPos, threshold) {
+    const deltaX = Math.abs(currentPos.x - initialPos.x);
+    const deltaY = Math.abs(currentPos.y - initialPos.y);
+    return deltaX > threshold || deltaY > threshold;
+  }
+
+  /**
+   * Validates if an edge string is valid
+   * @param {string} edge - Edge identifier
+   * @returns {boolean} True if valid
+   */
+  function isValidEdge(edge) {
+    return VALID_EDGES.includes(edge);
+  }
+
   function drag(e) {
     // Only apply bodyDragClass after the mouse has moved a threshold distance
-    if (!dragClassApplied) {
-      const deltaX = Math.abs(e.clientX - initialMousePos.x);
-      const deltaY = Math.abs(e.clientY - initialMousePos.y);
-      const threshold = 5; // pixels
-      if (deltaX > threshold || deltaY > threshold) {
+    if (!dragClassApplied.value) {
+      if (shouldApplyClass(
+        {
+          x: e.clientX,
+          y: e.clientY
+        },
+        initialMousePos,
+        DRAG_THRESHOLD
+      )) {
         document.body.classList.add(bodyDragClass);
-        dragClassApplied = true;
+        dragClassApplied.value = true;
       }
     }
     const x = getAxisPos('x', e.clientX - offset.x);
@@ -120,16 +211,16 @@ export function useDraggableWindow({
       x: e.clientX,
       y: e.clientY
     };
-    dragClassApplied = false;
+    dragClassApplied.value = false;
     window.addEventListener('mousemove', drag);
     window.addEventListener('mouseup', stopDragging);
   }
 
   function stopDragging() {
     dragging.value = false;
-    if (dragClassApplied) {
+    if (dragClassApplied.value) {
       document.body.classList.remove(bodyDragClass);
-      dragClassApplied = false;
+      dragClassApplied.value = false;
     }
     document.getSelection().removeAllRanges();
 
@@ -145,6 +236,13 @@ export function useDraggableWindow({
     window.removeEventListener('mouseup', stopDragging);
   }
 
+  /**
+   * Clamps a dimension value between min and max
+   * @param {number} value - Value to clamp
+   * @param {number|null} min - Minimum value (null if no minimum)
+   * @param {number|null} max - Maximum value (null if no maximum)
+   * @returns {number} Clamped value
+   */
   function clampDimension(value, min, max) {
     if (min != null && value < min) {
       return min;
@@ -155,42 +253,66 @@ export function useDraggableWindow({
     return value;
   }
 
+  /**
+   * Applies resize constraints based on edge, min/max dimensions, and viewport
+   * limits
+   * @param {string} edge - Edge identifier ('n', 's', 'e', 'w', 'se', 'sw', 'ne', 'nw')
+   * @param {number} width - Proposed width
+   * @param {number} height - Proposed height
+   * @param {number} left - Proposed left position
+   * @param {number} top - Proposed top position
+   * @returns {{ width: number; height: number; left: number; top: number }}
+   * Constrained dimensions and position
+   */
   function applyResizeConstraints(edge, width, height, left, top) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Determine which dimensions need constraint based on edge
+    const affectsWidth = edge.includes('e') || edge.includes('w');
+    const affectsHeight = edge.includes('n') || edge.includes('s');
+    const affectsLeft = edge.includes('w');
+    const affectsTop = edge.includes('n');
+
     let w = width;
     let h = height;
     let l = left;
     let t = top;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    if (edge === 'e') {
+
+    // Apply min/max constraints
+    if (affectsWidth) {
       w = clampDimension(width, minWidth, maxWidth);
-      w = Math.min(w, vw - l);
-    } else if (edge === 'w') {
-      const rightEdge = left + width;
-      w = clampDimension(width, minWidth, maxWidth);
-      w = Math.min(w, vw, rightEdge);
-      l = rightEdge - w;
-    } else if (edge === 's') {
-      h = clampDimension(height, minHeight, maxHeight);
-      h = Math.min(h, vh - t);
-    } else if (edge === 'n') {
-      const bottomEdge = top + height;
-      h = clampDimension(height, minHeight, maxHeight);
-      h = Math.min(h, vh, bottomEdge);
-      t = bottomEdge - h;
-    } else if (edge === 'se') {
-      w = clampDimension(width, minWidth, maxWidth);
-      w = Math.min(w, vw - l);
-      h = clampDimension(height, minHeight, maxHeight);
-      h = Math.min(h, vh - t);
-    } else if (edge === 'sw') {
-      const rightEdge = left + width;
-      w = clampDimension(width, minWidth, maxWidth);
-      w = Math.min(w, vw, rightEdge);
-      l = rightEdge - w;
-      h = clampDimension(height, minHeight, maxHeight);
-      h = Math.min(h, vh - t);
     }
+    if (affectsHeight) {
+      h = clampDimension(height, minHeight, maxHeight);
+    }
+
+    // Apply viewport constraints for width
+    if (affectsWidth) {
+      if (affectsLeft) {
+        // When resizing from left/west edge, maintain right edge position
+        const rightEdge = left + width;
+        w = Math.min(w, vw, rightEdge);
+        l = rightEdge - w;
+      } else {
+        // When resizing from right/east edge, constrain to viewport
+        w = Math.min(w, vw - l);
+      }
+    }
+
+    // Apply viewport constraints for height
+    if (affectsHeight) {
+      if (affectsTop) {
+        // When resizing from top/north edge, maintain bottom edge position
+        const bottomEdge = top + height;
+        h = Math.min(h, vh, bottomEdge);
+        t = bottomEdge - h;
+      } else {
+        // When resizing from bottom/south edge, constrain to viewport
+        h = Math.min(h, vh - t);
+      }
+    }
+
     return {
       width: w,
       height: h,
@@ -200,44 +322,45 @@ export function useDraggableWindow({
   }
 
   function doResize(e) {
-    if (!resizeClassApplied) {
-      const deltaX = Math.abs(e.clientX - resizeInitial.mouseX);
-      const deltaY = Math.abs(e.clientY - resizeInitial.mouseY);
-      const threshold = 5;
-      if (deltaX > threshold || deltaY > threshold) {
+    // Apply class after threshold
+    if (!resizeClassApplied.value) {
+      if (shouldApplyClass(
+        {
+          x: e.clientX,
+          y: e.clientY
+        },
+        {
+          x: resizeInitial.mouseX,
+          y: resizeInitial.mouseY
+        },
+        RESIZE_THRESHOLD
+      )) {
         document.body.classList.add(bodyResizeClass);
-        resizeClassApplied = true;
+        resizeClassApplied.value = true;
       }
     }
+
     const deltaX = e.clientX - resizeInitial.mouseX;
     const deltaY = e.clientY - resizeInitial.mouseY;
     const edge = resizeInitial.edge;
-    let width = resizeInitial.width;
-    let height = resizeInitial.height;
-    let left = resizeInitial.left;
-    let top = resizeInitial.top;
-    if (edge === 'e') {
-      width = resizeInitial.width + deltaX;
-    } else if (edge === 'w') {
-      width = resizeInitial.width - deltaX;
-      left = resizeInitial.left + deltaX;
-    } else if (edge === 's') {
-      height = resizeInitial.height + deltaY;
-    } else if (edge === 'n') {
-      height = resizeInitial.height - deltaY;
-      top = resizeInitial.top + deltaY;
-    } else if (edge === 'se') {
-      width = resizeInitial.width + deltaX;
-      height = resizeInitial.height + deltaY;
-    } else if (edge === 'sw') {
-      width = resizeInitial.width - deltaX;
-      left = resizeInitial.left + deltaX;
-      height = resizeInitial.height + deltaY;
+    const config = EDGE_DELTAS[edge];
+
+    if (!config) {
+      return;
     }
+
+    // Calculate new dimensions and position using edge configuration
+    const width = resizeInitial.width + (deltaX * config.width);
+    const height = resizeInitial.height + (deltaY * config.height);
+    const left = resizeInitial.left + (deltaX * config.left);
+    const top = resizeInitial.top + (deltaY * config.top);
+
     const result = applyResizeConstraints(edge, width, height, left, top);
+
     if (!isRef(size)) {
       return;
     }
+
     size.value = {
       width: result.width,
       height: result.height
@@ -249,7 +372,7 @@ export function useDraggableWindow({
   }
 
   function startResizing(e, edge) {
-    if (!isRef(size) || !edge || ![ 'n', 's', 'e', 'w', 'se', 'sw' ].includes(edge)) {
+    if (!isRef(size) || !edge || !isValidEdge(edge)) {
       return;
     }
     resizing.value = true;
@@ -264,16 +387,16 @@ export function useDraggableWindow({
       mouseY: e.clientY,
       edge
     };
-    resizeClassApplied = false;
+    resizeClassApplied.value = false;
     window.addEventListener('mousemove', doResize);
     window.addEventListener('mouseup', stopResizing);
   }
 
   function stopResizing() {
     resizing.value = false;
-    if (resizeClassApplied) {
+    if (resizeClassApplied.value) {
       document.body.classList.remove(bodyResizeClass);
-      resizeClassApplied = false;
+      resizeClassApplied.value = false;
     }
     document.getSelection().removeAllRanges();
     window.removeEventListener('mousemove', doResize);
@@ -374,6 +497,19 @@ export function useDraggableWindow({
     };
   });
 
+  /**
+   * Cleanup function to be called on component unmount
+   * Ensures event listeners are removed and classes are cleaned up
+   */
+  function cleanup() {
+    if (dragging.value) {
+      stopDragging();
+    }
+    if (resizing.value) {
+      stopResizing();
+    }
+  }
+
   return {
     position,
     dragging,
@@ -386,6 +522,7 @@ export function useDraggableWindow({
     setPosition,
     resetPosition,
     constrainPosition,
-    constrainSize
+    constrainSize,
+    cleanup
   };
 }
