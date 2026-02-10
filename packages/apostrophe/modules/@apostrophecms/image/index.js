@@ -718,12 +718,34 @@ module.exports = {
       }
     };
   },
-  helpers: [
-    'first',
-    'all',
-    'srcset',
-    'isCroppable'
-  ],
+  helpers(self) {
+    return {
+      first(within, options) {
+        if (!within) {
+          return null;
+        }
+        return self.first(within, options);
+      },
+      all(within, options) {
+        if (!within) {
+          return [];
+        }
+        return self.all(within, options);
+      },
+      srcset(attachment, cropFields) {
+        if (!attachment) {
+          return '';
+        }
+        return self.srcset(attachment, cropFields);
+      },
+      isCroppable(image) {
+        if (!image) {
+          return false;
+        }
+        return self.isCroppable(image);
+      }
+    };
+  },
   queries(self, query) {
     return {
       builders: {

@@ -1307,15 +1307,59 @@ module.exports = {
       ...require('./lib/legacy-migrations')(self)
     };
   },
-  helpers: [
-    'url',
-    'first',
-    'all',
-    'hasFocalPoint',
-    'getFocalPoint',
-    'focalPointToObjectPosition',
-    'getWidth',
-    'getHeight',
-    'isCroppable'
-  ]
+  helpers(self) {
+    return {
+      url(attachment, options) {
+        return self.url(attachment, options);
+      },
+      first(within, options) {
+        if (!within) {
+          return null;
+        }
+        return self.first(within, options);
+      },
+      all(within, options) {
+        if (!within) {
+          return [];
+        }
+        return self.all(within, options);
+      },
+      hasFocalPoint(attachment) {
+        if (!attachment) {
+          return false;
+        }
+        return self.hasFocalPoint(attachment);
+      },
+      getFocalPoint(attachment) {
+        if (!attachment) {
+          return null;
+        }
+        return self.getFocalPoint(attachment);
+      },
+      focalPointToObjectPosition(attachment) {
+        if (!attachment) {
+          return null;
+        }
+        return self.focalPointToObjectPosition(attachment);
+      },
+      getWidth(attachment) {
+        if (!attachment) {
+          return null;
+        }
+        return self.getWidth(attachment);
+      },
+      getHeight(attachment) {
+        if (!attachment) {
+          return null;
+        }
+        return self.getHeight(attachment);
+      },
+      isCroppable(attachment) {
+        if (!attachment) {
+          return false;
+        }
+        return self.isCroppable(attachment);
+      }
+    };
+  }
 };
