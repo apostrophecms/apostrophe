@@ -27,11 +27,16 @@
 // as the default value for the`adminLocale` user field. If it is not set,
 // but `adminLocales` is set, then the default is to display the admin UI
 // in the same language as the website content.
-// Example: `defaultLocale: 'fr'`.
+// Example: `defaultAdminLocale: 'fr'`.
 //
 // ### `encoding`
 //
 // Defaults to `'utf-8'`. You almost certainly do not want to change this.
+//
+// ### `slugDirection`
+//
+// Controls the default `direction` value of slug schema. Can be `ltr`, `rtl` or
+// `undefined|null` to not set a default. Defaults to `ltr`.
 
 const i18next = require('i18next');
 const fs = require('fs');
@@ -77,7 +82,8 @@ module.exports = {
     // If true, slugifying will strip accents from Latin characters
     stripUrlAccents: false,
     // You almost certainly do not want to change this
-    encoding: 'utf-8'
+    encoding: 'utf-8',
+    slugDirection: 'ltr'
   },
   async init(self) {
     self.defaultNamespace = 'default';
@@ -93,6 +99,12 @@ module.exports = {
     // If adminLocales are configured, it should be one of them. Otherwise,
     // it can be any valid locale string identifier.
     self.defaultAdminLocale = self.options.defaultAdminLocale || null;
+    if (self.options.slugDirection && ![ 'ltr', 'rtl' ].includes(self.options.slugDirection)) {
+      throw self.apos.error(
+        'invalid',
+        `The "slugDirection" option of "${self.__meta.name}" module must be "ltr", "rtl" or "null".`
+      );
+    }
     // Lint the locale configurations
     for (const [ key, options ] of Object.entries(self.locales)) {
       if (!options) {
@@ -175,6 +187,12 @@ module.exports = {
         // The array is provided in the order in which locales are configured.
         // The current locale is included and has the property `current: true`.
         async addLocalizations(req) {
+          const locale = req.locale || self.defaultLocale;
+          req.data.i18n = {
+            locale,
+            direction: self.locales[locale]?.direction || 'ltr',
+            label: self.locales[locale]?.label || locale
+          };
           const context = req.data.piece || req.data.page;
           if (!context) {
             return;
@@ -212,6 +230,7 @@ module.exports = {
             const info = doc || {};
             info.locale = name;
             info.label = self.locales[name].label;
+            info.direction = self.locales[name].direction;
             info.homePageUrl = `${localeReq.prefix}/`;
             req.data.localizations.push(info);
           }
@@ -686,7 +705,8 @@ module.exports = {
           show: self.show,
           action: self.action,
           crossDomainClipboard: req.session && req.session.aposCrossDomainClipboard,
-          stripUrlAccents: self.options.stripUrlAccents
+          stripUrlAccents: self.options.stripUrlAccents,
+          slugDirection: self.options.slugDirection
         };
         if (req.session && req.session.aposCrossDomainClipboard) {
           req.session.aposCrossDomainClipboard = null;
@@ -715,11 +735,13 @@ module.exports = {
       getLocales() {
         const locales = self.options.locales || {
           en: {
-            label: 'English'
+            label: 'English',
+            direction: 'ltr'
           }
         };
         for (const locale in locales) {
           locales[locale]._edit = true;
+          locales[locale].direction ??= 'ltr';
         }
         verifyLocales(locales, self.apos.options.baseUrl);
         return locales;

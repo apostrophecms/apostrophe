@@ -44,5 +44,8 @@
     "apostrophecms-openapi.yaml",
     "README.md",
     "LICENSE.md"
-  ]
+  ],
+  "apostropheTestConfig": {
+    "requiresMongo": false
+  }
 }

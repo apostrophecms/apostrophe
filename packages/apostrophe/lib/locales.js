@@ -10,6 +10,24 @@ module.exports = {
       const hostname = options.hostname || '__none';
       const prefix = options.prefix || '__none';
       const key = `${hostname}:${prefix}`;
+      const direction = options.direction;
+      const intlMapping = options.intlMapping;
+
+      if (intlMapping && (typeof intlMapping !== 'string')) {
+        throw new Error(stripIndent`
+          The locale "${name}" has an invalid intlMapping option "${intlMapping}".
+          The intlMapping option must be a string.
+        `);
+      }
+
+      // Note that default `ltr` directions should have been set
+      // already by the `getLocales` method in the i18n module.
+      if ([ 'ltr', 'rtl' ].indexOf(direction) === -1) {
+        throw new Error(stripIndent`
+          The locale "${name}" has an invalid direction option "${direction || 'undefined'}".
+          The direction option must be either "ltr" (left to right) or "rtl" (right to left).
+        `);
+      }
 
       hostnamesCount += options.hostname ? 1 : 0;
 

@@ -17,7 +17,13 @@ describe('static i18n', function() {
             locales: {
               en: {},
               fr: {
-                prefix: '/fr'
+                prefix: '/fr',
+                intlMapping: 'fr-FR'
+              },
+              he: {
+                label: 'Hebrew',
+                prefix: '/he',
+                direction: 'rtl'
               }
             }
           }
@@ -60,28 +66,100 @@ describe('static i18n', function() {
     assert(apos.i18n.i18next);
   });
 
-  it('should set the lang attribute to "en" by default', async function() {
+  it('should preserve intlMapping property on locales', async function() {
+    assert.equal(apos.i18n.locales.fr.intlMapping, 'fr-FR');
+    assert.equal(apos.i18n.locales.en.intlMapping, undefined);
+  });
+
+  it('should set the lang and dir attributes by default', async function() {
     const req = apos.task.getReq();
     const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
 
     const $ = cheerio.load(result);
     const $html = $('html');
     const lang = $html.attr('lang');
+    const dir = $html.attr('dir');
 
     assert.equal(lang, 'en');
+    assert.equal(dir, 'ltr');
   });
 
-  it('should set the lang attribute to the current locale', async function() {
+  it('should set the lang and dir attributes to the current locale', async function() {
+    {
+      const req = apos.task.getReq({
+        locale: 'fr'
+      });
+      const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+      const $ = cheerio.load(result);
+      const $html = $('html');
+      const lang = $html.attr('lang');
+      const dir = $html.attr('dir');
+
+      assert.equal(lang, 'fr', 'fr locale should set lang="fr"');
+      assert.equal(dir, 'ltr', 'fr locale should set dir="ltr"');
+    }
+
+    {
+      const req = apos.task.getReq({
+        locale: 'he'
+      });
+      const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+      const $ = cheerio.load(result);
+      const $html = $('html');
+      const lang = $html.attr('lang');
+      const dir = $html.attr('dir');
+
+      assert.equal(lang, 'he', 'he locale should set lang="he"');
+      assert.equal(dir, 'rtl', 'he locale should set dir="rtl"');
+    }
+  });
+
+  it('should set `data.i18n` by default', async function() {
+    const req = apos.task.getReq();
+    const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+    const $ = cheerio.load(result);
+    const locale = $('#locale').text();
+    const label = $('#label').text();
+    const direction = $('#direction').text();
+
+    assert.equal(locale, 'en');
+    assert.equal(label, 'en');
+    assert.equal(direction, 'ltr');
+  });
+
+  it('should set `data.i18n` when direction is not specified', async function() {
     const req = apos.task.getReq({
       locale: 'fr'
     });
     const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
 
     const $ = cheerio.load(result);
-    const $html = $('html');
-    const lang = $html.attr('lang');
+    const locale = $('#locale').text();
+    const label = $('#label').text();
+    const direction = $('#direction').text();
 
-    assert.equal(lang, 'fr');
+    assert.equal(locale, 'fr');
+    assert.equal(label, 'fr');
+    assert.equal(direction, 'ltr');
+  });
+
+  it('should set `data.i18n` when direction is specified', async function() {
+    const req = apos.task.getReq({
+      locale: 'he'
+    });
+    const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+    const $ = cheerio.load(result);
+    const locale = $('#locale').text();
+    const label = $('#label').text();
+    const direction = $('#direction').text();
+
+    assert.equal(locale, 'he');
+    assert.equal(label, 'Hebrew');
+    assert.equal(direction, 'rtl');
   });
 
   it('should localize apostrophe namespace phrases in the default locale', function() {

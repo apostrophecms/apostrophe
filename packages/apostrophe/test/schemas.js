@@ -2775,6 +2775,398 @@ describe('Schemas', function() {
     assert.deepEqual(actual, expected);
   });
 
+  it('validate direction schema (string)', function () {
+    const schema = [
+      {
+        name: 'noDirString',
+        type: 'string'
+      },
+      {
+        name: 'validLtrString',
+        type: 'string',
+        direction: 'ltr'
+      },
+      {
+        name: 'validRtlString',
+        type: 'string',
+        direction: 'rtl'
+      },
+      {
+        name: 'invalidString',
+        type: 'string',
+        direction: 'sideways'
+      }
+    ];
+
+    const options = {
+      type: 'doc type',
+      subtype: 'test'
+    };
+
+    assert.throws(() => {
+      apos.schema.validate(schema, options);
+    }, function (err) {
+      assert.equal(
+        err.message.includes(
+          'string field "invalidString"'
+        ),
+        true,
+        'Error message should mention the invalidString field'
+      );
+      assert.equal(
+        err.message.includes(
+          'The direction property must be "ltr" or "rtl" if specified'
+        ),
+        true,
+        'Error message should mention the allowed values'
+      );
+      return true;
+    });
+  });
+
+  it('validate direction schema (slug)', function () {
+    const schema = [
+      {
+        name: 'noDirSlug',
+        type: 'slug'
+      },
+      {
+        name: 'validLtrSlug',
+        type: 'slug',
+        direction: 'ltr'
+      },
+      {
+        name: 'validRtlSlug',
+        type: 'slug',
+        direction: 'rtl'
+      },
+      {
+        name: 'invalidSlug',
+        type: 'slug',
+        direction: 'sideways'
+      }
+    ];
+
+    const options = {
+      type: 'doc type',
+      subtype: 'test'
+    };
+
+    assert.throws(() => {
+      apos.schema.validate(schema, options);
+    }, function (err) {
+      assert.equal(
+        err.message.includes(
+          'slug field "invalidSlug"'
+        ),
+        true,
+        'Error message should mention the invalidSlug field'
+      );
+      assert.equal(
+        err.message.includes(
+          'The direction property must be "ltr" or "rtl" if specified'
+        ),
+        true,
+        'Error message should mention the allowed values'
+      );
+      return true;
+    });
+  });
+
+  it('validate direction schema (url)', function () {
+    const schema = [
+      {
+        name: 'noDirUrl',
+        type: 'url'
+      },
+      {
+        name: 'validLtrUrl',
+        type: 'url',
+        direction: 'ltr'
+      },
+      {
+        name: 'validRtlUrl',
+        type: 'url',
+        direction: 'rtl'
+      },
+      {
+        name: 'invalidUrl',
+        type: 'url',
+        direction: 'sideways'
+      }
+    ];
+
+    const options = {
+      type: 'doc type',
+      subtype: 'test'
+    };
+
+    assert.throws(() => {
+      apos.schema.validate(schema, options);
+    }, function (err) {
+      assert.equal(
+        err.message.includes(
+          'url field "invalidUrl"'
+        ),
+        true,
+        'Error message should mention the invalidUrl field'
+      );
+      assert.equal(
+        err.message.includes(
+          'The direction property must be "ltr" or "rtl" if specified'
+        ),
+        true,
+        'Error message should mention the allowed values'
+      );
+      return true;
+    });
+  });
+
+  it('validate direction schema (email)', function () {
+    const schema = [
+      {
+        name: 'noDirEmail',
+        type: 'email'
+      },
+      {
+        name: 'validLtrEmail',
+        type: 'email',
+        direction: 'ltr'
+      },
+      {
+        name: 'validRtlEmail',
+        type: 'email',
+        direction: 'rtl'
+      },
+      {
+        name: 'invalidEmail',
+        type: 'email',
+        direction: 'sideways'
+      }
+    ];
+
+    const options = {
+      type: 'doc type',
+      subtype: 'test'
+    };
+
+    assert.throws(() => {
+      apos.schema.validate(schema, options);
+    }, function (err) {
+      assert.equal(
+        err.message.includes(
+          'email field "invalidEmail"'
+        ),
+        true,
+        'Error message should mention the invalidEmail field'
+      );
+      assert.equal(
+        err.message.includes(
+          'The direction property must be "ltr" or "rtl" if specified'
+        ),
+        true,
+        'Error message should mention the allowed values'
+      );
+      return true;
+    });
+  });
+
+  it('validate direction schema (date)', function () {
+    const schema = [
+      {
+        name: 'noDirDate',
+        type: 'date'
+      },
+      {
+        name: 'validLtrDate',
+        type: 'date',
+        direction: 'ltr'
+      },
+      {
+        name: 'validRtlDate',
+        type: 'date',
+        direction: 'rtl'
+      },
+      {
+        name: 'invalidDate',
+        type: 'date',
+        direction: 'sideways'
+      }
+    ];
+
+    const options = {
+      type: 'doc type',
+      subtype: 'test'
+    };
+
+    assert.throws(() => {
+      apos.schema.validate(schema, options);
+    }, function (err) {
+      assert.equal(
+        err.message.includes(
+          'date field "invalidDate"'
+        ),
+        true,
+        'Error message should mention the invalidDate field'
+      );
+      assert.equal(
+        err.message.includes(
+          'The direction property must be "ltr" or "rtl" if specified'
+        ),
+        true,
+        'Error message should mention the allowed values'
+      );
+      return true;
+    });
+  });
+
+  it('validate direction schema (dateAndTime)', function () {
+    const schema = [
+      {
+        name: 'noDirDateAndTime',
+        type: 'dateAndTime'
+      },
+      {
+        name: 'validLtrDateAndTime',
+        type: 'dateAndTime',
+        direction: 'ltr'
+      },
+      {
+        name: 'validRtlDateAndTime',
+        type: 'dateAndTime',
+        direction: 'rtl'
+      },
+      {
+        name: 'invalidDateAndTime',
+        type: 'dateAndTime',
+        direction: 'sideways'
+      }
+    ];
+
+    const options = {
+      type: 'doc type',
+      subtype: 'test'
+    };
+
+    assert.throws(() => {
+      apos.schema.validate(schema, options);
+    }, function (err) {
+      assert.equal(
+        err.message.includes(
+          'dateAndTime field "invalidDateAndTime"'
+        ),
+        true,
+        'Error message should mention the invalidDateAndTime field'
+      );
+      assert.equal(
+        err.message.includes(
+          'The direction property must be "ltr" or "rtl" if specified'
+        ),
+        true,
+        'Error message should mention the allowed values'
+      );
+      return true;
+    });
+  });
+
+  it('validate direction schema (password)', function () {
+    const schema = [
+      {
+        name: 'noDirPassword',
+        type: 'password'
+      },
+      {
+        name: 'validLtrPassword',
+        type: 'password',
+        direction: 'ltr'
+      },
+      {
+        name: 'validRtlPassword',
+        type: 'password',
+        direction: 'rtl'
+      },
+      {
+        name: 'invalidPassword',
+        type: 'password',
+        direction: 'sideways'
+      }
+    ];
+
+    const options = {
+      type: 'doc type',
+      subtype: 'test'
+    };
+
+    assert.throws(() => {
+      apos.schema.validate(schema, options);
+    }, function (err) {
+      assert.equal(
+        err.message.includes(
+          'password field "invalidPassword"'
+        ),
+        true,
+        'Error message should mention the invalidPassword field'
+      );
+      assert.equal(
+        err.message.includes(
+          'The direction property must be "ltr" or "rtl" if specified'
+        ),
+        true,
+        'Error message should mention the allowed values'
+      );
+      return true;
+    });
+  });
+
+  it('validate direction schema (box)', function () {
+    const schema = [
+      {
+        name: 'noDirBox',
+        type: 'box'
+      },
+      {
+        name: 'validLtrBox',
+        type: 'box',
+        direction: 'ltr'
+      },
+      {
+        name: 'validRtlBox',
+        type: 'box',
+        direction: 'rtl'
+      },
+      {
+        name: 'invalidBox',
+        type: 'box',
+        direction: 'sideways'
+      }
+    ];
+
+    const options = {
+      type: 'doc type',
+      subtype: 'test'
+    };
+
+    assert.throws(() => {
+      apos.schema.validate(schema, options);
+    }, function (err) {
+      assert.equal(
+        err.message.includes(
+          'box field "invalidBox"'
+        ),
+        true,
+        'Error message should mention the invalidBox field'
+      );
+      assert.equal(
+        err.message.includes(
+          'The direction property must be "ltr" or "rtl" if specified'
+        ),
+        true,
+        'Error message should mention the allowed values'
+      );
+      return true;
+    });
+  });
+
   describe('field.readOnly with default value', function() {
     const givenSchema = [
       {

@@ -4,7 +4,19 @@
 
 ### Fixes
 
-- No changes. Published to reset the `latest` tag in `npm`, which inadvertently pointed to an alpha release for a brief period of time.
+- No changes relative to 4.26.0. Published to reset the `latest` tag in `npm`, which inadvertently pointed to an alpha release for a brief period of time.
+
+## 4.27.0-alpha.1
+
+### Adds
+
+- In `@apostrophecms/i18n` add `direction` property to locale configuration to support RTL languages (e.g., `he`, `ar`), `slugDirection` option to control default direction of slug fields. Add `direction` property in the schema field definitions to override and validate text direction (supports `ltr` and `rtl`) of input fields. Note that the admin UI layout and labels overall are still LTR only for now, but these changes accommodate editing RTL locale content within that. For best results the feature should be combined with `adminLocales` and `defaultAdminLocale` module options, e.g. the admin UI itself should remain in English or another LTR language for now.
+
+## 4.26.1-alpha.1
+
+### Fixes
+
+- Fix a bug where rich text images and permalinks are not properly rendered in public external front (e.g. Astro) views.
 
 ## 4.26.0
 
