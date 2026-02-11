@@ -204,6 +204,10 @@ export function useDraggableWindow({
   }
 
   function startDragging(e) {
+    // Prevent re-entry
+    if (dragging.value) {
+      return;
+    }
     dragging.value = true;
     offset.x = e.clientX - position.value.left;
     offset.y = e.clientY - position.value.top;
@@ -218,10 +222,9 @@ export function useDraggableWindow({
 
   function stopDragging() {
     dragging.value = false;
-    if (dragClassApplied.value) {
-      document.body.classList.remove(bodyDragClass);
-      dragClassApplied.value = false;
-    }
+    // Remove unconditionally
+    document.body.classList.remove(bodyDragClass);
+    dragClassApplied.value = false;
     document.getSelection().removeAllRanges();
 
     if (storageKey) {
@@ -372,7 +375,13 @@ export function useDraggableWindow({
   }
 
   function startResizing(e, edge) {
-    if (!isRef(size) || !edge || !isValidEdge(edge)) {
+    if (
+      resizing.value ||
+      e.button !== 0 ||
+      !isRef(size) ||
+      !edge ||
+      !isValidEdge(edge)
+    ) {
       return;
     }
     resizing.value = true;
@@ -394,10 +403,8 @@ export function useDraggableWindow({
 
   function stopResizing() {
     resizing.value = false;
-    if (resizeClassApplied.value) {
-      document.body.classList.remove(bodyResizeClass);
-      resizeClassApplied.value = false;
-    }
+    document.body.classList.remove(bodyResizeClass);
+    resizeClassApplied.value = false;
     document.getSelection().removeAllRanges();
     window.removeEventListener('mousemove', doResize);
     window.removeEventListener('mouseup', stopResizing);
@@ -502,12 +509,19 @@ export function useDraggableWindow({
    * Ensures event listeners are removed and classes are cleaned up
    */
   function cleanup() {
-    if (dragging.value) {
-      stopDragging();
-    }
-    if (resizing.value) {
-      stopResizing();
-    }
+    // Unconditionally clean up — reactive state may be out of sync
+    // if mouseup was lost (tab switch, mouse left viewport, etc.)
+    document.body.classList.remove(bodyDragClass);
+    document.body.classList.remove(bodyResizeClass);
+    window.removeEventListener('mousemove', drag);
+    window.removeEventListener('mouseup', stopDragging);
+    window.removeEventListener('mousemove', doResize);
+    window.removeEventListener('mouseup', stopResizing);
+    dragging.value = false;
+    resizing.value = false;
+    dragClassApplied.value = false;
+    resizeClassApplied.value = false;
+    document.getSelection().removeAllRanges();
   }
 
   return {
