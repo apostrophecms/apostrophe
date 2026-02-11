@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.26.2 (2026-02-11)
+
+### Fixes
+
+- Republished solely to resolve npm packaging issue that broke `npm install` in the short-lived 4.26.1 release.
+
+## 4.26.1 (2026-02-10)
+
+- Republished to correct the npm `latest` tag to not refer to an alpha release.
+
 ## 4.26.0
 
 ### Adds
