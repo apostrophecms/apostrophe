@@ -221,6 +221,8 @@ export function useDraggableWindow({
   }
 
   function stopDragging() {
+    window.removeEventListener('mousemove', drag);
+    window.removeEventListener('mouseup', stopDragging);
     dragging.value = false;
     // Remove unconditionally
     document.body.classList.remove(bodyDragClass);
@@ -234,9 +236,6 @@ export function useDraggableWindow({
         // Ignore storage errors (e.g. private mode)
       }
     }
-
-    window.removeEventListener('mousemove', drag);
-    window.removeEventListener('mouseup', stopDragging);
   }
 
   /**

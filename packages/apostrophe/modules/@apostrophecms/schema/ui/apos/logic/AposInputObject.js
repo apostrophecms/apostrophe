@@ -43,9 +43,9 @@ export default {
       return this.field?.options || {};
     },
     finalizedField() {
-      const field = this.field;
+      const field = { ...this.field };
       if (this.options.hideLabel) {
-        delete this.field.label;
+        delete field.label;
       }
       return field;
     },
