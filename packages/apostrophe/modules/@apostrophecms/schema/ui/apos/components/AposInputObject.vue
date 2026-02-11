@@ -4,6 +4,7 @@
   <AposInputWrapper
     :field="finalizedField"
     :modifiers="modifiers"
+    :class="{ 'apos-input-object--hide-label': options.hideLabel }"
     :error="null"
     :uid="uid"
     :display-options="displayOptions"
@@ -45,6 +46,11 @@ export default {
 </script>
 
 <style scoped lang="scss">
+  .apos-input-object--hide-label > :deep(.apos-field.apos-field--object),
+  .apos-input-object--hide-label > :deep(.apos-field--micro.apos-field.apos-field--object) {
+    margin-bottom: 0;
+  }
+
   .apos-input-object:not(.apos-input-object--flat) {
     border-left: 1px solid var(--a-base-9);
 
