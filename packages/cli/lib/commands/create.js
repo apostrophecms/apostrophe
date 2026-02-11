@@ -26,6 +26,11 @@ module.exports = function (program) {
       'Add a connection string to connect to a hosted MongoDB instance.'
     )
     .action(async function (shortName, options) {
+      if (!/^[\w-]+$/.test(shortName)) {
+        await util.error('create', 'The shortname must only contain letters, numbers, hyphens, and underscores.');
+        return false;
+      }
+
       // If options.starter is undefined, use config.BOILERPLATE
       const input = options.starter ? options.starter : config.BOILERPLATE;
 
