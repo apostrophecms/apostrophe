@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.26.1
+
+### Fixes
+
+- No changes relative to 4.26.0. Published to reset the `latest` tag in `npm`, which inadvertently pointed to an alpha release for a brief period of time.
+
 ## 4.27.0-alpha.1
 
 ### Adds
