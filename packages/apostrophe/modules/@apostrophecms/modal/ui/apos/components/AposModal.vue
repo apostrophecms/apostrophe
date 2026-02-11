@@ -275,7 +275,7 @@ const {
   maxHeight: props.modal.maxHeight !== undefined ? props.modal.maxHeight : null
 });
 
-// Wrap handler to only work for window modals and left mouse button
+// Wrap handler to only work for window modals and primary mouse button
 const startDragging = (e) => {
   if (e.button !== 0) {
     return;
