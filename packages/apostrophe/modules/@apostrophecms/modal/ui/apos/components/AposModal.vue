@@ -264,7 +264,8 @@ const {
   startDragging: composableStartDragging,
   startResizing,
   setPosition: setWindowPosition,
-  constrainPosition
+  constrainPosition,
+  cleanup: cleanupDraggable
 } = useDraggableWindow({
   size,
   getDefaultPosition: () => getDefaultPosition(props.modal.origin),
@@ -274,8 +275,11 @@ const {
   maxHeight: props.modal.maxHeight !== undefined ? props.modal.maxHeight : null
 });
 
-// Wrap handler to only work for window modals
+// Wrap handler to only work for window modals and primary mouse button
 const startDragging = (e) => {
+  if (e.button !== 0) {
+    return;
+  }
   const nonDraggable = nonDraggableElements.some(
     sel => e.target.closest(sel)
   );
@@ -459,6 +463,7 @@ function handleResize() {
 }
 
 onUnmounted(() => {
+  cleanupDraggable();
   if (isWindowModal.value) {
     window.removeEventListener('resize', handleResize);
   }
