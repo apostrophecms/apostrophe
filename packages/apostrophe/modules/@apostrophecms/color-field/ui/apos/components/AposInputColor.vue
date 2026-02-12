@@ -81,6 +81,7 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input-color {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: $spacing-base;

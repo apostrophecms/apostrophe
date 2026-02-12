@@ -141,7 +141,8 @@ module.exports = function (self) {
 
       conditionals[conditionName] = conditionals[conditionName] || {};
 
-      conditionals[conditionName][conditionValue] = conditionals[conditionName][conditionValue] || [];
+      conditionals[conditionName][conditionValue] =
+      conditionals[conditionName][conditionValue] || [];
 
       widget.contents.items.forEach(item => {
         conditionals[conditionName][conditionValue].push(item.fieldName);
@@ -158,8 +159,12 @@ module.exports = function (self) {
         if (typeof val === 'string') {
           const cleaned = val.replace(/^["']|["']$/g, '');
           // Use exact matches to avoid substring issues
-          if (cleaned === 'on' || cleaned === 'true') return true;
-          if (cleaned === 'off' || cleaned === 'false') return false;
+          if (cleaned === 'on' || cleaned === 'true') {
+            return true;
+          }
+          if (cleaned === 'off' || cleaned === 'false') {
+            return false;
+          }
           return cleaned;
         }
         return val;

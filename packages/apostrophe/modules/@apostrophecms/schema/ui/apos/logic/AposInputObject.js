@@ -39,6 +39,16 @@ export default {
     };
   },
   computed: {
+    options() {
+      return this.field?.options || {};
+    },
+    finalizedField() {
+      const field = { ...this.field };
+      if (this.options.hideLabel) {
+        delete field.label;
+      }
+      return field;
+    },
     followingValuesWithParent() {
       return this.computeFollowingValues(this.schemaInput.data);
     },
