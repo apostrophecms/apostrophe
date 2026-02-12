@@ -50,10 +50,14 @@ export default {
     },
     // TODO get 'Search' server for better i18n
     placeholder() {
-      return this.field.placeholder || {
-        key: 'apostrophe:searchDocType',
-        type: this.$t(this.pluralLabel)
-      };
+      return this.modifiers.some(m => [ 'small', 'micro' ].includes(m))
+        ? {
+          key: 'apostrophe:search'
+        }
+        : {
+          key: 'apostrophe:searchDocType',
+          type: this.$t(this.pluralLabel)
+        };
     },
     // TODO get 'Browse' for better i18n
     browseLabel() {
