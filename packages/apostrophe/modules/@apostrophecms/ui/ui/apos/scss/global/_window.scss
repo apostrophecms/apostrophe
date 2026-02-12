@@ -1,0 +1,47 @@
+.apos-window {
+  @include type-base;
+
+  & {
+    $width: 360px;
+    $duration: 0.2s;
+    $timing: cubic-bezier(.175,.885,.32,1.15);
+
+    z-index: $z-index-modal;
+    position: fixed;
+    display: flex;
+    box-sizing: border-box;
+    flex-direction: column;
+    width: $width;
+    border: 1px solid var(--a-base-9);
+    transition:
+      opacity $duration $timing,
+      transform $duration $timing;
+    box-shadow: rgb(0 0 0 / 19%) 0 10px 20px, rgb(0 0 0 / 23%) 0 6px 6px;
+    border-radius: 10px;
+    background-color: var(--a-background-primary);
+  }
+
+  &--dragging {
+    .apos-styles__top,
+    .apos-styles__body {
+      cursor: grabbing;
+    }
+  }
+}
+
+.apos-window-is-dragging {
+  [data-apos-refreshable] {
+    filter: blur(2px);
+  }
+
+  [data-apos-refreshable]::after {
+    opacity: 0.3;
+  }
+}
+
+.apos-window-is-dragging,
+.apos-window-is-resizing {
+  & *::selection {
+    background-color: transparent;
+  }
+}

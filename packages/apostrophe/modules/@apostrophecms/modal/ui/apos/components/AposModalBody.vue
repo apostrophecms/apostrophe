@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="bodyEl"
     class="apos-modal__body"
     :class="{ 'apos-modal__body--flex': hasSlot('footer') }"
   >
@@ -30,20 +31,39 @@
 <script>
 export default {
   name: 'AposModalBody',
+  props: {
+    currentTab: {
+      type: String,
+      default: null
+    }
+  },
   data() {
     return {
       headerHeight: 0
     };
+  },
+  watch: {
+    currentTab() {
+      this.scrollToTop();
+    }
   },
   async mounted() {
     if (this.$refs.bodyHeader) {
       await this.$nextTick();
       this.headerHeight = this.$refs.bodyHeader.offsetHeight;
     }
+    // Scroll to top of modal when opened
+    setTimeout(this.scrollToTop, 50);
   },
   methods: {
     hasSlot(name) {
       return !!this.$slots[name];
+    },
+    scrollToTop() {
+      this.$refs?.bodyEl?.scrollTo({
+        top: 0,
+        left: 0
+      });
     },
     getBodyMainRef() {
       return this.$refs.bodyMain;

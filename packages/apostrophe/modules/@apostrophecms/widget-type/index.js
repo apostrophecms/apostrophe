@@ -167,8 +167,8 @@ module.exports = {
     // 'up', 'down', 'cut', 'copy', 'clone'.
     placeholder: false,
     placeholderClass: 'apos-placeholder',
-    // two-thirds, half or full:
-    width: '',
+    // window, one-third, two-thirds, half or full:
+    width: 'window',
     // left or right, or null for no explicit origin (internally set
     // to 'right'):
     origin: null,
