@@ -22,5 +22,8 @@
       data-max-size-error="{{ __t('aposForm:fileMaxSizeError') }}"
       data-file-size-units="{{ widget.fileSizeUnits | jsonAttribute }}"
     {% endif %}
+    {% if widget.allowedExtensions | length %}
+      accept=".{{ widget.allowedExtensions | join(',.') }}"
+    {% endif %}
     name="{{ widget.fieldName}}" {% if widget.required %}required{% endif %}>
 </div>

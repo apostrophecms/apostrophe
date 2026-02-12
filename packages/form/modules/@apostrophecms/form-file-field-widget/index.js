@@ -54,11 +54,14 @@ module.exports = {
   extendMethods (self) {
     return {
       async output(_super, req, widget, options, _with) {
+        const allowedExtensions = self.apos.attachment.fileGroups
+          .flatMap(group => group.extensions);
         return _super(
           req,
           {
             ...widget,
             allowMultiple: widget.allowMultiple ?? true,
+            allowedExtensions,
             fileSizeUnits: {
               B: req.t('aposForm:fileSizeUnitB'),
               KB: req.t('aposForm:fileSizeUnitKB'),
