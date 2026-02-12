@@ -269,10 +269,10 @@ const {
 } = useDraggableWindow({
   size,
   getDefaultPosition: () => getDefaultPosition(props.modal.origin),
-  minWidth: props.modal.minWidth !== undefined ? props.modal.minWidth : 300,
-  maxWidth: props.modal.maxWidth !== undefined ? props.modal.maxWidth : 800,
-  minHeight: props.modal.minHeight !== undefined ? props.modal.minHeight : 300,
-  maxHeight: props.modal.maxHeight !== undefined ? props.modal.maxHeight : null
+  minWidth: props.modal.minWidth || 300,
+  maxWidth: props.modal.maxWidth || 800,
+  minHeight: props.modal.minHeight || 300,
+  maxHeight: props.modal.maxHeight || null
 });
 
 // Wrap handler to only work for window modals and primary mouse button

@@ -220,14 +220,20 @@ export function useDraggableWindow({
     window.addEventListener('mouseup', stopDragging);
   }
 
-  function stopDragging() {
+  /**
+   * Cleans up dragging state: removes event listeners, body class, and resets flags
+   */
+  function cleanupDragging() {
     window.removeEventListener('mousemove', drag);
     window.removeEventListener('mouseup', stopDragging);
     dragging.value = false;
-    // Remove unconditionally
     document.body.classList.remove(bodyDragClass);
     dragClassApplied.value = false;
     document.getSelection().removeAllRanges();
+  }
+
+  function stopDragging() {
+    cleanupDragging();
 
     if (storageKey) {
       try {
@@ -400,13 +406,20 @@ export function useDraggableWindow({
     window.addEventListener('mouseup', stopResizing);
   }
 
-  function stopResizing() {
+  /**
+   * Cleans up resizing state: removes event listeners, body class, and resets flags
+   */
+  function cleanupResizing() {
+    window.removeEventListener('mousemove', doResize);
+    window.removeEventListener('mouseup', stopResizing);
     resizing.value = false;
     document.body.classList.remove(bodyResizeClass);
     resizeClassApplied.value = false;
     document.getSelection().removeAllRanges();
-    window.removeEventListener('mousemove', doResize);
-    window.removeEventListener('mouseup', stopResizing);
+  }
+
+  function stopResizing() {
+    cleanupResizing();
   }
 
   function setPosition() {
@@ -506,21 +519,13 @@ export function useDraggableWindow({
   /**
    * Cleanup function to be called on component unmount
    * Ensures event listeners are removed and classes are cleaned up
+   * Uses shared cleanup functions to maintain single source of truth
    */
   function cleanup() {
     // Unconditionally clean up — reactive state may be out of sync
     // if mouseup was lost (tab switch, mouse left viewport, etc.)
-    document.body.classList.remove(bodyDragClass);
-    document.body.classList.remove(bodyResizeClass);
-    window.removeEventListener('mousemove', drag);
-    window.removeEventListener('mouseup', stopDragging);
-    window.removeEventListener('mousemove', doResize);
-    window.removeEventListener('mouseup', stopResizing);
-    dragging.value = false;
-    resizing.value = false;
-    dragClassApplied.value = false;
-    resizeClassApplied.value = false;
-    document.getSelection().removeAllRanges();
+    cleanupDragging();
+    cleanupResizing();
   }
 
   return {
