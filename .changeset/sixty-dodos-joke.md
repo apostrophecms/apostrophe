@@ -6,3 +6,5 @@
 - Updated the default Astro starter example in the README to use `astro-public-demo`.
 
 - The `add` command now displays an error when run inside a hybrid Astro project, as it is not currently supported in that context.
+
+- The default starter kit is now `public-demo`
