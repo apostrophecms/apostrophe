@@ -58,7 +58,8 @@ module.exports = {
         // Get the options from that form for the widget
         const choices = self.getChoicesValues(widget);
 
-        output[widget.fieldName] = self.apos.launder.select(input[widget.fieldName], choices);
+        output[widget.fieldName] =
+        self.apos.launder.select(input[widget.fieldName], choices);
       }
     };
   },
