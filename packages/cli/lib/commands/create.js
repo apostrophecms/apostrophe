@@ -2,6 +2,7 @@ require('shelljs/global');
 // Utilities from shelljs
 /* globals exec cd rm */
 const prompts = require('prompts');
+const path = require('path');
 const util = require('../util');
 const config = require('../../config');
 const fs = require('fs');
@@ -61,20 +62,31 @@ module.exports = function (program) {
       // Remove the initial .git directory.
       rm('-rf', '.git/');
 
+      // Auto-detect Astro projects by checking for backend directory
+      const isAstroProject = fs.existsSync('backend');
+      const backendPath = isAstroProject ? 'backend' : '.';
+      const resolvePath = (relativePath) => {
+        if (backendPath === '.') {
+          return relativePath;
+        }
+        return path.join(backendPath, relativePath);
+      };
+
       util.log('create', `Adding your project shortname (${shortName}) [2/4]`);
 
       // Do some token replaces to rename the project
       // replaces the shortname in app.js
-      replaceInConfig(/(shortName:).*?,/gi, `$1 '${shortName}',`);
+      replaceInConfig(/(shortName:).*?,/gi, `$1 '${shortName}',`, resolvePath);
       // replaces the shortname in package.json
-      replaceInConfig(/("name":).*?,/g, `$1 "${shortName}",`);
+      replaceInConfig(/("name":).*?,/g, `$1 "${shortName}",`, resolvePath);
 
       // Generate session secret
       let secret = util.secret();
 
-      if (fs.existsSync('./lib/modules/apostrophe-express/index.js')) {
+      const expressIndexPath = resolvePath('lib/modules/apostrophe-express/index.js');
+      if (fs.existsSync(expressIndexPath)) {
         util.replaceInFiles(
-          [ './lib/modules/apostrophe-express/index.js' ],
+          [expressIndexPath],
           /secret: undefined/,
           `secret: '${secret}'`
         );
@@ -84,7 +96,7 @@ module.exports = function (program) {
       secret = util.secret();
 
       util.replaceInFiles(
-        [ './app.js' ],
+        [resolvePath('app.js')],
         /disabledFileKey: undefined/,
         `disabledFileKey: '${secret}'`
       );
@@ -92,26 +104,56 @@ module.exports = function (program) {
       // Remove lock file and install packages.
       util.log('create', 'Installing packages [3/4]');
 
-      if (fs.existsSync('package-lock.json')) {
-        rm('package-lock.json');
+      const packageLockPath = resolvePath('package-lock.json');
+      const yarnLockPath = resolvePath('yarn.lock');
+
+      if (fs.existsSync(packageLockPath)) {
+        rm(packageLockPath);
       }
-      if (fs.existsSync('yarn.lock')) {
-        rm('yarn.lock');
+      if (fs.existsSync(yarnLockPath)) {
+        rm(yarnLockPath);
       }
 
-      try {
-        await util.spawnWithSpinner('npm install', {
-          spinnerMessage:
-            'Installing packages. This will take a little while...'
-        });
-      } catch (error) {
-        await util.error('create', 'Error installing packages');
+      // Run npm install in the appropriate directories
+      if (isAstroProject) {
+        // Install backend packages
+        try {
+          await util.spawnWithSpinner('npm install --prefix backend', {
+            spinnerMessage:
+              'Installing backend packages. This will take a little while...'
+          });
+        } catch (error) {
+          await util.error('create', 'Error installing backend packages');
+          /* eslint-disable-next-line no-console */
+          console.error(error);
+        }
 
-        console.error(error);
+        // Install frontend packages
+        try {
+          await util.spawnWithSpinner('npm install --prefix frontend', {
+            spinnerMessage:
+              'Installing frontend packages. This will take a little while...'
+          });
+        } catch (error) {
+          await util.error('create', 'Error installing frontend packages');
+          /* eslint-disable-next-line no-console */
+          console.error(error);
+        }
+      } else {
+        try {
+          await util.spawnWithSpinner('npm install', {
+            spinnerMessage:
+              'Installing packages. This will take a little while...'
+          });
+        } catch (error) {
+          await util.error('create', 'Error installing packages');
+          /* eslint-disable-next-line no-console */
+          console.error(error);
+        }
       }
 
       const cwd = process.cwd();
-      const aposPath = `${cwd}/node_modules/apostrophe`;
+      const aposPath = path.join(cwd, resolvePath('node_modules/apostrophe'));
 
       // Append the installed Apostrophe version, if in an active project.
       if (!fs.existsSync(aposPath)) {
@@ -132,7 +174,8 @@ module.exports = function (program) {
       });
 
       const userTask = '@apostrophecms/user:add';
-      let createUserCommand = `node app.js ${userTask} admin admin`;
+      const appJsPath = resolvePath('app.js');
+      let createUserCommand = `node ${appJsPath} ${userTask} admin admin`;
 
       // Prepend MongoDB URI if provided
       if (options.mongodbUri) {
@@ -148,6 +191,7 @@ module.exports = function (program) {
     });
 };
 
-function replaceInConfig(regex, replacement) {
-  util.replaceInFiles([ './app.js', './package.json' ], regex, replacement);
+function replaceInConfig(regex, replacement, resolvePath) {
+  const files = [resolvePath('app.js'), resolvePath('package.json')];
+  util.replaceInFiles(files, regex, replacement);
 }
