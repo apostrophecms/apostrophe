@@ -49,11 +49,17 @@ export default function() {
     els.filter(el => depth(el) === lowest).forEach(el => createAreaApp(el));
   }
 
+  // Determine how deeply it is nested in other areas. We don't care about
+  // non-area levels
   function depth(el) {
     let depth = 0;
     while (el) {
       el = el.parentNode;
-      depth++;
+      if (el?.hasAttribute) {
+        if (el.hasAttribute('data-apos-area-newly-editable') || el.hasAttribute('data-apos-area-editable')) {
+          depth++;
+        }
+      }
     }
     return depth;
   }
@@ -97,6 +103,7 @@ export default function() {
       }
     }
     el.removeAttribute('data-apos-area-newly-editable');
+    el.setAttribute('data-apos-area-editable', true);
 
     let created = false;
     let observer;
