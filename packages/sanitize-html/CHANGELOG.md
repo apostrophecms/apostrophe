@@ -1,9 +1,5 @@
 # Changelog
 
-## UNRELEASED
-
-- Fix unclosed tags (e.g., `<hello`) returning empty string in `escape` and `recursiveEscape` modes. Fixes [#706](https://github.com/apostrophecms/sanitize-html/issues/706).
-
 ## 2.17.0 (2025-05-14)
 
 - Add `preserveEscapedAttributes`, allowing attributes on escaped disallowed tags to be retained. Thanks to [Ben Elliot](https://github.com/benelliott) for this new option.
