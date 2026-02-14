@@ -1653,6 +1653,41 @@ describe('sanitizeHtml', function() {
       disallowedTagsMode: 'discard'
     }), 'Hello');
   });
+  it('should escape unclosed tags without closing bracket in escape mode', function() {
+    assert.equal(sanitizeHtml('<hello', {
+      disallowedTagsMode: 'escape'
+    }), '&lt;hello');
+  });
+  it('should escape unclosed tags without closing bracket in recursiveEscape mode', function() {
+    assert.equal(sanitizeHtml('<hello', {
+      disallowedTagsMode: 'recursiveEscape'
+    }), '&lt;hello');
+  });
+  it('should escape unclosed tags with attributes but no closing bracket in escape mode', function() {
+    assert.equal(sanitizeHtml('<hello you', {
+      disallowedTagsMode: 'escape'
+    }), '&lt;hello you');
+  });
+  it('should escape unclosed tags with attributes but no closing bracket in recursiveEscape mode', function() {
+    assert.equal(sanitizeHtml('<hello you', {
+      disallowedTagsMode: 'recursiveEscape'
+    }), '&lt;hello you');
+  });
+  it('should discard unclosed tags without closing bracket in discard mode', function() {
+    assert.equal(sanitizeHtml('<hello', {
+      disallowedTagsMode: 'discard'
+    }), '');
+  });
+  it('should escape text followed by unclosed tag in escape mode', function() {
+    assert.equal(sanitizeHtml('Hello <world', {
+      disallowedTagsMode: 'escape'
+    }), 'Hello &lt;world');
+  });
+  it('should escape text followed by unclosed tag in recursiveEscape mode', function() {
+    assert.equal(sanitizeHtml('Hello <world', {
+      disallowedTagsMode: 'recursiveEscape'
+    }), 'Hello &lt;world');
+  });
   it('should remove non-boolean attributes that are empty', function() {
     assert.equal(sanitizeHtml('<a href target="_blank">hello</a>', {
     }), '<a target="_blank">hello</a>');
