@@ -4,11 +4,12 @@
 //
 // ### `uri`
 //
-// The MongoDB connection URI. See the [MongoDB URI documentation](https://docs.mongodb.com/manual/reference/connection-string/).
+// The databse connection URI. See the [MongoDB URI documentation](https://docs.mongodb.com/manual/reference/connection-string/)
+// and the postgres documentation.
 //
 // ### `connect`
 //
-// If present, this object is passed on as options to MongoDB's "connect"
+// If present, this object is passed on as options to the database adapters "connect"
 // method, along with the uri. See the [MongoDB connect settings documentation](http://mongodb.github.io/node-mongodb-native/2.2/reference/connecting/connection-settings/).
 //
 // By default, Apostrophe sets options to retry lost connections forever,
@@ -20,8 +21,15 @@
 //
 // ### `client`
 //
-// An existing MongoDB connection (MongoClient) object. If present, it is used
+// An existing MongoDB-compatible client object. If present, it is used
 // and `uri`, `host`, `connect`, etc. are ignored.
+//
+// ### `adapters`
+//
+// An array of adapters, each of which must provide `name`, `connect(uri, options)`,
+// and `protocols` properties. `name` may be used to override a core adapter,
+// such as `postgres` or `mongodb`. `connect` must resolve to a client object
+// supporting a sufficient subset of the mongodb API.
 //
 // ### `versionCheck`
 //
@@ -49,15 +57,44 @@
 // in your project. However you may find it easier to just use the
 // `client` option.
 
-const mongodbConnect = require('../../../lib/mongodb-connect');
 const escapeHost = require('../../../lib/escape-host');
+const mongodbAdapter = require('./adapters/mongodb.js');
+const postgresAdapter = require('./adapters/postgres.js');
+
+// Standalone function: connect to a database using the appropriate adapter
+// based on the URI protocol. No side effects.
+async function connectToAdapter(adapters, uri, options) {
+  const matches = uri.match(/^([^:]+):\/\//);
+  if (!matches) {
+    throw new Error(`Invalid database URI: ${uri}`);
+  }
+  const protocol = matches[1];
+
+  for (const adapter of adapters) {
+    if (adapter.protocols.includes(protocol)) {
+      return adapter.connect(uri, options);
+    }
+  }
+
+  throw new Error(`No adapter found for protocol: ${protocol}`);
+}
 
 module.exports = {
   options: {
     versionCheck: true
   },
   async init(self) {
-    await self.connectToMongo();
+    // Build db adapters array, allowing custom adapters to override by name
+    const named = new Map();
+    for (const adapter of [
+      mongodbAdapter,
+      postgresAdapter,
+      ...(self.options.adapters || [])
+    ]) {
+      named.set(adapter.name, adapter);
+    }
+    self.adapters = [...named.values()];
+    await self.connectToDb();
     await self.versionCheck();
   },
   handlers(self) {
@@ -81,14 +118,11 @@ module.exports = {
   },
   methods(self) {
     return {
-      // Open the database connection. Always uses MongoClient with its
-      // sensible defaults. Builds a URI if necessary, so we can call it
-      // in a consistent way.
-      //
-      // One default we override: if the connection is lost, we keep
-      // attempting to reconnect forever. This is the most sensible behavior
-      // for a persistent process that requires MongoDB in order to operate.
-      async connectToMongo() {
+      // Connect to the database and sets self.apos.dbClient and self.apos.db. Builds a mongodb URI
+      // by default, accepting host, port, user, password and name options if present. More typically
+      // a URI is specified via APOS_DB_URI, or via APOS_MONGODB_URI for bc. If nothing at all is
+      // specified an unsecured connection to mongodb on localhost:27017 is attempted.
+      async connectToDb() {
         if (self.options.client) {
           // Reuse a single client connection http://mongodb.github.io/node-mongodb-native/2.2/api/Db.html#db
           self.apos.dbClient = self.options.client;
@@ -97,8 +131,9 @@ module.exports = {
           return;
         }
         let uri = 'mongodb://';
-        if (process.env.APOS_MONGODB_URI) {
-          uri = process.env.APOS_MONGODB_URI;
+        const viaEnv = process.env.APOS_DB_URI || process.env.APOS_MONGODB_URI;
+        if (viaEnv) {
+          uri = viaEnv;
         } else if (self.options.uri) {
           uri = self.options.uri;
         } else {
@@ -117,10 +152,17 @@ module.exports = {
           uri += escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
         }
 
-        self.apos.dbClient = await mongodbConnect(uri, self.options.connect);
+        self.apos.dbClient = await self.connectToAdapter(uri, self.options.connect);
         self.uri = uri;
         // Automatically uses the db name in the connection string
         self.apos.db = self.apos.dbClient.db();
+      },
+      // Connect to a database using the appropriate adapter based on the URI protocol.
+      // Returns a client object compatible with the MongoDB driver interface.
+      // This method has no side effects — it does not set apos.db or apos.dbClient.
+      // It can be used to make temporary connections, e.g. for dropping a test database.
+      async connectToAdapter(uri, options) {
+        return connectToAdapter(self.adapters, uri, options);
       },
       async versionCheck() {
         if (!self.options.versionCheck) {

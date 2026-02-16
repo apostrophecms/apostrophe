@@ -1,5 +1,16 @@
 const { createId } = require('@paralleldrive/cuid2');
-const mongodbConnect = require('../lib/mongodb-connect');
+
+const testDbProtocol = process.env.APOS_TEST_DB_PROTOCOL || 'mongodb';
+
+// Build a test database URI for postgres based on the shortName.
+// Returns undefined for mongodb, letting the default logic handle it.
+function getTestDbUri(shortName) {
+  if (testDbProtocol === 'postgres') {
+    // PostgreSQL database names cannot contain hyphens
+    const dbName = shortName.replace(/-/g, '_');
+    return `postgres://localhost:5432/${dbName}`;
+  }
+}
 
 // Properly clean up an apostrophe instance and drop its
 // database collections to create a sane environment for the next test.
@@ -13,20 +24,19 @@ async function destroy(apos) {
   if (!apos) {
     return;
   }
+  const dbModule = apos.modules['@apostrophecms/db'];
+  const { uri } = dbModule;
+  const dbName = apos.db && (apos.db.databaseName || apos.db._name);
   await apos.destroy();
-  const { uri } = apos.modules['@apostrophecms/db'];
-  const dbName = apos.db && apos.db.databaseName;
-  // TODO at some point accommodate nonsense like testing remote databases
-  // that won't let us use dropDatabase, no shell available etc., but the
-  // important principle here is that we should not have to have an apos
-  // object to clean up the database, otherwise we have to get hold of one
-  // when initialization failed and that's really not apostrophe's concern
-  if (dbName && uri) {
-    const client = await mongodbConnect(`${uri}${dbName}`);
-    const db = client.db(dbName);
-    await db.dropDatabase();
-    await client.close();
+  if (!uri || !dbName) {
+    return;
   }
+  // Make a fresh connection (the original was closed by destroy)
+  // and use it to drop the test database
+  const client = await dbModule.connectToAdapter(uri);
+  const db = client.db(dbName);
+  await db.dropDatabase();
+  await client.close();
 };
 
 async function create(options = {}) {
@@ -54,6 +64,18 @@ async function create(options = {}) {
     express.options.session = express.options.session || {};
     express.options.session.secret = express.options.session.secret || 'test';
     config.modules['@apostrophecms/express'] = express;
+  }
+  // When APOS_TEST_DB_PROTOCOL=postgres, automatically configure the db
+  // module to use a postgres URI unless already explicitly configured
+  const testUri = getTestDbUri(config.shortName);
+  if (testUri) {
+    config.modules = config.modules || {};
+    const dbModule = config.modules['@apostrophecms/db'] || {};
+    dbModule.options = dbModule.options || {};
+    if (!dbModule.options.uri && !dbModule.options.client) {
+      dbModule.options.uri = testUri;
+    }
+    config.modules['@apostrophecms/db'] = dbModule;
   }
   return require('../index.js')(config);
 }
@@ -151,5 +173,6 @@ module.exports = {
   loginAs,
   logout,
   getUserJar,
+  testDbProtocol,
   timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 20000
 };

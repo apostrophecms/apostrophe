@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "pretest": "npm run lint",
-    "test": "npm run test:base && npm run test:missing && npm run test:assets && npm run test:esm",
+    "test": "npm run test:base && npm run test:missing && npm run test:assets && npm run test:esm && npm run test:db",
     "test:base": "nyc mocha -t 10000 --ignore=test/assets.js",
     "test:missing": "nyc mocha -t 10000 test/add-missing-schema-fields-project/test.js",
     "test:assets": "nyc mocha -t 10000 test/assets.js",
@@ -15,7 +15,10 @@
     "i18n": "node scripts/lint-i18n",
     "stylelint": "stylelint modules/**/*.{scss,vue}",
     "lint": "npm run eslint && npm run i18n && npm run stylelint",
-    "mocha": "mocha"
+    "mocha": "mocha",
+    "test:db": "mocha modules/@apostrophecms/db/test/**/*.test.js --timeout 30000",
+    "test:db:mongodb": "ADAPTER=mongodb mocha modules/@apostrophecms/db/test/**/*.test.js --timeout 30000",
+    "test:db:postgres": "ADAPTER=postgres mocha modules/@apostrophecms/db/test/**/*.test.js --timeout 30000"
   },
   "repository": {
     "type": "git",
@@ -138,9 +141,11 @@
     "vue-style-loader": "^4.1.3",
     "webpack": "^5.72.0",
     "webpack-merge": "^5.7.3",
-    "xregexp": "^2.0.0"
+    "xregexp": "^2.0.0",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
+    "chai": "^4.3.10",
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
     "form-data": "^4.0.4",
