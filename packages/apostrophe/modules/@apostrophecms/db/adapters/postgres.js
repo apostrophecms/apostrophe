@@ -46,6 +46,29 @@ function validateInteger(value, name) {
   return num;
 }
 
+// Create a MongoDB-compatible duplicate key error from a PostgreSQL 23505 error
+function makeDuplicateKeyError(pgError, message) {
+  const error = new Error(message || 'Duplicate key error');
+  error.code = 11000;
+  // Parse PostgreSQL detail to extract keyValue for MongoDB compatibility
+  // Detail format: Key ((data ->> 'field'::text))=(value) already exists.
+  // Note: PostgreSQL wraps expression indexes in double parens
+  if (pgError.detail) {
+    const match = pgError.detail.match(/Key \((.+?)\)=\((.+?)\) already exists/);
+    if (match) {
+      // Try to map the PostgreSQL expression back to a field name
+      // e.g., (data ->> 'username'::text) -> username
+      const expr = match[1];
+      const value = match[2];
+      const fieldMatch = expr.match(/>>\s*'([^']+)'/);
+      if (fieldMatch) {
+        error.keyValue = { [fieldMatch[1]]: value };
+      }
+    }
+  }
+  return error;
+}
+
 // Generate a MongoDB-style ObjectId-like string
 function generateId() {
   return crypto.randomBytes(12).toString('hex');
@@ -131,6 +154,31 @@ function buildWhereClause(query, params, prefix = 'data') {
         return `(${subClause})`;
       });
       conditions.push(`(${orConditions.join(' OR ')})`);
+    } else if (key === '$text') {
+      // Full-text search: { $text: { $search: "term" } }
+      // Search against the text index fields stored in the table.
+      // We use PostgreSQL's to_tsvector/to_tsquery for this.
+      const searchTerm = value.$search;
+      if (typeof searchTerm !== 'string') {
+        throw new Error('$text.$search must be a string');
+      }
+      // Convert search string to tsquery format: split words and join with &
+      const words = searchTerm.trim().split(/\s+/).filter(w => w.length > 0);
+      if (words.length === 0) {
+        conditions.push('FALSE');
+      } else {
+        // Build a text search across the common text-indexed fields
+        // ApostropheCMS indexes: highSearchText, lowSearchText, title, searchBoost
+        const textExpr = [
+          "coalesce(data->>'highSearchText', '')",
+          "coalesce(data->>'lowSearchText', '')",
+          "coalesce(data->>'title', '')",
+          "coalesce(data->>'searchBoost', '')"
+        ].join(" || ' ' || ");
+        // MongoDB $text uses OR semantics: any word matches
+        params.push(words.map(w => w.replace(/[&|!():*<>'"]/g, ' ')).join(' | '));
+        conditions.push(`to_tsvector('english', ${textExpr}) @@ to_tsquery('english', $${params.length})`);
+      }
     } else if (key === '_id') {
       // _id is a separate column, handle specially
       if (value instanceof RegExp) {
@@ -156,16 +204,25 @@ function buildWhereClause(query, params, prefix = 'data') {
         conditions.push(`${prefix}->>'${escapeString(key)}' = $${params.length}`);
       }
     } else if (value instanceof RegExp) {
+      const jsonPath = buildJsonPath(key, prefix);
       params.push(value.source);
       const flags = value.ignoreCase ? '*' : '';
-      conditions.push(`${prefix}->>'${escapeString(key)}' ~${flags} $${params.length}`);
+      const regexOp = `~${flags}`;
+      // Match scalar text OR any element of an array (MongoDB behavior)
+      conditions.push(`(${prefix}->>'${escapeString(key)}' ${regexOp} $${params.length} OR (jsonb_typeof(${jsonPath}) = 'array' AND EXISTS(SELECT 1 FROM jsonb_array_elements_text(${jsonPath}) elem WHERE elem ${regexOp} $${params.length})))`);
+    } else if (value === null) {
+      // MongoDB: { field: null } matches both explicit null AND missing field
+      const jsonPath = buildJsonPath(key, prefix);
+      conditions.push(`(${jsonPath} IS NULL OR ${jsonPath} = 'null'::jsonb)`);
     } else {
       // Simple equality
       const jsonPath = buildJsonPath(key, prefix);
-      params.push(JSON.stringify(value));
+      // Serialize through serializeValue to handle Date→{$date:...} conversion
+      const serialized = serializeValue(value);
+      params.push(JSON.stringify(serialized));
       // Handle both direct equality AND array containment (MongoDB behavior)
       // If the field is an array and contains the value, OR if it equals the value directly
-      params.push(JSON.stringify([value]));
+      params.push(JSON.stringify([serialized]));
       conditions.push(`(${jsonPath} = $${params.length - 1}::jsonb OR (jsonb_typeof(${jsonPath}) = 'array' AND ${jsonPath} @> $${params.length}::jsonb))`);
     }
   }
@@ -199,7 +256,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           params.push(opValue);
           conditions.push(`_id = $${params.length}`);
         } else {
-          params.push(JSON.stringify(opValue));
+          params.push(JSON.stringify(serializeValue(opValue)));
           conditions.push(`${jsonPath} = $${params.length}::jsonb`);
         }
         break;
@@ -209,7 +266,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           params.push(opValue);
           conditions.push(`(_id IS NULL OR _id != $${params.length})`);
         } else {
-          params.push(JSON.stringify(opValue));
+          params.push(JSON.stringify(serializeValue(opValue)));
           conditions.push(`(${jsonPath} IS NULL OR ${jsonPath} != $${params.length}::jsonb)`);
         }
         break;
@@ -286,7 +343,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           const nonNullValues = opValue.filter(v => v !== null);
           const parts = [];
           if (nonNullValues.length > 0) {
-            params.push(JSON.stringify(nonNullValues));
+            params.push(JSON.stringify(nonNullValues.map(serializeValue)));
             const paramRef = `$${params.length}`;
             // Match scalar values directly
             parts.push(`${jsonPath} IN (SELECT jsonb_array_elements(${paramRef}::jsonb))`);
@@ -318,7 +375,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           const nonNullValues = opValue.filter(v => v !== null);
           const parts = [];
           if (nonNullValues.length > 0) {
-            params.push(JSON.stringify(nonNullValues));
+            params.push(JSON.stringify(nonNullValues.map(serializeValue)));
             parts.push(`NOT ${jsonPath} IN (SELECT jsonb_array_elements($${params.length}::jsonb))`);
           }
           if (hasNull) {
@@ -382,18 +439,26 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
 
 // Build ORDER BY clause
 function buildOrderBy(sort) {
-  if (!sort || Object.keys(sort).length === 0) {
-    return '';
+  const clauses = [];
+
+  if (sort && Object.keys(sort).length > 0) {
+    for (const [field, direction] of Object.entries(sort)) {
+      // Skip $meta sort fields (e.g. textScore: { $meta: 'textScore' })
+      if (direction && typeof direction === 'object' && direction.$meta) {
+        continue;
+      }
+      if (field === '_id') {
+        clauses.push(`_id ${direction === -1 ? 'DESC' : 'ASC'}`);
+      } else {
+        const jsonPath = buildJsonTextPath(field);
+        clauses.push(`${jsonPath} ${direction === -1 ? 'DESC' : 'ASC'}`);
+      }
+    }
   }
 
-  const clauses = Object.entries(sort).map(([field, direction]) => {
-    if (field === '_id') {
-      return `_id ${direction === -1 ? 'DESC' : 'ASC'}`;
-    }
-    const jsonPath = buildJsonTextPath(field);
-    return `${jsonPath} ${direction === -1 ? 'DESC' : 'ASC'}`;
-  });
-
+  // Always add _order as final tiebreaker to match MongoDB's
+  // insertion-order stability among equal sort keys
+  clauses.push('_order ASC');
   return `ORDER BY ${clauses.join(', ')}`;
 }
 
@@ -513,23 +578,28 @@ function deepEqual(a, b) {
 // Document Serialization (Date handling)
 // =============================================================================
 
-function serializeDocument(doc) {
-  // Recursively convert Date objects to { $date: ... } BEFORE JSON.stringify
-  // (JSON.stringify calls toJSON on Dates before the replacer sees them)
-  function convertDatesToWrapper(obj) {
-    if (obj === null || obj === undefined) return obj;
-    if (obj instanceof Date) return { $date: obj.toISOString() };
-    if (Array.isArray(obj)) return obj.map(convertDatesToWrapper);
-    if (typeof obj === 'object') {
-      const result = {};
-      for (const [key, value] of Object.entries(obj)) {
-        result[key] = convertDatesToWrapper(value);
-      }
-      return result;
+// Recursively convert Date objects to { $date: ... } wrapper and
+// undefined to null (matching MongoDB's BSON behavior where undefined
+// is stored as null). This is called before JSON.stringify because
+// JSON.stringify calls toJSON() on Dates before any replacer sees them,
+// and omits properties with undefined values.
+function serializeValue(obj) {
+  if (obj === undefined) return null;
+  if (obj === null) return null;
+  if (obj instanceof Date) return { $date: obj.toISOString() };
+  if (Array.isArray(obj)) return obj.map(serializeValue);
+  if (typeof obj === 'object') {
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = serializeValue(value);
     }
-    return obj;
+    return result;
   }
-  return JSON.stringify(convertDatesToWrapper(doc));
+  return obj;
+}
+
+function serializeDocument(doc) {
+  return JSON.stringify(serializeValue(doc));
 }
 
 function deserializeDocument(data, id) {
@@ -561,7 +631,14 @@ function applyProjection(doc, projection) {
     return doc;
   }
 
-  const fields = Object.entries(projection);
+  // Filter out $meta projections (e.g. textScore: { $meta: 'textScore' })
+  // These are MongoDB-specific and don't apply to our storage model
+  const fields = Object.entries(projection).filter(
+    ([k, v]) => !(v && typeof v === 'object' && v.$meta)
+  );
+  if (fields.length === 0) {
+    return doc;
+  }
   const isInclusion = fields.some(([k, v]) => v && k !== '_id');
 
   if (isInclusion) {
@@ -618,7 +695,9 @@ class PostgresCursor {
   }
 
   limit(n) {
-    this._limit = validateInteger(n, 'limit');
+    // MongoDB convention: limit(0) means no limit
+    const val = validateInteger(n, 'limit');
+    this._limit = val === 0 ? null : val;
     return this;
   }
 
@@ -726,6 +805,24 @@ class PostgresCursor {
       this._cursorClient = null;
       this._exhausted = true;
     }
+  }
+
+  addCursorFlag() {
+    // No-op for PostgreSQL — flags like noCursorTimeout are MongoDB-specific
+    return this;
+  }
+
+  [Symbol.asyncIterator]() {
+    return {
+      cursor: this,
+      async next() {
+        const doc = await this.cursor._next();
+        if (doc === null) {
+          return { done: true, value: undefined };
+        }
+        return { done: false, value: doc };
+      }
+    };
   }
 
   async count() {
@@ -900,6 +997,9 @@ function matchesQuery(doc, query) {
         }
       } else if (Array.isArray(docValue)) {
         if (!docValue.some(item => deepEqual(item, value))) return false;
+      } else if (value === null) {
+        // MongoDB: { field: null } matches null, undefined, and missing
+        if (docValue !== null && docValue !== undefined) return false;
       } else {
         if (!deepEqual(docValue, value)) return false;
       }
@@ -940,6 +1040,7 @@ class PostgresCollection {
     await this._pool.query(`
       CREATE TABLE IF NOT EXISTS "${tableName}" (
         _id TEXT PRIMARY KEY,
+        _order SERIAL,
         data JSONB NOT NULL
       )
     `);
@@ -959,12 +1060,10 @@ class PostgresCollection {
         `INSERT INTO "${tableName}" (_id, data) VALUES ($1, $2)`,
         [id, serializeDocument(docWithoutId)]
       );
-      return { acknowledged: true, insertedId: id };
+      return { acknowledged: true, insertedId: id, insertedCount: 1, ops: [{ ...doc, _id: id }], result: { ok: 1 } };
     } catch (e) {
       if (e.code === '23505') {
-        const error = new Error(`Duplicate key error: _id "${id}" already exists`);
-        error.code = 11000;
-        throw error;
+        throw makeDuplicateKeyError(e, `Duplicate key error: _id "${id}" already exists`);
       }
       throw e;
     }
@@ -982,7 +1081,7 @@ class PostgresCollection {
       insertedCount++;
     }
 
-    return { acknowledged: true, insertedCount, insertedIds };
+    return { acknowledged: true, insertedCount, insertedIds, result: { ok: 1 } };
   }
 
   async findOne(query, options = {}) {
@@ -1006,6 +1105,21 @@ class PostgresCollection {
 
   async updateOne(query, update, options = {}) {
     await this._ensureTable();
+
+    // Handle legacy callback as third argument (ignore the callback, PostgreSQL
+    // adapter is Promise-based)
+    if (typeof options === 'function') {
+      options = {};
+    }
+
+    // Check if we can use atomic SQL (only $inc and/or $set, no upsert)
+    if (!options.upsert) {
+      const ops = Object.keys(update);
+      const isAtomicCompatible = ops.length > 0 && ops.every(op => op === '$inc' || op === '$set');
+      if (isAtomicCompatible) {
+        return this._atomicUpdateOne(query, update);
+      }
+    }
 
     const params = [];
     const tableName = escapeIdentifier(this._tableName);
@@ -1038,12 +1152,68 @@ class PostgresCollection {
     const updated = applyUpdate(existing, update);
     const { _id, ...dataWithoutId } = updated;
 
-    await this._pool.query(
-      `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
-      [serializeDocument(dataWithoutId), selectResult.rows[0]._id]
-    );
+    try {
+      await this._pool.query(
+        `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
+        [serializeDocument(dataWithoutId), selectResult.rows[0]._id]
+      );
+    } catch (e) {
+      if (e.code === '23505') {
+        throw makeDuplicateKeyError(e, 'Duplicate key error in updateOne');
+      }
+      throw e;
+    }
 
     return { acknowledged: true, matchedCount: 1, modifiedCount: 1, result: { nModified: 1, n: 1 } };
+  }
+
+  // Atomic update using SQL expressions for $inc and $set (no read-modify-write race)
+  async _atomicUpdateOne(query, update) {
+    const params = [];
+    const tableName = escapeIdentifier(this._tableName);
+    const whereClause = buildWhereClause(query, params);
+
+    // Build a chain of jsonb_set calls for atomic update
+    let dataExpr = 'data';
+
+    // Handle $set: set fields to specific values
+    if (update.$set) {
+      for (const [field, value] of Object.entries(update.$set)) {
+        const pathArray = field.split('.');
+        const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
+        const serialized = serializeValue(value);
+        params.push(JSON.stringify(serialized));
+        dataExpr = `jsonb_set(${dataExpr}, ${pathLiteral}, $${params.length}::jsonb, true)`;
+      }
+    }
+
+    // Handle $inc: atomically increment numeric fields
+    if (update.$inc) {
+      for (const [field, value] of Object.entries(update.$inc)) {
+        const pathArray = field.split('.');
+        const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
+        // Build the JSON path for reading the current value
+        let readPath = 'data';
+        for (let i = 0; i < pathArray.length - 1; i++) {
+          readPath += `->'${escapeString(pathArray[i])}'`;
+        }
+        readPath += `->>'${escapeString(pathArray[pathArray.length - 1])}'`;
+        params.push(value);
+        dataExpr = `jsonb_set(${dataExpr}, ${pathLiteral}, to_jsonb(COALESCE((${readPath})::numeric, 0) + $${params.length}), true)`;
+      }
+    }
+
+    const sql = `UPDATE "${tableName}" SET data = ${dataExpr} WHERE ${whereClause}`;
+    try {
+      const result = await this._pool.query(sql, params);
+      const matched = result.rowCount > 0 ? 1 : 0;
+      return { acknowledged: true, matchedCount: matched, modifiedCount: matched, result: { nModified: matched, n: matched } };
+    } catch (e) {
+      if (e.code === '23505') {
+        throw makeDuplicateKeyError(e, 'Duplicate key error in updateOne');
+      }
+      throw e;
+    }
   }
 
   async updateMany(query, update, options = {}) {
@@ -1101,10 +1271,17 @@ class PostgresCollection {
     }
 
     const { _id, ...dataWithoutId } = replacement;
-    await this._pool.query(
-      `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
-      [serializeDocument(dataWithoutId), selectResult.rows[0]._id]
-    );
+    try {
+      await this._pool.query(
+        `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
+        [serializeDocument(dataWithoutId), selectResult.rows[0]._id]
+      );
+    } catch (e) {
+      if (e.code === '23505') {
+        throw makeDuplicateKeyError(e, 'Duplicate key error in replaceOne');
+      }
+      throw e;
+    }
 
     return { acknowledged: true, matchedCount: 1, modifiedCount: 1 };
   }
@@ -1123,7 +1300,7 @@ class PostgresCollection {
       params
     );
 
-    return { acknowledged: true, deletedCount: result.rowCount };
+    return { acknowledged: true, deletedCount: result.rowCount, result: { ok: 1 } };
   }
 
   async deleteMany(query) {
@@ -1138,7 +1315,7 @@ class PostgresCollection {
       params
     );
 
-    return { acknowledged: true, deletedCount: result.rowCount };
+    return { acknowledged: true, deletedCount: result.rowCount, result: { ok: 1 } };
   }
 
   // Legacy MongoDB method aliases used by ApostropheCMS
@@ -1183,6 +1360,7 @@ class PostgresCollection {
     // MongoDB's distinct() automatically flattens arrays.
     // Use LATERAL with jsonb_array_elements to unwind array values,
     // and fall back to the value itself for scalars.
+    // Use jsonb_array_elements (not _text) to preserve types for non-string values.
     const sql = `SELECT DISTINCT elem as value FROM "${tableName}", LATERAL jsonb_array_elements(
       CASE WHEN jsonb_typeof(${jsonPath}) = 'array' THEN ${jsonPath} ELSE jsonb_build_array(${jsonPath}) END
     ) AS elem WHERE ${whereClause} AND ${jsonPath} IS NOT NULL`;
@@ -1190,13 +1368,12 @@ class PostgresCollection {
 
     return result.rows
       .map(row => {
-        const v = row.value;
-        if (v === null) return null;
-        // jsonb values come back as objects/strings, deserialize them
-        if (typeof v === 'string') {
-          try { return JSON.parse(v); } catch { return v; }
-        }
-        // jsonb primitives may come through as native types
+        let v = row.value;
+        if (v === null || v === undefined) return null;
+        // pg driver parses jsonb automatically, returning JS types.
+        // For jsonb strings, we already get JS strings.
+        // For jsonb numbers/booleans/objects, we get those types.
+        // No additional parsing needed.
         return v;
       })
       .filter(v => v !== null);
@@ -1403,8 +1580,11 @@ class PostgresCollection {
       ? validateTableName(options.name)
       : `idx_${this._tableName}_${safeFieldNames}`.substring(0, 63);
 
+    // Generate MongoDB-compatible index name for indexInformation() compatibility
+    const mongoName = options.name || keyEntries.map(([k, v]) => `${k}_${v}`).join('_');
+
     // Store index metadata
-    this._indexes.set(indexName, { keys, options });
+    this._indexes.set(indexName, { keys, options, mongoName });
 
     const tableName = escapeIdentifier(this._tableName);
     const escapedIndexName = escapeIdentifier(indexName);
@@ -1467,9 +1647,20 @@ class PostgresCollection {
   }
 
   async dropIndex(indexName) {
-    const safeIndexName = validateTableName(indexName);
-    this._indexes.delete(safeIndexName);
-    const escapedIndexName = escapeIdentifier(safeIndexName);
+    // Look up by MongoDB-compatible name first (in case caller uses that)
+    let pgName = null;
+    for (const [pgKey, meta] of this._indexes.entries()) {
+      if (meta.mongoName === indexName) {
+        pgName = pgKey;
+        break;
+      }
+    }
+    if (!pgName) {
+      // Try as a direct postgres index name
+      pgName = validateTableName(indexName);
+    }
+    this._indexes.delete(pgName);
+    const escapedIndexName = escapeIdentifier(pgName);
     await this._pool.query(`DROP INDEX IF EXISTS "${escapedIndexName}"`);
   }
 
@@ -1494,7 +1685,7 @@ class PostgresCollection {
       const storedIndex = this._indexes.get(row.indexname);
       if (storedIndex) {
         indexes.push({
-          name: row.indexname,
+          name: storedIndex.mongoName || row.indexname,
           key: storedIndex.keys,
           unique: storedIndex.options.unique || false
         });
@@ -1517,6 +1708,54 @@ class PostgresCollection {
       info[idx.name] = Object.entries(idx.key).map(([k, v]) => [k, v]);
     }
     return info;
+  }
+
+  // Legacy MongoDB method: insert (alias for insertOne or insertMany)
+  async insert(docs) {
+    if (Array.isArray(docs)) {
+      return this.insertMany(docs);
+    }
+    return this.insertOne(docs);
+  }
+
+  initializeUnorderedBulkOp() {
+    const collection = this;
+    const operations = [];
+
+    return {
+      find(query) {
+        return {
+          updateOne(update) {
+            operations.push({ updateOne: { filter: query, update } });
+          },
+          update(update) {
+            operations.push({ updateMany: { filter: query, update } });
+          },
+          upsert() {
+            return {
+              updateOne(update) {
+                operations.push({ updateOne: { filter: query, update, upsert: true } });
+              },
+              update(update) {
+                operations.push({ updateMany: { filter: query, update, upsert: true } });
+              },
+              replaceOne(doc) {
+                operations.push({ replaceOne: { filter: query, replacement: doc, upsert: true } });
+              }
+            };
+          },
+          deleteOne() {
+            operations.push({ deleteOne: { filter: query } });
+          },
+          delete() {
+            operations.push({ deleteMany: { filter: query } });
+          }
+        };
+      },
+      async execute() {
+        return collection.bulkWrite(operations);
+      }
+    };
   }
 
   async drop() {
@@ -1576,21 +1815,23 @@ class PostgresDb {
     if (!dbName) {
       return;
     }
-    // Close the current pool (can't drop a database with active connections)
-    this._client._poolEnded = true;
-    await this._client._pool.end();
-    // Connect to the admin 'postgres' database to drop the target
-    const adminUrl = new URL(this._client._uri);
-    adminUrl.pathname = '/postgres';
-    const adminPool = new Pool({
-      connectionString: adminUrl.toString(),
-      ...this._client._options
-    });
-    try {
-      await adminPool.query(`DROP DATABASE IF EXISTS "${escapeIdentifier(dbName)}" WITH (FORCE)`);
-    } finally {
-      await adminPool.end();
+    // Drop all tables with the matching prefix instead of dropping the entire
+    // PostgreSQL database. This avoids the need to close the pool and reconnect,
+    // and avoids "terminating connection" errors from DROP DATABASE WITH (FORCE).
+    const prefix = escapeIdentifier(dbName) + '_';
+    const result = await this._pool.query(
+      `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE $1`,
+      [prefix + '%']
+    );
+    for (const row of result.rows) {
+      await this._pool.query(`DROP TABLE IF EXISTS "${escapeIdentifier(row.tablename)}" CASCADE`);
     }
+    this._collections.clear();
+  }
+
+  async collections() {
+    const list = await this.listCollections().toArray();
+    return list.map(entry => this.collection(entry.name));
   }
 
   listCollections() {
