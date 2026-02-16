@@ -3,6 +3,7 @@ require('shelljs/global');
 // /* globals mkdir */
 // const fs = require('fs');
 // const path = require('path');
+const fs = require('fs');
 const util = require('../util');
 const { stripIndent } = require('common-tags');
 
@@ -20,6 +21,10 @@ module.exports = function (program, version) {
     .option('--widget', 'Used with the "piece" module type. Also add a corresponding piece widget module (A2 only).')
     .option('--player', 'Used with the "widget" module type. Also add a Javascript player file for browser-side code.')
     .action(async function(type, moduleName, options) {
+      if (fs.existsSync('backend')) {
+        await util.error(`add ${type}`, 'The "add" command is not supported in hybrid Astro projects.');
+        return false;
+      }
       const allowedTypes = [ 'module', 'piece', 'widget' ];
       if (!allowedTypes.includes(type)) {
         await util.error('add module', `Module type ${type} was not recognized. Options include "module", "piece", and "widget".`);
