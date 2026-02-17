@@ -1044,6 +1044,14 @@ class PostgresCollection {
         data JSONB NOT NULL
       )
     `);
+    // Add _order column to tables created before it existed
+    try {
+      await this._pool.query(`
+        ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS _order SERIAL
+      `);
+    } catch (e) {
+      // Column already exists, ignore
+    }
     this._initialized = true;
   }
 
