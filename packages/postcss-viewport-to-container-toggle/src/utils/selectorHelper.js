@@ -1,5 +1,6 @@
 const createSelectorHelper = ({ modifierAttr }) => {
   const bodyRegex = /^body|^html.*\s+body|^html.*\s*>\s*body/;
+  const rootRegex = /^:root\b/;
   const tagRegex = /^\.|^#|^\[|^:/;
 
   /**
@@ -18,8 +19,9 @@ const createSelectorHelper = ({ modifierAttr }) => {
       .reduce((acc, part) => {
         const trimmed = part.trim();
         const isBodySelector = trimmed.match(bodyRegex);
+        const isRootSelector = trimmed.match(rootRegex);
 
-        if (!isBodySelector) {
+        if (!isBodySelector && !isRootSelector) {
           acc.push(`${wrapInWhere(target)} ${trimmed}`);
         }
 
@@ -38,6 +40,16 @@ const createSelectorHelper = ({ modifierAttr }) => {
       .split(',')
       .reduce((acc, part) => {
         const trimmed = part.trim();
+
+        if (trimmed.match(rootRegex)) {
+          return [
+            ...acc,
+            ...targets.map(target => {
+              const updatedPart = trimmed.replace(rootRegex, '');
+              return `${target}${updatedPart}`.trim();
+            })
+          ];
+        }
 
         // Should we get body level selector here?
         if (!trimmed.match(bodyRegex)) {
@@ -63,6 +75,11 @@ const createSelectorHelper = ({ modifierAttr }) => {
   };
 
   const getBodyLevelSelector = (selector, target, isBodySelector) => {
+    if (selector.match(rootRegex)) {
+      selector = selector.replace(rootRegex, '');
+      return `${target}${selector}`.trim();
+    }
+
     if (isBodySelector) {
       selector = selector.replace(bodyRegex, '');
 
@@ -85,10 +102,21 @@ const createSelectorHelper = ({ modifierAttr }) => {
     return null;
   };
 
+  const isRootOnlySelector = (selector) => {
+    const selectors = selector
+      .split(',')
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    return selectors.length > 0 &&
+      selectors.every(part => part.match(rootRegex));
+  };
+
   return {
     bodyRegex,
     addTargetToSelectors,
-    updateBodySelectors
+    updateBodySelectors,
+    isRootOnlySelector
   };
 };
 
