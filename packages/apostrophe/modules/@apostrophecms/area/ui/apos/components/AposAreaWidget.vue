@@ -23,7 +23,7 @@
       @keyup.enter="onKeyup"
     >
       <div
-        v-if="!breadcrumbDisabled"
+        v-if="!breadcrumbDisabled && focusedWidget === widget._id"
         ref="label"
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
@@ -92,7 +92,10 @@
         />
       </div>
       <div
-        v-if="!controlsDisabled"
+        v-if="
+          !controlsDisabled &&
+            !maxReached &&
+            (!focusedWidget || focusedWidget === widget._id)"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -179,7 +182,10 @@
         @update="$emit('update', $event);"
       />
       <div
-        v-if="!controlsDisabled"
+        v-if="
+          !controlsDisabled &&
+            !maxReached &&
+            (!focusedWidget || focusedWidget === widget._id)"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add

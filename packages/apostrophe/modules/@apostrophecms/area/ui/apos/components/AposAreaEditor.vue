@@ -61,6 +61,9 @@
         :disabled="field && field.readOnly"
         :max-reached="maxReached"
         :rendering="rendering(widget)"
+        :style="{
+          'z-index': focusedWidget === widget._id ? '9999' : next.length - i
+        }"
         @up="up"
         @down="down"
         @remove="remove"
