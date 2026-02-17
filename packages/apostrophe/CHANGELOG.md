@@ -4,7 +4,7 @@
 
 ### Changes
 
-- Removes commit resolution markers that were left behind in the previous version
+- Removes commit resolution markers that were left behind in the 4.27.0-alpha.1 release
 
 ## 4.26.1
 
