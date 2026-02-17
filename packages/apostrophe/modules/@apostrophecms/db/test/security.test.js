@@ -1,3 +1,5 @@
+/* global describe, it, before, after, beforeEach */
+/* eslint-disable no-unused-expressions */
 const { expect } = require('chai');
 
 // Security tests for SQL injection prevention
@@ -43,23 +45,33 @@ describe(`Security Tests (${ADAPTER})`, function() {
       describe('Field Names (escaping, not rejection)', function() {
         it('should safely escape field names with single quotes', async function() {
           // Field names with quotes should be escaped, not cause SQL injection
-          await db.collection('sectest').insertOne({ _id: 'esc1', "field'test": 'value' });
-          const doc = await db.collection('sectest').findOne({ "field'test": 'value' });
+          await db.collection('sectest').insertOne({
+            _id: 'esc1',
+            'field\'test': 'value'
+          });
+          const doc = await db.collection('sectest').findOne({ 'field\'test': 'value' });
           expect(doc).to.exist;
-          expect(doc["field'test"]).to.equal('value');
+          expect(doc['field\'test']).to.equal('value');
           await db.collection('sectest').deleteOne({ _id: 'esc1' });
         });
 
         it('should safely escape field names with SQL-like content', async function() {
           // This should NOT execute SQL injection, just be a weird field name
-          await db.collection('sectest').insertOne({ _id: 'esc2', 'field; DROP TABLE users;': 'value' });
+          await db.collection('sectest').insertOne({
+            _id: 'esc2',
+            'field; DROP TABLE users;': 'value'
+          });
           const doc = await db.collection('sectest').findOne({ 'field; DROP TABLE users;': 'value' });
           expect(doc).to.exist;
           await db.collection('sectest').deleteOne({ _id: 'esc2' });
         });
 
         it('should safely handle field names with special characters', async function() {
-          await db.collection('sectest').insertOne({ _id: 'esc3', 'field()': 'value', 'field"quote': 'test' });
+          await db.collection('sectest').insertOne({
+            _id: 'esc3',
+            'field()': 'value',
+            'field"quote': 'test'
+          });
           const doc = await db.collection('sectest').findOne({ _id: 'esc3' });
           expect(doc).to.exist;
           expect(doc['field()']).to.equal('value');
@@ -68,14 +80,20 @@ describe(`Security Tests (${ADAPTER})`, function() {
         });
 
         it('should allow nested field names with dots', async function() {
-          await db.collection('sectest').insertOne({ _id: 'sec1', user: { name: 'test' } });
+          await db.collection('sectest').insertOne({
+            _id: 'sec1',
+            user: { name: 'test' }
+          });
           const doc = await db.collection('sectest').findOne({ 'user.name': 'test' });
           expect(doc).to.exist;
           await db.collection('sectest').deleteOne({ _id: 'sec1' });
         });
 
         it('should allow field names with hyphens', async function() {
-          await db.collection('sectest').insertOne({ _id: 'sec4', 'my-field-name': 'value' });
+          await db.collection('sectest').insertOne({
+            _id: 'sec4',
+            'my-field-name': 'value'
+          });
           const doc = await db.collection('sectest').findOne({ 'my-field-name': 'value' });
           expect(doc).to.exist;
           await db.collection('sectest').deleteOne({ _id: 'sec4' });
@@ -85,7 +103,7 @@ describe(`Security Tests (${ADAPTER})`, function() {
       describe('Collection Names', function() {
         it('should reject collection names with SQL injection', async function() {
           try {
-            db.collection("test'; DROP TABLE users;--");
+            db.collection('test\'; DROP TABLE users;--');
             expect.fail('Should have rejected malicious collection name');
           } catch (e) {
             expect(e.message).to.include('Invalid table name');
@@ -121,12 +139,15 @@ describe(`Security Tests (${ADAPTER})`, function() {
           } catch (e) {
             // ignore
           }
-          await db.collection('sectest').insertOne({ _id: 'idx1', field: 'value' });
+          await db.collection('sectest').insertOne({
+            _id: 'idx1',
+            field: 'value'
+          });
         });
 
         it('should reject malicious index names', async function() {
           try {
-            await db.collection('sectest').createIndex({ field: 1 }, { name: "idx'; DROP TABLE users;--" });
+            await db.collection('sectest').createIndex({ field: 1 }, { name: 'idx\'; DROP TABLE users;--' });
             expect.fail('Should have rejected malicious index name');
           } catch (e) {
             expect(e.message).to.include('Invalid table name');
@@ -146,23 +167,27 @@ describe(`Security Tests (${ADAPTER})`, function() {
           } catch (e) {
             // ignore
           }
-          await db.collection('sectest').insertOne({ _id: 'op1', name: 'test', count: 5 });
+          await db.collection('sectest').insertOne({
+            _id: 'op1',
+            name: 'test',
+            count: 5
+          });
         });
 
         it('should safely handle malicious string values (parameterized)', async function() {
           // This should not cause SQL injection because values are parameterized
-          const doc = await db.collection('sectest').findOne({ name: "'; DROP TABLE users;--" });
+          const doc = await db.collection('sectest').findOne({ name: '\'; DROP TABLE users;--' });
           expect(doc).to.be.null; // No match, but no error either
         });
 
         it('should safely handle malicious _id values (parameterized)', async function() {
-          const doc = await db.collection('sectest').findOne({ _id: "'; DROP TABLE users;--" });
+          const doc = await db.collection('sectest').findOne({ _id: '\'; DROP TABLE users;--' });
           expect(doc).to.be.null; // No match, but no error either
         });
 
         it('should safely handle malicious values in $in operator', async function() {
           const docs = await db.collection('sectest').find({
-            name: { $in: ["'; DROP TABLE users;--", "normal"] }
+            name: { $in: [ '\'; DROP TABLE users;--', 'normal' ] }
           }).toArray();
           expect(docs).to.have.lengthOf(0);
         });
@@ -170,7 +195,7 @@ describe(`Security Tests (${ADAPTER})`, function() {
         it('should safely handle malicious regex patterns', async function() {
           // Regex patterns are parameterized
           const docs = await db.collection('sectest').find({
-            name: { $regex: "'; DROP TABLE" }
+            name: { $regex: '\'; DROP TABLE' }
           }).toArray();
           expect(docs).to.have.lengthOf(0);
         });
@@ -184,9 +209,18 @@ describe(`Security Tests (${ADAPTER})`, function() {
             // ignore
           }
           await db.collection('sectest').insertMany([
-            { _id: 'lim1', value: 1 },
-            { _id: 'lim2', value: 2 },
-            { _id: 'lim3', value: 3 }
+            {
+              _id: 'lim1',
+              value: 1
+            },
+            {
+              _id: 'lim2',
+              value: 2
+            },
+            {
+              _id: 'lim3',
+              value: 3
+            }
           ]);
         });
 
@@ -228,12 +262,18 @@ describe(`Security Tests (${ADAPTER})`, function() {
   // Basic tests that apply to both adapters
   describe('Basic Security', function() {
     it('should prevent duplicate _id atomically', async function() {
-      await db.collection('sectest').insertOne({ _id: 'atomic1', value: 1 });
+      await db.collection('sectest').insertOne({
+        _id: 'atomic1',
+        value: 1
+      });
 
       const promises = [];
       for (let i = 0; i < 5; i++) {
         promises.push(
-          db.collection('sectest').insertOne({ _id: 'atomic1', value: i })
+          db.collection('sectest').insertOne({
+            _id: 'atomic1',
+            value: i
+          })
             .then(() => 'success')
             .catch(() => 'duplicate')
         );

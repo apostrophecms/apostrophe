@@ -93,7 +93,7 @@ module.exports = {
     ]) {
       named.set(adapter.name, adapter);
     }
-    self.adapters = [...named.values()];
+    self.adapters = [ ...named.values() ];
     await self.connectToDb();
     await self.versionCheck();
   },
@@ -118,10 +118,11 @@ module.exports = {
   },
   methods(self) {
     return {
-      // Connect to the database and sets self.apos.dbClient and self.apos.db. Builds a mongodb URI
-      // by default, accepting host, port, user, password and name options if present. More typically
-      // a URI is specified via APOS_DB_URI, or via APOS_MONGODB_URI for bc. If nothing at all is
-      // specified an unsecured connection to mongodb on localhost:27017 is attempted.
+      // Connect to the database and sets self.apos.dbClient
+      // and self.apos.db. Builds a mongodb URI by default,
+      // accepting host, port, user, password and name options
+      // if present. More typically a URI is specified via
+      // APOS_DB_URI, or via APOS_MONGODB_URI for bc.
       async connectToDb() {
         if (self.options.client) {
           // Reuse a single client connection http://mongodb.github.io/node-mongodb-native/2.2/api/Db.html#db

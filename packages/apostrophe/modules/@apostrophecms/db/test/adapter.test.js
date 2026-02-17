@@ -1,3 +1,5 @@
+/* global describe, it, before, after, beforeEach */
+/* eslint-disable no-unused-expressions */
 const { expect } = require('chai');
 
 // Test suite for the universal database adapter
@@ -71,9 +73,15 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
 
     it('should reject duplicate _id', async function() {
-      await db.collection('test').insertOne({ _id: 'dup', value: 1 });
+      await db.collection('test').insertOne({
+        _id: 'dup',
+        value: 1
+      });
       try {
-        await db.collection('test').insertOne({ _id: 'dup', value: 2 });
+        await db.collection('test').insertOne({
+          _id: 'dup',
+          value: 2
+        });
         expect.fail('Should have thrown duplicate key error');
       } catch (e) {
         expect(e.message).to.match(/duplicate|unique|already exists/i);
@@ -84,9 +92,18 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('insertMany', function() {
     it('should insert multiple documents', async function() {
       const docs = [
-        { _id: 'many1', title: 'First' },
-        { _id: 'many2', title: 'Second' },
-        { _id: 'many3', title: 'Third' }
+        {
+          _id: 'many1',
+          title: 'First'
+        },
+        {
+          _id: 'many2',
+          title: 'Second'
+        },
+        {
+          _id: 'many3',
+          title: 'Third'
+        }
       ];
       const result = await db.collection('test').insertMany(docs);
       expect(result.insertedCount).to.equal(3);
@@ -95,11 +112,20 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
 
     it('should reject if any document has duplicate _id', async function() {
-      await db.collection('test').insertOne({ _id: 'existing', value: 1 });
+      await db.collection('test').insertOne({
+        _id: 'existing',
+        value: 1
+      });
       try {
         await db.collection('test').insertMany([
-          { _id: 'new1', value: 2 },
-          { _id: 'existing', value: 3 }
+          {
+            _id: 'new1',
+            value: 2
+          },
+          {
+            _id: 'existing',
+            value: 3
+          }
         ]);
         expect.fail('Should have thrown duplicate key error');
       } catch (e) {
@@ -111,9 +137,24 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('findOne', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'find1', type: 'article', title: 'First Article', views: 100 },
-        { _id: 'find2', type: 'article', title: 'Second Article', views: 200 },
-        { _id: 'find3', type: 'page', title: 'Home Page', views: 500 }
+        {
+          _id: 'find1',
+          type: 'article',
+          title: 'First Article',
+          views: 100
+        },
+        {
+          _id: 'find2',
+          type: 'article',
+          title: 'Second Article',
+          views: 200
+        },
+        {
+          _id: 'find3',
+          type: 'page',
+          title: 'Home Page',
+          views: 500
+        }
       ]);
     });
 
@@ -163,11 +204,41 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('find', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'a1', type: 'article', title: 'Alpha', order: 1, tags: ['news', 'featured'] },
-        { _id: 'a2', type: 'article', title: 'Beta', order: 2, tags: ['news'] },
-        { _id: 'a3', type: 'article', title: 'Gamma', order: 3, tags: ['featured'] },
-        { _id: 'p1', type: 'page', title: 'Home', order: 1, tags: [] },
-        { _id: 'p2', type: 'page', title: 'About', order: 2, tags: ['info'] }
+        {
+          _id: 'a1',
+          type: 'article',
+          title: 'Alpha',
+          order: 1,
+          tags: [ 'news', 'featured' ]
+        },
+        {
+          _id: 'a2',
+          type: 'article',
+          title: 'Beta',
+          order: 2,
+          tags: [ 'news' ]
+        },
+        {
+          _id: 'a3',
+          type: 'article',
+          title: 'Gamma',
+          order: 3,
+          tags: [ 'featured' ]
+        },
+        {
+          _id: 'p1',
+          type: 'page',
+          title: 'Home',
+          order: 1,
+          tags: []
+        },
+        {
+          _id: 'p2',
+          type: 'page',
+          title: 'About',
+          order: 2,
+          tags: [ 'info' ]
+        }
       ]);
     });
 
@@ -272,15 +343,21 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         .find({ type: 'page' })
         .sort({ _id: 1 });
       cursor.next(function(err, doc1) {
-        if (err) return done(err);
+        if (err) {
+          return done(err);
+        }
         expect(doc1).to.exist;
         expect(doc1._id).to.equal('p1');
         cursor.next(function(err, doc2) {
-          if (err) return done(err);
+          if (err) {
+            return done(err);
+          }
           expect(doc2).to.exist;
           expect(doc2._id).to.equal('p2');
           cursor.next(function(err, doc3) {
-            if (err) return done(err);
+            if (err) {
+              return done(err);
+            }
             expect(doc3).to.be.null;
             done();
           });
@@ -316,8 +393,18 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('updateOne', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'u1', title: 'Original', views: 10, active: true },
-        { _id: 'u2', title: 'Another', views: 20, active: false }
+        {
+          _id: 'u1',
+          title: 'Original',
+          views: 10,
+          active: true
+        },
+        {
+          _id: 'u2',
+          title: 'Another',
+          views: 20,
+          active: false
+        }
       ]);
     });
 
@@ -347,7 +434,12 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     it('should support upsert', async function() {
       const result = await db.collection('test').updateOne(
         { _id: 'new1' },
-        { $set: { title: 'Upserted', value: 100 } },
+        {
+          $set: {
+            title: 'Upserted',
+            value: 100
+          }
+        },
         { upsert: true }
       );
       expect(result.upsertedId).to.equal('new1');
@@ -361,9 +453,21 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('updateMany', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'm1', type: 'article', status: 'draft' },
-        { _id: 'm2', type: 'article', status: 'draft' },
-        { _id: 'm3', type: 'page', status: 'draft' }
+        {
+          _id: 'm1',
+          type: 'article',
+          status: 'draft'
+        },
+        {
+          _id: 'm2',
+          type: 'article',
+          status: 'draft'
+        },
+        {
+          _id: 'm3',
+          type: 'page',
+          status: 'draft'
+        }
       ]);
     });
 
@@ -393,7 +497,11 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     it('should replace entire document', async function() {
       const result = await db.collection('test').replaceOne(
         { _id: 'r1' },
-        { _id: 'r1', title: 'Replaced', newField: 'value' }
+        {
+          _id: 'r1',
+          title: 'Replaced',
+          newField: 'value'
+        }
       );
       expect(result.matchedCount).to.equal(1);
       expect(result.modifiedCount).to.equal(1);
@@ -408,7 +516,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     it('should support upsert', async function() {
       const result = await db.collection('test').replaceOne(
         { _id: 'r2' },
-        { _id: 'r2', title: 'New Doc' },
+        {
+          _id: 'r2',
+          title: 'New Doc'
+        },
         { upsert: true }
       );
       expect(result.upsertedId).to.equal('r2');
@@ -418,8 +529,14 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('deleteOne', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'd1', value: 1 },
-        { _id: 'd2', value: 2 }
+        {
+          _id: 'd1',
+          value: 1
+        },
+        {
+          _id: 'd2',
+          value: 2
+        }
       ]);
     });
 
@@ -441,9 +558,21 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('deleteMany', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'dm1', type: 'temp', value: 1 },
-        { _id: 'dm2', type: 'temp', value: 2 },
-        { _id: 'dm3', type: 'keep', value: 3 }
+        {
+          _id: 'dm1',
+          type: 'temp',
+          value: 1
+        },
+        {
+          _id: 'dm2',
+          type: 'temp',
+          value: 2
+        },
+        {
+          _id: 'dm3',
+          type: 'keep',
+          value: 3
+        }
       ]);
     });
 
@@ -469,11 +598,41 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('Query Operators', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'q1', name: 'Alice', age: 25, active: true, tags: ['admin', 'user'] },
-        { _id: 'q2', name: 'Bob', age: 30, active: false, tags: ['user'] },
-        { _id: 'q3', name: 'Carol', age: 35, active: true, tags: ['guest'] },
-        { _id: 'q4', name: 'Dave', age: 25, active: true, tags: [] },
-        { _id: 'q5', name: 'Eve', age: 40, optional: 'present', tags: ['admin'] }
+        {
+          _id: 'q1',
+          name: 'Alice',
+          age: 25,
+          active: true,
+          tags: [ 'admin', 'user' ]
+        },
+        {
+          _id: 'q2',
+          name: 'Bob',
+          age: 30,
+          active: false,
+          tags: [ 'user' ]
+        },
+        {
+          _id: 'q3',
+          name: 'Carol',
+          age: 35,
+          active: true,
+          tags: [ 'guest' ]
+        },
+        {
+          _id: 'q4',
+          name: 'Dave',
+          age: 25,
+          active: true,
+          tags: []
+        },
+        {
+          _id: 'q5',
+          name: 'Eve',
+          age: 40,
+          optional: 'present',
+          tags: [ 'admin' ]
+        }
       ]);
     });
 
@@ -509,12 +668,12 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       });
 
       it('$in - should match values in array', async function() {
-        const docs = await db.collection('test').find({ age: { $in: [25, 35] } }).toArray();
+        const docs = await db.collection('test').find({ age: { $in: [ 25, 35 ] } }).toArray();
         expect(docs).to.have.lengthOf(3);
       });
 
       it('$nin - should match values not in array', async function() {
-        const docs = await db.collection('test').find({ age: { $nin: [25, 35] } }).toArray();
+        const docs = await db.collection('test').find({ age: { $nin: [ 25, 35 ] } }).toArray();
         expect(docs).to.have.lengthOf(2);
       });
     });
@@ -576,7 +735,12 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       });
 
       it('$regex - should support string pattern', async function() {
-        const docs = await db.collection('test').find({ name: { $regex: 'li', $options: 'i' } }).toArray();
+        const docs = await db.collection('test').find({
+          name: {
+            $regex: 'li',
+            $options: 'i'
+          }
+        }).toArray();
         expect(docs).to.have.lengthOf(1);
         expect(docs[0].name).to.equal('Alice');
       });
@@ -589,7 +753,7 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       });
 
       it('$all - should match arrays containing all values', async function() {
-        const docs = await db.collection('test').find({ tags: { $all: ['admin', 'user'] } }).toArray();
+        const docs = await db.collection('test').find({ tags: { $all: [ 'admin', 'user' ] } }).toArray();
         expect(docs).to.have.lengthOf(1);
         expect(docs[0].name).to.equal('Alice');
       });
@@ -603,8 +767,17 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('Update Operators', function() {
     describe('$set', function() {
       it('should set field value', async function() {
-        await db.collection('test').insertOne({ _id: 'set1', a: 1, b: 2 });
-        await db.collection('test').updateOne({ _id: 'set1' }, { $set: { a: 10, c: 3 } });
+        await db.collection('test').insertOne({
+          _id: 'set1',
+          a: 1,
+          b: 2
+        });
+        await db.collection('test').updateOne({ _id: 'set1' }, {
+          $set: {
+            a: 10,
+            c: 3
+          }
+        });
         const doc = await db.collection('test').findOne({ _id: 'set1' });
         expect(doc.a).to.equal(10);
         expect(doc.b).to.equal(2);
@@ -612,7 +785,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       });
 
       it('should set nested field value', async function() {
-        await db.collection('test').insertOne({ _id: 'set2', nested: { a: 1 } });
+        await db.collection('test').insertOne({
+          _id: 'set2',
+          nested: { a: 1 }
+        });
         await db.collection('test').updateOne({ _id: 'set2' }, { $set: { 'nested.b': 2 } });
         const doc = await db.collection('test').findOne({ _id: 'set2' });
         expect(doc.nested.a).to.equal(1);
@@ -622,7 +798,12 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
     describe('$unset', function() {
       it('should remove field', async function() {
-        await db.collection('test').insertOne({ _id: 'unset1', a: 1, b: 2, c: 3 });
+        await db.collection('test').insertOne({
+          _id: 'unset1',
+          a: 1,
+          b: 2,
+          c: 3
+        });
         await db.collection('test').updateOne({ _id: 'unset1' }, { $unset: { b: '' } });
         const doc = await db.collection('test').findOne({ _id: 'unset1' });
         expect(doc.a).to.equal(1);
@@ -633,14 +814,20 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
     describe('$inc', function() {
       it('should increment numeric field', async function() {
-        await db.collection('test').insertOne({ _id: 'inc1', count: 5 });
+        await db.collection('test').insertOne({
+          _id: 'inc1',
+          count: 5
+        });
         await db.collection('test').updateOne({ _id: 'inc1' }, { $inc: { count: 3 } });
         const doc = await db.collection('test').findOne({ _id: 'inc1' });
         expect(doc.count).to.equal(8);
       });
 
       it('should decrement with negative value', async function() {
-        await db.collection('test').insertOne({ _id: 'inc2', count: 10 });
+        await db.collection('test').insertOne({
+          _id: 'inc2',
+          count: 10
+        });
         await db.collection('test').updateOne({ _id: 'inc2' }, { $inc: { count: -4 } });
         const doc = await db.collection('test').findOne({ _id: 'inc2' });
         expect(doc.count).to.equal(6);
@@ -656,48 +843,63 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
     describe('$push', function() {
       it('should add element to array', async function() {
-        await db.collection('test').insertOne({ _id: 'push1', items: ['a', 'b'] });
+        await db.collection('test').insertOne({
+          _id: 'push1',
+          items: [ 'a', 'b' ]
+        });
         await db.collection('test').updateOne({ _id: 'push1' }, { $push: { items: 'c' } });
         const doc = await db.collection('test').findOne({ _id: 'push1' });
-        expect(doc.items).to.deep.equal(['a', 'b', 'c']);
+        expect(doc.items).to.deep.equal([ 'a', 'b', 'c' ]);
       });
 
       it('should create array if it does not exist', async function() {
         await db.collection('test').insertOne({ _id: 'push2' });
         await db.collection('test').updateOne({ _id: 'push2' }, { $push: { items: 'a' } });
         const doc = await db.collection('test').findOne({ _id: 'push2' });
-        expect(doc.items).to.deep.equal(['a']);
+        expect(doc.items).to.deep.equal([ 'a' ]);
       });
     });
 
     describe('$pull', function() {
       it('should remove matching elements from array', async function() {
-        await db.collection('test').insertOne({ _id: 'pull1', items: ['a', 'b', 'c', 'b'] });
+        await db.collection('test').insertOne({
+          _id: 'pull1',
+          items: [ 'a', 'b', 'c', 'b' ]
+        });
         await db.collection('test').updateOne({ _id: 'pull1' }, { $pull: { items: 'b' } });
         const doc = await db.collection('test').findOne({ _id: 'pull1' });
-        expect(doc.items).to.deep.equal(['a', 'c']);
+        expect(doc.items).to.deep.equal([ 'a', 'c' ]);
       });
     });
 
     describe('$addToSet', function() {
       it('should add element only if not present', async function() {
-        await db.collection('test').insertOne({ _id: 'add1', tags: ['a', 'b'] });
+        await db.collection('test').insertOne({
+          _id: 'add1',
+          tags: [ 'a', 'b' ]
+        });
         await db.collection('test').updateOne({ _id: 'add1' }, { $addToSet: { tags: 'c' } });
         const doc = await db.collection('test').findOne({ _id: 'add1' });
-        expect(doc.tags).to.deep.equal(['a', 'b', 'c']);
+        expect(doc.tags).to.deep.equal([ 'a', 'b', 'c' ]);
       });
 
       it('should not add duplicate element', async function() {
-        await db.collection('test').insertOne({ _id: 'add2', tags: ['a', 'b'] });
+        await db.collection('test').insertOne({
+          _id: 'add2',
+          tags: [ 'a', 'b' ]
+        });
         await db.collection('test').updateOne({ _id: 'add2' }, { $addToSet: { tags: 'b' } });
         const doc = await db.collection('test').findOne({ _id: 'add2' });
-        expect(doc.tags).to.deep.equal(['a', 'b']);
+        expect(doc.tags).to.deep.equal([ 'a', 'b' ]);
       });
     });
 
     describe('$currentDate', function() {
       it('should set field to current date', async function() {
-        await db.collection('test').insertOne({ _id: 'date1', name: 'test' });
+        await db.collection('test').insertOne({
+          _id: 'date1',
+          name: 'test'
+        });
         const before = new Date();
         await db.collection('test').updateOne({ _id: 'date1' }, { $currentDate: { updatedAt: true } });
         const after = new Date();
@@ -716,9 +918,21 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('countDocuments', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'c1', type: 'a', value: 1 },
-        { _id: 'c2', type: 'a', value: 2 },
-        { _id: 'c3', type: 'b', value: 3 }
+        {
+          _id: 'c1',
+          type: 'a',
+          value: 1
+        },
+        {
+          _id: 'c2',
+          type: 'a',
+          value: 2
+        },
+        {
+          _id: 'c3',
+          type: 'b',
+          value: 3
+        }
       ]);
     });
 
@@ -736,21 +950,37 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('distinct', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'd1', category: 'food', tag: 'healthy' },
-        { _id: 'd2', category: 'food', tag: 'junk' },
-        { _id: 'd3', category: 'tech', tag: 'healthy' },
-        { _id: 'd4', category: 'tech', tag: 'new' }
+        {
+          _id: 'd1',
+          category: 'food',
+          tag: 'healthy'
+        },
+        {
+          _id: 'd2',
+          category: 'food',
+          tag: 'junk'
+        },
+        {
+          _id: 'd3',
+          category: 'tech',
+          tag: 'healthy'
+        },
+        {
+          _id: 'd4',
+          category: 'tech',
+          tag: 'new'
+        }
       ]);
     });
 
     it('should return distinct values for field', async function() {
       const values = await db.collection('test').distinct('category');
-      expect(values.sort()).to.deep.equal(['food', 'tech']);
+      expect(values.sort()).to.deep.equal([ 'food', 'tech' ]);
     });
 
     it('should return distinct values with filter', async function() {
       const values = await db.collection('test').distinct('tag', { category: 'food' });
-      expect(values.sort()).to.deep.equal(['healthy', 'junk']);
+      expect(values.sort()).to.deep.equal([ 'healthy', 'junk' ]);
     });
   });
 
@@ -761,10 +991,30 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('aggregate', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'agg1', category: 'fruit', name: 'apple', qty: 10 },
-        { _id: 'agg2', category: 'fruit', name: 'banana', qty: 5 },
-        { _id: 'agg3', category: 'vegetable', name: 'carrot', qty: 8 },
-        { _id: 'agg4', category: 'vegetable', name: 'broccoli', qty: 3 }
+        {
+          _id: 'agg1',
+          category: 'fruit',
+          name: 'apple',
+          qty: 10
+        },
+        {
+          _id: 'agg2',
+          category: 'fruit',
+          name: 'banana',
+          qty: 5
+        },
+        {
+          _id: 'agg3',
+          category: 'vegetable',
+          name: 'carrot',
+          qty: 8
+        },
+        {
+          _id: 'agg4',
+          category: 'vegetable',
+          name: 'broccoli',
+          qty: 3
+        }
       ]);
     });
 
@@ -777,7 +1027,12 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
     it('$group - should group and aggregate', async function() {
       const results = await db.collection('test').aggregate([
-        { $group: { _id: '$category', total: { $sum: '$qty' } } }
+        {
+          $group: {
+            _id: '$category',
+            total: { $sum: '$qty' }
+          }
+        }
       ]).toArray();
       expect(results).to.have.lengthOf(2);
       const fruit = results.find(r => r._id === 'fruit');
@@ -789,7 +1044,12 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     it('$project - should project fields', async function() {
       const results = await db.collection('test').aggregate([
         { $match: { _id: 'agg1' } },
-        { $project: { name: 1, qty: 1 } }
+        {
+          $project: {
+            name: 1,
+            qty: 1
+          }
+        }
       ]).toArray();
       expect(results).to.have.lengthOf(1);
       expect(results[0].name).to.equal('apple');
@@ -800,14 +1060,14 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       await db.collection('test').insertOne({
         _id: 'agg5',
         name: 'mixed',
-        items: ['x', 'y', 'z']
+        items: [ 'x', 'y', 'z' ]
       });
       const results = await db.collection('test').aggregate([
         { $match: { _id: 'agg5' } },
         { $unwind: '$items' }
       ]).toArray();
       expect(results).to.have.lengthOf(3);
-      expect(results.map(r => r.items)).to.deep.equal(['x', 'y', 'z']);
+      expect(results.map(r => r.items)).to.deep.equal([ 'x', 'y', 'z' ]);
     });
   });
 
@@ -817,7 +1077,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
   describe('Index Operations', function() {
     it('createIndex - should create a single field index', async function() {
-      await db.collection('test').insertOne({ _id: 'idx1', field: 'value' });
+      await db.collection('test').insertOne({
+        _id: 'idx1',
+        field: 'value'
+      });
       const indexName = await db.collection('test').createIndex({ field: 1 });
       expect(indexName).to.be.a('string');
 
@@ -827,18 +1090,31 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
 
     it('createIndex - should create a compound index', async function() {
-      await db.collection('test').insertOne({ _id: 'idx2', a: 1, b: 2 });
-      const indexName = await db.collection('test').createIndex({ a: 1, b: -1 });
+      await db.collection('test').insertOne({
+        _id: 'idx2',
+        a: 1,
+        b: 2
+      });
+      const indexName = await db.collection('test').createIndex({
+        a: 1,
+        b: -1
+      });
       expect(indexName).to.be.a('string');
     });
 
     it('createIndex - should create a unique index', async function() {
-      await db.collection('test').insertOne({ _id: 'idx3', email: 'test@example.com' });
+      await db.collection('test').insertOne({
+        _id: 'idx3',
+        email: 'test@example.com'
+      });
       await db.collection('test').createIndex({ email: 1 }, { unique: true });
 
       // Should reject duplicate
       try {
-        await db.collection('test').insertOne({ _id: 'idx4', email: 'test@example.com' });
+        await db.collection('test').insertOne({
+          _id: 'idx4',
+          email: 'test@example.com'
+        });
         expect.fail('Should have thrown duplicate key error');
       } catch (e) {
         expect(e.message).to.match(/duplicate|unique|already exists/i);
@@ -846,13 +1122,19 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
 
     it('createIndex - should support text index', async function() {
-      await db.collection('test').insertOne({ _id: 'txt1', content: 'hello world' });
+      await db.collection('test').insertOne({
+        _id: 'txt1',
+        content: 'hello world'
+      });
       const indexName = await db.collection('test').createIndex({ content: 'text' });
       expect(indexName).to.be.a('string');
     });
 
     it('dropIndex - should drop an index', async function() {
-      await db.collection('test').insertOne({ _id: 'drop1', field: 'value' });
+      await db.collection('test').insertOne({
+        _id: 'drop1',
+        field: 'value'
+      });
       const indexName = await db.collection('test').createIndex({ field: 1 });
 
       await db.collection('test').dropIndex(indexName);
@@ -863,7 +1145,11 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
 
     it('indexes - should list all indexes', async function() {
-      await db.collection('test').insertOne({ _id: 'list1', a: 1, b: 2 });
+      await db.collection('test').insertOne({
+        _id: 'list1',
+        a: 1,
+        b: 2
+      });
       await db.collection('test').createIndex({ a: 1 });
       await db.collection('test').createIndex({ b: 1 });
 
@@ -888,9 +1174,15 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     it('createIndex - should create sparse index', async function() {
       // Insert docs with and without the indexed field
       await db.collection('test').insertMany([
-        { _id: 'sparse1', optionalField: 'present' },
+        {
+          _id: 'sparse1',
+          optionalField: 'present'
+        },
         { _id: 'sparse2' }, // no optionalField
-        { _id: 'sparse3', optionalField: 'also present' }
+        {
+          _id: 'sparse3',
+          optionalField: 'also present'
+        }
       ]);
 
       const indexName = await db.collection('test').createIndex(
@@ -907,19 +1199,28 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     it('createIndex - should create unique sparse index', async function() {
       // Unique sparse index allows multiple docs without the field
       await db.collection('test').insertMany([
-        { _id: 'us1', uniqueOptional: 'value1' },
+        {
+          _id: 'us1',
+          uniqueOptional: 'value1'
+        },
         { _id: 'us2' }, // no uniqueOptional - allowed with sparse
         { _id: 'us3' }  // no uniqueOptional - also allowed with sparse
       ]);
 
       await db.collection('test').createIndex(
         { uniqueOptional: 1 },
-        { unique: true, sparse: true }
+        {
+          unique: true,
+          sparse: true
+        }
       );
 
       // Should reject duplicate value
       try {
-        await db.collection('test').insertOne({ _id: 'us4', uniqueOptional: 'value1' });
+        await db.collection('test').insertOne({
+          _id: 'us4',
+          uniqueOptional: 'value1'
+        });
         expect.fail('Should have thrown duplicate key error');
       } catch (e) {
         expect(e.message).to.match(/duplicate|unique|already exists/i);
@@ -927,7 +1228,7 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
       // But allow another doc without the field
       await db.collection('test').insertOne({ _id: 'us5' });
-      const count = await db.collection('test').countDocuments({ _id: { $in: ['us2', 'us3', 'us5'] } });
+      const count = await db.collection('test').countDocuments({ _id: { $in: [ 'us2', 'us3', 'us5' ] } });
       expect(count).to.equal(3);
     });
 
@@ -935,10 +1236,22 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     // but should work (be ignored) for MongoDB as well
     it('createIndex - should create numeric index for range queries', async function() {
       await db.collection('test').insertMany([
-        { _id: 'num1', price: 10 },
-        { _id: 'num2', price: 25 },
-        { _id: 'num3', price: 50 },
-        { _id: 'num4', price: 100 }
+        {
+          _id: 'num1',
+          price: 10
+        },
+        {
+          _id: 'num2',
+          price: 25
+        },
+        {
+          _id: 'num3',
+          price: 50
+        },
+        {
+          _id: 'num4',
+          price: 100
+        }
       ]);
 
       // Create numeric index for efficient range queries
@@ -951,17 +1264,20 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       // Range queries should work correctly
       const cheap = await db.collection('test').find({ price: { $lt: 30 } }).toArray();
       expect(cheap).to.have.lengthOf(2);
-      expect(cheap.map(d => d._id).sort()).to.deep.equal(['num1', 'num2']);
+      expect(cheap.map(d => d._id).sort()).to.deep.equal([ 'num1', 'num2' ]);
 
       const expensive = await db.collection('test').find({ price: { $gte: 50 } }).toArray();
       expect(expensive).to.have.lengthOf(2);
-      expect(expensive.map(d => d._id).sort()).to.deep.equal(['num3', 'num4']);
+      expect(expensive.map(d => d._id).sort()).to.deep.equal([ 'num3', 'num4' ]);
 
       const midRange = await db.collection('test').find({
-        price: { $gt: 10, $lt: 100 }
+        price: {
+          $gt: 10,
+          $lt: 100
+        }
       }).toArray();
       expect(midRange).to.have.lengthOf(2);
-      expect(midRange.map(d => d._id).sort()).to.deep.equal(['num2', 'num3']);
+      expect(midRange.map(d => d._id).sort()).to.deep.equal([ 'num2', 'num3' ]);
     });
 
     it('createIndex - should create date index for range queries', async function() {
@@ -971,10 +1287,22 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const lastMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
       await db.collection('test').insertMany([
-        { _id: 'date1', createdAt: lastMonth },
-        { _id: 'date2', createdAt: lastWeek },
-        { _id: 'date3', createdAt: yesterday },
-        { _id: 'date4', createdAt: now }
+        {
+          _id: 'date1',
+          createdAt: lastMonth
+        },
+        {
+          _id: 'date2',
+          createdAt: lastWeek
+        },
+        {
+          _id: 'date3',
+          createdAt: yesterday
+        },
+        {
+          _id: 'date4',
+          createdAt: now
+        }
       ]);
 
       // Create date index for efficient range queries
@@ -989,7 +1317,7 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         createdAt: { $gte: yesterday }
       }).toArray();
       expect(recent).to.have.lengthOf(2);
-      expect(recent.map(d => d._id).sort()).to.deep.equal(['date3', 'date4']);
+      expect(recent.map(d => d._id).sort()).to.deep.equal([ 'date3', 'date4' ]);
 
       const older = await db.collection('test').find({
         createdAt: { $lt: lastWeek }
@@ -998,33 +1326,51 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       expect(older[0]._id).to.equal('date1');
 
       const midRange = await db.collection('test').find({
-        createdAt: { $gt: lastMonth, $lt: now }
+        createdAt: {
+          $gt: lastMonth,
+          $lt: now
+        }
       }).toArray();
       expect(midRange).to.have.lengthOf(2);
-      expect(midRange.map(d => d._id).sort()).to.deep.equal(['date2', 'date3']);
+      expect(midRange.map(d => d._id).sort()).to.deep.equal([ 'date2', 'date3' ]);
     });
 
     it('createIndex - should create unique numeric index', async function() {
       await db.collection('test').insertMany([
-        { _id: 'unum1', rank: 1 },
-        { _id: 'unum2', rank: 2 }
+        {
+          _id: 'unum1',
+          rank: 1
+        },
+        {
+          _id: 'unum2',
+          rank: 2
+        }
       ]);
 
       await db.collection('test').createIndex(
         { rank: 1 },
-        { type: 'number', unique: true }
+        {
+          type: 'number',
+          unique: true
+        }
       );
 
       // Should reject duplicate
       try {
-        await db.collection('test').insertOne({ _id: 'unum3', rank: 1 });
+        await db.collection('test').insertOne({
+          _id: 'unum3',
+          rank: 1
+        });
         expect.fail('Should have thrown duplicate key error');
       } catch (e) {
         expect(e.message).to.match(/duplicate|unique|already exists/i);
       }
 
       // Different value should work
-      await db.collection('test').insertOne({ _id: 'unum3', rank: 3 });
+      await db.collection('test').insertOne({
+        _id: 'unum3',
+        rank: 3
+      });
       const count = await db.collection('test').countDocuments({ _id: { $regex: '^unum' } });
       expect(count).to.equal(3);
     });
@@ -1036,12 +1382,34 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
   describe('bulkWrite', function() {
     it('should execute multiple operations', async function() {
-      await db.collection('test').insertOne({ _id: 'bulk1', value: 1 });
+      await db.collection('test').insertOne({
+        _id: 'bulk1',
+        value: 1
+      });
 
       const result = await db.collection('test').bulkWrite([
-        { insertOne: { document: { _id: 'bulk2', value: 2 } } },
-        { updateOne: { filter: { _id: 'bulk1' }, update: { $set: { value: 10 } } } },
-        { insertOne: { document: { _id: 'bulk3', value: 3 } } },
+        {
+          insertOne: {
+            document: {
+              _id: 'bulk2',
+              value: 2
+            }
+          }
+        },
+        {
+          updateOne: {
+            filter: { _id: 'bulk1' },
+            update: { $set: { value: 10 } }
+          }
+        },
+        {
+          insertOne: {
+            document: {
+              _id: 'bulk3',
+              value: 3
+            }
+          }
+        },
         { deleteOne: { filter: { _id: 'bulk3' } } }
       ]);
 
@@ -1061,7 +1429,11 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
   describe('findOneAndUpdate', function() {
     beforeEach(async function() {
-      await db.collection('test').insertOne({ _id: 'fau1', value: 1, name: 'original' });
+      await db.collection('test').insertOne({
+        _id: 'fau1',
+        value: 1,
+        name: 'original'
+      });
     });
 
     it('should update and return the document', async function() {
@@ -1087,7 +1459,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const result = await db.collection('test').findOneAndUpdate(
         { _id: 'fau2' },
         { $set: { name: 'new' } },
-        { upsert: true, returnDocument: 'after' }
+        {
+          upsert: true,
+          returnDocument: 'after'
+        }
       );
       expect(result._id).to.equal('fau2');
       expect(result.name).to.equal('new');
@@ -1128,7 +1503,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
 
     it('should rename collection', async function() {
-      await db.collection('oldname').insertOne({ _id: 'rename1', value: 42 });
+      await db.collection('oldname').insertOne({
+        _id: 'rename1',
+        value: 42
+      });
 
       await db.collection('oldname').rename('newname');
 
@@ -1147,9 +1525,30 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('Nested Field Queries', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'n1', user: { name: 'Alice', role: 'admin' }, metadata: { views: 100 } },
-        { _id: 'n2', user: { name: 'Bob', role: 'user' }, metadata: { views: 50 } },
-        { _id: 'n3', user: { name: 'Carol', role: 'admin' }, metadata: { views: 200 } }
+        {
+          _id: 'n1',
+          user: {
+            name: 'Alice',
+            role: 'admin'
+          },
+          metadata: { views: 100 }
+        },
+        {
+          _id: 'n2',
+          user: {
+            name: 'Bob',
+            role: 'user'
+          },
+          metadata: { views: 50 }
+        },
+        {
+          _id: 'n3',
+          user: {
+            name: 'Carol',
+            role: 'admin'
+          },
+          metadata: { views: 200 }
+        }
       ]);
     });
 
@@ -1187,17 +1586,36 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('Multi-field Sort', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 's1', category: 'a', priority: 2 },
-        { _id: 's2', category: 'b', priority: 1 },
-        { _id: 's3', category: 'a', priority: 1 },
-        { _id: 's4', category: 'b', priority: 2 }
+        {
+          _id: 's1',
+          category: 'a',
+          priority: 2
+        },
+        {
+          _id: 's2',
+          category: 'b',
+          priority: 1
+        },
+        {
+          _id: 's3',
+          category: 'a',
+          priority: 1
+        },
+        {
+          _id: 's4',
+          category: 'b',
+          priority: 2
+        }
       ]);
     });
 
     it('should sort by multiple fields', async function() {
       const docs = await db.collection('test')
         .find({})
-        .sort({ category: 1, priority: -1 })
+        .sort({
+          category: 1,
+          priority: -1
+        })
         .toArray();
 
       expect(docs[0]._id).to.equal('s1'); // a, 2
@@ -1219,7 +1637,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         : client.db('dbtest_sibling');
 
       // Write to sibling
-      await siblingDb.collection('siblingcol').insertOne({ _id: 'sib1', from: 'sibling' });
+      await siblingDb.collection('siblingcol').insertOne({
+        _id: 'sib1',
+        from: 'sibling'
+      });
 
       // Verify it's not in original
       const origDoc = await db.collection('siblingcol').findOne({ _id: 'sib1' });
@@ -1263,7 +1684,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('Date Handling', function() {
     it('should store and retrieve Date objects', async function() {
       const now = new Date();
-      await db.collection('test').insertOne({ _id: 'date1', createdAt: now });
+      await db.collection('test').insertOne({
+        _id: 'date1',
+        createdAt: now
+      });
 
       const doc = await db.collection('test').findOne({ _id: 'date1' });
       expect(doc.createdAt).to.be.instanceOf(Date);
@@ -1276,8 +1700,14 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const cutoff = new Date('2022-01-01');
 
       await db.collection('test').insertMany([
-        { _id: 'old', createdAt: old },
-        { _id: 'recent', createdAt: recent }
+        {
+          _id: 'old',
+          createdAt: old
+        },
+        {
+          _id: 'recent',
+          createdAt: recent
+        }
       ]);
 
       const docs = await db.collection('test').find({ createdAt: { $gte: cutoff } }).toArray();
@@ -1293,8 +1723,14 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   describe('Null and Undefined Handling', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
-        { _id: 'null1', value: null },
-        { _id: 'null2', value: 'present' },
+        {
+          _id: 'null1',
+          value: null
+        },
+        {
+          _id: 'null2',
+          value: 'present'
+        },
         { _id: 'null3' } // value field missing
       ]);
     });
@@ -1323,11 +1759,11 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     it('should handle arrays with mixed types', async function() {
       await db.collection('test').insertOne({
         _id: 'mixed1',
-        items: [1, 'two', { three: 3 }, [4, 5], null]
+        items: [ 1, 'two', { three: 3 }, [ 4, 5 ], null ]
       });
 
       const doc = await db.collection('test').findOne({ _id: 'mixed1' });
-      expect(doc.items).to.deep.equal([1, 'two', { three: 3 }, [4, 5], null]);
+      expect(doc.items).to.deep.equal([ 1, 'two', { three: 3 }, [ 4, 5 ], null ]);
     });
   });
 
@@ -1351,7 +1787,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
     it('should handle large string values', async function() {
       const largeString = 'x'.repeat(100000);
-      await db.collection('test').insertOne({ _id: 'largestr', content: largeString });
+      await db.collection('test').insertOne({
+        _id: 'largestr',
+        content: largeString
+      });
 
       const doc = await db.collection('test').findOne({ _id: 'largestr' });
       expect(doc.content).to.equal(largeString);
@@ -1368,7 +1807,7 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         _id: 'multi1',
         count: 5,
         name: 'original',
-        tags: ['a'],
+        tags: [ 'a' ],
         toRemove: 'value'
       });
 
@@ -1385,7 +1824,7 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const doc = await db.collection('test').findOne({ _id: 'multi1' });
       expect(doc.name).to.equal('updated');
       expect(doc.count).to.equal(8);
-      expect(doc.tags).to.deep.equal(['a', 'b']);
+      expect(doc.tags).to.deep.equal([ 'a', 'b' ]);
       expect(doc.toRemove).to.be.undefined;
     });
   });
@@ -1400,7 +1839,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const promises = [];
       for (let i = 0; i < 10; i++) {
         promises.push(
-          db.collection('test').insertOne({ _id: 'atomic1', value: i })
+          db.collection('test').insertOne({
+            _id: 'atomic1',
+            value: i
+          })
             .then(() => 'success')
             .catch(() => 'duplicate')
         );
@@ -1433,8 +1875,11 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         float: 3.14159,
         boolean: true,
         date: new Date('2024-01-15T12:00:00Z'),
-        array: [1, 2, 3],
-        nested: { a: 1, b: { c: 2 } },
+        array: [ 1, 2, 3 ],
+        nested: {
+          a: 1,
+          b: { c: 2 }
+        },
         nullValue: null
       };
 

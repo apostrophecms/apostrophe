@@ -14,7 +14,7 @@ const SAFE_IDENTIFIER_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 // Validate and sanitize a table/collection name
 function validateTableName(name) {
   if (typeof name !== 'string' || name.length === 0 || name.length > 63) {
-    throw new Error(`Invalid table name: must be a non-empty string up to 63 characters`);
+    throw new Error('Invalid table name: must be a non-empty string up to 63 characters');
   }
   // Replace hyphens with underscores (common in MongoDB collection names)
   const sanitized = name.replace(/-/g, '_');
@@ -23,7 +23,6 @@ function validateTableName(name) {
   }
   return sanitized;
 }
-
 
 // Escape a PostgreSQL identifier (table name, index name) for use in double quotes
 // PostgreSQL: double any internal double quotes
@@ -34,7 +33,7 @@ function escapeIdentifier(name) {
 // Escape a string for use in single quotes (JSON path segments)
 // PostgreSQL: double any internal single quotes
 function escapeString(str) {
-  return str.replace(/'/g, "''");
+  return str.replace(/'/g, '\'\'');
 }
 
 // Validate and format an integer (for LIMIT, OFFSET)
@@ -135,7 +134,7 @@ function buildJsonTextPath(field, prefix = 'data') {
 function buildWhereClause(query, params, prefix = 'data') {
   const conditions = [];
 
-  for (const [key, value] of Object.entries(query || {})) {
+  for (const [ key, value ] of Object.entries(query || {})) {
     if (key === '$and') {
       if (!Array.isArray(value)) {
         throw new Error('$and must be an array');
@@ -170,11 +169,11 @@ function buildWhereClause(query, params, prefix = 'data') {
         // Build a text search across the common text-indexed fields
         // ApostropheCMS indexes: highSearchText, lowSearchText, title, searchBoost
         const textExpr = [
-          "coalesce(data->>'highSearchText', '')",
-          "coalesce(data->>'lowSearchText', '')",
-          "coalesce(data->>'title', '')",
-          "coalesce(data->>'searchBoost', '')"
-        ].join(" || ' ' || ");
+          'coalesce(data->>\'highSearchText\', \'\')',
+          'coalesce(data->>\'lowSearchText\', \'\')',
+          'coalesce(data->>\'title\', \'\')',
+          'coalesce(data->>\'searchBoost\', \'\')'
+        ].join(' || \' \' || ');
         // MongoDB $text uses OR semantics: any word matches
         params.push(words.map(w => w.replace(/[&|!():*<>'"]/g, ' ')).join(' | '));
         conditions.push(`to_tsvector('english', ${textExpr}) @@ to_tsquery('english', $${params.length})`);
@@ -220,10 +219,16 @@ function buildWhereClause(query, params, prefix = 'data') {
       // Serialize through serializeValue to handle Date→{$date:...} conversion
       const serialized = serializeValue(value);
       params.push(JSON.stringify(serialized));
-      // Handle both direct equality AND array containment (MongoDB behavior)
-      // If the field is an array and contains the value, OR if it equals the value directly
-      params.push(JSON.stringify([serialized]));
-      conditions.push(`(${jsonPath} = $${params.length - 1}::jsonb OR (jsonb_typeof(${jsonPath}) = 'array' AND ${jsonPath} @> $${params.length}::jsonb))`);
+      // Handle both direct equality AND array containment
+      // (MongoDB behavior)
+      params.push(JSON.stringify([ serialized ]));
+      const eqRef = `$${params.length - 1}::jsonb`;
+      const arrRef = `$${params.length}::jsonb`;
+      conditions.push(
+        `(${jsonPath} = ${eqRef}` +
+        ` OR (jsonb_typeof(${jsonPath}) = 'array'` +
+        ` AND ${jsonPath} @> ${arrRef}))`
+      );
     }
   }
 
@@ -245,11 +250,10 @@ function buildWhereClause(query, params, prefix = 'data') {
 function buildOperatorClause(field, operators, params, isIdField = false) {
   const conditions = [];
 
-
   const jsonPath = isIdField ? '_id' : buildJsonPath(field);
   const jsonTextPath = isIdField ? '_id' : buildJsonTextPath(field);
 
-  for (const [op, opValue] of Object.entries(operators)) {
+  for (const [ op, opValue ] of Object.entries(operators)) {
     switch (op) {
       case '$eq':
         if (isIdField) {
@@ -347,8 +351,16 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
             const paramRef = `$${params.length}`;
             // Match scalar values directly
             parts.push(`${jsonPath} IN (SELECT jsonb_array_elements(${paramRef}::jsonb))`);
-            // Also match if the field is an array that contains any of the values (MongoDB behavior)
-            parts.push(`(jsonb_typeof(${jsonPath}) = 'array' AND EXISTS(SELECT 1 FROM jsonb_array_elements(${jsonPath}) elem WHERE elem IN (SELECT jsonb_array_elements(${paramRef}::jsonb))))`);
+            // Also match if the field is an array that
+            // contains any of the values (MongoDB behavior)
+            parts.push(
+              `(jsonb_typeof(${jsonPath}) = 'array'` +
+              ' AND EXISTS(SELECT 1' +
+              ` FROM jsonb_array_elements(${jsonPath}) elem` +
+              ' WHERE elem IN' +
+              ' (SELECT jsonb_array_elements(' +
+              `${paramRef}::jsonb))))`
+            );
           }
           if (hasNull) {
             parts.push(`${jsonPath} IS NULL`);
@@ -397,25 +409,35 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         }
         break;
 
-      case '$not':
+      case '$not': {
         if (typeof opValue !== 'object' || opValue === null) {
           throw new Error('$not requires an object');
         }
-        const negatedClause = buildOperatorClause(field, opValue, params, isIdField);
+        const negatedClause = buildOperatorClause(
+          field, opValue, params, isIdField
+        );
         conditions.push(`NOT (${negatedClause})`);
         break;
+      }
 
-      case '$regex':
-        const pattern = opValue instanceof RegExp ? opValue.source : String(opValue);
+      case '$regex': {
+        const pattern = opValue instanceof RegExp
+          ? opValue.source
+          : String(opValue);
         params.push(pattern);
         const regexOptions = operators.$options || '';
         const caseInsensitive = regexOptions.includes('i');
         if (isIdField) {
-          conditions.push(`_id ~${caseInsensitive ? '*' : ''} $${params.length}`);
+          conditions.push(
+            `_id ~${caseInsensitive ? '*' : ''} $${params.length}`
+          );
         } else {
-          conditions.push(`${jsonTextPath} ~${caseInsensitive ? '*' : ''} $${params.length}`);
+          conditions.push(
+            `${jsonTextPath} ~${caseInsensitive ? '*' : ''} $${params.length}`
+          );
         }
         break;
+      }
 
       case '$options':
         // Handled with $regex, skip
@@ -442,7 +464,7 @@ function buildOrderBy(sort) {
   const clauses = [];
 
   if (sort && Object.keys(sort).length > 0) {
-    for (const [field, direction] of Object.entries(sort)) {
+    for (const [ field, direction ] of Object.entries(sort)) {
       // Skip $meta sort fields (e.g. textScore: { $meta: 'textScore' })
       if (direction && typeof direction === 'object' && direction.$meta) {
         continue;
@@ -469,10 +491,10 @@ function buildOrderBy(sort) {
 function applyUpdate(doc, update) {
   const result = { ...doc };
 
-  for (const [op, fields] of Object.entries(update)) {
+  for (const [ op, fields ] of Object.entries(update)) {
     switch (op) {
       case '$set':
-        for (const [field, value] of Object.entries(fields)) {
+        for (const [ field, value ] of Object.entries(fields)) {
           setNestedField(result, field, value);
         }
         break;
@@ -482,26 +504,26 @@ function applyUpdate(doc, update) {
         }
         break;
       case '$inc':
-        for (const [field, value] of Object.entries(fields)) {
+        for (const [ field, value ] of Object.entries(fields)) {
           const current = getNestedField(result, field) || 0;
           setNestedField(result, field, current + value);
         }
         break;
       case '$push':
-        for (const [field, value] of Object.entries(fields)) {
+        for (const [ field, value ] of Object.entries(fields)) {
           const arr = getNestedField(result, field) || [];
           arr.push(value);
           setNestedField(result, field, arr);
         }
         break;
       case '$pull':
-        for (const [field, value] of Object.entries(fields)) {
+        for (const [ field, value ] of Object.entries(fields)) {
           const arr = getNestedField(result, field) || [];
           setNestedField(result, field, arr.filter(item => !deepEqual(item, value)));
         }
         break;
       case '$addToSet':
-        for (const [field, value] of Object.entries(fields)) {
+        for (const [ field, value ] of Object.entries(fields)) {
           const arr = getNestedField(result, field) || [];
           if (!arr.some(item => deepEqual(item, value))) {
             arr.push(value);
@@ -510,7 +532,7 @@ function applyUpdate(doc, update) {
         }
         break;
       case '$currentDate':
-        for (const [field, value] of Object.entries(fields)) {
+        for (const [ field, value ] of Object.entries(fields)) {
           if (value === true || (value && value.$type === 'date')) {
             setNestedField(result, field, new Date());
           }
@@ -529,7 +551,9 @@ function getNestedField(obj, path) {
   const parts = path.split('.');
   let current = obj;
   for (const part of parts) {
-    if (current == null) return undefined;
+    if (current == null) {
+      return undefined;
+    }
     current = current[part];
   }
   return current;
@@ -551,25 +575,41 @@ function unsetNestedField(obj, path) {
   const parts = path.split('.');
   let current = obj;
   for (let i = 0; i < parts.length - 1; i++) {
-    if (current[parts[i]] == null) return;
+    if (current[parts[i]] == null) {
+      return;
+    }
     current = current[parts[i]];
   }
   delete current[parts[parts.length - 1]];
 }
 
 function deepEqual(a, b) {
-  if (a === b) return true;
-  if (a == null || b == null) return false;
-  if (typeof a !== typeof b) return false;
-  if (typeof a !== 'object') return false;
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (a === b) {
+    return true;
+  }
+  if (a == null || b == null) {
+    return false;
+  }
+  if (typeof a !== typeof b) {
+    return false;
+  }
+  if (typeof a !== 'object') {
+    return false;
+  }
+  if (Array.isArray(a) !== Array.isArray(b)) {
+    return false;
+  }
 
   const keysA = Object.keys(a);
   const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
 
   for (const key of keysA) {
-    if (!deepEqual(a[key], b[key])) return false;
+    if (!deepEqual(a[key], b[key])) {
+      return false;
+    }
   }
   return true;
 }
@@ -584,13 +624,21 @@ function deepEqual(a, b) {
 // JSON.stringify calls toJSON() on Dates before any replacer sees them,
 // and omits properties with undefined values.
 function serializeValue(obj) {
-  if (obj === undefined) return null;
-  if (obj === null) return null;
-  if (obj instanceof Date) return { $date: obj.toISOString() };
-  if (Array.isArray(obj)) return obj.map(serializeValue);
+  if (obj === undefined) {
+    return null;
+  }
+  if (obj === null) {
+    return null;
+  }
+  if (obj instanceof Date) {
+    return { $date: obj.toISOString() };
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(serializeValue);
+  }
   if (typeof obj === 'object') {
     const result = {};
-    for (const [key, value] of Object.entries(obj)) {
+    for (const [ key, value ] of Object.entries(obj)) {
       result[key] = serializeValue(value);
     }
     return result;
@@ -608,11 +656,17 @@ function deserializeDocument(data, id) {
 
   // Recursively convert $date wrappers back to Date objects
   function convertDates(obj) {
-    if (obj === null || typeof obj !== 'object') return obj;
-    if (obj.$date) return new Date(obj.$date);
-    if (Array.isArray(obj)) return obj.map(convertDates);
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+    if (obj.$date) {
+      return new Date(obj.$date);
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(convertDates);
+    }
     const result = {};
-    for (const [key, value] of Object.entries(obj)) {
+    for (const [ key, value ] of Object.entries(obj)) {
       result[key] = convertDates(value);
     }
     return result;
@@ -634,16 +688,16 @@ function applyProjection(doc, projection) {
   // Filter out $meta projections (e.g. textScore: { $meta: 'textScore' })
   // These are MongoDB-specific and don't apply to our storage model
   const fields = Object.entries(projection).filter(
-    ([k, v]) => !(v && typeof v === 'object' && v.$meta)
+    ([ k, v ]) => !(v && typeof v === 'object' && v.$meta)
   );
   if (fields.length === 0) {
     return doc;
   }
-  const isInclusion = fields.some(([k, v]) => v && k !== '_id');
+  const isInclusion = fields.some(([ k, v ]) => v && k !== '_id');
 
   if (isInclusion) {
     const result = {};
-    for (const [field, include] of fields) {
+    for (const [ field, include ] of fields) {
       if (include) {
         const value = getNestedField(doc, field);
         if (value !== undefined) {
@@ -658,7 +712,7 @@ function applyProjection(doc, projection) {
     return result;
   } else {
     const result = JSON.parse(JSON.stringify(doc));
-    for (const [field, include] of fields) {
+    for (const [ field, include ] of fields) {
       if (!include) {
         unsetNestedField(result, field);
       }
@@ -818,9 +872,15 @@ class PostgresCursor {
       async next() {
         const doc = await this.cursor._next();
         if (doc === null) {
-          return { done: true, value: undefined };
+          return {
+            done: true,
+            value: undefined
+          };
         }
-        return { done: false, value: doc };
+        return {
+          done: false,
+          value: doc
+        };
       }
     };
   }
@@ -851,7 +911,7 @@ class PostgresAggregationCursor {
     let docs = await this._collection.find({}).toArray();
 
     for (const stage of this._pipeline) {
-      const [op, value] = Object.entries(stage)[0];
+      const [ op, value ] = Object.entries(stage)[0];
 
       switch (op) {
         case '$match':
@@ -897,17 +957,22 @@ class PostgresAggregationCursor {
 
       const keyStr = JSON.stringify(groupKey);
       if (!groups.has(keyStr)) {
-        groups.set(keyStr, { _id: groupKey, docs: [] });
+        groups.set(keyStr, {
+          _id: groupKey,
+          docs: []
+        });
       }
       groups.get(keyStr).docs.push(doc);
     }
 
     const results = [];
-    for (const [, group] of groups) {
+    for (const [ , group ] of groups) {
       const result = { _id: group._id };
 
-      for (const [field, expr] of Object.entries(groupSpec)) {
-        if (field === '_id') continue;
+      for (const [ field, expr ] of Object.entries(groupSpec)) {
+        if (field === '_id') {
+          continue;
+        }
 
         if (expr.$sum) {
           const sumField = expr.$sum;
@@ -920,14 +985,23 @@ class PostgresAggregationCursor {
           }
         } else if (expr.$avg) {
           const avgField = expr.$avg.substring(1);
-          const values = group.docs.map(doc => getNestedField(doc, avgField)).filter(v => v != null);
-          result[field] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
+          const values = group.docs
+            .map(doc => getNestedField(doc, avgField))
+            .filter(v => v != null);
+          result[field] = values.length > 0
+            ? values.reduce((a, b) => a + b, 0) / values.length
+            : null;
         } else if (expr.$first) {
           const firstField = expr.$first.substring(1);
-          result[field] = group.docs.length > 0 ? getNestedField(group.docs[0], firstField) : null;
+          result[field] = group.docs.length > 0
+            ? getNestedField(group.docs[0], firstField)
+            : null;
         } else if (expr.$last) {
           const lastField = expr.$last.substring(1);
-          result[field] = group.docs.length > 0 ? getNestedField(group.docs[group.docs.length - 1], lastField) : null;
+          const last = group.docs[group.docs.length - 1];
+          result[field] = group.docs.length > 0
+            ? getNestedField(last, lastField)
+            : null;
         }
       }
 
@@ -959,12 +1033,16 @@ class PostgresAggregationCursor {
 
   _processSort(docs, sortSpec) {
     return docs.slice().sort((a, b) => {
-      for (const [field, direction] of Object.entries(sortSpec)) {
+      for (const [ field, direction ] of Object.entries(sortSpec)) {
         const aVal = getNestedField(a, field);
         const bVal = getNestedField(b, field);
 
-        if (aVal < bVal) return direction === -1 ? 1 : -1;
-        if (aVal > bVal) return direction === -1 ? -1 : 1;
+        if (aVal < bVal) {
+          return direction === -1 ? 1 : -1;
+        }
+        if (aVal > bVal) {
+          return direction === -1 ? -1 : 1;
+        }
       }
       return 0;
     });
@@ -973,35 +1051,63 @@ class PostgresAggregationCursor {
 
 // In-memory query matching for aggregation $match
 function matchesQuery(doc, query) {
-  for (const [key, value] of Object.entries(query)) {
+  for (const [ key, value ] of Object.entries(query)) {
     if (key === '$and') {
-      if (!value.every(subQuery => matchesQuery(doc, subQuery))) return false;
+      if (!value.every(subQuery => matchesQuery(doc, subQuery))) {
+        return false;
+      }
     } else if (key === '$or') {
-      if (!value.some(subQuery => matchesQuery(doc, subQuery))) return false;
+      if (!value.some(subQuery => matchesQuery(doc, subQuery))) {
+        return false;
+      }
     } else {
       const docValue = key === '_id' ? doc._id : getNestedField(doc, key);
 
       if (typeof value === 'object' && value !== null && !(value instanceof Date) && !(value instanceof RegExp)) {
-        for (const [op, opValue] of Object.entries(value)) {
+        for (const [ op, opValue ] of Object.entries(value)) {
           switch (op) {
-            case '$eq': if (!deepEqual(docValue, opValue)) return false; break;
-            case '$ne': if (deepEqual(docValue, opValue)) return false; break;
-            case '$gt': if (!(docValue > opValue)) return false; break;
-            case '$gte': if (!(docValue >= opValue)) return false; break;
-            case '$lt': if (!(docValue < opValue)) return false; break;
-            case '$lte': if (!(docValue <= opValue)) return false; break;
-            case '$in': if (!opValue.includes(docValue)) return false; break;
-            case '$nin': if (opValue.includes(docValue)) return false; break;
-            case '$exists': if ((docValue !== undefined) !== opValue) return false; break;
+            case '$eq': if (!deepEqual(docValue, opValue)) {
+              return false;
+            } break;
+            case '$ne': if (deepEqual(docValue, opValue)) {
+              return false;
+            } break;
+            case '$gt': if (!(docValue > opValue)) {
+              return false;
+            } break;
+            case '$gte': if (!(docValue >= opValue)) {
+              return false;
+            } break;
+            case '$lt': if (!(docValue < opValue)) {
+              return false;
+            } break;
+            case '$lte': if (!(docValue <= opValue)) {
+              return false;
+            } break;
+            case '$in': if (!opValue.includes(docValue)) {
+              return false;
+            } break;
+            case '$nin': if (opValue.includes(docValue)) {
+              return false;
+            } break;
+            case '$exists': if ((docValue !== undefined) !== opValue) {
+              return false;
+            } break;
           }
         }
       } else if (Array.isArray(docValue)) {
-        if (!docValue.some(item => deepEqual(item, value))) return false;
+        if (!docValue.some(item => deepEqual(item, value))) {
+          return false;
+        }
       } else if (value === null) {
         // MongoDB: { field: null } matches null, undefined, and missing
-        if (docValue !== null && docValue !== undefined) return false;
+        if (docValue !== null && docValue !== undefined) {
+          return false;
+        }
       } else {
-        if (!deepEqual(docValue, value)) return false;
+        if (!deepEqual(docValue, value)) {
+          return false;
+        }
       }
     }
   }
@@ -1016,7 +1122,8 @@ class PostgresCollection {
   constructor(db, name) {
     this._db = db;
     this._pool = db._pool;
-    // Prefix table name with database name to support multiple "databases" in one PostgreSQL db
+    // Prefix table name with database name to support
+    // multiple "databases" in one PostgreSQL db
     const dbPrefix = validateTableName(db._name);
     const collName = validateTableName(name);
     this._tableName = `${dbPrefix}_${collName}`;
@@ -1034,7 +1141,9 @@ class PostgresCollection {
   }
 
   async _ensureTable() {
-    if (this._initialized) return;
+    if (this._initialized) {
+      return;
+    }
 
     const tableName = escapeIdentifier(this._tableName);
     await this._pool.query(`
@@ -1066,9 +1175,18 @@ class PostgresCollection {
     try {
       await this._pool.query(
         `INSERT INTO "${tableName}" (_id, data) VALUES ($1, $2)`,
-        [id, serializeDocument(docWithoutId)]
+        [ id, serializeDocument(docWithoutId) ]
       );
-      return { acknowledged: true, insertedId: id, insertedCount: 1, ops: [{ ...doc, _id: id }], result: { ok: 1 } };
+      return {
+        acknowledged: true,
+        insertedId: id,
+        insertedCount: 1,
+        ops: [ {
+          ...doc,
+          _id: id
+        } ],
+        result: { ok: 1 }
+      };
     } catch (e) {
       if (e.code === '23505') {
         throw makeDuplicateKeyError(e, `Duplicate key error: _id "${id}" already exists`);
@@ -1089,7 +1207,12 @@ class PostgresCollection {
       insertedCount++;
     }
 
-    return { acknowledged: true, insertedCount, insertedIds, result: { ok: 1 } };
+    return {
+      acknowledged: true,
+      insertedCount,
+      insertedIds,
+      result: { ok: 1 }
+    };
   }
 
   async findOne(query, options = {}) {
@@ -1101,7 +1224,9 @@ class PostgresCollection {
     const sql = `SELECT _id, data FROM "${tableName}" WHERE ${whereClause} LIMIT 1`;
 
     const result = await this._pool.query(sql, params);
-    if (result.rows.length === 0) return null;
+    if (result.rows.length === 0) {
+      return null;
+    }
 
     const doc = deserializeDocument(result.rows[0].data, result.rows[0]._id);
     return options.projection ? applyProjection(doc, options.projection) : doc;
@@ -1150,20 +1275,32 @@ class PostgresCollection {
           modifiedCount: 0,
           upsertedId: insertResult.insertedId,
           upsertedCount: 1,
-          result: { nModified: 0, n: 1 }
+          result: {
+            nModified: 0,
+            n: 1
+          }
         };
       }
-      return { acknowledged: true, matchedCount: 0, modifiedCount: 0, result: { nModified: 0, n: 0 } };
+      return {
+        acknowledged: true,
+        matchedCount: 0,
+        modifiedCount: 0,
+        result: {
+          nModified: 0,
+          n: 0
+        }
+      };
     }
 
-    const existing = deserializeDocument(selectResult.rows[0].data, selectResult.rows[0]._id);
+    const row = selectResult.rows[0];
+    const existing = deserializeDocument(row.data, row._id);
     const updated = applyUpdate(existing, update);
     const { _id, ...dataWithoutId } = updated;
 
     try {
       await this._pool.query(
         `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
-        [serializeDocument(dataWithoutId), selectResult.rows[0]._id]
+        [ serializeDocument(dataWithoutId), selectResult.rows[0]._id ]
       );
     } catch (e) {
       if (e.code === '23505') {
@@ -1172,7 +1309,15 @@ class PostgresCollection {
       throw e;
     }
 
-    return { acknowledged: true, matchedCount: 1, modifiedCount: 1, result: { nModified: 1, n: 1 } };
+    return {
+      acknowledged: true,
+      matchedCount: 1,
+      modifiedCount: 1,
+      result: {
+        nModified: 1,
+        n: 1
+      }
+    };
   }
 
   // Atomic update using SQL expressions for $inc and $set (no read-modify-write race)
@@ -1186,7 +1331,7 @@ class PostgresCollection {
 
     // Handle $set: set fields to specific values
     if (update.$set) {
-      for (const [field, value] of Object.entries(update.$set)) {
+      for (const [ field, value ] of Object.entries(update.$set)) {
         const pathArray = field.split('.');
         const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
         const serialized = serializeValue(value);
@@ -1197,7 +1342,7 @@ class PostgresCollection {
 
     // Handle $inc: atomically increment numeric fields
     if (update.$inc) {
-      for (const [field, value] of Object.entries(update.$inc)) {
+      for (const [ field, value ] of Object.entries(update.$inc)) {
         const pathArray = field.split('.');
         const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
         // Build the JSON path for reading the current value
@@ -1215,7 +1360,15 @@ class PostgresCollection {
     try {
       const result = await this._pool.query(sql, params);
       const matched = result.rowCount > 0 ? 1 : 0;
-      return { acknowledged: true, matchedCount: matched, modifiedCount: matched, result: { nModified: matched, n: matched } };
+      return {
+        acknowledged: true,
+        matchedCount: matched,
+        modifiedCount: matched,
+        result: {
+          nModified: matched,
+          n: matched
+        }
+      };
     } catch (e) {
       if (e.code === '23505') {
         throw makeDuplicateKeyError(e, 'Duplicate key error in updateOne');
@@ -1235,7 +1388,15 @@ class PostgresCollection {
     const selectResult = await this._pool.query(selectSql, params);
 
     if (selectResult.rows.length === 0) {
-      return { acknowledged: true, matchedCount: 0, modifiedCount: 0, result: { nModified: 0, n: 0 } };
+      return {
+        acknowledged: true,
+        matchedCount: 0,
+        modifiedCount: 0,
+        result: {
+          nModified: 0,
+          n: 0
+        }
+      };
     }
 
     let modifiedCount = 0;
@@ -1246,12 +1407,20 @@ class PostgresCollection {
 
       await this._pool.query(
         `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
-        [serializeDocument(dataWithoutId), row._id]
+        [ serializeDocument(dataWithoutId), row._id ]
       );
       modifiedCount++;
     }
 
-    return { acknowledged: true, matchedCount: selectResult.rows.length, modifiedCount, result: { nModified: modifiedCount, n: selectResult.rows.length } };
+    return {
+      acknowledged: true,
+      matchedCount: selectResult.rows.length,
+      modifiedCount,
+      result: {
+        nModified: modifiedCount,
+        n: selectResult.rows.length
+      }
+    };
   }
 
   async replaceOne(query, replacement, options = {}) {
@@ -1275,14 +1444,18 @@ class PostgresCollection {
           upsertedCount: 1
         };
       }
-      return { acknowledged: true, matchedCount: 0, modifiedCount: 0 };
+      return {
+        acknowledged: true,
+        matchedCount: 0,
+        modifiedCount: 0
+      };
     }
 
     const { _id, ...dataWithoutId } = replacement;
     try {
       await this._pool.query(
         `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
-        [serializeDocument(dataWithoutId), selectResult.rows[0]._id]
+        [ serializeDocument(dataWithoutId), selectResult.rows[0]._id ]
       );
     } catch (e) {
       if (e.code === '23505') {
@@ -1291,7 +1464,11 @@ class PostgresCollection {
       throw e;
     }
 
-    return { acknowledged: true, matchedCount: 1, modifiedCount: 1 };
+    return {
+      acknowledged: true,
+      matchedCount: 1,
+      modifiedCount: 1
+    };
   }
 
   async deleteOne(query) {
@@ -1308,7 +1485,11 @@ class PostgresCollection {
       params
     );
 
-    return { acknowledged: true, deletedCount: result.rowCount, result: { ok: 1 } };
+    return {
+      acknowledged: true,
+      deletedCount: result.rowCount,
+      result: { ok: 1 }
+    };
   }
 
   async deleteMany(query) {
@@ -1323,7 +1504,11 @@ class PostgresCollection {
       params
     );
 
-    return { acknowledged: true, deletedCount: result.rowCount, result: { ok: 1 } };
+    return {
+      acknowledged: true,
+      deletedCount: result.rowCount,
+      result: { ok: 1 }
+    };
   }
 
   // Legacy MongoDB method aliases used by ApostropheCMS
@@ -1376,8 +1561,10 @@ class PostgresCollection {
 
     return result.rows
       .map(row => {
-        let v = row.value;
-        if (v === null || v === undefined) return null;
+        const v = row.value;
+        if (v === null || v === undefined) {
+          return null;
+        }
         // pg driver parses jsonb automatically, returning JS types.
         // For jsonb strings, we already get JS strings.
         // For jsonb numbers/booleans/objects, we get those types.
@@ -1480,13 +1667,14 @@ class PostgresCollection {
       return null;
     }
 
-    const existing = deserializeDocument(selectResult.rows[0].data, selectResult.rows[0]._id);
+    const row = selectResult.rows[0];
+    const existing = deserializeDocument(row.data, row._id);
     const updated = applyUpdate(existing, update);
     const { _id, ...dataWithoutId } = updated;
 
     await this._pool.query(
       `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
-      [serializeDocument(dataWithoutId), selectResult.rows[0]._id]
+      [ serializeDocument(dataWithoutId), selectResult.rows[0]._id ]
     );
 
     return options.returnDocument === 'after' ? updated : existing;
@@ -1495,19 +1683,22 @@ class PostgresCollection {
   /**
    * Create an index on one or more fields.
    *
-   * @param {Object} keys - Fields to index, e.g. { fieldName: 1 } or { fieldName: -1 }
+   * @param {Object} keys - Fields to index,
+   *   e.g. { fieldName: 1 } or { fieldName: -1 }
    * @param {Object} options - Index options
    * @param {string} [options.name] - Custom index name
-   * @param {boolean} [options.unique] - Create a unique index
-   * @param {boolean} [options.sparse] - Create a sparse/partial index (only index docs where field exists)
-   * @param {string} [options.type] - Field type for range query optimization:
-   *   - 'number': Creates expression index on numeric cast, enables efficient $gt/$lt on numbers
-   *   - 'date': Creates expression index on date extraction, enables efficient $gt/$lt on dates
-   *   - undefined (default): Text index, efficient for $eq, $in, $regex, and text equality
+   * @param {boolean} [options.unique] - Unique index
+   * @param {boolean} [options.sparse] - Sparse/partial index
+   *   (only index docs where field exists)
+   * @param {string} [options.type] - Field type for range
+   *   query optimization:
+   *   - 'number': numeric cast for $gt/$lt on numbers
+   *   - 'date': date extraction for $gt/$lt on dates
+   *   - undefined: text (for $eq, $in, $regex)
    *
-   * IMPORTANT: The `type` option is required for PostgreSQL to efficiently use indexes
-   * on range queries ($gt, $gte, $lt, $lte). Without it, the index expression won't match
-   * the query expression. MongoDB ignores this option (it handles types automatically).
+   * IMPORTANT: The `type` option is required for
+   * PostgreSQL to efficiently use indexes on range
+   * queries ($gt, $gte, $lt, $lte). MongoDB ignores it.
    *
    * @example
    * // Text/equality index (default) - efficient for $eq, $in, $regex
@@ -1516,11 +1707,16 @@ class PostgresCollection {
    * // Numeric index - efficient for $gt, $lt on numbers
    * await collection.createIndex({ price: 1 }, { type: 'number' });
    *
-   * // Date index - efficient for $gt, $lt on dates
-   * await collection.createIndex({ createdAt: 1 }, { type: 'date' });
+   * // Date index - for $gt, $lt on dates
+   * await collection.createIndex(
+   *   { createdAt: 1 }, { type: 'date' }
+   * );
    *
    * // Unique sparse date index
-   * await collection.createIndex({ publishedAt: 1 }, { type: 'date', unique: true, sparse: true });
+   * await collection.createIndex(
+   *   { publishedAt: 1 },
+   *   { type: 'date', unique: true, sparse: true }
+   * );
    */
   async createIndex(keys, options = {}) {
     await this._ensureTable();
@@ -1528,8 +1724,10 @@ class PostgresCollection {
     const keyEntries = Object.entries(keys);
     const indexType = options.type; // 'number', 'date', or undefined (text)
 
-    // Helper to build JSON path expression for index (handles nested fields like 'user.name')
-    // The type parameter determines the expression for range query optimization
+    // Helper to build JSON path expression for index
+    // (handles nested fields like 'user.name').
+    // The type parameter determines the expression
+    // for range query optimization
     const buildIndexPath = (field, type) => {
       const parts = field.split('.');
 
@@ -1583,16 +1781,20 @@ class PostgresCollection {
     };
 
     // Generate a safe index name
-    const safeFieldNames = keyEntries.map(([k]) => k.replace(/[^a-zA-Z0-9]/g, '_')).join('_');
+    const safeFieldNames = keyEntries.map(([ k ]) => k.replace(/[^a-zA-Z0-9]/g, '_')).join('_');
     const indexName = options.name
       ? validateTableName(options.name)
       : `idx_${this._tableName}_${safeFieldNames}`.substring(0, 63);
 
     // Generate MongoDB-compatible index name for indexInformation() compatibility
-    const mongoName = options.name || keyEntries.map(([k, v]) => `${k}_${v}`).join('_');
+    const mongoName = options.name || keyEntries.map(([ k, v ]) => `${k}_${v}`).join('_');
 
     // Store index metadata
-    this._indexes.set(indexName, { keys, options, mongoName });
+    this._indexes.set(indexName, {
+      keys,
+      options,
+      mongoName
+    });
 
     const tableName = escapeIdentifier(this._tableName);
     const escapedIndexName = escapeIdentifier(indexName);
@@ -1600,7 +1802,7 @@ class PostgresCollection {
     // Build WHERE clause for sparse indexes (PostgreSQL partial index)
     let whereClause = '';
     if (options.sparse) {
-      const sparseConditions = keyEntries.map(([field]) => {
+      const sparseConditions = keyEntries.map(([ field ]) => {
         if (field === '_id') {
           return '_id IS NOT NULL';
         }
@@ -1610,12 +1812,12 @@ class PostgresCollection {
     }
 
     // Handle text indexes (full-text search, always uses text extraction)
-    const hasTextIndex = keyEntries.some(([, v]) => v === 'text');
+    const hasTextIndex = keyEntries.some(([ , v ]) => v === 'text');
     if (hasTextIndex) {
-      const textFields = keyEntries.filter(([, v]) => v === 'text').map(([k]) => k);
+      const textFields = keyEntries.filter(([ , v ]) => v === 'text').map(([ k ]) => k);
       const tsvectorExpr = textFields
         .map(f => `coalesce(${buildIndexPath(f, null)}, '')`)
-        .join(" || ' ' || ");
+        .join(' || \' \' || ');
 
       await this._pool.query(`
         CREATE INDEX IF NOT EXISTS "${escapedIndexName}"
@@ -1627,7 +1829,7 @@ class PostgresCollection {
 
     // Handle unique constraint
     if (options.unique) {
-      const indexExprs = keyEntries.map(([field]) => {
+      const indexExprs = keyEntries.map(([ field ]) => {
         return field === '_id' ? '_id' : `(${buildIndexPath(field, indexType)})`;
       });
 
@@ -1639,7 +1841,7 @@ class PostgresCollection {
     }
 
     // Handle regular indexes (single or compound)
-    const indexExprs = keyEntries.map(([field, direction]) => {
+    const indexExprs = keyEntries.map(([ field, direction ]) => {
       if (field === '_id') {
         return `_id ${direction === -1 ? 'DESC' : 'ASC'}`;
       }
@@ -1657,7 +1859,7 @@ class PostgresCollection {
   async dropIndex(indexName) {
     // Look up by MongoDB-compatible name first (in case caller uses that)
     let pgName = null;
-    for (const [pgKey, meta] of this._indexes.entries()) {
+    for (const [ pgKey, meta ] of this._indexes.entries()) {
       if (meta.mongoName === indexName) {
         pgName = pgKey;
         break;
@@ -1679,16 +1881,18 @@ class PostgresCollection {
       SELECT indexname, indexdef
       FROM pg_indexes
       WHERE tablename = $1
-    `, [this._tableName]);
+    `, [ this._tableName ]);
 
-    const indexes = [{
+    const indexes = [ {
       name: '_id_',
       key: { _id: 1 },
       unique: true
-    }];
+    } ];
 
     for (const row of result.rows) {
-      if (row.indexname === `${this._tableName}_pkey`) continue;
+      if (row.indexname === `${this._tableName}_pkey`) {
+        continue;
+      }
 
       const storedIndex = this._indexes.get(row.indexname);
       if (storedIndex) {
@@ -1713,7 +1917,7 @@ class PostgresCollection {
     const indexes = await this.indexes();
     const info = {};
     for (const idx of indexes) {
-      info[idx.name] = Object.entries(idx.key).map(([k, v]) => [k, v]);
+      info[idx.name] = Object.entries(idx.key).map(([ k, v ]) => [ k, v ]);
     }
     return info;
   }
@@ -1734,21 +1938,49 @@ class PostgresCollection {
       find(query) {
         return {
           updateOne(update) {
-            operations.push({ updateOne: { filter: query, update } });
+            operations.push({
+              updateOne: {
+                filter: query,
+                update
+              }
+            });
           },
           update(update) {
-            operations.push({ updateMany: { filter: query, update } });
+            operations.push({
+              updateMany: {
+                filter: query,
+                update
+              }
+            });
           },
           upsert() {
             return {
               updateOne(update) {
-                operations.push({ updateOne: { filter: query, update, upsert: true } });
+                operations.push({
+                  updateOne: {
+                    filter: query,
+                    update,
+                    upsert: true
+                  }
+                });
               },
               update(update) {
-                operations.push({ updateMany: { filter: query, update, upsert: true } });
+                operations.push({
+                  updateMany: {
+                    filter: query,
+                    update,
+                    upsert: true
+                  }
+                });
               },
               replaceOne(doc) {
-                operations.push({ replaceOne: { filter: query, replacement: doc, upsert: true } });
+                operations.push({
+                  replaceOne: {
+                    filter: query,
+                    replacement: doc,
+                    upsert: true
+                  }
+                });
               }
             };
           },
@@ -1828,8 +2060,8 @@ class PostgresDb {
     // and avoids "terminating connection" errors from DROP DATABASE WITH (FORCE).
     const prefix = escapeIdentifier(dbName) + '_';
     const result = await this._pool.query(
-      `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE $1`,
-      [prefix + '%']
+      'SELECT tablename FROM pg_tables WHERE schemaname = \'public\' AND tablename LIKE $1',
+      [ prefix + '%' ]
     );
     for (const row of result.rows) {
       await this._pool.query(`DROP TABLE IF EXISTS "${escapeIdentifier(row.tablename)}" CASCADE`);
@@ -1851,7 +2083,7 @@ class PostgresDb {
           SELECT tablename as name
           FROM pg_tables
           WHERE schemaname = 'public' AND tablename LIKE $1
-        `, [dbPrefix + '%']);
+        `, [ dbPrefix + '%' ]);
         // Strip the database prefix from returned names
         return result.rows.map(row => ({
           name: row.name.substring(dbPrefix.length)
@@ -1897,13 +2129,15 @@ class PostgresClient {
 module.exports = {
   name: 'postgres',
   // Native protocol schemes for this adapter
-  protocols: ['postgres', 'postgresql'],
+  protocols: [ 'postgres', 'postgresql' ],
 
   /**
    * Connect to PostgreSQL and return a client with MongoDB-compatible interface.
    *
-   * @param {string} uri - PostgreSQL connection URI (e.g., 'postgres://user:pass@localhost:5432/mydb')
-   * @param {Object} [options={}] - Additional pg Pool options (not duplicating URI params)
+   * @param {string} uri - PostgreSQL connection URI
+   *   (e.g., 'postgres://user:pass@localhost:5432/mydb')
+   * @param {Object} [options={}] - Additional pg Pool
+   *   options (not duplicating URI params)
    * @returns {Promise<PostgresClient>} Client with db(), close() methods
    */
   async connect(uri, options = {}) {
