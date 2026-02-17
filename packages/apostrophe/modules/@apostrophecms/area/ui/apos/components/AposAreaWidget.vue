@@ -146,41 +146,43 @@
           @operation="onOperation"
         />
       </div>
+      <div class="apos-area-widget-rendered-widget">
+        <!-- Still used for contextual editing components -->
+        <component
+          :is="widgetEditorComponent(widget.type)"
+          v-if="isContextual && !foreign"
+          :key="generation"
+          :class="adminContentDirectionClass"
+          :options="widgetOptions"
+          :type="widget.type"
+          :model-value="widget"
+          :meta="meta"
+          :doc-id="docId"
+          :focused="isFocused"
+          @update="$emit('update', $event)"
+          @suppress-widget-controls="isSuppressingWidgetControls = true"
+        />
+        <component
+          :is="widgetComponent(widget.type)"
+          v-else
+          :id="widget._id"
+          :key="`${generation}-preview`"
+          :class="adminContentDirectionClass"
+          :options="widgetOptions"
+          :type="widget.type"
+          :area-field-id="fieldId"
+          :following-values="followingValuesWithParent"
+          :model-value="widget"
+          :value="widget"
+          :meta="meta"
+          :foreign="foreign"
+          :doc-id="docId"
+          :rendering="rendering"
+          @edit="$emit('edit', i);"
+          @update="$emit('update', $event);"
+        />
 
-      <!-- Still used for contextual editing components -->
-      <component
-        :is="widgetEditorComponent(widget.type)"
-        v-if="isContextual && !foreign"
-        :key="generation"
-        :class="adminContentDirectionClass"
-        :options="widgetOptions"
-        :type="widget.type"
-        :model-value="widget"
-        :meta="meta"
-        :doc-id="docId"
-        :focused="isFocused"
-        @update="$emit('update', $event)"
-        @suppress-widget-controls="isSuppressingWidgetControls = true"
-      />
-      <component
-        :is="widgetComponent(widget.type)"
-        v-else
-        :id="widget._id"
-        :key="`${generation}-preview`"
-        :class="adminContentDirectionClass"
-        :options="widgetOptions"
-        :type="widget.type"
-        :area-field-id="fieldId"
-        :following-values="followingValuesWithParent"
-        :model-value="widget"
-        :value="widget"
-        :meta="meta"
-        :foreign="foreign"
-        :doc-id="docId"
-        :rendering="rendering"
-        @edit="$emit('edit', i);"
-        @update="$emit('update', $event);"
-      />
+      </div>
       <div
         v-if="
           !controlsDisabled &&
@@ -991,6 +993,11 @@ export default {
   &.apos-is-focused::before {
     opacity: 0.15;
   }
+}
+
+.apos-area-widget-rendered-widget {
+  z-index: $z-index-base;
+  position: relative;
 }
 
 .apos-area-widget-controls {

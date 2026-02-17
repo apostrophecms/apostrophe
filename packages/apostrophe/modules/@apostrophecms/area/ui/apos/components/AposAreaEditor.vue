@@ -62,7 +62,11 @@
         :max-reached="maxReached"
         :rendering="rendering(widget)"
         :style="{
-          'z-index': focusedWidget === widget._id ? '9999' : next.length - i
+          'z-index': focusedWidget === widget._id
+            ? next.length + 1
+            : focusedWidget
+              ? next.length - i
+              : null
         }"
         @up="up"
         @down="down"

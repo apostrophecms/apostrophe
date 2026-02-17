@@ -48,7 +48,8 @@
             label,
             icon,
             iconOnly: true,
-            type: 'outline'
+            type: 'outline',
+            modifiers: ['small']
           }"
           :disabled="!checkedCount"
           :menu="operations"

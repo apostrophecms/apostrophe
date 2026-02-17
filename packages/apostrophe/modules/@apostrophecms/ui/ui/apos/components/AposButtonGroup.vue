@@ -48,7 +48,7 @@ export default {
 <style lang="scss" scoped>
   .apos-button-group {
     background-color: var(--a-background-primary);
-    border-radius: var(--a-border-radius);
+    border-radius: var(--a-border-radius-large);
     display: inline-flex;
   }
 
