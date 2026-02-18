@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/cli",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "Commandline generator and configurator for Apostrophe CMS",
   "main": "bin/apostrophe",
   "scripts": {
