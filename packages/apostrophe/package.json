@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "4.27.0-alpha.2",
+  "version": "4.27.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -120,7 +120,7 @@
     "regexp-quote": "0.0.0",
     "resolve": "^1.19.0",
     "resolve-from": "^5.0.0",
-    "sanitize-html": "^2.12.1",
+    "sanitize-html": "workspace:^",
     "sass": "^1.80.3",
     "sass-loader": "^16.0.0",
     "server-destroy": "^1.0.1",

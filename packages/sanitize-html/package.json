@@ -1,6 +1,6 @@
 {
   "name": "sanitize-html",
-  "version": "2.17.0",
+  "version": "2.17.1",
   "description": "Clean up user-submitted HTML, preserving allowlisted elements and allowlisted attributes on a per-element basis",
   "sideEffects": false,
   "main": "index.js",

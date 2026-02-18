@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.9.0 (2026-02-18)
+
+### Adds
+
+- Add RTL support for Astro applications
+
+### Fixes
+
+- Handle correctly HEAD page requests
+
 ## 1.9.0-alpha.1
 
 ### Adds
