@@ -97,7 +97,7 @@ export default {
       };
     },
     widgetPrimaryControls() {
-      const maxedFilter = [ 'nudgeUp', 'nudgeDown' ];
+      const removeForMaxedSingletonAreas = [ 'nudgeUp', 'nudgeDown' ];
       // Custom widget operations displayed in the primary controls
       return this.widgetPrimaryOperations
         .map(operation => {
@@ -111,7 +111,12 @@ export default {
           };
         })
         .filter(operation => {
-          if (maxedFilter.includes(operation.action)) {
+          if (
+            removeForMaxedSingletonAreas.includes(operation.action) &&
+            this.maxReached &&
+            this.first &&
+            this.last
+          ) {
             return !this.maxReached;
           }
           return true;
