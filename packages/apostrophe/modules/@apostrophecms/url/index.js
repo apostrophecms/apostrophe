@@ -236,26 +236,36 @@ module.exports = {
         }
       },
 
-      // Generate a list of all URLs reachable with the given req object.
-      // Used internally to implement static site generation and sitemaps. Usually called
-      // in a loop, once for each locale.
+      // Generate a list of all URLs reachable with the given
+      // req object. Used internally to implement static site
+      // generation and sitemaps. Usually called in a loop,
+      // once for each locale.
       //
-      // Returns a list of objects with `url`, `type`, `_id`, `aposDocId` and `i18nId` properties.
-      //  `type`, `_id` and `aposDocId` are only present if the URL is a representation
-      // of a particular document in ApostropheCMS, but `i18nId` should always be present
-      // and should be consistent across localized versions of the same URL. If the URL is
-      // the main view of a document (e.g. an ordinary page URL or piece URL) it will be
-      // equal to `aposDocId`.
+      // Returns a list of objects with `url`, `type`, `_id`,
+      // `aposDocId` and `i18nId` properties. `type`, `_id`
+      // and `aposDocId` are only present if the URL is a
+      // representation of a particular document in
+      // ApostropheCMS, but `i18nId` should always be present
+      // and should be consistent across localized versions
+      // of the same URL. If the URL is the main view of a
+      // document (e.g. an ordinary page URL or piece URL)
+      // it will be equal to `aposDocId`.
       //
-      // To accommodate requirements such as `changefreq` and `priority` for sitemaps,
-      // additional such properties may be returned, although as of this writing
-      // Google explicitly states they are not expected or honored.
+      // To accommodate requirements such as `changefreq`
+      // and `priority` for sitemaps, additional such
+      // properties may be returned, although as of this
+      // writing Google explicitly states they are not
+      // expected or honored.
       //
-      // This method emits the `@apostrophecms/url:getAllUrlMetadata` event, so that handlers in any module
-      // can add URLs to the results. The default implementation already calls `getAllUrlMetadata` on every
-      // doc type manager that has at least one doc in the database, so listening for the event is only
-      // for edge cases that can't be covered by extending `getAllUrlMetadata` or `getUrlMetadata` on
-      // such a manager.
+      // This method emits the
+      // `@apostrophecms/url:getAllUrlMetadata` event, so
+      // that handlers in any module can add URLs to the
+      // results. The default implementation already calls
+      // `getAllUrlMetadata` on every doc type manager that
+      // has at least one doc in the database, so listening
+      // for the event is only for edge cases that can't be
+      // covered by extending `getAllUrlMetadata` or
+      // `getUrlMetadata` on such a manager.
       //
       // Handlers should respect `excludeTypes`.
       async getAll(req, { excludeTypes = [] } = {}) {
@@ -263,14 +273,19 @@ module.exports = {
         const types = await self.apos.doc.db.distinct('type');
         for (const type of types) {
           if (!excludeTypes.includes(type)) {
-            results = [...results, ...await self.apos.doc.getManager(type).getAllUrlMetadata(req)];
+            results = [
+              ...results,
+              ...await self.apos.doc.getManager(type)
+                .getAllUrlMetadata(req)
+            ];
           }
         }
         await self.emit('getAllUrlMetadata', req, results, { excludeTypes });
         return results;
       },
 
-      // Build a static site in the directory specified by `dir`. 
+      // Build a static site in the directory specified
+      // by `dir`.
       // This is an implementation detail of the task. This method will
       // listen on port 3123 and is not designed to be run in parallel.
       // After execution the server on port 3123 remains open
@@ -301,7 +316,7 @@ module.exports = {
             APOS_RELEASE_ID: releaseId,
             NODE_ENV: 'production',
             PORT: '3123',
-            ADDRESS: '127.0.0.1'        
+            ADDRESS: '127.0.0.1'
           }
         });
         await waitOn({
@@ -318,12 +333,12 @@ module.exports = {
           });
           const urls = await self.getAll(req);
           for (const { url } of urls) {
-            let path = url.substring(baseUrl.length);
+            const path = url.substring(baseUrl.length);
             if (path.includes('?')) {
               console.log(`Ignoring ${path}, not suitable for inclusion in a static site`);
               continue;
             }
-            let file = `${path}/index.html`;
+            const file = `${path}/index.html`;
             const body = await getBody(path);
             fs.mkdirSync(`${dir}${path}`, { recursive: true });
             fs.writeFileSync(`${dir}${file}`, body);
@@ -370,9 +385,3 @@ module.exports = {
     };
   }
 };
-
-function pause(ms) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => resolve(null), ms);
-  });
-}
