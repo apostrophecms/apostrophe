@@ -806,6 +806,7 @@ module.exports = {
           process.env.HEROKU_RELEASE_VERSION ||
           process.env.PLATFORM_TREE_ID;
         if (viaEnv) {
+          console.log('===>', viaEnv);
           return viaEnv;
         }
         try {
@@ -1168,6 +1169,7 @@ module.exports = {
       // Return the URL of the asset with the given path, taking into account
       // the release id, uploadfs, etc.
       url(path) {
+        console.log(`${process.pid} here we go for ${path}`);
         return `${self.getAssetBaseUrl()}${path}`;
       },
       devServerUrl(path) {

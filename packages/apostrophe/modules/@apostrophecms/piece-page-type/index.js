@@ -15,7 +15,7 @@
 //
 // ### `piecesFilters`
 //
-// If present, this is an array of objects with `name` properties.This works
+// If present, this is an array of objects with `name` properties. This works
 // only if the corresponding query builders exist and have a `launder` method.
 // An array of choices for each is populated in `req.data.piecesFilters`. The
 // choices in the array are objects with `label` and `value` properties.
@@ -37,6 +37,7 @@ module.exports = {
     self.piecesCssName = self.apos.util.cssName(self.pieces.name);
 
     self.piecesFilters = self.options.piecesFilters || [];
+    console.log(`>> ${self.__meta.name}`);
 
     self.enableAddUrlsToPieces();
   },
@@ -199,6 +200,26 @@ module.exports = {
 
       dispatchAll() {
         self.dispatch('/', self.indexPage);
+        if (self.apos.url.options.static) {
+          self.dispatch('/page/:page', req => {
+            req.query.page = req.params.page;
+            return self.indexPage(req);
+          });
+          console.log(self.options.piecesFilters);
+          console.log(`** ${self.__meta.name}`);
+          console.log(self.piecesFilters);
+          for (const filter of self.piecesFilters) {
+            self.dispatch(`/${filter.name}/:filterValue`, req => {
+              req.query[filter.name] = req.params.filterValue;
+              return self.indexPage(req);
+            });
+            self.dispatch(`/${filter.name}/:filterValue/page/:page`, req => {
+              req.query[filter.name] = req.params.filterValue;
+              req.query.page = req.params.page;
+              return self.indexPage(req);
+            });
+          }
+        }
         self.dispatch('/:slug', self.showPage);
       },
 
@@ -340,15 +361,39 @@ module.exports = {
 
       async populatePiecesFilters(query) {
         const req = query.req;
-        req.data.piecesFilters = req.data.piecesFilters || {};
+        const filtersWithChoices = await self.getFiltersWithChoices(query);
+        req.data.filters = filtersWithChoices;
+        // for bc (less useful)
+        req.data.piecesFilters = {};
+        for (const filter of filtersWithChoices) {
+          req.data.piecesFilters[filter.name] = filter.choices;
+        }
+      },
+
+      async getFiltersWithChoices(query, { allCounts = false } = {}) {
+        const results = [];
         for (const filter of self.piecesFilters) {
           // The choices for each filter should reflect the effect of all
           // filters except this one (filtering by topic pares down the list of
           // categories and vice versa)
           const _query = query.clone();
           _query[filter.name](undefined);
-          req.data.piecesFilters[filter.name] = await _query.toChoices(filter.name, _.pick(filter, 'counts'));
+          const choices = await _query.toChoices(filter.name, allCounts || _.pick(filter, 'counts'));
+          console.log(query.req.params, filter.name);
+          for (const choice of choices) {
+            choice._url = query.req.data.page._url +
+              self.apos.url.getChoiceFilter(filter.name, choice.value, 1);
+            if (query.req.query[filter.name] === choice.value) {
+              choice.active = true;
+              console.log('MATCH');
+            }
+          }
+          results.push({
+            ...filter,
+            choices
+          });
         }
+        return results;
       }
     };
 
@@ -368,6 +413,41 @@ module.exports = {
         } else {
           return data;
         }
+      },
+      async getUrlMetadata(_super, req, page) {
+        const metadata = _super(req, page);
+        if (!metadata.length) {
+          return metadata;
+        }
+        const query = self.indexQuery(req);
+        const filters = await self.getFiltersWithChoices(query, { allCounts: true });
+        for (const filter of filters) {
+          for (const choice of filter.choices) {
+            // Was: Math.min(1, ...) which always capped at 1
+            // Fixed: Math.max(1, ...) to ensure at least 1 page
+            const pages = Math.max(1, Math.ceil(choice.count / self.perPage));
+            for (let page = 1; (page <= pages); page++) {
+              metadata.push({
+                ...metadata[0],
+                i18nId: `${metadata[0].i18nId}.${self.apos.util.slugify(filter.name)}.${self.apos.util.slugify(choice.value)}.${page}`,
+                _url: metadata[0]._url + self.apos.url
+                  .getChoiceFilter(filter.name, choice.value, page)
+              });
+            }
+          }
+        }
+        await query.toCount();
+        const pages = query.get('totalPages');
+        // Was: (pages >= 2) which checked the constant, causing an infinite loop
+        // Fixed: (page <= pages) to correctly iterate through page numbers
+        for (let page = 2; (page <= pages); page++) {
+          metadata.push({
+            ...metadata[0],
+            i18nId: `${metadata[0].i18nId}.${page}`,
+            _url: metadata[0]._url + self.apos.url.getPageFilter(page)
+          });
+        }
+        return metadata;
       }
     };
   }

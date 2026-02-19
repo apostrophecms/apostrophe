@@ -1648,7 +1648,61 @@ module.exports = {
           name: key,
           ...self.columns[key]
         }));
+      },
+
+      async getAllUrlMetadata(req) {
+        const results = [];
+        let skip = 0;
+        // Declared here so we can use do/while
+        let docs = null;
+
+        do {
+          // Paginate through 100 at a time to avoid exhausting
+          // memory
+          docs = await self.getUrlMetadataQuery(req)
+            .skip(skip).limit(100).toArray();
+          await Promise.all(docs.map(async doc => {
+            results.push(...await self.getUrlMetadata(req, doc));
+          }));
+          skip += docs.length;
+        } while (docs.length > 0);
+
+        return results;
+      },
+
+      // Used to build sitemaps and assist in static site builds. Extend to
+      // return all URLs that provide views of this document and
+      // should be included in sitemaps and static builds. You may
+      // use `async` when extending
+      getUrlMetadata(req, piece) {
+        if (!piece._url) {
+          return [];
+        }
+        return [
+          {
+            url: piece._url,
+            type: piece.type,
+            aposDocId: piece.aposDocId,
+            i18nId: piece.aposDocId,
+            _id: piece._id,
+            // For legacy reasons. Google 100% ignores this
+            changefreq: 'daily',
+            // For legacy reasons. Google 100% ignores this
+            priority: 1.0
+          }
+        ];
+      },
+
+      // Extend to change the query used when fetching documents of this type
+      // for purposes of building sitemaps and static sites. Should be efficient
+      // while still capturing enough information to generate all URLs for
+      // this particular type of document. By default no relationships are fetched
+      // and widget loaders for areas are not run
+      getUrlMetadataQuery(req) {
+        return self.find(req, {})
+          .relationships(false).areas(false);
       }
+
     };
   },
   extendMethods(self) {
