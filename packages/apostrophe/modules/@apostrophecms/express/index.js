@@ -732,7 +732,6 @@ module.exports = {
 
         // awaitable listen function
         function listen() {
-          console.log('--->', process.env);
           if (address !== false) {
             self.server = self.apos.baseApp.listen(port, address);
           } else if (port) {

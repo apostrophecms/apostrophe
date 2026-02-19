@@ -45,6 +45,21 @@ node app @apostrophecms-pro/palette:migrate-to-styles
         }
         self.apos.template.addBodyClass(req, classes.join(' '));
       }
+    },
+    '@apostrophecms/url:getAllUrlMetadata': {
+      // Provide a literal content entry so static builds
+      // can include the dynamically generated stylesheet
+      addStylesheetUrl(req, results) {
+        if (!req.data.global?.stylesStylesheet) {
+          return;
+        }
+        results.push({
+          url: `${self.action}/stylesheet?version=${req.data.global.stylesStylesheetVersion}&aposLocale=${req.locale}:${req.mode}`,
+          contentType: 'text/css',
+          i18nId: '@apostrophecms/styles:stylesheet',
+          sitemap: false
+        });
+      }
     }
   };
 };

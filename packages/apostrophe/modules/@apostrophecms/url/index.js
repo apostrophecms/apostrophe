@@ -5,9 +5,6 @@
 
 const _ = require('lodash');
 const qs = require('qs');
-const fs = require('fs');
-const cp = require('child_process');
-const waitOn = require('wait-on');
 
 module.exports = {
 
@@ -16,18 +13,36 @@ module.exports = {
     static: false
   },
 
-  tasks(self) {
+  restApiRoutes(self) {
     return {
-      'build-static-site': {
-        usage: 'Build a static site at a specified directory path',
-
-        async task(argv) {
-          self.apos.url.options.static = true;
-          if (argv._.length !== 2) {
-            throw new Error('A directory path for the static site must be given.');
-          }
-          await self.buildStaticSite(argv._[1]);
+      // GET /api/v1/@apostrophecms/url
+      //
+      // Returns the complete URL metadata for all reachable URLs
+      // in the current locale. Requires the external frontend key.
+      //
+      // The response is `{ results: [...] }` where each entry
+      // contains at minimum `url` and `i18nId`.
+      //
+      // Entries that represent documents also include `type`,
+      // `aposDocId` and `_id`.
+      //
+      // Entries representing literal (non-HTML) content include
+      // a `contentType` property (e.g. `text/css`). Consumers
+      // should proxy these URLs and serve them with the specified
+      // content type rather than rendering them as pages.
+      async getAll(req) {
+        if (!req.aposExternalFront) {
+          throw self.apos.error('forbidden');
         }
+        if (!self.options.static) {
+          throw self.apos.error('invalid',
+            'The @apostrophecms/url module must be configured with the "static: true" option to use this API. ' +
+            'Without it, URL metadata for filters and pagination cannot be fully enumerated for a static build.'
+          );
+        }
+        return {
+          results: await self.getAllUrlMetadata(req)
+        };
       }
     };
   },
@@ -241,21 +256,86 @@ module.exports = {
       // generation and sitemaps. Usually called in a loop,
       // once for each locale.
       //
-      // Returns a list of objects with `url`, `type`, `_id`,
-      // `aposDocId` and `i18nId` properties. `type`, `_id`
-      // and `aposDocId` are only present if the URL is a
-      // representation of a particular document in
-      // ApostropheCMS, but `i18nId` should always be present
-      // and should be consistent across localized versions
-      // of the same URL. If the URL is the main view of a
-      // document (e.g. an ordinary page URL or piece URL)
-      // it will be equal to `aposDocId`.
+      // ## Returned schema
       //
-      // To accommodate requirements such as `changefreq`
-      // and `priority` for sitemaps, additional such
-      // properties may be returned, although as of this
-      // writing Google explicitly states they are not
-      // expected or honored.
+      // Returns an array of metadata objects. Each object may
+      // contain the following properties:
+      //
+      // ### `url` (string, always present)
+      // The URL path for this entry, relative to the site's
+      // base URL (e.g. `/articles` or `/articles/category/tech`).
+      //
+      // ### `i18nId` (string, always present)
+      // A stable identifier that is consistent across localized
+      // versions of the same logical URL. Used by external
+      // frontends (e.g. Astro) to correlate URLs across locales.
+      // For the primary view of a document this equals `aposDocId`.
+      // For derived URLs (pagination, filter combinations) it is
+      // built by appending suffixes to the base doc's `aposDocId`,
+      // e.g. `myDocId.category.tech.1` or `myDocId.2`.
+      //
+      // ### `type` (string, present for document entries)
+      // The Apostrophe doc `type` name (e.g. `'article'`,
+      // `'@apostrophecms/home-page'`). Absent on non-document
+      // entries such as literal content URLs.
+      //
+      // ### `aposDocId` (string, present for document entries)
+      // The locale-independent document ID. Absent on
+      // non-document entries.
+      //
+      // ### `_id` (string, present for document entries)
+      // The full locale-qualified MongoDB `_id` of the document
+      // (e.g. `'xyz:en:published'`). Absent on non-document
+      // entries.
+      //
+      // ### `contentType` (string, present for literal content entries only)
+      // A MIME type such as `'text/css'` or `'text/plain'`.
+      // When present, this signals that the URL returns non-HTML
+      // content that should be proxied literally by the consumer
+      // (e.g. an Astro static build). The consumer should fetch
+      // the `url` and write the response body to disk with the
+      // given content type instead of rendering it as a page.
+      // When absent, the URL is an ordinary HTML page.
+      //
+      // Document entries (pages, pieces, etc.) should NEVER set
+      // `contentType`. Consumers such as the sitemap module and
+      // Astro use its absence to identify renderable HTML pages
+      // vs literal assets.
+      //
+      // Literal content entries should NOT include `changefreq`
+      // or `priority` — those are only meaningful for document
+      // entries in sitemaps.
+      //
+      // ### `sitemap` (boolean, optional, default `true`)
+      // When explicitly set to `false`, the entry is excluded
+      // from sitemap generation but still included in static
+      // builds. Useful for URLs that must exist in the build
+      // (e.g. paginated filter pages, CSS files) but should
+      // not appear in `sitemap.xml`. If omitted, the entry is
+      // included in sitemaps.
+      //
+      // ### `changefreq` (string, optional, document entries only)
+      // Sitemap hint (e.g. `'daily'`). Included for legacy
+      // sitemap compatibility. Google explicitly ignores this.
+      // Must NOT be set on literal content entries.
+      //
+      // ### `priority` (number, optional, document entries only)
+      // Sitemap priority hint (e.g. `1.0`). Included for legacy
+      // sitemap compatibility. Google explicitly ignores this.
+      // Must NOT be set on literal content entries.
+      //
+      // ## Literal content entries
+      //
+      // Some entries represent non-HTML content that should be
+      // served literally with a specific MIME type, such as
+      // CSS stylesheets, `robots.txt`, `llms.txt`, etc. These
+      // entries include a `contentType` property (e.g.
+      // `text/css`, `text/plain`). Consumers of this API
+      // (e.g. an Astro static build) should fetch the `url`
+      // and serve the response body with the specified content
+      // type rather than rendering it as an HTML page.
+      //
+      // ## Extension points
       //
       // This method emits the
       // `@apostrophecms/url:getAllUrlMetadata` event, so
@@ -268,7 +348,10 @@ module.exports = {
       // `getUrlMetadata` on such a manager.
       //
       // Handlers should respect `excludeTypes`.
-      async getAll(req, { excludeTypes = [] } = {}) {
+      async getAllUrlMetadata(req, { excludeTypes = [] } = {}) {
+        // Ensure global doc is available for event handlers
+        // that may need it (e.g. @apostrophecms/styles)
+        await self.apos.global.addGlobalToData(req);
         let results = [];
         const types = await self.apos.doc.db.distinct('type');
         for (const type of types) {
@@ -282,79 +365,6 @@ module.exports = {
         }
         await self.emit('getAllUrlMetadata', req, results, { excludeTypes });
         return results;
-      },
-
-      // Build a static site in the directory specified
-      // by `dir`.
-      // This is an implementation detail of the task. This method will
-      // listen on port 3123 and is not designed to be run in parallel.
-      // After execution the server on port 3123 remains open
-
-      async buildStaticSite(dir) {
-        process.env.NODE_ENV = 'production';
-        const baseUrl = self.apos.baseUrl;
-        if (!self.apos.baseUrl) {
-          throw new Error('The top-level baseUrl option must be set for static site builds');
-        }
-        const releaseId = self.apos.util.generateId();
-        console.log('Building assets for static site...');
-        cp.execSync(`APOS_RELEASE_ID=${releaseId} NODE_ENV=production node app @apostrophecms/asset:build`, {
-          stdio: 'inherit'
-        });
-        console.log('Copying assets into static site...');
-        const assetsFrom = `${self.apos.rootDir}/public/apos-frontend/releases/${releaseId}`;
-        const assetsTo = `${dir}/apos-frontend/releases`;
-        fs.mkdirSync(assetsTo, { recursive: true });
-        cp.execSync(`cp -r ${assetsFrom} ${assetsTo}`);
-        console.log('Launching temporary server for static site page generation...');
-        const child = cp.spawn('node app', {
-          cwd: self.apos.rootDir,
-          shell: '/bin/bash',
-          stdio: 'inherit',
-          env: {
-            ...process.env,
-            APOS_RELEASE_ID: releaseId,
-            NODE_ENV: 'production',
-            PORT: '3123',
-            ADDRESS: '127.0.0.1'
-          }
-        });
-        await waitOn({
-          resources: [
-            'tcp:127.0.0.1:3123'
-          ]
-        });
-        const locales = Object.keys(self.apos.i18n.getLocales());
-        for (const locale of locales) {
-          console.log(`Generating pages for locale ${locale}...`);
-          const req = self.apos.task.getAnonReq({
-            locale,
-            mode: 'published'
-          });
-          const urls = await self.getAll(req);
-          for (const { url } of urls) {
-            const path = url.substring(baseUrl.length);
-            if (path.includes('?')) {
-              console.log(`Ignoring ${path}, not suitable for inclusion in a static site`);
-              continue;
-            }
-            const file = `${path}/index.html`;
-            const body = await getBody(path);
-            fs.mkdirSync(`${dir}${path}`, { recursive: true });
-            fs.writeFileSync(`${dir}${file}`, body);
-          }
-        }
-        // flush I/O for debugging
-        child.kill();
-        console.log('Static site built.');
-
-        async function getBody(path) {
-          const result = await fetch(`http://127.0.0.1:3123${path}`);
-          if (result.status !== 200) {
-            throw self.apos.error('invalid', `The path ${path} did not produce a 200 status`);
-          }
-          return result.text();
-        }
       },
       // Returns a string suitable to append to the original page URL when we're
       // specifying a particular filter and a page number. Pages start with 1

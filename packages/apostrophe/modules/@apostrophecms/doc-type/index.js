@@ -1654,13 +1654,15 @@ module.exports = {
         const results = [];
         let skip = 0;
         // Declared here so we can use do/while
-        let docs = null;
+        let docs = [];
 
         do {
           // Paginate through 100 at a time to avoid exhausting
           // memory
           docs = await self.getUrlMetadataQuery(req)
-            .skip(skip).limit(100).toArray();
+            .skip(skip)
+            .limit(100)
+            .toArray();
           await Promise.all(docs.map(async doc => {
             results.push(...await self.getUrlMetadata(req, doc));
           }));
@@ -1674,17 +1676,17 @@ module.exports = {
       // return all URLs that provide views of this document and
       // should be included in sitemaps and static builds. You may
       // use `async` when extending
-      getUrlMetadata(req, piece) {
-        if (!piece._url) {
+      getUrlMetadata(req, doc) {
+        if (!doc._url) {
           return [];
         }
         return [
           {
-            url: piece._url,
-            type: piece.type,
-            aposDocId: piece.aposDocId,
-            i18nId: piece.aposDocId,
-            _id: piece._id,
+            url: doc._url,
+            type: doc.type,
+            aposDocId: doc.aposDocId,
+            i18nId: doc.aposDocId,
+            _id: doc._id,
             // For legacy reasons. Google 100% ignores this
             changefreq: 'daily',
             // For legacy reasons. Google 100% ignores this
@@ -1700,7 +1702,8 @@ module.exports = {
       // and widget loaders for areas are not run
       getUrlMetadataQuery(req) {
         return self.find(req, {})
-          .relationships(false).areas(false);
+          .relationships(false)
+          .areas(false);
       }
 
     };
