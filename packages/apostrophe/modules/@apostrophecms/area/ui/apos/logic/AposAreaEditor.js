@@ -133,6 +133,10 @@ export default {
     }
   },
   watch: {
+    // focusedArea(current, prev) {
+    //   console.log('changed: ', current);
+    //   console.log(this.focusedArea === this.areaId);
+    // },
     // Note: please don't make this a deep watcher as that could cause
     // issues with live widget preview and also performance, the top level
     // array will change in situations where a patch API call is actually
@@ -174,6 +178,22 @@ export default {
     this.unbindEventListeners();
   },
   methods: {
+    applyZindex(widget, i) {
+      console.log('========');
+      console.log('index ', i);
+      console.log('focusedWidget ', this.focusedWidget);
+      console.log('widget._id ', widget._id);
+      console.log('focusedArea ', this.focusedArea);
+      console.log('areaId ', this.areaId);
+      return {};
+      // {
+      //     'z-index': focusedWidget === widget._id
+      //       ? next.length + 1
+      //       : focusedArea == areaId
+      //         ? next.length - i
+      //         : null
+      //   }
+    },
     ...mapActions(useWidgetStore, [ 'setFocusedArea', 'setFocusedWidget' ]),
     ...mapActions(useModalStore, [ 'isOnTop' ]),
     bindEventListeners() {
