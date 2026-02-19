@@ -1,5 +1,31 @@
 # Changelog
 
+## 4.27.0 (2026-02-18)
+
+### Adds
+
+- Relax the image and attachment related Nunjucks helpers, they should never throw.
+- Adds the `intlMapping` option to locale configuration to map custom locale codes to standard ones for `Intl` usage. This property is available in `apos.i18n.locales` for project-level code.
+- In `@apostrophecms/i18n` add `direction` property to locale configuration to support RTL languages (e.g., `he`, `ar`), `slugDirection` option to control default direction of slug fields. Add `direction` property in the schema field definitions to override and validate text direction (supports `ltr` and `rtl`) of input fields. Note that the admin UI layout and labels overall are still LTR only for now, but these changes accommodate editing RTL locale content within that. For best results the feature should be combined with `adminLocales` and `defaultAdminLocale` module options, e.g. the admin UI itself should remain in English or another LTR language for now.
+- Add new `showBreakpointsHelp` option (default `true`). If set to `false`, the "Show tablet/mobile" fields help text will be removed from the UI.
+- Adds windowed view to widget editor
+- Added support for translation interpolation for schema fields in the UI via `labelInterpolation` and `helpInterpolation` schema properties.
+- Updates Global Styles Editor window title
+- Updated dependencies [bbf3359]
+  - sanitize-html@2.17.1
+
+### Fixes
+
+- Fix hardcoded help text in Layout Column fields. Rename the existing `breakpoints` option to `labelBreakpoints` for clarity. The old option is deprecated but still supported for BC reasons.
+- Fix a bug where rich text images and permalinks are not properly rendered in public external front (e.g. Astro) views.
+- Fixed a regression introduced in 4.26.0 that could cause some areas on the page not to be editable outside of the page or piece settings dialog.
+
+## 4.27.0-alpha.2
+
+### Changes
+
+- Removes commit resolution markers that were left behind in the 4.27.0-alpha.1 release
+
 ## 4.26.1
 
 ### Fixes

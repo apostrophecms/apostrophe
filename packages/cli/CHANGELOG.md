@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.6.0 (2026-02-18)
+
+### Adds
+
+- Adds support for hybrid ApostropheCMS + Astro projects in the `create` command. Projects with a `backend/` directory are automatically detected and handled appropriately.
+
+  - Updated the default Astro starter example in the README to use `astro-public-demo`.
+
+  - The `add` command now displays an error when run inside a hybrid Astro project, as it is not currently supported in that context.
+
+  - The default starter kit is now `public-demo`
+- Validates the `shortName` argument in the `create` command to only allow letters, numbers, hyphens, and underscores, preventing potential command injection.
+
 ## 3.5.0 (2025-01-07)
 
 ### Adds
@@ -16,8 +29,8 @@
 ### Removes
 
 - Removed vestigial support for Apostrophe 2.x, which has passed its end of life date and should not be used,
-therefore its removal is not considered a major version change in the CLI. Of course, those who
-need to create new 2.x projects can fork existing projects without the use of the CLI.
+  therefore its removal is not considered a major version change in the CLI. Of course, those who
+  need to create new 2.x projects can fork existing projects without the use of the CLI.
 
 ## 3.3.0 (2024-01-25)
 
@@ -34,7 +47,7 @@ need to create new 2.x projects can fork existing projects without the use of th
 
 ## 3.1.2 (2022-09-15)
 
-### Fixes 
+### Fixes
 
 - Fixes apostrophe 3 paths in console output.
 - Fixed typo in CLI help to clarify install options.
