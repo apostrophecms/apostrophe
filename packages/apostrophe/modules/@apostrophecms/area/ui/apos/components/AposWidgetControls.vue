@@ -117,7 +117,7 @@ export default {
             this.first &&
             this.last
           ) {
-            return !this.maxReached;
+            return false;
           }
           return true;
         });
