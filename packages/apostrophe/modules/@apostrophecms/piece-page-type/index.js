@@ -15,7 +15,7 @@
 //
 // ### `piecesFilters`
 //
-// If present, this is an array of objects with `name` properties.This works
+// If present, this is an array of objects with `name` properties. This works
 // only if the corresponding query builders exist and have a `launder` method.
 // An array of choices for each is populated in `req.data.piecesFilters`. The
 // choices in the array are objects with `label` and `value` properties.
@@ -199,6 +199,26 @@ module.exports = {
 
       dispatchAll() {
         self.dispatch('/', self.indexPage);
+        if (self.apos.url.options.static) {
+          // 1. SEO friendly pagination URLs
+          self.dispatch('/page/:pagenum', req => {
+            req.query.page = req.params.pagenum;
+            return self.indexPage(req);
+          });
+          for (const filter of self.piecesFilters) {
+            // 2. SEO friendly filter URLs
+            self.dispatch(`/${filter.name}/:filterValue`, req => {
+              req.query[filter.name] = req.params.filterValue;
+              return self.indexPage(req);
+            });
+            // 3. SEO friendly filter + pagination URLs
+            self.dispatch(`/${filter.name}/:filterValue/page/:pagenum`, req => {
+              req.query[filter.name] = req.params.filterValue;
+              req.query.page = req.params.pagenum;
+              return self.indexPage(req);
+            });
+          }
+        }
         self.dispatch('/:slug', self.showPage);
       },
 
@@ -325,30 +345,62 @@ module.exports = {
         return !!(await self.find(req, {}).areas(false).relationships(false).toObject());
       },
 
-      // Populate `req.data.piecesFilters` with arrays of choice objects,
-      // with label and value properties, for each filter configured in the
-      // `piecesFilters` array option. Each filter in that array must have a
-      // `name` property. Distinct values are fetched for the corresponding
-      // query builder (note that most schema fields automatically get a
-      // corresponding query builder method). Each filter's choices are
-      // reduced by the other filters; for instance, "tags" might only reveal
+      // Populate `req.data.filters` based on the `piecesFilters` option.
+      // Each entry in the option array must have a `name` property, and a
+      // corresponding query builder with a `launder` method must exist
+      // (note that most schema fields automatically get one).
+      //
+      // `req.data.filters` is an array of filter objects, each containing
+      // the original configuration properties (e.g. `name`, `counts`) plus
+      // a `choices` array. Each choice has `label`, `value`, `_url`, and
+      // optionally `active` and `count` properties. Choices are reduced by
+      // the other active filters; for instance, "tags" might only reveal
       // choices not ruled out by the current "topic" filter setting.
       //
-      // If a filter in the array has its `counts` property set to true,
-      // Apostrophe will supply a `count` property for each distinct value,
-      // whenever possible. This has a performance impact.
+      // If a filter has its `counts` property set to `true`, each choice
+      // will also include a `count`. This has a performance impact.
+      //
+      // Legacy: `req.data.piecesFilters` is also populated as an object
+      // keyed by filter name, where each value is that filter's choices
+      // array. Still supported for backward compatibility but
+      // `req.data.filters` is preferred.
 
       async populatePiecesFilters(query) {
         const req = query.req;
-        req.data.piecesFilters = req.data.piecesFilters || {};
+        const filtersWithChoices = await self.getFiltersWithChoices(query);
+        req.data.filters = filtersWithChoices;
+        // for bc (less useful)
+        req.data.piecesFilters = {};
+        for (const filter of filtersWithChoices) {
+          req.data.piecesFilters[filter.name] = filter.choices;
+        }
+      },
+
+      async getFiltersWithChoices(query, { allCounts = false } = {}) {
+        const results = [];
         for (const filter of self.piecesFilters) {
           // The choices for each filter should reflect the effect of all
           // filters except this one (filtering by topic pares down the list of
           // categories and vice versa)
           const _query = query.clone();
           _query[filter.name](undefined);
-          req.data.piecesFilters[filter.name] = await _query.toChoices(filter.name, _.pick(filter, 'counts'));
+          const countsOption = allCounts ? { counts: true } : _.pick(filter, 'counts');
+          const choices = await _query.toChoices(filter.name, countsOption);
+          for (const choice of choices) {
+            if (query.req.data.page) {
+              choice._url = query.req.data.page._url +
+                self.apos.url.getChoiceFilter(filter.name, choice.value, 1);
+            }
+            if (query.req.query[filter.name] === choice.value) {
+              choice.active = true;
+            }
+          }
+          results.push({
+            ...filter,
+            choices
+          });
         }
+        return results;
       }
     };
 
@@ -368,6 +420,41 @@ module.exports = {
         } else {
           return data;
         }
+      },
+      async getUrlMetadata(_super, req, doc) {
+        const metadata = _super(req, doc);
+        if (!metadata.length) {
+          return metadata;
+        }
+        const [ pm ] = metadata;
+        const query = self.indexQuery(req);
+        const filters = await self.getFiltersWithChoices(query, { allCounts: true });
+
+        // 1. Enumerate every filter + choice combination
+        for (const filter of filters) {
+          for (const choice of filter.choices) {
+            const totalPages = Math.max(1, Math.ceil(choice.count / self.perPage));
+            for (let p = 1; p <= totalPages; p++) {
+              metadata.push({
+                ...pm,
+                i18nId: `${pm.i18nId}.${self.apos.util.slugify(filter.name)}.${self.apos.util.slugify(choice.value)}.${p}`,
+                url: pm.url + self.apos.url
+                  .getChoiceFilter(filter.name, choice.value, p)
+              });
+            }
+          }
+        }
+        await query.toCount();
+        const totalPages = query.get('totalPages');
+        // 2. Enumerate pagination (starting at page 2; page 1 is the base URL)
+        for (let p = 2; p <= totalPages; p++) {
+          metadata.push({
+            ...pm,
+            i18nId: `${pm.i18nId}.${p}`,
+            url: pm.url + self.apos.url.getPageFilter(p)
+          });
+        }
+        return metadata;
       }
     };
   }
