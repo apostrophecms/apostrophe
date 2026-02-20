@@ -21,7 +21,7 @@
         v-for="checked in selectedItems"
         :key="objectValues ? checked.value : checked"
         class="apos-combo__selected"
-        @click.stop="selectOption(getSelectedOption(checked))"
+        @pointerdown.stop.prevent="selectOption(getSelectedOption(checked))"
       >
         {{ getSelectedOption(checked)?.label }}
         <AposIndicator
@@ -74,7 +74,7 @@
         class="apos-combo__list-item"
         role="menuitemcheckbox"
         :class="{focused: focusedItemIndex === i}"
-        @click.stop="selectOption(choice)"
+        @pointerdown.stop.prevent="selectOption(choice)"
         @mouseover="focusedItemIndex = i"
       >
         <AposIndicator

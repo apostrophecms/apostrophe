@@ -28,7 +28,7 @@
       v-apos-tooltip="getTooltip(item)"
       aria-selected="false"
       :class="getClasses(item, index)"
-      @click="select(item)"
+      @pointerdown.prevent="select(item)"
     >
       <div
         v-if="item?.attachment?._urls?.['one-sixth']"
