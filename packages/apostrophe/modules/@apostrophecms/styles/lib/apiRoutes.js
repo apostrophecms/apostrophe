@@ -2,12 +2,27 @@ module.exports = self => {
   return {
     get: {
       // This route serves the existing styles stylesheet,
-      // constructed from the global object
-      // We do it this way so the browser can cache the styles as often as possible
+      // constructed from the global object.
+      // We do it this way so the browser can cache the styles as often as possible.
+      //
+      // The locale-qualified alias (`stylesheet/locale/:locale/:mode`)
+      // produces a distinct path per locale so that static-build
+      // tools that key on the URL path (e.g. Astro) don't
+      // overwrite one locale's stylesheet with another's.
       stylesheet(req) {
-        req.res.setHeader('Content-Type', 'text/css');
-        req.res.setHeader('Cache-Control', 'public, max-age=31557600');
-        return req.data.global.stylesStylesheet;
+        return self.serveStylesheet(req);
+      },
+      'stylesheet/locale/:locale/:mode': async function(req) {
+        const { locale, mode } = req.params;
+        if (!locale || !self.apos.i18n.isValidLocale(locale)) {
+          throw self.apos.error('invalid', `Invalid locale: ${locale}`);
+        }
+        req.locale = locale;
+        req.mode = mode || 'published';
+        // Force re-fetch global for the correct locale
+        delete req.data.global;
+        await self.apos.global.addGlobalToData(req);
+        return self.serveStylesheet(req);
       }
     },
     post: {

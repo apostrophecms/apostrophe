@@ -553,6 +553,9 @@ module.exports = {
       // in an autocomplete menu. Default behavior is to
       // return only the `title`, `_id` and `slug` properties.
       // Removing any of these three is not recommended.
+      // `aposDocId` is required for building template filters when static
+      // url's are enabled, `type` is required for various features including
+      // permissions - do not remove these unless you know what you are doing.
       //
       // `query.field` will contain the schema field definition for
       // the relationship the user is attempting to match titles from.
@@ -564,6 +567,7 @@ module.exports = {
           title: 1,
           type: 1,
           _id: 1,
+          aposDocId: 1,
           _url: 1,
           slug: 1
         };
@@ -1650,10 +1654,21 @@ module.exports = {
         }));
       },
 
-      async getAllUrlMetadata(req) {
-        const results = [];
+      // Returns an object with `metadata` (array of URL metadata
+      // entries) and `attachmentDocIds` (array of full `_id` strings
+      // for docs referenced via relationships to types with
+      // attachment fields).
+      //
+      // When `options.attachments` is truthy, each document is also
+      // inspected for attachment references via
+      // `attachment.collectUsedDocIds()`, otherwise `attachmentDocIds`
+      // is returned as an empty array.
+      async getAllUrlMetadata(req, { attachments = false } = {}) {
+        const result = {
+          metadata: [],
+          attachmentDocIds: []
+        };
         let skip = 0;
-        // Declared here so we can use do/while
         let docs = [];
 
         do {
@@ -1664,12 +1679,17 @@ module.exports = {
             .limit(100)
             .toArray();
           await Promise.all(docs.map(async doc => {
-            results.push(...await self.getUrlMetadata(req, doc));
+            result.metadata.push(...await self.getUrlMetadata(req, doc));
+            if (attachments) {
+              result.attachmentDocIds.push(
+                ...self.apos.attachment.collectUsedDocIds(req, doc)
+              );
+            }
           }));
           skip += docs.length;
         } while (docs.length > 0);
 
-        return results;
+        return result;
       },
 
       // Used to build sitemaps and assist in static site builds. Extend to
@@ -2872,7 +2892,10 @@ module.exports = {
           const counts = query.get('distinctCounts');
           if (counts && ((typeof counts) === 'object')) {
             for (const result of results) {
-              result.count = counts[result.value];
+              // For relationship slug builders the value is a slug, but
+              // distinctCounts is keyed by aposDocId (from idsStorage).
+              // Fall back to aposDocId when the value key yields nothing.
+              result.count = counts[result.value] ?? counts[result.aposDocId];
             }
           }
           return results;

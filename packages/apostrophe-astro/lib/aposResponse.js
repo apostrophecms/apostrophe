@@ -24,7 +24,8 @@ function looksLikeChunkedEncoding(buffer) {
 export default async function aposResponse(req) {
   try {
     // Host header should not contain the protocol or a path
-    if (req.headers.get('host').includes('/')) {
+    const host = req.headers.get('host');
+    if (host?.includes('/')) {
       return new Response('Invalid Host header', {
         status: 400,
         statusText: 'Bad Request'

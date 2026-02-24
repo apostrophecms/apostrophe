@@ -48,13 +48,15 @@ node app @apostrophecms-pro/palette:migrate-to-styles
     },
     '@apostrophecms/url:getAllUrlMetadata': {
       // Provide a literal content entry so static builds
-      // can include the dynamically generated stylesheet
+      // can include the dynamically generated stylesheet.
+      // Uses the locale-path URL so each locale produces a
+      // distinct path for static-build tools.
       addStylesheetUrl(req, results) {
         if (!req.data.global?.stylesStylesheet) {
           return;
         }
         results.push({
-          url: `${self.action}/stylesheet?version=${req.data.global.stylesStylesheetVersion}&aposLocale=${req.locale}:${req.mode}`,
+          url: self.getStylesheetUrl(req),
           contentType: 'text/css',
           i18nId: '@apostrophecms/styles:stylesheet',
           sitemap: false

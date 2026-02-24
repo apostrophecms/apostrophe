@@ -3,7 +3,8 @@ export function vitePluginApostropheConfig(
   forwardHeaders = null,
   viewTransitionWorkaround,
   includeResponseHeaders = null,
-  excludeRequestHeaders = null
+  excludeRequestHeaders = null,
+  staticBuild = null
 ) {
   const virtualModuleId = "virtual:apostrophe-config";
   const resolvedVirtualModuleId = "\0" + virtualModuleId;
@@ -31,6 +32,9 @@ export function vitePluginApostropheConfig(
             }
             ${viewTransitionWorkaround ? `,
               viewTransitionWorkaround: true` : ''
+            }
+            ${staticBuild ? `,
+              staticBuild: ${JSON.stringify(staticBuild)}` : ''
             }
           }`
         ;

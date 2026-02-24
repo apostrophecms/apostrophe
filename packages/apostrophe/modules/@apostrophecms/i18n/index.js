@@ -222,7 +222,26 @@ module.exports = {
             const doc = localizations.find(doc => doc.aposLocale.split(':')[0] === name);
             if (doc && self.apos.permission.can(req, 'view', doc)) {
               doc.available = true;
-              doc._url = `${self.apos.prefix}${manager.action}/${context._id}/locale/${name}`;
+              // WARNING: the `addUrls` call below has a serious
+              // performance impact (extra DB queries per locale).
+              // Keep this gated for static builds only.
+              if (req.aposExternalFront && self.apos.url.options.static) {
+                // Static builds can't follow the API redirect route
+                // (there is no server to handle it), so compute the
+                // real URL using the same mechanisms the query builders
+                // would.
+                if (self.apos.page.isPage(doc)) {
+                  doc._url = `${localeReq.prefix}${doc.slug}`;
+                } else if (manager.addUrls) {
+                  await manager.addUrls(localeReq, [ doc ]);
+                }
+              }
+              // Fall back to the API redirect route when no real URL
+              // was resolved (e.g. traditional Nunjucks frontend, non static
+              // external frontend).
+              if (!doc._url) {
+                doc._url = `${self.apos.prefix}${manager.action}/${context._id}/locale/${name}`;
+              }
               if (doc._id === context._id) {
                 doc.current = true;
               }

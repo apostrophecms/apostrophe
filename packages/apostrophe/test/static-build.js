@@ -197,7 +197,7 @@ describe('Static Build Support', function () {
 
     it('should return URL metadata for all documents', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
       assert(Array.isArray(results));
       assert(results.length > 0);
 
@@ -210,7 +210,7 @@ describe('Static Build Support', function () {
 
     it('should include individual article URLs', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
       const articleUrls = results.filter(r => r.type === 'article');
 
       assert.strictEqual(articleUrls.length, 12);
@@ -219,7 +219,7 @@ describe('Static Build Support', function () {
 
     it('document entries should not have contentType', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
       const docEntries = results.filter(r => r.aposDocId);
 
       assert(docEntries.length > 0, 'Should have document entries');
@@ -239,7 +239,7 @@ describe('Static Build Support', function () {
 
     it('should include filter URLs in static mode', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
 
       // Should include filter URLs like /articles/category/tech
       const filterUrls = results.filter(
@@ -259,7 +259,7 @@ describe('Static Build Support', function () {
 
     it('should include pagination URLs in static mode', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
 
       // 12 articles with perPage=5 means 3 pages.
       // Page 1 is the base URL (/articles), so only /page/2 and /page/3
@@ -288,7 +288,7 @@ describe('Static Build Support', function () {
 
     it('filter URLs should use path format in static mode', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
       const filterUrls = results.filter(
         r => r.url && r.url.match(/\/articles\/category\//)
       );
@@ -302,7 +302,7 @@ describe('Static Build Support', function () {
 
     it('should have consistent i18nId values', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
       for (const entry of results) {
         assert(entry.i18nId, `Entry with url ${entry.url} should have i18nId`);
       }
@@ -317,14 +317,14 @@ describe('Static Build Support', function () {
 
     it('should include home page URL', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
       const home = results.find(r => r.url === '/');
       assert(home, 'Should include the home page');
     });
 
     it('should respect excludeTypes option', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req, {
+      const { pages: results } = await apos.url.getAllUrlMetadata(req, {
         excludeTypes: [ 'article' ]
       });
       const articles = results.filter(r => r.type === 'article');
@@ -367,7 +367,7 @@ describe('Static Build Support', function () {
 
     it('should include styles stylesheet as a literal content entry', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
       const stylesheet = results.find(
         r => r.i18nId === '@apostrophecms/styles:stylesheet'
       );
@@ -386,7 +386,7 @@ describe('Static Build Support', function () {
 
     it('literal content entries have contentType property', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
       const literals = results.filter(r => r.contentType);
 
       for (const entry of literals) {
@@ -400,9 +400,8 @@ describe('Static Build Support', function () {
     });
   });
 
-  describe('REST API endpoint', function () {
+  describe('getAllUrlMetadata with attachments', function () {
     let apos;
-    const externalFrontKey = 'test-static-build-key';
 
     before(async function () {
       apos = await t.create({
@@ -411,17 +410,28 @@ describe('Static Build Support', function () {
           '@apostrophecms/url': {
             options: { static: true }
           },
-          '@apostrophecms/express': {
-            options: {
-              externalFrontKey
-            }
-          },
           article: {
             extend: '@apostrophecms/piece-type',
             options: {
               name: 'article',
               label: 'Article',
               alias: 'article'
+            },
+            fields: {
+              add: {
+                _image: {
+                  type: 'relationship',
+                  withType: '@apostrophecms/image',
+                  label: 'Image',
+                  max: 1
+                },
+                _file: {
+                  type: 'relationship',
+                  withType: '@apostrophecms/file',
+                  label: 'File',
+                  max: 1
+                }
+              }
             }
           },
           'article-page': {
@@ -449,10 +459,365 @@ describe('Static Build Support', function () {
       });
 
       const req = apos.task.getReq();
-      await apos.article.insert(req, {
+
+      // Insert an article so we have a document with a known _id
+      const article = await apos.article.insert(req, {
+        title: 'Attachment Test Article',
+        visibility: 'public'
+      });
+
+      // Update the article raw record to reference image and file
+      // docs via idsStorage fields, as if a user had chosen media
+      // through the CMS UI.
+      await apos.doc.db.updateMany(
+        { aposDocId: article.aposDocId },
+        {
+          $set: {
+            imageIds: [ 'img-1' ],
+            fileIds: [ 'file-1' ]
+          }
+        }
+      );
+
+      // Seed attachment records directly into the DB to avoid
+      // needing real uploaded files.  Attachment `docIds` reference
+      // the image/file doc IDs (not the article), matching how the
+      // core attachment module stores references.
+      const imgDocId = 'img-1:en:published';
+      const fileDocId = 'file-1:en:published';
+
+      await apos.attachment.db.insertMany([
+        {
+          _id: 'att-jpg-1',
+          name: 'photo',
+          extension: 'jpg',
+          group: 'images',
+          width: 800,
+          height: 600,
+          archived: false,
+          docIds: [ imgDocId ],
+          crops: [],
+          used: true,
+          utilized: true
+        },
+        {
+          _id: 'att-pdf-1',
+          name: 'document',
+          extension: 'pdf',
+          group: 'office',
+          archived: false,
+          docIds: [ fileDocId ],
+          crops: [],
+          used: true,
+          utilized: true
+        },
+        {
+          _id: 'att-orphan-1',
+          name: 'orphan',
+          extension: 'png',
+          group: 'images',
+          width: 100,
+          height: 100,
+          archived: false,
+          docIds: [ 'img-orphan:en:published' ],
+          crops: [],
+          used: false,
+          utilized: false
+        },
+        {
+          _id: 'att-archived-1',
+          name: 'archived-photo',
+          extension: 'jpg',
+          group: 'images',
+          width: 200,
+          height: 200,
+          archived: true,
+          docIds: [ imgDocId ],
+          crops: [],
+          used: true,
+          utilized: true
+        },
+        {
+          _id: 'att-cropped-1',
+          name: 'cropped-photo',
+          extension: 'jpg',
+          group: 'images',
+          width: 1000,
+          height: 800,
+          archived: false,
+          docIds: [ imgDocId ],
+          crops: [
+            {
+              top: 10,
+              left: 20,
+              width: 300,
+              height: 400
+            }
+          ],
+          used: true,
+          utilized: true
+        }
+      ]);
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('should return attachments as null when not requested', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req);
+      assert.strictEqual(result.attachments, null);
+      assert(Array.isArray(result.pages));
+    });
+
+    it('should return attachment metadata when requested', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      assert(result.attachments);
+      assert(typeof result.attachments.uploadsUrl === 'string');
+      assert(Array.isArray(result.attachments.results));
+      assert(result.attachments.results.length > 0);
+    });
+
+    it('used scope should only include attachments referenced by content docs', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      const ids = result.attachments.results.map(a => a._id);
+      assert(ids.includes('att-jpg-1'), 'Should include attachment referenced via image relationship');
+      assert(ids.includes('att-pdf-1'), 'Should include attachment referenced via file relationship');
+      assert(!ids.includes('att-orphan-1'), 'Should not include attachment whose image doc is unreferenced by content');
+    });
+
+    it('all scope should include all attachments', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'all' }
+      });
+      const ids = result.attachments.results.map(a => a._id);
+      assert(ids.includes('att-jpg-1'));
+      assert(ids.includes('att-pdf-1'));
+      assert(ids.includes('att-orphan-1'), 'all scope should include attachments not referenced by content docs');
+    });
+
+    it('sized attachment should have multiple size variants', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      const jpgAtt = result.attachments.results.find(a => a._id === 'att-jpg-1');
+      assert(jpgAtt, 'Should find the jpg attachment');
+      assert(jpgAtt.urls.length > 1, 'Sized attachment should have multiple URL entries');
+      const sizeNames = jpgAtt.urls.map(u => u.size);
+      assert(sizeNames.includes('full'), 'Should include full size');
+      assert(sizeNames.includes('one-half'), 'Should include one-half size');
+      assert(sizeNames.includes('original'), 'Should include original size');
+      for (const entry of jpgAtt.urls) {
+        assert(typeof entry.path === 'string');
+        assert(entry.path.startsWith('/attachments/'));
+      }
+    });
+
+    it('non-sized attachment should have only a path', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      const pdfAtt = result.attachments.results.find(a => a._id === 'att-pdf-1');
+      assert(pdfAtt, 'Should find the pdf attachment');
+      assert.strictEqual(pdfAtt.urls.length, 1, 'Non-sized attachment should have one entry');
+      assert.strictEqual(
+        pdfAtt.urls[0].size,
+        undefined,
+        'Non-sized attachment should not have a size property'
+      );
+      assert(pdfAtt.urls[0].path.includes('.pdf'));
+    });
+
+    it('skipSizes should exclude specified sizes', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: {
+          scope: 'used',
+          skipSizes: [ 'original', 'max' ]
+        }
+      });
+      const jpgAtt = result.attachments.results.find(a => a._id === 'att-jpg-1');
+      const sizeNames = jpgAtt.urls.map(u => u.size);
+      assert(!sizeNames.includes('original'), 'original should be skipped');
+      assert(!sizeNames.includes('max'), 'max should be skipped');
+      assert(sizeNames.includes('full'), 'full should still be present');
+    });
+
+    it('sizes should include only specified sizes', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: {
+          scope: 'used',
+          sizes: [ 'full', 'one-half' ]
+        }
+      });
+      const jpgAtt = result.attachments.results.find(a => a._id === 'att-jpg-1');
+      const sizeNames = jpgAtt.urls.map(u => u.size);
+      assert(sizeNames.includes('full'));
+      assert(sizeNames.includes('one-half'));
+      assert(!sizeNames.includes('original'), 'original should not be included when sizes is explicit');
+      assert(!sizeNames.includes('max'), 'max should not be included when sizes is explicit');
+    });
+
+    it('uploadsUrl should match the uploadfs base URL', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      assert.strictEqual(
+        result.attachments.uploadsUrl,
+        apos.attachment.uploadfs.getUrl()
+      );
+    });
+
+    it('should exclude archived attachments even if they have docIds', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      const ids = result.attachments.results.map(a => a._id);
+      assert(!ids.includes('att-archived-1'), 'Archived attachments should be excluded');
+      assert(ids.includes('att-jpg-1'), 'Non-archived attachments should be included');
+    });
+
+    it('should exclude archived attachments in all scope too', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'all' }
+      });
+      const ids = result.attachments.results.map(a => a._id);
+      assert(!ids.includes('att-archived-1'), 'Archived attachments should be excluded in all scope');
+    });
+
+    it('crop variants should include all sizes by default', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      const att = result.attachments.results.find(a => a._id === 'att-cropped-1');
+      assert(att, 'Should find the cropped attachment');
+      // Should have all regular sizes + all crop sizes
+      const cropUrls = att.urls.filter(u => u.path.includes('.20.'));
+      assert(cropUrls.length > 0, 'Should have crop variant URLs');
+      const cropSizes = cropUrls.map(u => u.size);
+      assert(cropSizes.includes('full'), 'Crop should include full size');
+      assert(cropSizes.includes('original'), 'Crop should include original size');
+    });
+
+    it('crop variants should respect skipSizes', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: {
+          scope: 'used',
+          skipSizes: [ 'original', 'max' ]
+        }
+      });
+      const att = result.attachments.results.find(a => a._id === 'att-cropped-1');
+      const cropUrls = att.urls.filter(u => u.path.includes('.20.'));
+      const cropSizes = cropUrls.map(u => u.size);
+      assert(!cropSizes.includes('original'), 'Crop should skip original when told to');
+      assert(!cropSizes.includes('max'), 'Crop should skip max when told to');
+      assert(cropSizes.includes('full'), 'Crop should still include full');
+    });
+
+    it('crop variants should respect sizes filter', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: {
+          scope: 'used',
+          sizes: [ 'full', 'one-half' ]
+        }
+      });
+      const att = result.attachments.results.find(a => a._id === 'att-cropped-1');
+      const cropUrls = att.urls.filter(u => u.path.includes('.20.'));
+      const cropSizes = cropUrls.map(u => u.size);
+      assert.strictEqual(cropSizes.length, 2, 'Crop should only have the 2 requested sizes');
+      assert(cropSizes.includes('full'));
+      assert(cropSizes.includes('one-half'));
+      assert(!cropSizes.includes('original'));
+    });
+  });
+
+  describe('REST API endpoint', function () {
+    let apos;
+    const externalFrontKey = 'test-static-build-key';
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/url': {
+            options: { static: true }
+          },
+          '@apostrophecms/express': {
+            options: {
+              externalFrontKey
+            }
+          },
+          article: {
+            extend: '@apostrophecms/piece-type',
+            options: {
+              name: 'article',
+              label: 'Article',
+              alias: 'article'
+            },
+            fields: {
+              add: {
+                _image: {
+                  type: 'relationship',
+                  withType: '@apostrophecms/image',
+                  label: 'Image',
+                  max: 1
+                }
+              }
+            }
+          },
+          'article-page': {
+            extend: '@apostrophecms/piece-page-type',
+            options: {
+              name: 'articlePage',
+              label: 'Articles',
+              alias: 'articlePage',
+              perPage: 10
+            }
+          },
+          '@apostrophecms/page': {
+            options: {
+              park: [
+                {
+                  title: 'Articles',
+                  type: 'articlePage',
+                  slug: '/articles',
+                  parkedId: 'articles'
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const req = apos.task.getReq();
+      const article = await apos.article.insert(req, {
         title: 'Test Article',
         visibility: 'public'
       });
+
+      // Set up idsStorage so the article references an image doc
+      await apos.doc.db.updateMany(
+        { aposDocId: article.aposDocId },
+        { $set: { imageIds: [ 'api-img-1' ] } }
+      );
     });
 
     after(async function () {
@@ -487,15 +852,15 @@ describe('Static Build Support', function () {
         }
       });
       assert(response);
-      assert(Array.isArray(response.results));
-      assert(response.results.length > 0);
+      assert(Array.isArray(response.pages));
+      assert(response.pages.length > 0);
       // Should include at least the home page and articles page
       assert(
-        response.results.some(r => r.url === '/'),
+        response.pages.some(r => r.url === '/'),
         'Should include home page'
       );
       assert(
-        response.results.some(r => r.url === '/articles'),
+        response.pages.some(r => r.url === '/articles'),
         'Should include articles page'
       );
     });
@@ -507,10 +872,160 @@ describe('Static Build Support', function () {
           'apos-external-front-key': externalFrontKey
         }
       });
-      for (const entry of response.results) {
+      for (const entry of response.pages) {
         assert(entry.url, `Entry should have url: ${JSON.stringify(entry)}`);
         assert(entry.i18nId, `Entry should have i18nId: ${JSON.stringify(entry)}`);
       }
+    });
+
+    it('should return attachments as null without query param', async function () {
+      const response = await apos.http.get('/api/v1/@apostrophecms/url', {
+        headers: {
+          'x-requested-with': 'AposExternalFront',
+          'apos-external-front-key': externalFrontKey
+        }
+      });
+      assert.strictEqual(response.attachments, null);
+    });
+
+    it('should return attachment metadata with attachments=1', async function () {
+      // Seed an attachment referencing an image doc ID that
+      // the article doc points to via imageIds idsStorage
+      await apos.attachment.db.insertOne({
+        _id: 'att-api-jpg',
+        name: 'api-photo',
+        extension: 'jpg',
+        group: 'images',
+        width: 400,
+        height: 300,
+        archived: false,
+        docIds: [ 'api-img-1:en:published' ],
+        crops: [],
+        used: true,
+        utilized: true
+      });
+
+      const response = await apos.http.get(
+        '/api/v1/@apostrophecms/url?attachments=1',
+        {
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': externalFrontKey
+          }
+        }
+      );
+      assert(response.attachments);
+      assert(typeof response.attachments.uploadsUrl === 'string');
+      assert(Array.isArray(response.attachments.results));
+      const att = response.attachments.results.find(a => a._id === 'att-api-jpg');
+      assert(att, 'Should include the seeded attachment');
+      assert(att.urls.length > 1, 'Sized image should have multiple URL entries');
+    });
+
+    it('should accept attachmentSkipSizes as comma-separated list', async function () {
+      const response = await apos.http.get(
+        '/api/v1/@apostrophecms/url?attachments=1&attachmentSkipSizes=original,max',
+        {
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': externalFrontKey
+          }
+        }
+      );
+      const att = response.attachments.results.find(a => a._id === 'att-api-jpg');
+      const sizeNames = att.urls.map(u => u.size);
+      assert(!sizeNames.includes('original'), 'original should be skipped');
+      assert(!sizeNames.includes('max'), 'max should be skipped');
+      assert(sizeNames.includes('full'), 'full should remain');
+    });
+
+    it('should accept attachmentSizes as comma-separated list', async function () {
+      const response = await apos.http.get(
+        '/api/v1/@apostrophecms/url?attachments=1&attachmentSizes=full,one-half',
+        {
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': externalFrontKey
+          }
+        }
+      );
+      const att = response.attachments.results.find(a => a._id === 'att-api-jpg');
+      const sizeNames = att.urls.map(u => u.size);
+      assert(sizeNames.includes('full'));
+      assert(sizeNames.includes('one-half'));
+      assert(!sizeNames.includes('original'));
+      assert(!sizeNames.includes('max'));
+    });
+
+    it('should accept attachmentScope=all', async function () {
+      // Insert an attachment not referenced by any content doc
+      await apos.attachment.db.insertOne({
+        _id: 'att-api-orphan',
+        name: 'api-orphan',
+        extension: 'png',
+        group: 'images',
+        width: 50,
+        height: 50,
+        archived: false,
+        docIds: [ 'unreferenced-img:en:published' ],
+        crops: [],
+        used: false,
+        utilized: false
+      });
+
+      const response = await apos.http.get(
+        '/api/v1/@apostrophecms/url?attachments=1&attachmentScope=all',
+        {
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': externalFrontKey
+          }
+        }
+      );
+      const ids = response.attachments.results.map(a => a._id);
+      assert(ids.includes('att-api-orphan'), 'all scope should include attachments not in URL results');
+    });
+
+    it('should default scope to used and exclude orphaned attachments', async function () {
+      const response = await apos.http.get(
+        '/api/v1/@apostrophecms/url?attachments=1',
+        {
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': externalFrontKey
+          }
+        }
+      );
+      const ids = response.attachments.results.map(a => a._id);
+      assert(!ids.includes('att-api-orphan'), 'used scope should not include attachments not in URL results');
+    });
+
+    it('should ignore invalid attachmentScope values', async function () {
+      const response = await apos.http.get(
+        '/api/v1/@apostrophecms/url?attachments=1&attachmentScope=evil',
+        {
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': externalFrontKey
+          }
+        }
+      );
+      // Invalid scope falls back to 'used' via launder.select
+      const ids = response.attachments.results.map(a => a._id);
+      assert(!ids.includes('att-api-orphan'), 'invalid scope should fall back to used');
+    });
+
+    it('should ignore non-boolean attachments values', async function () {
+      const response = await apos.http.get(
+        '/api/v1/@apostrophecms/url?attachments=evil',
+        {
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': externalFrontKey
+          }
+        }
+      );
+      assert.strictEqual(response.attachments, null, 'Non-boolean value should result in null attachments');
     });
   });
 
@@ -708,7 +1223,7 @@ describe('Static Build Support', function () {
 
     it('should emit getAllUrlMetadata event and include custom URLs', async function () {
       const req = apos.task.getAnonReq({ mode: 'published' });
-      const results = await apos.url.getAllUrlMetadata(req);
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
 
       assert(eventFired, 'Event should have been fired');
 
@@ -848,6 +1363,132 @@ describe('Static Build Support', function () {
       assert(
         !techChoice._url.includes('?'),
         'Static mode _url should not contain query string'
+      );
+    });
+  });
+
+  describe('getFiltersWithChoices for relationship fields', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/url': {
+            options: { static: true }
+          },
+          category: {
+            extend: '@apostrophecms/piece-type',
+            options: {
+              name: 'category',
+              label: 'Category',
+              alias: 'category'
+            }
+          },
+          article: {
+            extend: '@apostrophecms/piece-type',
+            options: {
+              name: 'article',
+              label: 'Article',
+              alias: 'article',
+              sort: { title: 1 }
+            },
+            fields: {
+              add: {
+                _categories: {
+                  type: 'relationship',
+                  withType: 'category',
+                  label: 'Categories'
+                }
+              }
+            }
+          },
+          'article-page': {
+            extend: '@apostrophecms/piece-page-type',
+            options: {
+              name: 'articlePage',
+              label: 'Articles',
+              alias: 'articlePage',
+              perPage: 10,
+              piecesFilters: [
+                { name: 'categories' }
+              ]
+            }
+          },
+          '@apostrophecms/page': {
+            options: {
+              park: [
+                {
+                  title: 'Articles',
+                  type: 'articlePage',
+                  slug: '/articles',
+                  parkedId: 'articles'
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const req = apos.task.getReq();
+      const tech = await apos.category.insert(req, {
+        title: 'Tech',
+        visibility: 'public'
+      });
+      const science = await apos.category.insert(req, {
+        title: 'Science',
+        visibility: 'public'
+      });
+
+      for (let i = 1; i <= 6; i++) {
+        const cats = i <= 3 ? [ tech ] : [ science ];
+        await apos.article.insert(req, {
+          title: `Article ${i}`,
+          visibility: 'public',
+          _categories: cats
+        });
+      }
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('should return relationship filter choices with counts', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const query = apos.articlePage.indexQuery(req);
+      const filters = await apos.articlePage.getFiltersWithChoices(query, {
+        allCounts: true
+      });
+
+      assert(Array.isArray(filters));
+      assert.strictEqual(filters.length, 1);
+      assert.strictEqual(filters[0].name, 'categories');
+
+      const techChoice = filters[0].choices.find(c => c.value === 'tech');
+      const scienceChoice = filters[0].choices.find(c => c.value === 'science');
+      assert(techChoice, 'Should have tech choice');
+      assert(scienceChoice, 'Should have science choice');
+      assert.strictEqual(techChoice.count, 3, 'Tech should have count 3');
+      assert.strictEqual(scienceChoice.count, 3, 'Science should have count 3');
+    });
+
+    it('should enumerate relationship filter URLs in getUrlMetadata', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const { pages: results } = await apos.url.getAllUrlMetadata(req);
+
+      const filterUrls = results.filter(r =>
+        r.url && r.url.startsWith('/articles/categories/')
+      );
+      assert(filterUrls.length >= 2, `Should have at least 2 filter URLs, got ${filterUrls.length}`);
+      assert(
+        filterUrls.some(r => r.url === '/articles/categories/tech'),
+        'Should enumerate /articles/categories/tech'
+      );
+      assert(
+        filterUrls.some(r => r.url === '/articles/categories/science'),
+        'Should enumerate /articles/categories/science'
       );
     });
   });

@@ -17,19 +17,9 @@ module.exports = {
     return {
       // GET /api/v1/@apostrophecms/url
       //
-      // Returns the complete URL metadata for all reachable URLs
-      // in the current locale. Requires the external frontend key.
-      //
-      // The response is `{ results: [...] }` where each entry
-      // contains at minimum `url` and `i18nId`.
-      //
-      // Entries that represent documents also include `type`,
-      // `aposDocId` and `_id`.
-      //
-      // Entries representing literal (non-HTML) content include
-      // a `contentType` property (e.g. `text/css`). Consumers
-      // should proxy these URLs and serve them with the specified
-      // content type rather than rendering them as pages.
+      // Returns the result of `getAllUrlMetadata` — an object
+      // with `pages` and `attachments` properties.
+      // See the `getAllUrlMetadata` method for full documentation.
       async getAll(req) {
         if (!req.aposExternalFront) {
           throw self.apos.error('forbidden');
@@ -40,9 +30,30 @@ module.exports = {
             'Without it, URL metadata for filters and pagination cannot be fully enumerated for a static build.'
           );
         }
-        return {
-          results: await self.getAllUrlMetadata(req)
+
+        // Parse and sanitize attachment options from the query string.
+        const launder = self.apos.launder;
+        const wantAttachments = launder.boolean(req.query.attachments);
+        const splitSizes = (val) => {
+          const list = launder.string(val)
+            .split(',').map(s => s.trim()).filter(Boolean);
+          return list.length ? list : undefined;
         };
+        const attachments = wantAttachments
+          ? {
+            sizes: splitSizes(req.query.attachmentSizes),
+            skipSizes: splitSizes(req.query.attachmentSkipSizes),
+            scope: launder.select(
+              req.query.attachmentScope,
+              [ 'used', 'all' ],
+              'used'
+            )
+          }
+          : false;
+
+        return self.getAllUrlMetadata(req, {
+          attachments
+        });
       }
     };
   },
@@ -256,10 +267,27 @@ module.exports = {
       // generation and sitemaps. Usually called in a loop,
       // once for each locale.
       //
-      // ## Returned schema
+      // ## Returned shape
       //
-      // Returns an array of metadata objects. Each object may
-      // contain the following properties:
+      // The return value is always:
+      //
+      // ```js
+      // {
+      //   pages: [ ...page metadata entries ],
+      //   attachments: { // null when not requested
+      //     uploadsUrl: '/uploads',
+      //     results: [
+      //       { _id: 'abc', urls: [{ size?, path }] },
+      //       ...
+      //     ]
+      //   }
+      // }
+      // ```
+      //
+      // ## Page metadata entries (`pages`)
+      //
+      // Each entry in the `pages` array may contain the
+      // following properties:
       //
       // ### `url` (string, always present)
       // The URL path for this entry, relative to the site's
@@ -348,23 +376,92 @@ module.exports = {
       // `getUrlMetadata` on such a manager.
       //
       // Handlers should respect `excludeTypes`.
-      async getAllUrlMetadata(req, { excludeTypes = [] } = {}) {
+      //
+      // ## Attachment metadata (`attachments`)
+      //
+      // When `options.attachments` is a truthy object, attachment
+      // metadata is collected after URL enumeration and returned
+      // alongside the pages.  The option accepts:
+      //
+      // - `scope` (`'used'` | `'all'`): `'used'` (default) limits
+      //   to attachments referenced by documents present in the
+      //   results.  `'all'` returns every non-archived attachment.
+      // - `sizes` (string[]): explicit image sizes to include.
+      // - `skipSizes` (string[]): image sizes to exclude.
+      //
+      // `attachments.uploadsUrl` is the uploadfs base URL prefix
+      // (e.g. `/uploads` or `https://cdn.example.com`).
+      //
+      // Each entry in `attachments.results` contains:
+      // - `_id` (string): the attachment record ID.
+      // - `urls` (array): `{ size, path }` objects where `path`
+      //   is the uploadfs-relative file path.
+      //
+      async getAllUrlMetadata(req, { excludeTypes = [], attachments = false } = {}) {
         // Ensure global doc is available for event handlers
         // that may need it (e.g. @apostrophecms/styles)
         await self.apos.global.addGlobalToData(req);
-        let results = [];
+        const results = [];
+        const allAttachmentDocIds = new Set();
+        const collectDocIds = !!attachments && attachments.scope !== 'all';
         const types = await self.apos.doc.db.distinct('type');
         for (const type of types) {
           if (!excludeTypes.includes(type)) {
-            results = [
-              ...results,
-              ...await self.apos.doc.getManager(type)
-                .getAllUrlMetadata(req)
-            ];
+            const manager = self.apos.doc.getManager(type);
+            if (!manager?.getAllUrlMetadata) {
+              continue;
+            }
+            const {
+              metadata,
+              attachmentDocIds
+            } = await manager
+              .getAllUrlMetadata(req, { attachments: collectDocIds });
+            for (const entry of metadata) {
+              results.push(entry);
+            }
+            for (const id of attachmentDocIds) {
+              allAttachmentDocIds.add(id);
+            }
           }
         }
         await self.emit('getAllUrlMetadata', req, results, { excludeTypes });
-        return results;
+
+        const response = {
+          pages: results,
+          attachments: null
+        };
+
+        if (attachments) {
+          const {
+            sizes, skipSizes, scope
+          } = attachments;
+
+          const docIds = collectDocIds
+            ? [ ...allAttachmentDocIds ]
+            : undefined;
+
+          response.attachments = {
+            uploadsUrl: self.apos.attachment.uploadfs.getUrl(),
+            results: await self.apos.attachment.getStaticMetadata({
+              docIds,
+              sizes,
+              skipSizes
+            })
+          };
+          await self.emit(
+            'getAllAttachmentMetadata',
+            req,
+            response.attachments.results,
+            {
+              sizes,
+              skipSizes,
+              scope,
+              uploadsUrl: response.attachments.uploadsUrl
+            }
+          );
+        }
+
+        return response;
       },
       // Returns a string suitable to append to the original page URL when we're
       // specifying a particular filter and a page number. Pages start with 1

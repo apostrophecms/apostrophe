@@ -92,6 +92,17 @@ module.exports = {
   },
   methods(self) {
     return {
+      // File docs are attachment containers themselves — their
+      // attachments are discovered via relationship walking from
+      // the content docs that reference them.  Iterating all
+      // published files here would make the "used" scope
+      // equivalent to "all", defeating scoped attachment builds.
+      async getAllUrlMetadata() {
+        return {
+          metadata: [],
+          attachmentDocIds: []
+        };
+      },
       addUrls(req, files) {
         _.each(files, function (file) {
           file._url = self.apos.attachment.url(file.attachment);

@@ -82,6 +82,20 @@ module.exports = (self, options) => {
 
       return expanded;
     },
+    // Returns the locale-qualified stylesheet URL for the given
+    // request. The path encodes the locale so that static-build
+    // tools produce a distinct file per locale.
+    getStylesheetUrl(req) {
+      const version = req.data.global?.stylesStylesheetVersion;
+      return `${self.action}/stylesheet/locale/${req.locale}/${req.mode}${version ? `?version=${version}` : ''}`;
+    },
+    // Shared implementation for the stylesheet API routes.
+    // Sets cache headers and returns the raw CSS string.
+    serveStylesheet(req) {
+      req.res.setHeader('Content-Type', 'text/css');
+      req.res.setHeader('Cache-Control', 'public, max-age=31557600');
+      return req.data.global?.stylesStylesheet || '';
+    },
     stylesheet(req) {
       // Stylesheet node should be created only for logged in users.
       if (!req.data.global) {
@@ -94,7 +108,7 @@ module.exports = (self, options) => {
       // and similar features from those who should just get the link tag
       const hasLink = !self.apos.permission.can(req, 'view-draft');
       if (req.data.global.stylesStylesheet && hasLink) {
-        const href = `${self.action}/stylesheet?version=${req.data.global.stylesStylesheetVersion}&aposLocale=${req.locale}:${req.mode}`;
+        const href = self.getStylesheetUrl(req);
         nodes.push({
           name: 'link',
           attrs: {
