@@ -97,7 +97,9 @@ function getMetaHead(data, options) {
     // Previous page link
     if (currentPage > 1) {
       const prevPage = currentPage - 1;
-      const prevUrl = prevPage === 1 ? baseUrl : `${baseUrl}?page=${prevPage}`;
+      const prevUrl = options.buildPaginationUrl
+        ? options.buildPaginationUrl(data, prevPage)
+        : (prevPage === 1 ? baseUrl : `${baseUrl}?page=${prevPage}`);
       nodes.push({
         name: 'link',
         attrs: {
@@ -109,24 +111,27 @@ function getMetaHead(data, options) {
 
     // Next page link
     if (currentPage < totalPages) {
+      const nextUrl = options.buildPaginationUrl
+        ? options.buildPaginationUrl(data, currentPage + 1)
+        : `${baseUrl}?page=${currentPage + 1}`;
       nodes.push({
         name: 'link',
         attrs: {
           rel: 'next',
-          href: `${baseUrl}?page=${currentPage + 1}`
+          href: nextUrl
         }
       });
     }
   } else if (data.currentPage && data.totalPages && data.page?._url) {
     const currentPage = data.currentPage;
     const totalPages = data.totalPages;
-    const baseUrl = data.page._url;
 
     // Previous page link
     if (currentPage > 1) {
       const prevPage = currentPage - 1;
-      // Page 1 should have clean URL (no query string)
-      const prevUrl = prevPage === 1 ? baseUrl : `${baseUrl}?page=${prevPage}`;
+      const prevUrl = options.buildPaginationUrl
+        ? options.buildPaginationUrl(data, prevPage)
+        : (prevPage === 1 ? data.page._url : `${data.page._url}?page=${prevPage}`);
       nodes.push({
         name: 'link',
         attrs: {
@@ -138,11 +143,14 @@ function getMetaHead(data, options) {
 
     // Next page link
     if (currentPage < totalPages) {
+      const nextUrl = options.buildPaginationUrl
+        ? options.buildPaginationUrl(data, currentPage + 1)
+        : `${data.page._url}?page=${currentPage + 1}`;
       nodes.push({
         name: 'link',
         attrs: {
           rel: 'next',
-          href: `${baseUrl}?page=${currentPage + 1}`
+          href: nextUrl
         }
       });
     }

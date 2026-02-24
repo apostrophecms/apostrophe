@@ -58,6 +58,16 @@ module.exports = {
     };
   },
 
+  handlers(self) {
+    return {
+      '@apostrophecms/page:beforeSend': {
+        addStaticUrlsFlag(req) {
+          req.data.staticUrls = !!self.options.static;
+        }
+      }
+    };
+  },
+
   methods(self) {
     return {
 
