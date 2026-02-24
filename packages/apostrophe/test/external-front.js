@@ -11,6 +11,7 @@ describe('External Front', function() {
   this.timeout(t.timeout);
 
   after(function() {
+    delete process.env.APOS_EXTERNAL_FRONT_KEY;
     return t.destroy(apos);
   });
 
