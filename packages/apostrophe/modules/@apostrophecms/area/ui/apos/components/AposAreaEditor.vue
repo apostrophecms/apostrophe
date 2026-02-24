@@ -43,6 +43,7 @@
       </template>
     </div>
     <div class="apos-areas-widgets-list">
+      <!-- TODO raise the zindex if we are focused or our children are focused -->
       <AposAreaWidget
         v-for="(widget, i) in next"
         :key="widget._id"
@@ -61,6 +62,11 @@
         :disabled="field && field.readOnly"
         :max-reached="maxReached"
         :rendering="rendering(widget)"
+        :style="{
+          'z-index': focusedWidget === widget._id
+            ? next.length + 1
+            : null
+        }"
         @up="up"
         @down="down"
         @remove="remove"
