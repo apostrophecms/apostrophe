@@ -1492,4 +1492,524 @@ describe('Static Build Support', function () {
       );
     });
   });
+
+  describe('URL support', function () {
+
+    describe('baseUrl configured, no staticBaseUrl', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('apos.baseUrl is set correctly', function () {
+        assert.strictEqual(apos.baseUrl, 'http://localhost:3000');
+      });
+
+      it('apos.staticBaseUrl is undefined when not configured', function () {
+        assert.strictEqual(apos.staticBaseUrl, undefined);
+      });
+
+      it('getBaseUrl returns empty string when req.aposStaticBuild is true and no staticBaseUrl', function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const baseUrl = apos.page.getBaseUrl(req);
+        assert.strictEqual(baseUrl, '');
+      });
+
+      it('getBaseUrl returns apos.baseUrl when req.aposStaticBuild is not set', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const baseUrl = apos.page.getBaseUrl(req);
+        assert.strictEqual(baseUrl, 'http://localhost:3000');
+      });
+
+      it('getAllUrlMetadata strips baseUrl from page URLs for static build requests', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const { pages } = await apos.url.getAllUrlMetadata(req);
+        assert(pages.length > 0);
+        for (const entry of pages) {
+          assert(
+            !entry.url.startsWith('http://'),
+            `URL should be path-only, got: ${entry.url}`
+          );
+        }
+        const home = pages.find(r => r.url === '/');
+        assert(home, 'Should include the home page with path-only URL');
+      });
+
+      it('getAllUrlMetadata strips baseUrl from uploadsUrl for static build requests', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const { attachments } = await apos.url.getAllUrlMetadata(req, {
+          attachments: { scope: 'all' }
+        });
+        assert(attachments);
+        assert(
+          !attachments.uploadsUrl.startsWith('http://'),
+          `uploadsUrl should be path-only, got: ${attachments.uploadsUrl}`
+        );
+        assert.strictEqual(attachments.uploadsUrl, '/uploads');
+      });
+
+      it('apos.baseUrl is NOT modified after static build requests', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        await apos.url.getAllUrlMetadata(req);
+        assert.strictEqual(apos.baseUrl, 'http://localhost:3000');
+      });
+    });
+
+    describe('baseUrl + staticBaseUrl configured', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://www.example.com',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('apos.staticBaseUrl is set correctly', function () {
+        assert.strictEqual(apos.staticBaseUrl, 'https://www.example.com');
+      });
+
+      it('getBaseUrl returns staticBaseUrl when req.aposStaticBuild is true', function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const baseUrl = apos.page.getBaseUrl(req);
+        assert.strictEqual(baseUrl, 'https://www.example.com');
+      });
+
+      it('getBaseUrl returns apos.baseUrl when req.aposStaticBuild is not set', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const baseUrl = apos.page.getBaseUrl(req);
+        assert.strictEqual(baseUrl, 'http://localhost:3000');
+      });
+
+      it('getAllUrlMetadata strips staticBaseUrl from page URLs for static build requests', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const { pages } = await apos.url.getAllUrlMetadata(req);
+        assert(pages.length > 0);
+        for (const entry of pages) {
+          assert(
+            !entry.url.startsWith('https://'),
+            `URL should be path-only, got: ${entry.url}`
+          );
+        }
+        const home = pages.find(r => r.url === '/');
+        assert(home, 'Should include the home page with path-only URL');
+      });
+
+      it('getAllUrlMetadata strips original baseUrl from uploadsUrl', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const { attachments } = await apos.url.getAllUrlMetadata(req, {
+          attachments: { scope: 'all' }
+        });
+        assert(attachments);
+        assert.strictEqual(
+          attachments.uploadsUrl,
+          '/uploads',
+          'uploadsUrl should strip the original baseUrl, not staticBaseUrl'
+        );
+      });
+
+      it('req.absoluteUrl uses staticBaseUrl during static builds', function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true,
+          url: '/some-page'
+        });
+        assert(
+          req.absoluteUrl.startsWith('https://www.example.com'),
+          `req.absoluteUrl should use staticBaseUrl, got: ${req.absoluteUrl}`
+        );
+      });
+
+      it('apos.baseUrl is NOT modified after static build requests', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        await apos.url.getAllUrlMetadata(req);
+        assert.strictEqual(apos.baseUrl, 'http://localhost:3000');
+      });
+    });
+
+    describe('staticBaseUrl only (no baseUrl)', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          staticBaseUrl: 'https://www.example.com',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('apos.baseUrl is undefined', function () {
+        assert.strictEqual(apos.baseUrl, undefined);
+      });
+
+      it('apos.staticBaseUrl is set', function () {
+        assert.strictEqual(apos.staticBaseUrl, 'https://www.example.com');
+      });
+
+      it('getBaseUrl returns staticBaseUrl when req.aposStaticBuild is true', function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const baseUrl = apos.page.getBaseUrl(req);
+        assert.strictEqual(baseUrl, 'https://www.example.com');
+      });
+
+      it('getBaseUrl returns empty string without static build flag', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const baseUrl = apos.page.getBaseUrl(req);
+        assert.strictEqual(baseUrl, '');
+      });
+
+      it('getAllUrlMetadata strips staticBaseUrl from page URLs', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const { pages } = await apos.url.getAllUrlMetadata(req);
+        assert(pages.length > 0);
+        for (const entry of pages) {
+          assert(
+            !entry.url.startsWith('https://'),
+            `URL should be path-only, got: ${entry.url}`
+          );
+        }
+      });
+
+      it('uploadsUrl is path-only (no baseUrl to strip)', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const { attachments } = await apos.url.getAllUrlMetadata(req, {
+          attachments: { scope: 'all' }
+        });
+        assert(attachments);
+        assert.strictEqual(attachments.uploadsUrl, '/uploads');
+      });
+    });
+
+    describe('baseUrl + prefix', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          prefix: '/cms',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('getAllUrlMetadata strips baseUrl but preserves prefix in page URLs', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const { pages } = await apos.url.getAllUrlMetadata(req);
+        assert(pages.length > 0);
+        for (const entry of pages) {
+          assert(
+            !entry.url.startsWith('http://'),
+            `URL should not start with http://, got: ${entry.url}`
+          );
+          assert(
+            entry.url.startsWith('/cms') || entry.url.startsWith('/api'),
+            `URL should start with /cms prefix, got: ${entry.url}`
+          );
+        }
+      });
+
+      it('getAllUrlMetadata strips baseUrl from uploadsUrl, preserving prefix', async function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const { attachments } = await apos.url.getAllUrlMetadata(req, {
+          attachments: { scope: 'all' }
+        });
+        assert(attachments);
+        assert.strictEqual(
+          attachments.uploadsUrl,
+          '/cms/uploads',
+          'uploadsUrl should be path-only with prefix preserved'
+        );
+      });
+    });
+
+    describe('no static header (normal external front)', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('getAllUrlMetadata returns path-only page URLs even without static build flag', async function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const { pages } = await apos.url.getAllUrlMetadata(req);
+        assert(pages.length > 0);
+        const home = pages.find(r => r.url === '/');
+        assert(home, 'Should return path-only URLs regardless of static build flag');
+        for (const entry of pages) {
+          assert(
+            !entry.url.startsWith('http://'),
+            `URL should be path-only, got: ${entry.url}`
+          );
+        }
+      });
+
+      it('getAllUrlMetadata returns path-only uploadsUrl even without static build flag', async function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const { attachments } = await apos.url.getAllUrlMetadata(req, {
+          attachments: { scope: 'all' }
+        });
+        assert(attachments);
+        assert.strictEqual(
+          attachments.uploadsUrl,
+          '/uploads',
+          'uploadsUrl should be path-only regardless of static build flag'
+        );
+      });
+    });
+
+    describe('APOS_STATIC_BASE_URL environment variable', function () {
+      let apos;
+      let savedEnvVar;
+
+      before(async function () {
+        savedEnvVar = process.env.APOS_STATIC_BASE_URL;
+        process.env.APOS_STATIC_BASE_URL = 'https://env.example.com';
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://option.example.com',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        if (savedEnvVar) {
+          process.env.APOS_STATIC_BASE_URL = savedEnvVar;
+        } else {
+          delete process.env.APOS_STATIC_BASE_URL;
+        }
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('env variable overrides the staticBaseUrl option', function () {
+        assert.strictEqual(apos.staticBaseUrl, 'https://env.example.com');
+      });
+
+      it('getBaseUrl uses env-based staticBaseUrl for static builds', function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          aposStaticBuild: true
+        });
+        const baseUrl = apos.page.getBaseUrl(req);
+        assert.strictEqual(baseUrl, 'https://env.example.com');
+      });
+    });
+
+    describe('express middleware sets req.aposStaticBuild', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://www.example.com',
+          modules: {
+            '@apostrophecms/express': {
+              options: {
+                externalFrontKey: 'test-key'
+              }
+            },
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('sets req.aposStaticBuild and req.staticBaseUrl when header is present', async function () {
+        const jar = apos.http.jar();
+        // Use the URL API endpoint which requires externalFront
+        const response = await apos.http.get('/api/v1/@apostrophecms/url', {
+          jar,
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': 'test-key',
+            'x-apos-static-base-url': '1'
+          }
+        });
+        assert(response);
+        assert(response.pages);
+        // Page URLs should be path-only (stripped)
+        for (const entry of response.pages) {
+          assert(
+            !entry.url.startsWith('http://') && !entry.url.startsWith('https://'),
+            `URL should be path-only via HTTP, got: ${entry.url}`
+          );
+        }
+      });
+
+      it('returns path-only URLs even without the static header', async function () {
+        const jar = apos.http.jar();
+        const response = await apos.http.get('/api/v1/@apostrophecms/url', {
+          jar,
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': 'test-key'
+          }
+        });
+        assert(response);
+        assert(response.pages);
+        const home = response.pages.find(r => r.url === '/');
+        assert(home, 'URLs should be path-only regardless of static header');
+      });
+    });
+
+    describe('CDN uploadsUrl (cloud provider)', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            },
+            '@apostrophecms/uploadfs': {
+              options: {
+                uploadfs: {
+                  uploadsUrl: 'https://cdn.example.com/uploads'
+                }
+              }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('does not strip CDN uploadsUrl that differs from baseUrl', async function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const { attachments } = await apos.url.getAllUrlMetadata(req, {
+          attachments: { scope: 'all' }
+        });
+        assert(attachments);
+        assert.strictEqual(
+          attachments.uploadsUrl,
+          'https://cdn.example.com/uploads',
+          'CDN uploadsUrl should be left unchanged'
+        );
+      });
+
+      it('still strips baseUrl from page URLs', async function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const { pages } = await apos.url.getAllUrlMetadata(req);
+        assert(pages.length > 0);
+        for (const entry of pages) {
+          assert(
+            !entry.url.startsWith('http://localhost:3000'),
+            `URL should be path-only, got: ${entry.url}`
+          );
+        }
+      });
+    });
+  });
 });

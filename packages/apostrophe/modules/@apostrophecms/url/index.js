@@ -471,6 +471,23 @@ module.exports = {
           );
         }
 
+        const effectiveBaseUrl = self.apos.page.getBaseUrl(req);
+        if (effectiveBaseUrl) {
+          for (const entry of response.pages) {
+            if (entry.url?.startsWith(effectiveBaseUrl)) {
+              entry.url = entry.url.slice(effectiveBaseUrl.length) || '/';
+            }
+          }
+        }
+
+        if (response.attachments) {
+          const baseUrl = self.apos.baseUrl || '';
+          if (baseUrl && response.attachments.uploadsUrl.startsWith(baseUrl)) {
+            response.attachments.uploadsUrl =
+              response.attachments.uploadsUrl.slice(baseUrl.length);
+          }
+        }
+
         return response;
       },
       // Returns a string suitable to append to the original page URL when we're

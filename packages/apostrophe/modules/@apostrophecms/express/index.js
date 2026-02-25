@@ -272,6 +272,14 @@ module.exports = {
           return res.status(403).send('forbidden');
         }
         req.aposExternalFront = true;
+        if (req.headers['x-apos-static-base-url'] === '1') {
+          // Downstream code (page.getBaseUrl) checks this to decide
+          // which base URL to use for this request.
+          req.aposStaticBuild = true;
+          if (self.apos.staticBaseUrl) {
+            req.staticBaseUrl = self.apos.staticBaseUrl;
+          }
+        }
         res.redirect = function(...args) {
           // The external front end needs to issue the actual redirect,
           // not us

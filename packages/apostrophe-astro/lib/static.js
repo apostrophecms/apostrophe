@@ -24,7 +24,8 @@ export async function writeConfigCache(staticBuild) {
 function authHeaders(key) {
   return {
     'x-requested-with': 'AposExternalFront',
-    'apos-external-front-key': key
+    'apos-external-front-key': key,
+    'x-apos-static-base-url': '1'
   };
 }
 
@@ -418,7 +419,7 @@ export async function writeAttachments({ aposHost, outDir, logger }) {
 
   const totalStart = performance.now();
   process.stdout.write(`${bgGreen(black(' copying attachments '))}\n`);
-  process.stdout.write(`${timestamp()} ${green('▶')} ${dim(`${downloads.length} files`)}\n`);
+  process.stdout.write(`${timestamp()} ${green('▶')} ${dim(outputPrefix || '/')}\n`);
 
   let written = 0;
   let failed = 0;

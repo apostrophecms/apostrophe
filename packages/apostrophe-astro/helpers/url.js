@@ -6,6 +6,9 @@ import config from 'virtual:apostrophe-config';
  * Reads from the `APOS_HOST` environment variable first, then
  * falls back to the `aposHost` value configured in the Astro
  * integration options.
+ * WARNING: not to be confused With "Public Host" - this is meant to be used
+ * only in Astro server-side code. Use relative URLs for client-side
+ * requests `/api/v1/...`.
  *
  * @returns {string} The backend host URL (e.g. `http://localhost:3000`).
  *
