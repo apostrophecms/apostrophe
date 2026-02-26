@@ -8,11 +8,15 @@ import {
   cleanupCache
 } from './lib/static.js';
 
-// Parse a comma-separated env var into an array, or return undefined.
+// Parse a comma-separated env var into an array, or return undefined
+// when the variable is not present.
 function csvEnv(name) {
+  if (!(name in process.env)) {
+    return undefined;
+  }
   const val = process.env[name];
   if (!val) {
-    return undefined;
+    return [];
   }
   return val.split(',').map((s) => s.trim()).filter(Boolean);
 }
@@ -20,17 +24,19 @@ function csvEnv(name) {
 /**
  * @typedef {object} StaticBuildOptions
  * @property {boolean} [attachments=true] - Whether to copy attachments
- *   into the static build output.  Falls back to `APOS_SKIP_ATTACHMENTS=1`
- *   env var (disables when set).
+ *   into the static build output.  Overridden when `APOS_SKIP_ATTACHMENTS`
+ *   env var is present (`1` disables, `0` enables).
  * @property {string[]} [attachmentSizes] - Explicit image sizes to
- *   include (e.g. `['max', 'full']`).  Falls back to the
- *   `APOS_ATTACHMENT_SIZES` env var (comma-separated, e.g. `max,full`).
+ *   include (e.g. `['max', 'full']`).  Overridden when the
+ *   `APOS_ATTACHMENT_SIZES` env var is present (comma-separated,
+ *   e.g. `max,full`).
  * @property {string[]} [attachmentSkipSizes=['original']] - Image sizes
- *   to exclude.  Falls back to `APOS_ATTACHMENT_SKIP_SIZES` env var
- *   (comma-separated, e.g. `original,max`).
+ *   to exclude.  Overridden when `APOS_ATTACHMENT_SKIP_SIZES` env var
+ *   is present (comma-separated, e.g. `original,max`).
  * @property {'used'|'all'} [attachmentScope='used'] - `'used'` limits
  *   to attachments referenced by built pages; `'all'` includes every
- *   attachment in the database.  Falls back to `APOS_ATTACHMENT_SCOPE`.
+ *   attachment in the database.  Overridden when `APOS_ATTACHMENT_SCOPE`
+ *   env var is present.
  */
 
 /**
@@ -78,20 +84,22 @@ export default function apostropheIntegration(options) {
         }
 
         // Resolve static build configuration.
-        // User config takes precedence over environment variables.
-        // Env vars serve as fallback for zero-config CI setups.
+        // Environment variables take precedence over integration
+        // options so that CI/deployment pipelines can override
+        // without changing code.
         const userStatic = options.staticBuild || {};
         const staticBuild = {
-          attachments: userStatic.attachments
-            ?? (process.env.APOS_SKIP_ATTACHMENTS === '1' ? false : true),
-          attachmentSizes: userStatic.attachmentSizes
-            || csvEnv('APOS_ATTACHMENT_SIZES'),
-          attachmentSkipSizes: userStatic.attachmentSkipSizes
-            || csvEnv('APOS_ATTACHMENT_SKIP_SIZES')
-            || [ 'original' ],
-          attachmentScope: userStatic.attachmentScope
-            || process.env.APOS_ATTACHMENT_SCOPE
-            || 'used'
+          attachments: process.env.APOS_SKIP_ATTACHMENTS
+            ? process.env.APOS_SKIP_ATTACHMENTS !== '1'
+            : (userStatic.attachments ?? true),
+          attachmentSizes: csvEnv('APOS_ATTACHMENT_SIZES')
+            ?? userStatic.attachmentSizes,
+          attachmentSkipSizes: csvEnv('APOS_ATTACHMENT_SKIP_SIZES')
+            ?? userStatic.attachmentSkipSizes
+            ?? [ 'original' ],
+          attachmentScope: process.env.APOS_ATTACHMENT_SCOPE
+            ? process.env.APOS_ATTACHMENT_SCOPE
+            : (userStatic.attachmentScope || 'used')
         };
 
         // Persist static build config so `lib/static.js` can read

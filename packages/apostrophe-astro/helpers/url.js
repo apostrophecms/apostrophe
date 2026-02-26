@@ -112,3 +112,41 @@ export function buildPageUrl(aposData, pageNum) {
   url.searchParams.set('page', String(pageNum));
   return `${url.pathname}${url.search}`;
 }
+
+/**
+ * Add, update or remove a named query parameter and return a new URL.
+ *
+ * If `value` is `undefined`, `null` or empty string the parameter is
+ * removed from the query string.  Internal Apostrophe parameters
+ * (`aposRefresh`, `aposMode`, `aposEdit`) are always stripped.
+ *
+ * Typically `Astro.url` is passed as the first argument.
+ *
+ * @param {URL|string} url - The current URL.
+ * @param {string} name - The query parameter name.
+ * @param {string|null|undefined} value - The value to set, or
+ *   `null`/`undefined`/`''` to remove.
+ * @returns {URL} A new URL with the parameter applied.
+ *
+ * @example
+ * ```astro
+ * ---
+ * import { aposSetQueryParameter } from '@apostrophecms/apostrophe-astro/helpers';
+ * const next = aposSetQueryParameter(Astro.url, 'page', '2');
+ * ---
+ * <a href={next.pathname + next.search}>Page 2</a>
+ * ```
+ */
+export function aposSetQueryParameter(url, name, value) {
+  const newUrl = new URL(url);
+  // Internal query parameters not suitable for public facing URLs
+  newUrl.searchParams.delete('aposRefresh');
+  newUrl.searchParams.delete('aposMode');
+  newUrl.searchParams.delete('aposEdit');
+  if ((value == null) || (value === '')) {
+    newUrl.searchParams.delete(name);
+  } else {
+    newUrl.searchParams.set(name, value);
+  }
+  return newUrl;
+}
