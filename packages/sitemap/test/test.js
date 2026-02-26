@@ -507,6 +507,461 @@ describe('Apostrophe Sitemap', function() {
   });
 });
 
+describe('Sitemap – getAllUrlMetadata integration (static: true)', function () {
+  this.timeout(t.timeout);
+
+  describe('filter and pagination URLs', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:7780',
+        testModule: true,
+        modules: getProductAppConfig({
+          perPage: 3,
+          staticUrls: true
+        })
+      });
+
+      const req = apos.task.getReq();
+      // 6 electronics, 2 books → 8 total
+      for (let i = 1; i <= 8; i++) {
+        await apos.product.insert(req, {
+          title: `Product ${String(i).padStart(2, '0')}`,
+          slug: `product-${String(i).padStart(2, '0')}`,
+          visibility: 'public',
+          category: i <= 6 ? 'electronics' : 'books'
+        });
+      }
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+    });
+
+    it('should include filter URLs in the sitemap', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml.indexOf('<loc>http://localhost:7780/products/category/electronics</loc>') !== -1,
+        'Should include electronics filter URL');
+      assert(xml.indexOf('<loc>http://localhost:7780/products/category/books</loc>') !== -1,
+        'Should include books filter URL');
+    });
+
+    it('should include pagination URLs for the main index', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      // 8 products with perPage=3 → pages 2 and 3
+      assert(xml.indexOf('<loc>http://localhost:7780/products/page/2</loc>') !== -1,
+        'Should include page 2');
+      assert(xml.indexOf('<loc>http://localhost:7780/products/page/3</loc>') !== -1,
+        'Should include page 3');
+      // Page 1 is the base /products URL, no separate /page/1
+      assert(xml.indexOf('<loc>http://localhost:7780/products/page/1</loc>') === -1,
+        'Should NOT include page 1 separately');
+    });
+
+    it('should include paginated filter URLs when needed', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      // 6 electronics with perPage=3 → 2 pages for the electronics filter
+      assert(xml.indexOf('<loc>http://localhost:7780/products/category/electronics/page/2</loc>') !== -1,
+        'Should include electronics page 2');
+      // 2 books with perPage=3 → only 1 page, no separate pagination entry
+      assert(xml.indexOf('<loc>http://localhost:7780/products/category/books/page/2</loc>') === -1,
+        'Should NOT include books page 2 (only 2 items)');
+    });
+
+    it('should still include individual piece URLs', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml.indexOf('<loc>http://localhost:7780/products/product-01</loc>') !== -1,
+        'Should include individual product URL');
+      assert(xml.indexOf('<loc>http://localhost:7780/products/product-08</loc>') !== -1,
+        'Should include last product URL');
+    });
+
+    it('should include the base index page URL', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml.indexOf('<loc>http://localhost:7780/products</loc>') !== -1,
+        'Should include the products index page');
+    });
+  });
+
+  describe('literal content and sitemap:false exclusion', function () {
+    let apos;
+
+    before(async function () {
+      const appConfig = getAppConfig({
+        extraModules: {
+          'custom-urls': {
+            handlers(self) {
+              return {
+                '@apostrophecms/url:getAllUrlMetadata': {
+                  addCustomEntries(req, results) {
+                    // A literal content entry — should be excluded
+                    results.push({
+                      url: '/custom-styles.css',
+                      contentType: 'text/css',
+                      i18nId: 'custom:styles',
+                      sitemap: false
+                    });
+                    // A sitemap:false entry without contentType — should be excluded
+                    results.push({
+                      url: '/internal-only',
+                      i18nId: 'custom:internal',
+                      sitemap: false
+                    });
+                    // A normal entry — should be included
+                    results.push({
+                      url: '/custom-page',
+                      i18nId: 'custom:page',
+                      changefreq: 'weekly',
+                      priority: 0.5
+                    });
+                  }
+                }
+              };
+            }
+          }
+        }
+      });
+
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:7780',
+        testModule: true,
+        modules: appConfig
+      });
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+    });
+
+    it('should exclude literal content entries from the sitemap', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml.indexOf('/custom-styles.css') === -1,
+        'Literal content entry should not appear in sitemap');
+    });
+
+    it('should exclude sitemap:false entries from the sitemap', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml.indexOf('/internal-only') === -1,
+        'sitemap:false entry should not appear in sitemap');
+    });
+
+    it('should include normal event-contributed entries in the sitemap', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml.indexOf('<loc>http://localhost:7780/custom-page</loc>') !== -1,
+        'Normal event-contributed entry should appear in sitemap');
+    });
+
+    it('should use custom changefreq and priority from event entries', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      // Find the block containing /custom-page and verify changefreq/priority
+      const idx = xml.indexOf('<loc>http://localhost:7780/custom-page</loc>');
+      assert(idx !== -1);
+      // Extract the surrounding <url> block
+      const urlStart = xml.lastIndexOf('<url>', idx);
+      const urlEnd = xml.indexOf('</url>', idx);
+      const urlBlock = xml.slice(urlStart, urlEnd);
+      assert(urlBlock.indexOf('<changefreq>weekly</changefreq>') !== -1,
+        'Should use the custom changefreq');
+      assert(urlBlock.indexOf('<priority>0.5</priority>') !== -1,
+        'Should use the custom priority');
+    });
+  });
+
+  describe('multi-language filter and pagination URLs', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:7780',
+        testModule: true,
+        modules: getProductAppConfig({
+          perPage: 5,
+          staticUrls: true,
+          multilanguage: true
+        })
+      });
+
+      const req = apos.task.getReq();
+      for (let i = 1; i <= 4; i++) {
+        const product = await apos.product.insert(req, {
+          title: `Product ${i}`,
+          visibility: 'public',
+          category: i <= 2 ? 'electronics' : 'books'
+        });
+        await apos.product.publish(req, product);
+        // Localize to Spanish
+        const localized = await apos.product.localize(req, product, 'es');
+        await apos.product.publish(req, localized);
+      }
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+    });
+
+    it('should include filter URLs for each locale', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      // English
+      assert(xml.indexOf('<loc>http://localhost:7780/products/category/electronics</loc>') !== -1,
+        'Should include en electronics filter');
+      assert(xml.indexOf('<loc>http://localhost:7780/products/category/books</loc>') !== -1,
+        'Should include en books filter');
+      // Spanish
+      assert(xml.indexOf('<loc>http://localhost:7780/es/products/category/electronics</loc>') !== -1,
+        'Should include es electronics filter');
+      assert(xml.indexOf('<loc>http://localhost:7780/es/products/category/books</loc>') !== -1,
+        'Should include es books filter');
+    });
+
+    it('should cross-reference filter URLs with hreflang across locales', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      // The electronics filter URL in en should have hreflang pointing to es
+      const enIdx = xml.indexOf('<loc>http://localhost:7780/products/category/electronics</loc>');
+      assert(enIdx !== -1);
+      const urlStart = xml.lastIndexOf('<url>', enIdx);
+      const urlEnd = xml.indexOf('</url>', enIdx);
+      const urlBlock = xml.slice(urlStart, urlEnd);
+      assert(
+        urlBlock.indexOf('hreflang="es" href="http://localhost:7780/es/products/category/electronics"') !== -1,
+        'en electronics filter should have hreflang pointing to es equivalent'
+      );
+    });
+  });
+});
+
+describe('Sitemap – query string URLs (static: false)', function () {
+  this.timeout(t.timeout);
+
+  describe('filter and pagination URLs', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:7780',
+        testModule: true,
+        modules: getProductAppConfig({ perPage: 3 })
+      });
+
+      const req = apos.task.getReq();
+      // 6 electronics, 2 books → 8 total
+      for (let i = 1; i <= 8; i++) {
+        await apos.product.insert(req, {
+          title: `Product ${String(i).padStart(2, '0')}`,
+          slug: `product-${String(i).padStart(2, '0')}`,
+          visibility: 'public',
+          category: i <= 6 ? 'electronics' : 'books'
+        });
+      }
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+    });
+
+    it('should include filter URLs with query string format', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml.indexOf('<loc>http://localhost:7780/products?category=electronics</loc>') !== -1,
+        'Should include electronics filter URL as query string');
+      assert(xml.indexOf('<loc>http://localhost:7780/products?category=books</loc>') !== -1,
+        'Should include books filter URL as query string');
+    });
+
+    it('should include pagination URLs with query string format', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      // 8 products with perPage=3 → pages 2 and 3
+      assert(xml.indexOf('http://localhost:7780/products?page=2') !== -1,
+        'Should include page 2 as query string');
+      assert(xml.indexOf('http://localhost:7780/products?page=3') !== -1,
+        'Should include page 3 as query string');
+      // Page 1 is the base /products URL
+      assert(xml.indexOf('http://localhost:7780/products?page=1') === -1,
+        'Should NOT include page 1 separately');
+    });
+
+    it('should include paginated filter URLs with query string format', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      // 6 electronics with perPage=3 → 2 pages for the electronics filter
+      // Query strings use &amp; in XML
+      assert(xml.indexOf('http://localhost:7780/products?category=electronics&amp;page=2') !== -1,
+        'Should include electronics page 2 with proper XML escaping');
+      // 2 books with perPage=3 → only 1 page
+      assert(xml.indexOf('http://localhost:7780/products?category=books&amp;page=2') === -1,
+        'Should NOT include books page 2 (only 2 items)');
+    });
+
+    it('should NOT use path-based filter URLs', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      // These are the static: true format — should not appear
+      assert(xml.indexOf('/products/category/electronics') === -1,
+        'Should not use path-based filter format');
+      assert(xml.indexOf('/products/page/2') === -1,
+        'Should not use path-based pagination format');
+    });
+
+    it('should still include individual piece URLs and index page', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml.indexOf('<loc>http://localhost:7780/products</loc>') !== -1,
+        'Should include the products index page');
+      assert(xml.indexOf('<loc>http://localhost:7780/products/product-01</loc>') !== -1,
+        'Should include individual product URL');
+      assert(xml.indexOf('<loc>http://localhost:7780/products/product-08</loc>') !== -1,
+        'Should include last product URL');
+    });
+  });
+
+  describe('multi-language filter URLs', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:7780',
+        testModule: true,
+        modules: getProductAppConfig({
+          perPage: 5,
+          multilanguage: true
+        })
+      });
+
+      const req = apos.task.getReq();
+      for (let i = 1; i <= 4; i++) {
+        const product = await apos.product.insert(req, {
+          title: `Product ${i}`,
+          visibility: 'public',
+          category: i <= 2 ? 'electronics' : 'books'
+        });
+        await apos.product.publish(req, product);
+        const localized = await apos.product.localize(req, product, 'es');
+        await apos.product.publish(req, localized);
+      }
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+    });
+
+    it('should include query string filter URLs for each locale', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      // English
+      assert(xml.indexOf('<loc>http://localhost:7780/products?category=electronics</loc>') !== -1,
+        'Should include en electronics filter');
+      assert(xml.indexOf('<loc>http://localhost:7780/products?category=books</loc>') !== -1,
+        'Should include en books filter');
+      // Spanish
+      assert(xml.indexOf('<loc>http://localhost:7780/es/products?category=electronics</loc>') !== -1,
+        'Should include es electronics filter');
+      assert(xml.indexOf('<loc>http://localhost:7780/es/products?category=books</loc>') !== -1,
+        'Should include es books filter');
+    });
+
+    it('should cross-reference query string filter URLs with hreflang', async function () {
+      const xml = await apos.http.get('/sitemap.xml');
+
+      const enIdx = xml.indexOf('<loc>http://localhost:7780/products?category=electronics</loc>');
+      assert(enIdx !== -1);
+      const urlStart = xml.lastIndexOf('<url>', enIdx);
+      const urlEnd = xml.indexOf('</url>', enIdx);
+      const urlBlock = xml.slice(urlStart, urlEnd);
+      assert(
+        urlBlock.indexOf('hreflang="es" href="http://localhost:7780/es/products?category=electronics"') !== -1,
+        'en electronics filter should have hreflang pointing to es equivalent'
+      );
+    });
+  });
+});
+
+function getProductAppConfig({
+  perPage = 3, staticUrls = false, multilanguage = false
+} = {}) {
+  return getAppConfig({
+    multilanguage,
+    park: [
+      {
+        title: 'Products',
+        type: 'product-page',
+        slug: '/products',
+        parkedId: 'products'
+      }
+    ],
+    types: [
+      {
+        name: '@apostrophecms/home-page',
+        label: 'Home'
+      },
+      {
+        name: 'product-page',
+        label: 'Products'
+      }
+    ],
+    extraModules: {
+      ...(staticUrls
+        ? {
+          '@apostrophecms/url': {
+            options: { static: true }
+          }
+        }
+        : {}
+      ),
+      product: {
+        extend: '@apostrophecms/piece-type',
+        options: {
+          alias: 'product',
+          sort: { title: 1 }
+        },
+        fields: {
+          add: {
+            category: {
+              type: 'select',
+              label: 'Category',
+              choices: [
+                {
+                  label: 'Electronics',
+                  value: 'electronics'
+                },
+                {
+                  label: 'Books',
+                  value: 'books'
+                }
+              ]
+            }
+          }
+        }
+      },
+      'product-page': {
+        extend: '@apostrophecms/piece-page-type',
+        options: {
+          perPage,
+          piecesFilters: [
+            { name: 'category' }
+          ]
+        }
+      }
+    }
+  });
+}
+
 const parkedPages = [
   {
     title: 'Tab One',
@@ -571,7 +1026,7 @@ const pageTypes = [
   }
 ];
 
-function getAppConfig (options = {}) {
+function getAppConfig(options = {}) {
   return {
     '@apostrophecms/express': {
       options: {
@@ -609,8 +1064,8 @@ function getAppConfig (options = {}) {
     },
     '@apostrophecms/page': {
       options: {
-        park: parkedPages,
-        types: pageTypes
+        park: options.park || parkedPages,
+        types: options.types || pageTypes
       }
     },
     'default-page': {
@@ -624,6 +1079,7 @@ function getAppConfig (options = {}) {
     },
     'product-page': {
       extend: '@apostrophecms/piece-page-type'
-    }
+    },
+    ...(options.extraModules || {})
   };
 }

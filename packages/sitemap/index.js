@@ -77,6 +77,50 @@ module.exports = {
       }
     };
   },
+  handlers(self) {
+    return {
+      '@apostrophecms/url:getAllUrlMetadata': {
+        // Provide literal content entries so static builds
+        // can include the dynamically generated sitemap XML files.
+        addSitemapFiles(req, results) {
+          // Sitemap files are site-wide (not per-locale),
+          // so only include them for the default locale to avoid
+          // duplicates during per-locale static builds.
+          // TODO: in the future when per one locale static builds are supported,
+          // use the current locale if it has configured host, for path prefixes
+          // the behavior is the same.
+          if (req.locale !== self.apos.i18n.defaultLocale) {
+            return;
+          }
+          const prefix = self.apos.prefix || '';
+          if (self.options.perLocale) {
+            results.push({
+              url: `${prefix}/sitemaps/index.xml`,
+              contentType: 'text/xml',
+              i18nId: '@apostrophecms/sitemap:index',
+              sitemap: false
+            });
+            const locales = Object.keys(self.apos.i18n.getLocales());
+            for (const locale of locales) {
+              results.push({
+                url: `${prefix}/sitemaps/${locale}.xml`,
+                contentType: 'text/xml',
+                i18nId: `@apostrophecms/sitemap:${locale}`,
+                sitemap: false
+              });
+            }
+          } else {
+            results.push({
+              url: `${prefix}/sitemap.xml`,
+              contentType: 'text/xml',
+              i18nId: '@apostrophecms/sitemap:sitemap',
+              sitemap: false
+            });
+          }
+        }
+      }
+    };
+  },
   methods (self, options) {
     return {
       mapTask: async function (caching) {
@@ -145,9 +189,26 @@ module.exports = {
 
           for (const locale of locales) {
             const req = self.getReq(locale);
-
-            await self.getPages(req);
-            await self.getPieces(req);
+            const baseUrl = self.apos.page.getBaseUrl(req);
+            const { pages } = await self.apos.url.getAllUrlMetadata(req, {
+              excludeTypes: self.excludeTypes
+            });
+            for (const entry of pages) {
+              // Skip entries explicitly excluded from sitemaps.
+              // Always skip literal content entries (CSS, robots.txt, etc.)
+              if (entry.sitemap === false || entry.contentType) {
+                continue;
+              }
+              self.write(locale, {
+                url: {
+                  id: entry.i18nId,
+                  locale,
+                  priority: entry.priority ?? 1.0,
+                  changefreq: entry.changefreq || 'daily',
+                  loc: baseUrl + entry.url
+                }
+              });
+            }
           }
         }
 
