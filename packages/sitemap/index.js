@@ -14,9 +14,7 @@ const noBaseUrlWarning = stripIndent`
 
 module.exports = {
   options: {
-    alias: 'sitemap',
-    // The number of pieces to index in each loop.
-    piecesPerBatch: 100
+    alias: 'sitemap'
   },
   init(self, options) {
     self.updatingCache = true;
@@ -30,8 +28,6 @@ module.exports = {
     } else if (options.cacheLifetime || options.cacheLifetime === 0) {
       self.apos.util.warn('⚠️ The sitemap cacheLifetime option must be a number greater than zero.');
     }
-
-    self.piecesPerBatch = options.piecesPerBatch;
 
     self.baseUrl = self.apos.baseUrl;
 
@@ -379,99 +375,6 @@ module.exports = {
             createdAt: new Date()
           });
         }
-      },
-      async getPages (req) {
-        const pages = await self.apos.page.find(req, {}).areas(false)
-          .relationships(false).sort({
-            level: 1,
-            rank: 1
-          }).toArray();
-
-        pages.forEach(self.output);
-      },
-      async getPieces(req) {
-        const modules = Object.values(self.apos.modules).filter(function(mod) {
-          return mod.__meta.chain.find(entry => {
-            return entry.name === '@apostrophecms/piece-type';
-          });
-        });
-
-        let skip = 0;
-
-        for (const appModule of modules) {
-          if (self.excludeTypes.includes(appModule.__meta.name)) {
-            continue;
-          }
-          await stashPieces(appModule);
-          skip = 0;
-        }
-
-        async function stashPieces(appModule) {
-          // Paginate through 100 (by default) at a time to avoid slamming
-          // memory
-          const pieceSet = await appModule.find(req, {})
-            .relationships(false).areas(false).skip(skip)
-            .limit(self.piecesPerBatch).toArray();
-
-          pieceSet.forEach(function(piece) {
-            if (!piece._url) {
-            // This one has no page to be viewed on
-              return;
-            }
-            // Results in a reasonable priority relative
-            // to regular pages
-            piece.level = 3;
-
-            self.output(piece);
-          });
-
-          if (pieceSet.length) {
-            skip += pieceSet.length;
-
-            await stashPieces(appModule);
-          }
-        }
-      },
-      // Output the sitemap entry for the given doc, including its children if
-      // any. The entry is buffered for output as part of the map for the
-      // appropriate locale.
-      output: async function(page) {
-        const locale = (page.aposLocale || self.defaultLocale).split(':')[0];
-
-        if (!self.excludeTypes.includes(page.type)) {
-          let url;
-
-          // TODO: Revisit when supporting text format
-          if (self.format === 'text') {
-            if (self.indent) {
-              let i;
-
-              for (i = 0; (i < page.level); i++) {
-                self.write(locale, '  ');
-              }
-
-              self.write(locale, page._url + '\n');
-            }
-          } else {
-            url = page._url;
-            let priority = (page.level < 10) ? (1.0 - page.level / 10) : 0.1;
-
-            if (typeof (page.siteMapPriority) === 'number') {
-              priority = page.siteMapPriority;
-            }
-
-            self.write(locale, {
-              url: {
-                id: page.aposDocId,
-                locale,
-                priority,
-                changefreq: 'daily',
-                loc: url
-              }
-            });
-          }
-        }
-
       },
       // Append `str` to an array set aside for the map entries
       // for the host `locale`.
