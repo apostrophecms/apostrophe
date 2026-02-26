@@ -23,7 +23,7 @@
     <br />
     <a href="http://demo.apostrophecms.com">Demo</a>
     ·
-    <a href="https://productlane.com/edit-roadmap">Roadmap</a>
+    <a href="https://roadmap.apostrophecms.com/roadmap">Roadmap</a>
     ·
     <a href="https://github.com/apostrophecms/apostrophe/issues/new?assignees=&labels=bug,3.0&template=bug_report.md&title=">Report Bug</a>
   </p>
