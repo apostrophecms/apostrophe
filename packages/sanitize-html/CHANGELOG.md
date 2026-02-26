@@ -6,6 +6,7 @@
 
 - Fix unclosed tags (e.g., `<hello`) returning empty string in `escape` and `recursiveEscape` modes. Fixes [#706](https://github.com/apostrophecms/sanitize-html/issues/706).
 Thanks to [Byeong Hyeon](https://github.com/choi2601) for the fix.
+- Upgrade `htmlparser2` from 8.x to 10.1.0. This improves security by correctly decoding zero-padded numeric character references (e.g., `&#0000001`) that previously bypassed `javascript:` URL detection. Also fixes double-encoding of entities inside raw text elements like `textarea` and `option`.
 
 ## 2.17.0 (2025-05-14)
 
