@@ -375,6 +375,43 @@ module.exports = {
       : null;
   },
 
+  handlers(self) {
+    return {
+      '@apostrophecms/url:getAllUrlMetadata': {
+        // Provide literal content entries so static builds
+        // can include the dynamically generated robots.txt
+        // and llms.txt files.
+        addSeoFiles(req, results) {
+          const global = req.data.global;
+          // robots.txt and llms.txt are site-wide (not per-locale),
+          // so only include them for the default locale to avoid
+          // duplicates during per-locale static builds.
+          // TODO: in the future when per one locale static builds are supported,
+          // use the current locale if it has configured host, for path prefixes
+          // the behavior is the same.
+          if (!global || req.locale !== self.apos.i18n.defaultLocale) {
+            return;
+          }
+          const prefix = self.apos.prefix || '';
+          results.push({
+            url: `${prefix}/robots.txt`,
+            contentType: 'text/plain',
+            i18nId: '@apostrophecms/seo:robots.txt',
+            sitemap: false
+          });
+          if (global.llmsTxtSelection !== 'disabled') {
+            results.push({
+              url: `${prefix}/llms.txt`,
+              contentType: 'text/plain',
+              i18nId: '@apostrophecms/seo:llms.txt',
+              sitemap: false
+            });
+          }
+        }
+      }
+    };
+  },
+
   apiRoutes(self) {
     return {
       get: {

@@ -17,6 +17,8 @@ export const black = wrap('\x1b[30m', '\x1b[39m');
 export const blue = wrap('\x1b[34m', '\x1b[39m');
 export const dim = wrap('\x1b[2m', '\x1b[22m');
 export const green = wrap('\x1b[32m', '\x1b[39m');
+export const yellow = wrap('\x1b[33m', '\x1b[39m');
+export const red = wrap('\x1b[31m', '\x1b[39m');
 
 export function getTimeStat(timeStart, timeEnd) {
   const buildTime = timeEnd - timeStart;

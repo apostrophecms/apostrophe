@@ -1,6 +1,6 @@
 import { writeFile, mkdir, readFile, readdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { bgGreen, black, blue, dim, green, getTimeStat, timestamp } from './format.js';
+import { bgGreen, black, blue, dim, green, yellow, red, getTimeStat, timestamp } from './format.js';
 
 const CACHE_DIR = join(process.cwd(), 'node_modules', '.apostrophe-astro');
 const CONFIG_CACHE = join(CACHE_DIR, '_config.json');
@@ -281,6 +281,7 @@ export async function getAllStaticPaths(config) {
  */
 export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outDir, logger }) {
   const totalStart = performance.now();
+  const stats = { written: 0, warnings: 0, errors: 0 };
 
   // Collect literal content from cached locale files, deduplicating
   // by URL so each file is written only once.
@@ -313,14 +314,13 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
   }
 
   if (!literalContent.length) {
-    return;
+    return stats;
   }
 
   // Green block header matching Astro's "generating static routes" style
   process.stdout.write(`${bgGreen(black(' generating literal content '))}\n`);
   process.stdout.write(`${timestamp()} ${green('▶')} ${blue('/')}\n`);
 
-  let written = 0;
   for (let i = 0; i < literalContent.length; i++) {
     const entry = literalContent[i];
     const isLast = i === literalContent.length - 1;
@@ -331,7 +331,16 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
         headers: authHeaders(aposExternalFrontKey)
       });
       if (!res.ok) {
-        logger.warn(`Failed to fetch ${entry.url} (${res.status}), skipping`);
+        const isError = res.status >= 500;
+        if (isError) {
+          stats.errors++;
+        } else {
+          stats.warnings++;
+        }
+        const color = isError ? red : yellow;
+        process.stdout.write(
+          `${timestamp()}   ${blue(branch)} ${dim(entry.url)} ${color(`${res.status} skipped`)}\n`
+        );
         continue;
       }
       // Determine output path from the URL, stripping query string
@@ -342,14 +351,18 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
       await writeFile(filePath, buffer);
       const timeStat = getTimeStat(timeStart, performance.now());
       process.stdout.write(`${timestamp()}   ${blue(branch)} ${dim(urlPath)} ${dim(`(+${timeStat})`)}\n`);
-      written++;
+      stats.written++;
     } catch (err) {
-      logger.error(`Error writing ${entry.url}: ${err.message}`);
+      stats.errors++;
+      process.stdout.write(
+        `${timestamp()}   ${blue(branch)} ${dim(entry.url)} ${red(`✗ ${err.message}`)}\n`
+      );
     }
   }
 
   const totalTime = getTimeStat(totalStart, performance.now());
-  process.stdout.write(`${timestamp()} ${green(`✓ Completed in ${totalTime}.`)}\n\n`);
+  process.stdout.write(`${timestamp()} ${green(`✓ ${stats.written} completed in ${totalTime}.`)}\n\n`);
+  return stats;
 }
 
 /**
@@ -375,6 +388,7 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
  * @param {import('astro').AstroIntegrationLogger} options.logger - Astro integration logger.
  */
 export async function writeAttachments({ aposHost, outDir, logger }) {
+  const stats = { written: 0, warnings: 0, errors: 0 };
   let cache;
   try {
     cache = JSON.parse(await readFile(ATTACHMENTS_CACHE, 'utf-8'));
@@ -387,7 +401,7 @@ export async function writeAttachments({ aposHost, outDir, logger }) {
 
   const { uploadsUrl, results } = cache;
   if (!results || !results.length) {
-    return;
+    return stats;
   }
 
   // Flatten all attachment URLs into a single list for downloading
@@ -399,7 +413,7 @@ export async function writeAttachments({ aposHost, outDir, logger }) {
   }
 
   if (!downloads.length) {
-    return;
+    return stats;
   }
 
   // Resolve the base URL for downloading attachment files.
@@ -421,9 +435,6 @@ export async function writeAttachments({ aposHost, outDir, logger }) {
   process.stdout.write(`${bgGreen(black(' copying attachments '))}\n`);
   process.stdout.write(`${timestamp()} ${green('▶')} ${dim(outputPrefix || '/')}\n`);
 
-  let written = 0;
-  let failed = 0;
-
   // Download in batches with controlled concurrency
   for (let i = 0; i < downloads.length; i += DOWNLOAD_CONCURRENCY) {
     const batch = downloads.slice(i, i + DOWNLOAD_CONCURRENCY);
@@ -433,8 +444,16 @@ export async function writeAttachments({ aposHost, outDir, logger }) {
         const downloadUrl = downloadBase + path;
         const res = await fetch(downloadUrl);
         if (!res.ok) {
-          logger.warn(`Failed to fetch attachment ${path} (${res.status}), skipping`);
-          failed++;
+          const isError = res.status >= 500;
+          if (isError) {
+            stats.errors++;
+          } else {
+            stats.warnings++;
+          }
+          const color = isError ? red : yellow;
+          process.stdout.write(
+            `${timestamp()}   ${blue('├─')} ${dim(path)} ${color(`${res.status} skipped`)}\n`
+          );
           return;
         }
         // Write to the output directory preserving the URL path
@@ -445,20 +464,55 @@ export async function writeAttachments({ aposHost, outDir, logger }) {
         const buffer = Buffer.from(await res.arrayBuffer());
         await writeFile(outPath, buffer);
         const timeStat = getTimeStat(timeStart, performance.now());
-        written++;
+        stats.written++;
         process.stdout.write(`${timestamp()}   ${blue('├─')} ${dim(path)} ${dim(`(+${timeStat})`)}\n`);
       } catch (err) {
-        logger.error(`Error writing attachment ${path}: ${err.message}`);
-        failed++;
+        stats.errors++;
+        process.stdout.write(
+          `${timestamp()}   ${blue('├─')} ${dim(path)} ${red(`✗ ${err.message}`)}\n`
+        );
       }
     }));
   }
 
+  process.stdout.write(`${timestamp()}   ${blue('└─')} ${dim('Done')}\n`);
   const totalTime = getTimeStat(totalStart, performance.now());
-  const summary = failed
-    ? `✓ ${written} written, ${failed} failed in ${totalTime}.`
-    : `✓ ${written} files in ${totalTime}.`;
-  process.stdout.write(`${timestamp()} ${green(summary)}\n\n`);
+  process.stdout.write(`${timestamp()} ${green(`✓ ${stats.written} completed in ${totalTime}.`)}\n\n`);
+  return stats;
+}
+
+/**
+ * Write a combined post-build summary for literal content and
+ * attachment downloads.  Uses warning-level output when only
+ * client errors (4xx) occurred, and error-level output when
+ * server errors (5xx) or exceptions were encountered.
+ *
+ * @param {object} options
+ * @param {{ written: number, warnings: number, errors: number }} options.literal - Stats from writeLiteralContent.
+ * @param {{ written: number, warnings: number, errors: number }} options.attachments - Stats from writeAttachments.
+ * @param {import('astro').AstroIntegrationLogger} options.logger - Astro integration logger.
+ */
+export function writePostBuildSummary({ literal, attachments, logger }) {
+  const totalWritten = literal.written + attachments.written;
+  const totalWarnings = literal.warnings + attachments.warnings;
+  const totalErrors = literal.errors + attachments.errors;
+
+  const parts = [`${totalWritten} written`];
+  if (totalWarnings) {
+    parts.push(`${totalWarnings} skipped`);
+  }
+  if (totalErrors) {
+    parts.push(`${totalErrors} failed`);
+  }
+  const message = `files and uploads: ${parts.join(', ')}`;
+
+  if (totalErrors) {
+    logger.error(message);
+  } else if (totalWarnings) {
+    logger.warn(message);
+  } else {
+    logger.info(message);
+  }
 }
 
 export async function cleanupCache() {

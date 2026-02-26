@@ -1,6 +1,12 @@
 import { vitePluginApostropheDoctype } from './vite/vite-plugin-apostrophe-doctype.js';
 import { vitePluginApostropheConfig } from './vite/vite-plugin-apostrophe-config.js';
-import { writeConfigCache, writeLiteralContent, writeAttachments, cleanupCache } from './lib/static.js';
+import {
+  writeConfigCache,
+  writeLiteralContent,
+  writeAttachments,
+  writePostBuildSummary,
+  cleanupCache
+} from './lib/static.js';
 
 // Parse a comma-separated env var into an array, or return undefined.
 function csvEnv(name) {
@@ -161,17 +167,18 @@ export default function apostropheIntegration(options) {
           return;
         }
         try {
-          await writeLiteralContent({
+          const literal = await writeLiteralContent({
             aposHost,
             aposExternalFrontKey,
             outDir: dir.pathname,
             logger
           });
-          await writeAttachments({
+          const attachments = await writeAttachments({
             aposHost,
             outDir: dir.pathname,
             logger
           });
+          writePostBuildSummary({ literal, attachments, logger });
         } finally {
           await cleanupCache();
         }
