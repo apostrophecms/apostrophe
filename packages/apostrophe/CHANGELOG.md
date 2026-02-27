@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.27.1-alpha.1
+
+### Patch Changes
+
+### Fixes
+
+- Relationship field: fixes two conditions where slow internet speed could cause input to lose focus before a selection can be registered. Thanks to Gysho for the report and the fix.
+
 ## 4.27.0 (2026-02-18)
 
 ### Adds
