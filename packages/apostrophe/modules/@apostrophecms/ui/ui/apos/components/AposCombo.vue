@@ -22,6 +22,7 @@
         :key="objectValues ? checked.value : checked"
         class="apos-combo__selected"
         @pointerdown.stop.prevent="selectOption(getSelectedOption(checked))"
+        @click.stop
       >
         {{ getSelectedOption(checked)?.label }}
         <AposIndicator
@@ -75,6 +76,7 @@
         role="menuitemcheckbox"
         :class="{focused: focusedItemIndex === i}"
         @pointerdown.stop.prevent="selectOption(choice)"
+        @click.stop
         @mouseover="focusedItemIndex = i"
       >
         <AposIndicator
