@@ -1,5 +1,6 @@
 
-import createApp from 'Modules/@apostrophecms/ui/lib/vue';
+import createApp, { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
+import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { nextTick } from 'vue';
 
 export default function() {
@@ -24,6 +25,12 @@ export default function() {
   });
 
   apos.bus.$on('refreshed', function() {
+    // Re-instantiate the on-page widget graph before remounting areas.
+    // The normal mounted hooks will rebuild it from fresh data.
+    const graphStore = useWidgetGraphStore(pinia);
+    if (apos.adminBar?.contextId) {
+      graphStore.resetGraph(apos.adminBar.contextId);
+    }
     createAreaAppsAndRunPlayersIfDone();
   });
 

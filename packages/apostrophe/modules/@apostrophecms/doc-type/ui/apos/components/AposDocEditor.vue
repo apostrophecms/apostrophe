@@ -134,6 +134,7 @@
 
 <script>
 import { klona } from 'klona';
+import { computed } from 'vue';
 import { mapActions } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
@@ -144,6 +145,7 @@ import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisory
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 
 export default {
   name: 'AposDocEditor',
@@ -156,10 +158,14 @@ export default {
     AposArchiveMixin,
     AposDocErrorsMixin
   ],
-  provide () {
+  provide() {
     return {
       originalDoc: this.originalDoc,
-      liveOriginalDoc: this.docFields
+      liveOriginalDoc: this.docFields,
+      aposGraphKey: computed(() => this.modalData?.id && this.currentId
+        ? `${this.modalData.id}:${this.currentId}`
+        : null
+      )
     };
   },
   props: {
@@ -417,9 +423,16 @@ export default {
   },
   unmounted() {
     apos.bus.$off('content-changed', this.onContentChanged);
+    // Destroy the widget graph for this modal's editing context
+    if (this.modalData?.id && this.currentId) {
+      this.storeDestroyGraph(`${this.modalData.id}:${this.currentId}`);
+    }
   },
   methods: {
     ...mapActions(useModalStore, [ 'updateModalData' ]),
+    ...mapActions(useWidgetGraphStore, {
+      storeDestroyGraph: 'destroyGraph'
+    }),
     async instantiateExistingDoc() {
       await this.loadDoc();
       this.evaluateConditions();
