@@ -179,11 +179,14 @@ describe('sanitizeHtml', function() {
     assert.equal(sanitizeHtml('<a href="java\0&#14;\t\r\n script:alert(\'foo\')">Hax</a>'), '<a>Hax</a>');
   });
   it('should dump character codes 1-32 even when escaped with padding rather than trailing ;', function() {
-    assert.equal(sanitizeHtml('<a href="java&#0000001script:alert(\'foo\')">Hax</a>'), '<a href="java&amp;#0000001script:alert(\'foo\')">Hax</a>');
-    // This one is weird, but the browser does not interpret it
-    // as a scheme, so we're OK. That character is 65535, not null. I
-    // think it's a limitation of the entities module
-    assert.equal(sanitizeHtml('<a href="java&#0000000script:alert(\'foo\')">Hax</a>'), '<a href="java&amp;#0000000script:alert(\'foo\')">Hax</a>');
+    // htmlparser2 10.x correctly decodes zero-padded numeric entities.
+    // &#0000001 decodes to U+0001, which is stripped as a control char,
+    // revealing the javascript: scheme
+    assert.equal(sanitizeHtml('<a href="java&#0000001script:alert(\'foo\')">Hax</a>'), '<a>Hax</a>');
+    // &#0000000 decodes to U+FFFD (replacement character per HTML spec),
+    // which is not a control char, so the URL is preserved safely since
+    // browsers don't interpret java�script: as javascript:
+    assert.equal(sanitizeHtml('<a href="java&#0000000script:alert(\'foo\')">Hax</a>'), '<a href="java\uFFFDscript:alert(\'foo\')">Hax</a>');
   });
   it('should still like nice schemes', function() {
     assert.equal(sanitizeHtml('<a href="http://google.com/">Hi</a>'), '<a href="http://google.com/">Hi</a>');
@@ -876,6 +879,13 @@ describe('sanitizeHtml', function() {
       sanitizeHtml('!<textarea>&lt;/textarea&gt;&lt;svg/onload=prompt`xs`&gt;</textarea>!',
         { allowedTags: [ 'textarea' ] }
       ), '!<textarea>&lt;/textarea&gt;&lt;svg/onload=prompt`xs`&gt;</textarea>!'
+    );
+  });
+  it('should not double-encode entities inside an allowed textarea element', function() {
+    assert.equal(
+      sanitizeHtml('<textarea>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</textarea>',
+        { allowedTags: [ 'textarea' ] }
+      ), '<textarea>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</textarea>'
     );
   });
   it('should allow protocol relative links by default', function() {
