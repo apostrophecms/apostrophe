@@ -49,25 +49,30 @@ export const useWidgetGraphStore = defineStore('widgetGraph', () => {
    * @returns {void}
    */
   function registerWidget(graphKey, widget, { areaId } = {}) {
-    const { graph } = _ensure(graphKey);
-    const type = widget.type;
-    const schema = apos.modules[apos.area.widgetManagers[type]]?.schema || [];
+    try {
+      const { graph } = _ensure(graphKey);
+      const type = widget.type;
+      const schema = apos.modules[apos.area.widgetManagers[type]]?.schema || [];
 
-    graph.addNode(widget._id, {
-      type,
-      areaId
-    });
-
-    const children = _discoverChildren(schema, widget);
-    for (const child of children) {
-      graph.addNode(child.widgetId, {
-        type: child.type,
-        areaId: child.areaId
+      graph.addNode(widget._id, {
+        type,
+        areaId
       });
-      graph.addEdge(widget._id, child.widgetId);
-    }
 
-    _bump(graphKey);
+      const children = _discoverChildren(schema, widget);
+      for (const child of children) {
+        graph.addNode(child.widgetId, {
+          type: child.type,
+          areaId: child.areaId
+        });
+        graph.addEdge(widget._id, child.widgetId);
+      }
+
+      _bump(graphKey);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn(`[widgetGraph] registerWidget: ${e.message}`);
+    }
   }
 
   /**
@@ -317,7 +322,8 @@ export const useWidgetGraphStore = defineStore('widgetGraph', () => {
   /**
    * Recursively scan schema fields for nested area children.
    * Traverses area, array, and object fields to find all
-   * widget items contained within.
+   * widget items contained within. Only current schema widgets
+   * will be discovered.
    *
    * @param {Object[]} schema  - Apostrophe field schema array.
    * @param {Object}   dataObj - The data object matching the schema.
@@ -325,7 +331,7 @@ export const useWidgetGraphStore = defineStore('widgetGraph', () => {
    */
   function _discoverChildren(schema, dataObj) {
     const children = [];
-    for (const field of schema) {
+    for (const field of schema || []) {
       if (field.type === 'area') {
         const area = dataObj[field.name];
         if (area?.items?.length) {
