@@ -28,7 +28,7 @@
       v-apos-tooltip="getTooltip(item)"
       aria-selected="false"
       :class="getClasses(item, index)"
-      @click="select(item)"
+      @pointerdown.prevent="select(item)"
     >
       <div
         v-if="item?.attachment?._urls?.['one-sixth']"
@@ -43,7 +43,10 @@
         class="apos-button__icon"
         fill-color="currentColor"
       />
-      <div class="apos-search__item__title">
+      <div
+        class="apos-search__item__title"
+        data-apos-test="searchItemTitle"
+      >
         {{ item.title }}
       </div>
       <div
@@ -188,6 +191,9 @@ export default {
 
     & {
       color: var(--a-text-primary);
+      max-width: 40ch;
+      overflow-wrap: break-word;
+      word-break: break-all;
     }
   }
 
