@@ -676,7 +676,8 @@ function sanitizeHtml(html, options, _recursing) {
 
   if (options.disallowedTagsMode === 'escape' || options.disallowedTagsMode === 'recursiveEscape') {
     const lastParsedIndex = parser.endIndex;
-    if (lastParsedIndex != null && lastParsedIndex >= 0 && lastParsedIndex < html.length) {
+    if (lastParsedIndex != null && lastParsedIndex >= 0 &&
+        lastParsedIndex < html.length) {
       const unparsed = html.substring(lastParsedIndex);
       result += escapeHtml(unparsed);
     } else if ((lastParsedIndex == null || lastParsedIndex < 0) && html.length > 0 && result === '') {
