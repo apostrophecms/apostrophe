@@ -87,6 +87,7 @@ const createCoreProcessor = (opts = {}) => {
     }
 
     const selector = adapter.getSelector(rule);
+    const isRootOnlySelector = selectorHelper.isRootOnlySelector(selector);
     if (
       selector.includes(conditionalNotSelector) ||
       selector.includes(containerBodySelector) ||
@@ -106,10 +107,12 @@ const createCoreProcessor = (opts = {}) => {
         selector: selectorHelper.addTargetToSelectors(selector, containerBodySelector)
       });
 
-      adapter.setSelector(
-        rule,
-        selectorHelper.updateBodySelectors(selector, [ conditionalNotSelector ])
-      );
+      if (!isRootOnlySelector) {
+        adapter.setSelector(
+          rule,
+          selectorHelper.updateBodySelectors(selector, [ conditionalNotSelector ])
+        );
+      }
 
       ruleProcessor.processDeclarations(containerRule, {
         isContainer: true,
@@ -119,12 +122,14 @@ const createCoreProcessor = (opts = {}) => {
       adapter.after(rule, containerRule);
       // We might need to add newlines via adapter if we care about formatting
     } else {
-      adapter.setSelector(
-        rule,
-        selectorHelper.updateBodySelectors(
-          selector,
-          [ conditionalNotSelector, containerBodySelector ]
-        ));
+      if (!isRootOnlySelector) {
+        adapter.setSelector(
+          rule,
+          selectorHelper.updateBodySelectors(
+            selector,
+            [ conditionalNotSelector, containerBodySelector ]
+          ));
+      }
     }
 
     adapter.markProcessed(rule);
@@ -214,6 +219,9 @@ const createCoreProcessor = (opts = {}) => {
         adapter.walkRules(atRule, rule => {
           const selector = adapter.getSelector(rule);
           if (selector.includes(conditionalNotSelector)) {
+            return;
+          }
+          if (selectorHelper.isRootOnlySelector(selector)) {
             return;
           }
 
