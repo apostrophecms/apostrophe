@@ -1,14 +1,22 @@
 import { createId } from '@paralleldrive/cuid2';
+import { unref } from 'vue';
 import { mapState, mapActions } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 import { klona } from 'klona';
 
 export default {
   mixins: [ AposThemeMixin ],
+  inject: {
+    aposGraphKey: {
+      from: 'aposGraphKey',
+      default: null
+    }
+  },
   props: {
     docId: {
       type: String,
@@ -130,6 +138,35 @@ export default {
       }
 
       return this.next.findIndex(widget => widget._id === this.focusedWidget);
+    },
+    /**
+     * Set of widget _ids (from `next`) that should have a raised z-index
+     * because they are, or contain, the currently focused widget.
+     * Computed once per focusedWidget / graph change; O(depth) ancestor
+     * walk + O(1) per-widget lookup in the template.
+     */
+    raisedWidgets() {
+      const raised = new Set();
+      if (!this.focusedWidget) {
+        return raised;
+      }
+      const graphKey = this.docId || unref(this.aposGraphKey);
+      if (!graphKey) {
+        // No graph — fall back to exact match only
+        if (this.next.some(w => w._id === this.focusedWidget)) {
+          raised.add(this.focusedWidget);
+        }
+        return raised;
+      }
+      const ancestors = this.storeGetAncestors(graphKey, this.focusedWidget);
+      const chain = new Set([ this.focusedWidget, ...ancestors ]);
+
+      for (const widget of this.next) {
+        if (chain.has(widget._id)) {
+          raised.add(widget._id);
+        }
+      }
+      return raised;
     }
   },
   watch: {
@@ -176,6 +213,9 @@ export default {
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedArea', 'setFocusedWidget' ]),
     ...mapActions(useModalStore, [ 'isOnTop' ]),
+    ...mapActions(useWidgetGraphStore, {
+      storeGetAncestors: 'getAncestors'
+    }),
     bindEventListeners() {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
       apos.bus.$on('command-menu-area-copy-widget', this.handleCopy);

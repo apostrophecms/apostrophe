@@ -210,12 +210,20 @@
 
 <script>
 import { mapState, mapActions } from 'pinia';
+import { unref } from 'vue';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useBreakpointPreviewStore } from 'Modules/@apostrophecms/ui/stores/breakpointPreview.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
+import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 
 export default {
   name: 'AposAreaWidget',
+  inject: {
+    aposGraphKey: {
+      from: 'aposGraphKey',
+      default: null
+    }
+  },
   props: {
     docId: {
       type: String,
@@ -521,6 +529,8 @@ export default {
 
     this.getBreadcrumbs();
 
+    this.registerInGraph();
+
     if (this.focusedWidget) {
       // If another widget was in focus (because the user clicked the "add"
       // menu, for example), and this widget was created, give the new widget
@@ -552,10 +562,37 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
     window.removeEventListener('scroll', this.stickyControlsScroll);
     window.removeEventListener('resize', this.stickyControlsResize);
+    this.unregisterFromGraph();
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
     ...mapActions(useModalStore, [ 'getAdminContentDirectionClass' ]),
+    ...mapActions(useWidgetGraphStore, {
+      storeRegisterWidget: 'registerWidget',
+      storeUnregisterWidget: 'unregisterWidget'
+    }),
+    registerInGraph() {
+      if (this.foreign) {
+        return;
+      }
+      const graphKey = this.docId || unref(this.aposGraphKey);
+      if (!graphKey) {
+        return;
+      }
+      this.storeRegisterWidget(graphKey, this.widget, {
+        areaId: this.areaId
+      });
+    },
+    unregisterFromGraph() {
+      if (this.foreign) {
+        return;
+      }
+      const graphKey = this.docId || unref(this.aposGraphKey);
+      if (!graphKey) {
+        return;
+      }
+      this.storeUnregisterWidget(graphKey, this.widget._id);
+    },
     // Emits same actions as the native operations,
     // e.g ('edit', { index }), ('remove', { index }), etc.
     onOperation({ name, payload }) {
