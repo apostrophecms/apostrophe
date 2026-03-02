@@ -92,10 +92,7 @@
         />
       </div>
       <div
-        v-if="
-          !controlsDisabled &&
-            !maxReached &&
-            (!focusedWidget || focusedWidget === widget._id)"
+        v-if="!controlsDisabled && !maxReached && (!focusedWidget || isFocused)"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -181,10 +178,7 @@
         @update="$emit('update', $event);"
       />
       <div
-        v-if="
-          !controlsDisabled &&
-            !maxReached &&
-            (!focusedWidget || focusedWidget === widget._id)"
+        v-if="!controlsDisabled && !maxReached && (!focusedWidget || isFocused)"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
