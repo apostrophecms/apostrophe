@@ -422,7 +422,7 @@ module.exports = {
         }
       },
       async getUrlMetadata(_super, req, doc) {
-        const metadata = _super(req, doc);
+        const metadata = await _super(req, doc);
         if (!metadata.length) {
           return metadata;
         }

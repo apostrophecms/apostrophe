@@ -1,28 +1,37 @@
 import config from 'virtual:apostrophe-config';
 
 /**
- * Get the Apostrophe backend host URL.
+ * Get the Apostrophe backend base URL, including the prefix when
+ * configured.
  *
- * Reads from the `APOS_HOST` environment variable first, then
- * falls back to the `aposHost` value configured in the Astro
- * integration options.
- * WARNING: not to be confused With "Public Host" - this is meant to be used
- * only in Astro server-side code. Use relative URLs for client-side
- * requests `/api/v1/...`.
+ * Returns `config.aposHost + config.aposPrefix` — the full base URL
+ * for reaching the Apostrophe backend (e.g.
+ * `http://localhost:3000/my-repo`).  Environment variable overrides
+ * (`APOS_HOST`, `APOS_PREFIX`) are resolved once at config time in
+ * the integration's `astro:config:setup` hook and stored in the
+ * virtual config module — this function does no env lookups.
  *
- * @returns {string} The backend host URL (e.g. `http://localhost:3000`).
+ * Prefer `aposFetch` for API calls — use `getAposHost()` only when
+ * you need the raw URL string (e.g. for building non-fetch URLs).
+ *
+ * WARNING: not to be confused with "Public Host" - this is meant to
+ * be used only in Astro server-side code. Use relative URLs for
+ * client-side requests `/api/v1/...`.
+ *
+ * @returns {string} The backend base URL (e.g. `http://localhost:3000`
+ *   or `http://localhost:3000/my-repo`).
  *
  * @example
  * ```astro
  * ---
  * import { getAposHost } from '@apostrophecms/apostrophe-astro/helpers';
  * const host = getAposHost();
- * const res = await fetch(`${host}/api/v1/...`);
+ * // e.g. 'http://localhost:3000' or 'http://localhost:3000/my-repo'
  * ---
  * ```
  */
 export function getAposHost() {
-  return process.env.APOS_HOST || config.aposHost;
+  return config.aposHost + (config.aposPrefix || '');
 }
 
 /**

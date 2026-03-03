@@ -275,10 +275,7 @@ module.exports = {
         if (req.headers['x-apos-static-base-url'] === '1') {
           // Downstream code (page.getBaseUrl) checks this to decide
           // which base URL to use for this request.
-          req.aposStaticBuild = true;
-          if (self.apos.staticBaseUrl) {
-            req.staticBaseUrl = self.apos.staticBaseUrl;
-          }
+          self.applyStaticBuildHeaders(req);
         }
         res.redirect = function(...args) {
           // The external front end needs to issue the actual redirect,
@@ -307,10 +304,7 @@ module.exports = {
         middleware(req, res, next) {
           // Only act if not already set by externalFront middleware
           if (!req.aposStaticBuild && req.headers['x-apos-static-base-url'] === '1') {
-            req.aposStaticBuild = true;
-            if (self.apos.staticBaseUrl) {
-              req.staticBaseUrl = self.apos.staticBaseUrl;
-            }
+            self.applyStaticBuildHeaders(req);
           }
           return next();
         }
@@ -482,6 +476,16 @@ module.exports = {
         });
         if (process.env.APOS_LOG_ALL_ROUTES) {
           self.logAllRoutes();
+        }
+      },
+
+      applyStaticBuildHeaders(req) {
+        if (req.aposStaticBuild) {
+          return;
+        }
+        req.aposStaticBuild = true;
+        if (self.apos.staticBaseUrl) {
+          req.staticBaseUrl = self.apos.staticBaseUrl;
         }
       },
 

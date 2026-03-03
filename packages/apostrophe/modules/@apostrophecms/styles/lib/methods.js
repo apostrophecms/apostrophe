@@ -85,9 +85,16 @@ module.exports = (self, options) => {
     // Returns the locale-qualified stylesheet URL for the given
     // request. The path encodes the locale so that static-build
     // tools produce a distinct file per locale.
-    getStylesheetUrl(req) {
+    //
+    // Options:
+    //   `relative` - if true, return a prefix-free path suitable
+    //   for route-relative contexts (e.g. `getAllUrlMetadata`).
+    //   Defaults to `false`, which prepends `apos.prefix` so the
+    //   URL works in rendered HTML (`<link>` tags, etc.).
+    getStylesheetUrl(req, { relative = false } = {}) {
+      const prefix = relative ? '' : (self.apos.prefix || '');
       const version = req.data.global?.stylesStylesheetVersion;
-      return `${self.action}/stylesheet/locale/${req.locale}/${req.mode}${version ? `?version=${version}` : ''}`;
+      return `${prefix}${self.action}/stylesheet/locale/${req.locale}/${req.mode}${version ? `?version=${version}` : ''}`;
     },
     // Shared implementation for the stylesheet API routes.
     // Sets cache headers and returns the raw CSS string.

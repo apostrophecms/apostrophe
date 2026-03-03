@@ -62,6 +62,10 @@ function csvEnv(name) {
  *   strip before forwarding to the Apostrophe backend.
  * @property {string[]} [proxyRoutes] - Additional route patterns to
  *   proxy to the Apostrophe backend in SSR mode.
+ * @property {string} [aposPrefix] - URL path prefix matching the
+ *   Apostrophe backend `prefix` option (e.g. `'/my-repo'`).
+ *   Auto-inferred from Astro's `base` config when omitted.
+ *   Can also be set via the `APOS_PREFIX` environment variable.
  * @property {StaticBuildOptions} [staticBuild] - Options controlling
  *   static build behaviour (attachments, sizes, scope).
  */
@@ -74,6 +78,10 @@ function csvEnv(name) {
  */
 export default function apostropheIntegration(options) {
   let isStaticBuild = false;
+  // Resolved once and reused by the `astro:build:done` hook (which
+  // cannot access the Vite virtual module).
+  let resolvedAposHost;
+  let resolvedAposPrefix;
   return {
     name: 'apostrophe-integration',
     hooks: {
@@ -82,6 +90,17 @@ export default function apostropheIntegration(options) {
         if (!options.widgetsMapping || !options.templatesMapping) {
           throw new Error('Missing required options')
         }
+
+        // Resolve aposHost and aposPrefix once.  Environment variables
+        // take precedence over integration options.  The resolved
+        // values are emitted into the virtual config module so that
+        // helpers and library code never need to re-check process.env.
+        resolvedAposHost = process.env.APOS_HOST || options.aposHost;
+        const aposPrefix = process.env.APOS_PREFIX
+          || options.aposPrefix
+          || config.base?.replace(/\/+$/, '')
+          || '';
+        resolvedAposPrefix = aposPrefix;
 
         // Resolve static build configuration.
         // Environment variables take precedence over integration
@@ -117,14 +136,15 @@ export default function apostropheIntegration(options) {
                 options.templatesMapping,
                 options.onBeforeWidgetRender
               ),
-              vitePluginApostropheConfig(
-                options.aposHost,
-                options.forwardHeaders,
-                options.viewTransitionWorkaround,
-                options.includeResponseHeaders,
-                options.excludeRequestHeaders,
-                isStaticBuild ? staticBuild : undefined
-              ),
+              vitePluginApostropheConfig({
+                aposHost: resolvedAposHost,
+                forwardHeaders: options.forwardHeaders,
+                viewTransitionWorkaround: options.viewTransitionWorkaround,
+                includeResponseHeaders: options.includeResponseHeaders,
+                excludeRequestHeaders: options.excludeRequestHeaders,
+                staticBuild: isStaticBuild ? staticBuild : undefined,
+                aposPrefix
+              }),
             ],
           },
         });
@@ -169,7 +189,7 @@ export default function apostropheIntegration(options) {
         if (!isStaticBuild) {
           return;
         }
-        const aposHost = process.env.APOS_HOST || options.aposHost;
+        const aposHost = resolvedAposHost;
         const aposExternalFrontKey = process.env.APOS_EXTERNAL_FRONT_KEY;
         if (!aposHost || !aposExternalFrontKey) {
           return;
@@ -178,11 +198,13 @@ export default function apostropheIntegration(options) {
           const literal = await writeLiteralContent({
             aposHost,
             aposExternalFrontKey,
+            aposPrefix: resolvedAposPrefix,
             outDir: dir.pathname,
             logger
           });
           const attachments = await writeAttachments({
             aposHost,
+            aposPrefix: resolvedAposPrefix,
             outDir: dir.pathname,
             logger
           });

@@ -1526,7 +1526,7 @@ describe('Static Build Support', function () {
       it('getBaseUrl returns empty string when req.aposStaticBuild is true and no staticBaseUrl', function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const baseUrl = apos.page.getBaseUrl(req);
         assert.strictEqual(baseUrl, '');
@@ -1541,7 +1541,7 @@ describe('Static Build Support', function () {
       it('getAllUrlMetadata strips baseUrl from page URLs for static build requests', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const { pages } = await apos.url.getAllUrlMetadata(req);
         assert(pages.length > 0);
@@ -1558,7 +1558,7 @@ describe('Static Build Support', function () {
       it('getAllUrlMetadata strips baseUrl from uploadsUrl for static build requests', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const { attachments } = await apos.url.getAllUrlMetadata(req, {
           attachments: { scope: 'all' }
@@ -1574,7 +1574,7 @@ describe('Static Build Support', function () {
       it('apos.baseUrl is NOT modified after static build requests', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         await apos.url.getAllUrlMetadata(req);
         assert.strictEqual(apos.baseUrl, 'http://localhost:3000');
@@ -1609,7 +1609,7 @@ describe('Static Build Support', function () {
       it('getBaseUrl returns staticBaseUrl when req.aposStaticBuild is true', function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const baseUrl = apos.page.getBaseUrl(req);
         assert.strictEqual(baseUrl, 'https://www.example.com');
@@ -1624,7 +1624,7 @@ describe('Static Build Support', function () {
       it('getAllUrlMetadata strips staticBaseUrl from page URLs for static build requests', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const { pages } = await apos.url.getAllUrlMetadata(req);
         assert(pages.length > 0);
@@ -1641,7 +1641,7 @@ describe('Static Build Support', function () {
       it('getAllUrlMetadata strips original baseUrl from uploadsUrl', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const { attachments } = await apos.url.getAllUrlMetadata(req, {
           attachments: { scope: 'all' }
@@ -1657,7 +1657,7 @@ describe('Static Build Support', function () {
       it('req.absoluteUrl uses staticBaseUrl during static builds', function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true,
+          staticBuild: true,
           url: '/some-page'
         });
         assert(
@@ -1669,7 +1669,7 @@ describe('Static Build Support', function () {
       it('apos.baseUrl is NOT modified after static build requests', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         await apos.url.getAllUrlMetadata(req);
         assert.strictEqual(apos.baseUrl, 'http://localhost:3000');
@@ -1707,7 +1707,7 @@ describe('Static Build Support', function () {
       it('getBaseUrl returns staticBaseUrl when req.aposStaticBuild is true', function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const baseUrl = apos.page.getBaseUrl(req);
         assert.strictEqual(baseUrl, 'https://www.example.com');
@@ -1722,7 +1722,7 @@ describe('Static Build Support', function () {
       it('getAllUrlMetadata strips staticBaseUrl from page URLs', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const { pages } = await apos.url.getAllUrlMetadata(req);
         assert(pages.length > 0);
@@ -1737,7 +1737,7 @@ describe('Static Build Support', function () {
       it('uploadsUrl is path-only (no baseUrl to strip)', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const { attachments } = await apos.url.getAllUrlMetadata(req, {
           attachments: { scope: 'all' }
@@ -1768,10 +1768,10 @@ describe('Static Build Support', function () {
         apos = null;
       });
 
-      it('getAllUrlMetadata strips baseUrl but preserves prefix in page URLs', async function () {
+      it('getAllUrlMetadata strips baseUrl and prefix from page URLs', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const { pages } = await apos.url.getAllUrlMetadata(req);
         assert(pages.length > 0);
@@ -1781,16 +1781,18 @@ describe('Static Build Support', function () {
             `URL should not start with http://, got: ${entry.url}`
           );
           assert(
-            entry.url.startsWith('/cms') || entry.url.startsWith('/api'),
-            `URL should start with /cms prefix, got: ${entry.url}`
+            !entry.url.startsWith('/cms'),
+            `URL should not start with /cms prefix, got: ${entry.url}`
           );
         }
+        const home = pages.find(r => r.url === '/');
+        assert(home, 'Should include the home page as /');
       });
 
       it('getAllUrlMetadata strips baseUrl from uploadsUrl, preserving prefix', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const { attachments } = await apos.url.getAllUrlMetadata(req, {
           attachments: { scope: 'all' }
@@ -1888,7 +1890,7 @@ describe('Static Build Support', function () {
       it('getBaseUrl uses env-based staticBaseUrl for static builds', function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
-          aposStaticBuild: true
+          staticBuild: true
         });
         const baseUrl = apos.page.getBaseUrl(req);
         assert.strictEqual(baseUrl, 'https://env.example.com');

@@ -381,6 +381,8 @@ module.exports = {
         // Provide literal content entries so static builds
         // can include the dynamically generated robots.txt
         // and llms.txt files.
+        // URLs must be relative and prefix-free — the
+        // consumer prepends the prefix when fetching.
         addSeoFiles(req, results) {
           const global = req.data.global;
           // robots.txt and llms.txt are site-wide (not per-locale),
@@ -392,16 +394,15 @@ module.exports = {
           if (!global || req.locale !== self.apos.i18n.defaultLocale) {
             return;
           }
-          const prefix = self.apos.prefix || '';
           results.push({
-            url: `${prefix}/robots.txt`,
+            url: '/robots.txt',
             contentType: 'text/plain',
             i18nId: '@apostrophecms/seo:robots.txt',
             sitemap: false
           });
           if (global.llmsTxtSelection !== 'disabled') {
             results.push({
-              url: `${prefix}/llms.txt`,
+              url: '/llms.txt',
               contentType: 'text/plain',
               i18nId: '@apostrophecms/seo:llms.txt',
               sitemap: false

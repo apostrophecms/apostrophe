@@ -225,7 +225,7 @@ module.exports = {
               // WARNING: the `addUrls` call below has a serious
               // performance impact (extra DB queries per locale).
               // Keep this gated for static builds only.
-              if (req.aposExternalFront && self.apos.url.options.static) {
+              if (self.apos.url.isExternalFront(req) && self.apos.url.options.static) {
                 // Static builds can't follow the API redirect route
                 // (there is no server to handle it), so compute the
                 // real URL using the same mechanisms the query builders

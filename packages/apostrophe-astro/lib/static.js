@@ -44,7 +44,7 @@ export async function getLocales({ aposHost, aposExternalFrontKey }) {
   if (!aposExternalFrontKey) {
     throw new Error('aposExternalFrontKey is required.');
   }
-  const url = new URL('/api/v1/@apostrophecms/i18n/locales', aposHost);
+  const url = new URL(aposHost + '/api/v1/@apostrophecms/i18n/locales');
   const response = await fetch(url, {
     headers: authHeaders(aposExternalFrontKey)
   });
@@ -96,7 +96,7 @@ export async function getAllUrlMetadata(config) {
     );
   }
 
-  const url = new URL('/api/v1/@apostrophecms/url', aposHost);
+  const url = new URL(aposHost + '/api/v1/@apostrophecms/url');
   if (locale) {
     url.searchParams.set('aposLocale', locale);
   }
@@ -143,10 +143,11 @@ export async function getAllUrlMetadata(config) {
     }
   }
 
+  // The CMS returns page URLs that are already relative and
+  // prefix-free (e.g. `/about-us`, `/fr/articles/page/2`).  Astro's
+  // `base` config adds the prefix when generating output paths, so no
+  // stripping is needed here — just convert to [...slug] params.
   const paths = pages.map((entry) => {
-    // Strip leading and trailing slashes to match Astro's [...slug]
-    // param format. The root "/" becomes `undefined` so Astro renders
-    // the index page. Locale home pages like "/fr/" become "fr".
     const rawSlug = entry.url.replace(/^\//, '').replace(/\/+$/, '');
     const slug = rawSlug === '' ? undefined : rawSlug;
 
@@ -279,7 +280,7 @@ export async function getAllStaticPaths(config) {
  * @param {string} options.outDir - The absolute path to the build output directory.
  * @param {import('astro').AstroIntegrationLogger} options.logger - Astro integration logger.
  */
-export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outDir, logger }) {
+export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outDir, logger, aposPrefix = '' }) {
   const totalStart = performance.now();
   const stats = { written: 0, warnings: 0, errors: 0 };
 
@@ -327,7 +328,12 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
     const branch = isLast ? '└─' : '├─';
     try {
       const timeStart = performance.now();
-      const res = await fetch(new URL(entry.url, aposHost), {
+      // Literal content URLs are relative and prefix-free
+      // (e.g. `/sitemap.xml`, `/api/v1/.../stylesheet/...`).
+      // Prepend the Apostrophe prefix so the fetch hits the
+      // correct backend route.
+      const fetchUrl = new URL((aposPrefix || '') + entry.url, aposHost);
+      const res = await fetch(fetchUrl, {
         headers: authHeaders(aposExternalFrontKey)
       });
       if (!res.ok) {
@@ -343,7 +349,8 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
         );
         continue;
       }
-      // Determine output path from the URL, stripping query string
+      // Output path matches the prefix-free URL — the hosting
+      // platform serves under the prefix path already.
       const urlPath = new URL(entry.url, 'http://localhost').pathname;
       const filePath = join(outDir, urlPath);
       await mkdir(dirname(filePath), { recursive: true });
@@ -387,7 +394,7 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
  * @param {string} options.outDir - The absolute path to the build output directory.
  * @param {import('astro').AstroIntegrationLogger} options.logger - Astro integration logger.
  */
-export async function writeAttachments({ aposHost, outDir, logger }) {
+export async function writeAttachments({ aposHost, outDir, logger, aposPrefix = '' }) {
   const stats = { written: 0, warnings: 0, errors: 0 };
   let cache;
   try {
@@ -429,7 +436,14 @@ export async function writeAttachments({ aposHost, outDir, logger }) {
   // When `uploadsUrl` is an absolute CDN URL the pages already point
   // to the CDN, but if the user still wants local copies we write
   // under `outDir + /attachments/...` (just the path portion).
-  const outputPrefix = isAbsoluteUploadsUrl ? '' : uploadsUrl;
+  // Strip the Apostrophe prefix from the output path — the hosting
+  // platform already serves under the prefix path.
+  let outputPrefix = isAbsoluteUploadsUrl ? '' : uploadsUrl;
+  if (aposPrefix && outputPrefix.startsWith(aposPrefix + '/')) {
+    outputPrefix = outputPrefix.slice(aposPrefix.length);
+  } else if (aposPrefix && outputPrefix === aposPrefix) {
+    outputPrefix = '/';
+  }
 
   const totalStart = performance.now();
   process.stdout.write(`${bgGreen(black(' copying attachments '))}\n`);

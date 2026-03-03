@@ -21,7 +21,7 @@ module.exports = {
       // with `pages` and `attachments` properties.
       // See the `getAllUrlMetadata` method for full documentation.
       async getAll(req) {
-        if (!req.aposExternalFront) {
+        if (!self.isExternalFront(req)) {
           throw self.apos.error('forbidden');
         }
         if (!self.options.static) {
@@ -70,6 +70,81 @@ module.exports = {
 
   methods(self) {
     return {
+
+      // Returns `true` if the given `req` represents a static build
+      // request. This is the single source of truth — modules should
+      // use this method rather than inspecting `req` properties
+      // directly.
+      //
+      // Static build requests are those made by an external frontend
+      // (e.g. Astro) that opted in to static-build URL handling via
+      // the `x-apos-static-base-url: 1` header. The Express
+      // middleware sets `req.aposStaticBuild` and (when configured)
+      // `req.staticBaseUrl` in response.
+      isStaticBuild(req) {
+        return !!req.aposStaticBuild;
+      },
+
+      // Returns `true` if the given `req` originates from an
+      // external frontend integration (e.g. Astro, Next.js).
+      // This is the single source of truth — modules should use
+      // this method rather than inspecting `req.aposExternalFront`
+      // directly.
+      isExternalFront(req) {
+        return !!req.aposExternalFront;
+      },
+
+      // Returns the effective base URL for the given request.
+      //
+      // Resolution order:
+      //  1. If a hostname is configured for the active locale,
+      //     `<protocol>://<hostname>` is returned (locale-specific
+      //     host always wins, prefix is never appended).
+      //  2. If the request is a static build (`isStaticBuild(req)`),
+      //     `req.staticBaseUrl` + prefix is returned (or the empty
+      //     string when none is configured).
+      //  3. Otherwise, `apos.baseUrl` + prefix is returned (or the
+      //     empty string).
+      //
+      // ### `options.strict`
+      //
+      // When `true`, guarantees a non-empty return value:
+      //  - In a static build where `staticBaseUrl` is empty,
+      //    falls back to `apos.baseUrl`.
+      //  - In a non-static context where `apos.baseUrl` is empty,
+      //    still returns the empty string (nothing more to fall
+      //    back to).
+      //
+      // Use `strict: true` when an absolute URL is required (e.g.
+      // sitemap `<loc>` values).
+      //
+      // ### `options.prefix`
+      //
+      // When `true` (the default), the global `apos.prefix` is
+      // appended to the returned URL (e.g. `/blog`).  The prefix
+      // is **not** appended when a locale-specific hostname is
+      // used — that hostname already represents the full origin.
+      //
+      // Pass `prefix: false` to obtain only the origin / base URL
+      // without the prefix.  This is the legacy behavior of
+      // `apos.page.getBaseUrl(req)` before the delegation to this
+      // method.
+      getBaseUrl(req, { strict = false, prefix = true } = {}) {
+        const hostname = self.apos.i18n.locales?.[req.locale]?.hostname;
+        if (hostname) {
+          // Locale hostnames are fully qualified origins;
+          // the global prefix does not apply.
+          return `${req.protocol}://${hostname}`;
+        }
+        const aposPrefix = prefix ? (self.apos.prefix || '') : '';
+        if (self.isStaticBuild(req)) {
+          const staticUrl = req.staticBaseUrl || '';
+          if (staticUrl || !strict) {
+            return staticUrl + aposPrefix;
+          }
+        }
+        return (self.apos.baseUrl || '') + aposPrefix;
+      },
 
       // Build filter URLs. `data` is an object whose properties
       // become new query parameters. These parameters override any
@@ -300,8 +375,19 @@ module.exports = {
       // following properties:
       //
       // ### `url` (string, always present)
-      // The URL path for this entry, relative to the site's
-      // base URL (e.g. `/articles` or `/articles/category/tech`).
+      // The URL path for this entry — a purely relative path
+      // without origin or prefix (e.g. `/articles` or
+      // `/articles/category/tech`, never
+      // `https://example.com/my-repo/articles`).
+      //
+      // For document entries, the framework strips the base
+      // URL (origin + prefix) automatically after collection.
+      // For **literal content** entries added by event
+      // handlers, the URL **must** be provided as a relative,
+      // prefix-free path (e.g. `/robots.txt`, not
+      // `/my-repo/robots.txt`). The consumer (e.g. Astro
+      // integration) is responsible for prepending the prefix
+      // when fetching from the backend.
       //
       // ### `i18nId` (string, always present)
       // A stable identifier that is consistent across localized
@@ -387,6 +473,16 @@ module.exports = {
       //
       // Handlers should respect `excludeTypes`.
       //
+      // **Important:** handlers that push literal content
+      // entries must provide a relative, prefix-free `url`
+      // path (e.g. `/robots.txt`). The base URL stripping
+      // that runs after collection only applies to document
+      // entries whose `url` starts with the effective base
+      // URL — it will not strip a prefix that was manually
+      // added by a handler. Providing a relative path
+      // ensures correct behaviour regardless of whether a
+      // prefix is configured.
+      //
       // ## Attachment metadata (`attachments`)
       //
       // When `options.attachments` is a truthy object, attachment
@@ -471,7 +567,10 @@ module.exports = {
           );
         }
 
-        const effectiveBaseUrl = self.apos.page.getBaseUrl(req);
+        // Strip the base URL (origin + prefix) that `_url` values
+        // were built with, producing purely relative, prefix-free
+        // paths (e.g. `/about`, `/fr/articles/page/2`).
+        const effectiveBaseUrl = self.getBaseUrl(req);
         if (effectiveBaseUrl) {
           for (const entry of response.pages) {
             if (entry.url?.startsWith(effectiveBaseUrl)) {

@@ -892,6 +892,185 @@ describe('Sitemap – query string URLs (static: false)', function () {
   });
 });
 
+describe('Sitemap – static build URL generation', function () {
+  this.timeout(t.timeout);
+
+  describe('single-language', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:7780',
+        staticBaseUrl: 'https://example.com',
+        testModule: true,
+        modules: getAppConfig({
+          externalFrontKey: 'test-key'
+        })
+      });
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+    });
+
+    it('should use staticBaseUrl in sitemap when static build headers are sent', async function () {
+      const xml = await apos.http.get('/sitemap.xml', {
+        headers: {
+          'x-requested-with': 'AposExternalFront',
+          'apos-external-front-key': 'test-key',
+          'x-apos-static-base-url': '1'
+        }
+      });
+
+      assert(xml);
+      assert(xml.indexOf('<loc>https://example.com/</loc>') !== -1,
+        'Should use staticBaseUrl for home page');
+      assert(xml.indexOf('http://localhost:7780') === -1,
+        'Should NOT contain localhost baseUrl');
+    });
+
+    it('should use regular baseUrl when no static build headers are sent', async function () {
+      // Clear cache first so it regenerates
+      await apos.cache.clear('apos-sitemap');
+
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml);
+      assert(xml.indexOf('<loc>http://localhost:7780/</loc>') !== -1,
+        'Should use regular baseUrl');
+      assert(xml.indexOf('https://example.com') === -1,
+        'Should NOT contain staticBaseUrl');
+    });
+
+    it('should not poison the cache with static build URLs', async function () {
+      // Clear cache
+      await apos.cache.clear('apos-sitemap');
+
+      // Request with static build headers (should NOT cache)
+      await apos.http.get('/sitemap.xml', {
+        headers: {
+          'x-requested-with': 'AposExternalFront',
+          'apos-external-front-key': 'test-key',
+          'x-apos-static-base-url': '1'
+        }
+      });
+
+      // Now request without static build headers — should still get
+      // regular baseUrl (cache was not poisoned)
+      const xml = await apos.http.get('/sitemap.xml');
+
+      assert(xml);
+      assert(xml.indexOf('<loc>http://localhost:7780/</loc>') !== -1,
+        'Cache should not be poisoned with staticBaseUrl');
+      assert(xml.indexOf('https://example.com') === -1,
+        'Static build URLs should not appear in cached result');
+    });
+  });
+
+  describe('multi-language', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:7780',
+        staticBaseUrl: 'https://example.com',
+        testModule: true,
+        modules: getAppConfig({
+          multilanguage: true,
+          externalFrontKey: 'test-key'
+        })
+      });
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+    });
+
+    it('should use staticBaseUrl for all locales in static build', async function () {
+      const xml = await apos.http.get('/sitemap.xml', {
+        headers: {
+          'x-requested-with': 'AposExternalFront',
+          'apos-external-front-key': 'test-key',
+          'x-apos-static-base-url': '1'
+        }
+      });
+
+      assert(xml);
+      // English home
+      assert(xml.indexOf('<loc>https://example.com/</loc>') !== -1,
+        'English home should use staticBaseUrl');
+      // Spanish home (prefix locale)
+      assert(xml.indexOf('<loc>https://example.com/es/</loc>') !== -1,
+        'Spanish home should use staticBaseUrl with locale prefix');
+      // French home (hostname locale) — hostname override takes priority
+      assert(xml.indexOf('<loc>http://fr.example.com/</loc>') !== -1,
+        'French home should use hostname override, not staticBaseUrl');
+      // Verify no localhost URLs for en/es
+      assert(xml.indexOf('<loc>http://localhost:7780/</loc>') === -1,
+        'Should NOT have localhost for English');
+      assert(xml.indexOf('<loc>http://localhost:7780/es/</loc>') === -1,
+        'Should NOT have localhost for Spanish');
+    });
+
+    it('should use staticBaseUrl in hreflang links for static build', async function () {
+      const xml = await apos.http.get('/sitemap.xml', {
+        headers: {
+          'x-requested-with': 'AposExternalFront',
+          'apos-external-front-key': 'test-key',
+          'x-apos-static-base-url': '1'
+        }
+      });
+
+      // English home should have hreflang pointing to es with staticBaseUrl
+      assert(
+        xml.indexOf('hreflang="es" href="https://example.com/es/"') !== -1,
+        'English hreflang for es should use staticBaseUrl'
+      );
+      // French hostname should still be used in hreflang
+      assert(
+        xml.indexOf('hreflang="fr" href="http://fr.example.com/"') !== -1,
+        'French hreflang should use hostname override'
+      );
+    });
+  });
+
+  describe('strict fallback (no staticBaseUrl)', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:7780',
+        testModule: true,
+        modules: getAppConfig({
+          externalFrontKey: 'test-key'
+        })
+      });
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+    });
+
+    it('should fall back to baseUrl when staticBaseUrl is not configured', async function () {
+      const xml = await apos.http.get('/sitemap.xml', {
+        headers: {
+          'x-requested-with': 'AposExternalFront',
+          'apos-external-front-key': 'test-key',
+          'x-apos-static-base-url': '1'
+        }
+      });
+
+      assert(xml);
+      // With strict: true and no staticBaseUrl, should fall back to baseUrl
+      assert(xml.indexOf('<loc>http://localhost:7780/</loc>') !== -1,
+        'Should fall back to baseUrl when staticBaseUrl is not set');
+    });
+  });
+});
+
 function getProductAppConfig({
   perPage = 3, staticUrls = false, multilanguage = false
 } = {}) {
@@ -1030,7 +1209,8 @@ function getAppConfig(options = {}) {
   return {
     '@apostrophecms/express': {
       options: {
-        session: { secret: 'supersecret' }
+        session: { secret: 'supersecret' },
+        ...(options.externalFrontKey ? { externalFrontKey: options.externalFrontKey } : {})
       }
     },
     ...(options.multilanguage

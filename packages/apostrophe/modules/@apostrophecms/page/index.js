@@ -2855,23 +2855,16 @@ database.`);
         );
       },
       // Returns the effective base URL for the given request.
-      // If a hostname is defined for the active locale, that takes priority.
-      // For static build requests (`req.aposStaticBuild`), returns
-      // `staticBaseUrl` (or the empty string) so that rendered content
-      // uses the production hostname rather than the backend's `baseUrl`.
-      // Otherwise falls back to the top-level `baseUrl` option or the
-      // empty string. The Apostrophe queries used to fetch pages consult
-      // this method, and `i18n.setPrefixUrls` calls it to set
-      // `req.baseUrl`, `req.prefix`, and `req.absoluteUrl`.
+      // Delegates to `apos.url.getBaseUrl(req)` which is
+      // now the single source of truth.
+      // See `@apostrophecms/url` module for full documentation
+      // and the `strict` option.
+      //
+      // Note: `prefix: false` preserves backward compatibility —
+      // callers of `page.getBaseUrl` historically received only
+      // the origin, without the global prefix.
       getBaseUrl(req) {
-        const hostname = self.apos.i18n.locales[req.locale]?.hostname;
-        if (hostname) {
-          return `${req.protocol}://${hostname}`;
-        }
-        if (req.aposStaticBuild) {
-          return self.apos.staticBaseUrl || '';
-        }
-        return self.apos.baseUrl || '';
+        return self.apos.url.getBaseUrl(req, { prefix: false });
       },
 
       // Implements a simple batch operation like publish or unpublish.
