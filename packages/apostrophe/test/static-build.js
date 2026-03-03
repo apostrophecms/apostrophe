@@ -2012,4 +2012,456 @@ describe('Static Build Support', function () {
       });
     });
   });
+
+  describe('uploadfs relative URLs', function () {
+
+    describe('default (no staticBaseUrl, no relativeUrls)', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          modules: {}
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('uploadsUrl includes baseUrl (BC)', function () {
+        assert.strictEqual(
+          apos.uploadfs.getUrl(),
+          'http://localhost:3000/uploads'
+        );
+      });
+    });
+
+    describe('with staticBaseUrl configured', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://www.example.com',
+          modules: {}
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('uploadsUrl is path-only (no host)', function () {
+        assert.strictEqual(apos.uploadfs.getUrl(), '/uploads');
+      });
+    });
+
+    describe('with staticBaseUrl as empty string', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: '',
+          modules: {}
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('uploadsUrl includes baseUrl (empty string is falsy, BC preserved)', function () {
+        assert.strictEqual(
+          apos.uploadfs.getUrl(),
+          'http://localhost:3000/uploads'
+        );
+      });
+    });
+
+    describe('with relativeUrls option (no staticBaseUrl)', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          modules: {
+            '@apostrophecms/uploadfs': {
+              options: {
+                relativeUrls: true
+              }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('uploadsUrl is path-only', function () {
+        assert.strictEqual(apos.uploadfs.getUrl(), '/uploads');
+      });
+    });
+
+    describe('with both staticBaseUrl and relativeUrls', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://www.example.com',
+          modules: {
+            '@apostrophecms/uploadfs': {
+              options: {
+                relativeUrls: true
+              }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('uploadsUrl is path-only', function () {
+        assert.strictEqual(apos.uploadfs.getUrl(), '/uploads');
+      });
+    });
+
+    describe('with prefix and staticBaseUrl', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://www.example.com',
+          prefix: '/cms',
+          modules: {}
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('uploadsUrl preserves prefix but omits host', function () {
+        assert.strictEqual(apos.uploadfs.getUrl(), '/cms/uploads');
+      });
+    });
+
+    describe('with prefix and relativeUrls (no staticBaseUrl)', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          prefix: '/cms',
+          modules: {
+            '@apostrophecms/uploadfs': {
+              options: {
+                relativeUrls: true
+              }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('uploadsUrl preserves prefix but omits host', function () {
+        assert.strictEqual(apos.uploadfs.getUrl(), '/cms/uploads');
+      });
+    });
+
+    describe('cloud storage overrides uploadsUrl', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://www.example.com',
+          modules: {
+            '@apostrophecms/uploadfs': {
+              options: {
+                uploadfs: {
+                  uploadsUrl: 'https://cdn.example.com/uploads'
+                }
+              }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('explicit uploadsUrl from cloud config takes precedence', function () {
+        assert.strictEqual(
+          apos.uploadfs.getUrl(),
+          'https://cdn.example.com/uploads'
+        );
+      });
+    });
+  });
+
+  describe('staticBuildHeader middleware', function () {
+
+    describe('with staticBaseUrl configured', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://www.example.com',
+          modules: {
+            '@apostrophecms/express': {
+              options: {
+                externalFrontKey: 'test-key'
+              }
+            },
+            '@apostrophecms/url': {
+              options: { static: true }
+            },
+            article: {
+              extend: '@apostrophecms/piece-type',
+              options: {
+                name: 'article',
+                label: 'Article',
+                alias: 'article',
+                publicApiProjection: {
+                  title: 1,
+                  _url: 1
+                }
+              }
+            },
+            'article-page': {
+              extend: '@apostrophecms/piece-page-type',
+              options: {
+                name: 'articlePage',
+                label: 'Articles',
+                alias: 'articlePage'
+              }
+            },
+            '@apostrophecms/page': {
+              options: {
+                park: [
+                  {
+                    title: 'Articles',
+                    type: 'articlePage',
+                    slug: '/articles',
+                    parkedId: 'articles'
+                  }
+                ]
+              }
+            }
+          }
+        });
+
+        const req = apos.task.getReq();
+        await apos.article.insert(req, {
+          title: 'Middleware Test Article',
+          visibility: 'public'
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('sets req.aposStaticBuild via direct API call with header', async function () {
+        const jar = apos.http.jar();
+        const response = await apos.http.get('/api/v1/article', {
+          jar,
+          headers: {
+            'x-apos-static-base-url': '1'
+          }
+        });
+        assert(response);
+        assert(response.results);
+        assert(response.results.length > 0);
+        // With aposStaticBuild and staticBaseUrl configured, piece _url
+        // should use staticBaseUrl (not baseUrl)
+        for (const piece of response.results) {
+          assert(
+            piece._url.startsWith('https://www.example.com'),
+            `_url should use staticBaseUrl, got: ${piece._url}`
+          );
+          assert(
+            !piece._url.startsWith('http://localhost:3000'),
+            `_url should NOT use baseUrl, got: ${piece._url}`
+          );
+        }
+      });
+
+      it('does not set aposStaticBuild without the header', async function () {
+        const jar = apos.http.jar();
+        const response = await apos.http.get('/api/v1/article', {
+          jar
+        });
+        assert(response);
+        assert(response.results);
+        assert(response.results.length > 0);
+        // Without the header, piece _url should include baseUrl
+        for (const piece of response.results) {
+          assert(
+            piece._url.startsWith('http://localhost:3000'),
+            `_url should include baseUrl without the header, got: ${piece._url}`
+          );
+        }
+      });
+
+      it('externalFront still works when both headers are sent', async function () {
+        const jar = apos.http.jar();
+        const response = await apos.http.get('/api/v1/@apostrophecms/url', {
+          jar,
+          headers: {
+            'x-requested-with': 'AposExternalFront',
+            'apos-external-front-key': 'test-key',
+            'x-apos-static-base-url': '1'
+          }
+        });
+        assert(response);
+        assert(response.pages);
+        for (const entry of response.pages) {
+          assert(
+            !entry.url.startsWith('http://'),
+            `URL should be path-only via externalFront, got: ${entry.url}`
+          );
+        }
+      });
+    });
+
+    describe('without staticBaseUrl (header still sets aposStaticBuild)', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          modules: {
+            article: {
+              extend: '@apostrophecms/piece-type',
+              options: {
+                name: 'article',
+                label: 'Article',
+                alias: 'article',
+                publicApiProjection: {
+                  title: 1,
+                  _url: 1
+                }
+              }
+            },
+            'article-page': {
+              extend: '@apostrophecms/piece-page-type',
+              options: {
+                name: 'articlePage',
+                label: 'Articles',
+                alias: 'articlePage'
+              }
+            },
+            '@apostrophecms/page': {
+              options: {
+                park: [
+                  {
+                    title: 'Articles',
+                    type: 'articlePage',
+                    slug: '/articles',
+                    parkedId: 'articles'
+                  }
+                ]
+              }
+            }
+          }
+        });
+
+        const req = apos.task.getReq();
+        await apos.article.insert(req, {
+          title: 'No StaticBaseUrl Article',
+          visibility: 'public'
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('sets aposStaticBuild even without staticBaseUrl (matches externalFront behavior)', async function () {
+        const jar = apos.http.jar();
+        const response = await apos.http.get('/api/v1/article', {
+          jar,
+          headers: {
+            'x-apos-static-base-url': '1'
+          }
+        });
+        assert(response);
+        assert(response.results);
+        assert(response.results.length > 0);
+        // With aposStaticBuild=true and no staticBaseUrl, getBaseUrl returns ''
+        // so _url should be path-only
+        for (const piece of response.results) {
+          assert(
+            !piece._url.startsWith('http://'),
+            `_url should be path-only when aposStaticBuild is true, got: ${piece._url}`
+          );
+        }
+      });
+    });
+
+    describe('non-API routes ignore the header', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://www.example.com',
+          modules: {}
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('non-API request with the header does not cause errors', async function () {
+        const jar = apos.http.jar();
+        // Request the home page (non-API route) with the static header
+        // — should be ignored and not cause issues
+        const response = await apos.http.get('/', {
+          jar,
+          headers: {
+            'x-apos-static-base-url': '1'
+          },
+          fullResponse: true
+        });
+        assert.strictEqual(response.status, 200);
+      });
+    });
+  });
 });

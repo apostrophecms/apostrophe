@@ -4,6 +4,13 @@ const mkdirp = require('mkdirp');
 const Promise = require('bluebird');
 
 module.exports = {
+  options: {
+    // When true, the default `uploadsUrl` omits `baseUrl`, producing a
+    // relative pathname for local storage drivers (e.g. `/uploads`).
+    // Useful when an external frontend like Astro proxies uploads and
+    // needs path-only attachment URLs.
+    relativeUrls: false
+  },
   async init(self) {
     self.uploadfs = await self.getInstance(self.options.uploadfs || {});
     // Like @apostrophecms/express or @apostrophecms/db, this module has no
@@ -18,10 +25,17 @@ module.exports = {
       // appropriate defaults and environment variables where not overridden by
       // the given options object
       async getInstance(options = {}) {
+        // Strip the URL if static build or explicitly requested.
+        const useRelativeUrls = self.apos.staticBaseUrl ||
+          self.options.relativeUrls === true;
+        const urlPrefix = useRelativeUrls
+          ? ''
+          : (self.apos.baseUrl || '');
+
         const uploadfsDefaultSettings = {
           backend: 'local',
           uploadsPath: self.apos.rootDir + '/public/uploads',
-          uploadsUrl: (self.apos.baseUrl || '') + self.apos.prefix + '/uploads',
+          uploadsUrl: urlPrefix + self.apos.prefix + '/uploads',
           tempPath: self.apos.rootDir + '/data/temp/uploadfs'
         };
         const uploadfsSettings = {};

@@ -25,6 +25,26 @@ export function getAposHost() {
   return process.env.APOS_HOST || config.aposHost;
 }
 
+/**
+ * Check whether the current build is a static build.
+ *
+ * Returns `true` when the Astro integration is configured for
+ * static output (e.g. `output: 'static'` with `APOS_BUILD=static`).
+ *
+ * @returns {boolean}
+ *
+ * @example
+ * ```astro
+ * ---
+ * import { isStaticBuild } from '@apostrophecms/apostrophe-astro/helpers';
+ * ---
+ * <html data-static={isStaticBuild()}>
+ * ```
+ */
+export function isStaticBuild() {
+  return Boolean(config.staticBuild);
+}
+
 // Mode-aware URL building utilities for Apostrophe piece index
 // pages. Detects whether the backend uses static (path-based) URLs
 // via `aposData.staticUrls` (set by `@apostrophecms/url` when its

@@ -298,6 +298,23 @@ module.exports = {
         };
         return next();
       },
+      // Allow direct API calls (without externalFrontKey) to opt into
+      // static-build URL behavior by sending x-apos-static-base-url: 1.
+      // This is harmless — it only changes how URLs are built in the
+      // response, granting no elevated permissions.
+      staticBuildHeader: {
+        url: '/api/v1',
+        middleware(req, res, next) {
+          // Only act if not already set by externalFront middleware
+          if (!req.aposStaticBuild && req.headers['x-apos-static-base-url'] === '1') {
+            req.aposStaticBuild = true;
+            if (self.apos.staticBaseUrl) {
+              req.staticBaseUrl = self.apos.staticBaseUrl;
+            }
+          }
+          return next();
+        }
+      },
       attachUtilityMethods(req, res, next) {
         // We apply the super pattern variously to res.redirect,
         // make sure the original version is always available

@@ -1,2 +1,3 @@
-export { getAposHost, buildPageUrl, getFilterBaseUrl, aposSetQueryParameter } from './url.js';
+export { getAposHost, isStaticBuild, buildPageUrl, getFilterBaseUrl, aposSetQueryParameter } from './url.js';
 export { slugify } from './slug.js';
+export { aposFetch } from './fetch.js';
