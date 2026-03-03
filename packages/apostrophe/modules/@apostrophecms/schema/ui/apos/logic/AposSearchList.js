@@ -69,6 +69,9 @@ export default {
   emits: [ 'select' ],
   methods: {
     select(item) {
+      if (item.disabled) {
+        return;
+      }
       const selectedItems = this.selectedItems;
       if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
         // Never modify a prop
