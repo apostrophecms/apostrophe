@@ -796,6 +796,46 @@ body[data-breakpoint-preview-mode] {
     });
   });
 
+  describe(':root handling', () => {
+    it('should preserve media-query :root custom properties outside preview and copy to container in preview', async () => {
+      const input = `
+@media screen and (max-width: 800px) {
+  :root {
+    --widget-spacer: 30px;
+  }
+}`;
+      const output = `
+@media screen and (max-width: 800px) {
+  :root {
+    --widget-spacer: 30px;
+  }
+}
+@container (max-width: 800px) {
+  [data-apos-refreshable-body] {
+    --widget-spacer: 30px;
+  }
+}`;
+
+      await run(plugin, input, output, opts);
+    });
+
+    it('should preserve top-level :root rules while creating container-compatible converted copies when needed', async () => {
+      const input = `
+:root {
+  --widget-spacer: 50vw;
+}`;
+      const output = `
+:root {
+  --widget-spacer: 50vw;
+}
+[data-apos-refreshable-body] {
+  --widget-spacer: 50cqw;
+}`;
+
+      await run(plugin, input, output, opts);
+    });
+  });
+
   describe('Body level style to container compatibility', () => {
     it('should conserve body level styles when breakpoint preview is off (in media queries)', async () => {
       const input = `

@@ -330,7 +330,7 @@ module.exports = function() {
       if (!self.blobSvcs.length) {
         return callback(new Error('At least one valid container must be included in the replicateCluster configuration.'));
       }
-      const fileExt = localPath.split('.').pop();
+      const fileExt = extname(_path).substring(1);
       const path = _path[0] === '/' ? _path.slice(1) : _path;
       const tmpFileName = Math.random().toString(36).substring(7);
       let tempPath = this.options.tempPath + '/' + tmpFileName;

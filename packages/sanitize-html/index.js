@@ -566,6 +566,11 @@ function sanitizeHtml(html, options, _recursing) {
         // your concern, don't allow them. The same is essentially true for style tags
         // which have their own collection of XSS vectors.
         result += text;
+      } else if ((options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (nonTextTagsArray.indexOf(tag) !== -1)) {
+        // htmlparser2 does not decode entities inside raw text elements like
+        // textarea and option. The text is already properly encoded, so pass
+        // it through without additional escaping to avoid double-encoding.
+        result += text;
       } else if (!addedText) {
         const escaped = escapeHtml(text, false);
         if (options.textFilter) {
@@ -671,7 +676,8 @@ function sanitizeHtml(html, options, _recursing) {
 
   if (options.disallowedTagsMode === 'escape' || options.disallowedTagsMode === 'recursiveEscape') {
     const lastParsedIndex = parser.endIndex;
-    if (lastParsedIndex != null && lastParsedIndex >= 0 && lastParsedIndex < html.length) {
+    if (lastParsedIndex != null && lastParsedIndex >= 0 &&
+        lastParsedIndex < html.length) {
       const unparsed = html.substring(lastParsedIndex);
       result += escapeHtml(unparsed);
     } else if ((lastParsedIndex == null || lastParsedIndex < 0) && html.length > 0 && result === '') {
