@@ -150,7 +150,7 @@ export default {
       if (!this.focusedWidget) {
         return raised;
       }
-      const graphKey = this.docId || unref(this.aposGraphKey);
+      const graphKey = unref(this.aposGraphKey);
       if (!graphKey) {
         // No graph — fall back to exact match only
         if (this.next.some(w => w._id === this.focusedWidget)) {

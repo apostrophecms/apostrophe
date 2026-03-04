@@ -577,7 +577,7 @@ export default {
       if (this.foreign) {
         return;
       }
-      const graphKey = this.docId || unref(this.aposGraphKey);
+      const graphKey = unref(this.aposGraphKey);
       if (!graphKey) {
         return;
       }
@@ -589,7 +589,7 @@ export default {
       if (this.foreign) {
         return;
       }
-      const graphKey = this.docId || unref(this.aposGraphKey);
+      const graphKey = unref(this.aposGraphKey);
       if (!graphKey) {
         return;
       }

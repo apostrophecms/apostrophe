@@ -59,6 +59,9 @@ export const useWidgetGraphStore = defineStore('widgetGraph', () => {
         areaId
       });
 
+      // Discover direct children from the widget's schema and register
+      // them as nodes with edges. Each child will recursively register
+      // its own children when its AposAreaWidget mounts.
       const children = _discoverChildren(schema, widget);
       for (const child of children) {
         graph.addNode(child.widgetId, {
@@ -323,7 +326,7 @@ export const useWidgetGraphStore = defineStore('widgetGraph', () => {
    * Recursively scan schema fields for nested area children.
    * Traverses area, array, and object fields to find all
    * widget items contained within. Only current schema widgets
-   * will be discovered.
+   * will be discovered. Returns flat list of direct children only.
    *
    * @param {Object[]} schema  - Apostrophe field schema array.
    * @param {Object}   dataObj - The data object matching the schema.
