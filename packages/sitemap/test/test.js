@@ -1210,7 +1210,9 @@ function getAppConfig(options = {}) {
     '@apostrophecms/express': {
       options: {
         session: { secret: 'supersecret' },
-        ...(options.externalFrontKey ? { externalFrontKey: options.externalFrontKey } : {})
+        ...(options.externalFrontKey
+          ? { externalFrontKey: options.externalFrontKey }
+          : {})
       }
     },
     ...(options.multilanguage
