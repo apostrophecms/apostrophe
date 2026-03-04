@@ -166,22 +166,13 @@ export default {
     color: var(--a-text-primary);
   }
 
-  &__document-title {
-    margin-top: 1px;
-  }
-
   &__separator {
     align-items: center;
-    margin-top: 1px;
     padding: 0 7px;
   }
 
-  &__document {
-    margin-top: 3.5px;
-
-    :deep(.apos-context-menu__items) {
-      min-width: 150px;
-    }
+  &__document :deep(.apos-context-menu__items) {
+    min-width: 150px;
   }
 }
 

@@ -23,7 +23,7 @@
       @keyup.enter="onKeyup"
     >
       <div
-        v-if="!breadcrumbDisabled"
+        v-if="!breadcrumbDisabled && focusedWidget === widget._id"
         ref="label"
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
@@ -92,7 +92,7 @@
         />
       </div>
       <div
-        v-if="!controlsDisabled"
+        v-if="!controlsDisabled && !maxReached && (!focusedWidget || isFocused)"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -143,7 +143,6 @@
           @operation="onOperation"
         />
       </div>
-
       <!-- Still used for contextual editing components -->
       <component
         :is="widgetEditorComponent(widget.type)"
@@ -157,7 +156,7 @@
         :doc-id="docId"
         :focused="isFocused"
         @update="$emit('update', $event)"
-        @suppress-widget-controls="isSuppressingWidgetControls = true"
+        @suppress-widget-controls="doSuppressWidgetControls()"
       />
       <component
         :is="widgetComponent(widget.type)"
@@ -179,7 +178,7 @@
         @update="$emit('update', $event);"
       />
       <div
-        v-if="!controlsDisabled"
+        v-if="!controlsDisabled && !maxReached && (!focusedWidget || isFocused)"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
@@ -515,6 +514,7 @@ export default {
     // a 'focus my parent' plea
     apos.bus.$on('widget-focus-parent', this.focusParent);
     apos.bus.$on('context-menu-toggled', this.getFocusForMenu);
+    apos.bus.$on('suppress-focused-widget-controls', this.doSuppressWidgetControls);
 
     this.breadcrumbs.$lastEl = this.$el;
 
@@ -549,12 +549,19 @@ export default {
   unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
+    apos.bus.$off('suppress-focused-widget-controls', this.doSuppressWidgetControls);
     window.removeEventListener('scroll', this.stickyControlsScroll);
     window.removeEventListener('resize', this.stickyControlsResize);
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
     ...mapActions(useModalStore, [ 'getAdminContentDirectionClass' ]),
+
+    doSuppressWidgetControls() {
+      if (this.isFocused) {
+        this.isSuppressingWidgetControls = true;
+      }
+    },
     // Emits same actions as the native operations,
     // e.g ('edit', { index }), ('remove', { index }), etc.
     onOperation({ name, payload }) {
