@@ -138,6 +138,13 @@ export default function() {
       if (created) {
         return;
       }
+      // Resolve graphKey: if this area is inside a modal that owns a
+      // graph (data-apos-graph-key), use that key.  Otherwise fall back
+      // to the on-page contextId.  This single DOM lookup bridges the
+      // provide/inject gap created by createApp.
+      const graphKey = el.closest('[data-apos-graph-key]')
+        ?.getAttribute('data-apos-graph-key') || apos.adminBar?.contextId || null;
+
       const app = createApp(component, {
         options,
         id: data._id,
@@ -149,6 +156,11 @@ export default function() {
         parentOptions,
         renderings
       });
+      // Provide the resolved graphKey so every descendant component
+      // can simply inject('aposGraphKey') and get the correct value.
+      if (graphKey) {
+        app.provide('aposGraphKey', graphKey);
+      }
       app.mount(el);
       mountedApps.set(el, app);
       created = true;

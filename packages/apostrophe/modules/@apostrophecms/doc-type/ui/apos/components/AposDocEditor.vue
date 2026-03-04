@@ -4,6 +4,7 @@
     :modal="modal"
     :modal-title="modalTitle"
     :modal-data="modalData"
+    :graph-key="graphKey"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -162,10 +163,7 @@ export default {
     return {
       originalDoc: this.originalDoc,
       liveOriginalDoc: this.docFields,
-      aposGraphKey: computed(() => this.modalData?.id && this.currentId
-        ? `${this.modalData.id}:${this.currentId}`
-        : null
-      )
+      aposGraphKey: computed(() => this.graphKey)
     };
   },
   props: {
@@ -328,6 +326,11 @@ export default {
         type: this.$t(this.moduleOptions.label)
       };
     },
+    graphKey() {
+      return this.modalData?.id && this.currentId
+        ? `${this.modalData.id}:${this.currentId}`
+        : null;
+    },
     saveLabel() {
       if (this.restoreOnly) {
         return 'apostrophe:restore';
@@ -424,8 +427,8 @@ export default {
   unmounted() {
     apos.bus.$off('content-changed', this.onContentChanged);
     // Destroy the widget graph for this modal's editing context
-    if (this.modalData?.id && this.currentId) {
-      this.storeDestroyGraph(`${this.modalData.id}:${this.currentId}`);
+    if (this.graphKey) {
+      this.storeDestroyGraph(this.graphKey);
     }
   },
   methods: {
