@@ -103,17 +103,19 @@ module.exports = (self, options) => {
           }
         });
       }
-      nodes.push({
-        name: 'style',
-        attrs: {
-          id: 'apos-styles-stylesheet'
-        },
-        body: [
-          {
-            text: req.data.global.stylesStylesheet || ''
-          }
-        ]
-      });
+      if (!hasLink) {
+        nodes.push({
+          name: 'style',
+          attrs: {
+            id: 'apos-styles-stylesheet'
+          },
+          body: [
+            {
+              raw: req.data.global.stylesStylesheet || ''
+            }
+          ]
+        });
+      }
       return nodes;
     },
     ui(req) {

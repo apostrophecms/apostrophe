@@ -208,7 +208,7 @@ export default {
 
       await this.$nextTick();
       if (widgetId === this.parentOptions.widgetId && this.layoutMode === 'layout') {
-        this.setFocusedWidget(null, this.areaId);
+        apos.bus.$emit('suppress-focused-widget-controls');
         this.emphasizeGrid();
         return;
       }
@@ -230,7 +230,7 @@ export default {
     },
     layoutMode(newMode) {
       if (newMode === 'layout') {
-        this.setFocusedWidget(null, this.areaId);
+        apos.bus.$emit('suppress-focused-widget-controls');
         this.emphasizeGrid();
       } else {
         this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);

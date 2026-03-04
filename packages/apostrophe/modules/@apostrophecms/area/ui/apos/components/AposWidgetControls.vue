@@ -97,17 +97,29 @@ export default {
       };
     },
     widgetPrimaryControls() {
+      const removeForSingleWidget = [ 'nudgeUp', 'nudgeDown' ];
       // Custom widget operations displayed in the primary controls
-      return this.widgetPrimaryOperations.map(operation => {
-        const disabled = this.disabled || isOperationDisabled(operation, this.$props);
-        const tooltip = getOperationTooltip(operation, { disabled });
-        return {
-          ...this.widgetDefaultControl,
-          ...operation,
-          disabled,
-          tooltip
-        };
-      });
+      return this.widgetPrimaryOperations
+        .map(operation => {
+          const disabled = this.disabled || isOperationDisabled(operation, this.$props);
+          const tooltip = getOperationTooltip(operation, { disabled });
+          return {
+            ...this.widgetDefaultControl,
+            ...operation,
+            disabled,
+            tooltip
+          };
+        })
+        .filter(operation => {
+          if (
+            removeForSingleWidget.includes(operation.action) &&
+            this.first &&
+            this.last
+          ) {
+            return false;
+          }
+          return true;
+        });
     },
     widgetSecondaryControls() {
       const renderOperation = (operation) => {
