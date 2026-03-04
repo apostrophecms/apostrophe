@@ -117,10 +117,18 @@ export default function() {
 
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
-      observer = new IntersectionObserver(observed, {
-        rootMargin: '600px'
-      });
-      observer.observe(el);
+      const rect = el.getBoundingClientRect();
+      const isInViewport = rect.bottom >= 0 &&
+        rect.top <= window.innerHeight;
+
+      if (isInViewport) {
+        mountApp();
+      } else {
+        observer = new IntersectionObserver(observed, {
+          rootMargin: '600px'
+        });
+        observer.observe(el);
+      }
     }
 
     function observed(entries) {
@@ -129,8 +137,14 @@ export default function() {
         return;
       }
       if (created) {
+        observer.disconnect();
         return;
       }
+      mountApp();
+      observer.disconnect();
+    }
+
+    function mountApp() {
       const app = createApp(component, {
         options,
         id: data._id,
@@ -145,7 +159,6 @@ export default function() {
       app.mount(el);
       mountedApps.set(el, app);
       created = true;
-      observer.disconnect();
     }
   }
 
