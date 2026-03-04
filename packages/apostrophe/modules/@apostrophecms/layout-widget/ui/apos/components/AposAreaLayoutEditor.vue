@@ -11,7 +11,7 @@
       '--justify': 'stretch',
       '--align': 'stretch'
     }"
-    @click="setFocusedArea(areaId, $event)"
+    @click="setFocusedWidget(parentOptions.widgetId, areaId)"
   >
     <div
       v-if="next.length === 0 && !foreign && layoutMode === 'debug'"
@@ -203,6 +203,11 @@ export default {
     // Intercept the columns focus, and emphasize the layout widget instead.
     async focusedWidget(widgetId) {
       if (!widgetId || !this.parentOptions.widgetId) {
+        this.switchLayoutMode({
+          widgetId: this.parentOptions.widgetId,
+          data: 'content'
+        });
+        this.setFocusedWidget(null, null);
         return;
       }
 
@@ -233,7 +238,6 @@ export default {
         apos.bus.$emit('suppress-focused-widget-controls');
         this.emphasizeGrid();
       } else {
-        this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
         this.deEmphasizeGrid();
       }
     }
@@ -257,7 +261,8 @@ export default {
       'updateWidget',
       'setHoveredWidget',
       'addEmphasizedWidget',
-      'removeEmphasizedWidget'
+      'removeEmphasizedWidget',
+      'setFocusedWidget'
     ]),
     clickOnGrid() {
       if (this.parentOptions.widgetId) {
