@@ -300,7 +300,6 @@ export default {
       }
     },
     switchLayoutMode({ widgetId, data }) {
-      console.log('switchLayoutMode run');
       this.cleanRemovedWidget();
       if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
         return;

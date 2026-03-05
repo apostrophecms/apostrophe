@@ -55,14 +55,11 @@ export const useWidgetStore = defineStore('widget', () => {
     const isInView = rect.top >= visibleTop && rect.bottom <= visibleBottom;
 
     if (!isInView) {
-      console.log('not in view, scroll');
       const scrollPos = rect.top - headerHeight - bufferSpace;
       window.scrollBy({
         top: scrollPos,
         behavior: 'smooth'
       });
-    } else {
-      console.log('in view');
     }
 
     $el.focus({

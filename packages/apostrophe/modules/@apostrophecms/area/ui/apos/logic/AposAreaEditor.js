@@ -645,7 +645,7 @@ export default {
       if (this.widgetIsContextual(widget.type)) {
         this.edit({ index });
       }
-      this.setFocusedWidget(widget._id, this.areaId);
+      this.setFocusedWidget(widget._id, this.areaId, { scrollTo: true });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
