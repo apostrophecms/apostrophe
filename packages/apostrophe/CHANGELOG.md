@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.27.1 (2026-03-03)
+
+### Fixes
+
+- Fixes two conditions where slow internet speed could cause relationship field inputs to lose focus before a selection can be registered.
+- Fixes a subtle bug in AposPermissionGrid that caused unrelated clicks to be "swallowed" due to a race condition at low network speeds.
+
 ## 4.27.0 (2026-02-18)
 
 ### Adds
