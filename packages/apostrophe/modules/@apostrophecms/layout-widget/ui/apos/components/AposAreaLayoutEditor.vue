@@ -4,7 +4,12 @@
     :data-apos-area="areaId"
     data-tablet-full="true"
     class="apos-area"
-    :class="themeClass"
+    :class="[
+      themeClass,
+      {
+        'apos-area--empty': next.length === 0
+      }
+    ]"
     :style="{
       '--colspan': gridModuleOptions.columns,
       '--colstart': 1,
@@ -295,6 +300,7 @@ export default {
       }
     },
     switchLayoutMode({ widgetId, data }) {
+      console.log('switchLayoutMode run');
       this.cleanRemovedWidget();
       if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
         return;

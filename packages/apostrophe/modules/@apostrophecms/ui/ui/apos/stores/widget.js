@@ -49,13 +49,21 @@ export const useWidgetStore = defineStore('widget', () => {
 
     const headerHeight = window.apos.adminBar.height;
     const bufferSpace = 40;
-    const targetTop = $el.getBoundingClientRect().top;
-    const scrollPos = targetTop - headerHeight - bufferSpace;
+    const rect = $el.getBoundingClientRect();
+    const visibleTop = headerHeight + bufferSpace;
+    const visibleBottom = window.innerHeight - bufferSpace;
+    const isInView = rect.top >= visibleTop && rect.bottom <= visibleBottom;
 
-    window.scrollBy({
-      top: scrollPos,
-      behavior: 'smooth'
-    });
+    if (!isInView) {
+      console.log('not in view, scroll');
+      const scrollPos = rect.top - headerHeight - bufferSpace;
+      window.scrollBy({
+        top: scrollPos,
+        behavior: 'smooth'
+      });
+    } else {
+      console.log('in view');
+    }
 
     $el.focus({
       preventScroll: true

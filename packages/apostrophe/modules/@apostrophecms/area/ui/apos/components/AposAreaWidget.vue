@@ -761,6 +761,11 @@ export default {
       }
     },
     unfocus(event) {
+      console.log('unfocus', event.target);
+      if (event.target.closest('[data-apos-ignore-unfocus="true"]')) {
+        console.log('ignore unfocus');
+        return;
+      }
       if (!this.$el.contains(event.target)) {
         this.removeClickOutsideListener();
 

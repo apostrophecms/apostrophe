@@ -3,7 +3,12 @@
     v-click-outside-element="resetFocusedArea"
     :data-apos-area="areaId"
     class="apos-area"
-    :class="themeClass"
+    :class="[
+      themeClass,
+      {
+        'apos-area--empty': next.length === 0
+      }
+    ]"
     @click="setFocusedArea(areaId, $event)"
   >
     <div
