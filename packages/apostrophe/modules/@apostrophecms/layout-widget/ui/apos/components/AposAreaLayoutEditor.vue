@@ -228,6 +228,16 @@ export default {
       } else {
         this.deEmphasizeGrid();
       }
+
+      if (
+        !this.layoutColumnWidgetDeepIds.includes(widgetId) &&
+        widgetId !== this.parentOptions.widgetId
+      ) {
+        this.switchLayoutMode({
+          widgetId: this.parentOptions.widgetId,
+          data: 'content'
+        });
+      }
     },
     // Steal the columns hover, set it on the layout widget instead.
     hoveredWidget(widgetId) {
