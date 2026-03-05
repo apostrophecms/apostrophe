@@ -55,10 +55,7 @@ export function isStaticBuild() {
 }
 
 // Mode-aware URL building utilities for Apostrophe piece index
-// pages. Detects whether the backend uses static (path-based) URLs
-// via `aposData.staticUrls` (set by `@apostrophecms/url` when its
-// `static` option is `true`) and builds correct pagination & filter
-// URLs:
+// pages. 
 //
 // Static URLs (`@apostrophecms/url` option `static: true`):
 //   /articles/page/2
@@ -144,6 +141,7 @@ export function buildPageUrl(aposData, pageNum) {
 
 /**
  * Add, update or remove a named query parameter and return a new URL.
+ * This tool is not static URL aware.
  *
  * If `value` is `undefined`, `null` or empty string the parameter is
  * removed from the query string.  Internal Apostrophe parameters

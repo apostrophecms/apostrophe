@@ -503,6 +503,15 @@ module.exports = {
       // - `urls` (array): `{ size, path }` objects where `path`
       //   is the uploadfs-relative file path.
       //
+      // After attachment metadata is collected, the
+      // `@apostrophecms/url:getAllAttachmentMetadata` event is
+      // emitted. Handlers receive `(req, results, options)` where
+      // `results` is the attachments results array and `options`
+      // includes `{ sizes, skipSizes, scope, uploadsUrl }`. This
+      // is an escape hatch for edge cases where a module needs to
+      // contribute additional attachment entries or modify the
+      // results programmatically.
+      //
       async getAllUrlMetadata(req, { excludeTypes = [], attachments = false } = {}) {
         // Ensure global doc is available for event handlers
         // that may need it (e.g. @apostrophecms/styles)
@@ -579,6 +588,11 @@ module.exports = {
           }
         }
 
+        // Strip the backend origin from uploadsUrl so that the
+        // consumer receives a relative, prefix-qualified path
+        // (e.g. `/uploads` or `/cms/uploads`).
+        // CDN URLs (different origin) and already-relative URLs
+        // are left untouched.
         if (response.attachments) {
           const baseUrl = self.apos.baseUrl || '';
           if (baseUrl && response.attachments.uploadsUrl.startsWith(baseUrl)) {

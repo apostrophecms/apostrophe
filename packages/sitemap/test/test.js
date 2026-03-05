@@ -1069,6 +1069,67 @@ describe('Sitemap – static build URL generation', function () {
         'Should fall back to baseUrl when staticBaseUrl is not set');
     });
   });
+
+  describe('getReq externalFront propagation', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:7780',
+        staticBaseUrl: 'https://example.com',
+        testModule: true,
+        modules: getAppConfig({
+          externalFrontKey: 'test-key'
+        })
+      });
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+    });
+
+    it('getReq without externalFront should not set aposExternalFront', function () {
+      const req = apos.sitemap.getReq('en', { staticBuild: true });
+      assert.strictEqual(apos.url.isStaticBuild(req), true);
+      assert.strictEqual(apos.url.isExternalFront(req), false);
+    });
+
+    it('getReq with externalFront should set aposExternalFront', function () {
+      const req = apos.sitemap.getReq('en', {
+        staticBuild: true,
+        externalFront: true
+      });
+      assert.strictEqual(apos.url.isStaticBuild(req), true);
+      assert.strictEqual(apos.url.isExternalFront(req), true);
+    });
+
+    it('static build via HTTP should not poison cache (externalFront propagated)', async function () {
+      // Clear cache
+      await apos.cache.clear('apos-sitemap');
+
+      // Static build request (both externalFront + staticBuild headers) —
+      // cache should be skipped because externalFront is now propagated
+      // to the per-locale reqs created by getReq.
+      const staticXml = await apos.http.get('/sitemap.xml', {
+        headers: {
+          'x-requested-with': 'AposExternalFront',
+          'apos-external-front-key': 'test-key',
+          'x-apos-static-base-url': '1'
+        }
+      });
+      assert(staticXml.indexOf('https://example.com/') !== -1,
+        'Static build should use staticBaseUrl');
+
+      // Regular request — cache should still be empty (not poisoned)
+      // and the regular baseUrl should be used
+      const regularXml = await apos.http.get('/sitemap.xml');
+      assert(regularXml.indexOf('<loc>http://localhost:7780/</loc>') !== -1,
+        'Regular request should use baseUrl');
+      assert(regularXml.indexOf('https://example.com') === -1,
+        'Cache was not poisoned by the static build request');
+    });
+  });
 });
 
 function getProductAppConfig({

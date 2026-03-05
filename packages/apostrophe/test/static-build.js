@@ -1555,7 +1555,7 @@ describe('Static Build Support', function () {
         assert(home, 'Should include the home page with path-only URL');
       });
 
-      it('getAllUrlMetadata strips baseUrl from uploadsUrl for static build requests', async function () {
+      it('getAllUrlMetadata strips origin from uploadsUrl, keeping it relative', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
           staticBuild: true
@@ -1564,11 +1564,17 @@ describe('Static Build Support', function () {
           attachments: { scope: 'all' }
         });
         assert(attachments);
-        assert(
-          !attachments.uploadsUrl.startsWith('http://'),
-          `uploadsUrl should be path-only, got: ${attachments.uploadsUrl}`
+        // Without staticBaseUrl, uploadfs is initialized with the
+        // full baseUrl.  getAllUrlMetadata strips the origin so the
+        // consumer receives a relative path.
+        assert.strictEqual(
+          apos.attachment.uploadfs.getUrl(),
+          'http://localhost:3000/uploads'
         );
-        assert.strictEqual(attachments.uploadsUrl, '/uploads');
+        assert.strictEqual(
+          attachments.uploadsUrl,
+          '/uploads'
+        );
       });
 
       it('apos.baseUrl is NOT modified after static build requests', async function () {
@@ -1789,7 +1795,7 @@ describe('Static Build Support', function () {
         assert(home, 'Should include the home page as /');
       });
 
-      it('getAllUrlMetadata strips baseUrl from uploadsUrl, preserving prefix', async function () {
+      it('getAllUrlMetadata strips origin from uploadsUrl, preserves prefix', async function () {
         const req = apos.task.getAnonReq({
           mode: 'published',
           staticBuild: true
@@ -1798,10 +1804,17 @@ describe('Static Build Support', function () {
           attachments: { scope: 'all' }
         });
         assert(attachments);
+        // Without staticBaseUrl, uploadfs is initialized with the
+        // full baseUrl + prefix.  getAllUrlMetadata strips the
+        // origin, leaving a relative path that still includes the
+        // prefix — the consumer strips the prefix separately.
+        assert.strictEqual(
+          apos.attachment.uploadfs.getUrl(),
+          'http://localhost:3000/cms/uploads'
+        );
         assert.strictEqual(
           attachments.uploadsUrl,
-          '/cms/uploads',
-          'uploadsUrl should be path-only with prefix preserved'
+          '/cms/uploads'
         );
       });
     });
@@ -1840,16 +1853,21 @@ describe('Static Build Support', function () {
         }
       });
 
-      it('getAllUrlMetadata returns path-only uploadsUrl even without static build flag', async function () {
+      it('getAllUrlMetadata strips origin from uploadsUrl even without static flag', async function () {
         const req = apos.task.getAnonReq({ mode: 'published' });
         const { attachments } = await apos.url.getAllUrlMetadata(req, {
           attachments: { scope: 'all' }
         });
         assert(attachments);
+        // The origin is always stripped from uploadsUrl so the
+        // consumer receives a consistent relative path.
+        assert.strictEqual(
+          apos.attachment.uploadfs.getUrl(),
+          'http://localhost:3000/uploads'
+        );
         assert.strictEqual(
           attachments.uploadsUrl,
-          '/uploads',
-          'uploadsUrl should be path-only regardless of static build flag'
+          '/uploads'
         );
       });
     });
@@ -2226,6 +2244,7 @@ describe('Static Build Support', function () {
         );
       });
     });
+
   });
 
   describe('staticBuildHeader middleware', function () {

@@ -136,11 +136,13 @@ module.exports = {
         const isStaticBuild = httpReq
           ? self.apos.url.isStaticBuild(httpReq)
           : false;
+        const isExternalFront = httpReq
+          ? self.apos.url.isExternalFront(httpReq)
+          : false;
         // Skip cache when serving a static build request from an
         // external frontend — avoids poisoning the cache with
         // build-specific URLs.
-        const skipCache = isStaticBuild &&
-          self.apos.url.isExternalFront(httpReq);
+        const skipCache = isStaticBuild && isExternalFront;
 
         if (self.updatingCache) {
           self.cacheOutput = [];
@@ -192,7 +194,10 @@ module.exports = {
           const locales = Object.keys(self.apos.i18n.getLocales());
 
           for (const locale of locales) {
-            const req = self.getReq(locale, { staticBuild: isStaticBuild });
+            const req = self.getReq(locale, {
+              staticBuild: isStaticBuild,
+              externalFront: isExternalFront
+            });
             const baseUrl = self.apos.url.getBaseUrl(req, { strict: true });
             const { pages } = await self.apos.url.getAllUrlMetadata(req, {
               excludeTypes: self.excludeTypes
@@ -260,7 +265,10 @@ module.exports = {
         function write() {
           // Sitemap requires absolute URLs — use strict: true
           const baseUrl = self.apos.url.getBaseUrl(
-            self.getReq(self.defaultLocale, { staticBuild: isStaticBuild }),
+            self.getReq(self.defaultLocale, {
+              staticBuild: isStaticBuild,
+              externalFront: isExternalFront
+            }),
             { strict: true }
           );
           return self.writeSitemap({
@@ -278,15 +286,28 @@ module.exports = {
       // that do unusual things with proxied URLs, etc.
       //
       // When `options.staticBuild` is `true`, the returned req will
-      // have the static build flags set (via `task.getAnonReq`),
-      // so that `url.isStaticBuild(req)` and `url.getBaseUrl(req)`
-      // behave correctly without manual property assignment.
-      getReq(locale, { staticBuild = false } = {}) {
-        return self.apos.task.getAnonReq({
+      // have the static build flags set, so that `url.isStaticBuild(req)`
+      // and `url.getBaseUrl(req)` behave correctly.
+      //
+      // When `options.externalFront` is `true`, the returned req will
+      // also have `req.aposExternalFront = true`. This is needed because
+      // `task.getAnonReq({ staticBuild })` applies static build headers
+      // but does not set the external front flag — that flag is normally
+      // set by the Express middleware when a real HTTP request arrives
+      // with the `x-requested-with: AposExternalFront` header. Without
+      // it, `url.isExternalFront(req)` returns `false`, which can cause
+      // incorrect cache behavior (e.g. poisoning the sitemap cache with
+      // static-build URLs).
+      getReq(locale, { staticBuild = false, externalFront = false } = {}) {
+        const req = self.apos.task.getAnonReq({
           locale,
           mode: 'published',
           staticBuild
         });
+        if (externalFront) {
+          req.aposExternalFront = true;
+        }
+        return req;
       },
       writeSitemap: function({ skipCache, baseUrl } = {}) {
         if (!self.perLocale) {

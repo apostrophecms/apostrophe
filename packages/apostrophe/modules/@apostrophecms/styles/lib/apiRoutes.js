@@ -15,10 +15,15 @@ module.exports = self => {
       'stylesheet/locale/:locale/:mode': async function(req) {
         const { locale, mode } = req.params;
         if (!locale || !self.apos.i18n.isValidLocale(locale)) {
-          throw self.apos.error('invalid', `Invalid locale: ${locale}`);
+          throw self.apos.error('invalid');
+        }
+        const validModes = [ 'published', 'draft' ];
+        const safeMode = validModes.includes(mode) ? mode : 'published';
+        if (safeMode === 'draft' && !self.apos.permission.can(req, 'view-draft')) {
+          throw self.apos.error('forbidden');
         }
         req.locale = locale;
-        req.mode = mode || 'published';
+        req.mode = safeMode;
         // Force re-fetch global for the correct locale
         delete req.data.global;
         await self.apos.global.addGlobalToData(req);

@@ -12,6 +12,7 @@ export default async function aposPageFetch(req) {
       });
     }
     const response = await aposResponse(request);
+    let headers =response.headers;
     aposData = await response.json();
 
     // Apostrophe's external-front middleware returns redirects as JSON
@@ -38,11 +39,21 @@ export default async function aposPageFetch(req) {
         const retryUrl = prefix + aposData.url;
         const retry = new Request(new URL(retryUrl, request.url), request);
         const retryResponse = await aposResponse(retry);
-        aposData = await retryResponse.json();
+        headers = retryResponse.headers;
+        const retryData = await retryResponse.json();
+        // Safety check: if the retry itself redirects to the same
+        // URL we just tried, we've hit an infinite redirect loop.
+        // Return an error instead of bouncing forever.
+        if (retryData.redirect && retryData.url === aposData.url) {
+          throw new Error(
+            `Infinite redirect detected: ${aposData.url} redirects back to itself`
+          );
+        }
+        aposData = retryData;
       }
     }
 
-    aposData.aposResponseHeaders = response.headers;
+    aposData.aposResponseHeaders = headers;
     if (aposData.template === '@apostrophecms/page:notFound') {
       aposData.notFound = true;
     }
