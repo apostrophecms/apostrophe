@@ -124,10 +124,18 @@ export default function() {
 
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
-      observer = new IntersectionObserver(observed, {
-        rootMargin: '600px'
-      });
-      observer.observe(el);
+      const rect = el.getBoundingClientRect();
+      const isInViewport = rect.bottom >= 0 &&
+        rect.top <= window.innerHeight;
+
+      if (isInViewport) {
+        mountApp();
+      } else {
+        observer = new IntersectionObserver(observed, {
+          rootMargin: '600px'
+        });
+        observer.observe(el);
+      }
     }
 
     function observed(entries) {
@@ -136,15 +144,14 @@ export default function() {
         return;
       }
       if (created) {
+        observer.disconnect();
         return;
       }
-      // Resolve graphKey: if this area is inside a modal that owns a
-      // graph (data-apos-graph-key), use that key.  Otherwise fall back
-      // to the on-page contextId.  This single DOM lookup bridges the
-      // provide/inject gap created by createApp.
-      const graphKey = el.closest('[data-apos-graph-key]')
-        ?.getAttribute('data-apos-graph-key') || apos.adminBar?.contextId || null;
+      mountApp();
+      observer.disconnect();
+    }
 
+    function mountApp() {
       const app = createApp(component, {
         options,
         id: data._id,
@@ -156,6 +163,13 @@ export default function() {
         parentOptions,
         renderings
       });
+
+      // Resolve graphKey: if this area is inside a modal that owns a
+      // graph (data-apos-graph-key), use that key.  Otherwise fall back
+      // to the on-page contextId.  This single DOM lookup bridges the
+      // provide/inject gap created by createApp.
+      const graphKey = el.closest('[data-apos-graph-key]')
+        ?.getAttribute('data-apos-graph-key') || apos.adminBar?.contextId || null;
       // Provide the resolved graphKey so every descendant component
       // can simply inject('aposGraphKey') and get the correct value.
       if (graphKey) {
@@ -164,7 +178,6 @@ export default function() {
       app.mount(el);
       mountedApps.set(el, app);
       created = true;
-      observer.disconnect();
     }
   }
 
