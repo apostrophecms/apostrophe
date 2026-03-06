@@ -348,29 +348,31 @@ export default {
     margin-left: auto;
   }
 
-  &__grid.manage :deep(.apos-area),
-  &__grid.manage :deep(.apos-empty-area) {
+  &__grid.manage .apos-area--empty,
+  &__grid.manage .apos-empty-area {
     padding-top: 0;
     padding-bottom: 0;
   }
 
-  &__grid.manage :deep(.apos-layout__item-content),
-  &__grid.manage :deep(.apos-area-widget-wrapper),
-  &__grid.manage :deep(.apos-area-widget-inner),
-  &__grid.manage :deep(.apos-area-widget-inner > div),
-  &__grid.manage :deep(.apos-area),
-  &__grid.manage :deep(.apos-empty-area) {
+  &__grid.manage .apos-layout__item-content,
+  &__grid.manage .apos-area-widget-wrapper,
+  &__grid.manage .apos-area-widget-inner,
+  &__grid.manage .apos-area-widget-rendered-widget > div,
+  &__grid.manage .apos-area-widget-rendered-widget,
+  &__grid.manage .apos-area,
+  &__grid.manage .apos-empty-area {
     height: 100%;
   }
 
-  &__grid.manage :deep(.apos-empty-area::before) {
+  &__grid.manage .apos-empty-area::before {
     position: absolute;
     font-family: var(--a-family-default);
+    font-size: var(--a-type-base);
     text-align: center;
     content: var(--empty-area-text);
   }
 
-  &__grid.manage :deep(.apos-area-menu .apos-button) {
+  &__grid.manage .apos-area-menu .apos-button {
     display: none;
   }
 

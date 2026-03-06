@@ -23,7 +23,6 @@
       @keyup.enter="onKeyup"
     >
       <div
-        v-if="!breadcrumbDisabled && focusedWidget === widget._id"
         ref="label"
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
@@ -92,7 +91,7 @@
         />
       </div>
       <div
-        v-if="!controlsDisabled && !maxReached && (!focusedWidget || isFocused)"
+        v-if="!controlsDisabled && !maxReached"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -143,42 +142,44 @@
           @operation="onOperation"
         />
       </div>
-      <!-- Still used for contextual editing components -->
-      <component
-        :is="widgetEditorComponent(widget.type)"
-        v-if="isContextual && !foreign"
-        :key="generation"
-        :class="adminContentDirectionClass"
-        :options="widgetOptions"
-        :type="widget.type"
-        :model-value="widget"
-        :meta="meta"
-        :doc-id="docId"
-        :focused="isFocused"
-        @update="$emit('update', $event)"
-        @suppress-widget-controls="doSuppressWidgetControls()"
-      />
-      <component
-        :is="widgetComponent(widget.type)"
-        v-else
-        :id="widget._id"
-        :key="`${generation}-preview`"
-        :class="adminContentDirectionClass"
-        :options="widgetOptions"
-        :type="widget.type"
-        :area-field-id="fieldId"
-        :following-values="followingValuesWithParent"
-        :model-value="widget"
-        :value="widget"
-        :meta="meta"
-        :foreign="foreign"
-        :doc-id="docId"
-        :rendering="rendering"
-        @edit="$emit('edit', i);"
-        @update="$emit('update', $event);"
-      />
+      <div class="apos-area-widget-rendered-widget">
+        <!-- Still used for contextual editing components -->
+        <component
+          :is="widgetEditorComponent(widget.type)"
+          v-if="isContextual && !foreign"
+          :key="generation"
+          :class="adminContentDirectionClass"
+          :options="widgetOptions"
+          :type="widget.type"
+          :model-value="widget"
+          :meta="meta"
+          :doc-id="docId"
+          :focused="isFocused"
+          @update="$emit('update', $event)"
+          @suppress-widget-controls="doSuppressWidgetControls()"
+        />
+        <component
+          :is="widgetComponent(widget.type)"
+          v-else
+          :id="widget._id"
+          :key="`${generation}-preview`"
+          :class="adminContentDirectionClass"
+          :options="widgetOptions"
+          :type="widget.type"
+          :area-field-id="fieldId"
+          :following-values="followingValuesWithParent"
+          :model-value="widget"
+          :value="widget"
+          :meta="meta"
+          :foreign="foreign"
+          :doc-id="docId"
+          :rendering="rendering"
+          @edit="$emit('edit', i);"
+          @update="$emit('update', $event);"
+        />
+      </div>
       <div
-        v-if="!controlsDisabled && !maxReached && (!focusedWidget || isFocused)"
+        v-if="!controlsDisabled && !maxReached"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
@@ -208,12 +209,20 @@
 
 <script>
 import { mapState, mapActions } from 'pinia';
+import { unref } from 'vue';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useBreakpointPreviewStore } from 'Modules/@apostrophecms/ui/stores/breakpointPreview.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
+import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 
 export default {
   name: 'AposAreaWidget',
+  inject: {
+    aposGraphKey: {
+      from: 'aposGraphKey',
+      default: null
+    }
+  },
   props: {
     docId: {
       type: String,
@@ -446,7 +455,7 @@ export default {
     },
     labelsClasses() {
       return {
-        [this.classes.show]: this.isHovered || this.isFocused || this.isEmphasized,
+        [this.classes.show]: (this.isHovered && !this.focusedWidget) || this.isFocused,
         // Force LTR for breadcrumbs for now so that nested AreaWidgets
         // behave properly.
         'apos-ltr': true
@@ -454,7 +463,7 @@ export default {
     },
     addClasses() {
       return {
-        [this.classes.show]: this.isHovered || this.isFocused,
+        [this.classes.show]: (this.isHovered && !this.focusedWidget) || this.isFocused,
         [`${this.classes.open}--menu-${this.menuOpen}`]: !!this.menuOpen
       };
     },
@@ -520,6 +529,8 @@ export default {
 
     this.getBreadcrumbs();
 
+    this.registerInGraph();
+
     if (this.focusedWidget) {
       // If another widget was in focus (because the user clicked the "add"
       // menu, for example), and this widget was created, give the new widget
@@ -552,11 +563,37 @@ export default {
     apos.bus.$off('suppress-focused-widget-controls', this.doSuppressWidgetControls);
     window.removeEventListener('scroll', this.stickyControlsScroll);
     window.removeEventListener('resize', this.stickyControlsResize);
+    this.unregisterFromGraph();
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
     ...mapActions(useModalStore, [ 'getAdminContentDirectionClass' ]),
-
+    ...mapActions(useWidgetGraphStore, {
+      storeRegisterWidget: 'registerWidget',
+      storeUnregisterWidget: 'unregisterWidget'
+    }),
+    registerInGraph() {
+      if (this.foreign) {
+        return;
+      }
+      const graphKey = unref(this.aposGraphKey);
+      if (!graphKey) {
+        return;
+      }
+      this.storeRegisterWidget(graphKey, this.widget, {
+        areaId: this.areaId
+      });
+    },
+    unregisterFromGraph() {
+      if (this.foreign) {
+        return;
+      }
+      const graphKey = unref(this.aposGraphKey);
+      if (!graphKey) {
+        return;
+      }
+      this.storeUnregisterWidget(graphKey, this.widget._id);
+    },
     doSuppressWidgetControls() {
       if (this.isFocused) {
         this.isSuppressingWidgetControls = true;
@@ -723,6 +760,9 @@ export default {
       }
     },
     unfocus(event) {
+      if (event.target.closest('[data-apos-ignore-unfocus="true"]')) {
+        return;
+      }
       if (!this.$el.contains(event.target)) {
         this.removeClickOutsideListener();
 
@@ -930,6 +970,11 @@ export default {
   &.apos-is-focused::before {
     opacity: 0.15;
   }
+}
+
+.apos-area-widget-rendered-widget {
+  z-index: $z-index-base;
+  position: relative;
 }
 
 .apos-area-widget-controls {

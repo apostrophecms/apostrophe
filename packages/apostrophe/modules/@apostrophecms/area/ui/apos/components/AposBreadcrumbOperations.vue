@@ -209,6 +209,7 @@ export default {
             ...this.operationButtonDefault,
             icon: operation.icon
           },
+          ignoreUnfocus: true,
           teleportContent: this.teleportModals,
           disabled,
           tooltip
