@@ -348,9 +348,6 @@ export default {
     margin-left: auto;
   }
 
-  &__grid.manage {
-    touch-action: none;
-  }
   &__grid.manage .apos-area--empty,
   &__grid.manage .apos-empty-area {
     padding-top: 0;
@@ -370,8 +367,8 @@ export default {
   &__grid.manage .apos-empty-area::before {
     position: absolute;
     font-family: var(--a-family-default);
-    text-align: center;
     font-size: var(--a-type-base);
+    text-align: center;
     content: var(--empty-area-text);
   }
 

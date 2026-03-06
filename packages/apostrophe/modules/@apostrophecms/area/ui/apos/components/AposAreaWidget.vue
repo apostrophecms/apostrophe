@@ -23,7 +23,6 @@
       @keyup.enter="onKeyup"
     >
       <div
-        v-if="!breadcrumbDisabled && focusedWidget === widget._id"
         ref="label"
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
@@ -92,7 +91,7 @@
         />
       </div>
       <div
-        v-if="!controlsDisabled && !maxReached && (!focusedWidget || isFocused)"
+        v-if="!controlsDisabled && !maxReached"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -180,7 +179,7 @@
         />
       </div>
       <div
-        v-if="!controlsDisabled && !maxReached && (!focusedWidget || isFocused)"
+        v-if="!controlsDisabled && !maxReached"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
@@ -456,7 +455,7 @@ export default {
     },
     labelsClasses() {
       return {
-        [this.classes.show]: this.isHovered || this.isFocused || this.isEmphasized,
+        [this.classes.show]: (this.isHovered && !this.focusedWidget) || this.isFocused,
         // Force LTR for breadcrumbs for now so that nested AreaWidgets
         // behave properly.
         'apos-ltr': true
@@ -464,7 +463,7 @@ export default {
     },
     addClasses() {
       return {
-        [this.classes.show]: this.isHovered || this.isFocused,
+        [this.classes.show]: (this.isHovered && !this.focusedWidget) || this.isFocused,
         [`${this.classes.open}--menu-${this.menuOpen}`]: !!this.menuOpen
       };
     },

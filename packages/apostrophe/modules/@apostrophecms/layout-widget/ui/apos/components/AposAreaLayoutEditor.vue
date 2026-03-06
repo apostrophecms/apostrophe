@@ -210,7 +210,7 @@ export default {
       if (!widgetId || !this.parentOptions.widgetId) {
         this.switchLayoutMode({
           widgetId: this.parentOptions.widgetId,
-          data: 'content'
+          data: { value: 'content' }
         });
         this.setFocusedWidget(null, null);
         return;
@@ -235,7 +235,7 @@ export default {
       ) {
         this.switchLayoutMode({
           widgetId: this.parentOptions.widgetId,
-          data: 'content'
+          data: { value: 'content' }
         });
       }
     },
