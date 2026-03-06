@@ -1,10 +1,12 @@
-export function vitePluginApostropheConfig(
+export function vitePluginApostropheConfig({
   aposHost,
   forwardHeaders = null,
   viewTransitionWorkaround,
   includeResponseHeaders = null,
-  excludeRequestHeaders = null
-) {
+  excludeRequestHeaders = null,
+  staticBuild = null,
+  aposPrefix = ''
+} = {}) {
   const virtualModuleId = "virtual:apostrophe-config";
   const resolvedVirtualModuleId = "\0" + virtualModuleId;
 
@@ -22,7 +24,8 @@ export function vitePluginApostropheConfig(
       if (id === resolvedVirtualModuleId) {
         return `
           export default {
-            aposHost: ${JSON.stringify(aposHost)}
+            aposHost: ${JSON.stringify(aposHost)},
+            aposPrefix: ${JSON.stringify(aposPrefix)}
             ${headersToInclude ? `,
               includeResponseHeaders: ${JSON.stringify(headersToInclude)}` : ''
             }
@@ -31,6 +34,9 @@ export function vitePluginApostropheConfig(
             }
             ${viewTransitionWorkaround ? `,
               viewTransitionWorkaround: true` : ''
+            }
+            ${staticBuild ? `,
+              staticBuild: ${JSON.stringify(staticBuild)}` : ''
             }
           }`
         ;

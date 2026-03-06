@@ -272,6 +272,11 @@ module.exports = {
           return res.status(403).send('forbidden');
         }
         req.aposExternalFront = true;
+        if (req.headers['x-apos-static-base-url'] === '1') {
+          // Downstream code (page.getBaseUrl) checks this to decide
+          // which base URL to use for this request.
+          self.applyStaticBuildHeaders(req);
+        }
         res.redirect = function(...args) {
           // The external front end needs to issue the actual redirect,
           // not us
@@ -289,6 +294,20 @@ module.exports = {
           });
         };
         return next();
+      },
+      // Allow direct API calls (without externalFrontKey) to opt into
+      // static-build URL behavior by sending x-apos-static-base-url: 1.
+      // This is harmless — it only changes how URLs are built in the
+      // response, granting no elevated permissions.
+      staticBuildHeader: {
+        url: '/api/v1',
+        middleware(req, res, next) {
+          // Only act if not already set by externalFront middleware
+          if (!req.aposStaticBuild && req.headers['x-apos-static-base-url'] === '1') {
+            self.applyStaticBuildHeaders(req);
+          }
+          return next();
+        }
       },
       attachUtilityMethods(req, res, next) {
         // We apply the super pattern variously to res.redirect,
@@ -457,6 +476,16 @@ module.exports = {
         });
         if (process.env.APOS_LOG_ALL_ROUTES) {
           self.logAllRoutes();
+        }
+      },
+
+      applyStaticBuildHeaders(req) {
+        if (req.aposStaticBuild) {
+          return;
+        }
+        req.aposStaticBuild = true;
+        if (self.apos.staticBaseUrl) {
+          req.staticBaseUrl = self.apos.staticBaseUrl;
         }
       },
 
