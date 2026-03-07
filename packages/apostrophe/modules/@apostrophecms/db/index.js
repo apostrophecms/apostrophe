@@ -58,42 +58,13 @@
 // `client` option.
 
 const escapeHost = require('../../../lib/escape-host');
-const mongodbAdapter = require('./adapters/mongodb.js');
-const postgresAdapter = require('./adapters/postgres.js');
-
-// Standalone function: connect to a database using the appropriate adapter
-// based on the URI protocol. No side effects.
-async function connectToAdapter(adapters, uri, options) {
-  const matches = uri.match(/^([^:]+):\/\//);
-  if (!matches) {
-    throw new Error(`Invalid database URI: ${uri}`);
-  }
-  const protocol = matches[1];
-
-  for (const adapter of adapters) {
-    if (adapter.protocols.includes(protocol)) {
-      return adapter.connect(uri, options);
-    }
-  }
-
-  throw new Error(`No adapter found for protocol: ${protocol}`);
-}
+const dbConnect = require('../../../lib/db-connect');
 
 module.exports = {
   options: {
     versionCheck: true
   },
   async init(self) {
-    // Build db adapters array, allowing custom adapters to override by name
-    const named = new Map();
-    for (const adapter of [
-      mongodbAdapter,
-      postgresAdapter,
-      ...(self.options.adapters || [])
-    ]) {
-      named.set(adapter.name, adapter);
-    }
-    self.adapters = [ ...named.values() ];
     await self.connectToDb();
     await self.versionCheck();
   },
@@ -153,7 +124,10 @@ module.exports = {
           uri += escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
         }
 
-        self.apos.dbClient = await self.connectToAdapter(uri, self.options.connect);
+        self.apos.dbClient = await dbConnect(uri, {
+          ...self.options.connect,
+          adapters: self.options.adapters
+        });
         self.uri = uri;
         // Automatically uses the db name in the connection string
         self.apos.db = self.apos.dbClient.db();
@@ -163,7 +137,10 @@ module.exports = {
       // This method has no side effects — it does not set apos.db or apos.dbClient.
       // It can be used to make temporary connections, e.g. for dropping a test database.
       async connectToAdapter(uri, options) {
-        return connectToAdapter(self.adapters, uri, options);
+        return dbConnect(uri, {
+          ...options,
+          adapters: self.options.adapters
+        });
       },
       async versionCheck() {
         if (!self.options.versionCheck) {

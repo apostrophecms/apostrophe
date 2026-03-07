@@ -2050,6 +2050,28 @@ class PostgresDb {
     return col;
   }
 
+  // Returns an object mimicking MongoDB's admin interface.
+  // Currently supports listDatabases, which in postgres discovers
+  // database name prefixes by looking for tables ending in _aposDocs
+  // (which always exists in an Apostrophe database).
+  admin() {
+    const pool = this._pool;
+    return {
+      async listDatabases() {
+        const result = await pool.query(
+          'SELECT tablename FROM pg_tables WHERE schemaname = \'public\' AND tablename LIKE \'%_aposDocs\''
+        );
+        const databases = result.rows.map(row => ({
+          // Restore hyphens so names match what was originally passed to db().
+          // validateTableName converts hyphens to underscores for postgres
+          // table names, so we reverse that here.
+          name: row.tablename.replace(/_aposDocs$/, '').replace(/_/g, '-')
+        }));
+        return { databases };
+      }
+    };
+  }
+
   async dropDatabase() {
     const dbName = this._name;
     if (!dbName) {
@@ -2058,7 +2080,7 @@ class PostgresDb {
     // Drop all tables with the matching prefix instead of dropping the entire
     // PostgreSQL database. This avoids the need to close the pool and reconnect,
     // and avoids "terminating connection" errors from DROP DATABASE WITH (FORCE).
-    const prefix = escapeIdentifier(dbName) + '_';
+    const prefix = validateTableName(dbName) + '_';
     const result = await this._pool.query(
       'SELECT tablename FROM pg_tables WHERE schemaname = \'public\' AND tablename LIKE $1',
       [ prefix + '%' ]
