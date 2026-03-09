@@ -990,7 +990,8 @@ module.exports = {
       // schema recursively and collect `idsStorage` values from
       // relationship fields that point to types with attachment
       // fields.  Also handles the special case of rich-text
-      // widget inline images (`imageIds`).
+      // widget inline images (`imageIds`) and widgets whose own
+      // schema contains a direct `type: 'attachment'` field.
       //
       // Found IDs are added to the `target` Set
       // (aposDocId values, locale-agnostic).
@@ -1005,10 +1006,13 @@ module.exports = {
           },
           // Rich-text widgets store inline image references in
           // `imageIds` outside of any schema relationship field.
-          // Handled here via the `widget` handler so that a single
-          // schema-driven walk covers both relationships and
-          // rich-text image refs without a second full-doc walk.
+          // Widgets whose own schema has a direct `type: 'attachment'`
+          // field (e.g. a custom widget storing a file directly) also
+          // need to include the parent doc's ID.
           widget: (field, widget) => {
+            if (self.hasAttachmentFields(widget.type)) {
+              target.add(doc.aposDocId);
+            }
             if (
               widget.type === '@apostrophecms/rich-text' &&
               Array.isArray(widget.imageIds)

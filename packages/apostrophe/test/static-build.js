@@ -749,6 +749,219 @@ describe('Static Build Support', function () {
     });
   });
 
+  describe('used scope with direct attachment fields', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/url': {
+            options: { static: true }
+          },
+          // Piece type with a direct attachment field in its own schema
+          'direct-attachment-piece': {
+            extend: '@apostrophecms/piece-type',
+            options: {
+              name: 'direct-attachment-piece',
+              label: 'Direct Attachment Piece',
+              alias: 'directAttachmentPiece'
+            },
+            fields: {
+              add: {
+                file: {
+                  type: 'attachment',
+                  label: 'File',
+                  group: 'office'
+                }
+              }
+            }
+          },
+          // Widget with a direct attachment field (not a relationship)
+          'attachment-widget': {
+            extend: '@apostrophecms/widget-type',
+            options: {
+              label: 'Attachment Widget'
+            },
+            fields: {
+              add: {
+                photo: {
+                  type: 'attachment',
+                  label: 'Photo',
+                  fileGroup: 'images'
+                }
+              }
+            }
+          },
+          // Page type with an area that allows the attachment widget
+          'test-page': {
+            extend: '@apostrophecms/page-type',
+            options: {
+              label: 'Test Page'
+            },
+            fields: {
+              add: {
+                body: {
+                  type: 'area',
+                  label: 'Body',
+                  options: {
+                    widgets: {
+                      attachment: {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          '@apostrophecms/page': {
+            options: {
+              types: [
+                {
+                  name: 'test-page',
+                  label: 'Test Page'
+                }
+              ],
+              park: [
+                {
+                  title: 'Widget Attachment Page',
+                  type: 'test-page',
+                  slug: '/widget-att',
+                  parkedId: 'widget-att'
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const req = apos.task.getReq();
+
+      // --- Piece with a direct attachment field ---
+      const piece = await apos.directAttachmentPiece.insert(req, {
+        title: 'Piece With Direct Attachment',
+        visibility: 'public'
+      });
+
+      // Seed an attachment referencing the piece doc (as
+      // updateDocReferences would do at save time)
+      const pieceDocId = `${piece.aposDocId}:en:published`;
+      await apos.attachment.db.insertOne({
+        _id: 'att-direct-piece',
+        name: 'piece-doc',
+        extension: 'pdf',
+        group: 'office',
+        archived: false,
+        docIds: [ pieceDocId ],
+        crops: [],
+        utilized: true
+      });
+
+      // --- Page with a widget that has a direct attachment field ---
+      const page = await apos.doc.db.findOne({
+        slug: '/widget-att',
+        aposLocale: 'en:published'
+      });
+
+      // Simulate an area with an attachment-widget containing an
+      // attachment object, as if uploaded through the CMS UI.
+      // updateDocReferences stores the parent page's _id in
+      // attachment.docIds.
+      const pageDocId = page._id;
+      await apos.doc.db.updateOne(
+        { _id: pageDocId },
+        {
+          $set: {
+            body: {
+              metaType: 'area',
+              items: [
+                {
+                  _id: 'widget-1',
+                  metaType: 'widget',
+                  type: 'attachment-widget',
+                  photo: {
+                    _id: 'att-widget-photo',
+                    type: 'attachment',
+                    group: 'images',
+                    name: 'widget-photo',
+                    extension: 'jpg'
+                  }
+                }
+              ]
+            }
+          }
+        }
+      );
+
+      await apos.attachment.db.insertOne({
+        _id: 'att-widget-photo',
+        name: 'widget-photo',
+        extension: 'jpg',
+        group: 'images',
+        width: 400,
+        height: 300,
+        archived: false,
+        docIds: [ pageDocId ],
+        crops: [],
+        utilized: true
+      });
+
+      // --- Unrelated attachment (should not appear in used scope) ---
+      await apos.attachment.db.insertOne({
+        _id: 'att-unrelated',
+        name: 'unrelated',
+        extension: 'png',
+        group: 'images',
+        width: 50,
+        height: 50,
+        archived: false,
+        docIds: [ 'some-other-doc:en:published' ],
+        crops: [],
+        utilized: true
+      });
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('used scope includes attachment from piece with direct attachment field', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      const ids = result.attachments.results.map(a => a._id);
+      assert(
+        ids.includes('att-direct-piece'),
+        'Should include attachment owned by a piece with a direct attachment field'
+      );
+    });
+
+    it('used scope includes attachment from widget with direct attachment field', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      const ids = result.attachments.results.map(a => a._id);
+      assert(
+        ids.includes('att-widget-photo'),
+        'Should include attachment from a widget with a direct attachment field inside a page area'
+      );
+    });
+
+    it('used scope excludes unrelated attachments', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      const ids = result.attachments.results.map(a => a._id);
+      assert(
+        !ids.includes('att-unrelated'),
+        'Should not include attachments not referenced by any content doc'
+      );
+    });
+  });
+
   describe('REST API endpoint', function () {
     let apos;
     const externalFrontKey = 'test-static-build-key';

@@ -12,7 +12,7 @@ export default async function aposPageFetch(req) {
       });
     }
     const response = await aposResponse(request);
-    let headers =response.headers;
+    let headers = response.headers;
     aposData = await response.json();
 
     // Apostrophe's external-front middleware returns redirects as JSON
