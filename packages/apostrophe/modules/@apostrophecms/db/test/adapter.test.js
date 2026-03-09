@@ -23,7 +23,14 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const password = process.env.PGPASSWORD || '';
       const auth = password ? `${user}:${password}@` : `${user}@`;
       client = await postgres.connect(`postgres://${auth}localhost:5432/dbtest_adapter`);
-      db = client.db('dbtest_adapter');
+      db = client.db();
+    } else if (ADAPTER === 'multipostgres') {
+      const postgres = require('../adapters/postgres');
+      const user = process.env.PGUSER || process.env.USER;
+      const password = process.env.PGPASSWORD || '';
+      const auth = password ? `${user}:${password}@` : `${user}@`;
+      client = await postgres.connect(`multipostgres://${auth}localhost:5432/dbtest_adapter-testschema`);
+      db = client.db();
     }
   });
 
@@ -374,9 +381,13 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       expect(doc._id).to.equal('a1');
       expect(doc.title).to.equal('Alpha');
       expect(doc.type).to.be.undefined;
+      // Close cursor to release the connection/transaction
+      if (cursor.close) {
+        await cursor.close();
+      }
     });
 
-    if (ADAPTER === 'postgres') {
+    if (ADAPTER === 'postgres' || ADAPTER === 'multipostgres') {
       it('should support close() for early termination', async function() {
         const cursor = db.collection('test')
           .find({})
@@ -1630,30 +1641,62 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   // ============================================
 
   describe('Database Switching', function() {
-    it('should switch to sibling database', async function() {
-      // Get a reference to a different database
-      const siblingDb = ADAPTER === 'mongodb'
-        ? client.db('dbtest-sibling')
-        : client.db('dbtest_sibling');
-
-      // Write to sibling
-      await siblingDb.collection('siblingcol').insertOne({
-        _id: 'sib1',
-        from: 'sibling'
+    if (ADAPTER === 'postgres') {
+      it('should share the same tables when switching names in simple mode', async function() {
+        // In simple postgres mode, all db names map to the same public schema
+        const otherDb = client.db('other_name');
+        await db.collection('sharedtest').insertOne({
+          _id: 'shared1',
+          value: 42
+        });
+        const doc = await otherDb.collection('sharedtest').findOne({ _id: 'shared1' });
+        expect(doc).to.exist;
+        expect(doc.value).to.equal(42);
+        await db.collection('sharedtest').drop();
       });
+    } else if (ADAPTER === 'multipostgres') {
+      it('should switch to sibling schema', async function() {
+        const siblingDb = client.db('siblingschema');
 
-      // Verify it's not in original
-      const origDoc = await db.collection('siblingcol').findOne({ _id: 'sib1' });
-      expect(origDoc).to.be.null;
+        await siblingDb.collection('siblingcol').insertOne({
+          _id: 'sib1',
+          from: 'sibling'
+        });
 
-      // Verify it's in sibling
-      const sibDoc = await siblingDb.collection('siblingcol').findOne({ _id: 'sib1' });
-      expect(sibDoc).to.exist;
-      expect(sibDoc.from).to.equal('sibling');
+        // Verify it's not in original schema
+        const origDoc = await db.collection('siblingcol').findOne({ _id: 'sib1' });
+        expect(origDoc).to.be.null;
 
-      // Clean up sibling
-      await siblingDb.collection('siblingcol').drop();
-    });
+        // Verify it's in sibling schema
+        const sibDoc = await siblingDb.collection('siblingcol').findOne({ _id: 'sib1' });
+        expect(sibDoc).to.exist;
+        expect(sibDoc.from).to.equal('sibling');
+
+        // Clean up sibling
+        await siblingDb.dropDatabase();
+      });
+    } else {
+      it('should switch to sibling database', async function() {
+        const siblingDb = client.db('dbtest-sibling');
+
+        await siblingDb.collection('siblingcol').insertOne({
+          _id: 'sib1',
+          from: 'sibling'
+        });
+
+        // Verify it's not in original
+        const origDoc = await db.collection('siblingcol').findOne({ _id: 'sib1' });
+        expect(origDoc).to.be.null;
+
+        // Verify it's in sibling
+        const sibDoc = await siblingDb.collection('siblingcol').findOne({ _id: 'sib1' });
+        expect(sibDoc).to.exist;
+        expect(sibDoc.from).to.equal('sibling');
+
+        // Clean up sibling
+        await siblingDb.collection('siblingcol').drop();
+      });
+    }
   });
 
   // ============================================
@@ -1896,4 +1939,83 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       expect(doc.nullValue).to.be.null;
     });
   });
+
+  // ============================================
+  // SECTION 21: Multi-schema Mode (multipostgres only)
+  // ============================================
+
+  if (ADAPTER === 'multipostgres') {
+    describe('Multi-schema Mode', function() {
+      it('should store tables in the named schema, not public', async function() {
+        // Insert a doc to ensure the table exists in the schema
+        await db.collection('schematest').insertOne({
+          _id: 'st1',
+          value: 'hello'
+        });
+
+        // Check that the table exists in the named schema
+        const { Pool } = require('pg');
+        const pool = new Pool({ connectionString: 'postgres://localhost:5432/dbtest_adapter' });
+        try {
+          const inSchema = await pool.query(
+            'SELECT tablename FROM pg_tables WHERE schemaname = \'testschema\' AND tablename = \'schematest\''
+          );
+          expect(inSchema.rows).to.have.lengthOf(1);
+
+          const inPublic = await pool.query(
+            'SELECT tablename FROM pg_tables WHERE schemaname = \'public\' AND tablename = \'schematest\''
+          );
+          expect(inPublic.rows).to.have.lengthOf(0);
+        } finally {
+          await pool.end();
+        }
+
+        // Clean up
+        await db.collection('schematest').drop();
+      });
+
+      it('should list schemas as databases via admin().listDatabases()', async function() {
+        // Ensure at least one table exists so the schema is created
+        await db.collection('admintest').insertOne({
+          _id: 'at1',
+          value: 1
+        });
+
+        const result = await db.admin().listDatabases();
+        expect(result.databases).to.be.an('array');
+        const names = result.databases.map(d => d.name);
+        expect(names).to.include('testschema');
+
+        await db.collection('admintest').drop();
+      });
+
+      it('should drop schema via dropDatabase()', async function() {
+        const tempDb = client.db('dropschematest');
+        await tempDb.collection('tempcol').insertOne({
+          _id: 'tmp1',
+          value: 1
+        });
+
+        // Verify schema exists
+        const { Pool } = require('pg');
+        const pool = new Pool({ connectionString: 'postgres://localhost:5432/dbtest_adapter' });
+        try {
+          let schemas = await pool.query(
+            'SELECT schema_name FROM information_schema.schemata WHERE schema_name = \'dropschematest\''
+          );
+          expect(schemas.rows).to.have.lengthOf(1);
+
+          // Drop it
+          await tempDb.dropDatabase();
+
+          schemas = await pool.query(
+            'SELECT schema_name FROM information_schema.schemata WHERE schema_name = \'dropschematest\''
+          );
+          expect(schemas.rows).to.have.lengthOf(0);
+        } finally {
+          await pool.end();
+        }
+      });
+    });
+  }
 });

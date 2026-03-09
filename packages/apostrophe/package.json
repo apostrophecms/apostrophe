@@ -3,6 +3,10 @@
   "version": "4.27.0-alpha.1",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
+  "bin": {
+    "apos-db-dump": "./bin/apos-db-dump.js",
+    "apos-db-restore": "./bin/apos-db-restore.js"
+  },
   "scripts": {
     "pretest": "npm run lint",
     "test": "npm run test:base && npm run test:missing && npm run test:assets && npm run test:esm && npm run test:db",

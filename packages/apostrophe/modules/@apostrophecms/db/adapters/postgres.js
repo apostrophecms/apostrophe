@@ -773,11 +773,11 @@ class PostgresCursor {
     await this._collection._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._collection._tableName);
+    const qualifiedName = this._collection._qualifiedName();
     const whereClause = buildWhereClause(this._query, params);
     const orderBy = buildOrderBy(this._sort);
 
-    let sql = `SELECT _id, data FROM "${tableName}" WHERE ${whereClause} ${orderBy}`;
+    let sql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} ${orderBy}`;
 
     if (this._limit != null) {
       sql += ` LIMIT ${this._limit}`;
@@ -812,11 +812,11 @@ class PostgresCursor {
       this._cursorName = `cur_${generateId()}`;
 
       const params = [];
-      const tableName = escapeIdentifier(this._collection._tableName);
+      const qualifiedName = this._collection._qualifiedName();
       const whereClause = buildWhereClause(this._query, params);
       const orderBy = buildOrderBy(this._sort);
 
-      let sql = `SELECT _id, data FROM "${tableName}" WHERE ${whereClause} ${orderBy}`;
+      let sql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} ${orderBy}`;
       if (this._limit != null) {
         sql += ` LIMIT ${this._limit}`;
       }
@@ -889,9 +889,9 @@ class PostgresCursor {
     await this._collection._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._collection._tableName);
+    const qualifiedName = this._collection._qualifiedName();
     const whereClause = buildWhereClause(this._query, params);
-    const sql = `SELECT COUNT(*) as count FROM "${tableName}" WHERE ${whereClause}`;
+    const sql = `SELECT COUNT(*) as count FROM ${qualifiedName} WHERE ${whereClause}`;
     const result = await this._collection._pool.query(sql, params);
     return parseInt(result.rows[0].count, 10);
   }
@@ -1122,14 +1122,22 @@ class PostgresCollection {
   constructor(db, name) {
     this._db = db;
     this._pool = db._pool;
-    // Prefix table name with database name to support
-    // multiple "databases" in one PostgreSQL db
-    const dbPrefix = validateTableName(db._name);
-    const collName = validateTableName(name);
-    this._tableName = `${dbPrefix}_${collName}`;
+    this._tableName = validateTableName(name);
+    this._schema = db._schema || null;
     this._name = name;
     this._indexes = new Map();
     this._initialized = false;
+  }
+
+  // Returns the schema-qualified table name for use in SQL.
+  // In multi-schema mode: "schemaname"."tablename"
+  // In simple mode: "tablename"
+  _qualifiedName() {
+    const table = `"${escapeIdentifier(this._tableName)}"`;
+    if (this._schema) {
+      return `"${escapeIdentifier(this._schema)}".${table}`;
+    }
+    return table;
   }
 
   get collectionName() {
@@ -1145,9 +1153,16 @@ class PostgresCollection {
       return;
     }
 
-    const tableName = escapeIdentifier(this._tableName);
+    // In multi-schema mode, ensure the schema exists
+    if (this._schema) {
+      await this._pool.query(
+        `CREATE SCHEMA IF NOT EXISTS "${escapeIdentifier(this._schema)}"`
+      );
+    }
+
+    const qualifiedName = this._qualifiedName();
     await this._pool.query(`
-      CREATE TABLE IF NOT EXISTS "${tableName}" (
+      CREATE TABLE IF NOT EXISTS ${qualifiedName} (
         _id TEXT PRIMARY KEY,
         _order SERIAL,
         data JSONB NOT NULL
@@ -1156,7 +1171,7 @@ class PostgresCollection {
     // Add _order column to tables created before it existed
     try {
       await this._pool.query(`
-        ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS _order SERIAL
+        ALTER TABLE ${qualifiedName} ADD COLUMN IF NOT EXISTS _order SERIAL
       `);
     } catch (e) {
       // Column already exists, ignore
@@ -1171,10 +1186,10 @@ class PostgresCollection {
     const docWithoutId = { ...doc };
     delete docWithoutId._id;
 
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     try {
       await this._pool.query(
-        `INSERT INTO "${tableName}" (_id, data) VALUES ($1, $2)`,
+        `INSERT INTO ${qualifiedName} (_id, data) VALUES ($1, $2)`,
         [ id, serializeDocument(docWithoutId) ]
       );
       return {
@@ -1219,9 +1234,9 @@ class PostgresCollection {
     await this._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
-    const sql = `SELECT _id, data FROM "${tableName}" WHERE ${whereClause} LIMIT 1`;
+    const sql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
 
     const result = await this._pool.query(sql, params);
     if (result.rows.length === 0) {
@@ -1255,10 +1270,10 @@ class PostgresCollection {
     }
 
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
 
-    const selectSql = `SELECT _id, data FROM "${tableName}" WHERE ${whereClause} LIMIT 1`;
+    const selectSql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
     const selectResult = await this._pool.query(selectSql, params);
 
     if (selectResult.rows.length === 0) {
@@ -1299,7 +1314,7 @@ class PostgresCollection {
 
     try {
       await this._pool.query(
-        `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
+        `UPDATE ${qualifiedName} SET data = $1 WHERE _id = $2`,
         [ serializeDocument(dataWithoutId), selectResult.rows[0]._id ]
       );
     } catch (e) {
@@ -1323,7 +1338,7 @@ class PostgresCollection {
   // Atomic update using SQL expressions for $inc and $set (no read-modify-write race)
   async _atomicUpdateOne(query, update) {
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
 
     // Build a chain of jsonb_set calls for atomic update
@@ -1356,7 +1371,7 @@ class PostgresCollection {
       }
     }
 
-    const sql = `UPDATE "${tableName}" SET data = ${dataExpr} WHERE ${whereClause}`;
+    const sql = `UPDATE ${qualifiedName} SET data = ${dataExpr} WHERE ${whereClause}`;
     try {
       const result = await this._pool.query(sql, params);
       const matched = result.rowCount > 0 ? 1 : 0;
@@ -1381,10 +1396,10 @@ class PostgresCollection {
     await this._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
 
-    const selectSql = `SELECT _id, data FROM "${tableName}" WHERE ${whereClause}`;
+    const selectSql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause}`;
     const selectResult = await this._pool.query(selectSql, params);
 
     if (selectResult.rows.length === 0) {
@@ -1406,7 +1421,7 @@ class PostgresCollection {
       const { _id, ...dataWithoutId } = updated;
 
       await this._pool.query(
-        `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
+        `UPDATE ${qualifiedName} SET data = $1 WHERE _id = $2`,
         [ serializeDocument(dataWithoutId), row._id ]
       );
       modifiedCount++;
@@ -1427,10 +1442,10 @@ class PostgresCollection {
     await this._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
 
-    const selectSql = `SELECT _id FROM "${tableName}" WHERE ${whereClause} LIMIT 1`;
+    const selectSql = `SELECT _id FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
     const selectResult = await this._pool.query(selectSql, params);
 
     if (selectResult.rows.length === 0) {
@@ -1454,7 +1469,7 @@ class PostgresCollection {
     const { _id, ...dataWithoutId } = replacement;
     try {
       await this._pool.query(
-        `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
+        `UPDATE ${qualifiedName} SET data = $1 WHERE _id = $2`,
         [ serializeDocument(dataWithoutId), selectResult.rows[0]._id ]
       );
     } catch (e) {
@@ -1475,12 +1490,12 @@ class PostgresCollection {
     await this._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
 
     const result = await this._pool.query(
-      `DELETE FROM "${tableName}" WHERE _id IN (
-        SELECT _id FROM "${tableName}" WHERE ${whereClause} LIMIT 1
+      `DELETE FROM ${qualifiedName} WHERE _id IN (
+        SELECT _id FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1
       )`,
       params
     );
@@ -1496,11 +1511,11 @@ class PostgresCollection {
     await this._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
 
     const result = await this._pool.query(
-      `DELETE FROM "${tableName}" WHERE ${whereClause}`,
+      `DELETE FROM ${qualifiedName} WHERE ${whereClause}`,
       params
     );
 
@@ -1528,9 +1543,9 @@ class PostgresCollection {
     await this._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
-    const sql = `SELECT COUNT(*) as count FROM "${tableName}" WHERE ${whereClause}`;
+    const sql = `SELECT COUNT(*) as count FROM ${qualifiedName} WHERE ${whereClause}`;
 
     const result = await this._pool.query(sql, params);
     return parseInt(result.rows[0].count, 10);
@@ -1540,11 +1555,11 @@ class PostgresCollection {
     await this._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
 
     if (field === '_id') {
-      const sql = `SELECT DISTINCT _id as value FROM "${tableName}" WHERE ${whereClause}`;
+      const sql = `SELECT DISTINCT _id as value FROM ${qualifiedName} WHERE ${whereClause}`;
       const result = await this._pool.query(sql, params);
       return result.rows.map(row => row.value).filter(v => v !== null);
     }
@@ -1554,7 +1569,7 @@ class PostgresCollection {
     // Use LATERAL with jsonb_array_elements to unwind array values,
     // and fall back to the value itself for scalars.
     // Use jsonb_array_elements (not _text) to preserve types for non-string values.
-    const sql = `SELECT DISTINCT elem as value FROM "${tableName}", LATERAL jsonb_array_elements(
+    const sql = `SELECT DISTINCT elem as value FROM ${qualifiedName}, LATERAL jsonb_array_elements(
       CASE WHEN jsonb_typeof(${jsonPath}) = 'array' THEN ${jsonPath} ELSE jsonb_build_array(${jsonPath}) END
     ) AS elem WHERE ${whereClause} AND ${jsonPath} IS NOT NULL`;
     const result = await this._pool.query(sql, params);
@@ -1648,10 +1663,10 @@ class PostgresCollection {
     await this._ensureTable();
 
     const params = [];
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params);
 
-    const selectSql = `SELECT _id, data FROM "${tableName}" WHERE ${whereClause} LIMIT 1`;
+    const selectSql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
     const selectResult = await this._pool.query(selectSql, params);
 
     if (selectResult.rows.length === 0) {
@@ -1673,7 +1688,7 @@ class PostgresCollection {
     const { _id, ...dataWithoutId } = updated;
 
     await this._pool.query(
-      `UPDATE "${tableName}" SET data = $1 WHERE _id = $2`,
+      `UPDATE ${qualifiedName} SET data = $1 WHERE _id = $2`,
       [ serializeDocument(dataWithoutId), selectResult.rows[0]._id ]
     );
 
@@ -1796,7 +1811,7 @@ class PostgresCollection {
       mongoName
     });
 
-    const tableName = escapeIdentifier(this._tableName);
+    const qualifiedName = this._qualifiedName();
     const escapedIndexName = escapeIdentifier(indexName);
 
     // Build WHERE clause for sparse indexes (PostgreSQL partial index)
@@ -1821,7 +1836,7 @@ class PostgresCollection {
 
       await this._pool.query(`
         CREATE INDEX IF NOT EXISTS "${escapedIndexName}"
-        ON "${tableName}"
+        ON ${qualifiedName}
         USING gin(to_tsvector('english', ${tsvectorExpr}))${whereClause}
       `);
       return indexName;
@@ -1835,7 +1850,7 @@ class PostgresCollection {
 
       await this._pool.query(`
         CREATE UNIQUE INDEX IF NOT EXISTS "${escapedIndexName}"
-        ON "${tableName}" (${indexExprs.join(', ')})${whereClause}
+        ON ${qualifiedName} (${indexExprs.join(', ')})${whereClause}
       `);
       return indexName;
     }
@@ -1850,7 +1865,7 @@ class PostgresCollection {
 
     await this._pool.query(`
       CREATE INDEX IF NOT EXISTS "${escapedIndexName}"
-      ON "${tableName}" (${indexExprs.join(', ')})${whereClause}
+      ON ${qualifiedName} (${indexExprs.join(', ')})${whereClause}
     `);
 
     return indexName;
@@ -1871,17 +1886,24 @@ class PostgresCollection {
     }
     this._indexes.delete(pgName);
     const escapedIndexName = escapeIdentifier(pgName);
-    await this._pool.query(`DROP INDEX IF EXISTS "${escapedIndexName}"`);
+    if (this._schema) {
+      await this._pool.query(
+        `DROP INDEX IF EXISTS "${escapeIdentifier(this._schema)}"."${escapedIndexName}"`
+      );
+    } else {
+      await this._pool.query(`DROP INDEX IF EXISTS "${escapedIndexName}"`);
+    }
   }
 
   async indexes() {
     await this._ensureTable();
 
+    const schemaName = this._schema || 'public';
     const result = await this._pool.query(`
       SELECT indexname, indexdef
       FROM pg_indexes
-      WHERE tablename = $1
-    `, [ this._tableName ]);
+      WHERE schemaname = $1 AND tablename = $2
+    `, [ schemaName, this._tableName ]);
 
     const indexes = [ {
       name: '_id_',
@@ -1999,23 +2021,21 @@ class PostgresCollection {
   }
 
   async drop() {
-    const tableName = escapeIdentifier(this._tableName);
-    await this._pool.query(`DROP TABLE IF EXISTS "${tableName}"`);
+    const qualifiedName = this._qualifiedName();
+    await this._pool.query(`DROP TABLE IF EXISTS ${qualifiedName}`);
     this._initialized = false;
     this._indexes.clear();
   }
 
   async rename(newName) {
     const oldName = this._name;
-    const dbPrefix = validateTableName(this._db._name);
     const newCollName = validateTableName(newName);
-    const newTableName = `${dbPrefix}_${newCollName}`;
-    const oldTableName = escapeIdentifier(this._tableName);
-    const escapedNewTableName = escapeIdentifier(newTableName);
-    await this._pool.query(`ALTER TABLE "${oldTableName}" RENAME TO "${escapedNewTableName}"`);
+    const qualifiedName = this._qualifiedName();
+    const escapedNewTableName = escapeIdentifier(newCollName);
+    await this._pool.query(`ALTER TABLE ${qualifiedName} RENAME TO "${escapedNewTableName}"`);
 
     // Update internal state
-    this._tableName = newTableName;
+    this._tableName = newCollName;
     this._name = newName;
 
     // Update the database's collection cache
@@ -2029,10 +2049,12 @@ class PostgresCollection {
 // =============================================================================
 
 class PostgresDb {
-  constructor(client, name) {
+  constructor(client, name, schema) {
     this._client = client;
     this._pool = client._pool;
     this._name = name;
+    this._schema = schema || null;
+    this._multiSchema = client._multiSchema || false;
     this.databaseName = name;
     this._collections = new Map();
   }
@@ -2050,43 +2072,49 @@ class PostgresDb {
     return col;
   }
 
-  // Returns an object mimicking MongoDB's admin interface.
-  // Currently supports listDatabases, which in postgres discovers
-  // database name prefixes by looking for tables ending in _aposDocs
-  // (which always exists in an Apostrophe database).
   admin() {
     const pool = this._pool;
+    const multiSchema = this._multiSchema;
+    const name = this._name;
     return {
       async listDatabases() {
-        const result = await pool.query(
-          'SELECT tablename FROM pg_tables WHERE schemaname = \'public\' AND tablename LIKE \'%_aposDocs\''
-        );
-        const databases = result.rows.map(row => ({
-          // Restore hyphens so names match what was originally passed to db().
-          // validateTableName converts hyphens to underscores for postgres
-          // table names, so we reverse that here.
-          name: row.tablename.replace(/_aposDocs$/, '').replace(/_/g, '-')
-        }));
-        return { databases };
+        if (multiSchema) {
+          // List all non-system schemas as "databases"
+          const result = await pool.query(`
+            SELECT schema_name FROM information_schema.schemata
+            WHERE schema_name NOT IN ('public', 'information_schema', 'pg_catalog', 'pg_toast')
+            AND schema_name NOT LIKE 'pg_%'
+          `);
+          const databases = result.rows.map(row => ({
+            name: row.schema_name
+          }));
+          return { databases };
+        }
+        // Simple mode: just return this database
+        return { databases: [ { name } ] };
       }
     };
   }
 
   async dropDatabase() {
-    const dbName = this._name;
-    if (!dbName) {
+    if (!this._name) {
       return;
     }
-    // Drop all tables with the matching prefix instead of dropping the entire
-    // PostgreSQL database. This avoids the need to close the pool and reconnect,
-    // and avoids "terminating connection" errors from DROP DATABASE WITH (FORCE).
-    const prefix = validateTableName(dbName) + '_';
-    const result = await this._pool.query(
-      'SELECT tablename FROM pg_tables WHERE schemaname = \'public\' AND tablename LIKE $1',
-      [ prefix + '%' ]
-    );
-    for (const row of result.rows) {
-      await this._pool.query(`DROP TABLE IF EXISTS "${escapeIdentifier(row.tablename)}" CASCADE`);
+    if (this._multiSchema && this._schema) {
+      // Multi-schema mode: drop the schema
+      await this._pool.query(
+        `DROP SCHEMA IF EXISTS "${escapeIdentifier(this._schema)}" CASCADE`
+      );
+    } else {
+      // Simple mode: drop all tables in public schema
+      const result = await this._pool.query(
+        'SELECT tablename FROM pg_tables WHERE schemaname = \'public\''
+      );
+      for (const row of result.rows) {
+        await this._pool.query(
+          `DROP TABLE IF EXISTS "${escapeIdentifier(row.tablename)}" CASCADE`
+        );
+      }
     }
     this._collections.clear();
   }
@@ -2098,17 +2126,16 @@ class PostgresDb {
 
   listCollections() {
     const self = this;
-    const dbPrefix = validateTableName(this._name) + '_';
+    const schemaName = this._schema || 'public';
     return {
       async toArray() {
         const result = await self._pool.query(`
           SELECT tablename as name
           FROM pg_tables
-          WHERE schemaname = 'public' AND tablename LIKE $1
-        `, [ dbPrefix + '%' ]);
-        // Strip the database prefix from returned names
+          WHERE schemaname = $1
+        `, [ schemaName ]);
         return result.rows.map(row => ({
-          name: row.name.substring(dbPrefix.length)
+          name: row.name
         }));
       }
     };
@@ -2125,13 +2152,25 @@ class PostgresClient {
     this._defaultDb = defaultDb;
     this._uri = uri;
     this._options = options;
+    this._multiSchema = options._multiSchema || false;
+    this._defaultSchema = options._defaultSchema || null;
     this._databases = new Map();
   }
 
   db(name) {
+    if (!this._multiSchema) {
+      // Simple mode: all names map to the same database (public schema).
+      // The name is stored for identification but all share the same tables.
+      const dbName = name || this._defaultDb;
+      if (!this._databases.has(dbName)) {
+        this._databases.set(dbName, new PostgresDb(this, dbName, null));
+      }
+      return this._databases.get(dbName);
+    }
+    // Multi-schema mode: each name gets its own schema
     const dbName = name || this._defaultDb;
     if (!this._databases.has(dbName)) {
-      this._databases.set(dbName, new PostgresDb(this, dbName));
+      this._databases.set(dbName, new PostgresDb(this, dbName, dbName));
     }
     return this._databases.get(dbName);
   }
@@ -2151,24 +2190,56 @@ class PostgresClient {
 module.exports = {
   name: 'postgres',
   // Native protocol schemes for this adapter
-  protocols: [ 'postgres', 'postgresql' ],
+  protocols: [ 'postgres', 'postgresql', 'multipostgres' ],
 
   /**
    * Connect to PostgreSQL and return a client with MongoDB-compatible interface.
    *
-   * @param {string} uri - PostgreSQL connection URI
-   *   (e.g., 'postgres://user:pass@localhost:5432/mydb')
-   * @param {Object} [options={}] - Additional pg Pool
-   *   options (not duplicating URI params)
+   * Supports two modes:
+   * - postgres:// — Simple single-database mode, unprefixed tables in public schema
+   * - multipostgres:// — Multi-schema mode for multisite.
+   *   URI: multipostgres://host/realdb-schemaname
+   *   Last hyphen-separated component is the default schema,
+   *   everything before is the real PostgreSQL database name.
+   *
+   * @param {string} uri - Connection URI
+   * @param {Object} [options={}] - Additional pg Pool options
    * @returns {Promise<PostgresClient>} Client with db(), close() methods
    */
   async connect(uri, options = {}) {
-    // Parse URI to extract database name for the client
     const url = new URL(uri);
-    const database = url.pathname.slice(1) || undefined;
+    let database;
+    let multiSchema = false;
+    let defaultSchema = null;
+    let connectionUri = uri;
+
+    if (url.protocol === 'multipostgres:') {
+      // Multi-schema mode: multipostgres://host/realdb-schemaname
+      multiSchema = true;
+      const path = url.pathname.slice(1); // e.g. 'shared-db-dashboard'
+      const lastHyphen = path.lastIndexOf('-');
+      if (lastHyphen === -1) {
+        throw new Error(
+          'multipostgres:// URI must contain at least one hyphen in the path: ' +
+          'multipostgres://host/realdb-schemaname'
+        );
+      }
+      const realDb = path.substring(0, lastHyphen);
+      defaultSchema = path.substring(lastHyphen + 1);
+      database = defaultSchema;
+
+      // Rewrite URI to postgres:// for the actual pg Pool connection
+      const connUrl = new URL(uri);
+      connUrl.protocol = 'postgres:';
+      connUrl.pathname = '/' + realDb;
+      connectionUri = connUrl.toString();
+    } else {
+      // Simple single-database mode
+      database = url.pathname.slice(1) || undefined;
+    }
 
     let pool = new Pool({
-      connectionString: uri,
+      connectionString: connectionUri,
       ...options
     });
 
@@ -2178,19 +2249,18 @@ module.exports = {
       await pool.query('SELECT 1');
     } catch (e) {
       // 3D000 = invalid_catalog_name (database does not exist)
-      if (e.code === '3D000' && database) {
+      const pgDatabase = new URL(connectionUri).pathname.slice(1);
+      if (e.code === '3D000' && pgDatabase) {
         await pool.end();
         // Connect to the default 'postgres' database to create the target
-        const adminUrl = new URL(uri);
+        const adminUrl = new URL(connectionUri);
         adminUrl.pathname = '/postgres';
         const adminPool = new Pool({
           connectionString: adminUrl.toString(),
           ...options
         });
         try {
-          // Database names are validated by validateTableName rules upstream,
-          // but use escapeIdentifier for the CREATE DATABASE statement
-          await adminPool.query(`CREATE DATABASE "${escapeIdentifier(database)}"`);
+          await adminPool.query(`CREATE DATABASE "${escapeIdentifier(pgDatabase)}"`);
         } catch (createErr) {
           // 42P04 = duplicate_database (another process just created it, that's fine)
           if (createErr.code !== '42P04') {
@@ -2201,7 +2271,7 @@ module.exports = {
         }
         // Reconnect to the now-existing database
         pool = new Pool({
-          connectionString: uri,
+          connectionString: connectionUri,
           ...options
         });
         await pool.query('SELECT 1');
@@ -2210,6 +2280,10 @@ module.exports = {
       }
     }
 
-    return new PostgresClient(pool, database, uri, options);
+    return new PostgresClient(pool, database, uri, {
+      ...options,
+      _multiSchema: multiSchema,
+      _defaultSchema: defaultSchema
+    });
   }
 };

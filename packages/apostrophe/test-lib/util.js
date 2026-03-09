@@ -10,6 +10,11 @@ function getTestDbUri(shortName) {
     const dbName = shortName.replace(/-/g, '_');
     return `postgres://localhost:5432/${dbName}`;
   }
+  if (testDbProtocol === 'multipostgres') {
+    // Multi-schema mode: shared real database, per-test schema
+    const schemaName = shortName.replace(/-/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    return `multipostgres://localhost:5432/apos_test-${schemaName}`;
+  }
 }
 
 // Properly clean up an apostrophe instance and drop its
