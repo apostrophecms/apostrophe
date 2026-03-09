@@ -52,8 +52,8 @@ module.exports = {
       // Since this API is solely for editing purposes you will receive
       // a 404 if you request a document you cannot edit.
       async getOne(req, _id) {
-        _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
-        const doc = await self.find(req, { _id }).permission('edit').toObject();
+        const localizedId = self.apos.i18n.inferIdLocaleAndMode(req, _id);
+        const doc = await self.find(req, { $or: [{ _id: localizedId }, { _id: _id }] } ).permission('edit').toObject();
         if (!doc) {
           throw self.apos.error('notfound');
         }
