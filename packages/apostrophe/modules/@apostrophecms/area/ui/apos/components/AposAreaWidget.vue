@@ -973,7 +973,7 @@ export default {
 }
 
 .apos-area-widget-rendered-widget {
-  z-index: $z-index-base;
+  z-index: $z-index-default;
   position: relative;
 }
 
