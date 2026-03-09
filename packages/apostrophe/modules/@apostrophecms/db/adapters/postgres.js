@@ -46,24 +46,37 @@ function validateInteger(value, name) {
 }
 
 // Create a MongoDB-compatible duplicate key error from a PostgreSQL 23505 error
-function makeDuplicateKeyError(pgError, message) {
-  const error = new Error(message || 'Duplicate key error');
-  error.code = 11000;
+function makeDuplicateKeyError(pgError) {
+  let field = null;
+  let value = null;
   // Parse PostgreSQL detail to extract keyValue for MongoDB compatibility
   // Detail format: Key ((data ->> 'field'::text))=(value) already exists.
+  // or for _id: Key (_id)=(value) already exists.
   // Note: PostgreSQL wraps expression indexes in double parens
   if (pgError.detail) {
     const match = pgError.detail.match(/Key \((.+?)\)=\((.+?)\) already exists/);
     if (match) {
-      // Try to map the PostgreSQL expression back to a field name
-      // e.g., (data ->> 'username'::text) -> username
       const expr = match[1];
-      const value = match[2];
-      const fieldMatch = expr.match(/>>\s*'([^']+)'/);
-      if (fieldMatch) {
-        error.keyValue = { [fieldMatch[1]]: value };
+      value = match[2];
+      if (expr === '_id') {
+        field = '_id';
+      } else {
+        // Try to map the PostgreSQL expression back to a field name
+        // e.g., (data ->> 'username'::text) -> username
+        const fieldMatch = expr.match(/>>\s*'([^']+)'/);
+        if (fieldMatch) {
+          field = fieldMatch[1];
+        }
       }
     }
+  }
+  const message = field && value
+    ? `Duplicate key error: ${field} "${value}" already exists`
+    : 'Duplicate key error';
+  const error = new Error(message);
+  error.code = 11000;
+  if (field && value) {
+    error.keyValue = { [field]: value };
   }
   return error;
 }
@@ -71,6 +84,176 @@ function makeDuplicateKeyError(pgError, message) {
 // Generate a MongoDB-style ObjectId-like string
 function generateId() {
   return crypto.randomBytes(12).toString('hex');
+}
+
+// Parse a PostgreSQL index definition (from pg_indexes.indexdef) back into
+// our abstract index metadata: { key, unique, sparse, type }.
+// This only handles the patterns our own createIndex generates — it is not
+// a general SQL parser.
+function parseIndexDef(indexdef) {
+  const unique = /\bUNIQUE\b/.test(indexdef);
+  const sparse = /\bWHERE\b/.test(indexdef);
+  const isGin = /\bUSING gin\b/.test(indexdef);
+
+  if (isGin) {
+    // Text index: USING gin(to_tsvector('english', coalesce(data->>'field', '') ...))
+    // PostgreSQL normalizes to: COALESCE((data ->> 'field'::text), ''::text)
+    const key = {};
+    const fieldPattern = /coalesce\(\s*\(*(data(?:\s*->\s*'[^']*'(?:::text)?)*\s*->>\s*'[^']*'(?:::text)?)\)*\s*,\s*''(?:::text)?\s*\)/gi;
+    let m;
+    while ((m = fieldPattern.exec(indexdef)) !== null) {
+      const fieldName = jsonPathToFieldName(m[1]);
+      if (fieldName) {
+        key[fieldName] = 'text';
+      }
+    }
+    return {
+      key,
+      unique,
+      ...(sparse ? { sparse: true } : {})
+    };
+  }
+
+  // Regular or unique index: extract expressions from the column list
+  // The column list is inside the last pair of parentheses before an
+  // optional WHERE clause
+  let colSection = indexdef;
+  const wherePos = colSection.indexOf(' WHERE ');
+  if (wherePos !== -1) {
+    colSection = colSection.substring(0, wherePos);
+  }
+  // Find the last opening paren that starts the column list
+  // For: CREATE INDEX ... ON tablename (expr1, expr2)
+  // or:  CREATE INDEX ... ON tablename USING btree (expr1, expr2)
+  const onMatch = colSection.match(/\bON\b\s+\S+\s+(?:USING \w+\s+)?\((.+)\)\s*$/);
+  if (!onMatch) {
+    return {
+      key: {},
+      unique,
+      ...(sparse ? { sparse: true } : {})
+    };
+  }
+
+  const exprList = onMatch[1];
+  const key = {};
+  let type;
+
+  // Split on commas that are not inside parentheses
+  const exprs = splitExpressions(exprList);
+
+  for (const expr of exprs) {
+    const trimmed = expr.trim();
+
+    // Check for _id column
+    if (/^_id\b/.test(trimmed)) {
+      const direction = /\bDESC\b/.test(trimmed) ? -1 : 1;
+      key._id = direction;
+      continue;
+    }
+
+    // Numeric type: ((data->>'field')::numeric) or nested variant
+    const numericMatch = trimmed.match(/::numeric/);
+    if (numericMatch) {
+      type = 'number';
+      const fieldName = jsonPathToFieldName(trimmed);
+      if (fieldName) {
+        const direction = /\bDESC\b/.test(trimmed) ? -1 : 1;
+        key[fieldName] = direction;
+      }
+      continue;
+    }
+
+    // Date type: data->'field'->>'$date' (or PostgreSQL normalized:
+    // (data -> 'createdAt'::text) ->> '$date'::text)
+    const dateMatch = trimmed.match(/->>?\s*'\$date'/);
+    if (dateMatch) {
+      type = 'date';
+      // The jsonPathToFieldName helper already skips $date segments,
+      // so we can pass the whole expression
+      const fieldName = jsonPathToFieldName(trimmed);
+      if (fieldName) {
+        const direction = /\bDESC\b/.test(trimmed) ? -1 : 1;
+        key[fieldName] = direction;
+      }
+      continue;
+    }
+
+    // Default text type: data->>'field' or data->'a'->>'b'
+    const fieldName = jsonPathToFieldName(trimmed);
+    if (fieldName) {
+      const direction = /\bDESC\b/.test(trimmed) ? -1 : 1;
+      key[fieldName] = direction;
+    }
+  }
+
+  return {
+    key,
+    unique,
+    ...(sparse ? { sparse: true } : {}),
+    ...(type ? { type } : {})
+  };
+}
+
+// Convert a JSONB path expression like data->>'slug' or data->'user'->>'name'
+// back into a dot-separated field name like 'slug' or 'user.name'.
+// Handles PostgreSQL's normalized output which adds spaces, ::text casts,
+// and extra parentheses (e.g. ((data ->> 'a'::text))).
+function jsonPathToFieldName(expr) {
+  // Remove outer parens, ::text and ::numeric casts, ASC/DESC
+  let cleaned = expr
+    .replace(/\(+/g, '')
+    .replace(/\)+/g, '')
+    .replace(/::(?:text|numeric)/g, '')
+    .replace(/\s+(ASC|DESC)\s*$/i, '')
+    .trim();
+
+  // Must start with 'data'
+  if (!cleaned.startsWith('data')) {
+    return null;
+  }
+  // Remove the 'data' prefix
+  cleaned = cleaned.substring(4);
+
+  const parts = [];
+  // Match ->> 'name' or -> 'name' segments (with optional spaces around arrows)
+  const segmentPattern = /\s*->>\s*'([^']*)'\s*|\s*->\s*'([^']*)'\s*/g;
+  let m;
+  while ((m = segmentPattern.exec(cleaned)) !== null) {
+    // ->> captures in group 1, -> captures in group 2
+    const name = m[1] !== undefined ? m[1] : m[2];
+    // Skip the $date pseudo-field used for date indexes
+    if (name === '$date') {
+      continue;
+    }
+    parts.push(name);
+  }
+
+  return parts.length > 0 ? parts.join('.') : null;
+}
+
+// Split a comma-separated expression list, respecting parentheses nesting.
+// E.g. "((data->>'a')::numeric) DESC, (data->>'b') ASC" → two expressions.
+function splitExpressions(str) {
+  const results = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of str) {
+    if (ch === '(') {
+      depth++;
+    } else if (ch === ')') {
+      depth--;
+    }
+    if (ch === ',' && depth === 0) {
+      results.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  if (current.trim()) {
+    results.push(current);
+  }
+  return results;
 }
 
 // =============================================================================
@@ -1204,7 +1387,7 @@ class PostgresCollection {
       };
     } catch (e) {
       if (e.code === '23505') {
-        throw makeDuplicateKeyError(e, `Duplicate key error: _id "${id}" already exists`);
+        throw makeDuplicateKeyError(e);
       }
       throw e;
     }
@@ -1319,7 +1502,7 @@ class PostgresCollection {
       );
     } catch (e) {
       if (e.code === '23505') {
-        throw makeDuplicateKeyError(e, 'Duplicate key error in updateOne');
+        throw makeDuplicateKeyError(e);
       }
       throw e;
     }
@@ -1386,7 +1569,7 @@ class PostgresCollection {
       };
     } catch (e) {
       if (e.code === '23505') {
-        throw makeDuplicateKeyError(e, 'Duplicate key error in updateOne');
+        throw makeDuplicateKeyError(e);
       }
       throw e;
     }
@@ -1474,7 +1657,7 @@ class PostgresCollection {
       );
     } catch (e) {
       if (e.code === '23505') {
-        throw makeDuplicateKeyError(e, 'Duplicate key error in replaceOne');
+        throw makeDuplicateKeyError(e);
       }
       throw e;
     }
@@ -1921,13 +2104,14 @@ class PostgresCollection {
         indexes.push({
           name: storedIndex.mongoName || row.indexname,
           key: storedIndex.keys,
-          unique: storedIndex.options.unique || false
+          unique: storedIndex.options.unique || false,
+          ...(storedIndex.options.sparse ? { sparse: true } : {}),
+          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {})
         });
       } else {
         indexes.push({
           name: row.indexname,
-          key: {},
-          unique: row.indexdef.includes('UNIQUE')
+          ...parseIndexDef(row.indexdef)
         });
       }
     }

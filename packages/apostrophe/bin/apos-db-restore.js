@@ -3,6 +3,8 @@
 const fs = require('fs');
 const dbConnect = require('../lib/db-connect');
 
+const BATCH_SIZE = 100;
+
 main().then(() => {
   process.exit(0);
 }).catch(err => {
@@ -20,35 +22,79 @@ async function main() {
     throw new Error('Usage: apos-db-restore <uri> [--input=filename]');
   }
 
-  let content;
-  if (input) {
-    content = fs.readFileSync(input, 'utf8');
-  } else {
-    content = fs.readFileSync('/dev/stdin', 'utf8');
-  }
-
-  const lines = content.split('\n').filter(line => line.trim());
-
   const client = await dbConnect(uri);
   try {
     const db = client.db();
+    const lines = readLines(input);
+    let currentCollection = null;
+    let col = null;
+    let batch = [];
 
     for (const line of lines) {
-      const { _collection, _docs } = JSON.parse(line);
-      const col = db.collection(_collection);
+      const entry = JSON.parse(line);
 
-      try {
-        await col.drop();
-      } catch (e) {
-        // Collection may not exist, ignore
-      }
+      if (entry._doc) {
+        // Document line
+        batch.push(deserializeValue(entry._doc));
+        if (batch.length >= BATCH_SIZE) {
+          await col.insertMany(batch);
+          batch = [];
+        }
+      } else if (entry._collection) {
+        // Collection header — flush previous batch and set up new collection
+        if (batch.length > 0) {
+          await col.insertMany(batch);
+          batch = [];
+        }
 
-      if (_docs && _docs.length > 0) {
-        await col.insertMany(_docs.map(deserializeValue));
+        currentCollection = entry._collection;
+        col = db.collection(currentCollection);
+
+        try {
+          await col.drop();
+        } catch (e) {
+          // Collection may not exist, ignore
+        }
+
+        // Restore indexes
+        if (entry._indexes && entry._indexes.length > 0) {
+          for (const idx of entry._indexes) {
+            const options = {};
+            if (idx.name) {
+              options.name = idx.name;
+            }
+            if (idx.unique) {
+              options.unique = true;
+            }
+            if (idx.sparse) {
+              options.sparse = true;
+            }
+            if (idx.type) {
+              options.type = idx.type;
+            }
+            await col.createIndex(idx.key, options);
+          }
+        }
       }
+    }
+
+    // Flush remaining batch
+    if (batch.length > 0 && col) {
+      await col.insertMany(batch);
     }
   } finally {
     await client.close();
+  }
+}
+
+function * readLines(input) {
+  const content = input
+    ? fs.readFileSync(input, 'utf8')
+    : fs.readFileSync('/dev/stdin', 'utf8');
+  for (const line of content.split('\n')) {
+    if (line.trim()) {
+      yield line;
+    }
   }
 }
 

@@ -1385,6 +1385,94 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const count = await db.collection('test').countDocuments({ _id: { $regex: '^unum' } });
       expect(count).to.equal(3);
     });
+
+    if (ADAPTER === 'postgres' || ADAPTER === 'multipostgres') {
+      // PostgreSQL-specific: verify indexes() reconstructs metadata from
+      // pg_indexes when the in-memory _indexes Map is not populated
+      // (e.g. after a reconnect)
+      it('indexes - should reconstruct index metadata from SQL definitions', async function() {
+        await db.collection('test').insertOne({
+          _id: 'parse1',
+          slug: 'hello',
+          price: 42,
+          createdAt: new Date('2024-06-01T00:00:00Z'),
+          user: { profile: { name: 'Alice' } },
+          content: 'some text here'
+        });
+
+        // Create various index types
+        await db.collection('test').createIndex({ slug: 1 });
+        await db.collection('test').createIndex({
+          a: 1,
+          b: -1
+        });
+        await db.collection('test').createIndex({ price: 1 }, { type: 'number' });
+        await db.collection('test').createIndex({ createdAt: 1 }, { type: 'date' });
+        await db.collection('test').createIndex({ 'user.profile.name': 1 });
+        await db.collection('test').createIndex({ content: 'text' });
+        await db.collection('test').createIndex({ slug: 1 }, {
+          unique: true,
+          name: 'slug_unique'
+        });
+        await db.collection('test').createIndex({ price: 1 }, {
+          sparse: true,
+          type: 'number',
+          name: 'price_sparse'
+        });
+
+        // Clear the in-memory index cache to force parsing from SQL
+        db.collection('test')._indexes.clear();
+
+        const indexes = await db.collection('test').indexes();
+
+        // Find the default text index
+        const textIdx = indexes.find(i => i.key && i.key.content === 'text');
+        expect(textIdx).to.exist;
+        expect(textIdx.key.content).to.equal('text');
+
+        // Find the single field index
+        const slugIdx = indexes.find(i =>
+          i.key && i.key.slug === 1 && !i.unique
+        );
+        expect(slugIdx).to.exist;
+
+        // Find the numeric typed index
+        const numIdx = indexes.find(i =>
+          i.key && i.key.price === 1 && i.type === 'number' && !i.sparse
+        );
+        expect(numIdx).to.exist;
+
+        // Find the date typed index
+        const dateIdx = indexes.find(i =>
+          i.key && i.key.createdAt === 1 && i.type === 'date'
+        );
+        expect(dateIdx).to.exist;
+
+        // Find the nested field index
+        const nestedIdx = indexes.find(i =>
+          i.key && i.key['user.profile.name'] === 1
+        );
+        expect(nestedIdx).to.exist;
+
+        // Find the compound index
+        const compoundIdx = indexes.find(i =>
+          i.key && i.key.a === 1 && i.key.b === -1
+        );
+        expect(compoundIdx).to.exist;
+
+        // Find the unique index
+        const uniqueIdx = indexes.find(i =>
+          i.key && i.key.slug === 1 && i.unique
+        );
+        expect(uniqueIdx).to.exist;
+
+        // Find the sparse numeric index
+        const sparseNumIdx = indexes.find(i =>
+          i.key && i.key.price === 1 && i.sparse && i.type === 'number'
+        );
+        expect(sparseNumIdx).to.exist;
+      });
+    }
   });
 
   // ============================================

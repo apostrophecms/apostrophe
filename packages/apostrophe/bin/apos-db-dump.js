@@ -3,6 +3,8 @@
 const fs = require('fs');
 const dbConnect = require('../lib/db-connect');
 
+const BATCH_SIZE = 100;
+
 main().then(() => {
   process.exit(0);
 }).catch(err => {
@@ -21,29 +23,59 @@ async function main() {
   }
 
   const client = await dbConnect(uri);
+  const stream = output ? fs.createWriteStream(output) : process.stdout;
   try {
     const db = client.db();
     const collections = await db.listCollections().toArray();
-    const lines = [];
 
     for (const collInfo of collections) {
       const name = collInfo.name;
-      const docs = await db.collection(name).find({}).toArray();
-      lines.push(JSON.stringify({
-        _collection: name,
-        _docs: docs.map(serializeValue)
-      }));
+      const col = db.collection(name);
+      const indexes = await col.indexes();
+      const customIndexes = indexes.filter(idx => idx.name !== '_id_');
+
+      // Write collection header
+      const header = { _collection: name };
+      if (customIndexes.length > 0) {
+        header._indexes = customIndexes;
+      }
+      write(stream, JSON.stringify(header));
+
+      // Write docs in batches, sorted by _id for deterministic output
+      let lastId = null;
+      while (true) {
+        const query = lastId ? { _id: { $gt: lastId } } : {};
+        const batch = await col.find(query).sort({ _id: 1 }).limit(BATCH_SIZE).toArray();
+        if (batch.length === 0) {
+          break;
+        }
+        for (const doc of batch) {
+          write(stream, JSON.stringify({
+            _collection: name,
+            _doc: serializeValue(doc)
+          }));
+        }
+        lastId = batch[batch.length - 1]._id;
+        if (batch.length < BATCH_SIZE) {
+          break;
+        }
+      }
     }
 
-    const content = lines.join('\n') + '\n';
+    // Wait for output stream to finish if writing to file
     if (output) {
-      fs.writeFileSync(output, content);
-    } else {
-      process.stdout.write(content);
+      await new Promise((resolve, reject) => {
+        stream.end(resolve);
+        stream.on('error', reject);
+      });
     }
   } finally {
     await client.close();
   }
+}
+
+function write(stream, line) {
+  stream.write(line + '\n');
 }
 
 function serializeValue(obj) {
