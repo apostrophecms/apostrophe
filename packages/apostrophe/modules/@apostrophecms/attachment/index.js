@@ -633,6 +633,15 @@ module.exports = {
         if (!attachment) {
           return self.getMissingAttachmentUrl();
         }
+        // file module supports these, optionally
+        // (performance tradeoff). It's not enough to
+        // pass the prettyUrl: true option to this method,
+        // and that's not necessary. Setting it to false is
+        // an internal option for determining the real URL
+        // behind the pretty URL.
+        if (attachment._prettyUrl && (options.prettyUrl !== false)) {
+          return attachment._prettyUrl;
+        }
         let path = '/attachments/' + attachment._id + '-' + attachment.name;
         if (!options.uploadfsPath) {
           path = self.uploadfs.getUrl() + path;
