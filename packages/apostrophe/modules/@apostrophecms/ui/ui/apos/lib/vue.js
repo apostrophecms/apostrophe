@@ -6,6 +6,8 @@ import VueAposI18Next from './i18next';
 
 const pinia = createPinia();
 
+export { pinia };
+
 export default (appConfig, props = {}) => {
   const app = createApp(appConfig, props);
 

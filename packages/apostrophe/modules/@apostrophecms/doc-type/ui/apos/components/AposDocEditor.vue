@@ -4,6 +4,7 @@
     :modal="modal"
     :modal-title="modalTitle"
     :modal-data="modalData"
+    :graph-key="graphKey"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -134,6 +135,7 @@
 
 <script>
 import { klona } from 'klona';
+import { computed } from 'vue';
 import { mapActions } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
@@ -144,6 +146,7 @@ import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisory
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 
 export default {
   name: 'AposDocEditor',
@@ -156,10 +159,11 @@ export default {
     AposArchiveMixin,
     AposDocErrorsMixin
   ],
-  provide () {
+  provide() {
     return {
       originalDoc: this.originalDoc,
-      liveOriginalDoc: this.docFields
+      liveOriginalDoc: this.docFields,
+      aposGraphKey: computed(() => this.graphKey)
     };
   },
   props: {
@@ -322,6 +326,11 @@ export default {
         type: this.$t(this.moduleOptions.label)
       };
     },
+    graphKey() {
+      return this.modalData?.id && this.currentId
+        ? `${this.modalData.id}:${this.currentId}`
+        : null;
+    },
     saveLabel() {
       if (this.restoreOnly) {
         return 'apostrophe:restore';
@@ -417,9 +426,16 @@ export default {
   },
   unmounted() {
     apos.bus.$off('content-changed', this.onContentChanged);
+    // Destroy the widget graph for this modal's editing context
+    if (this.graphKey) {
+      this.storeDestroyGraph(this.graphKey);
+    }
   },
   methods: {
     ...mapActions(useModalStore, [ 'updateModalData' ]),
+    ...mapActions(useWidgetGraphStore, {
+      storeDestroyGraph: 'destroyGraph'
+    }),
     async instantiateExistingDoc() {
       await this.loadDoc();
       this.evaluateConditions();

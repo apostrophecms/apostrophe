@@ -3,6 +3,7 @@
     class="apos-primary-scrollbar apos-context-menu__dialog"
     :class="classes"
     role="dialog"
+    :data-apos-ignore-unfocus="props.ignoreUnfocus"
   >
     <AposContextMenuTip
       v-if="hasTip"
@@ -37,6 +38,10 @@
 import { computed } from 'vue';
 
 const props = defineProps({
+  ignoreUnfocus: {
+    type: Boolean,
+    default: false
+  },
   menuPlacement: {
     type: String,
     required: true
