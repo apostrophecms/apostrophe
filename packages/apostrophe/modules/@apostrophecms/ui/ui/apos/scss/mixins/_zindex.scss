@@ -8,7 +8,7 @@ $z-index-manager-display: 2;
 // WIDGET Z-INDEX NOTE: It's important for all widgets in an area to be in the
 // same z-index stacking context. The only aspects that should be above the
 // base stacking context are the controls (including the label).
-$z-index-widget-label: 0;
+$z-index-widget-label: 2;
 $z-index-manager-toolbar: 3;
 $z-index-widget-controls: 3;
 $z-index-widget-focused-controls: 4;
