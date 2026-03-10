@@ -54,7 +54,7 @@ module.exports = {
       async getOne(req, _id) {
         _id = self.apos.i18n.inferIdLocaleAndMode(req, _id);
         const aposDocId = _id.split(':')[0];
-        const doc = await self.find(req, { $or: [{ _id: _id }, { _id: aposDocId }] } ).permission('edit').toObject();
+        const doc = await self.find(req, { $or: [ { _id }, { _id: aposDocId } ] }).permission('edit').toObject();
         if (!doc) {
           throw self.apos.error('notfound');
         }
