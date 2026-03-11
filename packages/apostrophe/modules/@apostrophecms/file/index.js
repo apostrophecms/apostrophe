@@ -109,7 +109,7 @@ module.exports = {
         for (const file of files) {
           if (self.options.prettyUrls) {
             const { extension } = file.attachment;
-            const baseUrl = self.apos.url.getBaseUrl(req, { prefix: true })
+            const baseUrl = self.apos.url.getBaseUrl(req, { prefix: true });
             file._url = `${baseUrl}${self.options.prettyUrlDir}/${file.slug.replace(self.options.slugPrefix || '', '')}.${extension}`;
             file.attachment._prettyUrl = file._url;
           } else {
