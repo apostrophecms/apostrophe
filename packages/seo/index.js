@@ -24,7 +24,31 @@ module.exports = {
   methods(self, options) {
     return {
       metaHead(req) {
-        return getMetaHead(req.data, options);
+        return getMetaHead(req.data, {
+          ...options,
+          buildPaginationUrl(data, pageNum) {
+            const { page, filters = [] } = data;
+            const baseUrl = page?._url || '/';
+
+            // Find active filter
+            for (const filter of filters) {
+              const activeChoice = filter.choices?.find(c => c.active);
+              if (activeChoice) {
+                if (pageNum <= 1) {
+                  return activeChoice._url;
+                }
+                return baseUrl + self.apos.url.getChoiceFilter(
+                  filter.name, activeChoice.value, pageNum
+                );
+              }
+            }
+
+            if (pageNum <= 1) {
+              return baseUrl;
+            }
+            return baseUrl + self.apos.url.getPageFilter(pageNum);
+          }
+        });
       },
       tagManagerHead(req) {
         return getTagManagerHead(req.data);

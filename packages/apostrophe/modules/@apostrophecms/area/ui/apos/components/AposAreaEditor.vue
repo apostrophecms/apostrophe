@@ -3,7 +3,12 @@
     v-click-outside-element="resetFocusedArea"
     :data-apos-area="areaId"
     class="apos-area"
-    :class="themeClass"
+    :class="[
+      themeClass,
+      {
+        'apos-area--empty': next.length === 0
+      }
+    ]"
     @click="setFocusedArea(areaId, $event)"
   >
     <div
@@ -61,6 +66,11 @@
         :disabled="field && field.readOnly"
         :max-reached="maxReached"
         :rendering="rendering(widget)"
+        :style="{
+          'z-index': raisedWidgets.has(widget._id)
+            ? next.length + 1
+            : null
+        }"
         @up="up"
         @down="down"
         @remove="remove"

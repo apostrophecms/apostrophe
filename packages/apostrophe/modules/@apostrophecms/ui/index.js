@@ -9,6 +9,7 @@ module.exports = {
   },
   init(self) {
     self.enableBrowserData();
+    self.uiDebug = self.options.debug ?? process.env.NODE_ENV !== 'production';
   },
   methods(self) {
     return {
@@ -23,6 +24,7 @@ module.exports = {
           theme.primary = req.data.user.aposThemePrimary;
         }
         return {
+          debug: self.uiDebug,
           theme,
           widgetMargin: self.options.widgetMargin
         };

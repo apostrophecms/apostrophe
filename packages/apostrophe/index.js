@@ -479,6 +479,9 @@ async function apostrophe(options, telemetry, rootSpan) {
     // Environment variable override
     self.options.baseUrl = process.env.APOS_BASE_URL || self.options.baseUrl;
     self.baseUrl = self.options.baseUrl;
+    self.options.staticBaseUrl = process.env.APOS_STATIC_BASE_URL ||
+      self.options.staticBaseUrl;
+    self.staticBaseUrl = self.options.staticBaseUrl;
     self.prefix = self.options.prefix || '';
   }
 

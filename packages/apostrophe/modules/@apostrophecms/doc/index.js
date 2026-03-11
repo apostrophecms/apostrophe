@@ -1795,11 +1795,13 @@ module.exports = {
 
       // Iterate through the document fields and call the provided handlers
       // for each item of an array, object and relationship field type.
+      // Invoke the `widget` handler for widgets in areas if provided.
       walkByMetaType(doc, handlers) {
         const defaultHandlers = {
           arrayItem: () => {},
           object: () => {},
-          relationship: () => {}
+          relationship: () => {},
+          widget: null
         };
 
         handlers = {
@@ -1828,6 +1830,9 @@ module.exports = {
           for (const field of schema) {
             if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
               for (const widget of doc[field.name].items) {
+                if (handlers.widget) {
+                  handlers.widget(field, widget);
+                }
                 self.walkByMetaType(widget, handlers);
               }
             } else if (field.type === 'array') {
