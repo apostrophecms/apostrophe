@@ -1187,9 +1187,10 @@ module.exports = {
         if (!self.shouldRefreshOnRestart()) {
           return '';
         }
+        const prefix = self.apos.prefix || '';
         return self.apos.template.safe(
-          `<script data-apos-refresh-on-restart="${self.action}/restart-id" ` +
-          `src="${self.action}/refresh-on-restart"></script>`
+          `<script data-apos-refresh-on-restart="${prefix}${self.action}/restart-id" ` +
+          `src="${prefix}${self.action}/refresh-on-restart"></script>`
         );
       },
       // Return the URL of the release asset with the given path, taking into

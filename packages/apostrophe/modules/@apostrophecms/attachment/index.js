@@ -124,6 +124,9 @@ module.exports = {
     await self.db.createIndex({ archivedDocIds: 1 });
     self.addLegacyMigrations();
     self.addSvgSanitizationMigration();
+
+    // Lazy cache for types whose schema contains attachment fields.
+    self.typesWithAttachmentFields = new Map();
   },
 
   tasks(self) {
@@ -881,6 +884,264 @@ module.exports = {
             break;
           }
         }
+      },
+      // Check whether a schema array (recursively through
+      // array and object sub-schemas) contains at least one
+      // field with `type: 'attachment'`.
+      schemaHasAttachmentField(schema) {
+        if (!Array.isArray(schema)) {
+          return false;
+        }
+        for (const field of schema) {
+          if (field.type === 'attachment') {
+            return true;
+          }
+          if (
+            (field.type === 'array' || field.type === 'object') &&
+            field.schema
+          ) {
+            if (self.schemaHasAttachmentField(field.schema)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      },
+
+      // Return a Set of doc type names whose module schema
+      // contains at least one `type: 'attachment'` field.
+      // Result is lazy cached.
+      hasAttachmentFields(type) {
+        if (self.typesWithAttachmentFields.has(type)) {
+          return self.typesWithAttachmentFields.get(type);
+        }
+        const module = self.apos.modules[type];
+        if (!module?.schema) {
+          self.typesWithAttachmentFields.set(type, false);
+        } else {
+          self.typesWithAttachmentFields.set(
+            type,
+            self.schemaHasAttachmentField(module.schema)
+          );
+        }
+        return self.typesWithAttachmentFields.get(type);
+      },
+
+      // Check whether a relationship field's `withType`
+      // (which may be a virtual type like
+      // `@apostrophecms/any-page-type`) resolves to a type
+      // that has attachment fields.
+      relationshipHasAttachmentFields(withType) {
+        if (self.hasAttachmentFields(withType)) {
+          return true;
+        }
+        if (
+          withType === '@apostrophecms/any-page-type' ||
+          withType === '@apostrophecms/page'
+        ) {
+          const cacheKey = '@apostrophecms/any-page-type';
+          if (!self.typesWithAttachmentFields.has(cacheKey)) {
+            self.typesWithAttachmentFields.set(
+              cacheKey,
+              self.apos
+                .instancesOf('@apostrophecms/page-type')
+                .some(module => self.hasAttachmentFields(module.__meta.name))
+            );
+            self.typesWithAttachmentFields.set(
+              '@apostrophecms/page',
+              self.typesWithAttachmentFields.get(cacheKey)
+            );
+          }
+          return self.typesWithAttachmentFields.get(cacheKey);
+        }
+        return false;
+      },
+
+      // Collect the full `_id` values (e.g. `abc:en:published`)
+      // of docs that are referenced via relationship fields
+      // from the given `doc` and belong to types whose schema
+      // contains at least one `type: 'attachment'` field.
+      //
+      // These IDs can be matched against the `docIds` array
+      // stored on each attachment record, allowing a "used"
+      // scope that only includes attachments actively referenced
+      // by published content.
+      //
+      // Returns an array of full `_id` strings. The method is
+      // synchronous because it only inspects the in-memory
+      // document data — no database queries are needed.
+      collectUsedDocIds(req, doc) {
+        const docIds = new Set();
+        if (self.hasAttachmentFields(doc.type)) {
+          docIds.add(doc.aposDocId);
+        }
+        const locale = req.locale || self.apos.i18n?.defaultLocale || 'en';
+        const mode = req.mode || 'published';
+
+        self.collectDocAttachmentRefIds(doc, docIds);
+
+        // Convert aposDocId values to full _id format
+        return [ ...docIds ].map(
+          aposDocId => `${aposDocId}:${locale}:${mode}`
+        );
+      },
+
+      // Given a single document (raw MongoDB data), walk its
+      // schema recursively and collect `idsStorage` values from
+      // relationship fields that point to types with attachment
+      // fields.  Also handles the special case of rich-text
+      // widget inline images (`imageIds`) and widgets whose own
+      // schema contains a direct `type: 'attachment'` field.
+      //
+      // Found IDs are added to the `target` Set
+      // (aposDocId values, locale-agnostic).
+      collectDocAttachmentRefIds(doc, target) {
+        const handlers = {
+          relationship: (field, contextDoc) => {
+            if (self.relationshipHasAttachmentFields(field.withType)) {
+              for (const id of (contextDoc[field.idsStorage] || [])) {
+                target.add(id);
+              }
+            }
+          },
+          // Rich-text widgets store inline image references in
+          // `imageIds` outside of any schema relationship field.
+          // Widgets whose own schema has a direct `type: 'attachment'`
+          // field (e.g. a custom widget storing a file directly) also
+          // need to include the parent doc's ID.
+          widget: (field, widget) => {
+            if (self.hasAttachmentFields(widget.type)) {
+              target.add(doc.aposDocId);
+            }
+            if (
+              widget.type === '@apostrophecms/rich-text' &&
+              Array.isArray(widget.imageIds)
+            ) {
+              for (const id of widget.imageIds) {
+                target.add(id);
+              }
+            }
+          }
+        };
+        self.apos.doc.walkByMetaType(doc, handlers);
+      },
+
+      // Return metadata for attachments suitable for a static build.
+      // Uses batch-of-100 pattern for memory efficiency (see self.each()).
+      //
+      // Options (all optional):
+      //
+      // `docIds`: array of full locale-qualified document `_id`s.
+      //   When provided, only attachments whose `docIds` array
+      //   intersects with the given list are returned ("used"
+      //   scope).  When not provided (undefined), all non-archived
+      //   attachments are returned ("all" scope).
+      //
+      // Archived attachments are always excluded.
+      //
+      // `sizes`: array of size names to include (e.g. `['full',
+      //   'one-half']`).  When provided, only these sizes are
+      //   emitted.  Ignored for non-sized attachments (SVG, office
+      //   files) which always get a single entry with `path` only.
+      //
+      // `skipSizes`: array of size names to exclude.  Applied
+      //   after `sizes` (or after the full size list when `sizes`
+      //   is not given).  Common use: `['original']` to skip the
+      //   potentially very large original upload.
+      //
+      // Cropped variants, when present on the attachment record,
+      // are also subject to `sizes` and `skipSizes` filtering.
+      //
+      // Returns an array of objects:
+      //
+      // ```js
+      // {
+      //   _id: 'abc123',
+      //   urls: [
+      //     // Sized attachments include a `size` property:
+      //     { size: 'full', path: '/attachments/abc-photo.full.jpg' },
+      //     { size: 'one-half', path: '/attachments/abc-photo.one-half.jpg' },
+      //     // crop variants (same sizes):
+      //     { size: 'full', path: '/attachments/abc-photo.10.20.300.400.full.jpg' },
+      //     ...
+      //     // Non-sized attachments (SVG, office docs) have `path` only:
+      //     { path: '/attachments/def-document.pdf' },
+      //   ]
+      // }
+      // ```
+      //
+      // `path` is an uploadfs-relative path (no host prefix).
+      async getStaticMetadata({
+        docIds, sizes, skipSizes
+      } = {}) {
+        const criteria = {
+          archived: { $ne: true }
+        };
+        if (Array.isArray(docIds)) {
+          criteria.docIds = { $in: docIds };
+        }
+
+        const allSizeNames = self.imageSizes.map((s) => s.name)
+          .concat([ 'original' ]);
+        let effectiveSizes;
+        if (Array.isArray(sizes) && sizes.length) {
+          effectiveSizes = sizes.filter((s) => allSizeNames.includes(s));
+        } else {
+          effectiveSizes = [ ...allSizeNames ];
+        }
+        if (Array.isArray(skipSizes) && skipSizes.length) {
+          effectiveSizes = effectiveSizes.filter(
+            (s) => !skipSizes.includes(s)
+          );
+        }
+
+        const results = [];
+
+        await self.each(criteria, async (attachment) => {
+          const urls = [];
+          const isSized = self.isSized(attachment);
+
+          if (isSized) {
+            // Sized image: emit one entry per requested size
+            for (const size of effectiveSizes) {
+              urls.push({
+                size,
+                path: self.url(attachment, {
+                  uploadfsPath: true,
+                  crop: false,
+                  size
+                })
+              });
+            }
+            // Crop variants — respect the same size constraints
+            for (const crop of (attachment.crops || [])) {
+              for (const size of effectiveSizes) {
+                urls.push({
+                  size,
+                  path: self.url(attachment, {
+                    uploadfsPath: true,
+                    crop,
+                    size
+                  })
+                });
+              }
+            }
+          } else {
+            // Non-sized (SVG, office docs): path only, no size property
+            urls.push({
+              path: self.url(attachment, { uploadfsPath: true })
+            });
+          }
+
+          if (urls.length) {
+            results.push({
+              _id: attachment._id,
+              urls
+            });
+          }
+        });
+
+        return results;
       },
       // Returns true if, based on the provided attachment object,
       // a valid focal point has been specified. Useful to avoid

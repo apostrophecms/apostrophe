@@ -45,6 +45,25 @@ node app @apostrophecms-pro/palette:migrate-to-styles
         }
         self.apos.template.addBodyClass(req, classes.join(' '));
       }
+    },
+    '@apostrophecms/url:getAllUrlMetadata': {
+      // Provide a literal content entry so static builds
+      // can include the dynamically generated stylesheet.
+      // Uses the locale-path URL so each locale produces a
+      // distinct path for static-build tools.
+      // The URL must be relative and prefix-free — the
+      // consumer prepends the prefix when fetching.
+      addStylesheetUrl(req, results) {
+        if (!req.data.global?.stylesStylesheet) {
+          return;
+        }
+        results.push({
+          url: self.getStylesheetUrl(req, { relative: true }),
+          contentType: 'text/css',
+          i18nId: '@apostrophecms/styles:stylesheet',
+          sitemap: false
+        });
+      }
     }
   };
 };
