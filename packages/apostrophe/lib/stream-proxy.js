@@ -1,6 +1,6 @@
 // Make a request for url and stream it to req.res,
 // passing through relevant headers, without downloading
-// the whole things to disk. Site-relative URLs are
+// the whole thing to disk. Site-relative URLs are
 // resolved via req.baseUrl. Server-side errors are logged to
 // error() which should accept multiple arguments
 
