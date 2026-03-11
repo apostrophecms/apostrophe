@@ -191,6 +191,7 @@ export default {
         ...this.schemaHtmlAttributes.reduce((acc, field) => {
           const value = this.docFields.data[field.name];
           if (field.type === 'checkboxes' && !value?.[0]) {
+            acc[field.htmlAttribute] = null;
             return acc;
           }
           if (field.type === 'boolean') {
