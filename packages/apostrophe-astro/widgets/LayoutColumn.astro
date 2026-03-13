@@ -6,14 +6,11 @@ function detectLastTabletFullWidthItem(widgets) {
   if (!Array.isArray(widgets)) {
     return;
   }
-  const items = widgets.filter((widget) => widget.tablet.show);
+  const items = widgets.filter((widget) => widget.showTablet !== false);
   if (items.length % 2 === 0) {
     return;
   }
-  items.sort(
-    (a, b) =>
-      (a.tablet.order ?? a.desktop.order) - (b.tablet.order ?? b.desktop.order),
-  );
+  items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   return items[items.length - 1]._id;
 }
 
@@ -32,13 +29,11 @@ if (options?.aposStylesWrapper) {
 
 // Convert internal style to string and merge it with the external style.
 const styleVars = {
-  "--justify": widget.desktop.justify || "auto",
-  "--align": widget.desktop.align || "auto",
-  "--colstart": widget.desktop.colstart,
-  "--colspan": widget.desktop.colspan,
-  "--rowstart": widget.desktop.rowstart,
-  "--rowspan": widget.desktop.rowspan,
-  "--order": widget.desktop.order,
+  "--colstart": widget.colstart,
+  "--colspan": widget.colspan,
+  "--rowstart": widget.rowstart,
+  "--rowspan": widget.rowspan,
+  "--order": widget.order,
 };
 
 // The core style string ALWAYS contains finishing semicolon if not empty,
@@ -56,8 +51,8 @@ const style = [
 const attributes = {
   ...(canEdit ? { "data-apos-widget": widget._id } : {}),
   ...tagAttributes,
-  "data-visible-tablet": widget.tablet.show,
-  "data-visible-mobile": widget.mobile.show,
+  "data-visible-tablet": widget.showTablet !== false,
+  "data-visible-mobile": widget.showMobile !== false,
   ...(lastId && widget._id === lastId && { "data-tablet-full": true }),
   style,
 };

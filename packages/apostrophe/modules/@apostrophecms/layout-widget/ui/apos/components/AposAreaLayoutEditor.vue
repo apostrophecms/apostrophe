@@ -366,7 +366,7 @@ export default {
           this.layoutColumnWidgetName,
           contentFieldDefPerColumn[index]
         );
-        Object.assign(widget[this.layoutDeviceMode], {
+        Object.assign(widget, {
           colspan: item.colspan,
           colstart: item.colstart,
           rowstart: item.rowstart,
@@ -389,7 +389,7 @@ export default {
       }
       const { _id, ...rest } = patch;
       const widget = this.newWidget(widgetName);
-      Object.assign(widget[this.layoutDeviceMode], rest);
+      Object.assign(widget, rest);
       const insert = {
         widget,
         index: this.layoutColumnWidgets.length
@@ -422,7 +422,7 @@ export default {
       this.layoutPatchMany(patches);
     },
     // Apply a partial widget patch, for only the current device mode
-    layoutPatchOne(patch, device) {
+    layoutPatchOne(patch) {
       if (!patch || !patch._id) {
         return;
       }
@@ -434,7 +434,7 @@ export default {
       // this is not the same as the nested object _id in the widget.
       // Be sure to keep the existing internal _id's intact.
       const { _id, ...rest } = patch;
-      Object.assign(widget[device || this.layoutDeviceMode], rest);
+      Object.assign(widget, rest);
       // eslint-disable-next-line no-console
       this.update(widget).catch(console.error);
     },
@@ -448,20 +448,15 @@ export default {
         this.layoutPatchOne(patch);
       }
     },
-    // Apply a full widget patch, including nested objects
+    // Apply a full widget patch
     layoutPatchFull(patch) {
       const widget = this.next.find(w => w._id === patch._id);
       if (widget?.type !== this.layoutColumnWidgetName) {
         return;
       }
 
-      const {
-        _id, desktop = {}, tablet = {}, mobile = {}, ...rest
-      } = patch;
+      const { _id, ...rest } = patch;
       Object.assign(widget, rest);
-      Object.assign(widget.desktop, desktop);
-      Object.assign(widget.tablet, tablet);
-      Object.assign(widget.mobile, mobile);
 
       // eslint-disable-next-line no-console
       this.update(widget).catch(console.error);

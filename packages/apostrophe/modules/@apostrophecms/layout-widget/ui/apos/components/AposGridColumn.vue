@@ -10,8 +10,8 @@
     data-apos-test="aposLayoutItem"
     :data-id="item._id"
     :data-tablet-full="props.tabletFullItems[item._id] || false"
-    :data-visible-tablet="item.tablet?.show"
-    :data-visible-mobile="item.mobile?.show"
+    :data-visible-tablet="item.showTablet !== false"
+    :data-visible-mobile="item.showMobile !== false"
   >
     <slot />
   </component>
@@ -45,9 +45,7 @@ const itemStyles = computed(() => {
       '--colspan': props.item.colspan,
       '--rowstart': props.item.rowstart,
       '--rowspan': props.item.rowspan,
-      '--order': props.item.order,
-      '--justify': props.item.justify,
-      '--align': props.item.align
+      '--order': props.item.order
     },
     widgetStyles.inline
   ];
