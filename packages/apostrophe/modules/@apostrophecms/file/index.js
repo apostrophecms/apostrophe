@@ -107,7 +107,9 @@ module.exports = {
       },
       addUrls(req, files) {
         for (const file of files) {
-          if (self.options.prettyUrls) {
+          // Watch out for projections with no attachment property
+          // (the slug-taken route does that)
+          if (self.options.prettyUrls && file.attachment) {
             const { extension } = file.attachment;
             const baseUrl = self.apos.url.getBaseUrl(req, { prefix: true });
             file._url = `${baseUrl}${self.options.prettyUrlDir}/${file.slug.replace(self.options.slugPrefix || '', '')}.${extension}`;
