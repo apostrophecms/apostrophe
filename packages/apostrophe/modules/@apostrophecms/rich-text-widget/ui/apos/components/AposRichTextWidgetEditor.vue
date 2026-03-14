@@ -10,16 +10,8 @@
       v-if="editor"
       plugin-key="richTextMenu"
       class="bubble-menu"
-      :tippy-options="{
-        maxWidth: 'none',
-        duration: 300,
-        zIndex: 999,
-        animation: 'fade',
-        inertia: true,
-        placement: 'bottom',
-        hideOnClick: false,
-        onHide: onBubbleHide
-      }"
+      :should-show="showBubbleMenu"
+      :tippy-options="bubbleMenuTippyOptions"
       :editor="editor"
     >
       <AposContextMenuDialog
@@ -199,7 +191,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'update', 'suppressWidgetControls' ],
+  emits: [ 'update', 'suppressWidgetControls', 'suppressAddContentButtons' ],
   setup() {
     return useAposStyles();
   },
@@ -219,6 +211,7 @@ export default {
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
       suppressWidgetControls: false,
+      suppressAddContentButtons: false,
       hasSelection: false,
       openedPopover: false
     };
@@ -258,6 +251,19 @@ export default {
         offset: [ 0, 35 ],
         moveTransition: 'transform 0s ease-out',
         appendTo: document.body
+      };
+    },
+    bubbleMenuTippyOptions() {
+      return {
+        appendTo: document.body,
+        maxWidth: 'none',
+        duration: 300,
+        zIndex: 999,
+        animation: 'fade',
+        inertia: true,
+        placement: 'bottom',
+        hideOnClick: false,
+        onHide: this.onBubbleHide
       };
     },
     moduleOptions() {
@@ -374,9 +380,16 @@ export default {
         this.$emit('suppressWidgetControls');
       }
     },
+    suppressAddContentButtons(newVal) {
+      if (newVal) {
+        this.$emit('suppressAddContentButtons');
+      }
+    },
     isFocused(newVal) {
       if (!newVal) {
         this.suppressWidgetControls = false;
+        this.suppressAddContentButtons = false;
+        this.hasSelection = false;
         if (this.pending) {
           this.emitWidgetUpdate();
         }
@@ -483,8 +496,11 @@ export default {
         },
         onSelectionUpdate: ({ editor }) => {
           this.$nextTick(() => {
-            if (!editor.view.state.selection.empty) {
+            const hasSelection = !editor.view.state.selection.empty;
+            this.hasSelection = hasSelection;
+            if (hasSelection) {
               this.suppressWidgetControls = true;
+              this.suppressAddContentButtons = true;
             }
           });
         }
@@ -557,6 +573,12 @@ export default {
     showTableControls() {
       return this.editor?.isActive('table') ?? false;
     },
+    showBubbleMenu({ editor, state }) {
+      if (!editor || !editor.isFocused) {
+        return false;
+      }
+      return !state.selection.empty;
+    },
     openPopover() {
       this.openedPopover = true;
     },
@@ -579,6 +601,7 @@ export default {
         this.suppressInsertMenu = false;
       }
       this.suppressWidgetControls = true;
+      this.suppressAddContentButtons = true;
     },
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;

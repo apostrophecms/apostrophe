@@ -33,7 +33,10 @@
       </template>
       <template v-else>
         <AposAreaMenu
-          :context-menu-options="contextMenuOptions"
+          :context-menu-options="{
+            ...contextMenuOptions,
+            teleportContent: true
+          }"
           :empty="true"
           :index="0"
           :options="options"
