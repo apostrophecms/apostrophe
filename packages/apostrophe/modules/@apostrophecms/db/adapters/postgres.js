@@ -397,21 +397,13 @@ function buildWhereClause(query, params, prefix = 'data') {
       const jsonPath = buildJsonPath(key, prefix);
       conditions.push(`(${jsonPath} IS NULL OR ${jsonPath} = 'null'::jsonb)`);
     } else {
-      // Simple equality
+      // Simple equality: use per-field @> which handles both scalar
+      // equality AND array-contains-scalar in one operation, replacing
+      // the previous two-branch OR with a single containment check.
       const jsonPath = buildJsonPath(key, prefix);
-      // Serialize through serializeValue to handle Date→{$date:...} conversion
       const serialized = serializeValue(value);
       params.push(JSON.stringify(serialized));
-      // Handle both direct equality AND array containment
-      // (MongoDB behavior)
-      params.push(JSON.stringify([ serialized ]));
-      const eqRef = `$${params.length - 1}::jsonb`;
-      const arrRef = `$${params.length}::jsonb`;
-      conditions.push(
-        `(${jsonPath} = ${eqRef}` +
-        ` OR (jsonb_typeof(${jsonPath}) = 'array'` +
-        ` AND ${jsonPath} @> ${arrRef}))`
-      );
+      conditions.push(`${jsonPath} @> $${params.length}::jsonb`);
     }
   }
 
@@ -520,11 +512,10 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           // $in with empty array matches nothing
           conditions.push('FALSE');
         } else if (isIdField) {
-          const placeholders = opValue.map(v => {
-            params.push(v);
-            return `$${params.length}`;
-          });
-          conditions.push(`_id IN (${placeholders.join(', ')})`);
+          // Single array parameter allows PostgreSQL to cache the plan
+          // regardless of how many IDs are passed
+          params.push(opValue);
+          conditions.push(`_id = ANY($${params.length}::text[])`);
         } else {
           const hasNull = opValue.includes(null);
           const nonNullValues = opValue.filter(v => v !== null);
@@ -534,15 +525,13 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
             const paramRef = `$${params.length}`;
             // Match scalar values directly
             parts.push(`${jsonPath} IN (SELECT jsonb_array_elements(${paramRef}::jsonb))`);
-            // Also match if the field is an array that
-            // contains any of the values (MongoDB behavior)
+            // Also match if the field is an array containing any of the values.
+            // Uses @> to avoid expanding the field's array elements (single
+            // subquery instead of nested double subquery)
             parts.push(
               `(jsonb_typeof(${jsonPath}) = 'array'` +
-              ' AND EXISTS(SELECT 1' +
-              ` FROM jsonb_array_elements(${jsonPath}) elem` +
-              ' WHERE elem IN' +
-              ' (SELECT jsonb_array_elements(' +
-              `${paramRef}::jsonb))))`
+              ` AND EXISTS(SELECT 1 FROM jsonb_array_elements(${paramRef}::jsonb) v` +
+              ` WHERE ${jsonPath} @> v))`
             );
           }
           if (hasNull) {
@@ -833,28 +822,48 @@ function serializeDocument(doc) {
   return JSON.stringify(serializeValue(doc));
 }
 
+// Convert $date wrappers back to Date objects, returning the original
+// object reference when no conversions occurred in a subtree.
+// Most document subtrees (rich text, widget configs) have zero dates,
+// so this avoids rebuilding the entire object tree on every read.
+function convertDates(obj) {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  if (obj.$date) {
+    return new Date(obj.$date);
+  }
+  if (Array.isArray(obj)) {
+    let changed = false;
+    const result = obj.map(item => {
+      const c = convertDates(item);
+      if (c !== item) {
+        changed = true;
+      }
+      return c;
+    });
+    return changed ? result : obj;
+  }
+  let changed = false;
+  const result = {};
+  for (const [ key, value ] of Object.entries(obj)) {
+    const c = convertDates(value);
+    result[key] = c;
+    if (c !== value) {
+      changed = true;
+    }
+  }
+  return changed ? result : obj;
+}
+
 function deserializeDocument(data, id) {
   // data might be a string or object depending on pg configuration
   const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-
-  // Recursively convert $date wrappers back to Date objects
-  function convertDates(obj) {
-    if (obj === null || typeof obj !== 'object') {
-      return obj;
-    }
-    if (obj.$date) {
-      return new Date(obj.$date);
-    }
-    if (Array.isArray(obj)) {
-      return obj.map(convertDates);
-    }
-    const result = {};
-    for (const [ key, value ] of Object.entries(obj)) {
-      result[key] = convertDates(value);
-    }
-    return result;
-  }
   const doc = convertDates(parsed);
+  if (doc === parsed) {
+    // No dates found — shallow copy to add _id without mutating parsed data
+    return { _id: id, ...doc };
+  }
   doc._id = id;
   return doc;
 }

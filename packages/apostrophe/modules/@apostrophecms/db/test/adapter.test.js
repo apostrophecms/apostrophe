@@ -2032,6 +2032,411 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   // SECTION 21: Multi-schema Mode (multipostgres only)
   // ============================================
 
+  // ============================================
+  // SECTION 22: Batched Containment Queries
+  // ============================================
+
+  describe('Batched Containment Queries', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'bc1',
+          type: 'article',
+          slug: '/news',
+          status: 'published',
+          tags: [ 'featured', 'news' ]
+        },
+        {
+          _id: 'bc2',
+          type: 'article',
+          slug: '/blog',
+          status: 'draft',
+          tags: [ 'blog' ]
+        },
+        {
+          _id: 'bc3',
+          type: 'page',
+          slug: '/home',
+          status: 'published',
+          tags: [ 'featured' ]
+        },
+        {
+          _id: 'bc4',
+          type: 'page',
+          slug: '/about',
+          status: 'published',
+          tags: []
+        }
+      ]);
+    });
+
+    it('should match multi-field scalar equality', async function() {
+      const docs = await db.collection('test').find({
+        type: 'article',
+        status: 'published'
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc1');
+    });
+
+    it('should match three-field scalar equality', async function() {
+      const docs = await db.collection('test').find({
+        type: 'page',
+        status: 'published',
+        slug: '/home'
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc3');
+    });
+
+    it('should match scalar value in array field via containment', async function() {
+      // MongoDB behavior: { tags: 'featured' } matches docs where tags contains 'featured'
+      const docs = await db.collection('test').find({
+        tags: 'featured',
+        type: 'article'
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc1');
+    });
+
+    it('should handle nested field equality in containment', async function() {
+      await db.collection('test').insertOne({
+        _id: 'bc5',
+        user: {
+          profile: {
+            name: 'Alice',
+            role: 'admin'
+          }
+        }
+      });
+      await db.collection('test').insertOne({
+        _id: 'bc6',
+        user: {
+          profile: {
+            name: 'Bob',
+            role: 'admin'
+          }
+        }
+      });
+      const docs = await db.collection('test').find({
+        'user.profile.role': 'admin',
+        'user.profile.name': 'Alice'
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc5');
+    });
+
+    it('should combine containment with operator conditions', async function() {
+      // Mix of scalar equality (batched) and operator conditions
+      const docs = await db.collection('test').find({
+        type: 'page',
+        status: { $ne: 'draft' }
+      }).toArray();
+      expect(docs).to.have.lengthOf(2);
+    });
+
+    it('should handle boolean values in containment', async function() {
+      await db.collection('test').insertOne({
+        _id: 'bc7',
+        active: true,
+        visible: false
+      });
+      const docs = await db.collection('test').find({
+        active: true,
+        visible: false
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc7');
+    });
+
+    it('should handle numeric values in containment', async function() {
+      await db.collection('test').insertOne({
+        _id: 'bc8',
+        level: 5,
+        score: 100
+      });
+      const docs = await db.collection('test').find({
+        level: 5,
+        score: 100
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc8');
+    });
+
+    it('should handle Date values in containment', async function() {
+      const date = new Date('2024-06-15T12:00:00Z');
+      await db.collection('test').insertOne({
+        _id: 'bc9',
+        createdAt: date,
+        type: 'event'
+      });
+      const docs = await db.collection('test').find({
+        type: 'event',
+        createdAt: date
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc9');
+      expect(docs[0].createdAt).to.be.instanceOf(Date);
+      expect(docs[0].createdAt.getTime()).to.equal(date.getTime());
+    });
+  });
+
+  // ============================================
+  // SECTION 23: $in on _id Field
+  // ============================================
+
+  describe('$in on _id field', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'in1',
+          value: 1
+        },
+        {
+          _id: 'in2',
+          value: 2
+        },
+        {
+          _id: 'in3',
+          value: 3
+        },
+        {
+          _id: 'in4',
+          value: 4
+        },
+        {
+          _id: 'in5',
+          value: 5
+        }
+      ]);
+    });
+
+    it('should find documents by _id $in', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'in1', 'in3', 'in5' ] }
+      }).sort({ _id: 1 }).toArray();
+      expect(docs).to.have.lengthOf(3);
+      expect(docs[0]._id).to.equal('in1');
+      expect(docs[1]._id).to.equal('in3');
+      expect(docs[2]._id).to.equal('in5');
+    });
+
+    it('should handle _id $in with single value', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'in2' ] }
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('in2');
+    });
+
+    it('should handle _id $in with empty array', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [] }
+      }).toArray();
+      expect(docs).to.have.lengthOf(0);
+    });
+
+    it('should handle _id $in with many values', async function() {
+      // Test with more IDs than exist — should only return matching ones
+      const ids = [];
+      for (let i = 1; i <= 20; i++) {
+        ids.push(`in${i}`);
+      }
+      const docs = await db.collection('test').find({
+        _id: { $in: ids }
+      }).toArray();
+      expect(docs).to.have.lengthOf(5);
+    });
+
+    it('should handle _id $in with non-matching values', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'nonexistent1', 'nonexistent2' ] }
+      }).toArray();
+      expect(docs).to.have.lengthOf(0);
+    });
+
+    it('should combine _id $in with other conditions', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'in1', 'in2', 'in3' ] },
+        value: { $gt: 1 }
+      }).toArray();
+      expect(docs).to.have.lengthOf(2);
+    });
+  });
+
+  // ============================================
+  // SECTION 24: $in on Array Fields
+  // ============================================
+
+  describe('$in on array fields', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'ia1',
+          name: 'Alice',
+          roles: [ 'admin', 'editor' ]
+        },
+        {
+          _id: 'ia2',
+          name: 'Bob',
+          roles: [ 'viewer' ]
+        },
+        {
+          _id: 'ia3',
+          name: 'Carol',
+          roles: [ 'editor', 'viewer' ]
+        },
+        {
+          _id: 'ia4',
+          name: 'Dave',
+          roles: [ 'admin' ]
+        }
+      ]);
+    });
+
+    it('$in should match array field containing any of the values', async function() {
+      const docs = await db.collection('test').find({
+        roles: { $in: [ 'admin', 'viewer' ] }
+      }).sort({ _id: 1 }).toArray();
+      // ia1 has admin, ia2 has viewer, ia3 has viewer, ia4 has admin
+      expect(docs).to.have.lengthOf(4);
+      expect(docs.map(d => d._id)).to.deep.equal([ 'ia1', 'ia2', 'ia3', 'ia4' ]);
+    });
+
+    it('$in should match scalar field normally', async function() {
+      const docs = await db.collection('test').find({
+        name: { $in: [ 'Alice', 'Carol' ] }
+      }).sort({ _id: 1 }).toArray();
+      expect(docs).to.have.lengthOf(2);
+      expect(docs.map(d => d._id)).to.deep.equal([ 'ia1', 'ia3' ]);
+    });
+
+    it('$in with null should match missing fields', async function() {
+      await db.collection('test').insertOne({
+        _id: 'ia5',
+        name: 'Eve'
+        // no roles field
+      });
+      const docs = await db.collection('test').find({
+        roles: { $in: [ 'admin', null ] }
+      }).sort({ _id: 1 }).toArray();
+      // Should match ia1 (has admin), ia4 (has admin), and ia5 (roles missing)
+      expect(docs).to.have.lengthOf(3);
+      expect(docs.map(d => d._id)).to.deep.equal([ 'ia1', 'ia4', 'ia5' ]);
+    });
+  });
+
+  // ============================================
+  // SECTION 25: Deserialization Optimization
+  // ============================================
+
+  describe('Deserialization Optimization', function() {
+    it('should correctly roundtrip documents with no dates', async function() {
+      const original = {
+        _id: 'deser1',
+        title: 'No Dates Here',
+        count: 42,
+        active: true,
+        tags: [ 'a', 'b', 'c' ],
+        nested: {
+          deep: {
+            value: 'hello',
+            list: [ 1, 2, 3 ]
+          }
+        }
+      };
+      await db.collection('test').insertOne(original);
+      const doc = await db.collection('test').findOne({ _id: 'deser1' });
+      expect(doc._id).to.equal('deser1');
+      expect(doc.title).to.equal('No Dates Here');
+      expect(doc.count).to.equal(42);
+      expect(doc.active).to.equal(true);
+      expect(doc.tags).to.deep.equal([ 'a', 'b', 'c' ]);
+      expect(doc.nested.deep.value).to.equal('hello');
+      expect(doc.nested.deep.list).to.deep.equal([ 1, 2, 3 ]);
+    });
+
+    it('should correctly roundtrip documents with deeply nested dates', async function() {
+      const date1 = new Date('2024-01-15T10:30:00Z');
+      const date2 = new Date('2024-06-01T00:00:00Z');
+      const original = {
+        _id: 'deser2',
+        title: 'Has Dates',
+        metadata: {
+          createdAt: date1,
+          nested: {
+            modifiedAt: date2,
+            plain: 'no date here'
+          }
+        },
+        tags: [ 'a', 'b' ]
+      };
+      await db.collection('test').insertOne(original);
+      const doc = await db.collection('test').findOne({ _id: 'deser2' });
+      expect(doc.metadata.createdAt).to.be.instanceOf(Date);
+      expect(doc.metadata.createdAt.getTime()).to.equal(date1.getTime());
+      expect(doc.metadata.nested.modifiedAt).to.be.instanceOf(Date);
+      expect(doc.metadata.nested.modifiedAt.getTime()).to.equal(date2.getTime());
+      expect(doc.metadata.nested.plain).to.equal('no date here');
+      expect(doc.tags).to.deep.equal([ 'a', 'b' ]);
+    });
+
+    it('should correctly roundtrip documents with dates in arrays', async function() {
+      const date1 = new Date('2024-03-01T00:00:00Z');
+      const date2 = new Date('2024-04-01T00:00:00Z');
+      const original = {
+        _id: 'deser3',
+        events: [
+          {
+            name: 'event1',
+            date: date1
+          },
+          {
+            name: 'event2',
+            date: date2
+          },
+          { name: 'event3' } // no date
+        ]
+      };
+      await db.collection('test').insertOne(original);
+      const doc = await db.collection('test').findOne({ _id: 'deser3' });
+      expect(doc.events[0].date).to.be.instanceOf(Date);
+      expect(doc.events[0].date.getTime()).to.equal(date1.getTime());
+      expect(doc.events[1].date).to.be.instanceOf(Date);
+      expect(doc.events[1].date.getTime()).to.equal(date2.getTime());
+      expect(doc.events[2].date).to.be.undefined;
+    });
+
+    it('should handle multiple documents efficiently via find', async function() {
+      // Insert mix of documents with and without dates
+      await db.collection('test').insertMany([
+        {
+          _id: 'deser4',
+          title: 'Plain',
+          value: 1
+        },
+        {
+          _id: 'deser5',
+          title: 'With Date',
+          createdAt: new Date('2024-01-01')
+        },
+        {
+          _id: 'deser6',
+          title: 'Also Plain',
+          value: 3
+        }
+      ]);
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'deser4', 'deser5', 'deser6' ] }
+      }).sort({ _id: 1 }).toArray();
+      expect(docs).to.have.lengthOf(3);
+      expect(docs[0].title).to.equal('Plain');
+      expect(docs[0].createdAt).to.be.undefined;
+      expect(docs[1].createdAt).to.be.instanceOf(Date);
+      expect(docs[2].title).to.equal('Also Plain');
+    });
+  });
+
   if (ADAPTER === 'multipostgres') {
     describe('Multi-schema Mode', function() {
       it('should store tables in the named schema, not public', async function() {
