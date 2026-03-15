@@ -255,7 +255,6 @@ export default {
     },
     bubbleMenuTippyOptions() {
       return {
-        appendTo: document.body,
         maxWidth: 'none',
         duration: 300,
         zIndex: 999,
