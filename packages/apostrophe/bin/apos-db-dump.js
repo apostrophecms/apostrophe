@@ -39,7 +39,7 @@ async function main() {
       if (customIndexes.length > 0) {
         header._indexes = customIndexes;
       }
-      write(stream, JSON.stringify(header));
+      await write(stream, JSON.stringify(header));
 
       // Write docs in batches, sorted by _id for deterministic output
       let lastId = null;
@@ -50,7 +50,7 @@ async function main() {
           break;
         }
         for (const doc of batch) {
-          write(stream, JSON.stringify({
+          await write(stream, JSON.stringify({
             _collection: name,
             _doc: serializeValue(doc)
           }));
@@ -75,7 +75,22 @@ async function main() {
 }
 
 function write(stream, line) {
-  stream.write(line + '\n');
+  return new Promise((resolve, reject) => {
+    const ok = stream.write(line + '\n');
+    if (ok) {
+      return resolve();
+    }
+    const onDrain = () => {
+      stream.removeListener('error', onError);
+      resolve();
+    };
+    const onError = (err) => {
+      stream.removeListener('drain', onDrain);
+      reject(err);
+    };
+    stream.once('drain', onDrain);
+    stream.once('error', onError);
+  });
 }
 
 function serializeValue(obj) {
@@ -84,6 +99,10 @@ function serializeValue(obj) {
   }
   if (obj === null || obj === undefined) {
     return obj;
+  }
+  // MongoDB ObjectId: convert to hex string
+  if (typeof obj === 'object' && obj.constructor && obj.constructor.name === 'ObjectId') {
+    return obj.toHexString();
   }
   if (Array.isArray(obj)) {
     return obj.map(serializeValue);

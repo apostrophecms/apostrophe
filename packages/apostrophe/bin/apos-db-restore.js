@@ -61,7 +61,12 @@ async function main() {
           for (const idx of entry._indexes) {
             const options = {};
             if (idx.name) {
-              options.name = idx.name;
+              // Sanitize for cross-backend compatibility: replace characters
+              // that are valid in MongoDB index names but not in PostgreSQL,
+              // and truncate to 63 characters (PostgreSQL identifier limit)
+              options.name = idx.name
+                .replace(/[^a-zA-Z0-9_]/g, '_')
+                .substring(0, 63);
             }
             if (idx.unique) {
               options.unique = true;
