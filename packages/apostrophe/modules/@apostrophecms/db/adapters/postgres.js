@@ -5,6 +5,101 @@ const { Pool } = require('pg');
 const crypto = require('crypto');
 
 // =============================================================================
+// PROFILING: Accumulated timing data for performance analysis
+// Enable with POSTGRES_PROFILE=1 environment variable
+// Print report with: require('.../postgres').profileReport()
+// =============================================================================
+
+const PROFILING = !!process.env.POSTGRES_PROFILE;
+
+const profile = {
+  buildWhereClause: { calls: 0, totalMs: 0 },
+  buildOrderBy: { calls: 0, totalMs: 0 },
+  serializeDocument: { calls: 0, totalMs: 0 },
+  convertDates: { calls: 0, totalMs: 0 },
+  applyProjection: { calls: 0, totalMs: 0 },
+  applyUpdate: { calls: 0, totalMs: 0 },
+  pgQuery: { calls: 0, totalMs: 0 },
+  ensureTable: { calls: 0, totalMs: 0 },
+  findOne: { calls: 0, totalMs: 0 },
+  findToArray: { calls: 0, totalMs: 0 },
+  cursorNext: { calls: 0, totalMs: 0 },
+  updateOne: { calls: 0, totalMs: 0 },
+  insertOne: { calls: 0, totalMs: 0 },
+  countDocuments: { calls: 0, totalMs: 0 },
+  distinct: { calls: 0, totalMs: 0 }
+};
+
+// Per-query tracking: SQL text -> { calls, totalMs }
+const queryProfile = {};
+
+function profileStart() {
+  if (!PROFILING) {
+    return 0;
+  }
+  return performance.now();
+}
+
+function profileEnd(category, start) {
+  if (!PROFILING) {
+    return;
+  }
+  const elapsed = performance.now() - start;
+  profile[category].calls++;
+  profile[category].totalMs += elapsed;
+}
+
+function profileQuery(sql, start) {
+  if (!PROFILING) {
+    return;
+  }
+  const elapsed = performance.now() - start;
+  profile.pgQuery.calls++;
+  profile.pgQuery.totalMs += elapsed;
+  // Normalize SQL for grouping: collapse $N params and specific values
+  const normalized = sql.replace(/\$\d+/g, '$?').replace(/\s+/g, ' ').trim().substring(0, 120);
+  if (!queryProfile[normalized]) {
+    queryProfile[normalized] = { calls: 0, totalMs: 0 };
+  }
+  queryProfile[normalized].calls++;
+  queryProfile[normalized].totalMs += elapsed;
+}
+
+function profileReport() {
+  console.log('\n=== PostgreSQL Adapter Profile ===\n');
+
+  // High-level categories
+  console.log('--- Cumulative time by category ---');
+  const sorted = Object.entries(profile)
+    .filter(([ , v ]) => v.calls > 0)
+    .sort((a, b) => b[1].totalMs - a[1].totalMs);
+  for (const [ name, data ] of sorted) {
+    console.log(`  ${name.padEnd(20)} ${data.totalMs.toFixed(1).padStart(8)}ms  (${data.calls} calls, ${(data.totalMs / data.calls).toFixed(3)}ms avg)`);
+  }
+
+  // Per-query breakdown
+  console.log('\n--- Top queries by total time ---');
+  const querySorted = Object.entries(queryProfile)
+    .sort((a, b) => b[1].totalMs - a[1].totalMs)
+    .slice(0, 20);
+  for (const [ sql, data ] of querySorted) {
+    console.log(`  ${data.totalMs.toFixed(1).padStart(8)}ms  (${String(data.calls).padStart(4)} calls, ${(data.totalMs / data.calls).toFixed(3)}ms avg)  ${sql}`);
+  }
+
+  console.log('\n=== End Profile ===\n');
+}
+
+function profileReset() {
+  for (const key of Object.keys(profile)) {
+    profile[key].calls = 0;
+    profile[key].totalMs = 0;
+  }
+  for (const key of Object.keys(queryProfile)) {
+    delete queryProfile[key];
+  }
+}
+
+// =============================================================================
 // SECURITY: Input Validation and Escaping
 // =============================================================================
 
@@ -315,6 +410,7 @@ function buildJsonTextPath(field, prefix = 'data') {
  * @returns {string} SQL WHERE clause (without "WHERE" keyword)
  */
 function buildWhereClause(query, params, prefix = 'data') {
+  const _pStart = profileStart();
   const conditions = [];
 
   for (const [ key, value ] of Object.entries(query || {})) {
@@ -407,6 +503,7 @@ function buildWhereClause(query, params, prefix = 'data') {
     }
   }
 
+  profileEnd('buildWhereClause', _pStart);
   return conditions.length > 0 ? conditions.join(' AND ') : 'TRUE';
 }
 
@@ -521,18 +618,8 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           const nonNullValues = opValue.filter(v => v !== null);
           const parts = [];
           if (nonNullValues.length > 0) {
-            params.push(JSON.stringify(nonNullValues.map(serializeValue)));
-            const paramRef = `$${params.length}`;
-            // Match scalar values directly
-            parts.push(`${jsonPath} IN (SELECT jsonb_array_elements(${paramRef}::jsonb))`);
-            // Also match if the field is an array containing any of the values.
-            // Uses @> to avoid expanding the field's array elements (single
-            // subquery instead of nested double subquery)
-            parts.push(
-              `(jsonb_typeof(${jsonPath}) = 'array'` +
-              ` AND EXISTS(SELECT 1 FROM jsonb_array_elements(${paramRef}::jsonb) v` +
-              ` WHERE ${jsonPath} @> v))`
-            );
+            params.push(nonNullValues.map(v => JSON.stringify(serializeValue(v))));
+            parts.push(`${jsonPath} @> ANY($${params.length}::jsonb[])`);
           }
           if (hasNull) {
             parts.push(`${jsonPath} IS NULL`);
@@ -559,8 +646,8 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           const nonNullValues = opValue.filter(v => v !== null);
           const parts = [];
           if (nonNullValues.length > 0) {
-            params.push(JSON.stringify(nonNullValues.map(serializeValue)));
-            parts.push(`NOT ${jsonPath} IN (SELECT jsonb_array_elements($${params.length}::jsonb))`);
+            params.push(nonNullValues.map(v => JSON.stringify(serializeValue(v))));
+            parts.push(`NOT ${jsonPath} @> ANY($${params.length}::jsonb[])`);
           }
           if (hasNull) {
             // $nin with null means exclude docs where field is null/missing
@@ -633,6 +720,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
 
 // Build ORDER BY clause
 function buildOrderBy(sort) {
+  const _pStart = profileStart();
   const clauses = [];
 
   if (sort && Object.keys(sort).length > 0) {
@@ -653,6 +741,7 @@ function buildOrderBy(sort) {
   // Always add _order as final tiebreaker to match MongoDB's
   // insertion-order stability among equal sort keys
   clauses.push('_order ASC');
+  profileEnd('buildOrderBy', _pStart);
   return `ORDER BY ${clauses.join(', ')}`;
 }
 
@@ -819,7 +908,10 @@ function serializeValue(obj) {
 }
 
 function serializeDocument(doc) {
-  return JSON.stringify(serializeValue(doc));
+  const _pStart = profileStart();
+  const result = JSON.stringify(serializeValue(doc));
+  profileEnd('serializeDocument', _pStart);
+  return result;
 }
 
 // Convert $date wrappers back to Date objects, returning the original
@@ -857,15 +949,20 @@ function convertDates(obj) {
 }
 
 function deserializeDocument(data, id) {
+  const _pStart = profileStart();
   // data might be a string or object depending on pg configuration
   const parsed = typeof data === 'string' ? JSON.parse(data) : data;
   const doc = convertDates(parsed);
+  let result;
   if (doc === parsed) {
     // No dates found — shallow copy to add _id without mutating parsed data
-    return { _id: id, ...doc };
+    result = { _id: id, ...doc };
+  } else {
+    doc._id = id;
+    result = doc;
   }
-  doc._id = id;
-  return doc;
+  profileEnd('convertDates', _pStart);
+  return result;
 }
 
 // =============================================================================
@@ -873,7 +970,9 @@ function deserializeDocument(data, id) {
 // =============================================================================
 
 function applyProjection(doc, projection) {
+  const _pStart = profileStart();
   if (!projection || Object.keys(projection).length === 0) {
+    profileEnd('applyProjection', _pStart);
     return doc;
   }
 
@@ -901,6 +1000,7 @@ function applyProjection(doc, projection) {
     if (projection._id !== 0 && projection._id !== false) {
       result._id = doc._id;
     }
+    profileEnd('applyProjection', _pStart);
     return result;
   } else {
     const result = JSON.parse(JSON.stringify(doc));
@@ -909,6 +1009,7 @@ function applyProjection(doc, projection) {
         unsetNestedField(result, field);
       }
     }
+    profileEnd('applyProjection', _pStart);
     return result;
   }
 }
@@ -962,6 +1063,7 @@ class PostgresCursor {
   }
 
   async toArray() {
+    const _pStart = profileStart();
     await this._collection._ensureTable();
 
     const params = [];
@@ -978,11 +1080,15 @@ class PostgresCursor {
       sql += ` OFFSET ${this._skip}`;
     }
 
+    const _qStart = profileStart();
     const result = await this._collection._pool.query(sql, params);
-    return result.rows.map(row => {
+    profileQuery(sql, _qStart);
+    const rows = result.rows.map(row => {
       const doc = deserializeDocument(row.data, row._id);
       return this._projection ? applyProjection(doc, this._projection) : doc;
     });
+    profileEnd('findToArray', _pStart);
+    return rows;
   }
 
   next(callback) {
@@ -1078,13 +1184,17 @@ class PostgresCursor {
   }
 
   async count() {
+    const _pStart = profileStart();
     await this._collection._ensureTable();
 
     const params = [];
     const qualifiedName = this._collection._qualifiedName();
     const whereClause = buildWhereClause(this._query, params);
     const sql = `SELECT COUNT(*) as count FROM ${qualifiedName} WHERE ${whereClause}`;
+    const _qStart = profileStart();
     const result = await this._collection._pool.query(sql, params);
+    profileQuery(sql, _qStart);
+    profileEnd('countDocuments', _pStart);
     return parseInt(result.rows[0].count, 10);
   }
 }
@@ -1344,6 +1454,7 @@ class PostgresCollection {
     if (this._initialized) {
       return;
     }
+    const _pStart = profileStart();
 
     // In multi-schema mode, ensure the schema exists
     if (this._schema) {
@@ -1368,6 +1479,7 @@ class PostgresCollection {
     } catch (e) {
       // Column already exists, ignore
     }
+    profileEnd('ensureTable', _pStart);
     this._initialized = true;
   }
 
@@ -1423,6 +1535,7 @@ class PostgresCollection {
   }
 
   async findOne(query, options = {}) {
+    const _pStart = profileStart();
     await this._ensureTable();
 
     const params = [];
@@ -1430,13 +1543,18 @@ class PostgresCollection {
     const whereClause = buildWhereClause(query, params);
     const sql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
 
+    const _qStart = profileStart();
     const result = await this._pool.query(sql, params);
+    profileQuery(sql, _qStart);
     if (result.rows.length === 0) {
+      profileEnd('findOne', _pStart);
       return null;
     }
 
     const doc = deserializeDocument(result.rows[0].data, result.rows[0]._id);
-    return options.projection ? applyProjection(doc, options.projection) : doc;
+    const final = options.projection ? applyProjection(doc, options.projection) : doc;
+    profileEnd('findOne', _pStart);
+    return final;
   }
 
   find(query) {
@@ -1444,6 +1562,7 @@ class PostgresCollection {
   }
 
   async updateOne(query, update, options = {}) {
+    const _pStart = profileStart();
     await this._ensureTable();
 
     // Handle legacy callback as third argument (ignore the callback, PostgreSQL
@@ -1457,7 +1576,9 @@ class PostgresCollection {
       const ops = Object.keys(update);
       const isAtomicCompatible = ops.length > 0 && ops.every(op => op === '$inc' || op === '$set');
       if (isAtomicCompatible) {
-        return this._atomicUpdateOne(query, update);
+        const result = await this._atomicUpdateOne(query, update);
+        profileEnd('updateOne', _pStart);
+        return result;
       }
     }
 
@@ -1466,7 +1587,9 @@ class PostgresCollection {
     const whereClause = buildWhereClause(query, params);
 
     const selectSql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
+    const _qStart = profileStart();
     const selectResult = await this._pool.query(selectSql, params);
+    profileQuery(selectSql, _qStart);
 
     if (selectResult.rows.length === 0) {
       if (options.upsert) {
@@ -1565,7 +1688,9 @@ class PostgresCollection {
 
     const sql = `UPDATE ${qualifiedName} SET data = ${dataExpr} WHERE ${whereClause}`;
     try {
+      const _qStart = profileStart();
       const result = await this._pool.query(sql, params);
+      profileQuery(sql, _qStart);
       const matched = result.rowCount > 0 ? 1 : 0;
       return {
         acknowledged: true,
@@ -1732,6 +1857,7 @@ class PostgresCollection {
   }
 
   async countDocuments(query = {}) {
+    const _pStart = profileStart();
     await this._ensureTable();
 
     const params = [];
@@ -1739,11 +1865,15 @@ class PostgresCollection {
     const whereClause = buildWhereClause(query, params);
     const sql = `SELECT COUNT(*) as count FROM ${qualifiedName} WHERE ${whereClause}`;
 
+    const _qStart = profileStart();
     const result = await this._pool.query(sql, params);
+    profileQuery(sql, _qStart);
+    profileEnd('countDocuments', _pStart);
     return parseInt(result.rows[0].count, 10);
   }
 
   async distinct(field, query = {}) {
+    const _pStart = profileStart();
     await this._ensureTable();
 
     const params = [];
@@ -1752,7 +1882,10 @@ class PostgresCollection {
 
     if (field === '_id') {
       const sql = `SELECT DISTINCT _id as value FROM ${qualifiedName} WHERE ${whereClause}`;
+      const _qStart = profileStart();
       const result = await this._pool.query(sql, params);
+      profileQuery(sql, _qStart);
+      profileEnd('distinct', _pStart);
       return result.rows.map(row => row.value).filter(v => v !== null);
     }
 
@@ -1764,9 +1897,11 @@ class PostgresCollection {
     const sql = `SELECT DISTINCT elem as value FROM ${qualifiedName}, LATERAL jsonb_array_elements(
       CASE WHEN jsonb_typeof(${jsonPath}) = 'array' THEN ${jsonPath} ELSE jsonb_build_array(${jsonPath}) END
     ) AS elem WHERE ${whereClause} AND ${jsonPath} IS NOT NULL`;
+    const _qStart = profileStart();
     const result = await this._pool.query(sql, params);
+    profileQuery(sql, _qStart);
 
-    return result.rows
+    const values = result.rows
       .map(row => {
         const v = row.value;
         if (v === null || v === undefined) {
@@ -1779,6 +1914,8 @@ class PostgresCollection {
         return v;
       })
       .filter(v => v !== null);
+    profileEnd('distinct', _pStart);
+    return values;
   }
 
   aggregate(pipeline) {
@@ -2478,5 +2615,7 @@ module.exports = {
       _multiSchema: multiSchema,
       _defaultSchema: defaultSchema
     });
-  }
+  },
+  profileReport,
+  profileReset
 };
