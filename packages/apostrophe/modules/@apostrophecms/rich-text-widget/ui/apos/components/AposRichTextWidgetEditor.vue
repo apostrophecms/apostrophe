@@ -197,7 +197,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'update', 'suppressWidgetControls' ],
+  emits: [ 'update', 'suppressWidgetControls', 'suppressAddContentButtons' ],
   setup() {
     return useAposStyles();
   },
@@ -217,6 +217,7 @@ export default {
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
       suppressWidgetControls: false,
+      suppressAddContentButtons: false,
       hasSelection: false,
       openedPopover: false
     };
@@ -418,19 +419,6 @@ export default {
     }
   },
   watch: {
-    focusedWidget(newVal, oldVal) {
-      console.log('focusedWidget', newVal, oldVal);
-      // if (oldVal === this.id && newVal !== this.id) {
-      //   // Widget lost focus according to the widget store; clear selection-related state
-      //   this.hasSelection = false;
-      //   this.suppressWidgetControls = false;
-      //   this.suppressAddContentButtons = false;
-      //   if (this.editor) {
-      //     // Force Tiptap to update its internal state and hide the bubble menu
-      //     this.editor.commands.blur();
-      //   }
-      // }
-    },
     modelValue(newVal, oldVal) {
       if (newVal.content !== oldVal.content) {
         return;
@@ -451,9 +439,15 @@ export default {
         this.$emit('suppressWidgetControls');
       }
     },
+    suppressAddContentButtons(newVal) {
+      if (newVal) {
+        this.$emit('suppressAddContentButtons');
+      }
+    },
     isFocused(newVal) {
       if (!newVal) {
         this.suppressWidgetControls = false;
+        this.suppressAddContentButtons = false;
         if (this.pending) {
           this.emitWidgetUpdate();
         }
@@ -563,6 +557,7 @@ export default {
           this.$nextTick(() => {
             if (this.hasSelection) {
               this.suppressWidgetControls = true;
+              this.suppressAddContentButtons = true;
             }
           });
         }
@@ -657,6 +652,7 @@ export default {
         this.suppressInsertMenu = false;
       }
       this.suppressWidgetControls = true;
+      this.suppressAddContentButtons = true;
     },
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;

@@ -29,7 +29,7 @@
       >
         <ol
           class="apos-area-widget__breadcrumbs"
-          @click="isSuppressingWidgetControls = false"
+          @click="clearSuppressionFlags"
         >
           <li
             class="
@@ -91,7 +91,7 @@
         />
       </div>
       <div
-        v-if="!controlsDisabled && !maxReached"
+        v-if="!controlsDisabled && !maxReached && !isSuppressingAddContentButtons"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -142,7 +142,14 @@
           @operation="onOperation"
         />
       </div>
-      <div class="apos-area-widget-rendered-widget">
+      <div
+        class="apos-area-widget-rendered-widget"
+        :style="{
+          'z-index': raised
+            ? 0
+            : null
+        }"
+      >
         <!-- Still used for contextual editing components -->
         <component
           :is="widgetEditorComponent(widget.type)"
@@ -157,7 +164,8 @@
           :doc-id="docId"
           :focused="isFocused"
           @update="$emit('update', $event)"
-          @suppress-widget-controls="doSuppressWidgetControls()"
+          @suppress-widget-controls="doSuppressWidgetControls"
+          @suppress-add-content-buttons="doSuppressAddContentButtons"
         />
         <component
           :is="widgetComponent(widget.type)"
@@ -180,7 +188,7 @@
         />
       </div>
       <div
-        v-if="!controlsDisabled && !maxReached"
+        v-if="!controlsDisabled && !maxReached && !isSuppressingAddContentButtons"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
@@ -225,6 +233,10 @@ export default {
     }
   },
   props: {
+    raised: {
+      type: Boolean,
+      default: false
+    },
     docId: {
       type: String,
       required: false,
@@ -325,6 +337,7 @@ export default {
       mounted: false, // hack around needing DOM to be rendered for computed classes
       menuOpen: null,
       isSuppressingWidgetControls: false,
+      isSuppressingAddContentButtons: false,
       hasClickOutsideListener: false,
       classes: {
         show: 'apos-is-visible',
@@ -502,6 +515,7 @@ export default {
       } else {
         this.menuOpen = null;
         this.isSuppressingWidgetControls = false;
+        this.isSuppressingAddContentButtons = false;
         this.removeClickOutsideListener();
       }
       // Helps get scroll tracking unstuck on new/modified widgets
@@ -567,6 +581,10 @@ export default {
     this.unregisterFromGraph();
   },
   methods: {
+    clearSuppressionFlags() {
+      this.isSuppressingWidgetControls = false;
+      this.isSuppressingAddContentButtons = false;
+    },
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
     ...mapActions(useModalStore, [ 'getAdminContentDirectionClass' ]),
     ...mapActions(useWidgetGraphStore, {
@@ -596,9 +614,10 @@ export default {
       this.storeUnregisterWidget(graphKey, this.widget._id);
     },
     doSuppressWidgetControls() {
-      if (this.isFocused) {
-        this.isSuppressingWidgetControls = true;
-      }
+      this.isSuppressingWidgetControls = true;
+    },
+    doSuppressAddContentButtons() {
+      this.isSuppressingAddContentButtons = true;
     },
     // Emits same actions as the native operations,
     // e.g ('edit', { index }), ('remove', { index }), etc.
@@ -974,7 +993,6 @@ export default {
 }
 
 .apos-area-widget-rendered-widget {
-  z-index: $z-index-base;
   position: relative;
 }
 

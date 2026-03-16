@@ -69,6 +69,7 @@
         :disabled="field && field.readOnly"
         :max-reached="maxReached"
         :rendering="rendering(widget)"
+        :raised="raisedWidgets.has(widget._id)"
         :style="{
           'z-index': raisedWidgets.has(widget._id)
             ? next.length + 1
