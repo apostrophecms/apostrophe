@@ -178,6 +178,7 @@ module.exports = {
   loginAs,
   logout,
   getUserJar,
+  getTestDbUri,
   testDbProtocol,
   timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 20000
 };
