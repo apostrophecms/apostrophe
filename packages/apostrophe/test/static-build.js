@@ -2698,4 +2698,646 @@ describe('Static Build Support', function () {
       });
     });
   });
+
+  describe('getBaseUrl with relative option', function () {
+
+    describe('no prefix configured', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          staticBaseUrl: 'https://www.example.com',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('returns empty string when relative is true and no prefix', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const result = apos.url.getBaseUrl(req, { relative: true });
+        assert.strictEqual(result, '');
+      });
+
+      it('returns origin-based URL when relative is false', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const result = apos.url.getBaseUrl(req, { relative: false });
+        assert.strictEqual(result, 'http://localhost:3000');
+      });
+
+      it('relative ignores staticBaseUrl', function () {
+        const req = apos.task.getAnonReq({
+          mode: 'published',
+          staticBuild: true
+        });
+        const result = apos.url.getBaseUrl(req, { relative: true });
+        assert.strictEqual(result, '');
+      });
+    });
+
+    describe('with prefix configured', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          prefix: '/cms',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('returns prefix when relative is true', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const result = apos.url.getBaseUrl(req, { relative: true });
+        assert.strictEqual(result, '/cms');
+      });
+
+      it('returns origin + prefix when relative is false', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const result = apos.url.getBaseUrl(req, { relative: false });
+        assert.strictEqual(result, 'http://localhost:3000/cms');
+      });
+    });
+  });
+
+  describe('Pretty URL file methods', function () {
+
+    describe('prettyUrls disabled (default)', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('getPrettyUrlBase returns null', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        assert.strictEqual(apos.file.getPrettyUrlBase(req), null);
+      });
+
+      it('getPrettyPath returns null', function () {
+        assert.strictEqual(
+          apos.file.getPrettyPath({
+            slug: 'file-test',
+            attachment: { extension: 'pdf' }
+          }),
+          null
+        );
+      });
+
+      it('applyPrettyUrlPaths is a no-op', async function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        const meta = {
+          uploadsUrl: '/uploads',
+          results: [
+            {
+              _id: 'att-1',
+              urls: [ { path: '/attachments/original.pdf' } ]
+            }
+          ]
+        };
+        await apos.file.applyPrettyUrlPaths(req, meta);
+        // Should remain unchanged
+        assert.strictEqual(meta.results[0].urls[0].path, '/attachments/original.pdf');
+        assert.strictEqual(meta.results[0].base, undefined);
+      });
+    });
+
+    describe('prettyUrls enabled, no prefix', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            },
+            '@apostrophecms/file': {
+              options: {
+                prettyUrls: true
+              }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('getPrettyUrlBase returns base with prettyUrlDir', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        assert.strictEqual(
+          apos.file.getPrettyUrlBase(req),
+          'http://localhost:3000/files'
+        );
+      });
+
+      it('getPrettyUrlBase with relative returns just prettyUrlDir', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        assert.strictEqual(
+          apos.file.getPrettyUrlBase(req, { relative: true }),
+          '/files'
+        );
+      });
+
+      it('getPrettyPath returns slug-based path', function () {
+        const doc = {
+          slug: 'file-my-document',
+          attachment: { extension: 'pdf' }
+        };
+        assert.strictEqual(apos.file.getPrettyPath(doc), '/my-document.pdf');
+      });
+
+      it('getPrettyPath strips slugPrefix', function () {
+        const doc = {
+          slug: 'file-design-principles',
+          attachment: { extension: 'pdf' }
+        };
+        assert.strictEqual(apos.file.getPrettyPath(doc), '/design-principles.pdf');
+      });
+
+      it('getPrettyPath returns null when no attachment', function () {
+        assert.strictEqual(apos.file.getPrettyPath({ slug: 'file-test' }), null);
+      });
+    });
+
+    describe('prettyUrls enabled with prefix', function () {
+      let apos;
+
+      before(async function () {
+        apos = await t.create({
+          root: module,
+          baseUrl: 'http://localhost:3000',
+          prefix: '/cms',
+          modules: {
+            '@apostrophecms/url': {
+              options: { static: true }
+            },
+            '@apostrophecms/file': {
+              options: {
+                prettyUrls: true
+              }
+            }
+          }
+        });
+      });
+
+      after(async function () {
+        await t.destroy(apos);
+        apos = null;
+      });
+
+      it('getPrettyUrlBase includes prefix', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        assert.strictEqual(
+          apos.file.getPrettyUrlBase(req),
+          'http://localhost:3000/cms/files'
+        );
+      });
+
+      it('getPrettyUrlBase with relative includes prefix', function () {
+        const req = apos.task.getAnonReq({ mode: 'published' });
+        assert.strictEqual(
+          apos.file.getPrettyUrlBase(req, { relative: true }),
+          '/cms/files'
+        );
+      });
+    });
+  });
+
+  describe('applyPrettyUrlPaths', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/url': {
+            options: { static: true }
+          },
+          '@apostrophecms/file': {
+            options: {
+              prettyUrls: true
+            }
+          }
+        }
+      });
+
+      const req = apos.task.getReq();
+
+      // Insert a file piece with a known attachment.
+      // We seed the attachment directly in the DB to avoid
+      // needing real uploaded files.
+      const file = await apos.file.insert(req, {
+        title: 'Design Principles',
+        visibility: 'public',
+        attachment: {
+          _id: 'att-pretty-1',
+          name: 'design-principles',
+          extension: 'pdf',
+          group: 'office',
+          type: 'attachment'
+        }
+      });
+
+      // Also seed the attachment record so getStaticMetadata
+      // can find it.
+      await apos.attachment.db.insertOne({
+        _id: 'att-pretty-1',
+        name: 'design-principles',
+        extension: 'pdf',
+        group: 'office',
+        archived: false,
+        docIds: [ `${file.aposDocId}:en:published` ],
+        crops: [],
+        used: true,
+        utilized: true
+      });
+
+      // Insert a second file.
+      const file2 = await apos.file.insert(req, {
+        title: 'Annual Report',
+        visibility: 'public',
+        attachment: {
+          _id: 'att-pretty-2',
+          name: 'annual-report',
+          extension: 'pdf',
+          group: 'office',
+          type: 'attachment'
+        }
+      });
+
+      await apos.attachment.db.insertOne({
+        _id: 'att-pretty-2',
+        name: 'annual-report',
+        extension: 'pdf',
+        group: 'office',
+        archived: false,
+        docIds: [ `${file2.aposDocId}:en:published` ],
+        crops: [],
+        used: true,
+        utilized: true
+      });
+
+      // Seed a non-file attachment (image) that should NOT
+      // be touched by applyPrettyUrlPaths.
+      await apos.attachment.db.insertOne({
+        _id: 'att-image-notouch',
+        name: 'photo',
+        extension: 'jpg',
+        group: 'images',
+        width: 800,
+        height: 600,
+        archived: false,
+        docIds: [ 'some-img:en:published' ],
+        crops: [],
+        used: true,
+        utilized: true
+      });
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('mutates matching entries with base and pretty urls', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const meta = {
+        uploadsUrl: '/uploads',
+        results: [
+          {
+            _id: 'att-pretty-1',
+            urls: [ { path: '/attachments/design-principles.pdf' } ]
+          },
+          {
+            _id: 'att-image-notouch',
+            urls: [
+              {
+                size: 'full',
+                path: '/attachments/photo-full.jpg'
+              },
+              {
+                size: 'one-half',
+                path: '/attachments/photo-one-half.jpg'
+              }
+            ]
+          },
+          {
+            _id: 'att-pretty-2',
+            urls: [ { path: '/attachments/annual-report.pdf' } ]
+          }
+        ]
+      };
+
+      await apos.file.applyPrettyUrlPaths(req, meta);
+
+      // File attachment should be mutated
+      const pretty1 = meta.results.find(a => a._id === 'att-pretty-1');
+      assert.strictEqual(pretty1.base, '/files');
+      assert.strictEqual(pretty1.urls.length, 1);
+      assert.strictEqual(pretty1.urls[0].path, '/design-principles.pdf');
+      assert.strictEqual(pretty1.urls[0].size, undefined);
+
+      // Second file attachment should also be mutated
+      const pretty2 = meta.results.find(a => a._id === 'att-pretty-2');
+      assert.strictEqual(pretty2.base, '/files');
+      assert.strictEqual(pretty2.urls.length, 1);
+      assert.strictEqual(pretty2.urls[0].path, '/annual-report.pdf');
+
+      // Image attachment should be untouched
+      const img = meta.results.find(a => a._id === 'att-image-notouch');
+      assert.strictEqual(img.base, undefined);
+      assert.strictEqual(img.urls.length, 2);
+      assert.strictEqual(img.urls[0].size, 'full');
+    });
+
+    it('handles empty results gracefully', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const meta = {
+        uploadsUrl: '/uploads',
+        results: []
+      };
+      await apos.file.applyPrettyUrlPaths(req, meta);
+      assert.strictEqual(meta.results.length, 0);
+    });
+
+    it('handles null attachmentMeta gracefully', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      // Should not throw
+      await apos.file.applyPrettyUrlPaths(req, null);
+    });
+
+    it('does not touch entries whose _id has no matching file doc', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const meta = {
+        uploadsUrl: '/uploads',
+        results: [
+          {
+            _id: 'att-nonexistent',
+            urls: [ { path: '/attachments/ghost.pdf' } ]
+          }
+        ]
+      };
+      await apos.file.applyPrettyUrlPaths(req, meta);
+      const entry = meta.results[0];
+      assert.strictEqual(entry.base, undefined);
+      assert.strictEqual(entry.urls[0].path, '/attachments/ghost.pdf');
+    });
+  });
+
+  describe('getAllUrlMetadata with prettyUrls', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/url': {
+            options: { static: true }
+          },
+          '@apostrophecms/file': {
+            options: {
+              prettyUrls: true
+            }
+          },
+          article: {
+            extend: '@apostrophecms/piece-type',
+            options: {
+              name: 'article',
+              label: 'Article',
+              alias: 'article'
+            },
+            fields: {
+              add: {
+                _file: {
+                  type: 'relationship',
+                  withType: '@apostrophecms/file',
+                  label: 'File',
+                  max: 1
+                }
+              }
+            }
+          },
+          'article-page': {
+            extend: '@apostrophecms/piece-page-type',
+            options: {
+              name: 'articlePage',
+              label: 'Articles',
+              alias: 'articlePage',
+              perPage: 10
+            }
+          },
+          '@apostrophecms/page': {
+            options: {
+              park: [
+                {
+                  title: 'Articles',
+                  type: 'articlePage',
+                  slug: '/articles',
+                  parkedId: 'articles'
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const req = apos.task.getReq();
+
+      // Insert a file piece
+      const file = await apos.file.insert(req, {
+        title: 'Spec Document',
+        visibility: 'public',
+        attachment: {
+          _id: 'att-spec-pdf',
+          name: 'spec-document',
+          extension: 'pdf',
+          group: 'office',
+          type: 'attachment'
+        }
+      });
+
+      // Seed attachment record
+      await apos.attachment.db.insertOne({
+        _id: 'att-spec-pdf',
+        name: 'spec-document',
+        extension: 'pdf',
+        group: 'office',
+        archived: false,
+        docIds: [ `${file.aposDocId}:en:published` ],
+        crops: [],
+        used: true,
+        utilized: true
+      });
+
+      // Insert an article referencing the file
+      const article = await apos.article.insert(req, {
+        title: 'Article With File',
+        visibility: 'public'
+      });
+
+      // Wire the relationship via idsStorage
+      await apos.doc.db.updateMany(
+        { aposDocId: article.aposDocId },
+        { $set: { fileIds: [ file.aposDocId ] } }
+      );
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('attachment entries with pretty URLs should have base property', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      assert(result.attachments);
+      const pdfAtt = result.attachments.results.find(a => a._id === 'att-spec-pdf');
+      assert(pdfAtt, 'Should find the pretty URL attachment');
+      assert.strictEqual(pdfAtt.base, '/files');
+      assert.strictEqual(pdfAtt.urls.length, 1);
+      assert(
+        pdfAtt.urls[0].path.endsWith('.pdf'),
+        'Pretty URL path should end with .pdf'
+      );
+      assert(
+        !pdfAtt.urls[0].path.includes('/attachments/'),
+        'Pretty URL path should not contain /attachments/'
+      );
+    });
+
+    it('uploadsUrl is unchanged by applyPrettyUrlPaths', async function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'used' }
+      });
+      assert(typeof result.attachments.uploadsUrl === 'string');
+      assert(
+        result.attachments.uploadsUrl.includes('/uploads'),
+        'uploadsUrl should still reference /uploads'
+      );
+    });
+
+    it('non-file attachments should not have base property', async function () {
+      // Seed a regular image attachment
+      await apos.attachment.db.insertOne({
+        _id: 'att-regular-img',
+        name: 'regular-photo',
+        extension: 'jpg',
+        group: 'images',
+        width: 400,
+        height: 300,
+        archived: false,
+        docIds: [],
+        crops: [],
+        used: true,
+        utilized: true
+      });
+
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const result = await apos.url.getAllUrlMetadata(req, {
+        attachments: { scope: 'all' }
+      });
+      const imgAtt = result.attachments.results.find(a => a._id === 'att-regular-img');
+      assert(imgAtt, 'Should find the regular image attachment');
+      assert.strictEqual(imgAtt.base, undefined, 'Regular attachment should not have base');
+      assert(imgAtt.urls.length > 1, 'Image should have multiple size variants');
+    });
+  });
+
+  describe('addUrls with prettyUrls', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        baseUrl: 'http://localhost:3000',
+        modules: {
+          '@apostrophecms/file': {
+            options: {
+              prettyUrls: true
+            }
+          }
+        }
+      });
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('sets _url to pretty URL on file docs', function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const files = [
+        {
+          slug: 'file-my-document',
+          attachment: { extension: 'pdf' }
+        }
+      ];
+      apos.file.addUrls(req, files);
+      assert.strictEqual(files[0]._url, 'http://localhost:3000/files/my-document.pdf');
+    });
+
+    it('sets attachment._prettyUrl', function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const files = [
+        {
+          slug: 'file-report',
+          attachment: { extension: 'pdf' }
+        }
+      ];
+      apos.file.addUrls(req, files);
+      assert.strictEqual(files[0].attachment._prettyUrl, 'http://localhost:3000/files/report.pdf');
+    });
+
+    it('uses relative URL when relative option is true', function () {
+      const req = apos.task.getAnonReq({ mode: 'published' });
+      const files = [
+        {
+          slug: 'file-guide',
+          attachment: { extension: 'pdf' }
+        }
+      ];
+      apos.file.addUrls(req, files, { relative: true });
+      assert.strictEqual(files[0]._url, '/files/guide.pdf');
+    });
+  });
 });
