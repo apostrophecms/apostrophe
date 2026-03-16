@@ -147,6 +147,7 @@
         <component
           :is="widgetEditorComponent(widget.type)"
           v-if="isContextual && !foreign"
+          :id="widget._id"
           :key="generation"
           :class="adminContentDirectionClass"
           :options="widgetOptions"
@@ -973,7 +974,7 @@ export default {
 }
 
 .apos-area-widget-rendered-widget {
-  z-index: $z-index-default;
+  z-index: $z-index-base;
   position: relative;
 }
 

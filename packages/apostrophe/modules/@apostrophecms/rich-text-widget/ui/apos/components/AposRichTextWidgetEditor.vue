@@ -1,6 +1,7 @@
 <template>
   <div
-    :id="widgetId"
+    :id="id"
+    ref="richTextWidgetEditorRef"
     :aria-controls="`insert-menu-${modelValue._id}`"
     :style="widgetStyles.inline"
     :class="widgetStyles.classes"
@@ -10,16 +11,7 @@
       v-if="editor"
       plugin-key="richTextMenu"
       class="bubble-menu"
-      :tippy-options="{
-        maxWidth: 'none',
-        duration: 300,
-        zIndex: 999,
-        animation: 'fade',
-        inertia: true,
-        placement: 'bottom',
-        hideOnClick: false,
-        onHide: onBubbleHide
-      }"
+      :tippy-options="bubbleMenuTippyOptions"
       :editor="editor"
     >
       <AposContextMenuDialog
@@ -122,6 +114,7 @@ import {
   BubbleMenu,
   FloatingMenu
 } from '@tiptap/vue-3';
+
 import AposTiptapTableControls from './AposTiptapTableControls.vue';
 // Starter Kit extensions
 import BlockQuote from '@tiptap/extension-blockquote';
@@ -155,6 +148,7 @@ import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstanc
 import merge from 'lodash/merge';
 import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 
 export default {
   name: 'AposRichTextWidgetEditor',
@@ -165,6 +159,10 @@ export default {
     AposTiptapTableControls
   },
   props: {
+    id: {
+      type: String,
+      required: true
+    },
     type: {
       type: String,
       required: true
@@ -225,6 +223,72 @@ export default {
   },
   computed: {
     ...mapState(useModalStore, [ 'getAdminDirectionClass' ]),
+    ...mapState(useWidgetStore, [ 'focusedWidget' ]),
+    bubbleMenuTippyOptions() {
+      const richTextWidgetEditorRef = this.$refs.richTextWidgetEditorRef;
+      const UiBuffer = 30;
+      return {
+        maxWidth: 'none',
+        duration: 300,
+        zIndex: 999,
+        animation: 'fade',
+        inertia: true,
+        placement: 'bottom',
+        hideOnClick: false,
+        onHide: this.onBubbleHide,
+        popperOptions: {
+          modifiers: [
+            {
+              name: 'flip',
+              options: {
+                boundary: richTextWidgetEditorRef,
+                padding: {
+                  top: UiBuffer,
+                  bottom: UiBuffer
+                },
+                fallbackPlacements: [ 'top', 'bottom' ]
+              }
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                boundary: richTextWidgetEditorRef,
+                rootBoundary: 'viewport',
+                padding: {
+                  top: UiBuffer,
+                  bottom: UiBuffer
+                },
+                altAxis: true
+              }
+            },
+            {
+              // This middleware is used to clamp the popper to the viewport
+              name: 'clampToViewport',
+              enabled: true,
+              phase: 'write',
+              requires: [ 'preventOverflow' ],
+              fn({ state }) {
+                const popper = state.elements.popper;
+                const rect = popper.getBoundingClientRect();
+                const viewportWidth = document.documentElement.clientWidth;
+                const margin = 8;
+
+                const overflow = rect.right - (viewportWidth - margin);
+                const underflow = margin - rect.left;
+
+                if (overflow > 0) {
+                  const current = parseFloat(popper.style.left || '0');
+                  popper.style.left = `${current - overflow}px`;
+                } else if (underflow > 0) {
+                  const current = parseFloat(popper.style.left || '0');
+                  popper.style.left = `${current + underflow}px`;
+                }
+              }
+            }
+          ]
+        }
+      };
+    },
     // Note that context menu class-list expects a string
     contextMenuClasses() {
       const directionClass = this.getAdminDirectionClass();
@@ -354,6 +418,19 @@ export default {
     }
   },
   watch: {
+    focusedWidget(newVal, oldVal) {
+      console.log('focusedWidget', newVal, oldVal);
+      // if (oldVal === this.id && newVal !== this.id) {
+      //   // Widget lost focus according to the widget store; clear selection-related state
+      //   this.hasSelection = false;
+      //   this.suppressWidgetControls = false;
+      //   this.suppressAddContentButtons = false;
+      //   if (this.editor) {
+      //     // Force Tiptap to update its internal state and hide the bubble menu
+      //     this.editor.commands.blur();
+      //   }
+      // }
+    },
     modelValue(newVal, oldVal) {
       if (newVal.content !== oldVal.content) {
         return;
@@ -482,8 +559,9 @@ export default {
           });
         },
         onSelectionUpdate: ({ editor }) => {
+          this.hasSelection = !editor.view.state.selection.empty;
           this.$nextTick(() => {
-            if (!editor.view.state.selection.empty) {
+            if (this.hasSelection) {
               this.suppressWidgetControls = true;
             }
           });
