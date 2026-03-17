@@ -15,6 +15,12 @@ function getTestDbUri(shortName) {
     const schemaName = shortName.replace(/-/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
     return `multipostgres://localhost:5432/apos_test-${schemaName}`;
   }
+  if (testDbProtocol === 'sqlite') {
+    const os = require('os');
+    const path = require('path');
+    const dbName = shortName.replace(/-/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    return `sqlite://${path.join(os.tmpdir(), `apos_test_${dbName}.db`)}`;
+  }
 }
 
 // Properly clean up an apostrophe instance and drop its

@@ -289,10 +289,28 @@ function applyUpdate(doc, update) {
 // SQLite Duplicate Key Error
 // =============================================================================
 
-function makeDuplicateKeyError(sqliteError) {
+function makeDuplicateKeyError(sqliteError, collection, doc) {
   const message = 'Duplicate key error: already exists';
   const error = new Error(message);
   error.code = 11000;
+  if (sqliteError.message) {
+    // For _id primary key: "UNIQUE constraint failed: tablename._id"
+    const colMatch = sqliteError.message.match(/UNIQUE constraint failed:\s*\S+\.(\S+)/);
+    if (colMatch && colMatch[1] === '_id') {
+      error.keyValue = { _id: doc ? doc._id : null };
+    }
+    // For expression indexes: "UNIQUE constraint failed: index 'indexname'"
+    const idxMatch = sqliteError.message.match(/UNIQUE constraint failed:\s*index '([^']+)'/);
+    if (idxMatch && collection && collection._indexes) {
+      const indexMeta = collection._indexes.get(idxMatch[1]);
+      if (indexMeta && indexMeta.keys) {
+        error.keyValue = {};
+        for (const field of Object.keys(indexMeta.keys)) {
+          error.keyValue[field] = doc ? getNestedField(doc, field) : null;
+        }
+      }
+    }
+  }
   return error;
 }
 
@@ -303,14 +321,16 @@ function makeDuplicateKeyError(sqliteError) {
 // Build a json_extract path for a field: json_extract(data, '$.field.nested')
 function buildJsonExtractPath(field) {
   const parts = field.split('.');
-  return `'$.${parts.map(p => {
-    // Escape dots and special chars in path segments
+  let path = '$';
+  for (const p of parts) {
     if (/^\d+$/.test(p)) {
-      return `[${p}]`;
+      // Array index — no dot before bracket notation
+      path += `[${p}]`;
+    } else {
+      path += `.${p.replace(/'/g, '\'\'')}`;
     }
-    // Double single quotes for SQL string literal escaping
-    return p.replace(/'/g, '\'\'');
-  }).join('.')}'`;
+  }
+  return `'${path}'`;
 }
 
 // Build full json_extract expression
@@ -1000,7 +1020,10 @@ class SqliteCursor {
     if (this._exhausted) {
       return null;
     }
-    if (!this._iterator) {
+    // Buffer all results on first call to avoid holding the database busy.
+    // better-sqlite3 is synchronous and an active .iterate() cursor blocks
+    // all other queries on the same connection.
+    if (!this._buffer) {
       this._collection._ensureTable();
 
       const params = [];
@@ -1011,35 +1034,31 @@ class SqliteCursor {
       let sql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause} ${orderBy}`;
       if (this._limit != null) {
         sql += ` LIMIT ${this._limit}`;
+      } else if (this._skip != null) {
+        sql += ` LIMIT -1`;
       }
       if (this._skip != null) {
         sql += ` OFFSET ${this._skip}`;
       }
 
-      this._iterator = this._collection._db._sqlite.prepare(sql).iterate(...params);
+      this._buffer = this._collection._db._sqlite.prepare(sql).all(...params);
+      this._bufferIndex = 0;
     }
 
-    const result = this._iterator.next();
-    if (result.done) {
+    if (this._bufferIndex >= this._buffer.length) {
       this._exhausted = true;
-      this._iterator = null;
+      this._buffer = null;
       return null;
     }
 
-    const row = result.value;
+    const row = this._buffer[this._bufferIndex++];
     const doc = deserializeDocument(row.data, row._id);
     return this._projection ? applyProjection(doc, this._projection) : doc;
   }
 
   async close() {
-    if (this._iterator) {
-      // better-sqlite3 iterators can be abandoned; setting to null is sufficient
-      if (this._iterator.return) {
-        this._iterator.return();
-      }
-      this._iterator = null;
-      this._exhausted = true;
-    }
+    this._buffer = null;
+    this._exhausted = true;
   }
 
   addCursorFlag() {
@@ -1281,7 +1300,7 @@ class SqliteCollection {
       };
     } catch (e) {
       if (e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && e.message.includes('UNIQUE constraint failed'))) {
-        throw makeDuplicateKeyError(e);
+        throw makeDuplicateKeyError(e, this, { ...doc, _id: id });
       }
       throw e;
     }
@@ -1377,7 +1396,7 @@ class SqliteCollection {
       ).run(serializeDocument(dataWithoutId), selectResult._id);
     } catch (e) {
       if (e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && e.message.includes('UNIQUE constraint failed'))) {
-        throw makeDuplicateKeyError(e);
+        throw makeDuplicateKeyError(e, this, updated);
       }
       throw e;
     }
@@ -1465,7 +1484,7 @@ class SqliteCollection {
       ).run(serializeDocument(dataWithoutId), selectResult._id);
     } catch (e) {
       if (e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && e.message.includes('UNIQUE constraint failed'))) {
-        throw makeDuplicateKeyError(e);
+        throw makeDuplicateKeyError(e, this, replacement);
       }
       throw e;
     }
@@ -1554,12 +1573,18 @@ class SqliteCollection {
 
     const jsonExtract = buildJsonExtract(field);
     const jsonExtractPath = buildJsonExtractPath(field);
-    // Flatten arrays like MongoDB's distinct()
-    const sql = `SELECT DISTINCT je.value as value FROM ${tableName}, json_each(
-      CASE WHEN json_type(data, ${jsonExtractPath}) = 'array' THEN ${jsonExtract} ELSE json_array(${jsonExtract}) END
-    ) AS je WHERE ${whereClause} AND ${jsonExtract} IS NOT NULL`;
+    // Flatten arrays like MongoDB's distinct(), preserving type info for booleans.
+    // For arrays: json_each provides type; for scalars: json_type on the field itself.
+    // Use UNION to combine both cases.
+    const sql = `
+      SELECT DISTINCT je.value as value, je.type as type FROM ${tableName}, json_each(${jsonExtract}) AS je
+        WHERE ${whereClause} AND json_type(data, ${jsonExtractPath}) = 'array'
+      UNION
+      SELECT DISTINCT ${jsonExtract} as value, json_type(data, ${jsonExtractPath}) as type FROM ${tableName}
+        WHERE ${whereClause} AND ${jsonExtract} IS NOT NULL AND json_type(data, ${jsonExtractPath}) != 'array'
+    `;
 
-    const rows = this._db._sqlite.prepare(sql).all(...params);
+    const rows = this._db._sqlite.prepare(sql).all(...params, ...params);
 
     return rows
       .map(row => {
@@ -1567,7 +1592,14 @@ class SqliteCollection {
         if (v === null || v === undefined) {
           return null;
         }
-        // json_each returns text for strings, numbers for numbers
+        // Convert SQLite boolean representations back to JS booleans
+        // json_type returns 'true'/'false' for boolean values
+        if (row.type === 'true') {
+          return true;
+        }
+        if (row.type === 'false') {
+          return false;
+        }
         return v;
       })
       .filter(v => v !== null);
@@ -1937,10 +1969,22 @@ class SqliteDb {
   }
 
   admin() {
-    const name = this._name;
+    const client = this._client;
     return {
       async listDatabases() {
-        return { databases: [ { name } ] };
+        // List all sibling .db files in the directory as "databases"
+        const dir = path.dirname(client._dbPath);
+        const fs = require('fs');
+        let files;
+        try {
+          files = fs.readdirSync(dir);
+        } catch (e) {
+          return { databases: [] };
+        }
+        const databases = files
+          .filter(f => f.endsWith('.db'))
+          .map(f => ({ name: f.replace(/\.db$/, '') }));
+        return { databases };
       }
     };
   }
@@ -1952,6 +1996,13 @@ class SqliteDb {
     ).all();
     for (const table of tables) {
       this._sqlite.exec(`DROP TABLE IF EXISTS "${escapeIdentifier(table.name)}"`);
+    }
+    // Also drop all indexes
+    const indexes = this._sqlite.prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'"
+    ).all();
+    for (const idx of indexes) {
+      this._sqlite.exec(`DROP INDEX IF EXISTS "${escapeIdentifier(idx.name)}"`);
     }
     this._collections.clear();
   }
