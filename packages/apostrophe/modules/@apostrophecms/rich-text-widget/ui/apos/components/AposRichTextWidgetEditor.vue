@@ -232,58 +232,7 @@ export default {
         inertia: true,
         placement: 'bottom',
         hideOnClick: false,
-        onHide: this.onBubbleHide,
-        popperOptions: {
-          modifiers: [
-            {
-              name: 'flip',
-              options: {
-                boundary: richTextWidgetEditorRef,
-                padding: {
-                  top: UiBuffer,
-                  bottom: UiBuffer
-                },
-                fallbackPlacements: [ 'top', 'bottom' ]
-              }
-            },
-            {
-              name: 'preventOverflow',
-              options: {
-                boundary: richTextWidgetEditorRef,
-                rootBoundary: 'viewport',
-                padding: {
-                  top: UiBuffer,
-                  bottom: UiBuffer
-                },
-                altAxis: true
-              }
-            },
-            {
-              // This middleware is used to clamp the popper to the viewport
-              name: 'clampToViewport',
-              enabled: true,
-              phase: 'write',
-              requires: [ 'preventOverflow' ],
-              fn({ state }) {
-                const popper = state.elements.popper;
-                const rect = popper.getBoundingClientRect();
-                const viewportWidth = document.documentElement.clientWidth;
-                const margin = 8;
-
-                const overflow = rect.right - (viewportWidth - margin);
-                const underflow = margin - rect.left;
-
-                if (overflow > 0) {
-                  const current = parseFloat(popper.style.left || '0');
-                  popper.style.left = `${current - overflow}px`;
-                } else if (underflow > 0) {
-                  const current = parseFloat(popper.style.left || '0');
-                  popper.style.left = `${current + underflow}px`;
-                }
-              }
-            }
-          ]
-        }
+        onHide: this.onBubbleHide
       };
     },
     // Note that context menu class-list expects a string
