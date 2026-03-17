@@ -1,7 +1,6 @@
 <template>
   <div
     :id="widgetId"
-    ref="richTextWidgetEditorRef"
     :aria-controls="`insert-menu-${modelValue._id}`"
     :style="widgetStyles.inline"
     :class="widgetStyles.classes"
@@ -222,8 +221,6 @@ export default {
     ...mapState(useModalStore, [ 'getAdminDirectionClass' ]),
     ...mapState(useWidgetStore, [ 'focusedWidget' ]),
     bubbleMenuTippyOptions() {
-      const richTextWidgetEditorRef = this.$refs.richTextWidgetEditorRef;
-      const UiBuffer = 30;
       return {
         maxWidth: 'none',
         duration: 300,
