@@ -1,16 +1,20 @@
 const mongodbAdapter = require(
-  '../modules/@apostrophecms/db/adapters/mongodb.js'
+  './adapters/mongodb.js'
 );
 const postgresAdapter = require(
-  '../modules/@apostrophecms/db/adapters/postgres.js'
+  './adapters/postgres.js'
+);
+const sqliteAdapter = require(
+  './adapters/sqlite.js'
 );
 
-module.exports = async function(uri, options = {}) {
+const connect = async function(uri, options = {}) {
   // Build adapter map: built-ins first, then custom overrides
   const named = new Map();
   for (const adapter of [
     mongodbAdapter,
     postgresAdapter,
+    sqliteAdapter,
     ...(options.adapters || [])
   ]) {
     named.set(adapter.name, adapter);
@@ -33,3 +37,6 @@ module.exports = async function(uri, options = {}) {
     `No adapter found for protocol: ${protocol}`
   );
 };
+
+module.exports = connect;
+module.exports.escapeHost = require('./lib/escape-host');

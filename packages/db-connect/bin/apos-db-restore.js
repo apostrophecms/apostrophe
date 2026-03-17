@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
-const dbConnect = require('../lib/db-connect');
+const dbConnect = require('..');
 
 const BATCH_SIZE = 100;
 

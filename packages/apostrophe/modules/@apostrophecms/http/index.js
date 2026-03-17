@@ -2,7 +2,7 @@ const _ = require('lodash');
 const qs = require('qs');
 const fetch = require('node-fetch');
 const tough = require('tough-cookie');
-const escapeHost = require('../../../lib/escape-host');
+const escapeHost = require('@apostrophecms/db-connect').escapeHost;
 const util = require('util');
 
 module.exports = {

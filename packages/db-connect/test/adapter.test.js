@@ -31,6 +31,15 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const auth = password ? `${user}:${password}@` : `${user}@`;
       client = await postgres.connect(`multipostgres://${auth}localhost:5432/dbtest_adapter-testschema`);
       db = client.db();
+    } else if (ADAPTER === 'sqlite') {
+      const sqlite = require('../adapters/sqlite');
+      const os = require('os');
+      const pathModule = require('path');
+      const fs = require('fs');
+      const dbPath = pathModule.join(os.tmpdir(), 'dbtest-adapter.db');
+      try { fs.unlinkSync(dbPath); } catch (e) { /* ignore */ }
+      client = await sqlite.connect(`sqlite://${dbPath}`);
+      db = client.db();
     }
   });
 
@@ -387,7 +396,7 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       }
     });
 
-    if (ADAPTER === 'postgres' || ADAPTER === 'multipostgres') {
+    if (ADAPTER === 'postgres' || ADAPTER === 'multipostgres' || ADAPTER === 'sqlite') {
       it('should support close() for early termination', async function() {
         const cursor = db.collection('test')
           .find({})

@@ -3,10 +3,6 @@
   "version": "4.27.0-alpha.1",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
-  "bin": {
-    "apos-db-dump": "./bin/apos-db-dump.js",
-    "apos-db-restore": "./bin/apos-db-restore.js"
-  },
   "scripts": {
     "pretest": "npm run lint",
     "test": "npm run test:base && npm run test:missing && npm run test:assets && npm run test:esm && npm run test:db",
@@ -20,9 +16,9 @@
     "stylelint": "stylelint modules/**/*.{scss,vue}",
     "lint": "npm run eslint && npm run i18n && npm run stylelint",
     "mocha": "mocha",
-    "test:db": "mocha modules/@apostrophecms/db/test/**/*.test.js --timeout 30000",
-    "test:db:mongodb": "ADAPTER=mongodb mocha modules/@apostrophecms/db/test/**/*.test.js --timeout 30000",
-    "test:db:postgres": "ADAPTER=postgres mocha modules/@apostrophecms/db/test/**/*.test.js --timeout 30000"
+    "test:db": "cd ../db-connect && npm test",
+    "test:db:mongodb": "cd ../db-connect && ADAPTER=mongodb npx mocha test/**/*.test.js --timeout 30000",
+    "test:db:postgres": "cd ../db-connect && ADAPTER=postgres npx mocha test/**/*.test.js --timeout 30000"
   },
   "repository": {
     "type": "git",
@@ -45,6 +41,7 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
+    "@apostrophecms/db-connect": "workspace:^",
     "@apostrophecms/emulate-mongo-3-driver": "workspace:^",
     "@apostrophecms/vue-material-design-icons": "^1.0.0",
     "@ctrl/tinycolor": "^4.1.0",
@@ -145,8 +142,7 @@
     "vue-style-loader": "^4.1.3",
     "webpack": "^5.72.0",
     "webpack-merge": "^5.7.3",
-    "xregexp": "^2.0.0",
-    "pg": "^8.11.3"
+    "xregexp": "^2.0.0"
   },
   "devDependencies": {
     "chai": "^4.3.10",

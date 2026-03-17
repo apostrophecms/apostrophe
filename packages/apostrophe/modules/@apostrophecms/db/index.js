@@ -57,8 +57,8 @@
 // in your project. However you may find it easier to just use the
 // `client` option.
 
-const escapeHost = require('../../../lib/escape-host');
-const dbConnect = require('../../../lib/db-connect');
+const dbConnect = require('@apostrophecms/db-connect');
+const escapeHost = require('@apostrophecms/db-connect').escapeHost;
 
 module.exports = {
   options: {

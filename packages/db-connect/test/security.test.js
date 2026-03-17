@@ -23,6 +23,15 @@ describe(`Security Tests (${ADAPTER})`, function() {
       const auth = password ? `${user}:${password}@` : `${user}@`;
       client = await postgres.connect(`postgres://${auth}localhost:5432/dbtest_adapter`);
       db = client.db('dbtest_adapter');
+    } else if (ADAPTER === 'sqlite') {
+      const sqlite = require('../adapters/sqlite');
+      const os = require('os');
+      const pathModule = require('path');
+      const fs = require('fs');
+      const dbPath = pathModule.join(os.tmpdir(), 'dbtest-security.db');
+      try { fs.unlinkSync(dbPath); } catch (e) { /* ignore */ }
+      client = await sqlite.connect(`sqlite://${dbPath}`);
+      db = client.db();
     }
   });
 
@@ -40,7 +49,7 @@ describe(`Security Tests (${ADAPTER})`, function() {
   });
 
   // These tests only apply to postgres adapter since MongoDB doesn't have SQL
-  if (ADAPTER === 'postgres') {
+  if (ADAPTER === 'postgres' || ADAPTER === 'sqlite') {
     describe('SQL Injection Prevention', function() {
       describe('Field Names (escaping, not rejection)', function() {
         it('should safely escape field names with single quotes', async function() {

@@ -3,10 +3,10 @@ const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const dbConnect = require(path.resolve(__dirname, '../lib/db-connect'));
+const dbConnect = require('@apostrophecms/db-connect');
 
-const dumpBin = path.resolve(__dirname, '../bin/apos-db-dump.js');
-const restoreBin = path.resolve(__dirname, '../bin/apos-db-restore.js');
+const dumpBin = require.resolve('@apostrophecms/db-connect/bin/apos-db-dump.js');
+const restoreBin = require.resolve('@apostrophecms/db-connect/bin/apos-db-restore.js');
 
 // Default to mongodb, allow override via DB_URI env var
 const baseUri = process.env.DB_URI || 'mongodb://localhost:27017';
