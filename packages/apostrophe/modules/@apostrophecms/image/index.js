@@ -400,6 +400,17 @@ module.exports = {
   },
   methods(self) {
     return {
+      // Image docs are attachment containers themselves — their
+      // attachments are discovered via relationship walking from
+      // the content docs that reference them.  Iterating all
+      // published images here would make the "used" scope
+      // equivalent to "all", defeating scoped attachment builds.
+      async getAllUrlMetadata() {
+        return {
+          metadata: [],
+          attachmentDocIds: []
+        };
+      },
       // This method is available as a template helper: apos.image.first
       //
       // Find the first image attachment referenced within an object that may

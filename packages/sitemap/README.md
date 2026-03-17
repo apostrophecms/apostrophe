@@ -21,14 +21,14 @@ A frequently updated and accurate XML sitemap allows search engines to index you
 
 ## Roadmap
 
-| Feature | Status |
-| --- | --- |
-| Sitemap generation for single-locale websites | ✅ Implemented |
-| Module configuration to exclude certain doc types | ✅ Implemented |
-| Tasks to manually generate sitemap | ✅ Implemented |
-| Text-style sitemap generation (for content strategy work) | 🚧 Planned |
-| Support for multiple locales (localization) | ✅ Implemented |
-| Output customization function | 🚧 Planned |
+| Feature                                                   | Status        |
+| --------------------------------------------------------- | ------------- |
+| Sitemap generation for single-locale websites             | ✅ Implemented |
+| Module configuration to exclude certain doc types         | ✅ Implemented |
+| Tasks to manually generate sitemap                        | ✅ Implemented |
+| Text-style sitemap generation (for content strategy work) | 🚧 Planned     |
+| Support for multiple locales (localization)               | ✅ Implemented |
+| Output customization function                             | 🚧 Planned     |
 
 ## Installation
 
@@ -77,7 +77,6 @@ module.exports = {
   options: {
     cacheLifetime: 1800,
     excludeTypes: [ 'exclusive-page', 'category' ]
-    piecesPerBatch: 500
   }
 };
 ```
@@ -104,13 +103,9 @@ If there are particular page types or piece content types that should *not* be i
 excludeTypes: [ 'exclusive-page', 'category' ]
 ```
 
-#### `piecesPerBatch`
+#### `piecesPerBatch` *(deprecated)*
 
-If you have thousands of URLs to index, building the sitemap may take a long time. By default, this module processes 100 pieces at a time, to avoid using too much memory. You can adjust this by setting the `piecesPerBatch` option to a larger number. Be aware that if you have many fields and content relationships **it is possible this can use a great deal of memory**.
-
-```javascript
-piecesPerBatch: 500
-```
+This option is no longer used and will be ignored. It was previously used to control how many pieces were processed at a time when building the sitemap directly from database queries. The sitemap module now uses the centralized `getAllUrlMetadata` API instead.
 
 ### `perLocale`
 

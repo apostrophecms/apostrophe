@@ -1,3 +1,5 @@
+import config from 'virtual:apostrophe-config';
+
 export default function(req) {
   const request = new Request(req);
   const key = process.env.APOS_EXTERNAL_FRONT_KEY;
@@ -6,6 +8,9 @@ export default function(req) {
   }
   request.headers.set('x-requested-with', 'AposExternalFront');
   request.headers.set('apos-external-front-key', key);
+  if (config.staticBuild) {
+    request.headers.set('x-apos-static-base-url', '1');
+  }
   // Prevent certain values of Connection, such as Upgrade, from causing an undici error in Node.js fetch
   request.headers.delete('Connection');
   return request;

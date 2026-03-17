@@ -2855,18 +2855,16 @@ database.`);
         );
       },
       // Returns the effective base URL for the given request.
-      // If Apostrophe's top-level `baseUrl` option is set, or a hostname is
-      // defined for the active locale, then that is consulted, otherwise the
-      // base URL is the empty string. This makes it easier to build absolute
-      // URLs (when `baseUrl` is configured), or to harmlessly prepend the empty
-      // string (when it is not configured). The Apostrophe queries used to
-      // fetch Apostrophe pages consult this method.
+      // Delegates to `apos.url.getBaseUrl(req)` which is
+      // now the single source of truth.
+      // See `@apostrophecms/url` module for full documentation
+      // and the `strict` option.
+      //
+      // Note: `prefix: false` preserves backward compatibility —
+      // callers of `page.getBaseUrl` historically received only
+      // the origin, without the global prefix.
       getBaseUrl(req) {
-        const hostname = self.apos.i18n.locales[req.locale]?.hostname;
-
-        return hostname
-          ? `${req.protocol}://${hostname}`
-          : (self.apos.baseUrl || '');
+        return self.apos.url.getBaseUrl(req, { prefix: false });
       },
 
       // Implements a simple batch operation like publish or unpublish.

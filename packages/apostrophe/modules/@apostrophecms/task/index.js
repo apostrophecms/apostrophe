@@ -300,7 +300,15 @@ module.exports = {
         };
         addCloneMethod(req);
         req.res.__ = req.__;
-        const { role: _role, ...properties } = options || {};
+        const {
+          role: _role, staticBuild: _staticBuild, ...properties
+        } = options || {};
+
+        // When staticBuild is requested, configure the req object
+        // with the same properties that Express middlewares
+        if (_staticBuild) {
+          self.apos.modules['@apostrophecms/express'].applyStaticBuildHeaders(req);
+        }
 
         Object.assign(req, properties);
         self.apos.i18n.setPrefixUrls(req);
