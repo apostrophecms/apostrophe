@@ -1,6 +1,6 @@
 <template>
   <div
-    :id="id"
+    :id="widgetId"
     ref="richTextWidgetEditorRef"
     :aria-controls="`insert-menu-${modelValue._id}`"
     :style="widgetStyles.inline"
@@ -159,10 +159,6 @@ export default {
     AposTiptapTableControls
   },
   props: {
-    id: {
-      type: String,
-      required: true
-    },
     type: {
       type: String,
       required: true

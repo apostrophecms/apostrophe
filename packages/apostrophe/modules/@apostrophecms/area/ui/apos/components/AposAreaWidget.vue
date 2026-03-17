@@ -154,7 +154,6 @@
         <component
           :is="widgetEditorComponent(widget.type)"
           v-if="isContextual && !foreign"
-          :id="widget._id"
           :key="generation"
           :class="adminContentDirectionClass"
           :options="widgetOptions"
