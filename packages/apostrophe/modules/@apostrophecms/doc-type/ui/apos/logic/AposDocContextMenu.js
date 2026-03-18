@@ -92,6 +92,12 @@ export default {
     moduleLabels: {
       type: Object,
       default: null
+    },
+    showUnpublish: {
+      type: Boolean,
+      default() {
+        return true;
+      }
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],
@@ -171,7 +177,7 @@ export default {
             }
           ]
           : []),
-        ...(this.canUnpublish
+        ...(this.showUnpublish && this.canUnpublish
           ? [
             {
               label: 'apostrophe:unpublish',

@@ -16,6 +16,7 @@
         :show-restore="options.showRestore"
         :show-dismiss-submission="options.showDismissSubmission"
         :can-delete-draft="options.canDeleteDraft"
+        :show-unpublish="options.showUnpublish"
         @menu-open="menuOpen = true"
         @menu-close="menuOpen = false"
       />

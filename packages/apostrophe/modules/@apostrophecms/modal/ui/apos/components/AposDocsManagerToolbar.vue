@@ -197,7 +197,7 @@ export default {
       }
     },
     canSelectAll() {
-      return this.displayedItems;
+      return this.displayedItems && this.batchOperations.length;
     },
     canArchive() {
       return this.checkedCount;
