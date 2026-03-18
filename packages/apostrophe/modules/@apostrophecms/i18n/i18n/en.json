@@ -476,6 +476,8 @@
   "rawHtml": "Raw HTML",
   "rawHtmlCode": "Raw HTML (Code)",
   "rawHtmlCodeHelp": "Be careful when embedding third-party code, as it can break the website editing functionality. If a page becomes unusable, add \"?safe_mode=1\" to the URL to make it work temporarily without the problem code being rendered.",
+  "recentlyEdited": "Recently edited",
+  "recentlyEditedDocuments": "Recently edited documents",
   "redo": "Redo",
   "redoFailed": "The operation could not be redone.",
   "redoTooltip": "Redo Change",
