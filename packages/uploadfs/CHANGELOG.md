@@ -1,204 +1,210 @@
 # Changelog
 
+## 1.26.1
+
+### Fixes
+
+- Fixes azure `copyIn` to correctly recognize file extensions for blacklisting
+
 ## 1.26.0 (2025-10-30)
 
-* Replace aws-sdk with @aws-sdk/client-s3.
+- Replace aws-sdk with @aws-sdk/client-s3.
 
 ## 1.25.2 (2025-10-01)
 
-* Fix typo in documentation (`disableFileKey` > `disabledFileKey`).
+- Fix typo in documentation (`disableFileKey` > `disabledFileKey`).
 
 ## 1.25.1 (2025-08-28)
 
-* Bump `@google-cloud/storage` to 7.x to address a deprecation warning.
-* `npx mocha test/gcs.js` exits without hanging (there was no bug in the actual functionality, just the test).
+- Bump `@google-cloud/storage` to 7.x to address a deprecation warning.
+- `npx mocha test/gcs.js` exits without hanging (there was no bug in the actual functionality, just the test).
 
 ## 1.25.0 (2025-08-06)
 
-* Adds SAS token support for the Azure storage backend.
+- Adds SAS token support for the Azure storage backend.
 
 ## 1.24.3 (2025-03-25)
 
-* Fix missing variable which led to confusing error messages if the configured image backend is unavailable and prevented automatic fallback from `sharp` to `imagemagick`.
+- Fix missing variable which led to confusing error messages if the configured image backend is unavailable and prevented automatic fallback from `sharp` to `imagemagick`.
 
 ## 1.24.2 (2024-12-09)
 
-* Corrected npm audit warning by eliminating a dependency on `gm` which is not actively maintained.
+- Corrected npm audit warning by eliminating a dependency on `gm` which is not actively maintained.
 
 ## 1.24.1 (2024-10-15)
 
-* Bug fix: error handling for `streamOut`. If an HTTP error status code is encountered, the stream will emit an error, and the error object will have a `statusCode` property, allowing downstream code to handle this situation appropriately.
+- Bug fix: error handling for `streamOut`. If an HTTP error status code is encountered, the stream will emit an error, and the error object will have a `statusCode` property, allowing downstream code to handle this situation appropriately.
 
 ## 1.24.0 (2024-10-15)
 
-* Bug fix: `bucketObjectsACL` is respected by the `enable` method, that method no longer makes files `public` again. Previously it was only respected at `copyIn` / `copyImageIn` time.
-* New feature: `disabledBucketObjectsACL` is now also supported, it is used by the `disable` method rather than
-assuming `private` (still the default).
+- Bug fix: `bucketObjectsACL` is respected by the `enable` method, that method no longer makes files `public` again. Previously it was only respected at `copyIn` / `copyImageIn` time.
+- New feature: `disabledBucketObjectsACL` is now also supported, it is used by the `disable` method rather than
+  assuming `private` (still the default).
 
 ## 1.23.0 (2024-10-14)
 
-* Introduced `streamOut` API for `local` and `s3` storage backends.
+- Introduced `streamOut` API for `local` and `s3` storage backends.
 
 ## 1.22.7 (2024-09-24)
 
-* `.mp3` does not benefit from gzip encoding and the transfer encoding header fails to be sent, so do not use it.
+- `.mp3` does not benefit from gzip encoding and the transfer encoding header fails to be sent, so do not use it.
 
 ## 1.22.6 (2024-09-03)
 
-* `.gz` files now receive the correct content type in S3.
-* `.gz` files are now exempt from gzip transfer encoding because they are already gzipped.
-* `s3.js` tests now use environment variables rather than
-a git-excluded local file.
+- `.gz` files now receive the correct content type in S3.
+- `.gz` files are now exempt from gzip transfer encoding because they are already gzipped.
+- `s3.js` tests now use environment variables rather than
+  a git-excluded local file.
 
 ## 1.22.5 (2024-07-10)
 
-* Document options for avoiding a public S3 bucket.
+- Document options for avoiding a public S3 bucket.
 
 ## 1.22.4 2024-06-11
 
-* Use latest `rimraf` package, silencing a deprecation warning.
+- Use latest `rimraf` package, silencing a deprecation warning.
 
 ## 1.22.3 2023-10-16
 
-* Security: update `sharp` to fix a [potential security risk](https://security.snyk.io/vuln/SNYK-JS-SHARP-5922108). You should update your project's
-dependencies manually or with `npm update` to ensure you get this fix.
+- Security: update `sharp` to fix a [potential security risk](https://security.snyk.io/vuln/SNYK-JS-SHARP-5922108). You should update your project's
+  dependencies manually or with `npm update` to ensure you get this fix.
 
 ## 1.22.2 2023-08-03
 
-* Bump to next major version of google cloud storage API to please `npm audit`. There was no actual security vulnerability due to the way the module in question was actually used.
-* Update our eslint configuration.
-* Modernize the source from `var` to `const` and `let` in all cases to satisfy eslint and help prevent future bugs. This does not change the behavior of the code.
+- Bump to next major version of google cloud storage API to please `npm audit`. There was no actual security vulnerability due to the way the module in question was actually used.
+- Update our eslint configuration.
+- Modernize the source from `var` to `const` and `let` in all cases to satisfy eslint and help prevent future bugs. This does not change the behavior of the code.
 
 ## 1.22.1 2023-05-03
 
-* Corrected behavior of `getUrl` method for Azure storage, for Apostrophe compatibility. This regression was introduced an hour ago in 1.22.0.
+- Corrected behavior of `getUrl` method for Azure storage, for Apostrophe compatibility. This regression was introduced an hour ago in 1.22.0.
 
 ## 1.22.0 2023-05-03
 
-* Remove `azure-storage` in favor of the actively supported `@azure/storage-blob`, refactor. No public API changes.
-* Remove `request` package and all related dependencies in favor of the actively supported `node-fetch@2`, refactor tests.
-* Update outdated dev dependencies.
+- Remove `azure-storage` in favor of the actively supported `@azure/storage-blob`, refactor. No public API changes.
+- Remove `request` package and all related dependencies in favor of the actively supported `node-fetch@2`, refactor tests.
+- Update outdated dev dependencies.
 
 ## 1.21.0 2023-02-11
 
-* Adds tests for `webp` files, updates the package scripts to include "webp" to run the tests, and a webp test image (Note: one test commented out because `sharp` currently fails to reorient webp files). Thanks to [Isaac Preston](https://github.com/ixc7) for this contribution.
-* `https` is now the default protocol for S3. As it is always supported and there are no uploadfs+S3 use cases where `http` is preferred this is not considered a bc break.
+- Adds tests for `webp` files, updates the package scripts to include "webp" to run the tests, and a webp test image (Note: one test commented out because `sharp` currently fails to reorient webp files). Thanks to [Isaac Preston](https://github.com/ixc7) for this contribution.
+- `https` is now the default protocol for S3. As it is always supported and there are no uploadfs+S3 use cases where `http` is preferred this is not considered a bc break.
 
 ## 1.20.1 2022-12-13
 
-* Add `webm` to the list of file formats with a known content type and add it to the list of types that should not be gzip encoded as it is precompressed and Chrome appears to behave poorly if it is gzip encoded
+- Add `webm` to the list of file formats with a known content type and add it to the list of types that should not be gzip encoded as it is precompressed and Chrome appears to behave poorly if it is gzip encoded
 
 ## 1.20.0 2022-08-18
 
-* Default image processing library changed to [sharp.js](https://www.npmjs.com/package/sharp) for excellent performance
-* Support for jimp and imagecrunch removed (added fallback to sharp for bc)
-* imagemagick is now the fallback if sharp installation fails on a particular platform
-* tests for sharp have been added and the package scripts updated to add "test-sharp"
+- Default image processing library changed to [sharp.js](https://www.npmjs.com/package/sharp) for excellent performance
+- Support for jimp and imagecrunch removed (added fallback to sharp for bc)
+- imagemagick is now the fallback if sharp installation fails on a particular platform
+- tests for sharp have been added and the package scripts updated to add "test-sharp"
 
 ## 1.19.0 2022-01-21
 
-* New options `noGzipContentTypes` and `addNoGzipContentTypes` to configure content types which should not be gzipped when using the `s3` storage backend. Thanks to Christian Litzlbauer.
+- New options `noGzipContentTypes` and `addNoGzipContentTypes` to configure content types which should not be gzipped when using the `s3` storage backend. Thanks to Christian Litzlbauer.
 
 ## 1.18.5 2021-12-07
 
 ### Fixed
 
-* Local storage is fully compatible with Node 16 and later, as well as earlier releases previously supported.
-* Removed a stray folder.
+- Local storage is fully compatible with Node 16 and later, as well as earlier releases previously supported.
+- Removed a stray folder.
 
 ## 1.18.4 - 2021-10-08
 
 ### Fixed
 
-* Updates jimp to resolve npm audit warning.
+- Updates jimp to resolve npm audit warning.
 
 ## 1.18.3 - 2021-08-13
 
 ### Fixed
 
-* Set Azure containers public access level to `blob` instead of `container` to ensure anonymous users cannot list the content.
+- Set Azure containers public access level to `blob` instead of `container` to ensure anonymous users cannot list the content.
 
 ## 1.18.2
 
-* Addressed `npm audit` complaints about `mkdirp` by using a simple `mkdirp` implementation that has no legacy compatibility issues.
-* Addressed `npm audit` complaints about `mocha` and friends by upgrading `mocha`.
-* There are currently `npm audit` warnings about `azure-storage`, however a fix for this is forthcoming according to the upstream maintainers, and the existing semver ranges in this package will pick it up on `npm audit` when released.
+- Addressed `npm audit` complaints about `mkdirp` by using a simple `mkdirp` implementation that has no legacy compatibility issues.
+- Addressed `npm audit` complaints about `mocha` and friends by upgrading `mocha`.
+- There are currently `npm audit` warnings about `azure-storage`, however a fix for this is forthcoming according to the upstream maintainers, and the existing semver ranges in this package will pick it up on `npm audit` when released.
 
 ## 1.18.1
 
-* Bug fix: the `sizes` option to `copyImageIn` now works even if `imageSizes` was not passed at all when calling `init`.
+- Bug fix: the `sizes` option to `copyImageIn` now works even if `imageSizes` was not passed at all when calling `init`.
 
 ## 1.18.0
 
-* Support for a `sizes` option when calling `copyImageIn`, removing the requirement that all uploads are scaled to the same set of sizes. If the option is not provided the globally configured sizes are used.
+- Support for a `sizes` option when calling `copyImageIn`, removing the requirement that all uploads are scaled to the same set of sizes. If the option is not provided the globally configured sizes are used.
 
 ## 1.17.2
 
-* Documented the `endpoint` option. Thanks to Joe Innes for this contribution.
+- Documented the `endpoint` option. Thanks to Joe Innes for this contribution.
 
 ## 1.17.1
 
-* Updates ESLint configuration and fixes errors.
+- Updates ESLint configuration and fixes errors.
 
 ## 1.17.0
 
-* Updated the `@google-cloud/storage` module to the 5.x series to address a possible security vulnerability reported by `npm audit`. Version 5.x does not support node 8, which is itself not supported, so you should not be running it anymore.
-* However, we also made the libraries for all three cloud storage backends (GCS, S3, and Azure) `optionalDependencies`. If they fail to install for any reason, uploadfs will still work, as long as you do not try to use that specific backend.
-* A longstanding bug in GCS storage that broke its use with ApostropheCMS has been fixed. Leading slashes in paths are no longer stored in a way that produces double slashes in URLs and breaks Apostrophe's URL-building. As far as we're concerned, this was a bug, since it broke the unit tests.
-* However, for the benefit of anyone who preferred this behavior for non-Apostrophe applications, the new `strictPaths: true` option may be passed when configuring uploadfs to get the old behavior in which leading slashes are not finessed and the URL will actually contain a double slash.
+- Updated the `@google-cloud/storage` module to the 5.x series to address a possible security vulnerability reported by `npm audit`. Version 5.x does not support node 8, which is itself not supported, so you should not be running it anymore.
+- However, we also made the libraries for all three cloud storage backends (GCS, S3, and Azure) `optionalDependencies`. If they fail to install for any reason, uploadfs will still work, as long as you do not try to use that specific backend.
+- A longstanding bug in GCS storage that broke its use with ApostropheCMS has been fixed. Leading slashes in paths are no longer stored in a way that produces double slashes in URLs and breaks Apostrophe's URL-building. As far as we're concerned, this was a bug, since it broke the unit tests.
+- However, for the benefit of anyone who preferred this behavior for non-Apostrophe applications, the new `strictPaths: true` option may be passed when configuring uploadfs to get the old behavior in which leading slashes are not finessed and the URL will actually contain a double slash.
 
 ## 1.16.0
 
-* Added bucketObjectsACL option to s3.js to allow override of default 'public-read' permission when using a restricted S3 bucket to store assets. Thanks to Shaun Hurley for the contribution.
+- Added bucketObjectsACL option to s3.js to allow override of default 'public-read' permission when using a restricted S3 bucket to store assets. Thanks to Shaun Hurley for the contribution.
 
 ## 1.15.1
 
-* Using the latest version of jimp, which resolves an `npm audit` issue. JPEG EXIF rotation autocorrection is now standard in jimp so we don't explicitly invoke it anymore but should get the same good results with smartphone photos etc.
+- Using the latest version of jimp, which resolves an `npm audit` issue. JPEG EXIF rotation autocorrection is now standard in jimp so we don't explicitly invoke it anymore but should get the same good results with smartphone photos etc.
 
 ## 1.15.0
 
-* gzip content encoding for S3. When using `copyIn` to copy a file of a suitable type into S3, it will be gzipped and the appropriate content encoding will be set so that browsers automatically do the right thing when they download it. Similarly, the `copyOut` implementation for S3 now transparently supports downloading the original, uncompressed content from S3. The standard web image formats and zipfiles are not double-compressed because the benefit is minimal, so the CPU impact on phones is not justified in this case.
+- gzip content encoding for S3. When using `copyIn` to copy a file of a suitable type into S3, it will be gzipped and the appropriate content encoding will be set so that browsers automatically do the right thing when they download it. Similarly, the `copyOut` implementation for S3 now transparently supports downloading the original, uncompressed content from S3. The standard web image formats and zipfiles are not double-compressed because the benefit is minimal, so the CPU impact on phones is not justified in this case.
 
 ## 1.14.1
 
-* Depend on GCS 4.x to address npm audit warning. There appear to be no relevant breaking API GCS.
+- Depend on GCS 4.x to address npm audit warning. There appear to be no relevant breaking API GCS.
 
 ## 1.14.0
 
-* Failover: azure copyOut now attempts to copy from every available replica, for durability
-* azure errors now report the account and container concerned so you can identify the faulty replica; if all were tried (copyOut), ALL is reported. This is done via `account` and `container` properties on the error object
-* eslint fixes, including undefined variable fixes
+- Failover: azure copyOut now attempts to copy from every available replica, for durability
+- azure errors now report the account and container concerned so you can identify the faulty replica; if all were tried (copyOut), ALL is reported. This is done via `account` and `container` properties on the error object
+- eslint fixes, including undefined variable fixes
 
 ## 1.13.0
 
-* Now compatible with S3-like backends that build the bucket URL as a path rather than a subdomain. To enable this behavior, set the `s3ForcePathStyle` option to `true`. Thanks to Funkhaus Creative for this contribution.
+- Now compatible with S3-like backends that build the bucket URL as a path rather than a subdomain. To enable this behavior, set the `s3ForcePathStyle` option to `true`. Thanks to Funkhaus Creative for this contribution.
 
 ## 1.12.0
 
-* Google Cloud Storage (GCS) support. Thanks to Nick Bauman for this contribution.
+- Google Cloud Storage (GCS) support. Thanks to Nick Bauman for this contribution.
 
 ## 1.11.1
 
-* Azure storage backend: `mp4` has been added to the list of formats that are excluded from gzip transfer encoding by default. This is because it does not stream properly in Chrome and saves very little space
+- Azure storage backend: `mp4` has been added to the list of formats that are excluded from gzip transfer encoding by default. This is because it does not stream properly in Chrome and saves very little space
 
 ## 1.11.0
 
-* The new `prefix` option, if present, is prepended to all `uploadfs` paths before they reach the storage layer. This makes it easy for several sites to share, for instance, the same S3 bucket without confusion. The `getUrl()` method also reflects the prefix, unless the `cdn` option is in play, as cdn URLs might not include a prefix. Always set the `url` subproperty of `cdn` with the prefix you need, if any.
+- The new `prefix` option, if present, is prepended to all `uploadfs` paths before they reach the storage layer. This makes it easy for several sites to share, for instance, the same S3 bucket without confusion. The `getUrl()` method also reflects the prefix, unless the `cdn` option is in play, as cdn URLs might not include a prefix. Always set the `url` subproperty of `cdn` with the prefix you need, if any.
 
 ## 1.10.2
 
 We fixed some significant issues impacting users of the `azure` storage backend. If you use that backend you should upgrade:
 
-* Get extensions from uploadfs path so gzipped files are not all application/octet stream
-* Pass the content-encoding header properly. Please note that files already uploaded to `azure` with uploadfs are gzipped but do *not* have the correct header and so your webserver may not recognize them correctly, especially if used for CSS files and other text formats. You can resolve this by uploading them again.
-* `copyOut` now correctly reverses `copyIn` completely, including gunzipping the file if necessary. Without this change cropping, etc. did not work.
-* Default test path covers these issues correctly.
+- Get extensions from uploadfs path so gzipped files are not all application/octet stream
+- Pass the content-encoding header properly. Please note that files already uploaded to `azure` with uploadfs are gzipped but do _not_ have the correct header and so your webserver may not recognize them correctly, especially if used for CSS files and other text formats. You can resolve this by uploading them again.
+- `copyOut` now correctly reverses `copyIn` completely, including gunzipping the file if necessary. Without this change cropping, etc. did not work.
+- Default test path covers these issues correctly.
 
 ## 1.10.1
 
-* If `replicateClusters` exists but is an empty array, the credential options are used instead. This was not a bug fix, exactly, but it is a nice "do what I mean" feature.
-* A single `gzip` object was being reused, leading to failures on subsequent writes to Azure. Fixed.
-* The Azure backend contained a global array, thus limiting you to a single instance of `uploadfs` in your project. Fixed.
+- If `replicateClusters` exists but is an empty array, the credential options are used instead. This was not a bug fix, exactly, but it is a nice "do what I mean" feature.
+- A single `gzip` object was being reused, leading to failures on subsequent writes to Azure. Fixed.
+- The Azure backend contained a global array, thus limiting you to a single instance of `uploadfs` in your project. Fixed.
 
 ## 1.10.0
 
@@ -214,27 +220,27 @@ Deemphasized `imagecrunch`. People don't serve public sites on Macs anyway and h
 
 ## 1.9.1
 
-* All `imagemin-` plugin modules are now `optionalDependencies` and uploadfs can print a warning at startup and continue without any one of them. In addition, if `imagemin` fails, this situation is tolerated with a warning printed and the images are still transformed as they would be without `imagemin`. This is necessary because [`imagemin-pngquant` fails on CentOS 7 without sysadmin intervention to install additional system packages outside of npm](https://github.com/imagemin/pngquant-bin/issues/77), and `cjpeg` fails to run without extra libraries even though it does `npm install`, etc.
+- All `imagemin-` plugin modules are now `optionalDependencies` and uploadfs can print a warning at startup and continue without any one of them. In addition, if `imagemin` fails, this situation is tolerated with a warning printed and the images are still transformed as they would be without `imagemin`. This is necessary because [`imagemin-pngquant` fails on CentOS 7 without sysadmin intervention to install additional system packages outside of npm](https://github.com/imagemin/pngquant-bin/issues/77), and `cjpeg` fails to run without extra libraries even though it does `npm install`, etc.
 
 ## 1.9.0
 
-* Azure support.
-* Added `migrateToDisabledFileKey` and `migrateFromDisabledFileKey` methods for use when switching to the option of renaming files in a cryptographically secure way rather than changing their permissions. These files change the approach for all existing disabled files.
+- Azure support.
+- Added `migrateToDisabledFileKey` and `migrateFromDisabledFileKey` methods for use when switching to the option of renaming files in a cryptographically secure way rather than changing their permissions. These files change the approach for all existing disabled files.
 
 ## 1.8.0
 
-* Added the optional `destroy` method, which allows for graceful release of resources such as file descriptors or timeouts that may belong to backends.
+- Added the optional `destroy` method, which allows for graceful release of resources such as file descriptors or timeouts that may belong to backends.
 
 ## 1.7.2
 
-* Added mime type for `svg` as standard equipment.
-* User-configured mime types now merge with the standard set, making it easy to add a few without starting from scratch.
+- Added mime type for `svg` as standard equipment.
+- User-configured mime types now merge with the standard set, making it easy to add a few without starting from scratch.
 
 Thanks to tortilaman.
 
 ## 1.7.1
 
-The `s3` storage backend now respects the `endpoint`  option properly when asked to provide URLs. Thanks to tortilaman.
+The `s3` storage backend now respects the `endpoint` option properly when asked to provide URLs. Thanks to tortilaman.
 
 ## 1.7.0
 
@@ -256,61 +262,61 @@ Node 8.x added an official `stream.destroy` method with different semantics from
 
 ## 1.5.1
 
-* The s3 storage backend now honors the `cachingTime` option properly again. Thanks to Matt Crider.
+- The s3 storage backend now honors the `cachingTime` option properly again. Thanks to Matt Crider.
 
 ## 1.5.0
 
-* The s3 storage backend now uses the official AWS SDK for JavaScript. The knox module is no longer maintained and is missing basic request signature support that is mandatory for newer AWS regions. It is no longer a serious option.
+- The s3 storage backend now uses the official AWS SDK for JavaScript. The knox module is no longer maintained and is missing basic request signature support that is mandatory for newer AWS regions. It is no longer a serious option.
 
 Every effort has been made to deliver 100% backwards compatibility with the documented options of knox, and the full test suite is passing with the new AWS SDK.
 
 ## 1.4.0
 
-* The new pure-JavaScript `jimp` image backend works "out of the box" even when ImageMagick is not installed. For faster operation and GIF support, you should still install ImageMagick. Thanks to Dave Ramirez for contributing this feature.
+- The new pure-JavaScript `jimp` image backend works "out of the box" even when ImageMagick is not installed. For faster operation and GIF support, you should still install ImageMagick. Thanks to Dave Ramirez for contributing this feature.
 
 ## 1.3.6
 
-* Octal constants are forbidden in ES6 strict, use `parseInt(x, 8)`. No other changes.
+- Octal constants are forbidden in ES6 strict, use `parseInt(x, 8)`. No other changes.
 
 ## 1.3.5
 
-* All tests passing.
-* Rewrote automatic directory cleanup mechanism of local storage to cope correctly with more complex directory structures.
+- All tests passing.
+- Rewrote automatic directory cleanup mechanism of local storage to cope correctly with more complex directory structures.
 
 ## 1.3.4
 
-* Bumped dependencies to newer, better maintained versions. All tests passing.
-* Removed accidental dependency on `global-tunnel-ng` and commented out a one-time test in `test.js`.
+- Bumped dependencies to newer, better maintained versions. All tests passing.
+- Removed accidental dependency on `global-tunnel-ng` and commented out a one-time test in `test.js`.
 
 ## 1.3.3
 
-* Dependency on `request` is no longer locked down to a minor version, which was unnecessary and caused peer dependency failures in some projects (an npm design flaw IMHO, but never mind)
+- Dependency on `request` is no longer locked down to a minor version, which was unnecessary and caused peer dependency failures in some projects (an npm design flaw IMHO, but never mind)
 
 ## 1.3.2
 
-* Updated dependency on `rimraf` module to eliminate deprecation warning for `graceful-fs`
+- Updated dependency on `rimraf` module to eliminate deprecation warning for `graceful-fs`
 
 ## 1.3.1
 
-* Whoops, refer to original width and height properly for gifsicle
+- Whoops, refer to original width and height properly for gifsicle
 
 ## 1.3.0
 
-* The `imagemagick` image conversion backend now optionally uses `gifsicle` to convert animated GIFs. Turn on this behavior with the `gifsicle: true` option. There are tradeoffs: `gifsicle` is much faster and uses much less RAM, but seems to produce slightly lower quality results. On a very large animation though, you're almost certain to run out of RAM with `imagemagick`. Of course you must install `gifsicle` to take advantage of this.
+- The `imagemagick` image conversion backend now optionally uses `gifsicle` to convert animated GIFs. Turn on this behavior with the `gifsicle: true` option. There are tradeoffs: `gifsicle` is much faster and uses much less RAM, but seems to produce slightly lower quality results. On a very large animation though, you're almost certain to run out of RAM with `imagemagick`. Of course you must install `gifsicle` to take advantage of this.
 
 ## 1.2.2
 
-* The very short-lived version 1.2.1 did not retain the originals of GIFs (when desired). This has been fixed.
+- The very short-lived version 1.2.1 did not retain the originals of GIFs (when desired). This has been fixed.
 
 ## 1.2.1
 
-* Animated GIF conversion strategy has been customized once again. We found cases in which the combined pipeline was 4x slower (!) and also needed to add in `-coalesce` to prevent bad frames in some cases.
+- Animated GIF conversion strategy has been customized once again. We found cases in which the combined pipeline was 4x slower (!) and also needed to add in `-coalesce` to prevent bad frames in some cases.
 
 ## 1.2.0
 
-* Added the `cachingTime` and `cdn` options. Thanks to Vispercept.
+- Added the `cachingTime` and `cdn` options. Thanks to Vispercept.
 
-* Fixed a bug where the local storage backend could invoke its callbacks twice, with both failure and success, when an error occurs reading from a local file in newer verisons of node (this bug did not appear in 0.10.x). The fix is backwards compatible.
+- Fixed a bug where the local storage backend could invoke its callbacks twice, with both failure and success, when an error occurs reading from a local file in newer verisons of node (this bug did not appear in 0.10.x). The fix is backwards compatible.
 
 ## 1.1.10
 
@@ -360,8 +366,8 @@ If you do not specify an `image` backend, uploadfs will look for imagecrunch and
 
 `copyImageIn` has been rewritten to run more than 4x faster! We now generate our own imagemagick `convert` pipeline which takes advantage of two big optimizations:
 
-* Load, orient and crop the original image only once, then output it at several sizes in the same pipeline. This yields a 2x speedup.
-* First scale the image to the largest size desired, then scale to smaller sizes based on that as part of the same pipeline, without creating any lossy intermediate files. This yields another 2x speedup and a helvetica of designers were unable to see any difference in quality. ("Helvetica" is the collective noun for a group of designers.)
+- Load, orient and crop the original image only once, then output it at several sizes in the same pipeline. This yields a 2x speedup.
+- First scale the image to the largest size desired, then scale to smaller sizes based on that as part of the same pipeline, without creating any lossy intermediate files. This yields another 2x speedup and a helvetica of designers were unable to see any difference in quality. ("Helvetica" is the collective noun for a group of designers.)
 
 The new `parallel` option allows you to specify the maximum number of image sizes to render simultaneously. This defaults to 1, to avoid using a lot of memory and CPU, but if you are under the gun to render a lot of images in a hurry, you can set this as high as the number of image sizes you have. Currently there is no throttling mechanism for multiple unrelated calls to `uploadfs.copyImageIn`, this option relates to the rendering of the various sizes for a single call.
 
