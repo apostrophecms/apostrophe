@@ -40,3 +40,6 @@ const connect = async function(uri, options = {}) {
 
 module.exports = connect;
 module.exports.escapeHost = require('./lib/escape-host');
+module.exports.dump = require('./lib/dump');
+module.exports.restore = require('./lib/restore');
+module.exports.copyDatabase = require('./lib/copy-database');

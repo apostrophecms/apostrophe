@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
-const dbConnect = require('..');
-
-const BATCH_SIZE = 100;
+const dump = require('../lib/dump');
 
 main().then(() => {
   process.exit(0);
@@ -22,97 +20,11 @@ async function main() {
     throw new Error('Usage: apos-db-dump <uri> [--output=filename]');
   }
 
-  const client = await dbConnect(uri);
-  const stream = output ? fs.createWriteStream(output) : process.stdout;
-  try {
-    const db = client.db();
-    const collections = await db.listCollections().toArray();
+  const data = await dump(uri);
 
-    for (const collInfo of collections) {
-      const name = collInfo.name;
-      const col = db.collection(name);
-      const indexes = await col.indexes();
-      const customIndexes = indexes.filter(idx => idx.name !== '_id_');
-
-      // Write collection header
-      const header = { _collection: name };
-      if (customIndexes.length > 0) {
-        header._indexes = customIndexes;
-      }
-      await write(stream, JSON.stringify(header));
-
-      // Write docs in batches, sorted by _id for deterministic output
-      let lastId = null;
-      while (true) {
-        const query = lastId ? { _id: { $gt: lastId } } : {};
-        const batch = await col.find(query).sort({ _id: 1 }).limit(BATCH_SIZE).toArray();
-        if (batch.length === 0) {
-          break;
-        }
-        for (const doc of batch) {
-          await write(stream, JSON.stringify({
-            _collection: name,
-            _doc: serializeValue(doc)
-          }));
-        }
-        lastId = batch[batch.length - 1]._id;
-        if (batch.length < BATCH_SIZE) {
-          break;
-        }
-      }
-    }
-
-    // Wait for output stream to finish if writing to file
-    if (output) {
-      await new Promise((resolve, reject) => {
-        stream.end(resolve);
-        stream.on('error', reject);
-      });
-    }
-  } finally {
-    await client.close();
+  if (output) {
+    fs.writeFileSync(output, data);
+  } else {
+    process.stdout.write(data);
   }
-}
-
-function write(stream, line) {
-  return new Promise((resolve, reject) => {
-    const ok = stream.write(line + '\n');
-    if (ok) {
-      return resolve();
-    }
-    const onDrain = () => {
-      stream.removeListener('error', onError);
-      resolve();
-    };
-    const onError = (err) => {
-      stream.removeListener('drain', onDrain);
-      reject(err);
-    };
-    stream.once('drain', onDrain);
-    stream.once('error', onError);
-  });
-}
-
-function serializeValue(obj) {
-  if (obj instanceof Date) {
-    return { $date: obj.toISOString() };
-  }
-  if (obj === null || obj === undefined) {
-    return obj;
-  }
-  // MongoDB ObjectId: convert to hex string
-  if (typeof obj === 'object' && obj.constructor && obj.constructor.name === 'ObjectId') {
-    return obj.toHexString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeValue);
-  }
-  if (typeof obj === 'object') {
-    const result = {};
-    for (const [ k, v ] of Object.entries(obj)) {
-      result[k] = serializeValue(v);
-    }
-    return result;
-  }
-  return obj;
 }
