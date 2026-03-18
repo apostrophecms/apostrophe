@@ -1,8 +1,14 @@
 # Changelog
 
+## 1.4.1
+
+### Fixes
+
+- Fixes README error in `fieldMappings` option
+
 ## 1.4.0
 
-### Minor Changes
+### Adds
 
 - Adds Structured data and the related fields to page and piece types.
 - Adds basic organization information to all pages.

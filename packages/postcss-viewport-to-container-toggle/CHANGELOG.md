@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0
+
+### Adds
+
+- Adds support for media queries that change `:root` variable values
+
 ## 2.2.0
 
 ### Adds

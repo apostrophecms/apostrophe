@@ -1,5 +1,40 @@
 # Changelog
 
+## 4.28.0
+
+### Adds
+
+- Adds support for static URLs and static external frontend builds.
+- Adds widget graph store, accessible in Admin UI.
+- Support for the new `prettyUrls: true` option for @apostrophecms/file, which enables "pretty URLs" for PDFs and other items in the file library, in exchange for a small performance impact. Edit the slug field to adjust the pretty URL
+
+
+### Fixes
+
+- Fix a bug when rich text link open in new tab checkbox can't be cleared
+- Ensures the `getOne` API can correctly retrieve documents that are not localized. Thanks to [Eduardo Correal](https://github.com/ecb34).
+- Clicking a choice should dismiss the relationship suggestions dropdown. This regression was caused by part of the patch in release 4.27.1.
+- lint on main
+- Adds inner wrapper to area widget that creates a separate z-index context for the user, fixing widget/apostrophe UI conflicts
+- Fixes a bug where Layout's mode erroneously switches state
+- Fixes a bug where Layouts synthetic column styles were not reaching their children
+- Fixes styles being sanitized as html (breaks quotes) and resolves duplicate styles on the page.
+- Fix subtle bug in AposPermissionGrid that caused unrelated clicks to be "swallowed" due to a race condition at low network speeds
+- Fixes two conditions where slow internet speed could cause input to lose focus before a selection can be registered.
+
+### Changes
+
+- Improve re-rendering UX while keeping the performance optimization
+- raise the user's widget z-index context only when focused
+- Hide add content buttons on rich text editing, like widget controls
+-  Refine in-context focus states for calmer UX
+- Simplifies some in-context UI rendering checks
+- Updated dependencies
+
+### Security
+
+- This previously undisclosed security vulnerability allowed users who had compromised a password to perform actions in the CMS without 2FA. For sites not using 2FA (e.g. our @apostrophecms/login-totp module), this changes nothing. But for those using our TOTP module or similar, upgrading to this release is urgent. Thanks to 0xkakashi for reporting the issue and recommending a fix.
+
 ## 4.27.1 (2026-03-03)
 
 ### Fixes
