@@ -404,7 +404,7 @@ module.exports = {
             // for the token to be usable to log in.
             $or: [
               { requirementsToVerify: { $exists: false } },
-              { requirementsToVerify: { $ne: [] } }
+              { requirementsToVerify: { $size: 0 } }
             ]
           });
           return bearer && bearer.userId;
