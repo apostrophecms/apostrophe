@@ -1,6 +1,6 @@
 <template>
   <AposButton
-    icon="clock-outline-icon"
+    icon="recently-edited-icon"
     type="subtle"
     :modifiers="['small', 'no-motion']"
     :tooltip="$t('apostrophe:recentlyEditedDocuments')"

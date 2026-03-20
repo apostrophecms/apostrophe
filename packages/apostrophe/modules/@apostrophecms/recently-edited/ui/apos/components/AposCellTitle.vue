@@ -15,7 +15,7 @@
       @click.stop
     >
       <AposIndicator
-        icon="open-in-new-icon"
+        icon="link-external-icon"
         :icon-size="14"
         decorative
       />

@@ -58,10 +58,6 @@ module.exports = {
     },
     remove: [ 'visibility', 'archived' ]
   },
-  icons: {
-    'clock-outline-icon': 'ClockOutline',
-    'open-in-new-icon': 'OpenInNew'
-  },
   async init(self) {
     self.actionFilterRegistry = {};
     self.statusFilterRegistry = {};
