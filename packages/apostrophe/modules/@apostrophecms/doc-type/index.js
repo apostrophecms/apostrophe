@@ -2461,20 +2461,43 @@ module.exports = {
             if (!val) {
               return;
             }
-            const byType = {};
-            for (const doc of results) {
-              byType[doc.type] = byType[doc.type] || [];
-              byType[doc.type].push(doc);
+
+            async function addUrlsByType(reqForUrls, docs) {
+              const byType = {};
+              for (const doc of docs) {
+                byType[doc.type] = byType[doc.type] || [];
+                byType[doc.type].push(doc);
+              }
+              for (const type of Object.keys(byType)) {
+                const manager = self.apos.doc.getManager(type);
+                if (manager?.addUrls) {
+                  await manager.addUrls(reqForUrls, byType[type]);
+                }
+              }
             }
-            const interesting = Object.keys(byType).filter(type => {
-              // Don't freak out if the projection was really conservative
-              // and the type is unknown, etc.
-              const manager = self.apos.doc.getManager(type);
-              return manager && manager.addUrls;
-            });
-            for (const type of interesting) {
-              await self.apos.doc.getManager(type).addUrls(req, byType[type]);
+
+            // When locale(null) was used, docs may span multiple
+            // locales. Group by locale and resolve URLs with a
+            // locale-appropriate req so each doc gets the correct
+            // _url for its own locale.
+            if (query.get('locale') === null) {
+              const byLocale = {};
+              for (const doc of results) {
+                const locale =
+                  doc.aposLocale?.split(':')[0] || req.locale;
+                byLocale[locale] = byLocale[locale] || [];
+                byLocale[locale].push(doc);
+              }
+              for (const [ locale, localeDocs ] of Object.entries(byLocale)) {
+                const localeReq = locale === req.locale
+                  ? req
+                  : req.clone({ locale });
+                await addUrlsByType(localeReq, localeDocs);
+              }
+              return;
             }
+
+            await addUrlsByType(req, results);
           }
         },
 
@@ -2521,10 +2544,31 @@ module.exports = {
         pageUrl: {
           def: true,
           after(results) {
+            const req = query.req;
+            const crossLocale = query.get('locale') === null;
+            const localeReqs = {};
             for (const result of results) {
-              if ((!result.archived) && result.slug && self.apos.page.isPage(result)) {
-                result._url = `${query.req.prefix}${result.slug}`;
+              if (
+                (!result.archived) &&
+                result.slug &&
+                self.apos.page.isPage(result)
+              ) {
+                const urlReq = getReqForLocale(result);
+                result._url = `${urlReq.prefix}${result.slug}`;
               }
+            }
+            function getReqForLocale(doc) {
+              if (!crossLocale || !doc.aposLocale) {
+                return req;
+              }
+              const locale = doc.aposLocale.split(':')[0];
+              if (!localeReqs[locale]) {
+                localeReqs[locale] =
+                  locale === req.locale
+                    ? req
+                    : req.clone({ locale });
+              }
+              return localeReqs[locale];
             }
           }
         },

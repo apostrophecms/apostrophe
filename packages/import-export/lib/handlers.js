@@ -58,7 +58,6 @@ module.exports = self => {
         if (recentlyEdited?.registerFilterAction) {
           recentlyEdited.registerFilterAction('imported', {
             label: 'aposImportExport:recentlyEditedActionImported',
-            projection: { importedAt: 1 },
             query(queryBuilder) {
               const cutoff = recentlyEdited.getCutoffDate();
               queryBuilder.and({ importedAt: { $gte: cutoff } });

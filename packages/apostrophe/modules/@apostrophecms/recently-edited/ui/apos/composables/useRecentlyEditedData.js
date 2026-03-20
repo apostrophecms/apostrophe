@@ -1,13 +1,14 @@
 import {
   computed, inject, ref, watch
 } from 'vue';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 
 const DEBOUNCE_TIMEOUT = 300;
 
 /**
- * Manages data fetching, filtering, pagination, and content refresh
- * for the recently-edited document manager.
+ * Manages data fetching, filtering, pagination, batch operations and content
+ * refresh for the recently-edited document manager.
  *
  * @param {string} moduleName
  * @returns {object} Reactive data, computed properties, and action functions
@@ -60,6 +61,141 @@ export function useRecentlyEditedData(moduleName) {
     )
   );
 
+  const modalStore = useModalStore();
+
+  // Batch operations are available only when both a specific type
+  // and locale are selected, making the list equivalent to a
+  // standard single-type manager.
+  const batchOperations = computed(() => {
+    const typeName = filterState.value._docType;
+    if (!typeName || !filterState.value._locale) {
+      return [];
+    }
+    return apos.modules[typeName]?.batchOperations || [];
+  });
+
+  // Map recently-edited filter state to the format batch operation
+  // `if` conditions expect (e.g. `{ archived: false }`).
+  const batchFilterValues = computed(() => ({
+    archived: filterState.value._status === 'archived'
+  }));
+
+  const checked = ref([]);
+  const allPiecesSelection = ref({
+    isSelected: false,
+    total: 0
+  });
+
+  const selectAllChoice = computed(() => {
+    const checkCount = checked.value.length;
+    const pageNotFullyChecked = items.value
+      .some(item => !checked.value.includes(item._id));
+    return {
+      value: 'checked',
+      indeterminate: checkCount > 0 && pageNotFullyChecked
+    };
+  });
+
+  const selectAllState = computed(() => {
+    if (checked.value.length && !selectAllChoice.value.indeterminate) {
+      return 'checked';
+    }
+    if (checked.value.length && selectAllChoice.value.indeterminate) {
+      return 'indeterminate';
+    }
+    return 'empty';
+  });
+
+  function selectAll() {
+    if (!checked.value.length) {
+      checked.value = items.value.map(item => item._id);
+      // With infinite scroll all items may already be loaded,
+      // so mark the full set as selected to show the banner.
+      if (items.value.length >= allPiecesSelection.value.total) {
+        allPiecesSelection.value.isSelected = true;
+      }
+      return;
+    }
+    allPiecesSelection.value.isSelected = false;
+    checked.value = [];
+  }
+
+  async function selectAllPieces() {
+    const response = await fetchPage(1, {
+      perPage: allPiecesSelection.value.total,
+      project: { _id: 1 },
+      lean: 1
+    });
+    const allIds = (response.results || []).map(item => item._id);
+    checked.value = allIds;
+    allPiecesSelection.value.isSelected = true;
+  }
+
+  function setAllPiecesSelection({
+    isSelected, total, docs
+  }) {
+    if (typeof isSelected === 'boolean') {
+      allPiecesSelection.value.isSelected = isSelected;
+    }
+    if (typeof total === 'number') {
+      allPiecesSelection.value.total = total;
+    }
+    if (docs) {
+      checked.value = docs.map(d => d._id || d);
+    }
+  }
+
+  async function handleBatchAction({
+    label, action, requestOptions = {}, messages
+  }) {
+    const typeName = filterState.value._docType;
+    const typeAction = apos.modules[typeName]?.action;
+    if (!action || !typeAction) {
+      return;
+    }
+    try {
+      await apos.http.post(`${typeAction}/${action}`, {
+        body: {
+          ...requestOptions,
+          _ids: checked.value,
+          messages,
+          type: checked.value.length === 1
+            ? moduleLabels.value.singular
+            : moduleLabels.value.plural
+        }
+      });
+    } catch (error) {
+      apos.notify('apostrophe:errorBatchOperationNoti', {
+        interpolate: { operation: label },
+        type: 'danger'
+      });
+    }
+    allPiecesSelection.value.isSelected = false;
+    checked.value = [];
+    reload({ immediate: true });
+  }
+
+  // True when no specific locale filter is selected ("Any"),
+  // meaning docs from multiple locales are listed simultaneously.
+  const crossLocale = computed(() => {
+    return !filterState.value._locale;
+  });
+
+  // Sync locale filter → modal store locale, so apos.http auto-appends
+  // the correct aposLocale to all requests (including child modals).
+  // This matches standard manager behavior — the context bar may
+  // rewrite the browser URL to the filtered locale, but it reverts
+  // when the modal closes (modal pops from stack).
+  watch(() => filterState.value._locale, (newLocale) => {
+    const id = modalStore.activeModal?.id;
+    if (id) {
+      modalStore.updateModalData(id, {
+        locale: newLocale || apos.i18n.locale,
+        crossLocale: !newLocale
+      });
+    }
+  }, { immediate: true });
+
   // Generation counter: incremented on every page-1 load so that
   // in-flight loadMore() calls from a stale dataset are discarded.
   let loadGeneration = 0;
@@ -105,8 +241,11 @@ export function useRecentlyEditedData(moduleName) {
     };
   }
 
-  async function fetchPage(page = 1) {
-    const qs = { page };
+  async function fetchPage(page = 1, overrides = {}) {
+    const qs = {
+      page,
+      ...overrides
+    };
     for (const [ key, val ] of Object.entries(filterState.value)) {
       if (val != null && val !== '') {
         qs[key] = val;
@@ -115,13 +254,18 @@ export function useRecentlyEditedData(moduleName) {
     if (searchQuery.value) {
       qs.autocomplete = searchQuery.value;
     }
-    if (page === 1 && choiceFilterNames.value.length) {
+    if (!overrides.perPage && page === 1 && choiceFilterNames.value.length) {
       qs.choices = choiceFilterNames.value;
     }
     return apos.http.get(moduleOptions.value.action, {
       qs,
       draft: true
     });
+  }
+
+  async function fetchTotalCount() {
+    const { count } = await fetchPage(1, { count: 1 });
+    return count || 0;
   }
 
   // Shallow comparison of filter choices to avoid unnecessary reactivity
@@ -145,7 +289,7 @@ export function useRecentlyEditedData(moduleName) {
     });
   }
 
-  function applyPage1Results(response) {
+  async function applyPage1Results(response) {
     loadGeneration++;
     items.value = (response.results || []).map(enrichItem);
     currentPage.value = response.currentPage;
@@ -155,6 +299,15 @@ export function useRecentlyEditedData(moduleName) {
       filterChoices.value = incoming;
     }
     isLoading.value = false;
+    // Update total count for the select-all banner when batch
+    // operations are available (single type + locale selected).
+    if (batchOperations.value.length) {
+      const total = await fetchTotalCount();
+      setAllPiecesSelection({
+        isSelected: false,
+        total
+      });
+    }
   }
 
   const debouncedLoad = debounceAsync(
@@ -224,6 +377,7 @@ export function useRecentlyEditedData(moduleName) {
   // Reload on any filter change via the unified debouncedLoad.
   // No inline state mutations — applyPage1Results handles everything atomically.
   watch(filterState, () => {
+    checked.value = [];
     reload();
   }, { deep: true });
 
@@ -241,6 +395,7 @@ export function useRecentlyEditedData(moduleName) {
     searchQuery,
     filterState,
     activeFilterTags,
+    crossLocale,
     reload,
     loadMore,
     updateFilters,
@@ -249,6 +404,15 @@ export function useRecentlyEditedData(moduleName) {
     hasActiveFilters,
     onContentChanged,
     onSearch,
-    cancel
+    cancel,
+    batchOperations,
+    batchFilterValues,
+    checked,
+    allPiecesSelection,
+    selectAllState,
+    selectAll,
+    selectAllPieces,
+    setAllPiecesSelection,
+    handleBatchAction
   };
 }

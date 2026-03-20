@@ -206,6 +206,17 @@ export default {
       return !this.options.noSearch;
     }
   },
+  watch: {
+    batchOperations() {
+      this.computeActiveOperations();
+    },
+    filterValues: {
+      deep: true,
+      handler() {
+        this.computeActiveOperations();
+      }
+    }
+  },
   mounted () {
     this.computeActiveOperations();
     apos.bus.$on('command-menu-manager-select-all', this.selectAll);

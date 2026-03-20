@@ -98,6 +98,10 @@ export default {
       default() {
         return true;
       }
+    },
+    crossLocale: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],
@@ -111,6 +115,12 @@ export default {
   },
   computed: {
     menu() {
+      // TODO: Register core context actions (edit, preview,
+      // copy, localize, archive, etc.) as custom operations
+      // via `addContextOperation`. This would let us unify
+      // cross-locale gating through the `crossLocale`
+      // flag on each operation, eliminating the manual
+      // `!this.crossLocale` wrapping below.
       const menu = [
         // TODO
         // ...(this.isModifiedFromPublished ? [
@@ -134,64 +144,76 @@ export default {
             }
           ]
           : []),
-        ...((this.showDismissSubmission && this.canDismissSubmission)
+        // In cross-locale mode, only Edit and Preview are safe.
+        // All other built-in ops are hidden.
+        ...(!this.crossLocale
           ? [
-            {
-              label: 'apostrophe:dismissSubmission',
-              action: 'dismissSubmission'
-            }
-          ]
-          : []),
-        ...(this.showCopy && this.canCopy
-          ? [
-            {
-              label: 'apostrophe:duplicate',
-              action: 'copy'
-            }
-          ]
-          : []),
-        ...(this.canLocalize
-          ? [
-            {
-              label: 'apostrophe:localize',
-              action: 'localize'
-            }
+            ...((this.showDismissSubmission && this.canDismissSubmission)
+              ? [
+                {
+                  label: 'apostrophe:dismissSubmission',
+                  action: 'dismissSubmission'
+                }
+              ]
+              : []),
+            ...(this.showCopy && this.canCopy
+              ? [
+                {
+                  label: 'apostrophe:duplicate',
+                  action: 'copy'
+                }
+              ]
+              : []),
+            ...(this.canLocalize
+              ? [
+                {
+                  label: 'apostrophe:localize',
+                  action: 'localize'
+                }
+              ]
+              : [])
           ]
           : []),
         ...this.customMenusByContext,
-        ...((this.showDiscardDraft && this.canDiscardDraft)
+        ...(!this.crossLocale
           ? [
-            {
-              label: this.context.lastPublishedAt ? 'apostrophe:discardDraft' : 'apostrophe:deleteDraft',
-              action: 'discardDraft',
-              modifiers: [ 'danger' ]
-            }
-          ]
-          : []),
-        ...(this.showArchive && this.canArchive
-          ? [
-            {
-              label: 'apostrophe:archive',
-              action: 'archive',
-              modifiers: [ 'danger' ]
-            }
-          ]
-          : []),
-        ...(this.showUnpublish && this.canUnpublish
-          ? [
-            {
-              label: 'apostrophe:unpublish',
-              action: 'unpublish',
-              modifiers: [ 'danger' ]
-            }
-          ]
-          : []),
-        ...(this.showRestore && this.canRestore
-          ? [
-            {
-              label: 'apostrophe:restore',
-              action: 'restore'
-            }
+            ...((this.showDiscardDraft && this.canDiscardDraft)
+              ? [
+                {
+                  label: this.context.lastPublishedAt
+                    ? 'apostrophe:discardDraft'
+                    : 'apostrophe:deleteDraft',
+                  action: 'discardDraft',
+                  modifiers: [ 'danger' ]
+                }
+              ]
+              : []),
+            ...(this.showArchive && this.canArchive
+              ? [
+                {
+                  label: 'apostrophe:archive',
+                  action: 'archive',
+                  modifiers: [ 'danger' ]
+                }
+              ]
+              : []),
+            ...(this.showUnpublish && this.canUnpublish
+              ? [
+                {
+                  label: 'apostrophe:unpublish',
+                  action: 'unpublish',
+                  modifiers: [ 'danger' ]
+                }
+              ]
+              : []),
+            ...(this.showRestore && this.canRestore
+              ? [
+                {
+                  label: 'apostrophe:restore',
+                  action: 'restore'
+                }
+              ]
+              : [])
           ]
           : [])
       ];
@@ -214,8 +236,14 @@ export default {
     },
     customOperationsByContext() {
       return this.customOperations.filter(({
-        manuallyPublished, hasUrl, conditions, context, if: ifProps, moduleIf
+        manuallyPublished, hasUrl, conditions, context,
+        if: ifProps, moduleIf, crossLocale
       }) => {
+        // In cross-locale mode, only show operations explicitly marked as safe
+        if (this.crossLocale && !crossLocale) {
+          return false;
+        }
+
         if (typeof manuallyPublished === 'boolean' && manuallyPublished !== this.manuallyPublished) {
           return false;
         }
@@ -439,13 +467,19 @@ export default {
       this[item.action](this.context);
     },
     async edit(doc) {
+      const props = {
+        moduleName: this.moduleName,
+        docId: doc._id,
+        type: doc.type
+      };
+      // Cross-locale mode suported.
+      if (this.crossLocale && doc.aposLocale) {
+        props.locale = doc.aposLocale.split(':')[0];
+      }
       await apos.modal.execute(
         doc._aposEditorModal || this.moduleOptions.components.editorModal,
-        {
-          moduleName: this.moduleName,
-          docId: doc._id,
-          type: doc.type
-        });
+        props
+      );
     },
     preview(doc) {
       window.open(doc._url, '_blank').focus();
@@ -496,6 +530,11 @@ export default {
         ...docProps(doc),
         ...operation.props
       };
+      // In cross-locale mode, pass the doc's locale so the modal
+      // opens in the correct locale context.
+      if (this.crossLocale && doc.aposLocale) {
+        props.locale = doc.aposLocale.split(':')[0];
+      }
       if (operation.type === 'event') {
         apos.bus.$emit(operation.action, props);
         return;

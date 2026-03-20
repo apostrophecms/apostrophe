@@ -18,7 +18,7 @@ module.exports = {
     showUnpublish: false,
     showPermissions: false,
     // 30-day window
-    rollingWindowDays: 30,
+    rollingWindowDays: 300,
     // Developer-configurable type exclusion
     excludeTypes: [],
     perPage: 50,
@@ -53,14 +53,14 @@ module.exports = {
         label: 'apostrophe:locale'
       },
       _status: {
-        label: 'apostrophe:recentlyEditedStatus',
-        def: 'live'
+        label: 'apostrophe:recentlyEditedStatus'
       }
     },
     remove: [ 'visibility', 'archived' ]
   },
   icons: {
-    'clock-outline-icon': 'ClockOutline'
+    'clock-outline-icon': 'ClockOutline',
+    'open-in-new-icon': 'OpenInNew'
   },
   async init(self) {
     self.actionFilterRegistry = {};
@@ -155,18 +155,11 @@ module.exports = {
       // `name` - unique action identifier (e.g. 'imported')
       // `config.label` - i18n key for the dropdown choice label
       // `config.query` - function(queryBuilder) that applies filter criteria
-      // `config.projection` - optional object of MongoDB projection fields
-      //   to whitelist in the manager API (e.g. { importedAt: 1 })
-      registerFilterAction(name, {
-        label, query, projection
-      }) {
+      registerFilterAction(name, { label, query }) {
         self.actionFilterRegistry[name] = {
           label,
           query
         };
-        if (projection && self.options.managerApiProjection) {
-          Object.assign(self.options.managerApiProjection, projection);
-        }
       },
       // Register a new status for the Status filter dropdown.
       // External modules (e.g. automatic-translation) can call this
@@ -179,18 +172,11 @@ module.exports = {
       //   Can call queryBuilder.and(...) for criteria or override core
       //   builders like queryBuilder.archived(true). Runs early enough
       //   to override any core builder defaults.
-      // `config.projection` - optional object of MongoDB projection fields
-      //   to whitelist in the manager API (e.g. { aposTranslationMeta: 1 })
-      registerFilterStatus(name, {
-        label, query, projection
-      }) {
+      registerFilterStatus(name, { label, query }) {
         self.statusFilterRegistry[name] = {
           label,
           query
         };
-        if (projection && self.options.managerApiProjection) {
-          Object.assign(self.options.managerApiProjection, projection);
-        }
       },
       // Calculate the cutoff date for recently edited documents based on the
       // rolling window setting. Can be used by external modules to provide
@@ -290,7 +276,6 @@ module.exports = {
         });
         self.registerFilterAction('localized', {
           label: 'apostrophe:recentlyEditedActionLocalized',
-          projection: { localizedAt: 1 },
           query(queryBuilder) {
             queryBuilder.and({ localizedAt: { $gte: self.getCutoffDate() } });
           }
@@ -338,9 +323,16 @@ module.exports = {
   extendMethods(self) {
     return {
       find(_super, req, criteria, options) {
+        // The manager projection contains no attachment, area, or
+        // relationship fields, so disable their expensive
+        // post-processing. `addUrls` is kept because `_url`
+        // is projected.
         return _super(req, criteria, options)
           .type(null)
           .locale(null)
+          .attachments(false)
+          .areas(false)
+          .relationships(false)
           .and({
             type: { $in: self.managedTypeNames },
             aposMode: 'draft',
@@ -348,13 +340,23 @@ module.exports = {
           })
           .sort({ updatedAt: -1 });
       },
-      // The API projection is controlled by the backend only to avoid
-      // unnecessary round-trips (QS) from the client.
+      // Inject the manager API projection into req.query before the
+      // parent processes it via applyBuildersSafely. If the client
+      // already sends a projection (e.g. { _id: 1 } for select-all),
+      // it takes precedence.
+      //
+      // When `lean` is set, also disable URL resolution — the caller
+      // wants lightweight results close to raw DB data.
       getRestQuery(_super, req) {
+        if (!req.query.project) {
+          const projection = self.getManagerApiProjection(req);
+          if (projection) {
+            req.query.project = projection;
+          }
+        }
         const query = _super(req);
-        const projection = self.getManagerApiProjection(req);
-        if (projection) {
-          query.project(projection);
+        if (self.apos.launder.boolean(req.query.lean)) {
+          query.addUrls(false);
         }
         return query;
       },
@@ -364,6 +366,7 @@ module.exports = {
           ...data,
           managedTypes: self.managedTypes,
           batchOperations: [],
+          perPage: self.options.perPage,
           showRestore: self.options.showRestore,
           showUnpublish: self.options.showUnpublish,
           rollingWindowDays: self.options.rollingWindowDays,

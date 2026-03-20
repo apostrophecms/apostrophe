@@ -19,16 +19,29 @@
       <AposModalBody>
         <template #bodyHeader>
           <AposDocsManagerToolbar
-            :selected-state="'empty'"
+            :selected-state="selectAllState"
             :total-pages="0"
             :current-page="currentPage"
             :labels="moduleLabels"
             :displayed-items="items.length"
-            :checked-count="0"
-            :batch-operations="[]"
+            :checked-count="checked.length"
+            :batch-operations="batchOperations"
+            :filter-values="batchFilterValues"
             :module-name="moduleName"
             :options="{ noPager: true }"
             @search="onSearch"
+            @select-click="selectAll"
+            @batch="handleBatchAction"
+          />
+          <AposDocsManagerSelectBox
+            v-if="batchOperations.length"
+            :selected-state="selectAllState"
+            :module-labels="moduleLabels"
+            :checked-ids="checked"
+            :all-pieces-selection="allPiecesSelection"
+            :displayed-items="items.length"
+            @select-all="selectAllPieces"
+            @set-all-pieces-selection="setAllPiecesSelection"
           />
           <div class="apos-recently-edited__filters-bar">
             <AposSpinner
@@ -57,9 +70,10 @@
         <template #bodyMain>
           <AposDocsManagerDisplay
             v-if="items.length > 0"
+            v-model:checked="checked"
             :items="items"
             :headers="headers"
-            :options="moduleOptions"
+            :options="displayOptions"
             @open="editDoc"
           />
           <div
@@ -94,7 +108,7 @@
 
 <script setup>
 import {
-  onBeforeUnmount, onMounted, onUnmounted, ref
+  computed, onBeforeUnmount, onMounted, onUnmounted, ref
 } from 'vue';
 import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfiniteScroll.js';
 import { useRecentlyEditedData } from '../composables/useRecentlyEditedData.js';
@@ -128,6 +142,7 @@ const {
   filterChoices,
   filterState,
   activeFilterTags,
+  crossLocale,
   reload,
   loadMore,
   updateFilters,
@@ -136,7 +151,16 @@ const {
   hasActiveFilters,
   onContentChanged,
   onSearch,
-  cancel
+  cancel,
+  batchOperations,
+  batchFilterValues,
+  checked,
+  allPiecesSelection,
+  selectAllState,
+  selectAll,
+  selectAllPieces,
+  setAllPiecesSelection,
+  handleBatchAction
 } = useRecentlyEditedData(props.moduleName);
 
 const { start: startScroll, stop: stopScroll } = useInfiniteScroll(
@@ -145,11 +169,17 @@ const { start: startScroll, stop: stopScroll } = useInfiniteScroll(
   { rootMargin: '100px' }
 );
 
+const displayOptions = computed(() => ({
+  ...moduleOptions,
+  crossLocale: crossLocale.value,
+  batchOperations: batchOperations.value
+}));
+
 const headers = [
   {
     label: 'apostrophe:title',
     name: 'title',
-    component: 'AposCellButton'
+    component: 'AposCellTitle'
   },
   {
     label: 'apostrophe:type',
@@ -174,9 +204,15 @@ const headers = [
 ];
 
 async function editDoc(item) {
+  if (!item._edit) {
+    return;
+  }
   const docModuleName = item.slug?.startsWith('/')
     ? '@apostrophecms/page'
     : item.type;
+  if (!apos.modules[docModuleName]) {
+    return;
+  }
   const editorComponent = apos.modules[docModuleName]?.components?.editorModal || 'AposDocEditor';
   const docLocale = item.aposLocale?.split(':')[0];
 
