@@ -38,7 +38,40 @@ module.exports = {
       _url: 1
     }
   },
+  filters: {
+    add: {
+      _editedBy: {
+        label: 'apostrophe:recentlyEditedEditedBy'
+      },
+      _docType: {
+        label: 'apostrophe:type'
+      },
+      _action: {
+        label: 'apostrophe:recentlyEditedAction'
+      },
+      _locale: {
+        label: 'apostrophe:locale'
+      },
+      _status: {
+        label: 'apostrophe:recentlyEditedStatus',
+        def: 'live'
+      }
+    },
+    remove: [ 'visibility', 'archived' ]
+  },
+  icons: {
+    'clock-outline-icon': 'ClockOutline'
+  },
   async init(self) {
+    self.actionFilterRegistry = {};
+    self.statusFilterRegistry = {};
+    self.managedTypes = [];
+    self.managedTypeNames = [];
+    self.managedPageTypeNames = [];
+    self.managedPieceTypeNames = [];
+
+    self.registerOwnFilterActions();
+    self.registerOwnFilterStatuses();
     await self.createIndexes();
   },
   handlers(self) {
@@ -92,12 +125,83 @@ module.exports = {
                 manager.__meta.name
             }));
           self.managedTypeNames = self.managedTypes.map(t => t.name);
+
+          // Cache page and piece type names for virtual group filters.
+          const managedManagersByName = Object.fromEntries(
+            managers
+              .filter(m => m.__meta && self.managedTypeNames.includes(m.__meta.name))
+              .map(m => [ m.__meta.name, m ])
+          );
+          self.managedPageTypeNames = self.managedTypeNames.filter(
+            name => self.apos.instanceOf(
+              managedManagersByName[name], '@apostrophecms/page-type'
+            )
+          );
+          self.managedPieceTypeNames = self.managedTypeNames.filter(
+            name => self.apos.instanceOf(
+              managedManagersByName[name], '@apostrophecms/piece-type'
+            )
+          );
         }
       }
     };
   },
   methods(self) {
     return {
+      // Register a new action for the Action filter dropdown.
+      // External modules (e.g. import-export) can call this in their
+      // own `modulesRegistered` handler to add actions like "imported".
+      //
+      // `name` - unique action identifier (e.g. 'imported')
+      // `config.label` - i18n key for the dropdown choice label
+      // `config.query` - function(queryBuilder) that applies filter criteria
+      // `config.projection` - optional object of MongoDB projection fields
+      //   to whitelist in the manager API (e.g. { importedAt: 1 })
+      registerFilterAction(name, {
+        label, query, projection
+      }) {
+        self.actionFilterRegistry[name] = {
+          label,
+          query
+        };
+        if (projection && self.options.managerApiProjection) {
+          Object.assign(self.options.managerApiProjection, projection);
+        }
+      },
+      // Register a new status for the Status filter dropdown.
+      // External modules (e.g. automatic-translation) can call this
+      // in their `modulesRegistered` handler to add statuses like
+      // "Unpublished Translations".
+      //
+      // `name` - unique status identifier (e.g. 'translated')
+      // `config.label` - i18n key for the dropdown choice label
+      // `config.query` - function(queryBuilder) that applies filter criteria.
+      //   Can call queryBuilder.and(...) for criteria or override core
+      //   builders like queryBuilder.archived(true). Runs early enough
+      //   to override any core builder defaults.
+      // `config.projection` - optional object of MongoDB projection fields
+      //   to whitelist in the manager API (e.g. { aposTranslationMeta: 1 })
+      registerFilterStatus(name, {
+        label, query, projection
+      }) {
+        self.statusFilterRegistry[name] = {
+          label,
+          query
+        };
+        if (projection && self.options.managerApiProjection) {
+          Object.assign(self.options.managerApiProjection, projection);
+        }
+      },
+      // Calculate the cutoff date for recently edited documents based on the
+      // rolling window setting. Can be used by external modules to provide
+      // their own "recently X" filters that align with the same window.
+      getCutoffDate() {
+        const cutoff = new Date();
+        cutoff.setDate(
+          cutoff.getDate() - (self.options.rollingWindowDays || 30)
+        );
+        return cutoff;
+      },
       addToAdminBar() {
         self.apos.adminBar.add(
           `${self.__meta.name}:manager`,
@@ -136,6 +240,25 @@ module.exports = {
         const manager = self.apos.doc.getManager(piece.type);
         return manager.revertDraftToPublished(req, piece, options);
       },
+      async distinctFromQuery(query, property, options = {}) {
+        const subquery = query.clone();
+        subquery.skip(undefined);
+        subquery.limit(undefined);
+        subquery.page(undefined);
+        subquery.perPage(undefined);
+        if (subquery.choices) {
+          subquery.choices(false);
+        }
+        if (subquery.counts) {
+          subquery.counts(false);
+        }
+        if (options.permission) {
+          subquery.and(
+            self.apos.permission.criteria(query.req, options.permission)
+          );
+        }
+        return subquery.toDistinct(property);
+      },
       async createIndexes() {
         await self.apos.doc.db.createIndex(
           {
@@ -145,27 +268,95 @@ module.exports = {
           },
           { name: 'recentlyEditedLookup' }
         );
+      },
+      registerOwnFilterActions() {
+        self.registerFilterAction('created', {
+          label: 'apostrophe:recentlyEditedActionCreated',
+          query(queryBuilder) {
+            queryBuilder.and({ createdAt: { $gte: self.getCutoffDate() } });
+          }
+        });
+        self.registerFilterAction('published', {
+          label: 'apostrophe:recentlyEditedActionPublished',
+          query(queryBuilder) {
+            queryBuilder.and({ lastPublishedAt: { $gte: self.getCutoffDate() } });
+          }
+        });
+        self.registerFilterAction('submitted', {
+          label: 'apostrophe:recentlyEditedActionSubmitted',
+          query(queryBuilder) {
+            queryBuilder.and({ 'submitted.at': { $gte: self.getCutoffDate() } });
+          }
+        });
+        self.registerFilterAction('localized', {
+          label: 'apostrophe:recentlyEditedActionLocalized',
+          projection: { localizedAt: 1 },
+          query(queryBuilder) {
+            queryBuilder.and({ localizedAt: { $gte: self.getCutoffDate() } });
+          }
+        });
+      },
+      registerOwnFilterStatuses() {
+        self.registerFilterStatus('live', {
+          label: 'apostrophe:live',
+          query(queryBuilder) {
+            queryBuilder.and({ lastPublishedAt: { $exists: true } });
+          }
+        });
+        self.registerFilterStatus('draft', {
+          label: 'apostrophe:draft',
+          query(queryBuilder) {
+            queryBuilder.and({ lastPublishedAt: { $exists: false } });
+          }
+        });
+        self.registerFilterStatus('modified', {
+          label: 'apostrophe:pendingUpdates',
+          query(queryBuilder) {
+            queryBuilder.and({
+              lastPublishedAt: { $exists: true },
+              $expr: {
+                $gt: [ '$updatedAt', '$lastPublishedAt' ]
+              }
+            });
+          }
+        });
+        self.registerFilterStatus('submitted', {
+          label: 'apostrophe:recentlyEditedStatusSubmitted',
+          query(queryBuilder) {
+            queryBuilder.and({ 'submitted.at': { $exists: true } });
+          }
+        });
+        self.registerFilterStatus('archived', {
+          label: 'apostrophe:archived',
+          query(queryBuilder) {
+            queryBuilder.archived(true);
+          }
+        });
       }
     };
   },
   extendMethods(self) {
     return {
       find(_super, req, criteria, options) {
-        const cutoff = new Date();
-        cutoff.setDate(
-          cutoff.getDate() - (self.options.rollingWindowDays || 30)
-        );
-
         return _super(req, criteria, options)
           .type(null)
           .locale(null)
           .and({
             type: { $in: self.managedTypeNames },
             aposMode: 'draft',
-            updatedAt: { $gte: cutoff }
+            updatedAt: { $gte: self.getCutoffDate() }
           })
-          .log(true)
           .sort({ updatedAt: -1 });
+      },
+      // The API projection is controlled by the backend only to avoid
+      // unnecessary round-trips (QS) from the client.
+      getRestQuery(_super, req) {
+        const query = _super(req);
+        const projection = self.getManagerApiProjection(req);
+        if (projection) {
+          query.project(projection);
+        }
+        return query;
       },
       getBrowserData(_super, req) {
         const data = _super(req);
@@ -183,7 +374,174 @@ module.exports = {
       }
     };
   },
-  icons: {
-    'clock-outline-icon': 'ClockOutline'
+  queries(self, query) {
+    return {
+      builders: {
+        _docType: {
+          def: null,
+          launder(type) {
+            return self.apos.launder.string(type);
+          },
+          finalize() {
+            const value = query.get('_docType');
+            if (!value) {
+              return;
+            }
+            // Virtual group types expand to all page or piece types.
+            if (value === '@apostrophecms/any-page-type') {
+              if (self.managedPageTypeNames.length) {
+                query.and({ type: { $in: self.managedPageTypeNames } });
+              }
+            } else if (value === '@apostrophecms/piece-type') {
+              if (self.managedPieceTypeNames.length) {
+                query.and({ type: { $in: self.managedPieceTypeNames } });
+              }
+            } else {
+              query.and({ type: value });
+            }
+          },
+          async choices() {
+            const distinctTypes = await self.distinctFromQuery(query, 'type');
+            const managedByName = Object.fromEntries(
+              self.managedTypes.map(type => [ type.name, type ])
+            );
+
+            const typeChoices = distinctTypes
+              .filter(type => managedByName[type])
+              .map(type => ({
+                value: type,
+                label: managedByName[type].label
+              }));
+
+            // Add virtual group entries when more than one type
+            // of that category has results — the group provides useful
+            // narrowing. A single-type category needs no group shortcut.
+            const pageCount = typeChoices.filter(
+              c => self.managedPageTypeNames.includes(c.value)
+            ).length;
+            const pieceCount = typeChoices.filter(
+              c => self.managedPieceTypeNames.includes(c.value)
+            ).length;
+            if (pageCount > 1) {
+              typeChoices.push({
+                value: '@apostrophecms/any-page-type',
+                label: 'apostrophe:pages'
+              });
+            }
+            if (pieceCount > 1) {
+              typeChoices.push({
+                value: '@apostrophecms/piece-type',
+                label: 'apostrophe:pieces'
+              });
+            }
+
+            return typeChoices;
+          }
+        },
+        _editedBy: {
+          def: null,
+          launder(userId) {
+            return self.apos.launder.string(userId);
+          },
+          finalize() {
+            const value = query.get('_editedBy');
+            if (value) {
+              query.and({ 'updatedBy._id': value });
+            }
+          },
+          async choices() {
+            const users = await self.distinctFromQuery(query, 'updatedBy');
+
+            return users
+              .filter(user => user && user._id)
+              .map(user => ({
+                value: user._id,
+                label: user.title || user.username || user._id
+              }));
+          }
+        },
+        _locale: {
+          def: null,
+          launder(locale) {
+            return self.apos.launder.string(locale);
+          },
+          finalize() {
+            const value = query.get('_locale');
+            if (value) {
+              query.and({ aposLocale: `${value}:draft` });
+            }
+          },
+          async choices() {
+            // Pass permission: 'edit' so distinctFromQuery applies
+            // core permission criteria. Modules that extend
+            // permission.criteria() (e.g. advanced-permission)
+            // automatically filter by allowed locales.
+            const distinctLocales = await self.distinctFromQuery(
+              query, 'aposLocale', { permission: 'edit' }
+            );
+            const localesConfig = self.apos.i18n?.locales || {};
+            const seen = new Set();
+
+            return distinctLocales
+              .filter(Boolean)
+              .map(locale => locale.split(':')[0])
+              .filter(locale => {
+                if (!locale || seen.has(locale)) {
+                  return false;
+                }
+                seen.add(locale);
+                return true;
+              })
+              .map(locale => ({
+                value: locale,
+                label: localesConfig[locale]?.label
+                  ? `${localesConfig[locale].label} (${locale})`
+                  : locale
+              }))
+              .sort((a, b) => a.label.localeCompare(b.label));
+          }
+        },
+        _status: {
+          def: 'live',
+          launder(status) {
+            const laundered = self.apos.launder.string(status);
+            return self.statusFilterRegistry[laundered] ? laundered : null;
+          },
+          prefinalize() {
+            const value = query.get('_status');
+            const status = self.statusFilterRegistry[value];
+            if (status?.query) {
+              status.query(query);
+            }
+          },
+          choices() {
+            return Object.entries(self.statusFilterRegistry).map(([ value, config ]) => ({
+              value,
+              label: config.label
+            }));
+          }
+        },
+        _action: {
+          def: null,
+          launder(action) {
+            const laundered = self.apos.launder.string(action);
+            return self.actionFilterRegistry[laundered] ? laundered : null;
+          },
+          prefinalize() {
+            const value = query.get('_action');
+            const action = self.actionFilterRegistry[value];
+            if (action?.query) {
+              action.query(query);
+            }
+          },
+          choices() {
+            return Object.entries(self.actionFilterRegistry).map(([ value, config ]) => ({
+              value,
+              label: config.label
+            }));
+          }
+        }
+      }
+    };
   }
 };

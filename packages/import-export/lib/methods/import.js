@@ -587,6 +587,7 @@ module.exports = self => {
               importDraftsOnly,
               translate
             });
+            await self.setImportedAt(doc);
             reporting.success();
           } catch (error) {
             reporting.failure();
@@ -619,6 +620,7 @@ module.exports = self => {
             translate
           });
           if (inserted) {
+            await self.setImportedAt(cloned);
             reporting.success();
           }
         } catch (error) {
@@ -1203,6 +1205,7 @@ module.exports = self => {
             ]);
           }
 
+          await self.setImportedAt(doc);
           jobManager.success(job);
         } catch (err) {
           jobManager.failure(job);
@@ -1425,6 +1428,20 @@ module.exports = self => {
         ids: [],
         types: new Set()
       });
+    },
+
+    // Stamp the specific document that was imported.
+    // Uses `_id` to target only the exact mode variant (draft or
+    // published) that was actually processed, so that e.g.
+    // draft-only imports don't incorrectly mark the published copy.
+    async setImportedAt(doc) {
+      if (!doc._id) {
+        return;
+      }
+      await self.apos.doc.db.updateOne(
+        { _id: doc._id },
+        { $set: { importedAt: new Date() } }
+      );
     }
   };
 };

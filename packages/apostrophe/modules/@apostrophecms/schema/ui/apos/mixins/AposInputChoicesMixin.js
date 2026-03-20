@@ -24,6 +24,13 @@ export default {
   },
 
   watch: {
+    'field.choices': {
+      handler(choices) {
+        if (Array.isArray(choices)) {
+          this.updateChoices(choices);
+        }
+      }
+    },
     followingValues: {
       deep: true,
       handler() {

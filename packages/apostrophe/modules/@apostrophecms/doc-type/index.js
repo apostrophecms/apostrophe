@@ -1261,6 +1261,17 @@ module.exports = {
           result = await actionModule.update(toReq, update);
         }
 
+        // Record when this document was localized. Uses a direct DB
+        // update so the timestamp survives regardless of the schema
+        // convert pipeline. Covers both single and batch localization
+        // (localizeBatch calls this method per document).
+        const localizedAt = new Date();
+        await self.apos.doc.db.updateOne(
+          { _id: result._id },
+          { $set: { localizedAt } }
+        );
+        result.localizedAt = localizedAt;
+
         await self.emit('afterLocalize', req, draft, result, eventOptions);
 
         return result;
