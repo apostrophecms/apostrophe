@@ -502,7 +502,7 @@ module.exports = {
           }
         },
         _status: {
-          def: 'live',
+          def: null,
           launder(status) {
             const laundered = self.apos.launder.string(status);
             return self.statusFilterRegistry[laundered] ? laundered : null;

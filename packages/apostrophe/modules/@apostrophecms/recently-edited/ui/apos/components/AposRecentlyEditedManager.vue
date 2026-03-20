@@ -31,6 +31,10 @@
             @search="onSearch"
           />
           <div class="apos-recently-edited__filters-bar">
+            <AposSpinner
+              v-if="isLoading"
+              class="apos-recently-edited__spinner"
+            />
             <div
               v-if="activeFilterTags.length"
               class="apos-recently-edited__active-filters"
@@ -233,6 +237,10 @@ onUnmounted(() => {
   justify-content: flex-end;
   gap: 8px;
   padding-top: 12px;
+}
+
+.apos-recently-edited__spinner {
+  margin-right: auto;
 }
 
 .apos-recently-edited__active-filters {
