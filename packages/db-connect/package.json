@@ -11,10 +11,14 @@
     "test": "mocha test/**/*.test.js --timeout 30000",
     "test:mongodb": "ADAPTER=mongodb mocha test/**/*.test.js --timeout 30000",
     "test:postgres": "ADAPTER=postgres mocha test/**/*.test.js --timeout 30000",
-    "test:sqlite": "ADAPTER=sqlite mocha test/**/*.test.js --timeout 30000"
+    "test:sqlite": "ADAPTER=sqlite mocha test/**/*.test.js --timeout 30000",
+    "lint": "eslint .",
+    "eslint": "eslint ."
   },
   "devDependencies": {
     "chai": "^4.3.10",
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:^",
     "mocha": "^11.7.1"
   },
   "dependencies": {

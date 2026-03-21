@@ -35,10 +35,18 @@ describe(`dump/restore programmatic API (${ADAPTER})`, function () {
     targetClient = await dbConnect(getUri(targetDbName));
     const sourceDb = sourceClient.db();
     const targetDb = targetClient.db();
-    try { await sourceDb.collection('items').drop(); } catch (e) { /* ignore */ }
-    try { await sourceDb.collection('meta').drop(); } catch (e) { /* ignore */ }
-    try { await targetDb.collection('items').drop(); } catch (e) { /* ignore */ }
-    try { await targetDb.collection('meta').drop(); } catch (e) { /* ignore */ }
+    try {
+      await sourceDb.collection('items').drop();
+    } catch (e) { /* ignore */ }
+    try {
+      await sourceDb.collection('meta').drop();
+    } catch (e) { /* ignore */ }
+    try {
+      await targetDb.collection('items').drop();
+    } catch (e) { /* ignore */ }
+    try {
+      await targetDb.collection('meta').drop();
+    } catch (e) { /* ignore */ }
     await sourceClient.close();
     await targetClient.close();
   });
@@ -47,10 +55,18 @@ describe(`dump/restore programmatic API (${ADAPTER})`, function () {
     // Clean up
     sourceClient = await dbConnect(getUri(sourceDbName));
     targetClient = await dbConnect(getUri(targetDbName));
-    try { await sourceClient.db().collection('items').drop(); } catch (e) { /* ignore */ }
-    try { await sourceClient.db().collection('meta').drop(); } catch (e) { /* ignore */ }
-    try { await targetClient.db().collection('items').drop(); } catch (e) { /* ignore */ }
-    try { await targetClient.db().collection('meta').drop(); } catch (e) { /* ignore */ }
+    try {
+      await sourceClient.db().collection('items').drop();
+    } catch (e) { /* ignore */ }
+    try {
+      await sourceClient.db().collection('meta').drop();
+    } catch (e) { /* ignore */ }
+    try {
+      await targetClient.db().collection('items').drop();
+    } catch (e) { /* ignore */ }
+    try {
+      await targetClient.db().collection('meta').drop();
+    } catch (e) { /* ignore */ }
     await sourceClient.close();
     await targetClient.close();
   });
@@ -60,10 +76,21 @@ describe(`dump/restore programmatic API (${ADAPTER})`, function () {
     const client = await dbConnect(getUri(sourceDbName));
     const db = client.db();
     await db.collection('items').insertMany([
-      { _id: 'item1', title: 'First', value: 10 },
-      { _id: 'item2', title: 'Second', value: 20 }
+      {
+        _id: 'item1',
+        title: 'First',
+        value: 10
+      },
+      {
+        _id: 'item2',
+        title: 'Second',
+        value: 20
+      }
     ]);
-    await db.collection('meta').insertOne({ _id: 'version', v: 1 });
+    await db.collection('meta').insertOne({
+      _id: 'version',
+      v: 1
+    });
     await client.close();
 
     const data = await dbConnect.dump(getUri(sourceDbName));
@@ -95,13 +122,21 @@ describe(`dump/restore programmatic API (${ADAPTER})`, function () {
   it('should copy a database via copyDatabase()', async function () {
     // Modify source to prove we get fresh data
     const client = await dbConnect(getUri(sourceDbName));
-    await client.db().collection('items').insertOne({ _id: 'item3', title: 'Third', value: 30 });
+    await client.db().collection('items').insertOne({
+      _id: 'item3',
+      title: 'Third',
+      value: 30
+    });
     await client.close();
 
     // Clean target first
     const tgt = await dbConnect(getUri(targetDbName));
-    try { await tgt.db().collection('items').drop(); } catch (e) { /* ignore */ }
-    try { await tgt.db().collection('meta').drop(); } catch (e) { /* ignore */ }
+    try {
+      await tgt.db().collection('items').drop();
+    } catch (e) { /* ignore */ }
+    try {
+      await tgt.db().collection('meta').drop();
+    } catch (e) { /* ignore */ }
     await tgt.close();
 
     await dbConnect.copyDatabase(getUri(sourceDbName), getUri(targetDbName));

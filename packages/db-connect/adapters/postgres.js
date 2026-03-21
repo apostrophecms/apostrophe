@@ -13,21 +13,66 @@ const crypto = require('crypto');
 const PROFILING = !!process.env.POSTGRES_PROFILE;
 
 const profile = {
-  buildWhereClause: { calls: 0, totalMs: 0 },
-  buildOrderBy: { calls: 0, totalMs: 0 },
-  serializeDocument: { calls: 0, totalMs: 0 },
-  convertDates: { calls: 0, totalMs: 0 },
-  applyProjection: { calls: 0, totalMs: 0 },
-  applyUpdate: { calls: 0, totalMs: 0 },
-  pgQuery: { calls: 0, totalMs: 0 },
-  ensureTable: { calls: 0, totalMs: 0 },
-  findOne: { calls: 0, totalMs: 0 },
-  findToArray: { calls: 0, totalMs: 0 },
-  cursorNext: { calls: 0, totalMs: 0 },
-  updateOne: { calls: 0, totalMs: 0 },
-  insertOne: { calls: 0, totalMs: 0 },
-  countDocuments: { calls: 0, totalMs: 0 },
-  distinct: { calls: 0, totalMs: 0 }
+  buildWhereClause: {
+    calls: 0,
+    totalMs: 0
+  },
+  buildOrderBy: {
+    calls: 0,
+    totalMs: 0
+  },
+  serializeDocument: {
+    calls: 0,
+    totalMs: 0
+  },
+  convertDates: {
+    calls: 0,
+    totalMs: 0
+  },
+  applyProjection: {
+    calls: 0,
+    totalMs: 0
+  },
+  applyUpdate: {
+    calls: 0,
+    totalMs: 0
+  },
+  pgQuery: {
+    calls: 0,
+    totalMs: 0
+  },
+  ensureTable: {
+    calls: 0,
+    totalMs: 0
+  },
+  findOne: {
+    calls: 0,
+    totalMs: 0
+  },
+  findToArray: {
+    calls: 0,
+    totalMs: 0
+  },
+  cursorNext: {
+    calls: 0,
+    totalMs: 0
+  },
+  updateOne: {
+    calls: 0,
+    totalMs: 0
+  },
+  insertOne: {
+    calls: 0,
+    totalMs: 0
+  },
+  countDocuments: {
+    calls: 0,
+    totalMs: 0
+  },
+  distinct: {
+    calls: 0,
+    totalMs: 0
+  }
 };
 
 // Per-query tracking: SQL text -> { calls, totalMs }
@@ -59,7 +104,10 @@ function profileQuery(sql, start) {
   // Normalize SQL for grouping: collapse $N params and specific values
   const normalized = sql.replace(/\$\d+/g, '$?').replace(/\s+/g, ' ').trim().substring(0, 120);
   if (!queryProfile[normalized]) {
-    queryProfile[normalized] = { calls: 0, totalMs: 0 };
+    queryProfile[normalized] = {
+      calls: 0,
+      totalMs: 0
+    };
   }
   queryProfile[normalized].calls++;
   queryProfile[normalized].totalMs += elapsed;
@@ -956,7 +1004,10 @@ function deserializeDocument(data, id) {
   let result;
   if (doc === parsed) {
     // No dates found — shallow copy to add _id without mutating parsed data
-    result = { _id: id, ...doc };
+    result = {
+      _id: id,
+      ...doc
+    };
   } else {
     doc._id = id;
     result = doc;

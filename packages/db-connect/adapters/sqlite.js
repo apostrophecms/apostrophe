@@ -110,7 +110,10 @@ function deserializeDocument(data, id) {
   const parsed = typeof data === 'string' ? JSON.parse(data) : data;
   const doc = convertDates(parsed);
   if (doc === parsed) {
-    return { _id: id, ...doc };
+    return {
+      _id: id,
+      ...doc
+    };
   }
   doc._id = id;
   return doc;
@@ -383,7 +386,7 @@ function buildWhereClause(query, params, prefix = 'data') {
           `COALESCE(json_extract(${prefix}, '$.title'), '')`,
           `COALESCE(json_extract(${prefix}, '$.searchBoost'), '')`
         ];
-        const textExpr = textFields.join(` || ' ' || `);
+        const textExpr = textFields.join(' || \' \' || ');
         // OR semantics: any word matches
         const wordConditions = words.map(w => {
           params.push(`%${w}%`);
@@ -395,15 +398,15 @@ function buildWhereClause(query, params, prefix = 'data') {
       if (value instanceof RegExp) {
         params.push(value.source);
         if (value.ignoreCase) {
-          conditions.push(`regexp_i(?, _id)`);
+          conditions.push('regexp_i(?, _id)');
         } else {
-          conditions.push(`regexp(?, _id)`);
+          conditions.push('regexp(?, _id)');
         }
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         conditions.push(buildOperatorClause('_id', value, params, true));
       } else {
         params.push(value);
-        conditions.push(`_id = ?`);
+        conditions.push('_id = ?');
       }
     } else if (key.startsWith('$')) {
       throw new Error(`Unsupported top-level operator: ${key}`);
@@ -472,7 +475,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
       case '$eq':
         if (isIdField) {
           params.push(opValue);
-          conditions.push(`_id = ?`);
+          conditions.push('_id = ?');
         } else {
           const serialized = serializeValue(opValue);
           if (typeof serialized === 'object' && serialized !== null) {
@@ -491,7 +494,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
       case '$ne':
         if (isIdField) {
           params.push(opValue);
-          conditions.push(`(_id IS NULL OR _id != ?)`);
+          conditions.push('(_id IS NULL OR _id != ?)');
         } else {
           const serialized = serializeValue(opValue);
           if (typeof serialized === 'object' && serialized !== null) {
@@ -510,7 +513,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
       case '$gt':
         if (isIdField) {
           params.push(opValue);
-          conditions.push(`_id > ?`);
+          conditions.push('_id > ?');
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`json_extract(data, '$.${escapeString(field)}.$date') > ?`);
@@ -523,7 +526,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
       case '$gte':
         if (isIdField) {
           params.push(opValue);
-          conditions.push(`_id >= ?`);
+          conditions.push('_id >= ?');
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`json_extract(data, '$.${escapeString(field)}.$date') >= ?`);
@@ -536,7 +539,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
       case '$lt':
         if (isIdField) {
           params.push(opValue);
-          conditions.push(`_id < ?`);
+          conditions.push('_id < ?');
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`json_extract(data, '$.${escapeString(field)}.$date') < ?`);
@@ -549,7 +552,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
       case '$lte':
         if (isIdField) {
           params.push(opValue);
-          conditions.push(`_id <= ?`);
+          conditions.push('_id <= ?');
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`json_extract(data, '$.${escapeString(field)}.$date') <= ?`);
@@ -576,7 +579,8 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           const nonNullValues = opValue.filter(v => v !== null);
           const parts = [];
           if (nonNullValues.length > 0) {
-            // For each value, check if the field equals it OR (if field is array) contains it
+            // For each value, check if the field equals it
+            // OR (if field is array) contains it
             const valueParts = nonNullValues.map(v => {
               const serialized = serializeValue(v);
               if (typeof serialized === 'boolean') {
@@ -688,7 +692,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         const caseInsensitive = regexOptions.includes('i');
         if (isIdField) {
           conditions.push(
-            caseInsensitive ? `regexp_i(?, _id)` : `regexp(?, _id)`
+            caseInsensitive ? 'regexp_i(?, _id)' : 'regexp(?, _id)'
           );
         } else {
           conditions.push(
@@ -824,7 +828,10 @@ function matchesQuery(doc, query) {
 
 function parseIndexDef(sql) {
   if (!sql) {
-    return { key: {}, unique: false };
+    return {
+      key: {},
+      unique: false
+    };
   }
   const unique = /\bUNIQUE\b/i.test(sql);
   const sparse = /\bWHERE\b/i.test(sql);
@@ -835,7 +842,11 @@ function parseIndexDef(sql) {
   // Extract expressions from CREATE INDEX ... ON tablename (expr1, expr2)
   const onMatch = sql.match(/\bON\b\s+\S+\s*\((.+)\)(?:\s+WHERE\b.*)?$/i);
   if (!onMatch) {
-    return { key: {}, unique, ...(sparse ? { sparse: true } : {}) };
+    return {
+      key: {},
+      unique,
+      ...(sparse ? { sparse: true } : {})
+    };
   }
 
   const exprList = onMatch[1];
@@ -994,7 +1005,7 @@ class SqliteCursor {
       sql += ` LIMIT ${this._limit}`;
     } else if (this._skip != null) {
       // SQLite requires LIMIT before OFFSET; use -1 for unlimited
-      sql += ` LIMIT -1`;
+      sql += ' LIMIT -1';
     }
     if (this._skip != null) {
       sql += ` OFFSET ${this._skip}`;
@@ -1035,7 +1046,7 @@ class SqliteCursor {
       if (this._limit != null) {
         sql += ` LIMIT ${this._limit}`;
       } else if (this._skip != null) {
-        sql += ` LIMIT -1`;
+        sql += ' LIMIT -1';
       }
       if (this._skip != null) {
         sql += ` OFFSET ${this._skip}`;
@@ -1071,9 +1082,15 @@ class SqliteCursor {
       async next() {
         const doc = await this.cursor._next();
         if (doc === null) {
-          return { done: true, value: undefined };
+          return {
+            done: true,
+            value: undefined
+          };
         }
-        return { done: false, value: doc };
+        return {
+          done: false,
+          value: doc
+        };
       }
     };
   }
@@ -1150,7 +1167,10 @@ class SqliteAggregationCursor {
 
       const keyStr = JSON.stringify(groupKey);
       if (!groups.has(keyStr)) {
-        groups.set(keyStr, { _id: groupKey, docs: [] });
+        groups.set(keyStr, {
+          _id: groupKey,
+          docs: []
+        });
       }
       groups.get(keyStr).docs.push(doc);
     }
@@ -1295,12 +1315,18 @@ class SqliteCollection {
         acknowledged: true,
         insertedId: id,
         insertedCount: 1,
-        ops: [ { ...doc, _id: id } ],
+        ops: [ {
+          ...doc,
+          _id: id
+        } ],
         result: { ok: 1 }
       };
     } catch (e) {
       if (e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && e.message.includes('UNIQUE constraint failed'))) {
-        throw makeDuplicateKeyError(e, this, { ...doc, _id: id });
+        throw makeDuplicateKeyError(e, this, {
+          ...doc,
+          _id: id
+        });
       }
       throw e;
     }
@@ -1375,14 +1401,20 @@ class SqliteCollection {
           modifiedCount: 0,
           upsertedId: insertResult.insertedId,
           upsertedCount: 1,
-          result: { nModified: 0, n: 1 }
+          result: {
+            nModified: 0,
+            n: 1
+          }
         };
       }
       return {
         acknowledged: true,
         matchedCount: 0,
         modifiedCount: 0,
-        result: { nModified: 0, n: 0 }
+        result: {
+          nModified: 0,
+          n: 0
+        }
       };
     }
 
@@ -1405,7 +1437,10 @@ class SqliteCollection {
       acknowledged: true,
       matchedCount: 1,
       modifiedCount: 1,
-      result: { nModified: 1, n: 1 }
+      result: {
+        nModified: 1,
+        n: 1
+      }
     };
   }
 
@@ -1424,7 +1459,10 @@ class SqliteCollection {
         acknowledged: true,
         matchedCount: 0,
         modifiedCount: 0,
-        result: { nModified: 0, n: 0 }
+        result: {
+          nModified: 0,
+          n: 0
+        }
       };
     }
 
@@ -1445,7 +1483,10 @@ class SqliteCollection {
       acknowledged: true,
       matchedCount: rows.length,
       modifiedCount,
-      result: { nModified: modifiedCount, n: rows.length }
+      result: {
+        nModified: modifiedCount,
+        n: rows.length
+      }
     };
   }
 
@@ -1761,7 +1802,7 @@ class SqliteCollection {
       const textFields = keyEntries.filter(([ , v ]) => v === 'text').map(([ k ]) => k);
       const textExpr = textFields
         .map(f => `COALESCE(json_extract(data, '$.${escapeString(f)}'), '')`)
-        .join(` || ' ' || `);
+        .join(' || \' \' || ');
 
       this._db._sqlite.exec(`
         CREATE INDEX IF NOT EXISTS "${escapedIndexName}"
@@ -1819,7 +1860,7 @@ class SqliteCollection {
     this._ensureTable();
 
     const rows = this._db._sqlite.prepare(
-      `SELECT name, sql FROM sqlite_master WHERE type = 'index' AND tbl_name = ?`
+      'SELECT name, sql FROM sqlite_master WHERE type = \'index\' AND tbl_name = ?'
     ).all(this._tableName);
 
     const indexes = [ {
@@ -1879,29 +1920,47 @@ class SqliteCollection {
         return {
           updateOne(update) {
             operations.push({
-              updateOne: { filter: query, update }
+              updateOne: {
+                filter: query,
+                update
+              }
             });
           },
           update(update) {
             operations.push({
-              updateMany: { filter: query, update }
+              updateMany: {
+                filter: query,
+                update
+              }
             });
           },
           upsert() {
             return {
               updateOne(update) {
                 operations.push({
-                  updateOne: { filter: query, update, upsert: true }
+                  updateOne: {
+                    filter: query,
+                    update,
+                    upsert: true
+                  }
                 });
               },
               update(update) {
                 operations.push({
-                  updateMany: { filter: query, update, upsert: true }
+                  updateMany: {
+                    filter: query,
+                    update,
+                    upsert: true
+                  }
                 });
               },
               replaceOne(doc) {
                 operations.push({
-                  replaceOne: { filter: query, replacement: doc, upsert: true }
+                  replaceOne: {
+                    filter: query,
+                    replacement: doc,
+                    upsert: true
+                  }
                 });
               }
             };
@@ -1992,14 +2051,14 @@ class SqliteDb {
   async dropDatabase() {
     // Drop all tables
     const tables = this._sqlite.prepare(
-      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+      'SELECT name FROM sqlite_master WHERE type = \'table\' AND name NOT LIKE \'sqlite_%\''
     ).all();
     for (const table of tables) {
       this._sqlite.exec(`DROP TABLE IF EXISTS "${escapeIdentifier(table.name)}"`);
     }
     // Also drop all indexes
     const indexes = this._sqlite.prepare(
-      "SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'"
+      'SELECT name FROM sqlite_master WHERE type = \'index\' AND name NOT LIKE \'sqlite_%\''
     ).all();
     for (const idx of indexes) {
       this._sqlite.exec(`DROP INDEX IF EXISTS "${escapeIdentifier(idx.name)}"`);
@@ -2017,7 +2076,7 @@ class SqliteDb {
     return {
       async toArray() {
         const rows = self._sqlite.prepare(
-          "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+          'SELECT name FROM sqlite_master WHERE type = \'table\' AND name NOT LIKE \'sqlite_%\''
         ).all();
         return rows.map(row => ({ name: row.name }));
       }

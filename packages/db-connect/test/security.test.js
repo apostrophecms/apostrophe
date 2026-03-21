@@ -29,7 +29,9 @@ describe(`Security Tests (${ADAPTER})`, function() {
       const pathModule = require('path');
       const fs = require('fs');
       const dbPath = pathModule.join(os.tmpdir(), 'dbtest-security.db');
-      try { fs.unlinkSync(dbPath); } catch (e) { /* ignore */ }
+      try {
+        fs.unlinkSync(dbPath);
+      } catch (e) { /* ignore */ }
       client = await sqlite.connect(`sqlite://${dbPath}`);
       db = client.db();
     }

@@ -37,7 +37,9 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const pathModule = require('path');
       const fs = require('fs');
       const dbPath = pathModule.join(os.tmpdir(), 'dbtest-adapter.db');
-      try { fs.unlinkSync(dbPath); } catch (e) { /* ignore */ }
+      try {
+        fs.unlinkSync(dbPath);
+      } catch (e) { /* ignore */ }
       client = await sqlite.connect(`sqlite://${dbPath}`);
       db = client.db();
     }
@@ -2099,7 +2101,8 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
 
     it('should match scalar value in array field via containment', async function() {
-      // MongoDB behavior: { tags: 'featured' } matches docs where tags contains 'featured'
+      // { tags: 'featured' } matches docs where
+      // tags contains 'featured'
       const docs = await db.collection('test').find({
         tags: 'featured',
         type: 'article'
