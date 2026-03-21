@@ -43,8 +43,6 @@
   - [Email Notifications](#email-notifications)
   - [Server-Side Events](#server-side-events)
   - [Browser Events](#browser-events)
-    - [Success Event](#success-event)
-    - [Failure Event](#failure-event)
 - [reCAPTCHA Integration](#recaptcha-integration)
   - [Configuration Options](#configuration-options)
 - [Styling](#styling)
@@ -411,18 +409,19 @@ When enabled, two additional fields appear in the widget schema:
        fileGroups: [
          {
            name: 'images',
-           extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-           extensionMaps: {},
-           contentTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+           label: 'Images',
+           extensions: [ 'jpg', 'jpeg', 'png', 'gif', 'webp' ],
+           extensionMaps: { jpeg: 'jpg' }
          },
          {
            name: 'office',
-           extensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx'],
-           contentTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+           label: 'Documents',
+           extensions: [ 'pdf', 'doc', 'docx', 'xls', 'xlsx' ],
+           extensionMaps: {}
          }
        ],
        // Set maximum file size (in bytes)
-       maximumUploadSize: 10485760  // 10MB
+       maxSize: 10485760  // 10MB
      }
    };
    ```

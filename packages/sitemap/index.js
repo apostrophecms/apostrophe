@@ -14,9 +14,7 @@ const noBaseUrlWarning = stripIndent`
 
 module.exports = {
   options: {
-    alias: 'sitemap',
-    // The number of pieces to index in each loop.
-    piecesPerBatch: 100
+    alias: 'sitemap'
   },
   init(self, options) {
     self.updatingCache = true;
@@ -30,8 +28,6 @@ module.exports = {
     } else if (options.cacheLifetime || options.cacheLifetime === 0) {
       self.apos.util.warn('⚠️ The sitemap cacheLifetime option must be a number greater than zero.');
     }
-
-    self.piecesPerBatch = options.piecesPerBatch;
 
     self.baseUrl = self.apos.baseUrl;
 
@@ -69,10 +65,55 @@ module.exports = {
     return {
       get: {
         '/sitemap.xml': async function(req, res) {
-          return self.sendCache(res, 'sitemap.xml');
+          return self.sendCache(req, res, 'sitemap.xml');
         },
         '/sitemaps/*': async function(req, res) {
-          return self.sendCache(res, 'sitemaps/' + req.params[0]);
+          return self.sendCache(req, res, 'sitemaps/' + req.params[0]);
+        }
+      }
+    };
+  },
+  handlers(self) {
+    return {
+      '@apostrophecms/url:getAllUrlMetadata': {
+        // Provide literal content entries so static builds
+        // can include the dynamically generated sitemap XML files.
+        // URLs must be relative and prefix-free — the
+        // consumer prepends the prefix when fetching.
+        addSitemapFiles(req, results) {
+          // Sitemap files are site-wide (not per-locale),
+          // so only include them for the default locale to avoid
+          // duplicates during per-locale static builds.
+          // TODO: in the future when per one locale static builds are supported,
+          // use the current locale if it has configured host, for path prefixes
+          // the behavior is the same.
+          if (req.locale !== self.apos.i18n.defaultLocale) {
+            return;
+          }
+          if (self.options.perLocale) {
+            results.push({
+              url: '/sitemaps/index.xml',
+              contentType: 'text/xml',
+              i18nId: '@apostrophecms/sitemap:index',
+              sitemap: false
+            });
+            const locales = Object.keys(self.apos.i18n.getLocales());
+            for (const locale of locales) {
+              results.push({
+                url: `/sitemaps/${locale}.xml`,
+                contentType: 'text/xml',
+                i18nId: `@apostrophecms/sitemap:${locale}`,
+                sitemap: false
+              });
+            }
+          } else {
+            results.push({
+              url: '/sitemap.xml',
+              contentType: 'text/xml',
+              i18nId: '@apostrophecms/sitemap:sitemap',
+              sitemap: false
+            });
+          }
         }
       }
     };
@@ -90,13 +131,22 @@ module.exports = {
 
         return self.map();
       },
-      map: async function () {
+      map: async function (httpReq) {
         const argv = self.apos.argv;
+        const isStaticBuild = httpReq
+          ? self.apos.url.isStaticBuild(httpReq)
+          : false;
+        const isExternalFront = httpReq
+          ? self.apos.url.isExternalFront(httpReq)
+          : false;
+        // Skip cache when serving a static build request from an
+        // external frontend — avoids poisoning the cache with
+        // build-specific URLs.
+        const skipCache = isStaticBuild && isExternalFront;
 
         if (self.updatingCache) {
           self.cacheOutput = [];
         }
-
         await lock();
         initConfig();
         await map();
@@ -144,10 +194,30 @@ module.exports = {
           const locales = Object.keys(self.apos.i18n.getLocales());
 
           for (const locale of locales) {
-            const req = self.getReq(locale);
-
-            await self.getPages(req);
-            await self.getPieces(req);
+            const req = self.getReq(locale, {
+              staticBuild: isStaticBuild,
+              externalFront: isExternalFront
+            });
+            const baseUrl = self.apos.url.getBaseUrl(req, { strict: true });
+            const { pages } = await self.apos.url.getAllUrlMetadata(req, {
+              excludeTypes: self.excludeTypes
+            });
+            for (const entry of pages) {
+              // Skip entries explicitly excluded from sitemaps.
+              // Always skip literal content entries (CSS, robots.txt, etc.)
+              if (entry.sitemap === false || entry.contentType) {
+                continue;
+              }
+              self.write(locale, {
+                url: {
+                  id: entry.i18nId,
+                  locale,
+                  priority: entry.priority ?? 1.0,
+                  changefreq: entry.changefreq || 'daily',
+                  loc: baseUrl + entry.url
+                }
+              });
+            }
           }
         }
 
@@ -193,23 +263,53 @@ module.exports = {
         }
 
         function write() {
-          return self.writeSitemap();
+          // Sitemap requires absolute URLs — use strict: true
+          const baseUrl = self.apos.url.getBaseUrl(
+            self.getReq(self.defaultLocale, {
+              staticBuild: isStaticBuild,
+              externalFront: isExternalFront
+            }),
+            { strict: true }
+          );
+          return self.writeSitemap({
+            skipCache,
+            baseUrl
+          });
         }
 
         async function unlock() {
           await self.apos.lock.unlock('apos-sitemap');
         }
       },
-      // Reqturn a req suitable for fetching content in the given locale
+      // Return a req suitable for fetching content in the given locale
       // that belongs in the sitemap. A useful extension point for projects
       // that do unusual things with proxied URLs, etc.
-      getReq(locale) {
-        return self.apos.task.getAnonReq({
+      //
+      // When `options.staticBuild` is `true`, the returned req will
+      // have the static build flags set, so that `url.isStaticBuild(req)`
+      // and `url.getBaseUrl(req)` behave correctly.
+      //
+      // When `options.externalFront` is `true`, the returned req will
+      // also have `req.aposExternalFront = true`. This is needed because
+      // `task.getAnonReq({ staticBuild })` applies static build headers
+      // but does not set the external front flag — that flag is normally
+      // set by the Express middleware when a real HTTP request arrives
+      // with the `x-requested-with: AposExternalFront` header. Without
+      // it, `url.isExternalFront(req)` returns `false`, which can cause
+      // incorrect cache behavior (e.g. poisoning the sitemap cache with
+      // static-build URLs).
+      getReq(locale, { staticBuild = false, externalFront = false } = {}) {
+        const req = self.apos.task.getAnonReq({
           locale,
-          mode: 'published'
+          mode: 'published',
+          staticBuild
         });
+        if (externalFront) {
+          req.aposExternalFront = true;
+        }
+        return req;
       },
-      writeSitemap: function() {
+      writeSitemap: function({ skipCache, baseUrl } = {}) {
         if (!self.perLocale) {
           // Simple single-file sitemap
           self.file = self.updatingCache
@@ -237,9 +337,11 @@ module.exports = {
 
           }
 
-          self.writeIndex();
+          self.writeIndex(baseUrl);
         }
-        if (self.updatingCache) {
+        // Static builds serve directly from cacheOutput without
+        // persisting to the database cache.
+        if (self.updatingCache && !skipCache) {
           return self.writeToCache();
         }
         return null;
@@ -261,9 +363,9 @@ module.exports = {
 
         return null;
       },
-      writeIndex: function() {
+      writeIndex: function(baseUrl) {
         const now = new Date();
-        if (!self.baseUrl) {
+        if (!baseUrl) {
           throw new Error(noBaseUrlWarning);
         }
 
@@ -275,7 +377,7 @@ module.exports = {
 
           Object.keys(self.maps).map(function(key) {
             const sitemap = '  <sitemap>\n' +
-              '    <loc>' + self.baseUrl + self.apos.prefix + '/sitemaps/' + key + '.xml' +
+              '    <loc>' + baseUrl + '/sitemaps/' + key + '.xml' +
                 '</loc>\n' +
               '    <lastmod>' + now.toISOString() + '</lastmod>\n' +
             '  </sitemap>\n';
@@ -319,106 +421,19 @@ module.exports = {
           });
         }
       },
-      async getPages (req) {
-        const pages = await self.apos.page.find(req, {}).areas(false)
-          .relationships(false).sort({
-            level: 1,
-            rank: 1
-          }).toArray();
-
-        pages.forEach(self.output);
-      },
-      async getPieces(req) {
-        const modules = Object.values(self.apos.modules).filter(function(mod) {
-          return mod.__meta.chain.find(entry => {
-            return entry.name === '@apostrophecms/piece-type';
-          });
-        });
-
-        let skip = 0;
-
-        for (const appModule of modules) {
-          if (self.excludeTypes.includes(appModule.__meta.name)) {
-            continue;
-          }
-          await stashPieces(appModule);
-          skip = 0;
-        }
-
-        async function stashPieces(appModule) {
-          // Paginate through 100 (by default) at a time to avoid slamming
-          // memory
-          const pieceSet = await appModule.find(req, {})
-            .relationships(false).areas(false).skip(skip)
-            .limit(self.piecesPerBatch).toArray();
-
-          pieceSet.forEach(function(piece) {
-            if (!piece._url) {
-            // This one has no page to be viewed on
-              return;
-            }
-            // Results in a reasonable priority relative
-            // to regular pages
-            piece.level = 3;
-
-            self.output(piece);
-          });
-
-          if (pieceSet.length) {
-            skip += pieceSet.length;
-
-            await stashPieces(appModule);
-          }
-        }
-      },
-      // Output the sitemap entry for the given doc, including its children if
-      // any. The entry is buffered for output as part of the map for the
-      // appropriate locale.
-      output: async function(page) {
-        const locale = (page.aposLocale || self.defaultLocale).split(':')[0];
-
-        if (!self.excludeTypes.includes(page.type)) {
-          let url;
-
-          // TODO: Revisit when supporting text format
-          if (self.format === 'text') {
-            if (self.indent) {
-              let i;
-
-              for (i = 0; (i < page.level); i++) {
-                self.write(locale, '  ');
-              }
-
-              self.write(locale, page._url + '\n');
-            }
-          } else {
-            url = page._url;
-            let priority = (page.level < 10) ? (1.0 - page.level / 10) : 0.1;
-
-            if (typeof (page.siteMapPriority) === 'number') {
-              priority = page.siteMapPriority;
-            }
-
-            self.write(locale, {
-              url: {
-                id: page.aposDocId,
-                locale,
-                priority,
-                changefreq: 'daily',
-                loc: url
-              }
-            });
-          }
-        }
-
-      },
       // Append `str` to an array set aside for the map entries
       // for the host `locale`.
       write: function(locale, str) {
         self.maps[locale] = self.maps[locale] || [];
         self.maps[locale].push(str);
       },
-      sendCache: async function(res, path) {
+      sendCache: async function(req, res, path) {
+        // Static builds: generate fresh without reading or writing cache.
+        // This avoids poisoning the cache with build-specific URLs and
+        // ensures the output always reflects the current staticBaseUrl.
+        if (self.apos.url.isStaticBuild(req) && self.apos.url.isExternalFront(req)) {
+          return self.generateAndSend(req, res, path);
+        }
         try {
           const file = await self.apos.cache.get(sitemapCacheName, path);
 
@@ -438,7 +453,7 @@ module.exports = {
             if (exists) {
               return notFound();
             }
-            return self.cacheAndRetry(res, path);
+            return self.cacheAndRetry(req, res, path);
           }
           return res.contentType('text/xml').send(file.data);
         } catch (error) {
@@ -454,10 +469,26 @@ module.exports = {
           return res.status(500).send('error');
         }
       },
-      cacheAndRetry: async function(res, path) {
+      // Generate sitemap fresh for static build requests.
+      // Output is collected in self.cacheOutput but never persisted
+      // to the database cache, and served directly to the response.
+      generateAndSend: async function(req, res, path) {
         try {
-          await self.map();
-          return self.sendCache(res, path);
+          await self.map(req);
+          const file = self.cacheOutput.find(doc => doc.filename === path);
+          if (!file) {
+            return res.status(404).send('not found');
+          }
+          return res.contentType('text/xml').send(file.data);
+        } catch (error) {
+          self.apos.util.error(error);
+          return res.status(500).send('error');
+        }
+      },
+      cacheAndRetry: async function(req, res, path) {
+        try {
+          await self.map(req);
+          return self.sendCache(req, res, path);
         } catch (error) {
           return fail(error);
         }

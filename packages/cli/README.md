@@ -25,7 +25,7 @@ To create a new project with the tool:
 apos create <shortname-without-spaces>
 ```
 
-This will create a local copy of the [apostrophe essentials starter kit](https://github.com/apostrophecms/starter-kit-essentials).
+This will create a local copy of the [ApostropheCMS public demo](https://github.com/apostrophecms/public-demo).
 
 ### options
 
@@ -36,6 +36,19 @@ Run `create` with a `--starter` flag to start from a Github repository other tha
 #### `--mongodb-uri`
 If you are not using a locally hosted MongoDB server, you can provide a connection string with the `--mongodb-uri` flag. For the standard Atlas connection string, you will need to add quotes around the connection string due to the query parameters. This allows for the creation of an admin user during project creation. **Note**: this will not add your connection string to the project. It needs to be included through the `APOS_MONGODB_URI` environment variable, potentially through a `.env` file.
 
+### Astro projects
+
+Hybrid ApostropheCMS + Astro projects are automatically detected by the presence of a `backend/` directory. When detected, the CLI will:
+- Update the shortname in `backend/app.js` and `backend/package.json`
+- Run `npm install` in both `backend/` and `frontend/` directories
+- Create the admin user
+
+Example:
+```bash
+apos create my-site --starter=apostrophecms/astro-public-demo
+```
+
+**Note:** The `add` commands below are only available for standard ApostropheCMS projects. They are not currently supported in hybrid Astro projects.
 
 ## Create a widget
 To bootstrap the necessary files and basic configuration for a new Apostrophe widget, run the following command from within your Apostrophe project's root directory:

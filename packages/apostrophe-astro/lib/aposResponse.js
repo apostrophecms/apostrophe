@@ -24,7 +24,8 @@ function looksLikeChunkedEncoding(buffer) {
 export default async function aposResponse(req) {
   try {
     // Host header should not contain the protocol or a path
-    if (req.headers.get('host').includes('/')) {
+    const host = req.headers.get('host');
+    if (host?.includes('/')) {
       return new Response('Invalid Host header', {
         status: 400,
         statusText: 'Bad Request'
@@ -34,8 +35,19 @@ export default async function aposResponse(req) {
     // Prepare URL for the backend request
     const url = new URL(req.url);
 
-    const aposHost = process.env.APOS_HOST || config.aposHost;
-    const aposUrl = new URL(url.pathname, aposHost);
+    const aposHost = config.aposHost;
+    let pathname = url.pathname;
+
+    // Apostrophe redirects prefix-only paths (e.g. `/my-prefix`) to
+    // the trailing-slash form (`/my-prefix/`) with a 301.  During
+    // static builds Astro may request the base path without the slash,
+    // causing aposPageFetch to receive HTML instead of JSON.
+    // Ensure a trailing slash when the pathname is exactly the prefix.
+    if (config.aposPrefix && pathname === config.aposPrefix) {
+      pathname += '/';
+    }
+
+    const aposUrl = new URL(aposHost + pathname);
     aposUrl.search = url.search;
  
     // Prepare headers, excluding any specified in config
@@ -52,7 +64,6 @@ export default async function aposResponse(req) {
       method: req.method,
       body: req.body
     });
-
     // Prepare response headers
     const responseHeaders = new Headers();
     Object.entries(res.headers).forEach(([key, value]) => {

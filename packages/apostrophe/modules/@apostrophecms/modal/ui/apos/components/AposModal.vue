@@ -13,6 +13,7 @@
       aria-modal="true"
       :aria-labelledby="props.modalData.id"
       data-apos-modal
+      :data-apos-graph-key="props.graphKey || undefined"
       tabindex="0"
       @focus.capture="captureFocus"
       @keyup.tab="onKeyup"
@@ -188,6 +189,10 @@ const props = defineProps({
   modalData: {
     type: Object,
     required: true
+  },
+  graphKey: {
+    type: String,
+    default: null
   }
 });
 

@@ -91,9 +91,21 @@ export default {
   },
   watch: {
     apiParams: {
-      async handler() {
+      async handler(newValue, oldValue) {
+        // The way we pass the props to this component as an object every
+        // means that everything gets flagged as a change every time the
+        // component is included in a render.
+        //
+        // So we need to compare the actual data, and this is a simple way
+        // to do that deeply for both regular and advanced permission.
+        if (JSON.stringify(newValue) === JSON.stringify(oldValue)) {
+          return;
+        }
         this.permissionSets = await this.getPermissionSets();
       },
+      // Still in place in case we stop passing a new object
+      // every time, in which case this wouldn't fire
+      // without it. -Tom
       deep: true
     }
   },

@@ -86,6 +86,7 @@
             :active-item="activeItem"
             :is-open="isOpen"
             :has-tip="hasTip"
+            :ignore-unfocus="ignoreUnfocus"
             @item-clicked="menuItemClicked"
             @set-arrow="setArrow"
           >
@@ -208,6 +209,10 @@ const props = defineProps({
   },
   // When true, teleports dropdown content to `body`
   teleportContent: {
+    type: Boolean,
+    default: false
+  },
+  ignoreUnfocus: {
     type: Boolean,
     default: false
   }

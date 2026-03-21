@@ -43,7 +43,10 @@
         class="apos-button__icon"
         fill-color="currentColor"
       />
-      <div class="apos-search__item__title">
+      <div
+        class="apos-search__item__title"
+        data-apos-test="searchItemTitle"
+      >
         {{ item.title }}
       </div>
       <div
@@ -188,6 +191,9 @@ export default {
 
     & {
       color: var(--a-text-primary);
+      max-width: 40ch;
+      overflow-wrap: break-word;
+      word-break: break-all;
     }
   }
 

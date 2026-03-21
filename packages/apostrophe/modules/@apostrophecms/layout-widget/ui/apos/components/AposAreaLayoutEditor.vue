@@ -4,14 +4,19 @@
     :data-apos-area="areaId"
     data-tablet-full="true"
     class="apos-area"
-    :class="themeClass"
+    :class="[
+      themeClass,
+      {
+        'apos-area--empty': next.length === 0
+      }
+    ]"
     :style="{
       '--colspan': gridModuleOptions.columns,
       '--colstart': 1,
       '--justify': 'stretch',
       '--align': 'stretch'
     }"
-    @click="setFocusedArea(areaId, $event)"
+    @click="setFocusedWidget(parentOptions.widgetId, areaId)"
   >
     <div
       v-if="next.length === 0 && !foreign && layoutMode === 'debug'"
@@ -92,6 +97,11 @@
             :rendering="rendering(widget)"
             :controls-disabled="true"
             :breadcrumb-disabled="true"
+            :style="{
+              'z-index': raisedWidgets.has(widget._id)
+                ? next.length + 1
+                : null
+            }"
             @up="up"
             @down="down"
             @remove="remove"
@@ -203,12 +213,17 @@ export default {
     // Intercept the columns focus, and emphasize the layout widget instead.
     async focusedWidget(widgetId) {
       if (!widgetId || !this.parentOptions.widgetId) {
+        this.switchLayoutMode({
+          widgetId: this.parentOptions.widgetId,
+          data: { value: 'content' }
+        });
+        this.setFocusedWidget(null, null);
         return;
       }
 
       await this.$nextTick();
       if (widgetId === this.parentOptions.widgetId && this.layoutMode === 'layout') {
-        this.setFocusedWidget(null, this.areaId);
+        apos.bus.$emit('suppress-focused-widget-controls');
         this.emphasizeGrid();
         return;
       }
@@ -217,6 +232,16 @@ export default {
         this.emphasizeGrid();
       } else {
         this.deEmphasizeGrid();
+      }
+
+      if (
+        !this.layoutColumnWidgetDeepIds.includes(widgetId) &&
+        widgetId !== this.parentOptions.widgetId
+      ) {
+        this.switchLayoutMode({
+          widgetId: this.parentOptions.widgetId,
+          data: { value: 'content' }
+        });
       }
     },
     // Steal the columns hover, set it on the layout widget instead.
@@ -230,10 +255,9 @@ export default {
     },
     layoutMode(newMode) {
       if (newMode === 'layout') {
-        this.setFocusedWidget(null, this.areaId);
+        apos.bus.$emit('suppress-focused-widget-controls');
         this.emphasizeGrid();
       } else {
-        this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
         this.deEmphasizeGrid();
       }
     }
@@ -257,7 +281,8 @@ export default {
       'updateWidget',
       'setHoveredWidget',
       'addEmphasizedWidget',
-      'removeEmphasizedWidget'
+      'removeEmphasizedWidget',
+      'setFocusedWidget'
     ]),
     clickOnGrid() {
       if (this.parentOptions.widgetId) {

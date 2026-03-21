@@ -1,5 +1,6 @@
 
-import createApp from 'Modules/@apostrophecms/ui/lib/vue';
+import createApp, { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
+import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { nextTick } from 'vue';
 
 export default function() {
@@ -24,6 +25,12 @@ export default function() {
   });
 
   apos.bus.$on('refreshed', function() {
+    // Re-instantiate the on-page widget graph before remounting areas.
+    // The normal mounted hooks will rebuild it from fresh data.
+    const graphStore = useWidgetGraphStore(pinia);
+    if (apos.adminBar?.contextId) {
+      graphStore.resetGraph(apos.adminBar.contextId);
+    }
     createAreaAppsAndRunPlayersIfDone();
   });
 
@@ -49,11 +56,17 @@ export default function() {
     els.filter(el => depth(el) === lowest).forEach(el => createAreaApp(el));
   }
 
+  // Determine how deeply it is nested in other areas. We don't care about
+  // non-area levels
   function depth(el) {
     let depth = 0;
     while (el) {
       el = el.parentNode;
-      depth++;
+      if (el?.hasAttribute) {
+        if (el.hasAttribute('data-apos-area-newly-editable') || el.hasAttribute('data-apos-area-editable')) {
+          depth++;
+        }
+      }
     }
     return depth;
   }
@@ -97,6 +110,7 @@ export default function() {
       }
     }
     el.removeAttribute('data-apos-area-newly-editable');
+    el.setAttribute('data-apos-area-editable', true);
 
     let created = false;
     let observer;
@@ -110,10 +124,18 @@ export default function() {
 
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
-      observer = new IntersectionObserver(observed, {
-        rootMargin: '600px'
-      });
-      observer.observe(el);
+      const rect = el.getBoundingClientRect();
+      const isInViewport = rect.bottom >= 0 &&
+        rect.top <= window.innerHeight;
+
+      if (isInViewport) {
+        mountApp();
+      } else {
+        observer = new IntersectionObserver(observed, {
+          rootMargin: '600px'
+        });
+        observer.observe(el);
+      }
     }
 
     function observed(entries) {
@@ -122,8 +144,14 @@ export default function() {
         return;
       }
       if (created) {
+        observer.disconnect();
         return;
       }
+      mountApp();
+      observer.disconnect();
+    }
+
+    function mountApp() {
       const app = createApp(component, {
         options,
         id: data._id,
@@ -135,10 +163,21 @@ export default function() {
         parentOptions,
         renderings
       });
+
+      // Resolve graphKey: if this area is inside a modal that owns a
+      // graph (data-apos-graph-key), use that key.  Otherwise fall back
+      // to the on-page contextId.  This single DOM lookup bridges the
+      // provide/inject gap created by createApp.
+      const graphKey = el.closest('[data-apos-graph-key]')
+        ?.getAttribute('data-apos-graph-key') || apos.adminBar?.contextId || null;
+      // Provide the resolved graphKey so every descendant component
+      // can simply inject('aposGraphKey') and get the correct value.
+      if (graphKey) {
+        app.provide('aposGraphKey', graphKey);
+      }
       app.mount(el);
       mountedApps.set(el, app);
       created = true;
-      observer.disconnect();
     }
   }
 

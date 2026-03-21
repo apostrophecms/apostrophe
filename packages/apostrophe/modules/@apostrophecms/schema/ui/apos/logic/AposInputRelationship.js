@@ -37,6 +37,7 @@ export default {
       subfields,
       disabled: false,
       searching: false,
+      searchRequestId: 0,
       choosing: false,
       relationshipSchema: null
     };
@@ -176,6 +177,7 @@ export default {
       );
     },
     async search(qs) {
+      const requestId = ++this.searchRequestId;
       const action = apos.modules[this.field.withType].action;
       const isPage = apos.modules['@apostrophecms/page'].validPageTypes
         .includes(this.field.withType);
@@ -200,6 +202,10 @@ export default {
         qs
       });
 
+      if (requestId !== this.searchRequestId) {
+        return;
+      }
+
       const removeSelectedItem = item => !this.next.map(i => i._id).includes(item._id);
       const formatItems = item => ({
         ...item,
@@ -216,10 +222,6 @@ export default {
       this.searching = false;
     },
     async input () {
-      if (this.searching) {
-        return;
-      }
-
       const trimmed = this.searchTerm.trim();
       const qs = trimmed.length
         ? {

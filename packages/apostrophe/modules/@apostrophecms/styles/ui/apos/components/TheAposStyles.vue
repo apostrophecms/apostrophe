@@ -431,6 +431,7 @@ export default {
       );
     },
     async setStyleMarkup({ css, classes }) {
+      const stylesheetEl = document.querySelector('#apos-styles-stylesheet');
       this.setBodyClasses(classes);
       if (apos.adminBar.breakpointPreviewMode?.enable) {
         const processed = breakpointPreviewTransformer(css, {
@@ -438,11 +439,15 @@ export default {
           debug: apos.adminBar.breakpointPreviewMode?.debug === true,
           transform: apos.adminBar.breakpointPreviewMode?.transform || null
         });
-        document.querySelector('#apos-styles-stylesheet').textContent = processed;
+        if (stylesheetEl) {
+          stylesheetEl.textContent = processed;
+        }
         return;
       }
 
-      document.querySelector('#apos-styles-stylesheet').textContent = css;
+      if (stylesheetEl) {
+        stylesheetEl.textContent = css;
+      }
     },
     setBodyClasses(classes) {
       const previousClasses = document.body
