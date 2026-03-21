@@ -188,16 +188,29 @@ function deepEqual(a, b) {
   return true;
 }
 
-function applyProjection(doc, projection) {
+function applyProjection(doc, projection, meta = {}) {
   if (!projection || Object.keys(projection).length === 0) {
     return doc;
   }
 
+  const metaFields = Object.entries(projection).filter(
+    ([ k, v ]) => v && typeof v === 'object' && v.$meta
+  );
   const fields = Object.entries(projection).filter(
     ([ k, v ]) => !(v && typeof v === 'object' && v.$meta)
   );
+
+  const applyMeta = (result) => {
+    for (const [ field, spec ] of metaFields) {
+      if (spec.$meta === 'textScore' && meta.textScore != null) {
+        result[field] = meta.textScore;
+      }
+    }
+    return result;
+  };
+
   if (fields.length === 0) {
-    return doc;
+    return applyMeta({ ...doc });
   }
   const isInclusion = fields.some(([ k, v ]) => v && k !== '_id');
 
@@ -214,7 +227,7 @@ function applyProjection(doc, projection) {
     if (projection._id !== 0 && projection._id !== false) {
       result._id = doc._id;
     }
-    return result;
+    return applyMeta(result);
   } else {
     const result = JSON.parse(JSON.stringify(doc));
     for (const [ field, include ] of fields) {
@@ -222,7 +235,7 @@ function applyProjection(doc, projection) {
         unsetNestedField(result, field);
       }
     }
-    return result;
+    return applyMeta(result);
   }
 }
 
@@ -370,7 +383,6 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
       });
       conditions.push(`(${orConditions.join(' OR ')})`);
     } else if (key === '$text') {
-      // Full-text search: simplistic LIKE-based approach for SQLite
       const searchTerm = value.$search;
       if (typeof searchTerm !== 'string') {
         throw new Error('$text.$search must be a string');
@@ -378,10 +390,16 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
       const words = searchTerm.trim().split(/\s+/).filter(w => w.length > 0);
       if (words.length === 0) {
         conditions.push('0');
+      } else if (options.ftsTable) {
+        // FTS5 search: match against the virtual table by rowid
+        // FTS5 query: OR the words together for MongoDB-compatible semantics
+        const ftsQuery = words.map(w => `"${w.replace(/"/g, '""')}"`).join(' OR ');
+        params.push(ftsQuery);
+        conditions.push(
+          `rowid IN (SELECT rowid FROM ${options.ftsTable} WHERE ${options.ftsTable} MATCH ?)`
+        );
       } else {
-        // Build a text search across the text-indexed fields.
-        // Use the fields from the actual text index if available,
-        // otherwise fall back to the default ApostropheCMS search fields.
+        // Fallback LIKE-based search when no FTS5 table exists
         const fieldNames = options.textFields || [
           'highSearchText', 'lowSearchText', 'title', 'searchBoost'
         ];
@@ -390,7 +408,6 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
           return `COALESCE(json_extract(${prefix}, '${jsonPath}'), '')`;
         });
         const textExpr = textFields.join(' || \' \' || ');
-        // OR semantics: any word matches
         const wordConditions = words.map(w => {
           params.push(`%${w}%`);
           return `(${textExpr}) LIKE ?`;
@@ -736,11 +753,28 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
 }
 
 // Build ORDER BY clause for SQLite
-function buildOrderBy(sort) {
+function queryHasText(query) {
+  if (!query || typeof query !== 'object' || !('$text' in query)) {
+    return false;
+  }
+  const search = query.$text && query.$text.$search;
+  if (typeof search !== 'string') {
+    return false;
+  }
+  return search.trim().split(/\s+/).filter(w => w.length > 0).length > 0;
+}
+
+function buildOrderBy(sort, options = {}) {
   const clauses = [];
 
   if (sort && Object.keys(sort).length > 0) {
     for (const [ field, direction ] of Object.entries(sort)) {
+      if (direction && typeof direction === 'object' && direction.$meta === 'textScore') {
+        if (options.hasTextScore) {
+          clauses.push('_score DESC');
+        }
+        continue;
+      }
       if (direction && typeof direction === 'object' && direction.$meta) {
         continue;
       }
@@ -753,8 +787,10 @@ function buildOrderBy(sort) {
     }
   }
 
-  // Use rowid as insertion-order tiebreaker (replaces postgres _order SERIAL)
-  clauses.push('rowid ASC');
+  // Use rowid as insertion-order tiebreaker (replaces postgres _order SERIAL).
+  // When joining with FTS5, qualify with the main table name to avoid ambiguity.
+  const rowidRef = options.mainTable ? `${options.mainTable}.rowid` : 'rowid';
+  clauses.push(`${rowidRef} ASC`);
   return `ORDER BY ${clauses.join(', ')}`;
 }
 
@@ -998,16 +1034,39 @@ class SqliteCursor {
     this._collection._ensureTable();
 
     const params = [];
+    const queryOptions = this._collection._queryOptions();
     const tableName = this._collection._quotedTableName();
-    const whereClause = buildWhereClause(this._query, params, 'data', this._collection._queryOptions());
-    const orderBy = buildOrderBy(this._sort);
+    const whereClause = buildWhereClause(this._query, params, 'data', queryOptions);
+    const hasText = queryHasText(this._query) && queryOptions.ftsTable;
+    const orderBy = buildOrderBy(this._sort, { hasTextScore: hasText, mainTable: hasText ? tableName : null });
 
-    let sql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause} ${orderBy}`;
+    let selectCols = `${tableName}._id, ${tableName}.data`;
+    let sql;
+    if (hasText) {
+      // Build WHERE from query without $text (the FTS JOIN handles text matching)
+      const nonTextQuery = { ...this._query };
+      delete nonTextQuery.$text;
+      const nonTextParams = [];
+      const nonTextWhere = buildWhereClause(nonTextQuery, nonTextParams, 'data', queryOptions);
+
+      const words = this._query.$text.$search.trim().split(/\s+/).filter(w => w.length > 0);
+      const ftsQuery = words.map(w => `"${w.replace(/"/g, '""')}"`).join(' OR ');
+
+      // bm25() returns negative values (lower = better), so negate for
+      // higher = better, matching MongoDB/PostgreSQL conventions
+      selectCols += `, -bm25(${queryOptions.ftsTable}) AS _score`;
+
+      sql = `SELECT ${selectCols} FROM ${tableName} JOIN ${queryOptions.ftsTable} ON ${tableName}.rowid = ${queryOptions.ftsTable}.rowid WHERE ${queryOptions.ftsTable} MATCH ? AND ${nonTextWhere} ${orderBy}`;
+      // Replace params with: ftsQuery first, then nonTextParams
+      params.length = 0;
+      params.push(ftsQuery, ...nonTextParams);
+    } else {
+      sql = `SELECT ${selectCols} FROM ${tableName} WHERE ${whereClause} ${orderBy}`;
+    }
 
     if (this._limit != null) {
       sql += ` LIMIT ${this._limit}`;
     } else if (this._skip != null) {
-      // SQLite requires LIMIT before OFFSET; use -1 for unlimited
       sql += ' LIMIT -1';
     }
     if (this._skip != null) {
@@ -1017,7 +1076,8 @@ class SqliteCursor {
     const rows = this._collection._db._sqlite.prepare(sql).all(...params);
     return rows.map(row => {
       const doc = deserializeDocument(row.data, row._id);
-      return this._projection ? applyProjection(doc, this._projection) : doc;
+      const meta = row._score != null ? { textScore: row._score } : {};
+      return this._projection ? applyProjection(doc, this._projection, meta) : doc;
     });
   }
 
@@ -1041,11 +1101,31 @@ class SqliteCursor {
       this._collection._ensureTable();
 
       const params = [];
+      const queryOptions = this._collection._queryOptions();
       const tableName = this._collection._quotedTableName();
-      const whereClause = buildWhereClause(this._query, params, 'data', this._collection._queryOptions());
-      const orderBy = buildOrderBy(this._sort);
+      const whereClause = buildWhereClause(this._query, params, 'data', queryOptions);
+      const hasText = queryHasText(this._query) && queryOptions.ftsTable;
+      const orderBy = buildOrderBy(this._sort, { hasTextScore: hasText, mainTable: hasText ? tableName : null });
 
-      let sql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause} ${orderBy}`;
+      let selectCols = `${tableName}._id, ${tableName}.data`;
+      let sql;
+      if (hasText) {
+        const nonTextQuery = { ...this._query };
+        delete nonTextQuery.$text;
+        const nonTextParams = [];
+        const nonTextWhere = buildWhereClause(nonTextQuery, nonTextParams, 'data', queryOptions);
+
+        const words = this._query.$text.$search.trim().split(/\s+/).filter(w => w.length > 0);
+        const ftsQuery = words.map(w => `"${w.replace(/"/g, '""')}"`).join(' OR ');
+
+        selectCols += `, -bm25(${queryOptions.ftsTable}) AS _score`;
+        sql = `SELECT ${selectCols} FROM ${tableName} JOIN ${queryOptions.ftsTable} ON ${tableName}.rowid = ${queryOptions.ftsTable}.rowid WHERE ${queryOptions.ftsTable} MATCH ? AND ${nonTextWhere} ${orderBy}`;
+        params.length = 0;
+        params.push(ftsQuery, ...nonTextParams);
+      } else {
+        sql = `SELECT ${selectCols} FROM ${tableName} WHERE ${whereClause} ${orderBy}`;
+      }
+
       if (this._limit != null) {
         sql += ` LIMIT ${this._limit}`;
       } else if (this._skip != null) {
@@ -1067,7 +1147,8 @@ class SqliteCursor {
 
     const row = this._buffer[this._bufferIndex++];
     const doc = deserializeDocument(row.data, row._id);
-    return this._projection ? applyProjection(doc, this._projection) : doc;
+    const meta = row._score != null ? { textScore: row._score } : {};
+    return this._projection ? applyProjection(doc, this._projection, meta) : doc;
   }
 
   async close() {
@@ -1280,8 +1361,64 @@ class SqliteCollection {
     return `"${escapeIdentifier(this._tableName)}"`;
   }
 
+  _ftsTableName() {
+    return `"${escapeIdentifier(this._tableName + '_fts')}"`;
+  }
+
   _queryOptions() {
-    return this._textFields ? { textFields: this._textFields } : {};
+    if (!this._textFields) {
+      return {};
+    }
+    return {
+      textFields: this._textFields,
+      ftsTable: this._ftsTableName(),
+      mainTable: this._quotedTableName()
+    };
+  }
+
+  // Extract text field values from a document for FTS5 indexing.
+  // Returns an array of string values in _textFields order, or null
+  // if no FTS5 table exists.
+  _extractFtsValues(doc) {
+    if (!this._textFields) {
+      return null;
+    }
+    return this._textFields.map(f => {
+      const val = getNestedField(doc, f);
+      return val != null ? String(val) : '';
+    });
+  }
+
+  // Sync FTS5 table after inserting a document
+  _syncFtsInsert(id, doc) {
+    const values = this._extractFtsValues(doc);
+    if (!values) {
+      return;
+    }
+    const fts = this._ftsTableName();
+    const placeholders = values.map(() => '?').join(', ');
+    this._db._sqlite.prepare(
+      `INSERT INTO ${fts} (rowid, ${this._textFields.map(f => `"${escapeIdentifier(f)}"`).join(', ')}) VALUES ((SELECT rowid FROM ${this._quotedTableName()} WHERE _id = ?), ${placeholders})`
+    ).run(id, ...values);
+  }
+
+  // Delete a document's FTS5 entry by its _id.
+  // With contentless_delete=1, we can delete by rowid without old values.
+  _syncFtsDelete(id) {
+    if (!this._textFields) {
+      return;
+    }
+    const tableName = this._quotedTableName();
+    const fts = this._ftsTableName();
+    const row = this._db._sqlite.prepare(
+      `SELECT rowid FROM ${tableName} WHERE _id = ?`
+    ).get(id);
+    if (!row) {
+      return;
+    }
+    this._db._sqlite.prepare(
+      `DELETE FROM ${fts} WHERE rowid = ?`
+    ).run(row.rowid);
   }
 
   get collectionName() {
@@ -1319,6 +1456,7 @@ class SqliteCollection {
       this._db._sqlite.prepare(
         `INSERT INTO ${tableName} (_id, data) VALUES (?, ?)`
       ).run(id, serializeDocument(docWithoutId));
+      this._syncFtsInsert(id, doc);
       return {
         acknowledged: true,
         insertedId: id,
@@ -1431,9 +1569,11 @@ class SqliteCollection {
     const { _id, ...dataWithoutId } = updated;
 
     try {
+      this._syncFtsDelete(selectResult._id);
       this._db._sqlite.prepare(
         `UPDATE ${tableName} SET data = ? WHERE _id = ?`
       ).run(serializeDocument(dataWithoutId), selectResult._id);
+      this._syncFtsInsert(selectResult._id, updated);
     } catch (e) {
       if (e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && e.message.includes('UNIQUE constraint failed'))) {
         throw makeDuplicateKeyError(e, this, updated);
@@ -1483,7 +1623,9 @@ class SqliteCollection {
       const existing = deserializeDocument(row.data, row._id);
       const updated = applyUpdate(existing, update);
       const { _id, ...dataWithoutId } = updated;
+      this._syncFtsDelete(row._id);
       updateStmt.run(serializeDocument(dataWithoutId), row._id);
+      this._syncFtsInsert(row._id, updated);
       modifiedCount++;
     }
 
@@ -1528,9 +1670,11 @@ class SqliteCollection {
 
     const { _id, ...dataWithoutId } = replacement;
     try {
+      this._syncFtsDelete(selectResult._id);
       this._db._sqlite.prepare(
         `UPDATE ${tableName} SET data = ? WHERE _id = ?`
       ).run(serializeDocument(dataWithoutId), selectResult._id);
+      this._syncFtsInsert(selectResult._id, replacement);
     } catch (e) {
       if (e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && e.message.includes('UNIQUE constraint failed'))) {
         throw makeDuplicateKeyError(e, this, replacement);
@@ -1552,6 +1696,19 @@ class SqliteCollection {
     const tableName = this._quotedTableName();
     const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
+    if (this._textFields) {
+      const fts = this._ftsTableName();
+      const row = this._db._sqlite.prepare(
+        `SELECT rowid FROM ${tableName} WHERE ${whereClause} LIMIT 1`
+      ).get(...params);
+      if (!row) {
+        return { acknowledged: true, deletedCount: 0, result: { ok: 1 } };
+      }
+      this._db._sqlite.prepare(`DELETE FROM ${fts} WHERE rowid = ?`).run(row.rowid);
+      this._db._sqlite.prepare(`DELETE FROM ${tableName} WHERE rowid = ?`).run(row.rowid);
+      return { acknowledged: true, deletedCount: 1, result: { ok: 1 } };
+    }
+
     const result = this._db._sqlite.prepare(
       `DELETE FROM ${tableName} WHERE _id IN (
         SELECT _id FROM ${tableName} WHERE ${whereClause} LIMIT 1
@@ -1571,6 +1728,22 @@ class SqliteCollection {
     const params = [];
     const tableName = this._quotedTableName();
     const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
+
+    if (this._textFields) {
+      const fts = this._ftsTableName();
+      const rows = this._db._sqlite.prepare(
+        `SELECT rowid FROM ${tableName} WHERE ${whereClause}`
+      ).all(...params);
+      if (rows.length > 0) {
+        const deleteFts = this._db._sqlite.prepare(`DELETE FROM ${fts} WHERE rowid = ?`);
+        const deleteMain = this._db._sqlite.prepare(`DELETE FROM ${tableName} WHERE rowid = ?`);
+        for (const row of rows) {
+          deleteFts.run(row.rowid);
+          deleteMain.run(row.rowid);
+        }
+      }
+      return { acknowledged: true, deletedCount: rows.length, result: { ok: 1 } };
+    }
 
     const result = this._db._sqlite.prepare(
       `DELETE FROM ${tableName} WHERE ${whereClause}`
@@ -1751,9 +1924,11 @@ class SqliteCollection {
     const updated = applyUpdate(existing, update);
     const { _id, ...dataWithoutId } = updated;
 
+    this._syncFtsDelete(selectResult._id);
     this._db._sqlite.prepare(
       `UPDATE ${tableName} SET data = ? WHERE _id = ?`
     ).run(serializeDocument(dataWithoutId), selectResult._id);
+    this._syncFtsInsert(selectResult._id, updated);
 
     return options.returnDocument === 'after' ? updated : existing;
   }
@@ -1802,22 +1977,40 @@ class SqliteCollection {
       whereClause = ` WHERE ${sparseConditions.join(' AND ')}`;
     }
 
-    // Handle text indexes
+    // Handle text indexes — create an FTS5 virtual table
     const hasTextIndex = keyEntries.some(([ , v ]) => v === 'text');
     if (hasTextIndex) {
-      // SQLite doesn't have native full-text search on JSON fields,
-      // but we create a simple expression index for the test to pass
       const textFields = keyEntries.filter(([ , v ]) => v === 'text').map(([ k ]) => k);
-      // Store the text index fields so $text queries use them
       this._textFields = textFields;
-      const textExpr = textFields
-        .map(f => `COALESCE(json_extract(data, '$.${escapeString(f)}'), '')`)
-        .join(' || \' \' || ');
 
-      this._db._sqlite.exec(`
-        CREATE INDEX IF NOT EXISTS "${escapedIndexName}"
-        ON ${tableName} (${textExpr})${whereClause}
-      `);
+      const fts = this._ftsTableName();
+      const cols = textFields.map(f => `"${escapeIdentifier(f)}"`).join(', ');
+
+      // Content-less FTS5 table — we manage inserts/deletes manually.
+      // content='' avoids duplicating data, contentless_delete=1 allows
+      // DELETE operations on the virtual table.
+      this._db._sqlite.exec(
+        `CREATE VIRTUAL TABLE IF NOT EXISTS ${fts} USING fts5(${cols}, content='', contentless_delete=1)`
+      );
+
+      // Backfill existing documents into the FTS5 table
+      const rows = this._db._sqlite.prepare(
+        `SELECT rowid, _id, data FROM ${tableName}`
+      ).all();
+      if (rows.length > 0) {
+        const insertFts = this._db._sqlite.prepare(
+          `INSERT OR REPLACE INTO ${fts} (rowid, ${cols}) VALUES (?, ${textFields.map(() => '?').join(', ')})`
+        );
+        const backfill = this._db._sqlite.transaction(() => {
+          for (const row of rows) {
+            const doc = deserializeDocument(row.data, row._id);
+            const values = this._extractFtsValues(doc);
+            insertFts.run(row.rowid, ...values);
+          }
+        });
+        backfill();
+      }
+
       return indexName;
     }
 
@@ -1990,6 +2183,11 @@ class SqliteCollection {
   }
 
   async drop() {
+    if (this._textFields) {
+      const fts = this._ftsTableName();
+      this._db._sqlite.exec(`DROP TABLE IF EXISTS ${fts}`);
+      this._textFields = null;
+    }
     const tableName = this._quotedTableName();
     this._db._sqlite.exec(`DROP TABLE IF EXISTS ${tableName}`);
     this._initialized = false;
@@ -2001,6 +2199,14 @@ class SqliteCollection {
     const newCollName = validateTableName(newName);
     const tableName = this._quotedTableName();
     const escapedNewTableName = escapeIdentifier(newCollName);
+
+    // Rename FTS5 table first if it exists
+    if (this._textFields) {
+      const oldFts = this._ftsTableName();
+      const newFtsName = escapeIdentifier(newCollName + '_fts');
+      this._db._sqlite.exec(`ALTER TABLE ${oldFts} RENAME TO "${newFtsName}"`);
+    }
+
     this._db._sqlite.exec(`ALTER TABLE ${tableName} RENAME TO "${escapedNewTableName}"`);
 
     this._tableName = newCollName;

@@ -2551,8 +2551,7 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       expect(results2).to.have.lengthOf(0);
     });
 
-    if (ADAPTER !== 'sqlite') {
-      it('should rank results by relevance when sorted by textScore', async function() {
+    it('should rank results by relevance when sorted by textScore', async function() {
         const results = await db.collection('search')
           .find({ $text: { $search: 'database migration' } })
           .sort({ score: { $meta: 'textScore' } })
@@ -2619,8 +2618,7 @@ describe(`Database Adapter (${ADAPTER})`, function() {
           expect(results[i - 1].score).to.be.at.least(results[i].score);
         }
       });
-    }
-  });
+  }); // Full-Text Search
 
   if (ADAPTER === 'multipostgres') {
     describe('Multi-schema Mode', function() {
