@@ -244,6 +244,15 @@ function applyProjection(doc, projection, meta = {}) {
 // =============================================================================
 
 function applyUpdate(doc, update) {
+  // Pipeline-form update: array of stages like [{ $unset: [...] }, { $set: {...} }]
+  if (Array.isArray(update)) {
+    let result = { ...doc };
+    for (const stage of update) {
+      result = applyUpdate(result, stage);
+    }
+    return result;
+  }
+
   const result = { ...doc };
 
   for (const [ op, fields ] of Object.entries(update)) {
@@ -254,8 +263,15 @@ function applyUpdate(doc, update) {
         }
         break;
       case '$unset':
-        for (const field of Object.keys(fields)) {
-          unsetNestedField(result, field);
+        if (Array.isArray(fields)) {
+          // Pipeline form: $unset takes an array of field names
+          for (const field of fields) {
+            unsetNestedField(result, field);
+          }
+        } else {
+          for (const field of Object.keys(fields)) {
+            unsetNestedField(result, field);
+          }
         }
         break;
       case '$inc':
@@ -290,6 +306,15 @@ function applyUpdate(doc, update) {
         for (const [ field, value ] of Object.entries(fields)) {
           if (value === true || (value && value.$type === 'date')) {
             setNestedField(result, field, new Date());
+          }
+        }
+        break;
+      case '$rename':
+        for (const [ oldField, newField ] of Object.entries(fields)) {
+          const value = getNestedField(result, oldField);
+          if (value !== undefined) {
+            unsetNestedField(result, oldField);
+            setNestedField(result, newField, value);
           }
         }
         break;
@@ -451,8 +476,9 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
         conditions.push(`(regexp(?, ${jsonExtract}) OR (json_type(${prefix}, ${buildJsonExtractPath(key)}) = 'array' AND EXISTS(SELECT 1 FROM json_each(${jsonExtract}) WHERE regexp(?, value))))`);
         params.push(value.source);
       }
-    } else if (value === null) {
-      // MongoDB: { field: null } matches both explicit null AND missing field
+    } else if (value === null || value === undefined) {
+      // MongoDB: { field: null } and { field: undefined } both match
+      // explicit null AND missing field
       const jsonExtract = buildJsonExtract(key, prefix);
       conditions.push(`(${jsonExtract} IS NULL OR json_type(${prefix}, ${buildJsonExtractPath(key)}) = 'null')`);
     } else {
@@ -537,6 +563,9 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`json_extract(data, '$.${escapeString(field)}.$date') > ?`);
+        } else if (typeof opValue === 'string') {
+          params.push(opValue);
+          conditions.push(`${jsonExtract} > ?`);
         } else {
           params.push(opValue);
           conditions.push(`CAST(${jsonExtract} AS NUMERIC) > ?`);
@@ -550,6 +579,9 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`json_extract(data, '$.${escapeString(field)}.$date') >= ?`);
+        } else if (typeof opValue === 'string') {
+          params.push(opValue);
+          conditions.push(`${jsonExtract} >= ?`);
         } else {
           params.push(opValue);
           conditions.push(`CAST(${jsonExtract} AS NUMERIC) >= ?`);
@@ -563,6 +595,9 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`json_extract(data, '$.${escapeString(field)}.$date') < ?`);
+        } else if (typeof opValue === 'string') {
+          params.push(opValue);
+          conditions.push(`${jsonExtract} < ?`);
         } else {
           params.push(opValue);
           conditions.push(`CAST(${jsonExtract} AS NUMERIC) < ?`);
@@ -576,6 +611,9 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`json_extract(data, '$.${escapeString(field)}.$date') <= ?`);
+        } else if (typeof opValue === 'string') {
+          params.push(opValue);
+          conditions.push(`${jsonExtract} <= ?`);
         } else {
           params.push(opValue);
           conditions.push(`CAST(${jsonExtract} AS NUMERIC) <= ?`);
@@ -798,6 +836,47 @@ function buildOrderBy(sort, options = {}) {
 // In-memory query matching for aggregation $match
 // =============================================================================
 
+// Apply a $project stage in an aggregation pipeline.
+// Unlike applyProjection for find(), this supports field references
+// (values starting with '$') and explicit exclusion with 0.
+function applyAggregateProject(doc, spec) {
+  const result = {};
+  let includeId = true;
+  for (const [ key, value ] of Object.entries(spec)) {
+    if (key === '_id') {
+      if (value === 0 || value === false) {
+        includeId = false;
+      } else if (value === 1 || value === true) {
+        includeId = true;
+      }
+      continue;
+    }
+    if (value === 0 || value === false) {
+      continue;
+    }
+    if (value === 1 || value === true) {
+      const v = getNestedField(doc, key);
+      if (v !== undefined) {
+        setNestedField(result, key, v);
+      }
+    } else if (typeof value === 'string' && value.startsWith('$')) {
+      // Field reference: '$fieldName' or '$nested.field'
+      const refPath = value.slice(1);
+      const v = getNestedField(doc, refPath);
+      if (v !== undefined) {
+        setNestedField(result, key, v);
+      }
+    } else {
+      // Literal value or expression — treat as literal
+      setNestedField(result, key, value);
+    }
+  }
+  if (includeId && doc._id !== undefined) {
+    result._id = doc._id;
+  }
+  return result;
+}
+
 function matchesQuery(doc, query) {
   for (const [ key, value ] of Object.entries(query)) {
     if (key === '$and') {
@@ -842,6 +921,10 @@ function matchesQuery(doc, query) {
               return false;
             } break;
           }
+        }
+      } else if (value instanceof RegExp) {
+        if (typeof docValue !== 'string' || !value.test(docValue)) {
+          return false;
         }
       } else if (Array.isArray(docValue)) {
         if (!docValue.some(item => deepEqual(item, value))) {
@@ -1151,6 +1234,23 @@ class SqliteCursor {
     return this._projection ? applyProjection(doc, this._projection, meta) : doc;
   }
 
+  async hasNext() {
+    if (this._exhausted) {
+      return false;
+    }
+    if (!this._buffer) {
+      // Force buffering by calling _next logic without consuming
+      await this._next();
+      if (this._exhausted) {
+        return false;
+      }
+      // Put the item back
+      this._bufferIndex--;
+      return true;
+    }
+    return this._bufferIndex < this._buffer.length;
+  }
+
   async close() {
     this._buffer = null;
     this._exhausted = true;
@@ -1215,7 +1315,7 @@ class SqliteAggregationCursor {
           docs = this._processGroup(docs, value);
           break;
         case '$project':
-          docs = docs.map(doc => applyProjection(doc, value));
+          docs = docs.map(doc => applyAggregateProject(doc, value));
           break;
         case '$unwind':
           docs = this._processUnwind(docs, value);
@@ -1245,6 +1345,16 @@ class SqliteAggregationCursor {
       let groupKey;
       if (typeof groupField === 'string' && groupField.startsWith('$')) {
         groupKey = getNestedField(doc, groupField.substring(1));
+      } else if (groupField !== null && typeof groupField === 'object') {
+        // Resolve field references in object-valued _id (e.g. { docId: '$docId' })
+        groupKey = {};
+        for (const [ k, v ] of Object.entries(groupField)) {
+          if (typeof v === 'string' && v.startsWith('$')) {
+            groupKey[k] = getNestedField(doc, v.substring(1));
+          } else {
+            groupKey[k] = v;
+          }
+        }
       } else {
         groupKey = groupField;
       }
@@ -1515,8 +1625,8 @@ class SqliteCollection {
     return options.projection ? applyProjection(doc, options.projection) : doc;
   }
 
-  find(query) {
-    return new SqliteCursor(this, query);
+  find(query, options) {
+    return new SqliteCursor(this, query, options);
   }
 
   async updateOne(query, update, options = {}) {
@@ -2072,12 +2182,14 @@ class SqliteCollection {
       unique: true
     } ];
 
+    const seen = new Set();
     for (const row of rows) {
       // Skip auto-created indexes (like the PRIMARY KEY index)
       if (!row.sql) {
         continue;
       }
 
+      seen.add(row.name);
       const storedIndex = this._indexes.get(row.name);
       if (storedIndex) {
         indexes.push({
@@ -2091,6 +2203,20 @@ class SqliteCollection {
         indexes.push({
           name: row.name,
           ...parseIndexDef(row.sql)
+        });
+      }
+    }
+
+    // Include indexes tracked in _indexes but not in sqlite_master
+    // (e.g. FTS5 virtual table text indexes)
+    for (const [ name, storedIndex ] of this._indexes) {
+      if (!seen.has(name)) {
+        indexes.push({
+          name: storedIndex.mongoName || name,
+          key: storedIndex.keys,
+          unique: storedIndex.options.unique || false,
+          ...(storedIndex.options.sparse ? { sparse: true } : {}),
+          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {})
         });
       }
     }
@@ -2292,7 +2418,7 @@ class SqliteDb {
     return {
       async toArray() {
         const rows = self._sqlite.prepare(
-          'SELECT name FROM sqlite_master WHERE type = \'table\' AND name NOT LIKE \'sqlite_%\''
+          'SELECT name FROM sqlite_master WHERE type = \'table\' AND name NOT LIKE \'sqlite_%\' AND name NOT LIKE \'%\\_fts%\' ESCAPE \'\\\''
         ).all();
         return rows.map(row => ({ name: row.name }));
       }

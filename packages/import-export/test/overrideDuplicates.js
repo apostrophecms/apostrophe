@@ -277,7 +277,7 @@ describe('#overrideDuplicates - overriding locales integration tests', function(
         locale: 'fr',
         mode: 'draft'
       });
-      const [ nonLocalized ] = await apos.doc.db.find({ title: 'nonLocalized1' }).toArray();
+      const [ nonLocalized ] = await apos.doc.db.find({ title: 'nonLocalized1' }).sort({ _id: 1 }).toArray();
       const enArticles = await apos.article.find(req).toArray();
       const parkedPages = await apos.page
         .find(req, { parkedId: { $exists: true } })

@@ -529,8 +529,9 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
       const regexOp = `~${flags}`;
       // Match scalar text OR any element of an array (MongoDB behavior)
       conditions.push(`(${prefix}->>'${escapeString(key)}' ${regexOp} $${params.length} OR (jsonb_typeof(${jsonPath}) = 'array' AND EXISTS(SELECT 1 FROM jsonb_array_elements_text(${jsonPath}) elem WHERE elem ${regexOp} $${params.length})))`);
-    } else if (value === null) {
-      // MongoDB: { field: null } matches both explicit null AND missing field
+    } else if (value === null || value === undefined) {
+      // MongoDB: { field: null } and { field: undefined } both match
+      // explicit null AND missing field
       const jsonPath = buildJsonPath(key, prefix);
       conditions.push(`(${jsonPath} IS NULL OR ${jsonPath} = 'null'::jsonb)`);
     } else {
@@ -593,10 +594,11 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           params.push(opValue);
           conditions.push(`_id > $${params.length}`);
         } else if (opValue instanceof Date) {
-          // Dates are stored as { "$date": "ISO string" } in UTC
-          // Compare as text (ISO 8601 strings sort correctly) for index compatibility
           params.push(opValue.toISOString());
           conditions.push(`${jsonPath}->>'$date' > $${params.length}`);
+        } else if (typeof opValue === 'string') {
+          params.push(opValue);
+          conditions.push(`${jsonTextPath} > $${params.length}`);
         } else {
           params.push(opValue);
           conditions.push(`(${jsonTextPath})::numeric > $${params.length}`);
@@ -610,6 +612,9 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`${jsonPath}->>'$date' >= $${params.length}`);
+        } else if (typeof opValue === 'string') {
+          params.push(opValue);
+          conditions.push(`${jsonTextPath} >= $${params.length}`);
         } else {
           params.push(opValue);
           conditions.push(`(${jsonTextPath})::numeric >= $${params.length}`);
@@ -623,6 +628,9 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`${jsonPath}->>'$date' < $${params.length}`);
+        } else if (typeof opValue === 'string') {
+          params.push(opValue);
+          conditions.push(`${jsonTextPath} < $${params.length}`);
         } else {
           params.push(opValue);
           conditions.push(`(${jsonTextPath})::numeric < $${params.length}`);
@@ -636,6 +644,9 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         } else if (opValue instanceof Date) {
           params.push(opValue.toISOString());
           conditions.push(`${jsonPath}->>'$date' <= $${params.length}`);
+        } else if (typeof opValue === 'string') {
+          params.push(opValue);
+          conditions.push(`${jsonTextPath} <= $${params.length}`);
         } else {
           params.push(opValue);
           conditions.push(`(${jsonTextPath})::numeric <= $${params.length}`);
@@ -832,6 +843,14 @@ function buildOrderBy(sort, options = {}) {
 // =============================================================================
 
 function applyUpdate(doc, update) {
+  if (Array.isArray(update)) {
+    let result = { ...doc };
+    for (const stage of update) {
+      result = applyUpdate(result, stage);
+    }
+    return result;
+  }
+
   const result = { ...doc };
 
   for (const [ op, fields ] of Object.entries(update)) {
@@ -842,8 +861,14 @@ function applyUpdate(doc, update) {
         }
         break;
       case '$unset':
-        for (const field of Object.keys(fields)) {
-          unsetNestedField(result, field);
+        if (Array.isArray(fields)) {
+          for (const field of fields) {
+            unsetNestedField(result, field);
+          }
+        } else {
+          for (const field of Object.keys(fields)) {
+            unsetNestedField(result, field);
+          }
         }
         break;
       case '$inc':
@@ -878,6 +903,15 @@ function applyUpdate(doc, update) {
         for (const [ field, value ] of Object.entries(fields)) {
           if (value === true || (value && value.$type === 'date')) {
             setNestedField(result, field, new Date());
+          }
+        }
+        break;
+      case '$rename':
+        for (const [ oldField, newField ] of Object.entries(fields)) {
+          const value = getNestedField(result, oldField);
+          if (value !== undefined) {
+            unsetNestedField(result, oldField);
+            setNestedField(result, newField, value);
           }
         }
         break;
@@ -1217,6 +1251,14 @@ class PostgresCursor {
   }
 
   async _next() {
+    if (this._peeked !== undefined) {
+      const doc = this._peeked;
+      this._peeked = undefined;
+      if (doc === null) {
+        this._exhausted = true;
+      }
+      return doc;
+    }
     if (this._exhausted) {
       return null;
     }
@@ -1277,6 +1319,17 @@ class PostgresCursor {
     const doc = deserializeDocument(row.data, row._id);
     const meta = row._score != null ? { textScore: parseFloat(row._score) } : {};
     return this._projection ? applyProjection(doc, this._projection, meta) : doc;
+  }
+
+  async hasNext() {
+    if (this._exhausted) {
+      return false;
+    }
+    if (this._peeked !== undefined) {
+      return this._peeked !== null;
+    }
+    this._peeked = await this._next();
+    return this._peeked !== null;
   }
 
   async close() {
@@ -1354,7 +1407,7 @@ class PostgresAggregationCursor {
           docs = this._processGroup(docs, value);
           break;
         case '$project':
-          docs = docs.map(doc => applyProjection(doc, value));
+          docs = docs.map(doc => applyAggregateProject(doc, value));
           break;
         case '$unwind':
           docs = this._processUnwind(docs, value);
@@ -1384,6 +1437,15 @@ class PostgresAggregationCursor {
       let groupKey;
       if (typeof groupField === 'string' && groupField.startsWith('$')) {
         groupKey = getNestedField(doc, groupField.substring(1));
+      } else if (groupField !== null && typeof groupField === 'object') {
+        groupKey = {};
+        for (const [ k, v ] of Object.entries(groupField)) {
+          if (typeof v === 'string' && v.startsWith('$')) {
+            groupKey[k] = getNestedField(doc, v.substring(1));
+          } else {
+            groupKey[k] = v;
+          }
+        }
       } else {
         groupKey = groupField;
       }
@@ -1483,6 +1545,42 @@ class PostgresAggregationCursor {
 }
 
 // In-memory query matching for aggregation $match
+function applyAggregateProject(doc, spec) {
+  const result = {};
+  let includeId = true;
+  for (const [ key, value ] of Object.entries(spec)) {
+    if (key === '_id') {
+      if (value === 0 || value === false) {
+        includeId = false;
+      } else if (value === 1 || value === true) {
+        includeId = true;
+      }
+      continue;
+    }
+    if (value === 0 || value === false) {
+      continue;
+    }
+    if (value === 1 || value === true) {
+      const v = getNestedField(doc, key);
+      if (v !== undefined) {
+        setNestedField(result, key, v);
+      }
+    } else if (typeof value === 'string' && value.startsWith('$')) {
+      const refPath = value.slice(1);
+      const v = getNestedField(doc, refPath);
+      if (v !== undefined) {
+        setNestedField(result, key, v);
+      }
+    } else {
+      setNestedField(result, key, value);
+    }
+  }
+  if (includeId && doc._id !== undefined) {
+    result._id = doc._id;
+  }
+  return result;
+}
+
 function matchesQuery(doc, query) {
   for (const [ key, value ] of Object.entries(query)) {
     if (key === '$and') {
@@ -1527,6 +1625,10 @@ function matchesQuery(doc, query) {
               return false;
             } break;
           }
+        }
+      } else if (value instanceof RegExp) {
+        if (typeof docValue !== 'string' || !value.test(docValue)) {
+          return false;
         }
       } else if (Array.isArray(docValue)) {
         if (!docValue.some(item => deepEqual(item, value))) {
@@ -1693,8 +1795,8 @@ class PostgresCollection {
     return final;
   }
 
-  find(query) {
-    return new PostgresCursor(this, query);
+  find(query, options) {
+    return new PostgresCursor(this, query, options);
   }
 
   async updateOne(query, update, options = {}) {
