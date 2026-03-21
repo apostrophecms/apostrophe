@@ -112,11 +112,16 @@ export function useRecentlyEditedData(moduleName) {
   const crossLocale = computed(() => !filterState.value._locale);
 
   const emptyDisplay = computed(() => {
-    if (hasActiveFilters.value) {
+    const hasSearch = !!searchQuery.value;
+    if (hasActiveFilters.value || hasSearch) {
       return {
         icon: 'magnify-icon',
-        title: 'apostrophe:recentlyEditedEmptyFiltered',
-        message: 'apostrophe:recentlyEditedEmptyFilteredHint'
+        title: hasSearch
+          ? 'apostrophe:recentlyEditedEmptySearched'
+          : 'apostrophe:recentlyEditedEmptyFiltered',
+        message: hasSearch
+          ? 'apostrophe:recentlyEditedEmptySearchedHint'
+          : 'apostrophe:recentlyEditedEmptyFilteredHint'
       };
     }
     return {
@@ -174,6 +179,7 @@ export function useRecentlyEditedData(moduleName) {
 
   function onSearch(query) {
     searchQuery.value = query;
+    checked.value = [];
     reload();
   }
 
