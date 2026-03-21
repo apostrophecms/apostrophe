@@ -27,6 +27,7 @@
           :model-value="filterSet.value"
           :status="filterSet.status"
           :modifiers="['small', 'inline']"
+          :add-label="filterSet.addLabel"
           :no-blur-emit="true"
           @update:model-value="updateFilter(filterSet.name, $event)"
         />
@@ -111,6 +112,7 @@ const filterSets = computed(() => {
       choices: getChoices(filter),
       def: filter.def
     },
+    addLabel: isCheckboxFilter(filter) ? 'apostrophe:recentlyEditedAddFilter' : undefined,
     value: {
       data: props.modelValue[filter.name] ?? filterDefault(filter)
     },

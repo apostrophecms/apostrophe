@@ -10,81 +10,88 @@
       <div
         ref="root"
         class="apos-input-wrapper"
+        :class="modifierClasses"
+        @keyup.esc="onEscKeyup"
       >
         <ul
           ref="selectEl"
           class="apos-input apos-input--select apos-combo-filter__select"
           :class="{ 'apos-combo-filter__select--has-tags': selected.length }"
-          role="button"
+          role="combobox"
           :aria-expanded="isOpen.toString()"
+          aria-haspopup="listbox"
+          :aria-owns="listId"
+          :aria-activedescendant="activeDescendantId"
+          :aria-label="$t(field.label || 'apostrophe:filter')"
           tabindex="0"
           @click="toggle"
-          @keydown.prevent.space="toggle"
-          @keydown.prevent.enter="toggle"
-          @keydown.escape="close"
+          @keydown="onKeydown"
         >
           <li
             v-if="!selected.length"
             class="apos-combo-filter__placeholder"
+            aria-hidden="true"
           >
             {{ $t('apostrophe:any') }}
           </li>
           <li
-            v-for="val in selected"
+            v-for="(val, tagIndex) in selected"
             :key="val"
             class="apos-combo-filter__tag"
+            tabindex="0"
+            role="button"
+            :aria-label="`${choiceLabel(val)} — ${$t('apostrophe:remove')}`"
             @mousedown.stop.prevent="removeValue(val)"
             @click.stop
+            @keydown="onTagKeydown($event, val, tagIndex)"
           >
             {{ choiceLabel(val) }}
             <AposIndicator
               icon="close-icon"
               :icon-size="10"
+              aria-hidden="true"
             />
           </li>
         </ul>
         <AposIndicator
-          icon="menu-down-icon"
+          icon="plus-icon"
           class="apos-input-icon"
-          :icon-size="20"
+          :icon-size="14"
+          :title="$t(addLabel)"
+          aria-hidden="true"
         />
-        <!-- Dropdown list -->
+        <!-- Dropdown: only unselected choices -->
         <ul
           v-show="isOpen"
+          :id="listId"
           class="apos-combo-filter__list"
-          :style="{ top: selectHeight + 'px' }"
+          role="listbox"
+          :aria-label="$t(field.label || 'apostrophe:filter')"
         >
           <li
+            :id="optionId(-1)"
             class="apos-combo-filter__item"
-            :class="{ focused: focusedIndex === -1 }"
-            @mousedown.stop.prevent="clearSelection"
+            role="option"
+            :aria-selected="(!selected.length).toString()"
+            :class="{ 'is-focused': focusedIndex === -1 }"
+            @mousedown.stop.prevent="clearAndClose"
             @click.stop
             @mouseover="focusedIndex = -1"
           >
-            <AposIndicator
-              v-if="!selected.length"
-              icon="check-bold-icon"
-              class="apos-combo-filter__check"
-              :icon-size="10"
-            />
             {{ $t('apostrophe:any') }}
           </li>
           <li
-            v-for="(choice, i) in choices"
+            v-for="(choice, i) in availableChoices"
+            :id="optionId(i)"
             :key="choice.value"
             class="apos-combo-filter__item"
-            role="menuitemcheckbox"
-            :class="{ focused: focusedIndex === i }"
-            @mousedown.stop.prevent="toggleChoice(choice)"
+            role="option"
+            aria-selected="false"
+            :class="{ 'is-focused': focusedIndex === i }"
+            @mousedown.stop.prevent="addChoice(choice)"
             @click.stop
             @mouseover="focusedIndex = i"
           >
-            <AposIndicator
-              v-if="selected.includes(choice.value)"
-              icon="check-bold-icon"
-              class="apos-combo-filter__check"
-              :icon-size="10"
-            />
             {{ choice.label }}
           </li>
         </ul>
@@ -94,16 +101,12 @@
 </template>
 
 <script setup>
-// Standalone multi-select combo for filter panels.
+// "Add-to-list" multi-select combo for filter panels.
 // Reuses the standard .apos-input / .apos-input--select / .apos-input-wrapper
-// CSS classes so sizing, padding, modifiers (small, micro) all match the
+// CSS classes so sizing, padding, and modifiers (small, micro) all match the
 // sibling AposInputSelect dropdowns automatically.
-//
-// Emits immediately on every selection change — the orchestrator's
-// `excludeChoices` mechanism prevents this filter's choices from being
-// refreshed, so the component stays mounted and the dropdown stays open.
 import {
-  computed, onBeforeUnmount, onMounted, ref
+  computed, nextTick, onBeforeUnmount, ref
 } from 'vue';
 
 const props = defineProps({
@@ -123,6 +126,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  addLabel: {
+    type: String,
+    default: 'apostrophe:addItem'
+  },
   // Accepted to avoid Vue "unknown prop" warnings — the parent
   // passes it for AposInputSelect compatibility.
   noBlurEmit: {
@@ -134,33 +141,44 @@ const props = defineProps({
 const emit = defineEmits([ 'update:modelValue' ]);
 
 const uid = Math.random();
+const listId = `combo-list-${uid}`;
 const root = ref(null);
 const selectEl = ref(null);
 const isOpen = ref(false);
 const focusedIndex = ref(null);
-const selectHeight = ref(0);
+const escConsumed = ref(false);
 
-// Read directly from props — no local accumulation.
 const choices = computed(() => props.field?.choices || []);
 const selected = computed(() => props.modelValue?.data || []);
+
+const modifierClasses = computed(() =>
+  props.modifiers.reduce((acc, mod) => {
+    acc[`apos-combo-filter--${mod}`] = true;
+    return acc;
+  }, {})
+);
+
+const availableChoices = computed(() =>
+  choices.value.filter(c => !selected.value.includes(c.value))
+);
+
+function optionId(index) {
+  return `${listId}-opt-${index}`;
+}
+
+const activeDescendantId = computed(() => {
+  if (!isOpen.value || focusedIndex.value == null) {
+    return undefined;
+  }
+  return optionId(focusedIndex.value);
+});
 
 function choiceLabel(val) {
   const choice = choices.value.find(c => c.value === val);
   return choice?.label ?? val;
 }
 
-// Track select area height so the dropdown positions below it.
-let resizeObserver;
-onMounted(() => {
-  resizeObserver = new ResizeObserver(([ entry ]) => {
-    selectHeight.value = entry.target.offsetHeight;
-  });
-  if (selectEl.value) {
-    resizeObserver.observe(selectEl.value);
-  }
-});
 onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
   document.removeEventListener('mousedown', onDocumentMousedown, true);
 });
 
@@ -171,7 +189,7 @@ function open() {
     return;
   }
   isOpen.value = true;
-  focusedIndex.value = 0;
+  focusedIndex.value = -1;
   document.addEventListener('mousedown', onDocumentMousedown, true);
 }
 
@@ -188,33 +206,137 @@ function toggle() {
   isOpen.value ? close() : open();
 }
 
-// Close on any mousedown outside the component root (capture phase).
 function onDocumentMousedown(event) {
   if (root.value && !root.value.contains(event.target)) {
     close();
   }
 }
 
-// --- Selection (emit immediately on every change) ---
+// --- Keyboard navigation ---
+
+function onKeydown(event) {
+  const { key } = event;
+
+  if (key === 'Escape') {
+    if (isOpen.value) {
+      event.preventDefault();
+      event.stopPropagation();
+      escConsumed.value = true;
+      close();
+    }
+    return;
+  }
+
+  if (key === 'Tab') {
+    close();
+    return;
+  }
+
+  if (!isOpen.value) {
+    if (key === ' ' || key === 'Enter' || key === 'ArrowDown' || key === 'ArrowUp') {
+      event.preventDefault();
+      open();
+    }
+    return;
+  }
+
+  // Dropdown is open — navigate or select.
+  const maxIndex = availableChoices.value.length - 1;
+
+  if (key === 'ArrowDown') {
+    event.preventDefault();
+    if (focusedIndex.value == null || focusedIndex.value >= maxIndex) {
+      focusedIndex.value = -1;
+    } else {
+      focusedIndex.value++;
+    }
+    return;
+  }
+
+  if (key === 'ArrowUp') {
+    event.preventDefault();
+    if (focusedIndex.value == null || focusedIndex.value <= -1) {
+      focusedIndex.value = maxIndex;
+    } else {
+      focusedIndex.value--;
+    }
+    return;
+  }
+
+  if (key === ' ' || key === 'Enter') {
+    event.preventDefault();
+    selectFocused();
+  }
+}
+
+function onEscKeyup(event) {
+  if (escConsumed.value) {
+    event.stopPropagation();
+    escConsumed.value = false;
+  }
+}
+
+function selectFocused() {
+  if (focusedIndex.value === -1) {
+    clearAndClose();
+  } else if (
+    focusedIndex.value != null &&
+    focusedIndex.value >= 0 &&
+    focusedIndex.value < availableChoices.value.length
+  ) {
+    addChoice(availableChoices.value[focusedIndex.value]);
+  }
+}
+
+// --- Selection ---
 
 function emitSelection(data) {
   emit('update:modelValue', { data });
 }
 
-function toggleChoice(choice) {
-  const current = selected.value;
-  const next = current.includes(choice.value)
-    ? current.filter(v => v !== choice.value)
-    : [ ...current, choice.value ];
-  emitSelection(next);
+function addChoice(choice) {
+  emitSelection([ ...selected.value, choice.value ]);
+  close();
 }
 
 function removeValue(val) {
   emitSelection(selected.value.filter(v => v !== val));
 }
 
-function clearSelection() {
+function removeValueAndRefocus(val, tagIndex) {
+  const newSelected = selected.value.filter(v => v !== val);
+  emitSelection(newSelected);
+  nextTick(() => {
+    const tags = root.value?.querySelectorAll('.apos-combo-filter__tag');
+    if (!tags || tags.length === 0) {
+      selectEl.value?.focus();
+    } else if (tagIndex < tags.length) {
+      tags[tagIndex].focus();
+    } else {
+      tags[tags.length - 1].focus();
+    }
+  });
+}
+
+function onTagKeydown(event, val, tagIndex) {
+  const { key } = event;
+  if (key === ' ' || key === 'Enter') {
+    event.preventDefault();
+    event.stopPropagation();
+    removeValueAndRefocus(val, tagIndex);
+    return;
+  }
+  // Prevent arrow keys from bubbling to combobox handler
+  // and from scrolling the page behind.
+  if (key === 'ArrowDown' || key === 'ArrowUp') {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+}
+
+function clearAndClose() {
   emitSelection([]);
+  close();
 }
 </script>
 
@@ -225,18 +347,43 @@ function clearSelection() {
   flex-wrap: wrap;
   align-items: center;
   margin: 0;
+  padding-right: $input-padding + 20px;
   gap: 4px;
   list-style: none;
   cursor: pointer;
 
-  // When tags are present, reduce padding so total height stays close.
   &--has-tags {
-    padding: 7px 30px 7px 8px;
+    padding: ($input-padding - $spacing-half) ($input-padding + 20px) ($input-padding - $spacing-half) ($input-padding - $spacing-half);
+  }
+}
+
+// --- Modifier overrides (small, small+inline) ---
+
+.apos-combo-filter--small {
+  .apos-combo-filter__select--has-tags {
+    padding: $spacing-half ($input-padding + 20px) $spacing-half $spacing-three-quarters;
+  }
+}
+
+.apos-combo-filter--small.apos-combo-filter--inline {
+  .apos-combo-filter__select {
+    padding-right: $spacing-half + 20px;
+  }
+
+  .apos-combo-filter__select--has-tags {
+    padding: $spacing-one-quarter ($spacing-half + 20px) $spacing-one-quarter $spacing-three-quarters;
   }
 }
 
 .apos-combo-filter__placeholder {
   pointer-events: none;
+}
+
+// Adapt the icon wrapper so that we have the standard dropdown
+// 20x20 area, while our icon is 14x14 (because it looks weirdly huge at 20x20).
+:deep(.apos-input-icon) {
+  width: 20px;
+  height: 20px;
 }
 
 .apos-combo-filter__tag {
@@ -267,6 +414,7 @@ function clearSelection() {
 .apos-combo-filter__list {
   z-index: $z-index-manager-display;
   position: absolute;
+  top: 100%;
   left: 0;
   width: 100%;
   max-height: 300px;
@@ -283,18 +431,12 @@ function clearSelection() {
   @include type-base;
 
   & {
-    position: relative;
-    padding: 10px 10px 10px 20px;
+    padding: 10px;
     cursor: pointer;
   }
 
-  &.focused {
+  &.is-focused {
     background-color: var(--a-base-9);
   }
-}
-
-.apos-combo-filter__check {
-  position: absolute;
-  left: 5px;
 }
 </style>
