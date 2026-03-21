@@ -2481,10 +2481,14 @@ module.exports = {
             // locale-appropriate req so each doc gets the correct
             // _url for its own locale.
             if (query.get('locale') === null) {
+              const locales = self.apos.i18n.locales;
               const byLocale = {};
               for (const doc of results) {
                 const locale =
                   doc.aposLocale?.split(':')[0] || req.locale;
+                if (!locales[locale]) {
+                  continue;
+                }
                 byLocale[locale] = byLocale[locale] || [];
                 byLocale[locale].push(doc);
               }
@@ -2562,6 +2566,9 @@ module.exports = {
                 return req;
               }
               const locale = doc.aposLocale.split(':')[0];
+              if (!self.apos.i18n.locales[locale]) {
+                return req;
+              }
               if (!localeReqs[locale]) {
                 localeReqs[locale] =
                   locale === req.locale

@@ -2,7 +2,7 @@
   <button
     type="button"
     class="apos-recently-edited-filter-tag"
-    @click="$emit('clear', tag.name)"
+    @click="$emit('clear', tag.name, tag.value)"
   >
     <close-icon
       class="apos-recently-edited-filter-tag__close-icon"

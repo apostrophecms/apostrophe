@@ -17,17 +17,18 @@
         </button>
       </div>
       <div
-        v-for="filter in filters"
-        :key="filter.name"
+        v-for="filterSet in filterSets"
+        :key="filterSet.key"
         class="apos-recently-edited-filters__row"
       >
-        <AposInputSelect
-          :field="fieldMap[filter.name]"
-          :model-value="modelValueMap[filter.name]"
-          :status="{}"
+        <component
+          :is="COMPONENT_MAP[filterSet.field.type] || COMPONENT_MAP.select"
+          :field="filterSet.field"
+          :model-value="filterSet.value"
+          :status="filterSet.status"
           :modifiers="['small', 'inline']"
           :no-blur-emit="true"
-          @update:model-value="updateFilter(filter.name, $event)"
+          @update:model-value="updateFilter(filterSet.name, $event)"
         />
       </div>
     </div>
@@ -35,9 +36,17 @@
 </template>
 
 <script setup>
-import { computed, inject } from 'vue';
+import {
+  computed, inject, ref, watch
+} from 'vue';
 
 const $t = inject('i18n');
+
+const COMPONENT_MAP = {
+  select: 'AposInputSelect',
+  radio: 'AposInputSelect',
+  combo: 'AposRecentlyEditedCombo'
+};
 
 const props = defineProps({
   filters: {
@@ -67,39 +76,55 @@ const button = computed(() => ({
   type: 'outline'
 }));
 
-// Cached field configs
-const fieldMap = computed(() => {
-  return Object.fromEntries(
-    props.filters.map(filter => [
-      filter.name,
-      {
-        name: filter.name,
-        type: filter.inputType || 'select',
-        label: filter.label,
-        choices: getChoices(filter)
-      }
-    ])
-  );
-});
+// Per-filter generation: only remount the specific filter whose
+// choices changed, rather than fingerprinting all choices at once.
+const generationMap = ref({});
 
-// Cached model-value wrappers
-const modelValueMap = computed(() => {
-  return Object.fromEntries(
-    props.filters.map(filter => [
-      filter.name,
-      {
-        data: filter.name in props.modelValue
-          ? props.modelValue[filter.name]
-          : filter.def ?? null
-      }
-    ])
-  );
+function choicesChanged(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) {
+    return a !== b;
+  }
+  if (a.length !== b.length) {
+    return true;
+  }
+  return a.some((choice, i) => choice.value !== b[i]?.value);
+}
+
+watch(() => props.filterChoices, (next, prev) => {
+  for (const name of Object.keys(next || {})) {
+    if (choicesChanged(next[name], prev?.[name])) {
+      generationMap.value[name] = (generationMap.value[name] || 0) + 1;
+    }
+  }
+}, { deep: true });
+
+// AposFilterMenu-style filterSets: creates fresh { data: value }
+// wrappers per evaluation — no persistent reactive objects needed.
+const filterSets = computed(() => {
+  return props.filters.map(filter => ({
+    name: filter.name,
+    key: `${generationMap.value[filter.name] || 0}:${filter.name}`,
+    field: {
+      name: filter.name,
+      type: isCheckboxFilter(filter) ? 'combo' : 'select',
+      label: filter.label,
+      choices: getChoices(filter),
+      def: filter.def
+    },
+    value: {
+      data: props.modelValue[filter.name] ?? filterDefault(filter)
+    },
+    status: {}
+  }));
 });
 
 function getChoices(filter) {
   const choices = props.filterChoices[filter.name];
-
   if (!choices) {
+    // Combo renders nothing when choices are empty.
+    if (isCheckboxFilter(filter)) {
+      return [];
+    }
     return [
       {
         label: 'apostrophe:filterMenuLoadingChoices',
@@ -136,6 +161,10 @@ function getChoices(filter) {
       }
       return String(a.label).localeCompare(String(b.label));
     });
+  }
+
+  if (isCheckboxFilter(filter)) {
+    return mappedChoices;
   }
 
   if (mappedChoices.find(choice => choice.value === null)) {
@@ -184,9 +213,20 @@ function updateFilter(name, value) {
 
 function clearFilters() {
   emit('update:modelValue', props.filters.reduce((acc, filter) => {
-    acc[filter.name] = filter.def ?? null;
+    acc[filter.name] = filterDefault(filter);
     return acc;
   }, {}));
+}
+
+function isCheckboxFilter(filter) {
+  return (filter.inputType || 'select') === 'checkbox';
+}
+
+function filterDefault(filter) {
+  if (filter.def !== undefined) {
+    return filter.def;
+  }
+  return isCheckboxFilter(filter) ? [] : null;
 }
 </script>
 

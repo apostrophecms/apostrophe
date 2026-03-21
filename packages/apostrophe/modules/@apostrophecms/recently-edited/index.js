@@ -44,7 +44,8 @@ module.exports = {
         label: 'apostrophe:recentlyEditedEditedBy'
       },
       _docType: {
-        label: 'apostrophe:type'
+        label: 'apostrophe:type',
+        inputType: 'checkbox'
       },
       _action: {
         label: 'apostrophe:recentlyEditedAction'
@@ -165,9 +166,6 @@ module.exports = {
       // `name` - unique status identifier (e.g. 'translated')
       // `config.label` - i18n key for the dropdown choice label
       // `config.query` - function(queryBuilder) that applies filter criteria.
-      //   Can call queryBuilder.and(...) for criteria or override core
-      //   builders like queryBuilder.archived(true). Runs early enough
-      //   to override any core builder defaults.
       registerFilterStatus(name, { label, query }) {
         self.statusFilterRegistry[name] = {
           label,
@@ -319,10 +317,6 @@ module.exports = {
   extendMethods(self) {
     return {
       find(_super, req, criteria, options) {
-        // The manager projection contains no attachment, area, or
-        // relationship fields, so disable their expensive
-        // post-processing. `addUrls` is kept because `_url`
-        // is projected.
         return _super(req, criteria, options)
           .type(null)
           .locale(null)
@@ -339,7 +333,7 @@ module.exports = {
       // Inject the manager API projection into req.query before the
       // parent processes it via applyBuildersSafely. If the client
       // already sends a projection (e.g. { _id: 1 } for select-all),
-      // it takes precedence.
+      // it takes precedence. This avoids unnecessarily data round-tripping.
       //
       // When `lean` is set, also disable URL resolution — the caller
       // wants lightweight results close to raw DB data.
@@ -378,25 +372,34 @@ module.exports = {
       builders: {
         _docType: {
           def: null,
-          launder(type) {
-            return self.apos.launder.string(type);
+          launder(value) {
+            const allowed = new Set([
+              ...self.managedTypeNames,
+              '@apostrophecms/any-page-type',
+              '@apostrophecms/piece-type'
+            ]);
+            const raw = Array.isArray(value)
+              ? self.apos.launder.strings(value)
+              : [ self.apos.launder.string(value) ].filter(Boolean);
+            return raw.filter(v => allowed.has(v));
           },
           finalize() {
             const value = query.get('_docType');
-            if (!value) {
+            if (!value || !value.length) {
               return;
             }
-            // Virtual group types expand to all page or piece types.
-            if (value === '@apostrophecms/any-page-type') {
-              if (self.managedPageTypeNames.length) {
-                query.and({ type: { $in: self.managedPageTypeNames } });
+            const resolved = [];
+            for (const v of value) {
+              if (v === '@apostrophecms/any-page-type') {
+                resolved.push(...self.managedPageTypeNames);
+              } else if (v === '@apostrophecms/piece-type') {
+                resolved.push(...self.managedPieceTypeNames);
+              } else {
+                resolved.push(v);
               }
-            } else if (value === '@apostrophecms/piece-type') {
-              if (self.managedPieceTypeNames.length) {
-                query.and({ type: { $in: self.managedPieceTypeNames } });
-              }
-            } else {
-              query.and({ type: value });
+            }
+            if (resolved.length) {
+              query.and({ type: { $in: [ ...new Set(resolved) ] } });
             }
           },
           async choices() {

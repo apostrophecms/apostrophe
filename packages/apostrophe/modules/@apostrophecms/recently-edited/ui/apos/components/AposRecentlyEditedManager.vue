@@ -54,7 +54,7 @@
             >
               <AposRecentlyEditedFilterTag
                 v-for="tag in activeFilterTags"
-                :key="tag.name"
+                :key="`${tag.name}:${tag.value ?? 'none'}`"
                 :tag="tag"
                 @clear="clearFilter"
               />
@@ -112,8 +112,6 @@ import {
 } from 'vue';
 import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfiniteScroll.js';
 import { useRecentlyEditedData } from '../composables/useRecentlyEditedData.js';
-import AposRecentlyEditedFilters from './AposRecentlyEditedFilters.vue';
-import AposRecentlyEditedFilterTag from './AposRecentlyEditedFilterTag.vue';
 
 const props = defineProps({
   moduleName: {
