@@ -2153,6 +2153,10 @@ class SqliteCollection {
     return indexName;
   }
 
+  async ensureIndex(keys, options) {
+    return this.createIndex(keys, options);
+  }
+
   async dropIndex(indexName) {
     let pgName = null;
     for (const [ pgKey, meta ] of this._indexes.entries()) {

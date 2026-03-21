@@ -2440,6 +2440,10 @@ class PostgresCollection {
     return indexName;
   }
 
+  async ensureIndex(keys, options) {
+    return this.createIndex(keys, options);
+  }
+
   async dropIndex(indexName) {
     // Look up by MongoDB-compatible name first (in case caller uses that)
     let pgName = null;

@@ -38,10 +38,13 @@ module.exports = async function restore(uriOrDb, data) {
 
         col = db.collection(entry._collection);
 
+        // Clear existing data. Use deleteMany instead of drop to
+        // preserve the table structure — important when the database
+        // is being used by a running application (e.g. Cypress tests)
         try {
-          await col.drop();
+          await col.deleteMany({});
         } catch (e) {
-          // Collection may not exist, ignore
+          // Collection may not exist yet, ignore
         }
 
         if (entry._indexes && entry._indexes.length > 0) {
