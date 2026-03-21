@@ -25,7 +25,10 @@ export function useRecentlyEditedBatch({
 
   function getBatchModule(typeName) {
     const pageModule = apos.modules['@apostrophecms/page'];
-    if (pageModule?.validPageTypes?.includes(typeName)) {
+    if (
+      typeName === '@apostrophecms/any-page-type' ||
+      pageModule?.validPageTypes?.includes(typeName)
+    ) {
       return pageModule;
     }
     return apos.modules[typeName];
