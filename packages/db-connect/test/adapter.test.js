@@ -2449,6 +2449,179 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
   });
 
+  // ============================================
+  // SECTION 26: Full-Text Search
+  // ============================================
+
+  describe('Full-Text Search', function() {
+    beforeEach(async function() {
+      const col = db.collection('search');
+      try {
+        await col.drop();
+      } catch (e) { /* ignore */ }
+      // Create a text index on title and body
+      await col.createIndex({ title: 'text', body: 'text' });
+      // Insert documents with varying relevance to "database migration"
+      await col.insertMany([
+        {
+          _id: 'full-match',
+          title: 'Database Migration Guide',
+          body: 'This guide covers database migration strategies for production systems. Database migration is critical.'
+        },
+        {
+          _id: 'title-only',
+          title: 'Database Basics',
+          body: 'An introduction to storing and retrieving information.'
+        },
+        {
+          _id: 'body-only',
+          title: 'System Administration',
+          body: 'Learn about database backup and migration procedures.'
+        },
+        {
+          _id: 'no-match',
+          title: 'Cooking Recipes',
+          body: 'How to make a perfect sourdough bread.'
+        }
+      ]);
+    });
+
+    afterEach(async function() {
+      try {
+        await db.collection('search').drop();
+      } catch (e) { /* ignore */ }
+    });
+
+    it('$text should match documents containing search terms', async function() {
+      const results = await db.collection('search')
+        .find({ $text: { $search: 'database' } })
+        .toArray();
+      const ids = results.map(d => d._id);
+      expect(ids).to.include('full-match');
+      expect(ids).to.include('title-only');
+      expect(ids).to.include('body-only');
+      expect(ids).to.not.include('no-match');
+    });
+
+    it('$text should combine with other query operators', async function() {
+      const results = await db.collection('search')
+        .find({
+          $text: { $search: 'database' },
+          _id: { $ne: 'title-only' }
+        })
+        .toArray();
+      const ids = results.map(d => d._id);
+      expect(ids).to.include('full-match');
+      expect(ids).to.include('body-only');
+      expect(ids).to.not.include('title-only');
+      expect(ids).to.not.include('no-match');
+    });
+
+    it('$text with empty search should match nothing', async function() {
+      const results = await db.collection('search')
+        .find({ $text: { $search: '   ' } })
+        .toArray();
+      expect(results).to.have.lengthOf(0);
+    });
+
+    it('$text should use fields from the text index, not hardcoded defaults', async function() {
+      // The text index is on title and body. A search for content
+      // in those fields should work. A value only present in an
+      // un-indexed field should not match.
+      const col = db.collection('search');
+      await col.insertOne({
+        _id: 'unindexed',
+        title: 'Nothing special',
+        body: 'Nothing special',
+        notes: 'database migration'
+      });
+      const results = await col
+        .find({ $text: { $search: 'sourdough' } })
+        .toArray();
+      // 'sourdough' appears only in no-match's body, which IS indexed
+      expect(results.map(d => d._id)).to.include('no-match');
+      // 'unindexed' has 'database migration' only in notes (not indexed)
+      // so a search that only matches notes should not find it
+      const results2 = await col
+        .find({
+          $text: { $search: 'database' },
+          _id: 'unindexed'
+        })
+        .toArray();
+      expect(results2).to.have.lengthOf(0);
+    });
+
+    if (ADAPTER !== 'sqlite') {
+      it('should rank results by relevance when sorted by textScore', async function() {
+        const results = await db.collection('search')
+          .find({ $text: { $search: 'database migration' } })
+          .sort({ score: { $meta: 'textScore' } })
+          .project({ score: { $meta: 'textScore' } })
+          .toArray();
+        // full-match has "database" 2x and "migration" 2x — should rank first
+        expect(results.length).to.be.at.least(3);
+        expect(results[0]._id).to.equal('full-match');
+      });
+
+      it('should expose textScore via $meta projection', async function() {
+        const results = await db.collection('search')
+          .find({ $text: { $search: 'database migration' } })
+          .sort({ score: { $meta: 'textScore' } })
+          .project({ title: 1, score: { $meta: 'textScore' } })
+          .toArray();
+        expect(results.length).to.be.at.least(1);
+        // Each result should have a numeric score
+        for (const doc of results) {
+          expect(doc.score).to.be.a('number');
+          expect(doc.score).to.be.greaterThan(0);
+          // Projection should still include requested fields
+          expect(doc.title).to.be.a('string');
+        }
+        // Higher-relevance doc should have a higher score
+        const fullMatch = results.find(d => d._id === 'full-match');
+        const titleOnly = results.find(d => d._id === 'title-only');
+        if (fullMatch && titleOnly) {
+          expect(fullMatch.score).to.be.greaterThan(titleOnly.score);
+        }
+      });
+
+      it('should support sorting by $meta textScore', async function() {
+        const results = await db.collection('search')
+          .find({ $text: { $search: 'database migration' } })
+          .sort({ score: { $meta: 'textScore' } })
+          .project({ score: { $meta: 'textScore' } })
+          .toArray();
+        expect(results.length).to.be.at.least(2);
+        // Scores should be in descending order
+        for (let i = 1; i < results.length; i++) {
+          expect(results[i - 1].score).to.be.at.least(results[i].score);
+        }
+      });
+
+      it('should sort by relevance with textScore among other sort fields', async function() {
+        // Insert additional docs to make ranking clearer
+        const col = db.collection('search');
+        await col.insertOne({
+          _id: 'weak-match',
+          title: 'Random Notes',
+          body: 'Contains the word database once among other unrelated content about gardening and weather.'
+        });
+
+        const results = await col
+          .find({ $text: { $search: 'database migration' } })
+          .sort({ score: { $meta: 'textScore' } })
+          .project({ score: { $meta: 'textScore' } })
+          .toArray();
+
+        expect(results.length).to.be.at.least(2);
+        // Scores should be in descending order
+        for (let i = 1; i < results.length; i++) {
+          expect(results[i - 1].score).to.be.at.least(results[i].score);
+        }
+      });
+    }
+  });
+
   if (ADAPTER === 'multipostgres') {
     describe('Multi-schema Mode', function() {
       it('should store tables in the named schema, not public', async function() {

@@ -409,7 +409,7 @@ function splitExpressions(str) {
 //
 // Correct usage:
 //   const params = [];
-//   const whereClause = buildWhereClause(query, params);
+//   const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 //   // params is now populated, whereClause contains matching $N references
 //   await pool.query(`SELECT * FROM t WHERE ${whereClause}`, params);
 //
@@ -457,7 +457,7 @@ function buildJsonTextPath(field, prefix = 'data') {
  * @param {string} [prefix='data'] - Column name prefix for JSONB access
  * @returns {string} SQL WHERE clause (without "WHERE" keyword)
  */
-function buildWhereClause(query, params, prefix = 'data') {
+function buildWhereClause(query, params, prefix = 'data', options = {}) {
   const _pStart = profileStart();
   const conditions = [];
 
@@ -467,7 +467,7 @@ function buildWhereClause(query, params, prefix = 'data') {
         throw new Error('$and must be an array');
       }
       const andConditions = value.map(subQuery => {
-        const subClause = buildWhereClause(subQuery, params, prefix);
+        const subClause = buildWhereClause(subQuery, params, prefix, options);
         return `(${subClause})`;
       });
       conditions.push(`(${andConditions.join(' AND ')})`);
@@ -476,7 +476,7 @@ function buildWhereClause(query, params, prefix = 'data') {
         throw new Error('$or must be an array');
       }
       const orConditions = value.map(subQuery => {
-        const subClause = buildWhereClause(subQuery, params, prefix);
+        const subClause = buildWhereClause(subQuery, params, prefix, options);
         return `(${subClause})`;
       });
       conditions.push(`(${orConditions.join(' OR ')})`);
@@ -488,22 +488,15 @@ function buildWhereClause(query, params, prefix = 'data') {
       if (typeof searchTerm !== 'string') {
         throw new Error('$text.$search must be a string');
       }
-      // Convert search string to tsquery format: split words and join with &
-      const words = searchTerm.trim().split(/\s+/).filter(w => w.length > 0);
-      if (words.length === 0) {
+      const textFields = options.textFields || [
+        'highSearchText', 'lowSearchText', 'title', 'searchBoost'
+      ];
+      const tsvectorExpr = buildTsvectorExpr(textFields);
+      const tsqueryExpr = buildTsqueryParam(searchTerm, params);
+      if (!tsqueryExpr) {
         conditions.push('FALSE');
       } else {
-        // Build a text search across the common text-indexed fields
-        // ApostropheCMS indexes: highSearchText, lowSearchText, title, searchBoost
-        const textExpr = [
-          'coalesce(data->>\'highSearchText\', \'\')',
-          'coalesce(data->>\'lowSearchText\', \'\')',
-          'coalesce(data->>\'title\', \'\')',
-          'coalesce(data->>\'searchBoost\', \'\')'
-        ].join(' || \' \' || ');
-        // MongoDB $text uses OR semantics: any word matches
-        params.push(words.map(w => w.replace(/[&|!():*<>'"]/g, ' ')).join(' | '));
-        conditions.push(`to_tsvector('english', ${textExpr}) @@ to_tsquery('english', $${params.length})`);
+        conditions.push(`${tsvectorExpr} @@ ${tsqueryExpr}`);
       }
     } else if (key === '_id') {
       // _id is a separate column, handle specially
@@ -766,15 +759,56 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
   return conditions.join(' AND ');
 }
 
+// Build the tsvector SQL expression for a given list of text fields.
+// Used by both the WHERE clause ($text matching) and SELECT (ts_rank scoring).
+function buildTsvectorExpr(textFields) {
+  const parts = textFields.map(f => {
+    const fieldParts = f.split('.');
+    let path = 'data';
+    for (let i = 0; i < fieldParts.length - 1; i++) {
+      path += `->'${escapeString(fieldParts[i])}'`;
+    }
+    path += `->>'${escapeString(fieldParts[fieldParts.length - 1])}'`;
+    return `coalesce(${path}, '')`;
+  });
+  return `to_tsvector('english', ${parts.join(' || \' \' || ')})`;
+}
+
+// Build the tsquery SQL expression from a search string.
+// Returns { expr, params } where expr contains $N placeholders.
+function buildTsqueryParam(searchTerm, params) {
+  const words = searchTerm.trim().split(/\s+/).filter(w => w.length > 0);
+  if (words.length === 0) {
+    return null;
+  }
+  params.push(words.map(w => w.replace(/[&|!():*<>'"]/g, ' ')).join(' | '));
+  return `to_tsquery('english', $${params.length})`;
+}
+
+// Check if a query object contains a $text operator with a non-empty search string.
+function queryHasText(query) {
+  if (!query || typeof query !== 'object' || !('$text' in query)) {
+    return false;
+  }
+  const search = query.$text && query.$text.$search;
+  if (typeof search !== 'string') {
+    return false;
+  }
+  return search.trim().split(/\s+/).filter(w => w.length > 0).length > 0;
+}
+
 // Build ORDER BY clause
-function buildOrderBy(sort) {
+function buildOrderBy(sort, options = {}) {
   const _pStart = profileStart();
   const clauses = [];
 
   if (sort && Object.keys(sort).length > 0) {
     for (const [ field, direction ] of Object.entries(sort)) {
-      // Skip $meta sort fields (e.g. textScore: { $meta: 'textScore' })
-      if (direction && typeof direction === 'object' && direction.$meta) {
+      if (direction && typeof direction === 'object' && direction.$meta === 'textScore') {
+        // Sort by text search relevance score (descending — higher is better)
+        if (options.hasTextScore) {
+          clauses.push('_score DESC');
+        }
         continue;
       }
       if (field === '_id') {
@@ -1020,20 +1054,35 @@ function deserializeDocument(data, id) {
 // Projection (in-memory, no SQL injection risk)
 // =============================================================================
 
-function applyProjection(doc, projection) {
+function applyProjection(doc, projection, meta = {}) {
   const _pStart = profileStart();
   if (!projection || Object.keys(projection).length === 0) {
     profileEnd('applyProjection', _pStart);
     return doc;
   }
 
-  // Filter out $meta projections (e.g. textScore: { $meta: 'textScore' })
-  // These are MongoDB-specific and don't apply to our storage model
+  // Separate $meta projections (e.g. score: { $meta: 'textScore' })
+  // from regular field projections
+  const metaFields = Object.entries(projection).filter(
+    ([ k, v ]) => v && typeof v === 'object' && v.$meta
+  );
   const fields = Object.entries(projection).filter(
     ([ k, v ]) => !(v && typeof v === 'object' && v.$meta)
   );
+
+  // Helper to apply $meta fields to a result object
+  const applyMeta = (result) => {
+    for (const [ field, spec ] of metaFields) {
+      if (spec.$meta === 'textScore' && meta.textScore != null) {
+        result[field] = meta.textScore;
+      }
+    }
+    return result;
+  };
+
   if (fields.length === 0) {
-    return doc;
+    profileEnd('applyProjection', _pStart);
+    return applyMeta({ ...doc });
   }
   const isInclusion = fields.some(([ k, v ]) => v && k !== '_id');
 
@@ -1052,7 +1101,7 @@ function applyProjection(doc, projection) {
       result._id = doc._id;
     }
     profileEnd('applyProjection', _pStart);
-    return result;
+    return applyMeta(result);
   } else {
     const result = JSON.parse(JSON.stringify(doc));
     for (const [ field, include ] of fields) {
@@ -1061,7 +1110,7 @@ function applyProjection(doc, projection) {
       }
     }
     profileEnd('applyProjection', _pStart);
-    return result;
+    return applyMeta(result);
   }
 }
 
@@ -1118,11 +1167,26 @@ class PostgresCursor {
     await this._collection._ensureTable();
 
     const params = [];
+    const queryOptions = this._collection._queryOptions();
     const qualifiedName = this._collection._qualifiedName();
-    const whereClause = buildWhereClause(this._query, params);
-    const orderBy = buildOrderBy(this._sort);
+    const whereClause = buildWhereClause(this._query, params, 'data', queryOptions);
+    const hasText = queryHasText(this._query);
+    const orderBy = buildOrderBy(this._sort, { hasTextScore: hasText });
 
-    let sql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} ${orderBy}`;
+    // When a $text query is active, compute ts_rank as _score
+    let selectCols = '_id, data';
+    if (hasText) {
+      const textFields = queryOptions.textFields || [
+        'highSearchText', 'lowSearchText', 'title', 'searchBoost'
+      ];
+      const tsvectorExpr = buildTsvectorExpr(textFields);
+      const tsqueryExpr = buildTsqueryParam(this._query.$text.$search, params);
+      if (tsqueryExpr) {
+        selectCols += `, ts_rank(${tsvectorExpr}, ${tsqueryExpr}) AS _score`;
+      }
+    }
+
+    let sql = `SELECT ${selectCols} FROM ${qualifiedName} WHERE ${whereClause} ${orderBy}`;
 
     if (this._limit != null) {
       sql += ` LIMIT ${this._limit}`;
@@ -1136,7 +1200,8 @@ class PostgresCursor {
     profileQuery(sql, _qStart);
     const rows = result.rows.map(row => {
       const doc = deserializeDocument(row.data, row._id);
-      return this._projection ? applyProjection(doc, this._projection) : doc;
+      const meta = row._score != null ? { textScore: parseFloat(row._score) } : {};
+      return this._projection ? applyProjection(doc, this._projection, meta) : doc;
     });
     profileEnd('findToArray', _pStart);
     return rows;
@@ -1161,11 +1226,25 @@ class PostgresCursor {
       this._cursorName = `cur_${generateId()}`;
 
       const params = [];
+      const queryOptions = this._collection._queryOptions();
       const qualifiedName = this._collection._qualifiedName();
-      const whereClause = buildWhereClause(this._query, params);
-      const orderBy = buildOrderBy(this._sort);
+      const whereClause = buildWhereClause(this._query, params, 'data', queryOptions);
+      const hasText = queryHasText(this._query);
+      const orderBy = buildOrderBy(this._sort, { hasTextScore: hasText });
 
-      let sql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} ${orderBy}`;
+      let selectCols = '_id, data';
+      if (hasText) {
+        const textFields = queryOptions.textFields || [
+          'highSearchText', 'lowSearchText', 'title', 'searchBoost'
+        ];
+        const tsvectorExpr = buildTsvectorExpr(textFields);
+        const tsqueryExpr = buildTsqueryParam(this._query.$text.$search, params);
+        if (tsqueryExpr) {
+          selectCols += `, ts_rank(${tsvectorExpr}, ${tsqueryExpr}) AS _score`;
+        }
+      }
+
+      let sql = `SELECT ${selectCols} FROM ${qualifiedName} WHERE ${whereClause} ${orderBy}`;
       if (this._limit != null) {
         sql += ` LIMIT ${this._limit}`;
       }
@@ -1196,7 +1275,8 @@ class PostgresCursor {
 
     const row = result.rows[0];
     const doc = deserializeDocument(row.data, row._id);
-    return this._projection ? applyProjection(doc, this._projection) : doc;
+    const meta = row._score != null ? { textScore: parseFloat(row._score) } : {};
+    return this._projection ? applyProjection(doc, this._projection, meta) : doc;
   }
 
   async close() {
@@ -1240,7 +1320,7 @@ class PostgresCursor {
 
     const params = [];
     const qualifiedName = this._collection._qualifiedName();
-    const whereClause = buildWhereClause(this._query, params);
+    const whereClause = buildWhereClause(this._query, params, 'data', this._collection._queryOptions());
     const sql = `SELECT COUNT(*) as count FROM ${qualifiedName} WHERE ${whereClause}`;
     const _qStart = profileStart();
     const result = await this._collection._pool.query(sql, params);
@@ -1479,6 +1559,7 @@ class PostgresCollection {
     this._schema = db._schema || null;
     this._name = name;
     this._indexes = new Map();
+    this._textFields = null;
     this._initialized = false;
   }
 
@@ -1491,6 +1572,10 @@ class PostgresCollection {
       return `"${escapeIdentifier(this._schema)}".${table}`;
     }
     return table;
+  }
+
+  _queryOptions() {
+    return this._textFields ? { textFields: this._textFields } : {};
   }
 
   get collectionName() {
@@ -1591,7 +1676,7 @@ class PostgresCollection {
 
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
     const sql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
 
     const _qStart = profileStart();
@@ -1635,7 +1720,7 @@ class PostgresCollection {
 
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const selectSql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
     const _qStart = profileStart();
@@ -1705,7 +1790,7 @@ class PostgresCollection {
   async _atomicUpdateOne(query, update) {
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     // Build a chain of jsonb_set calls for atomic update
     let dataExpr = 'data';
@@ -1765,7 +1850,7 @@ class PostgresCollection {
 
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const selectSql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause}`;
     const selectResult = await this._pool.query(selectSql, params);
@@ -1811,7 +1896,7 @@ class PostgresCollection {
 
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const selectSql = `SELECT _id FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
     const selectResult = await this._pool.query(selectSql, params);
@@ -1859,7 +1944,7 @@ class PostgresCollection {
 
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const result = await this._pool.query(
       `DELETE FROM ${qualifiedName} WHERE _id IN (
@@ -1880,7 +1965,7 @@ class PostgresCollection {
 
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const result = await this._pool.query(
       `DELETE FROM ${qualifiedName} WHERE ${whereClause}`,
@@ -1913,7 +1998,7 @@ class PostgresCollection {
 
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
     const sql = `SELECT COUNT(*) as count FROM ${qualifiedName} WHERE ${whereClause}`;
 
     const _qStart = profileStart();
@@ -1929,7 +2014,7 @@ class PostgresCollection {
 
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     if (field === '_id') {
       const sql = `SELECT DISTINCT _id as value FROM ${qualifiedName} WHERE ${whereClause}`;
@@ -2044,7 +2129,7 @@ class PostgresCollection {
 
     const params = [];
     const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const selectSql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
     const selectResult = await this._pool.query(selectSql, params);
@@ -2210,6 +2295,8 @@ class PostgresCollection {
     const hasTextIndex = keyEntries.some(([ , v ]) => v === 'text');
     if (hasTextIndex) {
       const textFields = keyEntries.filter(([ , v ]) => v === 'text').map(([ k ]) => k);
+      // Store the text index fields so $text queries use them
+      this._textFields = textFields;
       const tsvectorExpr = textFields
         .map(f => `coalesce(${buildIndexPath(f, null)}, '')`)
         .join(' || \' \' || ');

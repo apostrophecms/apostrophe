@@ -163,12 +163,16 @@ A JavaScript `RegExp` object can also be passed directly as the value:
 Full-text search. Requires a [text index](./indexes.md) on the collection.
 
 ```js
-{ $text: { $search: 'mongodb tutorial' } }
+{ $text: { $search: 'apostrophe tutorial' } }
 ```
 
-The search uses OR semantics — a document matches if it contains *any* of the search terms. In PostgreSQL, this uses `to_tsvector`/`to_tsquery`. In SQLite, this uses pattern matching.
+The search uses OR semantics — a document matches if it contains *any* of the search terms. The text search examines the fields `highSearchText`, `lowSearchText`, `title`, and `searchBoost`.
 
-The text search examines the fields `highSearchText`, `lowSearchText`, `title`, and `searchBoost`.
+**No ranking:** `$text` is a boolean filter — it matches or it doesn't. Results are not ranked by relevance. To control the order of results, use `.sort()` on the cursor.
+
+**PostgreSQL:** Uses `to_tsvector`/`to_tsquery` with the `english` dictionary. This provides stemming (e.g., "running" matches "run") and stop word removal (common words like "the", "is", "at" are ignored and will not match). Special characters in search terms are stripped.
+
+**SQLite:** Uses substring matching (`LIKE '%word%'`). There is no stemming or stop word removal — every word is matched literally as a substring, including common words like "the". This means SQLite text search is less precise than PostgreSQL and may return more false positives.
 
 ## Array Operators
 
@@ -184,13 +188,25 @@ The array must contain every value in the `$all` array, but may contain addition
 
 ## Array Field Matching
 
-Array fields are queried transparently. A scalar match against an array field succeeds if *any element* of the array matches. This applies to all operators:
+Array fields are queried transparently. A scalar match against an array field succeeds if *any element* of the array matches:
 
 ```js
 // Document: { tags: ['news', 'featured'] }
 
-{ tags: 'news' }                    // matches (element equality)
-{ tags: { $in: ['news', 'other'] } } // matches (element in array)
-{ tags: { $regex: '^new' } }        // matches (element matches pattern)
-{ tags: { $all: ['news', 'featured'] } }  // matches (all elements present)
+{ tags: 'news' }                          // matches (element equality)
+{ tags: { $in: ['news', 'other'] } }     // matches (element in array)
+{ tags: { $regex: '^new' } }             // matches (element matches pattern)
+{ tags: { $all: ['news', 'featured'] } } // matches (all elements present)
 ```
+
+### Array Matching and Index Usage
+
+In PostgreSQL and SQLite, there is a trade-off between transparent array matching and index usage.
+
+Simple equality queries like `{ tags: 'news' }` use PostgreSQL's `@>` (jsonb containment) operator, which transparently matches both scalar values and array elements. However, `@>` does not use standard btree indexes.
+
+Explicit operator queries like `{ tags: { $eq: 'news' } }` use strict equality (`=`), which can use btree indexes but does *not* match array elements — it only matches if the entire field value is the scalar `'news'`.
+
+The same applies to `$in`: simple `$in` uses containment (array-aware, not indexed by btree), while indexed fields are more efficient with direct equality lookups.
+
+For fields that are always arrays and need indexed queries, consider using `$all` or restructuring the query. For fields that are always scalars, `$eq` and btree indexes work as expected.

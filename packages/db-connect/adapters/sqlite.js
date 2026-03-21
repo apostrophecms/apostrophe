@@ -347,7 +347,7 @@ function buildJsonExtract(field, prefix = 'data') {
  * MUTATES `params` by pushing values for parameterized query placeholders.
  * The returned SQL string contains ? placeholders.
  */
-function buildWhereClause(query, params, prefix = 'data') {
+function buildWhereClause(query, params, prefix = 'data', options = {}) {
   const conditions = [];
 
   for (const [ key, value ] of Object.entries(query || {})) {
@@ -356,7 +356,7 @@ function buildWhereClause(query, params, prefix = 'data') {
         throw new Error('$and must be an array');
       }
       const andConditions = value.map(subQuery => {
-        const subClause = buildWhereClause(subQuery, params, prefix);
+        const subClause = buildWhereClause(subQuery, params, prefix, options);
         return `(${subClause})`;
       });
       conditions.push(`(${andConditions.join(' AND ')})`);
@@ -365,7 +365,7 @@ function buildWhereClause(query, params, prefix = 'data') {
         throw new Error('$or must be an array');
       }
       const orConditions = value.map(subQuery => {
-        const subClause = buildWhereClause(subQuery, params, prefix);
+        const subClause = buildWhereClause(subQuery, params, prefix, options);
         return `(${subClause})`;
       });
       conditions.push(`(${orConditions.join(' OR ')})`);
@@ -379,13 +379,16 @@ function buildWhereClause(query, params, prefix = 'data') {
       if (words.length === 0) {
         conditions.push('0');
       } else {
-        // Build a text search across common text-indexed fields using LIKE
-        const textFields = [
-          `COALESCE(json_extract(${prefix}, '$.highSearchText'), '')`,
-          `COALESCE(json_extract(${prefix}, '$.lowSearchText'), '')`,
-          `COALESCE(json_extract(${prefix}, '$.title'), '')`,
-          `COALESCE(json_extract(${prefix}, '$.searchBoost'), '')`
+        // Build a text search across the text-indexed fields.
+        // Use the fields from the actual text index if available,
+        // otherwise fall back to the default ApostropheCMS search fields.
+        const fieldNames = options.textFields || [
+          'highSearchText', 'lowSearchText', 'title', 'searchBoost'
         ];
+        const textFields = fieldNames.map(f => {
+          const jsonPath = '$.' + f.split('.').map(p => escapeString(p)).join('.');
+          return `COALESCE(json_extract(${prefix}, '${jsonPath}'), '')`;
+        });
         const textExpr = textFields.join(' || \' \' || ');
         // OR semantics: any word matches
         const wordConditions = words.map(w => {
@@ -996,7 +999,7 @@ class SqliteCursor {
 
     const params = [];
     const tableName = this._collection._quotedTableName();
-    const whereClause = buildWhereClause(this._query, params);
+    const whereClause = buildWhereClause(this._query, params, 'data', this._collection._queryOptions());
     const orderBy = buildOrderBy(this._sort);
 
     let sql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause} ${orderBy}`;
@@ -1039,7 +1042,7 @@ class SqliteCursor {
 
       const params = [];
       const tableName = this._collection._quotedTableName();
-      const whereClause = buildWhereClause(this._query, params);
+      const whereClause = buildWhereClause(this._query, params, 'data', this._collection._queryOptions());
       const orderBy = buildOrderBy(this._sort);
 
       let sql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause} ${orderBy}`;
@@ -1100,7 +1103,7 @@ class SqliteCursor {
 
     const params = [];
     const tableName = this._collection._quotedTableName();
-    const whereClause = buildWhereClause(this._query, params);
+    const whereClause = buildWhereClause(this._query, params, 'data', this._collection._queryOptions());
     const sql = `SELECT COUNT(*) as count FROM ${tableName} WHERE ${whereClause}`;
     const row = this._collection._db._sqlite.prepare(sql).get(...params);
     return row.count;
@@ -1269,11 +1272,16 @@ class SqliteCollection {
     this._tableName = validateTableName(name);
     this._name = name;
     this._indexes = new Map();
+    this._textFields = null;
     this._initialized = false;
   }
 
   _quotedTableName() {
     return `"${escapeIdentifier(this._tableName)}"`;
+  }
+
+  _queryOptions() {
+    return this._textFields ? { textFields: this._textFields } : {};
   }
 
   get collectionName() {
@@ -1357,7 +1365,7 @@ class SqliteCollection {
 
     const params = [];
     const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
     const sql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause} LIMIT 1`;
 
     const row = this._db._sqlite.prepare(sql).get(...params);
@@ -1382,7 +1390,7 @@ class SqliteCollection {
 
     const params = [];
     const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const selectSql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause} LIMIT 1`;
     const selectResult = this._db._sqlite.prepare(selectSql).get(...params);
@@ -1449,7 +1457,7 @@ class SqliteCollection {
 
     const params = [];
     const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const selectSql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause}`;
     const rows = this._db._sqlite.prepare(selectSql).all(...params);
@@ -1495,7 +1503,7 @@ class SqliteCollection {
 
     const params = [];
     const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const selectSql = `SELECT _id FROM ${tableName} WHERE ${whereClause} LIMIT 1`;
     const selectResult = this._db._sqlite.prepare(selectSql).get(...params);
@@ -1542,7 +1550,7 @@ class SqliteCollection {
 
     const params = [];
     const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const result = this._db._sqlite.prepare(
       `DELETE FROM ${tableName} WHERE _id IN (
@@ -1562,7 +1570,7 @@ class SqliteCollection {
 
     const params = [];
     const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const result = this._db._sqlite.prepare(
       `DELETE FROM ${tableName} WHERE ${whereClause}`
@@ -1592,7 +1600,7 @@ class SqliteCollection {
 
     const params = [];
     const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
     const sql = `SELECT COUNT(*) as count FROM ${tableName} WHERE ${whereClause}`;
 
     const row = this._db._sqlite.prepare(sql).get(...params);
@@ -1604,7 +1612,7 @@ class SqliteCollection {
 
     const params = [];
     const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     if (field === '_id') {
       const sql = `SELECT DISTINCT _id as value FROM ${tableName} WHERE ${whereClause}`;
@@ -1721,7 +1729,7 @@ class SqliteCollection {
 
     const params = [];
     const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params);
+    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
     const selectSql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause} LIMIT 1`;
     const selectResult = this._db._sqlite.prepare(selectSql).get(...params);
@@ -1800,6 +1808,8 @@ class SqliteCollection {
       // SQLite doesn't have native full-text search on JSON fields,
       // but we create a simple expression index for the test to pass
       const textFields = keyEntries.filter(([ , v ]) => v === 'text').map(([ k ]) => k);
+      // Store the text index fields so $text queries use them
+      this._textFields = textFields;
       const textExpr = textFields
         .map(f => `COALESCE(json_extract(data, '$.${escapeString(f)}'), '')`)
         .join(' || \' \' || ');

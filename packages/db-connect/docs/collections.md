@@ -290,20 +290,4 @@ Drops the collection and all its data.
 
 Renames the collection.
 
-## Database-Level Methods
-
-```js
-const db = client.db();
-
-// List collections
-const collections = await db.listCollections().toArray();
-
-// Create a collection explicitly
-await db.createCollection('newCollection');
-
-// Drop the entire database
-await db.dropDatabase();
-
-// Admin: list databases (in multipostgres mode, lists schemas)
-const { databases } = await db.admin().listDatabases();
-```
+See also: [Database and Client Methods](./database.md) for `client.db()`, `db.listCollections()`, `db.dropDatabase()`, and other database-level operations.

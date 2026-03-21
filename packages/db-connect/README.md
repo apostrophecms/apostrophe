@@ -78,7 +78,8 @@ await client.close();
 
 ## API Reference
 
-- [Collection Methods](./docs/collections.md) — CRUD operations, cursors, and database-level methods
+- [Database and Client](./docs/database.md) — `client.db(name)`, listing collections, dropping databases
+- [Collection Methods](./docs/collections.md) — CRUD operations, cursors, and bulk writes
 - [Query Operators](./docs/queries.md) — filtering documents with comparison, logical, element, and array operators
 - [Update Operators](./docs/updates.md) — modifying documents with `$set`, `$inc`, `$push`, and more
 - [Indexes](./docs/indexes.md) — creating and managing indexes, including numeric and date types
