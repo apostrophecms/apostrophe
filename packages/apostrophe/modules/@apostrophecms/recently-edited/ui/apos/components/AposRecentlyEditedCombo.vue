@@ -108,6 +108,7 @@
 import {
   computed, nextTick, onBeforeUnmount, ref
 } from 'vue';
+import { createId } from '@paralleldrive/cuid2';
 
 const props = defineProps({
   field: {
@@ -140,7 +141,7 @@ const props = defineProps({
 
 const emit = defineEmits([ 'update:modelValue' ]);
 
-const uid = Math.random();
+const uid = createId();
 const listId = `combo-list-${uid}`;
 const root = ref(null);
 const selectEl = ref(null);
@@ -250,6 +251,7 @@ function onKeydown(event) {
     } else {
       focusedIndex.value++;
     }
+    scrollFocusedIntoView();
     return;
   }
 
@@ -260,6 +262,7 @@ function onKeydown(event) {
     } else {
       focusedIndex.value--;
     }
+    scrollFocusedIntoView();
     return;
   }
 
@@ -274,6 +277,11 @@ function onEscKeyup(event) {
     event.stopPropagation();
     escConsumed.value = false;
   }
+}
+
+function scrollFocusedIntoView() {
+  const el = root.value?.querySelector(`#${optionId(focusedIndex.value)}`);
+  el?.scrollIntoView({ block: 'nearest' });
 }
 
 function selectFocused() {
@@ -351,6 +359,7 @@ function clearAndClose() {
   gap: 4px;
   list-style: none;
   cursor: pointer;
+  user-select: none;
 
   &--has-tags {
     padding: ($input-padding - $spacing-half) ($input-padding + 20px) ($input-padding - $spacing-half) ($input-padding - $spacing-half);
@@ -422,6 +431,7 @@ function clearAndClose() {
   padding-left: 0;
   list-style: none;
   overflow-y: auto;
+  user-select: none;
   background-color: var(--a-white);
   box-shadow: 0 0 3px var(--a-base-2);
   border-radius: var(--a-border-radius);
