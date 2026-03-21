@@ -108,7 +108,7 @@
 
 <script setup>
 import {
-  computed, onBeforeUnmount, onMounted, onUnmounted, ref
+  computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, ref, watch
 } from 'vue';
 import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfiniteScroll.js';
 import { useRecentlyEditedData } from '../composables/useRecentlyEditedData.js';
@@ -161,11 +161,24 @@ const {
   handleBatchAction
 } = useRecentlyEditedData(props.moduleName);
 
-const { start: startScroll, stop: stopScroll } = useInfiniteScroll(
+const {
+  start: startScroll, stop: stopScroll, recheck
+} = useInfiniteScroll(
   scrollSentinel,
   loadMore,
-  { rootMargin: '100px' }
+  {
+    rootMargin: '100px',
+    // Use the modal's actual scroll container, not the viewport.
+    root: '.apos-modal__main'
+  }
 );
+
+// After items change (page-1 reload or loadMore append), re-check
+// sentinel visibility. Without this, IntersectionObserver won't fire
+// again if the sentinel remained visible (e.g. low perPage and tall viewport).
+watch(items, () => {
+  nextTick(() => recheck());
+});
 
 const displayOptions = computed(() => ({
   ...moduleOptions,

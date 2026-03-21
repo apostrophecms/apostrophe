@@ -92,14 +92,38 @@ export function useRecentlyEditedFetch({
     // Merge only keys present in the response — excluded multiselect
     // filters retain their previous choices.
     const incoming = response.choices || {};
-    const merged = { ...filterChoices.value };
+    const prev = filterChoices.value;
+    const merged = { ...prev };
     for (const [ key, val ] of Object.entries(incoming)) {
       if (choicesChanged(val, merged[key])) {
-        merged[key] = val;
+        merged[key] = preserveSelectedChoices(key, val, prev[key]);
       }
     }
     filterChoices.value = merged;
     isLoading.value = false;
+  }
+
+  // When the server returns narrowed choices that no longer include a
+  // currently-selected value, keep that choice entry (with its label)
+  // so that dropdowns, combo pills, and filter tags remain functional.
+  function preserveSelectedChoices(filterName, incoming, previous) {
+    const selected = filterState.value[filterName];
+    if (selected == null || !Array.isArray(previous)) {
+      return incoming;
+    }
+    const selectedValues = Array.isArray(selected) ? selected : [ selected ];
+    if (!selectedValues.length) {
+      return incoming;
+    }
+    const incomingValues = new Set((incoming || []).map(c => c.value));
+    const missing = selectedValues
+      .filter(v => !incomingValues.has(v))
+      .map(v => previous.find(c => c.value === v))
+      .filter(Boolean);
+    if (!missing.length) {
+      return incoming;
+    }
+    return [ ...incoming, ...missing ];
   }
 
   const debouncedFetch = debounceAsync(

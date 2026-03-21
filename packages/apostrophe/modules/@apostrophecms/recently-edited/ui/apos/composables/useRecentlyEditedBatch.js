@@ -16,18 +16,30 @@ import { computed, ref } from 'vue';
 export function useRecentlyEditedBatch({
   filterState, items, fetchPage, moduleLabels, reload
 }) {
+  function getSelectedTypeName() {
+    const typeValue = filterState.value._docType;
+    return Array.isArray(typeValue)
+      ? (typeValue.length === 1 ? typeValue[0] : null)
+      : typeValue;
+  }
+
+  function getBatchModule(typeName) {
+    const pageModule = apos.modules['@apostrophecms/page'];
+    if (pageModule?.validPageTypes?.includes(typeName)) {
+      return pageModule;
+    }
+    return apos.modules[typeName];
+  }
+
   // Batch operations are available only when a single concrete type
   // and locale are selected, making the list equivalent to a
   // standard single-type manager.
   const batchOperations = computed(() => {
-    const typeValue = filterState.value._docType;
-    const typeName = Array.isArray(typeValue)
-      ? (typeValue.length === 1 ? typeValue[0] : null)
-      : typeValue;
+    const typeName = getSelectedTypeName();
     if (!typeName || !filterState.value._locale) {
       return [];
     }
-    return apos.modules[typeName]?.batchOperations || [];
+    return getBatchModule(typeName)?.batchOperations || [];
   });
 
   // Map recently-edited filter state to the format batch operation
@@ -104,16 +116,13 @@ export function useRecentlyEditedBatch({
   async function handleBatchAction({
     label, action, requestOptions = {}, messages
   }) {
-    const typeValue = filterState.value._docType;
-    const typeName = Array.isArray(typeValue)
-      ? (typeValue.length === 1 ? typeValue[0] : null)
-      : typeValue;
-    const typeAction = typeName && apos.modules[typeName]?.action;
-    if (!action || !typeAction) {
+    const typeName = getSelectedTypeName();
+    const batchModule = typeName && getBatchModule(typeName);
+    if (!action || !batchModule?.action) {
       return;
     }
     try {
-      await apos.http.post(`${typeAction}/${action}`, {
+      await apos.http.post(`${batchModule.action}/${action}`, {
         body: {
           ...requestOptions,
           _ids: checked.value,
