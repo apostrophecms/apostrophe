@@ -183,6 +183,14 @@ export function useRecentlyEditedData(moduleName) {
     reload();
   }
 
+  const hasActiveSearch = computed(() => !!searchQuery.value);
+
+  function clearSearch() {
+    searchQuery.value = '';
+    checked.value = [];
+    reload();
+  }
+
   function cancel() {
     fetchCancel();
   }
@@ -220,6 +228,8 @@ export function useRecentlyEditedData(moduleName) {
     clearFilter,
     clearAllFilters,
     hasActiveFilters,
+    hasActiveSearch,
+    clearSearch,
     onContentChanged,
     onSearch,
     cancel,

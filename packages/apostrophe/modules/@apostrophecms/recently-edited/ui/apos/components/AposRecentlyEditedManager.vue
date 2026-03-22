@@ -19,6 +19,7 @@
       <AposModalBody>
         <template #bodyHeader>
           <AposDocsManagerToolbar
+            ref="toolbarRef"
             :selected-state="selectAllState"
             :total-pages="0"
             :current-page="currentPage"
@@ -81,14 +82,27 @@
             class="apos-pieces-manager__empty"
           >
             <AposEmptyState :empty-state="emptyDisplay" />
-            <button
-              v-if="hasActiveFilters"
-              type="button"
-              class="apos-recently-edited__clear-all"
-              @click="clearAllFilters"
+            <div
+              v-if="hasActiveSearch || hasActiveFilters"
+              class="apos-recently-edited__clear-actions"
             >
-              {{ $t('apostrophe:recentlyEditedClearAllFilters') }}
-            </button>
+              <button
+                v-if="hasActiveSearch"
+                type="button"
+                class="apos-recently-edited__clear-all"
+                @click="handleClearSearch"
+              >
+                {{ $t('apostrophe:recentlyEditedClearSearch') }}
+              </button>
+              <button
+                v-if="hasActiveFilters"
+                type="button"
+                class="apos-recently-edited__clear-all"
+                @click="clearAllFilters"
+              >
+                {{ $t('apostrophe:recentlyEditedClearAllFilters') }}
+              </button>
+            </div>
           </div>
           <div
             ref="scrollSentinel"
@@ -127,6 +141,7 @@ const modal = ref({
 });
 
 const scrollSentinel = ref(null);
+const toolbarRef = ref(null);
 
 const {
   moduleOptions,
@@ -147,6 +162,8 @@ const {
   clearFilter,
   clearAllFilters,
   hasActiveFilters,
+  hasActiveSearch,
+  clearSearch,
   onContentChanged,
   onSearch,
   cancel,
@@ -234,6 +251,13 @@ async function editDoc(item) {
   });
 }
 
+function handleClearSearch() {
+  clearSearch();
+  if (toolbarRef.value) {
+    toolbarRef.value.searchField.value = { data: '' };
+  }
+}
+
 async function close() {
   modal.value.showModal = false;
 }
@@ -297,11 +321,16 @@ onUnmounted(() => {
   gap: 8px;
 }
 
+.apos-recently-edited__clear-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+}
+
 .apos-recently-edited__clear-all {
   @include type-base;
 
   & {
-    margin-top: 10px;
     padding: 0;
     border: none;
     color: var(--a-primary);

@@ -490,6 +490,7 @@
   "recentlyEditedDocuments": "Recently edited documents",
   "recentlyEditedEditedBy": "Edited by",
   "recentlyEditedClearAllFilters": "Clear all filters",
+  "recentlyEditedClearSearch": "Clear search",
   "recentlyEditedEmpty": "No recently edited documents found in the past {{ count }} day",
   "recentlyEditedEmpty_plural": "No recently edited documents found in the past {{ count }} days",
   "recentlyEditedEmptyFiltered": "No documents match your current filters",
