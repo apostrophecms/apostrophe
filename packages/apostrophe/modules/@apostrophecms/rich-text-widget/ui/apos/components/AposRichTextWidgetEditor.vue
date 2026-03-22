@@ -10,16 +10,7 @@
       v-if="editor"
       plugin-key="richTextMenu"
       class="bubble-menu"
-      :tippy-options="{
-        maxWidth: 'none',
-        duration: 300,
-        zIndex: 999,
-        animation: 'fade',
-        inertia: true,
-        placement: 'bottom',
-        hideOnClick: false,
-        onHide: onBubbleHide
-      }"
+      :tippy-options="bubbleMenuTippyOptions"
       :editor="editor"
     >
       <AposContextMenuDialog
@@ -122,6 +113,7 @@ import {
   BubbleMenu,
   FloatingMenu
 } from '@tiptap/vue-3';
+
 import AposTiptapTableControls from './AposTiptapTableControls.vue';
 // Starter Kit extensions
 import BlockQuote from '@tiptap/extension-blockquote';
@@ -155,6 +147,7 @@ import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstanc
 import merge from 'lodash/merge';
 import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 
 export default {
   name: 'AposRichTextWidgetEditor',
@@ -199,7 +192,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'update', 'suppressWidgetControls' ],
+  emits: [ 'update', 'suppressWidgetControls', 'suppressAddContentButtons' ],
   setup() {
     return useAposStyles();
   },
@@ -219,12 +212,26 @@ export default {
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
       suppressWidgetControls: false,
+      suppressAddContentButtons: false,
       hasSelection: false,
       openedPopover: false
     };
   },
   computed: {
     ...mapState(useModalStore, [ 'getAdminDirectionClass' ]),
+    ...mapState(useWidgetStore, [ 'focusedWidget' ]),
+    bubbleMenuTippyOptions() {
+      return {
+        maxWidth: 'none',
+        duration: 300,
+        zIndex: 999,
+        animation: 'fade',
+        inertia: true,
+        placement: 'bottom',
+        hideOnClick: false,
+        onHide: this.onBubbleHide
+      };
+    },
     // Note that context menu class-list expects a string
     contextMenuClasses() {
       const directionClass = this.getAdminDirectionClass();
@@ -374,9 +381,15 @@ export default {
         this.$emit('suppressWidgetControls');
       }
     },
+    suppressAddContentButtons(newVal) {
+      if (newVal) {
+        this.$emit('suppressAddContentButtons');
+      }
+    },
     isFocused(newVal) {
       if (!newVal) {
         this.suppressWidgetControls = false;
+        this.suppressAddContentButtons = false;
         if (this.pending) {
           this.emitWidgetUpdate();
         }
@@ -482,9 +495,11 @@ export default {
           });
         },
         onSelectionUpdate: ({ editor }) => {
+          this.hasSelection = !editor.view.state.selection.empty;
           this.$nextTick(() => {
-            if (!editor.view.state.selection.empty) {
+            if (this.hasSelection) {
               this.suppressWidgetControls = true;
+              this.suppressAddContentButtons = true;
             }
           });
         }
@@ -579,6 +594,7 @@ export default {
         this.suppressInsertMenu = false;
       }
       this.suppressWidgetControls = true;
+      this.suppressAddContentButtons = true;
     },
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;
