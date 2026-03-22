@@ -18,7 +18,7 @@ module.exports = {
     showUnpublish: false,
     showPermissions: false,
     // 30-day window
-    rollingWindowDays: 300,
+    recentDays: 300,
     // Developer-configurable type exclusion
     excludeTypes: [],
     perPage: 50,
@@ -60,15 +60,16 @@ module.exports = {
     remove: [ 'visibility', 'archived' ]
   },
   async init(self) {
-    self.actionFilterRegistry = {};
-    self.statusFilterRegistry = {};
+    self.filterChoiceRegistry = {
+      action: {},
+      status: {}
+    };
     self.managedTypes = [];
     self.managedTypeNames = [];
     self.managedPageTypeNames = [];
     self.managedPieceTypeNames = [];
 
-    self.registerOwnFilterActions();
-    self.registerOwnFilterStatuses();
+    self.addOwnFilterChoices();
     await self.createIndexes();
   },
   handlers(self) {
@@ -145,29 +146,20 @@ module.exports = {
   },
   methods(self) {
     return {
-      // Register a new action for the Action filter dropdown.
-      // External modules (e.g. import-export) can call this in their
-      // own `modulesRegistered` handler to add actions like "imported".
+      // Register a new choice for a filter dropdown (Action or Status).
+      // External modules can call this in their `modulesRegistered` handler.
       //
-      // `name` - unique action identifier (e.g. 'imported')
-      // `config.label` - i18n key for the dropdown choice label
-      // `config.query` - function(queryBuilder) that applies filter criteria
-      registerFilterAction(name, { label, query }) {
-        self.actionFilterRegistry[name] = {
-          label,
-          query
-        };
-      },
-      // Register a new status for the Status filter dropdown.
-      // External modules (e.g. automatic-translation) can call this
-      // in their `modulesRegistered` handler to add statuses like
-      // "Unpublished Translations".
-      //
-      // `name` - unique status identifier (e.g. 'translated')
-      // `config.label` - i18n key for the dropdown choice label
-      // `config.query` - function(queryBuilder) that applies filter criteria.
-      registerFilterStatus(name, { label, query }) {
-        self.statusFilterRegistry[name] = {
+      // `type` - 'action' or 'status'
+      // `name` - unique choice identifier (e.g. 'imported', 'translated')
+      // `label` - i18n key for the dropdown choice label
+      // `query` - function(queryBuilder) that applies filter criteria
+      addFilterChoice({
+        type, name, label, query
+      }) {
+        if (type !== 'action' && type !== 'status') {
+          throw new Error(`addFilterChoice: type must be "action" or "status", got "${type}"`);
+        }
+        self.filterChoiceRegistry[type][name] = {
           label,
           query
         };
@@ -178,7 +170,7 @@ module.exports = {
       getCutoffDate() {
         const cutoff = new Date();
         cutoff.setDate(
-          cutoff.getDate() - (self.options.rollingWindowDays || 30)
+          cutoff.getDate() - (self.options.recentDays || 30)
         );
         return cutoff;
       },
@@ -249,46 +241,58 @@ module.exports = {
           { name: 'recentlyEditedLookup' }
         );
       },
-      registerOwnFilterActions() {
-        self.registerFilterAction('created', {
+      addOwnFilterChoices() {
+        self.addFilterChoice({
+          type: 'action',
+          name: 'created',
           label: 'apostrophe:recentlyEditedActionCreated',
           query(queryBuilder) {
             queryBuilder.and({ createdAt: { $gte: self.getCutoffDate() } });
           }
         });
-        self.registerFilterAction('published', {
+        self.addFilterChoice({
+          type: 'action',
+          name: 'published',
           label: 'apostrophe:recentlyEditedActionPublished',
           query(queryBuilder) {
             queryBuilder.and({ lastPublishedAt: { $gte: self.getCutoffDate() } });
           }
         });
-        self.registerFilterAction('submitted', {
+        self.addFilterChoice({
+          type: 'action',
+          name: 'submitted',
           label: 'apostrophe:recentlyEditedActionSubmitted',
           query(queryBuilder) {
             queryBuilder.and({ 'submitted.at': { $gte: self.getCutoffDate() } });
           }
         });
-        self.registerFilterAction('localized', {
+        self.addFilterChoice({
+          type: 'action',
+          name: 'localized',
           label: 'apostrophe:recentlyEditedActionLocalized',
           query(queryBuilder) {
             queryBuilder.and({ localizedAt: { $gte: self.getCutoffDate() } });
           }
         });
-      },
-      registerOwnFilterStatuses() {
-        self.registerFilterStatus('live', {
+        self.addFilterChoice({
+          type: 'status',
+          name: 'live',
           label: 'apostrophe:live',
           query(queryBuilder) {
             queryBuilder.and({ lastPublishedAt: { $exists: true } });
           }
         });
-        self.registerFilterStatus('draft', {
+        self.addFilterChoice({
+          type: 'status',
+          name: 'draft',
           label: 'apostrophe:draft',
           query(queryBuilder) {
             queryBuilder.and({ lastPublishedAt: { $exists: false } });
           }
         });
-        self.registerFilterStatus('modified', {
+        self.addFilterChoice({
+          type: 'status',
+          name: 'modified',
           label: 'apostrophe:pendingUpdates',
           query(queryBuilder) {
             queryBuilder.and({
@@ -299,13 +303,17 @@ module.exports = {
             });
           }
         });
-        self.registerFilterStatus('submitted', {
+        self.addFilterChoice({
+          type: 'status',
+          name: 'submitted',
           label: 'apostrophe:recentlyEditedStatusSubmitted',
           query(queryBuilder) {
             queryBuilder.and({ 'submitted.at': { $exists: true } });
           }
         });
-        self.registerFilterStatus('archived', {
+        self.addFilterChoice({
+          type: 'status',
+          name: 'archived',
           label: 'apostrophe:archived',
           query(queryBuilder) {
             queryBuilder.archived(true);
@@ -359,7 +367,7 @@ module.exports = {
           perPage: self.options.perPage,
           showRestore: self.options.showRestore,
           showUnpublish: self.options.showUnpublish,
-          rollingWindowDays: self.options.rollingWindowDays,
+          rollingWindowDays: self.options.recentDays,
           components: {
             managerModal: 'AposRecentlyEditedManager'
           }
@@ -507,17 +515,19 @@ module.exports = {
           def: null,
           launder(status) {
             const laundered = self.apos.launder.string(status);
-            return self.statusFilterRegistry[laundered] ? laundered : null;
+            return self.filterChoiceRegistry.status[laundered] ? laundered : null;
           },
           prefinalize() {
             const value = query.get('_status');
-            const status = self.statusFilterRegistry[value];
+            const status = self.filterChoiceRegistry.status[value];
             if (status?.query) {
               status.query(query);
             }
           },
           choices() {
-            return Object.entries(self.statusFilterRegistry).map(([ value, config ]) => ({
+            return Object.entries(
+              self.filterChoiceRegistry.status
+            ).map(([ value, config ]) => ({
               value,
               label: config.label
             }));
@@ -527,17 +537,19 @@ module.exports = {
           def: null,
           launder(action) {
             const laundered = self.apos.launder.string(action);
-            return self.actionFilterRegistry[laundered] ? laundered : null;
+            return self.filterChoiceRegistry.action[laundered] ? laundered : null;
           },
           prefinalize() {
             const value = query.get('_action');
-            const action = self.actionFilterRegistry[value];
+            const action = self.filterChoiceRegistry.action[value];
             if (action?.query) {
               action.query(query);
             }
           },
           choices() {
-            return Object.entries(self.actionFilterRegistry).map(([ value, config ]) => ({
+            return Object.entries(
+              self.filterChoiceRegistry.action
+            ).map(([ value, config ]) => ({
               value,
               label: config.label
             }));

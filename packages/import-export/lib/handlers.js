@@ -55,8 +55,10 @@ module.exports = self => {
       },
       registerImportedFilterAction() {
         const recentlyEdited = self.apos.recentlyEdited;
-        if (recentlyEdited?.registerFilterAction) {
-          recentlyEdited.registerFilterAction('imported', {
+        if (recentlyEdited?.addFilterChoice) {
+          recentlyEdited.addFilterChoice({
+            type: 'action',
+            name: 'imported',
             label: 'aposImportExport:recentlyEditedActionImported',
             query(queryBuilder) {
               const cutoff = recentlyEdited.getCutoffDate();
