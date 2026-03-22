@@ -198,7 +198,7 @@ watch(items, () => {
 });
 
 const displayOptions = computed(() => ({
-  ...moduleOptions,
+  ...moduleOptions.value,
   crossLocale: crossLocale.value,
   batchOperations: batchOperations.value
 }));

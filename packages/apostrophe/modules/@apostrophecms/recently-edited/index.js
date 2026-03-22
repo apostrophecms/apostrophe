@@ -11,12 +11,6 @@ module.exports = {
     pluralLabel: 'apostrophe:recentlyEditedDocuments',
     quickCreate: false,
     showCreate: false,
-    showArchive: false,
-    showDiscardDraft: false,
-    showDismissSubmission: false,
-    showRestore: false,
-    showUnpublish: false,
-    showPermissions: false,
     // 30-day window
     recentDays: 30,
     // Developer-configurable type exclusion
@@ -117,7 +111,8 @@ module.exports = {
         label: 'apostrophe:recentlyEditedAction'
       },
       _locale: {
-        label: 'apostrophe:locale'
+        label: 'apostrophe:locale',
+        inputType: 'checkbox'
       },
       _status: {
         label: 'apostrophe:recentlyEditedStatus'
@@ -218,19 +213,50 @@ module.exports = {
       // `type` - 'action' or 'status'
       // `name` - unique choice identifier (e.g. 'imported', 'translated')
       // `label` - i18n key for the dropdown choice label
-      // `query` - function(queryBuilder) that applies filter criteria
+      // `criteria` - a standard MongoDB criteria object (e.g.
+      //   `{ lastPublishedAt: { $exists: true } }`), or a function
+      //   receiving `{ cutoffDate }` and returning one when the
+      //   criteria must be computed at query time (e.g. rolling date
+      //   windows). `cutoffDate` is the `Date` marking the start of
+      //   the configured rolling window (`options.recentDays`).
+      //   Multi-field objects work as implicit `$and`, and any valid
+      //   MongoDB operator is allowed.
+      // `archived` - optional boolean. When `true` the choice matches
+      //   archived documents (overrides the default exclusion of
+      //   archived docs). Otherwise it is ignored.
       // `project` - optional projection object (e.g. `{ translatedAt: 1 }`)
       //   merged into `managerApiProjection` so the field is available
       //   to context operations in the recently-edited manager
+      //
+      // Examples:
+      //
+      //   // Static criteria (object) — no date dependency
+      //   addFilterChoice({
+      //     type: 'status',
+      //     name: 'translated',
+      //     label: 'myModule:translated',
+      //     criteria: { 'translationMeta.state': 'translated' }
+      //   });
+      //
+      //   // Dynamic criteria (function) — uses the rolling window
+      //   addFilterChoice({
+      //     type: 'action',
+      //     name: 'imported',
+      //     label: 'myModule:imported',
+      //     criteria({ cutoffDate }) {
+      //       return { importedAt: { $gte: cutoffDate } };
+      //     }
+      //   });
       addFilterChoice({
-        type, name, label, query, project
+        type, name, label, criteria, archived, project
       }) {
         if (type !== 'action' && type !== 'status') {
           throw new Error(`addFilterChoice: type must be "action" or "status", got "${type}"`);
         }
         self.filterChoiceRegistry[type][name] = {
           label,
-          query
+          criteria,
+          archived: archived || false
         };
         if (project) {
           Object.assign(self.options.managerApiProjection, project);
@@ -303,6 +329,14 @@ module.exports = {
         }
         return subquery.toDistinct(property);
       },
+      // Resolve the MongoDB criteria for a registered filter choice.
+      // Returns the criteria object — calls it if it's a function,
+      // passing `{ cutoffDate }` for dynamic date-based choices.
+      getFilterCriteria(entry) {
+        return typeof entry.criteria === 'function'
+          ? entry.criteria({ cutoffDate: self.getCutoffDate() })
+          : entry.criteria;
+      },
       async createIndexes() {
         await self.apos.doc.db.createIndex(
           {
@@ -319,78 +353,68 @@ module.exports = {
           type: 'action',
           name: 'created',
           label: 'apostrophe:recentlyEditedActionCreated',
-          query(queryBuilder) {
-            queryBuilder.and({ createdAt: { $gte: self.getCutoffDate() } });
+          criteria({ cutoffDate }) {
+            return { createdAt: { $gte: cutoffDate } };
           }
         });
         self.addFilterChoice({
           type: 'action',
           name: 'published',
           label: 'apostrophe:recentlyEditedActionPublished',
-          query(queryBuilder) {
-            queryBuilder.and({ lastPublishedAt: { $gte: self.getCutoffDate() } });
+          criteria({ cutoffDate }) {
+            return { lastPublishedAt: { $gte: cutoffDate } };
           }
         });
         self.addFilterChoice({
           type: 'action',
           name: 'submitted',
           label: 'apostrophe:recentlyEditedActionSubmitted',
-          query(queryBuilder) {
-            queryBuilder.and({ 'submitted.at': { $gte: self.getCutoffDate() } });
+          criteria({ cutoffDate }) {
+            return { 'submitted.at': { $gte: cutoffDate } };
           }
         });
         self.addFilterChoice({
           type: 'action',
           name: 'localized',
           label: 'apostrophe:recentlyEditedActionLocalized',
-          query(queryBuilder) {
-            queryBuilder.and({ localizedAt: { $gte: self.getCutoffDate() } });
+          criteria({ cutoffDate }) {
+            return { localizedAt: { $gte: cutoffDate } };
           }
         });
         self.addFilterChoice({
           type: 'status',
           name: 'live',
           label: 'apostrophe:live',
-          query(queryBuilder) {
-            queryBuilder.and({ lastPublishedAt: { $exists: true } });
-          }
+          criteria: { lastPublishedAt: { $exists: true } }
         });
         self.addFilterChoice({
           type: 'status',
           name: 'draft',
           label: 'apostrophe:draft',
-          query(queryBuilder) {
-            queryBuilder.and({ lastPublishedAt: { $exists: false } });
-          }
+          criteria: { lastPublishedAt: { $exists: false } }
         });
         self.addFilterChoice({
           type: 'status',
           name: 'modified',
           label: 'apostrophe:pendingUpdates',
-          query(queryBuilder) {
-            queryBuilder.and({
-              lastPublishedAt: { $exists: true },
-              $expr: {
-                $gt: [ '$updatedAt', '$lastPublishedAt' ]
-              }
-            });
+          criteria: {
+            lastPublishedAt: { $exists: true },
+            $expr: {
+              $gt: [ '$updatedAt', '$lastPublishedAt' ]
+            }
           }
         });
         self.addFilterChoice({
           type: 'status',
           name: 'submitted',
           label: 'apostrophe:recentlyEditedStatusSubmitted',
-          query(queryBuilder) {
-            queryBuilder.and({ 'submitted.at': { $exists: true } });
-          }
+          criteria: { 'submitted.at': { $exists: true } }
         });
         self.addFilterChoice({
           type: 'status',
           name: 'archived',
           label: 'apostrophe:archived',
-          query(queryBuilder) {
-            queryBuilder.archived(true);
-          }
+          archived: true
         });
       }
     };
@@ -441,8 +465,6 @@ module.exports = {
           managedTypes: self.managedTypes,
           batchOperations: [],
           perPage: self.options.perPage,
-          showRestore: self.options.showRestore,
-          showUnpublish: self.options.showUnpublish,
           rollingWindowDays: self.options.recentDays,
           components: {
             managerModal: 'AposRecentlyEditedManager'
@@ -526,12 +548,22 @@ module.exports = {
         },
         _editedBy: {
           def: null,
-          launder(userId) {
-            return self.apos.launder.string(userId);
+          launder(value) {
+            if (Array.isArray(value)) {
+              return self.apos.launder.strings(value).filter(Boolean);
+            }
+            return self.apos.launder.string(value) || null;
           },
           finalize() {
             const value = query.get('_editedBy');
-            if (value) {
+            if (!value) {
+              return;
+            }
+            if (Array.isArray(value)) {
+              if (value.length) {
+                query.and({ 'updatedBy._id': { $in: value } });
+              }
+            } else {
               query.and({ 'updatedBy._id': value });
             }
           },
@@ -548,16 +580,29 @@ module.exports = {
         },
         _locale: {
           def: null,
-          launder(locale) {
-            const value = self.apos.launder.string(locale);
-            if (value && self.apos.i18n.locales[value]) {
-              return value;
+          launder(value) {
+            if (Array.isArray(value)) {
+              return self.apos.launder.strings(value)
+                .filter(v => v && self.apos.i18n.locales[v]);
+            }
+            const laundered = self.apos.launder.string(value);
+            if (laundered && self.apos.i18n.locales[laundered]) {
+              return laundered;
             }
             return null;
           },
           finalize() {
             const value = query.get('_locale');
-            if (value) {
+            if (!value) {
+              return;
+            }
+            if (Array.isArray(value)) {
+              if (value.length) {
+                query.and({
+                  aposLocale: { $in: value.map(v => `${v}:draft`) }
+                });
+              }
+            } else {
               query.and({ aposLocale: `${value}:draft` });
             }
           },
@@ -593,15 +638,62 @@ module.exports = {
         },
         _status: {
           def: null,
-          launder(status) {
-            const laundered = self.apos.launder.string(status);
+          launder(value) {
+            if (Array.isArray(value)) {
+              return self.apos.launder.strings(value)
+                .filter(v => self.filterChoiceRegistry.status[v]);
+            }
+            const laundered = self.apos.launder.string(value);
             return self.filterChoiceRegistry.status[laundered] ? laundered : null;
           },
           prefinalize() {
             const value = query.get('_status');
-            const status = self.filterChoiceRegistry.status[value];
-            if (status?.query) {
-              status.query(query);
+            if (!value) {
+              return;
+            }
+            if (Array.isArray(value)) {
+              if (!value.length) {
+                return;
+              }
+              const orClauses = [];
+              let needsArchivedNull = false;
+              for (const v of value) {
+                const entry = self.filterChoiceRegistry.status[v];
+                if (!entry) {
+                  continue;
+                }
+                if (entry.archived) {
+                  needsArchivedNull = true;
+                  const criteria = self.getFilterCriteria(entry);
+                  if (criteria) {
+                    orClauses.push({ $and: [ { archived: true }, criteria ] });
+                  } else {
+                    orClauses.push({ archived: true });
+                  }
+                } else {
+                  const criteria = self.getFilterCriteria(entry);
+                  if (criteria) {
+                    orClauses.push(criteria);
+                  }
+                }
+              }
+              if (needsArchivedNull) {
+                query.archived(null);
+              }
+              if (orClauses.length) {
+                query.and({ $or: orClauses });
+              }
+            } else {
+              const entry = self.filterChoiceRegistry.status[value];
+              if (entry) {
+                if (entry.archived) {
+                  query.archived(true);
+                }
+                const criteria = self.getFilterCriteria(entry);
+                if (criteria) {
+                  query.and(criteria);
+                }
+              }
             }
           },
           choices() {
@@ -615,15 +707,45 @@ module.exports = {
         },
         _action: {
           def: null,
-          launder(action) {
-            const laundered = self.apos.launder.string(action);
+          launder(value) {
+            if (Array.isArray(value)) {
+              return self.apos.launder.strings(value)
+                .filter(v => self.filterChoiceRegistry.action[v]);
+            }
+            const laundered = self.apos.launder.string(value);
             return self.filterChoiceRegistry.action[laundered] ? laundered : null;
           },
           prefinalize() {
             const value = query.get('_action');
-            const action = self.filterChoiceRegistry.action[value];
-            if (action?.query) {
-              action.query(query);
+            if (!value) {
+              return;
+            }
+            if (Array.isArray(value)) {
+              if (!value.length) {
+                return;
+              }
+              const orClauses = [];
+              for (const v of value) {
+                const entry = self.filterChoiceRegistry.action[v];
+                if (!entry) {
+                  continue;
+                }
+                const criteria = self.getFilterCriteria(entry);
+                if (criteria) {
+                  orClauses.push(criteria);
+                }
+              }
+              if (orClauses.length) {
+                query.and({ $or: orClauses });
+              }
+            } else {
+              const entry = self.filterChoiceRegistry.action[value];
+              if (entry) {
+                const criteria = self.getFilterCriteria(entry);
+                if (criteria) {
+                  query.and(criteria);
+                }
+              }
             }
           },
           choices() {

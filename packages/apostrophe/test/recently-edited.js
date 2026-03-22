@@ -266,9 +266,7 @@ describe('Recently Edited', function () {
         type: 'action',
         name: 'imported',
         label: 'Imported',
-        query(qb) {
-          qb.and({ importedAt: { $exists: true } });
-        }
+        criteria: { importedAt: { $exists: true } }
       });
       assert(apos.recentlyEdited.filterChoiceRegistry.action.imported);
       assert.equal(
@@ -284,9 +282,7 @@ describe('Recently Edited', function () {
         type: 'status',
         name: 'reviewed',
         label: 'Reviewed',
-        query(qb) {
-          qb.and({ reviewed: true });
-        }
+        criteria: { reviewed: true }
       });
       assert(apos.recentlyEdited.filterChoiceRegistry.status.reviewed);
       // Clean up
@@ -299,7 +295,7 @@ describe('Recently Edited', function () {
           type: 'bogus',
           name: 'x',
           label: 'X',
-          query() {}
+          criteria: { x: 1 }
         });
       }, /type must be "action" or "status"/);
     });
@@ -1383,11 +1379,13 @@ describe('Recently Edited', function () {
       assert.equal(data.components.managerModal, 'AposRecentlyEditedManager');
     });
 
-    it('includes showRestore and showUnpublish from options', function () {
+    it('does not include removed show* options in browser data', function () {
       const req = apos.task.getReq({ mode: 'draft' });
       const data = apos.recentlyEdited.getBrowserData(req);
-      assert.equal(data.showRestore, false);
-      assert.equal(data.showUnpublish, false);
+      // These were removed; piece-type defaults (undefined) let
+      // AposDocContextMenu prop defaults (true) take over.
+      assert.equal(data.showRestore, undefined);
+      assert.equal(data.showUnpublish, undefined);
     });
   });
 
@@ -1773,6 +1771,389 @@ describe('Recently Edited', function () {
         // Pages store _url in MongoDB — lean skips addUrls post-processing
         // but the stored value persists via projection
         assert(response.results[0]._url);
+      });
+    });
+  });
+
+  // ───── Array (Multiselect) Filter Support ─────
+
+  describe('array (multiselect) filter support', function () {
+    before(async function () {
+      await cleanDocs();
+
+      // English articles
+      await insertPiece('article', { title: 'EN Article 1' });
+      await insertPiece('article', { title: 'EN Article 2' });
+
+      // French article
+      await insertPiece('article', { title: 'FR Article' }, { locale: 'fr' });
+
+      // German topic
+      await insertPiece('topic', { title: 'DE Topic' }, { locale: 'de' });
+
+      // Published article (for status tests)
+      const published = await insertPiece('article', { title: 'Published Article' });
+      const req = apos.task.getReq({ mode: 'draft' });
+      await apos.modules.article.publish(req, published);
+
+      // Archived article (for status tests)
+      const archived = await insertPiece('article', { title: 'Archived Article' });
+      await apos.doc.db.updateOne(
+        { _id: archived._id },
+        { $set: { archived: true } }
+      );
+    });
+
+    describe('_locale array', function () {
+      it('filters by multiple locales', async function () {
+        const response = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _locale: [ 'en', 'fr' ] }
+          }
+        );
+        const locales = [ ...new Set(
+          response.results.map(r => r.aposLocale.split(':')[0])
+        ) ];
+        assert(locales.includes('en'));
+        assert(locales.includes('fr'));
+        assert(!locales.includes('de'));
+      });
+
+      it('filters to single locale when array has one element', async function () {
+        const response = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _locale: [ 'de' ] }
+          }
+        );
+        for (const doc of response.results) {
+          assert(doc.aposLocale.startsWith('de:'));
+        }
+      });
+
+      it('strips invalid locales from array', async function () {
+        const response = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _locale: [ 'fr', 'nonexistent' ] }
+          }
+        );
+        for (const doc of response.results) {
+          assert(doc.aposLocale.startsWith('fr:'));
+        }
+      });
+    });
+
+    describe('_editedBy array', function () {
+      it('filters by multiple user IDs', async function () {
+        // Create a second editor
+        const secondEditor = await apos.user.insert(apos.task.getReq(), {
+          username: 'arraytest-editor',
+          password: 'test',
+          title: 'Array Test Editor',
+          role: 'editor'
+        });
+        const editorReq = apos.task.getReq({
+          mode: 'draft',
+          user: secondEditor
+        });
+        const editorPiece = apos.modules.article.newInstance();
+        await apos.modules.article.insert(editorReq, {
+          ...editorPiece,
+          title: 'Editor Piece'
+        });
+
+        const adminUser = await apos.doc.db.findOne({
+          type: '@apostrophecms/user',
+          role: 'admin'
+        });
+
+        const response = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _editedBy: [ adminUser._id, secondEditor._id ] }
+          }
+        );
+        const editorIds = [ ...new Set(
+          response.results.map(r => r.updatedBy?._id).filter(Boolean)
+        ) ];
+        for (const id of editorIds) {
+          assert(
+            id === adminUser._id || id === secondEditor._id,
+            `unexpected editor ${id}`
+          );
+        }
+        assert(response.results.length > 0);
+      });
+    });
+
+    describe('_status array', function () {
+      it('combines statuses with $or (live + archived)', async function () {
+        const response = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _status: [ 'live', 'archived' ] }
+          }
+        );
+        const hasLive = response.results.some(r => r.lastPublishedAt && !r.archived);
+        const hasArchived = response.results.some(r => r.archived);
+        assert(hasLive, 'should include live docs');
+        assert(hasArchived, 'should include archived docs');
+      });
+
+      it('custom status choice with static criteria, scalar request', async function () {
+        apos.recentlyEdited.addFilterChoice({
+          type: 'status',
+          name: 'test-enonly',
+          label: 'EN Articles Only',
+          criteria: { title: 'EN Article 1' }
+        });
+        try {
+          const response = await apos.http.get(
+            recentApi(), {
+              jar,
+              qs: { _status: 'test-enonly' }
+            }
+          );
+          assert.equal(response.results.length, 1);
+          assert.equal(response.results[0].title, 'EN Article 1');
+        } finally {
+          delete apos.recentlyEdited.filterChoiceRegistry.status['test-enonly'];
+        }
+      });
+
+      it('custom status choice combined with built-in via array', async function () {
+        // Register a custom status matching a specific title
+        apos.recentlyEdited.addFilterChoice({
+          type: 'status',
+          name: 'test-published-article',
+          label: 'Published Article',
+          criteria: { title: 'Published Article' }
+        });
+        try {
+          // Request both the custom choice and the built-in 'archived'
+          const response = await apos.http.get(
+            recentApi(), {
+              jar,
+              qs: { _status: [ 'test-published-article', 'archived' ] }
+            }
+          );
+          const titles = response.results.map(r => r.title);
+          assert(
+            titles.includes('Published Article'),
+            'should include the custom-matched doc'
+          );
+          assert(
+            titles.includes('Archived Article'),
+            'should include archived doc via $or'
+          );
+          // Must not include unrelated docs (e.g. plain drafts)
+          for (const doc of response.results) {
+            assert(
+              doc.title === 'Published Article' || doc.archived,
+              `unexpected doc: ${doc.title}`
+            );
+          }
+        } finally {
+          delete apos.recentlyEdited.filterChoiceRegistry.status['test-published-article'];
+        }
+      });
+
+      it('custom status with archived: true and criteria, scalar request', async function () {
+        apos.recentlyEdited.addFilterChoice({
+          type: 'status',
+          name: 'test-archived-titled',
+          label: 'Archived & Titled',
+          archived: true,
+          criteria: { title: 'Archived Article' }
+        });
+        try {
+          const response = await apos.http.get(
+            recentApi(), {
+              jar,
+              qs: { _status: 'test-archived-titled' }
+            }
+          );
+          // Scalar archived choice: query.archived(true) + criteria
+          assert.equal(response.results.length, 1);
+          assert.equal(response.results[0].title, 'Archived Article');
+          assert.equal(response.results[0].archived, true);
+        } finally {
+          delete apos.recentlyEdited.filterChoiceRegistry.status['test-archived-titled'];
+        }
+      });
+
+      it('custom status with archived: true and criteria, combined via array', async function () {
+        // Custom archived choice narrowed to a specific title
+        apos.recentlyEdited.addFilterChoice({
+          type: 'status',
+          name: 'test-archived-titled',
+          label: 'Archived & Titled',
+          archived: true,
+          criteria: { title: 'Archived Article' }
+        });
+        // Custom non-archived choice matching a specific title
+        apos.recentlyEdited.addFilterChoice({
+          type: 'status',
+          name: 'test-en1',
+          label: 'EN1',
+          criteria: { title: 'EN Article 1' }
+        });
+        try {
+          const response = await apos.http.get(
+            recentApi(), {
+              jar,
+              qs: { _status: [ 'test-archived-titled', 'test-en1' ] }
+            }
+          );
+          const titles = response.results.map(r => r.title);
+          assert(
+            titles.includes('Archived Article'),
+            'should include archived doc matched by criteria'
+          );
+          assert(
+            titles.includes('EN Article 1'),
+            'should include non-archived doc matched by criteria'
+          );
+          // Must not include unrelated docs
+          for (const doc of response.results) {
+            assert(
+              doc.title === 'Archived Article' || doc.title === 'EN Article 1',
+              `unexpected doc: ${doc.title}`
+            );
+          }
+        } finally {
+          delete apos.recentlyEdited.filterChoiceRegistry.status['test-archived-titled'];
+          delete apos.recentlyEdited.filterChoiceRegistry.status['test-en1'];
+        }
+      });
+
+      it('custom status with criteria function receives cutoffDate', async function () {
+        let receivedCutoff;
+        apos.recentlyEdited.addFilterChoice({
+          type: 'status',
+          name: 'test-cutoff',
+          label: 'Cutoff Test',
+          criteria({ cutoffDate }) {
+            receivedCutoff = cutoffDate;
+            // Match everything — just testing the argument
+            return { updatedAt: { $gte: cutoffDate } };
+          }
+        });
+        try {
+          await apos.http.get(
+            recentApi(), {
+              jar,
+              qs: { _status: [ 'test-cutoff' ] }
+            }
+          );
+          assert(receivedCutoff instanceof Date, 'cutoffDate should be a Date');
+          // Should be roughly `recentDays` ago (30 days default)
+          const expectedCutoff = new Date();
+          expectedCutoff.setDate(expectedCutoff.getDate() - 30);
+          const diffMs = Math.abs(receivedCutoff.getTime() - expectedCutoff.getTime());
+          assert(diffMs < 5000, 'cutoffDate should be ~30 days ago');
+        } finally {
+          delete apos.recentlyEdited.filterChoiceRegistry.status['test-cutoff'];
+        }
+      });
+
+      it('strips invalid statuses from array', async function () {
+        const response = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _status: [ 'live', 'hacked' ] }
+          }
+        );
+        for (const doc of response.results) {
+          assert(doc.lastPublishedAt, 'should only have live docs');
+        }
+      });
+
+      it('returns all when array is entirely invalid', async function () {
+        const response = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _status: [ 'fake1', 'fake2' ] }
+          }
+        );
+        assert(response.results.length > 0);
+      });
+    });
+
+    describe('_action array', function () {
+      it('combines actions with $or (created + published)', async function () {
+        const response = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _action: [ 'created', 'published' ] }
+          }
+        );
+        assert(response.results.length > 0);
+      });
+
+      it('custom action choice with static criteria, scalar request', async function () {
+        apos.recentlyEdited.addFilterChoice({
+          type: 'action',
+          name: 'test-titled',
+          label: 'Titled FR',
+          criteria: { title: 'FR Article' }
+        });
+        try {
+          const response = await apos.http.get(
+            recentApi(), {
+              jar,
+              qs: { _action: 'test-titled' }
+            }
+          );
+          assert.equal(response.results.length, 1);
+          assert.equal(response.results[0].title, 'FR Article');
+        } finally {
+          delete apos.recentlyEdited.filterChoiceRegistry.action['test-titled'];
+        }
+      });
+
+      it('custom action choice combined with built-in via array', async function () {
+        // Register custom action matching DE Topic only
+        apos.recentlyEdited.addFilterChoice({
+          type: 'action',
+          name: 'test-de-topic',
+          label: 'DE Topic',
+          criteria: { title: 'DE Topic' }
+        });
+        try {
+          // Combine with built-in 'published' — should get DE Topic + published docs
+          const response = await apos.http.get(
+            recentApi(), {
+              jar,
+              qs: { _action: [ 'test-de-topic', 'published' ] }
+            }
+          );
+          const titles = response.results.map(r => r.title);
+          assert(
+            titles.includes('DE Topic'),
+            'should include custom-matched doc'
+          );
+          assert(
+            titles.includes('Published Article'),
+            'should include built-in published doc'
+          );
+        } finally {
+          delete apos.recentlyEdited.filterChoiceRegistry.action['test-de-topic'];
+        }
+      });
+
+      it('strips invalid actions from array', async function () {
+        const response = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _action: [ 'published', 'nonexistent' ] }
+          }
+        );
+        for (const doc of response.results) {
+          assert(doc.lastPublishedAt, 'should only have published docs');
+        }
       });
     });
   });

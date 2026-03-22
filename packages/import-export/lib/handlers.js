@@ -60,9 +60,8 @@ module.exports = self => {
             type: 'action',
             name: 'imported',
             label: 'aposImportExport:recentlyEditedActionImported',
-            query(queryBuilder) {
-              const cutoff = recentlyEdited.getCutoffDate();
-              queryBuilder.and({ importedAt: { $gte: cutoff } });
+            criteria({ cutoffDate }) {
+              return { importedAt: { $gte: cutoffDate } };
             }
           });
         }

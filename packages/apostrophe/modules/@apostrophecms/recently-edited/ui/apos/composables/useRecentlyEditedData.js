@@ -92,12 +92,17 @@ export function useRecentlyEditedData(moduleName) {
   // the correct aposLocale to all requests (including child modals).
   watch(() => filterState.value._locale, (newLocale) => {
     const id = modalStore.activeModal?.id;
-    if (id) {
-      modalStore.updateModalData(id, {
-        locale: newLocale || apos.i18n.locale,
-        crossLocale: !newLocale
-      });
+    if (!id) {
+      return;
     }
+    const multiLocale = Object.keys(apos.i18n.locales || {}).length > 1;
+    const effectiveLocale = Array.isArray(newLocale)
+      ? (newLocale.length === 1 ? newLocale[0] : null)
+      : newLocale;
+    modalStore.updateModalData(id, {
+      locale: effectiveLocale || apos.i18n.locale,
+      crossLocale: multiLocale && !effectiveLocale
+    });
   }, { immediate: true });
 
   // Refresh batch total count after each page-1 reload completes.
@@ -109,7 +114,16 @@ export function useRecentlyEditedData(moduleName) {
 
   // --- Computed properties ---
 
-  const crossLocale = computed(() => !filterState.value._locale);
+  const crossLocale = computed(() => {
+    const locale = filterState.value._locale;
+    if (Object.keys(apos.i18n.locales || {}).length <= 1) {
+      return false;
+    }
+    if (Array.isArray(locale)) {
+      return locale.length !== 1;
+    }
+    return !locale;
+  });
 
   const emptyDisplay = computed(() => {
     const hasSearch = !!searchQuery.value;
