@@ -23,20 +23,86 @@ module.exports = {
     excludeTypes: [],
     perPage: 50,
     managerApiProjection: {
-      title: 1,
-      type: 1,
-      slug: 1,
       updatedAt: 1,
       updatedBy: 1,
-      aposLocale: 1,
-      aposMode: 1,
-      aposDocId: 1,
-      visibility: 1,
+      archived: 1,
+      modified: 1,
+      parked: 1,
       lastPublishedAt: 1,
       submitted: 1,
-      aposPermissions: 1,
-      _url: 1
+      aposPermissions: 1
     }
+  },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:manager`]: {
+          type: 'item',
+          label: self.options.label,
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          shortcut: 'T,R'
+        },
+        [`${self.__meta.name}:search`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSearch',
+          action: {
+            type: 'command-menu-manager-focus-search'
+          },
+          shortcut: 'Ctrl+F Meta+F'
+        },
+        [`${self.__meta.name}:select-all`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSelectAll',
+          action: {
+            type: 'command-menu-manager-select-all'
+          },
+          shortcut: 'Ctrl+Shift+A Meta+Shift+A'
+        },
+        [`${self.__meta.name}:exit-manager`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuExitManager',
+          action: {
+            type: 'command-menu-manager-close'
+          },
+          shortcut: 'Q'
+        }
+      },
+      remove: [
+        `${self.__meta.name}:create-new`,
+        `${self.__meta.name}:archive-selected`
+      ],
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:taskbar': {
+            label: 'apostrophe:commandMenuTaskbar',
+            commands: [
+              `${self.__meta.name}:manager`
+            ]
+          }
+        },
+        [`${self.__meta.name}:manager`]: {
+          '@apostrophecms/command-menu:manager': {
+            label: 'apostrophe:commandMenuManager',
+            commands: [
+              `${self.__meta.name}:search`,
+              `${self.__meta.name}:select-all`,
+              `${self.__meta.name}:exit-manager`
+            ]
+          },
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            commands: [
+              '@apostrophecms/command-menu:show-shortcut-list'
+            ]
+          }
+        }
+      }
+    };
   },
   filters: {
     add: {
@@ -235,6 +301,7 @@ module.exports = {
         await self.apos.doc.db.createIndex(
           {
             updatedAt: -1,
+            _id: 1,
             type: 1,
             aposLocale: 1
           },
@@ -336,7 +403,10 @@ module.exports = {
             aposMode: 'draft',
             updatedAt: { $gte: self.getCutoffDate() }
           })
-          .sort({ updatedAt: -1 });
+          .sort({
+            updatedAt: -1,
+            _id: 1
+          });
       },
       // Inject the manager API projection into req.query before the
       // parent processes it via applyBuildersSafely. If the client
@@ -473,7 +543,11 @@ module.exports = {
         _locale: {
           def: null,
           launder(locale) {
-            return self.apos.launder.string(locale);
+            const value = self.apos.launder.string(locale);
+            if (value && self.apos.i18n.locales[value]) {
+              return value;
+            }
+            return null;
           },
           finalize() {
             const value = query.get('_locale');

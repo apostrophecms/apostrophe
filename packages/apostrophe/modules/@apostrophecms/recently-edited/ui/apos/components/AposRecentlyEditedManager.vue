@@ -267,6 +267,7 @@ onMounted(async () => {
   await reload({ immediate: true });
   startScroll();
   apos.bus.$on('content-changed', onContentChanged);
+  apos.bus.$on('command-menu-manager-close', close);
 });
 
 onBeforeUnmount(() => {
@@ -276,6 +277,7 @@ onBeforeUnmount(() => {
 
 onUnmounted(() => {
   apos.bus.$off('content-changed', onContentChanged);
+  apos.bus.$off('command-menu-manager-close', close);
 });
 </script>
 
