@@ -18,7 +18,7 @@ module.exports = {
     showUnpublish: false,
     showPermissions: false,
     // 30-day window
-    recentDays: 300,
+    recentDays: 30,
     // Developer-configurable type exclusion
     excludeTypes: [],
     perPage: 50,
@@ -219,8 +219,11 @@ module.exports = {
       // `name` - unique choice identifier (e.g. 'imported', 'translated')
       // `label` - i18n key for the dropdown choice label
       // `query` - function(queryBuilder) that applies filter criteria
+      // `project` - optional projection object (e.g. `{ translatedAt: 1 }`)
+      //   merged into `managerApiProjection` so the field is available
+      //   to context operations in the recently-edited manager
       addFilterChoice({
-        type, name, label, query
+        type, name, label, query, project
       }) {
         if (type !== 'action' && type !== 'status') {
           throw new Error(`addFilterChoice: type must be "action" or "status", got "${type}"`);
@@ -229,6 +232,9 @@ module.exports = {
           label,
           query
         };
+        if (project) {
+          Object.assign(self.options.managerApiProjection, project);
+        }
       },
       // Calculate the cutoff date for recently edited documents based on the
       // rolling window setting. Can be used by external modules to provide

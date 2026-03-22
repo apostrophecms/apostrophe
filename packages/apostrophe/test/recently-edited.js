@@ -38,7 +38,6 @@ describe('Recently Edited', function () {
         },
         '@apostrophecms/recently-edited': {
           options: {
-            recentDays: 300,
             excludeTypes: [ 'excluded-article' ]
           }
         },
@@ -359,8 +358,8 @@ describe('Recently Edited', function () {
       assert(cutoff instanceof Date);
       const now = new Date();
       const diffDays = (now - cutoff) / (1000 * 60 * 60 * 24);
-      // recentDays is 300
-      assert(diffDays >= 299 && diffDays <= 301);
+      // recentDays is 30
+      assert(diffDays >= 29 && diffDays <= 31);
     });
   });
 
@@ -1368,7 +1367,7 @@ describe('Recently Edited', function () {
       const req = apos.task.getReq({ mode: 'draft' });
       const data = apos.recentlyEdited.getBrowserData(req);
       assert.equal(data.perPage, 50);
-      assert.equal(data.rollingWindowDays, 300);
+      assert.equal(data.rollingWindowDays, 30);
     });
 
     it('has empty batchOperations', function () {
