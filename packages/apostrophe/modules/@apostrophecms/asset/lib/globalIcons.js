@@ -23,6 +23,7 @@ module.exports = {
   'arrow-expand-vertical-icon': 'ArrowExpandVertical',
   'arrow-left-icon': 'ArrowLeft',
   'arrow-right-icon': 'ArrowRight',
+  'arrow-top-right-icon': 'ArrowTopRight',
   'arrow-up-icon': 'ArrowUp',
   'binoculars-icon': 'Binoculars',
   'calendar-icon': 'Calendar',

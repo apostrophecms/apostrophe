@@ -15,11 +15,10 @@
       :href="item._url"
       class="apos-recently-edited__cell-link"
       data-apos-test="recently-edited-cell-link"
-      target="_blank"
       @click.stop
     >
       <AposIndicator
-        icon="link-external-icon"
+        icon="arrow-top-right-icon"
         :icon-size="14"
         decorative
       />
