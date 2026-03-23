@@ -11,8 +11,11 @@ import { useRecentlyEditedBatch } from './useRecentlyEditedBatch.js';
  * cross-composable wiring for the recently-edited document manager.
  *
  * @param {string} moduleName
+ * @param {Object} [initialFilters={}] - Optional initial filter values.
+ *  When provided (non-empty), fully replaces the default filter state.
+ *  Values should be arrays; coerced to scalar/array based on filter inputType.
  */
-export function useRecentlyEditedData(moduleName) {
+export function useRecentlyEditedData(moduleName, initialFilters = {}) {
   const $t = inject('i18n');
   const modalStore = useModalStore();
 
@@ -35,7 +38,7 @@ export function useRecentlyEditedData(moduleName) {
     updateFilters,
     clearFilter,
     clearAllFilters
-  } = useRecentlyEditedFilters(managerFilters);
+  } = useRecentlyEditedFilters(managerFilters, initialFilters);
 
   const {
     items,

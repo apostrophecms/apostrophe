@@ -136,6 +136,10 @@ const props = defineProps({
   moduleName: {
     type: String,
     required: true
+  },
+  initialFilters: {
+    type: Object,
+    default: () => ({})
   }
 });
 
@@ -181,7 +185,7 @@ const {
   selectAllPieces,
   setAllPiecesSelection,
   handleBatchAction
-} = useRecentlyEditedData(props.moduleName);
+} = useRecentlyEditedData(props.moduleName, props.initialFilters);
 
 const {
   start: startScroll, stop: stopScroll, recheck
