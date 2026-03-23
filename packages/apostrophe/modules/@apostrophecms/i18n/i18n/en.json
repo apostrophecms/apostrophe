@@ -334,7 +334,6 @@
   "localizeNewRelated": "Localize new related documents",
   "localizeNotYetLocalized": "Not Yet Localized",
   "localizeOpenDocument": "View document",
-  "localized": "Localized the {{ type }} {{ title }} to {{ locale }}",
   "localizedBatch": "Processed {{ count }} {{ type }}",
   "localizedBatchFailed": "Localizing {{ type }} failed",
   "localizedBatchWithFailures": "Processed {{ count }} {{ type }} ({{ bad }} of {{ total }} failed)",
