@@ -896,6 +896,37 @@ describe('Recently Edited', function () {
         assert.equal(response.results.length, 3);
       });
 
+      it('includes unpublished documents in "draft" status (lastPublishedAt set to null)', async function () {
+        // Publish then unpublish an article to set lastPublishedAt to null
+        const piece = await insertPiece('article', { title: 'Unpublished Article' });
+        const req = apos.task.getReq({ mode: 'draft' });
+        await apos.modules.article.publish(req, piece);
+        await apos.modules.article.unpublish(req, piece);
+
+        const draftResponse = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _status: 'draft' }
+          }
+        );
+        const found = draftResponse.results.find(d => d.title === 'Unpublished Article');
+        assert(found, 'unpublished doc (lastPublishedAt: null) should appear under "draft" status');
+        assert(!found.lastPublishedAt, 'unpublished doc should have falsy lastPublishedAt');
+
+        // It should NOT appear under "live" status
+        const liveResponse = await apos.http.get(
+          recentApi(), {
+            jar,
+            qs: { _status: 'live' }
+          }
+        );
+        const foundInLive = liveResponse.results.find(d => d.title === 'Unpublished Article');
+        assert(!foundInLive, 'unpublished doc should not appear under "live" status');
+
+        // Clean up to avoid affecting subsequent test counts
+        await apos.doc.db.deleteMany({ aposDocId: piece.aposDocId });
+      });
+
       it('filters by "archived" status', async function () {
         const response = await apos.http.get(
           recentApi(), {

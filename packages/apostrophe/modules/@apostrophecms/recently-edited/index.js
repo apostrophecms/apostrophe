@@ -214,7 +214,7 @@ module.exports = {
       // `name` - unique choice identifier (e.g. 'imported', 'translated')
       // `label` - i18n key for the dropdown choice label
       // `criteria` - a standard MongoDB criteria object (e.g.
-      //   `{ lastPublishedAt: { $exists: true } }`), or a function
+      //   `{ lastPublishedAt: { $ne: null } }`), or a function
       //   receiving `{ cutoffDate }` and returning one when the
       //   criteria must be computed at query time (e.g. rolling date
       //   windows). `cutoffDate` is the `Date` marking the start of
@@ -332,9 +332,11 @@ module.exports = {
       // Resolve the MongoDB criteria for a registered filter choice.
       // Returns the criteria object — calls it if it's a function,
       // passing `{ cutoffDate }` for dynamic date-based choices.
-      getFilterCriteria(entry) {
+      // The `cutoffDate` argument should come from `query.get('cutoffDate')`
+      // to ensure a single consistent date across all builders per query.
+      getFilterCriteria(entry, cutoffDate) {
         return typeof entry.criteria === 'function'
-          ? entry.criteria({ cutoffDate: self.getCutoffDate() })
+          ? entry.criteria({ cutoffDate })
           : entry.criteria;
       },
       async createIndexes() {
@@ -385,20 +387,20 @@ module.exports = {
           type: 'status',
           name: 'live',
           label: 'apostrophe:live',
-          criteria: { lastPublishedAt: { $exists: true } }
+          criteria: { lastPublishedAt: { $ne: null } }
         });
         self.addFilterChoice({
           type: 'status',
           name: 'draft',
           label: 'apostrophe:draft',
-          criteria: { lastPublishedAt: { $exists: false } }
+          criteria: { lastPublishedAt: null }
         });
         self.addFilterChoice({
           type: 'status',
           name: 'modified',
           label: 'apostrophe:pendingUpdates',
           criteria: {
-            lastPublishedAt: { $exists: true },
+            lastPublishedAt: { $ne: null },
             $expr: {
               $gt: [ '$updatedAt', '$lastPublishedAt' ]
             }
@@ -422,16 +424,18 @@ module.exports = {
   extendMethods(self) {
     return {
       find(_super, req, criteria, options) {
+        const cutoffDate = self.getCutoffDate();
         return _super(req, criteria, options)
           .type(null)
           .locale(null)
           .attachments(false)
           .areas(false)
           .relationships(false)
+          .cutoffDate(cutoffDate)
           .and({
             type: { $in: self.managedTypeNames },
             aposMode: 'draft',
-            updatedAt: { $gte: self.getCutoffDate() }
+            updatedAt: { $gte: cutoffDate }
           })
           .sort({
             updatedAt: -1,
@@ -476,6 +480,7 @@ module.exports = {
   queries(self, query) {
     return {
       builders: {
+        cutoffDate: {},
         _docType: {
           def: null,
           launder(value) {
@@ -651,6 +656,7 @@ module.exports = {
             if (!value) {
               return;
             }
+            const cutoffDate = query.get('cutoffDate');
             if (Array.isArray(value)) {
               if (!value.length) {
                 return;
@@ -664,14 +670,14 @@ module.exports = {
                 }
                 if (entry.archived) {
                   needsArchivedNull = true;
-                  const criteria = self.getFilterCriteria(entry);
+                  const criteria = self.getFilterCriteria(entry, cutoffDate);
                   if (criteria) {
                     orClauses.push({ $and: [ { archived: true }, criteria ] });
                   } else {
                     orClauses.push({ archived: true });
                   }
                 } else {
-                  const criteria = self.getFilterCriteria(entry);
+                  const criteria = self.getFilterCriteria(entry, cutoffDate);
                   if (criteria) {
                     orClauses.push(criteria);
                   }
@@ -689,7 +695,7 @@ module.exports = {
                 if (entry.archived) {
                   query.archived(true);
                 }
-                const criteria = self.getFilterCriteria(entry);
+                const criteria = self.getFilterCriteria(entry, cutoffDate);
                 if (criteria) {
                   query.and(criteria);
                 }
@@ -720,6 +726,7 @@ module.exports = {
             if (!value) {
               return;
             }
+            const cutoffDate = query.get('cutoffDate');
             if (Array.isArray(value)) {
               if (!value.length) {
                 return;
@@ -730,7 +737,7 @@ module.exports = {
                 if (!entry) {
                   continue;
                 }
-                const criteria = self.getFilterCriteria(entry);
+                const criteria = self.getFilterCriteria(entry, cutoffDate);
                 if (criteria) {
                   orClauses.push(criteria);
                 }
@@ -741,7 +748,7 @@ module.exports = {
             } else {
               const entry = self.filterChoiceRegistry.action[value];
               if (entry) {
-                const criteria = self.getFilterCriteria(entry);
+                const criteria = self.getFilterCriteria(entry, cutoffDate);
                 if (criteria) {
                   query.and(criteria);
                 }
