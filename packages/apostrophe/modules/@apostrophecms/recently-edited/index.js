@@ -468,6 +468,18 @@ module.exports = {
             _id: 1
           });
       },
+      // Remove UI-computed column fields (_localeLabel, _lastEditor)
+      // from the projection to mute warnings - they don't exist in the DB and are
+      // explicitly supported by the custom manager component.
+      getManagerApiProjection(_super, req) {
+        const projection = _super(req);
+        for (const key of Object.keys(projection)) {
+          if ([ '_localeLabel', '_lastEditor' ].includes(key)) {
+            delete projection[key];
+          }
+        }
+        return projection;
+      },
       // Inject the manager API projection into req.query before the
       // parent processes it via applyBuildersSafely. If the client
       // already sends a projection (e.g. { _id: 1 } for select-all),
