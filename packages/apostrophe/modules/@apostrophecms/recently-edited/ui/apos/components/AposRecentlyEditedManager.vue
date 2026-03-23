@@ -302,13 +302,13 @@ onUnmounted(() => {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--a-background-overlay);
+  width: 100%;
+  height: 100%;
   transition: opacity 300ms ease;
+  background-color: var(--a-background-overlay);
 }
 
 .apos-recently-edited__active-filters {

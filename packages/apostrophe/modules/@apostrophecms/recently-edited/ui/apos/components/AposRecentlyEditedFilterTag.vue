@@ -49,6 +49,7 @@ defineEmits([ 'clear' ]);
 
   &:hover {
     border-color: var(--a-base-5);
+
     .apos-recently-edited-filter-tag__close-icon {
       color: var(--a-primary);
     }
