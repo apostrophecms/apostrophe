@@ -1,5 +1,8 @@
 <template>
-  <span class="apos-recently-edited__cell-title">
+  <span
+    class="apos-recently-edited__cell-title"
+    data-apos-test="recently-edited-cell-title"
+  >
     <button
       class="apos-table__cell-field"
       :class="`apos-table__cell-field--${header.name}`"
@@ -11,6 +14,7 @@
       v-if="item._url"
       :href="item._url"
       class="apos-recently-edited__cell-link"
+      data-apos-test="recently-edited-cell-link"
       target="_blank"
       @click.stop
     >

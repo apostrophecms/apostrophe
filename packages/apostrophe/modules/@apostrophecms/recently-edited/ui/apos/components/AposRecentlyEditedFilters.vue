@@ -2,8 +2,12 @@
   <AposContextMenu
     :button="button"
     menu-placement="bottom-end"
+    identifier="recently-edited-filter-menu"
   >
-    <div class="apos-recently-edited-filters">
+    <div
+      class="apos-recently-edited-filters"
+      data-apos-test="recently-edited-filters"
+    >
       <div class="apos-recently-edited-filters__header">
         <h3 class="apos-recently-edited-filters__title">
           {{ $t('apostrophe:recentlyEditedFilters') }}
@@ -11,6 +15,7 @@
         <button
           type="button"
           class="apos-recently-edited-filters__clear"
+          data-apos-test="recently-edited-filter-reset"
           @click="clearFilters"
         >
           {{ $t('apostrophe:recentlyEditedResetFilters') }}
@@ -20,6 +25,7 @@
         v-for="filterSet in filterSets"
         :key="filterSet.key"
         class="apos-recently-edited-filters__row"
+        :data-apos-test="'recently-edited-filter-' + filterSet.name"
       >
         <component
           :is="COMPONENT_MAP[filterSet.field.type] || COMPONENT_MAP.select"

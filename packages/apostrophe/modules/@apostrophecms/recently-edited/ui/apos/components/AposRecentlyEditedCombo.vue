@@ -11,6 +11,7 @@
         ref="root"
         class="apos-input-wrapper"
         :class="modifierClasses"
+        :data-apos-test="'recently-edited-combo-' + field.name"
         @keyup.esc="onEscKeyup"
       >
         <ul
@@ -65,6 +66,7 @@
           v-show="isOpen"
           :id="listId"
           class="apos-combo-filter__list"
+          data-apos-test="recently-edited-combo-list"
           role="listbox"
           :aria-label="$t(field.label || 'apostrophe:filter')"
         >

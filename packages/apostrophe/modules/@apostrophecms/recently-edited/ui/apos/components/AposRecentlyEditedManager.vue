@@ -80,6 +80,7 @@
           <div
             v-else-if="!isLoading"
             class="apos-pieces-manager__empty"
+            data-apos-test="recently-edited-empty"
           >
             <AposEmptyState :empty-state="emptyDisplay" />
             <div
@@ -90,6 +91,7 @@
                 v-if="hasActiveSearch"
                 type="button"
                 class="apos-recently-edited__clear-all"
+                data-apos-test="recently-edited-clear-search"
                 @click="handleClearSearch"
               >
                 {{ $t('apostrophe:recentlyEditedClearSearch') }}
@@ -98,6 +100,7 @@
                 v-if="hasActiveFilters"
                 type="button"
                 class="apos-recently-edited__clear-all"
+                data-apos-test="recently-edited-clear-filters"
                 @click="clearAllFilters"
               >
                 {{ $t('apostrophe:recentlyEditedClearAllFilters') }}
@@ -107,10 +110,12 @@
           <div
             ref="scrollSentinel"
             class="apos-recently-edited__sentinel"
+            data-apos-test="recently-edited-sentinel"
           />
           <div
             v-if="isLoadingMore"
             class="apos-recently-edited__loading"
+            data-apos-test="recently-edited-loading-more"
           >
             {{ $t('apostrophe:loadingMore') }}
           </div>

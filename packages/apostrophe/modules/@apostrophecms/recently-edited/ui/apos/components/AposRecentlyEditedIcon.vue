@@ -2,6 +2,7 @@
   <AposButton
     icon="recently-edited-icon"
     type="subtle"
+    data-apos-test="recently-edited-icon"
     :modifiers="['small', 'no-motion']"
     :tooltip="$t('apostrophe:recentlyEditedDocuments')"
     :icon-only="true"
