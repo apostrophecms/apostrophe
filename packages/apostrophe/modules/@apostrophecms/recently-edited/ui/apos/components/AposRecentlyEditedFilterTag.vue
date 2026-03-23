@@ -39,15 +39,19 @@ defineEmits([ 'clear' ]);
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border: 1px solid var(--a-base-8);
     border-radius: var(--a-border-radius);
     background-color: var(--a-white);
     white-space: nowrap;
+    line-height: 1.1;
   }
 
   &:hover {
     border-color: var(--a-base-5);
+    .apos-recently-edited-filter-tag__close-icon {
+      color: var(--a-primary);
+    }
   }
 }
 
@@ -64,7 +68,6 @@ defineEmits([ 'clear' ]);
 .apos-recently-edited-filter-tag__value {
   overflow: hidden;
   max-width: 200px;
-  font-weight: var(--a-weight-bold);
   text-overflow: ellipsis;
 }
 </style>

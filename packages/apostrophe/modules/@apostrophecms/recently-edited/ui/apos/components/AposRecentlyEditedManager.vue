@@ -45,10 +45,12 @@
             @set-all-pieces-selection="setAllPiecesSelection"
           />
           <div class="apos-recently-edited__filters-bar">
-            <AposSpinner
+            <div
               v-if="isLoading"
-              class="apos-recently-edited__spinner"
-            />
+              class="apos-recently-edited__loading-spinner-container"
+            >
+              <AposSpinner class="apos-recently-edited__spinner" />
+            </div>
             <div
               v-if="activeFilterTags.length"
               class="apos-recently-edited__active-filters"
@@ -295,8 +297,18 @@ onUnmounted(() => {
   padding-top: 12px;
 }
 
-.apos-recently-edited__spinner {
-  margin-right: auto;
+.apos-recently-edited__loading-spinner-container {
+  z-index: $z-index-admin-bar;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--a-background-overlay);
+  transition: opacity 300ms ease;
 }
 
 .apos-recently-edited__active-filters {
