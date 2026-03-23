@@ -361,5 +361,135 @@ describe('Layout Widget Migration', function () {
       });
       assert.notEqual(base._id, extended._id);
     });
+
+    it('converts old-schema widget to flat fields for extended column type', function () {
+      const migrate = apos.modules['test-column-widget'].migrateColumnWidget;
+      const doc = {
+        type: 'default-page',
+        main: {
+          _id: 'area1',
+          metaType: 'area',
+          items: [
+            {
+              _id: 'w1',
+              type: 'test-column',
+              metaType: 'widget',
+              desktop: {
+                colstart: 2,
+                colspan: 4,
+                rowstart: 1,
+                rowspan: 2,
+                order: 1,
+                justify: 'start',
+                align: 'center'
+              },
+              tablet: {
+                show: true,
+                order: 3
+              },
+              mobile: {
+                show: false,
+                order: 4
+              }
+            }
+          ]
+        }
+      };
+
+      const changed = migrate(doc);
+      const item = doc.main.items[0];
+
+      assert.equal(changed, true);
+      assert.equal(item.colstart, 2);
+      assert.equal(item.colspan, 4);
+      assert.equal(item.rowstart, 1);
+      assert.equal(item.rowspan, 2);
+      assert.equal(item.order, 1);
+      assert.equal(item.justify, 'start');
+      assert.equal(item.align, 'center');
+      assert.equal(item.showTablet, true);
+      assert.equal(item.showMobile, false);
+      assert.equal(item.desktop, undefined);
+      assert.equal(item.tablet, undefined);
+      assert.equal(item.mobile, undefined);
+    });
+
+    it('does not migrate base column widgets when using extended migrate', function () {
+      const migrate = apos.modules['test-column-widget'].migrateColumnWidget;
+      const doc = {
+        type: 'default-page',
+        main: {
+          _id: 'area1',
+          metaType: 'area',
+          items: [
+            {
+              _id: 'w1',
+              type: '@apostrophecms/layout-column',
+              metaType: 'widget',
+              desktop: {
+                colstart: 1,
+                colspan: 6
+              },
+              tablet: {},
+              mobile: {}
+            }
+          ]
+        }
+      };
+
+      const changed = migrate(doc);
+      assert.equal(changed, false);
+      assert.deepEqual(doc.main.items[0].desktop, {
+        colstart: 1,
+        colspan: 6
+      });
+    });
+
+    it('migrates deeply nested areas for extended column type', function () {
+      const migrate = apos.modules['test-column-widget'].migrateColumnWidget;
+      const doc = {
+        type: 'default-page',
+        main: {
+          _id: 'area1',
+          metaType: 'area',
+          items: [
+            {
+              _id: 'w-outer',
+              type: '@apostrophecms/some-widget',
+              metaType: 'widget',
+              content: {
+                _id: 'area2',
+                metaType: 'area',
+                items: [
+                  {
+                    _id: 'w-inner',
+                    type: 'test-column',
+                    metaType: 'widget',
+                    desktop: {
+                      colstart: 5,
+                      colspan: 3
+                    },
+                    tablet: { show: false },
+                    mobile: { show: true }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      };
+
+      const changed = migrate(doc);
+      const inner = doc.main.items[0].content.items[0];
+
+      assert.equal(changed, true);
+      assert.equal(inner.colstart, 5);
+      assert.equal(inner.colspan, 3);
+      assert.equal(inner.showTablet, false);
+      assert.equal(inner.showMobile, true);
+      assert.equal(inner.desktop, undefined);
+      assert.equal(inner.tablet, undefined);
+      assert.equal(inner.mobile, undefined);
+    });
   });
 });
