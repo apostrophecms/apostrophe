@@ -98,6 +98,32 @@ module.exports = {
       }
     };
   },
+  columns: {
+    add: {
+      title: {
+        label: 'apostrophe:title',
+        component: 'AposCellTitle'
+      },
+      type: {
+        label: 'apostrophe:type',
+        component: 'AposCellType'
+      },
+      _localeLabel: {
+        label: 'apostrophe:locale',
+        component: 'AposCellBasic'
+      },
+      _lastEditor: {
+        label: 'apostrophe:lastEditor',
+        component: 'AposCellBasic'
+      },
+      updatedAt: {
+        label: 'apostrophe:lastEdited',
+        component: 'AposCellLastEdited'
+      }
+    },
+    remove: [ 'labels' ],
+    order: [ 'title', 'type', '_localeLabel', '_lastEditor', 'updatedAt' ]
+  },
   filters: {
     add: {
       _editedBy: {
@@ -564,23 +590,45 @@ module.exports = {
             if (!value) {
               return;
             }
-            if (Array.isArray(value)) {
-              if (value.length) {
-                query.and({ 'updatedBy._id': { $in: value } });
-              }
+            const values = Array.isArray(value) ? value : [ value ];
+            if (!values.length) {
+              return;
+            }
+            const hasSystem = values.includes('__system');
+            const userIds = values.filter(v => v !== '__system');
+            const conditions = [];
+            if (userIds.length) {
+              conditions.push({ 'updatedBy._id': { $in: userIds } });
+            }
+            if (hasSystem) {
+              conditions.push({ 'updatedBy._id': null });
+            }
+            if (conditions.length === 1) {
+              query.and(conditions[0]);
             } else {
-              query.and({ 'updatedBy._id': value });
+              query.and({ $or: conditions });
             }
           },
           async choices() {
             const users = await self.distinctFromQuery(query, 'updatedBy');
-
-            return users
-              .filter(user => user && user._id)
-              .map(user => ({
-                value: user._id,
-                label: user.title || user.username || user._id
-              }));
+            const choices = [];
+            for (const user of users) {
+              if (!user) {
+                continue;
+              }
+              if (user._id) {
+                choices.push({
+                  value: user._id,
+                  label: user.title || user.username || user._id
+                });
+              } else if (user.title) {
+                choices.push({
+                  value: '__system',
+                  label: user.title
+                });
+              }
+            }
+            return choices;
           }
         },
         _locale: {

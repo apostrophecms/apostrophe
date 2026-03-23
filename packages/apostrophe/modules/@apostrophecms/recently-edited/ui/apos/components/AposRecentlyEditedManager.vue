@@ -212,33 +212,7 @@ const displayOptions = computed(() => ({
   batchOperations: batchOperations.value
 }));
 
-const headers = [
-  {
-    label: 'apostrophe:title',
-    name: 'title',
-    component: 'AposCellTitle'
-  },
-  {
-    label: 'apostrophe:type',
-    name: 'type',
-    component: 'AposCellType'
-  },
-  {
-    label: 'apostrophe:locale',
-    name: '_localeLabel',
-    component: 'AposCellBasic'
-  },
-  {
-    label: 'apostrophe:lastEditor',
-    name: '_lastEditor',
-    component: 'AposCellBasic'
-  },
-  {
-    label: 'apostrophe:lastEdited',
-    name: 'updatedAt',
-    component: 'AposCellLastEdited'
-  }
-];
+const headers = moduleOptions.value.columns || [];
 
 async function editDoc(item) {
   if (!item._edit) {
