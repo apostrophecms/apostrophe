@@ -52,6 +52,19 @@ module.exports = self => {
 
         self.apos.doc.addContextOperation(exportOperation);
         self.apos.doc.addContextOperation(importOperation);
+      },
+      registerImportedFilterAction() {
+        const recentlyEdited = self.apos.recentlyEdited;
+        if (recentlyEdited?.addFilterChoice) {
+          recentlyEdited.addFilterChoice({
+            type: 'action',
+            name: 'imported',
+            label: 'aposImportExport:recentlyEditedActionImported',
+            criteria({ cutoffDate }) {
+              return { importedAt: { $gte: cutoffDate } };
+            }
+          });
+        }
       }
     },
     'apostrophe:destroy': {

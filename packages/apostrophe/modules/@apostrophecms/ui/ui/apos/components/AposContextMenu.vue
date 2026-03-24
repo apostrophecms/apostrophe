@@ -41,7 +41,7 @@
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
         tabindex="0"
-        @keyup.tab="onKeyup"
+        @keydown.tab="onKeydownTab"
         @keyup.esc="onKeyup"
         @keyup.enter="onKeyup"
       >
@@ -75,7 +75,7 @@
             ...popoverClass
           ]"
           tabindex="0"
-          @keyup.tab="onKeyup"
+          @keydown.tab="onKeydownTab"
           @keyup.esc="onKeyup"
           @keyup.enter="onKeyup"
         >
@@ -559,11 +559,26 @@ const ignoreInputTypes = [
   'week'
 ];
 
+// Handle Tab on keydown — before the browser moves focus.
+// At keydown time document.activeElement is the element the user
+// is on (the source), and preventDefault() can stop the browser's
+// default focus movement.
+function onKeydownTab(event) {
+  if (!isOpen.value || modalDepth.value !== modalStore.getDepth()) {
+    return;
+  }
+  if (event.target?.nodeName?.toLowerCase() === 'textarea') {
+    return;
+  }
+  event.stopImmediatePropagation();
+  onTab(event);
+}
+
 /**
  * @param {KeyboardEvent} event
  */
 function onKeyup(event) {
-  if (modalDepth.value !== modalStore.getDepth() || !isOpen.value) {
+  if (!isOpen.value || modalDepth.value !== modalStore.getDepth()) {
     return;
   }
 
@@ -572,7 +587,6 @@ function onKeyup(event) {
 
   if (event.key === 'Tab' && target?.nodeName?.toLowerCase() !== 'textarea') {
     event.stopImmediatePropagation();
-    onTab(event);
     return;
   }
 

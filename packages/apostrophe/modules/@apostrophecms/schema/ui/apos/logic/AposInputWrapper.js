@@ -26,7 +26,7 @@ export default {
       default: null
     },
     uid: {
-      type: Number,
+      type: [ String, Number ],
       required: true
     },
     modifiers: {

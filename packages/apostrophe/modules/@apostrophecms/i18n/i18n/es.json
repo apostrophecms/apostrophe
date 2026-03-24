@@ -324,7 +324,6 @@
   "localizeLocalized": "Localizado",
   "localizeNewRelated": "Traducir nuevos documentos relacionados",
   "localizeNotYetLocalized": "No localizado aún",
-  "localized": "El {{ type }} {{ title }} ha sido traducido a la configuración regional {{ locale }}",
   "localizedBatch": "Procesado {{ count }} {{ type }}",
   "localizedBatchFailed": "Error al localizar {{ type }}",
   "localizedBatchWithFailures": "Procesado {{ count }} {{ type }} ({{ bad }} de {{ total }} fallaron)",

@@ -1553,7 +1553,8 @@ module.exports = {
         ];
 
         function validate ({
-          action, context, type = 'modal', label, modal, conditions, if: ifProps
+          action, context, type = 'modal', label, modal, conditions, if: ifProps,
+          crossLocale
         }) {
           const allowedConditions = [
             'canPublish',
@@ -1594,6 +1595,15 @@ module.exports = {
           ) {
             throw self.apos.error(
               'invalid', 'The if property in addContextOperation must be an object containing properties and values that will be checked against the current document in order to show or not the context operation.'
+            );
+          }
+
+          if (
+            crossLocale !== undefined &&
+            typeof crossLocale !== 'boolean'
+          ) {
+            throw self.apos.error(
+              'invalid', 'The crossLocale property in addContextOperation must be a boolean.'
             );
           }
         }

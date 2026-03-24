@@ -197,13 +197,24 @@ export default {
       }
     },
     canSelectAll() {
-      return this.displayedItems;
+      return this.displayedItems && this.batchOperations.length;
     },
     canArchive() {
       return this.checkedCount;
     },
     hasSearch() {
       return !this.options.noSearch;
+    }
+  },
+  watch: {
+    batchOperations() {
+      this.computeActiveOperations();
+    },
+    filterValues: {
+      deep: true,
+      handler() {
+        this.computeActiveOperations();
+      }
     }
   },
   mounted () {

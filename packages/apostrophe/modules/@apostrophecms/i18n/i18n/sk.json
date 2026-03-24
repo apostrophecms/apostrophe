@@ -324,7 +324,6 @@
   "localizeLocalized": "Lokalizované",
   "localizeNewRelated": "Preložte nové súvisiace dokumenty",
   "localizeNotYetLocalized": "Ešte nie je lokalizované",
-  "localized": "Preložené {{ type }} {{ title }} do {{ locale }}",
   "localizedBatch": "Spracované {{ count }} {{ type }}",
   "localizedBatchFailed": "Lokalizácia {{ type }} zlyhala",
   "localizedBatchWithFailures": "Spracované {{ count }} {{ type }} ({{ bad }} z {{ total }} zlyhalo)",
