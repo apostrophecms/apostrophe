@@ -637,7 +637,7 @@ describe('Expired Token Deletion', function() {
     const jar = apos.http.jar();
 
     // establish session
-    let page = await apos.http.get(
+    await apos.http.get(
       '/',
       {
         jar
