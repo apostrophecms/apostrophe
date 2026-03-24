@@ -31,8 +31,8 @@
         :item="item"
         :tablet-full-items="tabletFullItems"
         :data-tablet-full="tabletFullItems[item._id] || false"
-        :data-visible-tablet="item.tablet?.show"
-        :data-visible-mobile="item.mobile?.show"
+        :data-visible-tablet="item.showTablet !== false"
+        :data-visible-mobile="item.showMobile !== false"
         :data-id="`${ item._id }`"
       >
         <div
@@ -188,12 +188,12 @@ export default {
         return {};
       }
       const items = this.gridState.current.items
-        .filter(widget => widget.tablet.show);
+        .filter(widget => widget.showTablet !== false);
       if (items.length % 2 === 0) {
         return {};
       }
       items.sort((a, b) =>
-        (a.tablet.order ?? a.order) - (b.tablet.order ?? b.order)
+        (a.order ?? 0) - (b.order ?? 0)
       );
       const lastId = items[items.length - 1]._id;
       return {
