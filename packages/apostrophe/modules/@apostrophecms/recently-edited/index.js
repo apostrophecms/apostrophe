@@ -11,6 +11,7 @@ module.exports = {
     pluralLabel: 'apostrophe:recentlyEditedDocuments',
     quickCreate: false,
     showCreate: false,
+    showPermissions: false,
     // 30-day window
     recentDays: 30,
     // Developer-configurable type exclusion
