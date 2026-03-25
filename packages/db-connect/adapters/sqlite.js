@@ -1137,7 +1137,10 @@ class SqliteCursor {
     const tableName = this._collection._quotedTableName();
     const whereClause = buildWhereClause(this._query, params, 'data', queryOptions);
     const hasText = queryHasText(this._query) && queryOptions.ftsTable;
-    const orderBy = buildOrderBy(this._sort, { hasTextScore: hasText, mainTable: hasText ? tableName : null });
+    const orderBy = buildOrderBy(this._sort, {
+      hasTextScore: hasText,
+      mainTable: hasText ? tableName : null
+    });
 
     let selectCols = `${tableName}._id, ${tableName}.data`;
     let sql;
@@ -1204,7 +1207,10 @@ class SqliteCursor {
       const tableName = this._collection._quotedTableName();
       const whereClause = buildWhereClause(this._query, params, 'data', queryOptions);
       const hasText = queryHasText(this._query) && queryOptions.ftsTable;
-      const orderBy = buildOrderBy(this._sort, { hasTextScore: hasText, mainTable: hasText ? tableName : null });
+      const orderBy = buildOrderBy(this._sort, {
+        hasTextScore: hasText,
+        mainTable: hasText ? tableName : null
+      });
 
       let selectCols = `${tableName}._id, ${tableName}.data`;
       let sql;
@@ -1828,28 +1834,44 @@ class SqliteCollection {
         `SELECT rowid FROM ${tableName} WHERE ${whereClause} LIMIT 1`
       ).get(...params);
       if (!row) {
-        return { acknowledged: true, deletedCount: 0, result: { ok: 1 } };
+        return {
+          acknowledged: true,
+          deletedCount: 0,
+          result: { ok: 1 }
+        };
       }
       this._db._sqlite.prepare(`DELETE FROM ${fts} WHERE rowid = ?`).run(row.rowid);
       this._db._sqlite.prepare(`DELETE FROM ${tableName} WHERE rowid = ?`).run(row.rowid);
-      return { acknowledged: true, deletedCount: 1, result: { ok: 1 } };
+      return {
+        acknowledged: true,
+        deletedCount: 1,
+        result: { ok: 1 }
+      };
     }
 
     // Even without _textFields set, clean up FTS entries if the FTS table exists
     const fts = this._ftsTableName();
     const ftsExists = this._db._sqlite.prepare(
-      `SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`
+      'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=?'
     ).get(this._tableName + '_fts');
     if (ftsExists) {
       const row = this._db._sqlite.prepare(
         `SELECT rowid FROM ${tableName} WHERE ${whereClause} LIMIT 1`
       ).get(...params);
       if (!row) {
-        return { acknowledged: true, deletedCount: 0, result: { ok: 1 } };
+        return {
+          acknowledged: true,
+          deletedCount: 0,
+          result: { ok: 1 }
+        };
       }
       this._db._sqlite.prepare(`DELETE FROM ${fts} WHERE rowid = ?`).run(row.rowid);
       this._db._sqlite.prepare(`DELETE FROM ${tableName} WHERE rowid = ?`).run(row.rowid);
-      return { acknowledged: true, deletedCount: 1, result: { ok: 1 } };
+      return {
+        acknowledged: true,
+        deletedCount: 1,
+        result: { ok: 1 }
+      };
     }
 
     const result = this._db._sqlite.prepare(
@@ -1885,7 +1907,11 @@ class SqliteCollection {
           deleteMain.run(row.rowid);
         }
       }
-      return { acknowledged: true, deletedCount: rows.length, result: { ok: 1 } };
+      return {
+        acknowledged: true,
+        deletedCount: rows.length,
+        result: { ok: 1 }
+      };
     }
 
     // Even without _textFields set (e.g. a separate connection that never
@@ -1893,7 +1919,7 @@ class SqliteCollection {
     // This prevents stale FTS data when external tools delete documents.
     const fts = this._ftsTableName();
     const ftsExists = this._db._sqlite.prepare(
-      `SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`
+      'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=?'
     ).get(this._tableName + '_fts');
     if (ftsExists) {
       const rows = this._db._sqlite.prepare(
@@ -1907,7 +1933,11 @@ class SqliteCollection {
           deleteMain.run(row.rowid);
         }
       }
-      return { acknowledged: true, deletedCount: rows.length, result: { ok: 1 } };
+      return {
+        acknowledged: true,
+        deletedCount: rows.length,
+        result: { ok: 1 }
+      };
     }
 
     const result = this._db._sqlite.prepare(

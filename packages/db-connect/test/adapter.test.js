@@ -2460,7 +2460,10 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         await col.drop();
       } catch (e) { /* ignore */ }
       // Create a text index on title and body
-      await col.createIndex({ title: 'text', body: 'text' });
+      await col.createIndex({
+        title: 'text',
+        body: 'text'
+      });
       // Insert documents with varying relevance to "database migration"
       await col.insertMany([
         {
@@ -2552,72 +2555,75 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
 
     it('should rank results by relevance when sorted by textScore', async function() {
-        const results = await db.collection('search')
-          .find({ $text: { $search: 'database migration' } })
-          .sort({ score: { $meta: 'textScore' } })
-          .project({ score: { $meta: 'textScore' } })
-          .toArray();
+      const results = await db.collection('search')
+        .find({ $text: { $search: 'database migration' } })
+        .sort({ score: { $meta: 'textScore' } })
+        .project({ score: { $meta: 'textScore' } })
+        .toArray();
         // full-match has "database" 2x and "migration" 2x — should rank first
-        expect(results.length).to.be.at.least(3);
-        expect(results[0]._id).to.equal('full-match');
+      expect(results.length).to.be.at.least(3);
+      expect(results[0]._id).to.equal('full-match');
+    });
+
+    it('should expose textScore via $meta projection', async function() {
+      const results = await db.collection('search')
+        .find({ $text: { $search: 'database migration' } })
+        .sort({ score: { $meta: 'textScore' } })
+        .project({
+          title: 1,
+          score: { $meta: 'textScore' }
+        })
+        .toArray();
+      expect(results.length).to.be.at.least(1);
+      // Each result should have a numeric score
+      for (const doc of results) {
+        expect(doc.score).to.be.a('number');
+        expect(doc.score).to.be.greaterThan(0);
+        // Projection should still include requested fields
+        expect(doc.title).to.be.a('string');
+      }
+      // Higher-relevance doc should have a higher score
+      const fullMatch = results.find(d => d._id === 'full-match');
+      const titleOnly = results.find(d => d._id === 'title-only');
+      if (fullMatch && titleOnly) {
+        expect(fullMatch.score).to.be.greaterThan(titleOnly.score);
+      }
+    });
+
+    it('should support sorting by $meta textScore', async function() {
+      const results = await db.collection('search')
+        .find({ $text: { $search: 'database migration' } })
+        .sort({ score: { $meta: 'textScore' } })
+        .project({ score: { $meta: 'textScore' } })
+        .toArray();
+      expect(results.length).to.be.at.least(2);
+      // Scores should be in descending order
+      for (let i = 1; i < results.length; i++) {
+        expect(results[i - 1].score).to.be.at.least(results[i].score);
+      }
+    });
+
+    it('should sort by relevance with textScore among other sort fields', async function() {
+      // Insert additional docs to make ranking clearer
+      const col = db.collection('search');
+      await col.insertOne({
+        _id: 'weak-match',
+        title: 'Random Notes',
+        body: 'Contains the word database once among other unrelated content about gardening and weather.'
       });
 
-      it('should expose textScore via $meta projection', async function() {
-        const results = await db.collection('search')
-          .find({ $text: { $search: 'database migration' } })
-          .sort({ score: { $meta: 'textScore' } })
-          .project({ title: 1, score: { $meta: 'textScore' } })
-          .toArray();
-        expect(results.length).to.be.at.least(1);
-        // Each result should have a numeric score
-        for (const doc of results) {
-          expect(doc.score).to.be.a('number');
-          expect(doc.score).to.be.greaterThan(0);
-          // Projection should still include requested fields
-          expect(doc.title).to.be.a('string');
-        }
-        // Higher-relevance doc should have a higher score
-        const fullMatch = results.find(d => d._id === 'full-match');
-        const titleOnly = results.find(d => d._id === 'title-only');
-        if (fullMatch && titleOnly) {
-          expect(fullMatch.score).to.be.greaterThan(titleOnly.score);
-        }
-      });
+      const results = await col
+        .find({ $text: { $search: 'database migration' } })
+        .sort({ score: { $meta: 'textScore' } })
+        .project({ score: { $meta: 'textScore' } })
+        .toArray();
 
-      it('should support sorting by $meta textScore', async function() {
-        const results = await db.collection('search')
-          .find({ $text: { $search: 'database migration' } })
-          .sort({ score: { $meta: 'textScore' } })
-          .project({ score: { $meta: 'textScore' } })
-          .toArray();
-        expect(results.length).to.be.at.least(2);
-        // Scores should be in descending order
-        for (let i = 1; i < results.length; i++) {
-          expect(results[i - 1].score).to.be.at.least(results[i].score);
-        }
-      });
-
-      it('should sort by relevance with textScore among other sort fields', async function() {
-        // Insert additional docs to make ranking clearer
-        const col = db.collection('search');
-        await col.insertOne({
-          _id: 'weak-match',
-          title: 'Random Notes',
-          body: 'Contains the word database once among other unrelated content about gardening and weather.'
-        });
-
-        const results = await col
-          .find({ $text: { $search: 'database migration' } })
-          .sort({ score: { $meta: 'textScore' } })
-          .project({ score: { $meta: 'textScore' } })
-          .toArray();
-
-        expect(results.length).to.be.at.least(2);
-        // Scores should be in descending order
-        for (let i = 1; i < results.length; i++) {
-          expect(results[i - 1].score).to.be.at.least(results[i].score);
-        }
-      });
+      expect(results.length).to.be.at.least(2);
+      // Scores should be in descending order
+      for (let i = 1; i < results.length; i++) {
+        expect(results[i - 1].score).to.be.at.least(results[i].score);
+      }
+    });
   }); // Full-Text Search
 
   if (ADAPTER === 'multipostgres') {

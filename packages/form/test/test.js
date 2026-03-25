@@ -751,7 +751,7 @@ describe('Forms module', function () {
     item.allowMultiple = true;
     await apos.doc.db.updateOne(
       { _id: savedForm1._id },
-      { $set: { 'contents': formDoc.contents } }
+      { $set: { contents: formDoc.contents } }
     );
 
     const formData = new FormData();

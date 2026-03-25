@@ -102,7 +102,7 @@ module.exports = async function restore(uriOrDb, data) {
       const result = db._sqlite.pragma('wal_checkpoint(PASSIVE)');
       if (result && result[0]) {
         // Log checkpoint result for debugging
-        const { busy, log, checkpointed } = result[0];
+        const { log, checkpointed } = result[0];
         if (log !== checkpointed) {
           // Some pages weren't checkpointed, try harder
           db._sqlite.pragma('wal_checkpoint(TRUNCATE)');
