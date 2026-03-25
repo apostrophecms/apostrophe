@@ -420,8 +420,9 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
         // FTS5 query: OR the words together for MongoDB-compatible semantics
         const ftsQuery = words.map(w => `"${w.replace(/"/g, '""')}"`).join(' OR ');
         params.push(ftsQuery);
+        const rowidRef = options.mainTable ? `${options.mainTable}.rowid` : 'rowid';
         conditions.push(
-          `rowid IN (SELECT rowid FROM ${options.ftsTable} WHERE ${options.ftsTable} MATCH ?)`
+          `${rowidRef} IN (SELECT rowid FROM ${options.ftsTable} WHERE ${options.ftsTable} MATCH ?)`
         );
       } else {
         // Fallback LIKE-based search when no FTS5 table exists
@@ -520,11 +521,18 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
     switch (op) {
       case '$eq':
         if (isIdField) {
-          params.push(opValue);
-          conditions.push('_id = ?');
+          if (opValue === null || opValue === undefined) {
+            conditions.push('_id IS NULL');
+          } else {
+            params.push(opValue);
+            conditions.push('_id = ?');
+          }
         } else {
           const serialized = serializeValue(opValue);
-          if (typeof serialized === 'object' && serialized !== null) {
+          if (serialized === null || serialized === undefined) {
+            // SQL: = NULL is always false, must use IS NULL
+            conditions.push(`(${jsonExtract} IS NULL OR json_type(data, ${jsonExtractPath}) = 'null')`);
+          } else if (typeof serialized === 'object' && serialized !== null) {
             params.push(JSON.stringify(serialized));
             conditions.push(`json(${jsonExtract}) = json(?)`);
           } else if (typeof serialized === 'boolean') {
@@ -539,11 +547,19 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
 
       case '$ne':
         if (isIdField) {
-          params.push(opValue);
-          conditions.push('(_id IS NULL OR _id != ?)');
+          if (opValue === null || opValue === undefined) {
+            conditions.push('_id IS NOT NULL');
+          } else {
+            params.push(opValue);
+            conditions.push('(_id IS NULL OR _id != ?)');
+          }
         } else {
           const serialized = serializeValue(opValue);
-          if (typeof serialized === 'object' && serialized !== null) {
+          if (serialized === null || serialized === undefined) {
+            // $ne: null means "field exists and is not null"
+            // SQL: != NULL is always false, must use IS NOT NULL
+            conditions.push(`(${jsonExtract} IS NOT NULL AND json_type(data, ${jsonExtractPath}) != 'null')`);
+          } else if (typeof serialized === 'object' && serialized !== null) {
             params.push(JSON.stringify(serialized));
             conditions.push(`(${jsonExtract} IS NULL OR json(${jsonExtract}) != json(?))`);
           } else if (typeof serialized === 'boolean') {
@@ -1819,6 +1835,23 @@ class SqliteCollection {
       return { acknowledged: true, deletedCount: 1, result: { ok: 1 } };
     }
 
+    // Even without _textFields set, clean up FTS entries if the FTS table exists
+    const fts = this._ftsTableName();
+    const ftsExists = this._db._sqlite.prepare(
+      `SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`
+    ).get(this._tableName + '_fts');
+    if (ftsExists) {
+      const row = this._db._sqlite.prepare(
+        `SELECT rowid FROM ${tableName} WHERE ${whereClause} LIMIT 1`
+      ).get(...params);
+      if (!row) {
+        return { acknowledged: true, deletedCount: 0, result: { ok: 1 } };
+      }
+      this._db._sqlite.prepare(`DELETE FROM ${fts} WHERE rowid = ?`).run(row.rowid);
+      this._db._sqlite.prepare(`DELETE FROM ${tableName} WHERE rowid = ?`).run(row.rowid);
+      return { acknowledged: true, deletedCount: 1, result: { ok: 1 } };
+    }
+
     const result = this._db._sqlite.prepare(
       `DELETE FROM ${tableName} WHERE _id IN (
         SELECT _id FROM ${tableName} WHERE ${whereClause} LIMIT 1
@@ -1841,6 +1874,28 @@ class SqliteCollection {
 
     if (this._textFields) {
       const fts = this._ftsTableName();
+      const rows = this._db._sqlite.prepare(
+        `SELECT rowid FROM ${tableName} WHERE ${whereClause}`
+      ).all(...params);
+      if (rows.length > 0) {
+        const deleteFts = this._db._sqlite.prepare(`DELETE FROM ${fts} WHERE rowid = ?`);
+        const deleteMain = this._db._sqlite.prepare(`DELETE FROM ${tableName} WHERE rowid = ?`);
+        for (const row of rows) {
+          deleteFts.run(row.rowid);
+          deleteMain.run(row.rowid);
+        }
+      }
+      return { acknowledged: true, deletedCount: rows.length, result: { ok: 1 } };
+    }
+
+    // Even without _textFields set (e.g. a separate connection that never
+    // called createIndex), clean up FTS entries if the FTS table exists.
+    // This prevents stale FTS data when external tools delete documents.
+    const fts = this._ftsTableName();
+    const ftsExists = this._db._sqlite.prepare(
+      `SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`
+    ).get(this._tableName + '_fts');
+    if (ftsExists) {
       const rows = this._db._sqlite.prepare(
         `SELECT rowid FROM ${tableName} WHERE ${whereClause}`
       ).all(...params);
@@ -2061,7 +2116,7 @@ class SqliteCollection {
 
     const safeFieldNames = keyEntries.map(([ k ]) => k.replace(/[^a-zA-Z0-9]/g, '_')).join('_');
     const indexName = options.name
-      ? validateTableName(options.name)
+      ? validateTableName(options.name.substring(0, 63))
       : `idx_${this._tableName}_${safeFieldNames}`.substring(0, 63);
 
     const mongoName = options.name || keyEntries.map(([ k, v ]) => `${k}_${v}`).join('_');
@@ -2090,7 +2145,12 @@ class SqliteCollection {
     // Handle text indexes — create an FTS5 virtual table
     const hasTextIndex = keyEntries.some(([ , v ]) => v === 'text');
     if (hasTextIndex) {
-      const textFields = keyEntries.filter(([ , v ]) => v === 'text').map(([ k ]) => k);
+      let textFields = keyEntries.filter(([ , v ]) => v === 'text').map(([ k ]) => k);
+      // MongoDB dumps store text indexes as { _fts: 'text', _ftsx: 1 }
+      // The real field names are in options.weights
+      if (textFields.length === 1 && textFields[0] === '_fts' && options.weights) {
+        textFields = Object.keys(options.weights);
+      }
       this._textFields = textFields;
 
       const fts = this._ftsTableName();
@@ -2102,6 +2162,11 @@ class SqliteCollection {
       this._db._sqlite.exec(
         `CREATE VIRTUAL TABLE IF NOT EXISTS ${fts} USING fts5(${cols}, content='', contentless_delete=1)`
       );
+
+      // Clear any stale FTS entries (important during DB restore where
+      // deleteMany runs before createIndex sets _textFields, leaving
+      // orphaned FTS entries that cause incorrect search results)
+      this._db._sqlite.exec(`DELETE FROM ${fts}`);
 
       // Backfill existing documents into the FTS5 table
       const rows = this._db._sqlite.prepare(
@@ -2540,6 +2605,8 @@ module.exports = {
 
     // Enable WAL mode for better concurrent access
     db.pragma('journal_mode = WAL');
+    // Set busy timeout to wait up to 5 seconds for locks
+    db.pragma('busy_timeout = 5000');
 
     // Register custom functions
     _registerFunctions(db);

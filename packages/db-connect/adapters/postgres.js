@@ -239,7 +239,7 @@ function parseIndexDef(indexdef) {
   const isGin = /\bUSING gin\b/.test(indexdef);
 
   if (isGin) {
-    // Text index: USING gin(to_tsvector('english', coalesce(data->>'field', '') ...))
+    // Text index: USING gin(to_tsvector('simple', coalesce(data->>'field', '') ...))
     // PostgreSQL normalizes to: COALESCE((data ->> 'field'::text), ''::text)
     const key = {};
     const fieldPattern = /coalesce\(\s*\(*(data(?:\s*->\s*'[^']*'(?:::text)?)*\s*->>\s*'[^']*'(?:::text)?)\)*\s*,\s*''(?:::text)?\s*\)/gi;
@@ -601,7 +601,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           conditions.push(`${jsonTextPath} > $${params.length}`);
         } else {
           params.push(opValue);
-          conditions.push(`(${jsonTextPath})::numeric > $${params.length}`);
+          conditions.push(`(NULLIF(${jsonTextPath}, ''))::numeric > $${params.length}`);
         }
         break;
 
@@ -617,7 +617,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           conditions.push(`${jsonTextPath} >= $${params.length}`);
         } else {
           params.push(opValue);
-          conditions.push(`(${jsonTextPath})::numeric >= $${params.length}`);
+          conditions.push(`(NULLIF(${jsonTextPath}, ''))::numeric >= $${params.length}`);
         }
         break;
 
@@ -633,7 +633,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           conditions.push(`${jsonTextPath} < $${params.length}`);
         } else {
           params.push(opValue);
-          conditions.push(`(${jsonTextPath})::numeric < $${params.length}`);
+          conditions.push(`(NULLIF(${jsonTextPath}, ''))::numeric < $${params.length}`);
         }
         break;
 
@@ -649,7 +649,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           conditions.push(`${jsonTextPath} <= $${params.length}`);
         } else {
           params.push(opValue);
-          conditions.push(`(${jsonTextPath})::numeric <= $${params.length}`);
+          conditions.push(`(NULLIF(${jsonTextPath}, ''))::numeric <= $${params.length}`);
         }
         break;
 
@@ -782,7 +782,7 @@ function buildTsvectorExpr(textFields) {
     path += `->>'${escapeString(fieldParts[fieldParts.length - 1])}'`;
     return `coalesce(${path}, '')`;
   });
-  return `to_tsvector('english', ${parts.join(' || \' \' || ')})`;
+  return `to_tsvector('simple', ${parts.join(' || \' \' || ')})`;
 }
 
 // Build the tsquery SQL expression from a search string.
@@ -793,7 +793,7 @@ function buildTsqueryParam(searchTerm, params) {
     return null;
   }
   params.push(words.map(w => w.replace(/[&|!():*<>'"]/g, ' ')).join(' | '));
-  return `to_tsquery('english', $${params.length})`;
+  return `to_tsquery('simple', $${params.length})`;
 }
 
 // Check if a query object contains a $text operator with a non-empty search string.
@@ -2396,7 +2396,12 @@ class PostgresCollection {
     // Handle text indexes (full-text search, always uses text extraction)
     const hasTextIndex = keyEntries.some(([ , v ]) => v === 'text');
     if (hasTextIndex) {
-      const textFields = keyEntries.filter(([ , v ]) => v === 'text').map(([ k ]) => k);
+      let textFields = keyEntries.filter(([ , v ]) => v === 'text').map(([ k ]) => k);
+      // MongoDB dumps store text indexes as { _fts: 'text', _ftsx: 1 }
+      // The real field names are in options.weights
+      if (textFields.length === 1 && textFields[0] === '_fts' && options.weights) {
+        textFields = Object.keys(options.weights);
+      }
       // Store the text index fields so $text queries use them
       this._textFields = textFields;
       const tsvectorExpr = textFields
@@ -2406,7 +2411,7 @@ class PostgresCollection {
       await this._pool.query(`
         CREATE INDEX IF NOT EXISTS "${escapedIndexName}"
         ON ${qualifiedName}
-        USING gin(to_tsvector('english', ${tsvectorExpr}))${whereClause}
+        USING gin(to_tsvector('simple', ${tsvectorExpr}))${whereClause}
       `);
       return indexName;
     }

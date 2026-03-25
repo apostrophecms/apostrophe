@@ -95,6 +95,20 @@ module.exports = async function restore(uriOrDb, data) {
     if (batch.length > 0 && col) {
       await col.insertMany(batch);
     }
+
+    // For SQLite: force a WAL checkpoint to ensure all changes are
+    // visible to other connections immediately
+    if (db._sqlite) {
+      const result = db._sqlite.pragma('wal_checkpoint(PASSIVE)');
+      if (result && result[0]) {
+        // Log checkpoint result for debugging
+        const { busy, log, checkpointed } = result[0];
+        if (log !== checkpointed) {
+          // Some pages weren't checkpointed, try harder
+          db._sqlite.pragma('wal_checkpoint(TRUNCATE)');
+        }
+      }
+    }
   } finally {
     if (client) {
       await client.close();
