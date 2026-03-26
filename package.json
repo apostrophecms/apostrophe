@@ -18,6 +18,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "better-sqlite3",
       "sharp",
       "vue-demi",
       "@parcel/watcher",
