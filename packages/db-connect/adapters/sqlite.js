@@ -42,6 +42,14 @@ function escapeString(str) {
   return str.replace(/'/g, '\'\'');
 }
 
+// Convert a dot-path like "body.items.0.sublabel" to a SQLite JSON path
+// like "$.body.items[0].sublabel". Numeric segments become array indices.
+function toJsonPath(dotPath) {
+  return '$.' + dotPath.split('.').map(p =>
+    /^\d+$/.test(p) ? `[${p}]` : escapeString(p)
+  ).join('.').replace(/\.\[/g, '[');
+}
+
 function validateInteger(value, name) {
   const num = Number(value);
   if (!Number.isInteger(num) || num < 0) {
@@ -1511,7 +1519,7 @@ class SqliteCollection {
 
     if (update.$set) {
       for (const [ field, value ] of Object.entries(update.$set)) {
-        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        const jsonPath = toJsonPath(field);
         const serialized = serializeValue(value);
         setParams.push(JSON.stringify(serialized));
         dataExpr = `json_set(${dataExpr}, '${jsonPath}', json(?))`;
@@ -1520,7 +1528,7 @@ class SqliteCollection {
 
     if (update.$inc) {
       for (const [ field, value ] of Object.entries(update.$inc)) {
-        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        const jsonPath = toJsonPath(field);
         setParams.push(value);
         dataExpr = `json_set(${dataExpr}, '${jsonPath}', COALESCE(json_extract(data, '${jsonPath}'), 0) + ?)`;
       }
@@ -1531,7 +1539,7 @@ class SqliteCollection {
         ? update.$unset
         : Object.keys(update.$unset);
       for (const field of fields) {
-        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        const jsonPath = toJsonPath(field);
         dataExpr = `json_remove(${dataExpr}, '${jsonPath}')`;
       }
     }
@@ -1539,7 +1547,7 @@ class SqliteCollection {
     if (update.$currentDate) {
       for (const [ field, value ] of Object.entries(update.$currentDate)) {
         if (value === true || (value && value.$type === 'date')) {
-          const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+          const jsonPath = toJsonPath(field);
           const dateVal = JSON.stringify(serializeValue(new Date()));
           setParams.push(dateVal);
           dataExpr = `json_set(${dataExpr}, '${jsonPath}', json(?))`;
@@ -1550,7 +1558,7 @@ class SqliteCollection {
     // $push: append scalar value to array
     if (update.$push) {
       for (const [ field, value ] of Object.entries(update.$push)) {
-        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        const jsonPath = toJsonPath(field);
         setParams.push(value);
         const coalesced = `COALESCE(json_extract(data, '${jsonPath}'), json('[]'))`;
         dataExpr = `json_set(${dataExpr}, '${jsonPath}', json_insert(${coalesced}, '$[#]', ?))`;
@@ -1560,7 +1568,7 @@ class SqliteCollection {
     // $pull: remove scalar value from array
     if (update.$pull) {
       for (const [ field, value ] of Object.entries(update.$pull)) {
-        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        const jsonPath = toJsonPath(field);
         setParams.push(value);
         dataExpr = `json_set(${dataExpr}, '${jsonPath}', ` +
           '(SELECT json_group_array(je.value) ' +
@@ -1572,7 +1580,7 @@ class SqliteCollection {
     // $addToSet: add scalar value to array if not already present
     if (update.$addToSet) {
       for (const [ field, value ] of Object.entries(update.$addToSet)) {
-        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        const jsonPath = toJsonPath(field);
         setParams.push(value, value);
         const coalesced = `COALESCE(json_extract(data, '${jsonPath}'), json('[]'))`;
         dataExpr = `json_set(${dataExpr}, '${jsonPath}', ` +
@@ -1603,7 +1611,15 @@ class SqliteCollection {
       };
     } catch (e) {
       if (e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && e.message.includes('UNIQUE constraint failed'))) {
-        throw makeDuplicateKeyError(e, this, {});
+        // Build a pseudo-doc from $set values so makeDuplicateKeyError
+        // can report the conflicting key values
+        const pseudoDoc = {};
+        if (update.$set) {
+          for (const [ field, value ] of Object.entries(update.$set)) {
+            setNestedField(pseudoDoc, field, value);
+          }
+        }
+        throw makeDuplicateKeyError(e, this, pseudoDoc);
       }
       throw e;
     }
