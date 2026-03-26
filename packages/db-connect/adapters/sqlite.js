@@ -6,6 +6,16 @@ const Database = require('better-sqlite3');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const {
+  serializeValue,
+  serializeDocument,
+  deserializeDocument,
+  getNestedField,
+  setNestedField,
+  deepEqual,
+  applyProjection,
+  applyUpdate
+} = require('../lib/shared');
 
 // =============================================================================
 // SECURITY: Input Validation and Escaping
@@ -43,287 +53,6 @@ function validateInteger(value, name) {
 // Generate a MongoDB-style ObjectId-like string
 function generateId() {
   return crypto.randomBytes(12).toString('hex');
-}
-
-// =============================================================================
-// Document Serialization (Date handling)
-// =============================================================================
-
-function serializeValue(obj) {
-  if (obj === undefined) {
-    return null;
-  }
-  if (obj === null) {
-    return null;
-  }
-  if (obj instanceof Date) {
-    return { $date: obj.toISOString() };
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeValue);
-  }
-  if (typeof obj === 'object') {
-    const result = {};
-    for (const [ key, value ] of Object.entries(obj)) {
-      result[key] = serializeValue(value);
-    }
-    return result;
-  }
-  return obj;
-}
-
-function serializeDocument(doc) {
-  return JSON.stringify(serializeValue(doc));
-}
-
-function convertDates(obj) {
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
-  }
-  if (obj.$date) {
-    return new Date(obj.$date);
-  }
-  if (Array.isArray(obj)) {
-    let changed = false;
-    const result = obj.map(item => {
-      const c = convertDates(item);
-      if (c !== item) {
-        changed = true;
-      }
-      return c;
-    });
-    return changed ? result : obj;
-  }
-  let changed = false;
-  const result = {};
-  for (const [ key, value ] of Object.entries(obj)) {
-    const c = convertDates(value);
-    result[key] = c;
-    if (c !== value) {
-      changed = true;
-    }
-  }
-  return changed ? result : obj;
-}
-
-function deserializeDocument(data, id) {
-  const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-  const doc = convertDates(parsed);
-  if (doc === parsed) {
-    return {
-      _id: id,
-      ...doc
-    };
-  }
-  doc._id = id;
-  return doc;
-}
-
-// =============================================================================
-// Projection (in-memory)
-// =============================================================================
-
-function getNestedField(obj, path) {
-  const parts = path.split('.');
-  let current = obj;
-  for (const part of parts) {
-    if (current == null) {
-      return undefined;
-    }
-    current = current[part];
-  }
-  return current;
-}
-
-function setNestedField(obj, path, value) {
-  const parts = path.split('.');
-  let current = obj;
-  for (let i = 0; i < parts.length - 1; i++) {
-    if (current[parts[i]] == null) {
-      current[parts[i]] = {};
-    }
-    current = current[parts[i]];
-  }
-  current[parts[parts.length - 1]] = value;
-}
-
-function unsetNestedField(obj, path) {
-  const parts = path.split('.');
-  let current = obj;
-  for (let i = 0; i < parts.length - 1; i++) {
-    if (current[parts[i]] == null) {
-      return;
-    }
-    current = current[parts[i]];
-  }
-  delete current[parts[parts.length - 1]];
-}
-
-function deepEqual(a, b) {
-  if (a === b) {
-    return true;
-  }
-  if (a == null || b == null) {
-    return false;
-  }
-  if (typeof a !== typeof b) {
-    return false;
-  }
-  if (typeof a !== 'object') {
-    return false;
-  }
-  if (Array.isArray(a) !== Array.isArray(b)) {
-    return false;
-  }
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) {
-    return false;
-  }
-  for (const key of keysA) {
-    if (!deepEqual(a[key], b[key])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function applyProjection(doc, projection, meta = {}) {
-  if (!projection || Object.keys(projection).length === 0) {
-    return doc;
-  }
-
-  const metaFields = Object.entries(projection).filter(
-    ([ k, v ]) => v && typeof v === 'object' && v.$meta
-  );
-  const fields = Object.entries(projection).filter(
-    ([ k, v ]) => !(v && typeof v === 'object' && v.$meta)
-  );
-
-  const applyMeta = (result) => {
-    for (const [ field, spec ] of metaFields) {
-      if (spec.$meta === 'textScore' && meta.textScore != null) {
-        result[field] = meta.textScore;
-      }
-    }
-    return result;
-  };
-
-  if (fields.length === 0) {
-    return applyMeta({ ...doc });
-  }
-  const isInclusion = fields.some(([ k, v ]) => v && k !== '_id');
-
-  if (isInclusion) {
-    const result = {};
-    for (const [ field, include ] of fields) {
-      if (include) {
-        const value = getNestedField(doc, field);
-        if (value !== undefined) {
-          setNestedField(result, field, value);
-        }
-      }
-    }
-    if (projection._id !== 0 && projection._id !== false) {
-      result._id = doc._id;
-    }
-    return applyMeta(result);
-  } else {
-    const result = JSON.parse(JSON.stringify(doc));
-    for (const [ field, include ] of fields) {
-      if (!include) {
-        unsetNestedField(result, field);
-      }
-    }
-    return applyMeta(result);
-  }
-}
-
-// =============================================================================
-// Update Operations (in-memory)
-// =============================================================================
-
-function applyUpdate(doc, update) {
-  // Pipeline-form update: array of stages like [{ $unset: [...] }, { $set: {...} }]
-  if (Array.isArray(update)) {
-    let result = { ...doc };
-    for (const stage of update) {
-      result = applyUpdate(result, stage);
-    }
-    return result;
-  }
-
-  const result = { ...doc };
-
-  for (const [ op, fields ] of Object.entries(update)) {
-    switch (op) {
-      case '$set':
-        for (const [ field, value ] of Object.entries(fields)) {
-          setNestedField(result, field, value);
-        }
-        break;
-      case '$unset':
-        if (Array.isArray(fields)) {
-          // Pipeline form: $unset takes an array of field names
-          for (const field of fields) {
-            unsetNestedField(result, field);
-          }
-        } else {
-          for (const field of Object.keys(fields)) {
-            unsetNestedField(result, field);
-          }
-        }
-        break;
-      case '$inc':
-        for (const [ field, value ] of Object.entries(fields)) {
-          const current = getNestedField(result, field) || 0;
-          setNestedField(result, field, current + value);
-        }
-        break;
-      case '$push':
-        for (const [ field, value ] of Object.entries(fields)) {
-          const arr = getNestedField(result, field) || [];
-          arr.push(value);
-          setNestedField(result, field, arr);
-        }
-        break;
-      case '$pull':
-        for (const [ field, value ] of Object.entries(fields)) {
-          const arr = getNestedField(result, field) || [];
-          setNestedField(result, field, arr.filter(item => !deepEqual(item, value)));
-        }
-        break;
-      case '$addToSet':
-        for (const [ field, value ] of Object.entries(fields)) {
-          const arr = getNestedField(result, field) || [];
-          if (!arr.some(item => deepEqual(item, value))) {
-            arr.push(value);
-          }
-          setNestedField(result, field, arr);
-        }
-        break;
-      case '$currentDate':
-        for (const [ field, value ] of Object.entries(fields)) {
-          if (value === true || (value && value.$type === 'date')) {
-            setNestedField(result, field, new Date());
-          }
-        }
-        break;
-      case '$rename':
-        for (const [ oldField, newField ] of Object.entries(fields)) {
-          const value = getNestedField(result, oldField);
-          if (value !== undefined) {
-            unsetNestedField(result, oldField);
-            setNestedField(result, newField, value);
-          }
-        }
-        break;
-      default:
-        throw new Error(`Unsupported update operator: ${op}`);
-    }
-  }
-
-  return result;
 }
 
 // =============================================================================
@@ -1658,6 +1387,55 @@ class SqliteCollection {
       options = {};
     }
 
+    // Single-statement fast path: when the update uses only simple
+    // operators without upsert, execute a single UPDATE statement
+    // instead of the read-modify-write cycle. $push, $pull and
+    // $addToSet are included only when all their values are scalars
+    // (strings, numbers, booleans). Skip if any touched field is
+    // text-indexed (FTS sync requires the full read-modify-write path).
+    if (!options.upsert) {
+      const atomicOps = [
+        '$inc', '$set', '$unset', '$currentDate',
+        '$push', '$pull', '$addToSet'
+      ];
+      const ops = Object.keys(update);
+      const isAtomicCompatible = ops.length > 0 &&
+        ops.every(op => atomicOps.includes(op));
+      if (isAtomicCompatible) {
+        // $push/$pull/$addToSet only qualify when all values are scalars
+        const allScalar = [ '$push', '$pull', '$addToSet' ].every(op => {
+          if (!update[op]) {
+            return true;
+          }
+          return Object.values(update[op]).every(v =>
+            typeof v === 'string' ||
+            typeof v === 'number' ||
+            typeof v === 'boolean'
+          );
+        });
+        if (allScalar) {
+          const textFields = this._textFields || [];
+          const unsetKeys = Array.isArray(update.$unset)
+            ? update.$unset
+            : Object.keys(update.$unset || {});
+          const allKeys = [
+            ...Object.keys(update.$set || {}),
+            ...Object.keys(update.$inc || {}),
+            ...unsetKeys,
+            ...Object.keys(update.$currentDate || {}),
+            ...Object.keys(update.$push || {}),
+            ...Object.keys(update.$pull || {}),
+            ...Object.keys(update.$addToSet || {})
+          ];
+          const touchesTextFields =
+            allKeys.some(f => textFields.includes(f));
+          if (!touchesTextFields) {
+            return this._atomicUpdateOne(query, update);
+          }
+        }
+      }
+    }
+
     const params = [];
     const tableName = this._quotedTableName();
     const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
@@ -1722,6 +1500,113 @@ class SqliteCollection {
         n: 1
       }
     };
+  }
+
+  _atomicUpdateOne(query, update) {
+    const tableName = this._quotedTableName();
+
+    // Build SET expression and its params first (they appear before WHERE in SQL)
+    const setParams = [];
+    let dataExpr = 'data';
+
+    if (update.$set) {
+      for (const [ field, value ] of Object.entries(update.$set)) {
+        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        const serialized = serializeValue(value);
+        setParams.push(JSON.stringify(serialized));
+        dataExpr = `json_set(${dataExpr}, '${jsonPath}', json(?))`;
+      }
+    }
+
+    if (update.$inc) {
+      for (const [ field, value ] of Object.entries(update.$inc)) {
+        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        setParams.push(value);
+        dataExpr = `json_set(${dataExpr}, '${jsonPath}', COALESCE(json_extract(data, '${jsonPath}'), 0) + ?)`;
+      }
+    }
+
+    if (update.$unset) {
+      const fields = Array.isArray(update.$unset)
+        ? update.$unset
+        : Object.keys(update.$unset);
+      for (const field of fields) {
+        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        dataExpr = `json_remove(${dataExpr}, '${jsonPath}')`;
+      }
+    }
+
+    if (update.$currentDate) {
+      for (const [ field, value ] of Object.entries(update.$currentDate)) {
+        if (value === true || (value && value.$type === 'date')) {
+          const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+          const dateVal = JSON.stringify(serializeValue(new Date()));
+          setParams.push(dateVal);
+          dataExpr = `json_set(${dataExpr}, '${jsonPath}', json(?))`;
+        }
+      }
+    }
+
+    // $push: append scalar value to array
+    if (update.$push) {
+      for (const [ field, value ] of Object.entries(update.$push)) {
+        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        setParams.push(value);
+        const coalesced = `COALESCE(json_extract(data, '${jsonPath}'), json('[]'))`;
+        dataExpr = `json_set(${dataExpr}, '${jsonPath}', json_insert(${coalesced}, '$[#]', ?))`;
+      }
+    }
+
+    // $pull: remove scalar value from array
+    if (update.$pull) {
+      for (const [ field, value ] of Object.entries(update.$pull)) {
+        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        setParams.push(value);
+        dataExpr = `json_set(${dataExpr}, '${jsonPath}', ` +
+          '(SELECT json_group_array(je.value) ' +
+          `FROM json_each(COALESCE(json_extract(data, '${jsonPath}'), '[]')) AS je ` +
+          'WHERE je.value != ?))';
+      }
+    }
+
+    // $addToSet: add scalar value to array if not already present
+    if (update.$addToSet) {
+      for (const [ field, value ] of Object.entries(update.$addToSet)) {
+        const jsonPath = '$.' + field.split('.').map(p => escapeString(p)).join('.');
+        setParams.push(value, value);
+        const coalesced = `COALESCE(json_extract(data, '${jsonPath}'), json('[]'))`;
+        dataExpr = `json_set(${dataExpr}, '${jsonPath}', ` +
+          `CASE WHEN EXISTS(SELECT 1 FROM json_each(${coalesced}) WHERE value = ?) ` +
+          `THEN ${coalesced} ` +
+          `ELSE json_insert(${coalesced}, '$[#]', ?) END)`;
+      }
+    }
+
+    // Build WHERE clause params second
+    const whereParams = [];
+    const whereClause = buildWhereClause(query, whereParams, 'data', this._queryOptions());
+
+    // Positional params: SET params first, then WHERE params
+    const params = [ ...setParams, ...whereParams ];
+    const sql = `UPDATE ${tableName} SET data = ${dataExpr} WHERE ${whereClause}`;
+    try {
+      const result = this._db._sqlite.prepare(sql).run(...params);
+      const matched = result.changes > 0 ? 1 : 0;
+      return {
+        acknowledged: true,
+        matchedCount: matched,
+        modifiedCount: matched,
+        result: {
+          nModified: matched,
+          n: matched
+        }
+      };
+    } catch (e) {
+      if (e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && e.message.includes('UNIQUE constraint failed'))) {
+        throw makeDuplicateKeyError(e, this, {});
+      }
+      throw e;
+    }
   }
 
   async updateMany(query, update, options = {}) {

@@ -863,6 +863,334 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       });
     });
 
+    describe('single-statement update path', function() {
+      it('should apply both $inc and $set in a single update', async function() {
+        await db.collection('test').insertOne({
+          _id: 'combo1',
+          count: 5,
+          status: 'pending'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'combo1' },
+          {
+            $inc: { count: 3 },
+            $set: { status: 'done' }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'combo1' });
+        expect(doc.count).to.equal(8);
+        expect(doc.status).to.equal('done');
+      });
+
+      it('should fall back to read-modify-write for $set with upsert', async function() {
+        await db.collection('test').updateOne(
+          { _id: 'combo2' },
+          { $set: { name: 'upserted' } },
+          { upsert: true }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'combo2' });
+        expect(doc.name).to.equal('upserted');
+      });
+
+      it('should fall back to read-modify-write when $set touches text-indexed fields', async function() {
+        const col = db.collection('test_text_atomic');
+        await col.insertOne({
+          _id: 'ta1',
+          title: 'Original',
+          highSearchText: 'original',
+          lowSearchText: 'original',
+          searchBoost: '',
+          body: 'test'
+        });
+        await col.createIndex({
+          highSearchText: 'text',
+          lowSearchText: 'text',
+          title: 'text',
+          searchBoost: 'text'
+        });
+        // This $set touches 'title' which is text-indexed, so it must
+        // go through the read-modify-write path to keep FTS in sync
+        await col.updateOne(
+          { _id: 'ta1' },
+          {
+            $set: {
+              title: 'Updated',
+              highSearchText: 'updated'
+            }
+          }
+        );
+        const doc = await col.findOne({ _id: 'ta1' });
+        expect(doc.title).to.equal('Updated');
+        // Verify text search finds the updated content
+        const found = await col.find({ $text: { $search: 'updated' } }).toArray();
+        expect(found).to.have.lengthOf(1);
+        expect(found[0]._id).to.equal('ta1');
+        // lowSearchText still contains 'original' so it should still match
+        // (FTS indexes all text fields, not just the ones we updated)
+        const stillFound = await col.find({ $text: { $search: 'original' } }).toArray();
+        expect(stillFound).to.have.lengthOf(1);
+      });
+
+      it('should use single-statement path when $set does not touch text-indexed fields', async function() {
+        const col = db.collection('test_text_atomic');
+        // 'body' is not text-indexed, so this should use the single-statement path
+        await col.updateOne(
+          { _id: 'ta1' },
+          {
+            $set: { body: 'changed' },
+            $inc: { views: 1 }
+          }
+        );
+        const doc = await col.findOne({ _id: 'ta1' });
+        expect(doc.body).to.equal('changed');
+        expect(doc.views).to.equal(1);
+        // Text search should still work (FTS not affected)
+        const found = await col.find({ $text: { $search: 'updated' } }).toArray();
+        expect(found).to.have.lengthOf(1);
+      });
+
+      it('should handle $unset via single-statement path', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_unset1',
+          a: 1,
+          b: 2,
+          c: 3
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_unset1' },
+          { $unset: { b: '' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_unset1' });
+        expect(doc.a).to.equal(1);
+        expect(doc.b).to.be.undefined;
+        expect(doc.c).to.equal(3);
+      });
+
+      it('should handle $unset combined with $set and $inc in a single update', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_unset2',
+          keep: 'yes',
+          remove: 'gone',
+          count: 0
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_unset2' },
+          {
+            $set: { keep: 'updated' },
+            $unset: { remove: '' },
+            $inc: { count: 1 }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_unset2' });
+        expect(doc.keep).to.equal('updated');
+        expect(doc.remove).to.be.undefined;
+        expect(doc.count).to.equal(1);
+      });
+
+      it('should handle $currentDate combined with $set in a single update', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_cd1',
+          status: 'pending'
+        });
+        const before = new Date();
+        await db.collection('test').updateOne(
+          { _id: 'atomic_cd1' },
+          {
+            $set: { status: 'done' },
+            $currentDate: { updatedAt: true }
+          }
+        );
+        const after = new Date();
+        const doc = await db.collection('test').findOne({ _id: 'atomic_cd1' });
+        expect(doc.status).to.equal('done');
+        expect(doc.updatedAt).to.be.an.instanceOf(Date);
+        expect(doc.updatedAt.getTime()).to.be.at.least(before.getTime());
+        expect(doc.updatedAt.getTime()).to.be.at.most(after.getTime());
+      });
+
+      it('should handle scalar $addToSet via single-statement path', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_addset1',
+          tags: [ 'a', 'b' ]
+        });
+        // Add new value
+        await db.collection('test').updateOne(
+          { _id: 'atomic_addset1' },
+          { $addToSet: { tags: 'c' } }
+        );
+        let doc = await db.collection('test').findOne({ _id: 'atomic_addset1' });
+        expect(doc.tags).to.include.members([ 'a', 'b', 'c' ]);
+        expect(doc.tags).to.have.lengthOf(3);
+        // Add duplicate (should be no-op)
+        await db.collection('test').updateOne(
+          { _id: 'atomic_addset1' },
+          { $addToSet: { tags: 'b' } }
+        );
+        doc = await db.collection('test').findOne({ _id: 'atomic_addset1' });
+        expect(doc.tags).to.have.lengthOf(3);
+      });
+
+      it('should handle scalar $pull via single-statement path', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_pull1',
+          tags: [ 'a', 'b', 'c' ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_pull1' },
+          { $pull: { tags: 'b' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_pull1' });
+        expect(doc.tags).to.deep.equal([ 'a', 'c' ]);
+      });
+
+      it('should handle scalar $push via single-statement path', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_push1',
+          tags: [ 'a', 'b' ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_push1' },
+          { $push: { tags: 'c' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_push1' });
+        expect(doc.tags).to.deep.equal([ 'a', 'b', 'c' ]);
+      });
+
+      it('should handle $push when field does not exist', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_push2',
+          name: 'test'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_push2' },
+          { $push: { tags: 'first' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_push2' });
+        expect(doc.tags).to.deep.equal([ 'first' ]);
+      });
+
+      it('should handle $push with $set and $inc combined', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_push3',
+          log: [ 'init' ],
+          count: 0,
+          status: 'new'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_push3' },
+          {
+            $push: { log: 'step1' },
+            $inc: { count: 1 },
+            $set: { status: 'running' }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_push3' });
+        expect(doc.log).to.deep.equal([ 'init', 'step1' ]);
+        expect(doc.count).to.equal(1);
+        expect(doc.status).to.equal('running');
+      });
+
+      it('should handle $pull and $addToSet on different fields', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_both1',
+          active: [ 'x', 'y' ],
+          archived: [ 'z' ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_both1' },
+          {
+            $pull: { active: 'x' },
+            $addToSet: { archived: 'x' }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_both1' });
+        expect(doc.active).to.deep.equal([ 'y' ]);
+        expect(doc.archived).to.include.members([ 'z', 'x' ]);
+      });
+
+      it('should handle $addToSet when field does not exist', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_addset2',
+          name: 'test'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_addset2' },
+          { $addToSet: { tags: 'first' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_addset2' });
+        expect(doc.tags).to.deep.equal([ 'first' ]);
+      });
+
+      it('should handle $pull when field does not exist', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_pull2',
+          name: 'test'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_pull2' },
+          { $pull: { tags: 'nope' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_pull2' });
+        // MongoDB leaves the field absent, SQL adapters create an
+        // empty array. Both are acceptable — the field has no elements.
+        if (doc.tags !== undefined) {
+          expect(doc.tags).to.deep.equal([]);
+        }
+      });
+
+      it('should combine scalar $pull with $set and $inc', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_combo3',
+          ids: [ 'a', 'b' ],
+          count: 5,
+          status: 'active'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_combo3' },
+          {
+            $pull: { ids: 'a' },
+            $inc: { count: -1 },
+            $set: { status: 'modified' }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_combo3' });
+        expect(doc.ids).to.deep.equal([ 'b' ]);
+        expect(doc.count).to.equal(4);
+        expect(doc.status).to.equal('modified');
+      });
+
+      it('should fall back to read-modify-write for object $addToSet', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_objset1',
+          items: [ { id: 1 } ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_objset1' },
+          { $addToSet: { items: { id: 2 } } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_objset1' });
+        expect(doc.items).to.have.lengthOf(2);
+        expect(doc.items[1].id).to.equal(2);
+      });
+
+      it('should fall back to read-modify-write for object $pull', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_objpull1',
+          items: [
+            { id: 1 },
+            { id: 2 }
+          ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_objpull1' },
+          { $pull: { items: { id: 1 } } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_objpull1' });
+        expect(doc.items).to.have.lengthOf(1);
+        expect(doc.items[0].id).to.equal(2);
+      });
+    });
+
     describe('$push', function() {
       it('should add element to array', async function() {
         await db.collection('test').insertOne({

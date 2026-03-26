@@ -3,6 +3,16 @@
 
 const { Pool } = require('pg');
 const crypto = require('crypto');
+const {
+  serializeValue,
+  serializeDocument,
+  deserializeDocument,
+  getNestedField,
+  setNestedField,
+  deepEqual,
+  applyProjection,
+  applyUpdate
+} = require('../lib/shared');
 
 // =============================================================================
 // PROFILING: Accumulated timing data for performance analysis
@@ -839,316 +849,6 @@ function buildOrderBy(sort, options = {}) {
 }
 
 // =============================================================================
-// Update Operations (in-memory, no SQL injection risk)
-// =============================================================================
-
-function applyUpdate(doc, update) {
-  if (Array.isArray(update)) {
-    let result = { ...doc };
-    for (const stage of update) {
-      result = applyUpdate(result, stage);
-    }
-    return result;
-  }
-
-  const result = { ...doc };
-
-  for (const [ op, fields ] of Object.entries(update)) {
-    switch (op) {
-      case '$set':
-        for (const [ field, value ] of Object.entries(fields)) {
-          setNestedField(result, field, value);
-        }
-        break;
-      case '$unset':
-        if (Array.isArray(fields)) {
-          for (const field of fields) {
-            unsetNestedField(result, field);
-          }
-        } else {
-          for (const field of Object.keys(fields)) {
-            unsetNestedField(result, field);
-          }
-        }
-        break;
-      case '$inc':
-        for (const [ field, value ] of Object.entries(fields)) {
-          const current = getNestedField(result, field) || 0;
-          setNestedField(result, field, current + value);
-        }
-        break;
-      case '$push':
-        for (const [ field, value ] of Object.entries(fields)) {
-          const arr = getNestedField(result, field) || [];
-          arr.push(value);
-          setNestedField(result, field, arr);
-        }
-        break;
-      case '$pull':
-        for (const [ field, value ] of Object.entries(fields)) {
-          const arr = getNestedField(result, field) || [];
-          setNestedField(result, field, arr.filter(item => !deepEqual(item, value)));
-        }
-        break;
-      case '$addToSet':
-        for (const [ field, value ] of Object.entries(fields)) {
-          const arr = getNestedField(result, field) || [];
-          if (!arr.some(item => deepEqual(item, value))) {
-            arr.push(value);
-          }
-          setNestedField(result, field, arr);
-        }
-        break;
-      case '$currentDate':
-        for (const [ field, value ] of Object.entries(fields)) {
-          if (value === true || (value && value.$type === 'date')) {
-            setNestedField(result, field, new Date());
-          }
-        }
-        break;
-      case '$rename':
-        for (const [ oldField, newField ] of Object.entries(fields)) {
-          const value = getNestedField(result, oldField);
-          if (value !== undefined) {
-            unsetNestedField(result, oldField);
-            setNestedField(result, newField, value);
-          }
-        }
-        break;
-      default:
-        throw new Error(`Unsupported update operator: ${op}`);
-    }
-  }
-
-  return result;
-}
-
-// Helper functions for nested field operations
-function getNestedField(obj, path) {
-  const parts = path.split('.');
-  let current = obj;
-  for (const part of parts) {
-    if (current == null) {
-      return undefined;
-    }
-    current = current[part];
-  }
-  return current;
-}
-
-function setNestedField(obj, path, value) {
-  const parts = path.split('.');
-  let current = obj;
-  for (let i = 0; i < parts.length - 1; i++) {
-    if (current[parts[i]] == null) {
-      current[parts[i]] = {};
-    }
-    current = current[parts[i]];
-  }
-  current[parts[parts.length - 1]] = value;
-}
-
-function unsetNestedField(obj, path) {
-  const parts = path.split('.');
-  let current = obj;
-  for (let i = 0; i < parts.length - 1; i++) {
-    if (current[parts[i]] == null) {
-      return;
-    }
-    current = current[parts[i]];
-  }
-  delete current[parts[parts.length - 1]];
-}
-
-function deepEqual(a, b) {
-  if (a === b) {
-    return true;
-  }
-  if (a == null || b == null) {
-    return false;
-  }
-  if (typeof a !== typeof b) {
-    return false;
-  }
-  if (typeof a !== 'object') {
-    return false;
-  }
-  if (Array.isArray(a) !== Array.isArray(b)) {
-    return false;
-  }
-
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) {
-    return false;
-  }
-
-  for (const key of keysA) {
-    if (!deepEqual(a[key], b[key])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// =============================================================================
-// Document Serialization (Date handling)
-// =============================================================================
-
-// Recursively convert Date objects to { $date: ... } wrapper and
-// undefined to null (matching MongoDB's BSON behavior where undefined
-// is stored as null). This is called before JSON.stringify because
-// JSON.stringify calls toJSON() on Dates before any replacer sees them,
-// and omits properties with undefined values.
-function serializeValue(obj) {
-  if (obj === undefined) {
-    return null;
-  }
-  if (obj === null) {
-    return null;
-  }
-  if (obj instanceof Date) {
-    return { $date: obj.toISOString() };
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeValue);
-  }
-  if (typeof obj === 'object') {
-    const result = {};
-    for (const [ key, value ] of Object.entries(obj)) {
-      result[key] = serializeValue(value);
-    }
-    return result;
-  }
-  return obj;
-}
-
-function serializeDocument(doc) {
-  const _pStart = profileStart();
-  const result = JSON.stringify(serializeValue(doc));
-  profileEnd('serializeDocument', _pStart);
-  return result;
-}
-
-// Convert $date wrappers back to Date objects, returning the original
-// object reference when no conversions occurred in a subtree.
-// Most document subtrees (rich text, widget configs) have zero dates,
-// so this avoids rebuilding the entire object tree on every read.
-function convertDates(obj) {
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
-  }
-  if (obj.$date) {
-    return new Date(obj.$date);
-  }
-  if (Array.isArray(obj)) {
-    let changed = false;
-    const result = obj.map(item => {
-      const c = convertDates(item);
-      if (c !== item) {
-        changed = true;
-      }
-      return c;
-    });
-    return changed ? result : obj;
-  }
-  let changed = false;
-  const result = {};
-  for (const [ key, value ] of Object.entries(obj)) {
-    const c = convertDates(value);
-    result[key] = c;
-    if (c !== value) {
-      changed = true;
-    }
-  }
-  return changed ? result : obj;
-}
-
-function deserializeDocument(data, id) {
-  const _pStart = profileStart();
-  // data might be a string or object depending on pg configuration
-  const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-  const doc = convertDates(parsed);
-  let result;
-  if (doc === parsed) {
-    // No dates found — shallow copy to add _id without mutating parsed data
-    result = {
-      _id: id,
-      ...doc
-    };
-  } else {
-    doc._id = id;
-    result = doc;
-  }
-  profileEnd('convertDates', _pStart);
-  return result;
-}
-
-// =============================================================================
-// Projection (in-memory, no SQL injection risk)
-// =============================================================================
-
-function applyProjection(doc, projection, meta = {}) {
-  const _pStart = profileStart();
-  if (!projection || Object.keys(projection).length === 0) {
-    profileEnd('applyProjection', _pStart);
-    return doc;
-  }
-
-  // Separate $meta projections (e.g. score: { $meta: 'textScore' })
-  // from regular field projections
-  const metaFields = Object.entries(projection).filter(
-    ([ k, v ]) => v && typeof v === 'object' && v.$meta
-  );
-  const fields = Object.entries(projection).filter(
-    ([ k, v ]) => !(v && typeof v === 'object' && v.$meta)
-  );
-
-  // Helper to apply $meta fields to a result object
-  const applyMeta = (result) => {
-    for (const [ field, spec ] of metaFields) {
-      if (spec.$meta === 'textScore' && meta.textScore != null) {
-        result[field] = meta.textScore;
-      }
-    }
-    return result;
-  };
-
-  if (fields.length === 0) {
-    profileEnd('applyProjection', _pStart);
-    return applyMeta({ ...doc });
-  }
-  const isInclusion = fields.some(([ k, v ]) => v && k !== '_id');
-
-  if (isInclusion) {
-    const result = {};
-    for (const [ field, include ] of fields) {
-      if (include) {
-        const value = getNestedField(doc, field);
-        if (value !== undefined) {
-          setNestedField(result, field, value);
-        }
-      }
-    }
-    // Always include _id unless explicitly excluded
-    if (projection._id !== 0 && projection._id !== false) {
-      result._id = doc._id;
-    }
-    profileEnd('applyProjection', _pStart);
-    return applyMeta(result);
-  } else {
-    const result = JSON.parse(JSON.stringify(doc));
-    for (const [ field, include ] of fields) {
-      if (!include) {
-        unsetNestedField(result, field);
-      }
-    }
-    profileEnd('applyProjection', _pStart);
-    return applyMeta(result);
-  }
-}
-
-// =============================================================================
 // Cursor Implementation
 // =============================================================================
 
@@ -1809,14 +1509,34 @@ class PostgresCollection {
       options = {};
     }
 
-    // Check if we can use atomic SQL (only $inc and/or $set, no upsert)
+    // Single-statement fast path: when the update uses only simple
+    // operators without upsert, execute a single UPDATE statement
+    // instead of the read-modify-write cycle. $push, $pull and
+    // $addToSet are included only when all their values are scalars.
     if (!options.upsert) {
+      const atomicOps = [
+        '$inc', '$set', '$unset', '$currentDate',
+        '$push', '$pull', '$addToSet'
+      ];
       const ops = Object.keys(update);
-      const isAtomicCompatible = ops.length > 0 && ops.every(op => op === '$inc' || op === '$set');
+      const isAtomicCompatible = ops.length > 0 &&
+        ops.every(op => atomicOps.includes(op));
       if (isAtomicCompatible) {
-        const result = await this._atomicUpdateOne(query, update);
-        profileEnd('updateOne', _pStart);
-        return result;
+        const allScalar = [ '$push', '$pull', '$addToSet' ].every(op => {
+          if (!update[op]) {
+            return true;
+          }
+          return Object.values(update[op]).every(v =>
+            typeof v === 'string' ||
+            typeof v === 'number' ||
+            typeof v === 'boolean'
+          );
+        });
+        if (allScalar) {
+          const result = await this._atomicUpdateOne(query, update);
+          profileEnd('updateOne', _pStart);
+          return result;
+        }
       }
     }
 
@@ -1888,16 +1608,16 @@ class PostgresCollection {
     };
   }
 
-  // Atomic update using SQL expressions for $inc and $set (no read-modify-write race)
+  // Atomic update using SQL expressions for $inc, $set, $unset,
+  // $currentDate, $push, $pull, $addToSet (no read-modify-write race)
   async _atomicUpdateOne(query, update) {
     const params = [];
     const qualifiedName = this._qualifiedName();
     const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
 
-    // Build a chain of jsonb_set calls for atomic update
+    // Build a chain of jsonb_set / #- calls for atomic update
     let dataExpr = 'data';
 
-    // Handle $set: set fields to specific values
     if (update.$set) {
       for (const [ field, value ] of Object.entries(update.$set)) {
         const pathArray = field.split('.');
@@ -1908,12 +1628,10 @@ class PostgresCollection {
       }
     }
 
-    // Handle $inc: atomically increment numeric fields
     if (update.$inc) {
       for (const [ field, value ] of Object.entries(update.$inc)) {
         const pathArray = field.split('.');
         const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
-        // Build the JSON path for reading the current value
         let readPath = 'data';
         for (let i = 0; i < pathArray.length - 1; i++) {
           readPath += `->'${escapeString(pathArray[i])}'`;
@@ -1921,6 +1639,70 @@ class PostgresCollection {
         readPath += `->>'${escapeString(pathArray[pathArray.length - 1])}'`;
         params.push(value);
         dataExpr = `jsonb_set(${dataExpr}, ${pathLiteral}, to_jsonb(COALESCE((${readPath})::numeric, 0) + $${params.length}), true)`;
+      }
+    }
+
+    if (update.$unset) {
+      const fields = Array.isArray(update.$unset)
+        ? update.$unset
+        : Object.keys(update.$unset);
+      for (const field of fields) {
+        const pathArray = field.split('.');
+        const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
+        dataExpr = `(${dataExpr}) #- ${pathLiteral}`;
+      }
+    }
+
+    if (update.$currentDate) {
+      for (const [ field, value ] of Object.entries(update.$currentDate)) {
+        if (value === true || (value && value.$type === 'date')) {
+          const pathArray = field.split('.');
+          const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
+          const dateVal = JSON.stringify(serializeValue(new Date()));
+          params.push(dateVal);
+          dataExpr = `jsonb_set(${dataExpr}, ${pathLiteral}, $${params.length}::jsonb, true)`;
+        }
+      }
+    }
+
+    // $push: append scalar value to array
+    if (update.$push) {
+      for (const [ field, value ] of Object.entries(update.$push)) {
+        const pathArray = field.split('.');
+        const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
+        const readPath = pathArray.map(p => `'${escapeString(p)}'`).join('->');
+        const coalesced = `COALESCE(data->${readPath}, '[]'::jsonb)`;
+        params.push(JSON.stringify(value));
+        dataExpr = `jsonb_set(${dataExpr}, ${pathLiteral}, ${coalesced} || $${params.length}::jsonb, true)`;
+      }
+    }
+
+    // $pull: remove scalar value from array
+    if (update.$pull) {
+      for (const [ field, value ] of Object.entries(update.$pull)) {
+        const pathArray = field.split('.');
+        const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
+        const readPath = pathArray.map(p => `'${escapeString(p)}'`).join('->');
+        params.push(JSON.stringify(value));
+        dataExpr = `jsonb_set(${dataExpr}, ${pathLiteral}, ` +
+          '(SELECT COALESCE(jsonb_agg(elem), \'[]\'::jsonb) ' +
+          `FROM jsonb_array_elements(COALESCE(data->${readPath}, '[]'::jsonb)) AS elem ` +
+          `WHERE elem != $${params.length}::jsonb), true)`;
+      }
+    }
+
+    // $addToSet: add scalar value to array if not already present
+    if (update.$addToSet) {
+      for (const [ field, value ] of Object.entries(update.$addToSet)) {
+        const pathArray = field.split('.');
+        const pathLiteral = `'{${pathArray.map(p => escapeString(p)).join(',')}}'`;
+        const readPath = pathArray.map(p => `'${escapeString(p)}'`).join('->');
+        const coalesced = `COALESCE(data->${readPath}, '[]'::jsonb)`;
+        params.push(JSON.stringify(value));
+        dataExpr = `jsonb_set(${dataExpr}, ${pathLiteral}, ` +
+          `CASE WHEN ${coalesced} @> $${params.length}::jsonb ` +
+          `THEN ${coalesced} ` +
+          `ELSE ${coalesced} || $${params.length}::jsonb END, true)`;
       }
     }
 
