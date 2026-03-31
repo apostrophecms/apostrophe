@@ -7,7 +7,8 @@ module.exports = defineConfig([
     '**/blueimp/**/*.js',
     'test/public',
     'test/apos-build',
-    'coverage'
+    'coverage',
+    'claude-tools'
   ]),
   apostrophe
 ]);
