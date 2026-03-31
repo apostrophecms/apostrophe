@@ -5,10 +5,9 @@
   "main": "index.js",
   "scripts": {
     "pretest": "npm run lint",
-    "test": "npm run test:base && npm run test:missing && npm run test:assets && npm run test:esm && npm run test:db",
-    "test:base": "nyc mocha -t 10000 --ignore=test/assets.js",
+    "test": "npm run test:base && npm run test:missing && npm run test:esm && npm run test:db",
+    "test:base": "nyc mocha -t 10000",
     "test:missing": "nyc mocha -t 10000 test/add-missing-schema-fields-project/test.js",
-    "test:assets": "nyc mocha -t 10000 test/assets.js",
     "test:esm": "mocha -t 1000 test/esm-project/esm.js",
     "eslint": "eslint .",
     "eslint-fix": "npm run eslint -- --fix",

@@ -1,1 +1,4 @@
-export default () => { 'bundle-page-watcher-test-30'; };
+/* eslint-disable no-console */
+export default () => {
+  console.log('BUNDLE_EXTRA_PAGE');
+};
