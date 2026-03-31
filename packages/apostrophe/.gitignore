@@ -44,4 +44,4 @@ test/public/uploads
 .*.sw*
 
 # claude-tools log files
-claude-tools/*.log
+claude-tools/**/*.log
