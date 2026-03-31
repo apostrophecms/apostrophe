@@ -7,6 +7,7 @@ env:
   NODE_VERSIONS_JSON: "[20,22,24]"
   MONGODB_VERSIONS_JSON: '["7","8"]'
   REDIS_VERSION: "7"
+  POSTGRES_VERSION: "16"
 
 on:
   push:
@@ -124,7 +125,7 @@ jobs:
         run: |
           month='${{ steps.cache-month.outputs.value }}'
           mongo_suffix=$(jq -r '.[]' <<< '${{ env.MONGODB_VERSIONS_JSON }}' | paste -sd'-' -)
-          echo "key=docker-images-${month}-mongo${mongo_suffix}-redis${{ env.REDIS_VERSION }}" >> "$GITHUB_OUTPUT"
+          echo "key=docker-images-${month}-mongo${mongo_suffix}-redis${{ env.REDIS_VERSION }}-pg${{ env.POSTGRES_VERSION }}" >> "$GITHUB_OUTPUT"
 
       - name: Restore docker image cache
         id: docker-cache
@@ -143,6 +144,8 @@ jobs:
           done
           docker pull "redis:${{ env.REDIS_VERSION }}"
           docker save "redis:${{ env.REDIS_VERSION }}" -o ".github/docker-cache/redis-${{ env.REDIS_VERSION }}.tar"
+          docker pull "postgres:${{ env.POSTGRES_VERSION }}"
+          docker save "postgres:${{ env.POSTGRES_VERSION }}" -o ".github/docker-cache/postgres-${{ env.POSTGRES_VERSION }}.tar"
 
   warm-sharp-cache:
     name: Warm sharp/libvips cache (Node ${{ matrix.nodeVersion }})
@@ -216,7 +219,7 @@ jobs:
           du -sh ~/.npm/_libvips || true
 
   package-tests:
-    name: ${{ format('{0} ({1}, {2})', matrix.package, matrix.nodeVersion, matrix.needsMongo && matrix.mongodbVersion || 'n/a') }}
+    name: ${{ format('{0} ({1}, {2}{3})', matrix.package, matrix.nodeVersion, matrix.adapter || 'n/a', matrix.needsMongo && format(' mongo {0}', matrix.mongodbVersion) || '') }}
     needs:
       - setup
       - shared-runtime
@@ -279,7 +282,7 @@ jobs:
       - name: Restore docker image cache
         id: docker-cache-restore
         uses: actions/cache/restore@v4
-        if: matrix.needsMongo || matrix.needsRedis
+        if: matrix.needsMongo || matrix.needsRedis || matrix.needsPostgres
         with:
           path: .github/docker-cache
           key: ${{ needs.shared-runtime.outputs.docker-cache-key }}
@@ -299,6 +302,14 @@ jobs:
       - name: Pull Redis image (cache miss)
         if: steps.docker-cache-restore.outputs.cache-hit != 'true' && matrix.needsRedis
         run: docker pull redis:${{ env.REDIS_VERSION }}
+
+      - name: Load cached Postgres image
+        if: steps.docker-cache-restore.outputs.cache-hit == 'true' && matrix.needsPostgres
+        run: docker load -i ".github/docker-cache/postgres-${{ env.POSTGRES_VERSION }}.tar"
+
+      - name: Pull Postgres image (cache miss)
+        if: steps.docker-cache-restore.outputs.cache-hit != 'true' && matrix.needsPostgres
+        run: docker pull postgres:${{ env.POSTGRES_VERSION }}
 
       - name: Start MongoDB
         if: matrix.needsMongo
@@ -358,6 +369,36 @@ jobs:
           docker logs redis
           exit 1
 
+      - name: Start PostgreSQL
+        if: matrix.needsPostgres
+        run: |
+          docker rm -f postgres >/dev/null 2>&1 || true
+          docker run -d \
+            --name postgres \
+            --publish 5432:5432 \
+            -e POSTGRES_HOST_AUTH_METHOD=trust \
+            --health-cmd "pg_isready -U postgres" \
+            --health-interval 5s \
+            --health-timeout 5s \
+            --health-retries 12 \
+            postgres:${{ env.POSTGRES_VERSION }}
+          echo "Waiting for PostgreSQL to report healthy..."
+          for attempt in $(seq 1 60); do
+            status=$(docker inspect --format='{{.State.Health.Status}}' postgres 2>/dev/null || echo "starting")
+            if [ "$status" = "healthy" ]; then
+              exit 0
+            fi
+            if [ "$status" = "unhealthy" ]; then
+              echo "PostgreSQL reported unhealthy" >&2
+              docker logs postgres
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "PostgreSQL failed to become healthy in time" >&2
+          docker logs postgres
+          exit 1
+
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
 
@@ -367,6 +408,15 @@ jobs:
           CI: true
           # Yes we want import-export to test with automatic-translation
           TEST_WITH_PRO: "1"
+          # Adapter selection: mongodb (default), postgres, or sqlite.
+          # ADAPTER is used by db-connect tests, APOS_TEST_DB_PROTOCOL by apostrophe tests.
+          ADAPTER: ${{ matrix.adapter }}
+          APOS_TEST_DB_PROTOCOL: ${{ matrix.adapter }}
+          PGUSER: postgres
+
+      - name: Stop PostgreSQL
+        if: always() && matrix.needsPostgres
+        run: docker rm -f postgres || true
 
       - name: Stop Redis
         if: always() && matrix.needsRedis

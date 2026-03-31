@@ -30,6 +30,9 @@
     "cache-on-demand": "workspace:^",
     "lodash": "^4.0.0"
   },
+  "apostropheTestConfig": {
+    "requiresMongo": false
+  },
   "devDependencies": {
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",

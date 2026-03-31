@@ -32,6 +32,9 @@
   "dependencies": {
     "lodash": "^4.0.0"
   },
+  "apostropheTestConfig": {
+    "mongodbOnly": true
+  },
   "devDependencies": {
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
