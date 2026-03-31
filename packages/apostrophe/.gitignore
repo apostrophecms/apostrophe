@@ -42,3 +42,6 @@ test/public/uploads
 
 # vim swp files
 .*.sw*
+
+# claude-tools log files
+claude-tools/*.log
