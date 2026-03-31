@@ -5,7 +5,7 @@ const { expect } = require('chai');
 // Test suite for the universal database adapter
 // Based on actual MongoDB usage patterns in ApostropheCMS
 
-const ADAPTER = process.env.ADAPTER || 'mongodb';
+const ADAPTER = process.env.ADAPTER || process.env.APOS_TEST_DB_PROTOCOL || 'mongodb';
 const TEST_DB_NAME = 'dbtest-adapter';
 
 describe(`Database Adapter (${ADAPTER})`, function() {

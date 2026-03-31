@@ -32,9 +32,10 @@ function getTestDbUri(shortName) {
 // If `apos` is null, no work is done.
 
 async function destroy(apos) {
-  if (!apos) {
+  if (!apos || apos._destroyed) {
     return;
   }
+  apos._destroyed = true;
   const dbModule = apos.modules['@apostrophecms/db'];
   const { uri } = dbModule;
   const dbName = apos.db && (apos.db.databaseName || apos.db._name);

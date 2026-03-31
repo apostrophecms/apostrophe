@@ -162,6 +162,7 @@ describe('Assets', function() {
   });
 
   it('should get webpack extensions from modules and fill extra bundles', async function () {
+    await t.destroy(apos);
     const expectedEntryPointsNames = {
       js: [ 'company', 'main', 'another', 'extra', 'extra2' ],
       css: [ 'company', 'main', 'extra' ]
@@ -309,6 +310,7 @@ describe('Assets', function() {
   });
 
   it('should build with cache and gain performance', async function() {
+    await t.destroy(apos);
     await removeCache();
     await removeCache(cacheFolderPath.replace('/webpack-cache', '/changed'));
 
@@ -1224,6 +1226,7 @@ describe('Assets', function() {
   });
 
   it('should be able to setup the debounce time', async function() {
+    await t.destroy(apos);
 
     apos = await t.create({
       root: module,
@@ -1317,6 +1320,7 @@ describe('Assets', function() {
   });
 
   it('should pass the right options to webpack extensions from all modules', async function() {
+    await t.destroy(apos);
     const { extConfig1, extConfig2 } = getWebpackConfigsForExtensionOptions();
 
     apos = await t.create({
@@ -1347,6 +1351,7 @@ describe('Assets', function() {
   });
 
   it('should allow two modules extending each others to pass options to the same webpack extension', async function() {
+    await t.destroy(apos);
     const { extConfig1, extConfig2 } = getWebpackConfigsForExtensionOptions();
 
     apos = await t.create({
