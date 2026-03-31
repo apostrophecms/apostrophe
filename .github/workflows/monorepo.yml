@@ -219,7 +219,7 @@ jobs:
           du -sh ~/.npm/_libvips || true
 
   package-tests:
-    name: ${{ format('{0} ({1}, {2}{3})', matrix.package, matrix.nodeVersion, matrix.adapter || 'n/a', matrix.needsMongo && format(' mongo {0}', matrix.mongodbVersion) || '') }}
+    name: ${{ format('{0} ({1}, {2}{3})', matrix.group, matrix.nodeVersion, matrix.adapter || 'n/a', matrix.needsMongo && format(' mongo {0}', matrix.mongodbVersion) || '') }}
     needs:
       - setup
       - shared-runtime
@@ -403,7 +403,17 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run package tests
-        run: pnpm run --filter "${{ matrix.package }}" --if-present test
+        run: |
+          failed=0
+          for pkg in $(echo '${{ matrix.packages }}' | jq -r '.[]'); do
+            echo "::group::Testing $pkg"
+            if ! pnpm run --filter "$pkg" --if-present test; then
+              echo "::error::Tests failed for $pkg"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $failed
         env:
           CI: true
           # Yes we want import-export to test with automatic-translation
