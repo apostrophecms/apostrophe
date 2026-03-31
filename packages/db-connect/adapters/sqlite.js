@@ -722,7 +722,9 @@ function parseIndexDef(sql) {
   let type;
 
   // Extract expressions from CREATE INDEX ... ON tablename (expr1, expr2)
-  const onMatch = sql.match(/\bON\b\s+\S+\s*\((.+)\)(?:\s+WHERE\b.*)?$/i);
+  // Normalize whitespace to simplify matching across multi-line SQL
+  const normalizedSql = sql.replace(/\s+/g, ' ').trim();
+  const onMatch = normalizedSql.match(/\bON\b\s+\S+\s*\((.+)\)(?:\s+WHERE\b.*)?$/i);
   if (!onMatch) {
     return {
       key: {},
@@ -735,7 +737,9 @@ function parseIndexDef(sql) {
   const exprs = splitExpressions(exprList);
 
   for (const expr of exprs) {
-    const trimmed = expr.trim();
+    // Strip outer parentheses that SQLite adds around expression indexes.
+    // e.g. "(json_extract(data, '$.slug')) ASC" → "json_extract(data, '$.slug') ASC"
+    let trimmed = stripOuterParens(expr.trim());
 
     if (/^_id\b/.test(trimmed)) {
       const direction = /\bDESC\b/i.test(trimmed) ? -1 : 1;
@@ -802,6 +806,31 @@ function jsonExtractToFieldName(expr) {
   // Remove .$date suffix for date indexes
   path = path.replace(/\.\$date$/, '');
   return path || null;
+}
+
+// Strip one layer of outer parentheses from an expression, preserving
+// any trailing ASC/DESC. SQLite wraps expression-index columns in
+// extra parens, e.g. "(json_extract(data, '$.slug')) ASC".
+function stripOuterParens(str) {
+  if (!str.startsWith('(')) {
+    return str;
+  }
+  let depth = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === '(') {
+      depth++;
+    } else if (str[i] === ')') {
+      depth--;
+      if (depth === 0) {
+        const rest = str.slice(i + 1).trim();
+        if (i > 0 && (/^(ASC|DESC)?$/i.test(rest))) {
+          return str.slice(1, i) + (rest ? ' ' + rest : '');
+        }
+        return str;
+      }
+    }
+  }
+  return str;
 }
 
 function splitExpressions(str) {

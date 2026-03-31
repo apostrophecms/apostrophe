@@ -8,15 +8,18 @@ const dbConnect = require('@apostrophecms/db-connect');
 const dumpBin = require.resolve('@apostrophecms/db-connect/bin/apos-db-dump.js');
 const restoreBin = require.resolve('@apostrophecms/db-connect/bin/apos-db-restore.js');
 
-// Default to mongodb, allow override via DB_URI env var
-const baseUri = process.env.DB_URI || 'mongodb://localhost:27017';
+const testDbProtocol = process.env.APOS_TEST_DB_PROTOCOL || 'mongodb';
 
 function testUri(dbName) {
-  if (baseUri.startsWith('mongodb://')) {
-    return `${baseUri}/${dbName}`;
+  const dbSafe = dbName.replace(/-/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  if (testDbProtocol === 'sqlite') {
+    return `sqlite://${path.join(os.tmpdir(), `${dbSafe}.db`)}`;
   }
-  // postgres or multipostgres
-  return `${baseUri.replace(/\/[^/]*$/, '')}/${dbName}`;
+  if (testDbProtocol === 'postgres') {
+    return `postgres://localhost:5432/${dbSafe}`;
+  }
+  const baseUri = process.env.DB_URI || 'mongodb://localhost:27017';
+  return `${baseUri}/${dbName}`;
 }
 
 function run(bin, args) {
