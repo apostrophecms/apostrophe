@@ -779,6 +779,25 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         expect(docs).to.have.lengthOf(1);
         expect(docs[0].name).to.equal('Alice');
       });
+
+      it('$size - should match arrays with exact length', async function() {
+        const docs = await db.collection('test').find({ tags: { $size: 2 } }).toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0].name).to.equal('Alice');
+      });
+
+      it('$size: 1 - should match single-element arrays', async function() {
+        const docs = await db.collection('test').find({ tags: { $size: 1 } }).toArray();
+        expect(docs).to.have.lengthOf(3);
+        const names = docs.map(d => d.name).sort();
+        expect(names).to.deep.equal([ 'Bob', 'Carol', 'Eve' ]);
+      });
+
+      it('$size: 0 - should match empty arrays', async function() {
+        const docs = await db.collection('test').find({ tags: { $size: 0 } }).toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0].name).to.equal('Dave');
+      });
     });
   });
 

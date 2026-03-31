@@ -535,6 +535,13 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         }
         break;
 
+      case '$size':
+        params.push(opValue);
+        conditions.push(
+          `json_type(data, ${jsonExtractPath}) = 'array' AND json_array_length(${jsonExtract}) = ?`
+        );
+        break;
+
       default:
         throw new Error(`Unsupported operator: ${op}`);
     }

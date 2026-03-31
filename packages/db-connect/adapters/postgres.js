@@ -772,6 +772,13 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         conditions.push(`${jsonPath} @> $${params.length}::jsonb`);
         break;
 
+      case '$size':
+        params.push(opValue);
+        conditions.push(
+          `jsonb_typeof(${jsonPath}) = 'array' AND jsonb_array_length(${jsonPath}) = $${params.length}`
+        );
+        break;
+
       default:
         throw new Error(`Unsupported operator: ${op}`);
     }

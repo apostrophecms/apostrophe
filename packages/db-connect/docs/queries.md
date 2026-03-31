@@ -186,6 +186,17 @@ Matches documents where an array field contains *all* of the specified values.
 
 The array must contain every value in the `$all` array, but may contain additional values.
 
+### $size
+
+Matches documents where an array field has the specified number of elements.
+
+```js
+{ tags: { $size: 2 } }  // matches arrays with exactly 2 elements
+{ tags: { $size: 0 } }  // matches empty arrays
+```
+
+The value must be a non-negative integer. Only matches fields that are arrays — documents where the field is missing or not an array are excluded.
+
 ## Array Field Matching
 
 Array fields are queried transparently. A scalar match against an array field succeeds if *any element* of the array matches:
