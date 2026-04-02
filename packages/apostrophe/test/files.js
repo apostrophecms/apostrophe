@@ -201,7 +201,9 @@ describe('Files with i18n locale prefixes', function() {
     const req = apos.task.getReq();
     for (const file of mockFiles) {
       await apos.file.insert(req, file);
-      const { _id, name, extension, data } = file.attachment;
+      const {
+        _id, name, extension, data
+      } = file.attachment;
       fs.writeFileSync(
         `${__dirname}/public/uploads/attachments/${_id}-${name}.${extension}`,
         data
