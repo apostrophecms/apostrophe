@@ -111,8 +111,7 @@ module.exports = {
           // (the slug-taken route does that)
           if (self.options.prettyUrls && file.attachment) {
             const { extension } = file.attachment;
-            const baseUrl = self.apos.url.getBaseUrl(req, { prefix: true });
-            file._url = `${baseUrl}${self.options.prettyUrlDir}/${file.slug.replace(self.options.slugPrefix || '', '')}.${extension}`;
+            file._url = `${req.prefix}${self.options.prettyUrlDir}/${file.slug.replace(self.options.slugPrefix || '', '')}.${extension}`;
             file.attachment._prettyUrl = file._url;
           } else {
             file._url = self.apos.attachment.url(file.attachment);
