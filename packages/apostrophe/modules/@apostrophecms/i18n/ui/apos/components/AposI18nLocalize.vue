@@ -317,7 +317,7 @@ export default {
       type: Object,
       default: null
     },
-    locale: {
+    targetLocale: {
       required: false,
       type: Object,
       default: null
@@ -385,7 +385,7 @@ export default {
             title: this.$t('apostrophe:selectLocales'),
             filter: '',
             if() {
-              return !this.locale;
+              return !this.targetLocale;
             },
             complete() {
               return this.selectedLocales.length > 0;
@@ -409,7 +409,7 @@ export default {
         },
         values: {
           toLocalize: { data: 'thisDocAndRelated' },
-          toLocales: { data: this.locale ? [ this.locale ] : [] },
+          toLocales: { data: this.targetLocale ? [ this.targetLocale ] : [] },
           relatedDocSettings: { data: 'localizeNewRelated' },
           relatedDocTypesToLocalize: { data: [] },
           translateContent: { data: false },
@@ -857,7 +857,7 @@ export default {
               relationship: doc._id === this.fullDoc._id
             });
 
-            if (this.locale && this.shouldRedirect) {
+            if (this.targetLocale && this.shouldRedirect) {
               // Ask for the redirect URL, this way it still works if we
               // need to carry a session across hostnames
               const result = await apos.http.post(`${this.moduleOptions.action}/locale`, {

@@ -123,7 +123,7 @@ export default {
             itemName: '@apostrophecms/i18n:localize',
             props: {
               doc: apos.adminBar.context,
-              locale
+              targetLocale: locale
             }
           });
         } else {

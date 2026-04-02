@@ -990,7 +990,7 @@ export default {
 
       const isLocalized = await apos.modal.execute('AposI18nLocalize', {
         doc: saved || this.original,
-        locale,
+        targetLocale: locale,
         moduleName: this.moduleName,
         shouldRedirect: false
       });
