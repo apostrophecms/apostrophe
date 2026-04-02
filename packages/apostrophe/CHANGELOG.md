@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.28.1
+
+### Patch Changes
+
+- f8d1952: Bug fix: the "pretty URLs" feature of @apostrophecms/file is now compatible with locale prefixes.
+
 ## 4.28.0
 
 ### Adds
@@ -7,7 +13,6 @@
 - Adds support for static URLs and static external frontend builds.
 - Adds widget graph store, accessible in Admin UI.
 - Support for the new `prettyUrls: true` option for @apostrophecms/file, which enables "pretty URLs" for PDFs and other items in the file library, in exchange for a small performance impact. Edit the slug field to adjust the pretty URL
-
 
 ### Fixes
 
@@ -27,7 +32,7 @@
 - Improve re-rendering UX while keeping the performance optimization
 - raise the user's widget z-index context only when focused
 - Hide add content buttons on rich text editing, like widget controls
--  Refine in-context focus states for calmer UX
+- Refine in-context focus states for calmer UX
 - Simplifies some in-context UI rendering checks
 - Updated dependencies
 
