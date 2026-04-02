@@ -113,10 +113,13 @@ module.exports = {
         if (!self.options.prettyUrls) {
           return null;
         }
-        const baseUrl = self.apos.url.getBaseUrl(req, {
-          relative
-        });
-        return `${baseUrl}${self.options.prettyUrlDir}`;
+        if (relative) {
+          return self.apos.url.getBaseUrl(req, {
+            relative: true,
+            localePrefix: true
+          }) + self.options.prettyUrlDir;
+        }
+        return `${req.prefix}${self.options.prettyUrlDir}`;
       },
       // Returns the pretty-URL path component for a file doc.
       // E.g. `/my-document.pdf` — just the filename portion,
