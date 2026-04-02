@@ -2,7 +2,8 @@
   <button
     type="button"
     class="apos-recently-edited-filter-tag"
-    :data-apos-test="'recently-edited-tag-' + tag.name"
+    data-apos-test="recently-edited-tag"
+    :data-apos-test-tag="tag.name"
     @click="$emit('clear', tag.name, tag.value)"
   >
     <close-icon

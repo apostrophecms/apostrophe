@@ -48,6 +48,7 @@
             <div
               v-if="isLoading"
               class="apos-recently-edited__loading-spinner-container"
+              data-apos-test="recently-edited-spinner"
             >
               <AposSpinner class="apos-recently-edited__spinner" />
             </div>

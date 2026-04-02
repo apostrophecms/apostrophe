@@ -16,11 +16,19 @@ import { computed, ref } from 'vue';
 export function useRecentlyEditedBatch({
   filterState, items, fetchPage, moduleLabels, reload
 }) {
+  function getSelectedSingleValue(filterValue) {
+    if (Array.isArray(filterValue)) {
+      return filterValue.length === 1 ? filterValue[0] : null;
+    }
+    return filterValue || null;
+  }
+
   function getSelectedTypeName() {
-    const typeValue = filterState.value._docType;
-    return Array.isArray(typeValue)
-      ? (typeValue.length === 1 ? typeValue[0] : null)
-      : typeValue;
+    return getSelectedSingleValue(filterState.value._docType);
+  }
+
+  function getSelectedLocaleName() {
+    return getSelectedSingleValue(filterState.value._locale);
   }
 
   function getBatchModule(typeName) {
@@ -39,7 +47,8 @@ export function useRecentlyEditedBatch({
   // standard single-type manager.
   const batchOperations = computed(() => {
     const typeName = getSelectedTypeName();
-    if (!typeName || !filterState.value._locale) {
+    const localeName = getSelectedLocaleName();
+    if (!typeName || !localeName) {
       return [];
     }
     return getBatchModule(typeName)?.batchOperations || [];
