@@ -59,13 +59,15 @@ export async function getLocales({ aposHost, aposExternalFrontKey }) {
 /**
  * Fetch URL metadata for a single locale from the Apostrophe backend.
  *
- * Returns an object with three properties:
+ * Returns an object with four properties:
  * - `paths`: entries for `getStaticPaths` (renderable HTML pages)
  * - `literalContent`: entries with a `contentType` (CSS, robots.txt, etc.)
  *   that must be written to disk separately.
  * - `attachments`: attachment metadata from the backend (when requested).
  *   Each entry has `_id` and `urls` (array of `{ size, path }`).
  *   Also includes `uploadsUrl` — the uploadfs base URL prefix.
+ *   Entries for pretty-URL files additionally carry a `base` property
+ *   that overrides `uploadsUrl` for those entries.
  *
  * Results are cached to the filesystem per locale so that the
  * `astro:build:done` hook can read literal content entries without
@@ -225,7 +227,8 @@ export async function getAllStaticPaths(config) {
   const allPaths = [];
   // Deduplicate attachments across locales by _id.
   // Attachments are not localized — the same attachment record
-  // will appear in every locale's response.
+  // will appear in every locale's response.  Entries for pretty-URL
+  // files carry a `base` property that overrides `uploadsUrl`.
   const attachmentMap = new Map();
   let uploadsUrl = null;
 
@@ -300,7 +303,7 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
     );
   }
   for (const file of files) {
-    if (!file.endsWith('.json') || file === '_attachments.json' || file === '_config.json') {
+    if (!file.endsWith('.json') || file.startsWith('_')) {
       continue;
     }
     const data = JSON.parse(
@@ -394,7 +397,7 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
  * @param {string} options.outDir - The absolute path to the build output directory.
  * @param {import('astro').AstroIntegrationLogger} options.logger - Astro integration logger.
  */
-export async function writeAttachments({ aposHost, outDir, logger, aposPrefix = '' }) {
+export async function writeAttachments({ aposHost, outDir, logger, aposPrefix = '', attachmentFilter = 'all' }) {
   const stats = { written: 0, warnings: 0, errors: 0 };
   let cache;
   try {
@@ -411,11 +414,36 @@ export async function writeAttachments({ aposHost, outDir, logger, aposPrefix = 
     return stats;
   }
 
-  // Flatten all attachment URLs into a single list for downloading
+  const totalStart = performance.now();
+
+  // Flatten all attachment URLs into download tasks.
+  // Each attachment entry may carry a `base` property (for pretty-URL
+  // files) that overrides the global `uploadsUrl`.
   const downloads = [];
   for (const att of results) {
+    // Apply attachment filter:
+    // - 'prettyOnly': skip entries without a per-entry `base`
+    //   (regular uploadfs attachments served by CDN)
+    if (attachmentFilter === 'prettyOnly' && !att.base) {
+      continue;
+    }
+    const entryBase = att.base || uploadsUrl;
+    const isAbsolute = /^https?:\/\//i.test(entryBase);
+    const dlBase = isAbsolute ? entryBase : aposHost + entryBase;
+    // Strip the Apostrophe prefix from the output path — the hosting
+    // platform already serves under the prefix path.
+    let outPrefix = isAbsolute ? '' : entryBase;
+    if (aposPrefix && outPrefix.startsWith(aposPrefix + '/')) {
+      outPrefix = outPrefix.slice(aposPrefix.length);
+    } else if (aposPrefix && outPrefix === aposPrefix) {
+      outPrefix = '/';
+    }
     for (const entry of att.urls) {
-      downloads.push(entry.path);
+      downloads.push({
+        path: entry.path,
+        downloadBase: dlBase,
+        outputPrefix: outPrefix
+      });
     }
   }
 
@@ -423,39 +451,16 @@ export async function writeAttachments({ aposHost, outDir, logger, aposPrefix = 
     return stats;
   }
 
-  // Resolve the base URL for downloading attachment files.
-  // `uploadsUrl` may be a relative path (e.g. `/uploads`) or an
-  // absolute URL (e.g. `https://cdn.example.com`).
-  const isAbsoluteUploadsUrl = /^https?:\/\//i.test(uploadsUrl);
-  const downloadBase = isAbsoluteUploadsUrl ? uploadsUrl : aposHost + uploadsUrl;
-
-  // For the output path we need to replicate the same path structure
-  // that HTML pages reference.  When `uploadsUrl` is a relative path
-  // (e.g. `/uploads`), the page HTML has `src="/uploads/attachments/..."`.
-  // So we write files to `outDir + uploadsUrl + path`.
-  // When `uploadsUrl` is an absolute CDN URL the pages already point
-  // to the CDN, but if the user still wants local copies we write
-  // under `outDir + /attachments/...` (just the path portion).
-  // Strip the Apostrophe prefix from the output path — the hosting
-  // platform already serves under the prefix path.
-  let outputPrefix = isAbsoluteUploadsUrl ? '' : uploadsUrl;
-  if (aposPrefix && outputPrefix.startsWith(aposPrefix + '/')) {
-    outputPrefix = outputPrefix.slice(aposPrefix.length);
-  } else if (aposPrefix && outputPrefix === aposPrefix) {
-    outputPrefix = '/';
-  }
-
-  const totalStart = performance.now();
   process.stdout.write(`${bgGreen(black(' copying attachments '))}\n`);
-  process.stdout.write(`${timestamp()} ${green('▶')} ${dim(outputPrefix || '/')}\n`);
+  process.stdout.write(`${timestamp()} ${green('▶')} ${dim('/')}\n`);
 
   // Download in batches with controlled concurrency
   for (let i = 0; i < downloads.length; i += DOWNLOAD_CONCURRENCY) {
     const batch = downloads.slice(i, i + DOWNLOAD_CONCURRENCY);
-    await Promise.all(batch.map(async (path) => {
+    await Promise.all(batch.map(async (task) => {
       try {
         const timeStart = performance.now();
-        const downloadUrl = downloadBase + path;
+        const downloadUrl = task.downloadBase + task.path;
         const res = await fetch(downloadUrl);
         if (!res.ok) {
           const isError = res.status >= 500;
@@ -465,25 +470,25 @@ export async function writeAttachments({ aposHost, outDir, logger, aposPrefix = 
             stats.warnings++;
           }
           const color = isError ? red : yellow;
+          const displayPath = task.outputPrefix + task.path;
           process.stdout.write(
-            `${timestamp()}   ${blue('├─')} ${dim(path)} ${color(`${res.status} skipped`)}\n`
+            `${timestamp()}   ${blue('├─')} ${dim(displayPath)} ${color(`${res.status} skipped`)}\n`
           );
           return;
         }
-        // Write to the output directory preserving the URL path
-        // structure so the file is served at the same path the
-        // HTML pages reference.
-        const outPath = join(outDir, outputPrefix, path);
+        const outPath = join(outDir, task.outputPrefix, task.path);
         await mkdir(dirname(outPath), { recursive: true });
         const buffer = Buffer.from(await res.arrayBuffer());
         await writeFile(outPath, buffer);
         const timeStat = getTimeStat(timeStart, performance.now());
         stats.written++;
-        process.stdout.write(`${timestamp()}   ${blue('├─')} ${dim(path)} ${dim(`(+${timeStat})`)}\n`);
+        const displayPath = task.outputPrefix + task.path;
+        process.stdout.write(`${timestamp()}   ${blue('├─')} ${dim(displayPath)} ${dim(`(+${timeStat})`)}\n`);
       } catch (err) {
         stats.errors++;
+        const displayPath = task.outputPrefix + task.path;
         process.stdout.write(
-          `${timestamp()}   ${blue('├─')} ${dim(path)} ${red(`✗ ${err.message}`)}\n`
+          `${timestamp()}   ${blue('├─')} ${dim(displayPath)} ${red(`✗ ${err.message}`)}\n`
         );
       }
     }));
