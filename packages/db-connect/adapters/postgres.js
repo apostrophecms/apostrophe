@@ -677,7 +677,8 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           conditions.push(`_id = ANY($${params.length}::text[])`);
         } else {
           const hasNull = opValue.includes(null);
-          const nonNullValues = opValue.filter(v => v !== null);
+          const regexValues = opValue.filter(v => v instanceof RegExp);
+          const nonNullValues = opValue.filter(v => v !== null && !(v instanceof RegExp));
           const parts = [];
           if (nonNullValues.length > 0) {
             params.push(nonNullValues.map(v => JSON.stringify(serializeValue(v))));
@@ -685,6 +686,12 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           }
           if (hasNull) {
             parts.push(`${jsonPath} IS NULL`);
+          }
+          // MongoDB supports RegExp values inside $in for pattern matching
+          for (const regex of regexValues) {
+            params.push(regex.source);
+            const flags = regex.ignoreCase ? '*' : '';
+            parts.push(`${jsonTextPath} ~${flags} $${params.length}`);
           }
           conditions.push(parts.length > 1 ? `(${parts.join(' OR ')})` : parts[0]);
         }
