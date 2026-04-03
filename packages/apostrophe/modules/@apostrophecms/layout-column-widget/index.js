@@ -180,46 +180,49 @@ module.exports = {
         self.apos.migration.add(
           `${self.__meta.name}:flatten-column-schema`,
           async () => {
-            await self.apos.migration.eachDoc({}, 5, async (doc) => {
-              if (await self.migrateColumnWidget(doc)) {
-                await self.apos.doc.db.replaceOne(
-                  { _id: doc._id },
-                  doc
-                );
+            await self.apos.migration.eachWidget({}, 5, async (doc, widget, dotPath) => {
+              if (widget.type !== self.name) {
+                return;
               }
+              const update = self.migrateColumnWidget(widget, dotPath);
+              if (!update) {
+                return;
+              }
+              await self.apos.doc.db.updateOne(
+                { _id: doc._id },
+                update
+              );
             });
           }
         );
       },
 
-      migrateColumnWidget(doc) {
-        let changed = false;
-        self.apos.area.walk(doc, (area) => {
-          for (const item of (area.items || [])) {
-            if (item.type !== self.name) {
-              continue;
-            }
-            // Idempotency check
-            if (!item.desktop && typeof item.colstart === 'number') {
-              continue;
-            }
-            const d = item.desktop || {};
-            item.colstart = d.colstart ?? null;
-            item.colspan = d.colspan ?? null;
-            item.rowstart = d.rowstart ?? 1;
-            item.rowspan = d.rowspan ?? 1;
-            item.order = d.order ?? null;
-            item.justify = d.justify ?? null;
-            item.align = d.align ?? null;
-            item.showTablet = item.tablet?.show ?? true;
-            item.showMobile = item.mobile?.show ?? true;
-            delete item.desktop;
-            delete item.tablet;
-            delete item.mobile;
-            changed = true;
-          }
-        });
-        return changed;
+      migrateColumnWidget(widget, dotPath) {
+        // Idempotency check
+        if (!widget.desktop && typeof widget.colstart === 'number') {
+          return null;
+        }
+        const d = widget.desktop || {};
+        const $set = {
+          [`${dotPath}.colstart`]: d.colstart ?? null,
+          [`${dotPath}.colspan`]: d.colspan ?? null,
+          [`${dotPath}.rowstart`]: d.rowstart ?? 1,
+          [`${dotPath}.rowspan`]: d.rowspan ?? 1,
+          [`${dotPath}.order`]: d.order ?? null,
+          [`${dotPath}.justify`]: d.justify ?? null,
+          [`${dotPath}.align`]: d.align ?? null,
+          [`${dotPath}.showTablet`]: widget.tablet?.show ?? true,
+          [`${dotPath}.showMobile`]: widget.mobile?.show ?? true
+        };
+        const $unset = {
+          [`${dotPath}.desktop`]: 1,
+          [`${dotPath}.tablet`]: 1,
+          [`${dotPath}.mobile`]: 1
+        };
+        return {
+          $set,
+          $unset
+        };
       }
     };
   }
