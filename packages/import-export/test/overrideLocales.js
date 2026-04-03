@@ -68,6 +68,7 @@ describe('#import - overriding locales integration tests', function() {
         .findOne({ _id: notificationId });
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       const actual = {
@@ -123,6 +124,7 @@ describe('#import - overriding locales integration tests', function() {
         .findOne({ _id: notificationId });
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       const actual = {
@@ -267,6 +269,7 @@ describe('#import - overriding locales integration tests', function() {
         .findOne({ _id: notificationId });
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       const actual = {
@@ -327,6 +330,7 @@ describe('#import - overriding locales integration tests', function() {
         .findOne({ _id: notificationId });
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       const actual = {
@@ -390,6 +394,7 @@ describe('#import - overriding locales integration tests', function() {
         .findOne({ _id: notificationId2 });
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       const actual = {

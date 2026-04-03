@@ -1,6 +1,10 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 
+const bogusUri = t.testDbProtocol === 'postgres'
+  ? 'postgres://this-will-not-work-unless-db-successfully-overrides-it/fail'
+  : 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail';
+
 describe('Db', function() {
 
   let apos, apos2;
@@ -34,7 +38,7 @@ describe('Db', function() {
         '@apostrophecms/db': {
           options: {
             client: apos.dbClient,
-            uri: 'mongodb://this-will-not-work-unless-db-successfully-overrides-it/fail'
+            uri: bogusUri
           }
         }
       }

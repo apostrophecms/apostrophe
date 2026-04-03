@@ -5,17 +5,19 @@
   "main": "index.js",
   "scripts": {
     "pretest": "npm run lint",
-    "test": "npm run test:base && npm run test:missing && npm run test:assets && npm run test:esm",
-    "test:base": "nyc mocha -t 10000 --ignore=test/assets.js",
+    "test": "npm run test:base && npm run test:missing && npm run test:esm && npm run test:db",
+    "test:base": "nyc mocha -t 10000",
     "test:missing": "nyc mocha -t 10000 test/add-missing-schema-fields-project/test.js",
-    "test:assets": "nyc mocha -t 10000 test/assets.js",
     "test:esm": "mocha -t 1000 test/esm-project/esm.js",
     "eslint": "eslint .",
     "eslint-fix": "npm run eslint -- --fix",
     "i18n": "node scripts/lint-i18n",
     "stylelint": "stylelint modules/**/*.{scss,vue}",
     "lint": "npm run eslint && npm run i18n && npm run stylelint",
-    "mocha": "mocha"
+    "mocha": "mocha",
+    "test:db": "cd ../db-connect && npm test",
+    "test:db:mongodb": "cd ../db-connect && ADAPTER=mongodb npx mocha test/**/*.test.js --timeout 30000",
+    "test:db:postgres": "cd ../db-connect && ADAPTER=postgres npx mocha test/**/*.test.js --timeout 30000"
   },
   "repository": {
     "type": "git",
@@ -38,6 +40,7 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
+    "@apostrophecms/db-connect": "workspace:^",
     "@apostrophecms/emulate-mongo-3-driver": "workspace:^",
     "@apostrophecms/vue-material-design-icons": "^1.0.0",
     "@ctrl/tinycolor": "^4.1.0",
@@ -141,6 +144,7 @@
     "xregexp": "^2.0.0"
   },
   "devDependencies": {
+    "chai": "^4.3.10",
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
     "form-data": "^4.0.4",

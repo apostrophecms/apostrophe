@@ -311,7 +311,7 @@ describe('Job module', function() {
         req,
         async function(_req, reporters) {
           let count = 1;
-          reporters.setTotal(articleIds.length);
+          await reporters.setTotal(articleIds.length);
 
           for (const id of articleIds) {
             await delay(3);
