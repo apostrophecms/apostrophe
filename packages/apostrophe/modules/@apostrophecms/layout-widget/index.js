@@ -358,12 +358,12 @@ module.exports = {
         if (!Array.isArray(widgets)) {
           return;
         }
-        const items = widgets.filter(widget => widget.tablet.show);
+        const items = widgets.filter(widget => widget.showTablet !== false);
         if (items.length % 2 === 0) {
           return;
         }
         items.sort((a, b) =>
-          (a.tablet.order ?? a.desktop.order) - (b.tablet.order ?? b.desktop.order)
+          (a.order ?? 0) - (b.order ?? 0)
         );
         return items[items.length - 1]._id;
       }

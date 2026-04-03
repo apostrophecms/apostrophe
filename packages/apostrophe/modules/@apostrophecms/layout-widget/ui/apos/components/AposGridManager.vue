@@ -98,7 +98,6 @@
             :skip-info="true"
             :disabled="opstate.disabled"
             :teleport-modals="true"
-            @update="updateItem"
             @operation="onBreadcrumbOperation(item, $event)"
           />
         </div>
@@ -799,21 +798,6 @@ export default {
         colspan,
         colstart
       };
-    },
-    updateItem(data) {
-      const { align, justify } = (data[this.gridState.deviceMode] || {});
-      const patch = {
-        mobile: {
-          show: data.mobile?.show ?? true
-        },
-        tablet: {
-          show: data.tablet?.show ?? true
-        }
-      };
-      patch[this.gridState.deviceMode] ||= {};
-      patch[this.gridState.deviceMode].align = align;
-      patch[this.gridState.deviceMode].justify = justify;
-      this.patchItem(data, patch);
     },
     patchItem(item, patch) {
       this.$emit('patch-item', {
