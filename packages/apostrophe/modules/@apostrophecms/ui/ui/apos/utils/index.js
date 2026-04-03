@@ -176,6 +176,13 @@ class Queue {
     });
   }
 
+  clear() {
+    const pending = this.queue.splice(0);
+    for (const item of pending) {
+      item.reject(new Error('queue:cleared'));
+    }
+  }
+
   async run() {
     if (this.running) {
       return;
@@ -216,6 +223,7 @@ class Queue {
  * ```
  * @returns {{
  *  add: <T>(task: () => Promise<T>) => Promise<T>,
+ *  clear: () => void,
  *  count: () => number,
  *  hasTasks: () => boolean
  * }}
@@ -224,6 +232,7 @@ function asyncTaskQueue() {
   const queue = new Queue();
   return {
     add: (task) => queue.add(task),
+    clear: () => queue.clear(),
     count: () => queue.count(),
     hasTasks: () => queue.hasTasks()
   };

@@ -125,6 +125,7 @@
             :headers="headers"
             :options="{
               ...moduleOptions,
+              isRelationship: !!relationshipField,
               disableUnchecked: maxReached(),
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished

@@ -49,6 +49,7 @@
     <button
       v-if="!process"
       class="apos-notification__button"
+      data-apos-test="notification-close"
       @click="close"
     >
       <Close
