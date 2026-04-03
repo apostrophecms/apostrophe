@@ -500,6 +500,7 @@
   "recentlyEditedEmptySearched": "No documents match your search",
   "recentlyEditedEmptySearchedHint": "Try different search terms or adjust your filters",
   "recentlyEditedFilters": "Filters",
+  "recentlyEditedSearchDocuments": "Search documents",
   "recentlyEditedAddFilter": "Add filter value",
   "recentlyEditedStatus": "Status",
   "recentlyEditedStatusSubmitted": "Submitted",

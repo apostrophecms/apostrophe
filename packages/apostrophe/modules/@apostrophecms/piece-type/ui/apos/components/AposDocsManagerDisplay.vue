@@ -170,7 +170,7 @@ export default {
       return this.options;
     },
     hasBatchOperations() {
-      return this.options.batchOperations?.length > 0;
+      return this.options.batchOperations?.length > 0 || this.options.isRelationship;
     }
   },
   watch: {

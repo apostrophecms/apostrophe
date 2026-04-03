@@ -29,6 +29,7 @@
             :batch-operations="batchOperations"
             :filter-values="batchFilterValues"
             :module-name="moduleName"
+            :search-placeholder="$t('apostrophe:recentlyEditedSearchDocuments')"
             :options="{ noPager: true }"
             @search="onSearch"
             @select-click="selectAll"
