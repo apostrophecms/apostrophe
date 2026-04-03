@@ -198,30 +198,22 @@ module.exports = {
       },
 
       migrateColumnWidget(widget, dotPath) {
-        // Idempotency check
-        if (!widget.desktop && typeof widget.colstart === 'number') {
+        if (typeof widget.showTablet === 'boolean') {
           return null;
         }
         const d = widget.desktop || {};
-        const $set = {
-          [`${dotPath}.colstart`]: d.colstart ?? null,
-          [`${dotPath}.colspan`]: d.colspan ?? null,
-          [`${dotPath}.rowstart`]: d.rowstart ?? 1,
-          [`${dotPath}.rowspan`]: d.rowspan ?? 1,
-          [`${dotPath}.order`]: d.order ?? null,
-          [`${dotPath}.justify`]: d.justify ?? null,
-          [`${dotPath}.align`]: d.align ?? null,
-          [`${dotPath}.showTablet`]: widget.tablet?.show ?? true,
-          [`${dotPath}.showMobile`]: widget.mobile?.show ?? true
-        };
-        const $unset = {
-          [`${dotPath}.desktop`]: 1,
-          [`${dotPath}.tablet`]: 1,
-          [`${dotPath}.mobile`]: 1
-        };
         return {
-          $set,
-          $unset
+          $set: {
+            [`${dotPath}.colstart`]: d.colstart ?? null,
+            [`${dotPath}.colspan`]: d.colspan ?? null,
+            [`${dotPath}.rowstart`]: d.rowstart ?? 1,
+            [`${dotPath}.rowspan`]: d.rowspan ?? 1,
+            [`${dotPath}.order`]: d.order ?? null,
+            [`${dotPath}.justify`]: d.justify ?? null,
+            [`${dotPath}.align`]: d.align ?? null,
+            [`${dotPath}.showTablet`]: widget.tablet?.show ?? true,
+            [`${dotPath}.showMobile`]: widget.mobile?.show ?? true
+          }
         };
       }
     };

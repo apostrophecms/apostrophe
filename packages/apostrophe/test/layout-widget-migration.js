@@ -17,7 +17,7 @@ describe('Layout Widget Migration', function () {
       await t.destroy(apos);
     });
 
-    it('returns $set and $unset for old-schema widget', function () {
+    it('returns $set for old-schema widget', function () {
       const widget = {
         _id: 'w1',
         type: '@apostrophecms/layout-column',
@@ -54,11 +54,6 @@ describe('Layout Widget Migration', function () {
           'main.items.0.align': 'start',
           'main.items.0.showTablet': false,
           'main.items.0.showMobile': true
-        },
-        $unset: {
-          'main.items.0.desktop': 1,
-          'main.items.0.tablet': 1,
-          'main.items.0.mobile': 1
         }
       });
     });
@@ -68,6 +63,12 @@ describe('Layout Widget Migration', function () {
         _id: 'w1',
         type: '@apostrophecms/layout-column',
         metaType: 'widget',
+        desktop: {
+          colstart: 1,
+          colspan: 6
+        },
+        tablet: {},
+        mobile: {},
         colstart: 1,
         colspan: 6,
         rowstart: 1,
@@ -98,21 +99,18 @@ describe('Layout Widget Migration', function () {
 
       const result = migrate(widget, 'main.items.0');
 
-      assert.deepEqual(result.$set, {
-        'main.items.0.colstart': 2,
-        'main.items.0.colspan': 4,
-        'main.items.0.rowstart': 1,
-        'main.items.0.rowspan': 1,
-        'main.items.0.order': null,
-        'main.items.0.justify': null,
-        'main.items.0.align': null,
-        'main.items.0.showTablet': true,
-        'main.items.0.showMobile': true
-      });
-      assert.deepEqual(result.$unset, {
-        'main.items.0.desktop': 1,
-        'main.items.0.tablet': 1,
-        'main.items.0.mobile': 1
+      assert.deepEqual(result, {
+        $set: {
+          'main.items.0.colstart': 2,
+          'main.items.0.colspan': 4,
+          'main.items.0.rowstart': 1,
+          'main.items.0.rowspan': 1,
+          'main.items.0.order': null,
+          'main.items.0.justify': null,
+          'main.items.0.align': null,
+          'main.items.0.showTablet': true,
+          'main.items.0.showMobile': true
+        }
       });
     });
 
@@ -135,7 +133,6 @@ describe('Layout Widget Migration', function () {
       assert.equal(result.$set['main.items.0.content.items.0.colspan'], 2);
       assert.equal(result.$set['main.items.0.content.items.0.showTablet'], false);
       assert.equal(result.$set['main.items.0.content.items.0.showMobile'], true);
-      assert.equal(result.$unset['main.items.0.content.items.0.desktop'], 1);
     });
 
     it('returns update when colstart is null at root but desktop still present', function () {
@@ -157,7 +154,6 @@ describe('Layout Widget Migration', function () {
       assert.equal(result.$set['main.items.0.colstart'], 5);
       assert.equal(result.$set['main.items.0.colspan'], 3);
       assert.equal(result.$set['main.items.0.showMobile'], false);
-      assert.equal(result.$unset['main.items.0.desktop'], 1);
     });
   });
 
@@ -253,7 +249,7 @@ describe('Layout Widget Migration', function () {
       assert.notEqual(base._id, extended._id);
     });
 
-    it('returns $set/$unset for extended column type', function () {
+    it('returns $set for extended column type', function () {
       const migrate = apos.modules['test-column-widget'].migrateColumnWidget;
       const widget = {
         _id: 'w1',
@@ -280,21 +276,18 @@ describe('Layout Widget Migration', function () {
 
       const result = migrate(widget, 'main.items.0');
 
-      assert.deepEqual(result.$set, {
-        'main.items.0.colstart': 2,
-        'main.items.0.colspan': 4,
-        'main.items.0.rowstart': 1,
-        'main.items.0.rowspan': 2,
-        'main.items.0.order': 1,
-        'main.items.0.justify': 'start',
-        'main.items.0.align': 'center',
-        'main.items.0.showTablet': true,
-        'main.items.0.showMobile': false
-      });
-      assert.deepEqual(result.$unset, {
-        'main.items.0.desktop': 1,
-        'main.items.0.tablet': 1,
-        'main.items.0.mobile': 1
+      assert.deepEqual(result, {
+        $set: {
+          'main.items.0.colstart': 2,
+          'main.items.0.colspan': 4,
+          'main.items.0.rowstart': 1,
+          'main.items.0.rowspan': 2,
+          'main.items.0.order': 1,
+          'main.items.0.justify': 'start',
+          'main.items.0.align': 'center',
+          'main.items.0.showTablet': true,
+          'main.items.0.showMobile': false
+        }
       });
     });
   });
@@ -455,9 +448,7 @@ describe('Layout Widget Migration', function () {
       assert.equal(widget.align, 'start');
       assert.equal(widget.showTablet, false);
       assert.equal(widget.showMobile, true);
-      assert.equal(widget.desktop, undefined);
-      assert.equal(widget.tablet, undefined);
-      assert.equal(widget.mobile, undefined);
+      assert(widget.desktop);
     });
 
     it('migrates extended column widget in DB', async function () {
@@ -508,9 +499,7 @@ describe('Layout Widget Migration', function () {
       assert.equal(widget.align, 'center');
       assert.equal(widget.showTablet, true);
       assert.equal(widget.showMobile, false);
-      assert.equal(widget.desktop, undefined);
-      assert.equal(widget.tablet, undefined);
-      assert.equal(widget.mobile, undefined);
+      assert(widget.desktop);
     });
 
     it('applies defaults for missing optional fields in DB', async function () {
@@ -550,9 +539,7 @@ describe('Layout Widget Migration', function () {
       assert.equal(widget.align, null);
       assert.equal(widget.showTablet, true);
       assert.equal(widget.showMobile, true);
-      assert.equal(widget.desktop, undefined);
-      assert.equal(widget.tablet, undefined);
-      assert.equal(widget.mobile, undefined);
+      assert(widget.desktop);
     });
 
     it('does not touch non-column widgets in DB', async function () {
@@ -635,9 +622,7 @@ describe('Layout Widget Migration', function () {
       assert.equal(inner.colspan, 2);
       assert.equal(inner.showTablet, false);
       assert.equal(inner.showMobile, true);
-      assert.equal(inner.desktop, undefined);
-      assert.equal(inner.tablet, undefined);
-      assert.equal(inner.mobile, undefined);
+      assert(inner.desktop);
     });
 
     it('is idempotent when run twice in DB', async function () {
@@ -671,7 +656,7 @@ describe('Layout Widget Migration', function () {
       const firstResults = await setupAndRunMigration(oldDocs);
       const widgetAfterFirst = firstResults['test-idempotent:en:published'].main.items[0];
       assert.equal(widgetAfterFirst.colstart, 1);
-      assert.equal(widgetAfterFirst.desktop, undefined);
+      assert.equal(widgetAfterFirst.showTablet, true);
 
       // Remove migration record again and run a second time
       await apos.migration.db.deleteMany({
@@ -688,9 +673,9 @@ describe('Layout Widget Migration', function () {
       assert.equal(widget.colspan, 6);
       assert.equal(widget.rowstart, 1);
       assert.equal(widget.rowspan, 1);
-      assert.equal(widget.desktop, undefined);
-      assert.equal(widget.tablet, undefined);
-      assert.equal(widget.mobile, undefined);
+      assert.equal(widget.showTablet, true);
+      assert.equal(widget.showMobile, true);
+      assert(widget.desktop);
     });
 
     it('migrates both base and extended column widgets in the same doc', async function () {
@@ -736,14 +721,14 @@ describe('Layout Widget Migration', function () {
       assert.equal(baseWidget.colspan, 6);
       assert.equal(baseWidget.showTablet, false);
       assert.equal(baseWidget.showMobile, true);
-      assert.equal(baseWidget.desktop, undefined);
+      assert(baseWidget.desktop);
 
       const extWidget = results['test-both:en:published'].main.items[1];
       assert.equal(extWidget.colstart, 7);
       assert.equal(extWidget.colspan, 6);
       assert.equal(extWidget.showTablet, true);
       assert.equal(extWidget.showMobile, false);
-      assert.equal(extWidget.desktop, undefined);
+      assert(extWidget.desktop);
     });
 
     it('migrates deeply nested extended column in DB', async function () {
@@ -789,9 +774,7 @@ describe('Layout Widget Migration', function () {
       assert.equal(inner.colspan, 3);
       assert.equal(inner.showTablet, false);
       assert.equal(inner.showMobile, true);
-      assert.equal(inner.desktop, undefined);
-      assert.equal(inner.tablet, undefined);
-      assert.equal(inner.mobile, undefined);
+      assert(inner.desktop);
     });
   });
 });
