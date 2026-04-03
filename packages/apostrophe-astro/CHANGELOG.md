@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.0
+
+### Adds
+
+- Adds support for static builds. Introduces relevant helpers.
+
 ## 1.9.0 (2026-02-18)
 
 ### Adds

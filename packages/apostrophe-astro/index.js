@@ -33,6 +33,14 @@ function csvEnv(name) {
  * @property {string[]} [attachmentSkipSizes=['original']] - Image sizes
  *   to exclude.  Overridden when `APOS_ATTACHMENT_SKIP_SIZES` env var
  *   is present (comma-separated, e.g. `original,max`).
+ * @property {'all'|'prettyOnly'} [attachmentFilter='all'] - Controls
+ *   which attachment types to include in the build output.
+ *   `'all'` (default) writes both regular uploadfs attachments and
+ *   pretty URL files.  `'prettyOnly'` skips regular uploadfs
+ *   attachments (useful when those are served by a CDN) but still
+ *   writes pretty URL files which are always backend-served.
+ *   This option has no effect when `attachments` is `false`.
+ *   Overridden when `APOS_ATTACHMENT_FILTER` env var is present.
  * @property {'used'|'all'} [attachmentScope='used'] - `'used'` limits
  *   to attachments referenced by built pages; `'all'` includes every
  *   attachment in the database.  Overridden when `APOS_ATTACHMENT_SCOPE`
@@ -82,6 +90,7 @@ export default function apostropheIntegration(options) {
   // cannot access the Vite virtual module).
   let resolvedAposHost;
   let resolvedAposPrefix;
+  let resolvedStaticBuild;
   return {
     name: 'apostrophe-integration',
     hooks: {
@@ -111,6 +120,9 @@ export default function apostropheIntegration(options) {
           attachments: process.env.APOS_SKIP_ATTACHMENTS
             ? process.env.APOS_SKIP_ATTACHMENTS !== '1'
             : (userStatic.attachments ?? true),
+          attachmentFilter: process.env.APOS_ATTACHMENT_FILTER
+            ? process.env.APOS_ATTACHMENT_FILTER
+            : (userStatic.attachmentFilter || 'all'),
           attachmentSizes: csvEnv('APOS_ATTACHMENT_SIZES')
             ?? userStatic.attachmentSizes,
           attachmentSkipSizes: csvEnv('APOS_ATTACHMENT_SKIP_SIZES')
@@ -125,6 +137,7 @@ export default function apostropheIntegration(options) {
         // it without depending on the Vite virtual module (which
         // is unavailable at config load time).
         if (isStaticBuild) {
+          resolvedStaticBuild = staticBuild;
           await writeConfigCache(staticBuild);
         }
 
@@ -202,11 +215,13 @@ export default function apostropheIntegration(options) {
             outDir: dir.pathname,
             logger
           });
+          const filter = resolvedStaticBuild?.attachmentFilter || 'all';
           const attachments = await writeAttachments({
             aposHost,
             aposPrefix: resolvedAposPrefix,
             outDir: dir.pathname,
-            logger
+            logger,
+            attachmentFilter: filter
           });
           writePostBuildSummary({ literal, attachments, logger });
         } finally {

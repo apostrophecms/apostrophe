@@ -3,6 +3,7 @@
     <tbody>
       <tr>
         <th
+          v-if="hasBatchOperations"
           class="apos-table__header"
         />
         <th
@@ -46,6 +47,7 @@
         @mouseout="out(item._id)"
       >
         <td
+          v-if="hasBatchOperations"
           class="apos-table__cell"
         >
           <AposCheckbox
@@ -166,6 +168,9 @@ export default {
     },
     contextMenuOptions() {
       return this.options;
+    },
+    hasBatchOperations() {
+      return this.options.batchOperations?.length > 0 || this.options.isRelationship;
     }
   },
   watch: {

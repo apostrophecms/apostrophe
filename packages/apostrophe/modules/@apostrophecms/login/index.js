@@ -61,6 +61,8 @@ module.exports = {
     localLogin: true,
     passwordReset: false,
     passwordResetHours: 48,
+    // Maximum time to complete login (1 hour)
+    incompleteLifetime: 60 * 60 * 1000,
     scene: 'apos',
     csrfExceptions: [
       'login'
@@ -85,6 +87,7 @@ module.exports = {
     await self.enableBearerTokens();
     self.addToAdminBar();
     self.addCaseInsensitiveMigration();
+    self.cleanupInterval = setInterval(self.cleanup, self.options.incompleteLifetime);
   },
   handlers(self) {
     return {
@@ -96,6 +99,14 @@ module.exports = {
         },
         async checkForUser() {
           await self.checkForUserAndAlert();
+        }
+      },
+      'apostrophe:destroy': {
+        clearIntervals() {
+          if (self.cleanupInterval) {
+            clearInterval(self.cleanupInterval);
+            self.cleanupInterval = null;
+          }
         }
       }
     };
@@ -725,16 +736,12 @@ module.exports = {
 
         const user = await self.deserializeUser(token.userId);
         if (!user) {
-          await self.bearerTokens.removeOne({
-            _id: token.userId
-          });
+          await removeToken();
           throw self.apos.error('notfound');
         }
 
         if (session) {
-          await self.bearerTokens.removeOne({
-            _id: token.userId
-          });
+          await removeToken();
           await self.passportLogin(req, user);
           // No access to login attempts in the final phase.
           self.logInfo(req, 'complete', {
@@ -742,9 +749,12 @@ module.exports = {
           });
         } else {
           delete token.requirementsToVerify;
-          self.bearerTokens.updateOne(token, {
+          await self.bearerTokens.updateOne(token, {
             $unset: {
               requirementsToVerify: 1
+            },
+            $set: {
+              expires: Date.now() + self.getBearerTokenLifetime()
             }
           });
           self.logInfo(req, 'complete', {
@@ -753,6 +763,12 @@ module.exports = {
           return {
             token
           };
+        }
+
+        async function removeToken() {
+          await self.bearerTokens.removeOne({
+            _id: token._id
+          });
         }
       },
 
@@ -765,7 +781,9 @@ module.exports = {
           _id: self.apos.launder.string(token),
           requirementsToVerify: {
             $exists: true,
-            $ne: []
+            $not: {
+              $size: 0
+            }
           },
           expires: {
             $gte: new Date()
@@ -858,7 +876,7 @@ module.exports = {
               // Default lifetime of 1 hour is generous to permit situations
               // like installing a TOTP app for the first time
               expires: new Date(
-                new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000)
+                Date.now() + self.options.incompleteLifetime
               )
             });
 
@@ -884,8 +902,8 @@ module.exports = {
               _id: token,
               userId: user._id,
               expires: new Date(
-                new Date().getTime() +
-                (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000
+                Date.now() +
+                self.getBearerTokenLifetime()
               )
             });
 
@@ -1071,6 +1089,20 @@ module.exports = {
             { failed: duplicatedUsernames }
           );
         }
+      },
+      getBearerTokenLifetime() {
+        return (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000;
+      },
+      // Periodic cleanup. Expired bearer tokens are only honored until they expire, but
+      // it also makes sense to free the resources after expiration
+      async cleanup() {
+        return self.bearerTokens.deleteMany(
+          {
+            expires: {
+              $lt: new Date()
+            }
+          }
+        );
       }
     };
   },

@@ -128,6 +128,9 @@ export const useModalStore = defineStore('modal', () => {
       props = await apos.ui.transformers[transformer](props);
     }
     return new Promise((resolve) => {
+      const modalLocale = props?.locale ||
+        activeModal.value?.locale ||
+        apos.i18n.locale;
       const item = {
         id: `modal:${createId()}`,
         componentName,
@@ -135,11 +138,11 @@ export const useModalStore = defineStore('modal', () => {
         props: props || {},
         elementsToFocus: [],
         focusedElement: null,
-        locale: activeModal.value?.locale || apos.i18n.locale,
+        locale: modalLocale,
         hasContextLocale: activeModal.value
           ? (activeModal.value.hasContextLocale ||
               activeModal.value.locale !== apos.i18n.locale)
-          : false
+          : modalLocale !== apos.i18n.locale
       };
 
       activeId.value = item.id;

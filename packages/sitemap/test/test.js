@@ -82,6 +82,8 @@ describe('Apostrophe Sitemap', function() {
       assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="en" href="http://localhost:7780/products/cheese" />') !== -1);
       assert(xml.indexOf('<loc>http://localhost:7780/products/rocks</loc>') === -1);
       assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="en" href="http://localhost:7780/products/rocks" />') === -1);
+      assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="x-default" href="http://localhost:7780/" />') !== -1);
+      assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="x-default" href="http://localhost:7780/products/cheese" />') !== -1);
     } catch (error) {
       assert(!error);
     }
@@ -273,6 +275,10 @@ describe('Apostrophe Sitemap', function() {
         '<xhtml:link rel="alternate" hreflang="fr" href="http://fr.example.com/products/cheese" />'
       ) === -1
     );
+    // x-default should point to the default locale (en) for all locale variants
+    assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="x-default" href="http://localhost:7780/" />') !== -1);
+    assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="x-default" href="http://localhost:7780/tab-one/child-one" />') !== -1);
+    assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="x-default" href="http://localhost:7780/products/cheese" />') !== -1);
   });
 
   it('should create new multi-language app', async function () {
@@ -401,6 +407,10 @@ describe('Apostrophe Sitemap', function() {
         '<xhtml:link rel="alternate" hreflang="fr" href="http://fr.example.com/products/cheese" />'
       ) === -1
     );
+    // x-default should point to the default locale (en) for all locale variants
+    assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="x-default" href="http://localhost:7780/" />') !== -1);
+    assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="x-default" href="http://localhost:7780/tab-one/child-one" />') !== -1);
+    assert(xml.indexOf('<xhtml:link rel="alternate" hreflang="x-default" href="http://localhost:7780/products/cheese" />') !== -1);
   });
 
   it('should create app with perLocale option enabled', async function () {

@@ -179,7 +179,7 @@ Advanced structured data types need [fields with specific names](#summary-requir
 >
 > 👉 For the full list of supported field names, fallbacks, and recommended patterns, see **[Field Flexibility](#field-flexibility)**.
 >
-> You can also map existing field names to required field names using the [`fieldMappings`](#custom-field-mappings) option of the module.
+> You can also map existing field names to required field names using the [`seoFieldMappings`](#custom-field-mappings) option of the module.
 >
 > If you plan to rely heavily on structured data (especially for products, recipes, jobs, or video), it’s a good idea to:
 >
@@ -1197,7 +1197,7 @@ If your project uses different field names than the SEO module's defaults, you c
 modules: {
   '@apostrophecms/seo': {
     options: {
-      fieldMappings: {
+      seoFieldMappings: {
         author: 'authorName',           // Use authorName instead of author/_author
         image: 'heroImage',             // Use heroImage instead of _featuredImage
         description: 'summary',         // Use summary instead of description/excerpt

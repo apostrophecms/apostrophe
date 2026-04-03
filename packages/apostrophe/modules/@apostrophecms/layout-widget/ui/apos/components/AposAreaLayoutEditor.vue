@@ -97,6 +97,11 @@
             :rendering="rendering(widget)"
             :controls-disabled="true"
             :breadcrumb-disabled="true"
+            :style="{
+              'z-index': raisedWidgets.has(widget._id)
+                ? next.length + 1
+                : null
+            }"
             @up="up"
             @down="down"
             @remove="remove"

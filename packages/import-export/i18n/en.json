@@ -41,6 +41,7 @@
   "lastEdited": "Last edited",
   "mode": "Mode",
   "or": "or",
+  "recentlyEditedActionImported": "Imported",
   "title": "Title",
   "type": "Type",
   "typeUnknown": "Type \"{{ type }}\" is not valid.",

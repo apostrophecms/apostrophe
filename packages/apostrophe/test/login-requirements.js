@@ -1,7 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 
-describe('Login', function() {
+describe('Login Requirements', function() {
 
   let apos;
 
@@ -433,9 +433,12 @@ describe('Login', function() {
 
     assert(page.match(/logged out/));
 
-    // Make sure it won't convert with an incorrect ExtraSecret
-
     const token = result.incompleteToken;
+
+    // Make sure we can't use an incomplete token as a bearer token
+    await assert.rejects(tryAsBearerToken);
+
+    // Make sure it won't convert with an incorrect ExtraSecret
 
     try {
       await apos.http.post('/api/v1/@apostrophecms/login/requirement-verify', {
@@ -447,11 +450,16 @@ describe('Login', function() {
         },
         jar
       });
+      // Getting here is bad
+      assert(false);
     } catch ({ status, body }) {
       assert(status === 400);
       assert.strictEqual(body.message, extraSecretErr);
       assert.strictEqual(body.data.requirement, 'ExtraSecret');
     }
+
+    // Make sure a bad conversion attempt doesn't unlock it as a bearer token either
+    await assert.rejects(tryAsBearerToken);
 
     // If we try the final login without
     // having successfully verified all requirements we get an error
@@ -512,6 +520,10 @@ describe('Login', function() {
       jar
     });
 
+    // Only now should we be able to use it as a bearer token
+    await tryAsBearerToken();
+
+    // Complete the cookie-based session login process
     await apos.http.post(
       '/api/v1/@apostrophecms/login/login',
       {
@@ -532,6 +544,136 @@ describe('Login', function() {
     );
 
     assert(page.match(/logged in/));
+
+    async function tryAsBearerToken() {
+      await apos.http.get('/api/v1/@apostrophecms/page', {
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
+    }
   });
 
 });
+
+describe('Expired Token Deletion', function() {
+
+  let apos;
+
+  const extraSecretErr = 'extra secret incorrect';
+
+  this.timeout(20000);
+
+  this.beforeEach(async function() {
+    if (apos && apos.modules && apos.modules['@apostrophecms/login']) {
+      const loginModule = apos.modules['@apostrophecms/login'];
+      await loginModule.clearLoginAttempts('HarryPutter');
+    }
+  });
+
+  after(function() {
+    return t.destroy(apos);
+  });
+
+  // EXISTENCE
+
+  it('should initialize', async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/login': {
+          options: {
+            incompleteLifetime: 5000
+          },
+          requirements(self) {
+            return {
+              add: {
+                // Need an extra requirement so that the token will die
+                // after incompleteLifetime
+                ExtraSecret: {
+                  phase: 'afterPasswordVerified',
+                  async props(req, user) {
+                    return {
+                      // Verify we had access to the user here
+                      hint: user.username
+                    };
+                  },
+                  async verify(req, data, user) {
+                    if (data !== user.extraSecret) {
+                      throw self.apos.error('invalid', extraSecretErr);
+                    }
+                  }
+                }
+              }
+            };
+          }
+        }
+      }
+    });
+
+    assert(apos.modules['@apostrophecms/login']);
+  });
+
+  it('should be able to insert test user', async function() {
+    assert(apos.user.newInstance);
+    const user = apos.user.newInstance();
+    assert(user);
+
+    user.title = 'Harry Putter';
+    user.username = 'HarryPutter';
+    user.password = 'crookshanks';
+    user.email = 'hputter@aol.com';
+    user.role = 'admin';
+    user.extraSecret = 'roll-on';
+
+    assert(user.type === '@apostrophecms/user');
+    assert(apos.user.insert);
+    const doc = await apos.user.insert(apos.task.getReq(), user);
+    assert(doc._id);
+  });
+
+  it('initial login should produce an incompleteToken, convertible with the afterPasswordVerified requirements', async function() {
+
+    const jar = apos.http.jar();
+
+    // establish session
+    await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    const result = await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'crookshanks',
+          session: true,
+          requirements: {
+            WeakCaptcha: 'xyz',
+            UponSubmit: 'abc'
+          }
+        },
+        jar
+      }
+    );
+
+    const token = result.incompleteToken;
+    assert(token);
+    // Verify it initially exists
+    assert(await apos.login.bearerTokens.findOne({ _id: token }));
+    // Wait until well over 5 seconds have passed to allow the cleanup interval to run
+    await delay(10000);
+    // Verify it is gone from the db
+    assert(!(await apos.login.bearerTokens.findOne({ _id: token })));
+  });
+});
+
+function delay(ms) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => resolve(), ms);
+  });
+}
