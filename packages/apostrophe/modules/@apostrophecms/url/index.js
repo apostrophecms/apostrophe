@@ -134,11 +134,21 @@ module.exports = {
       //
       // When `true`, the returned URL is relative and prefix-qualified.
       // The `prefix` option and i18n hosts are ignored in this case.
+      //
+      // ### `options.localePrefix`
+      //
+      // When `true`, the locale prefix (e.g. `/fr`) is appended
+      // after the global prefix.  Defaults to `false` for
+      // backward compatibility.
       getBaseUrl(req, {
-        strict = false, prefix = true, relative = false
+        strict = false, prefix = true, relative = false,
+        localePrefix = false
       } = {}) {
         if (relative) {
-          return self.apos.prefix || '';
+          const result = self.apos.prefix || '';
+          return localePrefix
+            ? result + (self.apos.i18n.locales[req.locale]?.prefix || '')
+            : result;
         }
         const hostname = self.apos.i18n.locales?.[req.locale]?.hostname;
         if (hostname) {
@@ -147,13 +157,16 @@ module.exports = {
           return `${req.protocol}://${hostname}`;
         }
         const aposPrefix = prefix ? (self.apos.prefix || '') : '';
+        const lPrefix = localePrefix
+          ? (self.apos.i18n.locales[req.locale]?.prefix || '')
+          : '';
         if (self.isStaticBuild(req)) {
           const staticUrl = req.staticBaseUrl || '';
           if (staticUrl || !strict) {
-            return staticUrl + aposPrefix;
+            return staticUrl + aposPrefix + lPrefix;
           }
         }
-        return (self.apos.baseUrl || '') + aposPrefix;
+        return (self.apos.baseUrl || '') + aposPrefix + lPrefix;
       },
 
       // Build filter URLs. `data` is an object whose properties
