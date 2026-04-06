@@ -198,7 +198,7 @@ module.exports = {
       },
 
       migrateColumnWidget(widget, dotPath) {
-        if (typeof widget.showTablet === 'boolean') {
+        if (!widget.desktop) {
           return null;
         }
         const d = widget.desktop || {};

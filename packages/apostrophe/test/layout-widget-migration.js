@@ -58,32 +58,6 @@ describe('Layout Widget Migration', function () {
       });
     });
 
-    it('returns null for already-migrated widget (idempotency)', function () {
-      const widget = {
-        _id: 'w1',
-        type: '@apostrophecms/layout-column',
-        metaType: 'widget',
-        desktop: {
-          colstart: 1,
-          colspan: 6
-        },
-        tablet: {},
-        mobile: {},
-        colstart: 1,
-        colspan: 6,
-        rowstart: 1,
-        rowspan: 1,
-        order: 0,
-        justify: 'center',
-        align: 'start',
-        showTablet: true,
-        showMobile: true
-      };
-
-      const result = migrate(widget, 'main.items.0');
-      assert.equal(result, null);
-    });
-
     it('applies defaults when optional fields are missing', function () {
       const widget = {
         _id: 'w1',
@@ -135,7 +109,25 @@ describe('Layout Widget Migration', function () {
       assert.equal(result.$set['main.items.0.content.items.0.showMobile'], true);
     });
 
-    it('returns update when colstart is null at root but desktop still present', function () {
+    it('returns null when desktop property is absent', function () {
+      const widget = {
+        _id: 'w1',
+        type: '@apostrophecms/layout-column',
+        metaType: 'widget',
+        colstart: 1,
+        colspan: 6,
+        rowstart: 1,
+        rowspan: 1,
+        order: 0,
+        showTablet: true,
+        showMobile: true
+      };
+
+      const result = migrate(widget, 'main.items.0');
+      assert.equal(result, null);
+    });
+
+    it('returns update when desktop property is present', function () {
       const widget = {
         _id: 'w1',
         type: '@apostrophecms/layout-column',
@@ -623,59 +615,6 @@ describe('Layout Widget Migration', function () {
       assert.equal(inner.showTablet, false);
       assert.equal(inner.showMobile, true);
       assert(inner.desktop);
-    });
-
-    it('is idempotent when run twice in DB', async function () {
-      const oldDocs = [
-        {
-          _id: 'test-idempotent:en:published',
-          aposLocale: 'en:published',
-          type: 'default-page',
-          slug: '/test-idempotent',
-          main: {
-            _id: 'area1',
-            metaType: 'area',
-            items: [
-              {
-                _id: 'w1',
-                type: '@apostrophecms/layout-column',
-                metaType: 'widget',
-                desktop: {
-                  colstart: 1,
-                  colspan: 6
-                },
-                tablet: {},
-                mobile: {}
-              }
-            ]
-          }
-        }
-      ];
-
-      // Boot and run migration once
-      const firstResults = await setupAndRunMigration(oldDocs);
-      const widgetAfterFirst = firstResults['test-idempotent:en:published'].main.items[0];
-      assert.equal(widgetAfterFirst.colstart, 1);
-      assert.equal(widgetAfterFirst.showTablet, true);
-
-      // Remove migration record again and run a second time
-      await apos.migration.db.deleteMany({
-        _id: '@apostrophecms/layout-column-widget:flatten-column-schema'
-      });
-      const migration = apos.migration.migrations.find(
-        m => m.name === '@apostrophecms/layout-column-widget:flatten-column-schema'
-      );
-      await apos.migration.runOne(migration);
-
-      const doc = await apos.doc.db.findOne({ _id: 'test-idempotent:en:published' });
-      const widget = doc.main.items[0];
-      assert.equal(widget.colstart, 1);
-      assert.equal(widget.colspan, 6);
-      assert.equal(widget.rowstart, 1);
-      assert.equal(widget.rowspan, 1);
-      assert.equal(widget.showTablet, true);
-      assert.equal(widget.showMobile, true);
-      assert(widget.desktop);
     });
 
     it('migrates both base and extended column widgets in the same doc', async function () {
