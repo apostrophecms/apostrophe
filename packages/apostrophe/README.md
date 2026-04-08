@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/apostrophecms/apostrophe">
-    <img src="logo.svg" alt="ApostropheCMS logo" width="80" height="80">
+    <img src="https://static.apostrophecms.com/apostrophecms/apostrophe/logo.svg" alt="ApostropheCMS logo" width="80" height="80">
   </a>
 
   <h1>ApostropheCMS</h1>
