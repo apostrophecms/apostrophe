@@ -1139,7 +1139,7 @@ describe('Styles', function () {
       });
 
       describe('extractImageData', function () {
-        it('should return url and urls for a valid image attachment', function () {
+        it('should return urls map for a valid image attachment', function () {
           const value = {
             group: 'images',
             _urls: {
@@ -1150,10 +1150,11 @@ describe('Styles', function () {
             }
           };
           const result = extractImageData(value);
-          assert.deepEqual(result, {
-            url: '/attachments/abc.full.jpg',
-            urls: value._urls
-          }, 'Should return url (full) and urls map');
+          assert.deepEqual(
+            result,
+            value._urls,
+            'Should return the _urls map directly'
+          );
         });
 
         it('should return null for non-image group', function () {
@@ -1184,7 +1185,7 @@ describe('Styles', function () {
           assert.equal(extractImageData(undefined), null, 'undefined should return null');
         });
 
-        it('should fall back to original for SVG (only original in _urls)', function () {
+        it('should return urls map for SVG (only original in _urls)', function () {
           const value = {
             group: 'images',
             _urls: {
@@ -1192,13 +1193,14 @@ describe('Styles', function () {
             }
           };
           const result = extractImageData(value);
-          assert.deepEqual(result, {
-            url: '/attachments/icon.svg',
-            urls: value._urls
-          }, 'SVG should fall back to original');
+          assert.deepEqual(
+            result,
+            value._urls,
+            'SVG should return the _urls map'
+          );
         });
 
-        it('should fall back to max when full is missing', function () {
+        it('should return urls map regardless of which sizes are present', function () {
           const value = {
             group: 'images',
             _urls: {
@@ -1208,32 +1210,14 @@ describe('Styles', function () {
             }
           };
           const result = extractImageData(value);
-          assert.equal(
-            result.url,
-            '/attachments/abc.max.jpg',
-            'Should fall back to max when full is missing'
+          assert.deepEqual(
+            result,
+            value._urls,
+            'Should return the _urls map directly'
           );
         });
 
-        it('should fall back to largest known size when full and max are missing', function () {
-          const value = {
-            group: 'images',
-            _urls: {
-              original: '/attachments/abc.original.jpg',
-              'one-third': '/attachments/abc.one-third.jpg',
-              'two-thirds': '/attachments/abc.two-thirds.jpg',
-              'one-sixth': '/attachments/abc.one-sixth.jpg'
-            }
-          };
-          const result = extractImageData(value);
-          assert.equal(
-            result.url,
-            '/attachments/abc.two-thirds.jpg',
-            'Should fall back to largest available sized URL by width'
-          );
-        });
-
-        it('should fall back to original when no standard sizes exist', function () {
+        it('should return urls map even with non-standard size names', function () {
           const value = {
             group: 'images',
             _urls: {
@@ -1242,10 +1226,10 @@ describe('Styles', function () {
             }
           };
           const result = extractImageData(value);
-          assert.equal(
-            result.url,
-            '/attachments/abc.original.jpg',
-            'Should fall back to original when no standard sizes match'
+          assert.deepEqual(
+            result,
+            value._urls,
+            'Should return the _urls map regardless of size names'
           );
         });
 
@@ -1264,13 +1248,10 @@ describe('Styles', function () {
 
       describe('buildResponsiveImageRules', function () {
         it('should return base url rule for single size', function () {
-          const imageData = {
-            url: '/attachments/icon.svg',
-            urls: {
-              original: '/attachments/icon.svg'
-            }
+          const urls = {
+            original: '/attachments/icon.svg'
           };
-          const result = buildResponsiveImageRules('--bg-image', imageData);
+          const result = buildResponsiveImageRules('--bg-image', urls);
           assert.deepEqual(result.rules, [
             '--bg-image: url(/attachments/icon.svg)'
           ], 'Should have only base url rule');
@@ -1278,22 +1259,19 @@ describe('Styles', function () {
         });
 
         it('should produce media query breakpoints for multiple sizes', function () {
-          const imageData = {
-            url: '/attachments/abc.full.jpg',
-            urls: {
-              'one-sixth': '/attachments/abc.one-sixth.jpg',
-              'one-third': '/attachments/abc.one-third.jpg',
-              'one-half': '/attachments/abc.one-half.jpg',
-              'two-thirds': '/attachments/abc.two-thirds.jpg',
-              full: '/attachments/abc.full.jpg',
-              max: '/attachments/abc.max.jpg',
-              original: '/attachments/abc.original.jpg'
-            }
+          const urls = {
+            'one-sixth': '/attachments/abc.one-sixth.jpg',
+            'one-third': '/attachments/abc.one-third.jpg',
+            'one-half': '/attachments/abc.one-half.jpg',
+            'two-thirds': '/attachments/abc.two-thirds.jpg',
+            full: '/attachments/abc.full.jpg',
+            max: '/attachments/abc.max.jpg',
+            original: '/attachments/abc.original.jpg'
           };
-          const result = buildResponsiveImageRules('--bg-image', imageData);
+          const result = buildResponsiveImageRules('--bg-image', urls);
           assert.deepEqual(result.rules, [
-            '--bg-image: url(/attachments/abc.full.jpg)'
-          ], 'Base rule should use the default url');
+            '--bg-image: url(/attachments/abc.max.jpg)'
+          ], 'Base rule should use the largest available sized image');
           assert.ok(result.mediaRules.length > 0, 'Should have media rules');
           for (const mr of result.mediaRules) {
             assert.ok(
@@ -1308,35 +1286,29 @@ describe('Styles', function () {
         });
 
         it('should not produce media rules that duplicate the default url', function () {
-          const imageData = {
-            url: '/attachments/abc.full.jpg',
-            urls: {
-              full: '/attachments/abc.full.jpg',
-              max: '/attachments/abc.max.jpg'
-            }
+          const urls = {
+            full: '/attachments/abc.full.jpg',
+            max: '/attachments/abc.max.jpg'
           };
-          const result = buildResponsiveImageRules('--bg-image', imageData);
-          // Mobile breakpoint selects full (= base) → skipped.
-          // Tablet breakpoint selects max (≠ base) → emitted.
+          const result = buildResponsiveImageRules('--bg-image', urls);
+          // Base is now max (largest). Mobile BP selects full (≠ base) → emitted.
+          // Tablet BP selects max (= base) → skipped.
           for (const mr of result.mediaRules) {
             assert.notEqual(
               mr.rules[0],
-              '--bg-image: url(/attachments/abc.full.jpg)',
-              'Should not duplicate the default url in a media query'
+              '--bg-image: url(/attachments/abc.max.jpg)',
+              'Should not duplicate the base url in a media query'
             );
           }
         });
 
         it('should use correct property name in declarations', function () {
-          const imageData = {
-            url: '/attachments/abc.full.jpg',
-            urls: {
-              full: '/attachments/abc.full.jpg',
-              max: '/attachments/abc.max.jpg',
-              'one-third': '/attachments/abc.one-third.jpg'
-            }
+          const urls = {
+            full: '/attachments/abc.full.jpg',
+            max: '/attachments/abc.max.jpg',
+            'one-third': '/attachments/abc.one-third.jpg'
           };
-          const result = buildResponsiveImageRules('--hero-bg-image', imageData);
+          const result = buildResponsiveImageRules('--hero-bg-image', urls);
           assert.ok(
             result.rules[0].startsWith('--hero-bg-image:'),
             'Should use provided property name in base rule'
@@ -1350,13 +1322,10 @@ describe('Styles', function () {
         });
 
         it('should use custom imageSizes when provided', function () {
-          const imageData = {
-            url: '/attachments/abc.large.jpg',
-            urls: {
-              small: '/attachments/abc.small.jpg',
-              medium: '/attachments/abc.medium.jpg',
-              large: '/attachments/abc.large.jpg'
-            }
+          const urls = {
+            small: '/attachments/abc.small.jpg',
+            medium: '/attachments/abc.medium.jpg',
+            large: '/attachments/abc.large.jpg'
           };
           const imageSizes = [
             {
@@ -1372,10 +1341,10 @@ describe('Styles', function () {
               width: 1800
             }
           ];
-          const result = buildResponsiveImageRules('--bg-image', imageData, imageSizes);
+          const result = buildResponsiveImageRules('--bg-image', urls, imageSizes);
           assert.deepEqual(result.rules, [
             '--bg-image: url(/attachments/abc.large.jpg)'
-          ], 'Base rule should use default url');
+          ], 'Base rule should use largest sized image');
           // With sizes 400, 1000, 1800 and breakpoints 480, 768 (×2 DPR):
           // - 480px → target 960 → best match >= 960 is 1000 (medium)  → emitted
           // - 768px → target 1536 → best match >= 1536 is 1800 (large) = base → skipped
@@ -1392,16 +1361,13 @@ describe('Styles', function () {
         });
 
         it('should skip original and uncropped entries', function () {
-          const imageData = {
-            url: '/attachments/abc.full.jpg',
-            urls: {
-              original: '/attachments/abc.original.jpg',
-              uncropped: { full: '/attachments/abc.uncropped.full.jpg' },
-              full: '/attachments/abc.full.jpg',
-              'one-third': '/attachments/abc.one-third.jpg'
-            }
+          const urls = {
+            original: '/attachments/abc.original.jpg',
+            uncropped: { full: '/attachments/abc.uncropped.full.jpg' },
+            full: '/attachments/abc.full.jpg',
+            'one-third': '/attachments/abc.one-third.jpg'
           };
-          const result = buildResponsiveImageRules('--bg-image', imageData);
+          const result = buildResponsiveImageRules('--bg-image', urls);
           const allUrls = [
             ...result.rules,
             ...result.mediaRules.flatMap(mr => mr.rules)
@@ -2118,12 +2084,12 @@ describe('Styles', function () {
             },
             { rootSelector: '#w123' }
           );
-          // With default sizes, mobile BP selects full (= base) and is
-          // skipped. Tablet BP selects max (≠ base) → emitted as range query.
-          const hasTablet = result.css.includes('@media (480px < width <= 768px)');
+          // Base is now max (largest entry). Mobile BP selects full (≠ base)
+          // → emitted. Tablet BP selects max (= base) → skipped.
+          const hasMobile = result.css.includes('@media (width <= 480px)');
           assert.ok(
-            hasTablet,
-            'Should produce tablet responsive breakpoint with range query'
+            hasMobile,
+            'Should produce mobile responsive breakpoint with range query'
           );
           // Media queries should override --bg-image with smaller images
           assert.ok(

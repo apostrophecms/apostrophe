@@ -114,8 +114,8 @@ export default {
 
     // Image Mode
     const rel = subfields._image?.value;
-    const imageData = extractImageData(rel?.[0]?.attachment);
-    if (!imageData) {
+    const urls = extractImageData(rel?.[0]?.attachment);
+    if (!urls) {
       return {
         field,
         rules: [],
@@ -127,7 +127,7 @@ export default {
 
     // --- CSS Variable Export ---
     const responsive = buildResponsiveImageRules(
-      `${varBase}-image`, imageData, options.imageSizes
+      `${varBase}-image`, urls, options.imageSizes
     );
     rules.push(...responsive.rules);
 

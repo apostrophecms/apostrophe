@@ -8,44 +8,17 @@ const KNOWN_SIZE_WIDTHS = {
   max: 1600
 };
 
-// Returns the URL of the largest available sized image from the
-// known widths map. Falls back to null when nothing matches.
-function largestSizedUrl(urls, sizeWidths) {
-  let best = null;
-  let bestWidth = -1;
-  for (const [ name, width ] of Object.entries(sizeWidths)) {
-    if (urls[name] && width > bestWidth) {
-      best = urls[name];
-      bestWidth = width;
-    }
-  }
-  return best;
-}
-
 export function extractImageData(value) {
   if (!value || value.group !== 'images') {
     return null;
   }
 
   const urls = value._urls;
-  if (!urls) {
+  if (!urls || !Object.keys(urls).length) {
     return null;
   }
 
-  // Fallback chain: full → max → largest known size → original
-  const url = urls.full ||
-    urls.max ||
-    largestSizedUrl(urls, KNOWN_SIZE_WIDTHS) ||
-    urls.original;
-
-  if (!url) {
-    return null;
-  }
-
-  return {
-    url,
-    urls
-  };
+  return urls;
 }
 
 function getSizeWidths(imageSizes) {
@@ -93,11 +66,10 @@ function bestUrlForWidth(entries, targetWidth) {
   return entries[entries.length - 1]?.url || null;
 }
 
-export function buildResponsiveImageRules(property, imageData, imageSizes) {
-  const { url, urls } = imageData;
+export function buildResponsiveImageRules(property, urls, imageSizes) {
   const sizeWidths = getSizeWidths(imageSizes);
 
-  // Build sorted entries ascending by width (reuses the same logic)
+  // Build sorted entries ascending by width
   const entries = [];
   for (const [ name, sizedUrl ] of Object.entries(urls)) {
     if (
@@ -118,7 +90,20 @@ export function buildResponsiveImageRules(property, imageData, imageSizes) {
   }
   entries.sort((a, b) => a.width - b.width);
 
-  const rules = [ `${property}: url(${url})` ];
+  // Use the largest sized image as the base (covers the widest viewport).
+  // Fall back to `original` when no sized entries exist (e.g. SVG).
+  const baseUrl = entries.length
+    ? entries[entries.length - 1].url
+    : urls.original;
+
+  if (!baseUrl) {
+    return {
+      rules: [],
+      mediaRules: []
+    };
+  }
+
+  const rules = [ `${property}: url(${baseUrl})` ];
   const mediaRules = [];
 
   if (entries.length > 1) {
@@ -127,7 +112,7 @@ export function buildResponsiveImageRules(property, imageData, imageSizes) {
       const bpUrl = bestUrlForWidth(entries, bp.maxWidth);
       // Skip if the breakpoint would use the same URL as the base —
       // the base rule already covers it at every viewport.
-      if (bpUrl && bpUrl !== url) {
+      if (bpUrl && bpUrl !== baseUrl) {
         // First breakpoint: (width <= Npx)
         // Subsequent:       (Ppx < width <= Npx)
         const query = i === 0
