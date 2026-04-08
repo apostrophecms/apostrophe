@@ -57,8 +57,37 @@
 import { klona } from 'klona';
 import customRules from './customRules.mjs';
 
+// For legacy reasons this stays the default export.
 export default renderGlobalStyles;
-export { renderGlobalStyles, renderScopedStyles };
+export {
+  renderGlobalStyles, renderScopedStyles, createRenderer
+};
+
+/**
+ * Creates a renderer with shared options pre-applied.
+ * Callers can override per-call options as needed.
+ *
+ * @param {Object} options - Shared options for all render calls
+ * @returns {{ renderGlobalStyles: Function, renderScopedStyles: Function }}
+ */
+function createRenderer(options = {}) {
+  const memoized = { ...options };
+
+  return {
+    renderGlobalStyles(schema, doc, callOptions = {}) {
+      return renderGlobalStyles(schema, doc, {
+        ...memoized,
+        ...callOptions
+      });
+    },
+    renderScopedStyles(schema, doc, callOptions = {}) {
+      return renderScopedStyles(schema, doc, {
+        ...memoized,
+        ...callOptions
+      });
+    }
+  };
+}
 
 // Exported for testing purposes
 export const NORMALIZERS = {
@@ -67,7 +96,8 @@ export const NORMALIZERS = {
 };
 export const EXTRACTORS = {
   _: extract,
-  object: extractObject
+  object: extractObject,
+  customType: extractCustomType
 };
 const FILTERS = {
   _: filter,
@@ -85,7 +115,8 @@ const FILTERS = {
  * @returns {{ css: string; classes: string[] }} Compiled CSS stylesheet and classes
  */
 function renderGlobalStyles(schema, doc, {
-  checkIfConditionsFn
+  checkIfConditionsFn,
+  ...engineOptions
 } = {}) {
   const withConditions = filterConditionalFields(
     klona(schema),
@@ -97,12 +128,17 @@ function renderGlobalStyles(schema, doc, {
   const storage = {
     classes: new Set(),
     styles: new Map(),
-    conditions: withConditions.conditions
+    conditions: withConditions.conditions,
+    options: engineOptions
   };
 
   for (const field of withConditions.schema) {
     const filter = FILTERS[field.type] || FILTERS._;
     if (!filter(field, doc)) {
+      continue;
+    }
+    if (field.customType) {
+      extractCustomType(field, doc, { storage });
       continue;
     }
     const normalizer = NORMALIZERS[field.type] || NORMALIZERS._;
@@ -135,7 +171,8 @@ function renderGlobalStyles(schema, doc, {
 function renderScopedStyles(schema, doc, {
   rootSelector = null,
   checkIfConditionsFn,
-  subset = null
+  subset = null,
+  ...engineOptions
 } = {}) {
   const withConditions = filterConditionalFields(
     klona(schema),
@@ -149,12 +186,20 @@ function renderScopedStyles(schema, doc, {
     classes: new Set(),
     styles: new Map(),
     inlineVotes: new Set(),
-    conditions: withConditions.conditions
+    conditions: withConditions.conditions,
+    options: engineOptions
   };
 
   for (const field of withConditions.schema) {
     const filter = FILTERS[field.type] || FILTERS._;
     if (!filter(field, doc)) {
+      continue;
+    }
+    if (field.customType) {
+      extractCustomType(field, doc, {
+        rootSelector,
+        storage
+      });
       continue;
     }
     const normalizer = NORMALIZERS[field.type] || NORMALIZERS._;
@@ -326,6 +371,9 @@ function filter(field, doc) {
   if (!doc[field.name] && doc[field.name] !== 0) {
     return false;
   }
+  if (field.customType) {
+    return true;
+  }
   const hasProperty = Array.isArray(field.property)
     ? field.property.length > 0
     : !!field.property;
@@ -355,6 +403,9 @@ function filterObject(field, doc) {
   }
   if (!doc[field.name]) {
     return false;
+  }
+  if (field.customType) {
+    return true;
   }
   if (field.property && field.valueTemplate) {
     return true;
@@ -390,15 +441,31 @@ function normalize(field, doc, {
   const fieldUnit = field.unit || '';
   const fieldMediaQuery = field.mediaQuery || rootMediaQuery;
 
-  if (field.class) {
-    applyFieldClass(field.class, fieldValue, storage);
+  // skipFalsyValues: when enabled and value is falsy, skip the field entirely.
+  // No CSS property, no CSS variable, no class toggle — nothing is emitted.
+  if (field.skipFalsyValues && !fieldValue) {
     return {
       raw: field,
-      selectors,
-      properties,
-      value: fieldValue,
+      selectors: [],
+      properties: [],
+      value: null,
       unit: ''
     };
+  }
+
+  if (field.class) {
+    applyFieldClass(field.class, fieldValue, storage);
+    // When the field also has `property`, continue to generate CSS output.
+    // Otherwise return early (class-only field, preserving existing behavior).
+    if (!field.property) {
+      return {
+        raw: field,
+        selectors,
+        properties,
+        value: fieldValue,
+        unit: ''
+      };
+    }
   }
 
   if (!properties) {
@@ -485,9 +552,11 @@ function normalizeObject(field, doc, {
   });
   delete normalized.unit;
 
-  const schema = field.schema.filter(subfield => {
-    return filter(subfield, doc[field.name] || {});
-  });
+  const schema = field.customType
+    ? field.schema
+    : field.schema.filter(subfield => {
+      return filter(subfield, doc[field.name] || {});
+    });
 
   for (const subfield of schema) {
     subfields.push(
@@ -518,7 +587,7 @@ function normalizeObject(field, doc, {
  * @param {RuntimeStorage} storage
  */
 function extract(normalized, storage) {
-  if (normalized.class) {
+  if (normalized.class && normalized.properties.length === 0) {
     return;
   }
   const styles = storage.styles;
@@ -568,6 +637,117 @@ function extract(normalized, storage) {
       );
     });
   });
+}
+
+/**
+ * Dispatch a field with a `customType` to the matching custom rule.
+ * The custom rule is authoritative — the field doesn't flow through
+ * the standard normalize → extract pipeline.
+ *
+ * For object fields: normalizes with normalizeObject(), builds a subfield
+ * map, and lets the rule do partial processing (remaining subfields
+ * continue through extract()).
+ *
+ * For non-object fields: normalizes normally, passes an empty subfield
+ * map, and the rule is fully responsible for CSS output.
+ *
+ * Custom rules may return `inline: false` to explicitly opt out of
+ * inline styles when their output requires scoped CSS (e.g.
+ * pseudo-element rules). When absent, the field-level vote stands.
+ *
+ * @param {SchemaField} field
+ * @param {Object} doc
+ * @param {Object} opts
+ * @param {String} [opts.rootSelector]
+ * @param {RuntimeStorage} opts.storage
+ */
+function extractCustomType(field, doc, { rootSelector, storage } = {}) {
+  const ruleName = field.customType;
+  const rule = customRules[ruleName];
+  if (!rule) {
+
+    console.error(
+      `[styles] Unknown customType "${ruleName}" on field "${field.name}". ` +
+      'The field will be skipped. Available types: ' +
+      Object.keys(customRules).join(', ')
+    );
+    return;
+  }
+
+  const isObject = field.type === 'object';
+  const normalizer = isObject ? normalizeObject : normalize;
+  const normalized = normalizer(field, doc, {
+    rootSelector,
+    storage
+  });
+
+  const subfieldMap = {};
+  if (isObject && normalized.subfields) {
+    for (const sub of normalized.subfields) {
+      subfieldMap[sub.raw.name] = sub;
+    }
+  }
+
+  const result = rule({
+    field: normalized,
+    subfields: subfieldMap,
+    options: storage.options || {}
+  });
+  const processed = new Set(result.processedFields || []);
+
+  if (result.inline === false && storage.inlineVotes) {
+    storage.inlineVotes.add(false);
+  }
+
+  // Add the custom rule's CSS output to storage
+  if (result.rules?.length) {
+    for (const selector of normalized.selectors) {
+      let currentStyles = storage.styles;
+      if (normalized.mediaQuery) {
+        const mediaQuery = `@media ${normalized.mediaQuery}`;
+        storage.styles.set(mediaQuery, storage.styles.get(mediaQuery) || new Map());
+        currentStyles = storage.styles.get(mediaQuery);
+      }
+      for (const r of result.rules) {
+        currentStyles.set(
+          selector, (currentStyles.get(selector) || new Set()).add(r)
+        );
+      }
+    }
+  }
+
+  // Add media-scoped rules from the custom rule (e.g. responsive image breakpoints).
+  // Media rules require scoped CSS, so automatically opt out of inline styles.
+  if (result.mediaRules?.length) {
+    if (storage.inlineVotes) {
+      storage.inlineVotes.add(false);
+    }
+    for (const mr of result.mediaRules) {
+      const mediaQuery = `@media ${mr.query}`;
+      storage.styles.set(mediaQuery, storage.styles.get(mediaQuery) || new Map());
+      const mediaStyles = storage.styles.get(mediaQuery);
+      for (const selector of normalized.selectors) {
+        for (const r of mr.rules) {
+          mediaStyles.set(
+            selector, (mediaStyles.get(selector) || new Set()).add(r)
+          );
+        }
+      }
+    }
+  }
+
+  // For object fields: continue processing subfields NOT consumed by the rule.
+  // Filter before extract — normalizeObject deliberately skips filtering for
+  // customType so the rule receives the full schema. Leftover subfields must
+  // pass the same filter the main loop applies to avoid emitting broken CSS.
+  if (isObject && normalized.subfields) {
+    const subdoc = doc[field.name] || {};
+    for (const sub of normalized.subfields) {
+      if (!processed.has(sub.raw.name) && filter(sub.raw, subdoc)) {
+        extract(sub, storage);
+      }
+    }
+  }
 }
 
 /**

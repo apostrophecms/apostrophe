@@ -217,6 +217,11 @@ module.exports = {
 
             await self.crop(req, _id, sanitizedCrop);
 
+            if (req.body.annotate) {
+              const attachment = await self.db.findOne({ _id });
+              return self.annotateAttachment(attachment, sanitizedCrop);
+            }
+
             return true;
           }
         ]
@@ -610,6 +615,42 @@ module.exports = {
           width: sanitizeInteger(crop.width, 0, 0, 10000),
           height: sanitizeInteger(crop.height, 0, 0, 10000)
         };
+      },
+      // Given an attachment object and an optional crop,
+      // return a clone with `_urls` fully populated for all
+      // configured image sizes. For non-image attachments
+      // a single `_url` is set instead.
+      annotateAttachment(attachment, crop) {
+        const result = { ...attachment };
+        result._isCroppable = self.isCroppable(result);
+        if (crop && crop.width) {
+          result._crop = _.pick(crop, 'width', 'height', 'top', 'left');
+        }
+        if (result.group === 'images') {
+          result._urls = {};
+          if (result._crop) {
+            result._urls.uncropped = {};
+          }
+          for (const size of self.imageSizes) {
+            result._urls[size.name] = self.url(result, { size: size.name });
+            if (result._crop) {
+              result._urls.uncropped[size.name] = self.url(result, {
+                size: size.name,
+                crop: false
+              });
+            }
+          }
+          result._urls.original = self.url(result, { size: 'original' });
+          if (result._crop) {
+            result._urls.uncropped.original = self.url(result, {
+              size: 'original',
+              crop: false
+            });
+          }
+        } else {
+          result._url = self.url(result);
+        }
+        return result;
       },
       // This method return a default icon url if an attachment is missing
       // to avoid template errors
@@ -1459,7 +1500,8 @@ module.exports = {
           uploadsUrl: self.uploadfs.getUrl(),
           croppable: self.croppable,
           sized: self.sized,
-          maxSize: self.options.maxSize
+          maxSize: self.options.maxSize,
+          imageSizes: self.imageSizes
         };
       },
       // Middleware method used when only those with attachment privileges
