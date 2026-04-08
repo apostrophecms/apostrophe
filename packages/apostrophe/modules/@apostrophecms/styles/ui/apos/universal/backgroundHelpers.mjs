@@ -65,8 +65,8 @@ function getSizeWidths(imageSizes) {
 const DPR_FACTOR = 2;
 
 // Internal breakpoints for responsive background images.
-// Sorted descending — processed largest-first so that the
-// default (no query) gets the biggest available image.
+// Sorted ascending — each breakpoint generates a non-overlapping
+// range query so there is no cascade/specificity dependency.
 const BREAKPOINTS = [
   {
     maxWidth: 480,
@@ -84,13 +84,12 @@ const BREAKPOINTS = [
 // Falls back to the largest available image when nothing qualifies.
 function bestUrlForWidth(entries, targetWidth) {
   const adjusted = targetWidth * DPR_FACTOR;
-  // entries are already sorted ascending by width
   for (const entry of entries) {
     if (entry.width >= adjusted) {
       return entry.url;
     }
   }
-  // All images are smaller than the target — return the largest
+
   return entries[entries.length - 1]?.url || null;
 }
 
@@ -119,21 +118,23 @@ export function buildResponsiveImageRules(property, imageData, imageSizes) {
   }
   entries.sort((a, b) => a.width - b.width);
 
-  // Base rule — always present
   const rules = [ `${property}: url(${url})` ];
   const mediaRules = [];
 
-  // Only emit breakpoints when we have multiple sizes to choose from
   if (entries.length > 1) {
-    const seen = new Set([ url ]);
-    for (const bp of BREAKPOINTS) {
+    for (let i = 0; i < BREAKPOINTS.length; i++) {
+      const bp = BREAKPOINTS[i];
       const bpUrl = bestUrlForWidth(entries, bp.maxWidth);
-      // Skip if the breakpoint would use the same URL as the default
-      // or as a previously emitted breakpoint
-      if (bpUrl && !seen.has(bpUrl)) {
-        seen.add(bpUrl);
+      // Skip if the breakpoint would use the same URL as the base —
+      // the base rule already covers it at every viewport.
+      if (bpUrl && bpUrl !== url) {
+        // First breakpoint: (width <= Npx)
+        // Subsequent:       (Ppx < width <= Npx)
+        const query = i === 0
+          ? `(width <= ${bp.maxWidth}px)`
+          : `(${BREAKPOINTS[i - 1].maxWidth}px < width <= ${bp.maxWidth}px)`;
         mediaRules.push({
-          query: `(max-width: ${bp.maxWidth}px)`,
+          query,
           rules: [ `${property}: url(${bpUrl})` ]
         });
       }

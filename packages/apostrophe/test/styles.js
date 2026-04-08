@@ -1297,8 +1297,8 @@ describe('Styles', function () {
           assert.ok(result.mediaRules.length > 0, 'Should have media rules');
           for (const mr of result.mediaRules) {
             assert.ok(
-              mr.query.startsWith('(max-width:'),
-              'Media rule query should be max-width'
+              mr.query.includes('width'),
+              'Media rule query should use range syntax'
             );
             assert.ok(
               mr.rules[0].startsWith('--bg-image: url('),
@@ -1316,8 +1316,8 @@ describe('Styles', function () {
             }
           };
           const result = buildResponsiveImageRules('--bg-image', imageData);
-          // Only 2 sizes, both >= any breakpoint, so media rules
-          // would use the same full url — should be skipped
+          // Mobile breakpoint selects full (= base) → skipped.
+          // Tablet breakpoint selects max (≠ base) → emitted.
           for (const mr of result.mediaRules) {
             assert.notEqual(
               mr.rules[0],
@@ -1377,14 +1377,17 @@ describe('Styles', function () {
             '--bg-image: url(/attachments/abc.large.jpg)'
           ], 'Base rule should use default url');
           // With sizes 400, 1000, 1800 and breakpoints 480, 768 (×2 DPR):
-          // - 480px → target 960 → best match >= 960 is 1000 (medium)
-          // - 768px → target 1536 → best match >= 1536 is 1800 (large) — same
-          // as default, skipped
+          // - 480px → target 960 → best match >= 960 is 1000 (medium)  → emitted
+          // - 768px → target 1536 → best match >= 1536 is 1800 (large) = base → skipped
+          assert.equal(result.mediaRules.length, 1, 'Only mobile breakpoint should emit');
           assert.ok(
-            result.mediaRules.some(mr =>
-              mr.rules[0].includes('abc.medium.jpg')
-            ),
+            result.mediaRules[0].rules[0].includes('abc.medium.jpg'),
             'Should use medium image for mobile breakpoint'
+          );
+          assert.equal(
+            result.mediaRules[0].query,
+            '(width <= 480px)',
+            'Mobile breakpoint should use range query'
           );
         });
 
@@ -2115,12 +2118,12 @@ describe('Styles', function () {
             },
             { rootSelector: '#w123' }
           );
-          // Both breakpoints should produce smaller image overrides
-          const hasMobile = result.css.includes('@media (max-width: 480px)');
-          const hasTablet = result.css.includes('@media (max-width: 768px)');
+          // With default sizes, mobile BP selects full (= base) and is
+          // skipped. Tablet BP selects max (≠ base) → emitted as range query.
+          const hasTablet = result.css.includes('@media (480px < width <= 768px)');
           assert.ok(
-            hasMobile || hasTablet,
-            'Should produce at least one responsive breakpoint'
+            hasTablet,
+            'Should produce tablet responsive breakpoint with range query'
           );
           // Media queries should override --bg-image with smaller images
           assert.ok(
