@@ -2168,24 +2168,6 @@ module.exports = {
           }
         },
 
-        // `.attachments(true)` annotates all attachment fields in the
-        // returned documents with URLs as documented for the
-        // `apos.attachment.all` method. Used by our REST APIs.
-
-        attachments: {
-          def: true,
-          after(results) {
-            const attachments = query.get('attachments');
-
-            if (attachments) {
-              self.apos.attachment.all(results, { annotate: true });
-            }
-          },
-          launder(b) {
-            return self.apos.launder.boolean(b);
-          }
-        },
-
         // `.autocomplete('sta')` limits results to docs which are a good match
         // for a partial string beginning with `sta`, for instance `station`.
         // Appropriate words must exist in the title or other text schema fields
@@ -2435,6 +2417,28 @@ module.exports = {
                 );
               }
             }
+          }
+        },
+
+        // `.attachments(true)` annotates all attachment fields in the
+        // returned documents with URLs as documented for the
+        // `apos.attachment.all` method. Used by our REST APIs.
+        //
+        // Must appear after the `relationships` builder so that
+        // relationship `_fields` (e.g. crop coordinates) are
+        // available when `attachment.all` generates `_urls`.
+
+        attachments: {
+          def: true,
+          after(results) {
+            const attachments = query.get('attachments');
+
+            if (attachments) {
+              self.apos.attachment.all(results, { annotate: true });
+            }
+          },
+          launder(b) {
+            return self.apos.launder.boolean(b);
           }
         },
 

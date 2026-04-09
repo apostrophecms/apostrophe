@@ -530,6 +530,12 @@ module.exports = {
         // then feeding it our widgets as if they were docs.
 
         if (!(widgets.length && widgets[0]._virtual)) {
+          // For non-virtual widgets whose loading was deferred,
+          // relationships were just populated above but the page-level
+          // `attachments` query builder already ran before widget
+          // loading occurred. Re-annotate so that attachment `_urls`
+          // reflect crop/focal-point data from relationship `_fields`.
+          self.apos.attachment.all(widgets, { annotate: true });
           return;
         }
 
