@@ -189,6 +189,25 @@ module.exports = {
   },
   extendMethods(self) {
     return {
+      async sanitize(_super, req, input, options, convertOptions) {
+        // If the widget has no image and is not already a placeholder,
+        // mark it as a placeholder before validation so the required
+        // _image field check is skipped (aposPlaceholder widgets bypass
+        // schema conversion entirely). Without this, the required field
+        // error crashes ApostropheCMS's handleConvertErrors due to an
+        // upstream bug with numeric error paths.
+
+        // NOTE: This function only runs during the render-widget API call
+        // (the admin editor's widget validation/rendering endpoint)
+        if (
+          input.aposPlaceholder === false &&
+          Array.isArray(input.imageIds) &&
+          input.imageIds.length === 0
+        ) {
+          input.aposPlaceholder = true;
+        }
+        return _super(req, input, options, convertOptions);
+      },
       getBrowserData(_super, req) {
         return {
           ..._super(req),

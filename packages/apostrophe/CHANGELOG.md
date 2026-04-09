@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+- Fixes an issue where an image widget could fail to display its placeholder after the selected image is archived, leaving an empty `_image` relationship.
+
 ## 4.28.0
 
 ### Adds
