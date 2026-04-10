@@ -23,6 +23,11 @@ node app @apostrophecms-pro/palette:migrate-to-styles
     afterSave: {
       async mirrorToGlobal(req, doc, options) {
         // mirror the stylesheet to @apostrophecms/global
+        // Re-annotate attachments so that relationship _fields
+        // (crop/focal-point) are reflected in _urls for CSS generation.
+        if (self.hasBackgroundFields) {
+          self.apos.attachment.all([ doc ], { annotate: true });
+        }
         const { css, classes } = self.getStylesheet(doc);
         const $set = {
           stylesStylesheet: css,

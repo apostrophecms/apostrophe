@@ -156,7 +156,8 @@ module.exports = (self, options) => {
     // to the <body> element (`class` attribute).
     getStylesheet(doc) {
       return self.stylesheetGlobalRender(self.schema, doc, {
-        checkIfConditionsFn: self.styleCheckIfConditions
+        checkIfConditionsFn: self.styleCheckIfConditions,
+        imageSizes: self.apos.attachment.imageSizes
       });
     },
     // Returns object with `css` (string), `inline` (string) and `classes` (array)
@@ -172,7 +173,8 @@ module.exports = (self, options) => {
     getWidgetStylesheet(schema, doc, options = {}) {
       return self.stylesheetScopedRender(schema, doc, {
         ...options,
-        checkIfConditionsFn: self.styleCheckIfConditions
+        checkIfConditionsFn: self.styleCheckIfConditions,
+        imageSizes: self.apos.attachment.imageSizes
       });
     },
     // Generate unique ID, Invoke the widget owned `getStylesheet` method

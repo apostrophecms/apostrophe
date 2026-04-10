@@ -40,6 +40,12 @@ module.exports = self => {
         const piece = {};
         await self.convert(req, req.body.data, piece);
 
+        // Re-annotate attachments so that relationship _fields
+        // (crop/focal-point) are reflected in _urls for CSS generation.
+        if (self.hasBackgroundFields) {
+          self.apos.attachment.all([ piece ], { annotate: true });
+        }
+
         req.res.setHeader('Content-Type', 'text/css');
 
         return self.getStylesheet(piece);

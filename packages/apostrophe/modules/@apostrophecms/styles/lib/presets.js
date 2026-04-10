@@ -179,6 +179,125 @@ module.exports = (moduleOptions) => {
           }
         }
       }
+    },
+    background: {
+      label: 'apostrophe:styleBackground',
+      type: 'object',
+      customType: 'background',
+      options: {
+        flat: true,
+        hideLabel: true
+      },
+      property: '--preset-bg',
+      fields: {
+        add: {
+          enabled: {
+            label: 'apostrophe:styleBackground',
+            type: 'boolean',
+            def: false
+          },
+          backgroundType: {
+            label: 'apostrophe:styleBackgroundType',
+            type: 'select',
+            def: 'color',
+            if: { enabled: true },
+            choices: [
+              {
+                label: 'apostrophe:styleBackgroundColor',
+                value: 'color'
+              },
+              {
+                label: 'apostrophe:styleBackgroundGradient',
+                value: 'gradient'
+              },
+              {
+                label: 'apostrophe:styleBackgroundImage',
+                value: 'image'
+              }
+            ]
+          },
+          color: {
+            label: 'apostrophe:styleBackgroundColor',
+            type: 'color',
+            if: {
+              enabled: true,
+              backgroundType: 'color'
+            }
+          },
+          gradientStart: {
+            label: 'apostrophe:styleGradientStart',
+            type: 'color',
+            def: '#000000',
+            if: {
+              enabled: true,
+              backgroundType: 'gradient'
+            }
+          },
+          gradientEnd: {
+            label: 'apostrophe:styleGradientEnd',
+            type: 'color',
+            def: '#ffffff',
+            if: {
+              enabled: true,
+              backgroundType: 'gradient'
+            }
+          },
+          gradientAngle: {
+            label: 'apostrophe:styleGradientAngle',
+            type: 'range',
+            min: 0,
+            max: 360,
+            step: 5,
+            def: 180,
+            unit: 'deg',
+            if: {
+              enabled: true,
+              backgroundType: 'gradient'
+            }
+          },
+          _image: {
+            label: 'apostrophe:styleBackgroundImage',
+            type: 'relationship',
+            withType: '@apostrophecms/image',
+            max: 1,
+            if: {
+              enabled: true,
+              backgroundType: 'image'
+            }
+          },
+          overlay: {
+            label: 'apostrophe:styleBackgroundOverlay',
+            type: 'boolean',
+            def: false,
+            if: {
+              enabled: true,
+              backgroundType: 'image'
+            }
+          },
+          overlayColor: {
+            label: 'apostrophe:styleOverlayColor',
+            type: 'color',
+            def: '#000000',
+            if: {
+              enabled: true,
+              backgroundType: 'image',
+              overlay: true
+            }
+          },
+          overlayOpacity: {
+            label: 'apostrophe:styleOverlayOpacity',
+            type: 'range',
+            min: 0,
+            max: 100,
+            def: 50,
+            if: {
+              enabled: true,
+              backgroundType: 'image',
+              overlay: true
+            }
+          }
+        }
+      }
     }
   };
 };

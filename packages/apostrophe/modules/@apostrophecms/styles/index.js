@@ -87,6 +87,16 @@ module.exports = {
     self.prependNodes('body', 'stylesheet');
     self.prependNodes('body', 'ui');
 
+    // Detect if any top-level style field uses a background preset
+    // (which includes image relationships requiring attachment annotation).
+    // A hack until we analyze the relationship/attachment racing
+    // problem more thoroughly and implement a more robust solution.
+    // This signals the API render route and post save hook to explicitly
+    // re-annotate attachments.
+    self.hasBackgroundFields = self.schema.some(
+      field => field.customType === 'background'
+    );
+
     // Removes some automatically added top level groups and
     // provides a default group if none are provided.
     const nonFields = [ 'archived' ];
