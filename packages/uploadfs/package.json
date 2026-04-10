@@ -30,7 +30,7 @@
     "es6-promise": "^4.1.0",
     "fs-extra": "^5.0.0",
     "gzipme": "^0.1.1",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "rimraf": "^5.0.7"
   },
   "optionalDependencies": {
@@ -44,7 +44,7 @@
   "devDependencies": {
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^10.2.0",
+    "mocha": "^11.7.5",
     "node-fetch": "^2.6.9",
     "stat-mode": "^0.2.2"
   },

@@ -1,15 +1,12 @@
-/* jshint node:true */
-
 const assert = require('assert');
-const request = require('request');
 const app = require('express')();
 const expressCacheOnDemand = require('../index.js')();
 
-describe('expressCacheOnDemand', () => {
+describe('expressCacheOnDemand', function () {
   let workCount = 0;
   let server;
 
-  before(() => {
+  before(function () {
     app.get('/welcome', expressCacheOnDemand, (req, res) => {
       // Simulate time-consuming async work
       setTimeout(() => {
@@ -36,131 +33,80 @@ describe('expressCacheOnDemand', () => {
     server = app.listen(9765);
   });
 
-  after(() => {
+  after(function () {
     server.close();
   });
 
-  it('replies to simultaneous requests with the same response', (done) => {
-    let count = 0;
-
-    for (let i = 0; (i < 5); i++) {
-      attempt(i);
-    }
-
-    function attempt(i) {
-      request('http://localhost:9765/welcome', (err, response, body) => {
-        assert(!err);
-        assert(response.statusCode === 200);
-        assert(body === 'URL was: /welcome, work count is: 1');
-        count++;
-
-        if (count === 5) {
-          done();
-        }
-      });
+  it('replies to simultaneous requests with the same response', async function () {
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        fetch('http://localhost:9765/welcome').then(async (res) => ({
+          status: res.status,
+          body: await res.text()
+        }))
+      )
+    );
+    for (const { status, body } of results) {
+      assert.strictEqual(status, 200);
+      assert.strictEqual(body, 'URL was: /welcome, work count is: 1');
     }
   });
-  it('replies to a subsequent request with a separate response', (done) => {
-    request('http://localhost:9765/welcome', (err, response, body) => {
-      assert(!err);
-      assert(response.statusCode === 200);
-      assert(body === 'URL was: /welcome, work count is: 2');
-
-      done();
-    });
+  it('replies to a subsequent request with a separate response', async function () {
+    const res = await fetch('http://localhost:9765/welcome');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(await res.text(), 'URL was: /welcome, work count is: 2');
   });
-  it('replies correctly when res.send is given an empty string', (done) => {
-    let count = 0;
-
-    for (let i = 0; (i < 5); i++) {
-      attempt(i);
-    }
-
-    function attempt(i) {
-      request('http://localhost:9765/empty', (err, response, body) => {
-        assert(!err);
-        assert(response.statusCode === 200);
-        assert(body === '');
-        count++;
-
-        if (count === 5) {
-          done();
-        }
-      });
+  it('replies correctly when res.send is given an empty string', async function () {
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        fetch('http://localhost:9765/empty').then(async (res) => ({
+          status: res.status,
+          body: await res.text()
+        }))
+      )
+    );
+    for (const { status, body } of results) {
+      assert.strictEqual(status, 200);
+      assert.strictEqual(body, '');
     }
   });
-  it('handles redirects successfully', (done) => {
-    return request('http://localhost:9765/redirect', (err, response, body) => {
-      assert(!err);
-      assert(response.statusCode === 200);
-      assert(body === 'URL was: /welcome, work count is: 3');
-
-      done();
+  it('handles redirects successfully', async function () {
+    const res = await fetch('http://localhost:9765/redirect');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(await res.text(), 'URL was: /welcome, work count is: 3');
+  });
+  describe('handles redirects successfully with different statusCode', function () {
+    it('handles 301 statusCode', async function () {
+      const res = await fetch('http://localhost:9765/redirect-301', { redirect: 'manual' });
+      assert.strictEqual(res.status, 301);
+    });
+    it('handles 302 statusCode', async function () {
+      const res = await fetch('http://localhost:9765/redirect-302', { redirect: 'manual' });
+      assert.strictEqual(res.status, 302);
+    });
+    it('redirects to welcome from 301 statusCode', async function () {
+      const res = await fetch('http://localhost:9765/redirect-301', { redirect: 'follow' });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(await res.text(), 'URL was: /welcome, work count is: 9');
+    });
+    it('redirects to welcome from 302 statusCode', async function () {
+      const res = await fetch('http://localhost:9765/redirect-302', { redirect: 'follow' });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(await res.text(), 'URL was: /welcome, work count is: 10');
     });
   });
-  describe('handles redirects successfully with different statusCode', () => {
-    it('handles 301 statusCode', (done) => {
-      return request('http://localhost:9765/redirect-301',
-        { followRedirect: false },
-        (err, response, body) => {
-          assert(!err);
-          assert(response.statusCode === 301);
-
-          done();
-        }
-      );
-    });
-    it('handles 302 statusCode', (done) => {
-      return request('http://localhost:9765/redirect-302',
-        { followRedirect: false },
-        (err, response, body) => {
-          assert(!err);
-          assert(response.statusCode === 302);
-
-          done();
-        });
-    });
-    it('redirects to welcome from 301 statusCode', (done) => {
-      return request('http://localhost:9765/redirect-301',
-        { followRedirect: true },
-        (err, response, body) => {
-          assert(!err);
-          assert(response.statusCode === 200);
-          assert(body === 'URL was: /welcome, work count is: 9');
-
-          done();
-        });
-    });
-    it('redirects to welcome from 302 statusCode', (done) => {
-      return request('http://localhost:9765/redirect-302',
-        { followRedirect: true },
-        (err, response, body) => {
-          assert(!err);
-          assert(response.statusCode === 200);
-          assert(body === 'URL was: /welcome, work count is: 10');
-
-          done();
-        });
-    });
-
-  });
-  it('replies to separate URLs with separate responses', (done) => {
-    let count = 0;
-
-    for (let i = 0; (i < 5); i++) {
-      attempt(i);
+  it('replies to separate URLs with separate responses', async function () {
+    const results = await Promise.all(
+      Array.from({ length: 5 }, (_, i) =>
+        fetch('http://localhost:9765/welcome?' + i).then(async (res) => ({
+          status: res.status,
+          body: await res.text()
+        }))
+      )
+    );
+    for (const { status } of results) {
+      assert.strictEqual(status, 200);
     }
-
-    function attempt(i) {
-      request('http://localhost:9765/welcome?' + i, (err, response, body) => {
-        assert(!err);
-        assert(response.statusCode === 200);
-        count++;
-        if (count === 5) {
-          assert(workCount === 8);
-          done();
-        }
-      });
-    }
+    assert.strictEqual(workCount, 8);
   });
 });

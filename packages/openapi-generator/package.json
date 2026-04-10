@@ -43,7 +43,7 @@
   ],
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.0.0",
-    "@openapitools/openapi-generator-cli": "^2.23.4",
+    "@openapitools/openapi-generator-cli": "^2.31.1",
     "express": "^5.1.0",
     "js-yaml": "^4.1.0",
     "open": "^10.2.0",
