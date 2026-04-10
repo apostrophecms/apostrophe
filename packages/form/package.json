@@ -27,11 +27,11 @@
     "apostrophe": "workspace:^",
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^10.2.0",
+    "mocha": "^11.7.5",
     "stylelint": "^16.5.0",
     "stylelint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
-    "multer": "^2.0.2"
+    "multer": "^2.1.1"
   }
 }
