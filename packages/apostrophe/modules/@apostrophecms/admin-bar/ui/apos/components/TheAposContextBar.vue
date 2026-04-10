@@ -579,6 +579,7 @@ export default {
         doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
           qs: {
             aposMode: this.draftMode,
+            aposLocale: apos.i18n.locale,
             project: { _url: 1 }
           }
         });
