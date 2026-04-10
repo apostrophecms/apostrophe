@@ -83,6 +83,7 @@
           :tiny-screen="tinyScreen"
           :widget="widget"
           :options="options"
+          :breadcrumb-operations="widgetBreadcrumbOperations"
           :disabled="disabled"
           :is-focused="isFocused"
           @widget-focus="getFocus"
@@ -304,10 +305,6 @@ export default {
       type: Boolean,
       default: false
     },
-    breadcrumbDisabled: {
-      type: Boolean,
-      default: false
-    },
     generation: {
       type: Number,
       required: false,
@@ -426,7 +423,8 @@ export default {
       return apos.modules[this.moduleOptions?.widgetManagers[this.widget?.type]] ?? {};
     },
     widgetBreadcrumbOperations() {
-      return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
+      return (this.widgetModuleOptions.widgetBreadcrumbOperations || [])
+        .filter(op => op.hidden !== true);
     },
     shouldSkipEdit() {
       return !this.widgetModuleOptions.widgetOperations

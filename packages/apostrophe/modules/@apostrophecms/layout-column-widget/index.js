@@ -20,7 +20,8 @@ module.exports = {
           nativeAction: 'move',
           placement: 'breadcrumb',
           icon: 'cursor-move-icon',
-          rawEvents: [ 'mousedown', 'touchstart' ]
+          rawEvents: [ 'mousedown', 'touchstart' ],
+          hidden: true
         },
         layoutColEditStyles: {
           action: 'apos-edit-styles',
@@ -32,7 +33,8 @@ module.exports = {
           action: 'apos-layout-col-delete',
           placement: 'breadcrumb',
           icon: 'delete-icon',
-          tooltip: 'apostrophe:delete'
+          tooltip: 'apostrophe:delete',
+          hidden: true
         }
       }
     };
