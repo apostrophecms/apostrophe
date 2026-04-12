@@ -21,9 +21,9 @@ When called with a name, the behavior depends on the adapter:
 
 **MongoDB:** Behaves as in the native driver — each name accesses a separate MongoDB database on the same server.
 
-**PostgreSQL (single mode, `postgres://`):** The name is stored for identification, but all databases share the same tables in the `public` schema. Calling `db('other')` does *not* create a separate set of tables — it is the same data as `db()`.
+**PostgreSQL (single mode, `postgres://`):** `db()` or `db('mydb')` (matching the database name from the connection URI) both return the default database. Passing a different name throws an error — there is no schema isolation in single mode.
 
-**PostgreSQL (multi-schema mode, `multipostgres://`):** Each name must be a full virtual database name in the form `realdb-schema`, where `realdb` matches the physical database name from the connection URI. For example, if the URI is `multipostgres://localhost:5432/shareddb-tenant1`, then `db('shareddb-tenant2')` accesses the `tenant2` schema. Names that don't start with `realdb-` are rejected. Schemas are created automatically on first use.
+**PostgreSQL (multi-schema mode, `multipostgres://`):** Each name must be a full virtual database name in the form `realdb-schema`, where `realdb` matches the physical database name from the connection URI. The schema name is everything after the **last** hyphen — this accommodates database names that themselves contain hyphens (e.g., `my-shared-db-tenant1` uses real database `my-shared-db` and schema `tenant1`). For example, if the URI is `multipostgres://localhost:5432/shareddb-tenant1`, then `db('shareddb-tenant2')` accesses the `tenant2` schema. Names that don't start with `realdb-` are rejected. Schemas are created automatically on first use.
 
 **SQLite:** Each name opens a separate `.db` file in the same directory as the original database file. `db('other')` opens `other.db` alongside the original file. This provides true separation — each named database has its own tables and data.
 
