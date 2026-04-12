@@ -37,35 +37,6 @@ describe('Default Adapter', function() {
     }
   });
 
-  // Helper: instantiate just the db module to inspect URI construction.
-  // We provide a fake adapter to prevent actual connection attempts,
-  // and capture the URI from the error or from the module state.
-  function getDbModule(options = {}) {
-    const dbModuleDef = require('../modules/@apostrophecms/db/index.js');
-    const shortName = options.shortName || 'test-app';
-    const rootDir = options.rootDir || '/tmp/test-app';
-
-    // Build a fake self/apos context
-    const moduleOptions = { ...options.dbOptions };
-    const self = {
-      options: moduleOptions,
-      apos: {
-        shortName,
-        rootDir,
-        db: null,
-        dbClient: null
-      }
-    };
-
-    // Get the connectToDb method
-    const methods = dbModuleDef.methods(self);
-
-    return {
-      self,
-      connectToDb: methods.connectToDb
-    };
-  }
-
   // These tests verify URI construction by examining module internals
   // without needing actual database connections.
 

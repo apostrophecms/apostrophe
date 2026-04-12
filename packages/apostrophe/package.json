@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "pretest": "npm run lint",
-    "test": "npm run test:base && npm run test:missing && npm run test:esm && npm run test:db",
+    "test": "npm run test:base && npm run test:missing && npm run test:esm",
     "test:base": "nyc mocha -t 10000",
     "test:missing": "nyc mocha -t 10000 test/add-missing-schema-fields-project/test.js",
     "test:esm": "mocha -t 1000 test/esm-project/esm.js",
@@ -14,10 +14,7 @@
     "i18n": "node scripts/lint-i18n",
     "stylelint": "stylelint modules/**/*.{scss,vue}",
     "lint": "npm run eslint && npm run i18n && npm run stylelint",
-    "mocha": "mocha",
-    "test:db": "cd ../db-connect && npm test",
-    "test:db:mongodb": "cd ../db-connect && ADAPTER=mongodb npx mocha test/**/*.test.js --timeout 30000",
-    "test:db:postgres": "cd ../db-connect && ADAPTER=postgres npx mocha test/**/*.test.js --timeout 30000"
+    "mocha": "mocha"
   },
   "repository": {
     "type": "git",
