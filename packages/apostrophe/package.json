@@ -38,7 +38,6 @@
   "license": "MIT",
   "dependencies": {
     "@apostrophecms/db-connect": "workspace:^",
-    "@apostrophecms/emulate-mongo-3-driver": "workspace:^",
     "@apostrophecms/vue-material-design-icons": "^1.0.0",
     "@ctrl/tinycolor": "^4.1.0",
     "@floating-ui/dom": "^1.5.3",
