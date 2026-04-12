@@ -102,26 +102,47 @@ module.exports = {
           self.connectionReused = true;
           return;
         }
-        let uri = 'mongodb://';
+        let uri;
         const viaEnv = process.env.APOS_DB_URI || process.env.APOS_MONGODB_URI;
         if (viaEnv) {
           uri = viaEnv;
         } else if (self.options.uri) {
           uri = self.options.uri;
         } else {
-          if (self.options.user) {
-            uri += self.options.user + ':' + self.options.password + '@';
-          }
-          if (!self.options.host) {
-            self.options.host = 'localhost';
-          }
-          if (!self.options.port) {
-            self.options.port = 27017;
+          const validAdapters = [ 'mongodb', 'sqlite', 'postgres', 'multipostgres' ];
+          const adapter = process.env.APOS_DEFAULT_DB_ADAPTER || self.options.defaultAdapter || 'mongodb';
+          if (!validAdapters.includes(adapter)) {
+            throw new Error(`Invalid defaultAdapter: "${adapter}". Must be one of: ${validAdapters.join(', ')}`);
           }
           if (!self.options.name) {
             self.options.name = self.apos.shortName;
           }
-          uri += escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
+          if (adapter === 'sqlite') {
+            const path = require('path');
+            uri = `sqlite://${path.resolve(self.apos.rootDir, 'data', self.options.name + '.sqlite')}`;
+          } else {
+            const credentials = self.options.user
+              ? encodeURIComponent(self.options.user) + ':' + encodeURIComponent(self.options.password) + '@'
+              : '';
+            if (adapter === 'mongodb') {
+              if (!self.options.host) {
+                self.options.host = 'localhost';
+              }
+              if (!self.options.port) {
+                self.options.port = 27017;
+              }
+              uri = 'mongodb://' + credentials + escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
+            } else {
+              // postgres or multipostgres
+              if (!self.options.host) {
+                self.options.host = 'localhost';
+              }
+              if (!self.options.port) {
+                self.options.port = 5432;
+              }
+              uri = adapter + '://' + credentials + escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
+            }
+          }
         }
 
         self.apos.dbClient = await dbConnect(uri, {
