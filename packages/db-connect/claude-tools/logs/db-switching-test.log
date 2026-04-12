@@ -1,0 +1,10 @@
+
+
+  Database Adapter (postgres)
+    Database Switching
+      ✔ should return the same db for nullish or matching name
+      ✔ should throw when requesting a different database name
+
+
+  2 passing (80ms)
+

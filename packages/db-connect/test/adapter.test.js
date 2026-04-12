@@ -2088,17 +2088,16 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
   describe('Database Switching', function() {
     if (ADAPTER === 'postgres') {
-      it('should share the same tables when switching names in simple mode', async function() {
-        // In simple postgres mode, all db names map to the same public schema
-        const otherDb = client.db('other_name');
-        await db.collection('sharedtest').insertOne({
-          _id: 'shared1',
-          value: 42
-        });
-        const doc = await otherDb.collection('sharedtest').findOne({ _id: 'shared1' });
-        expect(doc).to.exist;
-        expect(doc.value).to.equal(42);
-        await db.collection('sharedtest').drop();
+      it('should return the same db for nullish or matching name', function() {
+        const db1 = client.db();
+        const db2 = client.db();
+        const db3 = client.db('dbtest_adapter');
+        expect(db1).to.equal(db2);
+        expect(db1).to.equal(db3);
+      });
+
+      it('should throw when requesting a different database name', function() {
+        expect(() => client.db('other_name')).to.throw(/multipostgres/);
       });
     } else if (ADAPTER === 'multipostgres') {
       it('should switch to sibling schema', async function() {

@@ -1,0 +1,34 @@
+
+
+  Security Tests (postgres)
+    SQL Injection Prevention
+      Field Names (escaping, not rejection)
+        ✔ should safely escape field names with single quotes
+        ✔ should safely escape field names with SQL-like content
+        ✔ should safely handle field names with special characters
+        ✔ should allow nested field names with dots
+        ✔ should allow field names with hyphens
+      Collection Names
+        ✔ should reject collection names with SQL injection
+        ✔ should reject collection names with double quotes
+        ✔ should allow collection names with hyphens (converted to underscores)
+        ✔ should allow standard alphanumeric collection names
+      Index Names
+        ✔ should reject malicious index names
+        ✔ should allow valid index names
+      Operator Values
+        ✔ should safely handle malicious string values (parameterized)
+        ✔ should safely handle malicious _id values (parameterized)
+        ✔ should safely handle malicious values in $in operator
+        ✔ should safely handle malicious regex patterns
+      LIMIT and OFFSET Validation
+        ✔ should reject non-integer limit values
+        ✔ should reject negative limit values
+        ✔ should reject non-integer skip values
+        ✔ should allow valid integer limit and skip
+    Basic Security
+      ✔ should prevent duplicate _id atomically
+
+
+  20 passing (124ms)
+

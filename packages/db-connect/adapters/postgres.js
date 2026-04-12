@@ -2534,13 +2534,18 @@ class PostgresClient {
 
   db(name) {
     if (!this._multiSchema) {
-      // Simple mode: all names map to the same database (public schema).
-      // The name is stored for identification but all share the same tables.
-      const dbName = name || this._defaultDb;
-      if (!this._databases.has(dbName)) {
-        this._databases.set(dbName, new PostgresDb(this, dbName, null));
+      // Simple mode: only the database from the connection URI is allowed.
+      if (name && name !== this._defaultDb) {
+        throw new Error(
+          `Cannot switch to database "${name}" in simple postgres:// mode.\n` +
+          'All database names would share the same tables, causing data collisions.\n' +
+          'Use a multipostgres:// URI for independent per-name data (via schemas).'
+        );
       }
-      return this._databases.get(dbName);
+      if (!this._databases.has(this._defaultDb)) {
+        this._databases.set(this._defaultDb, new PostgresDb(this, this._defaultDb, null));
+      }
+      return this._databases.get(this._defaultDb);
     }
     // Multi-schema mode: each name gets its own schema
     const dbName = name || this._defaultDb;
