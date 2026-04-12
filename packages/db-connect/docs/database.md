@@ -23,7 +23,7 @@ When called with a name, the behavior depends on the adapter:
 
 **PostgreSQL (single mode, `postgres://`):** The name is stored for identification, but all databases share the same tables in the `public` schema. Calling `db('other')` does *not* create a separate set of tables — it is the same data as `db()`.
 
-**PostgreSQL (multi-schema mode, `multipostgres://`):** Each name maps to a separate PostgreSQL schema within the same physical database. `db('tenant1')` and `db('tenant2')` have fully isolated tables. Schemas are created automatically on first use.
+**PostgreSQL (multi-schema mode, `multipostgres://`):** Each name must be a full virtual database name in the form `realdb-schema`, where `realdb` matches the physical database name from the connection URI. For example, if the URI is `multipostgres://localhost:5432/shareddb-tenant1`, then `db('shareddb-tenant2')` accesses the `tenant2` schema. Names that don't start with `realdb-` are rejected. Schemas are created automatically on first use.
 
 **SQLite:** Each name opens a separate `.db` file in the same directory as the original database file. `db('other')` opens `other.db` alongside the original file. This provides true separation — each named database has its own tables and data.
 
@@ -73,9 +73,10 @@ await db.dropDatabase();
 
 ### db.admin().listDatabases()
 
-Returns a list of databases. In `multipostgres` mode, this lists schemas.
+Returns a list of databases. In `multipostgres` mode, this lists schemas as full virtual database names.
 
 ```js
 const { databases } = await db.admin().listDatabases();
-// [{ name: 'tenant1' }, { name: 'tenant2' }, ...]
+// MongoDB: [{ name: 'mydb' }, { name: 'otherdb' }, ...]
+// multipostgres: [{ name: 'shareddb-tenant1' }, { name: 'shareddb-tenant2' }, ...]
 ```

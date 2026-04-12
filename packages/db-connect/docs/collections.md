@@ -200,7 +200,7 @@ const result = await collection.deleteMany({ status: 'archived' });
 
 ## findOneAndUpdate(query, update, options)
 
-Finds a document, updates it, and returns it. Useful for atomic read-modify-write operations.
+Finds a document, updates it, and returns it. Note: this operation uses a read-modify-write pattern and is **not atomic**. See the [Atomicity](../README.md#atomicity) section in the README.
 
 ```js
 const result = await collection.findOneAndUpdate(

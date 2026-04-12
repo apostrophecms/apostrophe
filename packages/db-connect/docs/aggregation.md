@@ -14,13 +14,13 @@ const results = await collection.aggregate([
 ]).toArray();
 ```
 
-All stages are processed in memory after loading matching documents. For large datasets, use `$match` early in the pipeline to reduce the working set.
+When `$match` is the first pipeline stage, its query is passed to the database for filtering — only matching documents are loaded into memory. All subsequent stages are processed in memory. Place `$match` first whenever possible to reduce the working set.
 
 ## Stages
 
 ### $match
 
-Filters documents using standard [query operators](./queries.md). Place `$match` as early as possible to reduce the number of documents processed by later stages.
+Filters documents using standard [query operators](./queries.md). When `$match` is the first stage, filtering happens in the database — only matching documents are loaded into memory. Later `$match` stages filter in memory. Place `$match` first whenever possible.
 
 ```js
 { $match: { status: 'active', price: { $gt: 10 } } }
