@@ -302,6 +302,14 @@ function applyUpdate(doc, update) {
   return result;
 }
 
+function validateInteger(value, name) {
+  const num = Number(value);
+  if (!Number.isInteger(num) || num < 0) {
+    throw new Error(`${name} must be a non-negative integer`);
+  }
+  return num;
+}
+
 module.exports = {
   serializeValue,
   serializeDocument,
@@ -312,5 +320,6 @@ module.exports = {
   unsetNestedField,
   deepEqual,
   applyProjection,
-  applyUpdate
+  applyUpdate,
+  validateInteger
 };

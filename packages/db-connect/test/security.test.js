@@ -23,6 +23,13 @@ describe(`Security Tests (${ADAPTER})`, function() {
       const auth = password ? `${user}:${password}@` : `${user}@`;
       client = await postgres.connect(`postgres://${auth}localhost:5432/dbtest_adapter`);
       db = client.db('dbtest_adapter');
+    } else if (ADAPTER === 'multipostgres') {
+      const postgres = require('../adapters/postgres');
+      const user = process.env.PGUSER || process.env.USER;
+      const password = process.env.PGPASSWORD || '';
+      const auth = password ? `${user}:${password}@` : `${user}@`;
+      client = await postgres.connect(`multipostgres://${auth}localhost:5432/dbtest_adapter-securitytest`);
+      db = client.db();
     } else if (ADAPTER === 'sqlite') {
       const sqlite = require('../adapters/sqlite');
       const os = require('os');

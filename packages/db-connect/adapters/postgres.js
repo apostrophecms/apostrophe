@@ -11,8 +11,10 @@ const {
   setNestedField,
   deepEqual,
   applyProjection,
-  applyUpdate
+  applyUpdate,
+  validateInteger
 } = require('../lib/shared');
+const { AggregationCursor } = require('../lib/aggregation-cursor');
 
 // =============================================================================
 // PROFILING: Accumulated timing data for performance analysis
@@ -187,15 +189,6 @@ function escapeIdentifier(name) {
 // PostgreSQL: double any internal single quotes
 function escapeString(str) {
   return str.replace(/'/g, '\'\'');
-}
-
-// Validate and format an integer (for LIMIT, OFFSET)
-function validateInteger(value, name) {
-  const num = Number(value);
-  if (!Number.isInteger(num) || num < 0) {
-    throw new Error(`${name} must be a non-negative integer`);
-  }
-  return num;
 }
 
 // Create a MongoDB-compatible duplicate key error from a PostgreSQL 23505 error
@@ -1098,272 +1091,6 @@ class PostgresCursor {
 }
 
 // =============================================================================
-// Aggregation Cursor (in-memory processing)
-// =============================================================================
-
-class PostgresAggregationCursor {
-  constructor(collection, pipeline) {
-    this._collection = collection;
-    this._pipeline = pipeline;
-  }
-
-  async toArray() {
-    let docs = await this._collection.find({}).toArray();
-
-    for (const stage of this._pipeline) {
-      const [ op, value ] = Object.entries(stage)[0];
-
-      switch (op) {
-        case '$match':
-          docs = docs.filter(doc => matchesQuery(doc, value));
-          break;
-        case '$group':
-          docs = this._processGroup(docs, value);
-          break;
-        case '$project':
-          docs = docs.map(doc => applyAggregateProject(doc, value));
-          break;
-        case '$unwind':
-          docs = this._processUnwind(docs, value);
-          break;
-        case '$sort':
-          docs = this._processSort(docs, value);
-          break;
-        case '$limit':
-          docs = docs.slice(0, validateInteger(value, '$limit'));
-          break;
-        case '$skip':
-          docs = docs.slice(validateInteger(value, '$skip'));
-          break;
-        default:
-          throw new Error(`Unsupported aggregation stage: ${op}`);
-      }
-    }
-
-    return docs;
-  }
-
-  _processGroup(docs, groupSpec) {
-    const groups = new Map();
-    const groupField = groupSpec._id;
-
-    for (const doc of docs) {
-      let groupKey;
-      if (typeof groupField === 'string' && groupField.startsWith('$')) {
-        groupKey = getNestedField(doc, groupField.substring(1));
-      } else if (groupField !== null && typeof groupField === 'object') {
-        groupKey = {};
-        for (const [ k, v ] of Object.entries(groupField)) {
-          if (typeof v === 'string' && v.startsWith('$')) {
-            groupKey[k] = getNestedField(doc, v.substring(1));
-          } else {
-            groupKey[k] = v;
-          }
-        }
-      } else {
-        groupKey = groupField;
-      }
-
-      const keyStr = JSON.stringify(groupKey);
-      if (!groups.has(keyStr)) {
-        groups.set(keyStr, {
-          _id: groupKey,
-          docs: []
-        });
-      }
-      groups.get(keyStr).docs.push(doc);
-    }
-
-    const results = [];
-    for (const [ , group ] of groups) {
-      const result = { _id: group._id };
-
-      for (const [ field, expr ] of Object.entries(groupSpec)) {
-        if (field === '_id') {
-          continue;
-        }
-
-        if (expr.$sum) {
-          const sumField = expr.$sum;
-          if (typeof sumField === 'string' && sumField.startsWith('$')) {
-            result[field] = group.docs.reduce((sum, doc) => {
-              return sum + (getNestedField(doc, sumField.substring(1)) || 0);
-            }, 0);
-          } else if (typeof sumField === 'number') {
-            result[field] = group.docs.length * sumField;
-          }
-        } else if (expr.$avg) {
-          const avgField = expr.$avg.substring(1);
-          const values = group.docs
-            .map(doc => getNestedField(doc, avgField))
-            .filter(v => v != null);
-          result[field] = values.length > 0
-            ? values.reduce((a, b) => a + b, 0) / values.length
-            : null;
-        } else if (expr.$first) {
-          const firstField = expr.$first.substring(1);
-          result[field] = group.docs.length > 0
-            ? getNestedField(group.docs[0], firstField)
-            : null;
-        } else if (expr.$last) {
-          const lastField = expr.$last.substring(1);
-          const last = group.docs[group.docs.length - 1];
-          result[field] = group.docs.length > 0
-            ? getNestedField(last, lastField)
-            : null;
-        }
-      }
-
-      results.push(result);
-    }
-
-    return results;
-  }
-
-  _processUnwind(docs, field) {
-    const fieldName = field.startsWith('$') ? field.substring(1) : field;
-    const results = [];
-
-    for (const doc of docs) {
-      const arr = getNestedField(doc, fieldName);
-      if (Array.isArray(arr)) {
-        for (const item of arr) {
-          const newDoc = JSON.parse(JSON.stringify(doc));
-          setNestedField(newDoc, fieldName, item);
-          results.push(newDoc);
-        }
-      } else {
-        results.push(doc);
-      }
-    }
-
-    return results;
-  }
-
-  _processSort(docs, sortSpec) {
-    return docs.slice().sort((a, b) => {
-      for (const [ field, direction ] of Object.entries(sortSpec)) {
-        const aVal = getNestedField(a, field);
-        const bVal = getNestedField(b, field);
-
-        if (aVal < bVal) {
-          return direction === -1 ? 1 : -1;
-        }
-        if (aVal > bVal) {
-          return direction === -1 ? -1 : 1;
-        }
-      }
-      return 0;
-    });
-  }
-}
-
-// In-memory query matching for aggregation $match
-function applyAggregateProject(doc, spec) {
-  const result = {};
-  let includeId = true;
-  for (const [ key, value ] of Object.entries(spec)) {
-    if (key === '_id') {
-      if (value === 0 || value === false) {
-        includeId = false;
-      } else if (value === 1 || value === true) {
-        includeId = true;
-      }
-      continue;
-    }
-    if (value === 0 || value === false) {
-      continue;
-    }
-    if (value === 1 || value === true) {
-      const v = getNestedField(doc, key);
-      if (v !== undefined) {
-        setNestedField(result, key, v);
-      }
-    } else if (typeof value === 'string' && value.startsWith('$')) {
-      const refPath = value.slice(1);
-      const v = getNestedField(doc, refPath);
-      if (v !== undefined) {
-        setNestedField(result, key, v);
-      }
-    } else {
-      setNestedField(result, key, value);
-    }
-  }
-  if (includeId && doc._id !== undefined) {
-    result._id = doc._id;
-  }
-  return result;
-}
-
-function matchesQuery(doc, query) {
-  for (const [ key, value ] of Object.entries(query)) {
-    if (key === '$and') {
-      if (!value.every(subQuery => matchesQuery(doc, subQuery))) {
-        return false;
-      }
-    } else if (key === '$or') {
-      if (!value.some(subQuery => matchesQuery(doc, subQuery))) {
-        return false;
-      }
-    } else {
-      const docValue = key === '_id' ? doc._id : getNestedField(doc, key);
-
-      if (typeof value === 'object' && value !== null && !(value instanceof Date) && !(value instanceof RegExp)) {
-        for (const [ op, opValue ] of Object.entries(value)) {
-          switch (op) {
-            case '$eq': if (!deepEqual(docValue, opValue)) {
-              return false;
-            } break;
-            case '$ne': if (deepEqual(docValue, opValue)) {
-              return false;
-            } break;
-            case '$gt': if (!(docValue > opValue)) {
-              return false;
-            } break;
-            case '$gte': if (!(docValue >= opValue)) {
-              return false;
-            } break;
-            case '$lt': if (!(docValue < opValue)) {
-              return false;
-            } break;
-            case '$lte': if (!(docValue <= opValue)) {
-              return false;
-            } break;
-            case '$in': if (!opValue.includes(docValue)) {
-              return false;
-            } break;
-            case '$nin': if (opValue.includes(docValue)) {
-              return false;
-            } break;
-            case '$exists': if ((docValue !== undefined) !== opValue) {
-              return false;
-            } break;
-          }
-        }
-      } else if (value instanceof RegExp) {
-        if (typeof docValue !== 'string' || !value.test(docValue)) {
-          return false;
-        }
-      } else if (Array.isArray(docValue)) {
-        if (!docValue.some(item => deepEqual(item, value))) {
-          return false;
-        }
-      } else if (value === null) {
-        // MongoDB: { field: null } matches null, undefined, and missing
-        if (docValue !== null && docValue !== undefined) {
-          return false;
-        }
-      } else {
-        if (!deepEqual(docValue, value)) {
-          return false;
-        }
-      }
-    }
-  }
-  return true;
-}
-
-// =============================================================================
 // Collection Implementation
 // =============================================================================
 
@@ -1953,7 +1680,7 @@ class PostgresCollection {
   }
 
   aggregate(pipeline) {
-    return new PostgresAggregationCursor(this, pipeline);
+    return new AggregationCursor(this, pipeline);
   }
 
   async bulkWrite(operations) {
@@ -2451,17 +2178,19 @@ class PostgresDb {
     const pool = this._pool;
     const multiSchema = this._multiSchema;
     const name = this._name;
+    const realDb = this._client._realDb;
     return {
       async listDatabases() {
         if (multiSchema) {
-          // List all non-system schemas as "databases"
+          // List all non-system schemas as virtual "databases",
+          // prefixed with the real PostgreSQL database name
           const result = await pool.query(`
             SELECT schema_name FROM information_schema.schemata
             WHERE schema_name NOT IN ('public', 'information_schema', 'pg_catalog', 'pg_toast')
             AND schema_name NOT LIKE 'pg_%'
           `);
           const databases = result.rows.map(row => ({
-            name: row.schema_name
+            name: realDb + '-' + row.schema_name
           }));
           return { databases };
         }
@@ -2529,6 +2258,7 @@ class PostgresClient {
     this._options = options;
     this._multiSchema = options._multiSchema || false;
     this._defaultSchema = options._defaultSchema || null;
+    this._realDb = options._realDb || null;
     this._databases = new Map();
   }
 
@@ -2547,10 +2277,19 @@ class PostgresClient {
       }
       return this._databases.get(this._defaultDb);
     }
-    // Multi-schema mode: each name gets its own schema
+    // Multi-schema mode: the virtual database name must start with
+    // the real PostgreSQL database name followed by a hyphen.
+    // The schema is derived from what follows that prefix.
     const dbName = name || this._defaultDb;
+    const prefix = this._realDb + '-';
+    if (!dbName.startsWith(prefix)) {
+      throw new Error(
+        `Invalid virtual database name "${dbName}": must start with "${prefix}".`
+      );
+    }
+    const schema = dbName.substring(prefix.length);
     if (!this._databases.has(dbName)) {
-      this._databases.set(dbName, new PostgresDb(this, dbName, dbName));
+      this._databases.set(dbName, new PostgresDb(this, dbName, schema));
     }
     return this._databases.get(dbName);
   }
@@ -2591,10 +2330,14 @@ module.exports = {
     let database;
     let multiSchema = false;
     let defaultSchema = null;
+    let realDb = null;
     let connectionUri = uri;
 
     if (url.protocol === 'multipostgres:') {
       // Multi-schema mode: multipostgres://host/realdb-schemaname
+      // The full path is the virtual "database name" (like MongoDB's database name).
+      // The real PostgreSQL database is everything before the last hyphen.
+      // The default schema is everything after the last hyphen.
       multiSchema = true;
       const path = url.pathname.slice(1); // e.g. 'shared-db-dashboard'
       const lastHyphen = path.lastIndexOf('-');
@@ -2604,9 +2347,10 @@ module.exports = {
           'multipostgres://host/realdb-schemaname'
         );
       }
-      const realDb = path.substring(0, lastHyphen);
+      realDb = path.substring(0, lastHyphen);
       defaultSchema = path.substring(lastHyphen + 1);
-      database = defaultSchema;
+      // The virtual database name is the full path, matching MongoDB conventions
+      database = path;
 
       // Rewrite URI to postgres:// for the actual pg Pool connection
       const connUrl = new URL(uri);
@@ -2663,7 +2407,8 @@ module.exports = {
     return new PostgresClient(pool, database, uri, {
       ...options,
       _multiSchema: multiSchema,
-      _defaultSchema: defaultSchema
+      _defaultSchema: defaultSchema,
+      _realDb: realDb
     });
   },
   profileReport,

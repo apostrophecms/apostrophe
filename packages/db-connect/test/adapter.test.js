@@ -2101,7 +2101,7 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       });
     } else if (ADAPTER === 'multipostgres') {
       it('should switch to sibling schema', async function() {
-        const siblingDb = client.db('siblingschema');
+        const siblingDb = client.db('dbtest_adapter-siblingschema');
 
         await siblingDb.collection('siblingcol').insertOne({
           _id: 'sib1',
@@ -3012,13 +3012,13 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         const result = await db.admin().listDatabases();
         expect(result.databases).to.be.an('array');
         const names = result.databases.map(d => d.name);
-        expect(names).to.include('testschema');
+        expect(names).to.include('dbtest_adapter-testschema');
 
         await db.collection('admintest').drop();
       });
 
       it('should drop schema via dropDatabase()', async function() {
-        const tempDb = client.db('dropschematest');
+        const tempDb = client.db('dbtest_adapter-dropschematest');
         await tempDb.collection('tempcol').insertOne({
           _id: 'tmp1',
           value: 1
