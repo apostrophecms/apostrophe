@@ -239,7 +239,7 @@ describe('Default Adapter', function() {
 // Helper: simulate the URI construction logic from the db module
 // without actually connecting. This extracts the same logic path.
 function buildUri(options = {}) {
-  const escapeHost = require('@apostrophecms/db-connect').escapeHost;
+  const escapeHost = require('../lib/escape-host.js');
   const shortName = options.shortName || 'test-app';
   const rootDir = options.rootDir || '/tmp/test-app';
   const dbOptions = { ...(options.dbOptions || {}) };

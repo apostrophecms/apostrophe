@@ -58,7 +58,7 @@
 // `client` option.
 
 const dbConnect = require('@apostrophecms/db-connect');
-const escapeHost = require('@apostrophecms/db-connect').escapeHost;
+const escapeHost = require('../../../lib/escape-host.js');
 
 module.exports = {
   options: {
