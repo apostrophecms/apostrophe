@@ -574,21 +574,40 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
     switch (op) {
       case '$eq':
         if (isIdField) {
-          params.push(opValue);
-          conditions.push(`_id = $${params.length}`);
+          if (opValue === null || opValue === undefined) {
+            conditions.push('_id IS NULL');
+          } else {
+            params.push(opValue);
+            conditions.push(`_id = $${params.length}`);
+          }
         } else {
-          params.push(JSON.stringify(serializeValue(opValue)));
-          conditions.push(`${jsonPath} = $${params.length}::jsonb`);
+          if (opValue === null || opValue === undefined) {
+            // $eq: null matches both missing fields and explicit null values
+            conditions.push(`(${jsonPath} IS NULL OR ${jsonPath} = 'null'::jsonb)`);
+          } else {
+            params.push(JSON.stringify(serializeValue(opValue)));
+            conditions.push(`${jsonPath} = $${params.length}::jsonb`);
+          }
         }
         break;
 
       case '$ne':
         if (isIdField) {
-          params.push(opValue);
-          conditions.push(`(_id IS NULL OR _id != $${params.length})`);
+          if (opValue === null || opValue === undefined) {
+            conditions.push('_id IS NOT NULL');
+          } else {
+            params.push(opValue);
+            conditions.push(`(_id IS NULL OR _id != $${params.length})`);
+          }
         } else {
-          params.push(JSON.stringify(serializeValue(opValue)));
-          conditions.push(`(${jsonPath} IS NULL OR ${jsonPath} != $${params.length}::jsonb)`);
+          if (opValue === null || opValue === undefined) {
+            // $ne: null means "field exists and is not null"
+            // Must exclude both missing fields (IS NULL) and JSON null values
+            conditions.push(`(${jsonPath} IS NOT NULL AND ${jsonPath} != 'null'::jsonb)`);
+          } else {
+            params.push(JSON.stringify(serializeValue(opValue)));
+            conditions.push(`(${jsonPath} IS NULL OR ${jsonPath} != $${params.length}::jsonb)`);
+          }
         }
         break;
 

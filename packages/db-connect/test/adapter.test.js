@@ -669,6 +669,21 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         expect(docs).to.have.lengthOf(3);
       });
 
+      it('$ne: null - should match docs where field exists and is not null', async function() {
+        // Only q5 (Eve) has the `optional` field set
+        const docs = await db.collection('test').find({ optional: { $ne: null } }).toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0]._id).to.equal('q5');
+      });
+
+      it('$eq: null - should match docs where field is null or missing', async function() {
+        // q1-q4 lack the `optional` field entirely
+        const docs = await db.collection('test').find({ optional: { $eq: null } }).toArray();
+        expect(docs).to.have.lengthOf(4);
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'q1', 'q2', 'q3', 'q4' ]);
+      });
+
       it('$gt - should match greater than', async function() {
         const docs = await db.collection('test').find({ age: { $gt: 30 } }).toArray();
         expect(docs).to.have.lengthOf(2);
@@ -1350,6 +1365,31 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     it('should return distinct values with filter', async function() {
       const values = await db.collection('test').distinct('tag', { category: 'food' });
       expect(values.sort()).to.deep.equal([ 'healthy', 'junk' ]);
+    });
+
+    it('should return distinct object values as parsed objects', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'dobj1',
+          updatedBy: { _id: 'user1', title: 'Alice' }
+        },
+        {
+          _id: 'dobj2',
+          updatedBy: { _id: 'user2', title: 'Bob' }
+        },
+        {
+          _id: 'dobj3',
+          updatedBy: { _id: 'user1', title: 'Alice' }
+        }
+      ]);
+      const values = await db.collection('test').distinct('updatedBy');
+      // Should return parsed objects, not JSON strings
+      expect(values).to.be.an('array');
+      expect(values.length).to.be.at.least(2);
+      const hasUser1 = values.some(v => typeof v === 'object' && v._id === 'user1');
+      const hasUser2 = values.some(v => typeof v === 'object' && v._id === 'user2');
+      expect(hasUser1).to.equal(true);
+      expect(hasUser2).to.equal(true);
     });
   });
 

@@ -1682,6 +1682,10 @@ class SqliteCollection {
         if (row.type === 'false') {
           return false;
         }
+        // Parse JSON objects and arrays back to JS values
+        if (row.type === 'object' || row.type === 'array') {
+          return JSON.parse(v);
+        }
         return v;
       })
       .filter(v => v !== null);

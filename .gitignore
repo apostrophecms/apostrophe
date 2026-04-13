@@ -7,3 +7,4 @@ public/apos-frontend
 coverage/
 .nyc_output
 claude-tools/logs/
+.claude
