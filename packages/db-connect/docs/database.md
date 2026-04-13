@@ -25,7 +25,7 @@ When called with a name, the behavior depends on the adapter:
 
 **PostgreSQL (multi-schema mode, `multipostgres://`):** Each name must be a full virtual database name in the form `realdb-schema`, where `realdb` matches the physical database name from the connection URI. The schema name is everything after the **last** hyphen — this accommodates database names that themselves contain hyphens (e.g., `my-shared-db-tenant1` uses real database `my-shared-db` and schema `tenant1`). For example, if the URI is `multipostgres://localhost:5432/shareddb-tenant1`, then `db('shareddb-tenant2')` accesses the `tenant2` schema. Names that don't start with `realdb-` are rejected. Schemas are created automatically on first use.
 
-**SQLite:** Each name opens a separate `.db` file in the same directory as the original database file. `db('other')` opens `other.db` alongside the original file. This provides true separation — each named database has its own tables and data.
+**SQLite:** Each name opens a separate file in the same directory as the original database file, using the same extension. For example, if the original URI points to `data/myapp.sqlite`, then `db('other')` opens `data/other.sqlite`. This provides true separation — each named database has its own tables and data.
 
 ### client.close()
 
@@ -65,7 +65,7 @@ Drops the entire database:
 - **MongoDB:** Drops the database.
 - **PostgreSQL (single mode):** Drops all collection tables.
 - **PostgreSQL (multi-schema mode):** Drops the schema and all its tables.
-- **SQLite:** Deletes the database file.
+- **SQLite:** Drops all tables and indexes, but does not delete the database file.
 
 ```js
 await db.dropDatabase();

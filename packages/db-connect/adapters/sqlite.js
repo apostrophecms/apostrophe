@@ -2137,8 +2137,10 @@ class SqliteDb {
     const client = this._client;
     return {
       async listDatabases() {
-        // List all sibling .db files in the directory as "databases"
+        // List all sibling database files in the directory,
+        // matching the extension of the original database
         const dir = path.dirname(client._dbPath);
+        const ext = client._ext;
         const fs = require('fs');
         let files;
         try {
@@ -2147,8 +2149,8 @@ class SqliteDb {
           return { databases: [] };
         }
         const databases = files
-          .filter(f => f.endsWith('.db'))
-          .map(f => ({ name: f.replace(/\.db$/, '') }));
+          .filter(f => f.endsWith(ext))
+          .map(f => ({ name: f.slice(0, -ext.length) }));
         return { databases };
       }
     };
@@ -2199,6 +2201,7 @@ class SqliteClient {
     this._sqlite = sqliteInstance;
     this._dbPath = dbPath;
     this._defaultDbName = defaultDbName;
+    this._ext = path.extname(dbPath) || '.sqlite';
     this._databases = new Map();
     this._siblingDbs = new Map();
   }
@@ -2214,10 +2217,11 @@ class SqliteClient {
       return this._databases.get(this._defaultDbName);
     }
 
-    // For sibling databases, open a separate .db file in the same directory
+    // For sibling databases, open a separate file in the same directory,
+    // using the same extension as the original database
     if (!this._databases.has(name)) {
       const dir = path.dirname(this._dbPath);
-      const siblingPath = path.join(dir, `${name}.db`);
+      const siblingPath = path.join(dir, `${name}${this._ext}`);
       let siblingDb;
       if (this._siblingDbs.has(siblingPath)) {
         siblingDb = this._siblingDbs.get(siblingPath);
@@ -2279,14 +2283,14 @@ module.exports = {
   protocols: [ 'sqlite' ],
 
   async connect(uri, options = {}) {
-    // Parse URI: sqlite:///path/to/file.db or sqlite://path/to/file.db
+    // Parse URI: sqlite:///path/to/file.sqlite or sqlite://path/to/file.db
     const url = new URL(uri);
     let dbPath;
     if (url.hostname) {
-      // sqlite://relative/path/to/file.db
+      // sqlite://relative/path/to/file.sqlite
       dbPath = url.hostname + url.pathname;
     } else {
-      // sqlite:///absolute/path/to/file.db
+      // sqlite:///absolute/path/to/file.sqlite
       dbPath = url.pathname;
     }
 
