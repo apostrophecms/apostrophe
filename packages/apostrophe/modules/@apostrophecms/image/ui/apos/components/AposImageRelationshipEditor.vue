@@ -290,21 +290,27 @@ export default {
       };
     },
     async submit() {
+      let attachment;
       if (this.image.attachment) {
-        await apos.http.post(`${apos.attachment.action}/crop`, {
+        attachment = await apos.http.post(`${apos.attachment.action}/crop`, {
           body: {
             _id: this.image.attachment._id,
-            crop: this.docFields.data
+            crop: this.docFields.data,
+            annotate: true
           },
           busy: true
         });
       }
 
       if (!this.widget) {
+        if (attachment) {
+          this.image.attachment = attachment;
+        }
         this.$emit('modal-result', this.docFields.data);
       } else {
         const image = {
           ...this.image,
+          ...(attachment && { attachment }),
           _fields: this.docFields.data
         };
         const widget = {

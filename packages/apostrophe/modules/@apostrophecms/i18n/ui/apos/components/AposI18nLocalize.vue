@@ -317,7 +317,7 @@ export default {
       type: Object,
       default: null
     },
-    locale: {
+    targetLocale: {
       required: false,
       type: Object,
       default: null
@@ -385,7 +385,7 @@ export default {
             title: this.$t('apostrophe:selectLocales'),
             filter: '',
             if() {
-              return !this.locale;
+              return !this.targetLocale;
             },
             complete() {
               return this.selectedLocales.length > 0;
@@ -409,7 +409,7 @@ export default {
         },
         values: {
           toLocalize: { data: 'thisDocAndRelated' },
-          toLocales: { data: this.locale ? [ this.locale ] : [] },
+          toLocales: { data: this.targetLocale ? [ this.targetLocale ] : [] },
           relatedDocSettings: { data: 'localizeNewRelated' },
           relatedDocTypesToLocalize: { data: [] },
           translateContent: { data: false },
@@ -836,7 +836,7 @@ export default {
         this.modal.busy = true;
         for (const locale of this.selectedLocales) {
           try {
-            await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
+            const result = await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
               body: {
                 toLocale: locale.name,
                 update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated')
@@ -853,10 +853,11 @@ export default {
               locale,
               docTypeLabel: this.singular(doc.type),
               doc,
+              result,
               relationship: doc._id === this.fullDoc._id
             });
 
-            if (this.locale && this.shouldRedirect) {
+            if (this.targetLocale && this.shouldRedirect) {
               // Ask for the redirect URL, this way it still works if we
               // need to carry a session across hostnames
               const result = await apos.http.post(`${this.moduleOptions.action}/locale`, {
@@ -938,15 +939,57 @@ export default {
           }
         );
       } else {
-        for (const item of notifications) {
-          await apos.notify('apostrophe:localized', {
+        const successes = notifications.filter(({ type }) => type === 'success');
+        const count = successes.length;
+        const targetLocales = [ ...new Set(successes.map(item => item.locale.name)) ];
+        const managerOpen = apos.modal.get()
+          .some(modal => modal.componentName === 'AposRecentlyEditedManager');
+
+        if (count === 1) {
+          const item = successes[0];
+          const hasUrl = !!item.result?._url;
+          await apos.notify('apostrophe:localizingNotificationSuccess', {
             type: 'success',
-            interpolate: {
-              type: this.$t(this.singular(item.doc.type)),
-              title: item.doc.title,
-              locale: item.locale.name
-            },
-            dismiss: true
+            icon: 'translate-icon',
+            interpolate: { count },
+            dismiss: managerOpen,
+            ...!managerOpen && {
+              buttons: [
+                {
+                  type: 'event',
+                  label: hasUrl
+                    ? 'apostrophe:localizeOpenDocument'
+                    : 'apostrophe:localizeEditDocument',
+                  name: 'localize-open-document',
+                  data: {
+                    _url: item.result?._url || null,
+                    type: item.doc.type,
+                    _id: item.result?._id || null,
+                    locale: item.locale.name,
+                    slug: item.result?.slug || item.doc.slug
+                  }
+                }
+              ]
+            }
+          });
+        } else if (count > 1) {
+          await apos.notify('apostrophe:localizingNotificationSuccess', {
+            type: 'success',
+            icon: 'translate-icon',
+            interpolate: { count },
+            dismiss: managerOpen,
+            ...!managerOpen && {
+              buttons: [
+                {
+                  type: 'event',
+                  label: 'apostrophe:localizeManageDocuments',
+                  name: 'localize-manage-documents',
+                  data: {
+                    locales: targetLocales
+                  }
+                }
+              ]
+            }
           });
         }
       }

@@ -129,7 +129,27 @@ module.exports = {
       // without the prefix.  This is the legacy behavior of
       // `apos.page.getBaseUrl(req)` before the delegation to this
       // method.
-      getBaseUrl(req, { strict = false, prefix = true } = {}) {
+      //
+      // ### `options.relative`
+      //
+      // When `true`, the returned URL is relative and prefix-qualified.
+      // The `prefix` option and i18n hosts are ignored in this case.
+      //
+      // ### `options.localePrefix`
+      //
+      // When `true`, the locale prefix (e.g. `/fr`) is appended
+      // after the global prefix.  Defaults to `false` for
+      // backward compatibility.
+      getBaseUrl(req, {
+        strict = false, prefix = true, relative = false,
+        localePrefix = false
+      } = {}) {
+        if (relative) {
+          const result = self.apos.prefix || '';
+          return localePrefix
+            ? result + (self.apos.i18n.locales[req.locale]?.prefix || '')
+            : result;
+        }
         const hostname = self.apos.i18n.locales?.[req.locale]?.hostname;
         if (hostname) {
           // Locale hostnames are fully qualified origins;
@@ -137,13 +157,16 @@ module.exports = {
           return `${req.protocol}://${hostname}`;
         }
         const aposPrefix = prefix ? (self.apos.prefix || '') : '';
+        const lPrefix = localePrefix
+          ? (self.apos.i18n.locales[req.locale]?.prefix || '')
+          : '';
         if (self.isStaticBuild(req)) {
           const staticUrl = req.staticBaseUrl || '';
           if (staticUrl || !strict) {
-            return staticUrl + aposPrefix;
+            return staticUrl + aposPrefix + lPrefix;
           }
         }
-        return (self.apos.baseUrl || '') + aposPrefix;
+        return (self.apos.baseUrl || '') + aposPrefix + lPrefix;
       },
 
       // Build filter URLs. `data` is an object whose properties
@@ -362,7 +385,7 @@ module.exports = {
       //   attachments: { // null when not requested
       //     uploadsUrl: '/uploads',
       //     results: [
-      //       { _id: 'abc', urls: [{ size?, path }] },
+      //       { _id: 'abc', urls: [{ size?, path }], base? },
       //       ...
       //     ]
       //   }
@@ -502,6 +525,14 @@ module.exports = {
       // - `_id` (string): the attachment record ID.
       // - `urls` (array): `{ size, path }` objects where `path`
       //   is the uploadfs-relative file path.
+      // - `base` (string, optional): when present, overrides the
+      //   global `uploadsUrl` for this entry.  Set by
+      //   `@apostrophecms/file.applyPrettyUrlPaths` for file
+      //   pieces with pretty URLs enabled.  The value is a
+      //   relative, prefix-qualified path (e.g. `/files` or
+      //   `/cms/files`).  Consumers should use
+      //   `entry.base || attachments.uploadsUrl` as the download
+      //   and output base for each entry.
       //
       // After attachment metadata is collected, the
       // `@apostrophecms/url:getAllAttachmentMetadata` event is
@@ -563,6 +594,9 @@ module.exports = {
               skipSizes
             })
           };
+          await self.apos.file.applyPrettyUrlPaths(
+            req, response.attachments
+          );
           await self.emit(
             'getAllAttachmentMetadata',
             req,

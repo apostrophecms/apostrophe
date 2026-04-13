@@ -158,6 +158,10 @@ export default {
     moduleName: {
       type: String,
       required: true
+    },
+    searchPlaceholder: {
+      type: [ String, Object ],
+      default: null
     }
   },
   emits: [
@@ -173,7 +177,7 @@ export default {
       searchField: {
         field: {
           name: 'search',
-          placeholder: {
+          placeholder: this.searchPlaceholder || {
             key: 'apostrophe:searchDocType',
             type: this.$t(this.labels.plural)
           },
@@ -197,13 +201,24 @@ export default {
       }
     },
     canSelectAll() {
-      return this.displayedItems;
+      return this.displayedItems && (this.batchOperations.length || this.isRelationship);
     },
     canArchive() {
       return this.checkedCount;
     },
     hasSearch() {
       return !this.options.noSearch;
+    }
+  },
+  watch: {
+    batchOperations() {
+      this.computeActiveOperations();
+    },
+    filterValues: {
+      deep: true,
+      handler() {
+        this.computeActiveOperations();
+      }
     }
   },
   mounted () {

@@ -120,8 +120,7 @@ import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTab
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
-import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
-import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
+import { renderScopedStyles } from 'Modules/@apostrophecms/styles/render-factory.js';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
@@ -553,7 +552,6 @@ export default {
       if (recomputeOnlyStyles) {
         const styles = renderScopedStyles(this.schema, value.data, {
           rootSelector: '__placeholder_root_selector__',
-          checkIfConditionsFn: checkIfConditions,
           subset: this.moduleOptions.stylesFields
         });
         this.applyPreviewStyles(styles);

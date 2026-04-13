@@ -324,7 +324,6 @@
   "localizeLocalized": "Localisé",
   "localizeNewRelated": "Changer la langue des nouveaux documents associés",
   "localizeNotYetLocalized": "Pas encore localisé",
-  "localized": "{{ type }} {{ title }} changé en {{ locale }}",
   "localizedBatch": "Traité {{ count }} {{ type }}",
   "localizedBatchFailed": "La localisation de {{ type }} a échoué.",
   "localizedBatchWithFailures": "Traité {{ count }} {{ type }} ({{ bad }} sur {{ total }} ont échoué).",

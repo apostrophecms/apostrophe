@@ -5,6 +5,7 @@ const stream = require('node:stream/promises');
 const zlib = require('node:zlib');
 const tar = require('tar-stream');
 const { EJSON } = require('bson');
+const { Writable } = require('stream');
 
 module.exports = {
   label: 'gzip',
@@ -147,13 +148,28 @@ async function extract(filepath, exportPath) {
     extract.on('error', reject);
 
     extract.on('entry', (header, stream, next) => {
+      // Normalize \ to / before checking for zip-slip
+      const name = header.name.replace(/\\/g, '/');
+      if (name.includes('../')) {
+        // Reject zip-slip attacks without revealing information
+        if (header.type !== 'directory') {
+          // Pipe the file to nowhere so we can reach the next file
+          stream.pipe(new Writable({
+            write(chunk, encoding, cb) {
+              cb();
+            }
+          }));
+          stream.on('end', next);
+        }
+        return;
+      }
       if (header.type === 'directory') {
         fsp
-          .mkdir(path.join(exportPath, header.name))
+          .mkdir(path.join(exportPath, name))
           .then(next)
           .catch(reject);
       } else {
-        stream.pipe(fs.WriteStream(path.join(exportPath, header.name)));
+        stream.pipe(fs.WriteStream(path.join(exportPath, name)));
         stream.on('end', next);
       }
     });

@@ -16,6 +16,8 @@
         :show-restore="options.showRestore"
         :show-dismiss-submission="options.showDismissSubmission"
         :can-delete-draft="options.canDeleteDraft"
+        :show-unpublish="options.showUnpublish"
+        :cross-locale="options.crossLocale || false"
         @menu-open="menuOpen = true"
         @menu-close="menuOpen = false"
       />

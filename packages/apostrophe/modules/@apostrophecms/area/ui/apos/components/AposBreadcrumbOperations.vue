@@ -75,6 +75,15 @@ export default {
         return {};
       }
     },
+    // Override module breadcrumb operations.
+    // If not provided (undefined or null), operations will be pulled from the
+    // widget's module options.
+    breadcrumbOperations: {
+      type: Array,
+      default() {
+        return null;
+      }
+    },
     isFocused: {
       type: Boolean,
       default: false
@@ -130,7 +139,10 @@ export default {
       return apos.modules[this.moduleOptions?.widgetManagers[this.widget?.type]] ?? {};
     },
     widgetBreadcrumbOperations() {
-      return (this.widgetModuleOptions.widgetBreadcrumbOperations || [])
+      return (
+        this.breadcrumbOperations ||
+        this.widgetModuleOptions.widgetBreadcrumbOperations || []
+      )
         .map((operation) => ({
           component: this.getOperationComponent(operation),
           props: this.getOperationProps(operation),

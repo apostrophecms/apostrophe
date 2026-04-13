@@ -85,9 +85,8 @@
 // via alias `Modules/@apostrophecms/ui/schema/universal/check-if-conditions.mjs`.
 // Replace the backend imports to import
 // from `../path-to/@apostrophecms/ui/apos/schema/universal/check-if-conditions.mjs`.
-import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
-import renderCss from 'Modules/@apostrophecms/styles/universal/render.mjs';
+import { renderGlobalStyles as renderCss } from 'Modules/@apostrophecms/styles/render-factory.js';
 import { klona } from 'klona';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 import { useDraggableWindow } from 'Modules/@apostrophecms/ui/composables/useDraggableWindow.js';
@@ -342,9 +341,7 @@ export default {
       if (Object.keys(this.docFields.data).length === 0) {
         return;
       }
-      const { classes } = renderCss(this.schema, this.docFields.data, {
-        checkIfConditionsFn: checkIfConditions
-      });
+      const { classes } = renderCss(this.schema, this.docFields.data);
       document.body.setAttribute(this.bodyAttr, classes.join(' '));
     },
     fillGroupData(group) {
@@ -425,9 +422,7 @@ export default {
     },
     async renderBrowserSide() {
       await this.setStyleMarkup(
-        renderCss(this.schema, this.docFields.data, {
-          checkIfConditionsFn: checkIfConditions
-        })
+        renderCss(this.schema, this.docFields.data)
       );
     },
     async setStyleMarkup({ css, classes }) {

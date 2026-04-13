@@ -3,8 +3,7 @@ import {
 } from 'vue';
 import { createId } from '@paralleldrive/cuid2';
 import { isEqual } from 'lodash';
-import { renderScopedStyles } from 'Modules/@apostrophecms/styles/universal/render.mjs';
-import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
+import { renderScopedStyles } from 'Modules/@apostrophecms/styles/render-factory.js';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 
 export function useAposStyles() {
@@ -28,7 +27,6 @@ export function useAposStyles() {
 
     const styles = renderScopedStyles(schema, doc, {
       rootSelector: `#${widgetId.value}`,
-      checkIfConditionsFn: checkIfConditions,
       subset: stylesFields
     });
 

@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "eslint": "^9.34.0",
-    "mocha": "^10.2.0"
+    "mocha": "^11.7.5"
   },
   "apostropheTestConfig": {
     "requiresMongo": false

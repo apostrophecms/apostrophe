@@ -23,7 +23,7 @@
     "url": "https://github.com/apostrophecms/sluggo/issues"
   },
   "devDependencies": {
-    "mocha": "^8.3.2"
+    "mocha": "^11.7.5"
   },
   "apostropheTestConfig": {
     "requiresMongo": false

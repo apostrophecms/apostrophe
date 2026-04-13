@@ -16,11 +16,28 @@ export default () => {
 
     if (!skipCount) {
       if (count) {
+        const targetLocales = [ ...new Set(
+          log.filter(isSuccess).map(entry => entry.locale)
+        ) ];
+        const managerOpen = apos.modal.get()
+          .some(modal => modal.componentName === 'AposRecentlyEditedManager');
         await apos.notify('apostrophe:localizingNotificationSuccess', {
           type: 'success',
           icon: 'translate-icon',
           interpolate: { count },
-          dismiss: true
+          dismiss: managerOpen,
+          ...!managerOpen && {
+            buttons: [
+              {
+                type: 'event',
+                label: 'apostrophe:localizeManageDocuments',
+                name: 'localize-manage-documents',
+                data: {
+                  locales: targetLocales
+                }
+              }
+            ]
+          }
         });
       }
       return;

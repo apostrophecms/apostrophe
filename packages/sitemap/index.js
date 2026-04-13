@@ -224,41 +224,55 @@ module.exports = {
         async function hreflang() {
           const alternativesByAposId = {};
 
-          for (const [ locale, entries ] of Object.entries(self.maps)) {
-            entries.forEach(entry => {
-              entry.url['xhtml:link'] = [ {
-                _attributes: {
-                  rel: 'alternate',
-                  hreflang: locale,
-                  href: entry.url.loc
-                }
-              } ];
-
+          for (const entries of Object.values(self.maps)) {
+            for (const entry of entries) {
               alternativesByAposId[entry.url.id] ??= [];
               alternativesByAposId[entry.url.id].push(entry);
-            });
+            }
           }
 
           for (const entries of Object.values(self.maps)) {
-            entries.forEach(entry => {
-              const links = alternativesByAposId[entry.url.id]
-                .filter(alternative => alternative !== entry)
-                .map(alternative => ({
+            for (const entry of entries) {
+              const alternatives = alternativesByAposId[entry.url.id];
+
+              entry.url['xhtml:link'] = [
+                {
                   _attributes: {
                     rel: 'alternate',
-                    hreflang: alternative.url.locale,
-                    href: alternative.url.loc
+                    hreflang: entry.url.locale,
+                    href: entry.url.loc
                   }
-                }));
-              entry.url['xhtml:link'].push(...links);
-            });
+                },
+                ...alternatives
+                  .filter(alt => alt !== entry)
+                  .map(alt => ({
+                    _attributes: {
+                      rel: 'alternate',
+                      hreflang: alt.url.locale,
+                      href: alt.url.loc
+                    }
+                  }))
+              ];
+
+              const defaultEntry = alternatives
+                .find(alt => alt.url.locale === self.defaultLocale);
+              if (defaultEntry) {
+                entry.url['xhtml:link'].push({
+                  _attributes: {
+                    rel: 'alternate',
+                    hreflang: 'x-default',
+                    href: defaultEntry.url.loc
+                  }
+                });
+              }
+            }
           }
 
           for (const entries of Object.values(self.maps)) {
-            entries.forEach(entry => {
+            for (const entry of entries) {
               delete entry.url.id;
               delete entry.url.locale;
-            });
+            }
           }
         }
 

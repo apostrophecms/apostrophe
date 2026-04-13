@@ -77,36 +77,17 @@
 export function itemsToState({
   items, meta, options, layoutMode, deviceMode
 }) {
-  const perDevice = {
-    desktop: {
-      items: [],
-      rows: 1,
-      auto: true
-    },
-    tablet: {
-      items: [],
-      rows: 1,
-      auto: true
-    },
-    mobile: {
-      items: [],
-      rows: 1,
-      auto: true
-    }
-  };
-
-  for (const [ device, record ] of Object.entries(perDevice)) {
-    record.items = items.map(item => ({
+  const deviceMeta = meta[deviceMode] || meta.desktop || {};
+  const current = {
+    items: items.map(item => ({
       ...item,
-      ...item[device],
       _id: item._id,
       type: item.type,
       content: null // optimize memory, we don't need content here
-    }));
-    record.rows = meta[device]?.rows || 1;
-    record.auto = meta[device]?.auto ?? false;
-  }
-  const current = perDevice[deviceMode] || perDevice.desktop;
+    })),
+    rows: deviceMeta.rows || 1,
+    auto: deviceMeta.auto ?? false
+  };
   const gap = options.gap === '0' ? 0 : options.gap;
   const resolvedOptions = {
     ...options,
@@ -124,7 +105,6 @@ export function itemsToState({
     columns: meta.columns || options.columns,
     layoutMode,
     deviceMode,
-    devices: perDevice,
     current,
     originalItems,
     lookup,

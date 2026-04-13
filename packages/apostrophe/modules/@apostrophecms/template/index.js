@@ -1252,9 +1252,10 @@ module.exports = {
         return data;
       },
 
-      pruneDataForExternalFront(req, template, data, moduleName) {
-        return data;
-      },
+      // An opportunity to modify `data` IN PLACE to send less data to
+      // the external front, e.g. Astro. Invoked immediately before
+      // data is sent to Astro
+      pruneDataForExternalFront(req, template, data, moduleName) {},
 
       getDocsForExternalFront(req, template, data, moduleName) {
         return [

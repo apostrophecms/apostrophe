@@ -1,6 +1,6 @@
 {
   "name": "uploadfs",
-  "version": "1.26.0",
+  "version": "1.26.1",
   "description": "Store files in a web-accessible location via a simplified API. Can automatically scale and rotate images. Includes S3, Azure and local filesystem-based backends with the most convenient features of each.",
   "main": "uploadfs.js",
   "scripts": {
@@ -30,21 +30,21 @@
     "es6-promise": "^4.1.0",
     "fs-extra": "^5.0.0",
     "gzipme": "^0.1.1",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "rimraf": "^5.0.7"
   },
   "optionalDependencies": {
     "@aws-sdk/client-s3": "^3.908.0",
     "@aws-sdk/lib-storage": "^3.908.0",
     "@azure/storage-blob": "^12.14.0",
-    "@google-cloud/storage": "^7.17.0",
+    "@google-cloud/storage": "^7.19.0",
     "@smithy/node-http-handler": "^4.4.0",
     "sharp": "^0.32.6"
   },
   "devDependencies": {
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^10.2.0",
+    "mocha": "^11.7.5",
     "node-fetch": "^2.6.9",
     "stat-mode": "^0.2.2"
   },

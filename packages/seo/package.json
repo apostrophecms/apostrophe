@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/seo",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "SEO Tools for ApostropheCMS",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.18.1"
   },
   "devDependencies": {
     "@apostrophecms/blog": "workspace:^",

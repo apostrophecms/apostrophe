@@ -3,6 +3,12 @@ const assert = require('assert/strict');
 const universal = import(
   '../modules/@apostrophecms/styles/ui/apos/universal/render.mjs'
 );
+const customRulesImport = import(
+  '../modules/@apostrophecms/styles/ui/apos/universal/customRules.mjs'
+);
+const imageHelpersImport = import(
+  '../modules/@apostrophecms/styles/ui/apos/universal/backgroundHelpers.mjs'
+);
 
 describe('Styles', function () {
   this.timeout(t.timeout);
@@ -216,6 +222,513 @@ describe('Styles', function () {
       }
     });
 
+    it('should skip field with skipFalsyValues when value is falsy', async function () {
+      const { NORMALIZERS } = await universal;
+
+      // Value 0 with skipFalsyValues: true — should skip
+      {
+        const field = {
+          name: 'blur',
+          type: 'range',
+          selector: '.bg',
+          property: '--bg-blur',
+          unit: 'px',
+          skipFalsyValues: true
+        };
+        const actual = NORMALIZERS._(field, { blur: 0 });
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [],
+            properties: [],
+            value: null,
+            unit: ''
+          },
+          'Field with skipFalsyValues and value 0 should produce empty output'
+        );
+      }
+
+      // Value null with skipFalsyValues: true — should skip
+      {
+        const field = {
+          name: 'blur',
+          type: 'range',
+          selector: '.bg',
+          property: '--bg-blur',
+          unit: 'px',
+          skipFalsyValues: true
+        };
+        const actual = NORMALIZERS._(field, { blur: null });
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [],
+            properties: [],
+            value: null,
+            unit: ''
+          },
+          'Field with skipFalsyValues and value null should produce empty output'
+        );
+      }
+
+      // Value undefined with skipFalsyValues: true — should skip
+      {
+        const field = {
+          name: 'blur',
+          type: 'range',
+          selector: '.bg',
+          property: '--bg-blur',
+          unit: 'px',
+          skipFalsyValues: true
+        };
+        const actual = NORMALIZERS._(field, {});
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [],
+            properties: [],
+            value: null,
+            unit: ''
+          },
+          'Field with skipFalsyValues and value undefined should produce empty output'
+        );
+      }
+
+      // Value empty string with skipFalsyValues: true — should skip
+      {
+        const field = {
+          name: 'blur',
+          type: 'range',
+          selector: '.bg',
+          property: '--bg-blur',
+          unit: 'px',
+          skipFalsyValues: true
+        };
+        const actual = NORMALIZERS._(field, { blur: '' });
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [],
+            properties: [],
+            value: null,
+            unit: ''
+          },
+          'Field with skipFalsyValues and empty string should produce empty output'
+        );
+      }
+
+      // Truthy value with skipFalsyValues: true — should produce normal output
+      {
+        const field = {
+          name: 'blur',
+          type: 'range',
+          selector: '.bg',
+          property: '--bg-blur',
+          unit: 'px',
+          skipFalsyValues: true
+        };
+        const actual = NORMALIZERS._(field, { blur: 7 });
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [ '.bg' ],
+            properties: [ '--bg-blur' ],
+            value: 7,
+            unit: 'px'
+          },
+          'Field with skipFalsyValues and truthy value should produce normal output'
+        );
+      }
+
+      // Value 0 without skipFalsyValues — should produce
+      // normal output (default behavior)
+      {
+        const field = {
+          name: 'blur',
+          type: 'range',
+          selector: '.bg',
+          property: '--bg-blur',
+          unit: 'px'
+        };
+        const actual = NORMALIZERS._(field, { blur: 0 });
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [ '.bg' ],
+            properties: [ '--bg-blur' ],
+            value: 0,
+            unit: 'px'
+          },
+          'Field without skipFalsyValues and value 0 should produce normal output'
+        );
+      }
+
+      // Class field with skipFalsyValues: true and falsy value — should
+      // skip (no class toggle)
+      {
+        const field = {
+          name: 'hasBlur',
+          type: 'boolean',
+          class: 'has-bg-blur',
+          skipFalsyValues: true
+        };
+        const actual = NORMALIZERS._(field, { hasBlur: false });
+        assert.deepEqual(
+          actual,
+          {
+            raw: field,
+            selectors: [],
+            properties: [],
+            value: null,
+            unit: ''
+          },
+          'Class field with skipFalsyValues and falsy value should produce empty output'
+        );
+      }
+    });
+
+    it('should handle class + property combo field', async function () {
+      const {
+        NORMALIZERS, renderScopedStyles
+      } = await universal;
+
+      // Both class and property, truthy value — should produce both outputs
+      {
+        const field = {
+          name: 'blur',
+          type: 'range',
+          selector: '.bg',
+          property: '--my-var',
+          unit: 'px',
+          class: 'my-class'
+        };
+        const storage = {
+          classes: new Set(),
+          styles: new Map(),
+          inlineVotes: new Set()
+        };
+        const actual = NORMALIZERS._(field, { blur: 5 }, { storage });
+        assert.deepEqual(
+          actual.selectors,
+          [ '.bg' ],
+          'Combo field should have selectors'
+        );
+        assert.deepEqual(
+          actual.properties,
+          [ '--my-var' ],
+          'Combo field should have properties'
+        );
+        assert.equal(actual.value, 5, 'Combo field should have value');
+        assert.equal(actual.unit, 'px', 'Combo field should have unit');
+        assert.ok(
+          storage.classes.has('my-class'),
+          'Combo field should apply the class toggle'
+        );
+      }
+
+      // Only class, no property — should apply class only (existing behavior)
+      {
+        const field = {
+          name: 'active',
+          type: 'boolean',
+          class: 'is-active'
+        };
+        const storage = {
+          classes: new Set(),
+          styles: new Map(),
+          inlineVotes: new Set()
+        };
+        const actual = NORMALIZERS._(field, { active: true }, { storage });
+        assert.deepEqual(actual.properties, [], 'Class-only field should have no properties');
+        assert.ok(
+          storage.classes.has('is-active'),
+          'Class-only field should apply the class'
+        );
+      }
+
+      // Only property, no class — should produce CSS only (existing behavior)
+      {
+        const field = {
+          name: 'blur',
+          type: 'range',
+          selector: '.bg',
+          property: '--my-var',
+          unit: 'px'
+        };
+        const storage = {
+          classes: new Set(),
+          styles: new Map(),
+          inlineVotes: new Set()
+        };
+        const actual = NORMALIZERS._(field, { blur: 5 }, { storage });
+        assert.deepEqual(actual.properties, [ '--my-var' ], 'Property-only field should have properties');
+        assert.equal(storage.classes.size, 0, 'Property-only field should not add classes');
+      }
+
+      // Full render: class + property + skipFalsyValues, value = 0 — neither
+      // class nor CSS
+      {
+        const schema = [
+          {
+            name: 'blur',
+            type: 'range',
+            selector: '.bg',
+            property: '--my-var',
+            unit: 'px',
+            class: 'has-bg-blur',
+            skipFalsyValues: true
+          }
+        ];
+        const result = renderScopedStyles(schema, { blur: 0 }, { rootSelector: '#id' });
+        assert.equal(result.css, '', 'skipFalsyValues + combo with 0 should produce no CSS');
+        assert.deepEqual(result.classes, [], 'skipFalsyValues + combo with 0 should produce no classes');
+      }
+
+      // Full render: class + property + skipFalsyValues, truthy value — both
+      // class and CSS
+      {
+        const schema = [
+          {
+            name: 'blur',
+            type: 'range',
+            selector: '.bg',
+            property: '--my-var',
+            unit: 'px',
+            class: 'has-bg-blur',
+            skipFalsyValues: true
+          }
+        ];
+        const result = renderScopedStyles(schema, { blur: 10 }, { rootSelector: '#id' });
+        assert.ok(
+          result.css.includes('--my-var: 10px'),
+          'skipFalsyValues + combo with truthy value should produce CSS'
+        );
+        assert.ok(
+          result.classes.includes('has-bg-blur'),
+          'skipFalsyValues + combo with truthy value should produce class'
+        );
+      }
+    });
+
+    it('should dispatch object field with customType to custom rule', async function () {
+      const { renderScopedStyles } = await universal;
+      const customRules = (await customRulesImport).default;
+
+      // Register a mock custom rule
+      customRules._testObjectRule = function ({
+        field, subfields, options
+      }) {
+        // Consume only 'color' subfield, leave 'size' for normal processing
+        const colorSub = subfields.color;
+        const rules = [];
+        if (colorSub?.value) {
+          rules.push(`background-color: ${colorSub.value}`);
+        }
+        return {
+          rules,
+          processedFields: [ 'color' ]
+        };
+      };
+
+      try {
+        const schema = [
+          {
+            name: 'bg',
+            type: 'object',
+            customType: '_testObjectRule',
+            selector: '.bg',
+            schema: [
+              {
+                name: 'color',
+                type: 'color',
+                property: '--bg-color'
+              },
+              {
+                name: 'size',
+                type: 'range',
+                property: '--bg-size',
+                unit: 'px'
+              }
+            ]
+          }
+        ];
+        const result = renderScopedStyles(
+          schema,
+          {
+            bg: {
+              color: '#ff0000',
+              size: 12
+            }
+          },
+          { rootSelector: '#id' }
+        );
+
+        // Custom rule's output should be present
+        assert.ok(
+          result.css.includes('background-color: #ff0000'),
+          'Custom rule should produce its CSS declarations'
+        );
+        // 'color' was consumed by rule — should NOT appear as standard --bg-color
+        assert.ok(
+          !result.css.includes('--bg-color'),
+          'Consumed subfield should not be double-processed'
+        );
+        // 'size' was NOT consumed — should be processed normally
+        assert.ok(
+          result.css.includes('--bg-size: 12px'),
+          'Non-consumed subfield should be processed normally'
+        );
+      } finally {
+        delete customRules._testObjectRule;
+      }
+    });
+
+    it('should dispatch non-object field with customType to custom rule', async function () {
+      const { renderScopedStyles } = await universal;
+      const customRules = (await customRulesImport).default;
+
+      customRules._testScalarRule = function ({
+        field, subfields, options
+      }) {
+        return {
+          rules: [ `--custom: ${field.value}${field.unit}` ],
+          processedFields: []
+        };
+      };
+
+      try {
+        const schema = [
+          {
+            name: 'myVal',
+            type: 'range',
+            customType: '_testScalarRule',
+            selector: '.target',
+            property: '--my-val',
+            unit: 'px'
+          }
+        ];
+        const result = renderScopedStyles(
+          schema,
+          { myVal: 42 },
+          { rootSelector: '#id' }
+        );
+
+        assert.ok(
+          result.css.includes('--custom: 42px'),
+          'Non-object customType should produce CSS from custom rule'
+        );
+        // Standard extract should NOT run (no --my-val output)
+        assert.ok(
+          !result.css.includes('--my-val:'),
+          'Non-object customType should not go through standard extract'
+        );
+      } finally {
+        delete customRules._testScalarRule;
+      }
+    });
+
+    it('should skip unknown customType with console error', async function () {
+      const { renderScopedStyles } = await universal;
+      // eslint-disable-next-line no-console
+      const originalError = console.error;
+      let errorMsg = '';
+      // eslint-disable-next-line no-console
+      console.error = (msg) => {
+        errorMsg = msg;
+      };
+
+      try {
+        const schema = [
+          {
+            name: 'myVal',
+            type: 'range',
+            customType: '_nonExistentRule',
+            selector: '.target',
+            property: '--my-val',
+            unit: 'px'
+          }
+        ];
+        const result = renderScopedStyles(
+          schema,
+          { myVal: 5 },
+          { rootSelector: '#id' }
+        );
+
+        assert.ok(
+          errorMsg.includes('Unknown customType "_nonExistentRule"'),
+          'Should log error for unknown customType'
+        );
+        assert.equal(result.css, '', 'Unknown customType should produce no CSS');
+      } finally {
+        // eslint-disable-next-line no-console
+        console.error = originalError;
+      }
+    });
+
+    it('should thread engine options to custom rule', async function () {
+      const { renderScopedStyles } = await universal;
+      const customRules = (await customRulesImport).default;
+      let receivedOptions = null;
+
+      customRules._testOptionsRule = function ({
+        field, subfields, options
+      }) {
+        receivedOptions = options;
+        return {
+          rules: [],
+          processedFields: []
+        };
+      };
+
+      try {
+        const schema = [
+          {
+            name: 'myVal',
+            type: 'range',
+            customType: '_testOptionsRule',
+            selector: '.target',
+            property: '--my-val',
+            unit: 'px'
+          }
+        ];
+        renderScopedStyles(
+          schema,
+          { myVal: 1 },
+          {
+            rootSelector: '#id',
+            imageSizes: [ {
+              name: 'small',
+              width: 100
+            } ]
+          }
+        );
+
+        assert.ok(receivedOptions, 'Custom rule should receive options');
+        assert.deepEqual(
+          receivedOptions.imageSizes,
+          [ {
+            name: 'small',
+            width: 100
+          } ],
+          'Engine options should be threaded to custom rule'
+        );
+        // Internal render keys should NOT leak
+        assert.equal(
+          receivedOptions.rootSelector,
+          undefined,
+          'Internal render keys should not leak to custom rule options'
+        );
+      } finally {
+        delete customRules._testOptionsRule;
+      }
+    });
+
     it('should normalize object field (UI container)', async function () {
       const { NORMALIZERS } = await universal;
       const subField1 = {
@@ -425,6 +938,2062 @@ describe('Styles', function () {
         },
         'First subfield should be normalized correctly'
       );
+    });
+
+    it('should export createRenderer factory', async function () {
+      const { createRenderer } = await universal;
+      assert.equal(
+        typeof createRenderer,
+        'function',
+        'createRenderer should be a function'
+      );
+
+      const renderer = createRenderer({
+        imageSizes: [ {
+          name: 'small',
+          width: 100
+        } ]
+      });
+      assert.equal(
+        typeof renderer.renderGlobalStyles,
+        'function',
+        'renderer.renderGlobalStyles should be a function'
+      );
+      assert.equal(
+        typeof renderer.renderScopedStyles,
+        'function',
+        'renderer.renderScopedStyles should be a function'
+      );
+    });
+
+    it('should thread createRenderer memoized options to custom rule', async function () {
+      const { createRenderer } = await universal;
+      const customRules = (await customRulesImport).default;
+      let receivedOptions = null;
+
+      customRules._testMemoRule = function ({ options }) {
+        receivedOptions = options;
+        return {
+          rules: [],
+          processedFields: []
+        };
+      };
+
+      try {
+        const schema = [
+          {
+            name: 'val',
+            type: 'range',
+            customType: '_testMemoRule',
+            selector: '.t',
+            property: '--v',
+            unit: 'px'
+          }
+        ];
+
+        const renderer = createRenderer({
+          imageSizes: [ {
+            name: 'full',
+            width: 1140,
+            height: 760
+          } ]
+        });
+        renderer.renderScopedStyles(
+          schema,
+          { val: 1 },
+          { rootSelector: '#id' }
+        );
+
+        assert.ok(receivedOptions, 'Custom rule should receive options');
+        assert.deepEqual(
+          receivedOptions.imageSizes,
+          [ {
+            name: 'full',
+            width: 1140,
+            height: 760
+          } ],
+          'Memoized imageSizes should be threaded to custom rule'
+        );
+      } finally {
+        delete customRules._testMemoRule;
+      }
+    });
+
+    it('should allow createRenderer call options to override memoized options', async function () {
+      const { createRenderer } = await universal;
+      const customRules = (await customRulesImport).default;
+      let receivedOptions = null;
+
+      customRules._testOverrideRule = function ({ options }) {
+        receivedOptions = options;
+        return {
+          rules: [],
+          processedFields: []
+        };
+      };
+
+      try {
+        const schema = [
+          {
+            name: 'val',
+            type: 'range',
+            customType: '_testOverrideRule',
+            selector: '.t',
+            property: '--v',
+            unit: 'px'
+          }
+        ];
+
+        const renderer = createRenderer({
+          imageSizes: [ {
+            name: 'small',
+            width: 100
+          } ]
+        });
+        renderer.renderScopedStyles(
+          schema,
+          { val: 1 },
+          {
+            rootSelector: '#id',
+            imageSizes: [ {
+              name: 'large',
+              width: 1000
+            } ]
+          }
+        );
+
+        assert.deepEqual(
+          receivedOptions.imageSizes,
+          [ {
+            name: 'large',
+            width: 1000
+          } ],
+          'Call-level imageSizes should override memoized imageSizes'
+        );
+      } finally {
+        delete customRules._testOverrideRule;
+      }
+    });
+
+    it('should work without imageSizes (backward compatible)', async function () {
+      const { renderGlobalStyles, renderScopedStyles } = await universal;
+
+      const schema = [
+        {
+          name: 'color',
+          type: 'color',
+          selector: ':root',
+          property: '--color'
+        }
+      ];
+
+      const globalResult = renderGlobalStyles(schema, { color: '#abc' });
+      assert.ok(
+        globalResult.css.includes('--color: #abc'),
+        'renderGlobalStyles should work without imageSizes'
+      );
+
+      const scopedResult = renderScopedStyles(schema, { color: '#abc' }, {
+        rootSelector: '#id'
+      });
+      assert.ok(
+        scopedResult.css.includes('--color: #abc'),
+        'renderScopedStyles should work without imageSizes'
+      );
+    });
+
+    it('should include imageSizes in attachment getBrowserData', function () {
+      const browserData = apos.attachment.getBrowserData(apos.task.getReq());
+      assert.ok(
+        Array.isArray(browserData.imageSizes),
+        'imageSizes should be an array in browser data'
+      );
+      assert.ok(
+        browserData.imageSizes.length > 0,
+        'imageSizes should not be empty'
+      );
+      assert.ok(
+        browserData.imageSizes[0].name,
+        'Each image size should have a name'
+      );
+      assert.ok(
+        browserData.imageSizes[0].width,
+        'Each image size should have a width'
+      );
+      assert.deepEqual(
+        browserData.imageSizes,
+        apos.attachment.imageSizes,
+        'Browser data imageSizes should match server-side imageSizes'
+      );
+    });
+
+    describe('Image helpers (customRules)', function () {
+      let extractImageData;
+      let buildResponsiveImageRules;
+
+      before(async function () {
+        ({
+          extractImageData,
+          buildResponsiveImageRules
+        } = await imageHelpersImport);
+      });
+
+      describe('extractImageData', function () {
+        it('should return urls map for a valid image attachment', function () {
+          const value = {
+            group: 'images',
+            _urls: {
+              original: '/attachments/abc.original.jpg',
+              full: '/attachments/abc.full.jpg',
+              max: '/attachments/abc.max.jpg',
+              'one-sixth': '/attachments/abc.one-sixth.jpg'
+            }
+          };
+          const result = extractImageData(value);
+          assert.deepEqual(
+            result,
+            value._urls,
+            'Should return the _urls map directly'
+          );
+        });
+
+        it('should return null for non-image group', function () {
+          const value = {
+            group: 'office',
+            _urls: {
+              original: '/attachments/doc.pdf'
+            }
+          };
+          assert.equal(
+            extractImageData(value),
+            null,
+            'Office files should return null'
+          );
+        });
+
+        it('should return null when _urls is missing', function () {
+          const value = { group: 'images' };
+          assert.equal(
+            extractImageData(value),
+            null,
+            'Missing _urls should return null'
+          );
+        });
+
+        it('should return null for null/undefined value', function () {
+          assert.equal(extractImageData(null), null, 'null should return null');
+          assert.equal(extractImageData(undefined), null, 'undefined should return null');
+        });
+
+        it('should return urls map for SVG (only original in _urls)', function () {
+          const value = {
+            group: 'images',
+            _urls: {
+              original: '/attachments/icon.svg'
+            }
+          };
+          const result = extractImageData(value);
+          assert.deepEqual(
+            result,
+            value._urls,
+            'SVG should return the _urls map'
+          );
+        });
+
+        it('should return urls map regardless of which sizes are present', function () {
+          const value = {
+            group: 'images',
+            _urls: {
+              original: '/attachments/abc.original.jpg',
+              max: '/attachments/abc.max.jpg',
+              'one-third': '/attachments/abc.one-third.jpg'
+            }
+          };
+          const result = extractImageData(value);
+          assert.deepEqual(
+            result,
+            value._urls,
+            'Should return the _urls map directly'
+          );
+        });
+
+        it('should return urls map even with non-standard size names', function () {
+          const value = {
+            group: 'images',
+            _urls: {
+              original: '/attachments/abc.original.jpg',
+              'custom-size': '/attachments/abc.custom.jpg'
+            }
+          };
+          const result = extractImageData(value);
+          assert.deepEqual(
+            result,
+            value._urls,
+            'Should return the _urls map regardless of size names'
+          );
+        });
+
+        it('should return null when _urls is empty', function () {
+          const value = {
+            group: 'images',
+            _urls: {}
+          };
+          assert.equal(
+            extractImageData(value),
+            null,
+            'Empty _urls should return null'
+          );
+        });
+      });
+
+      describe('buildResponsiveImageRules', function () {
+        it('should return base url rule for single size', function () {
+          const urls = {
+            original: '/attachments/icon.svg'
+          };
+          const result = buildResponsiveImageRules('--bg-image', urls);
+          assert.deepEqual(result.rules, [
+            '--bg-image: url(/attachments/icon.svg)'
+          ], 'Should have only base url rule');
+          assert.deepEqual(result.mediaRules, [], 'Should have no media rules');
+        });
+
+        it('should produce media query breakpoints for multiple sizes', function () {
+          const urls = {
+            'one-sixth': '/attachments/abc.one-sixth.jpg',
+            'one-third': '/attachments/abc.one-third.jpg',
+            'one-half': '/attachments/abc.one-half.jpg',
+            'two-thirds': '/attachments/abc.two-thirds.jpg',
+            full: '/attachments/abc.full.jpg',
+            max: '/attachments/abc.max.jpg',
+            original: '/attachments/abc.original.jpg'
+          };
+          const result = buildResponsiveImageRules('--bg-image', urls);
+          assert.deepEqual(result.rules, [
+            '--bg-image: url(/attachments/abc.max.jpg)'
+          ], 'Base rule should use the largest available sized image');
+          assert.ok(result.mediaRules.length > 0, 'Should have media rules');
+          for (const mr of result.mediaRules) {
+            assert.ok(
+              mr.query.includes('width'),
+              'Media rule query should use range syntax'
+            );
+            assert.ok(
+              mr.rules[0].startsWith('--bg-image: url('),
+              'Media rule should set --bg-image'
+            );
+          }
+        });
+
+        it('should not produce media rules that duplicate the default url', function () {
+          const urls = {
+            full: '/attachments/abc.full.jpg',
+            max: '/attachments/abc.max.jpg'
+          };
+          const result = buildResponsiveImageRules('--bg-image', urls);
+          // Base is now max (largest). Mobile BP selects full (≠ base) → emitted.
+          // Tablet BP selects max (= base) → skipped.
+          for (const mr of result.mediaRules) {
+            assert.notEqual(
+              mr.rules[0],
+              '--bg-image: url(/attachments/abc.max.jpg)',
+              'Should not duplicate the base url in a media query'
+            );
+          }
+        });
+
+        it('should use correct property name in declarations', function () {
+          const urls = {
+            full: '/attachments/abc.full.jpg',
+            max: '/attachments/abc.max.jpg',
+            'one-third': '/attachments/abc.one-third.jpg'
+          };
+          const result = buildResponsiveImageRules('--hero-bg-image', urls);
+          assert.ok(
+            result.rules[0].startsWith('--hero-bg-image:'),
+            'Should use provided property name in base rule'
+          );
+          if (result.mediaRules.length > 0) {
+            assert.ok(
+              result.mediaRules[0].rules[0].startsWith('--hero-bg-image:'),
+              'Should use provided property name in media rules'
+            );
+          }
+        });
+
+        it('should use custom imageSizes when provided', function () {
+          const urls = {
+            small: '/attachments/abc.small.jpg',
+            medium: '/attachments/abc.medium.jpg',
+            large: '/attachments/abc.large.jpg'
+          };
+          const imageSizes = [
+            {
+              name: 'small',
+              width: 400
+            },
+            {
+              name: 'medium',
+              width: 1000
+            },
+            {
+              name: 'large',
+              width: 1800
+            }
+          ];
+          const result = buildResponsiveImageRules('--bg-image', urls, imageSizes);
+          assert.deepEqual(result.rules, [
+            '--bg-image: url(/attachments/abc.large.jpg)'
+          ], 'Base rule should use largest sized image');
+          // With sizes 400, 1000, 1800 and breakpoints 480, 768 (×2 DPR):
+          // - 480px → target 960 → best match >= 960 is 1000 (medium)  → emitted
+          // - 768px → target 1536 → best match >= 1536 is 1800 (large) = base → skipped
+          assert.equal(result.mediaRules.length, 1, 'Only mobile breakpoint should emit');
+          assert.ok(
+            result.mediaRules[0].rules[0].includes('abc.medium.jpg'),
+            'Should use medium image for mobile breakpoint'
+          );
+          assert.equal(
+            result.mediaRules[0].query,
+            '(width <= 480px)',
+            'Mobile breakpoint should use range query'
+          );
+        });
+
+        it('should skip original and uncropped entries', function () {
+          const urls = {
+            original: '/attachments/abc.original.jpg',
+            uncropped: { full: '/attachments/abc.uncropped.full.jpg' },
+            full: '/attachments/abc.full.jpg',
+            'one-third': '/attachments/abc.one-third.jpg'
+          };
+          const result = buildResponsiveImageRules('--bg-image', urls);
+          const allUrls = [
+            ...result.rules,
+            ...result.mediaRules.flatMap(mr => mr.rules)
+          ].join(' ');
+          assert.ok(
+            !allUrls.includes('original'),
+            'Should not reference original in any rule'
+          );
+          assert.ok(
+            !allUrls.includes('uncropped'),
+            'Should not reference uncropped in any rule'
+          );
+        });
+      });
+    });
+
+    describe('background composite rule (customRules)', function () {
+      let renderScopedStyles;
+
+      before(async function () {
+        ({ renderScopedStyles } = await universal);
+      });
+
+      function makeBackgroundSchema(subfields) {
+        return [
+          {
+            name: 'bg',
+            type: 'object',
+            customType: 'background',
+            selector: '.s-w123',
+            property: '--bg',
+            schema: [
+              {
+                name: 'enabled',
+                type: 'boolean',
+                def: false
+              },
+              {
+                name: 'backgroundType',
+                type: 'select',
+                def: 'color'
+              },
+              ...subfields
+            ]
+          }
+        ];
+      }
+
+      describe('Color mode', function () {
+        it('should produce background-color for valid color', function () {
+          const schema = makeBackgroundSchema([
+            {
+              name: 'color',
+              type: 'color'
+            }
+          ]);
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#1a1a2e'
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('background-color: #1a1a2e'),
+            'Should produce background-color declaration'
+          );
+        });
+
+        it('should produce empty rules when no color is set', function () {
+          const schema = makeBackgroundSchema([
+            {
+              name: 'color',
+              type: 'color'
+            }
+          ]);
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: null
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            !result.css.includes('background-color'),
+            'Should not produce background-color when no color set'
+          );
+        });
+      });
+
+      describe('Gradient mode', function () {
+        it('should produce linear-gradient with all values', function () {
+          const schema = makeBackgroundSchema([
+            {
+              name: 'gradientStart',
+              type: 'color'
+            },
+            {
+              name: 'gradientEnd',
+              type: 'color'
+            },
+            {
+              name: 'gradientAngle',
+              type: 'range',
+              unit: 'deg'
+            }
+          ]);
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'gradient',
+                gradientStart: '#ff0000',
+                gradientEnd: '#0000ff',
+                gradientAngle: 135
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('background: linear-gradient(135deg, #ff0000, #0000ff)'),
+            'Should produce linear-gradient declaration'
+          );
+        });
+
+        it('should apply defaults when gradient values are missing', function () {
+          const schema = makeBackgroundSchema([
+            {
+              name: 'gradientStart',
+              type: 'color'
+            },
+            {
+              name: 'gradientEnd',
+              type: 'color'
+            },
+            {
+              name: 'gradientAngle',
+              type: 'range',
+              unit: 'deg'
+            }
+          ]);
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'gradient'
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('background: linear-gradient(180deg, #000000, #ffffff)'),
+            'Should use default gradient values'
+          );
+        });
+      });
+
+      describe('Image mode', function () {
+        const imageAttachment = {
+          group: 'images',
+          _urls: {
+            'one-sixth': '/attachments/abc.one-sixth.jpg',
+            'one-third': '/attachments/abc.one-third.jpg',
+            'one-half': '/attachments/abc.one-half.jpg',
+            'two-thirds': '/attachments/abc.two-thirds.jpg',
+            full: '/attachments/abc.full.jpg',
+            max: '/attachments/abc.max.jpg',
+            original: '/attachments/abc.original.jpg'
+          }
+        };
+
+        function makeImageSchema(extraSubfields = []) {
+          return makeBackgroundSchema([
+            {
+              name: '_image',
+              type: 'relationship'
+            },
+            {
+              name: 'overlay',
+              type: 'boolean'
+            },
+            {
+              name: 'overlayColor',
+              type: 'color'
+            },
+            {
+              name: 'overlayOpacity',
+              type: 'range'
+            },
+            ...extraSubfields
+          ]);
+        }
+
+        it('should produce CSS variables and background shorthand for valid image', function () {
+          const schema = makeImageSchema();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ { attachment: imageAttachment } ]
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('--bg-image: url(/attachments/abc.full.jpg)'),
+            'Should export --bg-image CSS variable'
+          );
+          assert.ok(
+            result.css.includes('background: var(--bg-image-layer,'),
+            'Should produce background shorthand with override hook'
+          );
+          assert.ok(
+            result.css.includes('center / cover no-repeat'),
+            'Should include background sizing'
+          );
+        });
+
+        it('should emit initial values for override hooks to prevent inheritance in nested widgets', function () {
+          const schema = makeImageSchema();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ { attachment: imageAttachment } ]
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('--bg-image-layer: initial'),
+            'Should reset --bg-image-layer to initial for nested widget isolation'
+          );
+          assert.ok(
+            result.css.includes('--bg-overlay-layer: initial'),
+            'Should reset --bg-overlay-layer to initial for nested widget isolation'
+          );
+        });
+
+        it('should produce empty rules when no image is set', function () {
+          const schema = makeImageSchema();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: []
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            !result.css.includes('--bg-image'),
+            'Should not produce image variables when no image set'
+          );
+        });
+
+        it('should produce empty rules when image has no attachment', function () {
+          const schema = makeImageSchema();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ { title: 'missing attachment' } ]
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            !result.css.includes('--bg-image'),
+            'Should not produce image variables when attachment is missing'
+          );
+        });
+
+        it('should produce overlay CSS variable and layer when overlay is enabled', function () {
+          const schema = makeImageSchema();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ { attachment: imageAttachment } ],
+                overlay: true,
+                overlayColor: '#000000',
+                overlayOpacity: 50
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('--bg-overlay: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5))'),
+            'Should export --bg-overlay CSS variable'
+          );
+          assert.ok(
+            result.css.includes('var(--bg-overlay-layer, var(--bg-overlay))'),
+            'Should include overlay layer with override hook in background'
+          );
+          assert.ok(
+            result.css.includes('var(--bg-image-layer,'),
+            'Should include image layer in background'
+          );
+        });
+
+        it('should not produce overlay when overlay is disabled', function () {
+          const schema = makeImageSchema();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ { attachment: imageAttachment } ],
+                overlay: false
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            !result.css.includes('--bg-overlay:'),
+            'Should not produce overlay variable when overlay is disabled'
+          );
+          assert.ok(
+            !result.css.includes('var(--bg-overlay-layer,'),
+            'Should not produce overlay layer reference in background shorthand when overlay is disabled'
+          );
+        });
+
+        it('should handle SVG image (only url, no image-set)', function () {
+          const svgAttachment = {
+            group: 'images',
+            _urls: {
+              original: '/attachments/icon.svg'
+            }
+          };
+          const schema = makeImageSchema();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ { attachment: svgAttachment } ]
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('--bg-image: url(/attachments/icon.svg)'),
+            'Should export --bg-image for SVG'
+          );
+          assert.ok(
+            !result.css.includes('@media'),
+            'Should not produce media query breakpoints for SVG (single rendition)'
+          );
+        });
+      });
+
+      describe('Partial processing', function () {
+        it('should not include blur in processedFields', function () {
+          const schema = makeBackgroundSchema([
+            {
+              name: '_image',
+              type: 'relationship'
+            },
+            {
+              name: 'overlay',
+              type: 'boolean'
+            },
+            {
+              name: 'overlayColor',
+              type: 'color'
+            },
+            {
+              name: 'overlayOpacity',
+              type: 'range'
+            },
+            {
+              name: 'blur',
+              type: 'range',
+              unit: 'px',
+              property: '--bg-blur',
+              class: 'has-bg-blur',
+              skipFalsyValues: true
+            }
+          ]);
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ {
+                  attachment: {
+                    group: 'images',
+                    _urls: {
+                      full: '/attachments/abc.full.jpg',
+                      max: '/attachments/abc.max.jpg',
+                      original: '/attachments/abc.original.jpg'
+                    }
+                  }
+                } ],
+                blur: 7
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('--bg-blur: 7px'),
+            'Blur should be extracted by the engine (not consumed by background rule)'
+          );
+          assert.ok(
+            result.classes.includes('has-bg-blur'),
+            'Blur class should be applied by the engine'
+          );
+        });
+
+        it('should let additional project fields be processed by the engine', function () {
+          const schema = makeBackgroundSchema([
+            {
+              name: 'color',
+              type: 'color'
+            },
+            {
+              name: 'textColor',
+              type: 'color',
+              property: 'color'
+            }
+          ]);
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#1a1a2e',
+                textColor: '#ffffff'
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('color: #ffffff'),
+            'Additional fields should be processed by the engine normally'
+          );
+          assert.ok(
+            result.css.includes('background-color: #1a1a2e'),
+            'Background rule output should still be present'
+          );
+        });
+      });
+
+      describe('Variable base name', function () {
+        it('should use default --bg prefix', function () {
+          const schema = [
+            {
+              name: 'bg',
+              type: 'object',
+              customType: 'background',
+              selector: '.s-w123',
+              property: '--bg',
+              schema: [
+                {
+                  name: 'enabled',
+                  type: 'boolean',
+                  def: false
+                },
+                {
+                  name: 'backgroundType',
+                  type: 'select',
+                  def: 'color'
+                },
+                {
+                  name: 'color',
+                  type: 'color'
+                }
+              ]
+            }
+          ];
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#abc123'
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('background-color: #abc123'),
+            'Should produce background-color with default prefix'
+          );
+        });
+
+        it('should use custom prefix for CSS variables', function () {
+          const heroAttachment = {
+            group: 'images',
+            _urls: {
+              full: '/attachments/hero.full.jpg',
+              max: '/attachments/hero.max.jpg',
+              original: '/attachments/hero.original.jpg'
+            }
+          };
+          const schema = [
+            {
+              name: 'heroBg',
+              type: 'object',
+              customType: 'background',
+              selector: '.s-hero',
+              property: '--hero-bg',
+              schema: [
+                {
+                  name: 'enabled',
+                  type: 'boolean',
+                  def: false
+                },
+                {
+                  name: 'backgroundType',
+                  type: 'select',
+                  def: 'color'
+                },
+                {
+                  name: '_image',
+                  type: 'relationship'
+                },
+                {
+                  name: 'overlay',
+                  type: 'boolean'
+                },
+                {
+                  name: 'overlayColor',
+                  type: 'color'
+                },
+                {
+                  name: 'overlayOpacity',
+                  type: 'range'
+                }
+              ]
+            }
+          ];
+          const result = renderScopedStyles(
+            schema,
+            {
+              heroBg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ { attachment: heroAttachment } ],
+                overlay: true,
+                overlayColor: '#ff0000',
+                overlayOpacity: 80
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('--hero-bg-image: url(/attachments/hero.full.jpg)'),
+            'Should use custom prefix for image variable'
+          );
+          assert.ok(
+            result.css.includes('--hero-bg-overlay: linear-gradient('),
+            'Should use custom prefix for overlay variable'
+          );
+          assert.ok(
+            result.css.includes('var(--hero-bg-overlay-layer,'),
+            'Should use custom prefix for overlay hook'
+          );
+          assert.ok(
+            result.css.includes('var(--hero-bg-image-layer,'),
+            'Should use custom prefix for image hook'
+          );
+        });
+      });
+
+      describe('Inline vote and media queries', function () {
+        const imageAttachment = {
+          group: 'images',
+          _urls: {
+            'one-sixth': '/attachments/abc.one-sixth.jpg',
+            'one-third': '/attachments/abc.one-third.jpg',
+            'one-half': '/attachments/abc.one-half.jpg',
+            'two-thirds': '/attachments/abc.two-thirds.jpg',
+            full: '/attachments/abc.full.jpg',
+            max: '/attachments/abc.max.jpg',
+            original: '/attachments/abc.original.jpg'
+          }
+        };
+
+        function makeImageSchemaNoSelector(extraSubfields = []) {
+          return [
+            {
+              name: 'bg',
+              type: 'object',
+              customType: 'background',
+              property: '--bg',
+              schema: [
+                {
+                  name: 'enabled',
+                  type: 'boolean',
+                  def: false
+                },
+                {
+                  name: 'backgroundType',
+                  type: 'select',
+                  def: 'color'
+                },
+                {
+                  name: 'color',
+                  type: 'color'
+                },
+                {
+                  name: '_image',
+                  type: 'relationship'
+                },
+                {
+                  name: 'overlay',
+                  type: 'boolean'
+                },
+                {
+                  name: 'overlayColor',
+                  type: 'color'
+                },
+                {
+                  name: 'overlayOpacity',
+                  type: 'range'
+                },
+                ...extraSubfields
+              ]
+            }
+          ];
+        }
+
+        it('should force scoped CSS when media queries are present (no field selector)', function () {
+          const schema = makeImageSchemaNoSelector();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ { attachment: imageAttachment } ]
+              }
+            },
+            { rootSelector: '#w123' }
+          );
+          // Media queries present → must produce scoped CSS, not inline
+          assert.ok(
+            result.css.includes('@media'),
+            'Should produce media queries for responsive images'
+          );
+          assert.equal(
+            result.inline,
+            '',
+            'Should not produce inline styles when media queries are present'
+          );
+          assert.ok(
+            result.css.includes('#w123{'),
+            'Should scope rules under rootSelector'
+          );
+        });
+
+        it('should produce inline styles for color mode (no selector, no media queries)', function () {
+          const schema = makeImageSchemaNoSelector();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#ff0000'
+              }
+            },
+            { rootSelector: '#w123' }
+          );
+          assert.ok(
+            result.inline.includes('background-color: #ff0000'),
+            'Color mode without selector should produce inline styles'
+          );
+          assert.equal(
+            result.css,
+            '',
+            'Should not produce scoped CSS for inline-eligible color mode'
+          );
+        });
+
+        it('should produce media query breakpoints with correct image overrides', function () {
+          const schema = makeImageSchemaNoSelector();
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'image',
+                _image: [ { attachment: imageAttachment } ]
+              }
+            },
+            { rootSelector: '#w123' }
+          );
+          // Base is now max (largest entry). Mobile BP selects full (≠ base)
+          // → emitted. Tablet BP selects max (= base) → skipped.
+          const hasMobile = result.css.includes('@media (width <= 480px)');
+          assert.ok(
+            hasMobile,
+            'Should produce mobile responsive breakpoint with range query'
+          );
+          // Media queries should override --bg-image with smaller images
+          assert.ok(
+            result.css.includes('--bg-image: url(/attachments/abc'),
+            'Media query should override --bg-image variable'
+          );
+        });
+      });
+
+      describe('Subfield filtering', function () {
+        it('should not emit CSS for unprocessed subfields with null values', function () {
+          const schema = [
+            {
+              name: 'bg',
+              type: 'object',
+              customType: 'background',
+              selector: '.s-test',
+              property: '--bg',
+              schema: [
+                {
+                  name: 'enabled',
+                  type: 'boolean',
+                  def: false
+                },
+                {
+                  name: 'backgroundType',
+                  type: 'select',
+                  def: 'color'
+                },
+                {
+                  name: 'color',
+                  type: 'color'
+                },
+                {
+                  name: 'blur',
+                  type: 'range',
+                  unit: 'px',
+                  property: '--bg-blur'
+                }
+              ]
+            }
+          ];
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#aabbcc',
+                blur: null
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('background-color: #aabbcc'),
+            'Should render the color rule'
+          );
+          assert.ok(
+            !result.css.includes('--bg-blur'),
+            'Should NOT emit --bg-blur when value is null'
+          );
+        });
+
+        it('should not emit CSS for unprocessed subfields without property or selector', function () {
+          const schema = [
+            {
+              name: 'bg',
+              type: 'object',
+              customType: 'background',
+              selector: '.s-test',
+              property: '--bg',
+              schema: [
+                {
+                  name: 'enabled',
+                  type: 'boolean',
+                  def: false
+                },
+                {
+                  name: 'backgroundType',
+                  type: 'select',
+                  def: 'color'
+                },
+                {
+                  name: 'color',
+                  type: 'color'
+                },
+                {
+                  name: 'noPropertyField',
+                  type: 'string'
+                }
+              ]
+            }
+          ];
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#aabbcc',
+                noPropertyField: 'some-value'
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('background-color: #aabbcc'),
+            'Should render the color rule'
+          );
+          assert.ok(
+            !result.css.includes('some-value'),
+            'Should NOT emit a field without property or selector'
+          );
+        });
+
+        it('should emit CSS for valid unprocessed subfields with values', function () {
+          const schema = [
+            {
+              name: 'bg',
+              type: 'object',
+              customType: 'background',
+              selector: '.s-test',
+              property: '--bg',
+              schema: [
+                {
+                  name: 'enabled',
+                  type: 'boolean',
+                  def: false
+                },
+                {
+                  name: 'backgroundType',
+                  type: 'select',
+                  def: 'color'
+                },
+                {
+                  name: 'color',
+                  type: 'color'
+                },
+                {
+                  name: 'blur',
+                  type: 'range',
+                  unit: 'px',
+                  property: '--bg-blur',
+                  class: 'has-bg-blur',
+                  skipFalsyValues: true
+                }
+              ]
+            }
+          ];
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#aabbcc',
+                blur: 5
+              }
+            },
+            { rootSelector: '#id' }
+          );
+          assert.ok(
+            result.css.includes('--bg-blur: 5px'),
+            'Should emit --bg-blur for valid value'
+          );
+          assert.ok(
+            result.classes.includes('has-bg-blur'),
+            'Should apply blur class for valid value'
+          );
+        });
+      });
+
+      describe('Unprocessed subfield inline vote', function () {
+        // Edge case: a customType object rule does NOT process a subfield,
+        // but that subfield carries its own `selector` which should force
+        // scoped CSS. The vote must still happen because normalizeObject
+        // normalizes (and votes) ALL subfields before the rule runs.
+        it('should force scoped CSS when an unprocessed subfield has a selector', function () {
+          const schema = [
+            {
+              name: 'bg',
+              type: 'object',
+              customType: 'background',
+              property: '--bg',
+              // NO selector on parent
+              schema: [
+                {
+                  name: 'enabled',
+                  type: 'boolean',
+                  def: false
+                },
+                {
+                  name: 'backgroundType',
+                  type: 'select',
+                  def: 'color'
+                },
+                {
+                  name: 'color',
+                  type: 'color'
+                },
+                // Unprocessed by the background rule, has its own selector
+                {
+                  name: 'customExtra',
+                  type: 'range',
+                  unit: 'px',
+                  property: '--custom-extra',
+                  selector: '.extra-scope'
+                }
+              ]
+            }
+          ];
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#aabbcc',
+                customExtra: 10
+              }
+            },
+            { rootSelector: '#w999' }
+          );
+          // The subfield has a selector → it votes inline: false during
+          // normalizeObject, even though the background rule never touches it.
+          assert.ok(
+            result.css.includes('--custom-extra: 10px'),
+            'Unprocessed subfield should produce scoped CSS'
+          );
+          assert.ok(
+            result.css.includes('.extra-scope'),
+            'Subfield selector should appear in scoped output'
+          );
+          assert.equal(
+            result.inline,
+            '',
+            'Subfield selector should force scoped CSS, not inline'
+          );
+        });
+
+        it('should force scoped CSS when an unprocessed subfield has a mediaQuery', function () {
+          const schema = [
+            {
+              name: 'bg',
+              type: 'object',
+              customType: 'background',
+              property: '--bg',
+              schema: [
+                {
+                  name: 'enabled',
+                  type: 'boolean',
+                  def: false
+                },
+                {
+                  name: 'backgroundType',
+                  type: 'select',
+                  def: 'color'
+                },
+                {
+                  name: 'color',
+                  type: 'color'
+                },
+                // Unprocessed by the background rule, has its own media query
+                {
+                  name: 'mqExtra',
+                  type: 'range',
+                  unit: 'rem',
+                  property: '--mq-extra',
+                  mediaQuery: '(min-width: 1024px)'
+                }
+              ]
+            }
+          ];
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#112233',
+                mqExtra: 3
+              }
+            },
+            { rootSelector: '#w888' }
+          );
+          assert.ok(
+            result.css.includes('@media (min-width: 1024px)'),
+            'Unprocessed subfield media query should produce scoped CSS'
+          );
+          assert.ok(
+            result.css.includes('--mq-extra: 3rem'),
+            'Unprocessed subfield should emit its rule inside the media query'
+          );
+          assert.equal(
+            result.inline,
+            '',
+            'Subfield mediaQuery should force scoped CSS, not inline'
+          );
+        });
+
+        it('should still allow inline when unprocessed subfields have no selector or mediaQuery', function () {
+          const schema = [
+            {
+              name: 'bg',
+              type: 'object',
+              customType: 'background',
+              property: '--bg',
+              schema: [
+                {
+                  name: 'enabled',
+                  type: 'boolean',
+                  def: false
+                },
+                {
+                  name: 'backgroundType',
+                  type: 'select',
+                  def: 'color'
+                },
+                {
+                  name: 'color',
+                  type: 'color'
+                },
+                // Unprocessed, no selector, no mediaQuery
+                {
+                  name: 'simpleExtra',
+                  type: 'range',
+                  unit: 'px',
+                  property: '--simple-extra'
+                }
+              ]
+            }
+          ];
+          const result = renderScopedStyles(
+            schema,
+            {
+              bg: {
+                enabled: true,
+                backgroundType: 'color',
+                color: '#445566',
+                simpleExtra: 8
+              }
+            },
+            { rootSelector: '#w777' }
+          );
+          // No subfield selector/mediaQuery, no image mode → inline
+          assert.ok(
+            result.inline.includes('--simple-extra: 8px'),
+            'Unprocessed subfield without selector should render inline'
+          );
+          assert.ok(
+            result.inline.includes('background-color: #445566'),
+            'Color output should also be inline'
+          );
+          assert.equal(
+            result.css,
+            '',
+            'Nothing should force scoped CSS'
+          );
+        });
+      });
+    });
+  });
+
+  describe('Background preset (e2e)', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/styles': {
+            extendMethods(self) {
+              return {
+                registerPresets(_super) {
+                  _super();
+                  const bg = self.getPreset('background');
+                  bg.fields.add.blur = {
+                    label: 'Blur',
+                    type: 'range',
+                    min: 0,
+                    max: 20,
+                    def: 0,
+                    if: {
+                      enabled: true,
+                      backgroundType: 'image'
+                    },
+                    unit: 'px',
+                    property: '--preset-bg-blur',
+                    class: 'has-bg-blur',
+                    skipFalsyValues: true
+                  };
+                  self.setPreset('background', bg);
+                }
+              };
+            }
+          },
+          'test-bg-widget': {
+            extend: '@apostrophecms/widget-type',
+            options: {
+              label: 'Test Background Widget'
+            },
+            styles: {
+              add: {
+                background: 'background'
+              }
+            }
+          },
+          'test-bg-custom-prefix-widget': {
+            extend: '@apostrophecms/widget-type',
+            options: {
+              label: 'Test Background Custom Prefix Widget'
+            },
+            styles: {
+              add: {
+                background: {
+                  preset: 'background',
+                  property: '--hero-bg'
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+
+    after(async function () {
+      return t.destroy(apos);
+    });
+
+    describe('Preset schema validation', function () {
+      it('should register the background preset with correct structure', function () {
+        const preset = apos.styles.getPreset('background');
+        assert.ok(preset, 'Background preset should be registered');
+        assert.equal(preset.type, 'object', 'Should be an object type');
+        assert.equal(preset.customType, 'background', 'Should have customType background');
+        assert.equal(preset.property, '--preset-bg', 'Should have --preset-bg property');
+      });
+
+      it('should have all required subfields', function () {
+        const preset = apos.styles.getPreset('background');
+        const fieldNames = Object.keys(preset.fields.add);
+        const required = [
+          'enabled', 'backgroundType', 'color',
+          'gradientStart', 'gradientEnd', 'gradientAngle',
+          '_image', 'overlay', 'overlayColor', 'overlayOpacity'
+        ];
+        for (const name of required) {
+          assert.ok(
+            fieldNames.includes(name),
+            `Should have ${name} subfield`
+          );
+        }
+      });
+
+      it('should include extended blur field via registerPresets', function () {
+        const preset = apos.styles.getPreset('background');
+        assert.ok(
+          preset.fields.add.blur,
+          'Extended blur field should be present'
+        );
+        assert.equal(
+          preset.fields.add.blur.type,
+          'range',
+          'Blur should be a range field'
+        );
+        assert.equal(
+          preset.fields.add.blur.property,
+          '--preset-bg-blur',
+          'Blur should use --preset-bg-blur property'
+        );
+      });
+
+      it('should have gradientAngle with step 5', function () {
+        const preset = apos.styles.getPreset('background');
+        assert.equal(
+          preset.fields.add.gradientAngle.step,
+          5,
+          'Gradient angle should have step 5'
+        );
+      });
+
+      it('should compile background preset into widget schema', function () {
+        const schema = apos.modules['test-bg-widget'].schema;
+        const bgField = schema.find(field => field.name === 'background');
+        assert.ok(bgField, 'Background field should exist in widget schema');
+        assert.equal(bgField.type, 'object', 'Should be compiled as object');
+        assert.equal(bgField.customType, 'background', 'Should preserve customType');
+        assert.ok(
+          Array.isArray(bgField.schema),
+          'Should have compiled schema array (from fields.add)'
+        );
+        const subfieldNames = bgField.schema.map(f => f.name);
+        assert.ok(
+          subfieldNames.includes('enabled'),
+          'Compiled schema should include enabled'
+        );
+        assert.ok(
+          subfieldNames.includes('backgroundType'),
+          'Compiled schema should include backgroundType'
+        );
+        assert.ok(
+          subfieldNames.includes('blur'),
+          'Compiled schema should include extended blur field'
+        );
+      });
+    });
+
+    describe('Conditional field gating', function () {
+      it('should gate all fields when enabled is false', function () {
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          { background: { enabled: false } },
+          'gate-test-1'
+        );
+        assert.equal(result.css, '', 'Should produce no CSS when disabled');
+        assert.equal(result.inline, '', 'Should produce no inline when disabled');
+      });
+
+      it('should show only color field when backgroundType is color', function () {
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'color',
+              color: '#ff0000',
+              // These should be gated out
+              gradientStart: '#111111',
+              gradientEnd: '#222222'
+            }
+          },
+          'gate-test-2'
+        );
+        assert.ok(
+          result.inline.includes('background-color: #ff0000'),
+          'Should produce color output'
+        );
+        assert.ok(
+          !result.inline.includes('linear-gradient'),
+          'Should NOT produce gradient output when backgroundType is color'
+        );
+      });
+
+      it('should show gradient fields when backgroundType is gradient', function () {
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'gradient',
+              gradientStart: '#ff0000',
+              gradientEnd: '#0000ff',
+              gradientAngle: 90
+            }
+          },
+          'gate-test-3'
+        );
+        assert.ok(
+          result.inline.includes('linear-gradient(90deg, #ff0000, #0000ff)'),
+          'Should produce gradient output'
+        );
+      });
+
+      it('should gate overlay fields when overlay is false', function () {
+        const imageAttachment = {
+          group: 'images',
+          _urls: {
+            'one-third': '/attachments/gate.one-third.jpg',
+            full: '/attachments/gate.full.jpg',
+            max: '/attachments/gate.max.jpg',
+            original: '/attachments/gate.original.jpg'
+          }
+        };
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'image',
+              _image: [ { attachment: imageAttachment } ],
+              overlay: false,
+              overlayColor: '#000000',
+              overlayOpacity: 50
+            }
+          },
+          'gate-test-4'
+        );
+        assert.ok(
+          !result.css.includes('--preset-bg-overlay:'),
+          'Should NOT produce overlay in scoped CSS when overlay toggle is false'
+        );
+        assert.equal(
+          result.inline,
+          '',
+          'Image mode should not produce inline styles'
+        );
+      });
+
+      it('should show overlay fields when overlay is true', function () {
+        const imageAttachment = {
+          group: 'images',
+          _urls: {
+            'one-third': '/attachments/gate.one-third.jpg',
+            full: '/attachments/gate.full.jpg',
+            max: '/attachments/gate.max.jpg',
+            original: '/attachments/gate.original.jpg'
+          }
+        };
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'image',
+              _image: [ { attachment: imageAttachment } ],
+              overlay: true,
+              overlayColor: '#000000',
+              overlayOpacity: 50
+            }
+          },
+          'gate-test-5'
+        );
+        assert.ok(
+          result.css.includes('--preset-bg-overlay'),
+          'Should produce overlay in scoped CSS when overlay toggle is true'
+        );
+        assert.equal(
+          result.inline,
+          '',
+          'Image mode should not produce inline styles'
+        );
+      });
+    });
+
+    describe('End-to-end rendering', function () {
+      it('should render color mode correctly', function () {
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'color',
+              color: '#336699'
+            }
+          },
+          'e2e-color'
+        );
+        assert.ok(
+          result.inline.includes('background-color: #336699'),
+          'Should produce background-color'
+        );
+        assert.equal(
+          result.css,
+          '',
+          'Color mode should produce inline, not scoped CSS'
+        );
+      });
+
+      it('should render gradient mode correctly', function () {
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'gradient',
+              gradientStart: '#ff0000',
+              gradientEnd: '#0000ff',
+              gradientAngle: 45
+            }
+          },
+          'e2e-gradient'
+        );
+        assert.ok(
+          result.inline.includes('background: linear-gradient(45deg, #ff0000, #0000ff)'),
+          'Should produce linear-gradient'
+        );
+      });
+
+      it('should render image mode with responsive breakpoints', function () {
+        const imageAttachment = {
+          group: 'images',
+          _urls: {
+            'one-sixth': '/attachments/e2e.one-sixth.jpg',
+            'one-third': '/attachments/e2e.one-third.jpg',
+            'one-half': '/attachments/e2e.one-half.jpg',
+            'two-thirds': '/attachments/e2e.two-thirds.jpg',
+            full: '/attachments/e2e.full.jpg',
+            max: '/attachments/e2e.max.jpg',
+            original: '/attachments/e2e.original.jpg'
+          }
+        };
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'image',
+              _image: [ { attachment: imageAttachment } ]
+            }
+          },
+          'e2e-image'
+        );
+        assert.ok(
+          result.css.includes('--preset-bg-image: url(/attachments/e2e.full.jpg)'),
+          'Should export --preset-bg-image variable'
+        );
+        assert.ok(
+          result.css.includes('background:'),
+          'Should produce background shorthand'
+        );
+        assert.ok(
+          result.css.includes('@media'),
+          'Should produce responsive media queries'
+        );
+        assert.equal(
+          result.inline,
+          '',
+          'Image mode with media queries should not produce inline styles'
+        );
+      });
+
+      it('should render image mode with overlay', function () {
+        const imageAttachment = {
+          group: 'images',
+          _urls: {
+            'one-third': '/attachments/e2e-ov.one-third.jpg',
+            full: '/attachments/e2e-ov.full.jpg',
+            max: '/attachments/e2e-ov.max.jpg',
+            original: '/attachments/e2e-ov.original.jpg'
+          }
+        };
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'image',
+              _image: [ { attachment: imageAttachment } ],
+              overlay: true,
+              overlayColor: '#ff0000',
+              overlayOpacity: 80
+            }
+          },
+          'e2e-overlay'
+        );
+        assert.ok(
+          result.css.includes('--preset-bg-overlay: linear-gradient(rgba(255, 0, 0, 0.8), rgba(255, 0, 0, 0.8))'),
+          'Should produce overlay CSS variable in scoped CSS'
+        );
+        assert.ok(
+          result.css.includes('var(--preset-bg-overlay-layer, var(--preset-bg-overlay))'),
+          'Should include overlay layer in background shorthand'
+        );
+        assert.ok(
+          result.css.includes('var(--preset-bg-image-layer,'),
+          'Should include image layer in background shorthand'
+        );
+        assert.equal(
+          result.inline,
+          '',
+          'Image mode with overlay should not produce inline styles'
+        );
+      });
+
+      it('should render extended blur field alongside background', function () {
+        const imageAttachment = {
+          group: 'images',
+          _urls: {
+            'one-third': '/attachments/e2e-blur.one-third.jpg',
+            full: '/attachments/e2e-blur.full.jpg',
+            max: '/attachments/e2e-blur.max.jpg',
+            original: '/attachments/e2e-blur.original.jpg'
+          }
+        };
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'image',
+              _image: [ { attachment: imageAttachment } ],
+              blur: 10
+            }
+          },
+          'e2e-blur'
+        );
+        assert.ok(
+          result.css.includes('--preset-bg-blur: 10px'),
+          'Extended blur field should appear in scoped CSS'
+        );
+        assert.ok(
+          result.classes.includes('has-bg-blur'),
+          'Extended blur field should toggle class'
+        );
+        assert.ok(
+          result.css.includes('--preset-bg-image:'),
+          'Background image output should still be present in scoped CSS'
+        );
+        assert.equal(
+          result.inline,
+          '',
+          'Image mode with blur should not produce inline styles'
+        );
+      });
+
+      it('should skip blur output when blur is 0 (skipFalsyValues)', function () {
+        const imageAttachment = {
+          group: 'images',
+          _urls: {
+            'one-third': '/attachments/e2e-noblur.one-third.jpg',
+            full: '/attachments/e2e-noblur.full.jpg',
+            max: '/attachments/e2e-noblur.max.jpg',
+            original: '/attachments/e2e-noblur.original.jpg'
+          }
+        };
+        const result = apos.modules['test-bg-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'image',
+              _image: [ { attachment: imageAttachment } ],
+              blur: 0
+            }
+          },
+          'e2e-noblur'
+        );
+        assert.ok(
+          !result.css.includes('--preset-bg-blur'),
+          'Should not emit --preset-bg-blur in scoped CSS when value is 0 (skipFalsyValues)'
+        );
+        assert.ok(
+          !result.classes.includes('has-bg-blur'),
+          'Should not toggle blur class when value is 0'
+        );
+        assert.equal(
+          result.inline,
+          '',
+          'Image mode should not produce inline styles'
+        );
+      });
+    });
+
+    describe('Custom property prefix', function () {
+      it('should use overridden prefix for all CSS variables', function () {
+        const imageAttachment = {
+          group: 'images',
+          _urls: {
+            'one-third': '/attachments/hero.one-third.jpg',
+            full: '/attachments/hero.full.jpg',
+            max: '/attachments/hero.max.jpg',
+            original: '/attachments/hero.original.jpg'
+          }
+        };
+        const result = apos.modules['test-bg-custom-prefix-widget'].getStylesheet(
+          {
+            background: {
+              enabled: true,
+              backgroundType: 'image',
+              _image: [ { attachment: imageAttachment } ],
+              overlay: true,
+              overlayColor: '#000000',
+              overlayOpacity: 50
+            }
+          },
+          'e2e-prefix'
+        );
+        assert.ok(
+          result.css.includes('--hero-bg-image:'),
+          'Should use custom prefix for image variable in scoped CSS'
+        );
+        assert.ok(
+          result.css.includes('--hero-bg-overlay:'),
+          'Should use custom prefix for overlay variable in scoped CSS'
+        );
+        assert.ok(
+          result.css.includes('var(--hero-bg-overlay-layer,'),
+          'Should use custom prefix in overlay hook'
+        );
+        assert.ok(
+          result.css.includes('var(--hero-bg-image-layer,'),
+          'Should use custom prefix in image hook'
+        );
+        assert.equal(
+          result.inline,
+          '',
+          'Image mode with custom prefix should not produce inline styles'
+        );
+      });
+    });
+
+    describe('i18n labels', function () {
+      it('should resolve all background label keys', function () {
+        const keys = [
+          'styleBackground',
+          'styleBackgroundColor',
+          'styleBackgroundGradient',
+          'styleBackgroundImage',
+          'styleBackgroundOverlay',
+          'styleBackgroundType',
+          'styleGradientAngle',
+          'styleGradientEnd',
+          'styleGradientStart',
+          'styleOverlayColor',
+          'styleOverlayOpacity'
+        ];
+        for (const key of keys) {
+          const resolved = apos.i18n.i18next.t(`apostrophe:${key}`);
+          assert.ok(
+            resolved && !resolved.startsWith('apostrophe:'),
+            `Label key apostrophe:${key} should resolve (got "${resolved}")`
+          );
+        }
+      });
     });
   });
 
