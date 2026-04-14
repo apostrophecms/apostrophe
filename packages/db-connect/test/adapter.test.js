@@ -783,6 +783,127 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       });
     });
 
+    // Anchored-literal-prefix regex queries mirror the ApostropheCMS page-tree
+    // descendants pattern (matchDescendants). Under the covers, the postgres
+    // and sqlite adapters rewrite these to an indexable range predicate
+    // plus a residual regex. Verify correctness here; index-usage is verified
+    // separately in the Indexes describe block below.
+    describe('Anchored regex (prefix rewrite)', function() {
+      beforeEach(async function() {
+        await db.collection('test2').deleteMany({});
+        await db.collection('test2').insertMany([
+          {
+            _id: 'p1',
+            path: '/'
+          },
+          {
+            _id: 'p2',
+            path: '/parent'
+          },
+          {
+            _id: 'p3',
+            path: '/parent/child-a'
+          },
+          {
+            _id: 'p4',
+            path: '/parent/child-a/grandchild'
+          },
+          {
+            _id: 'p5',
+            path: '/parent/child-b'
+          },
+          {
+            _id: 'p6',
+            path: '/parentx'
+          }, // sibling, must not match a /parent/ prefix
+          {
+            _id: 'p7',
+            path: '/other/child'
+          }
+        ]);
+      });
+      after(async function() {
+        await db.collection('test2').deleteMany({});
+      });
+
+      it('matches exactly the descendants of a path (MongoDB semantics)', async function() {
+        // ApostropheCMS matchDescendants: /^<path>\/./
+        const docs = await db.collection('test2')
+          .find({ path: /^\/parent\/./ })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p4', 'p5' ]);
+      });
+
+      it('does not falsely match siblings that share a prefix without the separator', async function() {
+        // /parentx must not match /^\/parent\/./ even though they share '/parent'
+        const docs = await db.collection('test2')
+          .find({ path: /^\/parent\// })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p4', 'p5' ]);
+      });
+
+      it('excludes the parent itself from its descendants (trailing `.` enforcement)', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: /^\/parent\/./ })
+          .toArray();
+        const ids = docs.map(d => d._id);
+        expect(ids).to.not.include('p2'); // /parent is not its own descendant
+      });
+
+      it('works via $regex with $options', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: { $regex: '^/parent/' } })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p4', 'p5' ]);
+      });
+
+      it('works for _id prefix queries', async function() {
+        const docs = await db.collection('test2')
+          .find({ _id: /^p/ })
+          .toArray();
+        expect(docs.length).to.equal(7);
+        const noneMatch = await db.collection('test2')
+          .find({ _id: /^z/ })
+          .toArray();
+        expect(noneMatch).to.have.lengthOf(0);
+      });
+
+      it('returns no results when the literal prefix has no matches', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: /^\/nonexistent\// })
+          .toArray();
+        expect(docs).to.have.lengthOf(0);
+      });
+
+      it('matches results beyond the prefix via the residual regex', async function() {
+        // Prefix '/parent/child-', then [ab] picks just the two direct children
+        const docs = await db.collection('test2')
+          .find({ path: /^\/parent\/child-[ab]$/ })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p5' ]);
+      });
+
+      it('case-insensitive anchored regex still matches correctly (no range rewrite)', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: /^\/PARENT\//i })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p4', 'p5' ]);
+      });
+
+      it('unanchored regex still works (no rewrite)', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: /child-b/ })
+          .toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0]._id).to.equal('p5');
+      });
+    });
+
     describe('Array Operators', function() {
       it('should match array containing value (implicit)', async function() {
         const docs = await db.collection('test').find({ tags: 'admin' }).toArray();
@@ -1869,6 +1990,109 @@ describe(`Database Adapter (${ADAPTER})`, function() {
           i.key && i.key.price === 1 && i.sparse && i.type === 'number'
         );
         expect(sparseNumIdx).to.exist;
+      });
+    }
+
+    // Verify that anchored-regex queries (e.g. ApostropheCMS matchDescendants)
+    // actually use a btree index on the matched field via the rewrite to a
+    // range predicate. This is the behavior we care about — without it, page
+    // tree queries degrade to O(n) sequential scans.
+    if (ADAPTER === 'postgres' || ADAPTER === 'multipostgres') {
+      it('anchored regex on an indexed field uses a btree index scan (postgres)', async function() {
+        const coll = db.collection('pathidx');
+        await coll.deleteMany({});
+        await coll.createIndex({ path: 1 });
+        // Populate with enough rows that the planner considers the index
+        // even if query planning is cost-sensitive.
+        const docs = [];
+        for (let i = 0; i < 200; i++) {
+          docs.push({
+            _id: `d${i}`,
+            path: `/p${i}/child`
+          });
+        }
+        docs.push({
+          _id: 'target1',
+          path: '/tree/parent/a'
+        });
+        docs.push({
+          _id: 'target2',
+          path: '/tree/parent/b'
+        });
+        await coll.insertMany(docs);
+
+        // First verify the high-level query produces the right results —
+        // this proves the rewrite is correct end-to-end.
+        const results = await coll.find({ path: /^\/tree\/parent\// }).toArray();
+        const ids = results.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'target1', 'target2' ]);
+
+        // Now run EXPLAIN on the SQL shape that buildWhereClause produces
+        // for an anchored regex, against the same table + index. This
+        // confirms that the rewrite's output is planner-visible as
+        // index-eligible. Force enable_seqscan off so the planner is
+        // obliged to use the index if it CAN.
+        const pool = db._pool;
+        const qualifiedName = coll._qualifiedName();
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query('SET LOCAL enable_seqscan = off');
+          const explain = await client.query(
+            `EXPLAIN SELECT _id FROM ${qualifiedName} WHERE (data->>'path' >= $1 AND data->>'path' < $2 AND data->>'path' ~ $3)`,
+            [ '/tree/parent/', '/tree/parent0', '^/tree/parent/' ]
+          );
+          const planText = explain.rows.map(r => r['QUERY PLAN']).join('\n');
+          expect(planText).to.match(/Index (Only )?Scan|Bitmap Index Scan/);
+          expect(planText).to.not.match(/\bSeq Scan\b/);
+          await client.query('ROLLBACK');
+        } finally {
+          client.release();
+        }
+
+        await coll.deleteMany({});
+      });
+    }
+
+    if (ADAPTER === 'sqlite') {
+      it('anchored regex on an indexed field uses a btree index search (sqlite)', async function() {
+        const coll = db.collection('pathidx');
+        await coll.deleteMany({});
+        await coll.createIndex({ path: 1 });
+        const docs = [];
+        for (let i = 0; i < 200; i++) {
+          docs.push({
+            _id: `d${i}`,
+            path: `/p${i}/child`
+          });
+        }
+        docs.push({
+          _id: 'target1',
+          path: '/tree/parent/a'
+        });
+        docs.push({
+          _id: 'target2',
+          path: '/tree/parent/b'
+        });
+        await coll.insertMany(docs);
+
+        // End-to-end correctness first
+        const results = await coll.find({ path: /^\/tree\/parent\// }).toArray();
+        const ids = results.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'target1', 'target2' ]);
+
+        // EXPLAIN QUERY PLAN output:
+        //   "SEARCH table USING INDEX idx_name (...)"  -- uses index
+        //   "SCAN table"                                -- full scan
+        const sqlite = db._sqlite;
+        const tableName = coll._quotedTableName();
+        const planRows = sqlite.prepare(
+          `EXPLAIN QUERY PLAN SELECT _id FROM ${tableName} WHERE json_extract(data, '$.path') >= ? AND json_extract(data, '$.path') < ? AND regexp(?, json_extract(data, '$.path'))`
+        ).all('/tree/parent/', '/tree/parent0', '^/tree/parent/');
+        const planText = planRows.map(r => r.detail || '').join('\n');
+        expect(planText).to.match(/SEARCH.*USING INDEX/);
+
+        await coll.deleteMany({});
       });
     }
   });

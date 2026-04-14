@@ -12,6 +12,8 @@ const {
   deepEqual,
   applyProjection,
   applyUpdate,
+  extractAnchoredLiteralPrefix,
+  prefixUpperBound,
   validateInteger
 } = require('../lib/shared');
 const { AggregationCursor } = require('../lib/aggregation-cursor');
@@ -241,6 +243,11 @@ function parseIndexDef(indexdef) {
   const sparse = /\bWHERE\b/.test(indexdef);
   const isGin = /\bUSING gin\b/.test(indexdef);
 
+  // Strip COLLATE "C" annotations so the existing expression patterns match
+  // regardless of whether the JSON path has an explicit collation (introduced
+  // to make byte-wise comparisons match MongoDB semantics).
+  indexdef = indexdef.replace(/\s*COLLATE\s+"[^"]+"/gi, '');
+
   if (isGin) {
     // Text index: USING gin(to_tsvector('simple', coalesce(data->>'field', '') ...))
     // PostgreSQL normalizes to: COALESCE((data ->> 'field'::text), ''::text)
@@ -435,7 +442,15 @@ function buildJsonPath(field, prefix = 'data') {
   return path;
 }
 
-// Build JSON text path for nested fields (returns text, not jsonb)
+// Build JSON text path for nested fields (returns text, not jsonb).
+//
+// The result is wrapped with `COLLATE "C"` so string comparisons and sorts
+// follow byte-wise Unicode code point order, matching MongoDB's default
+// (non-collated) string semantics. Without this, Postgres would use the
+// database/OS locale (typically en_US.UTF-8) which produces user-visible
+// divergences from MongoDB in $gt/$lt/sort/range queries and also defeats
+// btree indexes built on the same expression whenever predicates and
+// indexes disagree on collation.
 function buildJsonTextPath(field, prefix = 'data') {
   const parts = field.split('.');
   let path = prefix;
@@ -445,7 +460,7 @@ function buildJsonTextPath(field, prefix = 'data') {
   // Last segment uses ->> for text extraction
   const last = parts[parts.length - 1];
   path += /^\d+$/.test(last) ? `->>${last}` : `->>'${escapeString(last)}'`;
-  return path;
+  return `(${path}) COLLATE "C"`;
 }
 
 /**
@@ -460,6 +475,30 @@ function buildJsonTextPath(field, prefix = 'data') {
  * @param {string} [prefix='data'] - Column name prefix for JSONB access
  * @returns {string} SQL WHERE clause (without "WHERE" keyword)
  */
+// Build a SQL condition matching `textExpr` against `regex`.
+//
+// When the regex is anchored and begins with a literal prefix, emit
+// `textExpr >= P AND textExpr < upper(P) AND textExpr ~ src`. The range
+// predicate is btree-indexable; the residual regex preserves correctness
+// for any trailing pattern. MUTATES `params`.
+function buildRegexMatchSql(textExpr, regex, params) {
+  const flags = regex.ignoreCase ? '*' : '';
+  const { prefix } = extractAnchoredLiteralPrefix(regex);
+  const parts = [];
+  if (prefix) {
+    params.push(prefix);
+    parts.push(`${textExpr} >= $${params.length}`);
+    const upper = prefixUpperBound(prefix);
+    if (upper !== null) {
+      params.push(upper);
+      parts.push(`${textExpr} < $${params.length}`);
+    }
+  }
+  params.push(regex.source);
+  parts.push(`${textExpr} ~${flags} $${params.length}`);
+  return parts.length > 1 ? `(${parts.join(' AND ')})` : parts[0];
+}
+
 function buildWhereClause(query, params, prefix = 'data', options = {}) {
   const _pStart = profileStart();
   const conditions = [];
@@ -504,9 +543,7 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
     } else if (key === '_id') {
       // _id is a separate column, handle specially
       if (value instanceof RegExp) {
-        params.push(value.source);
-        const flags = value.ignoreCase ? '*' : '';
-        conditions.push(`_id ~${flags} $${params.length}`);
+        conditions.push(buildRegexMatchSql('_id', value, params));
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         conditions.push(buildOperatorClause('_id', value, params, true));
       } else {
@@ -527,11 +564,14 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
       }
     } else if (value instanceof RegExp) {
       const jsonPath = buildJsonPath(key, prefix);
-      params.push(value.source);
+      const textExpr = buildJsonTextPath(key, prefix);
+      // Scalar match uses the indexable range + residual regex rewrite.
+      const scalarMatch = buildRegexMatchSql(textExpr, value, params);
+      // Array-element fallback (regex only — no per-element index to exploit).
       const flags = value.ignoreCase ? '*' : '';
-      const regexOp = `~${flags}`;
-      // Match scalar text OR any element of an array (MongoDB behavior)
-      conditions.push(`(${prefix}->>'${escapeString(key)}' ${regexOp} $${params.length} OR (jsonb_typeof(${jsonPath}) = 'array' AND EXISTS(SELECT 1 FROM jsonb_array_elements_text(${jsonPath}) elem WHERE elem ${regexOp} $${params.length})))`);
+      params.push(value.source);
+      const arrayMatch = `(jsonb_typeof(${jsonPath}) = 'array' AND EXISTS(SELECT 1 FROM jsonb_array_elements_text(${jsonPath}) elem WHERE elem ~${flags} $${params.length}))`;
+      conditions.push(`(${scalarMatch} OR ${arrayMatch})`);
     } else if (value === null || value === undefined) {
       // MongoDB: { field: null } and { field: undefined } both match
       // explicit null AND missing field
@@ -701,9 +741,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           }
           // MongoDB supports RegExp values inside $in for pattern matching
           for (const regex of regexValues) {
-            params.push(regex.source);
-            const flags = regex.ignoreCase ? '*' : '';
-            parts.push(`${jsonTextPath} ~${flags} $${params.length}`);
+            parts.push(buildRegexMatchSql(jsonTextPath, regex, params));
           }
           conditions.push(parts.length > 1 ? `(${parts.join(' OR ')})` : parts[0]);
         }
@@ -764,18 +802,23 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         const pattern = opValue instanceof RegExp
           ? opValue.source
           : String(opValue);
-        params.push(pattern);
         const regexOptions = operators.$options || '';
         const caseInsensitive = regexOptions.includes('i');
-        if (isIdField) {
+        // Reconstruct a RegExp so the helper can analyze the pattern uniformly.
+        let regex;
+        try {
+          regex = new RegExp(pattern, caseInsensitive ? 'i' : '');
+        } catch (e) {
+          // Fall back to direct emission if the pattern isn't a valid JS RegExp
+          params.push(pattern);
           conditions.push(
-            `_id ~${caseInsensitive ? '*' : ''} $${params.length}`
+            `${isIdField ? '_id' : jsonTextPath} ~${caseInsensitive ? '*' : ''} $${params.length}`
           );
-        } else {
-          conditions.push(
-            `${jsonTextPath} ~${caseInsensitive ? '*' : ''} $${params.length}`
-          );
+          break;
         }
+        conditions.push(
+          buildRegexMatchSql(isIdField ? '_id' : jsonTextPath, regex, params)
+        );
         break;
       }
 
@@ -816,7 +859,10 @@ function buildTsvectorExpr(textFields) {
       path += `->'${escapeString(fieldParts[i])}'`;
     }
     path += `->>'${escapeString(fieldParts[fieldParts.length - 1])}'`;
-    return `coalesce(${path}, '')`;
+    // COLLATE "C" here is ignored for the tsvector output but keeps this
+    // expression textually identical to the CREATE INDEX expression
+    // produced by createIndex so the planner can match the gin index.
+    return `coalesce((${path}) COLLATE "C", '')`;
   });
   return `to_tsvector('simple', ${parts.join(' || \' \' || ')})`;
 }
@@ -1164,7 +1210,7 @@ class PostgresCollection {
     const qualifiedName = this._qualifiedName();
     await this._pool.query(`
       CREATE TABLE IF NOT EXISTS ${qualifiedName} (
-        _id TEXT PRIMARY KEY,
+        _id TEXT COLLATE "C" PRIMARY KEY,
         _order SERIAL,
         data JSONB NOT NULL
       )
@@ -1881,9 +1927,14 @@ class PostgresCollection {
         return `(${path})::numeric`;
       }
 
-      // Default: text extraction for equality/text queries
+      // Default: text extraction for equality/text queries.
+      //
+      // Wrapped with COLLATE "C" to match buildJsonTextPath so that query
+      // predicates and this index expression agree on collation; otherwise
+      // the planner cannot use the index for range/equality comparisons.
+      // Byte-wise ordering also matches MongoDB's default string semantics.
       if (parts.length === 1) {
-        return `data->>'${escapeString(parts[0])}'`;
+        return `(data->>'${escapeString(parts[0])}') COLLATE "C"`;
       }
       // For nested: data->'user'->>'name'
       let path = 'data';
@@ -1891,7 +1942,7 @@ class PostgresCollection {
         path += `->'${escapeString(parts[i])}'`;
       }
       path += `->>'${escapeString(parts[parts.length - 1])}'`;
-      return path;
+      return `(${path}) COLLATE "C"`;
     };
 
     // Helper to build JSON path for existence check (returns jsonb, not text)

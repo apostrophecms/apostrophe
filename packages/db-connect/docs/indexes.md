@@ -73,7 +73,7 @@ await collection.createIndex({ title: 'text', body: 'text' });
 await collection.find({ $text: { $search: 'tutorial' } }).toArray();
 ```
 
-In PostgreSQL, this creates a GIN index using `to_tsvector`. In SQLite, text search uses pattern matching.
+In PostgreSQL, this creates a GIN index using `to_tsvector`. In SQLite, this creates an FTS5 virtual table kept in sync with the collection, providing proper tokenized full-text search with BM25 relevance scoring.
 
 ### Combined Options
 

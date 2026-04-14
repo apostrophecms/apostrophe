@@ -15,6 +15,8 @@ const {
   deepEqual,
   applyProjection,
   applyUpdate,
+  extractAnchoredLiteralPrefix,
+  prefixUpperBound,
   validateInteger
 } = require('../lib/shared');
 const { AggregationCursor } = require('../lib/aggregation-cursor');
@@ -116,6 +118,31 @@ function buildJsonExtract(field, prefix = 'data') {
  * MUTATES `params` by pushing values for parameterized query placeholders.
  * The returned SQL string contains ? placeholders.
  */
+// Build a SQL condition matching `textExpr` against `regex`.
+//
+// When the regex is anchored and begins with a literal prefix, emit
+// `textExpr >= ? AND textExpr < upper(?) AND regexp(?, textExpr)`. The
+// range predicate is btree-indexable on any expression index over
+// `textExpr`; the residual regex call preserves correctness for any
+// trailing pattern. MUTATES `params`.
+function buildRegexMatchSql(textExpr, regex, params) {
+  const regexpFn = regex.ignoreCase ? 'regexp_i' : 'regexp';
+  const { prefix } = extractAnchoredLiteralPrefix(regex);
+  const parts = [];
+  if (prefix) {
+    params.push(prefix);
+    parts.push(`${textExpr} >= ?`);
+    const upper = prefixUpperBound(prefix);
+    if (upper !== null) {
+      params.push(upper);
+      parts.push(`${textExpr} < ?`);
+    }
+  }
+  params.push(regex.source);
+  parts.push(`${regexpFn}(?, ${textExpr})`);
+  return parts.length > 1 ? `(${parts.join(' AND ')})` : parts[0];
+}
+
 function buildWhereClause(query, params, prefix = 'data', options = {}) {
   const conditions = [];
 
@@ -173,12 +200,7 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
       }
     } else if (key === '_id') {
       if (value instanceof RegExp) {
-        params.push(value.source);
-        if (value.ignoreCase) {
-          conditions.push('regexp_i(?, _id)');
-        } else {
-          conditions.push('regexp(?, _id)');
-        }
+        conditions.push(buildRegexMatchSql('_id', value, params));
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         conditions.push(buildOperatorClause('_id', value, params, true));
       } else {
@@ -198,16 +220,13 @@ function buildWhereClause(query, params, prefix = 'data', options = {}) {
       }
     } else if (value instanceof RegExp) {
       const jsonExtract = buildJsonExtract(key, prefix);
+      // Scalar match uses the indexable range + residual regex rewrite.
+      const scalarMatch = buildRegexMatchSql(jsonExtract, value, params);
+      // Array-element fallback (regex only — no per-element index to exploit).
+      const regexpFn = value.ignoreCase ? 'regexp_i' : 'regexp';
       params.push(value.source);
-      if (value.ignoreCase) {
-        // Match scalar text OR any element of an array (MongoDB behavior)
-        conditions.push(`(regexp_i(?, ${jsonExtract}) OR (json_type(${prefix}, ${buildJsonExtractPath(key)}) = 'array' AND EXISTS(SELECT 1 FROM json_each(${jsonExtract}) WHERE regexp_i(?, value))))`);
-        // Push the pattern again for the array branch
-        params.push(value.source);
-      } else {
-        conditions.push(`(regexp(?, ${jsonExtract}) OR (json_type(${prefix}, ${buildJsonExtractPath(key)}) = 'array' AND EXISTS(SELECT 1 FROM json_each(${jsonExtract}) WHERE regexp(?, value))))`);
-        params.push(value.source);
-      }
+      const arrayMatch = `(json_type(${prefix}, ${buildJsonExtractPath(key)}) = 'array' AND EXISTS(SELECT 1 FROM json_each(${jsonExtract}) WHERE ${regexpFn}(?, value)))`;
+      conditions.push(`(${scalarMatch} OR ${arrayMatch})`);
     } else if (value === null || value === undefined) {
       // MongoDB: { field: null } and { field: undefined } both match
       // explicit null AND missing field
@@ -421,9 +440,7 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
           }
           // MongoDB supports RegExp values inside $in for pattern matching
           for (const regex of regexValues) {
-            params.push(regex.source);
-            const regexpFn = regex.ignoreCase ? 'regexp_i' : 'regexp';
-            parts.push(`${regexpFn}(?, ${jsonExtract})`);
+            parts.push(buildRegexMatchSql(jsonExtract, regex, params));
           }
           conditions.push(parts.length > 1 ? `(${parts.join(' OR ')})` : parts[0]);
         }
@@ -499,18 +516,23 @@ function buildOperatorClause(field, operators, params, isIdField = false) {
         const pattern = opValue instanceof RegExp
           ? opValue.source
           : String(opValue);
-        params.push(pattern);
         const regexOptions = operators.$options || '';
         const caseInsensitive = regexOptions.includes('i');
-        if (isIdField) {
+        let regex;
+        try {
+          regex = new RegExp(pattern, caseInsensitive ? 'i' : '');
+        } catch (e) {
+          // Fall back to direct emission if the pattern isn't valid
+          params.push(pattern);
+          const regexpFn = caseInsensitive ? 'regexp_i' : 'regexp';
           conditions.push(
-            caseInsensitive ? 'regexp_i(?, _id)' : 'regexp(?, _id)'
+            isIdField ? `${regexpFn}(?, _id)` : `${regexpFn}(?, ${jsonExtract})`
           );
-        } else {
-          conditions.push(
-            caseInsensitive ? `regexp_i(?, ${jsonExtract})` : `regexp(?, ${jsonExtract})`
-          );
+          break;
         }
+        conditions.push(
+          buildRegexMatchSql(isIdField ? '_id' : jsonExtract, regex, params)
+        );
         break;
       }
 

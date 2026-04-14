@@ -302,6 +302,109 @@ function applyUpdate(doc, update) {
   return result;
 }
 
+// =============================================================================
+// Anchored-Literal Prefix Extraction (for indexable regex queries)
+// =============================================================================
+
+// Characters that are regex metacharacters when unescaped. Anything not in
+// this set is a literal and can contribute to the prefix.
+const REGEX_META = new Set([ '.', '*', '+', '?', '(', ')', '[', ']', '{', '}', '|', '^', '$', '\\' ]);
+
+// Extract the literal prefix from a regex rooted at the start of the string,
+// for use as an indexable range predicate. Returns an object
+// { prefix, anchored } where `prefix` is the literal string that every match
+// must begin with, and `anchored` indicates the regex begins with `^`.
+//
+// Returns { prefix: '', anchored: false } when no useful rewrite is possible
+// (unanchored regex, case-insensitive regex, or the regex begins with a
+// metacharacter).
+//
+// Example:
+//   extractAnchoredLiteralPrefix(/^\/parent\/child\/./)
+//     -> { prefix: '/parent/child/', anchored: true }
+//   extractAnchoredLiteralPrefix(/^foo.*bar/)
+//     -> { prefix: 'foo', anchored: true }
+//   extractAnchoredLiteralPrefix(/foo/)
+//     -> { prefix: '', anchored: false }
+function extractAnchoredLiteralPrefix(regex) {
+  if (!(regex instanceof RegExp)) {
+    return {
+      prefix: '',
+      anchored: false
+    };
+  }
+  // Case-insensitive regex cannot align with a case-sensitive btree range scan.
+  if (regex.ignoreCase) {
+    return {
+      prefix: '',
+      anchored: false
+    };
+  }
+  const source = regex.source;
+  if (source.length === 0 || source[0] !== '^') {
+    return {
+      prefix: '',
+      anchored: false
+    };
+  }
+  let i = 1;
+  let prefix = '';
+  while (i < source.length) {
+    const ch = source[i];
+    if (ch === '\\') {
+      // Escape sequence: the next character may be a literal or a character class
+      if (i + 1 >= source.length) {
+        break;
+      }
+      const next = source[i + 1];
+      // Single-character escapes for a literal character (\. \/ \- \( \\ etc.)
+      // — anything that is a regex metacharacter, plus '/' and similar. These
+      // contribute the escaped character itself to the prefix.
+      if (REGEX_META.has(next) || next === '/' || next === '-' || next === '=' || next === '!' || next === ':' || next === ',' || next === '#' || next === ' ' || next === '"' || next === '\'' || next === '<' || next === '>' || next === '@' || next === '~' || next === '`' || next === '%' || next === '&' || next === ';') {
+        prefix += next;
+        i += 2;
+        continue;
+      }
+      // Any other escape (\d, \w, \s, \b, \n, \t, \uXXXX, \xXX, etc.) is not
+      // a simple literal — stop here.
+      break;
+    }
+    if (REGEX_META.has(ch)) {
+      // Unescaped metacharacter ends the literal prefix. Quantifiers (`?`,
+      // `*`, `{`) make the *preceding* literal optional or zero-or-more, so
+      // that character is not guaranteed to appear in matches and must be
+      // dropped from the prefix. `+` guarantees at least one occurrence of
+      // the preceding literal, so the literal stays.
+      if ((ch === '?' || ch === '*' || ch === '{') && prefix.length > 0) {
+        prefix = prefix.slice(0, -1);
+      }
+      break;
+    }
+    prefix += ch;
+    i++;
+  }
+  return {
+    prefix,
+    anchored: true
+  };
+}
+
+// Given a literal prefix P, return the exclusive upper bound string U such
+// that a string S starts with P iff P <= S < U. Returns null when no safe
+// upper bound can be constructed (empty prefix, or last char is the maximum
+// BMP code point 0xFFFF). Callers should treat a null result as "emit only
+// the lower-bound predicate".
+function prefixUpperBound(prefix) {
+  if (!prefix) {
+    return null;
+  }
+  const lastCode = prefix.charCodeAt(prefix.length - 1);
+  if (lastCode === 0xFFFF) {
+    return null;
+  }
+  return prefix.slice(0, -1) + String.fromCharCode(lastCode + 1);
+}
+
 function validateInteger(value, name) {
   const num = Number(value);
   if (!Number.isInteger(num) || num < 0) {
@@ -321,5 +424,7 @@ module.exports = {
   deepEqual,
   applyProjection,
   applyUpdate,
+  extractAnchoredLiteralPrefix,
+  prefixUpperBound,
   validateInteger
 };

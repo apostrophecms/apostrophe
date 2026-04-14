@@ -166,13 +166,23 @@ Full-text search. Requires a [text index](./indexes.md) on the collection.
 { $text: { $search: 'apostrophe tutorial' } }
 ```
 
-The search uses OR semantics — a document matches if it contains *any* of the search terms. The text search examines the fields `highSearchText`, `lowSearchText`, `title`, and `searchBoost`.
+The search uses OR semantics — a document matches if it contains *any* of the search terms. The text search examines the fields declared in the text index (for Apostrophe, typically `highSearchText`, `lowSearchText`, `title`, and `searchBoost`).
 
-**No ranking:** `$text` is a boolean filter — it matches or it doesn't. Results are not ranked by relevance. To control the order of results, use `.sort()` on the cursor.
+**Ranking:** Results can be ordered by relevance using the MongoDB-compatible `{ $meta: 'textScore' }` sort, and the score can be projected as well:
 
-**PostgreSQL:** Uses `to_tsvector`/`to_tsquery` with the `english` dictionary. This provides stemming (e.g., "running" matches "run") and stop word removal (common words like "the", "is", "at" are ignored and will not match). Special characters in search terms are stripped.
+```js
+collection
+  .find({ $text: { $search: 'apostrophe tutorial' } })
+  .sort({ score: { $meta: 'textScore' } })
+  .project({ score: { $meta: 'textScore' } })
+  .toArray();
+```
 
-**SQLite:** Uses substring matching (`LIKE '%word%'`). There is no stemming or stop word removal — every word is matched literally as a substring, including common words like "the". This means SQLite text search is less precise than PostgreSQL and may return more false positives.
+Without a `$meta: 'textScore'` sort, results are returned in unspecified order — use `.sort()` if you need a deterministic order.
+
+**PostgreSQL:** Uses `to_tsvector`/`to_tsquery` with the `simple` dictionary, backed by a GIN index. Relevance scoring uses `ts_rank`. Special characters in search terms are stripped.
+
+**SQLite:** Uses an FTS5 virtual table kept in sync with the collection via triggers. Relevance scoring uses BM25. Tokenization is FTS5's default (Unicode-aware, case-insensitive) — there is no stemming or stop word removal, so word forms are matched literally.
 
 ## Array Operators
 

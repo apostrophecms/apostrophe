@@ -36,6 +36,30 @@ apos-db-dump mongodb://localhost:27017/mydb | apos-db-restore postgres://localho
 apos-db-dump postgres://localhost:5432/mydb | apos-db-restore sqlite:///path/to/local.db
 ```
 
+### multipostgres URIs
+
+`multipostgres://` URIs are fully supported. The URI path is a complete virtual database name, split at the **last hyphen** into a real PostgreSQL database name and a schema name. This lets you dump or restore a single tenant's schema directly from the command line:
+
+```bash
+# Dump just the tenant1 schema from the shareddb database
+apos-db-dump multipostgres://localhost:5432/shareddb-tenant1 --output=tenant1.jsonl
+
+# Restore into a different tenant's schema
+apos-db-restore multipostgres://localhost:5432/shareddb-tenant2 --input=tenant1.jsonl
+```
+
+The last-hyphen rule accommodates real database names that themselves contain hyphens — `multipostgres://localhost:5432/my-shared-db-tenant1` connects to the `my-shared-db` database and operates on the `tenant1` schema. A multipostgres URI with no hyphen in the path is rejected, since it cannot specify a complete virtual database.
+
+You can migrate between a single-database `postgres://` URI and a tenant schema by mixing protocols on either side of the pipe:
+
+```bash
+# Copy a standalone database into a tenant schema
+apos-db-dump postgres://localhost:5432/mydb | apos-db-restore multipostgres://localhost:5432/shareddb-tenant1
+
+# Extract a tenant schema into its own standalone database
+apos-db-dump multipostgres://localhost:5432/shareddb-tenant1 | apos-db-restore postgres://localhost:5432/tenant1db
+```
+
 ## Programmatic API
 
 ```js
