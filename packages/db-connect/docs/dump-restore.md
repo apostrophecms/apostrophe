@@ -131,4 +131,4 @@ The dump format is JSONL (one JSON object per line). Each collection begins with
 {"_id":"user1","email":"alice@example.com"}
 ```
 
-On restore, indexes are recreated from the header. Index creation failures are non-fatal, as applications typically recreate their indexes on startup.
+On restore, indexes are recreated from the header. Index creation failures are fatal — a failed `createIndex` is a real problem (invalid index name, conflicting definition, backend incompatibility) and should surface to the caller rather than being silently tolerated.

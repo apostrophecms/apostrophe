@@ -92,14 +92,7 @@ module.exports = async function restore(uriOrDb, source) {
             if (idx.expireAfterSeconds != null) {
               options.expireAfterSeconds = idx.expireAfterSeconds;
             }
-            try {
-              await col.createIndex(idx.key, options);
-            } catch (e) {
-              // Index creation may fail across backends (e.g. MongoDB-style
-              // names containing dots are invalid in PostgreSQL). This is
-              // non-fatal because the application typically recreates its
-              // indexes on boot.
-            }
+            await col.createIndex(idx.key, options);
           }
         }
       }

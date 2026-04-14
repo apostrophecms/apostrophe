@@ -39,7 +39,7 @@ store suitable for hosting an ApostropheCMS site.
 multipostgres://localhost:5432/shareddb-tenant1
 ```
 
-Designed for use with the ApostropheCMS [multisite](https://github.com/apostrophecms/multisite) module. In this mode, each site gets its own PostgreSQL schema within a single physical database.
+Designed for use with the ApostropheCMS [multisite](https://apostrophecms.com/extensions/multisite-2) module. In this mode, each site gets its own PostgreSQL schema within a single physical database.
 
 The URL path is split at the **last hyphen**:
 
