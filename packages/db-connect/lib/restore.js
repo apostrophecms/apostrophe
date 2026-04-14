@@ -130,18 +130,20 @@ function linesOf(source) {
   if (typeof source === 'string') {
     return source.split('\n');
   }
-  if (typeof source[Symbol.asyncIterator] === 'function' ||
-      typeof source[Symbol.iterator] === 'function') {
-    // Already an (async) iterable of lines.
-    return source;
-  }
-  // Treat anything else as a Node Readable stream; readline splits on
-  // newlines and tolerates both \n and \r\n line endings.
-  if (typeof source.on === 'function' || typeof source.pipe === 'function') {
+  // Check for Readable stream BEFORE async iterable: Node Readables are
+  // themselves async iterables, but iterating them yields chunks
+  // (Buffer/string), not lines. Use readline to split on newline.
+  if (typeof source.on === 'function' && typeof source.pipe === 'function') {
     return readline.createInterface({
       input: source,
       crlfDelay: Infinity
     });
+  }
+  if (typeof source[Symbol.asyncIterator] === 'function' ||
+      typeof source[Symbol.iterator] === 'function') {
+    // Already an (async) iterable of line strings — e.g. the iterable
+    // returned by dump(), or an array of lines.
+    return source;
   }
   throw new Error('restore: source must be a string, iterable of lines, or a Readable stream');
 }
