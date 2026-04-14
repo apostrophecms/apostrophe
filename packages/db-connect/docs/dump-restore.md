@@ -68,27 +68,49 @@ const { dump, restore, copyDatabase } = require('@apostrophecms/db-connect');
 
 ### dump(uri)
 
-Exports the entire database as a JSONL string.
+Returns an **async iterable** that yields one JSONL record per line (no trailing newlines). The dump is produced incrementally so large databases never sit fully in memory.
 
 ```js
-const data = await dump('postgres://localhost:5432/mydb');
+for await (const line of dump('postgres://localhost:5432/mydb')) {
+  process.stdout.write(line + '\n');
+}
+```
+
+To collect the entire dump as a string (only safe for small databases):
+
+```js
+const lines = [];
+for await (const line of dump(uri)) lines.push(line);
+const data = lines.join('\n') + '\n';
 ```
 
 Also accepts an already-connected `db` object instead of a URI string.
 
-### restore(uri, data)
+### restore(uri, source)
 
-Imports a JSONL string into the database.
+Imports a JSONL stream into the database. `source` can be any of:
+
+- an async iterable of JSONL lines (as produced by `dump()`)
+- an iterable / array of JSONL lines
+- a Node Readable stream (e.g. `process.stdin`, `fs.createReadStream(...)`)
+- a single JSONL string — retained for convenience, not recommended for large dumps
 
 ```js
-await restore('sqlite:///path/to/db.sqlite', data);
+// Async iterable
+await restore('sqlite:///path/to/db.sqlite', dump(sourceUri));
+
+// Readable stream
+await restore('sqlite:///path/to/db.sqlite', fs.createReadStream('backup.jsonl'));
+
+// String (small dumps only)
+await restore('sqlite:///path/to/db.sqlite', dataString);
 ```
 
 Also accepts an already-connected `db` object.
 
 ### copyDatabase(sourceUri, destUri)
 
-Copies all data directly from one database to another.
+Copies all data directly from one database to another by piping `dump()` straight into `restore()`. No intermediate buffer — works regardless of database size.
 
 ```js
 await copyDatabase(

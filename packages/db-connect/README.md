@@ -27,10 +27,11 @@ Single-database mode. All collections are stored as tables in the `public` schem
 
 ```
 sqlite:///path/to/database.db
-sqlite://:memory:
 ```
 
-File-based or in-memory SQLite databases using `better-sqlite3`.
+File-based SQLite databases using `better-sqlite3`. In-memory databases
+(`sqlite://:memory:`) are not supported — the adapter assumes a persistent
+store suitable for hosting an ApostropheCMS site.
 
 ### Multi-Schema PostgreSQL (multipostgres)
 

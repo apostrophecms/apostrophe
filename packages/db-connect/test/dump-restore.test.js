@@ -71,7 +71,7 @@ describe(`dump/restore programmatic API (${ADAPTER})`, function () {
     await targetClient.close();
   });
 
-  it('should dump a database to a string', async function () {
+  it('dump yields an async iterable of NDJSON lines', async function () {
     // Insert some data
     const client = await dbConnect(getUri(sourceDbName));
     const db = client.db();
@@ -93,17 +93,32 @@ describe(`dump/restore programmatic API (${ADAPTER})`, function () {
     });
     await client.close();
 
-    const data = await dbConnect.dump(getUri(sourceDbName));
-    expect(data).to.be.a('string');
-    expect(data).to.include('item1');
-    expect(data).to.include('First');
-    expect(data).to.include('item2');
-    expect(data).to.include('version');
+    const iter = dbConnect.dump(getUri(sourceDbName));
+    // Must be an async iterable — NOT a string (API contract: dump is
+    // streamed so large databases never sit fully in memory).
+    expect(iter).to.not.be.a('string');
+    expect(typeof iter[Symbol.asyncIterator]).to.equal('function');
+
+    const lines = [];
+    for await (const line of iter) {
+      lines.push(line);
+    }
+    // Every emitted record must be a non-empty single JSON object —
+    // no embedded newlines, parseable as JSON.
+    for (const line of lines) {
+      expect(line).to.be.a('string');
+      expect(line).to.not.include('\n');
+      expect(() => JSON.parse(line)).to.not.throw();
+    }
+    const joined = lines.join('\n');
+    expect(joined).to.include('item1');
+    expect(joined).to.include('First');
+    expect(joined).to.include('item2');
+    expect(joined).to.include('version');
   });
 
-  it('should restore a database from a dump string', async function () {
-    const data = await dbConnect.dump(getUri(sourceDbName));
-    await dbConnect.restore(getUri(targetDbName), data);
+  it('should restore a database from a dump stream', async function () {
+    await dbConnect.restore(getUri(targetDbName), dbConnect.dump(getUri(sourceDbName)));
 
     const client = await dbConnect(getUri(targetDbName));
     const db = client.db();

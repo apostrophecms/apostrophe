@@ -968,10 +968,10 @@ class PostgresCursor {
     return cloned;
   }
 
-  async toArray() {
-    const _pStart = profileStart();
-    await this._collection._ensureTable();
-
+  // Build the SELECT SQL + params that this cursor would execute. Shared
+  // by toArray/_next and exposed via explain() so tests and callers can
+  // introspect the planned query without re-deriving the SQL by hand.
+  _buildFindSql() {
     const params = [];
     const queryOptions = this._collection._queryOptions();
     const qualifiedName = this._collection._qualifiedName();
@@ -993,13 +993,33 @@ class PostgresCursor {
     }
 
     let sql = `SELECT ${selectCols} FROM ${qualifiedName} WHERE ${whereClause} ${orderBy}`;
-
     if (this._limit != null) {
       sql += ` LIMIT ${this._limit}`;
     }
     if (this._skip != null) {
       sql += ` OFFSET ${this._skip}`;
     }
+    return {
+      sql,
+      params
+    };
+  }
+
+  // Returns the SQL and parameter values the adapter would execute for
+  // this cursor's current query/sort/limit/skip/projection. Useful for
+  // EXPLAIN-based tests and for debugging query planner behavior. The
+  // returned SQL uses the adapter's native placeholder style ($N for
+  // PostgreSQL).
+  async explain() {
+    await this._collection._ensureTable();
+    return this._buildFindSql();
+  }
+
+  async toArray() {
+    const _pStart = profileStart();
+    await this._collection._ensureTable();
+
+    const { sql, params } = this._buildFindSql();
 
     const _qStart = profileStart();
     const result = await this._collection._pool.query(sql, params);
@@ -1039,32 +1059,7 @@ class PostgresCursor {
       this._cursorClient = await this._collection._pool.connect();
       this._cursorName = `cur_${generateId()}`;
 
-      const params = [];
-      const queryOptions = this._collection._queryOptions();
-      const qualifiedName = this._collection._qualifiedName();
-      const whereClause = buildWhereClause(this._query, params, 'data', queryOptions);
-      const hasText = queryHasText(this._query);
-      const orderBy = buildOrderBy(this._sort, { hasTextScore: hasText });
-
-      let selectCols = '_id, data';
-      if (hasText) {
-        const textFields = queryOptions.textFields || [
-          'highSearchText', 'lowSearchText', 'title', 'searchBoost'
-        ];
-        const tsvectorExpr = buildTsvectorExpr(textFields);
-        const tsqueryExpr = buildTsqueryParam(this._query.$text.$search, params);
-        if (tsqueryExpr) {
-          selectCols += `, ts_rank(${tsvectorExpr}, ${tsqueryExpr}) AS _score`;
-        }
-      }
-
-      let sql = `SELECT ${selectCols} FROM ${qualifiedName} WHERE ${whereClause} ${orderBy}`;
-      if (this._limit != null) {
-        sql += ` LIMIT ${this._limit}`;
-      }
-      if (this._skip != null) {
-        sql += ` OFFSET ${this._skip}`;
-      }
+      const { sql, params } = this._buildFindSql();
 
       const escapedCursorName = escapeIdentifier(this._cursorName);
       await this._cursorClient.query('BEGIN');

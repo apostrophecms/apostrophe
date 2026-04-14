@@ -80,3 +80,15 @@ const { databases } = await db.admin().listDatabases();
 // MongoDB: [{ name: 'mydb' }, { name: 'otherdb' }, ...]
 // multipostgres: [{ name: 'shareddb-tenant1' }, { name: 'shareddb-tenant2' }, ...]
 ```
+
+## Document Size Limits
+
+Each adapter has a different maximum document size. For portable applications, assume MongoDB's 16 MB cap applies everywhere — both PostgreSQL and SQLite accept considerably larger documents, but leaning on those higher ceilings makes the data non-portable between adapters and produces unpredictable query performance.
+
+| Adapter      | Per-document limit                                         |
+|--------------|------------------------------------------------------------|
+| MongoDB      | 16 MB (BSON `maxBsonObjectSize`)                           |
+| PostgreSQL   | JSONB field up to ~255 MB after TOAST compression (practical limit well under 1 GB)  |
+| SQLite       | Row/TEXT column capped by `SQLITE_MAX_LENGTH` (default 1 GB); `JSON1` parser also has internal limits |
+
+Exceeding the adapter-native limit produces an adapter-native error (not a portable one). Keep documents well under 16 MB to stay within the MongoDB cap and to avoid TOAST storage for most rows in PostgreSQL.

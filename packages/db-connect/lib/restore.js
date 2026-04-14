@@ -1,10 +1,22 @@
+const readline = require('readline');
 const dbConnect = require('..');
 
 const BATCH_SIZE = 100;
 
-// Accept either a URI string or an already-connected db object.
-// When a db object is passed, the caller owns the connection lifecycle.
-module.exports = async function restore(uriOrDb, data) {
+// Restore a database from NDJSON. `source` is streamed one line at a
+// time to avoid holding the entire dump in memory. Accepted `source`
+// shapes:
+//
+//   - an AsyncIterable<string> of NDJSON records (as produced by dump()),
+//   - an Iterable<string>,
+//   - a Node Readable stream (e.g. process.stdin, fs.createReadStream()) —
+//     lines are extracted with the built-in readline module,
+//   - a single string containing the entire dump — retained for
+//     convenience in small cases; for large dumps prefer a stream.
+//
+// Accept either a URI string or an already-connected db object. When a
+// db object is passed, the caller owns the connection lifecycle.
+module.exports = async function restore(uriOrDb, source) {
   let db;
   let client;
   if (typeof uriOrDb === 'string') {
@@ -18,8 +30,9 @@ module.exports = async function restore(uriOrDb, data) {
     let col = null;
     let batch = [];
 
-    for (const line of data.split('\n')) {
-      if (!line.trim()) {
+    for await (const rawLine of linesOf(source)) {
+      const line = rawLine.trim();
+      if (!line) {
         continue;
       }
       const entry = JSON.parse(line);
@@ -115,6 +128,30 @@ module.exports = async function restore(uriOrDb, data) {
     }
   }
 };
+
+// Normalize `source` into an async iterable of NDJSON lines.
+function linesOf(source) {
+  if (source == null) {
+    throw new Error('restore: source is required');
+  }
+  if (typeof source === 'string') {
+    return source.split('\n');
+  }
+  if (typeof source[Symbol.asyncIterator] === 'function' ||
+      typeof source[Symbol.iterator] === 'function') {
+    // Already an (async) iterable of lines.
+    return source;
+  }
+  // Treat anything else as a Node Readable stream; readline splits on
+  // newlines and tolerates both \n and \r\n line endings.
+  if (typeof source.on === 'function' || typeof source.pipe === 'function') {
+    return readline.createInterface({
+      input: source,
+      crlfDelay: Infinity
+    });
+  }
+  throw new Error('restore: source must be a string, iterable of lines, or a Readable stream');
+}
 
 function deserializeValue(obj) {
   if (obj === null || typeof obj !== 'object') {

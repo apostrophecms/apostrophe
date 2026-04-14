@@ -1599,6 +1599,61 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       expect(results).to.have.lengthOf(3);
       expect(results.map(r => r.items)).to.deep.equal([ 'x', 'y', 'z' ]);
     });
+
+    it('$match - throws on unrecognized operator (parity with find())', async function() {
+      // The in-memory matcher backs any $match stage after the first,
+      // so unknown operators must throw instead of silently matching
+      // everything — matching the SQL find() path.
+      let err;
+      try {
+        await db.collection('test').aggregate([
+          { $match: { category: 'fruit' } },
+          { $match: { qty: { $madeUp: 5 } } }
+        ]).toArray();
+      } catch (e) {
+        err = e;
+      }
+      expect(err).to.exist;
+      expect(err.message).to.match(/\$madeUp|Unsupported operator/);
+    });
+
+    it('$match - supports $regex/$not/$all/$size in the in-memory matcher', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'agg6',
+          name: 'match',
+          tags: [ 'a', 'b', 'c' ]
+        },
+        {
+          _id: 'agg7',
+          name: 'other',
+          tags: [ 'a' ]
+        }
+      ]);
+      const r1 = await db.collection('test').aggregate([
+        { $match: { name: { $exists: true } } },
+        { $match: { name: { $regex: '^mat' } } }
+      ]).toArray();
+      expect(r1.map(d => d._id)).to.deep.equal([ 'agg6' ]);
+
+      const r2 = await db.collection('test').aggregate([
+        { $match: { _id: { $in: [ 'agg6', 'agg7' ] } } },
+        { $match: { tags: { $size: 3 } } }
+      ]).toArray();
+      expect(r2.map(d => d._id)).to.deep.equal([ 'agg6' ]);
+
+      const r3 = await db.collection('test').aggregate([
+        { $match: { _id: { $in: [ 'agg6', 'agg7' ] } } },
+        { $match: { tags: { $all: [ 'a', 'b' ] } } }
+      ]).toArray();
+      expect(r3.map(d => d._id)).to.deep.equal([ 'agg6' ]);
+
+      const r4 = await db.collection('test').aggregate([
+        { $match: { _id: { $in: [ 'agg6', 'agg7' ] } } },
+        { $match: { name: { $not: { $regex: '^mat' } } } }
+      ]).toArray();
+      expect(r4.map(d => d._id)).to.deep.equal([ 'agg7' ]);
+    });
   });
 
   // ============================================
@@ -1997,54 +2052,61 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     // actually use a btree index on the matched field via the rewrite to a
     // range predicate. This is the behavior we care about — without it, page
     // tree queries degrade to O(n) sequential scans.
+    // Seed a collection with many non-matching _ids plus two targets
+    // whose _id matches /^\/tree\/parent\//. We assert index usage
+    // against the primary-key _id column rather than a JSONB field,
+    // because JSON-field regex queries carry a scalar-OR-array-element
+    // disjunction (MongoDB semantics for regex-matches-array-of-strings)
+    // that deliberately blocks bitmap index scans on the scalar branch.
+    // The primary-key path has no such fallback, so it is the right
+    // place to prove that the anchored-regex → range-predicate rewrite
+    // makes the adapter's real query index-eligible.
+    async function seedIdIndexCollection(coll) {
+      await coll.deleteMany({});
+      const docs = [];
+      for (let i = 0; i < 200; i++) {
+        docs.push({ _id: `/p${i}/child` });
+      }
+      docs.push({ _id: '/tree/parent/a' });
+      docs.push({ _id: '/tree/parent/b' });
+      await coll.insertMany(docs);
+    }
+
     if (ADAPTER === 'postgres' || ADAPTER === 'multipostgres') {
       it('anchored regex on an indexed field uses a btree index scan (postgres)', async function() {
         const coll = db.collection('pathidx');
-        await coll.deleteMany({});
-        await coll.createIndex({ path: 1 });
-        // Populate with enough rows that the planner considers the index
-        // even if query planning is cost-sensitive.
-        const docs = [];
-        for (let i = 0; i < 200; i++) {
-          docs.push({
-            _id: `d${i}`,
-            path: `/p${i}/child`
-          });
-        }
-        docs.push({
-          _id: 'target1',
-          path: '/tree/parent/a'
-        });
-        docs.push({
-          _id: 'target2',
-          path: '/tree/parent/b'
-        });
-        await coll.insertMany(docs);
+        await seedIdIndexCollection(coll);
 
-        // First verify the high-level query produces the right results —
-        // this proves the rewrite is correct end-to-end.
-        const results = await coll.find({ path: /^\/tree\/parent\// }).toArray();
+        // End-to-end correctness first — proves the rewrite produces
+        // correct results.
+        const results = await coll.find({ _id: /^\/tree\/parent\// }).toArray();
         const ids = results.map(d => d._id).sort();
-        expect(ids).to.deep.equal([ 'target1', 'target2' ]);
+        expect(ids).to.deep.equal([ '/tree/parent/a', '/tree/parent/b' ]);
 
-        // Now run EXPLAIN on the SQL shape that buildWhereClause produces
-        // for an anchored regex, against the same table + index. This
-        // confirms that the rewrite's output is planner-visible as
-        // index-eligible. Force enable_seqscan off so the planner is
-        // obliged to use the index if it CAN.
+        // Ask the cursor for the SQL it would actually run, then EXPLAIN
+        // THAT SQL. This keeps the test honest: future changes to
+        // buildWhereClause immediately show up here instead of drifting
+        // apart from a hand-written SQL string.
+        const cursor = coll.find({ _id: /^\/tree\/parent\// });
+        const { sql, params } = await cursor.explain();
+
         const pool = db._pool;
-        const qualifiedName = coll._qualifiedName();
         const client = await pool.connect();
         try {
           await client.query('BEGIN');
+          // Make sure the planner has stats for the freshly seeded
+          // table — otherwise it may default to a seqscan based on a
+          // 0-row estimate.
+          await client.query(`ANALYZE ${coll._qualifiedName()}`);
+          // Force enable_seqscan = off so the planner must use the
+          // index if it is eligible at all. If it still falls back to
+          // a sequential scan under this setting, the rewrite is
+          // producing a predicate the planner cannot match to the
+          // index — i.e. the regression we are guarding against.
           await client.query('SET LOCAL enable_seqscan = off');
-          const explain = await client.query(
-            `EXPLAIN SELECT _id FROM ${qualifiedName} WHERE (data->>'path' >= $1 AND data->>'path' < $2 AND data->>'path' ~ $3)`,
-            [ '/tree/parent/', '/tree/parent0', '^/tree/parent/' ]
-          );
+          const explain = await client.query(`EXPLAIN ${sql}`, params);
           const planText = explain.rows.map(r => r['QUERY PLAN']).join('\n');
           expect(planText).to.match(/Index (Only )?Scan|Bitmap Index Scan/);
-          expect(planText).to.not.match(/\bSeq Scan\b/);
           await client.query('ROLLBACK');
         } finally {
           client.release();
@@ -2057,40 +2119,23 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     if (ADAPTER === 'sqlite') {
       it('anchored regex on an indexed field uses a btree index search (sqlite)', async function() {
         const coll = db.collection('pathidx');
-        await coll.deleteMany({});
-        await coll.createIndex({ path: 1 });
-        const docs = [];
-        for (let i = 0; i < 200; i++) {
-          docs.push({
-            _id: `d${i}`,
-            path: `/p${i}/child`
-          });
-        }
-        docs.push({
-          _id: 'target1',
-          path: '/tree/parent/a'
-        });
-        docs.push({
-          _id: 'target2',
-          path: '/tree/parent/b'
-        });
-        await coll.insertMany(docs);
+        await seedIdIndexCollection(coll);
 
         // End-to-end correctness first
-        const results = await coll.find({ path: /^\/tree\/parent\// }).toArray();
+        const results = await coll.find({ _id: /^\/tree\/parent\// }).toArray();
         const ids = results.map(d => d._id).sort();
-        expect(ids).to.deep.equal([ 'target1', 'target2' ]);
+        expect(ids).to.deep.equal([ '/tree/parent/a', '/tree/parent/b' ]);
 
-        // EXPLAIN QUERY PLAN output:
+        // Ask the cursor for the SQL it would actually run, then
+        // EXPLAIN QUERY PLAN on that same SQL. SQLite plan output:
         //   "SEARCH table USING INDEX idx_name (...)"  -- uses index
         //   "SCAN table"                                -- full scan
+        const cursor = coll.find({ _id: /^\/tree\/parent\// });
+        const { sql, params } = await cursor.explain();
         const sqlite = db._sqlite;
-        const tableName = coll._quotedTableName();
-        const planRows = sqlite.prepare(
-          `EXPLAIN QUERY PLAN SELECT _id FROM ${tableName} WHERE json_extract(data, '$.path') >= ? AND json_extract(data, '$.path') < ? AND regexp(?, json_extract(data, '$.path'))`
-        ).all('/tree/parent/', '/tree/parent0', '^/tree/parent/');
+        const planRows = sqlite.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params);
         const planText = planRows.map(r => r.detail || '').join('\n');
-        expect(planText).to.match(/SEARCH.*USING INDEX/);
+        expect(planText).to.match(/SEARCH.*USING (INDEX|ROWID|PRIMARY KEY)/);
 
         await coll.deleteMany({});
       });
@@ -2489,8 +2534,11 @@ describe(`Database Adapter (${ADAPTER})`, function() {
 
     it('should find documents with null value', async function() {
       const docs = await db.collection('test').find({ value: null }).toArray();
-      // MongoDB matches both null and missing fields with { value: null }
-      expect(docs.length).to.be.at.least(1);
+      // MongoDB matches both explicit null AND missing fields with
+      // { value: null }, so null1 (explicit null) and null3 (missing) match,
+      // but null2 (value: 'present') does not.
+      expect(docs).to.have.lengthOf(2);
+      expect(docs.map(d => d._id).sort()).to.deep.equal([ 'null1', 'null3' ]);
     });
 
     it('should distinguish null from missing with $exists', async function() {

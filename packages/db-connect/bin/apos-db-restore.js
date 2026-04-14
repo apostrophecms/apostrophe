@@ -20,9 +20,11 @@ async function main() {
     throw new Error('Usage: apos-db-restore <uri> [--input=filename]');
   }
 
-  const data = input
-    ? fs.readFileSync(input, 'utf8')
-    : fs.readFileSync('/dev/stdin', 'utf8');
+  // Stream the dump into restore() line-by-line so a large dump never
+  // sits fully in memory. restore() accepts any Readable stream.
+  const source = input
+    ? fs.createReadStream(input, { encoding: 'utf8' })
+    : process.stdin;
 
-  await restore(uri, data);
+  await restore(uri, source);
 }

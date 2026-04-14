@@ -2,9 +2,19 @@ const dbConnect = require('..');
 
 const BATCH_SIZE = 100;
 
-// Accept either a URI string or an already-connected db object.
-// When a db object is passed, the caller owns the connection lifecycle.
-module.exports = async function dump(uriOrDb) {
+// Dump a database as NDJSON. Returns an AsyncIterable that yields one
+// string per NDJSON record (no trailing newline). The first record of
+// each collection is a header `{ _collection, _indexes? }`; subsequent
+// records are `{ _collection, _doc }`.
+//
+// The dump is yielded incrementally so a large database can be piped to
+// disk or a destination adapter without materializing the whole payload
+// in memory at any point.
+//
+// Accept either a URI string or an already-connected db object. When a
+// db object is passed, the caller owns the connection lifecycle; when a
+// URI is passed, this module connects and closes the client on its own.
+async function *dump(uriOrDb) {
   let db;
   let client;
   if (typeof uriOrDb === 'string') {
@@ -14,7 +24,6 @@ module.exports = async function dump(uriOrDb) {
     db = uriOrDb;
   }
 
-  const lines = [];
   try {
     const collections = await db.listCollections().toArray();
 
@@ -28,7 +37,7 @@ module.exports = async function dump(uriOrDb) {
       if (customIndexes.length > 0) {
         header._indexes = customIndexes;
       }
-      lines.push(JSON.stringify(header));
+      yield JSON.stringify(header);
 
       let lastId = null;
       while (true) {
@@ -38,10 +47,10 @@ module.exports = async function dump(uriOrDb) {
           break;
         }
         for (const doc of batch) {
-          lines.push(JSON.stringify({
+          yield JSON.stringify({
             _collection: name,
             _doc: serializeValue(doc)
-          }));
+          });
         }
         lastId = batch[batch.length - 1]._id;
         if (batch.length < BATCH_SIZE) {
@@ -54,8 +63,7 @@ module.exports = async function dump(uriOrDb) {
       await client.close();
     }
   }
-  return lines.join('\n') + '\n';
-};
+}
 
 function serializeValue(obj) {
   if (obj instanceof Date) {
@@ -79,3 +87,5 @@ function serializeValue(obj) {
   }
   return obj;
 }
+
+module.exports = dump;

@@ -814,9 +814,11 @@ class SqliteCursor {
     return cloned;
   }
 
-  async toArray() {
-    this._collection._ensureTable();
-
+  // Build the SELECT SQL + params this cursor would execute. Shared by
+  // toArray() and exposed via explain() for EXPLAIN-based tests and
+  // debugging. SQL uses SQLite's native `?` placeholders; `params` is a
+  // positional array in order.
+  _buildFindSql() {
     const params = [];
     const queryOptions = this._collection._queryOptions();
     const tableName = this._collection._quotedTableName();
@@ -859,7 +861,25 @@ class SqliteCursor {
     if (this._skip != null) {
       sql += ` OFFSET ${this._skip}`;
     }
+    return {
+      sql,
+      params
+    };
+  }
 
+  // Returns the SQL and parameter values the adapter would execute for
+  // this cursor's current query/sort/limit/skip/projection. Useful for
+  // EXPLAIN-based tests and for debugging query planner behavior. The
+  // returned SQL uses SQLite's native `?` placeholder style.
+  async explain() {
+    this._collection._ensureTable();
+    return this._buildFindSql();
+  }
+
+  async toArray() {
+    this._collection._ensureTable();
+
+    const { sql, params } = this._buildFindSql();
     const rows = this._collection._db._sqlite.prepare(sql).all(...params);
     return rows.map(row => {
       const doc = deserializeDocument(row.data, row._id);
@@ -2318,6 +2338,18 @@ module.exports = {
     } else {
       // sqlite:///absolute/path/to/file.sqlite
       dbPath = url.pathname;
+    }
+
+    // Reject in-memory / empty paths. The adapter does not support
+    // throwaway in-memory sqlite databases: an ApostropheCMS site needs
+    // a persistent store, and transient in-memory URIs would also
+    // interact poorly with multi-connection patterns (each new
+    // connection would get a fresh, empty database).
+    if (!dbPath || dbPath === ':memory:' || dbPath.endsWith('/:memory:')) {
+      throw new Error(
+        `sqlite adapter does not support in-memory databases (got "${uri}"). ` +
+        'Provide a file path, e.g. sqlite:///var/lib/mysite/data.db'
+      );
     }
 
     // Ensure directory exists

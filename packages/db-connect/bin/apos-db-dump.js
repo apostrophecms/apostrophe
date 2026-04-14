@@ -20,11 +20,23 @@ async function main() {
     throw new Error('Usage: apos-db-dump <uri> [--output=filename]');
   }
 
-  const data = await dump(uri);
+  // Stream NDJSON lines directly to the sink so a large dump never sits
+  // fully in memory.
+  const sink = output
+    ? fs.createWriteStream(output)
+    : process.stdout;
 
-  if (output) {
-    fs.writeFileSync(output, data);
-  } else {
-    process.stdout.write(data);
+  try {
+    for await (const line of dump(uri)) {
+      if (!sink.write(line + '\n')) {
+        await new Promise(resolve => sink.once('drain', resolve));
+      }
+    }
+  } finally {
+    if (output) {
+      await new Promise((resolve, reject) => {
+        sink.end(err => err ? reject(err) : resolve());
+      });
+    }
   }
 }
