@@ -4,6 +4,50 @@
 
 ## CLI Tools
 
+### Running the commands
+
+Any ApostropheCMS project has `@apostrophecms/db-connect` installed as a transitive dependency, so the `apos-db-dump` and `apos-db-restore` binaries are present in `node_modules/.bin` of every Apostrophe project. There are three common ways to invoke them:
+
+**Project-local with `npx` (recommended for one-off use):**
+
+```bash
+cd /path/to/your/apostrophe/project
+npx apos-db-dump mongodb://localhost:27017/mydb --output=backup.jsonl
+npx apos-db-restore postgres://localhost:5432/mydb --input=backup.jsonl
+```
+
+`npx` finds the binary in the project's `node_modules/.bin`, so no global installation is needed.
+
+**Project-local via npm scripts:**
+
+Add entries to your project's `package.json`:
+
+```json
+{
+  "scripts": {
+    "db:dump": "apos-db-dump",
+    "db:restore": "apos-db-restore"
+  }
+}
+```
+
+Then run:
+
+```bash
+npm run db:dump -- mongodb://localhost:27017/mydb --output=backup.jsonl
+```
+
+**Globally installed (for operators who manage many projects):**
+
+```bash
+npm install -g @apostrophecms/db-connect
+apos-db-dump mongodb://localhost:27017/mydb --output=backup.jsonl
+```
+
+A global install puts `apos-db-dump` and `apos-db-restore` directly on your `PATH`. The global copy is independent of any particular project, so use the same major version you have installed in your projects to ensure the JSONL format matches.
+
+The examples in the rest of this document drop the `npx` prefix for readability. Prepend `npx` (or use one of the other invocation styles above) according to how you've set things up.
+
 ### apos-db-dump
 
 ```bash
