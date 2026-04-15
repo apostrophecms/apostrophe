@@ -293,68 +293,67 @@ module.exports = {
         },
         ...self.isPasswordResetEnabled() && {
           async resetRequest(req) {
-            const wait = (t = 2000) => Promise.delay(t);
+            const MIN_RESPONSE_TIME = 2000;
+            const startTime = Date.now();
             const site = (req.headers.host || '').replace(/:\d+$/, '');
             const email = self.apos.launder.string(req.body.email);
             if (!email.length) {
               throw self.apos.error('invalid', req.t('apostrophe:loginResetEmailRequired'));
             }
             let user;
-            // error not reported to browser for security reasons
             try {
               user = await self.getPasswordResetUser(req.body.email);
             } catch (e) {
               self.apos.util.error(e);
             }
             if (!user) {
-              await wait();
               self.apos.util.error(
                 `Reset password request error - the user ${email} doesn\`t exist.`
               );
-              return;
-            }
-            if (!user.email) {
-              await wait();
+            } else if (!user.email) {
               self.apos.util.error(
                 `Reset password request error - the user ${user.username} doesn\`t have an email.`
               );
-              return;
-            }
-            const reset = self.apos.util.generateId();
-            user.passwordReset = reset;
-            user.passwordResetAt = new Date();
-            await self.apos.user.update(req, user, { permissions: false });
-            // Fix - missing host in the absoluteUrl results in a panic.
-            let port = (req.headers.host || '').split(':')[1];
-            if (!port || [ '80', '443' ].includes(port)) {
-              port = '';
             } else {
-              port = `:${port}`;
+              const reset = self.apos.util.generateId();
+              user.passwordReset = reset;
+              user.passwordResetAt = new Date();
+              await self.apos.user.update(req, user, { permissions: false });
+              let port = (req.headers.host || '').split(':')[1];
+              if (!port || [ '80', '443' ].includes(port)) {
+                port = '';
+              } else {
+                port = `:${port}`;
+              }
+              const parsed = new URL(
+                req.absoluteUrl,
+                self.apos.baseUrl
+                  ? undefined
+                  : `${req.protocol}://${req.hostname}${port}`
+              );
+              parsed.pathname = self.login();
+              parsed.search = '?';
+              parsed.searchParams.append('reset', reset);
+              parsed.searchParams.append('email', user.email);
+              try {
+                await self.email(req, 'passwordResetEmail', {
+                  user,
+                  url: parsed.toString(),
+                  site
+                }, {
+                  to: user.email,
+                  subject: req.t('apostrophe:passwordResetRequest', { site })
+                });
+              } catch (err) {
+                self.apos.util.error(`Error while sending email to ${user.email}`, err);
+              }
             }
-            const parsed = new URL(
-              req.absoluteUrl,
-              self.apos.baseUrl
-                ? undefined
-                : `${req.protocol}://${req.hostname}${port}`
-            );
-            parsed.pathname = self.login();
-            parsed.search = '?';
-            parsed.searchParams.append('reset', reset);
-            parsed.searchParams.append('email', user.email);
-            try {
-              await self.email(req, 'passwordResetEmail', {
-                user,
-                url: parsed.toString(),
-                site
-              }, {
-                to: user.email,
-                subject: req.t('apostrophe:passwordResetRequest', { site })
-              });
-            } catch (err) {
-              self.apos.util.error(`Error while sending email to ${user.email}`, err);
+            // Pad all paths to a constant minimum duration
+            const elapsed = Date.now() - startTime;
+            if (elapsed < MIN_RESPONSE_TIME) {
+              await Promise.delay(MIN_RESPONSE_TIME - elapsed);
             }
           },
-
           async reset(req) {
             const password = self.apos.launder.string(req.body.password);
             if (!password.length) {
