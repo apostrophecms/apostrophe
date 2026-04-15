@@ -181,6 +181,27 @@ function validateTableName(name) {
   return sanitized;
 }
 
+// Sanitize a caller-supplied index name so it is safe to use as a
+// PostgreSQL identifier. Unlike validateTableName() (which rejects unsafe
+// input as a security measure against malicious table names), index names
+// frequently arrive from cross-backend JSONL dumps — MongoDB's
+// default/auto-generated index names contain characters like "." that are
+// illegal PostgreSQL identifiers. Silently replacing those characters
+// with "_" is safe: the name is an internal identifier, not user data,
+// and the adapter is the one consulting the _indexes map by the sanitized
+// form.
+function sanitizeIndexName(name) {
+  if (typeof name !== 'string' || name.length === 0) {
+    return null;
+  }
+  const truncated = name.substring(0, 63);
+  const sanitized = truncated.replace(/[^a-zA-Z0-9_]/g, '_');
+  if (/^[0-9]/.test(sanitized)) {
+    return '_' + sanitized.substring(0, 62);
+  }
+  return sanitized;
+}
+
 // Escape a PostgreSQL identifier (table name, index name) for use in double quotes
 // PostgreSQL: double any internal double quotes
 function escapeIdentifier(name) {
@@ -1953,7 +1974,7 @@ class PostgresCollection {
     // Generate a safe index name
     const safeFieldNames = keyEntries.map(([ k ]) => k.replace(/[^a-zA-Z0-9]/g, '_')).join('_');
     const indexName = options.name
-      ? validateTableName(options.name)
+      ? sanitizeIndexName(options.name)
       : `idx_${this._tableName}_${safeFieldNames}`.substring(0, 63);
 
     // Generate MongoDB-compatible index name for indexInformation() compatibility
@@ -2047,8 +2068,11 @@ class PostgresCollection {
       }
     }
     if (!pgName) {
-      // Try as a direct postgres index name
-      pgName = validateTableName(indexName);
+      // Try as a direct postgres index name. Use the same sanitizer as
+      // createIndex so a name like "slug_unique" created via createIndex
+      // can be dropped with the same string, and MongoDB-style names with
+      // illegal characters don't throw.
+      pgName = sanitizeIndexName(indexName);
     }
     this._indexes.delete(pgName);
     const escapedIndexName = escapeIdentifier(pgName);

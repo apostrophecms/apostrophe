@@ -163,13 +163,20 @@ describe(`Security Tests (${ADAPTER})`, function() {
           });
         });
 
-        it('should reject malicious index names', async function() {
-          try {
-            await db.collection('sectest').createIndex({ field: 1 }, { name: 'idx\'; DROP TABLE users;--' });
-            expect.fail('Should have rejected malicious index name');
-          } catch (e) {
-            expect(e.message).to.include('Invalid table name');
-          }
+        it('should sanitize malicious index names', async function() {
+          // Index names arrive from cross-backend dumps (e.g. MongoDB defaults
+          // like "collection._id_1") so we sanitize rather than reject. The
+          // security property we care about is that no dangerous characters
+          // reach the SQL statement — quotes, semicolons, dashes must all be
+          // replaced before the name is interpolated into CREATE INDEX.
+          const returned = await db.collection('sectest').createIndex(
+            { field: 1 },
+            { name: 'idx\'; DROP TABLE users;--' }
+          );
+          expect(returned).to.not.match(/['";\- ]/);
+          // And the table must still exist — sanity check that no injection ran.
+          const doc = await db.collection('sectest').findOne({ _id: 'idx1' });
+          expect(doc).to.not.be.null;
         });
 
         it('should allow valid index names', async function() {

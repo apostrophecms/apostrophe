@@ -38,6 +38,27 @@ function validateTableName(name) {
   return sanitized;
 }
 
+// Sanitize a caller-supplied index name so it is safe to use as a SQLite
+// identifier. Unlike validateTableName() (which rejects unsafe input as a
+// security measure against malicious table names), index names frequently
+// arrive from cross-backend JSONL dumps — MongoDB's default/auto-generated
+// index names contain characters like "." that are illegal SQLite
+// identifiers. Silently replacing those characters with "_" is safe: the
+// name is an internal identifier, not user data, and the adapter is the
+// one consulting the _indexes map by the sanitized form.
+function sanitizeIndexName(name) {
+  if (typeof name !== 'string' || name.length === 0) {
+    return null;
+  }
+  const truncated = name.substring(0, 63);
+  const sanitized = truncated.replace(/[^a-zA-Z0-9_]/g, '_');
+  // Identifiers must start with a letter or underscore.
+  if (/^[0-9]/.test(sanitized)) {
+    return '_' + sanitized.substring(0, 62);
+  }
+  return sanitized;
+}
+
 function escapeIdentifier(name) {
   return name.replace(/"/g, '""');
 }
@@ -1857,7 +1878,7 @@ class SqliteCollection {
 
     const safeFieldNames = keyEntries.map(([ k ]) => k.replace(/[^a-zA-Z0-9]/g, '_')).join('_');
     const indexName = options.name
-      ? validateTableName(options.name.substring(0, 63))
+      ? sanitizeIndexName(options.name)
       : `idx_${this._tableName}_${safeFieldNames}`.substring(0, 63);
 
     const mongoName = options.name || keyEntries.map(([ k, v ]) => `${k}_${v}`).join('_');
@@ -1972,7 +1993,9 @@ class SqliteCollection {
       }
     }
     if (!pgName) {
-      pgName = validateTableName(indexName);
+      // Same sanitization rules as createIndex — tolerate MongoDB-style
+      // names (e.g. "slug.1") that would fail strict identifier checks.
+      pgName = sanitizeIndexName(indexName);
     }
     this._indexes.delete(pgName);
     const escapedIndexName = escapeIdentifier(pgName);
