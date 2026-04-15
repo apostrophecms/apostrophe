@@ -71,6 +71,11 @@ module.exports = {
             }
           }
         }
+      },
+      group: {
+        utility: {
+          fields: [ 'columns' ]
+        }
       }
     };
   },

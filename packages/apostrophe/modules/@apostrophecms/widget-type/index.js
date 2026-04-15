@@ -174,7 +174,10 @@ module.exports = {
     origin: null,
     preview: true,
     // Set to false to opt out of the automatic styling wrapping of widget output
-    stylesWrapper: true
+    stylesWrapper: true,
+    // If set to true, the widget editor will hide tabs when there is only one,
+    // even if groups are defined. Defaults to false for backwards compatibility.
+    hideSingleTab: false
   },
   init(self) {
     self.isExplicitOrigin = self.options.origin !== null;
@@ -306,14 +309,20 @@ module.exports = {
           label: 'apostrophe:styles',
           fields: groupFields
         };
-        // Create a default group if none exist
+        // Create a default group if none exist.
+        // Ignore utility group if it's the only one, since it's now the way
+        // to hide fields (see layout column widget).
+        const visibleFields = Object.keys(self.fields)
+          .filter(
+            fieldName => !self.fieldsGroups.utility?.fields?.includes(fieldName)
+          );
         if (
-          !Object.keys(self.fieldsGroups).length &&
-          Object.keys(self.fields).length
+          !Object.keys(self.fieldsGroups).filter(g => g !== 'utility').length &&
+          visibleFields.length
         ) {
           self.fieldsGroups.basics = {
             label: 'apostrophe:basics',
-            fields: Object.keys(self.fields)
+            fields: visibleFields
           };
         }
         self.fieldsGroups.styles = stylesGroup;
@@ -778,7 +787,8 @@ module.exports = {
           preview: self.options.preview,
           isExplicitOrigin: self.isExplicitOrigin,
           widgetOperations: self.getWidgetOperations(req),
-          widgetBreadcrumbOperations: self.getWidgetBreadcrumbOperations(req)
+          widgetBreadcrumbOperations: self.getWidgetBreadcrumbOperations(req),
+          hideSingleTab: self.options.hideSingleTab
         });
         return result;
       }
