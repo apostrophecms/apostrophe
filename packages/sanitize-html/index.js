@@ -566,10 +566,14 @@ function sanitizeHtml(html, options, _recursing) {
         // your concern, don't allow them. The same is essentially true for style tags
         // which have their own collection of XSS vectors.
         result += text;
-      } else if ((options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (nonTextTagsArray.indexOf(tag) !== -1)) {
-        // htmlparser2 does not decode entities inside raw text elements like
-        // textarea and option. The text is already properly encoded, so pass
-        // it through without additional escaping to avoid double-encoding.
+      } else if ((options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
+        // htmlparser2 treats <textarea> and <xmp> as raw text elements and
+        // does NOT decode entities inside them. The text is already properly
+        // encoded, so pass it through without additional escaping to avoid
+        // double-encoding. Other "nonTextTags" like <option> are not raw text
+        // elements in htmlparser2, so their contents are decoded and must be
+        // escaped below like any other text (important to prevent XSS via
+        // entity-encoded payloads such as <option>&lt;script&gt;...&lt;/script&gt;</option>).
         result += text;
       } else if (!addedText) {
         const escaped = escapeHtml(text, false);
