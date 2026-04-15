@@ -1,6 +1,12 @@
 # Changelog
 
-## 1.3.0
+## 1.4.0 (2026-04-15)
+
+### Adds
+
+- Added x-default hreflang tag to sitemap entries for improved international SEO targeting
+
+## 1.3.0 (2026-03-19)
 
 ### Adds
 
