@@ -32,9 +32,15 @@ module.exports = {
               throw self.apos.error('required');
             }
 
+            const isVariable = destination[field.name].startsWith('--');
             const test = new TinyColor(destination[field.name]);
-            if (!test.isValid && !destination[field.name].startsWith('--')) {
+            if (!test.isValid && !isVariable) {
               destination[field.name] = null;
+            } else if (isVariable) {
+              // CSS custom property names: only allow alphanumeric, hyphens, underscores
+              if (!/^--[a-zA-Z0-9_-]+$/.test(destination[field.name])) {
+                destination[field.name] = null;
+              }
             }
           },
           isEmpty: function (field, value) {

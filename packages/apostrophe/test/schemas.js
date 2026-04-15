@@ -38,6 +38,11 @@ describe('Schemas', function() {
       name: 'slug',
       label: 'Slug',
       type: 'slug'
+    },
+    {
+      name: 'color',
+      label: 'Color',
+      type: 'color'
     }
   ];
 
@@ -1371,24 +1376,55 @@ describe('Schemas', function() {
     const schema = apos.schema.compose({
       addFields: simpleFields
     });
-    assert(schema.length === 4);
+    assert(schema.length === 5);
     const input = {
       name: 'Bob Smith',
       address: '5017 Awesome Street\nPhiladelphia, PA 19147',
       irrelevant: 'Irrelevant',
-      slug: 'This Is Cool'
+      slug: 'This Is Cool',
+      color: '#ddeeff'
     };
     const req = apos.task.getReq();
     const result = {};
     await apos.schema.convert(req, schema, input, result);
     // no irrelevant or missing fields
-    assert(_.keys(result).length === 4);
+    assert(_.keys(result).length === 5);
     // expected fields came through
     assert(result.name === input.name);
     assert(result.address === input.address);
+    assert.strictEqual(result.color, '#ddeeff');
     // default
     assert(result.variety === undefined);
     assert(result.slug === 'this-is-cool');
+  });
+
+  it('should allow well-behaved CSS variable names', async function() {
+    const schema = apos.schema.compose({
+      addFields: simpleFields
+    });
+    const input = {
+      color: '--somevar'
+    };
+    const req = apos.task.getReq();
+    const result = {};
+    await apos.schema.convert(req, schema, input, result);
+    // expected fields came through
+    assert.strictEqual(result.color, '--somevar');
+  });
+
+  it('should NOT allow malicious CSS variable names', async function() {
+    const schema = apos.schema.compose({
+      addFields: simpleFields
+    });
+    const malicious = '--</style><script>alert("mwahahah")';
+    const input = {
+      color: malicious
+    };
+    const req = apos.task.getReq();
+    const result = {};
+    await apos.schema.convert(req, schema, input, result);
+    // Should be blocked
+    assert.notStrictEqual(result.color, malicious);
   });
 
   it('should update a password if provided', async function() {

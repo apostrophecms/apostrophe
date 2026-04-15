@@ -125,6 +125,8 @@ module.exports = (self, options) => {
         });
       }
       if (!hasLink) {
+        // Prevent an XSS attack even if a styles exploit is found
+        const css = (req.data.global.stylesStylesheet || '').replaceAll('</', '<\\/');
         nodes.push({
           name: 'style',
           attrs: {
@@ -132,7 +134,7 @@ module.exports = (self, options) => {
           },
           body: [
             {
-              raw: req.data.global.stylesStylesheet || ''
+              raw: css
             }
           ]
         });
@@ -231,6 +233,8 @@ module.exports = (self, options) => {
           transform: assetOptions.transform || null
         });
       }
+      // Prevent an XSS attack even if a styles exploit is found
+      css = css.replaceAll('</', '<\\/');
       return `<style data-apos-widget-style-for="${widgetId}" data-apos-widget-style-id="${styleId}">\n` +
         css +
         '\n</style>';
