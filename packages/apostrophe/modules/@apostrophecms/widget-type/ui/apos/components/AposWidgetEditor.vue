@@ -56,7 +56,7 @@
         :items="breadcrumbs"
       />
       <AposWidgetModalTabs
-        v-if="tabs.length && tabs[0].name !== 'ungrouped'"
+        v-if="shouldShowTabs"
         :key="tabKey"
         :current="currentTab"
         :tabs="tabs"
@@ -225,6 +225,12 @@ export default {
     },
     moduleOptions() {
       return window.apos.modules[apos.area.widgetManagers[this.type]];
+    },
+    shouldShowTabs() {
+      if (this.moduleOptions.hideSingleTab) {
+        return this.tabs.length > 1;
+      }
+      return this.tabs.length && this.tabs[0].name !== 'ungrouped';
     },
     typeLabel() {
       return this.moduleOptions.label;
