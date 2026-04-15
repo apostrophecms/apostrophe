@@ -118,6 +118,86 @@ describe('Pieces Public API', function() {
     assert(!response.results[0].foo);
   });
 
+  it('should not leak distinct values of non-projected fields via ?choices=', async function() {
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    const response = await apos.http.get('/api/v1/thing?choices=title,foo');
+    assert(response);
+    assert(response.choices);
+    // title IS in the public API projection, so its choices are allowed
+    assert(response.choices.title);
+    assert(response.choices.title.some(c => c.label === 'hello'));
+    // foo is NOT in the public API projection: its distinct values
+    // must not be exposed to anonymous callers
+    assert(
+      !response.choices.foo || response.choices.foo.length === 0,
+      'choices for non-projected field "foo" must not be exposed publicly'
+    );
+  });
+
+  it('should not leak distinct values of non-projected fields via ?counts=', async function() {
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    const response = await apos.http.get('/api/v1/thing?counts=title,foo');
+    assert(response);
+    assert(response.counts);
+    assert(response.counts.title);
+    assert(
+      !response.counts.foo || response.counts.foo.length === 0,
+      'counts for non-projected field "foo" must not be exposed publicly'
+    );
+  });
+
+  it('should not leak non-projected fields via dot-notated ?choices= filter names', async function() {
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    // A dot-notated filter whose top-level segment is not projected
+    // must be blocked the same way the plain field name is.
+    const response = await apos.http.get('/api/v1/thing?choices=foo.bar');
+    assert(response);
+    assert(
+      !response.choices || !response.choices['foo.bar'] || response.choices['foo.bar'].length === 0,
+      'choices for dot-notated non-projected field "foo.bar" must not be exposed publicly'
+    );
+  });
+
+  it('should still expose choices for non-projected fields to authenticated API users', async function() {
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    const req = apos.task.getReq();
+    // Simulate a full-API caller: canAccessApi is true, no projection applied
+    const query = apos.thing.find(req).choices([ 'foo' ]);
+    await query.toArray();
+    const choices = query.get('choicesResults');
+    assert(choices);
+    assert(choices.foo);
+    assert(choices.foo.some(c => c.value === 'bar'));
+  });
+
+  it('should not restrict choices when an authenticated user voluntarily sets a projection', async function() {
+    apos.thing.options.publicApiProjection = {
+      title: 1,
+      _url: 1
+    };
+    const req = apos.task.getReq();
+    // Authenticated user narrows their own query via project() — this is
+    // voluntary and must not block choices for fields outside that projection
+    const query = apos.thing.find(req).project({ title: 1 }).choices([ 'foo' ]);
+    await query.toArray();
+    const choices = query.get('choicesResults');
+    assert(choices);
+    assert(choices.foo);
+    assert(choices.foo.some(c => c.value === 'bar'));
+  });
+
   it('should not set a "max-age" cache-control value when retrieving pieces, when cache option is not set, with a public API projection', async function() {
     apos.thing.options.publicApiProjection = {
       title: 1,

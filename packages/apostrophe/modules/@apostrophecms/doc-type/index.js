@@ -1621,6 +1621,59 @@ module.exports = {
         return doc;
       },
 
+      // Returns true if the named filter is permitted to expose distinct
+      // values through the `choices` / `counts` query builders given the
+      // publicApiProjection. When no publicApiProjection is in effect
+      // (authenticated API callers), all fields are permitted.
+      //
+      // This guards against leaking distinct values of fields excluded by
+      // `publicApiProjection`, since MongoDB's `distinct` operator ignores
+      // projections. Projections set explicitly by authenticated users are
+      // not restricted — they are a voluntary narrowing of query results,
+      // not a security boundary.
+      choicesFieldAllowedByProjection(filter, projection) {
+        if (!projection || !Object.keys(projection).length) {
+          return true;
+        }
+        // Builders that aren't named after a top-level schema field are
+        // not gated by the projection.
+        const field = self.schema.find(f => f.name === filter);
+        if (!field) {
+          return true;
+        }
+        const topLevel = filter.split('.')[0];
+        const values = Object.values(projection);
+        const hasInclusion = values.some(v => v && v !== 0);
+        const hasExclusion = values.some(v => v === 0 || v === false);
+        if (hasInclusion) {
+          // Inclusion projection: field must be explicitly included.
+          return Boolean(projection[topLevel]);
+        }
+        if (hasExclusion) {
+          // Exclusion projection: field must not be explicitly excluded.
+          return projection[topLevel] !== 0 && projection[topLevel] !== false;
+        }
+        return true;
+      },
+
+      // Returns true if the current user is permitted to view the named
+      // schema field according to any schema-level `viewPermission`.
+      // Non-schema filters are permitted. A dot-notated filter is matched
+      // against the top-level schema field, since `viewPermission` is
+      // declared on top-level fields (see `removeForbiddenFields`).
+      choicesFieldAllowedByViewPermission(req, filter) {
+        const topLevel = filter.split('.')[0];
+        const field = self.schema.find(f => f.name === topLevel);
+        if (!field || !field.viewPermission) {
+          return true;
+        }
+        return self.apos.permission.can(
+          req,
+          field.viewPermission.action,
+          field.viewPermission.type
+        );
+      },
+
       composeFilters() {
         // TODO: keep in sync with page/index.js composeFilters
         self.filters = Object.entries(self.filters)
@@ -2707,6 +2760,7 @@ module.exports = {
             const choices = {};
             const baseQuery = query.get('choices-query-prefinalize');
             baseQuery.set('choices-query-prefinalize', null);
+            const publicApiProjection = query.get('publicApiProjection');
             for (const filter of filters) {
               // The choices for each filter should reflect the effect of all
               // filters except this one (filtering by topic pairs down the list
@@ -2720,6 +2774,19 @@ module.exports = {
               // Make sure it would ever be accepted via a query parameter
               // before attempting to shut it off
               if (!query.builders[filter].launder) {
+                continue;
+              }
+              // Do not leak distinct values of fields excluded by the
+              // publicApiProjection. MongoDB's `distinct` ignores projections,
+              // so we must enforce this ourselves here. Only applies to the
+              // public API; authenticated users who set their own projections
+              // are not restricted.
+              if (!self.choicesFieldAllowedByProjection(filter, publicApiProjection)) {
+                continue;
+              }
+              // Do not leak distinct values of fields the current user does
+              // not have permission to view via a schema-level viewPermission.
+              if (!self.choicesFieldAllowedByViewPermission(query.req, filter)) {
                 continue;
               }
               // Now shut it off

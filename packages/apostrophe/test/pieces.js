@@ -2364,6 +2364,31 @@ describe('Pieces', function() {
         assert.deepEqual(actual, expected);
       });
 
+      it('should not leak viewPermission-protected fields via ?choices=', async function() {
+        const jar = await t.loginAs(apos, 'editor');
+
+        const req = apos.task.getReq();
+        const candidate = {
+          ...apos.modules.board.newInstance(),
+          title: 'Icarus',
+          slug: 'icarus',
+          discontinued: 'April 2077'
+        };
+        await apos.modules.board.insert(req, candidate);
+
+        // Editor does not have 'publish' permission on 'board', so
+        // 'discontinued' (viewPermission: { action: 'publish', type: 'board' })
+        // must not appear in choices
+        const response = await apos.http.get('/api/v1/board?choices=title,discontinued', { jar });
+        assert(response);
+        assert(response.choices);
+        assert(response.choices.title);
+        assert(
+          !response.choices.discontinued || response.choices.discontinued.length === 0,
+          'choices for viewPermission-protected field "discontinued" must not be exposed to editors'
+        );
+      });
+
       it('should be able to edit fields with editPermission when having appropriate credentials on rest API', async function() {
         const jar = await t.loginAs(apos, 'editor');
 

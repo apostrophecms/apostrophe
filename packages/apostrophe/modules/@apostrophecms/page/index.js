@@ -2955,6 +2955,7 @@ database.`);
               ...self.options.publicApiProjection,
               cacheInvalidatedAt: 1
             });
+            query.set('publicApiProjection', self.options.publicApiProjection);
           }
         }
         return query;
