@@ -1,6 +1,12 @@
 # Changelog
 
-## 2.17.2
+## 2.17.3 (2026-04-15)
+
+### Security
+
+- Fix vulnerability introduced in version 2.17.2 that allowed XSS attacks if the developer chose to permit `option` tags. There was no vulnerability when not explicitly allowing `option` tags.
+
+## 2.17.2 (2026-03-19)
 
 ### Changes
 
