@@ -241,21 +241,18 @@ function getMetaHead(data, options) {
           '@graph': schemas
         };
 
-        const jsonLdString = JSON.stringify(jsonLdData, null, 2);
-
         nodes.push({
           comment: ' JSON-LD Structured Data '
         });
 
-        const scriptNode = {
+        // A `json` body is escaped by renderNodes so that untrusted content
+        // in SEO fields cannot break out of the surrounding script element
+        // (stored XSS).
+        nodes.push({
           name: 'script',
           attrs: { type: 'application/ld+json' },
-          body: [ {
-            raw: jsonLdString
-          } ]
-        };
-
-        nodes.push(scriptNode);
+          body: [ { json: jsonLdData } ]
+        });
       }
     } catch (err) {
       if (process.env.APOS_SEO_DEBUG) {
