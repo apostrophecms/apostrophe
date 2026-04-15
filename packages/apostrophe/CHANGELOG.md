@@ -1,13 +1,43 @@
 # Changelog
 
-## 4.28.0
+## 4.29.0 (2026-04-15)
+
+### Adds
+
+- Added support for pretty URL file attachments in the static build metadata pipeline. When `@apostrophecms/file` has `options.prettyUrls` enabled, the `getAllUrlMetadata` API now annotates affected attachments properly. The backend streaming proxy route was also fixed to correctly resolve relative uploadfs URLs during static builds.
+- Introduced Recently Edited manager as Admin Bar action, next to the existing Submitted Drafts. Allows modules to contribute filter choices.
+- Fix batch operations executed in a modal in a different locale causing wrong browser URL rewrite
+- Add background preset to the Styles Editor, supporting image, color, and gradient background CSS generation.
+
+### Fixes
+
+- Fix a focus trap bug where in the context menu focus would jump back to the first element when reaching the last one.
+- Bug fix: the "pretty URLs" feature of `@apostrophecms/file` is now compatible with locale prefixes.
+- Removed misleading return from `pruneDataForExternalFront`, a method intended to be overridden to modify data "in place" before it is sent to Astro or a similar frontend.
+- Fix layout column breadcrumb operations leaking in layout edit mode.
+- Fix edge case where widgets having styles and fields at the same time would show "Ungrouped" tab. Add `hideSingleTab` option that can be enabled in any widget to hide tabs from the widget editor when there is only one tab containing fields. This option can also be enabled globally in `@apostrophecms/widget-type` options.
+- Add background preset, supporting image, color and gradient background CSS generation.
+
+### Changes
+
+- Combine Styles and Column configuration in a single Styles Editor experience.
+- Use shorter placeholder text for relationship inputs in small/micro contexts.
+
+### Security
+
+- Fix an XSS vulnerability allowing arbitrary markup to be inserted via the "SEO Title" or "Meta Description" fields provided by the `@apostrophecms/seo` module. The fix requires upgrading BOTH `apostrophe` and `@apostrophecms/seo`. A new mechanism for safely emitting JSON nodes has been introduced to make this type of vulnerability unlikely in the future. Thanks to [K Shanmukha Srinivasulu Royal](https://github.com/Chittu13) for reporting the vulnerability.
+- Fixed a security hole in the `.choices()` and `.counts()` query builders: formerly, these query builders could be used by the public to exfiltrate schema fields not included in the `publicApiProjection`, or fields locked down with a `viewPermission` property. Thanks to [offset](https://github.com/offset) for reporting this issue, which was not made public prior to the release of the fix.
+- Fixed an XSS vulnerability in color fields, which formerly accepted `-` followed by anything, including `</style>`, which could be used to inject other markup. Thanks to [restriction](https://github.com/restriction) for reporting the issue and proposing the fix.
+- Resolved a `publicApiProjection` bypass vulnerability for piece types. Thanks to [restriction](https://github.com/restriction) for reporting the issue and proposing the fix.
+- Ensured a minimum 2-second delay in the password reset flow to avoid disclosing whether the email or username was valid or not. Thanks to [restriction](https://github.com/restriction) for reporting the issue and proposing the fix.
+
+## 4.28.0 (2026-03-19)
 
 ### Adds
 
 - Adds support for static URLs and static external frontend builds.
 - Adds widget graph store, accessible in Admin UI.
 - Support for the new `prettyUrls: true` option for @apostrophecms/file, which enables "pretty URLs" for PDFs and other items in the file library, in exchange for a small performance impact. Edit the slug field to adjust the pretty URL
-
 
 ### Fixes
 
@@ -27,7 +57,7 @@
 - Improve re-rendering UX while keeping the performance optimization
 - raise the user's widget z-index context only when focused
 - Hide add content buttons on rich text editing, like widget controls
--  Refine in-context focus states for calmer UX
+- Refine in-context focus states for calmer UX
 - Simplifies some in-context UI rendering checks
 - Updated dependencies
 

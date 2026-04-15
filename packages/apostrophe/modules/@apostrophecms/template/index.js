@@ -35,6 +35,7 @@ const path = require('path');
 const { stripIndent } = require('common-tags');
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const voidElements = require('void-elements');
+const safeJsonForScript = require('../../../lib/safe-json-script');
 
 module.exports = {
   options: { alias: 'template' },
@@ -1140,12 +1141,23 @@ module.exports = {
       //     attrs: { href: '/some/path', rel: 'stylesheet' }
       //   }
       // ]
-      // Node object SHOULD have either `name`, `text`, `raw` or `comment` property.
-      // A node with `name` can have `attrs` (array of element attributes)
-      // and `body` (array of child nodes, recursion).
+      // Node object SHOULD have either `name`, `text`, `raw`, `json` or
+      // `comment` property. A node with `name` can have `attrs` (array of
+      // element attributes) and `body` (array of child nodes, recursion).
       // `text` nodes are rendered as text (no HTML tags), the value is always a string.
       // `comment` nodes are rendered as HTML comments, the value is always a string.
       // `raw` nodes are rendered as is, no escaping, the value is always a string.
+      // `json` nodes are rendered as a JSON serialization of the value,
+      // safely escaped for inclusion inside a `<script>` element so that
+      // untrusted content cannot break out of the surrounding script tag.
+      // Use this instead of building a `raw` body from `JSON.stringify()`
+      // yourself, e.g.:
+      //
+      //   {
+      //     name: 'script',
+      //     attrs: { type: 'application/ld+json' },
+      //     body: [ { json: myData } ]
+      //   }
       renderNodes(nodes) {
         if (!Array.isArray(nodes)) {
           self.logError(
@@ -1163,6 +1175,9 @@ module.exports = {
           }
           if (node.raw != null) {
             return node.raw;
+          }
+          if (node.json != null) {
+            return safeJsonForScript(node.json);
           }
           if (node.name != null) {
             const name = self.apos.util.escapeHtml(node.name);

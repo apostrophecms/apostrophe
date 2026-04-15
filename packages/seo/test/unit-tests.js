@@ -1657,6 +1657,67 @@ describe('@apostrophecms/seo', function () {
     });
   });
 
+  describe('XSS prevention in JSON-LD', function () {
+    it('should emit JSON-LD as a json node so </script> cannot break out', function () {
+      const { getMetaHead } = require('../lib/nodes');
+      const safeJsonForScript = require('apostrophe/lib/safe-json-script');
+
+      const payload = '"></title><script>alert(1)</script>';
+
+      const data = {
+        page: {
+          title: 'XSS Test',
+          seoTitle: payload,
+          seoDescription: payload,
+          seoJsonLdType: 'WebPage',
+          _url: 'https://example.com/xss-test'
+        },
+        global: {
+          seoSiteName: 'Test Site',
+          seoSiteCanonicalUrl: 'https://example.com'
+        },
+        req: {}
+      };
+
+      const nodes = getMetaHead(data, {});
+
+      const jsonLdNode = nodes.find(n =>
+        n.name === 'script' &&
+        n.attrs &&
+        n.attrs.type === 'application/ld+json'
+      );
+
+      assert(jsonLdNode, 'JSON-LD script node should exist');
+      assert(
+        Array.isArray(jsonLdNode.body) && jsonLdNode.body[0],
+        'JSON-LD script should have a body'
+      );
+
+      // The body must be a `json` node, not a pre-serialized `raw` string,
+      // so that renderNodes performs the safe-for-script escaping on our
+      // behalf. Raw-serializing JSON inline is the exact footgun we are
+      // trying to remove.
+      assert(
+        jsonLdNode.body[0].json != null,
+        'JSON-LD body should be a json node, not a raw string'
+      );
+
+      // Belt and suspenders: verify that when that json value is actually
+      // rendered through the safe encoder, the literal `</script` sequence
+      // (which would terminate the surrounding <script> element) is gone.
+      const rendered = safeJsonForScript(jsonLdNode.body[0].json);
+      assert(
+        !/<\/script/i.test(rendered),
+        'rendered JSON-LD must not contain an unescaped </script> sequence'
+      );
+      // Sanity check: the payload is still there, just escaped.
+      assert(
+        rendered.includes('\\u003c/script'),
+        'payload should survive in escaped form'
+      );
+    });
+  });
+
   describe('Schema Validation', function () {
 
     it('should validate Article schema requirements', function () {

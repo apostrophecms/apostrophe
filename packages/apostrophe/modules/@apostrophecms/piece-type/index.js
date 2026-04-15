@@ -1126,11 +1126,13 @@ module.exports = {
             query.and({
               _id: null
             });
-          } else if (!query.state.project) {
+          } else {
+            // Note that we MUST NOT honor the "project" query builder here
             query.project({
               ...self.options.publicApiProjection,
               cacheInvalidatedAt: 1
             });
+            query.set('publicApiProjection', self.options.publicApiProjection);
           }
         }
         return query;

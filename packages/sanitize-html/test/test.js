@@ -1896,4 +1896,30 @@ describe('sanitizeHtml', function() {
 
     assert.equal(sanitizedHtmlPreservedAttrsTrue, sanitizedHtmlPreservedAttrsFalse);
   });
+  it('should not allow script tag injection via escaped entities in option tag', () => {
+    const inputHtml = '<option>&lt;script&gt;alert(1)&lt;/script&gt;</option>';
+    const result = sanitizeHtml(inputHtml, { allowedTags: ['option'] });
+    assert.strictEqual(result, '<option>&lt;script&gt;alert(1)&lt;/script&gt;</option>');
+  });
+  it('should not double-encode entities inside an allowed option element', function() {
+    assert.equal(
+      sanitizeHtml('<option>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</option>',
+        { allowedTags: [ 'option' ] }
+      ), '<option>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</option>'
+    );
+  });
+  it('should not double-encode entities inside an allowed xmp element', function() {
+    assert.equal(
+      sanitizeHtml('<xmp>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</xmp>',
+        { allowedTags: [ 'xmp' ] }
+      ), '<xmp>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</xmp>'
+    );
+  });
+  it('should correctly maintain escaping when allowing an xmp element', function() {
+    assert.equal(
+      sanitizeHtml('!<xmp>&lt;/xmp&gt;&lt;svg/onload=prompt`xs`&gt;</xmp>!',
+        { allowedTags: [ 'xmp' ] }
+      ), '!<xmp>&lt;/xmp&gt;&lt;svg/onload=prompt`xs`&gt;</xmp>!'
+    );
+  });
 });

@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.6.0
+
+### Changes
+
+- Add support for recently edited "Imported" action filter
+
 ## 3.5.3
 
 ### Security
