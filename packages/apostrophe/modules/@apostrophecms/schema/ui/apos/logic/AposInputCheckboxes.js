@@ -11,7 +11,7 @@ export default {
   },
   methods: {
     getChoiceId(uid, value) {
-      return (uid + String(value)).replace(/[\s"']/g, '');
+      return (uid + String(value)).replace(/[\s"'.]/g, '');
     },
     watchValue () {
       this.error = this.modelValue.error;

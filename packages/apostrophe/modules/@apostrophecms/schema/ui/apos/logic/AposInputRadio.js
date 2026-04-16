@@ -8,7 +8,7 @@ export default {
   mixins: [ AposInputMixin, AposInputChoicesMixin ],
   methods: {
     getChoiceId(uid, value) {
-      return (uid + String(value)).replace(/[\s"']/g, '');
+      return (uid + String(value)).replace(/[\s"'.]/g, '');
     },
     validate(value) {
       const validValue = this.choices.some((choice) => choice.value === value);
