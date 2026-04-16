@@ -370,6 +370,14 @@ function extractAnchoredLiteralPrefix(regex) {
       break;
     }
     if (REGEX_META.has(ch)) {
+      // Top-level alternation (`|`) means the regex can match a completely
+      // different string on the other side of the pipe. Any prefix we've
+      // accumulated so far is not guaranteed to appear in every match, so
+      // we must discard it entirely.
+      if (ch === '|') {
+        prefix = '';
+        break;
+      }
       // Unescaped metacharacter ends the literal prefix. Quantifiers (`?`,
       // `*`, `{`) make the *preceding* literal optional or zero-or-more, so
       // that character is not guaranteed to appear in matches and must be

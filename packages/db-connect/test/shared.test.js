@@ -76,6 +76,14 @@ describe('shared: extractAnchoredLiteralPrefix', function() {
     expect(extractAnchoredLiteralPrefix(/^abc\s/).prefix).to.equal('abc');
   });
 
+  it('returns empty prefix for top-level alternation', function() {
+    // Top-level alternation means the other branch may match a completely
+    // different string, so no prefix is safe for range predicates.
+    expect(extractAnchoredLiteralPrefix(/^en:|^fr:/).prefix).to.equal('');
+    expect(extractAnchoredLiteralPrefix(/^foo|^bar|^baz/).prefix).to.equal('');
+    expect(extractAnchoredLiteralPrefix(/^abc|xyz/).prefix).to.equal('');
+  });
+
   it('returns empty prefix for just ^', function() {
     expect(extractAnchoredLiteralPrefix(/^/).prefix).to.equal('');
   });
