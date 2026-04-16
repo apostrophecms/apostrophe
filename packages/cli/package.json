@@ -23,12 +23,11 @@
     "conf": "^6.2.4",
     "lodash": "^4.18.1",
     "ora": "^5.4.1",
-    "package-json": "^6.5.0",
     "pkginfo": "^0.4.1",
     "prompts": "^2.3.2",
     "semver": "^7.3.2",
     "shell-quote": "^1.8.1",
-    "shelljs": "~0.3.x",
+    "shelljs": "^0.10.0",
     "sync-request": "^6.0.0",
     "uuid": "^8.0.0"
   },

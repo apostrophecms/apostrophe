@@ -7,7 +7,7 @@ const util = {};
 const _ = require('lodash');
 const cliVersion = require('../package.json').version;
 const confUtils = require('./conf-utils');
-const packageJson = require('package-json');
+const { execSync } = require('child_process');
 const semver = require('semver');
 const ora = require('ora');
 const { spawn } = require('child_process');
@@ -218,7 +218,7 @@ util.spawnWithSpinner = async function (command, options = {
 async function checkIfUpdated () {
   try {
     // Get the latest published version number.
-    const { version: latest } = await packageJson('@apostrophecms/cli');
+    const latest = execSync('npm show @apostrophecms/cli version', { encoding: 'utf8' }).trim();
 
     // Check if they've been notified for this version already. If so, bail out.
     const latestChecked = await confUtils.getConf('versionNotified');
