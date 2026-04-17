@@ -19,7 +19,8 @@ module.exports = {
           action: {
             type: 'command-menu-area-cut-widget'
           },
-          shortcut: 'Ctrl+X Meta+X'
+          shortcut: 'Ctrl+X Meta+X',
+          requireWidgetFocus: true
         },
         [`${self.__meta.name}:copy-widget`]: {
           type: 'item',
@@ -27,7 +28,8 @@ module.exports = {
           action: {
             type: 'command-menu-area-copy-widget'
           },
-          shortcut: 'Ctrl+C Meta+C'
+          shortcut: 'Ctrl+C Meta+C',
+          requireWidgetFocus: true
         },
         [`${self.__meta.name}:paste-widget`]: {
           type: 'item',
@@ -35,7 +37,8 @@ module.exports = {
           action: {
             type: 'command-menu-area-paste-widget'
           },
-          shortcut: 'Ctrl+V Meta+V'
+          shortcut: 'Ctrl+V Meta+V',
+          requireWidgetFocus: true
         },
         [`${self.__meta.name}:duplicate-widget`]: {
           type: 'item',
@@ -43,7 +46,8 @@ module.exports = {
           action: {
             type: 'command-menu-area-duplicate-widget'
           },
-          shortcut: 'Ctrl+Shift+D Meta+Shift+D'
+          shortcut: 'Ctrl+Shift+D Meta+Shift+D',
+          requireWidgetFocus: true
         },
         [`${self.__meta.name}:remove-widget`]: {
           type: 'item',
@@ -51,7 +55,8 @@ module.exports = {
           action: {
             type: 'command-menu-area-remove-widget'
           },
-          shortcut: 'Backspace'
+          shortcut: 'Backspace',
+          requireWidgetFocus: true
         }
       },
       modal: {

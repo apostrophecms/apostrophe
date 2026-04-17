@@ -10,6 +10,7 @@
 import { mapActions, mapState } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 
 export default {
   name: 'TheAposCommandMenu',
@@ -50,7 +51,13 @@ export default {
               .flatMap(command => {
                 return command.shortcut
                   .split(' ')
-                  .map(shortcut => [ shortcut.toUpperCase(), command.action ]);
+                  .map(shortcut => [
+                    shortcut.toUpperCase(),
+                    {
+                      ...command.action,
+                      requireWidgetFocus: command.requireWidgetFocus || false
+                    }
+                  ]);
               });
           })
       );
@@ -111,6 +118,9 @@ export default {
             ? keys.slice('SHIFT+'.length)
             : keys];
         if (action) {
+          if (action.requireWidgetFocus && !useWidgetStore().focusedWidget) {
+            return;
+          }
           event.preventDefault();
           apos.bus.$emit(action.type, action.payload);
           return;
