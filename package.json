@@ -5,7 +5,7 @@
     "dev": "pnpm --parallel --recursive run dev",
     "build": "pnpm --recursive run build",
     "lint": "pnpm --recursive run lint",
-    "test": "APOS_TEST_DB_PROTOCOL=postgres npm run test:main && APOS_TEST_DB_PROTOCOL=mongodb npm run test:main && APOS_TEST_DB_PROTOCOL=sqlite npm run test:main && APOS_TEST_DB_PROTOCOL=multipostgres npm run test:main",
+    "test": "APOS_TEST_DB_PROTOCOL=postgres pnpm run test:main && APOS_TEST_DB_PROTOCOL=mongodb pnpm run test:main && APOS_TEST_DB_PROTOCOL=sqlite pnpm run test:main && APOS_TEST_DB_PROTOCOL=multipostgres pnpm run test:main",
     "test:main": "echo \"APOS_TEST_DB_PROTOCOL IS: $APOS_TEST_DB_PROTOCOL\" && pnpm --recursive run test",
     "eslint": "pnpm --recursive run eslint",
     "mocha": "pnpm --recursive run mocha",
