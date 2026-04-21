@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.30.0-alpha.1
+
+### Adds
+
+- Postgres and SQLite alpha release
+
 ## 4.29.0 (2026-04-15)
 
 ### Adds

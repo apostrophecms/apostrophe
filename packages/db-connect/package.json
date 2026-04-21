@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/db-connect",
-  "version": "1.0.0",
+  "version": "1.0.0-alpha.1",
   "description": "Database connection library and dump/restore tools for ApostropheCMS",
   "main": "index.js",
   "bin": {
