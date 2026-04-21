@@ -1358,6 +1358,13 @@ module.exports = {
         }
       }
     };
+  },
+  helpers(self) {
+    return {
+      encoding() {
+        return 'utf-8';
+      }
+    };
   }
 };
 
