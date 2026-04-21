@@ -29,10 +29,6 @@
 // in the same language as the website content.
 // Example: `defaultAdminLocale: 'fr'`.
 //
-// ### `encoding`
-//
-// Defaults to `'utf-8'`. You almost certainly do not want to change this.
-//
 // ### `slugDirection`
 //
 // Controls the default `direction` value of slug schema. Can be `ltr`, `rtl` or
@@ -81,8 +77,6 @@ module.exports = {
     },
     // If true, slugifying will strip accents from Latin characters
     stripUrlAccents: false,
-    // You almost certainly do not want to change this
-    encoding: 'utf-8',
     slugDirection: 'ltr'
   },
   async init(self) {
@@ -166,7 +160,6 @@ module.exports = {
     await self.i18next.init(i18nextOptions);
     self.addInitialResources();
     self.enableBrowserData();
-    self.encoding = self.options.encoding;
   },
   handlers(self) {
     return {
@@ -1363,13 +1356,6 @@ module.exports = {
             throw new Error('Some documents failed to update their slugs.');
           }
         }
-      }
-    };
-  },
-  helpers(self) {
-    return {
-      encoding() {
-        return self.encoding;
       }
     };
   }

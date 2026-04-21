@@ -2,6 +2,7 @@
 <html lang="{% block locale %}{{ data.locale }}{% endblock %}" dir="{% block direction %}{{ data.i18n.direction or 'ltr' }}{% endblock %}" {% block extraHtml %}{% endblock %}>
   <head>
     {% block encoding %}
+      {# Per spec (https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta#charset) the only allowed value for this attribute is `utf-8` and this meta element must be in the first 1kb of the document #}
       <meta charset="utf-8">
     {% endblock %}
     {% block startHead %}
@@ -15,7 +16,6 @@
 
     {% block standardHead %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta charset="{{ apos.i18n.encoding() }}">
     {% endblock %}
     {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append', when: 'hmr' } %}
     {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append' } %}
