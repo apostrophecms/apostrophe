@@ -49,7 +49,7 @@ export default async function aposResponse(req) {
 
     const aposUrl = new URL(aposHost + pathname);
     aposUrl.search = url.search;
- 
+
     // Prepare headers, excluding any specified in config
     const requestHeaders = {};
     for (const [name, value] of req.headers) {
@@ -111,6 +111,7 @@ export default async function aposResponse(req) {
           }
           // Skip unknown encodings silently
         } catch (decompressError) {
+          console.error(decompressError);
           // If decompression fails, return original response
           return new Response(new Uint8Array(bodyArrayBuffer), {
             ...rest,
@@ -133,10 +134,12 @@ export default async function aposResponse(req) {
         headers: responseHeaders
       });
     } catch (bodyError) {
+      console.error(bodyError);
       // If we can't process the body, fall back to the original response
       return new Response(res.body, { ...rest, status: statusCode, headers: responseHeaders });
     }
   } catch (error) {
+    console.error(error);
     // Handle any unexpected errors
     return new Response(`Server error: ${error.message}`, { status: 500 });
   }
