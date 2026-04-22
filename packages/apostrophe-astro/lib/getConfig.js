@@ -17,15 +17,55 @@ const configPath = join(
   '_runtime-config.json'
 );
 
+let cachedConfig;
+
 function load() {
+  if (cachedConfig) {
+    return cachedConfig;
+  }
   try {
-    return JSON.parse(readFileSync(configPath, 'utf-8'));
-  } catch {
-    return {
-      aposHost: process.env.APOS_HOST || '',
-      aposPrefix: process.env.APOS_PREFIX || '',
-    };
+    cachedConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
+    return cachedConfig;
+  } catch (error) {
+    if (process.env.APOS_HOST && error.code === 'ENOENT') {
+      return {
+        aposHost: process.env.APOS_HOST,
+        aposPrefix: process.env.APOS_PREFIX || ''
+      };
+    }
+    const reason = error instanceof SyntaxError
+      ? `invalid JSON in ${configPath}`
+      : `missing runtime config at ${configPath}`;
+    throw new Error(
+      `Apostrophe Astro runtime config is unavailable: ${reason}. ` +
+      'Ensure the Apostrophe Astro integration is registered in astro.config and its astro:config:setup hook runs before server helpers are used.'
+    );
   }
 }
 
-export default load();
+const config = new Proxy({}, {
+  get(_target, prop) {
+    return load()[prop];
+  },
+  has(_target, prop) {
+    return prop in load();
+  },
+  ownKeys() {
+    return Reflect.ownKeys(load());
+  },
+  getOwnPropertyDescriptor(_target, prop) {
+    const loaded = load();
+    if (prop in loaded) {
+      return {
+        enumerable: true,
+        configurable: true
+      };
+    }
+  }
+});
+
+export function getConfig() {
+  return load();
+}
+
+export default config;

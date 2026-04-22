@@ -96,7 +96,7 @@ export async function getLocales({ aposHost, aposExternalFrontKey }) {
  * @param {string} [config.locale] - The locale to fetch metadata for.
  *   When omitted, the backend returns metadata for the default locale.
  * @param {object} [config.staticBuild] - Static build config from the
- *   integration (resolved from `virtual:apostrophe-config`).
+ *   integration.
  * @returns {Promise<{ paths: Array<{ params: { slug: string | undefined }, props: object }>, literalContent: Array<object>, attachments: object | null }>}
  */
 export async function getAllUrlMetadata(config) {
@@ -201,9 +201,9 @@ export async function getAllUrlMetadata(config) {
  * 4. Deduplicates attachment metadata across locales and caches it
  * 5. Returns a flat array of `{ params, props }` entries
  *
- * Static build configuration is read from `virtual:apostrophe-config`
- * (injected by the integration plugin).  Callers may override any
- * value by passing it explicitly in `config`.
+ * Static build configuration is read from the cache written by the
+ * integration plugin. Callers may override any value by passing it
+ * explicitly in `config`.
  *
  * @param {object} config
  * @param {string} config.aposHost - The Apostrophe backend URL.

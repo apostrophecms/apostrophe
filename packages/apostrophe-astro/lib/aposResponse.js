@@ -8,8 +8,6 @@ const gunzipAsync = promisify(zlib.gunzip);
 const inflateAsync = promisify(zlib.inflate);
 const brotliDecompressAsync = promisify(zlib.brotliDecompress);
 
-const excludedHeadersLower = new Set(config.excludeRequestHeaders?.map(h => h.toLowerCase()) || []);
-
 function looksLikeChunkedEncoding(buffer) {
   const str = buffer.toString('utf8');
 
@@ -23,6 +21,8 @@ function looksLikeChunkedEncoding(buffer) {
 
 export default async function aposResponse(req) {
   try {
+    const excludedHeadersLower = new Set(config.excludeRequestHeaders?.map(h => h.toLowerCase()) || []);
+
     // Host header should not contain the protocol or a path
     const host = req.headers.get('host');
     if (host?.includes('/')) {

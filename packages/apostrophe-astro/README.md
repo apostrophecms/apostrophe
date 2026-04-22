@@ -39,6 +39,7 @@
   - [Redirections](#redirections)
   - [404 Not Found](#404-not-found)
   - [Reserved routes](#reserved-routes)
+  - [Helper imports](#helper-imports)
   - [What about widget players?](#what-about-widget-players)
   - [`aposSetQueryParameter`: working with query parameters](#apossetqueryparameter-working-with-query-parameters)
   - [What about Vue, React, SvelteJS, etc.?](#what-about-vue-react-sveltejs-etc)
@@ -574,6 +575,31 @@ As this integration proxies certain Apostrophe endpoints, there are some routes 
 
 As all Apostrophe API endpoints are proxied, you can expose new api routes as usual in your Apostrophe modules, and be able to request them through your Astro application.
 Those proxies are forwarding all of the original request headers, such as cookies, so that Apostrophe login works normally.
+
+## Helper imports
+
+The main `@apostrophecms/apostrophe-astro/helpers` entrypoint exports helpers
+that are safe to import from browser-bundled code:
+
+```js
+import {
+  aposSetQueryParameter,
+  buildPageUrl,
+  getFilterBaseUrl,
+  slugify
+} from '@apostrophecms/apostrophe-astro/helpers';
+```
+
+Server-only helpers use runtime configuration and should be imported from their
+own entrypoints:
+
+```js
+import { aposFetch } from '@apostrophecms/apostrophe-astro/helpers/fetch.js';
+import {
+  getAposHost,
+  isStaticBuild
+} from '@apostrophecms/apostrophe-astro/helpers/server.js';
+```
 
 ## What about widget players?
 

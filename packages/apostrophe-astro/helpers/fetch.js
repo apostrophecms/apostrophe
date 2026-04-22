@@ -1,12 +1,12 @@
 import config from '../lib/getConfig.js';
-import { getAposHost } from './url.js';
+import { getAposHost } from './server.js';
 
 /**
  * A transparent proxy around the native `fetch` API for **server-side
  * Astro code only** (`.astro` frontmatter, server endpoints, etc.).
  *
  * **Do NOT use in client-side code** — it depends on
- * `virtual:apostrophe-config` and exposes the internal backend host.
+ * server-side runtime config and exposes the internal backend host.
  * For browser requests use plain `fetch` with relative URLs
  * (e.g. `/api/v1/...`).
  *
@@ -28,7 +28,7 @@ import { getAposHost } from './url.js';
  * @example
  * ```astro
  * ---
- * import { aposFetch } from '@apostrophecms/apostrophe-astro/helpers';
+ * import { aposFetch } from '@apostrophecms/apostrophe-astro/helpers/fetch.js';
  * const response = await aposFetch('/api/v1/article?perPage=5');
  * const data = await response.json();
  * ---

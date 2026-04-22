@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Split browser-safe helpers from server-only helpers. `@apostrophecms/apostrophe-astro/helpers` now exports only `buildPageUrl`, `getFilterBaseUrl`, `aposSetQueryParameter`, and `slugify`. Import `getAposHost` and `isStaticBuild` from `@apostrophecms/apostrophe-astro/helpers/server.js`, and import `aposFetch` from `@apostrophecms/apostrophe-astro/helpers/fetch.js`.
+- Runtime config for server-side package modules is now loaded lazily from the integration cache, with a clear setup error if the cache is missing. `APOS_HOST` remains an explicit environment fallback.
+
 ## 1.11.0 (2026-04-15)
 
 ### Adds
