@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.12.0-beta.1
+
+### Minor Changes
+
+- 557e8ea: Log `aposResponse` errors server side in the Astro process. Thanks to [Harouna Traore](https://github.com/haroun).
+
 ## 1.11.0 (2026-04-15)
 
 ### Adds
