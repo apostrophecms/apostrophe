@@ -1,4 +1,4 @@
-import config from 'virtual:apostrophe-config';
+import config from './getConfig.js';
 
 export default function(req) {
   const request = new Request(req);

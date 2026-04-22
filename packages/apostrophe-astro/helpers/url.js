@@ -1,4 +1,4 @@
-import config from 'virtual:apostrophe-config';
+import config from '../lib/getConfig.js';
 
 /**
  * Get the Apostrophe backend base URL, including the prefix when

@@ -1,4 +1,4 @@
-import config from 'virtual:apostrophe-config';
+import config from '../lib/getConfig.js';
 import { getAposHost } from './url.js';
 
 /**

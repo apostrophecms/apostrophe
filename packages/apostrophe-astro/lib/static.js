@@ -5,6 +5,7 @@ import { bgGreen, black, blue, dim, green, yellow, red, getTimeStat, timestamp }
 const CACHE_DIR = join(process.cwd(), 'node_modules', '.apostrophe-astro');
 const CONFIG_CACHE = join(CACHE_DIR, '_config.json');
 const ATTACHMENTS_CACHE = join(CACHE_DIR, '_attachments.json');
+const RUNTIME_CONFIG_CACHE = join(CACHE_DIR, '_runtime-config.json');
 // Maximum number of concurrent attachment file downloads.
 const DOWNLOAD_CONCURRENCY = 5;
 
@@ -19,6 +20,20 @@ export async function writeConfigCache(staticBuild) {
   await rm(CACHE_DIR, { recursive: true, force: true }).catch(() => {});
   await mkdir(CACHE_DIR, { recursive: true });
   await writeFile(CONFIG_CACHE, JSON.stringify(staticBuild));
+}
+
+/**
+ * Write the full runtime configuration to the cache directory so that
+ * package `.js` files can read it via Node.js fs when they are loaded
+ * outside Vite's module system (e.g. externalized during Astro v6
+ * static route generation). Called unconditionally from the
+ * integration's `astro:config:setup` hook for both static and SSR builds.
+ *
+ * @param {object} config - Resolved integration config.
+ */
+export async function writeRuntimeConfig(config) {
+  await mkdir(CACHE_DIR, { recursive: true });
+  await writeFile(RUNTIME_CONFIG_CACHE, JSON.stringify(config));
 }
 
 function authHeaders(key) {
