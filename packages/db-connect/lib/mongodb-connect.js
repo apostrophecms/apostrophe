@@ -29,7 +29,7 @@ module.exports = async (uri, options) => {
   }
   const records = await dns.promises.lookup('localhost', { all: true });
   if (!records.length) {
-    // The computer that reaches this point has bigger problems 😅
+    // The computer that reaches this point has bigger problems
     throw new Error('Unable to resolve localhost to an IP address.');
   }
   return new Promise((resolve, reject) => {
