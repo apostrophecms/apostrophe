@@ -1,0 +1,11 @@
+
+
+  dump/restore programmatic API (mongodb)
+    ✔ dump yields an async iterable of NDJSON lines (73ms)
+    ✔ should restore a database from a dump stream (69ms)
+    ✔ should copy a database via copyDatabase() (76ms)
+    ✔ should produce independent databases after copy
+
+
+  4 passing (300ms)
+

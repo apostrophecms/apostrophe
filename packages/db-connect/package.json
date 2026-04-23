@@ -1,0 +1,29 @@
+{
+  "name": "@apostrophecms/db-connect",
+  "version": "1.0.0",
+  "description": "Database connection library and dump/restore tools for ApostropheCMS",
+  "main": "index.js",
+  "bin": {
+    "apos-db-dump": "./bin/apos-db-dump.js",
+    "apos-db-restore": "./bin/apos-db-restore.js"
+  },
+  "scripts": {
+    "test": "mocha test/**/*.test.js --timeout 30000",
+    "test:mongodb": "ADAPTER=mongodb mocha test/**/*.test.js --timeout 30000",
+    "test:postgres": "ADAPTER=postgres mocha test/**/*.test.js --timeout 30000",
+    "test:sqlite": "ADAPTER=sqlite mocha test/**/*.test.js --timeout 30000",
+    "lint": "eslint .",
+    "eslint": "eslint ."
+  },
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:^",
+    "mocha": "^11.7.1"
+  },
+  "dependencies": {
+    "@apostrophecms/emulate-mongo-3-driver": "workspace:^",
+    "better-sqlite3": "^11.0.0",
+    "pg": "^8.11.3"
+  }
+}

@@ -409,10 +409,12 @@ describe('@apostrophecms/import-export', function() {
 
     const importedDocs = await apos.doc.db
       .find({ type: /article|topic|@apostrophecms\/image/ })
+      .sort({ _id: 1 })
       .toArray();
 
     const importedAttachments = await apos.attachment.db
       .find()
+      .sort({ _id: 1 })
       .toArray();
 
     const articlesWithRelatedImages = importedDocs
@@ -428,7 +430,7 @@ describe('@apostrophecms/import-export', function() {
     const actual = {
       articlesWithRelatedImages,
       docsLength: importedDocs.length,
-      docsTitles: importedDocs.map(({ title }) => title),
+      docsTitles: importedDocs.map(({ title }) => title).sort(),
       attachmentsNames: importedAttachments.map(({ name }) => name),
       attachmentFileNames: attachmentFiles.map((fullName) => {
         const regex = /-([\w\d-]+)\./;
@@ -451,10 +453,11 @@ describe('@apostrophecms/import-export', function() {
         } ],
       docsLength: 10,
       docsTitles: [
-        'article2', 'article1',
-        'article2', 'article1',
-        'topic1', 'topic3', 'topic2',
-        'topic3', 'topic1', 'topic2'
+        'article1', 'article1',
+        'article2', 'article2',
+        'topic1', 'topic1',
+        'topic2', 'topic2',
+        'topic3', 'topic3'
       ],
       attachmentsNames: [ 'test-image' ],
       attachmentFileNames: new Array(apos.attachment.imageSizes.length + 1)
@@ -535,13 +538,14 @@ describe('@apostrophecms/import-export', function() {
         type: /article|topic|@apostrophecms\/image/,
         aposMode: { $ne: 'previous' }
       })
+      .sort({ _id: 1 })
       .toArray();
-    const updatedAttachments = await apos.attachment.db.find().toArray();
+    const updatedAttachments = await apos.attachment.db.find().sort({ _id: 1 }).toArray();
     const attachmentFiles = await fs.readdir(attachmentPath);
     const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: jobId });
 
     const actual = {
-      docTitles: updatedDocs.map(({ title }) => title),
+      docTitles: updatedDocs.map(({ title }) => title).sort(),
       attachmentNames: updatedAttachments.map(({ name }) => name),
       attachmentFileNames: extractFileNames(attachmentFiles),
       job: {
@@ -552,18 +556,12 @@ describe('@apostrophecms/import-export', function() {
 
     const expected = {
       docTitles: [
-        'image1',
-        'image1',
-        'article1',
-        'article2',
-        'article1',
-        'article2',
-        'new title',
-        'topic2',
-        'topic1',
-        'new title',
-        'topic2',
-        'topic1'
+        'article1', 'article1',
+        'article2', 'article2',
+        'image1', 'image1',
+        'new title', 'new title',
+        'topic1', 'topic1',
+        'topic2', 'topic2'
       ],
       attachmentNames: [ 'new-name' ],
       attachmentFileNames: new Array(apos.attachment.imageSizes.length + 1)
@@ -609,20 +607,21 @@ describe('@apostrophecms/import-export', function() {
 
     const importedDocs = await apos.doc.db
       .find({ type: /default-page|article|topic|@apostrophecms\/image/ })
+      .sort({ _id: 1 })
       .toArray();
     const importedAttachments = await apos.attachment.db.find(
       { aposMode: { $ne: 'previous' } }
-    ).toArray();
+    ).sort({ _id: 1 }).toArray();
     const attachmentFiles = await fs.readdir(attachmentPath);
 
     const actual = {
-      docTitles: importedDocs.map(({ title }) => title),
+      docTitles: importedDocs.map(({ title }) => title).sort(),
       attachmentNames: importedAttachments.map(({ name }) => name),
       attachmentFileNames: extractFileNames(attachmentFiles)
     };
 
     const expected = {
-      docTitles: [ 'image1', 'image1', 'article2', 'article2', 'page1', 'page1' ],
+      docTitles: [ 'article2', 'article2', 'image1', 'image1', 'page1', 'page1' ],
       attachmentNames: [ 'test-image' ],
       attachmentFileNames: new Array(apos.attachment.imageSizes.length + 1)
         .fill('test-image')
@@ -699,13 +698,14 @@ describe('@apostrophecms/import-export', function() {
         type: /default-page|article|@apostrophecms\/image/,
         aposMode: { $ne: 'previous' }
       })
+      .sort({ _id: 1 })
       .toArray();
-    const updatedAttachments = await apos.attachment.db.find().toArray();
+    const updatedAttachments = await apos.attachment.db.find().sort({ _id: 1 }).toArray();
     const attachmentFiles = await fs.readdir(attachmentPath);
     const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: jobId });
 
     const actual = {
-      docTitles: updatedDocs.map(({ title }) => title),
+      docTitles: updatedDocs.map(({ title }) => title).sort(),
       attachmentNames: updatedAttachments.map(({ name }) => name),
       attachmentFileNames: extractFileNames(attachmentFiles),
       job: {
@@ -716,14 +716,10 @@ describe('@apostrophecms/import-export', function() {
 
     const expected = {
       docTitles: [
-        'image1',
-        'image1',
-        'new title',
-        'article2',
-        'new title',
-        'article2',
-        'page1',
-        'page1'
+        'article2', 'article2',
+        'image1', 'image1',
+        'new title', 'new title',
+        'page1', 'page1'
       ],
       attachmentNames: [ 'new-name' ],
       attachmentFileNames: new Array(apos.attachment.imageSizes.length + 1)
@@ -807,13 +803,14 @@ describe('@apostrophecms/import-export', function() {
         type: /default-page|article|@apostrophecms\/image/,
         aposMode: { $ne: 'previous' }
       })
+      .sort({ _id: 1 })
       .toArray();
-    const updatedAttachments = await apos.attachment.db.find().toArray();
+    const updatedAttachments = await apos.attachment.db.find().sort({ _id: 1 }).toArray();
     const attachmentFiles = await fs.readdir(attachmentPath);
     const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: jobId });
 
     const actual = {
-      docTitles: docs.map(({ title }) => title),
+      docTitles: docs.map(({ title }) => title).sort(),
       attachmentNames: updatedAttachments.map(({ name }) => name),
       attachmentFileNames: extractFileNames(attachmentFiles),
       job: {
@@ -825,14 +822,10 @@ describe('@apostrophecms/import-export', function() {
 
     const expected = {
       docTitles: [
-        'new title',
-        'new title',
-        'new title',
-        'article2',
-        'new title',
-        'article2',
-        'page1',
-        'page1'
+        'article2', 'article2',
+        'new title', 'new title',
+        'new title', 'new title',
+        'page1', 'page1'
       ],
       attachmentNames: [ 'new-name' ],
       attachmentFileNames: new Array(apos.attachment.imageSizes.length + 1)
@@ -918,6 +911,7 @@ describe('@apostrophecms/import-export', function() {
 
     const updatedPage = await apos.doc.db
       .find({ title: 'page2' })
+      .sort({ _id: 1 })
       .toArray();
 
     assert.deepEqual(updatedPage.every((doc) => {
@@ -1091,6 +1085,7 @@ describe('@apostrophecms/import-export', function() {
 
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(topics.length, 1);
@@ -1107,6 +1102,7 @@ describe('@apostrophecms/import-export', function() {
 
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(topics.length, 1);
@@ -1122,6 +1118,7 @@ describe('@apostrophecms/import-export', function() {
 
       const pages = await apos.doc.db
         .find({ type: 'default-page' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(pages.length, 1);
@@ -1136,6 +1133,7 @@ describe('@apostrophecms/import-export', function() {
 
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(topics.length, 2);
@@ -1158,6 +1156,7 @@ describe('@apostrophecms/import-export', function() {
 
       const pages = await apos.doc.db
         .find({ type: 'default-page' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(pages.length, 2);
@@ -1178,6 +1177,7 @@ describe('@apostrophecms/import-export', function() {
 
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(topics.length, 2);
@@ -1200,6 +1200,7 @@ describe('@apostrophecms/import-export', function() {
 
       const pages = await apos.doc.db
         .find({ type: 'default-page' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(pages.length, 2);
@@ -1227,6 +1228,7 @@ describe('@apostrophecms/import-export', function() {
 
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(topics.length, 2);
@@ -1258,6 +1260,7 @@ describe('@apostrophecms/import-export', function() {
 
       const pages = await apos.doc.db
         .find({ type: 'default-page' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(pages.length, 2);
@@ -1301,6 +1304,7 @@ describe('@apostrophecms/import-export', function() {
 
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(topics.length, 2);
@@ -1345,6 +1349,7 @@ describe('@apostrophecms/import-export', function() {
 
       const pages = await apos.doc.db
         .find({ type: 'default-page' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(pages.length, 2);
@@ -1388,6 +1393,7 @@ describe('@apostrophecms/import-export', function() {
 
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(topics.length, 2);
@@ -1432,6 +1438,7 @@ describe('@apostrophecms/import-export', function() {
 
       const pages = await apos.doc.db
         .find({ type: 'default-page' })
+        .sort({ _id: 1 })
         .toArray();
 
       assert.equal(pages.length, 2);
@@ -1709,6 +1716,7 @@ describe('@apostrophecms/import-export', function() {
               ]
             }
           })
+          .sort({ _id: 1 })
           .toArray();
 
         const actual = importedDocs.map(doc => {
@@ -2029,6 +2037,7 @@ describe('@apostrophecms/import-export', function() {
               ]
             }
           })
+          .sort({ _id: 1 })
           .toArray();
 
         const actual = importedDocs.map(doc => {

@@ -30,6 +30,9 @@
   "bugs": {
     "url": "https://github.com/punkave/cache-on-demand/issues"
   },
+  "apostropheTestConfig": {
+    "requiresMongo": false
+  },
   "devDependencies": {
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",

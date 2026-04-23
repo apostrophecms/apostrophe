@@ -4,11 +4,12 @@
 //
 // ### `uri`
 //
-// The MongoDB connection URI. See the [MongoDB URI documentation](https://docs.mongodb.com/manual/reference/connection-string/).
+// The databse connection URI. See the [MongoDB URI documentation](https://docs.mongodb.com/manual/reference/connection-string/)
+// and the postgres documentation.
 //
 // ### `connect`
 //
-// If present, this object is passed on as options to MongoDB's "connect"
+// If present, this object is passed on as options to the database adapters "connect"
 // method, along with the uri. See the [MongoDB connect settings documentation](http://mongodb.github.io/node-mongodb-native/2.2/reference/connecting/connection-settings/).
 //
 // By default, Apostrophe sets options to retry lost connections forever,
@@ -20,8 +21,15 @@
 //
 // ### `client`
 //
-// An existing MongoDB connection (MongoClient) object. If present, it is used
+// An existing MongoDB-compatible client object. If present, it is used
 // and `uri`, `host`, `connect`, etc. are ignored.
+//
+// ### `adapters`
+//
+// An array of adapters, each of which must provide `name`, `connect(uri, options)`,
+// and `protocols` properties. `name` may be used to override a core adapter,
+// such as `postgres` or `mongodb`. `connect` must resolve to a client object
+// supporting a sufficient subset of the mongodb API.
 //
 // ### `versionCheck`
 //
@@ -49,15 +57,15 @@
 // in your project. However you may find it easier to just use the
 // `client` option.
 
-const mongodbConnect = require('../../../lib/mongodb-connect');
-const escapeHost = require('../../../lib/escape-host');
+const dbConnect = require('@apostrophecms/db-connect');
+const escapeHost = require('../../../lib/escape-host.js');
 
 module.exports = {
   options: {
     versionCheck: true
   },
   async init(self) {
-    await self.connectToMongo();
+    await self.connectToDb();
     await self.versionCheck();
   },
   handlers(self) {
@@ -81,14 +89,12 @@ module.exports = {
   },
   methods(self) {
     return {
-      // Open the database connection. Always uses MongoClient with its
-      // sensible defaults. Builds a URI if necessary, so we can call it
-      // in a consistent way.
-      //
-      // One default we override: if the connection is lost, we keep
-      // attempting to reconnect forever. This is the most sensible behavior
-      // for a persistent process that requires MongoDB in order to operate.
-      async connectToMongo() {
+      // Connect to the database and sets self.apos.dbClient
+      // and self.apos.db. Builds a mongodb URI by default,
+      // accepting host, port, user, password and name options
+      // if present. More typically a URI is specified via
+      // APOS_DB_URI, or via APOS_MONGODB_URI for bc.
+      async connectToDb() {
         if (self.options.client) {
           // Reuse a single client connection http://mongodb.github.io/node-mongodb-native/2.2/api/Db.html#db
           self.apos.dbClient = self.options.client;
@@ -96,31 +102,66 @@ module.exports = {
           self.connectionReused = true;
           return;
         }
-        let uri = 'mongodb://';
-        if (process.env.APOS_MONGODB_URI) {
-          uri = process.env.APOS_MONGODB_URI;
+        let uri;
+        const viaEnv = process.env.APOS_DB_URI || process.env.APOS_MONGODB_URI;
+        if (viaEnv) {
+          uri = viaEnv;
         } else if (self.options.uri) {
           uri = self.options.uri;
         } else {
-          if (self.options.user) {
-            uri += self.options.user + ':' + self.options.password + '@';
-          }
-          if (!self.options.host) {
-            self.options.host = 'localhost';
-          }
-          if (!self.options.port) {
-            self.options.port = 27017;
+          const validAdapters = [ 'mongodb', 'sqlite', 'postgres', 'multipostgres' ];
+          const adapter = process.env.APOS_DEFAULT_DB_ADAPTER || self.options.defaultAdapter || 'mongodb';
+          if (!validAdapters.includes(adapter)) {
+            throw new Error(`Invalid defaultAdapter: "${adapter}". Must be one of: ${validAdapters.join(', ')}`);
           }
           if (!self.options.name) {
             self.options.name = self.apos.shortName;
           }
-          uri += escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
+          if (adapter === 'sqlite') {
+            const path = require('path');
+            uri = `sqlite://${path.resolve(self.apos.rootDir, 'data', self.options.name + '.sqlite')}`;
+          } else {
+            const credentials = self.options.user
+              ? encodeURIComponent(self.options.user) + ':' + encodeURIComponent(self.options.password) + '@'
+              : '';
+            if (adapter === 'mongodb') {
+              if (!self.options.host) {
+                self.options.host = 'localhost';
+              }
+              if (!self.options.port) {
+                self.options.port = 27017;
+              }
+              uri = 'mongodb://' + credentials + escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
+            } else {
+              // postgres or multipostgres
+              if (!self.options.host) {
+                self.options.host = 'localhost';
+              }
+              if (!self.options.port) {
+                self.options.port = 5432;
+              }
+              uri = adapter + '://' + credentials + escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
+            }
+          }
         }
 
-        self.apos.dbClient = await mongodbConnect(uri, self.options.connect);
+        self.apos.dbClient = await dbConnect(uri, {
+          ...self.options.connect,
+          adapters: self.options.adapters
+        });
         self.uri = uri;
         // Automatically uses the db name in the connection string
         self.apos.db = self.apos.dbClient.db();
+      },
+      // Connect to a database using the appropriate adapter based on the URI protocol.
+      // Returns a client object compatible with the MongoDB driver interface.
+      // This method has no side effects — it does not set apos.db or apos.dbClient.
+      // It can be used to make temporary connections, e.g. for dropping a test database.
+      async connectToAdapter(uri, options) {
+        return dbConnect(uri, {
+          ...options,
+          adapters: self.options.adapters
+        });
       },
       async versionCheck() {
         if (!self.options.versionCheck) {
