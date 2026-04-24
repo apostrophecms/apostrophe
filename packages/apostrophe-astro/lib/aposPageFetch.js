@@ -1,6 +1,6 @@
 import aposResponse from './aposResponse.js';
 import aposRequest from './aposRequest.js';
-import config from 'virtual:apostrophe-config';
+import config from './getConfig.js';
 
 export default async function aposPageFetch(req) {
   let aposData = {};
