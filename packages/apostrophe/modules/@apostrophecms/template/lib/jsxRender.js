@@ -24,7 +24,6 @@ const {
 } = require('./jsxRuntime.js');
 
 const TEMPLATE_EXTENSIONS = [ 'jsx', 'njk', 'html' ];
-const NUNJUCKS_EXTENSIONS = new Set([ 'njk', 'html' ]);
 
 module.exports = function(self) {
   return {
@@ -262,7 +261,10 @@ module.exports = function(self) {
         // (including `children`) need to be flattened to HTML strings
         // first so the underlying Nunjucks/JSX component template can
         // safely render them.
-        const inputProps = await self.flattenJsxProps({ ...rest, children });
+        const inputProps = await self.flattenJsxProps({
+          ...rest,
+          children
+        });
         const result = await self.apos.util.recursionGuard(
           req,
           `component:${moduleName}:${name}`,
@@ -395,7 +397,7 @@ module.exports = function(self) {
       for (const blockName of blockNames) {
         if (!/^[A-Za-z_][\w]*$/.test(blockName)) {
           throw new Error(
-            `Template/Extend: prop names used as block overrides must be ` +
+            'Template/Extend: prop names used as block overrides must be ' +
             `valid identifiers (got "${blockName}").`
           );
         }

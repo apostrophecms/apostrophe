@@ -1,8 +1,8 @@
 export default function (data, { Extend }) {
   return (
     <Extend
-      templateName="njk-layout.html"
-      title="A JSX page"
+      templateName='njk-layout.html'
+      title='A JSX page'
       main={
         <main>
           <h1>I am from JSX</h1>
