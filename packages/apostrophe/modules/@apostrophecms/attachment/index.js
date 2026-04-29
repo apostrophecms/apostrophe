@@ -656,7 +656,10 @@ module.exports = {
       // to avoid template errors
       getMissingAttachmentUrl() {
         const defaultIconUrl = '/modules/@apostrophecms/attachment/img/missing-icon.svg';
-        self.apos.util.warn('Template warning: Impossible to retrieve the attachment url since it is missing, a default icon has been set. Please fix this ASAP!');
+        const e = new Error();
+        self.apos.util.warn('Template warning: Impossible to retrieve the attachment url since it is missing, a default icon has been set. Please fix this ASAP!\n\n'
+          + e.stack
+        );
         // Convert static asset path to full URL, which matters when static
         // assets are in uploadfs
         return self.apos.asset.url(defaultIconUrl);

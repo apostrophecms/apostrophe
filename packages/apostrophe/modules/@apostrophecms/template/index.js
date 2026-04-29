@@ -76,6 +76,32 @@ module.exports = {
     self.insertions = {};
     self.runtimeNodes = {};
 
+    // Install the .jsx require hook and teach the JSX runtime about
+    // Nunjucks' SafeString class so its instances pass through unescaped.
+    self.initJsx();
+
+    // Wire up the view-folder watcher with the two default invalidation
+    // handlers — Nunjucks loader caches and compiled .jsx modules. Both
+    // engines share a single set of chokidar watchers so we don't pay
+    // twice for watching the same directories.
+    const jsxLoader = require('./lib/jsxLoader.js');
+    self.onViewChange(function clearNunjucksLoaderCaches() {
+      // Setting `cache = {}` mirrors the historical in-loader behavior
+      // and is exactly what Nunjucks itself reads when looking up a
+      // previously-loaded template.
+      for (const loader of Object.values(self.loaders || {})) {
+        loader.cache = {};
+      }
+    });
+    self.onViewChange(function invalidateJsxModules(filePath) {
+      if (filePath && filePath.endsWith('.jsx')) {
+        jsxLoader.invalidate(path.resolve(filePath));
+      } else {
+        // Anything else (e.g. a Nunjucks file) might be a template imported
+        // by a `.jsx` file via require()/import — be safe and drop them all.
+        jsxLoader.invalidateAll();
+      }
+    });
   },
   handlers(self) {
     return {
@@ -117,9 +143,15 @@ module.exports = {
       },
       'apostrophe:destroy': {
         async nunjucksLoaderCleanup() {
+          // Older code paths used to manage chokidar watchers per loader;
+          // a no-op `destroy()` is still defined for backwards compat.
           for (const loader of Object.values(self.loaders || {})) {
             await loader.destroy();
           }
+        },
+        async closeViewWatchers() {
+          // Tear down chokidar watchers (Nunjucks + JSX share these).
+          await self.closeViewWatchers();
         }
       }
     };
@@ -127,6 +159,8 @@ module.exports = {
   methods(self) {
     return {
       ...require('./lib/bundlesLoader')(self),
+      ...require('./lib/jsxRender')(self),
+      ...require('./lib/viewWatcher')(self),
 
       // Add helpers in the namespace for a particular module.
       // They will be visible in nunjucks at
@@ -260,6 +294,21 @@ module.exports = {
       async renderBody(req, type, s, data, module) {
 
         let result;
+
+        // For named files, prefer a .jsx implementation when one exists
+        // anywhere in the module's view-folder chain. Falling back to
+        // Nunjucks happens automatically below when no JSX file is found.
+        if (type === 'file') {
+          const resolved = self.resolveTemplate(module, s);
+          if (resolved && resolved.kind === 'jsx') {
+            const renderData = self.getRenderDataArgs(req, data, module);
+            result = await self.renderJsxTemplate(req, resolved, renderData, module);
+            if (process.platform === 'win32') {
+              result = result.replaceAll('\r', '');
+            }
+            return result;
+          }
+        }
 
         const args = self.getRenderArgs(req, data, module);
 
@@ -495,6 +544,9 @@ module.exports = {
         }
         if (!self.loaders[key]) {
           self.loaders[key] = self.newLoader(moduleName, dirs);
+          // Register these dirs with the shared view watcher (idempotent
+          // per absolute path, so calling it for every loader is fine).
+          self.watchViewFolders(dirs);
         }
         return self.loaders[key];
       },
