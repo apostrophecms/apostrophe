@@ -212,7 +212,8 @@ const nonDraggableElements = [
   '.apos-field--inline-array-field',
   '.apos-field--inline-array-table-with-remove-button-field',
   '.apos-field--inline-array-table-field',
-  '.apos-input-color__sample-picker'
+  '.apos-input-color__sample-picker',
+  '.apos-input-array-inline-table'
 ];
 
 const resizeSides = [
