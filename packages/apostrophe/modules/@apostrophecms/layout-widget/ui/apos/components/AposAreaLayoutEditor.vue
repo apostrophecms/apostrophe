@@ -259,6 +259,12 @@ export default {
         this.emphasizeGrid();
       } else {
         this.deEmphasizeGrid();
+        // Leaving layout mode: clear the control-suppression flag that was
+        // set on the focused widget when we entered layout mode. Without
+        // this the layout widget keeps `isSuppressingWidgetControls=true`
+        // and its side operation bar stays hidden even though it is the
+        // focused widget.
+        apos.bus.$emit('clear-focused-widget-control-suppression');
       }
     }
   },
