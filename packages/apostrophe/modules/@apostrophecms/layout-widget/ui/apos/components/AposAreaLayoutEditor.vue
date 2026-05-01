@@ -144,13 +144,7 @@ export default {
     return {
       // 'layout' | 'focus' | 'content'
       layoutMode: 'content',
-      layoutDeviceMode: 'desktop',
-      // True while we have temporarily released the layout root's focus
-      // so that another hovered widget (a descendant of this layout, or a
-      // sibling/unrelated widget) can reveal its own controls. Cleared
-      // when the hover leaves (focus is then restored to the layout root)
-      // or when an unrelated focus change happens.
-      suppressedFocusForHover: false
+      layoutDeviceMode: 'desktop'
     };
   },
   computed: {
@@ -218,12 +212,6 @@ export default {
   watch: {
     // Intercept the columns focus, and emphasize the layout widget instead.
     async focusedWidget(widgetId) {
-      // If something other than our own layout root takes focus, drop the
-      // "hover suppression" bookkeeping so we don't later try to restore
-      // focus to the layout root over a real user-initiated focus change.
-      if (widgetId && widgetId !== this.parentOptions.widgetId) {
-        this.suppressedFocusForHover = false;
-      }
       if (!widgetId || !this.parentOptions.widgetId) {
         this.switchLayoutMode({
           widgetId: this.parentOptions.widgetId,
@@ -258,38 +246,11 @@ export default {
     },
     // Steal the columns hover, set it on the layout widget instead.
     hoveredWidget(widgetId) {
-      const layoutRootId = this.parentOptions.widgetId;
-      if (!layoutRootId) {
-        return;
-      }
-      if (this.layoutColumnWidgetIds.includes(widgetId)) {
-        this.setHoveredWidget(layoutRootId, this.areaId);
-        return;
-      }
-      // While the layout root is the focused widget, hovering ANY other
-      // widget (a deep descendant of this layout, or a sibling/unrelated
-      // widget elsewhere in the document) should briefly release focus
-      // so the hovered widget's controls become visible under the global
-      // "(isHovered && !focusedWidget) || isFocused" rule. Restore the
-      // layout root focus once the hover leaves (no widget hovered, or
-      // hover lands back on the layout root itself), unless something
-      // else has claimed focus in the meantime.
-      //
-      // Columns are excluded above because their hover is rerouted to
-      // the layout root, which would otherwise cause an immediate
-      // restore-then-release loop.
-      const isOtherWidgetHovered = !!widgetId && widgetId !== layoutRootId;
-
-      if (isOtherWidgetHovered && this.focusedWidget === layoutRootId) {
-        this.suppressedFocusForHover = true;
-        this.setFocusedWidget(null, null);
-        return;
-      }
-      if (this.suppressedFocusForHover && !isOtherWidgetHovered) {
-        this.suppressedFocusForHover = false;
-        if (this.focusedWidget === null) {
-          this.setFocusedWidget(layoutRootId, this.areaId);
-        }
+      if (
+        this.parentOptions.widgetId &&
+        this.layoutColumnWidgetIds.includes(widgetId)
+      ) {
+        this.setHoveredWidget(this.parentOptions.widgetId, this.areaId);
       }
     },
     layoutMode(newMode) {
@@ -298,6 +259,12 @@ export default {
         this.emphasizeGrid();
       } else {
         this.deEmphasizeGrid();
+        // Leaving layout mode: clear the control-suppression flag that was
+        // set on the focused widget when we entered layout mode. Without
+        // this the layout widget keeps `isSuppressingWidgetControls=true`
+        // and its side operation bar stays hidden even though it is the
+        // focused widget.
+        apos.bus.$emit('clear-focused-widget-control-suppression');
       }
     }
   },

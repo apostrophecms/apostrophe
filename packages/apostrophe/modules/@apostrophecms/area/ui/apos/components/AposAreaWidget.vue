@@ -536,6 +536,7 @@ export default {
     apos.bus.$on('widget-focus-parent', this.focusParent);
     apos.bus.$on('context-menu-toggled', this.getFocusForMenu);
     apos.bus.$on('suppress-focused-widget-controls', this.doSuppressWidgetControls);
+    apos.bus.$on('clear-focused-widget-control-suppression', this.clearSuppressionFlags);
 
     this.breadcrumbs.$lastEl = this.$el;
 
@@ -573,6 +574,7 @@ export default {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
     apos.bus.$off('suppress-focused-widget-controls', this.doSuppressWidgetControls);
+    apos.bus.$off('clear-focused-widget-control-suppression', this.clearSuppressionFlags);
     window.removeEventListener('scroll', this.stickyControlsScroll);
     window.removeEventListener('resize', this.stickyControlsResize);
     this.unregisterFromGraph();

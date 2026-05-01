@@ -2,4 +2,4 @@
 "apostrophe": minor
 ---
 
-Fix layout widget stealing focus and preventing children controls on hover
+Fix layout widget not regaining full focus on switching back to Edit content mode.
