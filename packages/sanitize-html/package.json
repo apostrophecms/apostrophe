@@ -31,7 +31,7 @@
     "htmlparser2": "^10.1.0",
     "is-plain-object": "^5.0.0",
     "parse-srcset": "^1.0.2",
-    "postcss": "^8.3.11"
+    "postcss": "^8.5.13"
   },
   "devDependencies": {
     "eslint": "^9.39.1",
