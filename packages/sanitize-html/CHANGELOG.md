@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.17.4 (2026-05-02)
+
+### Security
+
+- Upgrade postcss to fix transitive vulnerability: [CVE-2026-41305](https://github.com/advisories/GHSA-qx2v-qp2m-jg93)
+
 ## 2.17.3 (2026-04-15)
 
 ### Security
