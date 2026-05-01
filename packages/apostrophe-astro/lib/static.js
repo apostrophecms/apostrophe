@@ -5,6 +5,7 @@ import { bgGreen, black, blue, dim, green, yellow, red, getTimeStat, timestamp }
 const CACHE_DIR = join(process.cwd(), 'node_modules', '.apostrophe-astro');
 const CONFIG_CACHE = join(CACHE_DIR, '_config.json');
 const ATTACHMENTS_CACHE = join(CACHE_DIR, '_attachments.json');
+const RUNTIME_CONFIG_CACHE = join(CACHE_DIR, '_runtime-config.json');
 // Maximum number of concurrent attachment file downloads.
 const DOWNLOAD_CONCURRENCY = 5;
 
@@ -19,6 +20,20 @@ export async function writeConfigCache(staticBuild) {
   await rm(CACHE_DIR, { recursive: true, force: true }).catch(() => {});
   await mkdir(CACHE_DIR, { recursive: true });
   await writeFile(CONFIG_CACHE, JSON.stringify(staticBuild));
+}
+
+/**
+ * Write the full runtime configuration to the cache directory so that
+ * package `.js` files can read it via Node.js fs when they are loaded
+ * outside Vite's module system (e.g. externalized during Astro v6
+ * static route generation). Called unconditionally from the
+ * integration's `astro:config:setup` hook for both static and SSR builds.
+ *
+ * @param {object} config - Resolved integration config.
+ */
+export async function writeRuntimeConfig(config) {
+  await mkdir(CACHE_DIR, { recursive: true });
+  await writeFile(RUNTIME_CONFIG_CACHE, JSON.stringify(config));
 }
 
 function authHeaders(key) {
@@ -81,7 +96,7 @@ export async function getLocales({ aposHost, aposExternalFrontKey }) {
  * @param {string} [config.locale] - The locale to fetch metadata for.
  *   When omitted, the backend returns metadata for the default locale.
  * @param {object} [config.staticBuild] - Static build config from the
- *   integration (resolved from `virtual:apostrophe-config`).
+ *   integration.
  * @returns {Promise<{ paths: Array<{ params: { slug: string | undefined }, props: object }>, literalContent: Array<object>, attachments: object | null }>}
  */
 export async function getAllUrlMetadata(config) {
@@ -186,9 +201,9 @@ export async function getAllUrlMetadata(config) {
  * 4. Deduplicates attachment metadata across locales and caches it
  * 5. Returns a flat array of `{ params, props }` entries
  *
- * Static build configuration is read from `virtual:apostrophe-config`
- * (injected by the integration plugin).  Callers may override any
- * value by passing it explicitly in `config`.
+ * Static build configuration is read from the cache written by the
+ * integration plugin. Callers may override any value by passing it
+ * explicitly in `config`.
  *
  * @param {object} config
  * @param {string} config.aposHost - The Apostrophe backend URL.

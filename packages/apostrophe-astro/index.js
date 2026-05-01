@@ -2,6 +2,7 @@ import { vitePluginApostropheDoctype } from './vite/vite-plugin-apostrophe-docty
 import { vitePluginApostropheConfig } from './vite/vite-plugin-apostrophe-config.js';
 import {
   writeConfigCache,
+  writeRuntimeConfig,
   writeLiteralContent,
   writeAttachments,
   writePostBuildSummary,
@@ -140,6 +141,20 @@ export default function apostropheIntegration(options) {
           resolvedStaticBuild = staticBuild;
           await writeConfigCache(staticBuild);
         }
+
+        // Write full runtime config to a real file so that package .js
+        // files (lib/aposResponse.js, helpers/url.js, etc.) can read it
+        // via Node.js fs when externalized during Astro v6 static route
+        // generation, where Vite's virtual module resolver is not active.
+        await writeRuntimeConfig({
+          aposHost: resolvedAposHost,
+          aposPrefix,
+          includeResponseHeaders:
+            options.includeResponseHeaders || options.forwardHeaders || null,
+          excludeRequestHeaders: options.excludeRequestHeaders || null,
+          viewTransitionWorkaround: options.viewTransitionWorkaround || false,
+          staticBuild: isStaticBuild ? staticBuild : null,
+        });
 
         updateConfig({
           vite: {
