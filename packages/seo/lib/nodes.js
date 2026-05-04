@@ -262,66 +262,6 @@ function getMetaHead(data, options) {
     }
   }
 
-  // Add hreflang tags
-  const hreflangTags = getHreflangTags(data);
-  nodes.push(...hreflangTags);
-
-  return nodes;
-}
-
-function getHreflangTags(data) {
-  const nodes = [];
-  const {
-    piece, page, req
-  } = data;
-  const document = piece || page;
-
-  // Only add hreflang if the site has i18n enabled
-  if (!req?.locale || !document?._url) {
-    return nodes;
-  }
-
-  // Get all locale versions of this document if they exist
-  // This assumes ApostropheCMS i18n structure
-  if (document.aposLocale && data.alternateLocales) {
-    // Add current page
-    nodes.push({
-      name: 'link',
-      attrs: {
-        rel: 'alternate',
-        hreflang: req.locale,
-        href: document._url
-      }
-    });
-
-    // Add alternate locales
-    data.alternateLocales.forEach(alt => {
-      if (alt.locale && alt.url) {
-        nodes.push({
-          name: 'link',
-          attrs: {
-            rel: 'alternate',
-            hreflang: alt.locale,
-            href: alt.url
-          }
-        });
-      }
-    });
-
-    // Add x-default for the primary locale
-    const defaultLocale = data.alternateLocales.find(alt => alt.isDefault);
-    if (defaultLocale) {
-      nodes.push({
-        name: 'link',
-        attrs: {
-          rel: 'alternate',
-          hreflang: 'x-default',
-          href: defaultLocale.url
-        }
-      });
-    }
-  }
-
   return nodes;
 }
 
@@ -407,6 +347,5 @@ function getTagManagerBody(data) {
 module.exports = {
   getMetaHead,
   getTagManagerHead,
-  getTagManagerBody,
-  getHreflangTags
+  getTagManagerBody
 };
