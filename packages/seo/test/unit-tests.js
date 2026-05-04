@@ -78,8 +78,6 @@ describe('@apostrophecms/seo', function () {
 
       const schemas = handler.generateSchemas(data);
       const articleSchema = schemas.find(s => s['@type'] === 'Article');
-      console.log(articleSchema);// eslint-disable-line no-console
-
       assert(articleSchema.author, 'author should exist');
       assert.strictEqual(articleSchema.author.name, 'John Doe');
     });
