@@ -1,5 +1,5 @@
 ---
-"@apostrophecms/seo": major
+"@apostrophecms/seo": minor
 ---
 
-Removes hreflang output in favor of the `@apostrophecms/sitemap` module.
+Removes unimplemented hreflang output; use @apostrophecms/sitemap for hreflang support
