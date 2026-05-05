@@ -123,6 +123,7 @@ import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 import { renderScopedStyles } from 'Modules/@apostrophecms/styles/render-factory.js';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 
 export default {
   name: 'AposWidgetEditor',
@@ -371,6 +372,9 @@ export default {
     this.areaDebounceUpdate.cancel?.();
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
     this.stopWatchingWindowSize();
+    // Publish-side cleanup: drop any live-preview snapshot we may
+    // have left behind (style-only fast path). Safe no-op if absent.
+    useWidgetStore().clearLivePreview(this.getPreviewWidgetId());
   },
   created() {
     const defaults = this.getDefault();
@@ -561,6 +565,15 @@ export default {
           subset: this.moduleOptions.stylesFields
         });
         this.applyPreviewStyles(styles);
+        // Publish the live snapshot so consumers driven by static
+        // `data-parent-options` (e.g. AposAreaLayoutEditor's grid
+        // gap) can react in real time. No SSR roundtrip, no write
+        // to the outer area's `next` — nothing here can be saved
+        // by accident; the side-channel is cleared on close.
+        useWidgetStore().setLivePreview(
+          this.getPreviewWidgetId(),
+          value.data
+        );
 
         return;
       }
@@ -574,6 +587,10 @@ export default {
       }
     },
     removePreview() {
+      // Always drop any live-preview snapshot when leaving the modal
+      // (save / cancel / no-modal close). Falls back to the SSR-rendered
+      // parent options on the next reactive read.
+      useWidgetStore().clearLivePreview(this.getPreviewWidgetId());
       if (!this.preview) {
         return;
       }
@@ -715,6 +732,9 @@ export default {
       };
     },
     getPreviewWidgetId() {
+      if (!this.preview) {
+        return null;
+      }
       if (!this.previewWidgetId) {
         if (this.preview.create) {
           // Deliberately different from the final widget's id, which will

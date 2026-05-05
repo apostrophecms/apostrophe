@@ -8,6 +8,15 @@ export const useWidgetStore = defineStore('widget', () => {
   const focusedArea = ref(null);
   const hoveredWidget = ref(null);
   const hoveredNonForeignWidget = ref(null);
+  // Live, in-modal preview snapshots of widget data, keyed by widget id.
+  // Published by AposWidgetEditor while the user is dragging style sliders
+  // (style-only fast path, no SSR roundtrip). Consumed by widget editors
+  // whose nested area lives behind a static `data-parent-options` JSON
+  // attribute (e.g. AposAreaLayoutEditor) so that values which are
+  // normally only fed in via SSR-rendered parent options can react in
+  // real time. Cleared synchronously on modal close (save / cancel /
+  // unmount) — callers fall back to the SSR-rendered parent options.
+  const livePreviews = ref({});
 
   function setFocusedArea(id, event) {
     if (event) {
@@ -98,6 +107,29 @@ export const useWidgetStore = defineStore('widget', () => {
     return true;
   }
 
+  function setLivePreview(id, data) {
+    if (!id) {
+      return;
+    }
+    livePreviews.value = {
+      ...livePreviews.value,
+      [id]: data
+    };
+  }
+
+  function clearLivePreview(id) {
+    if (!id || !(id in livePreviews.value)) {
+      return;
+    }
+    const next = { ...livePreviews.value };
+    delete next[id];
+    livePreviews.value = next;
+  }
+
+  function getLivePreview(id) {
+    return id ? livePreviews.value[id] || null : null;
+  }
+
   return {
     refs,
     emphasizedWidgets,
@@ -105,6 +137,7 @@ export const useWidgetStore = defineStore('widget', () => {
     focusedArea,
     hoveredWidget,
     hoveredNonForeignWidget,
+    livePreviews,
     addEmphasizedWidget,
     removeEmphasizedWidget,
     setHoveredWidget,
@@ -116,6 +149,9 @@ export const useWidgetStore = defineStore('widget', () => {
     set,
     getOrSet,
     updateWidget,
-    remove
+    remove,
+    setLivePreview,
+    clearLivePreview,
+    getLivePreview
   };
 });

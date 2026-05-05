@@ -121,7 +121,8 @@
 </template>
 
 <script>
-import { mapActions } from 'pinia';
+import { mapActions, mapState } from 'pinia';
+import get from 'lodash/get';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
 import walkWidgets from 'Modules/@apostrophecms/area/lib/walk-widgets.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
@@ -148,15 +149,50 @@ export default {
     };
   },
   computed: {
+    ...mapState(useWidgetStore, [ 'livePreviews' ]),
     layoutModuleOptions() {
       return window.apos.modules[this.moduleName] || {};
     },
     gridModuleOptions() {
-      return Object.assign(
-        {},
-        this.layoutModuleOptions.grid ?? {},
-        this.parentOptions
-      );
+      const baseGrid = this.layoutModuleOptions.grid ?? {};
+      const parent = this.parentOptions || {};
+      const opts = Object.assign({}, baseGrid, parent);
+      // Resolve `gap` priority for the live editor:
+      const liveGap = this.liveGapValue;
+      if (liveGap != null) {
+        opts.gap = liveGap;
+      } else if (parent.gap != null) {
+        opts.gap = parent.gap;
+      } else if (
+        parent.gap === null ||
+        this.layoutModuleOptions.globalGapEnabled
+      ) {
+        opts.gap = undefined;
+      } else {
+        opts.gap = baseGrid.gap;
+      }
+      return opts;
+    },
+    // Reactive bridge to the parent layout-widget's styles modal.
+    liveGapValue() {
+      if (this.layoutMode !== 'content') {
+        return null;
+      }
+      const fieldName = this.layoutModuleOptions.widgetGapFieldName;
+      const widgetId = this.parentOptions?.widgetId;
+      if (!fieldName || !widgetId) {
+        return null;
+      }
+      const live = this.livePreviews?.[widgetId];
+      if (!live) {
+        return null;
+      }
+      const value = get(live, fieldName);
+      if (value === null || value === undefined || value === '') {
+        return null;
+      }
+      const unit = this.layoutModuleOptions.widgetGapFieldUnit || '';
+      return typeof value === 'string' ? value : `${value}${unit}`;
     },
     // Meta storage is not yet implemented, return a default meta object
     layoutMeta() {

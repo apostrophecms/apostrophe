@@ -16,7 +16,7 @@
       data-mobile-auto="true"
       :style="{
         '--grid-columns': gridState.columns,
-        '--grid-gap': gridState.options.gap || '0',
+        '--grid-gap': gridState.options.gap ?? null,
         '--grid-rows': 'auto',
         '--mobile-grid-rows': 'auto',
         '--tablet-grid-rows': 'auto',
@@ -310,7 +310,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
   grid-template-rows: repeat(var(--grid-rows), auto);
-  grid-gap: var(--grid-gap, 0);
+  gap: var(--grid-gap, var(--apos-layout-gap, 0));
   justify-items: var(--justify-items);
   /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
   align-items: var(--align-items);
