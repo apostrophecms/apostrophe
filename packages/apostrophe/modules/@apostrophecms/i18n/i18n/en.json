@@ -644,7 +644,7 @@
   "styleGradientEnd": "End Color",
   "styleGradientStart": "Start Color",
   "styleLayoutGap": "Layout Gap",
-  "styleLayoutGapHelp": "Sets the spacing between columns and rows inside layout sections across the site.",
+  "styleLayoutGapHelp": "Sets the spacing between columns inside layout sections across the site.",
   "styleLeft": "Left",
   "styleMargin": "Margin",
   "styleOverlayColor": "Overlay Color",
