@@ -86,7 +86,7 @@ module.exports = function (program) {
       const expressIndexPath = resolvePath('lib/modules/apostrophe-express/index.js');
       if (fs.existsSync(expressIndexPath)) {
         util.replaceInFiles(
-          [expressIndexPath],
+          [ expressIndexPath ],
           /secret: undefined/,
           `secret: '${secret}'`
         );
@@ -96,7 +96,7 @@ module.exports = function (program) {
       secret = util.secret();
 
       util.replaceInFiles(
-        [resolvePath('app.js')],
+        [ resolvePath('app.js') ],
         /disabledFileKey: undefined/,
         `disabledFileKey: '${secret}'`
       );
@@ -124,7 +124,7 @@ module.exports = function (program) {
           });
         } catch (error) {
           await util.error('create', 'Error installing backend packages');
-          /* eslint-disable-next-line no-console */
+
           console.error(error);
         }
 
@@ -136,7 +136,7 @@ module.exports = function (program) {
           });
         } catch (error) {
           await util.error('create', 'Error installing frontend packages');
-          /* eslint-disable-next-line no-console */
+
           console.error(error);
         }
       } else {
@@ -147,7 +147,7 @@ module.exports = function (program) {
           });
         } catch (error) {
           await util.error('create', 'Error installing packages');
-          /* eslint-disable-next-line no-console */
+
           console.error(error);
         }
       }
@@ -192,6 +192,6 @@ module.exports = function (program) {
 };
 
 function replaceInConfig(regex, replacement, resolvePath) {
-  const files = [resolvePath('app.js'), resolvePath('package.json')];
+  const files = [ resolvePath('app.js'), resolvePath('package.json') ];
   util.replaceInFiles(files, regex, replacement);
 }

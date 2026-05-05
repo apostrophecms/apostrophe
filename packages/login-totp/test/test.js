@@ -67,7 +67,7 @@ describe('totp module', function () {
     user.role = 'editor';
 
     const doc = await apos.user.insert(apos.task.getReq(), user);
-    apos.user.safe.updateOne({
+    await apos.user.safe.updateOne({
       _id: doc._id
     }, {
       $set: {
