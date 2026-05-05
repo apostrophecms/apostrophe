@@ -207,18 +207,14 @@ module.exports = {
       // Determine whether the inline `--grid-gap` CSS variable should
       // be omitted on the grid container so the global cascade
       // (`var(--apos-layout-gap, …)`) can take effect. The inline var
-      // is omitted only when:
+      // is omitted whenever:
       //   - no widget-scope gap value is set, AND
-      //   - the global layout-gap field is configured AND has a value.
+      //   - the global layout-gap field is configured.
       shouldOmitInlineGap(widget, global) {
-        if (self.resolveWidgetGap(widget) !== null) {
-          return false;
-        }
         if (!self.globalGapEnabled) {
           return false;
         }
-        const v = global?.aposLayoutGap;
-        return v !== null && v !== undefined && v !== '';
+        return self.resolveWidgetGap(widget) === null;
       },
       publicCssNodes(req) {
         return [

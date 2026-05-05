@@ -266,21 +266,22 @@ describe('Layout Widget — gap via styles', function () {
         lw.shouldOmitInlineGap({ gap: 8 }, { aposLayoutGap: 24 }),
         false
       );
-      // No widget gap, global has value → omit
+      // No widget gap, global enabled → omit (cascade resolves via
+      // :root --apos-layout-gap, falling through to the static
+      // options.gap default when no saved value).
       assert.equal(
         lw.shouldOmitInlineGap({}, { aposLayoutGap: 24 }),
         true
       );
-      // No widget gap, global value missing → keep inline (BC)
       assert.equal(
         lw.shouldOmitInlineGap({}, { aposLayoutGap: null }),
-        false
+        true
       );
-      assert.equal(lw.shouldOmitInlineGap({}, {}), false);
-      assert.equal(lw.shouldOmitInlineGap({}, null), false);
+      assert.equal(lw.shouldOmitInlineGap({}, {}), true);
+      assert.equal(lw.shouldOmitInlineGap({}, null), true);
     });
 
-    it('gapInlineCss prefers widget value, then BC fallback, else empty', function () {
+    it('gapInlineCss prefers widget value, then omits when global enabled', function () {
       const lw = apos.modules['@apostrophecms/layout-widget'];
       const gapInlineCss = lw.__helpers.gapInlineCss;
       // Widget value wins
@@ -288,21 +289,19 @@ describe('Layout Widget — gap via styles', function () {
         gapInlineCss({ gap: 12 }, { gap: '1rem' }, { aposLayoutGap: 24 }),
         ' --grid-gap: 12px;'
       );
-      // No widget value, global has value → empty (cascade)
+      // No widget value, global enabled → empty (cascade resolves
+      // through :root --apos-layout-gap or static options.gap default)
       assert.equal(
         gapInlineCss({}, { gap: '1rem' }, { aposLayoutGap: 24 }),
         ''
       );
-      // No widget value, no global value → fall back to options.gap (BC)
       assert.equal(
         gapInlineCss({}, { gap: '1rem' }, { aposLayoutGap: null }),
-        ' --grid-gap: 1rem;'
+        ''
       );
-      // No options.gap → fall back to the static module option
-      // (default '1.5rem' on @apostrophecms/layout-widget)
       assert.equal(
         gapInlineCss({}, {}, { aposLayoutGap: null }),
-        ' --grid-gap: 1.5rem;'
+        ''
       );
     });
 
@@ -352,7 +351,8 @@ describe('Layout Widget — gap via styles', function () {
           gap: null
         }
       );
-      // Widget value absent + global has no value → no gap key (use BC)
+      // Widget value absent + global enabled → gap: null (signal omit)
+      // regardless of whether the global has a saved value.
       assert.deepEqual(
         parentOptionsForArea(
           { _id: 'w3' },
@@ -361,7 +361,8 @@ describe('Layout Widget — gap via styles', function () {
         ),
         {
           columns: 12,
-          widgetId: 'w3'
+          widgetId: 'w3',
+          gap: null
         }
       );
     });
