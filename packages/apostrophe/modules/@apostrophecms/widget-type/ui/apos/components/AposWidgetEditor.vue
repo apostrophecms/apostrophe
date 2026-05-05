@@ -123,7 +123,6 @@ import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 import { renderScopedStyles } from 'Modules/@apostrophecms/styles/render-factory.js';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 
 export default {
   name: 'AposWidgetEditor',
@@ -372,9 +371,9 @@ export default {
     this.areaDebounceUpdate.cancel?.();
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
     this.stopWatchingWindowSize();
-    // Publish-side cleanup: drop any live-preview snapshot we may
-    // have left behind (style-only fast path). Safe no-op if absent.
-    useWidgetStore().clearLivePreview(this.getPreviewWidgetId());
+    // Publish-side cleanup: tell live-preview consumers we're gone.
+    // Safe broadcast — consumers self-gate on widget id.
+    this.emitLivePreviewEnd('unmount');
   },
   created() {
     const defaults = this.getDefault();
@@ -565,15 +564,17 @@ export default {
           subset: this.moduleOptions.stylesFields
         });
         this.applyPreviewStyles(styles);
-        // Publish the live snapshot so consumers driven by static
-        // `data-parent-options` (e.g. AposAreaLayoutEditor's grid
-        // gap) can react in real time. No SSR roundtrip, no write
-        // to the outer area's `next` — nothing here can be saved
-        // by accident; the side-channel is cleared on close.
-        useWidgetStore().setLivePreview(
-          this.getPreviewWidgetId(),
-          value.data
-        );
+        // Publish the live snapshot on the apos bus so consumers
+        // can react in real time.
+        // Gated by the widget module's `subscribesToLivePreview` browser-data
+        // flag so the bus stays quiet for widgets that don't subscribe.
+        if (this.moduleOptions.subscribesToLivePreview) {
+          apos.bus.$emit('apos-widget-live-preview', {
+            widgetId: this.getPreviewWidgetId(),
+            type: this.type,
+            data: value.data
+          });
+        }
 
         return;
       }
@@ -587,10 +588,7 @@ export default {
       }
     },
     removePreview() {
-      // Always drop any live-preview snapshot when leaving the modal
-      // (save / cancel / no-modal close). Falls back to the SSR-rendered
-      // parent options on the next reactive read.
-      useWidgetStore().clearLivePreview(this.getPreviewWidgetId());
+      this.emitLivePreviewEnd(this.saving ? 'save' : 'cancel');
       if (!this.preview) {
         return;
       }
@@ -605,6 +603,20 @@ export default {
           reverting: true
         });
       }
+    },
+    emitLivePreviewEnd(reason) {
+      if (!this.moduleOptions.subscribesToLivePreview) {
+        return;
+      }
+      const widgetId = this.getPreviewWidgetId();
+      if (!widgetId) {
+        return;
+      }
+      apos.bus.$emit('apos-widget-live-preview-end', {
+        widgetId,
+        type: this.type,
+        reason
+      });
     },
     applyPreviewStyles({
       inline = '', css = '', classes = []

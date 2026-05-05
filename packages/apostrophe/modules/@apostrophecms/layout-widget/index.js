@@ -144,6 +144,10 @@ module.exports = {
               ?.unit || '')
             : '',
           globalGapEnabled: !!self.globalGapEnabled,
+          // Opt-in flag read by the generic widget editor: when true,
+          // it broadcasts `apos-widget-live-preview` events on the apos bus
+          // during the style-only fast path.
+          subscribesToLivePreview: !!self.widgetGapFieldName,
           columnWidgetName: self.columnWidgetName
         };
       },

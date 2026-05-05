@@ -121,7 +121,7 @@
 </template>
 
 <script>
-import { mapActions, mapState } from 'pinia';
+import { mapActions } from 'pinia';
 import get from 'lodash/get';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
 import walkWidgets from 'Modules/@apostrophecms/area/lib/walk-widgets.js';
@@ -145,11 +145,14 @@ export default {
     return {
       // 'layout' | 'focus' | 'content'
       layoutMode: 'content',
-      layoutDeviceMode: 'desktop'
+      layoutDeviceMode: 'desktop',
+      // Live snapshot of the parent layout-widget's in-modal style
+      // values, fed by `apos-widget-live-preview` bus events from
+      // AposWidgetEditor while the user drags style sliders.
+      liveWidgetData: null
     };
   },
   computed: {
-    ...mapState(useWidgetStore, [ 'livePreviews' ]),
     layoutModuleOptions() {
       return window.apos.modules[this.moduleName] || {};
     },
@@ -179,15 +182,10 @@ export default {
         return null;
       }
       const fieldName = this.layoutModuleOptions.widgetGapFieldName;
-      const widgetId = this.parentOptions?.widgetId;
-      if (!fieldName || !widgetId) {
+      if (!fieldName || !this.liveWidgetData) {
         return null;
       }
-      const live = this.livePreviews?.[widgetId];
-      if (!live) {
-        return null;
-      }
-      const value = get(live, fieldName);
+      const value = get(this.liveWidgetData, fieldName);
       if (value === null || value === undefined || value === '') {
         return null;
       }
@@ -308,6 +306,8 @@ export default {
     apos.bus.$on('apos-switch-layout-mode', this.switchLayoutMode);
     apos.bus.$on('apos-layout-col-delete', this.onRemoveLayoutColumn);
     apos.bus.$on('apos-edit-styles', this.editStyles);
+    apos.bus.$on('apos-widget-live-preview', this.onWidgetLivePreview);
+    apos.bus.$on('apos-widget-live-preview-end', this.onWidgetLivePreviewEnd);
     if (!this.hasLayoutColumnWidgets) {
       this.onCreateProvision();
     }
@@ -317,6 +317,8 @@ export default {
     apos.bus.$off('apos-switch-layout-mode', this.switchLayoutMode);
     apos.bus.$off('apos-layout-col-delete', this.onRemoveLayoutColumn);
     apos.bus.$off('apos-edit-styles', this.editStyles);
+    apos.bus.$off('apos-widget-live-preview', this.onWidgetLivePreview);
+    apos.bus.$off('apos-widget-live-preview-end', this.onWidgetLivePreviewEnd);
   },
   methods: {
     ...mapActions(useWidgetStore, [
@@ -326,6 +328,25 @@ export default {
       'removeEmphasizedWidget',
       'setFocusedWidget'
     ]),
+    onWidgetLivePreview({ widgetId, data }) {
+      if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
+        return;
+      }
+      this.liveWidgetData = data;
+    },
+    onWidgetLivePreviewEnd({ widgetId, reason }) {
+      if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
+        return;
+      }
+      // On `save` keep the live snapshot in place: clearing
+      // here would expose the old `parent.gap` value for one frame.
+      // On `cancel` / `unmount` drop the live value immediately so the
+      // editor falls back to the SSR-rendered parent options.
+      if (reason === 'save') {
+        return;
+      }
+      this.liveWidgetData = null;
+    },
     clickOnGrid() {
       if (this.parentOptions.widgetId) {
         this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
