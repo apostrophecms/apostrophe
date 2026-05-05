@@ -29,7 +29,7 @@
     "shell-quote": "^1.8.1",
     "shelljs": "^0.10.0",
     "sync-request": "^6.0.0",
-    "uuid": "^8.0.0"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "eslint": "^9.39.1",
