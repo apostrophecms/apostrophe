@@ -186,23 +186,26 @@ module.exports = {
   methods(self) {
     return {
       // Resolve the widget-scope gap for a widget instance, if this
-      // module declares a styles field with `property: 'gap'` *and*
-      // the widget has a value for it. Returns `null` otherwise.
-      // Subclasses of @apostrophecms/layout-widget that declare their
-      // own `gap` styles field automatically pick up their own
-      // `widgetGapFieldName` / `schema` because methods inherit per
-      // subclass with their own `self` binding.
+      // module declares a styles field with `property: 'gap'`. Returns
+      // the resolved value (with unit, when applicable). When the
+      // widget has no explicit value, falls back to the field's `def`.
+      // Returns `null` only when no widget gap field is
+      // configured, no widget value is set, and no `def` is declared
+      // on the field.
       resolveWidgetGap(widget) {
         if (!self.widgetGapFieldName || !widget) {
-          return null;
-        }
-        const value = self.apos.util.get(widget, self.widgetGapFieldName);
-        if (value === null || value === undefined || value === '') {
           return null;
         }
         const field = self.apos.styles.getFieldByPath(
           self.schema, self.widgetGapFieldName
         );
+        let value = self.apos.util.get(widget, self.widgetGapFieldName);
+        if (value === null || value === undefined || value === '') {
+          if (field?.def === null || field?.def === undefined || field?.def === '') {
+            return null;
+          }
+          value = field.def;
+        }
         if (field?.unit && typeof value !== 'string') {
           return `${value}${field.unit}`;
         }

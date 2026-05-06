@@ -222,7 +222,6 @@ describe('Layout Widget — gap via styles', function () {
                   type: 'range',
                   min: 0,
                   max: 64,
-                  def: 0,
                   unit: 'px',
                   property: 'gap'
                 }
@@ -416,7 +415,6 @@ describe('Layout Widget — gap via styles', function () {
                   type: 'range',
                   min: 0,
                   max: 64,
-                  def: 0,
                   unit: 'px',
                   property: 'gap'
                 }
@@ -462,6 +460,71 @@ describe('Layout Widget — gap via styles', function () {
         lw.widgetGapFieldName = original;
         lw.schema = originalSchema;
       }
+    });
+  });
+
+  describe('Layout-widget with widget gap field declaring `def`', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/styles': {},
+          '@apostrophecms/layout-widget': {
+            styles: {
+              add: {
+                gap: {
+                  label: 'Gap',
+                  type: 'range',
+                  min: 0,
+                  max: 64,
+                  def: 24,
+                  unit: 'px',
+                  property: 'gap'
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+
+    after(async function () {
+      return t.destroy(apos);
+    });
+
+    it('resolveWidgetGap falls back to field.def when widget value is absent', function () {
+      const lw = apos.modules['@apostrophecms/layout-widget'];
+      assert.equal(lw.resolveWidgetGap({}), '24px');
+      assert.equal(lw.resolveWidgetGap({ gap: null }), '24px');
+      assert.equal(lw.resolveWidgetGap({ gap: '' }), '24px');
+      // Explicit value still wins.
+      assert.equal(lw.resolveWidgetGap({ gap: 8 }), '8px');
+    });
+
+    it('gapInlineCss emits the def value (no global cascade in play)', function () {
+      const lw = apos.modules['@apostrophecms/layout-widget'];
+      assert.equal(
+        lw.__helpers.gapInlineCss({}, { gap: '1.5rem' }, {}),
+        ' --grid-gap: 24px;'
+      );
+    });
+
+    it('parentOptionsForArea passes the def value to the editor', function () {
+      const lw = apos.modules['@apostrophecms/layout-widget'];
+      assert.deepEqual(
+        lw.__helpers.parentOptionsForArea(
+          { _id: 'w1' },
+          { columns: 12 },
+          {}
+        ),
+        {
+          columns: 12,
+          widgetId: 'w1',
+          gap: '24px'
+        }
+      );
     });
   });
 });
