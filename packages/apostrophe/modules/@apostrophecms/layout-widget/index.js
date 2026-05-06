@@ -19,6 +19,10 @@ module.exports = {
     gap: '1.5rem',
     defaultCellHorizontalAlignment: null,
     defaultCellVerticalAlignment: null,
+    // Extra class name(s) to append to the rendered layout-widget area
+    // wrapper, in addition to the built-in `layout-widget` class. Accepts
+    // a string of space-separated class names.
+    className: '',
     injectStyles: true,
     minifyStyles: true
   },

@@ -6,7 +6,7 @@
     ' --tablet-grid-rows: auto;' + 
     ' --justify-items: ' + (data.options.defaultCellHorizontalAlignment or data.manager.options.defaultCellHorizontalAlignment or 'stretch') + ';' +
     ' --align-items: ' + (data.options.defaultCellVerticalAlignment or data.manager.options.defaultCellVerticalAlignment or 'stretch') + ';', 
-  aposClassName: 'layout-widget',
+  aposClassName: ('layout-widget' + ((' ' + (data.options.className or data.manager.options.className)) if (data.options.className or data.manager.options.className))),
   aposParentOptions: apos.modules[data.manager.__meta.name].parentOptionsForArea(data.widget, data.options, data.global),
   aposAttrs: {
     'tablet-auto': true,
