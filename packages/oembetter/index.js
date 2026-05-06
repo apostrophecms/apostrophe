@@ -191,7 +191,8 @@ module.exports = function(options) {
     'flickr.com',
     'vimeo.com',
     'soundcloud.com',
-    'twitter.com'
+    'twitter.com',
+    'x.com'
   ];
 
   self.suggestedEndpoints = [
