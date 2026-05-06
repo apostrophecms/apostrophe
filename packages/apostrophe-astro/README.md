@@ -601,15 +601,6 @@ import {
 } from '@apostrophecms/apostrophe-astro/helpers';
 ```
 
-Individual files are also exported if you only need a subset:
-
-```js
-import { getAttachmentUrl, getAttachmentSrcset } from '@apostrophecms/apostrophe-astro/helpers/attachment.js';
-import { stylesAttributes, stylesElements } from '@apostrophecms/apostrophe-astro/helpers/styles.js';
-import { buildPageUrl, getFilterBaseUrl, aposSetQueryParameter } from '@apostrophecms/apostrophe-astro/helpers/url.js';
-import { slugify } from '@apostrophecms/apostrophe-astro/helpers/slug.js';
-```
-
 ### Server-only helpers
 
 Import from `@apostrophecms/apostrophe-astro/helpers/server.js`. These depend on
@@ -630,12 +621,6 @@ import {
   getAllUrlMetadata,
   getLocales
 } from '@apostrophecms/apostrophe-astro/helpers/server.js';
-```
-
-`aposFetch` is also available directly from its own file:
-
-```js
-import { aposFetch } from '@apostrophecms/apostrophe-astro/helpers/fetch.js';
 ```
 
 #### Attachment helpers
