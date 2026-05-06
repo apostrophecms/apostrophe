@@ -510,7 +510,7 @@ module.exports = self => {
       const downloadPath = path.join('/exports', filename);
       const downloadUrl = `${self.apos.attachment.uploadfs.getUrl()}${downloadPath}`;
       const copyIn = util.promisify(self.apos.attachment.uploadfs.copyIn);
-      console.info(`[export] copying ${filepath} to ${self.apos.rootDir}/public/uploads${downloadPath}`);
+      self.apos.util.debug(`[export] copying ${filepath} to ${self.apos.rootDir}/public/uploads${downloadPath}`);
       try {
         await copyIn(filepath, downloadPath);
       } catch (error) {
@@ -565,7 +565,7 @@ module.exports = self => {
 
       async function processAttachment([ name, url ]) {
         const temp = self.apos.attachment.uploadfs.getTempPath() + '/' + self.apos.util.generateId();
-        console.info(`[export] processing attachment ${name} temporarily stored in ${temp}`);
+        self.apos.util.debug(`[export] processing attachment ${name} temporarily stored in ${temp}`);
         try {
           await copyOut(url, temp);
           const { size } = await fsp.stat(temp);
@@ -593,9 +593,9 @@ module.exports = self => {
     removeFromUploadFs(downloadPath, expiration) {
       const ms = expiration || 1000 * 60 * 10;
       const id = uniqueId();
-      console.info(`[export] removing ${self.apos.rootDir}/public/uploads${downloadPath} from uploadfs in ${ms / 1000 / 60} minutes`);
+      self.apos.util.debug(`[export] removing ${self.apos.rootDir}/public/uploads${downloadPath} from uploadfs in ${ms / 1000 / 60} minutes`);
       const handler = () => {
-        console.info(`[export] removing ${self.apos.rootDir}/public/uploads${downloadPath} from uploadfs`);
+        self.apos.util.debug(`[export] removing ${self.apos.rootDir}/public/uploads${downloadPath} from uploadfs`);
         delete self.timeoutIds[id];
         return new Promise((resolve, _reject) => {
           self.apos.attachment.uploadfs.remove(downloadPath, error => {

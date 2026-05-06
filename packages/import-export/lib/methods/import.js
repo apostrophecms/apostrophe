@@ -1272,7 +1272,7 @@ module.exports = self => {
     },
 
     async cleanExport(req) {
-      console.info('[import] cleaning export...');
+      self.apos.util.debug('[import] cleaning export...');
       const exportPath = await self.getExportPath(
         self.apos.launder.string(req.body.exportId)
       );

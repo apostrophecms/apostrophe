@@ -56,7 +56,7 @@ module.exports = self => {
         } else {
           await fsp.unlink(filepath);
         }
-        console.info(`removed: ${filepath}`);
+        self.apos.util.debug(`removed: ${filepath}`);
       } catch (err) {
         console.trace(err);
         self.apos.util.error(
