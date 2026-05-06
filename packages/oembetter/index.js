@@ -197,11 +197,6 @@ module.exports = function(options) {
 
   self.suggestedEndpoints = [
     {
-      domain: 'facebook.com',
-      path: /\/videos\//,
-      endpoint: 'https://www.facebook.com/plugins/video/oembed.json/'
-    },
-    {
       domain: 'vimeo.com',
       endpoint: 'https://vimeo.com/api/oembed.json'
     },
