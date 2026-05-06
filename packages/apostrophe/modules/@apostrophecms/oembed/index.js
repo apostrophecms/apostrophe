@@ -16,7 +16,7 @@ const cheerio = require('cheerio');
 // widely trusted sites are already allowlisted.
 //
 // Your `allowlist` option is concatenated with `oembetter`'s standard
-// allowlist, plus wufoo.com and slideshare.net.
+// allowlist, plus wufoo.com, infogr.am and slideshare.net.
 //
 // Your `endpoints` option is concatenated with `oembetter`'s standard
 // endpoints list.
