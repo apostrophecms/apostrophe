@@ -40,6 +40,8 @@
   - [404 Not Found](#404-not-found)
   - [Reserved routes](#reserved-routes)
   - [Helper imports](#helper-imports)
+    - [Client-safe helpers](#client-safe-helpers)
+    - [Server-only helpers](#server-only-helpers)
   - [What about widget players?](#what-about-widget-players)
   - [`aposSetQueryParameter`: working with query parameters](#apossetqueryparameter-working-with-query-parameters)
   - [What about Vue, React, SvelteJS, etc.?](#what-about-vue-react-sveltejs-etc)
@@ -161,14 +163,7 @@ export default defineConfig({
         // this is usually unnecessary
       ]
     })
-  ],
-  vite: {
-    ssr: {
-      // Do not externalize the @apostrophecms/apostrophe-astro plugin, we need
-      // to be able to use virtual: URLs there
-      noExternal: [ '@apostrophecms/apostrophe-astro' ],
-    }
-  }
+  ]
 });
 ```
 
@@ -332,7 +327,7 @@ Your `[...slug].astro` component should look like this:
 
 ```js
 ---
-import aposPageFetch from '@apostrophecms/apostrophe-astro/lib/aposPageFetch.js';
+import { aposPageFetch } from '@apostrophecms/apostrophe-astro/helpers/server.js';
 import AposLayout from '@apostrophecms/apostrophe-astro/components/layouts/AposLayout.astro';
 import AposTemplate from '@apostrophecms/apostrophe-astro/components/AposTemplate.astro';
 
@@ -463,11 +458,12 @@ As an example, here is a simple Astro component to render `@apostrophecms/image`
 
 ```js
 ---
+import { getAttachmentUrl } from '@apostrophecms/apostrophe-astro/helpers';
 const { widget } = Astro.props;
 const placeholder = widget?.aposPlaceholder;
 const src = placeholder ?
   '/images/image-widget-placeholder.jpg' :
-  widget?._image[0]?.attachment?._urls['full'];
+  getAttachmentUrl(widget?._image[0], { size: 'full' });
 ---
 <style>
   .img-widget {
@@ -578,28 +574,91 @@ Those proxies are forwarding all of the original request headers, such as cookie
 
 ## Helper imports
 
-The main `@apostrophecms/apostrophe-astro/helpers` entrypoint exports helpers
-that are safe to import from browser-bundled code:
+Helpers are organized into two clear tiers based on where they can safely run.
+
+### Client-safe helpers
+
+Import from `@apostrophecms/apostrophe-astro/helpers`. These are isomorphic —
+safe in both server-side Astro frontmatter and browser-bundled `<script>` blocks:
 
 ```js
 import {
+  // URL and pagination utilities
   aposSetQueryParameter,
   buildPageUrl,
   getFilterBaseUrl,
-  slugify
+  // Text
+  slugify,
+  // Attachment / image helpers
+  getAttachmentUrl,
+  getAttachmentSrcset,
+  getFocalPoint,
+  getWidth,
+  getHeight,
+  // Widget styles helpers
+  stylesAttributes,
+  stylesElements
 } from '@apostrophecms/apostrophe-astro/helpers';
 ```
 
-Server-only helpers use runtime configuration and should be imported from their
-own entrypoints:
+Individual files are also exported if you only need a subset:
+
+```js
+import { getAttachmentUrl, getAttachmentSrcset } from '@apostrophecms/apostrophe-astro/helpers/attachment.js';
+import { stylesAttributes, stylesElements } from '@apostrophecms/apostrophe-astro/helpers/styles.js';
+import { buildPageUrl, getFilterBaseUrl, aposSetQueryParameter } from '@apostrophecms/apostrophe-astro/helpers/url.js';
+import { slugify } from '@apostrophecms/apostrophe-astro/helpers/slug.js';
+```
+
+### Server-only helpers
+
+Import from `@apostrophecms/apostrophe-astro/helpers/server.js`. These depend on
+runtime configuration and must only be used in server-side code (Astro frontmatter,
+server endpoints, `getStaticPaths`). **Do not import them in client `<script>` blocks.**
+
+```js
+import {
+  // Page data fetching (for [...slug].astro)
+  aposPageFetch,
+  // Apostrophe-aware fetch wrapper
+  aposFetch,
+  // Backend URL access
+  getAposHost,
+  isStaticBuild,
+  // Static build path generation
+  getAllStaticPaths,
+  getAllUrlMetadata,
+  getLocales
+} from '@apostrophecms/apostrophe-astro/helpers/server.js';
+```
+
+`aposFetch` is also available directly from its own file:
 
 ```js
 import { aposFetch } from '@apostrophecms/apostrophe-astro/helpers/fetch.js';
-import {
-  getAposHost,
-  isStaticBuild
-} from '@apostrophecms/apostrophe-astro/helpers/server.js';
 ```
+
+#### Attachment helpers
+
+`getAttachmentUrl(imageObject, { size })` returns the URL for an image at a named
+size (`'one-sixth'`, `'one-third'`, `'one-half'`, `'two-thirds'`, `'full'`, `'max'`, `'original'`).
+It handles crop parameters, focal points, and missing attachments automatically.
+
+`getAttachmentSrcset(imageObject)` returns a `srcset` string spanning all available sizes.
+
+`getFocalPoint(imageObject)` returns a CSS `object-position` value (e.g. `"40% 60%"`) derived
+from the editor-chosen focal point, with a sensible fallback.
+
+#### Static build helpers
+
+`getAllStaticPaths(config)` is the main entry point for `getStaticPaths()` in static builds.
+It fetches all page URLs across all locales, caches attachment and literal content metadata,
+and returns an array of `{ params, props }` entries for Astro.
+
+`getAllUrlMetadata(config)` fetches URL metadata for a single locale — useful when you need
+more control over multi-locale static builds.
+
+`getLocales(config)` fetches the list of locales configured in the Apostrophe backend.
 
 ## What about widget players?
 
@@ -677,7 +736,7 @@ links to each page of blog posts:
 
 ```js
 ---
-import setParameter from '@apostrophecms/apostrophe-astro/lib/aposSetQueryParameter.js';
+import { aposSetQueryParameter as setParameter } from '@apostrophecms/apostrophe-astro/helpers';
 
 const {
   pieces,
@@ -753,30 +812,11 @@ this best practice.
 In most cases, Astro prints helpful error messages directly in the browser
 when in a development environment.
 
-However, if you receive the following error:
-
-```
-Only URLs with a scheme in: file and data are supported by the default ESM
-loader. Received protocol 'virtual:'
-```
-
-Then you most likely left out this part of the above `astro.config.mjs` file:
-
-```javascript
-export default defineConfig({
-  // ... other settings above here ...
-  vite: {
-    ssr: {
-      // Do not externalize the @apostrophecms/apostrophe-astro plugin, we need
-      // to be able to use virtual: URLs there
-      noExternal: [ '@apostrophecms/apostrophe-astro' ],
-    }
-  }
-});
-```
-
-Without this logic, the `virtual:` URLs used to access configuration information
-will cause the build to fail.
+> **Note for users upgrading from earlier versions:** the `vite.ssr.noExternal`
+> setting for `@apostrophecms/apostrophe-astro` is no longer required. Package
+> helpers now read runtime configuration directly from the filesystem instead of
+> relying on `virtual:` module imports, so Vite externalization is no longer an
+> issue. You can safely remove that block from your `astro.config.mjs`.
 
 ### Widget Render Hook
 

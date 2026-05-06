@@ -1,5 +1,9 @@
 import config from '../lib/getConfig.js';
 
+export { aposFetch } from './fetch.js';
+export { default as aposPageFetch } from '../lib/aposPageFetch.js';
+export { getAllStaticPaths, getAllUrlMetadata, getLocales } from '../lib/static.js';
+
 /**
  * Get the Apostrophe backend base URL, including the prefix when
  * configured.

@@ -43,6 +43,7 @@ function load() {
   }
 }
 
+/** @type {{ aposHost: string, aposPrefix: string, staticBuild: object|null, includeResponseHeaders: string[]|null, forwardHeaders: string[]|null, excludeRequestHeaders: string[]|null, viewTransitionWorkaround: boolean }} */
 const config = new Proxy({}, {
   get(_target, prop) {
     return load()[prop];
