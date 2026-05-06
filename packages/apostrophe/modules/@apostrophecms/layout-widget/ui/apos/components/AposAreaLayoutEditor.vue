@@ -170,7 +170,15 @@ export default {
         parent.gap === null ||
         this.layoutModuleOptions.globalGapEnabled
       ) {
-        opts.gap = undefined;
+        // Parent signalled "use the cascade" (omit `--grid-gap` and let
+        // `var(--apos-layout-gap, …)` resolve it on `:root`).
+        // The snapshot is recomputed whenever `layoutMode`
+        // changes, which is the only cadence the editor needs.
+        if (this.layoutMode !== 'content') {
+          opts.gap = this.resolvedCascadeGap();
+        } else {
+          opts.gap = undefined;
+        }
       } else {
         opts.gap = baseGrid.gap;
       }
@@ -328,6 +336,18 @@ export default {
       'removeEmphasizedWidget',
       'setFocusedWidget'
     ]),
+    // Read the current resolved value of the global cascade variable
+    // `--apos-layout-gap` from `:root`. Used by `gridModuleOptions` to
+    // hand layout/focus modes a real gap value.
+    resolvedCascadeGap() {
+      if (!document?.documentElement) {
+        return undefined;
+      }
+      const value = window.getComputedStyle(document.documentElement)
+        .getPropertyValue('--apos-layout-gap')
+        .trim();
+      return value || undefined;
+    },
     onWidgetLivePreview({ widgetId, data }) {
       if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
         return;
