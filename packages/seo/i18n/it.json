@@ -30,8 +30,6 @@
   "siteNameHelp": "Il nome del tuo sito web (usato nei dati strutturati e nella condivisione sui social).",
   "siteDescription": "Descrizione del sito",
   "siteDescriptionHelp": "Breve descrizione del tuo sito web.",
-  "siteCanonicalUrl": "URL base del sito",
-  "siteCanonicalUrlHelp": "L’URL base del tuo sito (es. https://example.com). Necessario per i link canonici e i dati strutturati corretti.",
 
   "themeColor": "Colore tema mobile",
   "themeColorHelp": "Imposta il colore dell’interfaccia del browser per dispositivi mobili e PWA.",

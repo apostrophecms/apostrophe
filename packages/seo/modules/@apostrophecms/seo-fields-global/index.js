@@ -141,12 +141,6 @@ module.exports = {
         textarea: true,
         help: 'aposSeo:siteDescriptionHelp'
       },
-      seoSiteCanonicalUrl: {
-        label: 'aposSeo:siteCanonicalUrl',
-        type: 'url',
-        required: true,
-        help: 'aposSeo:siteCanonicalUrlHelp'
-      },
       seoJsonLdOrganization: {
         label: 'aposSeo:organizationInfo',
         type: 'object',
@@ -333,7 +327,6 @@ module.exports = {
           'llmsCustomText',
           'seoSiteName',
           'seoSiteDescription',
-          'seoSiteCanonicalUrl',
           'seoJsonLdOrganization',
           'seoSocialProfiles',
           'seoSearchQueryParam'
@@ -373,6 +366,17 @@ module.exports = {
         group
       }
       : null;
+  },
+
+  extendMethods(self) {
+    return {
+      async addGlobalToData(_super, req) {
+        await _super(req);
+        // For bc. Prefer self.apos.url.getBaseUrl(req) or the ._url
+        // property of the document in question.
+        req.data.global.seoSiteCanonicalUrl = self.apos.url.getBaseUrl(req);
+      }
+    };
   },
 
   handlers(self) {
@@ -533,7 +537,7 @@ Allow: /
               return global.llmsCustomText;
             }
 
-            const baseUrl = global?.seoSiteCanonicalUrl || req.absoluteUrl.split('/').slice(0, 3).join('/');
+            const baseUrl = self.apos.url.getBaseUrl(req);
 
             // Build the LLMS.txt content
             let content = `# ${global.seoSiteName || global.title || 'Website'}\n\n`;
