@@ -187,41 +187,15 @@ module.exports = function(options) {
   self.suggestedAllowlist = [
     'youtube.com',
     'youtu.be',
-    'blip.tv',
     'dailymotion.com',
     'flickr.com',
-    'hulu.com',
-    'nfb.ca',
-    'qik.com',
-    'revision3.com',
-    'scribd.com',
-    'viddler.com',
     'vimeo.com',
-    'youtube.com',
-    'dotsub.com',
-    'yfrog.com',
-    'photobucket.com',
     'soundcloud.com',
-    'instagram.com',
     'twitter.com',
-    'facebook.com'
+    'x.com'
   ];
 
   self.suggestedEndpoints = [
-    {
-      domain: 'instagram.com',
-      endpoint: 'http://api.instagram.com/oembed'
-    },
-    {
-      domain: 'facebook.com',
-      path: /\/videos\//,
-      endpoint: 'https://www.facebook.com/plugins/video/oembed.json/'
-    },
-    {
-      domain: 'facebook.com',
-      path: /\/posts\//,
-      endpoint: 'https://www.facebook.com/plugins/post/oembed.json/'
-    },
     {
       domain: 'vimeo.com',
       endpoint: 'https://vimeo.com/api/oembed.json'
@@ -233,6 +207,14 @@ module.exports = function(options) {
     {
       domain: 'youtu.be',
       endpoint: 'https://www.youtube.com/oembed'
+    },
+    {
+      domain: 'twitter.com',
+      endpoint: 'https://publish.twitter.com/oembed'
+    },
+    {
+      domain: 'x.com',
+      endpoint: 'https://publish.twitter.com/oembed'
     }
   ];
 

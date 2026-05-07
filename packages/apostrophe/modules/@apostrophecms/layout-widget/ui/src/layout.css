@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
   grid-template-rows: repeat(var(--grid-rows), auto);
-  grid-gap: var(--grid-gap, 0);
+  gap: var(--grid-gap, var(--apos-layout-gap, {$gap-default}));
   justify-items: var(--justify-items);
   /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
   align-items: var(--align-items);
