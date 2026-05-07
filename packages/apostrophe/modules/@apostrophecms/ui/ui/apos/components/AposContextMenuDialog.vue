@@ -3,6 +3,7 @@
     class="apos-primary-scrollbar apos-context-menu__dialog"
     :class="classes"
     role="dialog"
+    :aria-label="$t(props.dialogLabel)"
     :data-apos-ignore-unfocus="props.ignoreUnfocus"
   >
     <AposContextMenuTip
@@ -71,6 +72,13 @@ const props = defineProps({
   activeItem: {
     type: String,
     default: null
+  },
+  // Accessible name for the dialog wrapper (role="dialog"). Pass an i18n
+  // key describing the menu's purpose for the most useful screen-reader
+  // announcement. Defaults to a generic "Menu" label.
+  dialogLabel: {
+    type: String,
+    default: 'apostrophe:menu'
   }
 });
 

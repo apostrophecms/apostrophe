@@ -9,9 +9,14 @@
         type="text"
         class="apos-locales-picker__filter"
         :placeholder="$t('apostrophe:searchLocalesPlaceholder')"
+        :aria-label="$t('apostrophe:searchLocales')"
       >
     </div>
-    <ul class="apos-locales-picker__list">
+    <ul
+      class="apos-locales-picker__list"
+      role="menu"
+      :aria-label="$t('apostrophe:locale')"
+    >
       <li
         v-for="locale in filteredLocales"
         :key="locale.name"
@@ -19,11 +24,15 @@
         :class="localeClasses(locale)"
         class="apos-locale-picker__item"
         data-apos-test="localeItem"
+        role="presentation"
         @click="switchLocale(locale)"
       >
         <button
           :tabindex="isOpen ? '0' : '-1'"
           class="apos-locale-picker__locale-display"
+          role="menuitemradio"
+          :aria-checked="isActive(locale)"
+          :aria-disabled="isForbidden(locale) ? 'true' : null"
         >
           <AposIndicator
             v-if="isForbidden(locale)"
@@ -49,6 +58,10 @@
             v-if="showLocalized"
             class="apos-locale-picker__localized"
             :class="{ 'apos-state-is-localized': isLocalized(locale) }"
+            role="img"
+            :aria-label="isLocalized(locale)
+              ? $t('apostrophe:localizeLocalized')
+              : $t('apostrophe:localizeNotYetLocalized')"
           />
         </button>
       </li>

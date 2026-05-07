@@ -1,6 +1,18 @@
+// Visually hidden but exposed to assistive technology and the
+// accessibility tree (unlike `visibility: hidden` or `display: none`,
+// which both remove the element from the a11y tree). Used to provide
+// accessible names for icon-only buttons, hidden labels, and visually
+// hidden form inputs that should remain focusable.
 .apos-sr-only {
-  visibility: hidden;
   position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px; 
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 .apos-ltr {
