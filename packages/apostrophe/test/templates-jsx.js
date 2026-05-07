@@ -81,7 +81,7 @@ describe('Templates: JSX', function() {
       html: '<script>alert("xss")</script>'
     });
     assert.match(result, /&lt;script&gt;alert\("xss"\)&lt;\/script&gt;/);
-    assert.doesNotMatch(result, /<script>/);
+    assert.doesNotMatch(result, /<script>/i);
   });
 
   it('should auto-escape attribute values, including quotes', async function() {
