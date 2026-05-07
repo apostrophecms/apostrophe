@@ -6,6 +6,8 @@
     :modifiers="['small', 'no-motion']"
     :tooltip="$t('apostrophe:recentlyEditedDocuments')"
     :icon-only="true"
+    :label="'apostrophe:recentlyEditedManagerOpen'"
+    :attrs="{ 'aria-label': $t('apostrophe:recentlyEditedManagerOpen') }"
     @click="open"
   />
 </template>

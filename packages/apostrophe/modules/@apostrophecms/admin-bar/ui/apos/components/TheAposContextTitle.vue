@@ -33,6 +33,8 @@
           :disabled="hasCustomUi || isUnpublished"
           :center-on-icon="true"
           menu-placement="bottom-end"
+          :dialog-label="'apostrophe:publicationStatusMenu'"
+          :trigger-aria-label="draftTriggerAriaLabel"
           @item-clicked="switchDraftMode"
         />
         <AposLabel
@@ -90,6 +92,13 @@ export default {
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'
       };
+    },
+    draftTriggerAriaLabel() {
+      return this.$t('apostrophe:publicationStatusTrigger', {
+        status: this.$t(
+          this.draftMode === 'draft' ? 'apostrophe:draft' : 'apostrophe:published'
+        )
+      });
     },
     isUnpublished() {
       return !this.context.lastPublishedAt;
