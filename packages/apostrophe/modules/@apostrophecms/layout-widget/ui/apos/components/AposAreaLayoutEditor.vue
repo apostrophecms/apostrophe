@@ -122,6 +122,7 @@
 
 <script>
 import { mapActions } from 'pinia';
+import get from 'lodash/get';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
 import walkWidgets from 'Modules/@apostrophecms/area/lib/walk-widgets.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
@@ -144,7 +145,11 @@ export default {
     return {
       // 'layout' | 'focus' | 'content'
       layoutMode: 'content',
-      layoutDeviceMode: 'desktop'
+      layoutDeviceMode: 'desktop',
+      // Live snapshot of the parent layout-widget's in-modal style
+      // values, fed by `apos-widget-live-preview` bus events from
+      // AposWidgetEditor while the user drags style sliders.
+      liveWidgetData: null
     };
   },
   computed: {
@@ -152,11 +157,48 @@ export default {
       return window.apos.modules[this.moduleName] || {};
     },
     gridModuleOptions() {
-      return Object.assign(
-        {},
-        this.layoutModuleOptions.grid ?? {},
-        this.parentOptions
-      );
+      const baseGrid = this.layoutModuleOptions.grid ?? {};
+      const parent = this.parentOptions || {};
+      const opts = Object.assign({}, baseGrid, parent);
+      // Resolve `gap` priority for the live editor:
+      const liveGap = this.liveGapValue;
+      if (liveGap != null) {
+        opts.gap = liveGap;
+      } else if (parent.gap != null) {
+        opts.gap = parent.gap;
+      } else if (
+        parent.gap === null ||
+        this.layoutModuleOptions.globalGapEnabled
+      ) {
+        // Parent signalled "use the cascade" (omit `--grid-gap` and let
+        // `var(--apos-layout-gap, …)` resolve it on `:root`).
+        // The snapshot is recomputed whenever `layoutMode`
+        // changes, which is the only cadence the editor needs.
+        if (this.layoutMode !== 'content') {
+          opts.gap = this.resolvedCascadeGap();
+        } else {
+          opts.gap = undefined;
+        }
+      } else {
+        opts.gap = baseGrid.gap;
+      }
+      return opts;
+    },
+    // Reactive bridge to the parent layout-widget's styles modal.
+    liveGapValue() {
+      if (this.layoutMode !== 'content') {
+        return null;
+      }
+      const fieldName = this.layoutModuleOptions.widgetGapFieldName;
+      if (!fieldName || !this.liveWidgetData) {
+        return null;
+      }
+      const value = get(this.liveWidgetData, fieldName);
+      if (value === null || value === undefined || value === '') {
+        return null;
+      }
+      const unit = this.layoutModuleOptions.widgetGapFieldUnit || '';
+      return typeof value === 'string' ? value : `${value}${unit}`;
     },
     // Meta storage is not yet implemented, return a default meta object
     layoutMeta() {
@@ -272,6 +314,8 @@ export default {
     apos.bus.$on('apos-switch-layout-mode', this.switchLayoutMode);
     apos.bus.$on('apos-layout-col-delete', this.onRemoveLayoutColumn);
     apos.bus.$on('apos-edit-styles', this.editStyles);
+    apos.bus.$on('apos-widget-live-preview', this.onWidgetLivePreview);
+    apos.bus.$on('apos-widget-live-preview-end', this.onWidgetLivePreviewEnd);
     if (!this.hasLayoutColumnWidgets) {
       this.onCreateProvision();
     }
@@ -281,6 +325,8 @@ export default {
     apos.bus.$off('apos-switch-layout-mode', this.switchLayoutMode);
     apos.bus.$off('apos-layout-col-delete', this.onRemoveLayoutColumn);
     apos.bus.$off('apos-edit-styles', this.editStyles);
+    apos.bus.$off('apos-widget-live-preview', this.onWidgetLivePreview);
+    apos.bus.$off('apos-widget-live-preview-end', this.onWidgetLivePreviewEnd);
   },
   methods: {
     ...mapActions(useWidgetStore, [
@@ -290,6 +336,37 @@ export default {
       'removeEmphasizedWidget',
       'setFocusedWidget'
     ]),
+    // Read the current resolved value of the global cascade variable
+    // `--apos-layout-gap` from `:root`. Used by `gridModuleOptions` to
+    // hand layout/focus modes a real gap value.
+    resolvedCascadeGap() {
+      if (!document?.documentElement) {
+        return undefined;
+      }
+      const value = window.getComputedStyle(document.documentElement)
+        .getPropertyValue('--apos-layout-gap')
+        .trim();
+      return value || undefined;
+    },
+    onWidgetLivePreview({ widgetId, data }) {
+      if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
+        return;
+      }
+      this.liveWidgetData = data;
+    },
+    onWidgetLivePreviewEnd({ widgetId, reason }) {
+      if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
+        return;
+      }
+      // On `save` keep the live snapshot in place: clearing
+      // here would expose the old `parent.gap` value for one frame.
+      // On `cancel` / `unmount` drop the live value immediately so the
+      // editor falls back to the SSR-rendered parent options.
+      if (reason === 'save') {
+        return;
+      }
+      this.liveWidgetData = null;
+    },
     clickOnGrid() {
       if (this.parentOptions.widgetId) {
         this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);

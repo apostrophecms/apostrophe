@@ -5,7 +5,7 @@
     data-apos-test="aposLayoutContainerClone"
     :style="{
       '--grid-columns': gridState.columns,
-      '--grid-gap': gridState.options.gap,
+      '--grid-gap': gridState.options.gap ?? null,
     }"
     @mousemove="onMouseMove($event)"
   >
@@ -938,7 +938,7 @@ $resize-ui-z-index: 2;
     inset: 0;
     grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
     grid-template-rows: repeat(var(--grid-rows), auto);
-    grid-gap: var(--grid-gap, 0);
+    gap: var(--grid-gap, var(--apos-layout-gap, 0));
 
     &.is-moving,
     &.is-resizing {

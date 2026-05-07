@@ -369,7 +369,11 @@ function filter(field, doc) {
     return true;
   }
   if (!doc[field.name] && doc[field.name] !== 0) {
-    return false;
+    // Allow the field through when it declares a `def` so the
+    // normalizer can substitute the default.
+    if (field.def === null || field.def === undefined || field.def === '') {
+      return false;
+    }
   }
   if (field.customType) {
     return true;
@@ -437,6 +441,11 @@ function normalize(field, doc, {
   let selectors = [];
   let properties = [];
   let fieldValue = doc[field.name];
+  // Fall back to the field's declared `def` when the doc carries no
+  // value.
+  if (fieldValue === null || fieldValue === undefined) {
+    fieldValue = field.def;
+  }
   let canBeInline = true;
   const fieldUnit = field.unit || '';
   const fieldMediaQuery = field.mediaQuery || rootMediaQuery;

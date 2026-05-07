@@ -1,3 +1,11 @@
+/*
+  Reserve the same vertical footprint for the SSR markup. 
+  This stylesheet is only injected on the apos scene in edit mode.
+*/
+.layout-widget > div {
+  min-height: 150px;
+}
+
 /* Tablet rules for admin interface */
 /* stylelint-disable-next-line media-feature-name-allowed-list */
 @media screen and (min-width: {$mobile-plus}px) and (max-width: {$tablet}px) {
