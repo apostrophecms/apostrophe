@@ -295,9 +295,12 @@ module.exports = {
 
         let result;
 
-        // For named files, prefer a .jsx implementation when one exists
-        // anywhere in the module's view-folder chain. Falling back to
-        // Nunjucks happens automatically below when no JSX file is found.
+        // For named files, resolve through the module's view-folder
+        // chain. Chain position wins: a closer directory's .html/.njk
+        // beats a more distant directory's .jsx. JSX only takes
+        // precedence over Nunjucks within the same directory. See
+        // resolveTemplate. Falling back to Nunjucks happens automatically
+        // below when the resolved file is not JSX.
         if (type === 'file') {
           const resolved = self.resolveTemplate(module, s);
           if (resolved && resolved.kind === 'jsx') {
