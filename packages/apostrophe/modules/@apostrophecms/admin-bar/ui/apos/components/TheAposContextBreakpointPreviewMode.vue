@@ -14,6 +14,7 @@
         :label="screen.label"
         :tooltip="$t(screen.label)"
         :title="$t(screen.label)"
+        :attrs="shortcutAttrs(screen)"
         :icon="screen.icon"
         :icon-only="true"
         type="subtle"
@@ -36,6 +37,7 @@
       :active-item="mode"
       :center-on-icon="true"
       menu-placement="bottom-end"
+      :dialog-label="'apostrophe:breakpointPreviewSelectMenu'"
       @item-clicked="selectBreakpoint"
     />
     <Transition>
@@ -320,6 +322,13 @@ export default {
     },
     setShowDropdown() {
       this.showDropdown = Object.values(this.screens).some(({ shortcut }) => !shortcut);
+    },
+    shortcutAttrs(screen) {
+      return {
+        'aria-label': this.$t('apostrophe:breakpointPreviewShortcut', {
+          breakpoint: this.$t(screen.label)
+        })
+      };
     }
   }
 };
