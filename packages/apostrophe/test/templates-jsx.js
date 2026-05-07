@@ -33,7 +33,9 @@ describe('Templates: JSX', function() {
             ignoreNoCodeWarning: true
           }
         },
-        'jsx-mixed-test': {}
+        'jsx-mixed-test': {},
+        'jsx-area-test': {},
+        'jsx-async-widget': {}
       }
     });
   });
@@ -169,6 +171,120 @@ describe('Templates: JSX', function() {
     });
     assert.match(result, /<section>/);
     assert.match(result, /<h1>Welcome<\/h1>/);
+    assert.match(
+      result,
+      /<span class="greet">Hello World \(after delay\)<\/span>/
+    );
+  });
+
+  // ---- <Area> ----
+
+  it('should render a doc area inline via the Area helper', async function() {
+    const req = apos.task.getAnonReq();
+    const piece = {
+      _id: 'jsx-area-piece-1',
+      metaType: 'doc',
+      type: 'jsx-area-test',
+      title: 'Area Host',
+      slug: 'area-host',
+      main: {
+        _id: 'jsx-area-1',
+        metaType: 'area',
+        items: [
+          {
+            _id: 'jsx-area-widget-1',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: '<p>area body</p>'
+          }
+        ]
+      }
+    };
+    const result = await apos.modules['jsx-area-test'].render(req, 'with-area', { piece });
+    assert.match(result, /<main>/);
+    assert.match(result, /class="apos-area"/);
+    assert.match(result, /<div data-rich-text>/);
+    assert.match(result, /<p>area body<\/p>/);
+  });
+
+  it('Area helper should reject calls with a missing or invalid name', async function() {
+    const req = apos.task.getAnonReq();
+    const piece = {
+      _id: 'jsx-area-piece-2',
+      metaType: 'doc',
+      type: 'jsx-area-test',
+      title: 'Bad Area',
+      slug: 'bad-area',
+      // No `nope` field exists in the schema
+      nope: {
+        _id: 'jsx-area-nope-1',
+        metaType: 'area',
+        items: []
+      }
+    };
+    let caught;
+    try {
+      await apos.modules['jsx-area-test'].render(req, 'bad-area', { piece });
+    } catch (e) {
+      caught = e;
+    }
+    assert(caught, 'expected the render to throw');
+    assert.match(caught.message, /no field named nope/);
+  });
+
+  // ---- <Widget> ----
+
+  it('should render a single widget via the Widget helper', async function() {
+    const req = apos.task.getAnonReq();
+    const widget = {
+      _id: 'jsx-widget-direct-1',
+      metaType: 'widget',
+      type: '@apostrophecms/rich-text',
+      content: '<p>just a widget</p>'
+    };
+    const result = await apos.modules['jsx-area-test'].render(req, 'with-widget', { widget });
+    assert.match(result, /<section class="wrapper">/);
+    assert.match(result, /<div data-rich-text>/);
+    assert.match(result, /<p>just a widget<\/p>/);
+    // Widget should NOT add the surrounding apos-area wrapper.
+    assert.doesNotMatch(result, /class="apos-area"/);
+  });
+
+  it('Widget helper should silently skip a null widget', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-area-test'].render(req, 'with-widget', { widget: null });
+    assert.match(result, /<section class="wrapper"><\/section>/);
+  });
+
+  // Exercises the full render-time async pipeline: a page JSX template calls
+  // <Area>, the area renders each widget via its widget.jsx, and the widget.jsx
+  // itself invokes <Component> which runs an async component that delays before
+  // returning. If any await is missing along that path — page → Area → widget.jsx
+  // → Component — the deferred output ("(after delay)") will not appear in the
+  // rendered HTML.
+  it('a JSX widget.jsx that calls an async <Component> should resolve through the full render pipeline', async function() {
+    const req = apos.task.getAnonReq();
+    const piece = {
+      _id: 'jsx-async-host',
+      metaType: 'doc',
+      type: 'jsx-area-test',
+      title: 'Async Host',
+      slug: 'async-host',
+      main: {
+        _id: 'jsx-async-area',
+        metaType: 'area',
+        items: [
+          {
+            _id: 'jsx-async-widget-instance',
+            metaType: 'widget',
+            type: 'jsx-async',
+            who: 'World'
+          }
+        ]
+      }
+    };
+    const result = await apos.modules['jsx-area-test'].render(req, 'with-area', { piece });
+    assert.match(result, /<div class="async-widget">/);
     assert.match(
       result,
       /<span class="greet">Hello World \(after delay\)<\/span>/
