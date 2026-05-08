@@ -298,6 +298,23 @@ module.exports = (moduleOptions) => {
           }
         }
       }
+    },
+    // Site-wide layout gap for @apostrophecms/layout-widget instances.
+    // Writes a CSS custom property at :root; meant to be added to the
+    // @apostrophecms/styles module only.
+    // Use on widget styles is rejected at boot.
+    layoutGap: {
+      label: 'apostrophe:styleLayoutGap',
+      help: 'apostrophe:styleLayoutGapHelp',
+      type: 'range',
+      min: 0,
+      max: 64,
+      def: 24,
+      unit: 'px',
+      property: '--apos-layout-gap',
+      selector: ':root',
+      // Marker used to identify the site-wide layout gap field.
+      layoutGapDefault: true
     }
   };
 };

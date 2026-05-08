@@ -2,6 +2,7 @@
   <li
     class="apos-context-menu__item"
     :class="menuItem.separator ? 'apos-context-menu__item--separator' : null"
+    role="presentation"
   >
     <hr
       v-if="menuItem.separator"
@@ -178,7 +179,9 @@ export default {
   }
 
   &--disabled {
-    color: var(--a-base-3);
+    // Use --a-base-2 (#6f6f6f) so the disabled label still meets WCAG AA
+    // contrast against the menu background (--a-background-primary, #fff).
+    color: var(--a-base-2);
 
     &:focus,
     &:active {
@@ -189,7 +192,7 @@ export default {
     &:focus,
     &:active {
       cursor: not-allowed;
-      color: var(--a-base-5);
+      color: var(--a-base-2);
       background-color: var(--a-base-9);
     }
   }

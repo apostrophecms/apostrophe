@@ -353,6 +353,99 @@ module.exports = (self, options) => {
         throw new Error('Preset must be an object with a "type" property.');
       }
     },
+    // Walk an expanded styles schema (array of fields) and return the
+    // names of fields that emit the given CSS `property`. Recurses into
+    // object fields. Returns [] when no schema is provided.
+    // The field names are dot notation paths.
+    fieldsWithProperty(schema, property) {
+      if (!Array.isArray(schema) || !property) {
+        return [];
+      }
+      const matches = [];
+      for (const field of schema) {
+        const props = Array.isArray(field.property)
+          ? field.property
+          : (field.property ? [ field.property ] : []);
+        if (props.includes(property)) {
+          matches.push(field.name);
+        }
+        if (Array.isArray(field.schema) && field.schema.length) {
+          for (const sub of field.schema) {
+            const subProps = Array.isArray(sub.property)
+              ? sub.property
+              : (sub.property ? [ sub.property ] : []);
+            if (subProps.includes(property)) {
+              matches.push(`${field.name}.${sub.name}`);
+            }
+          }
+        }
+      }
+      return matches;
+    },
+    // Resolve a (possibly dotted) field path against an expanded styles
+    // schema and return the corresponding field definition, or null if
+    // not found. Supports one level of nesting through `object` fields,
+    // matching what `fieldsWithProperty` enumerates.
+    getFieldByPath(schema, path) {
+      if (!Array.isArray(schema) || !path) {
+        return null;
+      }
+      const segments = String(path).split('.');
+      let current = schema;
+      let field = null;
+      for (const segment of segments) {
+        if (!Array.isArray(current)) {
+          return null;
+        }
+        field = current.find(f => f.name === segment) || null;
+        if (!field) {
+          return null;
+        }
+        current = field.schema || [];
+      }
+      return field;
+    },
+    // Walk an expanded styles schema (array of fields) and return the
+    // names of fields carrying a given marker property set to `true`.
+    // Recurses into object fields (returns dotted paths for nested
+    // matches), matching the recursion shape of `fieldsWithProperty`.
+    fieldsWithMarker(schema, markerName) {
+      if (!Array.isArray(schema) || !markerName) {
+        return [];
+      }
+      const matches = [];
+      for (const field of schema) {
+        if (field[markerName] === true) {
+          matches.push(field.name);
+        }
+        if (Array.isArray(field.schema) && field.schema.length) {
+          for (const sub of field.schema) {
+            if (sub[markerName] === true) {
+              matches.push(`${field.name}.${sub.name}`);
+            }
+          }
+        }
+      }
+      return matches;
+    },
+    // Throw if any field in the given expanded schema is marked with
+    // `layoutGapDefault: true`. The `layoutGap` preset is reserved for
+    // @apostrophecms/styles schema.
+    rejectLayoutGapPresetOnSchema(schema, contextLabel) {
+      if (!Array.isArray(schema)) {
+        return;
+      }
+      const offenders = self.fieldsWithMarker(schema, 'layoutGapDefault');
+      if (offenders.length) {
+        throw new Error(
+          `${contextLabel}: the "layoutGap" preset (or a field carrying ` +
+          '`layoutGapDefault: true`) is reserved for the @apostrophecms/styles ' +
+          'module and cannot be used as a widget styles field. ' +
+          'Use a field with `property: "gap"` instead. ' +
+          `Offending field(s): ${offenders.join(', ')}.`
+        );
+      }
+    },
     addToAdminBar() {
       if (Object.keys(self.styles).length === 0) {
         return;

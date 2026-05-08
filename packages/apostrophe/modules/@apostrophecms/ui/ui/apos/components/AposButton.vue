@@ -459,6 +459,15 @@ export default {
     }
   }
 
+  // Keyboard-focus indicator for the `quiet` modifier
+  .apos-button--quiet {
+    &:focus-visible {
+      box-shadow: 0 0 0 2px var(--a-primary-light-40);
+      outline: none;
+      border-radius: var(--a-border-radius);
+    }
+  }
+
   .apos-button--subtle {
     padding: 11px 10px; // extra pixel keeps them aligned with border'd buttons
     color: var(--a-text-primary);
@@ -757,10 +766,13 @@ export default {
   }
 
   .apos-button--no-motion {
-    &:hover:not([disabled]),
-    &:focus:not([disabled]) {
+    &:hover:not([disabled]) {
       transform: none;
       box-shadow: none;
+    }
+
+    &:focus:not([disabled]) {
+      transform: none;
     }
   }
 
