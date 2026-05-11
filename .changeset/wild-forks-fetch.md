@@ -1,5 +1,5 @@
 ---
-"apostrophe": minor
+"apostrophe": patch
 ---
 
 apostrophe and oembetter have been updated to eliminate a number of services that formerly supported
