@@ -1,3 +1,3 @@
-export default function (data, { apos }) {
-  return <div>{apos.modules['jsx-mixed-test'].safeBold('hello & <world>')}</div>;
+export default function (data, { helpers }) {
+  return <div>{helpers.modules['jsx-mixed-test'].safeBold('hello & <world>')}</div>;
 }

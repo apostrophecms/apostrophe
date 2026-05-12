@@ -363,6 +363,25 @@ describe('Templates: JSX', function() {
     assert.match(result, /<div><b>hello &amp; &lt;world&gt;<\/b><\/div>/);
   });
 
+  // ---- Full self.apos exposure ----
+
+  it('should expose full self.apos as `apos` and templateApos as `helpers` (distinct objects)', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-mixed-test'].render(req, 'apos-full', { req });
+    // apos.util.generateId() lives on self.apos.util, not on templateApos.
+    assert.match(result, /data-id-length="\d+"/);
+    // apos.doc.find(req, ...) returns a real cursor we can await.
+    assert.match(result, /data-global-count="\d+"/);
+    // apos and helpers must be different objects, not aliases.
+    assert.match(result, /data-distinct="true"/);
+    // apos.doc is the doc-module instance, with module methods like .find().
+    assert.match(result, /data-apos-doc-is-module="true"/);
+    // It is a different object than the helper bag for @apostrophecms/doc.
+    assert.match(result, /data-helpers-doc-is-helper-bag="true"/);
+    // The `modules` collections on the two objects are distinct.
+    assert.match(result, /data-modules-distinct="true"/);
+  });
+
   // ---- Localization helper ----
 
   it('should expose __t as the localization helper', async function() {

@@ -134,10 +134,13 @@ module.exports = function(self) {
     // `Template`/`Extend` to mirror Nunjucks' `extends` semantics).
     buildJsxHelpers(req, module, ambientData) {
       const helpers = {
-        apos: self.templateApos,
-        // `helpers` is an alias for `apos` so JSX authors can name the
-        // destructured variable whichever feels natural; both reach the
-        // same wrapped helper functions exposed to Nunjucks.
+        // Full `self.apos`. Unlike Nunjucks, JSX supports await, so
+        // there is no need to restrict access to this object.
+        apos: self.apos,
+        // The Nunjucks-compatible wrapper. Carries `addHelpers`-registered
+        // helpers under `helpers.modules['module-name'].method(...)` and
+        // module aliases, matching the `apos` object available in
+        // Nunjucks templates. Distinct from the JSX `apos` above.
         helpers: self.templateApos,
         // Localization helper, matching the Nunjucks `__t` global.
         __t: req.t && req.t.bind(req),
