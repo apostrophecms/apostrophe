@@ -11,7 +11,6 @@
     <nav
       ref="adminBar"
       :class="classes"
-      role="menubar"
       aria-label="Apostrophe Admin Bar"
     >
       <div class="apos-admin-bar__row">

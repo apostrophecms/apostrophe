@@ -87,6 +87,22 @@ module.exports = {
     self.prependNodes('body', 'stylesheet');
     self.prependNodes('body', 'ui');
 
+    // Detect the layout gap field (carries `layoutGapDefault: true`,
+    // see the `layoutGap` preset). If present, layout-widget will use its
+    // value as the site-wide layout gap. Only one such field is allowed —
+    // the first match wins; subsequent ones are ignored with a warning.
+    const layoutGapFieldNames = self.fieldsWithMarker(
+      self.schema, 'layoutGapDefault'
+    );
+    if (layoutGapFieldNames.length > 1) {
+      self.apos.util.warn(
+        '[@apostrophecms/styles] Multiple fields are marked with ' +
+        `\`layoutGapDefault: true\` (${layoutGapFieldNames.join(', ')}). ` +
+        'Only the first one will be used.'
+      );
+    }
+    self.layoutGapFieldName = layoutGapFieldNames[0] || null;
+
     // Detect if any top-level style field uses a background preset
     // (which includes image relationships requiring attachment annotation).
     // A hack until we analyze the relationship/attachment racing

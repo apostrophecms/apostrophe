@@ -34,6 +34,12 @@ node app @apostrophecms-pro/palette:migrate-to-styles
           stylesClasses: classes,
           stylesStylesheetVersion: createId()
         };
+        if (self.layoutGapFieldName) {
+          const value = self.apos.util.get(doc, self.layoutGapFieldName);
+          $set.aposLayoutGap = (value === null || value === undefined || value === '')
+            ? null
+            : value;
+        }
         return self.apos.doc.db.updateOne({
           type: '@apostrophecms/global',
           aposLocale: doc.aposLocale

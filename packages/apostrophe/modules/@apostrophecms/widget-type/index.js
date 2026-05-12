@@ -355,6 +355,12 @@ module.exports = {
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
           arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
         }, self);
+        // The `layoutGap` preset (and any field carrying
+        // `layoutGapDefault: true`) is reserved for global styles.
+        self.apos.styles.rejectLayoutGapPresetOnSchema(
+          self.schema,
+          `Widget "${self.name}"`
+        );
         const forbiddenFields = [
           '_id',
           'type'

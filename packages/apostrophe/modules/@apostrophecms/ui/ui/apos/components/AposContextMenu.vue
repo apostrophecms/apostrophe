@@ -19,15 +19,11 @@
         v-bind="button"
         ref="dropdownButton"
         class="apos-context-menu__btn"
-        role="button"
         :data-apos-test="identifier"
         :state="buttonState"
         :disabled="disabled"
         :tooltip="btnTooltip"
-        :attrs="{
-          'aria-haspopup': 'menu',
-          'aria-expanded': isOpen ? true : false
-        }"
+        :attrs="triggerAttrs"
         @icon="setIconToCenterTo"
         @click.stop="buttonClicked($event)"
       />
@@ -52,6 +48,7 @@
           :active-item="activeItem"
           :is-open="isOpen"
           :has-tip="hasTip"
+          :dialog-label="dialogLabel"
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
         >
@@ -87,6 +84,7 @@
             :is-open="isOpen"
             :has-tip="hasTip"
             :ignore-unfocus="ignoreUnfocus"
+            :dialog-label="dialogLabel"
             @item-clicked="menuItemClicked"
             @set-arrow="setArrow"
           >
@@ -215,6 +213,21 @@ const props = defineProps({
   ignoreUnfocus: {
     type: Boolean,
     default: false
+  },
+  // Accessible name for the popover dialog. Pass an i18n key describing
+  // the menu's purpose. Defaults to a generic "Menu" label.
+  dialogLabel: {
+    type: String,
+    default: 'apostrophe:menu'
+  },
+  // Optional accessible name for the trigger button. When provided, it
+  // overrides the visible button label as the button's accessible name
+  // (useful when the visible label alone does not convey the trigger's
+  // purpose, e.g. when the label only shows the current value of a
+  // setting the menu changes). Pass an already-translated string.
+  triggerAriaLabel: {
+    type: String,
+    default: null
   }
 });
 
@@ -318,6 +331,17 @@ const menuAttrs = computed(() => {
     ...!props.richTextMenu && { 'data-apos-menu': '' },
     'aria-hidden': !isOpen.value
   };
+});
+
+const triggerAttrs = computed(() => {
+  const attrs = {
+    'aria-haspopup': 'menu',
+    'aria-expanded': isOpen.value
+  };
+  if (props.triggerAriaLabel) {
+    attrs['aria-label'] = props.triggerAriaLabel;
+  }
+  return attrs;
 });
 
 const teleportedStyle = computed(() => {

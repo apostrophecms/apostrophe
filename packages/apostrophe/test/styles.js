@@ -1102,6 +1102,56 @@ describe('Styles', function () {
       );
     });
 
+    it('should fall back to field.def when the doc has no value', async function () {
+      const { renderGlobalStyles, renderScopedStyles } = await universal;
+
+      const schema = [
+        {
+          name: 'gap',
+          type: 'range',
+          selector: ':root',
+          property: '--apos-layout-gap',
+          unit: 'px',
+          def: 24
+        },
+        {
+          name: 'noDef',
+          type: 'range',
+          selector: ':root',
+          property: '--no-def',
+          unit: 'px'
+        }
+      ];
+
+      // Doc carries no `gap` value (e.g. field added after doc was
+      // created). The field's `def` is used.
+      const fromDef = renderGlobalStyles(schema, {});
+      assert.ok(
+        fromDef.css.includes('--apos-layout-gap: 24px'),
+        'renderGlobalStyles should emit field.def when doc value is absent'
+      );
+      assert.ok(
+        !fromDef.css.includes('--no-def'),
+        'fields without def should still be skipped'
+      );
+
+      // Saved value overrides def.
+      const fromDoc = renderGlobalStyles(schema, { gap: 12 });
+      assert.ok(
+        fromDoc.css.includes('--apos-layout-gap: 12px'),
+        'doc value should override field.def'
+      );
+
+      // Scoped renderer behaves the same way.
+      const scoped = renderScopedStyles(schema, {}, {
+        rootSelector: '#id'
+      });
+      assert.ok(
+        scoped.css.includes('--apos-layout-gap: 24px'),
+        'renderScopedStyles should emit field.def when doc value is absent'
+      );
+    });
+
     it('should include imageSizes in attachment getBrowserData', function () {
       const browserData = apos.attachment.getBrowserData(apos.task.getReq());
       assert.ok(
