@@ -13,7 +13,8 @@ module.exports = {
         options: {
           widgets: {
             '@apostrophecms/rich-text': {},
-            'jsx-async': {}
+            'jsx-async': {},
+            'jsx-ctx': {}
           }
         }
       }

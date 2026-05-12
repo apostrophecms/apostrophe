@@ -35,7 +35,8 @@ describe('Templates: JSX', function() {
         },
         'jsx-mixed-test': {},
         'jsx-area-test': {},
-        'jsx-async-widget': {}
+        'jsx-async-widget': {},
+        'jsx-ctx-widget': {}
       }
     });
   });
@@ -256,6 +257,45 @@ describe('Templates: JSX', function() {
     assert.match(result, /<section class="wrapper"><\/section>/);
   });
 
+  // ---- `with={...}` context options on Area and Widget ----
+
+  it('Area should pass `with={...}` context options through to the widget', async function() {
+    const req = apos.task.getAnonReq();
+    const piece = {
+      _id: 'jsx-ctx-area-piece-1',
+      metaType: 'doc',
+      type: 'jsx-area-test',
+      title: 'Ctx Host',
+      slug: 'ctx-host',
+      main: {
+        _id: 'jsx-ctx-area-1',
+        metaType: 'area',
+        items: [
+          {
+            _id: 'jsx-ctx-widget-1',
+            metaType: 'widget',
+            type: 'jsx-ctx'
+          }
+        ]
+      }
+    };
+    const result = await apos.modules['jsx-area-test'].render(req, 'with-area-ctx', { piece });
+    assert.match(result, /data-tag="from-area-with"/);
+    assert.match(result, /<span class="ctx-widget"[^>]*>from-area-with<\/span>/);
+  });
+
+  it('Widget should pass `with={...}` context options through to the widget', async function() {
+    const req = apos.task.getAnonReq();
+    const widget = {
+      _id: 'jsx-ctx-widget-direct-1',
+      metaType: 'widget',
+      type: 'jsx-ctx'
+    };
+    const result = await apos.modules['jsx-area-test'].render(req, 'with-widget-ctx', { widget });
+    assert.match(result, /data-tag="from-widget-with"/);
+    assert.match(result, /<span class="ctx-widget"[^>]*>from-widget-with<\/span>/);
+  });
+
   // Exercises the full render-time async pipeline: a page JSX template calls
   // <Area>, the area renders each widget via its widget.jsx, and the widget.jsx
   // itself invokes <Component> which runs an async component that delays before
@@ -322,6 +362,66 @@ describe('Templates: JSX', function() {
     assert.match(result, /<main>/);
     assert.match(result, /<p>inside the jsx layout<\/p>/);
     assert.match(result, /<footer>shared footer<\/footer>/);
+  });
+
+  // ---- <Extend> against a .jsx target behaves like <Template> ----
+
+  it('Extend against a .jsx target should behave like Template (props + children)', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-bridge-test'].render(req, 'jsx-extends-via-extend', {
+      message: 'inside via extend'
+    });
+    assert.match(result, /<title>Extend-against-JSX<\/title>/);
+    assert.match(result, /<header>shared header<\/header>/);
+    assert.match(result, /<p>inside via extend<\/p>/);
+    assert.match(result, /<footer>shared footer<\/footer>/);
+  });
+
+  // ---- <Template> against a .html target: include semantics ----
+
+  it('Template against a .html target should pass props as data and NOT override blocks', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-bridge-test'].render(req, 'include-html');
+    // Block content is the default — Template did NOT override it.
+    assert.match(result, /<p class="block-output">default-block<\/p>/);
+    // The JSX prop arrived as data.content in Nunjucks.
+    assert.match(result, /<p class="data-output">prop-content<\/p>/);
+  });
+
+  // ---- Template short-form `name=` (no `templateName`) ----
+
+  it('Template `name=` short form should resolve and pass other props as data', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-bridge-test'].render(req, 'short-form');
+    assert.match(result, /<p>short:from-short<\/p>/);
+  });
+
+  // ---- Cross-module `module:file` ----
+
+  it('Template should resolve `module:file` cross-module references', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-bridge-test'].render(req, 'cross-module');
+    assert.match(result, /<p class="partial">partial:from-cross-module<\/p>/);
+  });
+
+  // ---- templateName/name disambiguation rule ----
+
+  it('Template with both `templateName` and `name` should forward `name` as a prop and not `templateName`', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-bridge-test'].render(req, 'disambig-with-template-name');
+    // `name` is forwarded as data.name when `templateName` is also present.
+    assert.match(result, /data-name="forwarded-value"/);
+    // `templateName` itself is never forwarded as a data prop.
+    assert.match(result, /data-template-name="undefined"/);
+  });
+
+  it('Template with only `name=` should use it as the selector and not forward it as data', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-bridge-test'].render(req, 'disambig-name-only');
+    // `name` was the selector (resolved disambig-target.jsx), not a prop.
+    assert.match(result, /data-name="undefined"/);
+    // The target rendered, proving `name` selected it.
+    assert.match(result, /data-template-name="undefined"/);
   });
 
   // ---- import / require inside .jsx ----
