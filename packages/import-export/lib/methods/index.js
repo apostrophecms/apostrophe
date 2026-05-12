@@ -2,8 +2,21 @@ const fsp = require('node:fs/promises');
 const importMethods = require('./import.js');
 const exportMethods = require('./export.js');
 
+const noop = () => {};
+
 module.exports = self => {
+  const debugEnabled = self.options.debug === true ||
+    process.env.APOS_DEBUG_IMPORT_EXPORT === '1';
+  // Bind once at startup so each call site pays no per-call cost.
+  // No-op unless the module's `debug` option is `true` or the
+  // `APOS_DEBUG_IMPORT_EXPORT` env var is set.
+  const debug = debugEnabled
+    ? (...args) => self.apos.util.debug(...args)
+    : noop;
+
   return {
+    debug,
+
     registerFormats(formats = {}) {
       verifyFormats(formats);
 
@@ -56,7 +69,7 @@ module.exports = self => {
         } else {
           await fsp.unlink(filepath);
         }
-        self.apos.util.debug(`removed: ${filepath}`);
+        self.debug(`removed: ${filepath}`);
       } catch (err) {
         console.trace(err);
         self.apos.util.error(
