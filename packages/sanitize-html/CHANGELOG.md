@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.17.4
+
+### Changes
+
+- `sanitize-html` and `launder` now share a single implementation of `naughtyHref`, based on that which previously existed in `sanitize-html`.
+
+### Security
+
+- Security vulnerability: the xmp tag could be used to pass forbidden markup through sanitize-html, even when xmp itself is not explicitly allowed All users of sanitize-html should update immediately. Thanks to [Vincenzo Turturro](https://github.com/sushi-gif) for reporting the vulnerability.
+
 ## 2.17.3 (2026-04-15)
 
 ### Security
