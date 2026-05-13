@@ -16,7 +16,7 @@
       :data-apos-graph-key="props.graphKey || undefined"
       tabindex="0"
       @focus.capture="captureFocus"
-      @keyup.tab="onKeyup"
+      @keydown.tab="onKeydownTab"
       @keyup.esc="onKeyup"
     >
       <transition :name="transitionType">
@@ -476,13 +476,25 @@ onUnmounted(() => {
   }
 });
 
-function onKeyup(event) {
+// Handle Tab on keydown — before the browser moves focus.
+// Handling Tab on keyup is too late: the browser
+// has already moved focus, so the cycling logic sees the wrong
+// activeElement.
+function onKeydownTab(event) {
+  if (!shouldTrapFocus.value) {
+    return;
+  }
   if (!store.isOnTop(modalEl.value)) {
     return;
   }
+  if (event.target?.nodeName?.toLowerCase() === 'textarea') {
+    return;
+  }
+  cycleElementsToFocus(event, props.modalData.elementsToFocus);
+}
 
-  if (event.key === 'Tab') {
-    cycleElementsToFocus(event, props.modalData.elementsToFocus);
+function onKeyup(event) {
+  if (!store.isOnTop(modalEl.value)) {
     return;
   }
 
