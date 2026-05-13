@@ -102,7 +102,7 @@ module.exports = {
         linkHref: {
           label: 'apostrophe:url',
           help: 'apostrophe:linkHrefHelp',
-          type: 'string',
+          type: 'url',
           required: true,
           if: {
             linkTo: '_url'
@@ -147,6 +147,7 @@ module.exports = {
     self.showPlaceholder = self.options.placeholder !== false;
     self.options.placeholder = true;
     self.determineBestAssetUrl('placeholder');
+    self.addCleanLinkHrefMigration();
   },
   handlers(self) {
     return {
@@ -159,6 +160,33 @@ module.exports = {
   },
   methods(self) {
     return {
+      // Clear link hrefs that use dangerous URL schemes (e.g.
+      // `javascript:`) and may have been stored before the linkHref
+      // schema field was changed to `type: 'url'`. Registered per
+      // module instance so subclasses of this widget are migrated
+      // under their own widget type and migration name.
+      addCleanLinkHrefMigration() {
+        self.apos.migration.add(
+          `${self.__meta.name}:clean-naughty-link-href`,
+          async () => {
+            await self.apos.migration.eachWidget({}, async (doc, widget, dotPath) => {
+              if (widget.type !== self.name) {
+                return;
+              }
+              if (!widget.linkHref) {
+                return;
+              }
+              if (!self.apos.launder.naughtyHref(widget.linkHref)) {
+                return;
+              }
+              await self.apos.doc.db.updateOne(
+                { _id: doc._id },
+                { $set: { [`${dotPath}.linkHref`]: '' } }
+              );
+            });
+          }
+        );
+      },
       validateAndAddSchemaLabels() {
         const linkWithType = self.options.linkWithType;
 

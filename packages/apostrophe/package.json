@@ -94,7 +94,7 @@
     "is-wsl": "^2.2.0",
     "jsdom": "^24.1.0",
     "klona": "^2.0.4",
-    "launder": "^1.4.0",
+    "launder": "workspace:^",
     "lodash": "^4.18.1",
     "mini-css-extract-plugin": "^1.6.0",
     "minimatch": "^3.1.4",
