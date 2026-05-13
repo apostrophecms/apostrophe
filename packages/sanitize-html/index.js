@@ -136,11 +136,16 @@ function sanitizeHtml(html, options, _recursing) {
   // the text when the tag is disallowed makes sense for other reasons.
   // If we are not allowing these tags, we should drop their content too.
   // For other tags you would drop the tag but keep its content.
+  // `xmp` is included because htmlparser2 treats it as a raw-text element,
+  // so markup inside is parsed as text on input but would otherwise be
+  // re-emitted unescaped via the `ontext` branch below, allowing XSS bypass
+  // when `xmp` is disallowed (which is the default).
   const nonTextTagsArray = options.nonTextTags || [
     'script',
     'style',
     'textarea',
-    'option'
+    'option',
+    'xmp'
   ];
   let allowedAttributesMap;
   let allowedAttributesGlobMap;

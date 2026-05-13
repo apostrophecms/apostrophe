@@ -123,6 +123,15 @@ describe('sanitizeHtml', function() {
   it('should drop the content of textarea elements but keep the closing parent tag, when nested', function() {
     assert.equal(sanitizeHtml('<p>Paragraph<textarea>Nifty</textarea></p>'), '<p>Paragraph</p>');
   });
+  it('should drop the content of disallowed xmp elements rather than re-emit it as live markup', function() {
+    // Regression test for GHSA-rpr9-rxv7-x643: htmlparser2 parses the contents
+    // of <xmp> as raw text, so without xmp in nonTextTags the inner markup
+    // would be re-emitted unescaped and become live HTML.
+    assert.equal(sanitizeHtml('<xmp><script>alert(1)</script></xmp>'), '');
+    assert.equal(sanitizeHtml('<xmp><img src=x onerror=alert(1)></xmp>'), '');
+    assert.equal(sanitizeHtml('<xmp><svg><script>alert(1)</script></svg></xmp>'), '');
+    assert.equal(sanitizeHtml('before<xmp><script>alert(1)</script></xmp>after'), 'beforeafter');
+  });
   it('should retain the content of fibble elements by default', function() {
     assert.equal(sanitizeHtml('<fibble>Nifty</fibble><p>Paragraph</p>'), 'Nifty<p>Paragraph</p>');
   });
