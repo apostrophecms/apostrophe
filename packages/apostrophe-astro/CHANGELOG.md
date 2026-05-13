@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.12.0
+
+### Adds
+
+- Editors can now control the layout-widget gap through the styles system, both site-wide via a global `layoutGap` preset and per widget via a `gap` styles field. New Layout widget option `className` allows for additional CSS class names to be added to the widget Grid container.
+- Log aposResponse errors server side in the Astro process. Thanks to [Harouna Traore](https://github.com/haroun).
+
 ## 1.11.0 (2026-04-15)
 
 ### Adds
