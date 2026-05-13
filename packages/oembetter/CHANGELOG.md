@@ -4,7 +4,7 @@
 
 ### Changes
 
-- 073e356: - remove obsolete services and those which no longer support anonymous oembed from the suggestedAllowlist and suggestedEndpoints, to ensure they do not become a security risk in the future
+- remove obsolete services and those which no longer support anonymous oembed from the suggestedAllowlist and suggestedEndpoints, to ensure they do not become a security risk in the future
 - update the fast-xml-parser dependency
 
 ### Adds
