@@ -4,12 +4,12 @@
 
 ### Changes
 
-- remove obsolete services and those which no longer support anonymous oembed from the suggestedAllowlist and suggestedEndpoints, to ensure they do not become a security risk in the future
-- update the fast-xml-parser dependency
+- Remove obsolete services and those which no longer support anonymous oembed from `suggestedAllowlist` and `suggestedEndpoints`, to ensure they do not become a security risk in the future. `suggestedAllowlist` now contains: `youtube.com`, `youtu.be`, `dailymotion.com`, `flickr.com`, `vimeo.com`, `soundcloud.com`, `twitter.com`, `x.com`. `suggestedEndpoints` now contains hardcoded endpoints for Vimeo (`https://vimeo.com/api/oembed.json`), YouTube and youtu.be (`https://www.youtube.com/oembed`), and Twitter/X (`https://publish.twitter.com/oembed`).
+- Update the `fast-xml-parser` dependency.
 
 ### Adds
 
-- add x.com endpoint
+- Add `x.com` to both `suggestedAllowlist` and `suggestedEndpoints`, pointing to `https://publish.twitter.com/oembed`.
 
 ## 1.1.4 (2024-08-07)
 

@@ -5,6 +5,7 @@
 ### Adds
 
 - Layout widget gap is now controllable through the styles system, both site-wide via a global `layoutGap` preset and per widget via a `gap` styles field. A new `className` option allows additional CSS classes to be added to the widget grid container.
+- The `@apostrophecms/oembed` module now exposes `minimumAllowlist` and `minimumEndpoints` options, allowing developers to further restrict the set of allowed embed domains and configured endpoints beyond the defaults. `minimumAllowlist` defaults to oembetter's `suggestedAllowlist` (`youtube.com`, `youtu.be`, `dailymotion.com`, `flickr.com`, `vimeo.com`, `soundcloud.com`, `twitter.com`, `x.com`) plus `wufoo.com`, `infogr.am`, and `slideshare.net`. `minimumEndpoints` defaults to oembetter's `suggestedEndpoints` unchanged: hardcoded endpoints for Vimeo, YouTube, youtu.be, and Twitter/X.
 
 ### Fixes
 
@@ -13,7 +14,7 @@
 - Fixed orderable table array items dragging the entire floating window.
 - Fixed keyboard shortcuts for widget operations (copy, cut, paste, duplicate, remove) blocking the browser's native clipboard behavior when no widget was focused. Previously, selecting and copying text while logged in was intercepted unconditionally by the admin UI.
 - Removed duplicate `<meta charset>` tag from `outerLayoutBase.html` and standardized charset to `utf-8`.
-- Updated `apostrophe` and `oembetter` to remove oembed services that no longer support public access, eliminating them as a potential future XSS vector. New `minimumAllowlist` and `minimumEndpoints` options on `@apostrophecms/oembed` allow developers to prune the list further.
+- Updated `apostrophe` and `oembetter` to remove oembed services that no longer support public access, eliminating them as a potential future XSS vector.
 
 ### Security
 
