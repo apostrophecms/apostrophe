@@ -293,4 +293,204 @@ describe('Rich Text Widget', function () {
     assert(text2.includes('src="/uploads/attachments/attachment-1-attachment-1.max.jpg" alt="Updated Test Image 1"'));
     assert(text2.includes('src="/uploads/attachments/attachment-2-attachment-2.max.jpg" alt="Updated Test Image 2"'));
   });
+
+  describe('image import allowlist (SSRF mitigation)', function () {
+    let originalConsoleError;
+
+    before(function () {
+      // The sanitize method intentionally console.errors thrown errors to
+      // surface stack traces during development; silence that noise during
+      // these negative tests.
+      // eslint-disable-next-line no-console
+      originalConsoleError = console.error;
+      // eslint-disable-next-line no-console
+      console.error = () => {};
+    });
+
+    after(function () {
+      // eslint-disable-next-line no-console
+      console.error = originalConsoleError;
+    });
+
+    it('allows rich text HTML import without `<img>` tags even with no allowlist configured', async function () {
+      apos = await t.create({
+        root: module,
+        modules: {}
+      });
+
+      const manager = apos.modules['@apostrophecms/rich-text-widget'];
+      const req = apos.task.getReq();
+
+      const output = await manager.sanitize(req, {
+        type: '@apostrophecms/rich-text',
+        content: '<p>seed</p>',
+        import: {
+          html: '<p>Hello <strong>world</strong></p>'
+        }
+      }, {});
+
+      assert.match(output.content, /Hello/);
+    });
+
+    it('rejects an image fetch for a hostname not in the allowlist and never calls fetch', async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/rich-text-widget': {
+            options: {
+              imageImportAllowedHostnames: [ 'images.example.com' ]
+            }
+          }
+        }
+      });
+
+      const manager = apos.modules['@apostrophecms/rich-text-widget'];
+      const req = apos.task.getReq();
+
+      const originalFetch = global.fetch;
+      let fetchCalled = false;
+      global.fetch = async () => {
+        fetchCalled = true;
+        throw new Error('fetch should not be called');
+      };
+
+      try {
+        await assert.rejects(
+          () => manager.sanitize(req, {
+            type: '@apostrophecms/rich-text',
+            content: '<p>seed</p>',
+            import: {
+              html: '<img src="http://127.0.0.1:7777/secret.png">',
+              baseUrl: 'http://127.0.0.1:7777'
+            }
+          }, {}),
+          (err) => {
+            assert.equal(err.name, 'forbidden');
+            assert.match(err.message, /127\.0\.0\.1/);
+            assert.match(err.message, /imageImportAllowedHostnames/);
+            return true;
+          }
+        );
+      } finally {
+        global.fetch = originalFetch;
+      }
+
+      assert.equal(fetchCalled, false);
+    });
+
+    it('rejects rich text HTML import for non-http(s) protocols even if hostname matches', async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/rich-text-widget': {
+            options: {
+              imageImportAllowedHostnames: [ 'localhost' ]
+            }
+          }
+        }
+      });
+
+      const manager = apos.modules['@apostrophecms/rich-text-widget'];
+      const req = apos.task.getReq();
+
+      await assert.rejects(
+        () => manager.sanitize(req, {
+          type: '@apostrophecms/rich-text',
+          content: '<p>seed</p>',
+          import: {
+            html: '<img src="file:///etc/passwd">',
+            baseUrl: 'file://localhost'
+          }
+        }, {}),
+        (err) => {
+          assert.equal(err.name, 'forbidden');
+          return true;
+        }
+      );
+    });
+
+    it('proceeds to fetch when import URL hostname is on the allowlist', async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/rich-text-widget': {
+            options: {
+              imageImportAllowedHostnames: [ 'images.example.com' ]
+            }
+          }
+        }
+      });
+
+      const manager = apos.modules['@apostrophecms/rich-text-widget'];
+      const req = apos.task.getReq();
+
+      const originalFetch = global.fetch;
+      const fetchedUrls = [];
+      // Throw a unique marker error from inside fetch. If the allowlist
+      // passes, the marker error propagates; if the allowlist rejects, we
+      // would see a `forbidden` error instead.
+      const marker = new Error('FETCH_REACHED');
+      marker.name = 'FetchReached';
+      global.fetch = async (url) => {
+        fetchedUrls.push(url.toString());
+        throw marker;
+      };
+
+      try {
+        await assert.rejects(
+          () => manager.sanitize(req, {
+            type: '@apostrophecms/rich-text',
+            content: '<p>seed</p>',
+            import: {
+              html: '<img src="https://images.example.com/foo.png">',
+              baseUrl: 'https://images.example.com'
+            }
+          }, {}),
+          (err) => err.name === 'FetchReached'
+        );
+      } finally {
+        global.fetch = originalFetch;
+      }
+
+      assert.deepEqual(fetchedUrls, [ 'https://images.example.com/foo.png' ]);
+    });
+
+    it('helper methods reflect option configuration', async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/rich-text-widget': {
+            options: {
+              imageImportAllowedHostnames: [ 'Images.Example.com', '', null, 'cdn.example.com' ]
+            }
+          }
+        }
+      });
+
+      const manager = apos.modules['@apostrophecms/rich-text-widget'];
+
+      assert.deepEqual(
+        manager.getImageImportAllowedHostnames(),
+        [ 'images.example.com', 'cdn.example.com' ]
+      );
+
+      const allowed = manager.getImageImportAllowedHostnames();
+      assert.equal(
+        manager.isImageImportHostnameAllowed(new URL('https://images.example.com/foo.png'), allowed),
+        true
+      );
+      assert.equal(
+        manager.isImageImportHostnameAllowed(new URL('https://IMAGES.example.com/foo.png'), allowed),
+        true
+      );
+      assert.equal(
+        manager.isImageImportHostnameAllowed(new URL('https://attacker.example.com/foo.png'), allowed),
+        false
+      );
+      assert.equal(
+        manager.isImageImportHostnameAllowed(new URL('file:///etc/passwd'), allowed),
+        false
+      );
+    });
+  });
 });

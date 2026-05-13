@@ -1,13 +1,12 @@
 require('shelljs/global');
 // Utilities from shelljs
-/* globals exec cd rm */
+/* globals cd rm */
 const prompts = require('prompts');
 const path = require('path');
 const util = require('../util');
 const config = require('../../config');
 const fs = require('fs');
 const { stripIndent } = require('common-tags');
-const quote = require('shell-quote').quote;
 
 module.exports = function (program) {
   program
@@ -52,7 +51,7 @@ module.exports = function (program) {
       );
 
       // Clone the boilerplate project
-      if (exec(`git clone ${boilerplateUrl} ${shortName}`).code !== 0) {
+      if ((await util.spawnSafe('git', [ 'clone', boilerplateUrl, shortName ])).code !== 0) {
         await util.error('create', 'Error cloning starter code.');
         return false;
       }
@@ -175,15 +174,21 @@ module.exports = function (program) {
 
       const userTask = '@apostrophecms/user:add';
       const appJsPath = resolvePath('app.js');
-      let createUserCommand = `node ${appJsPath} ${userTask} admin admin`;
+      const createUserArgs = [ appJsPath, userTask, 'admin', 'admin' ];
 
-      // Prepend MongoDB URI if provided
+      const createUserEnv = { ...process.env };
       if (options.mongodbUri) {
-        // Ensure the URI is properly quoted to handle special characters
-        createUserCommand = `APOS_MONGODB_URI=${quote([ options.mongodbUri ])} ` + createUserCommand;
+        createUserEnv.APOS_MONGODB_URI = options.mongodbUri;
       }
-      util.log('create', `Creating admin user with command: ${createUserCommand}`);
-      exec(`echo "${response.pw}" | ${createUserCommand}`);
+      util.log('create', `Creating admin user: node ${createUserArgs.join(' ')}`);
+      const createUserResult = await util.spawnSafe('node', createUserArgs, {
+        env: createUserEnv,
+        input: `${response.pw ?? ''}\n`
+      });
+      if (createUserResult.code !== 0) {
+        await util.error('create', `Admin user creation exited with code ${createUserResult.code}.`);
+        return false;
+      }
       util.log('create', 'All done! 🎉 Login as "admin" at the /login URL.');
 
       await util.success('create');

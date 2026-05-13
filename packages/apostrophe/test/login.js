@@ -11,6 +11,7 @@ describe('Login', function () {
   before(async function () {
     apos = await t.create({
       root: module,
+      baseUrl: 'http://localhost:3000',
       modules: {
         '@apostrophecms/express': {
           options: {
@@ -602,8 +603,14 @@ describe('Login', function () {
       assert.equal(opts.to, user.email);
       assert(opts.subject);
 
-      // Safe the token for the reset tests
+      // The reset URL must be derived from apos.baseUrl, not from the
+      // request's Host header, to prevent host header injection attacks
+      // that could leak the reset token to an attacker-controlled domain.
       const url = new URL(data.url);
+      assert.equal(`${url.protocol}//${url.host}`, apos.baseUrl);
+      assert.equal(data.site, new URL(apos.baseUrl).hostname);
+
+      // Safe the token for the reset tests
       resetToken = url.searchParams.get('reset');
     }
 
@@ -796,6 +803,56 @@ describe('Login', function () {
       }
     );
     assert(page.match(/logged in/));
+  });
+
+  it('should ignore a spoofed Host header on POST /login/reset-request', async function () {
+    let args;
+    const orig = apos.login.email;
+    apos.login.email = (req, ...a) => {
+      args = a;
+    };
+
+    let user = apos.user.newInstance();
+    user.title = 'spoofUser';
+    user.email = 'spoofUser@example.com';
+    user.username = 'spoofUser';
+    user.password = 'secret';
+    user.role = 'guest';
+    user = await apos.user.insert(apos.task.getReq(), user);
+
+    const jar = apos.http.jar();
+    await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/reset-request',
+      {
+        body: {
+          email: 'spoofUser',
+          session: true
+        },
+        headers: {
+          Host: 'evil.attacker.example'
+        },
+        jar
+      }
+    );
+
+    assert(Array.isArray(args));
+    const [ , data ] = args;
+    const url = new URL(data.url);
+    // The reset URL must reflect the configured apos.baseUrl, not the
+    // attacker-supplied Host header.
+    assert.equal(`${url.protocol}//${url.host}`, apos.baseUrl);
+    assert.notEqual(url.hostname, 'evil.attacker.example');
+    assert.equal(data.site, new URL(apos.baseUrl).hostname);
+    assert.notEqual(data.site, 'evil.attacker.example');
+
+    apos.login.email = orig;
   });
 
   it('should find user by reset data', async function () {
@@ -1051,6 +1108,70 @@ describe('Login', function () {
       ];
 
       assert.deepEqual(actual, expected);
+    });
+  });
+
+  describe('passwordReset without apos.baseUrl', function () {
+    let apos3;
+
+    this.timeout(20000);
+
+    before(async function () {
+      apos3 = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/login': {
+            options: {
+              passwordReset: true,
+              environmentLabel: 'test'
+            }
+          }
+        }
+      });
+    });
+
+    after(function () {
+      return t.destroy(apos3);
+    });
+
+    it('should reject reset-request when apos.baseUrl is not configured', async function () {
+      assert(!apos3.baseUrl);
+
+      const user = apos3.user.newInstance();
+      user.title = 'noBaseUrlUser';
+      user.username = 'noBaseUrlUser';
+      user.email = 'noBaseUrlUser@example.com';
+      user.password = 'secret';
+      user.role = 'guest';
+      await apos3.user.insert(apos3.task.getReq(), user);
+
+      const jar = apos3.http.jar();
+      await apos3.http.get('/', { jar });
+
+      let emailed = false;
+      const orig = apos3.login.email;
+      apos3.login.email = () => {
+        emailed = true;
+      };
+
+      await assert.rejects(() => apos3.http.post(
+        '/api/v1/@apostrophecms/login/reset-request',
+        {
+          body: {
+            email: 'noBaseUrlUser',
+            session: true
+          },
+          jar
+        }
+      ), {
+        status: 400
+      });
+
+      // Confirm no reset email was sent — the request must be refused
+      // before any token is generated or message dispatched.
+      assert.equal(emailed, false);
+
+      apos3.login.email = orig;
     });
   });
 });

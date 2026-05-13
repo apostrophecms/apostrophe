@@ -295,7 +295,17 @@ module.exports = {
           async resetRequest(req) {
             const MIN_RESPONSE_TIME = 2000;
             const startTime = Date.now();
-            const site = (req.headers.host || '').replace(/:\d+$/, '');
+            // Refuse to construct reset URLs from the request's Host header,
+            // which is attacker-controlled. Operators must configure the
+            // baseUrl option (or the APOS_BASE_URL environment variable) so
+            // the link in the reset email points to the real site rather than
+            // wherever the attacker aimed their crafted request.
+            if (!self.apos.baseUrl) {
+              throw self.apos.error(
+                'invalid',
+                'The baseUrl option (or APOS_BASE_URL environment variable) must be configured to enable password reset'
+              );
+            }
             const email = self.apos.launder.string(req.body.email);
             if (!email.length) {
               throw self.apos.error('invalid', req.t('apostrophe:loginResetEmailRequired'));
@@ -319,22 +329,10 @@ module.exports = {
               user.passwordReset = reset;
               user.passwordResetAt = new Date();
               await self.apos.user.update(req, user, { permissions: false });
-              let port = (req.headers.host || '').split(':')[1];
-              if (!port || [ '80', '443' ].includes(port)) {
-                port = '';
-              } else {
-                port = `:${port}`;
-              }
-              const parsed = new URL(
-                req.absoluteUrl,
-                self.apos.baseUrl
-                  ? undefined
-                  : `${req.protocol}://${req.hostname}${port}`
-              );
-              parsed.pathname = self.login();
-              parsed.search = '?';
+              const parsed = new URL(self.login(), self.apos.baseUrl);
               parsed.searchParams.append('reset', reset);
               parsed.searchParams.append('email', user.email);
+              const site = parsed.hostname;
               try {
                 await self.email(req, 'passwordResetEmail', {
                   user,
