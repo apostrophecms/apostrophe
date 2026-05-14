@@ -1,5 +1,64 @@
 const dayjs = require('dayjs');
 
+// Strip characters browsers ignore inside URLs (control chars and
+// embedded HTML comments) that are commonly used to sneak XSS
+// payloads past simple scheme checks.
+function cleanHref(href) {
+  // Browsers ignore character codes of 32 (space) and below in a surprising
+  // number of situations. Start reading here:
+  // https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Embedded_tab
+  // eslint-disable-next-line no-control-regex
+  href = href.replace(/[\x00-\x20]+/g, '');
+  // Clobber any comments in URLs, which the browser might
+  // interpret inside an XML data island, allowing
+  // a javascript: URL to be snuck through
+  while (true) {
+    const firstIndex = href.indexOf('<!--');
+    if (firstIndex === -1) {
+      break;
+    }
+    const lastIndex = href.indexOf('-->', firstIndex + 4);
+    if (lastIndex === -1) {
+      break;
+    }
+    href = href.substring(0, firstIndex) + href.substring(lastIndex + 3);
+  }
+  return href;
+}
+
+// Returns true if `href` should be rejected as unsafe. Used to block
+// `javascript:`, `data:` and other dangerous schemes both when
+// validating URL fields and when sanitizing HTML attribute values.
+//
+// `options.allowedSchemes` is an array of permitted URL schemes
+// (defaults to the schemes long permitted by `launder().url`).
+// `options.allowProtocolRelative` controls whether protocol-relative
+// URLs (e.g. `//example.com`) are permitted. Defaults to true.
+function naughtyHref(href, options) {
+  options = options || {};
+  const allowedSchemes = options.allowedSchemes ||
+    [ 'http', 'https', 'ftp', 'mailto', 'tel', 'sms' ];
+  const allowProtocolRelative = (options.allowProtocolRelative !== false);
+  if (typeof href !== 'string') {
+    return false;
+  }
+  href = cleanHref(href);
+  // Case insensitive so we don't get faked out by JAVASCRIPT #1
+  // Allow more characters after the first so we don't get faked
+  // out by certain schemes browsers accept
+  const matches = href.match(/^([a-zA-Z][a-zA-Z0-9.\-+]*):/);
+  if (!matches) {
+    // Protocol-relative URL starting with any combination of '/' and '\'
+    if (href.match(/^[/\\]{2}/)) {
+      return !allowProtocolRelative;
+    }
+    // No scheme
+    return false;
+  }
+  const scheme = matches[1].toLowerCase();
+  return allowedSchemes.indexOf(scheme) === -1;
+}
+
 module.exports = function(options) {
   const self = {};
   self.options = options || {};
@@ -91,18 +150,27 @@ module.exports = function(options) {
     return i;
   };
 
+  self.naughtyHref = naughtyHref;
+
   self.url = function(s, def, httpsFix) {
     s = self.string(s, def);
     // Allow the default to be undefined, null, false, etc.
     if (s === def) {
       return s;
     }
-    s = fixUrl(s);
-    if (s === null) {
+    // Strip characters browsers ignore that are commonly used to
+    // smuggle dangerous schemes past validation.
+    s = cleanHref(s);
+    // Reject naughty URLs (e.g. `javascript:`, `data:`) before fixUrl
+    // runs. Otherwise fixUrl could mask such schemes by prepending
+    // `https://` to anything containing a `.`, turning
+    // `javascript:alert(document.domain)` into a syntactically odd
+    // but accepted `https://...` URL.
+    if (naughtyHref(s)) {
       return def;
     }
-    s = naughtyHref(s);
-    if (s === true) {
+    s = fixUrl(s);
+    if (s === null) {
       return def;
     }
     return s;
@@ -119,39 +187,6 @@ module.exports = function(options) {
         return null;
       }
     };
-
-    function naughtyHref(href) {
-      // Browsers ignore character codes of 32 (space) and below in a surprising
-      // number of situations. Start reading here:
-      // https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Embedded_tab
-      // eslint-disable-next-line no-control-regex
-      href = href.replace(/[\x00-\x20]+/g, '');
-      // Clobber any comments in URLs, which the browser might
-      // interpret inside an XML data island, allowing
-      // a javascript: URL to be snuck through
-      while (true) {
-        const firstIndex = href.indexOf('<!--');
-        if (firstIndex === -1) {
-          break;
-        }
-        const lastIndex = href.indexOf('-->', firstIndex + 4);
-        if (lastIndex === -1) {
-          break;
-        }
-        href = href.substring(0, firstIndex) + href.substring(lastIndex + 3);
-      }
-      // Case insensitive so we don't get faked out by JAVASCRIPT #1
-      // Allow more characters after the first so we don't get faked
-      // out by certain schemes browsers accept
-      const matches = href.match(/^([a-zA-Z]+):/);
-      if (!matches) {
-        // No scheme = no way to inject js (right?)
-        return href;
-      }
-      const scheme = matches[1].toLowerCase();
-
-      return (![ 'http', 'https', 'ftp', 'mailto', 'tel', 'sms' ].includes(scheme)) ? true : href;
-    }
   };
 
   self.select = function(s, choices, def) {
@@ -497,3 +532,7 @@ module.exports = function(options) {
   };
   return self;
 };
+
+// Expose `naughtyHref` statically so callers (notably sanitize-html)
+// can use it without instantiating a launder.
+module.exports.naughtyHref = naughtyHref;

@@ -58,6 +58,15 @@
 <script>
 import dayjs from 'dayjs';
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export default {
   name: 'TheAposContextTitle',
   props: {
@@ -80,8 +89,8 @@ export default {
       if (this.context.updatedBy) {
         const editor = this.context.updatedBy;
         editorLabel = '';
-        editorLabel += editor.title ? `${editor.title} ` : '';
-        editorLabel += editor.username ? `(${editor.username})` : '';
+        editorLabel += editor.title ? `${escapeHtml(editor.title)} ` : '';
+        editorLabel += editor.username ? `(${escapeHtml(editor.username)})` : '';
       }
       return editorLabel;
     },

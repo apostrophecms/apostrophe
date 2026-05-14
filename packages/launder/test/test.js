@@ -250,6 +250,76 @@ describe('launder', function() {
     it('should add https:// when missing if httpsFix is true', function() {
       assert(launder.url('www.apostrophenow.org', null, true) === 'https://www.apostrophenow.org');
     });
+    it('should reject javascript: even when the URL contains a dot', function() {
+      // Without rejecting before fixUrl, the dot in `document.domain`
+      // causes fixUrl to prepend `https://`, masking the dangerous
+      // scheme rather than discarding it.
+      assert(launder.url('javascript:alert(document.domain)', 'http://www.apostrophenow.org') === 'http://www.apostrophenow.org');
+    });
+    it('should reject javascript: with mixed case', function() {
+      assert(launder.url('JaVaScRiPt:alert(1)', 'http://www.apostrophenow.org') === 'http://www.apostrophenow.org');
+    });
+    it('should reject javascript: smuggled past simple checks with control characters', function() {
+      assert(launder.url('java\tscript:alert(1)', 'http://www.apostrophenow.org') === 'http://www.apostrophenow.org');
+    });
+    it('should reject javascript: smuggled past simple checks with HTML comments', function() {
+      assert(launder.url('java<!---->script:alert(1)', 'http://www.apostrophenow.org') === 'http://www.apostrophenow.org');
+    });
+    it('should reject data: urls', function() {
+      assert(launder.url('data:text/html,<script>alert(1)</script>', 'http://www.apostrophenow.org') === 'http://www.apostrophenow.org');
+    });
+    it('should preserve relative urls beginning with /', function() {
+      assert(launder.url('/about') === '/about');
+    });
+    it('should preserve protocol-relative urls', function() {
+      assert(launder.url('//www.apostrophenow.org') === '//www.apostrophenow.org');
+    });
+  });
+
+  describe('naughtyHref', function() {
+    it('should report javascript: as naughty', function() {
+      assert(launder.naughtyHref('javascript:alert(1)') === true);
+    });
+    it('should report data: as naughty', function() {
+      assert(launder.naughtyHref('data:text/html,<script>alert(1)</script>') === true);
+    });
+    it('should report mixed-case javascript: as naughty', function() {
+      assert(launder.naughtyHref('JaVaScRiPt:alert(1)') === true);
+    });
+    it('should report control-character-smuggled javascript: as naughty', function() {
+      assert(launder.naughtyHref('java\tscript:alert(1)') === true);
+    });
+    it('should report HTML-comment-smuggled javascript: as naughty', function() {
+      assert(launder.naughtyHref('java<!---->script:alert(1)') === true);
+    });
+    it('should accept allowed schemes', function() {
+      assert(launder.naughtyHref('https://example.com') === false);
+      assert(launder.naughtyHref('http://example.com') === false);
+      assert(launder.naughtyHref('ftp://example.com') === false);
+      assert(launder.naughtyHref('mailto:foo@example.com') === false);
+      assert(launder.naughtyHref('tel:1234') === false);
+      assert(launder.naughtyHref('sms:1234') === false);
+    });
+    it('should accept relative URLs', function() {
+      assert(launder.naughtyHref('/about') === false);
+      assert(launder.naughtyHref('about') === false);
+      assert(launder.naughtyHref('#fragment') === false);
+    });
+    it('should accept protocol-relative URLs by default', function() {
+      assert(launder.naughtyHref('//example.com') === false);
+    });
+    it('should reject protocol-relative URLs when allowProtocolRelative is false', function() {
+      assert(launder.naughtyHref('//example.com', { allowProtocolRelative: false }) === true);
+    });
+    it('should respect a custom allowedSchemes list', function() {
+      assert(launder.naughtyHref('https://example.com', { allowedSchemes: [ 'http' ] }) === true);
+      assert(launder.naughtyHref('http://example.com', { allowedSchemes: [ 'http' ] }) === false);
+    });
+    it('should return false for non-string input', function() {
+      assert(launder.naughtyHref(undefined) === false);
+      assert(launder.naughtyHref(null) === false);
+      assert(launder.naughtyHref(42) === false);
+    });
   });
 
   describe('select', function() {

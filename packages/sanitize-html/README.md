@@ -695,13 +695,13 @@ Normally, with a few exceptions, if a tag is not allowed, all of the text within
 
 The exceptions are:
 
-`style`, `script`, `textarea`, `option`
+`style`, `script`, `textarea`, `option`, `xmp`
 
 If you wish to replace this list, for instance to discard whatever is found
 inside a `noscript` tag, use the `nonTextTags` option:
 
 ```js
-nonTextTags: [ 'style', 'script', 'textarea', 'option', 'noscript' ]
+nonTextTags: [ 'style', 'script', 'textarea', 'option', 'xmp', 'noscript' ]
 ```
 
 Note that if you use this option you are responsible for stating the entire list. This gives you the power to retain the content of `textarea`, if you want to.

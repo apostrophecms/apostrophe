@@ -4,6 +4,7 @@ const { isPlainObject } = require('is-plain-object');
 const deepmerge = require('deepmerge');
 const parseSrcset = require('parse-srcset');
 const { parse: postcssParse } = require('postcss');
+const { naughtyHref: launderNaughtyHref } = require('launder');
 // Tags that can conceivably represent stand-alone media.
 const mediaTags = [
   'img', 'audio', 'video', 'picture', 'svg',
@@ -135,11 +136,16 @@ function sanitizeHtml(html, options, _recursing) {
   // the text when the tag is disallowed makes sense for other reasons.
   // If we are not allowing these tags, we should drop their content too.
   // For other tags you would drop the tag but keep its content.
+  // `xmp` is included because htmlparser2 treats it as a raw-text element,
+  // so markup inside is parsed as text on input but would otherwise be
+  // re-emitted unescaped via the `ontext` branch below, allowing XSS bypass
+  // when `xmp` is disallowed (which is the default).
   const nonTextTagsArray = options.nonTextTags || [
     'script',
     'style',
     'textarea',
-    'option'
+    'option',
+    'xmp'
   ];
   let allowedAttributesMap;
   let allowedAttributesGlobMap;
@@ -726,45 +732,15 @@ function sanitizeHtml(html, options, _recursing) {
   }
 
   function naughtyHref(name, href) {
-    // Browsers ignore character codes of 32 (space) and below in a surprising
-    // number of situations. Start reading here:
-    // https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Embedded_tab
-    // eslint-disable-next-line no-control-regex
-    href = href.replace(/[\x00-\x20]+/g, '');
-    // Clobber any comments in URLs, which the browser might
-    // interpret inside an XML data island, allowing
-    // a javascript: URL to be snuck through
-    while (true) {
-      const firstIndex = href.indexOf('<!--');
-      if (firstIndex === -1) {
-        break;
-      }
-      const lastIndex = href.indexOf('-->', firstIndex + 4);
-      if (lastIndex === -1) {
-        break;
-      }
-      href = href.substring(0, firstIndex) + href.substring(lastIndex + 3);
-    }
-    // Case insensitive so we don't get faked out by JAVASCRIPT #1
-    // Allow more characters after the first so we don't get faked
-    // out by certain schemes browsers accept
-    const matches = href.match(/^([a-zA-Z][a-zA-Z0-9.\-+]*):/);
-    if (!matches) {
-      // Protocol-relative URL starting with any combination of '/' and '\'
-      if (href.match(/^[/\\]{2}/)) {
-        return !options.allowProtocolRelative;
-      }
-
-      // No scheme
-      return false;
-    }
-    const scheme = matches[1].toLowerCase();
-
-    if (has(options.allowedSchemesByTag, name)) {
-      return options.allowedSchemesByTag[name].indexOf(scheme) === -1;
-    }
-
-    return !options.allowedSchemes || options.allowedSchemes.indexOf(scheme) === -1;
+    // Resolve the per-tag scheme allowlist if one is configured for
+    // this tag, otherwise fall back to the global allowedSchemes.
+    const allowedSchemes = has(options.allowedSchemesByTag, name)
+      ? options.allowedSchemesByTag[name]
+      : (options.allowedSchemes || []);
+    return launderNaughtyHref(href, {
+      allowedSchemes,
+      allowProtocolRelative: options.allowProtocolRelative
+    });
   }
 
   function parseUrl(value) {
