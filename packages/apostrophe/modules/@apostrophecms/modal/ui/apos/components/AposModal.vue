@@ -134,6 +134,7 @@
             <footer
               v-if="hasSlot('footer')"
               class="apos-modal__footer"
+              role="none"
             >
               <div class="apos-modal__footer__inner">
                 <slot name="footer" />
