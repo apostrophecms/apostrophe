@@ -67,6 +67,7 @@
             <header
               v-if="!modal.disableHeader"
               class="apos-modal__header"
+              role="none"
             >
               <div class="apos-modal__header__main">
                 <div
