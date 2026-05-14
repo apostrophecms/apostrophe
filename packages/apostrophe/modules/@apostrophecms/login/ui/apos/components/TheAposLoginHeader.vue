@@ -112,16 +112,16 @@ export default {
       text-transform: capitalize;
       padding: 6px 12px;
       color: var(--a-white);
-      background: var(--a-success);
+      background: var(--a-success-dark);
       border-radius: 5px;
     }
 
     &--development {
-      background: var(--a-danger);
+      background: var(--a-danger-button-hover);
     }
 
     &--success, &--staging {
-      background: var(--a-warning);
+      background: var(--a-warning-dark);
     }
   }
 
