@@ -632,6 +632,7 @@
   "slugInUse": "Slug already in use",
   "someoneElseTookControl": "{{ who }} took control of this document in another tab or window. A document can only be edited in one place at a time.",
   "splitCell": "Split Cell",
+  "status": "Status",
   "style": "Style",
   "styleAlignment": "Alignment",
   "styleBackground": "Background",
