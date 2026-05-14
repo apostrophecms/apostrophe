@@ -1231,7 +1231,7 @@ module.exports = {
       async annotateDataForExternalFront(req, template, data, moduleName) {
         const docs = self.getDocsForExternalFront(req, template, data, moduleName);
         for (const doc of docs) {
-          self.annotateDocForExternalFront(doc, { scene: req.scene });
+          await self.annotateDocForExternalFront(doc, { scene: req.scene });
         }
         data.aposBodyData = await self.getBodyData(req);
         // Already contains module name too
@@ -1283,7 +1283,8 @@ module.exports = {
         ].filter(doc => !!doc);
       },
 
-      annotateDocForExternalFront(doc, { scene } = {}) {
+      async annotateDocForExternalFront(doc, { scene } = {}) {
+        await self.apos.area.ensureMissingSchemaAreasForEditableDocTree(doc);
         self.apos.doc.walk(doc, (o, k, v) => {
           if (v && v.metaType === 'area') {
             const manager = self.apos.util.getManagerOf(o);

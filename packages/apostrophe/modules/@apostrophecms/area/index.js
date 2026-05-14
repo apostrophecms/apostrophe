@@ -296,6 +296,89 @@ module.exports = {
         area._edit = context._edit;
         return area;
       },
+      // Create a minimal area in `doc[name]` when the schema has an area field
+      // but the document has no value yet (e.g. field added after the doc was
+      // created). Persists to the database when possible, matching `{% area %}`.
+      async ensureStubAreaAtField(doc, name) {
+        if (doc[name]) {
+          return doc[name];
+        }
+        const area = {
+          metaType: 'area',
+          _id: self.apos.util.generateId(),
+          items: []
+        };
+        doc[name] = area;
+        const docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
+        if (docId) {
+          let mainDoc = await self.apos.doc.db.findOne({ _id: docId });
+          if (!mainDoc) {
+            throw self.apos.error('notfound');
+          }
+          let docDotPath;
+          try {
+            docDotPath = (doc._id === docId) ? '' : self.apos.util.findNestedObjectAndDotPathById(mainDoc, doc._id).dotPath;
+          } catch (e) {
+            throw self.apos.error('notfound');
+          }
+          const areaDotPath = docDotPath ? `${docDotPath}.${name}` : name;
+          await self.apos.doc.db.updateOne({
+            _id: docId,
+            [areaDotPath]: {
+              $eq: null
+            }
+          }, {
+            $set: {
+              [areaDotPath]: self.apos.util.clonePermanent(area)
+            }
+          });
+          mainDoc = await self.apos.doc.db.findOne({ _id: docId });
+          area._id = self.apos.util.get(mainDoc, areaDotPath)._id;
+        }
+        const manager = self.apos.util.getManagerOf(doc);
+        const field = manager?.schema?.find(f => f.name === name);
+        if (!field) {
+          throw self.apos.error('invalid', `Missing area schema field: ${name}`);
+        }
+        area._fieldId = field._id;
+        area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
+        area._edit = area._edit || doc._edit;
+        return area;
+      },
+      // For editable docs sent to an external front (e.g. Astro), materialize any
+      // missing schema area fields so they can be annotated and edited in place.
+      async ensureMissingSchemaAreasForEditableDocTree(doc) {
+        if (!doc) {
+          return;
+        }
+        const seen = new WeakSet();
+        const pending = [];
+        self.apos.doc.walk(doc, (o) => {
+          if (!o || typeof o !== 'object' || o._edit !== true) {
+            return;
+          }
+          if (seen.has(o)) {
+            return;
+          }
+          const manager = self.apos.util.getManagerOf(o);
+          if (!manager || !Array.isArray(manager.schema)) {
+            return;
+          }
+          const missing = manager.schema.filter(
+            field => field.type === 'area' && !o[field.name]
+          );
+          if (!missing.length) {
+            return;
+          }
+          seen.add(o);
+          for (const field of missing) {
+            pending.push([ o, field.name ]);
+          }
+        });
+        for (const [ o, name ] of pending) {
+          await self.ensureStubAreaAtField(o, name);
+        }
+      },
       // Render the given `area` object via `area.html`, with the given
       // `context` which may be omitted. Called for you by the `{% area %}
       // custom tag.
@@ -451,7 +534,7 @@ module.exports = {
         // Loop over the docs in the array passed in.
         for (const doc of within) {
           if (self.apos.externalFrontKey) {
-            self.apos.template.annotateDocForExternalFront(doc, { scene: req.scene });
+            await self.apos.template.annotateDocForExternalFront(doc, { scene: req.scene });
           }
 
           const rendered = [];
