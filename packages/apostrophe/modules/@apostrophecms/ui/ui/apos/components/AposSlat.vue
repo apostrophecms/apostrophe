@@ -9,7 +9,7 @@
       'apos-is-selected': selected,
       'apos-is-disabled': disabled,
     }"
-    :aria-pressed="engaged"
+    :aria-current="engaged"
     role="listitem"
     :aria-labelledby="parent"
     @keydown.space="toggleEngage"
