@@ -273,13 +273,13 @@ export default {
       });
     },
     moduleName() {
-      if (apos.modules[this.context.type].action === apos.modules['@apostrophecms/page'].action) {
+      if (apos.modules[this.context.type]?.action === apos.modules['@apostrophecms/page'].action) {
         return '@apostrophecms/page';
       }
       return this.context.type;
     },
     moduleOptions() {
-      return apos.modules[this.moduleName];
+      return apos.modules[this.moduleName] || {};
     },
     isUpdateOperation() {
       return !!this.context._id;
