@@ -22,7 +22,7 @@
   >
     <div class="apos-slat__main">
       <drag-icon
-        v-if="slatCount > 1"
+        v-if="draggable && slatCount > 1"
         class="apos-slat__control apos-slat__control--drag"
         :size="13"
       />
@@ -147,6 +147,10 @@ export default {
       type: Boolean,
       default: false
     },
+    draggable: {
+      type: Boolean,
+      default: true
+    },
     relationshipSchema: {
       type: Array,
       default: () => null
@@ -209,7 +213,7 @@ export default {
       return e.target.click();
     },
     toggleEngage() {
-      if (this.slatCount > 1) {
+      if (this.draggable && this.slatCount > 1) {
         if (this.engaged) {
           this.disengage();
         } else {
@@ -224,7 +228,7 @@ export default {
       this.$emit('disengage', this.item._id);
     },
     move(dir) {
-      if (this.engaged) {
+      if (this.draggable && this.engaged) {
         const direction = dir > 0 ? 1 : -1;
         this.$emit('move', this.item._id, direction);
       }

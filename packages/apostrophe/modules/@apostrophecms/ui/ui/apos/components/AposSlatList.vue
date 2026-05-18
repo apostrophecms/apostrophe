@@ -26,6 +26,7 @@
               'apos-input--error': duplicate
             }"
             :disabled="disabled"
+            :draggable="draggable"
             :engaged="engaged === item._id"
             :parent="listId"
             :slat-count="next.length"
@@ -63,6 +64,10 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    draggable: {
+      type: Boolean,
+      default: true
     },
     removable: {
       type: Boolean,
@@ -104,7 +109,7 @@ export default {
     dragOptions() {
       return {
         animation: 0,
-        disabled: this.disabled || this.next.length <= 1,
+        disabled: this.disabled || !this.draggable || this.next.length <= 1,
         ghostClass: 'apos-is-dragging'
       };
     }
@@ -161,6 +166,9 @@ export default {
     },
 
     move(id, dir) {
+      if (!this.draggable) {
+        return;
+      }
       const index = this.getIndex(id);
       const target = dir > 0 ? index + 1 : index - 1;
       if (this.next[target]) {
