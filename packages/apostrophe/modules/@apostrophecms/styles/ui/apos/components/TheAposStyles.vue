@@ -19,6 +19,7 @@
                 v-if="currentPath.length"
                 key="btn"
                 class="apos-styles__header-navigate-btn"
+                :aria-label="$t('apostrophe:back')"
                 @mousedown.stop=""
                 @click="navigateLeft"
               >

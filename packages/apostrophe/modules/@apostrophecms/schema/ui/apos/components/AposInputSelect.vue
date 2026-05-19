@@ -8,6 +8,7 @@
   >
     <template #body>
       <AposSelect
+        :uid="uid"
         :icon="icon"
         :choices="choices"
         :classes="classes"

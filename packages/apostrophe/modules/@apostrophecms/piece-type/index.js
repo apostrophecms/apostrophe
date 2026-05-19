@@ -73,7 +73,8 @@ module.exports = {
         },
         labels: {
           name: 'labels',
-          label: '',
+          label: 'apostrophe:status',
+          labelSrOnly: true,
           component: 'AposCellLabels'
         },
         updatedAt: {

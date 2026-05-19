@@ -67,6 +67,7 @@
             <header
               v-if="!modal.disableHeader"
               class="apos-modal__header"
+              role="none"
             >
               <div class="apos-modal__header__main">
                 <div
@@ -133,6 +134,7 @@
             <footer
               v-if="hasSlot('footer')"
               class="apos-modal__footer"
+              role="none"
             >
               <div class="apos-modal__footer__inner">
                 <slot name="footer" />

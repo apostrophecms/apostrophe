@@ -1,11 +1,11 @@
 <template>
   <div class="apos-totp">
-    <h3
+    <h2
       class="apos-totp__title"
       :class="{'apos-totp__title--success': token && success}"
     >
       {{ token ? $t('aposTotp:loginTitleSetup') : $t('aposTotp:loginTitle') }}
-    </h3>
+    </h2>
     <div
       v-if="token && !success"
       class="apos-totp__setup"
