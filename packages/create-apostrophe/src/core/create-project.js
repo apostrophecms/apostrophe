@@ -1,0 +1,146 @@
+// Headless orchestrator. Preflight (supported pm) + steps. Resolves a structured
+// CreateProjectResult and emits exactly one terminal telemetry event.
+// Never calls process.exit; expected failures resolve (ok:false),
+// unexpected throws propagate to the caller (which converts + emits).
+
+import { getKit } from './kits.js';
+import { detectPackageManager, assertSupportedPackageManager } from './pm.js';
+import { StageError, UnsupportedPackageManagerError } from './errors.js';
+import { clone as realClone } from './steps/clone.js';
+import { scaffold as realScaffold } from './steps/scaffold.js';
+import { install as realInstall } from './steps/install.js';
+import { dbConfig as realDbConfig } from './steps/db-config.js';
+import { addAdminUser as realAddAdminUser } from './steps/admin-user.js';
+
+/**
+ * Internal factory so steps can be substituted in unit tests. The public
+ * {@link createProject} binds the real steps; the (options, deps) contract is
+ * unchanged — the step set is not part of it.
+ */
+export function makeCreateProject({
+  clone, scaffold, install, dbConfig, addAdminUser
+}) {
+  return async function createProject(options, deps) {
+    const { telemetry, logger } = deps;
+    const echo = {
+      kitId: options.kitId,
+      dbChoice: options.dbChoice
+    };
+
+    // Single terminal point: build the result, emit exactly one event, return.
+    const finish = ({
+      ok, packageManager, failStage, errorCode
+    }) => {
+      const result = {
+        ok,
+        ...echo,
+        packageManager,
+        durationMs: Date.now() - options.confirmedAt
+      };
+      if (!ok) {
+        result.failStage = failStage;
+        if (errorCode) {
+          result.errorCode = errorCode;
+        }
+      }
+      const { ok: _ok, ...payload } = result;
+      telemetry.event(ok ? 'install_success' : 'install_fail', payload);
+      return result;
+    };
+
+    // Preflight (before any work). Node version stays a bin/ hard exit.
+    const packageManager = options.packageManager || detectPackageManager();
+    try {
+      assertSupportedPackageManager(packageManager);
+    } catch (err) {
+      if (err instanceof UnsupportedPackageManagerError) {
+        return finish({
+          ok: false,
+          packageManager,
+          failStage: null,
+          errorCode: err.errorCode
+        });
+      }
+      throw err;
+    }
+
+    // Validation errors (unknown kit, unsafe shortName, …) propagate as
+    // unexpected throws — the caller converts and emits.
+    const kit = getKit(options.kitId);
+
+    const step = async (label, fn) => {
+      const task = logger.task(label);
+      try {
+        const out = await fn();
+        task.succeed();
+        return out;
+      } catch (err) {
+        task.fail();
+        throw err;
+      }
+    };
+
+    try {
+      const cwd = process.cwd();
+      const { projectDir } = await step('Cloning starter', () =>
+        clone({
+          repo: kit.repo,
+          shortName: options.shortName,
+          cwd
+        }));
+
+      const { frontend, appRoot } = await step('Configuring project', () =>
+        scaffold({
+          projectDir,
+          shortName: options.shortName,
+          frontend: kit.frontend
+        }));
+
+      await step('Installing dependencies', () =>
+        install({
+          projectDir,
+          appRoot,
+          frontend,
+          packageManager
+        }));
+
+      await step('Configuring database', () =>
+        dbConfig({
+          appRoot,
+          dbChoice: options.dbChoice,
+          dbUri: options.dbUri
+        }));
+
+      await step('Creating admin account', () =>
+        addAdminUser({
+          appRoot,
+          login: options.admin.login,
+          password: options.admin.password
+        }));
+
+      return finish({
+        ok: true,
+        packageManager
+      });
+    } catch (err) {
+      if (err instanceof StageError) {
+        return finish({
+          ok: false,
+          packageManager,
+          failStage: err.stage,
+          errorCode: err.errorCode
+        });
+      }
+      throw err;
+    }
+  };
+}
+
+/** @type {import('../index.js').CreateProject} */
+export const createProject = makeCreateProject({
+  clone: realClone,
+  scaffold: realScaffold,
+  install: realInstall,
+  dbConfig: realDbConfig,
+  addAdminUser: realAddAdminUser
+});

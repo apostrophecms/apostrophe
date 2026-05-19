@@ -36,9 +36,12 @@
  */
 
 /**
- * The stage a failed install is attributed to. Exactly one per failure.
+ * The stage a failed install is attributed to. `null` means the failure
+ * happened in preflight (Node version / package manager), before any stage
+ * ran — every step is skipped. Otherwise exactly one stage per failure.
  * @typedef {(
- *   'clone' | 'dependency_install' | 'db_connect' | 'scaffold' | 'unknown'
+ *   'clone' | 'dependency_install' | 'db_connect' | 'scaffold' | 'admin'
+ *   | 'unknown' | null
  * )} FailStage
  */
 
@@ -83,7 +86,8 @@
  * @property {DbChoice}        dbChoice       Echo of the input.
  * @property {PackageManager}  packageManager Resolved value.
  * @property {number}          durationMs     `Date.now() - options.confirmedAt`.
- * @property {FailStage}       [failStage]    Present iff `ok === false`.
+ * @property {FailStage}       [failStage]    Present iff `ok === false`;
+ *                                            `null` for a preflight failure.
  * @property {string}          [errorCode]    Present only for known,
  *                                            allowlisted error codes.
  */
@@ -144,4 +148,4 @@
  * @typedef {(config: TelemetryConfig) => TelemetryHook} CreateTelemetry
  */
 
-export {};
+export { createProject } from './core/create-project.js';
