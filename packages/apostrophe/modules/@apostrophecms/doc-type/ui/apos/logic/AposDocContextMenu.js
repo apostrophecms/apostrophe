@@ -482,7 +482,9 @@ export default {
       );
     },
     preview(doc) {
-      window.open(doc._url, '_blank').focus();
+      // window.open() returns null when a popup blocker intercepts it,
+      // so guard before calling focus().
+      window.open(doc._url, '_blank')?.focus();
     },
     async copy(doc) {
       // If there are changes warn the user before discarding them before

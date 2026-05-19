@@ -1791,7 +1791,7 @@ describe('@apostrophecms/import-export', function() {
           }
         ];
 
-        assert.deepEqual(actual, expected);
+        assert.deepEqual(sortDocs(actual), sortDocs(expected));
       });
 
       it('should import and translate duplicated docs', async function () {
@@ -2112,8 +2112,18 @@ describe('@apostrophecms/import-export', function() {
           }
         ];
 
-        assert.deepEqual(actual, expected);
+        assert.deepEqual(sortDocs(actual), sortDocs(expected));
       });
     });
   }
 });
+
+// Sort an array of `{ type, aposLocale, title, modified }` projections by
+// a deterministic composite key so assertions don't depend on insert order.
+function sortDocs(docs) {
+  return [ ...docs ].sort((a, b) => {
+    const keyA = `${a.type}|${a.aposLocale}|${a.title}`;
+    const keyB = `${b.type}|${b.aposLocale}|${b.title}`;
+    return keyA < keyB ? -1 : keyA > keyB ? 1 : 0;
+  });
+}
