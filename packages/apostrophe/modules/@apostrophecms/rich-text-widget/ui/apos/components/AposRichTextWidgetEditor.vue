@@ -1,7 +1,6 @@
 <template>
   <div
     :id="widgetId"
-    :aria-controls="`insert-menu-${modelValue._id}`"
     :style="widgetStyles.inline"
     :class="widgetStyles.classes"
     @keyup="handleUIKeyup"
@@ -43,7 +42,12 @@
       ref="insertMenu"
       plugin-key="insertMenu"
       :class="insertMenuClasses"
-      :tippy-options="{ duration: 100, zIndex: 999, placement: 'bottom-start' }"
+      :tippy-options="{
+        duration: 100,
+        zIndex: 999,
+        placement: 'bottom-start',
+        aria: { content: null, expanded: false }
+      }"
       :should-show="showFloatingMenu"
       :editor="editor"
       role="listbox"
@@ -229,7 +233,11 @@ export default {
         inertia: true,
         placement: 'bottom',
         hideOnClick: false,
-        onHide: this.onBubbleHide
+        onHide: this.onBubbleHide,
+        aria: {
+          content: null,
+          expanded: false
+        }
       };
     },
     // Note that context menu class-list expects a string
@@ -264,7 +272,11 @@ export default {
         placement: 'top',
         offset: [ 0, 35 ],
         moveTransition: 'transform 0s ease-out',
-        appendTo: document.body
+        appendTo: document.body,
+        aria: {
+          content: null,
+          expanded: false
+        }
       };
     },
     moduleOptions() {
@@ -468,6 +480,11 @@ export default {
         autofocus: this.autofocus,
         onUpdate: this.editorUpdate,
         extensions,
+        editorProps: {
+          attributes: {
+            'aria-label': this.$t('apostrophe:richTextEditor')
+          }
+        },
 
         // The following events are triggered:
         //  - before the placeholder configuration function, when loading the page

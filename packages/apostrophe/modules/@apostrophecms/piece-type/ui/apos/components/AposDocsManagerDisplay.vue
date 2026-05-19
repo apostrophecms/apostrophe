@@ -4,8 +4,11 @@
       <tr>
         <th
           v-if="hasBatchOperations"
+          scope="col"
           class="apos-table__header"
-        />
+        >
+          <span class="apos-sr-only">{{ $t('apostrophe:selectAll') }}</span>
+        </th>
         <th
           v-for="header in headers"
           :key="header.label"
@@ -16,6 +19,7 @@
           <component
             :is="getEl(header)"
             class="apos-table__header-label"
+            :class="{ 'apos-sr-only': header.labelSrOnly }"
           >
             <component
               :is="icons[header.labelIcon]"
@@ -28,11 +32,12 @@
         </th>
         <th
           key="contextMenu"
+          scope="col"
           class="apos-table__header"
         >
           <component
             :is="getEl({})"
-            class="apos-table__header-label apos-is-hidden"
+            class="apos-table__header-label apos-sr-only"
           >
             {{ $t('apostrophe:moreOperations') }}
           </component>

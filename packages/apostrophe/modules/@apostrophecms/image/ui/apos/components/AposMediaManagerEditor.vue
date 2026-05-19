@@ -14,7 +14,7 @@
           v-if="activeMedia.attachment && activeMedia.attachment._urls"
           class="apos-media-editor__thumb"
           :src="activeMedia.attachment._urls[restoreOnly ? 'one-sixth' : 'one-third']"
-          :alt="activeMedia.description"
+          :alt="activeMedia.description || ''"
         >
       </div>
       <ul class="apos-media-editor__details">
@@ -484,7 +484,7 @@ export default {
 
     & {
       line-height: var(--a-line-tallest);
-      color: var(--a-base-4);
+      color: var(--a-base-2);
     }
   }
 
