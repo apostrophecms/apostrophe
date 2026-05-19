@@ -1,15 +1,20 @@
 <template>
   <div class="apos-modal-tabs">
-    <ul class="apos-modal-tabs__tabs">
+    <ul
+      class="apos-modal-tabs__tabs"
+      role="tablist"
+    >
       <li
         v-for="tab in tabs"
         v-show="tab.isVisible !== false"
         :key="tab.name"
         class="apos-modal-tabs__tab"
+        role="presentation"
       >
         <button
           :id="tab.name"
           class="apos-modal-tabs__btn"
+          role="tab"
           :aria-selected="tab.name === current ? true : false"
           @click="selectTab"
         >

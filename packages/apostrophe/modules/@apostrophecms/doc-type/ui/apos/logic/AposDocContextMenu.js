@@ -273,13 +273,13 @@ export default {
       });
     },
     moduleName() {
-      if (apos.modules[this.context.type].action === apos.modules['@apostrophecms/page'].action) {
+      if (apos.modules[this.context.type]?.action === apos.modules['@apostrophecms/page'].action) {
         return '@apostrophecms/page';
       }
       return this.context.type;
     },
     moduleOptions() {
-      return apos.modules[this.moduleName];
+      return apos.modules[this.moduleName] || {};
     },
     isUpdateOperation() {
       return !!this.context._id;
@@ -482,7 +482,9 @@ export default {
       );
     },
     preview(doc) {
-      window.open(doc._url, '_blank').focus();
+      // window.open() returns null when a popup blocker intercepts it,
+      // so guard before calling focus().
+      window.open(doc._url, '_blank')?.focus();
     },
     async copy(doc) {
       // If there are changes warn the user before discarding them before
