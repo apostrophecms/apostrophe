@@ -15,13 +15,17 @@
           @toggle="toggle"
         />
         <input
+          :id="uid"
           v-model="date"
           class="apos-input apos-input--date"
           :class="classes"
           type="date"
           @change="setDateAndTime"
         >
-        <span class="apos-input--label">
+        <span
+          :id="`${uid}-at`"
+          class="apos-input--label"
+        >
           {{ $t('apostrophe:at') }}
         </span>
         <input
@@ -29,6 +33,7 @@
           class="apos-input apos-input--time"
           :class="classes"
           type="time"
+          :aria-labelledby="`${uid} ${uid}-at`"
           @change="setDateAndTime"
         >
       </div>
@@ -60,7 +65,7 @@ export default {
     &--disabled {
       background-color: var(--a-white);
       border-color: var(--a-base-8);
-      color: var(--a-base-4);
+      color: var(--a-base-2);
     }
 
     &--label {

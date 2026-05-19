@@ -120,7 +120,7 @@ export default {
 @import '../scss/shared/_table-rows';
 
 .apos-tree__header {
-  color: var(--a-base-3);
+  color: var(--a-base-2);
 }
 
 .apos-tree__header.apos-tree__header--hidden {

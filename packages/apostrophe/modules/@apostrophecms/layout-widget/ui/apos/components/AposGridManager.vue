@@ -14,7 +14,6 @@
       :key="item._id"
       ref="items"
       class="apos-layout__item"
-      role="gridcell"
       data-apos-test="aposManageLayoutItem"
       :data-id="item._id"
       :style="{

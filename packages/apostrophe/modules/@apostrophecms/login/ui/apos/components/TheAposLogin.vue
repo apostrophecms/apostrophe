@@ -10,6 +10,7 @@
         <div
           v-if="showNav"
           class="apos-login__nav"
+          role="navigation"
         >
           <a
             href="#"
@@ -22,7 +23,13 @@
           >{{ $t('apostrophe:loginHome') }}</a>
         </div>
       </transition>
-      <div class="apos-login__wrapper">
+      <div
+        class="apos-login__wrapper"
+        role="main"
+      >
+        <h1 class="apos-sr-only">
+          {{ $t('apostrophe:login') }}
+        </h1>
         <transition
           name="fade-body"
           mode="out-in"
@@ -55,6 +62,7 @@
         <div
           v-show="loaded"
           class="apos-login__footer"
+          role="contentinfo"
         >
           <AposLogo class="apos-login__logo" />
           <label
@@ -234,7 +242,7 @@ export default {
       overflow: hidden;
       margin-right: 0;
       margin-left: auto;
-      color: var(--a-base-5);
+      color: var(--a-base-2);
       text-overflow: clip;
       white-space: nowrap;
     }

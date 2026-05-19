@@ -74,6 +74,7 @@
       </div>
       <button
         class="apos-subform__preview-trigger"
+        :aria-label="editSubformLabel"
         @click="toggleExpanded"
         @mouseenter="triggerHover = true"
         @mouseleave="triggerHover = false"

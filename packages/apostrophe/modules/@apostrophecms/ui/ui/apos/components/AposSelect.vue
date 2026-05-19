@@ -4,6 +4,7 @@
     :class="wrapperClasses"
   >
     <select
+      :id="uid"
       class="apos-input apos-input--select"
       :class="classes"
       :uid="uid"
