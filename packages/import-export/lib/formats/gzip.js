@@ -24,20 +24,14 @@ module.exports = {
     if (filepath.endsWith(this.allowedExtension)) {
       exportPath = filepath.replace(this.allowedExtension, '');
 
-      console.info(`[gzip] extracting ${filepath} into ${exportPath}`);
       await extract(filepath, exportPath);
 
-      console.info(`[gzip] removing ${filepath}`);
       await remove(filepath);
     }
 
     const docsPath = path.join(exportPath, 'aposDocs.json');
     const attachmentsPath = path.join(exportPath, 'aposAttachments.json');
     const attachmentFilesPath = path.join(exportPath, 'attachments');
-
-    console.info(`[gzip] reading docs from ${docsPath}`);
-    console.info(`[gzip] reading attachments from ${attachmentsPath}`);
-    console.info(`[gzip] reading attachment files from ${attachmentFilesPath}`);
 
     const docs = await fsp.readFile(docsPath);
     const attachments = await fsp.readFile(attachmentsPath);
@@ -92,12 +86,10 @@ module.exports = {
       pack.on('error', reject);
 
       writeStream.on('finish', () => {
-        console.info(`[gzip] export file written to ${filepath}`);
         resolve(result);
       });
 
       for (const [ filename, content ] of Object.entries(data.json || {})) {
-        console.info(`[gzip] adding ${filename} to the tarball`);
         addTarEntry(pack, { name: filename }, content).catch(reject);
       }
 
@@ -107,8 +99,6 @@ module.exports = {
       })
         .then(() => {
           processAttachments(data.attachments, async (attachmentPath, name, size) => {
-            console.info(`[gzip] adding attachments/${name} to the tarball`);
-
             const readStream = fs.createReadStream(attachmentPath);
             const entryStream = pack.entry({
               name: `attachments/${name}`,
