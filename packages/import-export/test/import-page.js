@@ -365,6 +365,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'level 2 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(0).updatedAt,
+          importedAt: importedDocs.at(0).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -404,6 +405,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'level 2 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(1).updatedAt,
+          importedAt: importedDocs.at(1).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -443,6 +445,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'level 4 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(2).updatedAt,
+          importedAt: importedDocs.at(2).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -484,6 +487,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'level 4 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(3).updatedAt,
+          importedAt: importedDocs.at(3).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -614,6 +618,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'level 2 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(0).updatedAt,
+          importedAt: importedDocs.at(0).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -653,6 +658,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'level 2 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(1).updatedAt,
+          importedAt: importedDocs.at(1).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -692,6 +698,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'level 4 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(2).updatedAt,
+          importedAt: importedDocs.at(2).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -733,6 +740,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'level 4 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(3).updatedAt,
+          importedAt: importedDocs.at(3).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -985,6 +993,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'custom',
           type: 'custom-page',
           updatedAt: importedDocs.at(0).updatedAt,
+          importedAt: importedDocs.at(0).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -1024,6 +1033,10 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'custom',
           type: 'custom-page',
           updatedAt: importedDocs.at(1).updatedAt,
+          // No `importedAt`: this is a `:previous` mode revision (a snapshot
+          // of the prior published state demoted by re-publishing). The
+          // import flow only stamps the documents it actually inserts or
+          // updates (draft and published), not the audit copy.
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -1063,6 +1076,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'custom',
           type: 'custom-page',
           updatedAt: importedDocs.at(2).updatedAt,
+          importedAt: importedDocs.at(2).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -1102,6 +1116,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'custom level 3 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(3).updatedAt,
+          importedAt: importedDocs.at(3).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
@@ -1143,6 +1158,7 @@ describe('@apostrophecms/import-export:import-page', function () {
           titleSortified: 'custom level 3 page 1',
           type: 'test-page',
           updatedAt: importedDocs.at(4).updatedAt,
+          importedAt: importedDocs.at(4).importedAt,
           updatedBy: {
             _id: null, // TODO: should be my user id
             title: 'System Task',
