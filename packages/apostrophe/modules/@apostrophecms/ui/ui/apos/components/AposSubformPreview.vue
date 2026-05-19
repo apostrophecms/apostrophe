@@ -140,7 +140,7 @@ function inferFieldValues(schema, values, $t) {
     & {
       display: inline-block;
       line-height: 1;
-      color: var(--a-base-3);
+      color: var(--a-base-2);
     }
   }
 }

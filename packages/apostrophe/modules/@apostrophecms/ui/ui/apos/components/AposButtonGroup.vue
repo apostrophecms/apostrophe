@@ -2,7 +2,7 @@
   <div
     class="apos-button-group"
     :class="modifierClass"
-    role="menubar"
+    role="toolbar"
   >
     <div class="apos-button-group__inner">
       <slot />

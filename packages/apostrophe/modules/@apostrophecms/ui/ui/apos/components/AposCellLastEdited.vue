@@ -70,6 +70,6 @@ export default {
 
 <style lang="scss" scoped>
   .apos-table__cell-field--relative-time {
-    color: var(--a-base-4);
+    color: var(--a-base-2);
   }
 </style>

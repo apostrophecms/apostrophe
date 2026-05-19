@@ -211,7 +211,7 @@ export default {
   & {
     margin: 0 0 $spacing-base;
     line-height: var(--a-line-tall);
-    color: var(--a-base-3);
+    color: var(--a-base-2);
   }
 }
 

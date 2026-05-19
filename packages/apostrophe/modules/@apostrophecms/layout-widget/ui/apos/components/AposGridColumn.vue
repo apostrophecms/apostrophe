@@ -6,7 +6,6 @@
     :style="itemStyles"
     :class="widgetStyles.classes"
     class="apos-layout__item"
-    role="gridcell"
     data-apos-test="aposLayoutItem"
     :data-id="item._id"
     :data-tablet-full="props.tabletFullItems[item._id] || false"

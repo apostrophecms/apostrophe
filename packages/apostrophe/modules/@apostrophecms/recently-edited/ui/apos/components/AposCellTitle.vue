@@ -15,6 +15,7 @@
       :href="item._url"
       class="apos-recently-edited__cell-link"
       data-apos-test="recently-edited-cell-link"
+      :aria-label="$t('apostrophe:preview')"
       @click.stop
     >
       <AposIndicator
