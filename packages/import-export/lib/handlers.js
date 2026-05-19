@@ -73,7 +73,7 @@ module.exports = self => {
         if (!ids.length) {
           return;
         }
-        self.apos.util.debug(`Clearing ${ids.length} timer(s)`);
+        self.debug(`Clearing ${ids.length} timer(s)`);
         for (const key of ids) {
           const entry = self.timeoutIds[key];
           delete self.timeoutIds[key];
@@ -85,7 +85,7 @@ module.exports = self => {
             await entry.handler();
           }
         }
-        self.apos.util.debug('Timer(s) cleared');
+        self.debug('Timer(s) cleared');
       }
     }
   };
