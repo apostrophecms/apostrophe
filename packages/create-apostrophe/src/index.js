@@ -51,10 +51,11 @@
  */
 
 /**
- * Admin account created during install. `login` is a username or email
- * (single field). Never reaches telemetry.
+ * Admin account created during install. `username` is the value the user
+ * will log in with; it may be email-shaped (a single field, no separate
+ * email). Never reaches telemetry.
  * @typedef {object} AdminAccount
- * @property {string} login    Username or email.
+ * @property {string} username Username or email.
  * @property {string} password Plaintext; passed over stdin, never logged.
  */
 
@@ -62,6 +63,12 @@
  * Fully resolved, already-validated inputs. createProject does not prompt.
  * @typedef {object} CreateProjectOptions
  * @property {string}          shortName        Project/directory name.
+ * @property {string}          cwd              Authoritative working
+ *                                              directory the install runs
+ *                                              from. The caller (bin / UI)
+ *                                              captures it once and threads
+ *                                              it in; steps must not call
+ *                                              process.cwd() on their own.
  * @property {KitId}           kitId            Starter kit.
  * @property {DbChoice}        dbChoice         Database selection.
  * @property {string}          [dbUri]          Connection string for

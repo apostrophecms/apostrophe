@@ -52,10 +52,11 @@ function spies() {
 
 const baseOptions = (over = {}) => ({
   shortName: 'my-site',
+  cwd: '/tmp/p',
   kitId: 'apostrophe-essentials',
   dbChoice: 'sqlite',
   admin: {
-    login: 'admin',
+    username: 'admin',
     password: 'pw'
   },
   packageManager: 'npm',

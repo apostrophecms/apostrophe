@@ -8,17 +8,20 @@ import { run as defaultRun } from '../spawn.js';
 import { StageError } from '../errors.js';
 import { detectPackageManager, assertSupportedPackageManager } from '../pm.js';
 
+/** @typedef {import('../kits.js').Frontend}            Frontend       */
+/** @typedef {import('../../index.js').PackageManager}  PackageManager */
+
 const STAGE = 'dependency_install';
 
 /**
  * @param {{
  *   projectDir: string,
  *   appRoot: string,
- *   frontend?: ('astro'|null),
- *   packageManager?: ('npm'|'pnpm'|'yarn'|'unknown')
+ *   frontend?: Frontend,
+ *   packageManager?: PackageManager
  * }} opts
  * @param {{ run?: typeof defaultRun }} [deps]
- * @returns {Promise<{ packageManager: ('npm'|'pnpm'|'yarn'|'unknown') }>}
+ * @returns {Promise<{ packageManager: PackageManager }>}
  *   The detected manager (may be `'unknown'`); the install runs with npm.
  * @throws {import('../errors.js').UnsupportedPackageManagerError} non-npm.
  * @throws {StageError} stage 'dependency_install'.

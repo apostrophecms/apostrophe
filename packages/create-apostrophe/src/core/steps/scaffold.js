@@ -12,6 +12,8 @@ import {
   standaloneEnv, externalBackendEnv, externalFrontendEnv, SECRET_KEYS
 } from '../env-templates.js';
 
+/** @typedef {import('../kits.js').Frontend} Frontend */
+
 const STAGE = 'scaffold';
 
 /** Frontend names with a delivered `.env` template. Supporting another is a
@@ -37,9 +39,9 @@ function generatedSecrets() {
  * @param {{
  *   projectDir: string,
  *   shortName: string,
- *   frontend?: ('astro'|null)
+ *   frontend?: Frontend
  * }} opts `frontend` is the kit's external-frontend name (null = standalone).
- * @returns {{ frontend: ('astro'|null), appRoot: string, envFiles: string[] }}
+ * @returns {{ frontend: Frontend, appRoot: string, envFiles: string[] }}
  * @throws {StageError} stage 'scaffold' on a missing required file or I/O.
  * @throws {TypeError} for an unsupported `frontend` name (validation error).
  */

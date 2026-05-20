@@ -5,17 +5,19 @@ import { join } from 'node:path';
 import { StageError } from '../errors.js';
 import { upsertEnv } from '../env-file.js';
 
+/** @typedef {import('../../index.js').DbChoice} DbChoice */
+
 const STAGE = 'db_connect';
 
 // DbChoice maps 1:1 to a core adapter name.
 const DB_CHOICES = new Set([ 'sqlite', 'mongodb', 'postgres' ]);
 
 /**
- * @param {{ appRoot: string, dbChoice: string, dbUri?: string }} opts
+ * @param {{ appRoot: string, dbChoice: DbChoice, dbUri?: string }} opts
  * @param {{
- *   verifyConnection?: (info: { dbChoice: string, dbUri?: string }) => Promise<void>
+ *   verifyConnection?: (info: { dbChoice: DbChoice, dbUri?: string }) => Promise<void>
  * }} [deps] When provided, a rejection maps to StageError 'db_connect'.
- * @returns {Promise<{ dbChoice: string }>}
+ * @returns {Promise<{ dbChoice: DbChoice }>}
  * @throws {StageError} stage 'db_connect' when the probe fails.
  * @throws {TypeError} for an unknown dbChoice (validation).
  */

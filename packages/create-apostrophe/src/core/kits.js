@@ -11,15 +11,20 @@ const REPOS = Object.freeze({
 });
 
 /**
+ * External-frontend technology paired with the Apostrophe backend. `null`
+ * means a standalone full-stack Apostrophe project (no separate frontend).
+ * Adding a frontend is a new named string here + step handling, never a
+ * boolean.
+ * @typedef {('astro' | null)} Frontend
+ */
+
+/**
  * kitId → { repo, label, frontend, seedData }.
- *
- * `frontend` is the external-frontend technology (`'astro'`), or `null` for a
- * standalone full-stack Apostrophe project.
  *
  * `label` is the human-facing name (UI/plan-preview). `seedData` marks the
  * demo-data variants that get a DB dump + sample images applied after clone.
  * @type {Readonly<Record<string, {
- *   repo: string, label: string, frontend: ('astro'|null), seedData: boolean
+ *   repo: string, label: string, frontend: Frontend, seedData: boolean
  * }>>}
  */
 export const KITS = Object.freeze({
@@ -72,7 +77,7 @@ export function isKnownKit(kitId) {
 /**
  * Resolve a KitId to its registry entry.
  * @param {string} kitId
- * @returns {{ repo: string, label: string, frontend: ('astro'|null), seedData: boolean }}
+ * @returns {{ repo: string, label: string, frontend: Frontend, seedData: boolean }}
  * @throws {TypeError} for an unknown KitId (programmer/validation error — the
  *   caller validates options before createProject; not an install failure).
  */

@@ -3,7 +3,7 @@ import { addAdminUser } from '../../src/core/steps/admin-user.js';
 import { StageError } from '../../src/core/errors.js';
 
 describe('core/steps/admin-user', function () {
-  it('runs the user:add task with login as username, password over stdin', async function () {
+  it('runs the user:add task with the username, password over stdin', async function () {
     const calls = [];
     const run = async (command, args, opts) => {
       calls.push({
@@ -20,7 +20,7 @@ describe('core/steps/admin-user', function () {
     await addAdminUser(
       {
         appRoot: '/proj',
-        login: 'me@example.com',
+        username: 'me@example.com',
         password: 's3cret'
       },
       { run }
@@ -36,7 +36,7 @@ describe('core/steps/admin-user', function () {
     assert.ok(!calls[0].args.includes('s3cret'));
   });
 
-  it('requires a login', async function () {
+  it('requires a username', async function () {
     await assert.rejects(
       () => addAdminUser({
         appRoot: '/p',
@@ -54,7 +54,7 @@ describe('core/steps/admin-user', function () {
     await assert.rejects(
       () => addAdminUser({
         appRoot: '/p',
-        login: 'admin',
+        username: 'admin',
         password: 'topsecret'
       }, { run }),
       (err) => {
@@ -76,7 +76,7 @@ describe('core/steps/admin-user', function () {
     await assert.rejects(
       () => addAdminUser({
         appRoot: '/p',
-        login: 'admin',
+        username: 'admin',
         password: 'x'
       }, { run }),
       (err) => {

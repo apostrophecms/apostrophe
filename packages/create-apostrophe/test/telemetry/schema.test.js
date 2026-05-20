@@ -74,13 +74,13 @@ describe('telemetry/schema — buildPayload (success)', function () {
       // Anything that could leak — paths, names, secrets, env, content.
       shortName: 'top-secret-project',
       dbUri: 'mongodb://admin:pw@db.internal/secret',
-      'admin.login': 'ceo@company.com',
+      'admin.username': 'ceo@company.com',
       cwd: '/home/secret/path',
       env: { APOS_SECRET: 'xxx' },
       headers: { authorization: 'Bearer leaked' }
     });
     for (const k of [
-      'shortName', 'dbUri', 'admin.login', 'cwd', 'env', 'headers'
+      'shortName', 'dbUri', 'admin.username', 'cwd', 'env', 'headers'
     ]) {
       assert.equal(k in p, false, `${k} must not appear in payload`);
     }

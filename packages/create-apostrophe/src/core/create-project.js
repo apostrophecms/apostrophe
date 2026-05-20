@@ -81,12 +81,11 @@ export function makeCreateProject({
     };
 
     try {
-      const cwd = process.cwd();
       const { projectDir } = await step('Cloning starter', () =>
         clone({
           repo: kit.repo,
           shortName: options.shortName,
-          cwd
+          cwd: options.cwd
         }));
 
       const { frontend, appRoot } = await step('Configuring project', () =>
@@ -111,10 +110,10 @@ export function makeCreateProject({
           dbUri: options.dbUri
         }));
 
-      await step('Creating admin account', () =>
+      await step(`Creating ${options.admin.username} account`, () =>
         addAdminUser({
           appRoot,
-          login: options.admin.login,
+          username: options.admin.username,
           password: options.admin.password
         }));
 

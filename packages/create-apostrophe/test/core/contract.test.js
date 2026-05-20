@@ -91,11 +91,12 @@ describe('core contract — createProject', function () {
         const res = await createProject(
           {
             shortName,
+            cwd: dir,
             kitId,
             dbChoice,
             dbUri: dbChoice === 'sqlite' ? undefined : `${dbChoice}://localhost/p`,
             admin: {
-              login: 'admin',
+              username: 'admin',
               password: 'pw'
             },
             packageManager: 'npm',
@@ -168,10 +169,11 @@ describe('core contract — createProject', function () {
       const res = await createProject(
         {
           shortName: 'p',
+          cwd: dir,
           kitId: 'apostrophe-essentials',
           dbChoice: 'sqlite',
           admin: {
-            login: 'admin',
+            username: 'admin',
             password: 'pw'
           },
           packageManager: 'npm',

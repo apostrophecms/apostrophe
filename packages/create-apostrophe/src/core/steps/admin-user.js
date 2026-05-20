@@ -5,27 +5,29 @@
 import { run as defaultRun } from '../spawn.js';
 import { StageError } from '../errors.js';
 
+/** @typedef {import('../../index.js').AdminAccount} AdminAccount */
+
 const STAGE = 'admin';
 
 /**
- * @param {{ appRoot: string, login: string, password: string }} opts
+ * @param {AdminAccount & { appRoot: string }} opts
  * @param {{ run?: typeof defaultRun }} [deps]
  * @returns {Promise<void>}
  * @throws {StageError} stage 'admin' if the task cannot run or exits non-zero.
  */
 export async function addAdminUser(
   {
-    appRoot, login, password
+    appRoot, username, password
   },
   { run = defaultRun } = {}
 ) {
-  if (!login) {
-    throw new TypeError('admin.login is required');
+  if (!username) {
+    throw new TypeError('admin.username is required');
   }
 
   const result = await run(
     'node',
-    [ 'app.js', '@apostrophecms/user:add', login, 'admin' ],
+    [ 'app.js', '@apostrophecms/user:add', username, 'admin' ],
     {
       cwd: appRoot,
       input: `${password ?? ''}\n`
