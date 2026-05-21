@@ -46,7 +46,6 @@ const OPTION_SPEC = Object.freeze({
   password: { type: 'string' },
   telemetry: { type: 'string' },
   unattended: { type: 'boolean' },
-  'telemetry-preview': { type: 'boolean' },
   help: {
     type: 'boolean',
     short: 'h'
@@ -58,10 +57,9 @@ const OPTION_SPEC = Object.freeze({
 });
 
 const USAGE = `${render.bold('Usage:')}
-  npm create apostrophe@latest                                    ${render.dim('Run the guided installer')}
-  npm create apostrophe@latest -- --unattended [flags]            ${render.dim('Run without prompts')}
-  npm create apostrophe@latest -- telemetry [status|on|off]       ${render.dim('Manage telemetry preference')}
-  npm create apostrophe@latest -- --telemetry-preview             ${render.dim('Print the would-be payload')}
+  npm create apostrophe@latest                                           ${render.dim('Run the guided installer')}
+  npm create apostrophe@latest -- --unattended [flags]                   ${render.dim('Run without prompts')}
+  npm create apostrophe@latest -- telemetry [status|on|off|preview]      ${render.dim('Manage telemetry preference')}
   npm create apostrophe@latest -- --help | --version
 
 ${render.dim('(everything after the `--` is forwarded to the installer; npm consumes args without it)')}
@@ -130,10 +128,7 @@ export async function main(argv, deps = {}) {
     return EXIT_OK;
   }
   if (positionals[0] === 'telemetry') {
-    return handleTelemetryCommand(positionals.slice(1), { createStore });
-  }
-  if (values['telemetry-preview']) {
-    return handleTelemetryPreview({ createStore });
+    return runTelemetryCommand({ sub: positionals[1] }, { createStore });
   }
   if (positionals.length > 0) {
     render.errorBlock('Unknown command', positionals[0]);
@@ -338,14 +333,21 @@ async function runUnattended(values, { createProject, createStore }) {
 }
 
 /**
- * @param {string[]} args  Positional args after `telemetry` (e.g. ['on']).
- * @param {{ createStore: typeof defaultCreateStore }} deps
+ * Run a `telemetry` subcommand by name. Exposed from the public entry so
+ * umbrella CLIs can dispatch their own Commander subcommands to identical
+ * output formatting — the npm-create positional dispatcher uses this too.
+ *
+ * @param {{ sub: string | undefined }} input
+ * @param {{ createStore?: typeof defaultCreateStore, env?: NodeJS.ProcessEnv }} [deps]
  * @returns {Promise<number>}
  */
-async function handleTelemetryCommand(args, { createStore }) {
-  const env = process.env;
+export async function runTelemetryCommand(input, deps = {}) {
+  const {
+    createStore = defaultCreateStore,
+    env = process.env
+  } = deps;
   const store = createStore();
-  const sub = args[0];
+  const sub = input.sub;
 
   if (sub === 'status') {
     const s = telemetryStatus(store, env);
@@ -373,39 +375,28 @@ async function handleTelemetryCommand(args, { createStore }) {
     render.success('Telemetry: off');
     return EXIT_OK;
   }
+  if (sub === 'preview') {
+    const p = telemetryPreview({
+      store,
+      cliVersion: CLI_VERSION,
+      env
+    });
+    const notes = [];
+    if (p.idSentinel) {
+      notes.push('anonymousId is a placeholder — a real UUID is generated on first opt-in.');
+    }
+    if (p.killSwitchOn) {
+      notes.push('APOS_TELEMETRY=0 is set — even with consent: on, nothing would be sent.');
+    }
+    const body = notes.length === 0
+      ? JSON.stringify(p.payload, null, 2)
+      : `${JSON.stringify(p.payload, null, 2)}\n\n${render.dim(notes.join('\n'))}`;
+    render.note('Telemetry preview', body);
+    return EXIT_OK;
+  }
   render.errorBlock(
     'Unknown telemetry subcommand',
-    `${sub ?? '(none)'}\n\nExpected one of: status, on, off`
+    `${sub ?? '(none)'}\n\nExpected one of: status, on, off, preview`
   );
   return EXIT_ARG;
-}
-
-/**
- * `--telemetry-preview` — print the exact would-be payload and exit. No
- * network call ever happens; this short-circuits before consent is even
- * evaluated.
- *
- * @param {{ createStore: typeof defaultCreateStore }} deps
- * @returns {Promise<number>}
- */
-async function handleTelemetryPreview({ createStore }) {
-  const env = process.env;
-  const store = createStore();
-  const p = telemetryPreview({
-    store,
-    cliVersion: CLI_VERSION,
-    env
-  });
-  const notes = [];
-  if (p.idSentinel) {
-    notes.push('anonymousId is a placeholder — a real UUID is generated on first opt-in.');
-  }
-  if (p.killSwitchOn) {
-    notes.push('APOS_TELEMETRY=0 is set — even with consent: on, nothing would be sent.');
-  }
-  const body = notes.length === 0
-    ? JSON.stringify(p.payload, null, 2)
-    : `${JSON.stringify(p.payload, null, 2)}\n\n${render.dim(notes.join('\n'))}`;
-  render.note('Telemetry preview', body);
-  return EXIT_OK;
 }

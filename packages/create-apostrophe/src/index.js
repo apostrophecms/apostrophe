@@ -2,12 +2,15 @@
 // import; everything under core/, ui/ and telemetry/ is private.
 //
 // Re-exports:
-//   - createProject    (headless install orchestration)
-//   - runInteractive   (structured entry — guided install with no argv
-//                       parsing; the @apostrophecms/cli `create` delegate
-//                       uses this so Commander keeps ownership of help)
-//   - runCli           (argv-driven entry for the standalone bin and any
-//                       host that wants full pass-through)
+//   - createProject       (headless install orchestration)
+//   - runInteractive      (structured entry — guided install with no argv
+//                          parsing; the @apostrophecms/cli `create`
+//                          delegate uses this so Commander keeps ownership
+//                          of help)
+//   - runTelemetryCommand (status | on | off | preview, structured entry;
+//                          the apos `telemetry` delegate uses this)
+//   - runCli              (argv-driven entry for the standalone bin and
+//                          any host that wants full pass-through)
 //
 // The typedefs below are the shared contract between the UI, core and
 // telemetry layers.
@@ -196,4 +199,6 @@
  */
 
 export { createProject } from './core/create-project.js';
-export { main as runCli, runInteractive } from './cli/main.js';
+export {
+  main as runCli, runInteractive, runTelemetryCommand
+} from './cli/main.js';
