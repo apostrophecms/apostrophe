@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
 
-import { createStore } from '../core/store.js';
-import { createProject } from '../core/create-project.js';
+import { createStore as defaultCreateStore } from '../core/store.js';
+import { createProject as defaultCreateProject } from '../core/create-project.js';
 import { isKnownKit } from '../core/kits.js';
 import { assertSafeShortName } from '../core/validate.js';
 import { createTelemetry } from '../telemetry/index.js';
@@ -20,7 +20,7 @@ import {
   preview as telemetryPreview
 } from '../telemetry/commands.js';
 import { getAnonymousId } from '../telemetry/consent.js';
-import { runFlow, renderInstallResult } from '../ui/flow.js';
+import { runFlow as defaultRunFlow, renderInstallResult } from '../ui/flow.js';
 import * as render from '../ui/render.js';
 import { UserCancelled } from '../ui/prompts.js';
 
@@ -84,10 +84,27 @@ ${render.bold('Environment:')}
 `;
 
 /**
+ * @typedef {object} MainDeps
+ * @property {typeof defaultCreateProject} [createProject]  Injected for tests
+ *   so the unattended/interactive paths can be exercised without real
+ *   git/npm/node spawns.
+ * @property {typeof defaultCreateStore}   [createStore]    Injected for tests
+ *   to keep ~/.config out of the picture.
+ * @property {typeof defaultRunFlow}       [runFlow]        Injected for tests
+ *   so the interactive path can be exercised without driving clack prompts.
+ */
+
+/**
  * @param {string[]} argv  Full process.argv (node + script + args).
+ * @param {MainDeps} [deps]
  * @returns {Promise<number>} Exit code.
  */
-export async function main(argv) {
+export async function main(argv, deps = {}) {
+  const {
+    createProject = defaultCreateProject,
+    createStore = defaultCreateStore,
+    runFlow = defaultRunFlow
+  } = deps;
   /** @type {{ values: Record<string, any>, positionals: string[] }} */
   let parsed;
   try {
@@ -113,10 +130,10 @@ export async function main(argv) {
     return EXIT_OK;
   }
   if (positionals[0] === 'telemetry') {
-    return handleTelemetryCommand(positionals.slice(1));
+    return handleTelemetryCommand(positionals.slice(1), { createStore });
   }
   if (values['telemetry-preview']) {
-    return handleTelemetryPreview();
+    return handleTelemetryPreview({ createStore });
   }
   if (positionals.length > 0) {
     render.errorBlock('Unknown command', positionals[0]);
@@ -124,18 +141,28 @@ export async function main(argv) {
     return EXIT_ARG;
   }
   if (values.unattended) {
-    return runUnattended(values);
+    return runUnattended(values, {
+      createProject,
+      createStore
+    });
   }
-  return runInteractive();
+  return runInteractive({
+    createProject,
+    createStore,
+    runFlow
+  });
 }
 
 /**
  * Interactive install: walks the user through the guided flow, runs the
  * orchestrator, renders the success/failure screen.
  *
+ * @param {Required<MainDeps>} deps
  * @returns {Promise<number>}
  */
-async function runInteractive() {
+async function runInteractive({
+  createProject, createStore, runFlow
+}) {
   const cwd = process.cwd();
   const env = process.env;
   const store = createStore();
@@ -189,9 +216,10 @@ async function runInteractive() {
  * `EXIT_ARG` without touching anything.
  *
  * @param {Record<string, any>} values  parseArgs `values`
+ * @param {Required<MainDeps>} deps
  * @returns {Promise<number>}
  */
-async function runUnattended(values) {
+async function runUnattended(values, { createProject, createStore }) {
   const env = process.env;
   const issues = [];
 
@@ -305,9 +333,10 @@ async function runUnattended(values) {
 
 /**
  * @param {string[]} args  Positional args after `telemetry` (e.g. ['on']).
+ * @param {{ createStore: typeof defaultCreateStore }} deps
  * @returns {Promise<number>}
  */
-async function handleTelemetryCommand(args) {
+async function handleTelemetryCommand(args, { createStore }) {
   const env = process.env;
   const store = createStore();
   const sub = args[0];
@@ -350,9 +379,10 @@ async function handleTelemetryCommand(args) {
  * network call ever happens; this short-circuits before consent is even
  * evaluated.
  *
+ * @param {{ createStore: typeof defaultCreateStore }} deps
  * @returns {Promise<number>}
  */
-async function handleTelemetryPreview() {
+async function handleTelemetryPreview({ createStore }) {
   const env = process.env;
   const store = createStore();
   const p = telemetryPreview({
