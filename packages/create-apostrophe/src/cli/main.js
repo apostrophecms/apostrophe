@@ -155,14 +155,20 @@ export async function main(argv, deps = {}) {
 
 /**
  * Interactive install: walks the user through the guided flow, runs the
- * orchestrator, renders the success/failure screen.
+ * orchestrator, renders the success/failure screen. Exposed from the
+ * public entry so umbrella CLIs (e.g. `apos create`) can launch the same
+ * flow without going through argv parsing — their command framework keeps
+ * ownership of help text and subcommand routing.
  *
- * @param {Required<MainDeps>} deps
+ * @param {MainDeps} [deps]
  * @returns {Promise<number>}
  */
-async function runInteractive({
-  createProject, createStore, runFlow
-}) {
+export async function runInteractive(deps = {}) {
+  const {
+    createProject = defaultCreateProject,
+    createStore = defaultCreateStore,
+    runFlow = defaultRunFlow
+  } = deps;
   const cwd = process.cwd();
   const env = process.env;
   const store = createStore();

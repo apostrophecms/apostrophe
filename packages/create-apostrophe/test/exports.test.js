@@ -14,12 +14,13 @@ describe('public exports map', function () {
     assert.ok(mod, 'create-apostrophe should resolve to src/index.js');
   });
 
-  it('exposes exactly { createProject, runCli } at the public surface', async function () {
+  it('exposes exactly { createProject, runCli, runInteractive } at the public surface', async function () {
     const mod = await importByName('create-apostrophe');
     const names = Object.keys(mod).sort();
-    assert.deepEqual(names, [ 'createProject', 'runCli' ]);
+    assert.deepEqual(names, [ 'createProject', 'runCli', 'runInteractive' ]);
     assert.equal(typeof mod.createProject, 'function');
     assert.equal(typeof mod.runCli, 'function');
+    assert.equal(typeof mod.runInteractive, 'function');
   });
 
   for (const sub of [
