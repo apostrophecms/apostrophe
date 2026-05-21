@@ -7,7 +7,9 @@
 const LINKS = Object.freeze({
   telemetryPolicy: '[link to telemetry policy]',
   docs: 'https://docs.apostrophecms.com',
-  discord: 'https://discord.gg/apostrophe'
+  discord: 'https://discord.gg/apostrophe',
+  demoSite: 'https://demo.apostrophecms.com',
+  dbGuide: 'https://apostrophecms.com/guides/choosing-a-db'
 });
 
 /** Per-kit "get oriented" guides. `*-demo` and `*-demo-data` share a guide. */

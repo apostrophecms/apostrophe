@@ -154,19 +154,22 @@ async function askBuildType(initial = 'astro') {
  * @returns {Promise<StartingPoint>}
  */
 async function askStartingPoint(initial = 'demo') {
+  const message =
+    `${render.stepLabel(3, totalSteps, 'Choose a starting point:')}\n` +
+    render.dim(`Preview the Demo site: ${link('demoSite')}`);
   return prompts.select({
-    message: render.stepLabel(3, totalSteps, 'Choose a starting point:'),
+    message,
     initialValue: initial,
     options: [
-      {
-        value: 'demo',
-        label: 'Demo',
-        hint: 'working blog, widgets, components'
-      },
       {
         value: 'essentials',
         label: 'Essentials',
         hint: 'clean slate, no sample content'
+      },
+      {
+        value: 'demo',
+        label: 'Demo',
+        hint: 'working blog, widgets, components'
       }
     ]
   });
@@ -218,8 +221,11 @@ async function askDatabase(shortName, defaults) {
  * @returns {Promise<DbChoice>}
  */
 async function askDbChoice(initial = 'sqlite') {
+  const message =
+    `${render.stepLabel(4, totalSteps, 'Choose a database:')}\n` +
+    render.dim(`Help choosing a database: ${link('dbGuide')}`);
   const choice = await prompts.select({
-    message: render.stepLabel(4, totalSteps, 'Choose a database:'),
+    message,
     initialValue: initial,
     options: [
       {
@@ -229,11 +235,13 @@ async function askDbChoice(initial = 'sqlite') {
       },
       {
         value: 'mongodb',
-        label: 'MongoDB'
+        label: 'MongoDB',
+        hint: 'flexible documents, no fixed schema, scales well'
       },
       {
         value: 'postgres',
-        label: 'PostgreSQL'
+        label: 'PostgreSQL',
+        hint: 'structured tables, strong for complex queries'
       }
     ]
   });
