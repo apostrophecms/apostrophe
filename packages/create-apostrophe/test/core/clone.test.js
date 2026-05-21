@@ -78,6 +78,28 @@ describe('core/steps/clone', function () {
     assert.equal(spawned, false, 'git must not be spawned for an unsafe name');
   });
 
+  it('throws StageError(clone, target_exists) when the target dir already exists', async function () {
+    mkdirSync(join(cwd, 'my-site'));
+    let spawned = false;
+    const fakeRun = async () => {
+      spawned = true; return { code: 0 };
+    };
+    await assert.rejects(
+      () => clone({
+        repo: 'r',
+        shortName: 'my-site',
+        cwd
+      }, { run: fakeRun }),
+      (err) => {
+        assert.ok(err instanceof StageError);
+        assert.equal(err.stage, 'clone');
+        assert.equal(err.errorCode, 'target_exists');
+        return true;
+      }
+    );
+    assert.equal(spawned, false, 'git must not be spawned when target already exists');
+  });
+
   it('throws StageError(clone, git_missing) when git is absent', async function () {
     const fakeRun = async () => ({
       code: null,

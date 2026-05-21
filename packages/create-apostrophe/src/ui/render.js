@@ -149,6 +149,7 @@ export function createUiLogger() {
     info,
     warn,
     error,
+    muted,
     task(label) {
       const s = clack.spinner();
       s.start(label);

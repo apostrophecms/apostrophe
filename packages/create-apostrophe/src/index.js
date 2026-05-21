@@ -146,6 +146,10 @@
  * @property {(msg: string) => void}         info
  * @property {(msg: string) => void}         warn
  * @property {(msg: string) => void}         error
+ * @property {(msg: string) => void}         [muted]  Optional dimmed-aside
+ *   channel for inline notes the user can ignore (e.g. recovery hints).
+ *   Optional so the contract stays backwards-compatible with existing
+ *   logger stubs.
  * @property {(label: string) => TaskHandle} task
  */
 

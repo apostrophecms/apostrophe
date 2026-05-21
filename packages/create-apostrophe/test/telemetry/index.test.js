@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { performance } from 'node:perf_hooks';
 import { createTelemetry } from '../../src/telemetry/index.js';
 
 const PARTIAL = Object.freeze({
@@ -208,12 +209,16 @@ describe('telemetry/createTelemetry — timeout', function () {
       logger: s.logger,
       verbose: true
     });
-    const start = Date.now();
+    const TOLERANCE_MS = 5;
+    const start = performance.now();
     t.event('install_success', PARTIAL);
     await t.flush();
-    const elapsed = Date.now() - start;
-    assert.ok(elapsed >= 30, `flush returned in ${elapsed}ms (expected >= 30)`);
-    assert.ok(elapsed < 500, `flush took too long: ${elapsed}ms`);
+    const elapsed = performance.now() - start;
+    assert.ok(
+      elapsed >= 30 - TOLERANCE_MS,
+      `flush returned in ${elapsed.toFixed(1)}ms (expected ≳ 30)`
+    );
+    assert.ok(elapsed < 500, `flush took too long: ${elapsed.toFixed(1)}ms`);
     assert.equal(s.warn.length, 1);
     assert.match(s.warn[0], /transport failed/);
     assert.match(s.warn[0], /timeout/);

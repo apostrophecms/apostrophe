@@ -19,6 +19,7 @@ import { KIT_IDS } from '../core/kits.js';
  * the schema, mirrored from grep'ing `src/core/steps/*` + `errors.js`.
  * @typedef {(
  *   'unsupported_pm' |
+ *   'target_exists' |
  *   'git_missing' | 'git_spawn_failed' | 'git_clone_failed' |
  *   'missing_scaffold_file' | 'scaffold_io' |
  *   'npm_missing' | 'npm_spawn_failed' | 'install_failed' | 'apostrophe_missing' |
@@ -56,6 +57,7 @@ export const FAIL_STAGES = Object.freeze([
  */
 export const ERROR_CODES = Object.freeze([
   'unsupported_pm',
+  'target_exists',
   'git_missing', 'git_spawn_failed', 'git_clone_failed',
   'missing_scaffold_file', 'scaffold_io',
   'npm_missing', 'npm_spawn_failed', 'install_failed', 'apostrophe_missing',

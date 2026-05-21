@@ -11,6 +11,7 @@ import { scaffold as realScaffold } from './steps/scaffold.js';
 import { install as realInstall } from './steps/install.js';
 import { dbConfig as realDbConfig } from './steps/db-config.js';
 import { addAdminUser as realAddAdminUser } from './steps/admin-user.js';
+import { importSampleData as realImportSampleData } from './steps/sample-data.js';
 
 /**
  * Internal factory so steps can be substituted in unit tests. The public
@@ -18,7 +19,7 @@ import { addAdminUser as realAddAdminUser } from './steps/admin-user.js';
  * unchanged — the step set is not part of it.
  */
 export function makeCreateProject({
-  clone, scaffold, install, dbConfig, addAdminUser
+  clone, scaffold, install, dbConfig, addAdminUser, importSampleData
 }) {
   return async function createProject(options, deps) {
     const { telemetry, logger } = deps;
@@ -110,12 +111,29 @@ export function makeCreateProject({
           dbUri: options.dbUri
         }));
 
-      await step(`Creating ${options.admin.username} account`, () =>
+      // Sample-data import runs BEFORE admin-user so a dump containing
+      // users can land first and admin creation reconciles against it.
+      // Placeholder no-op pending Phase 3.5 — see
+      // docs/cli-modernization/phases/45-sample-data.md. Conditional on
+      // kit.seedData so the spinner only fires for *-demo-data kits.
+      if (kit.seedData) {
+        await step('Importing sample content', () =>
+          importSampleData({
+            projectDir,
+            appRoot,
+            kitId: options.kitId
+          }));
+      }
+
+      const adminOutcome = await step(`Creating ${options.admin.username} account`, () =>
         addAdminUser({
           appRoot,
           username: options.admin.username,
           password: options.admin.password
         }));
+      if (adminOutcome === 'updated') {
+        logger.muted?.(`User ${options.admin.username} already existed — password updated.`);
+      }
 
       return finish({
         ok: true,
@@ -141,5 +159,6 @@ export const createProject = makeCreateProject({
   scaffold: realScaffold,
   install: realInstall,
   dbConfig: realDbConfig,
-  addAdminUser: realAddAdminUser
+  addAdminUser: realAddAdminUser,
+  importSampleData: realImportSampleData
 });

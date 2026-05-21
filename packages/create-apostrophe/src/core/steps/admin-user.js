@@ -1,6 +1,9 @@
 // Step: create the admin user via the project's own
 // `@apostrophecms/user:add` task. The password is written to the task's
 // stdin (never an argv, never logged).
+//
+// Recovery: if `user:add` fails because the username already exists,
+// retry as `user:change-password`.
 
 import { run as defaultRun } from '../spawn.js';
 import { StageError } from '../errors.js';
@@ -12,7 +15,8 @@ const STAGE = 'admin';
 /**
  * @param {AdminAccount & { appRoot: string }} opts
  * @param {{ run?: typeof defaultRun }} [deps]
- * @returns {Promise<void>}
+ * @returns {Promise<'created' | 'updated'>} `'updated'` only when the
+ *   user already existed and we fell back to `user:change-password`.
  * @throws {StageError} stage 'admin' if the task cannot run or exits non-zero.
  */
 export async function addAdminUser(
@@ -25,7 +29,7 @@ export async function addAdminUser(
     throw new TypeError('admin.username is required');
   }
 
-  const result = await run(
+  const add = await run(
     'node',
     [ 'app.js', '@apostrophecms/user:add', username, 'admin' ],
     {
@@ -34,16 +38,52 @@ export async function addAdminUser(
     }
   );
 
-  if (result.error) {
+  if (add.error) {
     throw new StageError(STAGE, {
-      code: result.error.code === 'ENOENT' ? 'node_missing' : 'node_spawn_failed',
-      cause: result.error
+      code: add.error.code === 'ENOENT' ? 'node_missing' : 'node_spawn_failed',
+      cause: add.error
     });
   }
-  if (result.code !== 0) {
-    throw new StageError(STAGE, {
-      code: 'admin_user_failed',
-      cause: new Error(`@apostrophecms/user:add exited with code ${result.code}`)
-    });
+  if (add.code === 0) {
+    return 'created';
   }
+
+  if (isDuplicateUsername(add.stderr)) {
+    const cp = await run(
+      'node',
+      [ 'app.js', '@apostrophecms/user:change-password', username ],
+      {
+        cwd: appRoot,
+        input: `${password ?? ''}\n`
+      }
+    );
+    if (!cp.error && cp.code === 0) {
+      return 'updated';
+    }
+  }
+
+  throw new StageError(STAGE, {
+    code: 'admin_user_failed',
+    cause: new Error(`@apostrophecms/user:add exited with code ${add.code}`)
+  });
+}
+
+/**
+ * Detect a duplicate-key failure across all three adapters Apostrophe
+ * supports. `@apostrophecms/db-connect` normalizes the error *code* to
+ * `11000` for mongo/postgres/sqlite, but `e.message` (what the task
+ * runner prints) differs per adapter:
+ *
+ *   - mongo:    `E11000 duplicate key error collection: ... index: username_1 ...`
+ *   - postgres: `Duplicate key error: username "admin" already exists`
+ *   - sqlite:   `Duplicate key error: already exists`  (no field name)
+ *
+ * @param {string} stderr
+ * @returns {boolean}
+ */
+function isDuplicateUsername(stderr) {
+  if (!stderr) {
+    return false;
+  }
+  return stderr.includes('E11000') || /duplicate\s+key/i.test(stderr);
 }

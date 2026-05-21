@@ -2,7 +2,7 @@
 // Failure → FailStage 'clone'.
 
 import { join } from 'node:path';
-import { rmSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import { run as defaultRun } from '../spawn.js';
 import { StageError } from '../errors.js';
 import { assertSafeShortName } from '../validate.js';
@@ -31,6 +31,18 @@ export async function clone(
   // Path-traversal guard before shortName is used as a clone target / path
   // base. Defense in depth even though the caller is contracted to validate.
   assertSafeShortName(shortName);
+
+  // Refuse to clone over an existing path. git clone itself rejects non-empty
+  // dirs but accepts empty ones (which a user may have pre-created and
+  // expected us to populate). Stop here either way with a distinct errorCode
+  // so the failure is legible — especially in unattended mode, where the
+  // alternative is a generic `git_clone_failed`.
+  if (existsSync(join(cwd, shortName))) {
+    throw new StageError(STAGE, {
+      code: 'target_exists',
+      cause: new Error(`Target path "${shortName}" already exists in ${cwd}`)
+    });
+  }
 
   const result = await run('git', [ 'clone', '--', repo, shortName ], { cwd });
 

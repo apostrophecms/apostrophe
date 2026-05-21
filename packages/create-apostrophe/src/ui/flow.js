@@ -1,6 +1,9 @@
 // Guided interactive flow. Drives the headless installer with a
 // UI-aware logger and renders progress + success/failure screens.
 
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import * as render from './render.js';
 import * as prompts from './prompts.js';
 import { defaultDbUri, verifyDbReachable } from './db-probe.js';
@@ -14,7 +17,12 @@ import {
   preview as telemetryPreview
 } from '../telemetry/commands.js';
 
-const TOTAL_STEPS = 6;
+// Effective step count for the run. Set once at the top of `runFlow`
+// based on whether the telemetry-consent step will actually be shown
+// (skipped when the kill switch is on, or a stored preference exists).
+// All `stepLabel(n, totalSteps, ...)` calls read this so a 5-step run
+// renders "N/5" instead of misleading "N/6".
+let totalSteps = 6;
 
 /** @typedef {'astro' | 'standalone'}             BuildType */
 /** @typedef {'essentials' | 'demo'}              StartingPoint */
@@ -76,6 +84,7 @@ export async function runFlow(deps) {
  * @returns {Promise<Omit<FlowAnswers, 'confirmedAt'>>}
  */
 async function collectAnswers(deps, defaults) {
+  totalSteps = willPromptForConsent(deps) ? 6 : 5;
   const shortName = await askProjectName(defaults?.shortName);
   const build = await askBuildType(defaults?.build);
   const startingPoint = await askStartingPoint(defaults?.startingPoint);
@@ -106,10 +115,14 @@ async function collectAnswers(deps, defaults) {
 /** @param {string} [defaultShortName] */
 async function askProjectName(defaultShortName = 'my-project') {
   return prompts.text({
-    message: render.stepLabel(1, TOTAL_STEPS, 'Project name'),
+    message: render.stepLabel(1, totalSteps, 'Project name'),
     placeholder: 'my-project',
     defaultValue: defaultShortName,
-    validate: validateProjectName
+    // clack runs validate against the *typed* value, then substitutes
+    // defaultValue afterwards — so an empty submission would skip every
+    // check below. Substitute the default here so validation always sees
+    // the effective name.
+    validate: (value) => validateProjectName(value || defaultShortName)
   });
 }
 
@@ -119,7 +132,7 @@ async function askProjectName(defaultShortName = 'my-project') {
  */
 async function askBuildType(initial = 'astro') {
   return prompts.select({
-    message: render.stepLabel(2, TOTAL_STEPS, 'How would you like to build?'),
+    message: render.stepLabel(2, totalSteps, 'How would you like to build?'),
     initialValue: initial,
     options: [
       {
@@ -140,20 +153,20 @@ async function askBuildType(initial = 'astro') {
  * @param {StartingPoint} [initial]
  * @returns {Promise<StartingPoint>}
  */
-async function askStartingPoint(initial = 'essentials') {
+async function askStartingPoint(initial = 'demo') {
   return prompts.select({
-    message: render.stepLabel(3, TOTAL_STEPS, 'Choose a starting point:'),
+    message: render.stepLabel(3, totalSteps, 'Choose a starting point:'),
     initialValue: initial,
     options: [
-      {
-        value: 'essentials',
-        label: 'Essentials',
-        hint: 'clean slate, no sample content'
-      },
       {
         value: 'demo',
         label: 'Demo',
         hint: 'working blog, widgets, components'
+      },
+      {
+        value: 'essentials',
+        label: 'Essentials',
+        hint: 'clean slate, no sample content'
       }
     ]
   });
@@ -162,7 +175,7 @@ async function askStartingPoint(initial = 'essentials') {
 /** @param {boolean} [initial] */
 async function askSampleContent(initial = false) {
   return prompts.confirm({
-    message: render.stepLabel('3b', TOTAL_STEPS, 'Pre-fill with sample content?'),
+    message: render.stepLabel('3b', totalSteps, 'Pre-fill with sample content?'),
     initialValue: initial
   });
 }
@@ -206,7 +219,7 @@ async function askDatabase(shortName, defaults) {
  */
 async function askDbChoice(initial = 'sqlite') {
   const choice = await prompts.select({
-    message: render.stepLabel(4, TOTAL_STEPS, 'Choose a database:'),
+    message: render.stepLabel(4, totalSteps, 'Choose a database:'),
     initialValue: initial,
     options: [
       {
@@ -224,11 +237,21 @@ async function askDbChoice(initial = 'sqlite') {
       }
     ]
   });
-  render.info('You don\'t have to use the same database in production.');
-  if (choice === 'postgres') {
-    render.info('Postgres usually needs a password — add `:yourpassword` after `postgres` in the URI.');
-  }
   return /** @type {DbChoice} */ (choice);
+}
+
+/**
+ * Per-DB hint shown under the connection-string prompt label. Returns
+ * `undefined` when nothing extra needs to be said for the given choice.
+ *
+ * @param {'mongodb' | 'postgres'} dbChoice
+ * @returns {string | undefined}
+ */
+function dbUriHint(dbChoice) {
+  if (dbChoice === 'postgres') {
+    return 'Postgres usually needs a password — add `:yourpassword` after `postgres` in the URI.';
+  }
+  return undefined;
 }
 
 /**
@@ -245,9 +268,13 @@ async function askDbChoice(initial = 'sqlite') {
  */
 async function collectAndVerifyDbUri(dbChoice, shortName, initialUri) {
   let candidate = initialUri ?? defaultDbUri(dbChoice, shortName);
+  const hint = dbUriHint(dbChoice);
+  const message = hint
+    ? `${render.stepLabel('4b', totalSteps, 'Connection string:')}\n${render.dim(hint)}`
+    : render.stepLabel('4b', totalSteps, 'Connection string:');
   while (true) {
     candidate = await prompts.text({
-      message: render.stepLabel('4b', TOTAL_STEPS, 'Connection string:'),
+      message,
       defaultValue: candidate,
       initialValue: candidate
     });
@@ -301,7 +328,7 @@ async function collectAndVerifyDbUri(dbChoice, shortName, initialUri) {
  */
 async function askAdminAccount(defaults) {
   const username = await prompts.text({
-    message: render.stepLabel(5, TOTAL_STEPS, 'Create your admin account — username or email:'),
+    message: render.stepLabel(5, totalSteps, 'Create your admin account — username or email:'),
     defaultValue: defaults?.username ?? 'admin',
     placeholder: 'admin',
     validate: validateAdminUsername
@@ -369,6 +396,19 @@ async function resolveTelemetryConsent(deps) {
 }
 
 /**
+ * Non-destructive peek that mirrors {@link resolveTelemetryConsent}'s
+ * skip conditions. Called before any prompt fires so the step counter
+ * can render the actual run length ("N/5" vs "N/6").
+ *
+ * @param {RunFlowDeps} deps
+ * @returns {boolean}
+ */
+function willPromptForConsent(deps) {
+  const current = telemetryStatus(deps.store, deps.env);
+  return !current.killSwitchOn && current.storedConsent === undefined;
+}
+
+/**
  * "See what would be sent" is the first option AND the default — bare
  * Enter shows the preview rather than silently committing. After viewing
  * the payload, the prompt re-opens with `off` preselected so a second
@@ -381,11 +421,10 @@ async function resolveTelemetryConsent(deps) {
 async function askTelemetryConsent({
   store, cliVersion, env
 }) {
-  let initial = 'details';
   while (true) {
     const choice = await prompts.select({
       message: telemetryPromptMessage(),
-      initialValue: initial,
+      initialValue: 'details',
       options: [
         {
           value: 'details',
@@ -409,7 +448,6 @@ async function askTelemetryConsent({
         cliVersion,
         env
       });
-      initial = 'off';
       continue;
     }
     if (choice === 'on') {
@@ -421,15 +459,14 @@ async function askTelemetryConsent({
   }
 }
 
-/** Header line + multi-line body (with the policy link) for the consent
+/** Header line + dimmed two-line body (lead + policy link) for the consent
  *  select. Returned as a single string; clack renders newlines below the
  *  header in the same prompt rail. */
 function telemetryPromptMessage() {
   return [
-    render.stepLabel(6, TOTAL_STEPS, 'Help us improve Apostrophe?'),
-    'Share anonymous usage data: no personal info, no content, just basic',
-    'telemetry like which features are used. See exactly what we collect:',
-    link('telemetryPolicy')
+    render.stepLabel(6, totalSteps, 'Help us improve Apostrophe?'),
+    render.dim('Anonymous usage data — no content, no personal info.'),
+    render.dim(`Policy: ${link('telemetryPolicy')}`)
   ].join('\n');
 }
 
@@ -549,16 +586,15 @@ const DEV_PORT = Object.freeze({
 /** @param {FlowAnswers} answers */
 function renderSuccess(answers) {
   const port = DEV_PORT[answers.build];
-  const { username } = answers.admin;
   const body = [
     'Your project is ready.',
     '',
     `  cd ${answers.shortName}`,
     '  npm run dev',
     '',
-    `  Open:                     http://localhost:${port}`,
-    `  Login with ${username}:   http://localhost:${port}/login`,
-    `  Get Oriented:             ${kitGuide(answers.kitId)}`,
+    `  Open:           http://localhost:${port}`,
+    `  Login:          http://localhost:${port}/login`,
+    `  Get Oriented:   ${kitGuide(answers.kitId)}`,
     '',
     `  Docs:     ${link('docs')}`,
     `  Discord:  ${link('discord', { stamp: false })}`
@@ -595,13 +631,13 @@ function renderFailure(answers, result) {
  * @returns {string | undefined}
  */
 function validateProjectName(value) {
-  if (!value) {
-    return undefined;
-  }
   try {
     assertSafeShortName(value);
-    return undefined;
   } catch {
     return 'Use letters, numbers, hyphens, or underscores only.';
   }
+  if (existsSync(join(process.cwd(), value))) {
+    return `A file or folder named "${value}" already exists here — choose another name.`;
+  }
+  return undefined;
 }

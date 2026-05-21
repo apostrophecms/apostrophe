@@ -76,6 +76,7 @@ describe('core contract — createProject', function () {
       dbConfig,
       install: async () => {},
       addAdminUser: async () => {},
+      importSampleData: async () => {},
       ...extra.steps
     });
   }

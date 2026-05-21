@@ -33,15 +33,19 @@ const EXIT_FAIL = 1;
 const EXIT_ARG = 2;
 const EXIT_CANCEL = 130;
 
+const DEFAULT_KIT = 'apostrophe-astro-demo';
+const DEFAULT_DB = 'sqlite';
+const DEFAULT_USERNAME = 'admin';
+
 const OPTION_SPEC = Object.freeze({
-  'short-name': { type: 'string' },
+  'project-name': { type: 'string' },
   kit: { type: 'string' },
   db: { type: 'string' },
   'db-uri': { type: 'string' },
   username: { type: 'string' },
   password: { type: 'string' },
   telemetry: { type: 'string' },
-  'non-interactive': { type: 'boolean' },
+  unattended: { type: 'boolean' },
   'telemetry-preview': { type: 'boolean' },
   help: {
     type: 'boolean',
@@ -55,21 +59,24 @@ const OPTION_SPEC = Object.freeze({
 
 const USAGE = `${render.bold('Usage:')}
   npm create apostrophe@latest                                    ${render.dim('Run the guided installer')}
-  npm create apostrophe@latest -- --non-interactive [flags]       ${render.dim('Run unattended')}
+  npm create apostrophe@latest -- --unattended [flags]            ${render.dim('Run without prompts')}
   npm create apostrophe@latest -- telemetry [status|on|off]       ${render.dim('Manage telemetry preference')}
   npm create apostrophe@latest -- --telemetry-preview             ${render.dim('Print the would-be payload')}
   npm create apostrophe@latest -- --help | --version
 
 ${render.dim('(everything after the `--` is forwarded to the installer; npm consumes args without it)')}
 
-${render.bold('Non-interactive flags')} (all required unless noted):
-  --short-name=NAME             ${render.dim('Project directory name')}
-  --kit=KITID                   ${render.dim('Starter kit id (e.g. apostrophe-astro-demo)')}
-  --db=sqlite|mongodb|postgres  ${render.dim('Database choice')}
-  --db-uri=URI                  ${render.dim('Connection string (required for mongodb/postgres)')}
-  --username=NAME               ${render.dim('Admin username or email')}
+${render.bold('Unattended flags')} ${render.dim('(--unattended is the only trigger for the headless path)')}:
+  ${render.bold('Required:')}
+  --project-name=NAME           ${render.dim('Project directory name')}
   --password=PASS               ${render.dim('Admin password (or use APOS_ADMIN_PASSWORD)')}
-  --telemetry=on|off            ${render.dim('Telemetry consent (default: off)')}
+  --telemetry=on|off            ${render.dim('Telemetry consent (no default — explicit choice)')}
+
+  ${render.bold('Defaulted (override to change):')}
+  --kit=KITID                   ${render.dim(`Starter kit id (default: ${DEFAULT_KIT})`)}
+  --db=sqlite|mongodb|postgres  ${render.dim(`Database choice (default: ${DEFAULT_DB})`)}
+  --db-uri=URI                  ${render.dim('Connection string (required when --db is mongodb or postgres)')}
+  --username=NAME               ${render.dim(`Admin username or email (default: ${DEFAULT_USERNAME})`)}
 
 ${render.bold('Environment:')}
   APOS_TELEMETRY=0              ${render.dim('Disable telemetry entirely (kill switch)')}
@@ -116,8 +123,8 @@ export async function main(argv) {
     process.stderr.write(USAGE);
     return EXIT_ARG;
   }
-  if (values['non-interactive']) {
-    return runNonInteractive(values);
+  if (values.unattended) {
+    return runUnattended(values);
   }
   return runInteractive();
 }
@@ -177,20 +184,20 @@ async function runInteractive() {
 }
 
 /**
- * Non-interactive install: all answers come from flags/env, no prompts,
+ * Unattended install: all answers come from flags/env, no prompts,
  * deterministic. Validates inputs up front; on invalid args returns
  * `EXIT_ARG` without touching anything.
  *
  * @param {Record<string, any>} values  parseArgs `values`
  * @returns {Promise<number>}
  */
-async function runNonInteractive(values) {
+async function runUnattended(values) {
   const env = process.env;
   const issues = [];
 
-  const shortName = values['short-name'];
+  const shortName = values['project-name'];
   if (!shortName) {
-    issues.push('--short-name is required');
+    issues.push('--project-name is required');
   } else {
     try {
       assertSafeShortName(shortName);
@@ -199,28 +206,24 @@ async function runNonInteractive(values) {
     }
   }
 
-  const kitId = values.kit;
-  if (!kitId) {
-    issues.push('--kit is required');
-  } else if (!isKnownKit(kitId)) {
+  const kitId = values.kit ?? DEFAULT_KIT;
+  if (!isKnownKit(kitId)) {
     issues.push(`Unknown --kit: ${JSON.stringify(kitId)}`);
   }
 
-  const dbChoice = values.db;
-  if (!dbChoice) {
-    issues.push('--db is required');
-  } else if (!DB_CHOICES.includes(dbChoice)) {
+  const dbChoice = values.db ?? DEFAULT_DB;
+  if (!DB_CHOICES.includes(dbChoice)) {
     issues.push(`Unknown --db: ${JSON.stringify(dbChoice)}. Expected one of: ${DB_CHOICES.join(', ')}`);
   }
 
   const dbUri = values['db-uri'];
-  if (dbChoice && dbChoice !== 'sqlite' && !dbUri) {
+  if (dbChoice !== 'sqlite' && !dbUri) {
     issues.push(`--db-uri is required when --db=${dbChoice}`);
   }
 
-  const username = values.username;
-  if (!username || username.trim().length === 0) {
-    issues.push('--username is required');
+  const username = (values.username ?? DEFAULT_USERNAME).trim();
+  if (username.length === 0) {
+    issues.push('--username cannot be empty');
   }
 
   const password = values.password ?? env.APOS_ADMIN_PASSWORD;
@@ -231,7 +234,7 @@ async function runNonInteractive(values) {
   const telemetryFlag = values.telemetry;
   let telemetryConsent;
   if (telemetryFlag === undefined) {
-    telemetryConsent = false;
+    issues.push('--telemetry is required (use \'on\' or \'off\')');
   } else if (telemetryFlag === 'on') {
     telemetryConsent = true;
   } else if (telemetryFlag === 'off') {
@@ -254,7 +257,7 @@ async function runNonInteractive(values) {
   const telemetry = createTelemetry({
     consent: telemetryConsent,
     cliVersion: CLI_VERSION,
-    anonymousId: getAnonymousId(store)
+    anonymousId: getAnonymousId(store) ?? 'unattended'
   });
   const logger = render.createUiLogger();
 
