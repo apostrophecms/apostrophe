@@ -15,6 +15,6 @@ if (Number.isFinite(major) && major < 20) {
 }
 
 // Past the guard — anything newer can run safely now.
-const { main } = await import('../src/cli/main.js');
-const code = await main(process.argv);
+const { runCli } = await import('../src/index.js');
+const code = await runCli(process.argv);
 process.exit(typeof code === 'number' ? code : 0);

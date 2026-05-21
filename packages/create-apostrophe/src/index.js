@@ -3,7 +3,8 @@
 //
 // Re-exports:
 //   - createProject  (headless install orchestration)
-//   - createTelemetry (consent-aware emitter constructor)
+//   - runCli         (argv-driven CLI entrypoint — used by the bin and by
+//                     the @apostrophecms/cli `create` delegate)
 //
 // The typedefs below are the shared contract between the UI, core and
 // telemetry layers.
@@ -192,4 +193,4 @@
  */
 
 export { createProject } from './core/create-project.js';
-export { createTelemetry } from './telemetry/index.js';
+export { main as runCli } from './cli/main.js';
