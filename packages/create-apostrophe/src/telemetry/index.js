@@ -49,7 +49,7 @@ import {
  * }} TelemetryConfigExt
  */
 
-const DEFAULT_TIMEOUT_MS = 2000;
+const DEFAULT_TIMEOUT_MS = 3000;
 
 /** @type {Transport} */
 const noopTransport = async () => {};
