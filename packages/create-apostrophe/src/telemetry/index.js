@@ -1,7 +1,6 @@
 // Telemetry hook constructor. The body merges `cliVersion` + `anonymousId`
 // from config into the partial payload, runs `buildPayload` to validate, and
-// hands off to `transport`. The default transport is a no-op; the live
-// implementation is swapped in by passing a different one at construction.
+// hands off to `transport`.
 //
 // Two invariants the test suite enforces:
 //   1. event() never throws and never delays the caller (fire-and-forget).
@@ -9,6 +8,12 @@
 //      no transport is invoked, nothing reaches the wire.
 
 import { buildPayload } from './schema.js';
+import { createUmamiTransport } from './transport.js';
+import {
+  TELEMETRY_ENDPOINT,
+  TELEMETRY_WRITE_KEY,
+  TELEMETRY_HOSTNAME
+} from './wire-config.js';
 
 /** @typedef {import('../index.js').TelemetryConfig}        TelemetryConfig        */
 /** @typedef {import('../index.js').TelemetryHook}          TelemetryHook          */
@@ -50,6 +55,28 @@ const DEFAULT_TIMEOUT_MS = 2000;
 const noopTransport = async () => {};
 
 /**
+ * Caller overrides win per field; missing fields fall through to
+ * `wire-config.js`. Empties out to no-op rather than building a broken
+ * client when the resolved endpoint or write key is missing.
+ *
+ * @param {{ endpoint?: string, writeKey?: string, hostname?: string }} overrides
+ * @returns {Transport}
+ */
+function buildDefaultTransport(overrides) {
+  const endpoint = overrides.endpoint ?? TELEMETRY_ENDPOINT;
+  const writeKey = overrides.writeKey ?? TELEMETRY_WRITE_KEY;
+  const hostname = overrides.hostname ?? TELEMETRY_HOSTNAME;
+  if (endpoint && writeKey) {
+    return createUmamiTransport({
+      endpoint,
+      writeKey,
+      hostname
+    });
+  }
+  return noopTransport;
+}
+
+/**
  * Race `promise` against a timer that rejects after `ms`. Used to bound the
  * transport so a slow / hanging network call cannot wedge the CLI.
  *
@@ -88,11 +115,20 @@ export function createTelemetry(config) {
     consent,
     cliVersion,
     anonymousId,
+    endpoint,
+    writeKey,
+    hostname,
     verbose = false,
-    transport = noopTransport,
+    transport: injectedTransport,
     timeoutMs = DEFAULT_TIMEOUT_MS,
     logger = console
   } = config;
+
+  const transport = injectedTransport ?? buildDefaultTransport({
+    endpoint,
+    writeKey,
+    hostname
+  });
 
   /**
    * Pending fire-and-forget jobs; `flush()` waits on them.
