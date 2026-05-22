@@ -1,0 +1,3361 @@
+/* global describe, it, before, after, beforeEach */
+/* eslint-disable no-unused-expressions */
+const { expect } = require('chai');
+
+// Test suite for the universal database adapter
+// Based on actual MongoDB usage patterns in ApostropheCMS
+
+const ADAPTER = process.env.ADAPTER || process.env.APOS_TEST_DB_PROTOCOL || 'mongodb';
+const TEST_DB_NAME = 'dbtest-adapter';
+
+describe(`Database Adapter (${ADAPTER})`, function() {
+  let client;
+  let db;
+
+  before(async function() {
+    if (ADAPTER === 'mongodb') {
+      const mongodb = require('../adapters/mongodb');
+      client = await mongodb.connect(`mongodb://localhost:27017/${TEST_DB_NAME}`);
+      db = client.db();
+    } else if (ADAPTER === 'postgres') {
+      const postgres = require('../adapters/postgres');
+      const user = process.env.PGUSER || process.env.USER;
+      const password = process.env.PGPASSWORD || '';
+      const auth = password ? `${user}:${password}@` : `${user}@`;
+      client = await postgres.connect(`postgres://${auth}localhost:5432/dbtest_adapter`);
+      db = client.db();
+    } else if (ADAPTER === 'multipostgres') {
+      const postgres = require('../adapters/postgres');
+      const user = process.env.PGUSER || process.env.USER;
+      const password = process.env.PGPASSWORD || '';
+      const auth = password ? `${user}:${password}@` : `${user}@`;
+      client = await postgres.connect(`multipostgres://${auth}localhost:5432/dbtest_adapter-testschema`);
+      db = client.db();
+    } else if (ADAPTER === 'sqlite') {
+      const sqlite = require('../adapters/sqlite');
+      const os = require('os');
+      const pathModule = require('path');
+      const fs = require('fs');
+      const dbPath = pathModule.join(os.tmpdir(), 'dbtest-adapter.db');
+      try {
+        fs.unlinkSync(dbPath);
+      } catch (e) { /* ignore */ }
+      client = await sqlite.connect(`sqlite://${dbPath}`);
+      db = client.db();
+    }
+  });
+
+  after(async function() {
+    if (db) {
+      // Clean up test database
+      const collections = await db.listCollections().toArray();
+      for (const col of collections) {
+        await db.collection(col.name).drop();
+      }
+    }
+    if (client) {
+      await client.close();
+    }
+  });
+
+  beforeEach(async function() {
+    // Clean up test collection before each test
+    try {
+      await db.collection('test').drop();
+    } catch (e) {
+      // Collection may not exist, ignore
+    }
+  });
+
+  // ============================================
+  // SECTION 1: Basic CRUD Operations
+  // ============================================
+
+  describe('insertOne', function() {
+    it('should insert a document and return insertedId', async function() {
+      const result = await db.collection('test').insertOne({
+        _id: 'doc1',
+        title: 'Test Document',
+        value: 42
+      });
+      expect(result.insertedId).to.equal('doc1');
+      expect(result.acknowledged).to.equal(true);
+    });
+
+    it('should auto-generate _id if not provided', async function() {
+      const result = await db.collection('test').insertOne({
+        title: 'Auto ID Document'
+      });
+      expect(result.insertedId).to.exist;
+      expect(result.acknowledged).to.equal(true);
+    });
+
+    it('should reject duplicate _id', async function() {
+      await db.collection('test').insertOne({
+        _id: 'dup',
+        value: 1
+      });
+      try {
+        await db.collection('test').insertOne({
+          _id: 'dup',
+          value: 2
+        });
+        expect.fail('Should have thrown duplicate key error');
+      } catch (e) {
+        expect(e.message).to.match(/duplicate|unique|already exists/i);
+      }
+    });
+  });
+
+  describe('insertMany', function() {
+    it('should insert multiple documents', async function() {
+      const docs = [
+        {
+          _id: 'many1',
+          title: 'First'
+        },
+        {
+          _id: 'many2',
+          title: 'Second'
+        },
+        {
+          _id: 'many3',
+          title: 'Third'
+        }
+      ];
+      const result = await db.collection('test').insertMany(docs);
+      expect(result.insertedCount).to.equal(3);
+      expect(result.acknowledged).to.equal(true);
+      expect(Object.keys(result.insertedIds)).to.have.lengthOf(3);
+    });
+
+    it('should reject if any document has duplicate _id', async function() {
+      await db.collection('test').insertOne({
+        _id: 'existing',
+        value: 1
+      });
+      try {
+        await db.collection('test').insertMany([
+          {
+            _id: 'new1',
+            value: 2
+          },
+          {
+            _id: 'existing',
+            value: 3
+          }
+        ]);
+        expect.fail('Should have thrown duplicate key error');
+      } catch (e) {
+        expect(e.message).to.match(/duplicate|unique|already exists/i);
+      }
+    });
+  });
+
+  describe('findOne', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'find1',
+          type: 'article',
+          title: 'First Article',
+          views: 100
+        },
+        {
+          _id: 'find2',
+          type: 'article',
+          title: 'Second Article',
+          views: 200
+        },
+        {
+          _id: 'find3',
+          type: 'page',
+          title: 'Home Page',
+          views: 500
+        }
+      ]);
+    });
+
+    it('should find a document by _id', async function() {
+      const doc = await db.collection('test').findOne({ _id: 'find1' });
+      expect(doc).to.exist;
+      expect(doc._id).to.equal('find1');
+      expect(doc.title).to.equal('First Article');
+    });
+
+    it('should find a document by field value', async function() {
+      const doc = await db.collection('test').findOne({ type: 'page' });
+      expect(doc).to.exist;
+      expect(doc._id).to.equal('find3');
+    });
+
+    it('should return null if no match', async function() {
+      const doc = await db.collection('test').findOne({ _id: 'nonexistent' });
+      expect(doc).to.be.null;
+    });
+
+    it('should support projection', async function() {
+      const doc = await db.collection('test').findOne(
+        { _id: 'find1' },
+        { projection: { title: 1 } }
+      );
+      expect(doc).to.exist;
+      expect(doc._id).to.equal('find1');
+      expect(doc.title).to.equal('First Article');
+      expect(doc.type).to.be.undefined;
+      expect(doc.views).to.be.undefined;
+    });
+
+    it('should support projection exclusion', async function() {
+      const doc = await db.collection('test').findOne(
+        { _id: 'find1' },
+        { projection: { views: 0 } }
+      );
+      expect(doc).to.exist;
+      expect(doc._id).to.equal('find1');
+      expect(doc.title).to.equal('First Article');
+      expect(doc.type).to.equal('article');
+      expect(doc.views).to.be.undefined;
+    });
+  });
+
+  describe('find', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'a1',
+          type: 'article',
+          title: 'Alpha',
+          order: 1,
+          tags: [ 'news', 'featured' ]
+        },
+        {
+          _id: 'a2',
+          type: 'article',
+          title: 'Beta',
+          order: 2,
+          tags: [ 'news' ]
+        },
+        {
+          _id: 'a3',
+          type: 'article',
+          title: 'Gamma',
+          order: 3,
+          tags: [ 'featured' ]
+        },
+        {
+          _id: 'p1',
+          type: 'page',
+          title: 'Home',
+          order: 1,
+          tags: []
+        },
+        {
+          _id: 'p2',
+          type: 'page',
+          title: 'About',
+          order: 2,
+          tags: [ 'info' ]
+        }
+      ]);
+    });
+
+    it('should find all documents with toArray()', async function() {
+      const docs = await db.collection('test').find({}).toArray();
+      expect(docs).to.have.lengthOf(5);
+    });
+
+    it('should find documents matching criteria', async function() {
+      const docs = await db.collection('test').find({ type: 'article' }).toArray();
+      expect(docs).to.have.lengthOf(3);
+      docs.forEach(doc => expect(doc.type).to.equal('article'));
+    });
+
+    it('should support sort()', async function() {
+      const docs = await db.collection('test')
+        .find({ type: 'article' })
+        .sort({ order: -1 })
+        .toArray();
+      expect(docs).to.have.lengthOf(3);
+      expect(docs[0]._id).to.equal('a3');
+      expect(docs[1]._id).to.equal('a2');
+      expect(docs[2]._id).to.equal('a1');
+    });
+
+    it('should support limit()', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({ _id: 1 })
+        .limit(2)
+        .toArray();
+      expect(docs).to.have.lengthOf(2);
+    });
+
+    it('should support skip()', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({ _id: 1 })
+        .skip(2)
+        .toArray();
+      expect(docs).to.have.lengthOf(3);
+    });
+
+    it('should support skip() and limit() together', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({ _id: 1 })
+        .skip(1)
+        .limit(2)
+        .toArray();
+      expect(docs).to.have.lengthOf(2);
+      expect(docs[0]._id).to.equal('a2');
+      expect(docs[1]._id).to.equal('a3');
+    });
+
+    it('should support project()', async function() {
+      const docs = await db.collection('test')
+        .find({ _id: 'a1' })
+        .project({ title: 1 })
+        .toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('a1');
+      expect(docs[0].title).to.equal('Alpha');
+      expect(docs[0].type).to.be.undefined;
+    });
+
+    it('should support count()', async function() {
+      const count = await db.collection('test')
+        .find({ type: 'article' })
+        .count();
+      expect(count).to.equal(3);
+    });
+
+    it('should support clone()', async function() {
+      const cursor = db.collection('test').find({ type: 'article' });
+      const cloned = cursor.clone();
+      const docs1 = await cursor.toArray();
+      const docs2 = await cloned.toArray();
+      expect(docs1).to.have.lengthOf(3);
+      expect(docs2).to.have.lengthOf(3);
+    });
+
+    it('should support next() with promises', async function() {
+      const cursor = db.collection('test')
+        .find({ type: 'article' })
+        .sort({ _id: 1 });
+      const doc1 = await cursor.next();
+      expect(doc1).to.exist;
+      expect(doc1._id).to.equal('a1');
+      const doc2 = await cursor.next();
+      expect(doc2).to.exist;
+      expect(doc2._id).to.equal('a2');
+      const doc3 = await cursor.next();
+      expect(doc3).to.exist;
+      expect(doc3._id).to.equal('a3');
+      const doc4 = await cursor.next();
+      expect(doc4).to.be.null;
+    });
+
+    it('should support next() with callbacks', function(done) {
+      const cursor = db.collection('test')
+        .find({ type: 'page' })
+        .sort({ _id: 1 });
+      cursor.next(function(err, doc1) {
+        if (err) {
+          return done(err);
+        }
+        expect(doc1).to.exist;
+        expect(doc1._id).to.equal('p1');
+        cursor.next(function(err, doc2) {
+          if (err) {
+            return done(err);
+          }
+          expect(doc2).to.exist;
+          expect(doc2._id).to.equal('p2');
+          cursor.next(function(err, doc3) {
+            if (err) {
+              return done(err);
+            }
+            expect(doc3).to.be.null;
+            done();
+          });
+        });
+      });
+    });
+
+    it('should support next() with projection', async function() {
+      const cursor = db.collection('test')
+        .find({ _id: 'a1' })
+        .project({ title: 1 });
+      const doc = await cursor.next();
+      expect(doc).to.exist;
+      expect(doc._id).to.equal('a1');
+      expect(doc.title).to.equal('Alpha');
+      expect(doc.type).to.be.undefined;
+      // Close cursor to release the connection/transaction
+      if (cursor.close) {
+        await cursor.close();
+      }
+    });
+
+    if (ADAPTER === 'postgres' || ADAPTER === 'multipostgres' || ADAPTER === 'sqlite') {
+      it('should support close() for early termination', async function() {
+        const cursor = db.collection('test')
+          .find({})
+          .sort({ _id: 1 });
+        const doc1 = await cursor.next();
+        expect(doc1).to.exist;
+        await cursor.close();
+        const doc2 = await cursor.next();
+        expect(doc2).to.be.null;
+      });
+    }
+  });
+
+  describe('updateOne', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'u1',
+          title: 'Original',
+          views: 10,
+          active: true
+        },
+        {
+          _id: 'u2',
+          title: 'Another',
+          views: 20,
+          active: false
+        }
+      ]);
+    });
+
+    it('should update a single document', async function() {
+      const result = await db.collection('test').updateOne(
+        { _id: 'u1' },
+        { $set: { title: 'Updated' } }
+      );
+      expect(result.matchedCount).to.equal(1);
+      expect(result.modifiedCount).to.equal(1);
+      expect(result.acknowledged).to.equal(true);
+
+      const doc = await db.collection('test').findOne({ _id: 'u1' });
+      expect(doc.title).to.equal('Updated');
+      expect(doc.views).to.equal(10);
+    });
+
+    it('should return matchedCount 0 if no match', async function() {
+      const result = await db.collection('test').updateOne(
+        { _id: 'nonexistent' },
+        { $set: { title: 'Updated' } }
+      );
+      expect(result.matchedCount).to.equal(0);
+      expect(result.modifiedCount).to.equal(0);
+    });
+
+    it('should support upsert', async function() {
+      const result = await db.collection('test').updateOne(
+        { _id: 'new1' },
+        {
+          $set: {
+            title: 'Upserted',
+            value: 100
+          }
+        },
+        { upsert: true }
+      );
+      expect(result.upsertedId).to.equal('new1');
+      expect(result.upsertedCount).to.equal(1);
+
+      const doc = await db.collection('test').findOne({ _id: 'new1' });
+      expect(doc.title).to.equal('Upserted');
+    });
+  });
+
+  describe('updateMany', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'm1',
+          type: 'article',
+          status: 'draft'
+        },
+        {
+          _id: 'm2',
+          type: 'article',
+          status: 'draft'
+        },
+        {
+          _id: 'm3',
+          type: 'page',
+          status: 'draft'
+        }
+      ]);
+    });
+
+    it('should update multiple documents', async function() {
+      const result = await db.collection('test').updateMany(
+        { type: 'article' },
+        { $set: { status: 'published' } }
+      );
+      expect(result.matchedCount).to.equal(2);
+      expect(result.modifiedCount).to.equal(2);
+
+      const docs = await db.collection('test').find({ status: 'published' }).toArray();
+      expect(docs).to.have.lengthOf(2);
+    });
+  });
+
+  describe('replaceOne', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertOne({
+        _id: 'r1',
+        title: 'Original',
+        extra: 'field',
+        count: 5
+      });
+    });
+
+    it('should replace entire document', async function() {
+      const result = await db.collection('test').replaceOne(
+        { _id: 'r1' },
+        {
+          _id: 'r1',
+          title: 'Replaced',
+          newField: 'value'
+        }
+      );
+      expect(result.matchedCount).to.equal(1);
+      expect(result.modifiedCount).to.equal(1);
+
+      const doc = await db.collection('test').findOne({ _id: 'r1' });
+      expect(doc.title).to.equal('Replaced');
+      expect(doc.newField).to.equal('value');
+      expect(doc.extra).to.be.undefined;
+      expect(doc.count).to.be.undefined;
+    });
+
+    it('should support upsert', async function() {
+      const result = await db.collection('test').replaceOne(
+        { _id: 'r2' },
+        {
+          _id: 'r2',
+          title: 'New Doc'
+        },
+        { upsert: true }
+      );
+      expect(result.upsertedId).to.equal('r2');
+    });
+  });
+
+  describe('deleteOne', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'd1',
+          value: 1
+        },
+        {
+          _id: 'd2',
+          value: 2
+        }
+      ]);
+    });
+
+    it('should delete a single document', async function() {
+      const result = await db.collection('test').deleteOne({ _id: 'd1' });
+      expect(result.deletedCount).to.equal(1);
+      expect(result.acknowledged).to.equal(true);
+
+      const doc = await db.collection('test').findOne({ _id: 'd1' });
+      expect(doc).to.be.null;
+    });
+
+    it('should return deletedCount 0 if no match', async function() {
+      const result = await db.collection('test').deleteOne({ _id: 'nonexistent' });
+      expect(result.deletedCount).to.equal(0);
+    });
+  });
+
+  describe('deleteMany', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'dm1',
+          type: 'temp',
+          value: 1
+        },
+        {
+          _id: 'dm2',
+          type: 'temp',
+          value: 2
+        },
+        {
+          _id: 'dm3',
+          type: 'keep',
+          value: 3
+        }
+      ]);
+    });
+
+    it('should delete multiple documents', async function() {
+      const result = await db.collection('test').deleteMany({ type: 'temp' });
+      expect(result.deletedCount).to.equal(2);
+
+      const docs = await db.collection('test').find({}).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('dm3');
+    });
+
+    it('should delete all documents with empty filter', async function() {
+      const result = await db.collection('test').deleteMany({});
+      expect(result.deletedCount).to.equal(3);
+    });
+  });
+
+  // ============================================
+  // SECTION 2: Query Operators
+  // ============================================
+
+  describe('Query Operators', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'q1',
+          name: 'Alice',
+          age: 25,
+          active: true,
+          tags: [ 'admin', 'user' ]
+        },
+        {
+          _id: 'q2',
+          name: 'Bob',
+          age: 30,
+          active: false,
+          tags: [ 'user' ]
+        },
+        {
+          _id: 'q3',
+          name: 'Carol',
+          age: 35,
+          active: true,
+          tags: [ 'guest' ]
+        },
+        {
+          _id: 'q4',
+          name: 'Dave',
+          age: 25,
+          active: true,
+          tags: []
+        },
+        {
+          _id: 'q5',
+          name: 'Eve',
+          age: 40,
+          optional: 'present',
+          tags: [ 'admin' ]
+        }
+      ]);
+    });
+
+    describe('Comparison Operators', function() {
+      it('$eq - should match equal values', async function() {
+        const docs = await db.collection('test').find({ age: { $eq: 25 } }).toArray();
+        expect(docs).to.have.lengthOf(2);
+      });
+
+      it('$ne - should match not equal values', async function() {
+        const docs = await db.collection('test').find({ age: { $ne: 25 } }).toArray();
+        expect(docs).to.have.lengthOf(3);
+      });
+
+      it('$ne: null - should match docs where field exists and is not null', async function() {
+        // Only q5 (Eve) has the `optional` field set
+        const docs = await db.collection('test').find({ optional: { $ne: null } }).toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0]._id).to.equal('q5');
+      });
+
+      it('$eq: null - should match docs where field is null or missing', async function() {
+        // q1-q4 lack the `optional` field entirely
+        const docs = await db.collection('test').find({ optional: { $eq: null } }).toArray();
+        expect(docs).to.have.lengthOf(4);
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'q1', 'q2', 'q3', 'q4' ]);
+      });
+
+      it('$gt - should match greater than', async function() {
+        const docs = await db.collection('test').find({ age: { $gt: 30 } }).toArray();
+        expect(docs).to.have.lengthOf(2);
+      });
+
+      it('$gte - should match greater than or equal', async function() {
+        const docs = await db.collection('test').find({ age: { $gte: 30 } }).toArray();
+        expect(docs).to.have.lengthOf(3);
+      });
+
+      it('$lt - should match less than', async function() {
+        const docs = await db.collection('test').find({ age: { $lt: 30 } }).toArray();
+        expect(docs).to.have.lengthOf(2);
+      });
+
+      it('$lte - should match less than or equal', async function() {
+        const docs = await db.collection('test').find({ age: { $lte: 30 } }).toArray();
+        expect(docs).to.have.lengthOf(3);
+      });
+
+      it('$in - should match values in array', async function() {
+        const docs = await db.collection('test').find({ age: { $in: [ 25, 35 ] } }).toArray();
+        expect(docs).to.have.lengthOf(3);
+      });
+
+      it('$nin - should match values not in array', async function() {
+        const docs = await db.collection('test').find({ age: { $nin: [ 25, 35 ] } }).toArray();
+        expect(docs).to.have.lengthOf(2);
+      });
+    });
+
+    describe('Logical Operators', function() {
+      it('$and - should match all conditions', async function() {
+        const docs = await db.collection('test').find({
+          $and: [
+            { age: { $gte: 25 } },
+            { active: true }
+          ]
+        }).toArray();
+        expect(docs).to.have.lengthOf(3);
+      });
+
+      it('$or - should match any condition', async function() {
+        const docs = await db.collection('test').find({
+          $or: [
+            { name: 'Alice' },
+            { name: 'Bob' }
+          ]
+        }).toArray();
+        expect(docs).to.have.lengthOf(2);
+      });
+
+      it('$not - should negate condition', async function() {
+        const docs = await db.collection('test').find({
+          age: { $not: { $gt: 30 } }
+        }).toArray();
+        expect(docs).to.have.lengthOf(3);
+      });
+
+      it('should support implicit $and with multiple fields', async function() {
+        const docs = await db.collection('test').find({
+          age: 25,
+          active: true
+        }).toArray();
+        expect(docs).to.have.lengthOf(2);
+      });
+    });
+
+    describe('Element Operators', function() {
+      it('$exists: true - should match documents with field', async function() {
+        const docs = await db.collection('test').find({ optional: { $exists: true } }).toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0].name).to.equal('Eve');
+      });
+
+      it('$exists: false - should match documents without field', async function() {
+        const docs = await db.collection('test').find({ optional: { $exists: false } }).toArray();
+        expect(docs).to.have.lengthOf(4);
+      });
+    });
+
+    describe('String Operators', function() {
+      it('$regex - should match regex pattern', async function() {
+        const docs = await db.collection('test').find({ name: { $regex: /^[AB]/ } }).toArray();
+        expect(docs).to.have.lengthOf(2);
+      });
+
+      it('$regex - should support string pattern', async function() {
+        const docs = await db.collection('test').find({
+          name: {
+            $regex: 'li',
+            $options: 'i'
+          }
+        }).toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0].name).to.equal('Alice');
+      });
+    });
+
+    // Anchored-literal-prefix regex queries mirror the ApostropheCMS page-tree
+    // descendants pattern (matchDescendants). Under the covers, the postgres
+    // and sqlite adapters rewrite these to an indexable range predicate
+    // plus a residual regex. Verify correctness here; index-usage is verified
+    // separately in the Indexes describe block below.
+    describe('Anchored regex (prefix rewrite)', function() {
+      beforeEach(async function() {
+        await db.collection('test2').deleteMany({});
+        await db.collection('test2').insertMany([
+          {
+            _id: 'p1',
+            path: '/'
+          },
+          {
+            _id: 'p2',
+            path: '/parent'
+          },
+          {
+            _id: 'p3',
+            path: '/parent/child-a'
+          },
+          {
+            _id: 'p4',
+            path: '/parent/child-a/grandchild'
+          },
+          {
+            _id: 'p5',
+            path: '/parent/child-b'
+          },
+          {
+            _id: 'p6',
+            path: '/parentx'
+          }, // sibling, must not match a /parent/ prefix
+          {
+            _id: 'p7',
+            path: '/other/child'
+          }
+        ]);
+      });
+      after(async function() {
+        await db.collection('test2').deleteMany({});
+      });
+
+      it('matches exactly the descendants of a path (MongoDB semantics)', async function() {
+        // ApostropheCMS matchDescendants: /^<path>\/./
+        const docs = await db.collection('test2')
+          .find({ path: /^\/parent\/./ })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p4', 'p5' ]);
+      });
+
+      it('does not falsely match siblings that share a prefix without the separator', async function() {
+        // /parentx must not match /^\/parent\/./ even though they share '/parent'
+        const docs = await db.collection('test2')
+          .find({ path: /^\/parent\// })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p4', 'p5' ]);
+      });
+
+      it('excludes the parent itself from its descendants (trailing `.` enforcement)', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: /^\/parent\/./ })
+          .toArray();
+        const ids = docs.map(d => d._id);
+        expect(ids).to.not.include('p2'); // /parent is not its own descendant
+      });
+
+      it('works via $regex with $options', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: { $regex: '^/parent/' } })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p4', 'p5' ]);
+      });
+
+      it('works for _id prefix queries', async function() {
+        const docs = await db.collection('test2')
+          .find({ _id: /^p/ })
+          .toArray();
+        expect(docs.length).to.equal(7);
+        const noneMatch = await db.collection('test2')
+          .find({ _id: /^z/ })
+          .toArray();
+        expect(noneMatch).to.have.lengthOf(0);
+      });
+
+      it('returns no results when the literal prefix has no matches', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: /^\/nonexistent\// })
+          .toArray();
+        expect(docs).to.have.lengthOf(0);
+      });
+
+      it('matches results beyond the prefix via the residual regex', async function() {
+        // Prefix '/parent/child-', then [ab] picks just the two direct children
+        const docs = await db.collection('test2')
+          .find({ path: /^\/parent\/child-[ab]$/ })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p5' ]);
+      });
+
+      it('case-insensitive anchored regex still matches correctly (no range rewrite)', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: /^\/PARENT\//i })
+          .toArray();
+        const ids = docs.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ 'p3', 'p4', 'p5' ]);
+      });
+
+      it('unanchored regex still works (no rewrite)', async function() {
+        const docs = await db.collection('test2')
+          .find({ path: /child-b/ })
+          .toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0]._id).to.equal('p5');
+      });
+    });
+
+    describe('Array Operators', function() {
+      it('should match array containing value (implicit)', async function() {
+        const docs = await db.collection('test').find({ tags: 'admin' }).toArray();
+        expect(docs).to.have.lengthOf(2);
+      });
+
+      it('$all - should match arrays containing all values', async function() {
+        const docs = await db.collection('test').find({ tags: { $all: [ 'admin', 'user' ] } }).toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0].name).to.equal('Alice');
+      });
+
+      it('$size - should match arrays with exact length', async function() {
+        const docs = await db.collection('test').find({ tags: { $size: 2 } }).toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0].name).to.equal('Alice');
+      });
+
+      it('$size: 1 - should match single-element arrays', async function() {
+        const docs = await db.collection('test').find({ tags: { $size: 1 } }).toArray();
+        expect(docs).to.have.lengthOf(3);
+        const names = docs.map(d => d.name).sort();
+        expect(names).to.deep.equal([ 'Bob', 'Carol', 'Eve' ]);
+      });
+
+      it('$size: 0 - should match empty arrays', async function() {
+        const docs = await db.collection('test').find({ tags: { $size: 0 } }).toArray();
+        expect(docs).to.have.lengthOf(1);
+        expect(docs[0].name).to.equal('Dave');
+      });
+    });
+  });
+
+  // ============================================
+  // SECTION 3: Update Operators
+  // ============================================
+
+  describe('Update Operators', function() {
+    describe('$set', function() {
+      it('should set field value', async function() {
+        await db.collection('test').insertOne({
+          _id: 'set1',
+          a: 1,
+          b: 2
+        });
+        await db.collection('test').updateOne({ _id: 'set1' }, {
+          $set: {
+            a: 10,
+            c: 3
+          }
+        });
+        const doc = await db.collection('test').findOne({ _id: 'set1' });
+        expect(doc.a).to.equal(10);
+        expect(doc.b).to.equal(2);
+        expect(doc.c).to.equal(3);
+      });
+
+      it('should set nested field value', async function() {
+        await db.collection('test').insertOne({
+          _id: 'set2',
+          nested: { a: 1 }
+        });
+        await db.collection('test').updateOne({ _id: 'set2' }, { $set: { 'nested.b': 2 } });
+        const doc = await db.collection('test').findOne({ _id: 'set2' });
+        expect(doc.nested.a).to.equal(1);
+        expect(doc.nested.b).to.equal(2);
+      });
+    });
+
+    describe('$unset', function() {
+      it('should remove field', async function() {
+        await db.collection('test').insertOne({
+          _id: 'unset1',
+          a: 1,
+          b: 2,
+          c: 3
+        });
+        await db.collection('test').updateOne({ _id: 'unset1' }, { $unset: { b: '' } });
+        const doc = await db.collection('test').findOne({ _id: 'unset1' });
+        expect(doc.a).to.equal(1);
+        expect(doc.b).to.be.undefined;
+        expect(doc.c).to.equal(3);
+      });
+    });
+
+    describe('$inc', function() {
+      it('should increment numeric field', async function() {
+        await db.collection('test').insertOne({
+          _id: 'inc1',
+          count: 5
+        });
+        await db.collection('test').updateOne({ _id: 'inc1' }, { $inc: { count: 3 } });
+        const doc = await db.collection('test').findOne({ _id: 'inc1' });
+        expect(doc.count).to.equal(8);
+      });
+
+      it('should decrement with negative value', async function() {
+        await db.collection('test').insertOne({
+          _id: 'inc2',
+          count: 10
+        });
+        await db.collection('test').updateOne({ _id: 'inc2' }, { $inc: { count: -4 } });
+        const doc = await db.collection('test').findOne({ _id: 'inc2' });
+        expect(doc.count).to.equal(6);
+      });
+
+      it('should create field if it does not exist', async function() {
+        await db.collection('test').insertOne({ _id: 'inc3' });
+        await db.collection('test').updateOne({ _id: 'inc3' }, { $inc: { count: 1 } });
+        const doc = await db.collection('test').findOne({ _id: 'inc3' });
+        expect(doc.count).to.equal(1);
+      });
+    });
+
+    describe('single-statement update path', function() {
+      it('should apply both $inc and $set in a single update', async function() {
+        await db.collection('test').insertOne({
+          _id: 'combo1',
+          count: 5,
+          status: 'pending'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'combo1' },
+          {
+            $inc: { count: 3 },
+            $set: { status: 'done' }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'combo1' });
+        expect(doc.count).to.equal(8);
+        expect(doc.status).to.equal('done');
+      });
+
+      it('should fall back to read-modify-write for $set with upsert', async function() {
+        await db.collection('test').updateOne(
+          { _id: 'combo2' },
+          { $set: { name: 'upserted' } },
+          { upsert: true }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'combo2' });
+        expect(doc.name).to.equal('upserted');
+      });
+
+      it('should fall back to read-modify-write when $set touches text-indexed fields', async function() {
+        const col = db.collection('test_text_atomic');
+        await col.insertOne({
+          _id: 'ta1',
+          title: 'Original',
+          highSearchText: 'original',
+          lowSearchText: 'original',
+          searchBoost: '',
+          body: 'test'
+        });
+        await col.createIndex({
+          highSearchText: 'text',
+          lowSearchText: 'text',
+          title: 'text',
+          searchBoost: 'text'
+        });
+        // This $set touches 'title' which is text-indexed, so it must
+        // go through the read-modify-write path to keep FTS in sync
+        await col.updateOne(
+          { _id: 'ta1' },
+          {
+            $set: {
+              title: 'Updated',
+              highSearchText: 'updated'
+            }
+          }
+        );
+        const doc = await col.findOne({ _id: 'ta1' });
+        expect(doc.title).to.equal('Updated');
+        // Verify text search finds the updated content
+        const found = await col.find({ $text: { $search: 'updated' } }).toArray();
+        expect(found).to.have.lengthOf(1);
+        expect(found[0]._id).to.equal('ta1');
+        // lowSearchText still contains 'original' so it should still match
+        // (FTS indexes all text fields, not just the ones we updated)
+        const stillFound = await col.find({ $text: { $search: 'original' } }).toArray();
+        expect(stillFound).to.have.lengthOf(1);
+      });
+
+      it('should use single-statement path when $set does not touch text-indexed fields', async function() {
+        const col = db.collection('test_text_atomic');
+        // 'body' is not text-indexed, so this should use the single-statement path
+        await col.updateOne(
+          { _id: 'ta1' },
+          {
+            $set: { body: 'changed' },
+            $inc: { views: 1 }
+          }
+        );
+        const doc = await col.findOne({ _id: 'ta1' });
+        expect(doc.body).to.equal('changed');
+        expect(doc.views).to.equal(1);
+        // Text search should still work (FTS not affected)
+        const found = await col.find({ $text: { $search: 'updated' } }).toArray();
+        expect(found).to.have.lengthOf(1);
+      });
+
+      it('should handle $unset via single-statement path', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_unset1',
+          a: 1,
+          b: 2,
+          c: 3
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_unset1' },
+          { $unset: { b: '' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_unset1' });
+        expect(doc.a).to.equal(1);
+        expect(doc.b).to.be.undefined;
+        expect(doc.c).to.equal(3);
+      });
+
+      it('should handle $unset combined with $set and $inc in a single update', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_unset2',
+          keep: 'yes',
+          remove: 'gone',
+          count: 0
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_unset2' },
+          {
+            $set: { keep: 'updated' },
+            $unset: { remove: '' },
+            $inc: { count: 1 }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_unset2' });
+        expect(doc.keep).to.equal('updated');
+        expect(doc.remove).to.be.undefined;
+        expect(doc.count).to.equal(1);
+      });
+
+      it('should handle $currentDate combined with $set in a single update', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_cd1',
+          status: 'pending'
+        });
+        const before = new Date();
+        await db.collection('test').updateOne(
+          { _id: 'atomic_cd1' },
+          {
+            $set: { status: 'done' },
+            $currentDate: { updatedAt: true }
+          }
+        );
+        const after = new Date();
+        const doc = await db.collection('test').findOne({ _id: 'atomic_cd1' });
+        expect(doc.status).to.equal('done');
+        expect(doc.updatedAt).to.be.an.instanceOf(Date);
+        expect(doc.updatedAt.getTime()).to.be.at.least(before.getTime());
+        expect(doc.updatedAt.getTime()).to.be.at.most(after.getTime());
+      });
+
+      it('should handle scalar $addToSet via single-statement path', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_addset1',
+          tags: [ 'a', 'b' ]
+        });
+        // Add new value
+        await db.collection('test').updateOne(
+          { _id: 'atomic_addset1' },
+          { $addToSet: { tags: 'c' } }
+        );
+        let doc = await db.collection('test').findOne({ _id: 'atomic_addset1' });
+        expect(doc.tags).to.include.members([ 'a', 'b', 'c' ]);
+        expect(doc.tags).to.have.lengthOf(3);
+        // Add duplicate (should be no-op)
+        await db.collection('test').updateOne(
+          { _id: 'atomic_addset1' },
+          { $addToSet: { tags: 'b' } }
+        );
+        doc = await db.collection('test').findOne({ _id: 'atomic_addset1' });
+        expect(doc.tags).to.have.lengthOf(3);
+      });
+
+      it('should handle scalar $pull via single-statement path', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_pull1',
+          tags: [ 'a', 'b', 'c' ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_pull1' },
+          { $pull: { tags: 'b' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_pull1' });
+        expect(doc.tags).to.deep.equal([ 'a', 'c' ]);
+      });
+
+      it('should handle scalar $push via single-statement path', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_push1',
+          tags: [ 'a', 'b' ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_push1' },
+          { $push: { tags: 'c' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_push1' });
+        expect(doc.tags).to.deep.equal([ 'a', 'b', 'c' ]);
+      });
+
+      it('should handle $push when field does not exist', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_push2',
+          name: 'test'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_push2' },
+          { $push: { tags: 'first' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_push2' });
+        expect(doc.tags).to.deep.equal([ 'first' ]);
+      });
+
+      it('should handle $push with $set and $inc combined', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_push3',
+          log: [ 'init' ],
+          count: 0,
+          status: 'new'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_push3' },
+          {
+            $push: { log: 'step1' },
+            $inc: { count: 1 },
+            $set: { status: 'running' }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_push3' });
+        expect(doc.log).to.deep.equal([ 'init', 'step1' ]);
+        expect(doc.count).to.equal(1);
+        expect(doc.status).to.equal('running');
+      });
+
+      it('should handle $pull and $addToSet on different fields', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_both1',
+          active: [ 'x', 'y' ],
+          archived: [ 'z' ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_both1' },
+          {
+            $pull: { active: 'x' },
+            $addToSet: { archived: 'x' }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_both1' });
+        expect(doc.active).to.deep.equal([ 'y' ]);
+        expect(doc.archived).to.include.members([ 'z', 'x' ]);
+      });
+
+      it('should handle $addToSet when field does not exist', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_addset2',
+          name: 'test'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_addset2' },
+          { $addToSet: { tags: 'first' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_addset2' });
+        expect(doc.tags).to.deep.equal([ 'first' ]);
+      });
+
+      it('should handle $pull when field does not exist', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_pull2',
+          name: 'test'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_pull2' },
+          { $pull: { tags: 'nope' } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_pull2' });
+        // MongoDB leaves the field absent, SQL adapters create an
+        // empty array. Both are acceptable — the field has no elements.
+        if (doc.tags !== undefined) {
+          expect(doc.tags).to.deep.equal([]);
+        }
+      });
+
+      it('should combine scalar $pull with $set and $inc', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_combo3',
+          ids: [ 'a', 'b' ],
+          count: 5,
+          status: 'active'
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_combo3' },
+          {
+            $pull: { ids: 'a' },
+            $inc: { count: -1 },
+            $set: { status: 'modified' }
+          }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_combo3' });
+        expect(doc.ids).to.deep.equal([ 'b' ]);
+        expect(doc.count).to.equal(4);
+        expect(doc.status).to.equal('modified');
+      });
+
+      it('should fall back to read-modify-write for object $addToSet', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_objset1',
+          items: [ { id: 1 } ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_objset1' },
+          { $addToSet: { items: { id: 2 } } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_objset1' });
+        expect(doc.items).to.have.lengthOf(2);
+        expect(doc.items[1].id).to.equal(2);
+      });
+
+      it('should fall back to read-modify-write for object $pull', async function() {
+        await db.collection('test').insertOne({
+          _id: 'atomic_objpull1',
+          items: [
+            { id: 1 },
+            { id: 2 }
+          ]
+        });
+        await db.collection('test').updateOne(
+          { _id: 'atomic_objpull1' },
+          { $pull: { items: { id: 1 } } }
+        );
+        const doc = await db.collection('test').findOne({ _id: 'atomic_objpull1' });
+        expect(doc.items).to.have.lengthOf(1);
+        expect(doc.items[0].id).to.equal(2);
+      });
+    });
+
+    describe('$push', function() {
+      it('should add element to array', async function() {
+        await db.collection('test').insertOne({
+          _id: 'push1',
+          items: [ 'a', 'b' ]
+        });
+        await db.collection('test').updateOne({ _id: 'push1' }, { $push: { items: 'c' } });
+        const doc = await db.collection('test').findOne({ _id: 'push1' });
+        expect(doc.items).to.deep.equal([ 'a', 'b', 'c' ]);
+      });
+
+      it('should create array if it does not exist', async function() {
+        await db.collection('test').insertOne({ _id: 'push2' });
+        await db.collection('test').updateOne({ _id: 'push2' }, { $push: { items: 'a' } });
+        const doc = await db.collection('test').findOne({ _id: 'push2' });
+        expect(doc.items).to.deep.equal([ 'a' ]);
+      });
+    });
+
+    describe('$pull', function() {
+      it('should remove matching elements from array', async function() {
+        await db.collection('test').insertOne({
+          _id: 'pull1',
+          items: [ 'a', 'b', 'c', 'b' ]
+        });
+        await db.collection('test').updateOne({ _id: 'pull1' }, { $pull: { items: 'b' } });
+        const doc = await db.collection('test').findOne({ _id: 'pull1' });
+        expect(doc.items).to.deep.equal([ 'a', 'c' ]);
+      });
+    });
+
+    describe('$addToSet', function() {
+      it('should add element only if not present', async function() {
+        await db.collection('test').insertOne({
+          _id: 'add1',
+          tags: [ 'a', 'b' ]
+        });
+        await db.collection('test').updateOne({ _id: 'add1' }, { $addToSet: { tags: 'c' } });
+        const doc = await db.collection('test').findOne({ _id: 'add1' });
+        expect(doc.tags).to.deep.equal([ 'a', 'b', 'c' ]);
+      });
+
+      it('should not add duplicate element', async function() {
+        await db.collection('test').insertOne({
+          _id: 'add2',
+          tags: [ 'a', 'b' ]
+        });
+        await db.collection('test').updateOne({ _id: 'add2' }, { $addToSet: { tags: 'b' } });
+        const doc = await db.collection('test').findOne({ _id: 'add2' });
+        expect(doc.tags).to.deep.equal([ 'a', 'b' ]);
+      });
+    });
+
+    describe('$currentDate', function() {
+      it('should set field to current date', async function() {
+        await db.collection('test').insertOne({
+          _id: 'date1',
+          name: 'test'
+        });
+        const before = new Date();
+        await db.collection('test').updateOne({ _id: 'date1' }, { $currentDate: { updatedAt: true } });
+        const after = new Date();
+        const doc = await db.collection('test').findOne({ _id: 'date1' });
+        expect(doc.updatedAt).to.be.instanceOf(Date);
+        expect(doc.updatedAt.getTime()).to.be.at.least(before.getTime());
+        expect(doc.updatedAt.getTime()).to.be.at.most(after.getTime());
+      });
+    });
+  });
+
+  // ============================================
+  // SECTION 4: Counting and Distinct
+  // ============================================
+
+  describe('countDocuments', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'c1',
+          type: 'a',
+          value: 1
+        },
+        {
+          _id: 'c2',
+          type: 'a',
+          value: 2
+        },
+        {
+          _id: 'c3',
+          type: 'b',
+          value: 3
+        }
+      ]);
+    });
+
+    it('should count all documents', async function() {
+      const count = await db.collection('test').countDocuments({});
+      expect(count).to.equal(3);
+    });
+
+    it('should count matching documents', async function() {
+      const count = await db.collection('test').countDocuments({ type: 'a' });
+      expect(count).to.equal(2);
+    });
+  });
+
+  describe('distinct', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'd1',
+          category: 'food',
+          tag: 'healthy'
+        },
+        {
+          _id: 'd2',
+          category: 'food',
+          tag: 'junk'
+        },
+        {
+          _id: 'd3',
+          category: 'tech',
+          tag: 'healthy'
+        },
+        {
+          _id: 'd4',
+          category: 'tech',
+          tag: 'new'
+        }
+      ]);
+    });
+
+    it('should return distinct values for field', async function() {
+      const values = await db.collection('test').distinct('category');
+      expect(values.sort()).to.deep.equal([ 'food', 'tech' ]);
+    });
+
+    it('should return distinct values with filter', async function() {
+      const values = await db.collection('test').distinct('tag', { category: 'food' });
+      expect(values.sort()).to.deep.equal([ 'healthy', 'junk' ]);
+    });
+
+    it('should return distinct object values as parsed objects', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'dobj1',
+          updatedBy: { _id: 'user1', title: 'Alice' }
+        },
+        {
+          _id: 'dobj2',
+          updatedBy: { _id: 'user2', title: 'Bob' }
+        },
+        {
+          _id: 'dobj3',
+          updatedBy: { _id: 'user1', title: 'Alice' }
+        }
+      ]);
+      const values = await db.collection('test').distinct('updatedBy');
+      // Should return parsed objects, not JSON strings
+      expect(values).to.be.an('array');
+      expect(values.length).to.be.at.least(2);
+      const hasUser1 = values.some(v => typeof v === 'object' && v._id === 'user1');
+      const hasUser2 = values.some(v => typeof v === 'object' && v._id === 'user2');
+      expect(hasUser1).to.equal(true);
+      expect(hasUser2).to.equal(true);
+    });
+  });
+
+  // ============================================
+  // SECTION 5: Aggregation (Limited)
+  // ============================================
+
+  describe('aggregate', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'agg1',
+          category: 'fruit',
+          name: 'apple',
+          qty: 10
+        },
+        {
+          _id: 'agg2',
+          category: 'fruit',
+          name: 'banana',
+          qty: 5
+        },
+        {
+          _id: 'agg3',
+          category: 'vegetable',
+          name: 'carrot',
+          qty: 8
+        },
+        {
+          _id: 'agg4',
+          category: 'vegetable',
+          name: 'broccoli',
+          qty: 3
+        }
+      ]);
+    });
+
+    it('$match - should filter documents', async function() {
+      const results = await db.collection('test').aggregate([
+        { $match: { category: 'fruit' } }
+      ]).toArray();
+      expect(results).to.have.lengthOf(2);
+    });
+
+    it('$group - should group and aggregate', async function() {
+      const results = await db.collection('test').aggregate([
+        {
+          $group: {
+            _id: '$category',
+            total: { $sum: '$qty' }
+          }
+        }
+      ]).toArray();
+      expect(results).to.have.lengthOf(2);
+      const fruit = results.find(r => r._id === 'fruit');
+      const vegetable = results.find(r => r._id === 'vegetable');
+      expect(fruit.total).to.equal(15);
+      expect(vegetable.total).to.equal(11);
+    });
+
+    it('$project - should project fields', async function() {
+      const results = await db.collection('test').aggregate([
+        { $match: { _id: 'agg1' } },
+        {
+          $project: {
+            name: 1,
+            qty: 1
+          }
+        }
+      ]).toArray();
+      expect(results).to.have.lengthOf(1);
+      expect(results[0].name).to.equal('apple');
+      expect(results[0].category).to.be.undefined;
+    });
+
+    it('$unwind - should unwind array field', async function() {
+      await db.collection('test').insertOne({
+        _id: 'agg5',
+        name: 'mixed',
+        items: [ 'x', 'y', 'z' ]
+      });
+      const results = await db.collection('test').aggregate([
+        { $match: { _id: 'agg5' } },
+        { $unwind: '$items' }
+      ]).toArray();
+      expect(results).to.have.lengthOf(3);
+      expect(results.map(r => r.items)).to.deep.equal([ 'x', 'y', 'z' ]);
+    });
+
+    it('$match - throws on unrecognized operator (parity with find())', async function() {
+      // The in-memory matcher backs any $match stage after the first,
+      // so unknown operators must throw instead of silently matching
+      // everything — matching the SQL find() path.
+      let err;
+      try {
+        await db.collection('test').aggregate([
+          { $match: { category: 'fruit' } },
+          { $match: { qty: { $madeUp: 5 } } }
+        ]).toArray();
+      } catch (e) {
+        err = e;
+      }
+      expect(err).to.exist;
+      expect(err.message).to.match(/\$madeUp|Unsupported operator/);
+    });
+
+    it('$match - supports $regex/$not/$all/$size in the in-memory matcher', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'agg6',
+          name: 'match',
+          tags: [ 'a', 'b', 'c' ]
+        },
+        {
+          _id: 'agg7',
+          name: 'other',
+          tags: [ 'a' ]
+        }
+      ]);
+      const r1 = await db.collection('test').aggregate([
+        { $match: { name: { $exists: true } } },
+        { $match: { name: { $regex: '^mat' } } }
+      ]).toArray();
+      expect(r1.map(d => d._id)).to.deep.equal([ 'agg6' ]);
+
+      const r2 = await db.collection('test').aggregate([
+        { $match: { _id: { $in: [ 'agg6', 'agg7' ] } } },
+        { $match: { tags: { $size: 3 } } }
+      ]).toArray();
+      expect(r2.map(d => d._id)).to.deep.equal([ 'agg6' ]);
+
+      const r3 = await db.collection('test').aggregate([
+        { $match: { _id: { $in: [ 'agg6', 'agg7' ] } } },
+        { $match: { tags: { $all: [ 'a', 'b' ] } } }
+      ]).toArray();
+      expect(r3.map(d => d._id)).to.deep.equal([ 'agg6' ]);
+
+      const r4 = await db.collection('test').aggregate([
+        { $match: { _id: { $in: [ 'agg6', 'agg7' ] } } },
+        { $match: { name: { $not: { $regex: '^mat' } } } }
+      ]).toArray();
+      expect(r4.map(d => d._id)).to.deep.equal([ 'agg7' ]);
+    });
+  });
+
+  // ============================================
+  // SECTION 6: Index Operations
+  // ============================================
+
+  describe('Index Operations', function() {
+    it('createIndex - should create a single field index', async function() {
+      await db.collection('test').insertOne({
+        _id: 'idx1',
+        field: 'value'
+      });
+      const indexName = await db.collection('test').createIndex({ field: 1 });
+      expect(indexName).to.be.a('string');
+
+      const indexes = await db.collection('test').indexes();
+      const fieldIndex = indexes.find(i => i.key && i.key.field === 1);
+      expect(fieldIndex).to.exist;
+    });
+
+    it('createIndex - should create a compound index', async function() {
+      await db.collection('test').insertOne({
+        _id: 'idx2',
+        a: 1,
+        b: 2
+      });
+      const indexName = await db.collection('test').createIndex({
+        a: 1,
+        b: -1
+      });
+      expect(indexName).to.be.a('string');
+    });
+
+    it('createIndex - should create a unique index', async function() {
+      await db.collection('test').insertOne({
+        _id: 'idx3',
+        email: 'test@example.com'
+      });
+      await db.collection('test').createIndex({ email: 1 }, { unique: true });
+
+      // Should reject duplicate
+      try {
+        await db.collection('test').insertOne({
+          _id: 'idx4',
+          email: 'test@example.com'
+        });
+        expect.fail('Should have thrown duplicate key error');
+      } catch (e) {
+        expect(e.message).to.match(/duplicate|unique|already exists/i);
+      }
+    });
+
+    it('createIndex - should support text index', async function() {
+      await db.collection('test').insertOne({
+        _id: 'txt1',
+        content: 'hello world'
+      });
+      const indexName = await db.collection('test').createIndex({ content: 'text' });
+      expect(indexName).to.be.a('string');
+    });
+
+    it('dropIndex - should drop an index', async function() {
+      await db.collection('test').insertOne({
+        _id: 'drop1',
+        field: 'value'
+      });
+      const indexName = await db.collection('test').createIndex({ field: 1 });
+
+      await db.collection('test').dropIndex(indexName);
+
+      const indexes = await db.collection('test').indexes();
+      const fieldIndex = indexes.find(i => i.name === indexName);
+      expect(fieldIndex).to.not.exist;
+    });
+
+    it('indexes - should list all indexes', async function() {
+      await db.collection('test').insertOne({
+        _id: 'list1',
+        a: 1,
+        b: 2
+      });
+      await db.collection('test').createIndex({ a: 1 });
+      await db.collection('test').createIndex({ b: 1 });
+
+      const indexes = await db.collection('test').indexes();
+      expect(indexes.length).to.be.at.least(3); // _id index + a + b
+    });
+
+    it('createIndex - should create index on nested field', async function() {
+      await db.collection('test').insertOne({
+        _id: 'nested1',
+        user: { profile: { name: 'Alice' } }
+      });
+      const indexName = await db.collection('test').createIndex({ 'user.profile.name': 1 });
+      expect(indexName).to.be.a('string');
+
+      // Verify we can query using the indexed field
+      const doc = await db.collection('test').findOne({ 'user.profile.name': 'Alice' });
+      expect(doc).to.exist;
+      expect(doc._id).to.equal('nested1');
+    });
+
+    it('createIndex - should create sparse index', async function() {
+      // Insert docs with and without the indexed field
+      await db.collection('test').insertMany([
+        {
+          _id: 'sparse1',
+          optionalField: 'present'
+        },
+        { _id: 'sparse2' }, // no optionalField
+        {
+          _id: 'sparse3',
+          optionalField: 'also present'
+        }
+      ]);
+
+      const indexName = await db.collection('test').createIndex(
+        { optionalField: 1 },
+        { sparse: true }
+      );
+      expect(indexName).to.be.a('string');
+
+      // Both docs with the field should be findable
+      const docs = await db.collection('test').find({ optionalField: { $exists: true } }).toArray();
+      expect(docs).to.have.lengthOf(2);
+    });
+
+    it('createIndex - should create unique sparse index', async function() {
+      // Unique sparse index allows multiple docs without the field
+      await db.collection('test').insertMany([
+        {
+          _id: 'us1',
+          uniqueOptional: 'value1'
+        },
+        { _id: 'us2' }, // no uniqueOptional - allowed with sparse
+        { _id: 'us3' }  // no uniqueOptional - also allowed with sparse
+      ]);
+
+      await db.collection('test').createIndex(
+        { uniqueOptional: 1 },
+        {
+          unique: true,
+          sparse: true
+        }
+      );
+
+      // Should reject duplicate value
+      try {
+        await db.collection('test').insertOne({
+          _id: 'us4',
+          uniqueOptional: 'value1'
+        });
+        expect.fail('Should have thrown duplicate key error');
+      } catch (e) {
+        expect(e.message).to.match(/duplicate|unique|already exists/i);
+      }
+
+      // But allow another doc without the field
+      await db.collection('test').insertOne({ _id: 'us5' });
+      const count = await db.collection('test').countDocuments({ _id: { $in: [ 'us2', 'us3', 'us5' ] } });
+      expect(count).to.equal(3);
+    });
+
+    // Typed index tests - these are PostgreSQL-specific optimizations
+    // but should work (be ignored) for MongoDB as well
+    it('createIndex - should create numeric index for range queries', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'num1',
+          price: 10
+        },
+        {
+          _id: 'num2',
+          price: 25
+        },
+        {
+          _id: 'num3',
+          price: 50
+        },
+        {
+          _id: 'num4',
+          price: 100
+        }
+      ]);
+
+      // Create numeric index for efficient range queries
+      const indexName = await db.collection('test').createIndex(
+        { price: 1 },
+        { type: 'number' }
+      );
+      expect(indexName).to.be.a('string');
+
+      // Range queries should work correctly
+      const cheap = await db.collection('test').find({ price: { $lt: 30 } }).toArray();
+      expect(cheap).to.have.lengthOf(2);
+      expect(cheap.map(d => d._id).sort()).to.deep.equal([ 'num1', 'num2' ]);
+
+      const expensive = await db.collection('test').find({ price: { $gte: 50 } }).toArray();
+      expect(expensive).to.have.lengthOf(2);
+      expect(expensive.map(d => d._id).sort()).to.deep.equal([ 'num3', 'num4' ]);
+
+      const midRange = await db.collection('test').find({
+        price: {
+          $gt: 10,
+          $lt: 100
+        }
+      }).toArray();
+      expect(midRange).to.have.lengthOf(2);
+      expect(midRange.map(d => d._id).sort()).to.deep.equal([ 'num2', 'num3' ]);
+    });
+
+    it('createIndex - should create date index for range queries', async function() {
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const lastMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      await db.collection('test').insertMany([
+        {
+          _id: 'date1',
+          createdAt: lastMonth
+        },
+        {
+          _id: 'date2',
+          createdAt: lastWeek
+        },
+        {
+          _id: 'date3',
+          createdAt: yesterday
+        },
+        {
+          _id: 'date4',
+          createdAt: now
+        }
+      ]);
+
+      // Create date index for efficient range queries
+      const indexName = await db.collection('test').createIndex(
+        { createdAt: 1 },
+        { type: 'date' }
+      );
+      expect(indexName).to.be.a('string');
+
+      // Range queries should work correctly
+      const recent = await db.collection('test').find({
+        createdAt: { $gte: yesterday }
+      }).toArray();
+      expect(recent).to.have.lengthOf(2);
+      expect(recent.map(d => d._id).sort()).to.deep.equal([ 'date3', 'date4' ]);
+
+      const older = await db.collection('test').find({
+        createdAt: { $lt: lastWeek }
+      }).toArray();
+      expect(older).to.have.lengthOf(1);
+      expect(older[0]._id).to.equal('date1');
+
+      const midRange = await db.collection('test').find({
+        createdAt: {
+          $gt: lastMonth,
+          $lt: now
+        }
+      }).toArray();
+      expect(midRange).to.have.lengthOf(2);
+      expect(midRange.map(d => d._id).sort()).to.deep.equal([ 'date2', 'date3' ]);
+    });
+
+    it('createIndex - should create unique numeric index', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'unum1',
+          rank: 1
+        },
+        {
+          _id: 'unum2',
+          rank: 2
+        }
+      ]);
+
+      await db.collection('test').createIndex(
+        { rank: 1 },
+        {
+          type: 'number',
+          unique: true
+        }
+      );
+
+      // Should reject duplicate
+      try {
+        await db.collection('test').insertOne({
+          _id: 'unum3',
+          rank: 1
+        });
+        expect.fail('Should have thrown duplicate key error');
+      } catch (e) {
+        expect(e.message).to.match(/duplicate|unique|already exists/i);
+      }
+
+      // Different value should work
+      await db.collection('test').insertOne({
+        _id: 'unum3',
+        rank: 3
+      });
+      const count = await db.collection('test').countDocuments({ _id: { $regex: '^unum' } });
+      expect(count).to.equal(3);
+    });
+
+    if (ADAPTER === 'postgres' || ADAPTER === 'multipostgres') {
+      // PostgreSQL-specific: verify indexes() reconstructs metadata from
+      // pg_indexes when the in-memory _indexes Map is not populated
+      // (e.g. after a reconnect)
+      it('indexes - should reconstruct index metadata from SQL definitions', async function() {
+        await db.collection('test').insertOne({
+          _id: 'parse1',
+          slug: 'hello',
+          price: 42,
+          createdAt: new Date('2024-06-01T00:00:00Z'),
+          user: { profile: { name: 'Alice' } },
+          content: 'some text here'
+        });
+
+        // Create various index types
+        await db.collection('test').createIndex({ slug: 1 });
+        await db.collection('test').createIndex({
+          a: 1,
+          b: -1
+        });
+        await db.collection('test').createIndex({ price: 1 }, { type: 'number' });
+        await db.collection('test').createIndex({ createdAt: 1 }, { type: 'date' });
+        await db.collection('test').createIndex({ 'user.profile.name': 1 });
+        await db.collection('test').createIndex({ content: 'text' });
+        await db.collection('test').createIndex({ slug: 1 }, {
+          unique: true,
+          name: 'slug_unique'
+        });
+        await db.collection('test').createIndex({ price: 1 }, {
+          sparse: true,
+          type: 'number',
+          name: 'price_sparse'
+        });
+
+        // Clear the in-memory index cache to force parsing from SQL
+        db.collection('test')._indexes.clear();
+
+        const indexes = await db.collection('test').indexes();
+
+        // Find the default text index
+        const textIdx = indexes.find(i => i.key && i.key.content === 'text');
+        expect(textIdx).to.exist;
+        expect(textIdx.key.content).to.equal('text');
+
+        // Find the single field index
+        const slugIdx = indexes.find(i =>
+          i.key && i.key.slug === 1 && !i.unique
+        );
+        expect(slugIdx).to.exist;
+
+        // Find the numeric typed index
+        const numIdx = indexes.find(i =>
+          i.key && i.key.price === 1 && i.type === 'number' && !i.sparse
+        );
+        expect(numIdx).to.exist;
+
+        // Find the date typed index
+        const dateIdx = indexes.find(i =>
+          i.key && i.key.createdAt === 1 && i.type === 'date'
+        );
+        expect(dateIdx).to.exist;
+
+        // Find the nested field index
+        const nestedIdx = indexes.find(i =>
+          i.key && i.key['user.profile.name'] === 1
+        );
+        expect(nestedIdx).to.exist;
+
+        // Find the compound index
+        const compoundIdx = indexes.find(i =>
+          i.key && i.key.a === 1 && i.key.b === -1
+        );
+        expect(compoundIdx).to.exist;
+
+        // Find the unique index
+        const uniqueIdx = indexes.find(i =>
+          i.key && i.key.slug === 1 && i.unique
+        );
+        expect(uniqueIdx).to.exist;
+
+        // Find the sparse numeric index
+        const sparseNumIdx = indexes.find(i =>
+          i.key && i.key.price === 1 && i.sparse && i.type === 'number'
+        );
+        expect(sparseNumIdx).to.exist;
+      });
+    }
+
+    // Verify that anchored-regex queries (e.g. ApostropheCMS matchDescendants)
+    // actually use a btree index on the matched field via the rewrite to a
+    // range predicate. This is the behavior we care about — without it, page
+    // tree queries degrade to O(n) sequential scans.
+    // Seed a collection with many non-matching _ids plus two targets
+    // whose _id matches /^\/tree\/parent\//. We assert index usage
+    // against the primary-key _id column rather than a JSONB field,
+    // because JSON-field regex queries carry a scalar-OR-array-element
+    // disjunction (MongoDB semantics for regex-matches-array-of-strings)
+    // that deliberately blocks bitmap index scans on the scalar branch.
+    // The primary-key path has no such fallback, so it is the right
+    // place to prove that the anchored-regex → range-predicate rewrite
+    // makes the adapter's real query index-eligible.
+    async function seedIdIndexCollection(coll) {
+      await coll.deleteMany({});
+      const docs = [];
+      for (let i = 0; i < 200; i++) {
+        docs.push({ _id: `/p${i}/child` });
+      }
+      docs.push({ _id: '/tree/parent/a' });
+      docs.push({ _id: '/tree/parent/b' });
+      await coll.insertMany(docs);
+    }
+
+    if (ADAPTER === 'postgres' || ADAPTER === 'multipostgres') {
+      it('anchored regex on an indexed field uses a btree index scan (postgres)', async function() {
+        const coll = db.collection('pathidx');
+        await seedIdIndexCollection(coll);
+
+        // End-to-end correctness first — proves the rewrite produces
+        // correct results.
+        const results = await coll.find({ _id: /^\/tree\/parent\// }).toArray();
+        const ids = results.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ '/tree/parent/a', '/tree/parent/b' ]);
+
+        // Ask the cursor for the SQL it would actually run, then EXPLAIN
+        // THAT SQL. This keeps the test honest: future changes to
+        // buildWhereClause immediately show up here instead of drifting
+        // apart from a hand-written SQL string.
+        const cursor = coll.find({ _id: /^\/tree\/parent\// });
+        const { sql, params } = await cursor.explain();
+
+        const pool = db._pool;
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          // Make sure the planner has stats for the freshly seeded
+          // table — otherwise it may default to a seqscan based on a
+          // 0-row estimate.
+          await client.query(`ANALYZE ${coll._qualifiedName()}`);
+          // Force enable_seqscan = off so the planner must use the
+          // index if it is eligible at all. If it still falls back to
+          // a sequential scan under this setting, the rewrite is
+          // producing a predicate the planner cannot match to the
+          // index — i.e. the regression we are guarding against.
+          await client.query('SET LOCAL enable_seqscan = off');
+          const explain = await client.query(`EXPLAIN ${sql}`, params);
+          const planText = explain.rows.map(r => r['QUERY PLAN']).join('\n');
+          expect(planText).to.match(/Index (Only )?Scan|Bitmap Index Scan/);
+          await client.query('ROLLBACK');
+        } finally {
+          client.release();
+        }
+
+        await coll.deleteMany({});
+      });
+    }
+
+    if (ADAPTER === 'sqlite') {
+      it('anchored regex on an indexed field uses a btree index search (sqlite)', async function() {
+        const coll = db.collection('pathidx');
+        await seedIdIndexCollection(coll);
+
+        // End-to-end correctness first
+        const results = await coll.find({ _id: /^\/tree\/parent\// }).toArray();
+        const ids = results.map(d => d._id).sort();
+        expect(ids).to.deep.equal([ '/tree/parent/a', '/tree/parent/b' ]);
+
+        // Ask the cursor for the SQL it would actually run, then
+        // EXPLAIN QUERY PLAN on that same SQL. SQLite plan output:
+        //   "SEARCH table USING INDEX idx_name (...)"  -- uses index
+        //   "SCAN table"                                -- full scan
+        const cursor = coll.find({ _id: /^\/tree\/parent\// });
+        const { sql, params } = await cursor.explain();
+        const sqlite = db._sqlite;
+        const planRows = sqlite.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params);
+        const planText = planRows.map(r => r.detail || '').join('\n');
+        expect(planText).to.match(/SEARCH.*USING (INDEX|ROWID|PRIMARY KEY)/);
+
+        await coll.deleteMany({});
+      });
+    }
+  });
+
+  // ============================================
+  // SECTION 7: Bulk Operations
+  // ============================================
+
+  describe('bulkWrite', function() {
+    it('should execute multiple operations', async function() {
+      await db.collection('test').insertOne({
+        _id: 'bulk1',
+        value: 1
+      });
+
+      const result = await db.collection('test').bulkWrite([
+        {
+          insertOne: {
+            document: {
+              _id: 'bulk2',
+              value: 2
+            }
+          }
+        },
+        {
+          updateOne: {
+            filter: { _id: 'bulk1' },
+            update: { $set: { value: 10 } }
+          }
+        },
+        {
+          insertOne: {
+            document: {
+              _id: 'bulk3',
+              value: 3
+            }
+          }
+        },
+        { deleteOne: { filter: { _id: 'bulk3' } } }
+      ]);
+
+      expect(result.insertedCount).to.equal(2);
+      expect(result.modifiedCount).to.equal(1);
+      expect(result.deletedCount).to.equal(1);
+
+      const docs = await db.collection('test').find({}).toArray();
+      expect(docs).to.have.lengthOf(2);
+      expect(docs.find(d => d._id === 'bulk1').value).to.equal(10);
+    });
+  });
+
+  // ============================================
+  // SECTION 8: findOneAndUpdate
+  // ============================================
+
+  describe('findOneAndUpdate', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertOne({
+        _id: 'fau1',
+        value: 1,
+        name: 'original'
+      });
+    });
+
+    it('should update and return the document', async function() {
+      const result = await db.collection('test').findOneAndUpdate(
+        { _id: 'fau1' },
+        { $set: { name: 'updated' } },
+        { returnDocument: 'after' }
+      );
+      expect(result._id).to.equal('fau1');
+      expect(result.name).to.equal('updated');
+    });
+
+    it('should return original by default', async function() {
+      const result = await db.collection('test').findOneAndUpdate(
+        { _id: 'fau1' },
+        { $set: { name: 'updated' } }
+      );
+      expect(result._id).to.equal('fau1');
+      expect(result.name).to.equal('original');
+    });
+
+    it('should support upsert', async function() {
+      const result = await db.collection('test').findOneAndUpdate(
+        { _id: 'fau2' },
+        { $set: { name: 'new' } },
+        {
+          upsert: true,
+          returnDocument: 'after'
+        }
+      );
+      expect(result._id).to.equal('fau2');
+      expect(result.name).to.equal('new');
+    });
+  });
+
+  // ============================================
+  // SECTION 9: Database Operations
+  // ============================================
+
+  describe('Database Operations', function() {
+    it('should get collection reference', function() {
+      const collection = db.collection('newcollection');
+      expect(collection).to.exist;
+      expect(collection.collectionName || collection.name).to.equal('newcollection');
+    });
+
+    it('should list collections', async function() {
+      await db.collection('listtest1').insertOne({ _id: '1' });
+      await db.collection('listtest2').insertOne({ _id: '2' });
+
+      const collections = await db.listCollections().toArray();
+      const names = collections.map(c => c.name);
+      expect(names).to.include('listtest1');
+      expect(names).to.include('listtest2');
+    });
+
+    it('should drop collection', async function() {
+      await db.collection('dropme').insertOne({ _id: '1' });
+
+      let collections = await db.listCollections().toArray();
+      expect(collections.map(c => c.name)).to.include('dropme');
+
+      await db.collection('dropme').drop();
+
+      collections = await db.listCollections().toArray();
+      expect(collections.map(c => c.name)).to.not.include('dropme');
+    });
+
+    it('should rename collection', async function() {
+      await db.collection('oldname').insertOne({
+        _id: 'rename1',
+        value: 42
+      });
+
+      await db.collection('oldname').rename('newname');
+
+      const doc = await db.collection('newname').findOne({ _id: 'rename1' });
+      expect(doc.value).to.equal(42);
+
+      const oldDoc = await db.collection('oldname').findOne({ _id: 'rename1' });
+      expect(oldDoc).to.be.null;
+    });
+  });
+
+  // ============================================
+  // SECTION 10: Nested Field Queries
+  // ============================================
+
+  describe('Nested Field Queries', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'n1',
+          user: {
+            name: 'Alice',
+            role: 'admin'
+          },
+          metadata: { views: 100 }
+        },
+        {
+          _id: 'n2',
+          user: {
+            name: 'Bob',
+            role: 'user'
+          },
+          metadata: { views: 50 }
+        },
+        {
+          _id: 'n3',
+          user: {
+            name: 'Carol',
+            role: 'admin'
+          },
+          metadata: { views: 200 }
+        }
+      ]);
+    });
+
+    it('should query nested fields with dot notation', async function() {
+      const docs = await db.collection('test').find({ 'user.role': 'admin' }).toArray();
+      expect(docs).to.have.lengthOf(2);
+    });
+
+    it('should update nested fields with dot notation', async function() {
+      await db.collection('test').updateOne(
+        { _id: 'n1' },
+        { $set: { 'user.name': 'Alicia' } }
+      );
+      const doc = await db.collection('test').findOne({ _id: 'n1' });
+      expect(doc.user.name).to.equal('Alicia');
+      expect(doc.user.role).to.equal('admin');
+    });
+
+    it('should project nested fields', async function() {
+      const doc = await db.collection('test').findOne(
+        { _id: 'n1' },
+        { projection: { 'user.name': 1 } }
+      );
+      expect(doc._id).to.equal('n1');
+      expect(doc.user.name).to.equal('Alice');
+      expect(doc.user.role).to.be.undefined;
+      expect(doc.metadata).to.be.undefined;
+    });
+  });
+
+  // ============================================
+  // SECTION 11: Sort on Multiple Fields
+  // ============================================
+
+  describe('Multi-field Sort', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 's1',
+          category: 'a',
+          priority: 2
+        },
+        {
+          _id: 's2',
+          category: 'b',
+          priority: 1
+        },
+        {
+          _id: 's3',
+          category: 'a',
+          priority: 1
+        },
+        {
+          _id: 's4',
+          category: 'b',
+          priority: 2
+        }
+      ]);
+    });
+
+    it('should sort by multiple fields', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({
+          category: 1,
+          priority: -1
+        })
+        .toArray();
+
+      expect(docs[0]._id).to.equal('s1'); // a, 2
+      expect(docs[1]._id).to.equal('s3'); // a, 1
+      expect(docs[2]._id).to.equal('s4'); // b, 2
+      expect(docs[3]._id).to.equal('s2'); // b, 1
+    });
+  });
+
+  // ============================================
+  // SECTION 12: Database Switching
+  // ============================================
+
+  describe('Database Switching', function() {
+    if (ADAPTER === 'postgres') {
+      it('should return the same db for nullish or matching name', function() {
+        const db1 = client.db();
+        const db2 = client.db();
+        const db3 = client.db('dbtest_adapter');
+        expect(db1).to.equal(db2);
+        expect(db1).to.equal(db3);
+      });
+
+      it('should throw when requesting a different database name', function() {
+        expect(() => client.db('other_name')).to.throw(/multipostgres/);
+      });
+    } else if (ADAPTER === 'multipostgres') {
+      it('should switch to sibling schema', async function() {
+        const siblingDb = client.db('dbtest_adapter-siblingschema');
+
+        await siblingDb.collection('siblingcol').insertOne({
+          _id: 'sib1',
+          from: 'sibling'
+        });
+
+        // Verify it's not in original schema
+        const origDoc = await db.collection('siblingcol').findOne({ _id: 'sib1' });
+        expect(origDoc).to.be.null;
+
+        // Verify it's in sibling schema
+        const sibDoc = await siblingDb.collection('siblingcol').findOne({ _id: 'sib1' });
+        expect(sibDoc).to.exist;
+        expect(sibDoc.from).to.equal('sibling');
+
+        // Clean up sibling
+        await siblingDb.dropDatabase();
+      });
+    } else {
+      it('should switch to sibling database', async function() {
+        const siblingDb = client.db('dbtest-sibling');
+
+        await siblingDb.collection('siblingcol').insertOne({
+          _id: 'sib1',
+          from: 'sibling'
+        });
+
+        // Verify it's not in original
+        const origDoc = await db.collection('siblingcol').findOne({ _id: 'sib1' });
+        expect(origDoc).to.be.null;
+
+        // Verify it's in sibling
+        const sibDoc = await siblingDb.collection('siblingcol').findOne({ _id: 'sib1' });
+        expect(sibDoc).to.exist;
+        expect(sibDoc.from).to.equal('sibling');
+
+        // Clean up sibling
+        await siblingDb.collection('siblingcol').drop();
+      });
+    }
+  });
+
+  // ============================================
+  // SECTION 13: Empty Results
+  // ============================================
+
+  describe('Empty Results Handling', function() {
+    it('should return empty array for find with no matches', async function() {
+      const docs = await db.collection('test').find({ nonexistent: true }).toArray();
+      expect(docs).to.be.an('array').that.is.empty;
+    });
+
+    it('should return 0 for count with no matches', async function() {
+      const count = await db.collection('test').countDocuments({ nonexistent: true });
+      expect(count).to.equal(0);
+    });
+
+    it('should return empty array for distinct with no matches', async function() {
+      const values = await db.collection('test').distinct('field', { nonexistent: true });
+      expect(values).to.be.an('array').that.is.empty;
+    });
+  });
+
+  // ============================================
+  // SECTION 14: Date Handling
+  // ============================================
+
+  describe('Date Handling', function() {
+    it('should store and retrieve Date objects', async function() {
+      const now = new Date();
+      await db.collection('test').insertOne({
+        _id: 'date1',
+        createdAt: now
+      });
+
+      const doc = await db.collection('test').findOne({ _id: 'date1' });
+      expect(doc.createdAt).to.be.instanceOf(Date);
+      expect(doc.createdAt.getTime()).to.equal(now.getTime());
+    });
+
+    it('should query by date comparison', async function() {
+      const old = new Date('2020-01-01');
+      const recent = new Date('2024-01-01');
+      const cutoff = new Date('2022-01-01');
+
+      await db.collection('test').insertMany([
+        {
+          _id: 'old',
+          createdAt: old
+        },
+        {
+          _id: 'recent',
+          createdAt: recent
+        }
+      ]);
+
+      const docs = await db.collection('test').find({ createdAt: { $gte: cutoff } }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('recent');
+    });
+  });
+
+  // ============================================
+  // SECTION 15: Null and Undefined Handling
+  // ============================================
+
+  describe('Null and Undefined Handling', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'null1',
+          value: null
+        },
+        {
+          _id: 'null2',
+          value: 'present'
+        },
+        { _id: 'null3' } // value field missing
+      ]);
+    });
+
+    it('should find documents with null value', async function() {
+      const docs = await db.collection('test').find({ value: null }).toArray();
+      // MongoDB matches both explicit null AND missing fields with
+      // { value: null }, so null1 (explicit null) and null3 (missing) match,
+      // but null2 (value: 'present') does not.
+      expect(docs).to.have.lengthOf(2);
+      expect(docs.map(d => d._id).sort()).to.deep.equal([ 'null1', 'null3' ]);
+    });
+
+    it('should distinguish null from missing with $exists', async function() {
+      const withField = await db.collection('test').find({ value: { $exists: true } }).toArray();
+      expect(withField).to.have.lengthOf(2);
+
+      const withoutField = await db.collection('test').find({ value: { $exists: false } }).toArray();
+      expect(withoutField).to.have.lengthOf(1);
+      expect(withoutField[0]._id).to.equal('null3');
+    });
+  });
+
+  // ============================================
+  // SECTION 16: Mixed Type Arrays
+  // ============================================
+
+  describe('Mixed Type Arrays', function() {
+    it('should handle arrays with mixed types', async function() {
+      await db.collection('test').insertOne({
+        _id: 'mixed1',
+        items: [ 1, 'two', { three: 3 }, [ 4, 5 ], null ]
+      });
+
+      const doc = await db.collection('test').findOne({ _id: 'mixed1' });
+      expect(doc.items).to.deep.equal([ 1, 'two', { three: 3 }, [ 4, 5 ], null ]);
+    });
+  });
+
+  // ============================================
+  // SECTION 17: Large Documents
+  // ============================================
+
+  describe('Large Documents', function() {
+    it('should handle documents with many fields', async function() {
+      const doc = { _id: 'large1' };
+      for (let i = 0; i < 100; i++) {
+        doc[`field${i}`] = `value${i}`;
+      }
+
+      await db.collection('test').insertOne(doc);
+      const retrieved = await db.collection('test').findOne({ _id: 'large1' });
+
+      expect(retrieved.field0).to.equal('value0');
+      expect(retrieved.field99).to.equal('value99');
+    });
+
+    it('should handle large string values', async function() {
+      const largeString = 'x'.repeat(100000);
+      await db.collection('test').insertOne({
+        _id: 'largestr',
+        content: largeString
+      });
+
+      const doc = await db.collection('test').findOne({ _id: 'largestr' });
+      expect(doc.content).to.equal(largeString);
+    });
+  });
+
+  // ============================================
+  // SECTION 18: Multiple Update Operators
+  // ============================================
+
+  describe('Multiple Update Operators Combined', function() {
+    it('should apply multiple update operators in single update', async function() {
+      await db.collection('test').insertOne({
+        _id: 'multi1',
+        count: 5,
+        name: 'original',
+        tags: [ 'a' ],
+        toRemove: 'value'
+      });
+
+      await db.collection('test').updateOne(
+        { _id: 'multi1' },
+        {
+          $set: { name: 'updated' },
+          $inc: { count: 3 },
+          $push: { tags: 'b' },
+          $unset: { toRemove: '' }
+        }
+      );
+
+      const doc = await db.collection('test').findOne({ _id: 'multi1' });
+      expect(doc.name).to.equal('updated');
+      expect(doc.count).to.equal(8);
+      expect(doc.tags).to.deep.equal([ 'a', 'b' ]);
+      expect(doc.toRemove).to.be.undefined;
+    });
+  });
+
+  // ============================================
+  // SECTION 19: Atomicity
+  // ============================================
+
+  describe('Atomicity', function() {
+    it('should ensure atomic _id uniqueness', async function() {
+      // Run multiple concurrent inserts with same _id
+      const promises = [];
+      for (let i = 0; i < 10; i++) {
+        promises.push(
+          db.collection('test').insertOne({
+            _id: 'atomic1',
+            value: i
+          })
+            .then(() => 'success')
+            .catch(() => 'duplicate')
+        );
+      }
+
+      const results = await Promise.all(promises);
+      const successes = results.filter(r => r === 'success');
+      const duplicates = results.filter(r => r === 'duplicate');
+
+      // Exactly one should succeed
+      expect(successes).to.have.lengthOf(1);
+      expect(duplicates).to.have.lengthOf(9);
+
+      // Verify only one document exists
+      const count = await db.collection('test').countDocuments({ _id: 'atomic1' });
+      expect(count).to.equal(1);
+    });
+  });
+
+  // ============================================
+  // SECTION 20: Type Preservation
+  // ============================================
+
+  describe('Type Preservation', function() {
+    it('should preserve JavaScript types', async function() {
+      const testDoc = {
+        _id: 'types1',
+        string: 'hello',
+        number: 42,
+        float: 3.14159,
+        boolean: true,
+        date: new Date('2024-01-15T12:00:00Z'),
+        array: [ 1, 2, 3 ],
+        nested: {
+          a: 1,
+          b: { c: 2 }
+        },
+        nullValue: null
+      };
+
+      await db.collection('test').insertOne(testDoc);
+      const doc = await db.collection('test').findOne({ _id: 'types1' });
+
+      expect(typeof doc.string).to.equal('string');
+      expect(typeof doc.number).to.equal('number');
+      expect(typeof doc.float).to.equal('number');
+      expect(typeof doc.boolean).to.equal('boolean');
+      expect(doc.date).to.be.instanceOf(Date);
+      expect(Array.isArray(doc.array)).to.be.true;
+      expect(typeof doc.nested).to.equal('object');
+      expect(doc.nullValue).to.be.null;
+    });
+  });
+
+  // ============================================
+  // SECTION 21: Multi-schema Mode (multipostgres only)
+  // ============================================
+
+  // ============================================
+  // SECTION 22: Batched Containment Queries
+  // ============================================
+
+  describe('Batched Containment Queries', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'bc1',
+          type: 'article',
+          slug: '/news',
+          status: 'published',
+          tags: [ 'featured', 'news' ]
+        },
+        {
+          _id: 'bc2',
+          type: 'article',
+          slug: '/blog',
+          status: 'draft',
+          tags: [ 'blog' ]
+        },
+        {
+          _id: 'bc3',
+          type: 'page',
+          slug: '/home',
+          status: 'published',
+          tags: [ 'featured' ]
+        },
+        {
+          _id: 'bc4',
+          type: 'page',
+          slug: '/about',
+          status: 'published',
+          tags: []
+        }
+      ]);
+    });
+
+    it('should match multi-field scalar equality', async function() {
+      const docs = await db.collection('test').find({
+        type: 'article',
+        status: 'published'
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc1');
+    });
+
+    it('should match three-field scalar equality', async function() {
+      const docs = await db.collection('test').find({
+        type: 'page',
+        status: 'published',
+        slug: '/home'
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc3');
+    });
+
+    it('should match scalar value in array field via containment', async function() {
+      // { tags: 'featured' } matches docs where
+      // tags contains 'featured'
+      const docs = await db.collection('test').find({
+        tags: 'featured',
+        type: 'article'
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc1');
+    });
+
+    it('should handle nested field equality in containment', async function() {
+      await db.collection('test').insertOne({
+        _id: 'bc5',
+        user: {
+          profile: {
+            name: 'Alice',
+            role: 'admin'
+          }
+        }
+      });
+      await db.collection('test').insertOne({
+        _id: 'bc6',
+        user: {
+          profile: {
+            name: 'Bob',
+            role: 'admin'
+          }
+        }
+      });
+      const docs = await db.collection('test').find({
+        'user.profile.role': 'admin',
+        'user.profile.name': 'Alice'
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc5');
+    });
+
+    it('should combine containment with operator conditions', async function() {
+      // Mix of scalar equality (batched) and operator conditions
+      const docs = await db.collection('test').find({
+        type: 'page',
+        status: { $ne: 'draft' }
+      }).toArray();
+      expect(docs).to.have.lengthOf(2);
+    });
+
+    it('should handle boolean values in containment', async function() {
+      await db.collection('test').insertOne({
+        _id: 'bc7',
+        active: true,
+        visible: false
+      });
+      const docs = await db.collection('test').find({
+        active: true,
+        visible: false
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc7');
+    });
+
+    it('should handle numeric values in containment', async function() {
+      await db.collection('test').insertOne({
+        _id: 'bc8',
+        level: 5,
+        score: 100
+      });
+      const docs = await db.collection('test').find({
+        level: 5,
+        score: 100
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc8');
+    });
+
+    it('should handle Date values in containment', async function() {
+      const date = new Date('2024-06-15T12:00:00Z');
+      await db.collection('test').insertOne({
+        _id: 'bc9',
+        createdAt: date,
+        type: 'event'
+      });
+      const docs = await db.collection('test').find({
+        type: 'event',
+        createdAt: date
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('bc9');
+      expect(docs[0].createdAt).to.be.instanceOf(Date);
+      expect(docs[0].createdAt.getTime()).to.equal(date.getTime());
+    });
+  });
+
+  // ============================================
+  // SECTION 23: $in on _id Field
+  // ============================================
+
+  describe('$in on _id field', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'in1',
+          value: 1
+        },
+        {
+          _id: 'in2',
+          value: 2
+        },
+        {
+          _id: 'in3',
+          value: 3
+        },
+        {
+          _id: 'in4',
+          value: 4
+        },
+        {
+          _id: 'in5',
+          value: 5
+        }
+      ]);
+    });
+
+    it('should find documents by _id $in', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'in1', 'in3', 'in5' ] }
+      }).sort({ _id: 1 }).toArray();
+      expect(docs).to.have.lengthOf(3);
+      expect(docs[0]._id).to.equal('in1');
+      expect(docs[1]._id).to.equal('in3');
+      expect(docs[2]._id).to.equal('in5');
+    });
+
+    it('should handle _id $in with single value', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'in2' ] }
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('in2');
+    });
+
+    it('should handle _id $in with empty array', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [] }
+      }).toArray();
+      expect(docs).to.have.lengthOf(0);
+    });
+
+    it('should handle _id $in with many values', async function() {
+      // Test with more IDs than exist — should only return matching ones
+      const ids = [];
+      for (let i = 1; i <= 20; i++) {
+        ids.push(`in${i}`);
+      }
+      const docs = await db.collection('test').find({
+        _id: { $in: ids }
+      }).toArray();
+      expect(docs).to.have.lengthOf(5);
+    });
+
+    it('should handle _id $in with non-matching values', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'nonexistent1', 'nonexistent2' ] }
+      }).toArray();
+      expect(docs).to.have.lengthOf(0);
+    });
+
+    it('should combine _id $in with other conditions', async function() {
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'in1', 'in2', 'in3' ] },
+        value: { $gt: 1 }
+      }).toArray();
+      expect(docs).to.have.lengthOf(2);
+    });
+  });
+
+  // ============================================
+  // SECTION 24: $in on Array Fields
+  // ============================================
+
+  describe('$in on array fields', function() {
+    beforeEach(async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'ia1',
+          name: 'Alice',
+          roles: [ 'admin', 'editor' ]
+        },
+        {
+          _id: 'ia2',
+          name: 'Bob',
+          roles: [ 'viewer' ]
+        },
+        {
+          _id: 'ia3',
+          name: 'Carol',
+          roles: [ 'editor', 'viewer' ]
+        },
+        {
+          _id: 'ia4',
+          name: 'Dave',
+          roles: [ 'admin' ]
+        }
+      ]);
+    });
+
+    it('$in should match array field containing any of the values', async function() {
+      const docs = await db.collection('test').find({
+        roles: { $in: [ 'admin', 'viewer' ] }
+      }).sort({ _id: 1 }).toArray();
+      // ia1 has admin, ia2 has viewer, ia3 has viewer, ia4 has admin
+      expect(docs).to.have.lengthOf(4);
+      expect(docs.map(d => d._id)).to.deep.equal([ 'ia1', 'ia2', 'ia3', 'ia4' ]);
+    });
+
+    it('$in should match scalar field normally', async function() {
+      const docs = await db.collection('test').find({
+        name: { $in: [ 'Alice', 'Carol' ] }
+      }).sort({ _id: 1 }).toArray();
+      expect(docs).to.have.lengthOf(2);
+      expect(docs.map(d => d._id)).to.deep.equal([ 'ia1', 'ia3' ]);
+    });
+
+    it('$in with null should match missing fields', async function() {
+      await db.collection('test').insertOne({
+        _id: 'ia5',
+        name: 'Eve'
+        // no roles field
+      });
+      const docs = await db.collection('test').find({
+        roles: { $in: [ 'admin', null ] }
+      }).sort({ _id: 1 }).toArray();
+      // Should match ia1 (has admin), ia4 (has admin), and ia5 (roles missing)
+      expect(docs).to.have.lengthOf(3);
+      expect(docs.map(d => d._id)).to.deep.equal([ 'ia1', 'ia4', 'ia5' ]);
+    });
+  });
+
+  // ============================================
+  // SECTION 25: Deserialization Optimization
+  // ============================================
+
+  describe('Deserialization Optimization', function() {
+    it('should correctly roundtrip documents with no dates', async function() {
+      const original = {
+        _id: 'deser1',
+        title: 'No Dates Here',
+        count: 42,
+        active: true,
+        tags: [ 'a', 'b', 'c' ],
+        nested: {
+          deep: {
+            value: 'hello',
+            list: [ 1, 2, 3 ]
+          }
+        }
+      };
+      await db.collection('test').insertOne(original);
+      const doc = await db.collection('test').findOne({ _id: 'deser1' });
+      expect(doc._id).to.equal('deser1');
+      expect(doc.title).to.equal('No Dates Here');
+      expect(doc.count).to.equal(42);
+      expect(doc.active).to.equal(true);
+      expect(doc.tags).to.deep.equal([ 'a', 'b', 'c' ]);
+      expect(doc.nested.deep.value).to.equal('hello');
+      expect(doc.nested.deep.list).to.deep.equal([ 1, 2, 3 ]);
+    });
+
+    it('should correctly roundtrip documents with deeply nested dates', async function() {
+      const date1 = new Date('2024-01-15T10:30:00Z');
+      const date2 = new Date('2024-06-01T00:00:00Z');
+      const original = {
+        _id: 'deser2',
+        title: 'Has Dates',
+        metadata: {
+          createdAt: date1,
+          nested: {
+            modifiedAt: date2,
+            plain: 'no date here'
+          }
+        },
+        tags: [ 'a', 'b' ]
+      };
+      await db.collection('test').insertOne(original);
+      const doc = await db.collection('test').findOne({ _id: 'deser2' });
+      expect(doc.metadata.createdAt).to.be.instanceOf(Date);
+      expect(doc.metadata.createdAt.getTime()).to.equal(date1.getTime());
+      expect(doc.metadata.nested.modifiedAt).to.be.instanceOf(Date);
+      expect(doc.metadata.nested.modifiedAt.getTime()).to.equal(date2.getTime());
+      expect(doc.metadata.nested.plain).to.equal('no date here');
+      expect(doc.tags).to.deep.equal([ 'a', 'b' ]);
+    });
+
+    it('should correctly roundtrip documents with dates in arrays', async function() {
+      const date1 = new Date('2024-03-01T00:00:00Z');
+      const date2 = new Date('2024-04-01T00:00:00Z');
+      const original = {
+        _id: 'deser3',
+        events: [
+          {
+            name: 'event1',
+            date: date1
+          },
+          {
+            name: 'event2',
+            date: date2
+          },
+          { name: 'event3' } // no date
+        ]
+      };
+      await db.collection('test').insertOne(original);
+      const doc = await db.collection('test').findOne({ _id: 'deser3' });
+      expect(doc.events[0].date).to.be.instanceOf(Date);
+      expect(doc.events[0].date.getTime()).to.equal(date1.getTime());
+      expect(doc.events[1].date).to.be.instanceOf(Date);
+      expect(doc.events[1].date.getTime()).to.equal(date2.getTime());
+      expect(doc.events[2].date).to.be.undefined;
+    });
+
+    it('should handle multiple documents efficiently via find', async function() {
+      // Insert mix of documents with and without dates
+      await db.collection('test').insertMany([
+        {
+          _id: 'deser4',
+          title: 'Plain',
+          value: 1
+        },
+        {
+          _id: 'deser5',
+          title: 'With Date',
+          createdAt: new Date('2024-01-01')
+        },
+        {
+          _id: 'deser6',
+          title: 'Also Plain',
+          value: 3
+        }
+      ]);
+      const docs = await db.collection('test').find({
+        _id: { $in: [ 'deser4', 'deser5', 'deser6' ] }
+      }).sort({ _id: 1 }).toArray();
+      expect(docs).to.have.lengthOf(3);
+      expect(docs[0].title).to.equal('Plain');
+      expect(docs[0].createdAt).to.be.undefined;
+      expect(docs[1].createdAt).to.be.instanceOf(Date);
+      expect(docs[2].title).to.equal('Also Plain');
+    });
+  });
+
+  // ============================================
+  // SECTION 26: Full-Text Search
+  // ============================================
+
+  describe('Full-Text Search', function() {
+    beforeEach(async function() {
+      const col = db.collection('search');
+      try {
+        await col.drop();
+      } catch (e) { /* ignore */ }
+      // Create a text index on title and body
+      await col.createIndex({
+        title: 'text',
+        body: 'text'
+      });
+      // Insert documents with varying relevance to "database migration"
+      await col.insertMany([
+        {
+          _id: 'full-match',
+          title: 'Database Migration Guide',
+          body: 'This guide covers database migration strategies for production systems. Database migration is critical.'
+        },
+        {
+          _id: 'title-only',
+          title: 'Database Basics',
+          body: 'An introduction to storing and retrieving information.'
+        },
+        {
+          _id: 'body-only',
+          title: 'System Administration',
+          body: 'Learn about database backup and migration procedures.'
+        },
+        {
+          _id: 'no-match',
+          title: 'Cooking Recipes',
+          body: 'How to make a perfect sourdough bread.'
+        }
+      ]);
+    });
+
+    afterEach(async function() {
+      try {
+        await db.collection('search').drop();
+      } catch (e) { /* ignore */ }
+    });
+
+    it('$text should match documents containing search terms', async function() {
+      const results = await db.collection('search')
+        .find({ $text: { $search: 'database' } })
+        .toArray();
+      const ids = results.map(d => d._id);
+      expect(ids).to.include('full-match');
+      expect(ids).to.include('title-only');
+      expect(ids).to.include('body-only');
+      expect(ids).to.not.include('no-match');
+    });
+
+    it('$text should combine with other query operators', async function() {
+      const results = await db.collection('search')
+        .find({
+          $text: { $search: 'database' },
+          _id: { $ne: 'title-only' }
+        })
+        .toArray();
+      const ids = results.map(d => d._id);
+      expect(ids).to.include('full-match');
+      expect(ids).to.include('body-only');
+      expect(ids).to.not.include('title-only');
+      expect(ids).to.not.include('no-match');
+    });
+
+    it('$text with empty search should match nothing', async function() {
+      const results = await db.collection('search')
+        .find({ $text: { $search: '   ' } })
+        .toArray();
+      expect(results).to.have.lengthOf(0);
+    });
+
+    it('$text should use fields from the text index, not hardcoded defaults', async function() {
+      // The text index is on title and body. A search for content
+      // in those fields should work. A value only present in an
+      // un-indexed field should not match.
+      const col = db.collection('search');
+      await col.insertOne({
+        _id: 'unindexed',
+        title: 'Nothing special',
+        body: 'Nothing special',
+        notes: 'database migration'
+      });
+      const results = await col
+        .find({ $text: { $search: 'sourdough' } })
+        .toArray();
+      // 'sourdough' appears only in no-match's body, which IS indexed
+      expect(results.map(d => d._id)).to.include('no-match');
+      // 'unindexed' has 'database migration' only in notes (not indexed)
+      // so a search that only matches notes should not find it
+      const results2 = await col
+        .find({
+          $text: { $search: 'database' },
+          _id: 'unindexed'
+        })
+        .toArray();
+      expect(results2).to.have.lengthOf(0);
+    });
+
+    it('should rank results by relevance when sorted by textScore', async function() {
+      const results = await db.collection('search')
+        .find({ $text: { $search: 'database migration' } })
+        .sort({ score: { $meta: 'textScore' } })
+        .project({ score: { $meta: 'textScore' } })
+        .toArray();
+        // full-match has "database" 2x and "migration" 2x — should rank first
+      expect(results.length).to.be.at.least(3);
+      expect(results[0]._id).to.equal('full-match');
+    });
+
+    it('should expose textScore via $meta projection', async function() {
+      const results = await db.collection('search')
+        .find({ $text: { $search: 'database migration' } })
+        .sort({ score: { $meta: 'textScore' } })
+        .project({
+          title: 1,
+          score: { $meta: 'textScore' }
+        })
+        .toArray();
+      expect(results.length).to.be.at.least(1);
+      // Each result should have a numeric score
+      for (const doc of results) {
+        expect(doc.score).to.be.a('number');
+        expect(doc.score).to.be.greaterThan(0);
+        // Projection should still include requested fields
+        expect(doc.title).to.be.a('string');
+      }
+      // Higher-relevance doc should have a higher score
+      const fullMatch = results.find(d => d._id === 'full-match');
+      const titleOnly = results.find(d => d._id === 'title-only');
+      if (fullMatch && titleOnly) {
+        expect(fullMatch.score).to.be.greaterThan(titleOnly.score);
+      }
+    });
+
+    it('should support sorting by $meta textScore', async function() {
+      const results = await db.collection('search')
+        .find({ $text: { $search: 'database migration' } })
+        .sort({ score: { $meta: 'textScore' } })
+        .project({ score: { $meta: 'textScore' } })
+        .toArray();
+      expect(results.length).to.be.at.least(2);
+      // Scores should be in descending order
+      for (let i = 1; i < results.length; i++) {
+        expect(results[i - 1].score).to.be.at.least(results[i].score);
+      }
+    });
+
+    it('should sort by relevance with textScore among other sort fields', async function() {
+      // Insert additional docs to make ranking clearer
+      const col = db.collection('search');
+      await col.insertOne({
+        _id: 'weak-match',
+        title: 'Random Notes',
+        body: 'Contains the word database once among other unrelated content about gardening and weather.'
+      });
+
+      const results = await col
+        .find({ $text: { $search: 'database migration' } })
+        .sort({ score: { $meta: 'textScore' } })
+        .project({ score: { $meta: 'textScore' } })
+        .toArray();
+
+      expect(results.length).to.be.at.least(2);
+      // Scores should be in descending order
+      for (let i = 1; i < results.length; i++) {
+        expect(results[i - 1].score).to.be.at.least(results[i].score);
+      }
+    });
+  }); // Full-Text Search
+
+  if (ADAPTER === 'multipostgres') {
+    describe('Multi-schema Mode', function() {
+      it('should store tables in the named schema, not public', async function() {
+        // Insert a doc to ensure the table exists in the schema
+        await db.collection('schematest').insertOne({
+          _id: 'st1',
+          value: 'hello'
+        });
+
+        // Check that the table exists in the named schema
+        const { Pool } = require('pg');
+        const pool = new Pool({ connectionString: 'postgres://localhost:5432/dbtest_adapter' });
+        try {
+          const inSchema = await pool.query(
+            'SELECT tablename FROM pg_tables WHERE schemaname = \'testschema\' AND tablename = \'schematest\''
+          );
+          expect(inSchema.rows).to.have.lengthOf(1);
+
+          const inPublic = await pool.query(
+            'SELECT tablename FROM pg_tables WHERE schemaname = \'public\' AND tablename = \'schematest\''
+          );
+          expect(inPublic.rows).to.have.lengthOf(0);
+        } finally {
+          await pool.end();
+        }
+
+        // Clean up
+        await db.collection('schematest').drop();
+      });
+
+      it('should list schemas as databases via admin().listDatabases()', async function() {
+        // Ensure at least one table exists so the schema is created
+        await db.collection('admintest').insertOne({
+          _id: 'at1',
+          value: 1
+        });
+
+        const result = await db.admin().listDatabases();
+        expect(result.databases).to.be.an('array');
+        const names = result.databases.map(d => d.name);
+        expect(names).to.include('dbtest_adapter-testschema');
+
+        await db.collection('admintest').drop();
+      });
+
+      it('should drop schema via dropDatabase()', async function() {
+        const tempDb = client.db('dbtest_adapter-dropschematest');
+        await tempDb.collection('tempcol').insertOne({
+          _id: 'tmp1',
+          value: 1
+        });
+
+        // Verify schema exists
+        const { Pool } = require('pg');
+        const pool = new Pool({ connectionString: 'postgres://localhost:5432/dbtest_adapter' });
+        try {
+          let schemas = await pool.query(
+            'SELECT schema_name FROM information_schema.schemata WHERE schema_name = \'dropschematest\''
+          );
+          expect(schemas.rows).to.have.lengthOf(1);
+
+          // Drop it
+          await tempDb.dropDatabase();
+
+          schemas = await pool.query(
+            'SELECT schema_name FROM information_schema.schemata WHERE schema_name = \'dropschematest\''
+          );
+          expect(schemas.rows).to.have.lengthOf(0);
+        } finally {
+          await pool.end();
+        }
+      });
+    });
+  }
+});

@@ -167,6 +167,30 @@ util.secret = function() {
   return string;
 };
 
+// Spawn a child process without invoking a shell, so caller-supplied URLs,
+// passwords, etc. cannot be parsed as shell metacharacters. Returns a promise
+// resolving to `{ code }`, mirroring the `.code` property on shelljs's `exec`
+// result so call sites can use the same shape. Pass `input` to write a string
+// to the child's stdin (e.g. an interactive password prompt response); when
+// omitted, stdin is inherited from the parent.
+util.spawnSafe = function (command, args, {
+  env, input, cwd
+} = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      env: env ?? process.env,
+      cwd,
+      stdio: [ input != null ? 'pipe' : 'inherit', 'inherit', 'inherit' ]
+    });
+    child.on('error', reject);
+    child.on('exit', (code) => resolve({ code }));
+    if (input != null) {
+      child.stdin.on('error', reject);
+      child.stdin.end(input);
+    }
+  });
+};
+
 util.spawnWithSpinner = async function (command, options = {
   spinnerMessage: 'Processing...',
   codeMessage: 'Spawn process error code:'

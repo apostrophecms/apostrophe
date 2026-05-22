@@ -16,7 +16,7 @@
       :data-apos-graph-key="props.graphKey || undefined"
       tabindex="0"
       @focus.capture="captureFocus"
-      @keyup.tab="onKeyup"
+      @keydown.tab="onKeydownTab"
       @keyup.esc="onKeyup"
     >
       <transition :name="transitionType">
@@ -67,6 +67,7 @@
             <header
               v-if="!modal.disableHeader"
               class="apos-modal__header"
+              role="none"
             >
               <div class="apos-modal__header__main">
                 <div
@@ -133,6 +134,7 @@
             <footer
               v-if="hasSlot('footer')"
               class="apos-modal__footer"
+              role="none"
             >
               <div class="apos-modal__footer__inner">
                 <slot name="footer" />
@@ -212,8 +214,25 @@ const nonDraggableElements = [
   '.apos-field--inline-array-field',
   '.apos-field--inline-array-table-with-remove-button-field',
   '.apos-field--inline-array-table-field',
-  '.apos-input-color__sample-picker'
+  '.apos-input-color__sample-picker',
+  '.apos-input-array-inline-table'
 ];
+
+// Selector for focusable elements inside the modal. Used both at trap setup
+// and on every Tab keydown to refresh the cycle list, so that elements that
+// became disabled/hidden (e.g. Save when validation fails) or newly visible
+// are reflected.
+const focusableSelector = [
+  '[tabindex]',
+  '[href]',
+  'input',
+  'select',
+  'textarea',
+  'button',
+  '[data-apos-focus-priority]'
+]
+  .map(s => `${s}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden]):not(.apos-sr-only)`)
+  .join(', ');
 
 const resizeSides = [
   {
@@ -475,13 +494,35 @@ onUnmounted(() => {
   }
 });
 
-function onKeyup(event) {
+// Handle Tab on keydown — before the browser moves focus.
+// Handling Tab on keyup is too late: the browser has already moved focus,
+// so the cycling logic sees the wrong activeElement.
+//
+// We also recompute the focusable list here on every Tab, scoped to
+// modalEl, instead of relying on the snapshot taken at trapFocus() time.
+function onKeydownTab(event) {
+  if (!shouldTrapFocus.value) {
+    return;
+  }
   if (!store.isOnTop(modalEl.value)) {
     return;
   }
+  if (event.target?.nodeName?.toLowerCase() === 'textarea') {
+    return;
+  }
+  // Skip visually hidden elements when cycling — but only here, not in
+  // trapFocus. Initial focus runs while `renderingElements` is still true,
+  // which puts the content under display:none and makes every candidate's
+  // offsetParent null.
+  const elements = getFocusableElements(modalEl.value)
+    .filter(el => el.offsetParent !== null);
+  // Keep the store snapshot consistent for other consumers.
+  store.updateModalData(props.modalData.id, { elementsToFocus: elements });
+  cycleElementsToFocus(event, elements);
+}
 
-  if (event.key === 'Tab') {
-    cycleElementsToFocus(event, props.modalData.elementsToFocus);
+function onKeyup(event) {
+  if (!store.isOnTop(modalEl.value)) {
     return;
   }
 
@@ -516,23 +557,16 @@ function captureFocus(e) {
   store.updateModalData(props.modalData.id, { focusedElement: e.target });
 }
 
+function getFocusableElements(rootEl) {
+  if (!rootEl) {
+    return [];
+  }
+  return [ ...rootEl.querySelectorAll(focusableSelector) ];
+}
+
 async function trapFocus() {
   if (modalEl?.value) {
-    const elementSelectors = [
-      '[tabindex]',
-      '[href]',
-      'input',
-      'select',
-      'textarea',
-      'button',
-      '[data-apos-focus-priority]'
-    ];
-
-    const selector = elementSelectors
-      .map(addExcludingAttributes)
-      .join(', ');
-
-    const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ];
+    const elementsToFocus = getFocusableElements(modalEl.value);
 
     store.updateModalData(props.modalData.id, { elementsToFocus });
 
@@ -554,10 +588,6 @@ async function trapFocus() {
     renderingElements.value = false;
     await nextTick();
     focusElement(props.modalData.focusedElement, firstElementToFocus);
-  }
-
-  function addExcludingAttributes(element) {
-    return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden]):not(.apos-sr-only)`;
   }
 }
 

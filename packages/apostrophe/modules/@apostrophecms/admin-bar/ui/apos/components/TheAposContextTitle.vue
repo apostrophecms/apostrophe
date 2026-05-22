@@ -33,6 +33,8 @@
           :disabled="hasCustomUi || isUnpublished"
           :center-on-icon="true"
           menu-placement="bottom-end"
+          :dialog-label="'apostrophe:publicationStatusMenu'"
+          :trigger-aria-label="draftTriggerAriaLabel"
           @item-clicked="switchDraftMode"
         />
         <AposLabel
@@ -56,6 +58,15 @@
 <script>
 import dayjs from 'dayjs';
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export default {
   name: 'TheAposContextTitle',
   props: {
@@ -78,8 +89,8 @@ export default {
       if (this.context.updatedBy) {
         const editor = this.context.updatedBy;
         editorLabel = '';
-        editorLabel += editor.title ? `${editor.title} ` : '';
-        editorLabel += editor.username ? `(${editor.username})` : '';
+        editorLabel += editor.title ? `${escapeHtml(editor.title)} ` : '';
+        editorLabel += editor.username ? `(${escapeHtml(editor.username)})` : '';
       }
       return editorLabel;
     },
@@ -90,6 +101,13 @@ export default {
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'quiet'
       };
+    },
+    draftTriggerAriaLabel() {
+      return this.$t('apostrophe:publicationStatusTrigger', {
+        status: this.$t(
+          this.draftMode === 'draft' ? 'apostrophe:draft' : 'apostrophe:published'
+        )
+      });
     },
     isUnpublished() {
       return !this.context.lastPublishedAt;

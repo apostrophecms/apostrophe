@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.6.1
+
+### Security
+
+- Bump and clean up dependencies. This closes vulnerabilities in `uuid` and `fast-xml-parser` although they were not used in a sensitive or vulnerable way within ApostropheCMS. This also closes a vulnerability in `shelljs` which ould only be exploited if the developer could be convinced to enter malicious commands as part of their CLI input.
+- Passwords and starter kit URLs containing intentionally malicious punctuation cannot be used to run arbitrary shell commands. Because the CLI is only used by developers, this would always have been an "own goal" situation, however this does make the CLI more robust for scripted use. Thanks to [Nitro13urn](https://github.com/VadlaReddySai) for reporting the issue.
+
 ## 3.6.0 (2026-02-18)
 
 ### Adds
@@ -11,6 +18,7 @@
   - The `add` command now displays an error when run inside a hybrid Astro project, as it is not currently supported in that context.
 
   - The default starter kit is now `public-demo`
+
 - Validates the `shortName` argument in the `create` command to only allow letters, numbers, hyphens, and underscores, preventing potential command injection.
 
 ## 3.5.0 (2025-01-07)

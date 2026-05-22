@@ -7,6 +7,7 @@
     :tooltip="tooltip"
     :icon-only="true"
     :action="action"
+    :attrs="{ 'aria-label': $t(tooltip) }"
     @click="open"
   >
     <template #label>

@@ -41,7 +41,6 @@ module.exports = {
       reader.on('error', reject);
       parser.on('error', reject);
       parser.on('end', () => {
-        console.info(`[csv] docs read from ${filepath}`);
         resolve({ docs });
       });
     });
@@ -74,7 +73,6 @@ module.exports = {
       stringifier.on('error', reject);
       writer.on('error', reject);
       writer.on('finish', () => {
-        console.info(`[csv] export file written to ${filepath}`);
         resolve();
       });
     });

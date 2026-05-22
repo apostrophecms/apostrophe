@@ -30,8 +30,6 @@
   "siteNameHelp": "The name of your website (used in structured data and social sharing).",
   "siteDescription": "Site Description",
   "siteDescriptionHelp": "A brief description of your website.",
-  "siteCanonicalUrl": "Site Base URL",
-  "siteCanonicalUrlHelp": "The base URL of your site (e.g., https://example.com). Required for proper canonical links and structured data.",
 
   "themeColor": "Mobile Theme Color",
   "themeColorHelp": "Set the browser chrome color for mobile devices and PWAs.",

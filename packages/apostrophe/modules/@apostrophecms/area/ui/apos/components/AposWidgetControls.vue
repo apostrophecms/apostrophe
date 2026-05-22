@@ -90,7 +90,6 @@ export default {
         icon: 'plus-icon',
         type: 'group',
         modifiers: [ 'small', 'inline' ],
-        role: 'menuitem',
         class: 'apos-area-modify-controls__button',
         iconSize: 16,
         disableFocus: !this.tabbable

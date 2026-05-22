@@ -19,6 +19,10 @@ module.exports = {
     gap: '1.5rem',
     defaultCellHorizontalAlignment: null,
     defaultCellVerticalAlignment: null,
+    // Extra class name(s) to append to the rendered layout-widget area
+    // wrapper, in addition to the built-in `layout-widget` class. Accepts
+    // a string of space-separated class names.
+    className: '',
     injectStyles: true,
     minifyStyles: true
   },
@@ -98,6 +102,25 @@ module.exports = {
         validateAndIdentifyTypes() {
           const { column } = self.validateAndIdentifyTypes();
           self.columnWidgetName = column;
+        },
+        // Detect the widget-style "gap" field (any styles field whose
+        // CSS `property` resolves to `gap`). Only the first match is used.
+        // Also detect whether the @apostrophecms/styles module has a
+        // site-wide layout gap field configured (via the `layoutGap`
+        // preset / `layoutGapDefault: true` marker).
+        detectGapFields() {
+          const widgetGapFields = self.apos.styles
+            .fieldsWithProperty(self.schema, 'gap');
+          if (widgetGapFields.length > 1) {
+            self.apos.util.warn(
+              `[${self.__meta.name}] Multiple style fields produce the ` +
+              `CSS \`gap\` property (${widgetGapFields.join(', ')}). ` +
+              'Only the first one will be honoured as the widget-scope gap.'
+            );
+          }
+          self.widgetGapFieldName = widgetGapFields[0] || null;
+          self.globalGapEnabled = !!self.apos.modules['@apostrophecms/styles']
+            ?.layoutGapFieldName;
         }
       }
     };
@@ -118,6 +141,17 @@ module.exports = {
             defaultCellHorizontalAlignment: self.options.defaultCellHorizontalAlignment,
             defaultCellVerticalAlignment: self.options.defaultCellVerticalAlignment
           },
+          widgetGapFieldName: self.widgetGapFieldName || null,
+          widgetGapFieldUnit: self.widgetGapFieldName
+            ? (self.apos.styles
+              .getFieldByPath(self.schema, self.widgetGapFieldName)
+              ?.unit || '')
+            : '',
+          globalGapEnabled: !!self.globalGapEnabled,
+          // Opt-in flag read by the generic widget editor: when true,
+          // it broadcasts `apos-widget-live-preview` events on the apos bus
+          // during the style-only fast path.
+          subscribesToLivePreview: !!self.widgetGapFieldName,
           columnWidgetName: self.columnWidgetName
         };
       },
@@ -132,6 +166,7 @@ module.exports = {
           defaultCellHorizontalAlignment,
           defaultCellVerticalAlignment
         } = self.options;
+        const widgetGap = self.resolveWidgetGap(widget);
         return {
           ..._super(widget, { scene }),
           columns,
@@ -141,13 +176,53 @@ module.exports = {
           tablet,
           gap,
           defaultCellHorizontalAlignment,
-          defaultCellVerticalAlignment
+          defaultCellVerticalAlignment,
+          _gap: widgetGap,
+          _gapHasGlobal: !!self.globalGapEnabled
         };
       }
     };
   },
   methods(self) {
     return {
+      // Resolve the widget-scope gap for a widget instance, if this
+      // module declares a styles field with `property: 'gap'`. Returns
+      // the resolved value (with unit, when applicable). When the
+      // widget has no explicit value, falls back to the field's `def`.
+      // Returns `null` only when no widget gap field is
+      // configured, no widget value is set, and no `def` is declared
+      // on the field.
+      resolveWidgetGap(widget) {
+        if (!self.widgetGapFieldName || !widget) {
+          return null;
+        }
+        const field = self.apos.styles.getFieldByPath(
+          self.schema, self.widgetGapFieldName
+        );
+        let value = self.apos.util.get(widget, self.widgetGapFieldName);
+        if (value === null || value === undefined || value === '') {
+          if (field?.def === null || field?.def === undefined || field?.def === '') {
+            return null;
+          }
+          value = field.def;
+        }
+        if (field?.unit && typeof value !== 'string') {
+          return `${value}${field.unit}`;
+        }
+        return value;
+      },
+      // Determine whether the inline `--grid-gap` CSS variable should
+      // be omitted on the grid container so the global cascade
+      // (`var(--apos-layout-gap, …)`) can take effect. The inline var
+      // is omitted whenever:
+      //   - no widget-scope gap value is set, AND
+      //   - the global layout-gap field is configured.
+      shouldOmitInlineGap(widget, global) {
+        if (!self.globalGapEnabled) {
+          return false;
+        }
+        return self.resolveWidgetGap(widget) === null;
+      },
       publicCssNodes(req) {
         return [
           {
@@ -277,11 +352,13 @@ module.exports = {
         const mobileBreakpointPlus = mobileBreakpoint + 1;
         const tabletBreakpoint = self.options.tablet?.breakpoint || 1024;
         const tabletBreakpointPlus = tabletBreakpoint + 1;
+        const gapDefault = self.options.gap || '0';
         cssContent = cssContent
           .replace(/\{\$mobile\}/g, mobileBreakpoint)
           .replace(/\{\$mobile-plus\}/g, mobileBreakpointPlus)
           .replace(/\{\$tablet\}/g, tabletBreakpoint)
-          .replace(/\{\$tablet-plus\}/g, tabletBreakpointPlus);
+          .replace(/\{\$tablet-plus\}/g, tabletBreakpointPlus)
+          .replace(/\{\$gap-default\}/g, gapDefault);
 
         return self.processCss(cssContent, scene);
       },
@@ -371,6 +448,51 @@ module.exports = {
           (a.order ?? 0) - (b.order ?? 0)
         );
         return items[items.length - 1]._id;
+      },
+      // Compute the `--grid-gap: <value>;` declaration to inline on the
+      // grid container, or an empty string when the cascade should
+      // resolve gap via `var(--apos-layout-gap, …)` instead.
+      // Honours the priority order:
+      //   1. Widget-style gap (when set on this widget instance).
+      //   2. Static module option (BC) — when no global gap field is
+      //      configured, or it has no value.
+      //   3. Otherwise, omit the inline var so the global cascade wins.
+      // Must be invoked via the widget's own module namespace —
+      // `apos.modules[data.manager.__meta.name].gapInlineCss(...)` —
+      // so that `self` resolves to the actual subclass and picks up
+      // its `widgetGapFieldName` / `globalGapEnabled`.
+      gapInlineCss(widget, options, global) {
+        const widgetGap = self.resolveWidgetGap(widget);
+        if (widgetGap !== null) {
+          return ` --grid-gap: ${widgetGap};`;
+        }
+        if (self.shouldOmitInlineGap(widget, global)) {
+          return '';
+        }
+        const fallback = (options && options.gap) || self.options.gap || '0';
+        return ` --grid-gap: ${fallback};`;
+      },
+      // Build the `aposParentOptions` payload passed by the rendered
+      // layout-widget area to the in-place editor (AposAreaLayoutEditor).
+      // Includes the widget's resolved gap (from its `gap` styles field,
+      // when present) so the live editor's grid container reflects the
+      // saved per-widget value rather than only the static module
+      // option. Sets `gap: null` to signal the editor to omit
+      // `--grid-gap` so the global cascade resolves it through
+      // `:root { --apos-layout-gap }`. Must be invoked via the widget's
+      // own module namespace, like `gapInlineCss`.
+      parentOptionsForArea(widget, options, global) {
+        const opts = {
+          ...(options || {}),
+          widgetId: widget._id
+        };
+        const widgetGap = self.resolveWidgetGap(widget);
+        if (widgetGap !== null) {
+          opts.gap = widgetGap;
+        } else if (self.shouldOmitInlineGap(widget, global)) {
+          opts.gap = null;
+        }
+        return opts;
       }
     };
   }

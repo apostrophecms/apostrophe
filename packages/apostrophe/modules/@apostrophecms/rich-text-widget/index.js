@@ -128,6 +128,10 @@ module.exports = {
     defaultData: { content: '' },
     className: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
+    // Hostnames from which `<img>` tags in `import.html` may be fetched.
+    // The list is empty by default, which disables image fetching during
+    // rich text HTML import. Add hostnames here to opt in.
+    imageImportAllowedHostnames: [],
     tableOptions: {
       resizable: true,
       handleWidth: 10,
@@ -470,6 +474,31 @@ module.exports = {
 
       getRichText(widget) {
         return widget.content;
+      },
+
+      // Return the configured allowlist of hostnames from which images may
+      // be fetched during a rich text widget HTML import, normalized to
+      // lowercase. Returns an empty array if the option is unset, in which
+      // case any image fetch attempted during import is rejected.
+      getImageImportAllowedHostnames() {
+        const list = self.options.imageImportAllowedHostnames;
+        if (!Array.isArray(list)) {
+          return [];
+        }
+        return list
+          .filter(entry => typeof entry === 'string' && entry.length > 0)
+          .map(entry => entry.toLowerCase());
+      },
+
+      // Determine whether the given URL's hostname is permitted by the
+      // import allowlist. The protocol is also restricted to http/https
+      // to prevent fetches via file:, data:, or other schemes.
+      isImageImportHostnameAllowed(url, allowedHostnames) {
+        if (!url || (url.protocol !== 'http:' && url.protocol !== 'https:')) {
+          return false;
+        }
+        const hostname = (url.hostname || '').toLowerCase();
+        return allowedHostnames.includes(hostname);
       },
 
       // Handle relationships to permalinks and inline images
@@ -1057,6 +1086,7 @@ module.exports = {
             if (input.import.baseUrl && ((typeof input.import.html) !== 'string')) {
               throw self.apos.error('invalid', 'If present, import.baseUrl must be a string');
             }
+            const allowedHostnames = self.getImageImportAllowedHostnames();
             const $ = cheerio.load(input.import.html);
             const $images = $('img');
             // Build an array of cheerio objects because
@@ -1071,6 +1101,12 @@ module.exports = {
               const src = $image.attr('src');
               const alt = $image.attr('alt') && self.apos.util.escapeHtml($image.attr('alt'));
               const url = new URL(src, input.import.baseUrl || self.apos.baseUrl);
+              if (!self.isImageImportHostnameAllowed(url, allowedHostnames)) {
+                throw self.apos.error(
+                  'forbidden',
+                  `Refusing to import image from disallowed hostname "${url.hostname}". Add it to the \`imageImportAllowedHostnames\` option of the \`@apostrophecms/rich-text-widget\` module to allow it.`
+                );
+              }
               const res = await fetch(url);
               if (res.status >= 400) {
                 self.apos.util.warn(`Error ${res.status} while importing ${src}, ignoring image`);

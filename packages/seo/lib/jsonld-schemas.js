@@ -983,14 +983,6 @@ class JsonLdSchemaHandler {
     if (fromGlobal) {
       return fromGlobal.replace(/\/$/, '');
     }
-    const abs = data.req?.absoluteUrl;
-
-    if (abs) {
-      try {
-        return new URL(abs).origin;
-      } catch (e) { }
-    }
-
     return null;
   }
 

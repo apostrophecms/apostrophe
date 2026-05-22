@@ -1,6 +1,6 @@
 {
   "name": "oembetter",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "A modern oembed client. Allows you to register filters to improve or supply oembed support for sites that don't normally have it. You can also supply a allowlist of services you trust to prevent XSS attacks.",
   "main": "index.js",
   "scripts": {
@@ -29,7 +29,7 @@
   "dependencies": {
     "async": "^0.9.0",
     "cheerio": "^1.1.0",
-    "fast-xml-parser": "^4.5.6",
+    "fast-xml-parser": "^5.7.0",
     "node-fetch": "^2.6.7",
     "urls": "0.0.4"
   },

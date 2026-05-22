@@ -371,6 +371,9 @@ export default {
     this.areaDebounceUpdate.cancel?.();
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
     this.stopWatchingWindowSize();
+    // Publish-side cleanup: tell live-preview consumers we're gone.
+    // Safe broadcast — consumers self-gate on widget id.
+    this.emitLivePreviewEnd('unmount');
   },
   created() {
     const defaults = this.getDefault();
@@ -561,6 +564,17 @@ export default {
           subset: this.moduleOptions.stylesFields
         });
         this.applyPreviewStyles(styles);
+        // Publish the live snapshot on the apos bus so consumers
+        // can react in real time.
+        // Gated by the widget module's `subscribesToLivePreview` browser-data
+        // flag so the bus stays quiet for widgets that don't subscribe.
+        if (this.moduleOptions.subscribesToLivePreview) {
+          apos.bus.$emit('apos-widget-live-preview', {
+            widgetId: this.getPreviewWidgetId(),
+            type: this.type,
+            data: value.data
+          });
+        }
 
         return;
       }
@@ -574,6 +588,7 @@ export default {
       }
     },
     removePreview() {
+      this.emitLivePreviewEnd(this.saving ? 'save' : 'cancel');
       if (!this.preview) {
         return;
       }
@@ -588,6 +603,20 @@ export default {
           reverting: true
         });
       }
+    },
+    emitLivePreviewEnd(reason) {
+      if (!this.moduleOptions.subscribesToLivePreview) {
+        return;
+      }
+      const widgetId = this.getPreviewWidgetId();
+      if (!widgetId) {
+        return;
+      }
+      apos.bus.$emit('apos-widget-live-preview-end', {
+        widgetId,
+        type: this.type,
+        reason
+      });
     },
     applyPreviewStyles({
       inline = '', css = '', classes = []
@@ -715,6 +744,9 @@ export default {
       };
     },
     getPreviewWidgetId() {
+      if (!this.preview) {
+        return null;
+      }
       if (!this.previewWidgetId) {
         if (this.preview.create) {
           // Deliberately different from the final widget's id, which will

@@ -11,10 +11,18 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
 
   let apos;
 
+  // When APOS_TEST_DB_PROTOCOL is set, child processes that run `node app.js`
+  // need the matching APOS_DB_URI so they use the same database as t.create()
+  const projectCwd = path.resolve(process.cwd(), 'test/add-missing-schema-fields-project/');
+  const testDbUri = t.getTestDbUri('add-missing-schema-fields-project');
+  const execEnv = testDbUri
+    ? { env: { ...process.env, APOS_DB_URI: testDbUri } }
+    : {};
+
   before(async function() {
     await util.promisify(exec)(
       'npm install',
-      { cwd: path.resolve(process.cwd(), 'test/add-missing-schema-fields-project/') }
+      { cwd: projectCwd }
     );
   });
 
@@ -25,7 +33,7 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
   it('should not run migrations when running the task', async function() {
     await util.promisify(exec)(
       'node app.js @apostrophecms/migration:add-missing-schema-fields',
-      { cwd: path.resolve(process.cwd(), 'test/add-missing-schema-fields-project/') }
+      { cwd: projectCwd, ...execEnv }
     );
 
     apos = await t.create({
@@ -64,7 +72,7 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
   it('should run migrations when running @apostrophecms/migration:migrate task', async function() {
     await util.promisify(exec)(
       'node app.js @apostrophecms/migration:migrate',
-      { cwd: path.resolve(process.cwd(), 'test/add-missing-schema-fields-project/') }
+      { cwd: projectCwd, ...execEnv }
     );
 
     apos = await t.create({

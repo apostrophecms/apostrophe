@@ -743,6 +743,7 @@ module.exports = {
       // in addition if the first component begins with `@xyz` the
       // sub-object within `o` with an `_id` property equal to `xyz`.
       // is found and returned, no matter how deeply nested it is.
+      // Returns `undefined` if any intermediate segment is null or undefined.
       get(o, path) {
         let i;
         path = path.split('.');
@@ -751,6 +752,9 @@ module.exports = {
           if ((i === 0) && (p.charAt(0) === '@')) {
             o = self.apos.util.findNestedObjectById(o, p.substring(1));
           } else {
+            if (o == null) {
+              return undefined;
+            }
             o = o[p];
           }
         }

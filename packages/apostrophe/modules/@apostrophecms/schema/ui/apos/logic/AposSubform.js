@@ -67,6 +67,16 @@ export default {
     },
     serverError() {
       return this.error || !!this.serverErrors;
+    },
+    subformLabel() {
+      return this.$t(
+        this.subform.label ||
+          this.subform.schema?.[0]?.label ||
+          'apostrophe:notAvailable'
+      );
+    },
+    editSubformLabel() {
+      return this.$t('apostrophe:editSubform', { label: this.subformLabel });
     }
   },
 

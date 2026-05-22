@@ -1,0 +1,11 @@
+
+
+  dump/restore programmatic API (multipostgres)
+    ✔ dump yields an async iterable of NDJSON lines (68ms)
+    ✔ should restore a database from a dump stream (78ms)
+    ✔ should copy a database via copyDatabase() (98ms)
+    ✔ should produce independent databases after copy (64ms)
+
+
+  4 passing (426ms)
+

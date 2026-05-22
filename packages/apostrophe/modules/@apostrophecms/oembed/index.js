@@ -16,10 +16,13 @@ const cheerio = require('cheerio');
 // widely trusted sites are already allowlisted.
 //
 // Your `allowlist` option is concatenated with `oembetter`'s standard
-// allowlist, plus wufoo.com, infogr.am, and slideshare.net.
+// allowlist, plus wufoo.com, infogr.am and slideshare.net.
 //
 // Your `endpoints` option is concatenated with `oembetter`'s standard
 // endpoints list.
+//
+// If you wish to completely override the behavior, set
+// `minimumAllowlist` and `minimumEndpoints` instead.
 
 module.exports = {
   options: {
@@ -42,28 +45,30 @@ module.exports = {
         // Don't permit oembed of untrusted sites, which could
         // lead to XSS attacks
 
-        self.oembetter.allowlist(self.oembetter.suggestedAllowlist.concat(
-          self.options.allowlist || [],
-          [
-            'wufoo.com',
-            'infogr.am',
-            'slideshare.net'
-          ])
-        );
+        const minimumAllowlist = self.options.minimumAllowlist || [
+          ...self.oembetter.suggestedAllowlist,
+          'wufoo.com',
+          'infogr.am',
+          'slideshare.net'
+        ];
+
+        self.oembetter.allowlist(minimumAllowlist.concat(self.options.allowlist || []));
+
+        const minimumEndpoints = self.options.minimumEndpoints || self.oembetter.suggestedEndpoints;
         self.oembetter.endpoints(
-          self.oembetter.suggestedEndpoints.concat(self.options.endpoints || [])
+          minimumEndpoints.concat(self.options.endpoints || [])
         );
       },
 
       // Enhances oembetter to support services better or to support services
-      // that have no oembed support by default. Called by `afterConstruct`.
-      // Extend this method to add additional `oembetter` filters.
+      // that have no oembed support by default.
+      //
+      // Extend or override this method to change or add oembetter filters.
 
       enhanceOembetter() {
         require('./lib/youtube.js')(self, self.oembetter);
         require('./lib/vimeo.js')(self, self.oembetter);
         require('./lib/wufoo.js')(self, self.oembetter);
-        require('./lib/infogram.js')(self, self.oembetter);
       },
 
       // This method fetches the specified URL, determines its best embedded

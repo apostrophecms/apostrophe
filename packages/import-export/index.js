@@ -20,7 +20,10 @@ module.exports = {
       browser: true
     },
     preventUpdateAssets: false,
-    importDraftsOnlyDefault: false
+    importDraftsOnlyDefault: false,
+    // When true (or when the `APOS_DEBUG_IMPORT_EXPORT='1'` env var is set),
+    // verbose internal progress is logged.
+    debug: false
   },
   init(self) {
     self.formats = {

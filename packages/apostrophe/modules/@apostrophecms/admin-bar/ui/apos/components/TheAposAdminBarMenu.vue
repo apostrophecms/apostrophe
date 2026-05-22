@@ -1,8 +1,5 @@
 <template>
-  <ol
-    class="apos-admin-bar__items"
-    role="menu"
-  >
+  <ol class="apos-admin-bar__items">
     <li
       v-if="pageTree"
       class="apos-admin-bar__item"
@@ -12,7 +9,6 @@
         label="apostrophe:pages"
         class="apos-admin-bar__btn"
         :modifiers="['no-motion']"
-        role="menuitem"
         action-test-label="page-manager-button"
         @click="emitEvent({ action: '@apostrophecms/page:manager' })"
       />
@@ -33,7 +29,6 @@
           class: 'apos-admin-bar__btn',
           type: 'subtle'
         }"
-        role="menuitem"
         @item-clicked="emitEvent"
       />
       <Component
@@ -44,7 +39,6 @@
         :modifiers="['no-motion']"
         class="apos-admin-bar__btn"
         :action-test-label="`${item.name}-manager-button`"
-        role="menuitem"
         @click="emitEvent(item)"
       />
     </li>
@@ -62,7 +56,6 @@
           type: 'primary',
           modifiers: ['round', 'no-motion']
         }"
-        role="menuitem"
         @item-clicked="emitEvent"
       />
     </li>
@@ -89,6 +82,7 @@
           :label="item.label"
           :action="item.action"
           :state="trayItemState[item.name] ? [ 'active' ] : []"
+          :attrs="trayItemAttrs(item)"
           @click="emitEvent(item)"
         />
       </template>
@@ -185,6 +179,29 @@ export default {
       } else {
         return item.options.tooltip;
       }
+    },
+    // Tray utility buttons render icon-only, so the visible label
+    // (e.g. "Global Content") is sr-only and doesn't describe what the
+    // button does. Make them accessible by providing an aria-label based on
+    // the tooltip content.
+    trayItemAttrs(item) {
+      const tooltip = item.options?.tooltip;
+      let key = null;
+      if (item.options?.toggle) {
+        if (this.trayItemState[item.name] && tooltip?.deactivate) {
+          key = tooltip.deactivate;
+        } else if (tooltip?.activate) {
+          key = tooltip.activate;
+        }
+      } else if (typeof tooltip === 'string') {
+        key = tooltip;
+      } else if (tooltip && typeof tooltip.content === 'string') {
+        key = tooltip.content;
+      }
+      if (!key) {
+        return {};
+      }
+      return { 'aria-label': this.$t(key) };
     }
   }
 };

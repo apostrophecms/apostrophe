@@ -30,8 +30,6 @@
   "siteNameHelp": "Der Name Ihrer Website (verwendet in strukturierten Daten und beim Teilen in sozialen Netzwerken).",
   "siteDescription": "Website-Beschreibung",
   "siteDescriptionHelp": "Eine kurze Beschreibung Ihrer Website.",
-  "siteCanonicalUrl": "Basis-URL der Website",
-  "siteCanonicalUrlHelp": "Die Basis-URL Ihrer Website (z. B. https://example.com). Erforderlich für korrekte kanonische Links und strukturierte Daten.",
 
   "themeColor": "Mobile Themenfarbe",
   "themeColorHelp": "Legen Sie die Farbe der Browser-Oberfläche für Mobilgeräte und PWAs fest.",
