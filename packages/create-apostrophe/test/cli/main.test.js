@@ -5,7 +5,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { main } from '../../src/cli/main.js';
+import { main, runTelemetryCommand } from '../../src/cli/main.js';
 import { createStore as realCreateStore } from '../../src/core/store.js';
 import { UserCancelled } from '../../src/ui/prompts.js';
 
@@ -496,5 +496,125 @@ describe('cli/main — interactive path (mocked runFlow)', function () {
       )),
       /boom/
     );
+  });
+});
+
+describe('cli/main — telemetry subcommands', function () {
+  let store;
+  beforeEach(function () {
+    store = isolatedStoreFactory();
+  });
+  afterEach(function () {
+    store.cleanup();
+  });
+
+  // env: {} isolates these from an ambient APOS_TELEMETRY kill switch so the
+  // rendered consent/source lines are deterministic on any machine.
+  const noKillSwitch = { env: {} };
+
+  it('status → exit 0, renders effective state (fresh store: off/default)', async function () {
+    const { code, output } = await captureIO(() => runTelemetryCommand(
+      { sub: 'status' },
+      {
+        createStore: store.createStore,
+        ...noKillSwitch
+      }
+    ));
+    assert.equal(code, 0);
+    assert.match(output, /Telemetry status/);
+    assert.match(output, /consent\s+off/);
+    assert.match(output, /source\s+default/);
+  });
+
+  it('on → exit 0, confirms opt-in and reports the generated id', async function () {
+    const { code, output } = await captureIO(() => runTelemetryCommand(
+      { sub: 'on' },
+      {
+        createStore: store.createStore,
+        ...noKillSwitch
+      }
+    ));
+    assert.equal(code, 0);
+    assert.match(output, /Telemetry: on/);
+    assert.match(output, /Generated anonymousId:/);
+  });
+
+  it('off → exit 0, confirms opt-out', async function () {
+    const { code, output } = await captureIO(() => runTelemetryCommand(
+      { sub: 'off' },
+      {
+        createStore: store.createStore,
+        ...noKillSwitch
+      }
+    ));
+    assert.equal(code, 0);
+    assert.match(output, /Telemetry: off/);
+  });
+
+  it('preview → exit 0, prints the would-be payload with the id sentinel', async function () {
+    const { code, output } = await captureIO(() => runTelemetryCommand(
+      { sub: 'preview' },
+      {
+        createStore: store.createStore,
+        ...noKillSwitch
+      }
+    ));
+    assert.equal(code, 0);
+    assert.match(output, /Telemetry preview/);
+    // No id stored yet → preview uses the all-zero placeholder and says so.
+    assert.match(output, /00000000-0000-0000-0000-000000000000/);
+    assert.match(output, /placeholder/);
+  });
+
+  it('on persists; a following status reads it back as on/stored', async function () {
+    await captureIO(() => runTelemetryCommand(
+      { sub: 'on' },
+      {
+        createStore: store.createStore,
+        ...noKillSwitch
+      }
+    ));
+    const { code, output } = await captureIO(() => runTelemetryCommand(
+      { sub: 'status' },
+      {
+        createStore: store.createStore,
+        ...noKillSwitch
+      }
+    ));
+    assert.equal(code, 0);
+    assert.match(output, /consent\s+on/);
+    assert.match(output, /source\s+stored/);
+  });
+
+  it('missing subcommand → exit 2 with the expected-values hint', async function () {
+    const { code, output } = await captureIO(() => runTelemetryCommand(
+      { sub: undefined },
+      {
+        createStore: store.createStore,
+        ...noKillSwitch
+      }
+    ));
+    assert.equal(code, 2);
+    assert.match(output, /Unknown telemetry subcommand/);
+    assert.match(output, /\(none\)/);
+    assert.match(output, /status, on, off, preview/);
+  });
+
+  it('positional dispatch: `telemetry preview` routes through main', async function () {
+    const { code, output } = await captureIO(() => main(
+      [ ...ARGV0, 'telemetry', 'preview' ],
+      { createStore: store.createStore }
+    ));
+    assert.equal(code, 0);
+    assert.match(output, /Telemetry preview/);
+  });
+
+  it('positional dispatch: `telemetry status` routes through main', async function () {
+    const { code, output } = await captureIO(() => main(
+      [ ...ARGV0, 'telemetry', 'status' ],
+      { createStore: store.createStore }
+    ));
+    assert.equal(code, 0);
+    assert.match(output, /Telemetry status/);
   });
 });
