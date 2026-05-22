@@ -73,7 +73,13 @@ describe('core contract — createProject', function () {
         return { projectDir };
       },
       scaffold,
-      dbConfig,
+      // Real env-writing + URI resolution, but the live connection probe is
+      // stubbed reachable — connectivity itself is covered by db.test.js /
+      // db-config.test.js, not this orchestration contract (which spans
+      // mongodb/postgres combos with no live server).
+      dbConfig: (opts) => dbConfig(opts, {
+        verifyConnection: async () => ({ reachable: true })
+      }),
       install: async () => {},
       addAdminUser: async () => {},
       importSampleData: async () => {},

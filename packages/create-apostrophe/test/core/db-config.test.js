@@ -76,48 +76,88 @@ describe('core/steps/db-config', function () {
     );
   });
 
-  it('passes probe info; success returns normally', async function () {
+  it('verifies the resolved URI; success returns normally', async function () {
     let seen;
     const res = await dbConfig(
       {
         appRoot,
         dbChoice: 'postgres',
-        dbUri: 'postgres://h/db'
+        dbUri: 'postgres://h/db',
+        shortName: 'my-site'
       },
       {
-        verifyConnection: async (info) => {
-          seen = info;
+        verifyConnection: async (uri) => {
+          seen = uri;
+          return { reachable: true };
         }
       }
     );
-    assert.deepEqual(seen, {
-      dbChoice: 'postgres',
-      dbUri: 'postgres://h/db'
-    });
+    // mongodb/postgres pass the user URI through verbatim.
+    assert.equal(seen, 'postgres://h/db');
     assert.deepEqual(res, { dbChoice: 'postgres' });
   });
 
-  it('probe rejection → StageError(db_connect, db_connect_failed)', async function () {
-    await assert.rejects(
-      () => dbConfig(
-        {
-          appRoot,
-          dbChoice: 'mongodb',
-          dbUri: 'mongodb://bad/db'
-        },
-        {
-          verifyConnection: async () => {
-            throw new Error('ECONNREFUSED');
-          }
+  it('verifies the derived sqlite URI (no user dbUri)', async function () {
+    let seen;
+    await dbConfig(
+      {
+        appRoot,
+        dbChoice: 'sqlite',
+        shortName: 'my-site'
+      },
+      {
+        verifyConnection: async (uri) => {
+          seen = uri;
+          return { reachable: true };
         }
-      ),
-      (err) => {
-        assert.ok(err instanceof StageError);
-        assert.equal(err.stage, 'db_connect');
-        assert.equal(err.errorCode, 'db_connect_failed');
-        assert.doesNotMatch(String(err.errorCode), /ECONNREFUSED/);
-        return true;
       }
     );
+    assert.match(seen, /^sqlite:\/\/.*\/data\/my-site\.sqlite$/);
   });
+
+  it('skips the check entirely when no verifyConnection is wired', async function () {
+    // No deps → env written, no connection attempted (shortName not required).
+    const res = await dbConfig({
+      appRoot,
+      dbChoice: 'mongodb',
+      dbUri: 'mongodb://h/db'
+    });
+    assert.deepEqual(res, { dbChoice: 'mongodb' });
+  });
+
+  /** @type {Array<[string, string]>} reason → mapped errorCode */
+  const reasonCases = [
+    [ 'unreachable', 'db_unreachable' ],
+    [ 'auth', 'db_auth_failed' ],
+    [ 'unknown', 'db_connect_failed' ]
+  ];
+  for (const [ reason, code ] of reasonCases) {
+    it(`unreachable verdict (${reason}) → StageError(db_connect, ${code})`, async function () {
+      await assert.rejects(
+        () => dbConfig(
+          {
+            appRoot,
+            dbChoice: 'mongodb',
+            dbUri: 'mongodb://bad/db',
+            shortName: 'my-site'
+          },
+          {
+            verifyConnection: async () => ({
+              reachable: false,
+              reason,
+              message: 'connect ECONNREFUSED 127.0.0.1:27017'
+            })
+          }
+        ),
+        (err) => {
+          assert.ok(err instanceof StageError);
+          assert.equal(err.stage, 'db_connect');
+          assert.equal(err.errorCode, code);
+          // The symbolic code never carries the raw driver string.
+          assert.doesNotMatch(String(err.errorCode), /ECONNREFUSED/);
+          return true;
+        }
+      );
+    });
+  }
 });

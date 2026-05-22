@@ -6,6 +6,7 @@
 import { getKit } from './kits.js';
 import { detectPackageManager, assertSupportedPackageManager } from './pm.js';
 import { StageError, UnsupportedPackageManagerError } from './errors.js';
+import { checkConnection } from './db.js';
 import { clone as realClone } from './steps/clone.js';
 import { scaffold as realScaffold } from './steps/scaffold.js';
 import { install as realInstall } from './steps/install.js';
@@ -108,8 +109,9 @@ export function makeCreateProject({
         dbConfig({
           appRoot,
           dbChoice: options.dbChoice,
-          dbUri: options.dbUri
-        }));
+          dbUri: options.dbUri,
+          shortName: options.shortName
+        }, { verifyConnection: checkConnection }));
 
       // Sample-data import runs BEFORE admin-user so a dump containing
       // users can land first and admin creation reconciles against it.

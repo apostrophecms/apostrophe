@@ -6,7 +6,8 @@ import { join } from 'node:path';
 
 import * as render from './render.js';
 import * as prompts from './prompts.js';
-import { defaultDbUri, verifyDbReachable } from './db-probe.js';
+import { defaultDbUri } from './db-uri.js';
+import * as db from '../core/db.js';
 import { link, kitGuide } from './links.js';
 import { assertSafeShortName } from '../core/validate.js';
 import { deriveKitId } from '../core/kits.js';
@@ -263,9 +264,28 @@ function dbUriHint(dbChoice) {
 }
 
 /**
- * Inner loop: ask for a connection string, probe it, on failure offer
- * retry-or-switch. Returns `{ kind: 'ok', dbUri }` when reachable, or
- * `{ kind: 'switch' }` to bounce back to the DB select.
+ * Human-readable line for a failed connection check, keyed off the core db
+ * module's classified reason. The raw driver message is only shown for the
+ * `unknown` fallback.
+ *
+ * @param {{ reason?: string, message?: string }} result
+ * @returns {string}
+ */
+function describeConnectionFailure(result) {
+  if (result.reason === 'auth') {
+    return 'Authentication failed — check the username and password in the URI';
+  }
+  if (result.reason === 'unreachable') {
+    return 'Could not reach the database server — is it running, and the host/port correct?';
+  }
+  return `Could not connect — ${result.message}`;
+}
+
+/**
+ * Inner loop: ask for a connection string, verify it with a real
+ * connection, and on failure offer retry-or-switch. Returns
+ * `{ kind: 'ok', dbUri }` when reachable, or `{ kind: 'switch' }` to bounce
+ * back to the DB select.
  *
  * @param {'mongodb' | 'postgres'} dbChoice
  * @param {string}                 shortName
@@ -287,26 +307,15 @@ async function collectAndVerifyDbUri(dbChoice, shortName, initialUri) {
       initialValue: candidate
     });
     const spin = render.startSpinner('Verifying connection');
-    const result = await verifyDbReachable(dbChoice, candidate);
-    if (result.ok && result.skipped === 'srv') {
-      spin.succeed('SRV URI — verified at install time');
+    const result = await db.checkConnection(candidate);
+    if (result.reachable) {
+      spin.succeed('Connection verified');
       return {
         kind: 'ok',
         dbUri: candidate
       };
     }
-    if (result.ok) {
-      spin.succeed(`Reachable at ${result.host}:${result.port}`);
-      return {
-        kind: 'ok',
-        dbUri: candidate
-      };
-    }
-    if (result.error === 'unparseable') {
-      spin.fail('Could not parse the connection string');
-    } else {
-      spin.fail(`Could not reach ${result.host}:${result.port} — ${result.error}`);
-    }
+    spin.fail(describeConnectionFailure(result));
     const next = await prompts.select({
       message: 'How would you like to proceed?',
       options: [
