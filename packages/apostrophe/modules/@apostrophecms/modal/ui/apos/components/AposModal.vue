@@ -510,7 +510,12 @@ function onKeydownTab(event) {
   if (event.target?.nodeName?.toLowerCase() === 'textarea') {
     return;
   }
-  const elements = getFocusableElements(modalEl.value);
+  // Skip visually hidden elements when cycling — but only here, not in
+  // trapFocus. Initial focus runs while `renderingElements` is still true,
+  // which puts the content under display:none and makes every candidate's
+  // offsetParent null.
+  const elements = getFocusableElements(modalEl.value)
+    .filter(el => el.offsetParent !== null);
   // Keep the store snapshot consistent for other consumers.
   store.updateModalData(props.modalData.id, { elementsToFocus: elements });
   cycleElementsToFocus(event, elements);
@@ -556,11 +561,7 @@ function getFocusableElements(rootEl) {
   if (!rootEl) {
     return [];
   }
-  return [ ...rootEl.querySelectorAll(focusableSelector) ]
-    // a cheap "visible and in the DOM" condition,
-    // false positive expected for position: fixed and
-    // visually hidden elements (visible: hidden, opacity: 0, etc.)
-    .filter(el => el.offsetParent !== null);
+  return [ ...rootEl.querySelectorAll(focusableSelector) ];
 }
 
 async function trapFocus() {
