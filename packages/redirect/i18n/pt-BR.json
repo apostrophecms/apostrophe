@@ -1,18 +1,19 @@
 {
   "301": "Permanente (código de status 301)",
   "302": "Temporário (código de status 302)",
+  "errorInfiniteRedirect": "Redirecionamento infinito: {{ originalSlug }} não pode ser o mesmo que {{ external }}",
+  "external": "URL",
+  "forwardQuery": "Encaminhar string de consulta",
+  "ignoreQuery": "Ignorar string de consulta ao combinar",
   "label": "Redirecionar",
-  "pluralLabel": "Redirecionamentos",
+  "newPage": "Título da Página",
   "originalSlug": "URL Antiga",
   "originalSlugHelp": "Formato com barra inicial (por exemplo, /antiga-url)",
+  "pluralLabel": "Redirecionamentos",
+  "statusCode": "Tipo de Redirecionamento",
+  "statusCodeHtmlHelp": "<ul><li>Use <strong>\"Temporário\"</strong> para redirecionamentos temporários ou para fins de teste.</li><li>Use <strong>\"Permanente\"</strong> após os testes, essa é uma boa prática de SEO. ⚠️ Os motores de busca vão armazenar em cache, então verifique com cuidado.</li>",
   "title": "Descrição",
   "urlType": "Tipo de Link",
-  "urlTypeInternal": "Página Interna",
   "urlTypeExternal": "URL",
-  "ignoreQuery": "Ignorar string de consulta ao combinar",
-  "forwardQuery": "Encaminhar string de consulta",
-  "newPage": "Título da Página",
-  "external": "URL",
-  "statusCode": "Tipo de Redirecionamento",
-  "statusCodeHtmlHelp": "<ul><li>Use <strong>\"Temporário\"</strong> para redirecionamentos temporários ou para fins de teste.</li><li>Use <strong>\"Permanente\"</strong> após os testes, essa é uma boa prática de SEO. ⚠️ Os motores de busca vão armazenar em cache, então verifique com cuidado.</li>"
+  "urlTypeInternal": "Página Interna"
 }
