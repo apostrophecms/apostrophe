@@ -151,6 +151,12 @@
  * @typedef {object} TaskHandle
  * @property {(msg?: string) => void} succeed
  * @property {(msg?: string) => void} fail
+ * @property {(fraction: number, label: string) => void} [progress]
+ *   Optional progress channel for long phases (e.g. a streamed download or a
+ *   large extract). `fraction` is 0–1 of the *named* phase; a new `label`
+ *   starts a fresh progress bar. Loggers with no visual progress surface
+ *   (headless/test) omit this method; callers must treat it as optional
+ *   (`task.progress?.(...)`).
  */
 
 /**

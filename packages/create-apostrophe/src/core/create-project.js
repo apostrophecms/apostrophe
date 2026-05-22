@@ -70,10 +70,12 @@ export function makeCreateProject({
     // unexpected throws — the caller converts and emits.
     const kit = getKit(options.kitId);
 
+    // The task handle is passed to the step fn so long-running steps can
+    // report progress (task.progress?.(...)); steps that don't, ignore it.
     const step = async (label, fn) => {
       const task = logger.task(label);
       try {
-        const out = await fn();
+        const out = await fn(task);
         task.succeed();
         return out;
       } catch (err) {
@@ -119,16 +121,15 @@ export function makeCreateProject({
 
       // Sample-data import runs BEFORE admin-user so a dump containing
       // users can land first and admin creation reconciles against it.
-      // Placeholder no-op pending Phase 3.5 — see
-      // docs/cli-modernization/phases/45-sample-data.md. Conditional on
-      // kit.seedData so the spinner only fires for *-demo-data kits.
+      // Conditional on kit.seedData so it only fires for *-demo-data kits.
       if (kit.seedData) {
-        await step('Importing sample content', () =>
+        await step('Importing sample content', (task) =>
           importSampleData({
-            projectDir,
             appRoot,
-            kitId: options.kitId
-          }));
+            dbChoice: options.dbChoice,
+            dbUri: options.dbUri,
+            shortName: options.shortName
+          }, { onProgress: task.progress }));
       }
 
       const adminOutcome = await step(`Creating ${options.admin.username} account`, () =>

@@ -135,6 +135,7 @@ export function cancel(message = 'Cancelled.') {
  * @typedef {object} TaskHandle
  * @property {(msg?: string) => void} succeed
  * @property {(msg?: string) => void} fail
+ * @property {(fraction: number, label: string) => void} progress
  */
 
 /**
@@ -151,14 +152,35 @@ export function createUiLogger() {
     error,
     muted,
     task(label) {
-      const s = clack.spinner();
-      s.start(label);
+      // Start as a spinner; on the first progress() call swap to clack's
+      // progress component, and again whenever the phase label changes — so
+      // each long phase (download, extract) gets its own 0–100% bar.
+      let active = clack.spinner();
+      active.start(label);
+      let phase = null;
+      let lastPct = 0;
       return {
         succeed(msg) {
-          s.stop(msg ?? label, 0);
+          active.stop(msg ?? label, 0);
         },
         fail(msg) {
-          s.stop(msg ?? label, 1);
+          active.stop(msg ?? label, 1);
+        },
+        progress(fraction, phaseLabel) {
+          const pct = Math.max(0, Math.min(100, Math.round(fraction * 100)));
+          if (phaseLabel !== phase) {
+            active.stop();
+            active = clack.progress({
+              style: 'block',
+              max: 100,
+              size: 24
+            });
+            active.start(phaseLabel);
+            phase = phaseLabel;
+            lastPct = 0;
+          }
+          active.advance(pct - lastPct, `${phaseLabel}  ${pct}%`);
+          lastPct = pct;
         }
       };
     }
