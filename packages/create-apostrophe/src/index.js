@@ -47,8 +47,8 @@
  * happened in preflight (Node version / package manager), before any stage
  * ran — every step is skipped. Otherwise exactly one stage per failure.
  * @typedef {(
- *   'clone' | 'dependency_install' | 'db_connect' | 'scaffold' | 'admin'
- *   | 'unknown' | null
+ *   'clone' | 'dependency_install' | 'db_connect' | 'scaffold' | 'sample_data'
+ *   | 'admin' | 'unknown' | null
  * )} FailStage
  */
 

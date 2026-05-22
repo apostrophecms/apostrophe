@@ -23,7 +23,9 @@ import { KIT_IDS } from '../core/kits.js';
  *   'git_missing' | 'git_spawn_failed' | 'git_clone_failed' |
  *   'missing_scaffold_file' | 'scaffold_io' |
  *   'npm_missing' | 'npm_spawn_failed' | 'install_failed' | 'apostrophe_missing' |
- *   'db_connect_failed' |
+ *   'db_unreachable' | 'db_auth_failed' | 'db_connect_failed' | 'db_drop_failed' |
+ *   'seed_manifest_invalid' | 'seed_download_failed' | 'seed_checksum_failed' |
+ *   'seed_unpack_failed' | 'seed_restore_failed' | 'seed_uploads_failed' |
  *   'node_missing' | 'node_spawn_failed' | 'admin_user_failed'
  * )} ErrorCode
  */
@@ -45,8 +47,8 @@ export const PACKAGE_MANAGERS = Object.freeze([
  * @type {ReadonlyArray<FailStage>}
  */
 export const FAIL_STAGES = Object.freeze([
-  'clone', 'dependency_install', 'db_connect', 'scaffold', 'admin',
-  'unknown', null
+  'clone', 'dependency_install', 'db_connect', 'scaffold', 'sample_data',
+  'admin', 'unknown', null
 ]);
 
 /**
@@ -61,7 +63,9 @@ export const ERROR_CODES = Object.freeze([
   'git_missing', 'git_spawn_failed', 'git_clone_failed',
   'missing_scaffold_file', 'scaffold_io',
   'npm_missing', 'npm_spawn_failed', 'install_failed', 'apostrophe_missing',
-  'db_connect_failed',
+  'db_unreachable', 'db_auth_failed', 'db_connect_failed', 'db_drop_failed',
+  'seed_manifest_invalid', 'seed_download_failed', 'seed_checksum_failed',
+  'seed_unpack_failed', 'seed_restore_failed', 'seed_uploads_failed',
   'node_missing', 'node_spawn_failed', 'admin_user_failed'
 ]);
 

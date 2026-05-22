@@ -35,6 +35,27 @@ describe('telemetry/schema — enum exports', function () {
     assert.ok(FAIL_STAGES.includes(null));
   });
 
+  it('failStages include sample_data (demo-data seed import)', function () {
+    assert.ok(FAIL_STAGES.includes('sample_data'));
+  });
+
+  it('errorCodes include the seed_* codes', function () {
+    for (const code of [
+      'seed_manifest_invalid', 'seed_download_failed', 'seed_checksum_failed',
+      'seed_unpack_failed', 'seed_restore_failed', 'seed_uploads_failed'
+    ]) {
+      assert.ok(ERROR_CODES.includes(code), code);
+    }
+  });
+
+  it('errorCodes refine db_connect into reachable/auth/drop verdicts', function () {
+    for (const code of [
+      'db_unreachable', 'db_auth_failed', 'db_connect_failed', 'db_drop_failed'
+    ]) {
+      assert.ok(ERROR_CODES.includes(code), code);
+    }
+  });
+
   it('every kit-registry id is a valid kitId enum value', function () {
     for (const id of KIT_IDS) {
       const p = buildPayload('install_success', {
@@ -99,6 +120,16 @@ describe('telemetry/schema — buildPayload (fail)', function () {
     assert.equal(p.event, 'install_fail');
     assert.equal(p.failStage, 'dependency_install');
     assert.equal(p.errorCode, 'install_failed');
+  });
+
+  it('accepts failStage: sample_data with a seed errorCode', function () {
+    const p = buildPayload('install_fail', {
+      ...FAIL_INPUT,
+      failStage: 'sample_data',
+      errorCode: 'seed_checksum_failed'
+    });
+    assert.equal(p.failStage, 'sample_data');
+    assert.equal(p.errorCode, 'seed_checksum_failed');
   });
 
   it('accepts failStage: null (preflight)', function () {
