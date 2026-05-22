@@ -135,6 +135,7 @@ describe('core/steps/sample-data — download + checksum', function () {
   const noopDbDeps = {
     resolveDbUri: () => 'sqlite:///tmp/x.sqlite',
     restore: async () => {},
+    clearDatabase: async () => {},
     unpackDbStream: async () => Readable.from('')
   };
 
@@ -167,6 +168,7 @@ describe('core/steps/sample-data — download + checksum', function () {
   it('mismatched sha256 → seed_checksum_failed (before any DB write)', async function () {
     writeManifest(appRoot, dbManifest('f'.repeat(64)));
     let restored = false;
+    let cleared = false;
     await assert.rejects(
       () => importSampleData(
         {
@@ -176,6 +178,9 @@ describe('core/steps/sample-data — download + checksum', function () {
         },
         {
           ...noopDbDeps,
+          clearDatabase: async () => {
+            cleared = true;
+          },
           restore: async () => {
             restored = true;
           },
@@ -184,6 +189,7 @@ describe('core/steps/sample-data — download + checksum', function () {
       ),
       (err) => err instanceof StageError && err.errorCode === 'seed_checksum_failed'
     );
+    assert.equal(cleared, false, 'must not wipe the DB when the checksum fails');
     assert.equal(restored, false, 'must not write to the DB when the checksum fails');
   });
 
@@ -246,6 +252,7 @@ describe('core/steps/sample-data — error mapping (stubbed unpack/restore/uploa
       fetchImpl: stubFetch(BYTES),
       resolveDbUri: () => 'sqlite:///tmp/x.sqlite',
       restore: async () => {},
+      clearDatabase: async () => {},
       unpackDbStream: async () => Readable.from('{"_collection":"x","_indexes":[]}\n'),
       extractAttachments: async () => {},
       ...over
@@ -270,6 +277,27 @@ describe('core/steps/sample-data — error mapping (stubbed unpack/restore/uploa
         }
       })),
       (err) => err instanceof StageError && err.errorCode === 'seed_unpack_failed'
+    );
+  });
+
+  it('clear failure → seed_clear_failed', async function () {
+    writeManifest(appRoot, {
+      db: {
+        url: 'https://x/db.zip',
+        sha256: sha256(BYTES)
+      }
+    });
+    await assert.rejects(
+      () => importSampleData({
+        appRoot,
+        dbChoice: 'sqlite',
+        shortName: 'site'
+      }, deps({
+        clearDatabase: async () => {
+          throw new Error('clear boom');
+        }
+      })),
+      (err) => err instanceof StageError && err.errorCode === 'seed_clear_failed'
     );
   });
 
@@ -315,13 +343,15 @@ describe('core/steps/sample-data — error mapping (stubbed unpack/restore/uploa
     );
   });
 
-  it('restores the dump (no pre-drop — restore self-clears its collections)', async function () {
+  it('wipes the target (clearDatabase) before restoring, same uri', async function () {
     writeManifest(appRoot, {
       db: {
         url: 'https://x/db.zip',
         sha256: sha256(BYTES)
       }
     });
+    const order = [];
+    let clearedUri;
     let restoredUri;
     await importSampleData({
       appRoot,
@@ -329,10 +359,17 @@ describe('core/steps/sample-data — error mapping (stubbed unpack/restore/uploa
       shortName: 'site'
     }, deps({
       resolveDbUri: () => 'sqlite:///tmp/site.sqlite',
+      clearDatabase: async (uri) => {
+        order.push('clear');
+        clearedUri = uri;
+      },
       restore: async (uri) => {
+        order.push('restore');
         restoredUri = uri;
       }
     }));
+    assert.deepEqual(order, [ 'clear', 'restore' ], 'wipe runs before restore');
+    assert.equal(clearedUri, 'sqlite:///tmp/site.sqlite');
     assert.equal(restoredUri, 'sqlite:///tmp/site.sqlite');
   });
 
@@ -357,6 +394,96 @@ describe('core/steps/sample-data — error mapping (stubbed unpack/restore/uploa
     }));
     assert.equal(seenRoot, join(appRoot, 'public', 'uploads'));
     assert.match(seenZip, /uploads\.zip$/);
+  });
+});
+
+describe('core/steps/sample-data — task labels per manifest shape', function () {
+  let appRoot;
+  const BYTES = Buffer.from('zip');
+
+  // A task factory that records the labels in creation order; each handle is
+  // a no-op (succeed/fail/progress).
+  function recordingTasks() {
+    const labels = [];
+    const task = (label) => {
+      labels.push(label);
+      return {
+        succeed() {},
+        fail() {},
+        progress() {}
+      };
+    };
+    return {
+      task,
+      labels
+    };
+  }
+
+  function deps(over = {}) {
+    return {
+      fetchImpl: stubFetch(BYTES),
+      resolveDbUri: () => 'sqlite:///tmp/x.sqlite',
+      restore: async () => {},
+      clearDatabase: async () => {},
+      unpackDbStream: async () => Readable.from('{"_collection":"x","_indexes":[]}\n'),
+      extractAttachments: async () => {},
+      ...over
+    };
+  }
+
+  const dbAsset = {
+    url: 'https://x/db.zip',
+    sha256: sha256(BYTES)
+  };
+  const uploadsAsset = {
+    url: 'https://x/up.zip',
+    sha256: sha256(BYTES)
+  };
+
+  beforeEach(function () {
+    appRoot = mkdtempSync(join(tmpdir(), 'ca-seed-'));
+  });
+  afterEach(function () {
+    rmSync(appRoot, {
+      recursive: true,
+      force: true
+    });
+  });
+
+  it('db-only manifest → just the import task (no download task)', async function () {
+    writeManifest(appRoot, { db: dbAsset });
+    const { task, labels } = recordingTasks();
+    await importSampleData({
+      appRoot,
+      dbChoice: 'sqlite',
+      shortName: 'site'
+    }, deps({ task }));
+    assert.deepEqual(labels, [ 'Importing sample content' ]);
+  });
+
+  it('both assets → download bar then import', async function () {
+    writeManifest(appRoot, {
+      db: dbAsset,
+      uploads: uploadsAsset
+    });
+    const { task, labels } = recordingTasks();
+    await importSampleData({
+      appRoot,
+      dbChoice: 'sqlite',
+      shortName: 'site'
+    }, deps({ task }));
+    assert.deepEqual(labels, [ 'Downloading sample content', 'Importing sample content' ]);
+  });
+
+  it('uploads-only manifest → download bar then import', async function () {
+    writeManifest(appRoot, { uploads: uploadsAsset });
+    const { task, labels } = recordingTasks();
+    await importSampleData({
+      appRoot,
+      dbChoice: 'sqlite',
+      shortName: 'site'
+    }, deps({ task }));
+    assert.deepEqual(labels, [ 'Downloading sample content', 'Importing sample content' ]);
   });
 });
 

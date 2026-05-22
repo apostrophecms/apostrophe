@@ -25,7 +25,8 @@ import { KIT_IDS } from '../core/kits.js';
  *   'npm_missing' | 'npm_spawn_failed' | 'install_failed' | 'apostrophe_missing' |
  *   'db_unreachable' | 'db_auth_failed' | 'db_connect_failed' | 'db_drop_failed' |
  *   'seed_manifest_invalid' | 'seed_download_failed' | 'seed_checksum_failed' |
- *   'seed_unpack_failed' | 'seed_restore_failed' | 'seed_uploads_failed' |
+ *   'seed_unpack_failed' | 'seed_clear_failed' | 'seed_restore_failed' |
+ *   'seed_uploads_failed' |
  *   'node_missing' | 'node_spawn_failed' | 'admin_user_failed'
  * )} ErrorCode
  */
@@ -65,7 +66,8 @@ export const ERROR_CODES = Object.freeze([
   'npm_missing', 'npm_spawn_failed', 'install_failed', 'apostrophe_missing',
   'db_unreachable', 'db_auth_failed', 'db_connect_failed', 'db_drop_failed',
   'seed_manifest_invalid', 'seed_download_failed', 'seed_checksum_failed',
-  'seed_unpack_failed', 'seed_restore_failed', 'seed_uploads_failed',
+  'seed_unpack_failed', 'seed_clear_failed', 'seed_restore_failed',
+  'seed_uploads_failed',
   'node_missing', 'node_spawn_failed', 'admin_user_failed'
 ]);
 

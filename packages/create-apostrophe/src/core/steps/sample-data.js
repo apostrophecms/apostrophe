@@ -1,11 +1,10 @@
 // Step: seed a freshly scaffolded project with the kit's sample database dump
 // and uploaded images. Runs only for kits with `seedData: true` (the
-// `*-demo-data` variants). Whole flow lives here (Option A, D16): resolve the
-// asset set → download + checksum-verify → restore the DB → copy attachments.
+// `*-demo-data` variants): resolve the asset set → download + checksum-verify →
+// restore the DB → copy attachments.
 //
-// Security ([[feedback_cli_security_invariants]]): no shell — node:fs only;
-// downloads are verified against an embedded (or kit-supplied) sha256 before
-// any DB write; zip entries are zip-slip guarded.
+// Security: no shell — node:fs only; downloads are verified against an embedded
+// (or kit-supplied) sha256 before any DB write; zip entries are zip-slip guarded.
 
 import os from 'node:os';
 import path from 'node:path';
@@ -18,10 +17,38 @@ import yauzl from 'yauzl';
 import { StageError } from '../errors.js';
 import {
   resolveDbUri as realResolveDbUri,
-  restore as realRestore
+  restore as realRestore,
+  clearDatabase as realClearDatabase
 } from '../db.js';
 
 const STAGE = 'sample_data';
+
+/** No-op task handle for headless callers that don't render progress. */
+const NOOP_TASK = Object.freeze({
+  succeed() {},
+  fail() {},
+  progress() {}
+});
+
+/**
+ * Settle a task (succeed/fail) around `fn`, re-throwing on failure so the
+ * error still propagates.
+ *
+ * @template T
+ * @param {import('../../index.js').TaskHandle} task
+ * @param {(task: import('../../index.js').TaskHandle) => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+async function runTask(task, fn) {
+  try {
+    const out = await fn(task);
+    task.succeed();
+    return out;
+  } catch (err) {
+    task.fail();
+    throw err;
+  }
+}
 
 /**
  * Embedded, npm-signed default assets (computed 2026-05-22 from the validated
@@ -32,11 +59,11 @@ const STAGE = 'sample_data';
 export const DEFAULT_ASSETS = Object.freeze({
   db: {
     url: 'https://static.apostrophecms.com/public-demo/starter-database.jsonl.zip',
-    sha256: '9b5904f2bd23076a908ccefc21ded7d58a64aa0712434222ae6f7f33794eb651'
+    sha256: '862fc4b380675e0eaade8447f6a137807ce54b54acbbee79636e581e0c5f29b1'
   },
   uploads: {
     url: 'https://static.apostrophecms.com/public-demo/starter-uploads.zip',
-    sha256: 'dab0db9af9a8453aca0b0e4d709997d62debb262ab84adb614883bb2011a9843'
+    sha256: 'b1a70f3372f8c897fd934abbe711cc1a8b0aeaf7d38b165890dd96939ab62f58'
   }
 });
 
@@ -45,6 +72,10 @@ const SHA256_RE = /^[0-9a-f]{64}$/;
 const MANIFEST_REL = path.join('.apostrophe', 'sample-data.json');
 
 /**
+ * Downloads the uploads archive (progress bar) then imports everything
+ * (spinner): the DB wipe+restore and the uploads extract. A db-only manifest
+ * shows only the import task. Downloads are verified before any DB write.
+ *
  * @param {{
  *   appRoot: string,
  *   dbChoice: import('../../index.js').DbChoice,
@@ -52,15 +83,14 @@ const MANIFEST_REL = path.join('.apostrophe', 'sample-data.json');
  *   shortName: string
  * }} opts
  * @param {{
- *   onProgress?: (fraction: number, label: string) => void,
+ *   task?: (label: string, opts?: { progress?: boolean })
+ *     => import('../../index.js').TaskHandle,
  *   fetchImpl?: typeof globalThis.fetch,
  *   resolveDbUri?: typeof realResolveDbUri,
  *   restore?: typeof realRestore,
+ *   clearDatabase?: typeof realClearDatabase,
  *   unpackDbStream?: (zipPath: string) => Promise<Readable>,
- *   extractAttachments?: (
- *     zipPath: string, uploadsRoot: string,
- *     onProgress?: (f: number, l: string) => void
- *   ) => Promise<void>
+ *   extractAttachments?: (zipPath: string, uploadsRoot: string) => Promise<void>
  * }} [deps]
  * @returns {Promise<void>}
  * @throws {StageError} stage 'sample_data' on any seed failure.
@@ -70,10 +100,11 @@ export async function importSampleData(
     appRoot, dbChoice, dbUri, shortName
   },
   {
-    onProgress,
+    task = () => NOOP_TASK,
     fetchImpl = globalThis.fetch,
     resolveDbUri = realResolveDbUri,
     restore = realRestore,
+    clearDatabase = realClearDatabase,
     unpackDbStream = defaultUnpackDbStream,
     extractAttachments = defaultExtractAttachments
   } = {}
@@ -82,65 +113,66 @@ export async function importSampleData(
 
   const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'apos-seed-'));
   try {
-    // 1. Download + verify every resolved asset FIRST — a failure here aborts
-    //    before anything destructive touches the database.
     const files = {};
-    if (assets.db) {
-      files.db = path.join(tmpDir, 'database.zip');
-      await downloadAndVerify(
-        fetchImpl, assets.db, files.db, onProgress, 'Downloading sample database'
-      );
-    }
+
     if (assets.uploads) {
       files.uploads = path.join(tmpDir, 'uploads.zip');
-      await downloadAndVerify(
-        fetchImpl, assets.uploads, files.uploads, onProgress, 'Downloading sample images'
+      await runTask(
+        task('Downloading sample content', { progress: true }),
+        (t) => downloadAndVerify(
+          fetchImpl, assets.uploads, files.uploads, (f) => t.progress?.(f)
+        )
       );
     }
 
-    // 2. Database: restore the dump. No pre-drop — restore clears each
-    //    collection it carries (per-collection deleteMany) before inserting,
-    //    so it needs only readWrite/DELETE privileges and a fresh or
-    //    prior-Apostrophe target both end up correct. (A non-seed "start
-    //    fresh" wipe is a separate, explicitly-consented db_connect concern.)
-    if (assets.db) {
-      const uri = resolveDbUri({
-        dbChoice,
-        dbUri,
-        appRoot,
-        shortName
-      });
-      let stream;
-      try {
-        stream = await unpackDbStream(files.db);
-      } catch (err) {
-        throw new StageError(STAGE, {
-          code: 'seed_unpack_failed',
-          cause: err
+    await runTask(task('Importing sample content'), async () => {
+      if (assets.db) {
+        files.db = path.join(tmpDir, 'database.zip');
+        await downloadAndVerify(fetchImpl, assets.db, files.db);
+        const uri = resolveDbUri({
+          dbChoice,
+          dbUri,
+          appRoot,
+          shortName
         });
+        try {
+          await clearDatabase(uri);
+        } catch (err) {
+          throw new StageError(STAGE, {
+            code: 'seed_clear_failed',
+            cause: err
+          });
+        }
+        let stream;
+        try {
+          stream = await unpackDbStream(files.db);
+        } catch (err) {
+          throw new StageError(STAGE, {
+            code: 'seed_unpack_failed',
+            cause: err
+          });
+        }
+        try {
+          await restore(uri, stream);
+        } catch (err) {
+          throw new StageError(STAGE, {
+            code: 'seed_restore_failed',
+            cause: err
+          });
+        }
       }
-      try {
-        await restore(uri, stream);
-      } catch (err) {
-        throw new StageError(STAGE, {
-          code: 'seed_restore_failed',
-          cause: err
-        });
+      if (assets.uploads) {
+        const uploadsRoot = path.join(appRoot, 'public', 'uploads');
+        try {
+          await extractAttachments(files.uploads, uploadsRoot);
+        } catch (err) {
+          throw new StageError(STAGE, {
+            code: 'seed_uploads_failed',
+            cause: err
+          });
+        }
       }
-    }
-
-    // 3. Uploads: copy attachments/ into the project's public/uploads.
-    if (assets.uploads) {
-      const uploadsRoot = path.join(appRoot, 'public', 'uploads');
-      try {
-        await extractAttachments(files.uploads, uploadsRoot, onProgress);
-      } catch (err) {
-        throw new StageError(STAGE, {
-          code: 'seed_uploads_failed',
-          cause: err
-        });
-      }
-    }
+    });
   } finally {
     await fsp.rm(tmpDir, {
       recursive: true,
@@ -245,12 +277,11 @@ function manifestInvalid(cause) {
  * @param {typeof globalThis.fetch} fetchImpl
  * @param {{ url: string, sha256: string }} asset
  * @param {string} destPath
- * @param {((fraction: number, label: string) => void) | undefined} onProgress
- * @param {string} label
+ * @param {((fraction: number) => void)} [onProgress]
  * @returns {Promise<void>}
  * @throws {StageError} 'seed_download_failed' / 'seed_checksum_failed'.
  */
-async function downloadAndVerify(fetchImpl, asset, destPath, onProgress, label) {
+async function downloadAndVerify(fetchImpl, asset, destPath, onProgress) {
   let res;
   try {
     res = await fetchImpl(asset.url);
@@ -283,7 +314,7 @@ async function downloadAndVerify(fetchImpl, asset, destPath, onProgress, label) 
             const pct = Math.floor((loaded / total) * 100);
             if (pct !== lastPct) {
               lastPct = pct;
-              onProgress(loaded / total, label);
+              onProgress(loaded / total);
             }
           }
           yield chunk;
@@ -364,19 +395,24 @@ function defaultUnpackDbStream(zipPath) {
 }
 
 /**
- * Extract only the `attachments/` tree of the uploads zip into
- * `<uploadsRoot>/attachments/…`. `exports/` and anything else is ignored;
- * zip-slip-escaping entries are skipped. Progress is reported by uncompressed
- * bytes written.
+ * Extract the uploads archive — which holds the attachment files directly,
+ * at its root — into `<uploadsRoot>/attachments/`. Directory entries and
+ * zip-slip-escaping entries are skipped.
  *
  * @param {string} zipPath
  * @param {string} uploadsRoot  `<appRoot>/public/uploads`
- * @param {((fraction: number, label: string) => void)} [onProgress]
  * @returns {Promise<void>}
  */
-function defaultExtractAttachments(zipPath, uploadsRoot, onProgress) {
+function defaultExtractAttachments(zipPath, uploadsRoot) {
+  const attachmentsRoot = path.join(uploadsRoot, 'attachments');
   return new Promise((resolve, reject) => {
-    yauzl.open(zipPath, { lazyEntries: true }, (err, zip) => {
+    // autoClose:false — we collect all entries first, then open their read
+    // streams; the default would close the file on the last entry. extractAll
+    // closes it when done.
+    yauzl.open(zipPath, {
+      lazyEntries: true,
+      autoClose: false
+    }, (err, zip) => {
       if (err) {
         reject(err);
         return;
@@ -385,9 +421,9 @@ function defaultExtractAttachments(zipPath, uploadsRoot, onProgress) {
       const entries = [];
       zip.on('entry', (entry) => {
         const name = entry.fileName;
-        const dest = (!name.endsWith('/') && name.startsWith('attachments/'))
-          ? safeJoin(uploadsRoot, name)
-          : null;
+        const dest = name.endsWith('/')
+          ? null
+          : safeJoin(attachmentsRoot, name);
         if (dest) {
           entries.push({
             entry,
@@ -398,7 +434,7 @@ function defaultExtractAttachments(zipPath, uploadsRoot, onProgress) {
       });
       zip.once('error', reject);
       zip.once('end', () => {
-        extractAll(zip, entries, onProgress).then(resolve, reject);
+        extractAll(zip, entries).then(resolve, reject);
       });
       zip.readEntry();
     });
@@ -408,25 +444,13 @@ function defaultExtractAttachments(zipPath, uploadsRoot, onProgress) {
 /**
  * @param {any} zip
  * @param {Array<{ entry: any, dest: string }>} entries
- * @param {((fraction: number, label: string) => void)} [onProgress]
  */
-async function extractAll(zip, entries, onProgress) {
-  const total = entries.reduce((sum, e) => sum + (e.entry.uncompressedSize || 0), 0);
-  let written = 0;
-  let lastPct = -1;
+async function extractAll(zip, entries) {
   try {
     for (const { entry, dest } of entries) {
       await fsp.mkdir(path.dirname(dest), { recursive: true });
       const stream = await openEntry(zip, entry);
       await pipeline(stream, fs.createWriteStream(dest));
-      written += entry.uncompressedSize || 0;
-      if (total && onProgress) {
-        const pct = Math.floor((written / total) * 100);
-        if (pct !== lastPct) {
-          lastPct = pct;
-          onProgress(written / total, 'Copying sample images');
-        }
-      }
     }
   } finally {
     zip.close();

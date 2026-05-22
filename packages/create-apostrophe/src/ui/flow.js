@@ -43,6 +43,9 @@ let totalSteps = 6;
  * @property {'keep' | 'drop'} dbReset  Consent to drop a pre-existing
  *                                      mongodb/postgres DB; `'keep'` unless
  *                                      the user confirmed "start fresh".
+ * @property {boolean}        [replacesData]  True when a confirmed seed import
+ *   will overwrite a non-empty database. Absent/false for an empty or sqlite
+ *   target.
  * @property {AdminAccount}   admin
  * @property {boolean}        telemetryConsent
  * @property {number}         confirmedAt  Epoch ms when the user confirmed
@@ -101,7 +104,7 @@ async function collectAnswers(deps, defaults) {
     sampleContent
   });
   const {
-    dbChoice, dbUri, dbReset
+    dbChoice, dbUri, dbReset, replacesData
   } = await askDatabase(
     shortName, defaults, getKit(kitId).seedData
   );
@@ -116,6 +119,7 @@ async function collectAnswers(deps, defaults) {
     dbChoice,
     dbUri,
     dbReset,
+    replacesData,
     admin,
     telemetryConsent
   };
@@ -202,7 +206,10 @@ async function askSampleContent(initial = false) {
  * @param {{ dbChoice?: DbChoice, dbUri?: string }} [defaults]
  * @param {boolean} seedData  True for `*-demo-data` kits; drives the
  *   "import will replace existing data" confirm vs the plain nuke prompt.
- * @returns {Promise<{ dbChoice: DbChoice, dbUri?: string, dbReset: 'keep' | 'drop' }>}
+ * @returns {Promise<{
+ *   dbChoice: DbChoice, dbUri?: string, dbReset: 'keep' | 'drop',
+ *   replacesData: boolean
+ * }>}
  */
 async function askDatabase(shortName, defaults, seedData) {
   let initialChoice = defaults?.dbChoice;
@@ -210,10 +217,11 @@ async function askDatabase(shortName, defaults, seedData) {
     const dbChoice = await askDbChoice(initialChoice);
     if (dbChoice === 'sqlite') {
       // SQLite lives inside the fresh project dir — no pre-existing DB to
-      // confront at flow time (a seed kit resets it in the sample-data step).
+      // confront here.
       return {
         dbChoice,
-        dbReset: 'keep'
+        dbReset: 'keep',
+        replacesData: false
       };
     }
     const initialUri = defaults?.dbChoice === dbChoice
@@ -226,7 +234,8 @@ async function askDatabase(shortName, defaults, seedData) {
       return {
         dbChoice,
         dbUri: result.dbUri,
-        dbReset: result.dbReset
+        dbReset: result.dbReset,
+        replacesData: result.replacesData
       };
     }
     // 'switch' falls through to re-ask the DB choice; preselect whatever
@@ -312,7 +321,8 @@ function describeConnectionFailure(result) {
  *   retype it.
  * @param {boolean}                seedData
  * @returns {Promise<
- *   { kind: 'ok', dbUri: string, dbReset: 'keep' | 'drop' } | { kind: 'switch' }
+ *   { kind: 'ok', dbUri: string, dbReset: 'keep' | 'drop', replacesData: boolean }
+ *   | { kind: 'switch' }
  * >}
  */
 async function collectAndVerifyDbUri(dbChoice, shortName, initialUri, seedData) {
@@ -356,7 +366,8 @@ async function collectAndVerifyDbUri(dbChoice, shortName, initialUri, seedData) 
       return {
         kind: 'ok',
         dbUri: candidate,
-        dbReset: 'keep'
+        dbReset: 'keep',
+        replacesData: false
       };
     }
     // Non-empty: confront the destructive case before the user commits.
@@ -367,7 +378,9 @@ async function collectAndVerifyDbUri(dbChoice, shortName, initialUri, seedData) 
     return {
       kind: 'ok',
       dbUri: candidate,
-      dbReset: decision
+      dbReset: decision,
+      // A seed import that proceeds over a non-empty target overwrites it.
+      replacesData: seedData && decision === 'keep'
     };
   }
 }
@@ -375,11 +388,9 @@ async function collectAndVerifyDbUri(dbChoice, shortName, initialUri, seedData) 
 /**
  * The DB the user pointed at already holds data. Confirm what to do — and
  * surface the destruction plainly so a real database is never wiped by
- * reflex. The default is always the non-destructive option.
- *
- * For a seed kit, "overwrite" is only a gate: the sample-data step performs
- * the reset (after the download succeeds), so `db_connect` must NOT also
- * drop — hence it maps to `'keep'`, not `'drop'`.
+ * reflex. The default is always the non-destructive option. A seed kit's
+ * "overwrite" maps to `'keep'`: the import does its own reset, so there is
+ * nothing to drop here.
  *
  * @param {number}  count     Existing collection count, shown in the copy.
  * @param {boolean} seedData
@@ -625,12 +636,10 @@ async function reviewAndConfirm(answers, deps) {
     [ 'Username', answers.admin.username ],
     [ 'Telemetry', telemetryLabel(answers.telemetryConsent, deps) ]
   ]);
-  // One destructive reminder, mutually exclusive: a non-seed "start fresh"
-  // drops the DB at db_connect; a seed kit resets it in the sample-data step.
   if (answers.dbReset === 'drop') {
     render.warn('The existing contents of this database will be dropped before install.');
-  } else if (getKit(answers.kitId).seedData) {
-    render.warn('Importing sample content will reset this database before the demo data is added.');
+  } else if (answers.replacesData) {
+    render.warn('Importing sample content will replace the existing data in this database.');
   }
   const ready = await prompts.confirm({
     message: 'Ready to create?',

@@ -135,13 +135,13 @@ export function cancel(message = 'Cancelled.') {
  * @typedef {object} TaskHandle
  * @property {(msg?: string) => void} succeed
  * @property {(msg?: string) => void} fail
- * @property {(fraction: number, label: string) => void} progress
+ * @property {(fraction: number) => void} progress  Advance the task's bar
+ *   (0–1). No-op for spinner tasks; forward-only.
  */
 
 /**
  * Bridge from the headless {@link import('../index.js').Logger} contract
- * to the clack/picocolors UI. The orchestrator and steps stay
- * UI-agnostic; the flow injects this so each `task()` opens a spinner.
+ * to the clack/picocolors UI, keeping the orchestrator and steps UI-agnostic.
  *
  * @returns {import('../index.js').Logger}
  */
@@ -151,36 +151,36 @@ export function createUiLogger() {
     warn,
     error,
     muted,
-    task(label) {
-      // Start as a spinner; on the first progress() call swap to clack's
-      // progress component, and again whenever the phase label changes — so
-      // each long phase (download, extract) gets its own 0–100% bar.
-      let active = clack.spinner();
+    task(label, { progress: useProgress = false } = {}) {
+      // clack writes a connector line on every start(), so pick spinner vs.
+      // bar up front rather than swapping mid-task (which would stack lines).
+      const active = useProgress
+        ? clack.progress({
+          style: 'block',
+          max: 100,
+          size: 24
+        })
+        : clack.spinner();
       active.start(label);
-      let phase = null;
       let lastPct = 0;
       return {
         succeed(msg) {
-          active.stop(msg ?? label, 0);
+          active.stop(msg ?? label);
         },
         fail(msg) {
-          active.stop(msg ?? label, 1);
+          // clack's stop() always renders success; error() is the red variant.
+          active.error(msg ?? label);
         },
-        progress(fraction, phaseLabel) {
-          const pct = Math.max(0, Math.min(100, Math.round(fraction * 100)));
-          if (phaseLabel !== phase) {
-            active.stop();
-            active = clack.progress({
-              style: 'block',
-              max: 100,
-              size: 24
-            });
-            active.start(phaseLabel);
-            phase = phaseLabel;
-            lastPct = 0;
+        progress(fraction) {
+          if (!useProgress) {
+            return;
           }
-          active.advance(pct - lastPct, `${phaseLabel}  ${pct}%`);
-          lastPct = pct;
+          const pct = Math.max(0, Math.min(100, Math.round(fraction * 100)));
+          const delta = pct - lastPct;
+          if (delta > 0) {
+            active.advance(delta, `${label}  ${pct}%`);
+            lastPct = pct;
+          }
         }
       };
     }
@@ -199,10 +199,11 @@ export function startSpinner(label) {
   s.start(label);
   return {
     succeed(msg) {
-      s.stop(msg ?? label, 0);
+      s.stop(msg ?? label);
     },
     fail(msg) {
-      s.stop(msg ?? label, 1);
+      // clack's stop() always renders success; error() is the red variant.
+      s.error(msg ?? label);
     },
     update(msg) {
       s.message(msg);

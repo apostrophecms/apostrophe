@@ -97,8 +97,8 @@ export async function inspect(
 }
 
 /**
- * Reachability/auth verdict only — emptiness ignored. For callers (the
- * `db_connect` step) that just need to know the connection is usable.
+ * Reachability/auth verdict only — emptiness ignored. For callers that just
+ * need to know the connection is usable.
  *
  * @param {string} uri
  * @param {{ timeoutMs?: number, connect?: typeof dbConnect }} [opts]
@@ -139,11 +139,41 @@ export async function dropDatabase(uri, { connect = dbConnect } = {}) {
 }
 
 /**
+ * Empty every existing collection (per-collection `deleteMany`) without
+ * dropping the database. Privilege-safe — needs only the `readWrite`/DELETE
+ * rights {@link restore} uses (no `dbAdmin`/DROP), so it works on a
+ * locked-down Atlas/SRV user. Unlike a bare {@link restore} (which clears
+ * only the dump's own collections) it also empties orphan collections the
+ * dump doesn't carry. No-op on an empty/fresh target.
+ *
+ * @param {string} uri
+ * @param {{ connect?: typeof dbConnect }} [opts]
+ * @returns {Promise<void>}
+ */
+export async function clearDatabase(uri, { connect = dbConnect } = {}) {
+  let client;
+  try {
+    client = await connect(uri);
+    const db = client.db();
+    const collections = await db.listCollections().toArray();
+    for (const { name } of collections) {
+      // Mongo system collections aren't writable and aren't ours to touch.
+      if (name.startsWith('system.')) {
+        continue;
+      }
+      await db.collection(name).deleteMany({});
+    }
+  } finally {
+    await closeQuietly(client);
+  }
+}
+
+/**
  * Restore a JSONL dump into the target DB. Thin wrapper over db-connect's
- * `restore`, which clears only the dump's collections (per-collection
- * `deleteMany`) — callers wanting a guaranteed clean slate call
- * {@link dropDatabase} first. The sqlite adapter creates the db file and its
- * parent directories on connect, so there is nothing for us to pre-create.
+ * `restore`, which clears only the dump's own collections — to also clear
+ * orphans, call {@link clearDatabase} first ({@link dropDatabase} is the hard
+ * reset). The sqlite adapter creates the db file and its parent directories
+ * on connect, so there is nothing for us to pre-create.
  *
  * @param {string} uri
  * @param {(

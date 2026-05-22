@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import dbConnect from '@apostrophecms/db-connect';
 import {
-  resolveDbUri, inspect, checkConnection, dropDatabase, restore
+  resolveDbUri, inspect, checkConnection, dropDatabase, clearDatabase, restore
 } from '../../src/core/db.js';
 
 // A fake db-connect client whose db() exposes just the surface db.js uses.
@@ -15,7 +15,8 @@ import {
 function makeClient(collections = []) {
   const calls = {
     closed: false,
-    dropped: false
+    dropped: false,
+    cleared: [] // names passed to collection().deleteMany()
   };
   const client = {
     db() {
@@ -29,6 +30,13 @@ function makeClient(collections = []) {
         },
         async dropDatabase() {
           calls.dropped = true;
+        },
+        collection(name) {
+          return {
+            async deleteMany() {
+              calls.cleared.push(name);
+            }
+          };
         }
       };
     },
@@ -177,6 +185,25 @@ describe('core/db — sqlite end-to-end (real temp file)', function () {
     }
   });
 
+  it('clearDatabase empties documents (privilege-safe deleteMany)', async function () {
+    await restore(uri, DUMP);
+    await clearDatabase(uri);
+
+    const client = await dbConnect(uri);
+    try {
+      const docs = await client.db().collection('articles').find({}).toArray();
+      assert.equal(docs.length, 0, 'documents removed by clearDatabase');
+    } finally {
+      await client.close();
+    }
+  });
+
+  it('clearDatabase on a fresh sqlite is a no-op (no throw)', async function () {
+    await clearDatabase(uri);
+    const res = await inspect(uri);
+    assert.equal(res.empty, true);
+  });
+
   it('inspect reports a fresh sqlite as reachable + empty', async function () {
     const res = await inspect(uri);
     assert.deepEqual(res, {
@@ -293,6 +320,29 @@ describe('core/db — dropDatabase (via injected connect)', function () {
     const { connect } = stubConnect({ client });
     await dropDatabase('mongodb://h/db', { connect });
     assert.equal(calls.dropped, true);
+    assert.equal(calls.closed, true);
+  });
+});
+
+describe('core/db — clearDatabase (via injected connect)', function () {
+  it('deleteMany on each collection, skips system.*, closes', async function () {
+    const { client, calls } = makeClient([
+      { name: 'aposDocs' },
+      { name: 'aposUsersSafe' },
+      { name: 'system.indexes' }
+    ]);
+    const { connect } = stubConnect({ client });
+    await clearDatabase('mongodb://h/db', { connect });
+    assert.deepEqual(calls.cleared, [ 'aposDocs', 'aposUsersSafe' ]);
+    assert.equal(calls.dropped, false, 'does not drop the database');
+    assert.equal(calls.closed, true);
+  });
+
+  it('no collections → no writes, still closes', async function () {
+    const { client, calls } = makeClient([]);
+    const { connect } = stubConnect({ client });
+    await clearDatabase('mongodb://h/db', { connect });
+    assert.deepEqual(calls.cleared, []);
     assert.equal(calls.closed, true);
   });
 });

@@ -119,17 +119,17 @@ export function makeCreateProject({
           dropDatabase
         }));
 
-      // Sample-data import runs BEFORE admin-user so a dump containing
-      // users can land first and admin creation reconciles against it.
-      // Conditional on kit.seedData so it only fires for *-demo-data kits.
+      // Runs before admin-user so the admin reconciles against the restored
+      // dump. Renders its own tasks, so it is not wrapped in step().
       if (kit.seedData) {
-        await step('Importing sample content', (task) =>
-          importSampleData({
-            appRoot,
-            dbChoice: options.dbChoice,
-            dbUri: options.dbUri,
-            shortName: options.shortName
-          }, { onProgress: task.progress }));
+        await importSampleData({
+          appRoot,
+          dbChoice: options.dbChoice,
+          dbUri: options.dbUri,
+          shortName: options.shortName
+        }, {
+          task: (label, taskOpts) => logger.task(label, taskOpts)
+        });
       }
 
       const adminOutcome = await step(`Creating ${options.admin.username} account`, () =>
