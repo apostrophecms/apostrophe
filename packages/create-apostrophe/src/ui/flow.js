@@ -10,7 +10,7 @@ import { defaultDbUri } from './db-uri.js';
 import * as db from '../core/db.js';
 import { link, kitGuide } from './links.js';
 import { assertSafeShortName } from '../core/validate.js';
-import { deriveKitId } from '../core/kits.js';
+import { deriveKitId, getKit } from '../core/kits.js';
 import {
   status as telemetryStatus,
   optIn as telemetryOptIn,
@@ -40,6 +40,9 @@ let totalSteps = 6;
  * @property {string}         kitId
  * @property {DbChoice}       dbChoice
  * @property {string}         [dbUri]
+ * @property {'keep' | 'drop'} dbReset  Consent to drop a pre-existing
+ *                                      mongodb/postgres DB; `'keep'` unless
+ *                                      the user confirmed "start fresh".
  * @property {AdminAccount}   admin
  * @property {boolean}        telemetryConsent
  * @property {number}         confirmedAt  Epoch ms when the user confirmed
@@ -97,7 +100,11 @@ async function collectAnswers(deps, defaults) {
     startingPoint,
     sampleContent
   });
-  const { dbChoice, dbUri } = await askDatabase(shortName, defaults);
+  const {
+    dbChoice, dbUri, dbReset
+  } = await askDatabase(
+    shortName, defaults, getKit(kitId).seedData
+  );
   const admin = await askAdminAccount(defaults?.admin);
   const telemetryConsent = await resolveTelemetryConsent(deps);
   return {
@@ -108,6 +115,7 @@ async function collectAnswers(deps, defaults) {
     kitId,
     dbChoice,
     dbUri,
+    dbReset,
     admin,
     telemetryConsent
   };
@@ -192,23 +200,33 @@ async function askSampleContent(initial = false) {
  *
  * @param {string} shortName
  * @param {{ dbChoice?: DbChoice, dbUri?: string }} [defaults]
- * @returns {Promise<{ dbChoice: DbChoice, dbUri?: string }>}
+ * @param {boolean} seedData  True for `*-demo-data` kits; drives the
+ *   "import will replace existing data" confirm vs the plain nuke prompt.
+ * @returns {Promise<{ dbChoice: DbChoice, dbUri?: string, dbReset: 'keep' | 'drop' }>}
  */
-async function askDatabase(shortName, defaults) {
+async function askDatabase(shortName, defaults, seedData) {
   let initialChoice = defaults?.dbChoice;
   while (true) {
     const dbChoice = await askDbChoice(initialChoice);
     if (dbChoice === 'sqlite') {
-      return { dbChoice };
+      // SQLite lives inside the fresh project dir — no pre-existing DB to
+      // confront at flow time (a seed kit resets it in the sample-data step).
+      return {
+        dbChoice,
+        dbReset: 'keep'
+      };
     }
     const initialUri = defaults?.dbChoice === dbChoice
       ? defaults?.dbUri
       : undefined;
-    const result = await collectAndVerifyDbUri(dbChoice, shortName, initialUri);
+    const result = await collectAndVerifyDbUri(
+      dbChoice, shortName, initialUri, seedData
+    );
     if (result.kind === 'ok') {
       return {
         dbChoice,
-        dbUri: result.dbUri
+        dbUri: result.dbUri,
+        dbReset: result.dbReset
       };
     }
     // 'switch' falls through to re-ask the DB choice; preselect whatever
@@ -292,9 +310,12 @@ function describeConnectionFailure(result) {
  * @param {string}                 [initialUri]  Preserves the user's
  *   previously-entered URI across a flow restart so they don't have to
  *   retype it.
- * @returns {Promise<{ kind: 'ok', dbUri: string } | { kind: 'switch' }>}
+ * @param {boolean}                seedData
+ * @returns {Promise<
+ *   { kind: 'ok', dbUri: string, dbReset: 'keep' | 'drop' } | { kind: 'switch' }
+ * >}
  */
-async function collectAndVerifyDbUri(dbChoice, shortName, initialUri) {
+async function collectAndVerifyDbUri(dbChoice, shortName, initialUri, seedData) {
   let candidate = initialUri ?? defaultDbUri(dbChoice, shortName);
   const hint = dbUriHint(dbChoice);
   const message = hint
@@ -307,32 +328,109 @@ async function collectAndVerifyDbUri(dbChoice, shortName, initialUri) {
       initialValue: candidate
     });
     const spin = render.startSpinner('Verifying connection');
-    const result = await db.checkConnection(candidate);
-    if (result.reachable) {
-      spin.succeed('Connection verified');
+    const result = await db.inspect(candidate);
+    if (!result.reachable) {
+      spin.fail(describeConnectionFailure(result));
+      const next = await prompts.select({
+        message: 'How would you like to proceed?',
+        options: [
+          {
+            value: 'retry',
+            label: 'Re-enter the connection string'
+          },
+          {
+            value: 'switch',
+            label: 'Choose a different database'
+          }
+        ]
+      });
+      if (next === 'switch') {
+        return { kind: 'switch' };
+      }
+      continue;
+    }
+    spin.succeed('Connection verified');
+
+    // Empty target: nothing to overwrite, proceed straight away.
+    if (result.empty) {
       return {
         kind: 'ok',
-        dbUri: candidate
+        dbUri: candidate,
+        dbReset: 'keep'
       };
     }
-    spin.fail(describeConnectionFailure(result));
-    const next = await prompts.select({
-      message: 'How would you like to proceed?',
+    // Non-empty: confront the destructive case before the user commits.
+    const decision = await confirmExistingData(result.collectionCount, seedData);
+    if (decision === 'switch') {
+      return { kind: 'switch' };
+    }
+    return {
+      kind: 'ok',
+      dbUri: candidate,
+      dbReset: decision
+    };
+  }
+}
+
+/**
+ * The DB the user pointed at already holds data. Confirm what to do — and
+ * surface the destruction plainly so a real database is never wiped by
+ * reflex. The default is always the non-destructive option.
+ *
+ * For a seed kit, "overwrite" is only a gate: the sample-data step performs
+ * the reset (after the download succeeds), so `db_connect` must NOT also
+ * drop — hence it maps to `'keep'`, not `'drop'`.
+ *
+ * @param {number}  count     Existing collection count, shown in the copy.
+ * @param {boolean} seedData
+ * @returns {Promise<'keep' | 'drop' | 'switch'>} ('cancel' throws UserCancelled)
+ */
+async function confirmExistingData(count, seedData) {
+  if (seedData) {
+    const choice = await prompts.select({
+      message:
+        `${render.bold('This database already contains data')} (${count} collections).\n` +
+        render.dim('Importing the sample content will REPLACE everything in it.'),
+      initialValue: 'switch',
       options: [
         {
-          value: 'retry',
-          label: 'Re-enter the connection string'
+          value: 'switch',
+          label: 'Choose a different (empty) database'
         },
         {
-          value: 'switch',
-          label: 'Choose a different database'
+          value: 'overwrite',
+          label: `Overwrite and import — permanently deletes all ${count} collections`
+        },
+        {
+          value: 'cancel',
+          label: 'Cancel'
         }
       ]
     });
-    if (next === 'switch') {
-      return { kind: 'switch' };
+    if (choice === 'cancel') {
+      throw new prompts.UserCancelled();
     }
+    return choice === 'overwrite' ? 'keep' : 'switch';
   }
+  return prompts.select({
+    message:
+      `${render.bold('This database already contains data')} (${count} collections).`,
+    initialValue: 'keep',
+    options: [
+      {
+        value: 'keep',
+        label: 'Use it as-is'
+      },
+      {
+        value: 'drop',
+        label: `Drop it and start fresh — permanently deletes all ${count} collections`
+      },
+      {
+        value: 'switch',
+        label: 'Choose a different database'
+      }
+    ]
+  });
 }
 
 /**
@@ -527,6 +625,13 @@ async function reviewAndConfirm(answers, deps) {
     [ 'Username', answers.admin.username ],
     [ 'Telemetry', telemetryLabel(answers.telemetryConsent, deps) ]
   ]);
+  // One destructive reminder, mutually exclusive: a non-seed "start fresh"
+  // drops the DB at db_connect; a seed kit resets it in the sample-data step.
+  if (answers.dbReset === 'drop') {
+    render.warn('The existing contents of this database will be dropped before install.');
+  } else if (getKit(answers.kitId).seedData) {
+    render.warn('Importing sample content will reset this database before the demo data is added.');
+  }
   const ready = await prompts.confirm({
     message: 'Ready to create?',
     initialValue: true

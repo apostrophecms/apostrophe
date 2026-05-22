@@ -125,6 +125,102 @@ describe('core/steps/db-config', function () {
     assert.deepEqual(res, { dbChoice: 'mongodb' });
   });
 
+  it('dbReset=drop: drops the resolved URI after a passing check', async function () {
+    const seen = {};
+    await dbConfig(
+      {
+        appRoot,
+        dbChoice: 'postgres',
+        dbUri: 'postgres://h/db',
+        shortName: 'my-site',
+        dbReset: 'drop'
+      },
+      {
+        verifyConnection: async (uri) => {
+          seen.checked = uri;
+          return { reachable: true };
+        },
+        dropDatabase: async (uri) => {
+          seen.dropped = uri;
+        }
+      }
+    );
+    assert.equal(seen.checked, 'postgres://h/db');
+    assert.equal(seen.dropped, 'postgres://h/db');
+  });
+
+  it('dbReset=keep (default): never drops', async function () {
+    let dropped = false;
+    await dbConfig(
+      {
+        appRoot,
+        dbChoice: 'postgres',
+        dbUri: 'postgres://h/db',
+        shortName: 'my-site'
+      },
+      {
+        verifyConnection: async () => ({ reachable: true }),
+        dropDatabase: async () => {
+          dropped = true;
+        }
+      }
+    );
+    assert.equal(dropped, false);
+  });
+
+  it('a failed check short-circuits before any drop', async function () {
+    let dropped = false;
+    await assert.rejects(
+      () => dbConfig(
+        {
+          appRoot,
+          dbChoice: 'mongodb',
+          dbUri: 'mongodb://bad/db',
+          shortName: 'my-site',
+          dbReset: 'drop'
+        },
+        {
+          verifyConnection: async () => ({
+            reachable: false,
+            reason: 'auth'
+          }),
+          dropDatabase: async () => {
+            dropped = true;
+          }
+        }
+      ),
+      (err) => err instanceof StageError && err.errorCode === 'db_auth_failed'
+    );
+    assert.equal(dropped, false, 'must not drop when the connection check failed');
+  });
+
+  it('drop failure → StageError(db_connect, db_drop_failed)', async function () {
+    await assert.rejects(
+      () => dbConfig(
+        {
+          appRoot,
+          dbChoice: 'postgres',
+          dbUri: 'postgres://h/db',
+          shortName: 'my-site',
+          dbReset: 'drop'
+        },
+        {
+          verifyConnection: async () => ({ reachable: true }),
+          dropDatabase: async () => {
+            throw new Error('permission denied to drop tables');
+          }
+        }
+      ),
+      (err) => {
+        assert.ok(err instanceof StageError);
+        assert.equal(err.stage, 'db_connect');
+        assert.equal(err.errorCode, 'db_drop_failed');
+        assert.doesNotMatch(String(err.errorCode), /permission denied/);
+        return true;
+      }
+    );
+  });
+
   /** @type {Array<[string, string]>} reason → mapped errorCode */
   const reasonCases = [
     [ 'unreachable', 'db_unreachable' ],

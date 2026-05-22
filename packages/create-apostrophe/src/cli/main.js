@@ -196,6 +196,7 @@ export async function runInteractive(deps = {}) {
       kitId: answers.kitId,
       dbChoice: answers.dbChoice,
       dbUri: answers.dbUri,
+      dbReset: answers.dbReset,
       admin: answers.admin,
       nonInteractive: false,
       confirmedAt: answers.confirmedAt
@@ -298,6 +299,9 @@ async function runUnattended(values, { createProject, createStore }) {
     kitId,
     dbChoice,
     dbUri,
+    // Unattended never drops a pre-existing DB — that needs interactive
+    // consent. (A seed kit still resets its own target in the seed step.)
+    dbReset: 'keep',
     admin: {
       username,
       password
@@ -320,6 +324,7 @@ async function runUnattended(values, { createProject, createStore }) {
     kitId,
     dbChoice,
     dbUri,
+    dbReset: 'keep',
     admin: {
       username,
       password

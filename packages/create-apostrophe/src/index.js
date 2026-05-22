@@ -83,6 +83,14 @@
  *                                              telemetry. Ignored for sqlite.
  * @property {AdminAccount}    admin            Admin account to create.
  * @property {PackageManager}  [packageManager] Override; otherwise detected.
+ * @property {('keep' | 'drop')} [dbReset]      Consent to drop a pre-existing
+ *                                              mongodb/postgres database before
+ *                                              install. `'drop'` only when the
+ *                                              user explicitly confirmed it for
+ *                                              a non-empty, non-seed target;
+ *                                              defaults to `'keep'`. (Seed kits
+ *                                              reset the DB in the sample-data
+ *                                              step, not via this flag.)
  * @property {boolean}         nonInteractive   CI mode: no prompts downstream.
  * @property {number}          confirmedAt      Plan-confirmation timestamp
  *                                              (epoch ms), set by the caller.
