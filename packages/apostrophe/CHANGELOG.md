@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.30.1
+
+### Patch Changes
+
+- Sites with a custom filterByIndexPage method no longer experience failures in the sitemap module and potential creeping CPU performance penalties. A regression introduced with our static site support, but not specific to static sites.
+
 ## 4.30.0
 
 ### Adds
@@ -21,7 +27,7 @@
 - **XSS via full name field:** A malicious full name containing HTML was executed in the page title tooltip in the admin bar, posing an XSS risk to other users. All multi-user projects should update promptly. Thanks to [Muhammad Uwais](https://github.com/MuhammadUwais) for reporting.
 - **XSS via image widget link URL:** Users with editing privileges could trigger arbitrary JavaScript via a `javascript:` URL in the image widget's link URL field. A migration is included to strip any such URLs already in the database. Thanks to [Muhammad Uwais](https://github.com/MuhammadUwais) for reporting.
 - **SSRF via rich text HTML import:** The rich text widget's HTML import feature no longer fetches images from arbitrary hosts, which could be used to probe internal networks or exfiltrate internal images. Configure `imageImportAllowedHostnames` on `@apostrophecms/rich-text-widget` to opt in. Thanks to [Yiğit Şengezer](https://github.com/yigitsengezer) and [Sainithin0309](https://github.com/Sainithin0309) for reporting.
--  **the xmp tag could be used to pass forbidden markup through sanitize-html**, even when xmp itself. This was fixed in `sanitize-html` and the dependency was bumped. Thanks to [Vincenzo Turturro](https://github.com/sushi-gif) for reporting the vulnerability.
+- **the xmp tag could be used to pass forbidden markup through sanitize-html**, even when xmp itself. This was fixed in `sanitize-html` and the dependency was bumped. Thanks to [Vincenzo Turturro](https://github.com/sushi-gif) for reporting the vulnerability.
 - **the `linkHref` field of image widgets was an XSS vulnerability** because it did not use the `url` field type. This means that a user with editing privileges could potentially carry out XSS. In addition, we have updated the `launder` module to sanitize URLs more robustly for the `url` field type, and bumped that dependency. Also, a database migration is included to clean any XSS attacks that could be present in existing links. Thanks to [Muhammad Uwais](https://github.com/MuhammadUwais) for reporting the issue.
 
 ### Accessibility
@@ -32,7 +38,6 @@
 - The Recently Edited Documents tray icon now exposes its action via `aria-label`.
 - Fixed `.apos-sr-only` so screen-reader-only content is correctly exposed to the accessibility tree.
 - Icon-only context-utility buttons in the admin bar tray (e.g. the global settings cog) now expose their action via `aria-label`.
-
 
 ## 4.29.0 (2026-04-15)
 
