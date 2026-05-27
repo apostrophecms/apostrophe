@@ -1284,11 +1284,22 @@ module.exports = {
       },
 
       annotateDocForExternalFront(doc, { scene } = {}) {
+        const handled = new WeakSet();
+        const missingAreas = [];
         self.apos.doc.walk(doc, (o, k, v) => {
+          if (o._edit === true && !handled.has(o)) {
+            handled.add(o);
+            for (const field of self.missingSchemaAreas(o)) {
+              missingAreas.push([ o, field ]);
+            }
+          }
           if (v && v.metaType === 'area') {
             const manager = self.apos.util.getManagerOf(o);
             if (!manager) {
-              self.apos.util.warnDevOnce('noManagerForDocInExternalFront', `No manager for: ${o.metaType} ${o.type || ''}`);
+              self.apos.util.warnDevOnce(
+                'noManagerForDocInExternalFront',
+                `No manager for: ${o.metaType} ${o.type || ''}`
+              );
               return;
             }
             const field = manager.schema.find(f => f.name === k);
@@ -1302,6 +1313,19 @@ module.exports = {
             return self.annotateAreaForExternalFront(field, v, { scene });
           }
         });
+        // Add the missing areas after the walk, so we never add keys to an
+        // object while it is being traversed. In memory only - unlike the
+        // `{% area %}` tag we never write to the database during a render.
+        for (const [ o, field ] of missingAreas) {
+          o[field.name] = {
+            metaType: 'area',
+            _id: self.apos.util.generateId(),
+            items: [],
+            _edit: true,
+            _docId: o._docId ?? (o.metaType === 'doc' ? o._id : null)
+          };
+          self.annotateAreaForExternalFront(field, o[field.name], { scene });
+        }
       },
 
       // Annotate an area for easy rendering by an external front end
@@ -1343,6 +1367,13 @@ module.exports = {
             throw self.apos.error('invalid', 'Missing widget type');
           }
         }
+      },
+
+      // The schema area fields of `object` that have no value yet. Returns an
+      // empty array for anything without a schema manager.
+      missingSchemaAreas(object) {
+        const schema = self.apos.util.getManagerOf(object, { log: false })?.schema ?? [];
+        return schema.filter(field => field.type === 'area' && !object[field.name]);
       }
     };
   }
