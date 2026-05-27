@@ -1,6 +1,6 @@
 {
   "name": "create-apostrophe",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Guided installer for ApostropheCMS — npm create apostrophe@latest",
   "type": "module",
   "engines": {
