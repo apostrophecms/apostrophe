@@ -11,7 +11,7 @@ import { createStore as defaultCreateStore } from '../core/store.js';
 import { createProject as defaultCreateProject } from '../core/create-project.js';
 import { isKnownKit } from '../core/kits.js';
 import { assertSafeShortName } from '../core/validate.js';
-import { createTelemetry } from '../telemetry/index.js';
+import { createTelemetry as defaultCreateTelemetry } from '../telemetry/index.js';
 import { DB_CHOICES } from '../telemetry/schema.js';
 import {
   status as telemetryStatus,
@@ -19,7 +19,7 @@ import {
   optOut as telemetryOptOut,
   preview as telemetryPreview
 } from '../telemetry/commands.js';
-import { getAnonymousId } from '../telemetry/consent.js';
+import { getAnonymousId, isKillSwitchOn } from '../telemetry/consent.js';
 import { runFlow as defaultRunFlow, renderInstallResult } from '../ui/flow.js';
 import * as render from '../ui/render.js';
 import { UserCancelled } from '../ui/prompts.js';
@@ -90,6 +90,9 @@ ${render.bold('Environment:')}
  *   to keep ~/.config out of the picture.
  * @property {typeof defaultRunFlow}       [runFlow]        Injected for tests
  *   so the interactive path can be exercised without driving clack prompts.
+ * @property {typeof defaultCreateTelemetry} [createTelemetry] Injected for tests
+ *   to observe the resolved `consent` (e.g. the kill switch overriding
+ *   --telemetry=on) without building a live transport.
  */
 
 /**
@@ -101,6 +104,7 @@ export async function main(argv, deps = {}) {
   const {
     createProject = defaultCreateProject,
     createStore = defaultCreateStore,
+    createTelemetry = defaultCreateTelemetry,
     runFlow = defaultRunFlow
   } = deps;
   /** @type {{ values: Record<string, any>, positionals: string[] }} */
@@ -138,12 +142,14 @@ export async function main(argv, deps = {}) {
   if (values.unattended) {
     return runUnattended(values, {
       createProject,
-      createStore
+      createStore,
+      createTelemetry
     });
   }
   return runInteractive({
     createProject,
     createStore,
+    createTelemetry,
     runFlow
   });
 }
@@ -162,6 +168,7 @@ export async function runInteractive(deps = {}) {
   const {
     createProject = defaultCreateProject,
     createStore = defaultCreateStore,
+    createTelemetry = defaultCreateTelemetry,
     runFlow = defaultRunFlow
   } = deps;
   const cwd = process.cwd();
@@ -221,7 +228,9 @@ export async function runInteractive(deps = {}) {
  * @param {Required<MainDeps>} deps
  * @returns {Promise<number>}
  */
-async function runUnattended(values, { createProject, createStore }) {
+async function runUnattended(values, {
+  createProject, createStore, createTelemetry
+}) {
   const env = process.env;
   const issues = [];
 
@@ -285,7 +294,7 @@ async function runUnattended(values, { createProject, createStore }) {
   const cwd = process.cwd();
   const store = createStore();
   const telemetry = createTelemetry({
-    consent: telemetryConsent,
+    consent: telemetryConsent && !isKillSwitchOn(env),
     cliVersion: CLI_VERSION,
     anonymousId: getAnonymousId(store) ?? 'unattended'
   });

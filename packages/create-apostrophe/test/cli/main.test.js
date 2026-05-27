@@ -381,6 +381,89 @@ describe('cli/main — unattended happy path (mocked createProject)', function (
   });
 });
 
+describe('cli/main — unattended telemetry consent (kill switch)', function () {
+  let store;
+  beforeEach(function () {
+    store = isolatedStoreFactory();
+  });
+  afterEach(function () {
+    store.cleanup();
+  });
+
+  // Capture the config createTelemetry is called with, without building a
+  // live transport. Returns a no-op hook so the install path runs to the end.
+  function recordingTelemetry() {
+    const configs = [];
+    const fn = (config) => {
+      configs.push(config);
+      return {
+        event() {},
+        flush: async () => {}
+      };
+    };
+    return {
+      fn,
+      configs
+    };
+  }
+
+  // Set APOS_TELEMETRY for the duration of `fn`, then restore it.
+  async function withKillSwitch(value, fn) {
+    const prev = process.env.APOS_TELEMETRY;
+    if (value === undefined) {
+      delete process.env.APOS_TELEMETRY;
+    } else {
+      process.env.APOS_TELEMETRY = value;
+    }
+    try {
+      return await fn();
+    } finally {
+      if (prev === undefined) {
+        delete process.env.APOS_TELEMETRY;
+      } else {
+        process.env.APOS_TELEMETRY = prev;
+      }
+    }
+  }
+
+  function runUnattendedWith(telemetryFlag, tele) {
+    return captureIO(() => main(
+      [
+        ...ARGV0,
+        '--unattended',
+        '--project-name=my-proj',
+        '--password=pw',
+        `--telemetry=${telemetryFlag}`
+      ],
+      {
+        createProject: stubCreateProject().fn,
+        createStore: store.createStore,
+        createTelemetry: tele.fn
+      }
+    ));
+  }
+
+  it('APOS_TELEMETRY=0 overrides --telemetry=on → consent false', async function () {
+    const tele = recordingTelemetry();
+    await withKillSwitch('0', () => runUnattendedWith('on', tele));
+    assert.equal(tele.configs.length, 1);
+    assert.equal(tele.configs[0].consent, false);
+  });
+
+  it('no kill switch + --telemetry=on → consent true', async function () {
+    const tele = recordingTelemetry();
+    await withKillSwitch(undefined, () => runUnattendedWith('on', tele));
+    assert.equal(tele.configs.length, 1);
+    assert.equal(tele.configs[0].consent, true);
+  });
+
+  it('a non-0 APOS_TELEMETRY value does not disable --telemetry=on', async function () {
+    const tele = recordingTelemetry();
+    await withKillSwitch('1', () => runUnattendedWith('on', tele));
+    assert.equal(tele.configs[0].consent, true);
+  });
+});
+
 describe('cli/main — interactive path (mocked runFlow)', function () {
   let store;
   beforeEach(function () {
