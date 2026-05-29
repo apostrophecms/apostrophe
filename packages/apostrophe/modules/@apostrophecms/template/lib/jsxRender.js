@@ -98,6 +98,7 @@ module.exports = function(self) {
     // installed by `jsxLoader` does the Babel transform on first load),
     // calls its default function, and flattens the returned node tree.
     async renderJsxTemplate(req, resolved, data, module) {
+      self.watchJsxRenderTargets(module, resolved);
       let mod;
       try {
         mod = require(resolved.path);

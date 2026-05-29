@@ -162,6 +162,17 @@ module.exports = {
       ...require('./lib/jsxRender')(self),
       ...require('./lib/viewWatcher')(self),
 
+      // Arm chokidar for the view-folder chain of the module whose views
+      // actually contain the resolved JSX file. For a same-module render
+      // that's the caller; for a cross-module render like
+      // `@apostrophecms/page` rendering `@apostrophecms/home-page:page`
+      // it's the target module. Idempotent per absolute directory.
+      watchJsxRenderTargets(callerModule, resolved) {
+        const owner = (resolved && self.apos.modules[resolved.moduleName]) ||
+          callerModule;
+        self.watchViewFolders(self.getViewFolders(owner));
+      },
+
       // Add helpers in the namespace for a particular module.
       // They will be visible in nunjucks at
       // apos.modules[module-name].helperName. If the alias
