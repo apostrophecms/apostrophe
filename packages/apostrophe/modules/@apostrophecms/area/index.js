@@ -285,6 +285,37 @@ module.exports = {
           self.missingWidgetTypes[name] = true;
         }
       },
+      // Build an empty area and attach it to `parent[name]`. When `parent`
+      // is doc-backed (has `_docId`, or is itself a doc) and `areaDotPath`
+      // is provided, also persist the area at that dot-path. The write is
+      // idempotent via `$eq: null`, so concurrent renders won't clobber each
+      // other. Returns the area.
+      //
+      // Used by the `{% area %}` tag and the external front annotator as a
+      // single source of truth for stubbing schema areas that have no value
+      // yet.
+      async addMissingArea(parent, name, areaDotPath) {
+        const area = {
+          metaType: 'area',
+          _id: self.apos.util.generateId(),
+          items: []
+        };
+        parent[name] = area;
+        const docId = parent._docId ??
+          (parent.metaType === 'doc' ? parent._id : null);
+        if (docId && areaDotPath) {
+          await self.apos.doc.db.updateOne(
+            {
+              _id: docId,
+              [areaDotPath]: { $eq: null }
+            },
+            {
+              $set: { [areaDotPath]: self.apos.util.clonePermanent(area) }
+            }
+          );
+        }
+        return area;
+      },
       prepForRender(area, context, fieldName) {
         const manager = self.apos.util.getManagerOf(context);
         const field = manager.schema.find(field => field.name === fieldName);
@@ -451,7 +482,10 @@ module.exports = {
         // Loop over the docs in the array passed in.
         for (const doc of within) {
           if (self.apos.externalFrontKey) {
-            self.apos.template.annotateDocForExternalFront(doc, { scene: req.scene });
+            await self.apos.template.annotateDocForExternalFront(
+              doc,
+              { scene: req.scene }
+            );
           }
 
           const rendered = [];
