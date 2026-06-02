@@ -15,6 +15,7 @@ async function execute () {
   util.checkDependencies();
 
   require('../lib/commands/create')(program);
+  require('../lib/commands/telemetry')(program);
   require('../lib/commands/add')(program, versionInfo.core);
 
   await confUtils.checkConf();

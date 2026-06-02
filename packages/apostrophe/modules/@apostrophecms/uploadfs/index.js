@@ -41,6 +41,9 @@ module.exports = {
         const uploadfsSettings = {};
         _.merge(uploadfsSettings, uploadfsDefaultSettings);
         _.merge(uploadfsSettings, options);
+        if (process.env.APOS_UPLOADFS_DISABLED_FILE_KEY) {
+          uploadfsSettings.disabledFileKey = process.env.APOS_UPLOADFS_DISABLED_FILE_KEY;
+        }
         if (process.env.APOS_S3_BUCKET) {
           _.merge(uploadfsSettings, {
             backend: 's3',

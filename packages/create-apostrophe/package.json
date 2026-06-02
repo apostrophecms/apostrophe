@@ -1,0 +1,45 @@
+{
+  "name": "create-apostrophe",
+  "version": "1.0.0",
+  "description": "Guided installer for ApostropheCMS — npm create apostrophe@latest",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "create-apostrophe": "bin/create-apostrophe.js"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "test": "mocha"
+  },
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/create-apostrophe"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/create-apostrophe#readme",
+  "dependencies": {
+    "@apostrophecms/db-connect": "workspace:^",
+    "@clack/prompts": "^1.4.0",
+    "@umami/node": "^0.4.0",
+    "picocolors": "^1.1.1",
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:^",
+    "mocha": "^11.7.5"
+  }
+}
