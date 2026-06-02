@@ -77,13 +77,13 @@ describe('External Front', function() {
     assert.deepStrictEqual(apos.template.missingSchemaAreas(area), []);
   });
 
-  it('annotateDocForExternalFront materializes missing areas on an editable doc', function() {
+  it('annotateDocForExternalFront materializes missing areas on an editable doc', async function() {
     const doc = productMissingExtra();
     doc._edit = true;
     // As loaded for an editor, existing areas carry _edit too
     doc.main._edit = true;
 
-    apos.template.annotateDocForExternalFront(doc);
+    await apos.template.annotateDocForExternalFront(doc);
 
     // Existing area still annotated, unchanged behavior
     assert(doc.main.field && doc.main.field.name === 'main');
@@ -101,14 +101,72 @@ describe('External Front', function() {
     assert(Array.isArray(doc.extra.choices));
   });
 
-  it('annotateDocForExternalFront leaves missing areas alone on a non-editable doc', function() {
+  it('annotateDocForExternalFront leaves missing areas alone on a non-editable doc', async function() {
     const doc = productMissingExtra();
 
-    apos.template.annotateDocForExternalFront(doc);
+    await apos.template.annotateDocForExternalFront(doc);
 
     assert.strictEqual(doc.extra, undefined, 'extra not added for anonymous');
     // Existing area annotated as before
     assert(doc.main.field && doc.main.field.name === 'main');
+  });
+
+  it('annotateDocForExternalFront persists materialized areas at their schema path with the same _id sent to the UI', async function() {
+    // Insert a doc directly with only `main`, no `extra`, simulating a field
+    // added to the schema after the doc was created.
+    const docId = 'persist-test:en:draft';
+    await apos.doc.db.deleteOne({ _id: docId });
+    await apos.doc.db.insertOne({
+      _id: docId,
+      type: 'product',
+      metaType: 'doc',
+      aposMode: 'draft',
+      aposDocId: 'persist-test',
+      aposLocale: 'en:draft',
+      title: 'Persist Test',
+      slug: 'persist-test',
+      main: {
+        metaType: 'area',
+        _id: 'main-id-persist',
+        items: []
+      }
+    });
+
+    // Load the doc and mark editable (mirroring what doc-type load does)
+    const doc = await apos.doc.db.findOne({ _id: docId });
+    doc._edit = true;
+    doc.main._edit = true;
+
+    await apos.template.annotateDocForExternalFront(doc);
+
+    // In-memory: extra was materialized and annotated
+    assert(doc.extra && doc.extra._id, 'extra has an id in memory');
+    const inMemoryId = doc.extra._id;
+
+    // In the DB: extra was written at the schema path with the same _id, so a
+    // subsequent editor patch using @<inMemoryId>.items will resolve
+    const persisted = await apos.doc.db.findOne({ _id: docId });
+    assert(persisted.extra, 'extra was persisted');
+    assert.strictEqual(persisted.extra.metaType, 'area');
+    assert.deepStrictEqual(persisted.extra.items, []);
+    assert.strictEqual(
+      persisted.extra._id, inMemoryId,
+      'persisted _id matches the one sent to the UI'
+    );
+
+    // Idempotent: a second annotate keeps the same persisted _id (the
+    // $eq: null condition prevents overwrite)
+    const doc2 = await apos.doc.db.findOne({ _id: docId });
+    doc2._edit = true;
+    delete doc2.extra; // simulate the missing-area branch firing again
+    await apos.template.annotateDocForExternalFront(doc2);
+    const persistedAgain = await apos.doc.db.findOne({ _id: docId });
+    assert.strictEqual(
+      persistedAgain.extra._id, inMemoryId,
+      'persisted _id is unchanged on re-annotate'
+    );
+
+    await apos.doc.db.deleteOne({ _id: docId });
   });
 
   it('fetch home with external front', async function() {

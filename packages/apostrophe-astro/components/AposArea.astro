@@ -17,7 +17,7 @@ let attributes = {};
 // orphaned area lacks it and renders nothing.
 const isArea = Boolean(area?.field);
 
-const widgets = area?.items || [];
+const widgets: Record<string, any>[] = area?.items || [];
 
 const isEdit = isArea && area?._edit && Astro.url.searchParams.get("aposEdit");
 const forceWrapper = aposAttributes || aposStyle || aposClassName;
@@ -84,9 +84,9 @@ function getWidgetOptions(options: any = {}) {
       })}
     </Wrapper>
   ) : (
-    // Orphaned area. Tell logged-in editors how to fix it; show nothing to
-    // anonymous visitors.
-    area?._edit &&
+    // Orphaned area. Dev-only diagnostic: `import.meta.env.DEV` is replaced
+    // with `false` in production, so this branch is dead-code eliminated.
+    (import.meta as any).env.DEV &&
     area?.metaType === "area" && (
       <div
         data-apos-area-error

@@ -1231,7 +1231,7 @@ module.exports = {
       async annotateDataForExternalFront(req, template, data, moduleName) {
         const docs = self.getDocsForExternalFront(req, template, data, moduleName);
         for (const doc of docs) {
-          self.annotateDocForExternalFront(doc, { scene: req.scene });
+          await self.annotateDocForExternalFront(doc, { scene: req.scene });
         }
         data.aposBodyData = await self.getBodyData(req);
         // Already contains module name too
@@ -1283,14 +1283,18 @@ module.exports = {
         ].filter(doc => !!doc);
       },
 
-      annotateDocForExternalFront(doc, { scene } = {}) {
+      async annotateDocForExternalFront(doc, { scene } = {}) {
         const handled = new WeakSet();
         const missingAreas = [];
-        self.apos.doc.walk(doc, (o, k, v) => {
+        self.apos.doc.walk(doc, (o, k, v, __dotPath) => {
           if (o._edit === true && !handled.has(o)) {
             handled.add(o);
+            // `__dotPath` is the path to `v` (= o[k]); the container `o` lives
+            // one segment up — '' for the top-level doc.
+            const dot = __dotPath.lastIndexOf('.');
+            const containerDotPath = dot === -1 ? '' : __dotPath.substring(0, dot);
             for (const field of self.missingSchemaAreas(o)) {
-              missingAreas.push([ o, field ]);
+              missingAreas.push([ o, field, containerDotPath ]);
             }
           }
           if (v && v.metaType === 'area') {
@@ -1313,18 +1317,20 @@ module.exports = {
             return self.annotateAreaForExternalFront(field, v, { scene });
           }
         });
-        // Add the missing areas after the walk, so we never add keys to an
-        // object while it is being traversed. In memory only - unlike the
-        // `{% area %}` tag we never write to the database during a render.
-        for (const [ o, field ] of missingAreas) {
-          o[field.name] = {
-            metaType: 'area',
-            _id: self.apos.util.generateId(),
-            items: [],
-            _edit: true,
-            _docId: o._docId ?? (o.metaType === 'doc' ? o._id : null)
-          };
-          self.annotateAreaForExternalFront(field, o[field.name], { scene });
+        // Materialize every missing area, after the walk so we never add keys
+        // to an object while it is being traversed.
+        for (const [ o, field, containerDotPath ] of missingAreas) {
+          const areaDotPath = containerDotPath
+            ? `${containerDotPath}.${field.name}`
+            : field.name;
+          const area = await self.apos.area.addMissingArea(
+            o,
+            field.name,
+            areaDotPath
+          );
+          area._edit = true;
+          area._docId = o._docId ?? (o.metaType === 'doc' ? o._id : null);
+          self.annotateAreaForExternalFront(field, area, { scene });
         }
       },
 
