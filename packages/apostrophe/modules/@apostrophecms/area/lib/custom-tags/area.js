@@ -63,15 +63,10 @@ module.exports = function(self) {
         // has a value, for instance the field could be new in the schema.
         // But we need an area _id. Stub it into the db on the fly
         // without race conditions
-        area = {
-          metaType: 'area',
-          _id: self.apos.util.generateId(),
-          items: []
-        };
-        doc[name] = area;
         const docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
+        let areaDotPath;
         if (docId) {
-          let mainDoc = await self.apos.doc.db.findOne({ _id: docId });
+          const mainDoc = await self.apos.doc.db.findOne({ _id: docId });
           if (!mainDoc) {
             throw self.apos.error('notfound');
           }
@@ -83,21 +78,14 @@ module.exports = function(self) {
             // Unlikely thanks to advisory locking
             throw self.apos.error('notfound');
           }
-          const areaDotPath = docDotPath ? `${docDotPath}.${name}` : name;
-          await self.apos.doc.db.updateOne({
-            _id: docId,
-            // Prevent race condition
-            [areaDotPath]: {
-              $eq: null
-            }
-          }, {
-            $set: {
-              [areaDotPath]: self.apos.util.clonePermanent(area)
-            }
-          });
-          mainDoc = await self.apos.doc.db.findOne({ _id: docId });
-          // Prevent race condition
-          area._id = self.apos.util.get(mainDoc, areaDotPath)._id;
+          areaDotPath = docDotPath ? `${docDotPath}.${name}` : name;
+        }
+        area = await self.apos.area.addMissingArea(doc, name, areaDotPath);
+        if (docId) {
+          // Race-safety: re-read the persisted _id in case another request
+          // wrote first (our $eq: null write was a no-op in that case).
+          const refreshed = await self.apos.doc.db.findOne({ _id: docId });
+          area._id = self.apos.util.get(refreshed, areaDotPath)._id;
         }
       }
       const manager = self.apos.util.getManagerOf(doc);
