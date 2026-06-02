@@ -12,7 +12,6 @@ const {
   deserializeDocument,
   getNestedField,
   setNestedField,
-  deepEqual,
   applyProjection,
   applyUpdate,
   extractAnchoredLiteralPrefix,
@@ -636,7 +635,6 @@ function buildOrderBy(sort, options = {}) {
   return `ORDER BY ${clauses.join(', ')}`;
 }
 
-
 // =============================================================================
 // Parse SQLite index definitions from sqlite_master
 // =============================================================================
@@ -672,7 +670,7 @@ function parseIndexDef(sql) {
   for (const expr of exprs) {
     // Strip outer parentheses that SQLite adds around expression indexes.
     // e.g. "(json_extract(data, '$.slug')) ASC" → "json_extract(data, '$.slug') ASC"
-    let trimmed = stripOuterParens(expr.trim());
+    const trimmed = stripOuterParens(expr.trim());
 
     if (/^_id\b/.test(trimmed)) {
       const direction = /\bDESC\b/i.test(trimmed) ? -1 : 1;

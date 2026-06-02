@@ -16,7 +16,12 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
   const projectCwd = path.resolve(process.cwd(), 'test/add-missing-schema-fields-project/');
   const testDbUri = t.getTestDbUri('add-missing-schema-fields-project');
   const execEnv = testDbUri
-    ? { env: { ...process.env, APOS_DB_URI: testDbUri } }
+    ? {
+      env: {
+        ...process.env,
+        APOS_DB_URI: testDbUri
+      }
+    }
     : {};
 
   before(async function() {
@@ -33,7 +38,10 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
   it('should not run migrations when running the task', async function() {
     await util.promisify(exec)(
       'node app.js @apostrophecms/migration:add-missing-schema-fields',
-      { cwd: projectCwd, ...execEnv }
+      {
+        cwd: projectCwd,
+        ...execEnv
+      }
     );
 
     apos = await t.create({
@@ -72,7 +80,10 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
   it('should run migrations when running @apostrophecms/migration:migrate task', async function() {
     await util.promisify(exec)(
       'node app.js @apostrophecms/migration:migrate',
-      { cwd: projectCwd, ...execEnv }
+      {
+        cwd: projectCwd,
+        ...execEnv
+      }
     );
 
     apos = await t.create({
