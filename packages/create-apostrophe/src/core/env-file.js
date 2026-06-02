@@ -7,10 +7,20 @@ import {
 /**
  * Quote a value only when dotenv would otherwise mis-parse it (whitespace,
  * `#`, quotes, backslash). Hex secrets need no quoting; a DB URI with special
- * characters does.
+ * characters does. Control chars (newlines, NUL, …) are refused outright:
+ * embedded inside a quoted value they would smuggle additional KEY=value
+ * lines into the resulting .env, and they are never legitimate in a URI,
+ * token, or secret.
  */
 function formatValue(value) {
   const s = String(value);
+  // Eliminate control characters.
+  // eslint-disable-next-line no-control-regex
+  if (/[\x00-\x1f\x7f]/.test(s)) {
+    throw new TypeError(
+      'env value contains a control character (newline, NUL, …); refusing to write.'
+    );
+  }
   if (s === '' || /[\s#"'\\]/.test(s)) {
     return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
   }

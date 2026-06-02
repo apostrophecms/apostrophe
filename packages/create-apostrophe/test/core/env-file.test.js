@@ -55,4 +55,17 @@ describe('core/env-file', function () {
     upsertEnv(env, { A: '1' });
     assert.equal(readFileSync(env, 'utf8'), 'A=1\n');
   });
+
+  it('upsertEnv refuses control chars in a value (no smuggled lines)', function () {
+    // Without the guard, a newline inside a quoted value would smuggle an
+    // extra KEY=value line into .env (`URI="x\nINJECTED=y"` → parsers that
+    // don't honour multiline quoting see two entries).
+    for (const evil of [ 'x\nINJECTED=y', 'x\rINJECTED=y', 'x\x00y' ]) {
+      assert.throws(
+        () => upsertEnv(env, { URI: evil }),
+        TypeError,
+        `expected TypeError for ${JSON.stringify(evil)}`
+      );
+    }
+  });
 });

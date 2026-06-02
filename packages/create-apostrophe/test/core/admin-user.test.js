@@ -31,7 +31,7 @@ describe('core/steps/admin-user', function () {
     assert.equal(outcome, 'created');
     assert.deepEqual(calls[0].command, 'node');
     assert.deepEqual(calls[0].args, [
-      'app.js', '@apostrophecms/user:add', 'me@example.com', 'admin'
+      'app.js', '@apostrophecms/user:add', '--', 'me@example.com', 'admin'
     ]);
     assert.equal(calls[0].opts.cwd, '/proj');
     // Password goes over stdin, never as an argument.
@@ -89,7 +89,7 @@ describe('core/steps/admin-user', function () {
       assert.equal(outcome, 'updated');
       assert.equal(calls.length, 2);
       assert.deepEqual(calls[1].args, [
-        'app.js', '@apostrophecms/user:change-password', 'admin'
+        'app.js', '@apostrophecms/user:change-password', '--', 'admin'
       ]);
       assert.equal(calls[1].opts.input, 'pw\n');
       assert.ok(!calls[1].args.includes('pw'));
@@ -185,6 +185,43 @@ describe('core/steps/admin-user', function () {
         return true;
       }
     );
+  });
+
+  it('username that looks like a flag is passed as a positional (-- separator)', async function () {
+    // Apostrophe parses task argv with `boring({ end: true })` and resolves
+    // username as `argv._[1] || argv.username`. Without the `--` end-of-
+    // options marker, a username like `--role=guest` would be re-interpreted
+    // as a flag, the task would see no positional username, and would create
+    // a different user with a different role than asked. The `--` keeps the
+    // user-supplied value strictly positional.
+    const calls = [];
+    const run = async (command, args, opts) => {
+      calls.push({
+        command,
+        args,
+        opts
+      });
+      return {
+        code: 0,
+        stdout: '',
+        stderr: '',
+        error: null
+      };
+    };
+
+    await addAdminUser(
+      {
+        appRoot: '/proj',
+        username: '--role=guest',
+        password: 'pw'
+      },
+      { run }
+    );
+
+    // The `--` MUST appear immediately before the user-supplied username.
+    const sepIdx = calls[0].args.indexOf('--');
+    assert.ok(sepIdx >= 0, '-- separator must be present');
+    assert.equal(calls[0].args[sepIdx + 1], '--role=guest');
   });
 
   it('requires a username', async function () {

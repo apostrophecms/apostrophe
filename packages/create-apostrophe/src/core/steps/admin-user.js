@@ -4,6 +4,11 @@
 //
 // Recovery: if `user:add` fails because the username already exists,
 // retry as `user:change-password`.
+//
+// The `--` end-of-options marker before the user-supplied `username`
+// stops Apostrophe's argv parser (`boring({ end: true })`) from
+// re-interpreting a username like `--role=guest` as a flag — without it,
+// the task would create a different user with a different role than asked.
 
 import { run as defaultRun } from '../spawn.js';
 import { StageError } from '../errors.js';
@@ -31,7 +36,7 @@ export async function addAdminUser(
 
   const add = await run(
     'node',
-    [ 'app.js', '@apostrophecms/user:add', username, 'admin' ],
+    [ 'app.js', '@apostrophecms/user:add', '--', username, 'admin' ],
     {
       cwd: appRoot,
       input: `${password ?? ''}\n`
@@ -51,7 +56,7 @@ export async function addAdminUser(
   if (isDuplicateUsername(add.stderr)) {
     const cp = await run(
       'node',
-      [ 'app.js', '@apostrophecms/user:change-password', username ],
+      [ 'app.js', '@apostrophecms/user:change-password', '--', username ],
       {
         cwd: appRoot,
         input: `${password ?? ''}\n`

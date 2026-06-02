@@ -78,7 +78,7 @@ export function scaffold({
   try {
     // Non-secret identity only.
     replaceInFile(appJs, /(shortName:).*?,/gi, `$1 '${shortName}',`);
-    replaceInFile(packageJson, /("name":).*?,/g, `$1 "${shortName}",`);
+    replaceInFile(packageJson, /("name":).*?,/g, `$1 "${shortName.toLowerCase()}",`);
 
     // Deliver our own .env template(s) and fill the generated secrets.
     const envFiles = [];

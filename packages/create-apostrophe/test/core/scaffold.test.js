@@ -78,6 +78,21 @@ describe('core/steps/scaffold', function () {
     assert.match(env, /gitignored/);
   });
 
+  it('lowercases the npm package name; preserves shortName casing elsewhere', function () {
+    // npm package names must be lowercase; Apostrophe's own shortName is
+    // case-tolerant and the user's chosen casing is kept in app.js + dir.
+    const projectDir = join(dir, 'proj');
+    makeProject(projectDir);
+
+    scaffold({
+      projectDir,
+      shortName: 'MyProject'
+    });
+
+    assert.match(read(join(projectDir, 'app.js')), /shortName: 'MyProject',/);
+    assert.match(read(join(projectDir, 'package.json')), /"name": "myproject",/);
+  });
+
   it('frontend:\'astro\': backend/.env (secrets + dev keys) and frontend/.env', function () {
     const projectDir = join(dir, 'proj');
     const appRoot = makeProject(projectDir, { external: true });
