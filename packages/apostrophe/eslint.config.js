@@ -7,6 +7,7 @@ module.exports = defineConfig([
     '**/blueimp/**/*.js',
     'test/public',
     'test/apos-build',
+    'test/modules/jsx-mixed-test/views/syntax-error.jsx',
     'coverage',
     'claude-tools'
   ]),

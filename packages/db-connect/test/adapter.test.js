@@ -1492,15 +1492,24 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       await db.collection('test').insertMany([
         {
           _id: 'dobj1',
-          updatedBy: { _id: 'user1', title: 'Alice' }
+          updatedBy: {
+            _id: 'user1',
+            title: 'Alice'
+          }
         },
         {
           _id: 'dobj2',
-          updatedBy: { _id: 'user2', title: 'Bob' }
+          updatedBy: {
+            _id: 'user2',
+            title: 'Bob'
+          }
         },
         {
           _id: 'dobj3',
-          updatedBy: { _id: 'user1', title: 'Alice' }
+          updatedBy: {
+            _id: 'user1',
+            title: 'Alice'
+          }
         }
       ]);
       const values = await db.collection('test').distinct('updatedBy');

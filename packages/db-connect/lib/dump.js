@@ -14,7 +14,7 @@ const BATCH_SIZE = 100;
 // Accept either a URI string or an already-connected db object. When a
 // db object is passed, the caller owns the connection lifecycle; when a
 // URI is passed, this module connects and closes the client on its own.
-async function *dump(uriOrDb) {
+async function * dump(uriOrDb) {
   let db;
   let client;
   if (typeof uriOrDb === 'string') {
