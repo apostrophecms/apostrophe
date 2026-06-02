@@ -128,7 +128,7 @@ describe('core/steps/admin-user', function () {
     assert.deepEqual(calls[0].args[1], '@apostrophecms/user:add');
   });
 
-  it('fallback fails too → original admin_user_failed propagates', async function () {
+  it('fallback non-zero exit → admin_user_failed attributed to change-password', async function () {
     const run = async (command, args) => ({
       code: 1,
       stdout: '',
@@ -146,6 +146,42 @@ describe('core/steps/admin-user', function () {
       }, { run }),
       (err) => {
         assert.equal(err.errorCode, 'admin_user_failed');
+        // The cause must point at the failed recovery, not the duplicate
+        // user:add that triggered it.
+        assert.match(err.cause.message, /user:change-password exited with code 1/);
+        return true;
+      }
+    );
+  });
+
+  it('fallback spawn error (ENOENT) → node_missing, not admin_user_failed', async function () {
+    const run = async (command, args) => {
+      if (args[1] === '@apostrophecms/user:add') {
+        return {
+          code: 1,
+          stdout: '',
+          stderr: 'E11000 duplicate key error index: username_1',
+          error: null
+        };
+      }
+      const err = new Error('spawn ENOENT');
+      err.code = 'ENOENT';
+      return {
+        code: null,
+        stdout: '',
+        stderr: '',
+        error: err
+      };
+    };
+
+    await assert.rejects(
+      () => addAdminUser({
+        appRoot: '/p',
+        username: 'admin',
+        password: 'x'
+      }, { run }),
+      (err) => {
+        assert.equal(err.errorCode, 'node_missing');
         return true;
       }
     );

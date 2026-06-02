@@ -57,9 +57,22 @@ export async function addAdminUser(
         input: `${password ?? ''}\n`
       }
     );
-    if (!cp.error && cp.code === 0) {
+    if (cp.error) {
+      throw new StageError(STAGE, {
+        code: cp.error.code === 'ENOENT' ? 'node_missing' : 'node_spawn_failed',
+        cause: cp.error
+      });
+    }
+    if (cp.code === 0) {
       return 'updated';
     }
+    throw new StageError(STAGE, {
+      code: 'admin_user_failed',
+      cause: new Error(
+        `@apostrophecms/user:change-password exited with code ${cp.code} ` +
+        '(recovery from duplicate @apostrophecms/user:add)'
+      )
+    });
   }
 
   throw new StageError(STAGE, {
