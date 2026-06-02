@@ -47,7 +47,7 @@ const { createId } = require('@paralleldrive/cuid2');
 const expressSession = require('express-session');
 
 const loginAttemptsNamespace = '@apostrophecms/loginAttempt';
-const DEFAULT_LOGGED_IN_COOKIE_NAME = 'loggedIn';
+const loggedInCookieName = 'loggedIn';
 
 module.exports = {
   cascades: [ 'requirements' ],
@@ -77,7 +77,6 @@ module.exports = {
     whoamiFields: []
   },
   async init(self) {
-    self.loggedInCookieName = self.options.loggedInCookieName || DEFAULT_LOGGED_IN_COOKIE_NAME;
     self.passport = new Passport();
     self.enableSerializeUsers();
     self.enableDeserializeUsers();
@@ -165,7 +164,8 @@ module.exports = {
             const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
             req.res.header('set-cookie', expireCookie.serialize(name, 'deleted'));
 
-            req.res.cookie(`${self.apos.shortName}.${self.loggedInCookieName}`, 'false');
+            // TODO: get cookie name from config
+            req.res.cookie(`${self.apos.shortName}.${loggedInCookieName}`, 'false');
           }
         },
         async whoami(req) {
@@ -934,7 +934,7 @@ module.exports = {
       // Awaitable wrapper for req.login. An implementation detail of the login
       // route
       async passportLogin(req, user) {
-        const cookieName = `${self.apos.shortName}.${self.loggedInCookieName}`;
+        const cookieName = `${self.apos.shortName}.${loggedInCookieName}`;
         if (req.cookies[cookieName] !== 'true') {
           req.res.cookie(cookieName, 'true');
         }
@@ -1201,7 +1201,8 @@ module.exports = {
       addLoggedInCookie: {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
-          const cookieName = `${self.apos.shortName}.${self.loggedInCookieName}`;
+          // TODO: get cookie name from config
+          const cookieName = `${self.apos.shortName}.${loggedInCookieName}`;
           if (req.user && req.cookies[cookieName] !== 'true') {
             res.cookie(cookieName, 'true');
           }
