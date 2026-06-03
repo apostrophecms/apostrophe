@@ -59,34 +59,7 @@ module.exports = function(self) {
       }
       area = doc[name];
       if (!area) {
-        // Problem: area is in schema but that doesn't guarantee it
-        // has a value, for instance the field could be new in the schema.
-        // But we need an area _id. Stub it into the db on the fly
-        // without race conditions
-        const docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
-        let areaDotPath;
-        if (docId) {
-          const mainDoc = await self.apos.doc.db.findOne({ _id: docId });
-          if (!mainDoc) {
-            throw self.apos.error('notfound');
-          }
-          let docDotPath;
-          try {
-            docDotPath = (doc._id === docId) ? '' : self.apos.util.findNestedObjectAndDotPathById(mainDoc, doc._id).dotPath;
-          } catch (e) {
-            // Race condition: someone removed the area's parent object.
-            // Unlikely thanks to advisory locking
-            throw self.apos.error('notfound');
-          }
-          areaDotPath = docDotPath ? `${docDotPath}.${name}` : name;
-        }
-        area = await self.apos.area.addMissingArea(doc, name, areaDotPath);
-        if (docId) {
-          // Race-safety: re-read the persisted _id in case another request
-          // wrote first (our $eq: null write was a no-op in that case).
-          const refreshed = await self.apos.doc.db.findOne({ _id: docId });
-          area._id = self.apos.util.get(refreshed, areaDotPath)._id;
-        }
+        area = await self.apos.area.addMissingArea(doc, name, { throwIfNotFound: true });
       }
       const manager = self.apos.util.getManagerOf(doc);
       const field = manager.schema.find(field => field.name === name);
