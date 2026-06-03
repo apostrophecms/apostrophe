@@ -2,7 +2,7 @@ import { writeFile, mkdir, readFile, readdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { bgGreen, black, blue, dim, green, yellow, red, getTimeStat, timestamp } from './format.js';
 
-const CACHE_DIR = join(process.cwd(), 'node_modules', '.apostrophe-astro');
+const CACHE_DIR = join(process.cwd(), 'node_modules', '.apostrophe-astro-static');
 const CONFIG_CACHE = join(CACHE_DIR, '_config.json');
 const ATTACHMENTS_CACHE = join(CACHE_DIR, '_attachments.json');
 // Maximum number of concurrent attachment file downloads.
@@ -81,7 +81,7 @@ export async function getLocales({ aposHost, aposExternalFrontKey }) {
  * @param {string} [config.locale] - The locale to fetch metadata for.
  *   When omitted, the backend returns metadata for the default locale.
  * @param {object} [config.staticBuild] - Static build config from the
- *   integration (resolved from `virtual:apostrophe-config`).
+ *   integration (resolved from `apostrophe-astro-config/config`).
  * @returns {Promise<{ paths: Array<{ params: { slug: string | undefined }, props: object }>, literalContent: Array<object>, attachments: object | null }>}
  */
 export async function getAllUrlMetadata(config) {
@@ -186,9 +186,9 @@ export async function getAllUrlMetadata(config) {
  * 4. Deduplicates attachment metadata across locales and caches it
  * 5. Returns a flat array of `{ params, props }` entries
  *
- * Static build configuration is read from `virtual:apostrophe-config`
- * (injected by the integration plugin).  Callers may override any
- * value by passing it explicitly in `config`.
+ * Static build configuration is read from the cache written during
+ * `astro:config:setup`.  Callers may override any value by passing
+ * it explicitly in `config`.
  *
  * @param {object} config
  * @param {string} config.aposHost - The Apostrophe backend URL.

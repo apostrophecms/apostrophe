@@ -1,5 +1,5 @@
-import { vitePluginApostropheDoctype } from './vite/vite-plugin-apostrophe-doctype.js';
-import { vitePluginApostropheConfig } from './vite/vite-plugin-apostrophe-config.js';
+import { vitePluginApostropheGeneratedConfig } from './vite/vite-plugin-apostrophe-generated-config.js';
+import path from 'node:path';
 import {
   writeConfigCache,
   writeLiteralContent,
@@ -141,25 +141,42 @@ export default function apostropheIntegration(options) {
           await writeConfigCache(staticBuild);
         }
 
+        // Build the integration config object that will be serialised
+        // into node_modules/.apostrophe-astro-config/config.js.
+        // forwardHeaders is normalised into includeResponseHeaders so
+        // the generated file has a single canonical field.
+        const integrationConfig = {
+          aposHost: resolvedAposHost,
+          aposPrefix,
+          includeResponseHeaders:
+            options.includeResponseHeaders || options.forwardHeaders || null,
+          excludeRequestHeaders: options.excludeRequestHeaders || null,
+          viewTransitionWorkaround: options.viewTransitionWorkaround || false,
+          staticBuild: isStaticBuild ? staticBuild : null
+        };
+
+        const generatedDir = path.join(
+          config.root,
+          'node_modules',
+          '.apostrophe-astro-config'
+        );
+
         updateConfig({
           vite: {
             plugins: [
-              vitePluginApostropheDoctype(
-                options.widgetsMapping,
-                options.templatesMapping,
-                options.onBeforeWidgetRender
-              ),
-              vitePluginApostropheConfig({
-                aposHost: resolvedAposHost,
-                forwardHeaders: options.forwardHeaders,
-                viewTransitionWorkaround: options.viewTransitionWorkaround,
-                includeResponseHeaders: options.includeResponseHeaders,
-                excludeRequestHeaders: options.excludeRequestHeaders,
-                staticBuild: isStaticBuild ? staticBuild : undefined,
-                aposPrefix
-              }),
+              vitePluginApostropheGeneratedConfig(
+                options,
+                integrationConfig,
+                config.root
+              )
             ],
-          },
+            resolve: {
+              alias: {
+                'apostrophe-astro-config/config': path.join(generatedDir, 'config.js'),
+                'apostrophe-astro-config/doctypes': path.join(generatedDir, 'doctypes.js')
+              }
+            }
+          }
         });
         // Proxy routes are only needed for SSR — in static mode all data
         // is fetched at build time via getStaticPaths / aposPageFetch.

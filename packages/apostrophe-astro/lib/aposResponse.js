@@ -1,4 +1,4 @@
-import config from 'virtual:apostrophe-config';
+import config from 'apostrophe-astro-config/config';
 import { request } from 'undici';
 import zlib from 'zlib';
 import { promisify } from 'util';

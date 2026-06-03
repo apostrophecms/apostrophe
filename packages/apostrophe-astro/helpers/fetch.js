@@ -1,4 +1,4 @@
-import config from 'virtual:apostrophe-config';
+import config from 'apostrophe-astro-config/config';
 import { getAposHost } from './url.js';
 
 /**
@@ -6,7 +6,7 @@ import { getAposHost } from './url.js';
  * Astro code only** (`.astro` frontmatter, server endpoints, etc.).
  *
  * **Do NOT use in client-side code** — it depends on
- * `virtual:apostrophe-config` and exposes the internal backend host.
+ * `apostrophe-astro-config/config` and exposes the internal backend host.
  * For browser requests use plain `fetch` with relative URLs
  * (e.g. `/api/v1/...`).
  *

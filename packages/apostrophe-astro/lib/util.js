@@ -1,2 +1,11 @@
-// BC: re-export from helpers/slug.js
-export { slugify } from '../helpers/slug.js';
+/**
+ * @deprecated Import from `@apostrophecms/apostrophe-astro/helpers/universal` instead.
+ *
+ * ```js
+ * // Before
+ * import { slugify } from '@apostrophecms/apostrophe-astro/lib/util';
+ * // After
+ * import { slugify } from '@apostrophecms/apostrophe-astro/helpers/universal';
+ * ```
+ */
+export { slugify } from '../helpers/universal/slug.js';

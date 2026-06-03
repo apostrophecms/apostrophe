@@ -1,63 +1,6 @@
-import config from 'apostrophe-astro-config/config';
-
-/**
- * Get the Apostrophe backend base URL, including the prefix when
- * configured.
- *
- * Returns `config.aposHost + config.aposPrefix` — the full base URL
- * for reaching the Apostrophe backend (e.g.
- * `http://localhost:3000/my-repo`).  Environment variable overrides
- * (`APOS_HOST`, `APOS_PREFIX`) are resolved once at config time in
- * the integration's `astro:config:setup` hook and stored in the
- * virtual config module — this function does no env lookups.
- *
- * Prefer `aposFetch` for API calls — use `getAposHost()` only when
- * you need the raw URL string (e.g. for building non-fetch URLs).
- *
- * WARNING: not to be confused with "Public Host" - this is meant to
- * be used only in Astro server-side code. Use relative URLs for
- * client-side requests `/api/v1/...`.
- *
- * @returns {string} The backend base URL (e.g. `http://localhost:3000`
- *   or `http://localhost:3000/my-repo`).
- *
- * @example
- * ```astro
- * ---
- * import { getAposHost } from '@apostrophecms/apostrophe-astro/helpers';
- * const host = getAposHost();
- * // e.g. 'http://localhost:3000' or 'http://localhost:3000/my-repo'
- * ---
- * ```
- */
-export function getAposHost() {
-  return config.aposHost + (config.aposPrefix || '');
-}
-
-/**
- * Check whether the current build is a static build.
- *
- * Returns `true` when the Astro integration is configured for
- * static output (e.g. `output: 'static'` with `APOS_BUILD=static`).
- *
- * @returns {boolean}
- *
- * @example
- * ```astro
- * ---
- * import { isStaticBuild } from '@apostrophecms/apostrophe-astro/helpers';
- * ---
- * <html data-static={isStaticBuild()}>
- * ```
- */
-export function isStaticBuild() {
-  return Boolean(config.staticBuild);
-}
-
-// Mode-aware URL building utilities for Apostrophe piece index
-// pages. 
+// Mode-aware URL building utilities for Apostrophe piece index pages.
 //
-// Static URLs (`@apostrophecms/url` option `static: true`):
+// Static URLs (@apostrophecms/url option `static: true`):
 //   /articles/page/2
 //   /articles/categories/insights/page/2
 //
@@ -115,7 +58,7 @@ export function getFilterBaseUrl(aposData) {
  * @example
  * ```astro
  * ---
- * import { buildPageUrl } from '@apostrophecms/apostrophe-astro/helpers';
+ * import { buildPageUrl } from '@apostrophecms/apostrophe-astro/helpers/universal';
  * const { aposData } = Astro.props;
  * ---
  * <a href={buildPageUrl(aposData, 2)}>Page 2</a>
@@ -144,7 +87,7 @@ export function buildPageUrl(aposData, pageNum) {
  * This tool is not static URL aware.
  *
  * If `value` is `undefined`, `null` or empty string the parameter is
- * removed from the query string.  Internal Apostrophe parameters
+ * removed from the query string. Internal Apostrophe parameters
  * (`aposRefresh`, `aposMode`, `aposEdit`) are always stripped.
  *
  * Typically `Astro.url` is passed as the first argument.
@@ -158,7 +101,7 @@ export function buildPageUrl(aposData, pageNum) {
  * @example
  * ```astro
  * ---
- * import { aposSetQueryParameter } from '@apostrophecms/apostrophe-astro/helpers';
+ * import { aposSetQueryParameter } from '@apostrophecms/apostrophe-astro/helpers/universal';
  * const next = aposSetQueryParameter(Astro.url, 'page', '2');
  * ---
  * <a href={next.pathname + next.search}>Page 2</a>

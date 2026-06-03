@@ -10,6 +10,23 @@
   },
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/apostrophe-astro#readme",
   "main": "index.js",
+  "types": "types/index.d.ts",
+  "exports": {
+    ".": "./index.js",
+    "./helpers/server": "./helpers/server/index.js",
+    "./helpers/universal": "./helpers/universal/index.js",
+    "./helpers/client": "./helpers/client/index.js",
+    "./components/*": "./components/*.astro",
+    "./components/layouts/*": "./components/layouts/*.astro",
+    "./widgets/*": "./widgets/*.astro",
+    "./endpoints/aposProxy.js": "./endpoints/aposProxy.js",
+    "./endpoints/renderWidget.astro": "./endpoints/renderWidget.astro",
+    "./lib/aposPageFetch.js": "./lib/aposPageFetch.js",
+    "./lib/util": "./lib/util.js",
+    "./lib/util.js": "./lib/util.js",
+    "./lib/aposSetQueryParameter": "./lib/aposSetQueryParameter.js",
+    "./lib/aposSetQueryParameter.js": "./lib/aposSetQueryParameter.js"
+  },
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "dependencies": {
