@@ -1414,31 +1414,32 @@ module.exports = {
           };
         }).filter(choice => !!choice);
 
-        area.items ||= [];
-        for (const item of area.items) {
-          if (!item || item.metaType !== 'widget' || !item.type) {
+        // Drop corrupt items (null, or not a widget).
+        area.items = (area.items || []).filter((item) => {
+          const valid = item && item.metaType === 'widget' && item.type;
+          if (!valid) {
             self.apos.util.warnDevOnce(
               'corruptAreaItemInExternalFront',
-              `Skipping malformed item in area ${area._id || ''}`
+              `Dropping malformed item in area ${area._id || ''}`
             );
-            continue;
           }
+          return valid;
+        });
 
+        for (const item of area.items) {
           // Add _docId if area has one
           if (area._docId) {
             item._docId = area._docId;
           }
 
-          // Annotate each individual widget with its options
-          // Each widget must elect into this by creating an
-          // `annotateWidgetForExternalFront() method.
+          // Annotate each individual widget with its options. Each widget must
+          // elect into this by creating an `annotateWidgetForExternalFront()`
+          // method.
           const manager = self.apos.area.getWidgetManager(item.type);
           if (manager) {
-            const widgetOptions = manager.annotateWidgetForExternalFront(item, { scene });
-            item._options = widgetOptions;
+            item._options = manager.annotateWidgetForExternalFront(item, { scene });
           } else {
             self.apos.area.warnMissingWidgetType(item.type);
-            throw self.apos.error('invalid', 'Missing widget type');
           }
         }
       },

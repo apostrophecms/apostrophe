@@ -22,7 +22,10 @@ const isArea = renderable && !isOrphan;
 
 const hasField = Boolean(area?.field);
 
-const widgets: Record<string, any>[] = area?.items || [];
+// Defensive: a corrupt item (null/typeless) must never crash the render.
+const widgets: Record<string, any>[] = (area?.items || []).filter(
+  (item: any) => item && item.type,
+);
 
 const isEdit =
   hasField && area?._edit && Astro.url.searchParams.get("aposEdit");

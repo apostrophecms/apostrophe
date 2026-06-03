@@ -324,7 +324,7 @@ describe('External Front', function() {
     await apos.doc.db.deleteMany({ _id: { $in: [ hostId, relatedId ] } });
   });
 
-  it('annotateAreaForExternalFront skips corrupt items instead of throwing (defensive guard)', function() {
+  it('annotateAreaForExternalFront drops corrupt items so they never reach the front end', function() {
     const field = {
       name: 'main',
       options: {
@@ -342,7 +342,8 @@ describe('External Front', function() {
           type: '@apostrophecms/rich-text',
           content: '<p>ok</p>'
         },
-        // The two shapes the production corruption produced:
+        // The two shapes the production corruption produced. A `null` left in
+        // place would crash the Astro area renderer (`...item._options`).
         null,
         {
           _id: 'frag',
@@ -355,12 +356,51 @@ describe('External Front', function() {
       apos.template.annotateAreaForExternalFront(field, area, { scene: 'apos' });
     });
 
-    // Valid widget is still annotated...
+    // Corrupt items are removed; only the valid, annotated widget remains.
+    assert.strictEqual(area.items.length, 1, 'corrupt items dropped');
+    assert.strictEqual(area.items[0]._id, 'w1');
     assert(area.items[0]._options, 'valid widget annotated');
     assert.strictEqual(area.items[0]._docId, area._docId, 'valid widget got _docId');
-    // ...corrupt items are skipped untouched (never dereferenced).
-    assert.strictEqual(area.items[1], null, 'null item left as-is');
-    assert.strictEqual(area.items[2]._options, undefined, 'typeless fragment not annotated');
+  });
+
+  it('annotateAreaForExternalFront keeps an unknown widget type un-annotated instead of throwing', function() {
+    const field = {
+      name: 'main',
+      options: {
+        widgets: { '@apostrophecms/rich-text': {} }
+      }
+    };
+    const area = {
+      metaType: 'area',
+      _id: 'unknown-area',
+      _docId: 'unknown-doc:en:published',
+      items: [
+        {
+          _id: 'w1',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: '<p>ok</p>'
+        },
+        // A real widget whose module is not registered (e.g. `custom-layout`).
+        {
+          _id: 'w2',
+          metaType: 'widget',
+          type: 'definitely-not-a-registered-widget'
+        }
+      ]
+    };
+
+    // No throw — a missing widget module must not 500 the whole render.
+    assert.doesNotThrow(() => {
+      apos.template.annotateAreaForExternalFront(field, area, { scene: 'apos' });
+    });
+
+    // The unknown widget is preserved (so its content survives a save) but left
+    // un-annotated; the front end skips it.
+    assert.strictEqual(area.items.length, 2, 'unknown-type item preserved');
+    assert(area.items[0]._options, 'valid widget annotated');
+    assert.strictEqual(area.items[1].type, 'definitely-not-a-registered-widget');
+    assert.strictEqual(area.items[1]._options, undefined, 'unknown widget not annotated');
   });
 
   it('addMissingArea honors throwIfNotFound (tag behavior) and defaults to graceful (annotator)', async function() {
