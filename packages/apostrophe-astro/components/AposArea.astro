@@ -13,13 +13,22 @@ const {
 
 let attributes = {};
 
-// The backend sets `field` only on areas still in the schema; a missing or
-// orphaned area lacks it and renders nothing.
-const isArea = Boolean(area?.field);
+// Enough structure to render as an area at all (hardens against malformed
+// data — never crash the render).
+const renderable = area?.metaType === "area" && Array.isArray(area?.items);
 
-const widgets: Record<string, any>[] = area?.items || [];
+const isOrphan = Boolean(area?._isOrphan);
+const isArea = renderable && !isOrphan;
 
-const isEdit = isArea && area?._edit && Astro.url.searchParams.get("aposEdit");
+const hasField = Boolean(area?.field);
+
+// Defensive: a corrupt item (null/typeless) must never crash the render.
+const widgets: Record<string, any>[] = (area?.items || []).filter(
+  (item: any) => item && item.type,
+);
+
+const isEdit =
+  hasField && area?._edit && Astro.url.searchParams.get("aposEdit");
 const forceWrapper = aposAttributes || aposStyle || aposClassName;
 
 const WidgetComponent = widgetComponent ?? AposWidget;
@@ -84,10 +93,12 @@ function getWidgetOptions(options: any = {}) {
       })}
     </Wrapper>
   ) : (
-    // Orphaned area. Dev-only diagnostic: `import.meta.env.DEV` is replaced
-    // with `false` in production, so this branch is dead-code eliminated.
+    // Genuine orphan only. Dev-only diagnostic: `import.meta.env.DEV` is
+    // replaced with `false` in production, so this branch is dead-code
+    // eliminated. Un-annotated (e.g. REST-delivered) areas never reach here —
+    // they render above.
     (import.meta as any).env.DEV &&
-    area?.metaType === "area" && (
+    isOrphan && (
       <div
         data-apos-area-error
         role="alert"
