@@ -1373,6 +1373,7 @@ module.exports = {
             }
             const field = manager.schema.find(f => f.name === k);
             if (!field) {
+              v._isOrphan = true;
               self.apos.util.warnDevOnce(
                 'noSchemaFieldForAreaInExternalFront',
                 `Area ${k} has no matching schema field in ${o.metaType} ${o.type || ''}`
@@ -1398,6 +1399,7 @@ module.exports = {
       // at least as an empty array.
 
       annotateAreaForExternalFront(field, area, { scene } = {}) {
+        area._aposAnnotated = true;
         area.field = field;
         area.options = field.options;
         // Really widget configurations, but the method name is already set in

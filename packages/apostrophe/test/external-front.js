@@ -88,6 +88,9 @@ describe('External Front', function() {
     // Existing area still annotated, unchanged behavior
     assert(doc.main.field && doc.main.field.name === 'main');
     assert(doc.main.options);
+    // Carries the provenance signal, and is never flagged as orphan
+    assert.strictEqual(doc.main._aposAnnotated, true);
+    assert.strictEqual(doc.main._isOrphan, undefined);
 
     // Missing area added as an empty, editable, annotated area
     assert(doc.extra, 'extra area was materialized');
@@ -99,6 +102,59 @@ describe('External Front', function() {
     assert(doc.extra.field && doc.extra.field.name === 'extra');
     assert(doc.extra.options, 'annotated with options');
     assert(Array.isArray(doc.extra.choices));
+    assert.strictEqual(doc.extra._aposAnnotated, true);
+    assert.strictEqual(doc.extra._isOrphan, undefined);
+  });
+
+  it('flags a genuine orphan area, leaves valid areas alone, and never persists the flag', async function() {
+    // Insert a doc with an area whose field is no longer in the schema.
+    const docId = 'orphan-test:en:draft';
+    await apos.doc.db.deleteOne({ _id: docId });
+    await apos.doc.db.insertOne({
+      _id: docId,
+      type: 'product',
+      metaType: 'doc',
+      aposMode: 'draft',
+      aposDocId: 'orphan-test',
+      aposLocale: 'en:draft',
+      title: 'Orphan Test',
+      slug: 'orphan-test',
+      main: {
+        metaType: 'area',
+        _id: 'orphan-main',
+        items: []
+      },
+      // `ghost` is not a field in the product schema (simulates a removed field)
+      ghost: {
+        metaType: 'area',
+        _id: 'orphan-ghost',
+        items: []
+      }
+    });
+
+    const doc = await apos.doc.db.findOne({ _id: docId });
+    doc._edit = true;
+    doc.main._edit = true;
+    doc.ghost._edit = true;
+
+    await apos.template.annotateDocForExternalFront(doc);
+
+    // The annotator owns the doc, so the orphan is flagged — and has no field.
+    // It is NOT marked `_aposAnnotated` (that signals a fully annotated area).
+    assert.strictEqual(doc.ghost._isOrphan, true, 'orphan flagged');
+    assert.strictEqual(doc.ghost.field, undefined, 'orphan has no schema field');
+    assert.strictEqual(doc.ghost._aposAnnotated, undefined, 'orphan is not _aposAnnotated');
+    // The valid area is annotated normally and never flagged orphan.
+    assert(doc.main.field && doc.main._isOrphan === undefined);
+    assert.strictEqual(doc.main._aposAnnotated, true);
+
+    // Neither flag is written to the database.
+    const persisted = await apos.doc.db.findOne({ _id: docId });
+    assert.strictEqual(persisted.ghost._isOrphan, undefined, 'flag not persisted');
+    assert.strictEqual(persisted.main._isOrphan, undefined, 'flag not persisted');
+    assert.strictEqual(persisted.main._aposAnnotated, undefined, 'signal not persisted');
+
+    await apos.doc.db.deleteOne({ _id: docId });
   });
 
   it('annotateDocForExternalFront leaves missing areas alone on a non-editable doc', async function() {
