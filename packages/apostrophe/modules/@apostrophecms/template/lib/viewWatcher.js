@@ -41,6 +41,11 @@ module.exports = (self) => {
       if (self.options.loader && self.options.loader.noWatch) {
         return;
       }
+      // In production the file tree is static and watching only burns
+      // file descriptors. Honor NODE_ENV unconditionally.
+      if (process.env.NODE_ENV === 'production') {
+        return;
+      }
       // chokidar's recursive watching is not reliable on WSL; preserve the
       // historical behavior of skipping watch setup entirely there.
       if (isWsl) {
