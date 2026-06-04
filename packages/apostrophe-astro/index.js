@@ -2,6 +2,7 @@ import { vitePluginApostropheGeneratedConfig } from './vite/vite-plugin-apostrop
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  setStaticCacheDir,
   writeConfigCache,
   writeLiteralContent,
   writeAttachments,
@@ -134,11 +135,21 @@ export default function apostropheIntegration(options) {
             : (userStatic.attachmentScope || 'used')
         };
 
+        // config.root is a URL in Astro 5+ — convert to a file-system path.
+        const projectRoot = config.root instanceof URL
+          ? fileURLToPath(config.root)
+          : config.root;
+
         // Persist static build config so `lib/static.js` can read
         // it without depending on the Vite virtual module (which
         // is unavailable at config load time).
         if (isStaticBuild) {
           resolvedStaticBuild = staticBuild;
+          setStaticCacheDir(path.join(
+            projectRoot,
+            'node_modules',
+            '.apostrophe-astro-static'
+          ));
           await writeConfigCache(staticBuild);
         }
 
@@ -155,11 +166,6 @@ export default function apostropheIntegration(options) {
           viewTransitionWorkaround: options.viewTransitionWorkaround || false,
           staticBuild: isStaticBuild ? staticBuild : null
         };
-
-        // config.root is a URL in Astro 5+ — convert to a file-system path.
-        const projectRoot = config.root instanceof URL
-          ? fileURLToPath(config.root)
-          : config.root;
 
         const generatedDir = path.join(
           projectRoot,

@@ -1,4 +1,11 @@
 /**
+ * Override the static build cache directory.
+ *
+ * @internal
+ * @param {string} dir - Absolute cache directory path.
+ */
+export function setStaticCacheDir(dir: string): void;
+/**
  * Persist static build configuration to the cache directory.
  * Cleans previous cache before writing. Called from the
  * integration's `astro:config:setup` hook.

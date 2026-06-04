@@ -2,11 +2,27 @@ import { writeFile, mkdir, readFile, readdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { bgGreen, black, blue, dim, green, yellow, red, getTimeStat, timestamp } from './format.js';
 
-const CACHE_DIR = join(process.cwd(), 'node_modules', '.apostrophe-astro-static');
-const CONFIG_CACHE = join(CACHE_DIR, '_config.json');
-const ATTACHMENTS_CACHE = join(CACHE_DIR, '_attachments.json');
+let cacheDir = join(process.cwd(), 'node_modules', '.apostrophe-astro-static');
 // Maximum number of concurrent attachment file downloads.
 const DOWNLOAD_CONCURRENCY = 5;
+
+/**
+ * Override the static build cache directory.
+ *
+ * @internal
+ * @param {string} dir - Absolute cache directory path.
+ */
+export function setStaticCacheDir(dir) {
+  cacheDir = dir;
+}
+
+function getConfigCachePath() {
+  return join(cacheDir, '_config.json');
+}
+
+function getAttachmentsCachePath() {
+  return join(cacheDir, '_attachments.json');
+}
 
 /**
  * Persist static build configuration to the cache directory.
@@ -16,9 +32,9 @@ const DOWNLOAD_CONCURRENCY = 5;
  * @param {object} staticBuild - Resolved static build config.
  */
 export async function writeConfigCache(staticBuild) {
-  await rm(CACHE_DIR, { recursive: true, force: true }).catch(() => {});
-  await mkdir(CACHE_DIR, { recursive: true });
-  await writeFile(CONFIG_CACHE, JSON.stringify(staticBuild));
+  await rm(cacheDir, { recursive: true, force: true }).catch(() => {});
+  await mkdir(cacheDir, { recursive: true });
+  await writeFile(getConfigCachePath(), JSON.stringify(staticBuild));
 }
 
 function authHeaders(key) {
@@ -162,9 +178,9 @@ export async function getAllUrlMetadata(config) {
   // Cache literal content to the filesystem per locale so it can be
   // read by the `astro:build:done` hook without re-fetching.
   const cacheKey = locale || '_default';
-  await mkdir(CACHE_DIR, { recursive: true });
+  await mkdir(cacheDir, { recursive: true });
   await writeFile(
-    join(CACHE_DIR, `${cacheKey}.json`),
+    join(cacheDir, `${cacheKey}.json`),
     JSON.stringify({ locale: locale || null, literalContent })
   );
 
@@ -209,7 +225,7 @@ export async function getAllStaticPaths(config) {
   // written to the cache directory during `astro:config:setup`.
   let integrationConfig;
   try {
-    integrationConfig = JSON.parse(await readFile(CONFIG_CACHE, 'utf-8'));
+    integrationConfig = JSON.parse(await readFile(getConfigCachePath(), 'utf-8'));
   } catch {
     throw new Error(
       'Static build config cache not found. The Apostrophe integration must run its ' +
@@ -256,9 +272,9 @@ export async function getAllStaticPaths(config) {
   }
 
   // Cache deduplicated attachment metadata for the post-build hook
-  await mkdir(CACHE_DIR, { recursive: true });
+  await mkdir(cacheDir, { recursive: true });
   await writeFile(
-    ATTACHMENTS_CACHE,
+    getAttachmentsCachePath(),
     JSON.stringify({
       uploadsUrl,
       results: [ ...attachmentMap.values() ]
@@ -295,7 +311,7 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
   const literalContent = [];
   let files;
   try {
-    files = await readdir(CACHE_DIR);
+    files = await readdir(cacheDir);
   } catch {
     throw new Error(
       'Apostrophe static build cache not found. Ensure the `[...slug].astro` page calls ' +
@@ -307,7 +323,7 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
       continue;
     }
     const data = JSON.parse(
-      await readFile(join(CACHE_DIR, file), 'utf-8')
+      await readFile(join(cacheDir, file), 'utf-8')
     );
     for (const entry of (data.literalContent || [])) {
       if (!seen.has(entry.url)) {
@@ -401,7 +417,7 @@ export async function writeAttachments({ aposHost, outDir, logger, aposPrefix = 
   const stats = { written: 0, warnings: 0, errors: 0 };
   let cache;
   try {
-    cache = JSON.parse(await readFile(ATTACHMENTS_CACHE, 'utf-8'));
+    cache = JSON.parse(await readFile(getAttachmentsCachePath(), 'utf-8'));
   } catch {
     throw new Error(
       'Apostrophe attachment cache not found. Ensure the `[...slug].astro` page calls ' +
@@ -535,5 +551,5 @@ export function writePostBuildSummary({ literal, attachments, logger }) {
 }
 
 export async function cleanupCache() {
-  await rm(CACHE_DIR, { recursive: true, force: true }).catch(() => {});
+  await rm(cacheDir, { recursive: true, force: true }).catch(() => {});
 }

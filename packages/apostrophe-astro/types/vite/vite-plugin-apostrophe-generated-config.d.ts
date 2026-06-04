@@ -24,4 +24,4 @@
  * @param {string} projectRoot - Astro project root (`config.root`).
  * @returns {import('vite').Plugin}
  */
-export function vitePluginApostropheGeneratedConfig(options: import("../index.js").ApostropheIntegrationOptions, integrationConfig: object, projectRoot: string): any;
+export function vitePluginApostropheGeneratedConfig(options: import("../index.js").ApostropheIntegrationOptions, integrationConfig: object, projectRoot: string): import("vite").Plugin;

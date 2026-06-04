@@ -117,6 +117,7 @@ function extractId(result) {
  */
 export function vitePluginApostropheGeneratedConfig(options, integrationConfig, projectRoot) {
   let filesWritten = false;
+  const rootImporter = join(projectRoot, 'astro.config.mjs');
 
   /**
    * Resolve user mapping paths then write the generated files.
@@ -174,7 +175,7 @@ export function vitePluginApostropheGeneratedConfig(options, integrationConfig, 
       return async () => {
         if (!filesWritten) {
           await resolveAndWrite((id) =>
-            server.pluginContainer.resolveId(id, undefined, { ssr: true })
+            server.pluginContainer.resolveId(id, rootImporter, { ssr: true })
           );
         }
       };
@@ -186,7 +187,7 @@ export function vitePluginApostropheGeneratedConfig(options, integrationConfig, 
     async buildStart() {
       if (!filesWritten) {
         const self = this;
-        await resolveAndWrite((id) => self.resolve(id));
+        await resolveAndWrite((id) => self.resolve(id, rootImporter));
       }
     }
   };

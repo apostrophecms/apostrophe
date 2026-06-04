@@ -82,7 +82,7 @@ import { stylesAttributes, getAttachmentUrl } from '@apostrophecms/apostrophe-as
 
 ## Deprecated shims (v2)
 
-The following `lib/` paths remain exported in v2 as compatibility shims. They will log `@deprecated` JSDoc notices but continue to work. Migrate before v3.
+The following `lib/` paths remain exported in v2 as compatibility shims. They continue to work, but new and migrated code should use the helper entry points. Migrate before v3.
 
 | Old path | New path |
 | --- | --- |
@@ -103,7 +103,7 @@ If your project imports `virtual:apostrophe-config` or `virtual:apostrophe-docty
 
 ### Unlisted `lib/` paths
 
-Any import of a `lib/` path not listed in the deprecated shims table above (e.g. `lib/aposRequest.js`, `lib/aposResponse.js`, `lib/format.js`, `lib/static.js`) will fail under the v2 exports map. These are internal modules with no public equivalent. If you need functionality that was only accessible via an internal path, open an issue to discuss adding a proper public helper.
+Any import of a `lib/` path not listed in the deprecated shims table above (e.g. `lib/aposRequest.js`, `lib/aposResponse.js`, `lib/format.js`) will fail under the v2 exports map. These are internal modules with no public equivalent. If you need functionality that was only accessible via an internal path, open an issue to discuss adding a proper public helper.
 
 ---
 
