@@ -566,13 +566,13 @@ function sanitizeHtml(html, options, _recursing) {
 
       if (options.disallowedTagsMode === 'completelyDiscard' && !tagAllowed(tag)) {
         text = '';
-      } else if ((options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && ((tag === 'script') || (tag === 'style'))) {
+      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && ((tag === 'script') || (tag === 'style'))) {
         // htmlparser2 gives us these as-is. Escaping them ruins the content. Allowing
         // script tags is, by definition, game over for XSS protection, so if that's
         // your concern, don't allow them. The same is essentially true for style tags
         // which have their own collection of XSS vectors.
         result += text;
-      } else if ((options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
+      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
         // htmlparser2 treats <textarea> and <xmp> as raw text elements and
         // does NOT decode entities inside them. The text is already properly
         // encoded, so pass it through without additional escaping to avoid
