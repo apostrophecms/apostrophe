@@ -55,7 +55,17 @@ import { slugify } from '@apostrophecms/apostrophe-astro/lib/util.js';
 import { slugify } from '@apostrophecms/apostrophe-astro/helpers/universal';
 ```
 
-### 4. Update `lib/aposStyles.js` and `lib/attachment.js` imports
+### 4. Update `lib/static.js` imports
+
+```js
+// Before
+import { getAllStaticPaths } from '@apostrophecms/apostrophe-astro/lib/static.js';
+
+// After
+import { getAllStaticPaths } from '@apostrophecms/apostrophe-astro/helpers/server';
+```
+
+### 5. Update `lib/aposStyles.js` and `lib/attachment.js` imports
 
 These files are no longer part of the public API.
 
@@ -77,6 +87,7 @@ The following `lib/` paths remain exported in v2 as compatibility shims. They wi
 | Old path | New path |
 | --- | --- |
 | `@apostrophecms/apostrophe-astro/lib/aposPageFetch.js` | `@apostrophecms/apostrophe-astro/helpers/server` |
+| `@apostrophecms/apostrophe-astro/lib/static.js` | `@apostrophecms/apostrophe-astro/helpers/server` |
 | `@apostrophecms/apostrophe-astro/lib/util` | `@apostrophecms/apostrophe-astro/helpers/universal` |
 | `@apostrophecms/apostrophe-astro/lib/util.js` | `@apostrophecms/apostrophe-astro/helpers/universal` |
 | `@apostrophecms/apostrophe-astro/lib/aposSetQueryParameter` | `@apostrophecms/apostrophe-astro/helpers/universal` |

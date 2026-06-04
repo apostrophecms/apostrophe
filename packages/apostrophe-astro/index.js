@@ -1,5 +1,6 @@
 import { vitePluginApostropheGeneratedConfig } from './vite/vite-plugin-apostrophe-generated-config.js';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   writeConfigCache,
   writeLiteralContent,
@@ -155,8 +156,13 @@ export default function apostropheIntegration(options) {
           staticBuild: isStaticBuild ? staticBuild : null
         };
 
+        // config.root is a URL in Astro 5+ — convert to a file-system path.
+        const projectRoot = config.root instanceof URL
+          ? fileURLToPath(config.root)
+          : config.root;
+
         const generatedDir = path.join(
-          config.root,
+          projectRoot,
           'node_modules',
           '.apostrophe-astro-config'
         );
@@ -167,7 +173,7 @@ export default function apostropheIntegration(options) {
               vitePluginApostropheGeneratedConfig(
                 options,
                 integrationConfig,
-                config.root
+                projectRoot
               )
             ],
             resolve: {
