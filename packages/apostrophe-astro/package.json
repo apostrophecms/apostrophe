@@ -11,11 +11,26 @@
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/apostrophe-astro#readme",
   "main": "index.js",
   "types": "types/index.d.ts",
+  "scripts": {
+    "build:types": "tsc"
+  },
   "exports": {
-    ".": "./index.js",
-    "./helpers/server": "./helpers/server/index.js",
-    "./helpers/universal": "./helpers/universal/index.js",
-    "./helpers/client": "./helpers/client/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./index.js"
+    },
+    "./helpers/server": {
+      "types": "./types/helpers/server/index.d.ts",
+      "default": "./helpers/server/index.js"
+    },
+    "./helpers/universal": {
+      "types": "./types/helpers/universal/index.d.ts",
+      "default": "./helpers/universal/index.js"
+    },
+    "./helpers/client": {
+      "types": "./types/helpers/client/index.d.ts",
+      "default": "./helpers/client/index.js"
+    },
     "./components/*.astro": "./components/*.astro",
     "./components/layouts/*.astro": "./components/layouts/*.astro",
     "./widgets/*.astro": "./widgets/*.astro",
@@ -34,5 +49,8 @@
     "lodash.deburr": "^4.1.0",
     "sluggo": "^1.0.0",
     "undici": "^8.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
   }
 }
