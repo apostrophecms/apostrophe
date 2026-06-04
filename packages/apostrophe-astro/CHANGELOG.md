@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.13.0
+
+### Minor Changes
+
+- f67c272: Fixed adding or removing an area field from a schema breaking existing documents on an external front such as Astro.
+
+  - `AposArea` now renders only schema-backed areas. A missing area no longer throws, and an area orphaned by removing its field from the schema (while its content remains in the document) renders nothing instead of breaking sibling areas in edit mode. Logged-in editors get a diagnostic message in place of an orphaned area; anonymous visitors see nothing.
+  - Editable documents sent to an external front now materialize empty area objects for schema area fields added after the document was created, so they can be edited in context.
+  - `apos.util.getManagerOf` accepts a `{ log }` option to suppress its error log when probing objects that may not have a manager.
+
+- bc8f7be: Editors can now control the layout-widget gap through the styles system, both site-wide via a global `layoutGap` preset and per widget via a `gap` styles field. New Layout widget option `className` allows for additional CSS class names to be added to the widget Grid container.
+- d45e27f: Log aposResponse errors server side in the Astro process. Thanks to [Harouna Traore](https://github.com/haroun).
+
 ## 1.12.0
 
 ### Adds

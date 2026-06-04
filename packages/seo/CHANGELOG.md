@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0
+
+### Minor Changes
+
+- 82ff110: Removes unimplemented hreflang output; use @apostrophecms/sitemap for hreflang support
+- d65c5d6: Removes the `seoSiteCanonicalUrl` field from global settings. The base URL is now derived automatically from `APOS_BASE_URL` or the `baseUrl` option. The value remains available at `req.data.global.seoSiteCanonicalUrl` for backwards compatibility.
+
 ## 1.4.2
 
 ### Security

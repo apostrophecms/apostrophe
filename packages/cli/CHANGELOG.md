@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.7.0
+
+### Minor Changes
+
+- 950927d: **Breaking:** `apos create` is now an interactive guided installer (it delegates to `create-apostrophe`). The `<shortname>` positional argument and the `--starter` and `--mongodb-uri` options have been removed - project name, starter kit, and database are now chosen through prompts. For scripted installs, use `npm create apostrophe@latest -- --unattended` instead.
+
+### Patch Changes
+
+- a5e1a4a: Security: bump and clean up dependencies. This closes vulnerabilities in `uuid` and `fast-xml-parser` although they were not used in a sensitive or vulnerable way within ApostropheCMS. This also closes a vulnerability in `shelljs` which ould only be exploited if the developer could be convinced to enter malicious commands as part of their CLI input.
+- 01bacd2: Security: passwords and starter kit URLs containing intentionally malicious punctuation cannot be used to run arbitrary shell commands. Because the CLI is only used by developers, this would always have been an "own goal" situation, however this does make the CLI more robust for scripted use. Thanks to [Nitro13urn](https://github.com/VadlaReddySai) for reporting the issue.
+
 ## 3.6.1
 
 ### Security
