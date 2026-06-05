@@ -151,6 +151,11 @@ export default function apostropheIntegration(options) {
             '.apostrophe-astro-static'
           ));
           await writeConfigCache(staticBuild);
+          // Set a process-level flag so aposRequest can reliably detect
+          // the static build context across all Vite environments and
+          // module instances, avoiding Astro.request.headers access
+          // during prerendering which triggers a warning in Astro v6.
+          process.env.APOS_ASTRO_STATIC_BUILD = '1';
         }
 
         // Build the integration config object that will be serialised
@@ -182,10 +187,31 @@ export default function apostropheIntegration(options) {
                 projectRoot
               )
             ],
+            define: {
+              'process.env.APOS_ASTRO_STATIC_BUILD': JSON.stringify(isStaticBuild ? '1' : '')
+            },
             resolve: {
               alias: {
                 'apostrophe-astro-config/config': path.join(generatedDir, 'config.js'),
                 'apostrophe-astro-config/doctypes': path.join(generatedDir, 'doctypes.js')
+              }
+            },
+            // Ensure this package is always processed by Vite (not externalized)
+            // so that the generated-config aliases are applied. In Astro v6 the
+            // `vite.ssr` option only covers the SSR environment; the prerender
+            // environment used for static builds needs the same treatment via
+            // `vite.environments.prerender`. We set both for forward-compat.
+            ssr: {
+              noExternal: [ '@apostrophecms/apostrophe-astro' ]
+            },
+            environments: {
+              prerender: {
+                resolve: {
+                  noExternal: [ '@apostrophecms/apostrophe-astro' ]
+                },
+                define: {
+                  'process.env.APOS_ASTRO_STATIC_BUILD': JSON.stringify(isStaticBuild ? '1' : '')
+                }
               }
             }
           }

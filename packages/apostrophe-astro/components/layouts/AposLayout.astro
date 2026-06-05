@@ -13,7 +13,10 @@ if (!headersToInclude && config.forwardHeaders) {
   headersToInclude = config.forwardHeaders;
 }
 
-if (headersToInclude && Array.isArray(headersToInclude)) {
+// Response headers are only meaningful in SSR — prerendered static pages
+// have no per-request HTTP response, and accessing Astro.response.headers
+// in that context triggers a warning in Astro v6.
+if (!config.staticBuild && headersToInclude && Array.isArray(headersToInclude)) {
   const headers = aposData.aposResponseHeaders;
   if (headers) {
     for (const header of headersToInclude) {

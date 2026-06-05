@@ -23,8 +23,36 @@ async function writeGeneratedRuntimeFiles({
   templatesId,
   hookId
 }) {
-  const generatedDir = join(projectRoot, 'node_modules', '.apostrophe-astro-config');
-  await mkdir(generatedDir, { recursive: true });
+  // Write to two locations:
+  //
+  // 1. node_modules/.apostrophe-astro-config/ — dot-prefixed for Vite
+  //    (conventional location for generated Vite artifacts; kept as the
+  //    Vite alias target for belt-and-suspenders coverage in all Vite
+  //    environments including dev server hot-reload).
+  //
+  // 2. node_modules/apostrophe-astro-config/ — a real Node-resolvable
+  //    package so that `import 'apostrophe-astro-config/config'` works
+  //    natively in Node's ESM loader without needing a Vite alias.
+  //    This is essential for Astro v6 static builds where the prerender
+  //    environment may execute page modules outside Vite's plugin chain.
+  const dotDir = join(projectRoot, 'node_modules', '.apostrophe-astro-config');
+  const pkgDir = join(projectRoot, 'node_modules', 'apostrophe-astro-config');
+
+  await mkdir(dotDir, { recursive: true });
+  await mkdir(pkgDir, { recursive: true });
+
+  // ── package.json (real package only) ──────────────────────────────────────
+  const pkgJson = JSON.stringify({
+    name: 'apostrophe-astro-config',
+    version: '0.0.0',
+    type: 'module',
+    exports: {
+      './config': './config.js',
+      './doctypes': './doctypes.js'
+    }
+  }, null, 2) + '\n';
+
+  await writeFile(join(pkgDir, 'package.json'), pkgJson);
 
   // ── config.js ──────────────────────────────────────────────────────────────
   // Serialise the resolved integration config as a static ES module export.
@@ -44,13 +72,16 @@ async function writeGeneratedRuntimeFiles({
     JSON.stringify(configObj, null, 2) +
     ';\n';
 
-  await writeFile(join(generatedDir, 'config.js'), configContent);
+  await writeFile(join(dotDir, 'config.js'), configContent);
+  await writeFile(join(pkgDir, 'config.js'), configContent);
 
   // ── doctypes.js ────────────────────────────────────────────────────────────
   // Re-export the user's mapping modules using relative paths from the
   // generated directory so the file is portable across machines and moves.
+  // We use the dot-prefixed directory for relative path calculation since
+  // both directories are siblings and produce identical relative paths.
   function toRelative(absPath) {
-    let rel = relative(generatedDir, absPath).replace(/\\/g, '/');
+    let rel = relative(dotDir, absPath).replace(/\\/g, '/');
     if (!rel.startsWith('.')) {
       rel = './' + rel;
     }
@@ -73,7 +104,8 @@ async function writeGeneratedRuntimeFiles({
     '\nexport { widgets, templates };\n' +
     `export const onBeforeWidgetRenderHook = ${hookExport};\n`;
 
-  await writeFile(join(generatedDir, 'doctypes.js'), doctypesContent);
+  await writeFile(join(dotDir, 'doctypes.js'), doctypesContent);
+  await writeFile(join(pkgDir, 'doctypes.js'), doctypesContent);
 }
 
 /**

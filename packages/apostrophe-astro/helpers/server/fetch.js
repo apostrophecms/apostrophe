@@ -1,7 +1,7 @@
 import config from 'apostrophe-astro-config/config';
 import { getAposHost } from './url.js';
 import aposResponse from '../../lib/aposResponse.js';
-import aposRequest from '../../lib/aposRequest.js';
+import aposRequest, { isAstroPrerenderedRequest } from '../../lib/aposRequest.js';
 
 /**
  * A transparent proxy around the native `fetch` API for **server-side
@@ -80,7 +80,17 @@ export async function aposFetch(input, init) {
 export async function aposPageFetch(req) {
   let aposData = {};
   try {
-    let request = aposRequest(req);
+    // Pass only the URL (as a plain string) when the request is Astro's
+    // prerendered request. Astro v6 installs a warning getter on
+    // Astro.request.headers for prerendered pages; we detect this via
+    // isAstroPrerenderedRequest() which inspects the property descriptor
+    // without triggering the getter. Fall back to env-var / config checks
+    // for any edge cases where the request was already unwrapped.
+    const isStaticBuild = isAstroPrerenderedRequest(req)
+      || process.env.APOS_ASTRO_STATIC_BUILD === '1'
+      || Boolean(config.staticBuild);
+    const input = (isStaticBuild && req && typeof req !== 'string') ? req.url : req;
+    let request = aposRequest(input);
     if (request.method === 'HEAD') {
       request = new Request(request, {
         method: 'GET'

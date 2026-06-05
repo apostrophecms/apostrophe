@@ -14,35 +14,6 @@
   "scripts": {
     "build:types": "tsc"
   },
-  "exports": {
-    ".": {
-      "types": "./types/index.d.ts",
-      "default": "./index.js"
-    },
-    "./helpers/server": {
-      "types": "./types/helpers/server/index.d.ts",
-      "default": "./helpers/server/index.js"
-    },
-    "./helpers/universal": {
-      "types": "./types/helpers/universal/index.d.ts",
-      "default": "./helpers/universal/index.js"
-    },
-    "./helpers/client": {
-      "types": "./types/helpers/client/index.d.ts",
-      "default": "./helpers/client/index.js"
-    },
-    "./components/*.astro": "./components/*.astro",
-    "./components/layouts/*.astro": "./components/layouts/*.astro",
-    "./widgets/*.astro": "./widgets/*.astro",
-    "./endpoints/aposProxy.js": "./endpoints/aposProxy.js",
-    "./endpoints/renderWidget.astro": "./endpoints/renderWidget.astro",
-    "./lib/aposPageFetch.js": "./lib/aposPageFetch.js",
-    "./lib/static.js": "./lib/static.js",
-    "./lib/util": "./lib/util.js",
-    "./lib/util.js": "./lib/util.js",
-    "./lib/aposSetQueryParameter": "./lib/aposSetQueryParameter.js",
-    "./lib/aposSetQueryParameter.js": "./lib/aposSetQueryParameter.js"
-  },
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "dependencies": {

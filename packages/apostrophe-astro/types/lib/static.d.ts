@@ -1,5 +1,9 @@
 /**
  * Override the static build cache directory.
+ * Must be called by the Apostrophe integration before any static-build
+ * functions are used. The integration sets this from `config.root` in its
+ * `astro:config:setup` hook so that the cache always lands inside the
+ * project's `node_modules`, regardless of where the Node process was started.
  *
  * @internal
  * @param {string} dir - Absolute cache directory path.

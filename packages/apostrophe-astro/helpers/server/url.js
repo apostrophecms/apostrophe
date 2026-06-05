@@ -51,5 +51,5 @@ export function getAposHost() {
  * ```
  */
 export function isStaticBuild() {
-  return Boolean(config.staticBuild);
+  return process.env.APOS_ASTRO_STATIC_BUILD === '1' || Boolean(config.staticBuild);
 }

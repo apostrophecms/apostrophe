@@ -2,12 +2,18 @@ import { writeFile, mkdir, readFile, readdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { bgGreen, black, blue, dim, green, yellow, red, getTimeStat, timestamp } from './format.js';
 
-let cacheDir = join(process.cwd(), 'node_modules', '.apostrophe-astro-static');
+// Initialized to null — must be set by the integration via setStaticCacheDir()
+// before any cache-dependent functions are called.
+let cacheDir = null;
 // Maximum number of concurrent attachment file downloads.
 const DOWNLOAD_CONCURRENCY = 5;
 
 /**
  * Override the static build cache directory.
+ * Must be called by the Apostrophe integration before any static-build
+ * functions are used. The integration sets this from `config.root` in its
+ * `astro:config:setup` hook so that the cache always lands inside the
+ * project's `node_modules`, regardless of where the Node process was started.
  *
  * @internal
  * @param {string} dir - Absolute cache directory path.
@@ -16,12 +22,40 @@ export function setStaticCacheDir(dir) {
   cacheDir = dir;
 }
 
+/**
+ * Resolve the cache directory for WRITE operations. Throws when
+ * `setStaticCacheDir` has not been called — writing to an unresolved path
+ * would silently land in the wrong place.
+ */
+function requireCacheDir() {
+  if (!cacheDir) {
+    throw new Error(
+      'apostrophe-astro static cache directory has not been set. ' +
+      'Ensure the Apostrophe integration is configured in astro.config.mjs ' +
+      'so its astro:config:setup hook runs before any static-build helpers are called.'
+    );
+  }
+  return cacheDir;
+}
+
+/**
+ * Resolve the cache directory for READ operations. Falls back to
+ * `process.cwd()/node_modules/.apostrophe-astro-static` when
+ * `setStaticCacheDir` has not been called in this module instance —
+ * this is expected for `getStaticPaths` and post-build hooks, which
+ * run in a separate Vite context from the integration setup hook and
+ * rely on the on-disk cache written during `astro:config:setup`.
+ */
+function getCacheDir() {
+  return cacheDir ?? join(process.cwd(), 'node_modules', '.apostrophe-astro-static');
+}
+
 function getConfigCachePath() {
-  return join(cacheDir, '_config.json');
+  return join(getCacheDir(), '_config.json');
 }
 
 function getAttachmentsCachePath() {
-  return join(cacheDir, '_attachments.json');
+  return join(getCacheDir(), '_attachments.json');
 }
 
 /**
@@ -32,8 +66,9 @@ function getAttachmentsCachePath() {
  * @param {object} staticBuild - Resolved static build config.
  */
 export async function writeConfigCache(staticBuild) {
-  await rm(cacheDir, { recursive: true, force: true }).catch(() => {});
-  await mkdir(cacheDir, { recursive: true });
+  const dir = requireCacheDir();
+  await rm(dir, { recursive: true, force: true }).catch(() => {});
+  await mkdir(dir, { recursive: true });
   await writeFile(getConfigCachePath(), JSON.stringify(staticBuild));
 }
 
@@ -178,9 +213,10 @@ export async function getAllUrlMetadata(config) {
   // Cache literal content to the filesystem per locale so it can be
   // read by the `astro:build:done` hook without re-fetching.
   const cacheKey = locale || '_default';
-  await mkdir(cacheDir, { recursive: true });
+  const dir = getCacheDir();
+  await mkdir(dir, { recursive: true });
   await writeFile(
-    join(cacheDir, `${cacheKey}.json`),
+    join(dir, `${cacheKey}.json`),
     JSON.stringify({ locale: locale || null, literalContent })
   );
 
@@ -272,7 +308,7 @@ export async function getAllStaticPaths(config) {
   }
 
   // Cache deduplicated attachment metadata for the post-build hook
-  await mkdir(cacheDir, { recursive: true });
+  await mkdir(getCacheDir(), { recursive: true });
   await writeFile(
     getAttachmentsCachePath(),
     JSON.stringify({
@@ -311,7 +347,7 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
   const literalContent = [];
   let files;
   try {
-    files = await readdir(cacheDir);
+    files = await readdir(getCacheDir());
   } catch {
     throw new Error(
       'Apostrophe static build cache not found. Ensure the `[...slug].astro` page calls ' +
@@ -323,7 +359,7 @@ export async function writeLiteralContent({ aposHost, aposExternalFrontKey, outD
       continue;
     }
     const data = JSON.parse(
-      await readFile(join(cacheDir, file), 'utf-8')
+      await readFile(join(getCacheDir(), file), 'utf-8')
     );
     for (const entry of (data.literalContent || [])) {
       if (!seen.has(entry.url)) {
@@ -551,5 +587,8 @@ export function writePostBuildSummary({ literal, attachments, logger }) {
 }
 
 export async function cleanupCache() {
+  if (!cacheDir) {
+    return;
+  }
   await rm(cacheDir, { recursive: true, force: true }).catch(() => {});
 }
