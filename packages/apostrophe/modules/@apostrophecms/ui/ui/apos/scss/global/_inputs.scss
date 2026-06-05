@@ -372,6 +372,8 @@
   @include type-base;
 
   & {
+    // Do not remove - it fixes unintended `sr-only` side effect.
+    position: relative;
     display: flex;
     align-items: center;
     color: var(--a-base-2);
