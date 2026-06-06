@@ -33,13 +33,12 @@ export default defineConfig({
 
 ---
 
-## Deprecated: direct `lib/` imports
+## Deprecated: direct `lib/` imports for public helpers
 
-Imports of internal `lib/` paths still work in v1.13 but are deprecated and will be removed in a future major release. Migrate to the stable helper entry points:
+Some `lib/` paths are deprecated in favour of the stable helper entry points. Note that `lib/aposPageFetch.js` is **not** deprecated — it is an internal function used by the starter kit's `[...slug].astro` entrypoint and is not part of the public API.
 
 | Old import | New import |
 |---|---|
-| `@apostrophecms/apostrophe-astro/lib/aposPageFetch.js` | `@apostrophecms/apostrophe-astro/helpers/server` (`aposPageFetch`) |
 | `@apostrophecms/apostrophe-astro/lib/static.js` | `@apostrophecms/apostrophe-astro/helpers/server` (`getAllStaticPaths`, `getAllUrlMetadata`, `getLocales`) |
 | `@apostrophecms/apostrophe-astro/lib/aposSetQueryParameter.js` | `@apostrophecms/apostrophe-astro/helpers/universal` (`aposSetQueryParameter`) |
 | `@apostrophecms/apostrophe-astro/lib/util.js` | `@apostrophecms/apostrophe-astro/helpers/universal` (`slugify`, etc.) |
@@ -50,11 +49,10 @@ Example:
 
 ```js
 // Before
-import aposPageFetch from '@apostrophecms/apostrophe-astro/lib/aposPageFetch.js';
 import { getAllStaticPaths } from '@apostrophecms/apostrophe-astro/lib/static.js';
 
 // After
-import { aposPageFetch, getAllStaticPaths } from '@apostrophecms/apostrophe-astro/helpers/server';
+import { getAllStaticPaths } from '@apostrophecms/apostrophe-astro/helpers/server';
 ```
 
 ---

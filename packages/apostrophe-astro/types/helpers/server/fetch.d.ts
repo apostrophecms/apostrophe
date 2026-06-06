@@ -32,28 +32,3 @@
  * ```
  */
 export function aposFetch(input: string | URL | Request, init?: RequestInit): Promise<Response>;
-/**
- * Fetch a full Apostrophe page data object for the given Astro request.
- *
- * This is the primary entry point for SSR and static-build page routes.
- * It wraps `aposRequest` and `aposResponse` to forward the incoming
- * request to the Apostrophe backend and return the parsed JSON page data,
- * including automatic handling of trailing-slash redirects.
- *
- * For static builds, use this inside `getStaticPaths` / your page
- * frontmatter to retrieve the `aposData` prop.
- *
- * @param {Request} req - The incoming Astro request (`Astro.request`).
- * @returns {Promise<object>} The Apostrophe page data object. On error,
- *   returns an object with `errorFetchingPage` set to the caught error
- *   and `page.type` set to `'apos-fetch-error'`.
- *
- * @example
- * ```astro
- * ---
- * import { aposPageFetch } from '@apostrophecms/apostrophe-astro/helpers/server';
- * const aposData = await aposPageFetch(Astro.request);
- * ---
- * ```
- */
-export function aposPageFetch(req: Request): Promise<object>;
