@@ -953,7 +953,7 @@ sanitizeHtml.defaults = {
     'alt'
   ],
   // Lots of these won't come up by default because we don't allow them
-  selfClosing: [ 'img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta' ],
+  selfClosing: [ 'img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta', 'col' ],
   // URL schemes we permit
   allowedSchemes: [ 'http', 'https', 'ftp', 'mailto', 'tel' ],
   allowedSchemesByTag: {},
