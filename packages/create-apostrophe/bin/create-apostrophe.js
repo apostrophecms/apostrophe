@@ -5,11 +5,11 @@
 
 const nodeVersion = process && process.versions && process.versions.node;
 const major = nodeVersion ? parseInt(nodeVersion.split('.')[0], 10) : NaN;
-if (Number.isFinite(major) && major < 20) {
+if (Number.isFinite(major) && major < 22) {
   process.stderr.write(
-    'Node.js 20 or newer is required. ' +
+    'Node.js 22 or newer is required. ' +
     'You are running Node ' + nodeVersion + '.\n' +
-    'Please upgrade Node (https://nodejs.org) and try again.\n'
+    'Please upgrade Node (https://nodejs.org) to a current LTS release and try again.\n'
   );
   process.exit(1);
 }

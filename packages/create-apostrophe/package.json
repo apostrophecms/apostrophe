@@ -4,7 +4,7 @@
   "description": "Guided installer for ApostropheCMS — npm create apostrophe@latest",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "bin": {
     "create-apostrophe": "bin/create-apostrophe.js"
