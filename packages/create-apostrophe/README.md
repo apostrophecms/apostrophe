@@ -28,8 +28,7 @@ npm create apostrophe@latest -- --help
 > Everything after `--` is forwarded to the installer; npm swallows args without it.
 > Run `-- --help` any time for the full flag list.
 
-Requires **Node 20+** and **npm** (pnpm and yarn aren't supported yet - running
-under either is rejected up front).
+Requires **Node 22+** and **npm** (pnpm and yarn aren't by this CLI yet, but they work fine with apostrophe).
 
 ## Architecture
 
