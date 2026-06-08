@@ -76,7 +76,16 @@
  *                                              captures it once and threads
  *                                              it in; steps must not call
  *                                              process.cwd() on their own.
- * @property {KitId}           kitId            Starter kit.
+ * @property {KitId | 'custom'} kitId           Starter kit, or `'custom'` for a
+ *                                              `--starter` install (escapes the
+ *                                              kit registry; see `starter`).
+ * @property {import('./core/starter.js').ResolvedStarter} [starter]
+ *                                              A custom starter resolved from
+ *                                              `--starter`. When present it
+ *                                              overrides `kitId` for cloning:
+ *                                              the repo is cloned directly and
+ *                                              the frontend is detected from the
+ *                                              clone rather than the registry.
  * @property {DbChoice}        dbChoice         Database selection.
  * @property {string}          [dbUri]          Connection string for
  *                                              mongodb/postgres. Never sent to
@@ -104,10 +113,18 @@
  * result.
  * @typedef {object} CreateProjectResult
  * @property {boolean}         ok             Whether the project was created.
- * @property {KitId}           kitId
+ * @property {KitId | 'custom'} kitId         Echo of the input (`'custom'` for
+ *                                            a `--starter` install).
  * @property {DbChoice}        dbChoice       Echo of the input.
  * @property {PackageManager}  packageManager Resolved value.
  * @property {number}          durationMs     `Date.now() - options.confirmedAt`.
+ * @property {import('./core/kits.js').Frontend} [frontend]  Resolved layout
+ *                                            (`'astro'` | `null`). Present only
+ *                                            on success; never sent to
+ *                                            telemetry. Lets the UI pick the
+ *                                            right dev-server port for a custom
+ *                                            starter whose frontend wasn't known
+ *                                            until after the clone.
  * @property {FailStage}       [failStage]    Present iff `ok === false`;
  *                                            `null` for a preflight failure.
  * @property {string}          [errorCode]    Present only for known,

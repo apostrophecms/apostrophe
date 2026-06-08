@@ -49,6 +49,17 @@ export function link(name, { utmSource = 'cli', stamp = true } = {}) {
 }
 
 /**
+ * Whether a per-kit "get oriented" guide is registered for `kitId`. False for
+ * a custom `--starter` install (kitId `'custom'`), whose repo has no guide.
+ *
+ * @param {string} kitId
+ * @returns {boolean}
+ */
+export function hasKitGuide(kitId) {
+  return Object.hasOwn(KIT_GUIDES, kitId);
+}
+
+/**
  * @param {string} kitId
  * @param {{ utmSource?: string }} [opts]
  * @returns {string}

@@ -5,6 +5,16 @@
 // upstream caller passing extra keys.
 
 import { KIT_IDS } from '../core/kits.js';
+import { CUSTOM_KIT_ID } from '../core/starter.js';
+
+/**
+ * kitId values accepted on the wire: the six registry kits plus the `'custom'`
+ * sentinel a `--starter` install reports. Kept separate from {@link KIT_IDS} so
+ * the registry stays exactly the six known kits while telemetry can still say
+ * "a custom starter was used" without naming the (potentially private) repo.
+ * @type {ReadonlyArray<string>}
+ */
+const TELEMETRY_KIT_IDS = Object.freeze([ ...KIT_IDS, CUSTOM_KIT_ID ]);
 
 /** @typedef {import('../index.js').KitId}           KitId           */
 /** @typedef {import('../index.js').DbChoice}        DbChoice        */
@@ -209,7 +219,7 @@ function requireFiniteNumber(name, value) {
 export function buildPayload(event, input) {
   requireOneOf('event', event, EVENT_NAMES);
   requireString('cliVersion', input.cliVersion);
-  requireOneOf('kitId', input.kitId, KIT_IDS);
+  requireOneOf('kitId', input.kitId, TELEMETRY_KIT_IDS);
   requireOneOf('dbChoice', input.dbChoice, DB_CHOICES);
   requireOneOf('packageManager', input.packageManager, PACKAGE_MANAGERS);
   requireFiniteNumber('durationMs', input.durationMs);
