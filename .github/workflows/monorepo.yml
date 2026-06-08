@@ -4,7 +4,7 @@ permissions:
 
 env:
   # Define supported runtime versions for matrix expansion once for the workflow.
-  NODE_VERSIONS_JSON: "[20,22,24]"
+  NODE_VERSIONS_JSON: "[22,24,26]"
   MONGODB_VERSIONS_JSON: '["7","8"]'
   REDIS_VERSION: "7"
   POSTGRES_VERSION: "16"
