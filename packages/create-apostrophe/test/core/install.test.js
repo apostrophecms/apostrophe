@@ -88,6 +88,36 @@ describe('core/steps/install', function () {
     ]);
   });
 
+  it('external frontend + root package.json: backend → frontend → root', async function () {
+    // Newer Astro kits ship a root package.json with orchestration deps
+    // (concurrently) so a single `npm run dev` runs both apps. Without
+    // installing the root, `npm run dev` fails with "concurrently: not found".
+    const projectDir = join(dir, 'proj');
+    const appRoot = join(projectDir, 'backend');
+    mkdirSync(appRoot, { recursive: true });
+    mkdirSync(join(projectDir, 'frontend'), { recursive: true });
+    writeFileSync(join(projectDir, 'package.json'), '{}');
+
+    const calls = [];
+    await install(
+      {
+        projectDir,
+        appRoot,
+        frontend: 'astro',
+        packageManager: 'npm'
+      },
+      { run: fakeRunFactory(calls) }
+    );
+
+    // Root install runs LAST so its (potentially redundant) recursion into
+    // workspaces hits an already-warm cache.
+    assert.deepEqual(calls.map((c) => [ c.command, c.cwd ]), [
+      [ 'npm', appRoot ],
+      [ 'npm', join(projectDir, 'frontend') ],
+      [ 'npm', projectDir ]
+    ]);
+  });
+
   it('unknown pm runs npm, reports \'unknown\'', async function () {
     const projectDir = join(dir, 'proj');
     mkdirSync(projectDir, { recursive: true });

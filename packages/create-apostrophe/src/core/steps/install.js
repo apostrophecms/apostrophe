@@ -1,6 +1,9 @@
 // Step: install dependencies with npm. Standalone installs once in the app
-// root; an external-frontend project installs in backend/ and frontend/.
-// A non-npm manager is rejected up front. Failure → 'dependency_install'.
+// root; an external-frontend project installs in backend/ and frontend/, and
+// — if the project root ships its own package.json — also at the root (some
+// Astro kits put orchestration deps like `concurrently` there to power a
+// single `npm run dev`). A non-npm manager is rejected up front. Failure →
+// 'dependency_install'.
 
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
@@ -40,6 +43,9 @@ export async function install(
     const frontendDir = join(projectDir, 'frontend');
     if (existsSync(frontendDir)) {
       dirs.push(frontendDir);
+    }
+    if (existsSync(join(projectDir, 'package.json'))) {
+      dirs.push(projectDir);
     }
   }
 
