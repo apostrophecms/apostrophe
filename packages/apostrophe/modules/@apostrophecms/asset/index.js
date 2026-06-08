@@ -845,16 +845,17 @@ module.exports = {
       },
       getAssetBaseUrl() {
         const namespace = self.getNamespace();
+        const prefix = self.apos.prefix || '';
         if (self.isProductionMode()) {
           const releaseId = self.getReleaseId();
           const releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
           if (process.env.APOS_UPLOADFS_ASSETS) {
             return `${self.uploadfs.getUrl()}${releaseDir}`;
           } else {
-            return releaseDir;
+            return `${prefix}${releaseDir}`;
           }
         }
-        return `/apos-frontend/${namespace}`;
+        return `${prefix}/apos-frontend/${namespace}`;
       },
       getCacheBasePath() {
         return process.env.APOS_ASSET_CACHE ||
