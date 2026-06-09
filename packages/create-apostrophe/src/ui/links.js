@@ -5,7 +5,7 @@
 // without each call site remembering to do it.
 
 const LINKS = Object.freeze({
-  telemetryPolicy: '[link to telemetry policy]',
+  telemetryPolicy: 'https://apostrophecms.com/telemetry-policy?utm_source=cli',
   docs: 'https://docs.apostrophecms.com',
   discord: 'https://discord.gg/apostrophe',
   demoSite: 'https://demo.apostrophecms.com',
