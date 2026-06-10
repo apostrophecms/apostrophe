@@ -1231,7 +1231,7 @@ module.exports = {
       async annotateDataForExternalFront(req, template, data, moduleName) {
         const docs = self.getDocsForExternalFront(req, template, data, moduleName);
         for (const doc of docs) {
-          self.annotateDocForExternalFront(doc, { scene: req.scene });
+          await self.annotateDocForExternalFront(doc, { scene: req.scene });
         }
         data.aposBodyData = await self.getBodyData(req);
         // Already contains module name too
@@ -1283,16 +1283,31 @@ module.exports = {
         ].filter(doc => !!doc);
       },
 
-      annotateDocForExternalFront(doc, { scene } = {}) {
+      async annotateDocForExternalFront(doc, { scene } = {}) {
+        const handled = new WeakSet();
+        const missingAreas = [];
         self.apos.doc.walk(doc, (o, k, v) => {
+          if (o._edit === true && !handled.has(o)) {
+            handled.add(o);
+            for (const field of self.missingSchemaAreas(o)) {
+              missingAreas.push([ o, field ]);
+            }
+          }
           if (v && v.metaType === 'area') {
-            const manager = self.apos.util.getManagerOf(o);
+            // A missing manager here is expected (e.g. an area reached on a
+            // container without a manager) and handled below, so suppress the
+            // low-level per-call log and rely on the once-per-process warning.
+            const manager = self.apos.util.getManagerOf(o, { log: false });
             if (!manager) {
-              self.apos.util.warnDevOnce('noManagerForDocInExternalFront', `No manager for: ${o.metaType} ${o.type || ''}`);
+              self.apos.util.warnDevOnce(
+                'noManagerForDocInExternalFront',
+                `No manager for: ${o.metaType} ${o.type || ''}`
+              );
               return;
             }
             const field = manager.schema.find(f => f.name === k);
             if (!field) {
+              v._isOrphan = true;
               self.apos.util.warnDevOnce(
                 'noSchemaFieldForAreaInExternalFront',
                 `Area ${k} has no matching schema field in ${o.metaType} ${o.type || ''}`
@@ -1302,6 +1317,14 @@ module.exports = {
             return self.annotateAreaForExternalFront(field, v, { scene });
           }
         });
+        // Materialize every missing area, after the walk so we never add keys
+        // to an object while it is being traversed.
+        for (const [ o, field ] of missingAreas) {
+          const area = await self.apos.area.addMissingArea(o, field.name);
+          area._edit = true;
+          area._docId = o._docId ?? (o.metaType === 'doc' ? o._id : null);
+          self.annotateAreaForExternalFront(field, area, { scene });
+        }
       },
 
       // Annotate an area for easy rendering by an external front end
@@ -1310,6 +1333,7 @@ module.exports = {
       // at least as an empty array.
 
       annotateAreaForExternalFront(field, area, { scene } = {}) {
+        area._aposAnnotated = true;
         area.field = field;
         area.options = field.options;
         // Really widget configurations, but the method name is already set in
@@ -1324,25 +1348,41 @@ module.exports = {
           };
         }).filter(choice => !!choice);
 
-        area.items ||= [];
+        // Drop corrupt items (null, or not a widget).
+        area.items = (area.items || []).filter((item) => {
+          const valid = item && item.metaType === 'widget' && item.type;
+          if (!valid) {
+            self.apos.util.warnDevOnce(
+              'corruptAreaItemInExternalFront',
+              `Dropping malformed item in area ${area._id || ''}`
+            );
+          }
+          return valid;
+        });
+
         for (const item of area.items) {
           // Add _docId if area has one
           if (area._docId) {
             item._docId = area._docId;
           }
 
-          // Annotate each individual widget with its options
-          // Each widget must elect into this by creating an
-          // `annotateWidgetForExternalFront() method.
+          // Annotate each individual widget with its options. Each widget must
+          // elect into this by creating an `annotateWidgetForExternalFront()`
+          // method.
           const manager = self.apos.area.getWidgetManager(item.type);
           if (manager) {
-            const widgetOptions = manager.annotateWidgetForExternalFront(item, { scene });
-            item._options = widgetOptions;
+            item._options = manager.annotateWidgetForExternalFront(item, { scene });
           } else {
             self.apos.area.warnMissingWidgetType(item.type);
-            throw self.apos.error('invalid', 'Missing widget type');
           }
         }
+      },
+
+      // The schema area fields of `object` that have no value yet. Returns an
+      // empty array for anything without a schema manager.
+      missingSchemaAreas(object) {
+        const schema = self.apos.util.getManagerOf(object, { log: false })?.schema ?? [];
+        return schema.filter(field => field.type === 'area' && !object[field.name]);
       }
     };
   }

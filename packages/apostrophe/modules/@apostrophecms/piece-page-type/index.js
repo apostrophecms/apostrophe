@@ -427,7 +427,14 @@ module.exports = {
           return metadata;
         }
         const [ pm ] = metadata;
+        // indexQuery is designed to be called with the
+        // index page in question as req.data.page. To
+        // reuse it for URL metadata purposes we must
+        // meet that expectation
+        const pageWas = req.data.page;
+        req.data.page = doc;
         const query = self.indexQuery(req);
+        req.data.page = pageWas;
         const filters = await self.getFiltersWithChoices(query, { allCounts: true });
 
         // 1. Enumerate every filter + choice combination

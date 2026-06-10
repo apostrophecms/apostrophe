@@ -724,7 +724,7 @@ module.exports = {
       },
       // Given a widget or doc, return the appropriate manager module. If the manager
       // cannot be determined for any reason, undefined is returned.
-      getManagerOf(object) {
+      getManagerOf(object, { log = true } = {}) {
         if (object.metaType === 'doc') {
           return self.apos.doc.getManager(object.type);
         } else if (object.metaType === 'widget') {
@@ -733,10 +733,10 @@ module.exports = {
           return self.apos.schema.getArrayManager(object.scopedArrayName);
         } else if (object.metaType === 'object') {
           return self.apos.schema.getObjectManager(object.scopedObjectName);
-        } else {
+        } else if (log) {
           self.apos.util.error(`Unsupported metaType in getManagerOf: ${object.metaType}`);
-          return undefined;
         }
+        return undefined;
       },
       // fetch the value at the given path from the object or
       // array `o`. `path` supports dot notation like MongoDB, and
