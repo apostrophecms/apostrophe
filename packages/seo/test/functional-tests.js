@@ -14,6 +14,7 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
     apos = await t.create({
       root: module,
       testModule: true,
+      baseUrl: 'http://localhost:3000',
       modules: getAppConfig()
     });
   });
@@ -37,7 +38,6 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
         { _id: global._id },
         {
           $set: {
-            seoSiteCanonicalUrl: 'https://example.com',
             seoSiteName: 'Example Tech Corp',
             seoSiteDescription: 'Leading provider of tech solutions',
             seoJsonLdOrganization: {
@@ -92,7 +92,7 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
       const websiteSchema = jsonLd['@graph'].find(s => s['@type'] === 'WebSite');
       assert(websiteSchema, 'Homepage should include WebSite schema');
       assert.strictEqual(websiteSchema.name, 'Example Tech Corp');
-      assert.strictEqual(websiteSchema.url, 'https://example.com');
+      assert.strictEqual(websiteSchema.url, 'http://localhost:3000');
       assert(websiteSchema.potentialAction, 'WebSite should have search action');
       assert.strictEqual(websiteSchema.potentialAction['@type'], 'SearchAction');
 
@@ -158,7 +158,6 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
         { _id: global._id },
         {
           $set: {
-            seoSiteCanonicalUrl: 'https://example.com',
             seoSiteName: 'Test Site',
             seoJsonLdOrganization: {
               name: 'Test Organization',
@@ -264,7 +263,6 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
         { _id: global._id },
         {
           $set: {
-            seoSiteCanonicalUrl: 'https://example.com',
             seoSiteName: 'Test Site'
           }
         }
@@ -315,7 +313,6 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
         { _id: global._id },
         {
           $set: {
-            seoSiteCanonicalUrl: 'https://example.com',
             seoSiteName: 'Test Site'
           }
         }
@@ -443,7 +440,6 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
         { _id: global._id },
         {
           $set: {
-            seoSiteCanonicalUrl: 'https://example.com',
             seoSiteName: 'Test Site for LLMs',
             seoSiteDescription: 'A test site demonstrating llms.txt',
             llmsTxtSelection: 'allow'
@@ -460,7 +456,7 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
         llmsTxt.includes('A test site demonstrating llms.txt'),
         'Should include site description'
       );
-      assert(llmsTxt.includes('https://example.com'), 'Should include base URL');
+      assert(llmsTxt.includes('http://localhost:3000'), 'Should include base URL');
       assert(
         llmsTxt.includes('## AI Training Policy') ||
         llmsTxt.includes('AI Training'),

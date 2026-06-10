@@ -1,0 +1,11 @@
+
+
+  dump/restore programmatic API (sqlite)
+    ✔ dump yields an async iterable of NDJSON lines
+    ✔ should restore a database from a dump stream
+    ✔ should copy a database via copyDatabase()
+    ✔ should produce independent databases after copy
+
+
+  4 passing (118ms)
+

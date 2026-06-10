@@ -5,10 +5,9 @@
   "main": "index.js",
   "scripts": {
     "pretest": "npm run lint",
-    "test": "npm run test:base && npm run test:missing && npm run test:assets && npm run test:esm",
-    "test:base": "nyc mocha -t 10000 --ignore=test/assets.js",
+    "test": "npm run test:base && npm run test:missing && npm run test:esm",
+    "test:base": "nyc mocha -t 10000",
     "test:missing": "nyc mocha -t 10000 test/add-missing-schema-fields-project/test.js",
-    "test:assets": "nyc mocha -t 10000 test/assets.js",
     "test:esm": "mocha -t 1000 test/esm-project/esm.js",
     "eslint": "eslint .",
     "eslint-fix": "npm run eslint -- --fix",
@@ -38,8 +37,11 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
-    "@apostrophecms/emulate-mongo-3-driver": "workspace:^",
+    "@apostrophecms/db-connect": "workspace:^",
     "@apostrophecms/vue-material-design-icons": "^1.0.0",
+    "@babel/core": "^7.29.0",
+    "@babel/plugin-transform-modules-commonjs": "^7.28.0",
+    "@babel/plugin-transform-react-jsx": "^7.28.0",
     "@ctrl/tinycolor": "^4.1.0",
     "@floating-ui/dom": "^1.5.3",
     "@opentelemetry/api": "^1.9.0",
@@ -127,6 +129,7 @@
     "sluggo": "^1.0.0",
     "sortablejs": "^1.15.0",
     "sortablejs-vue3": "^1.2.11",
+    "source-map-support": "^0.5.21",
     "tiny-emitter": "^2.1.0",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
@@ -141,6 +144,7 @@
     "xregexp": "^2.0.0"
   },
   "devDependencies": {
+    "chai": "^4.3.10",
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
     "form-data": "^4.0.4",

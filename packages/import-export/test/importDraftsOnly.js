@@ -69,6 +69,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
       const topics = await apos.doc.db
         .find({ type: 'topic' })
+        .sort({ _id: 1 })
         .toArray();
 
       const actual = topics;
@@ -127,6 +128,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
         const topics = await apos.doc.db
           .find({ type: 'topic' })
+          .sort({ _id: 1 })
           .toArray();
 
         const actual = topics.map(topic => ({
@@ -169,6 +171,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
         const topics = await apos.doc.db
           .find({ type: 'topic' })
+          .sort({ _id: 1 })
           .toArray();
 
         const actual = topics.map(topic => ({
@@ -220,6 +223,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
           const topics = await apos.doc.db
             .find({ type: 'topic' })
+            .sort({ _id: 1 })
             .toArray();
 
           const actual = topics.map(topic => ({
@@ -263,6 +267,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
           const topics = await apos.doc.db
             .find({ type: 'topic' })
+            .sort({ _id: 1 })
             .toArray();
 
           const actual = topics.map(topic => ({
@@ -305,6 +310,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
           const pages = await apos.doc.db
             .find({ type: 'default-page' })
+            .sort({ _id: 1 })
             .toArray();
 
           const actual = pages.map(page => ({
@@ -384,6 +390,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
         const topics = await apos.doc.db
           .find({ type: 'topic' })
+          .sort({ _id: 1 })
           .toArray();
 
         const actual = topics;
@@ -466,6 +473,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
         const topics = await apos.doc.db
           .find({ type: 'topic' })
+          .sort({ _id: 1 })
           .toArray();
 
         const actual = topics;
@@ -528,6 +536,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
           const topics = await apos.doc.db
             .find({ type: 'topic' })
+            .sort({ _id: 1 })
             .toArray();
 
           const actual = topics;
@@ -589,6 +598,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
           const topics = await apos.doc.db
             .find({ type: 'topic' })
+            .sort({ _id: 1 })
             .toArray();
 
           const actual = topics;
@@ -644,6 +654,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
           const pages = await apos.doc.db
             .find({ type: 'default-page' })
+            .sort({ _id: 1 })
             .toArray();
 
           const actual = pages;
@@ -705,6 +716,7 @@ describe('#import - when `importDraftsOnly` option is set to `true`', function (
 
           const pages = await apos.doc.db
             .find({ type: 'default-page' })
+            .sort({ _id: 1 })
             .toArray();
 
           const actual = pages;

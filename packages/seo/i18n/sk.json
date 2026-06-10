@@ -30,8 +30,6 @@
   "siteNameHelp": "Názov vašej webovej stránky (používa sa v štruktúrovaných dátach a pri zdieľaní na sociálnych sieťach).",
   "siteDescription": "Popis stránky",
   "siteDescriptionHelp": "Stručný popis vašej webovej stránky.",
-  "siteCanonicalUrl": "Základná URL stránky",
-  "siteCanonicalUrlHelp": "Základná URL vašej stránky (napr. https://example.com). Potrebné pre správne kanonické odkazy a štruktúrované dáta.",
 
   "themeColor": "Farba témy pre mobil",
   "themeColorHelp": "Nastavte farbu rozhrania prehliadača pre mobilné zariadenia a PWA.",

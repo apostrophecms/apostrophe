@@ -1931,4 +1931,60 @@ describe('sanitizeHtml', function() {
       ), '!<xmp>&lt;/xmp&gt;&lt;svg/onload=prompt`xs`&gt;</xmp>!'
     );
   });
+
+  describe('CVE-2026-44990 regression and raw-text edge cases', function() {
+    it('should escape raw-text inner content when xmp tag is disallowed and discarded under custom nonTextTags', function() {
+      assert.strictEqual(
+        sanitizeHtml('<xmp><script>alert(1)</script></xmp>', {
+          nonTextTags: ['script', 'style']
+        }),
+        '&lt;script&gt;alert(1)&lt;/script&gt;'
+      );
+    });
+
+    it('should escape raw-text inner content when script tag is disallowed and discarded under empty nonTextTags', function() {
+      assert.strictEqual(
+        sanitizeHtml('<script><svg onload=alert(1)></script>', {
+          nonTextTags: []
+        }),
+        '&lt;svg onload=alert(1)&gt;'
+      );
+    });
+
+    it('should escape raw-text inner content when textarea tag is disallowed and discarded', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea><script>alert(1)</script></textarea>', {
+          nonTextTags: []
+        }),
+        '&lt;script&gt;alert(1)&lt;/script&gt;'
+      );
+    });
+
+    it('should escape raw-text inner content when style tag is disallowed and discarded', function() {
+      assert.strictEqual(
+        sanitizeHtml('<style><a onload=alert(1)></style>', {
+          nonTextTags: []
+        }),
+        '&lt;a onload=alert(1)&gt;'
+      );
+    });
+
+    it('should handle malformed or unclosed raw-text tags correctly', function() {
+      assert.strictEqual(
+        sanitizeHtml('<xmp><script>alert(1)', {
+          nonTextTags: ['script', 'style']
+        }),
+        '&lt;script&gt;alert(1)'
+      );
+    });
+
+    it('should handle sibling raw-text elements correctly without leaking states', function() {
+      assert.strictEqual(
+        sanitizeHtml('<noembed><script>alert(1)</script></noembed><noscript><style>body{}</style></noscript>', {
+          nonTextTags: []
+        }),
+        'alert(1)body{}'
+      );
+    });
+  });
 });

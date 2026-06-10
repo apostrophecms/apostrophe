@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/import-export#readme",
   "author": "Apostrophe Technologies",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "devDependencies": {
     "apostrophe": "workspace:^",
     "eslint": "^9.39.1",

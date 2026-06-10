@@ -1,18 +1,19 @@
 {
   "301": "Permanente (codice di stato 301)",
   "302": "Temporaneo (codice di stato 302)",
+  "errorInfiniteRedirect": "Reindirizzamento infinito: {{ originalSlug }} non può essere uguale a {{ external }}",
+  "external": "URL",
+  "forwardQuery": "Inoltra la stringa di query",
+  "ignoreQuery": "Ignora la stringa di query durante il matching",
   "label": "Reindirizza",
-  "pluralLabel": "Reindirizzamenti",
+  "newPage": "Titolo della pagina",
   "originalSlug": "URL vecchia",
   "originalSlugHelp": "Formato con barra iniziale (ad es., /vecchia-url)",
+  "pluralLabel": "Reindirizzamenti",
+  "statusCode": "Tipo di reindirizzamento",
+  "statusCodeHtmlHelp": "<ul><li>Utilizza <strong>\"Temporaneo\"</strong> per reindirizzamenti temporanei o per scopi di test.</li><li>Utilizza <strong>\"Permanente\"</strong> dopo aver effettuato dei test, questa è una buona pratica SEO. ⚠️ I motori di ricerca memorizzeranno questi, quindi controlla attentamente.</li>",
   "title": "Descrizione",
   "urlType": "Tipo di collegamento",
-  "urlTypeInternal": "Incolla un URL",
   "urlTypeExternal": "URL",
-  "ignoreQuery": "Ignora la stringa di query durante il matching",
-  "forwardQuery": "Inoltra la stringa di query",
-  "newPage": "Titolo della pagina",
-  "external": "URL",
-  "statusCode": "Tipo di reindirizzamento",
-  "statusCodeHtmlHelp": "<ul><li>Utilizza <strong>\"Temporaneo\"</strong> per reindirizzamenti temporanei o per scopi di test.</li><li>Utilizza <strong>\"Permanente\"</strong> dopo aver effettuato dei test, questa è una buona pratica SEO. ⚠️ I motori di ricerca memorizzeranno questi, quindi controlla attentamente.</li>"
+  "urlTypeInternal": "Incolla un URL"
 }
