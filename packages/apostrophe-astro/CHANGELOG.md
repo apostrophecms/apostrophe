@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.13.0 (2026-06-10)
+
+### Fixes
+
+- Fixed adding or removing an area field from a schema breaking existing documents on an external front such as Astro.
+- `AposArea` now renders only schema-backed areas. A missing area no longer throws, and an area orphaned by removing its field from the schema (while its content remains in the document) renders nothing instead of breaking sibling areas in edit mode. Logged-in editors get a diagnostic message in place of an orphaned area; anonymous visitors see nothing.
+- Editable documents sent to an external front now materialize empty area objects for schema area fields added after the document was created, so they can be edited in context.
+- `apos.util.getManagerOf` accepts a `{ log }` option to suppress its error log when probing objects that may not have a manager.
+
 ## 1.12.0
 
 ### Adds
