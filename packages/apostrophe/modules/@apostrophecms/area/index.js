@@ -140,7 +140,7 @@ module.exports = {
               // so this logic is reproduced partially
               self.apos.doc.walk(area, (o, k, v) => {
                 if (v && v.metaType === 'area') {
-                  const manager = self.apos.util.getManagerOf(o);
+                  const manager = self.apos.util.getManagerOf(o, { log: false });
                   if (!manager) {
                     self.apos.util.warnDevOnce(
                       'noManagerForDocInExternalFront',
@@ -284,6 +284,95 @@ module.exports = {
           );
           self.missingWidgetTypes[name] = true;
         }
+      },
+      // Build an empty area and attach it to `parent[name]`. When the area's
+      // location can be resolved inside the *persisted* document, also stub it
+      // into the database so the backend recognizes it for later edits.
+      // Returns the area.
+      //
+      // Options:
+      // - `throwIfNotFound` (default `false`): when `parent` is doc-backed but
+      //   the document or the container cannot be located in the database,
+      //   throw a `notfound` error instead of returning an in-memory-only
+      //   stub. The `{% area %}` tag opts in to preserve its historical
+      //   behavior; the external front annotator leaves it off so a render is
+      //   never brought down by such a case.
+      //
+      // Used by the `{% area %}` tag and the external front annotator as the
+      // single source of truth for stubbing schema areas that have no value
+      // yet.
+      async addMissingArea(parent, name, { throwIfNotFound = false } = {}) {
+        const area = {
+          metaType: 'area',
+          _id: self.apos.util.generateId(),
+          items: []
+        };
+        parent[name] = area;
+
+        const docId = parent._docId ??
+          (parent.metaType === 'doc' ? parent._id : null);
+        const areaDotPath = await self.resolvePersistedAreaDotPath(parent, name);
+        if (!areaDotPath) {
+          if (throwIfNotFound && docId) {
+            throw self.apos.error('notfound');
+          }
+          return area;
+        }
+
+        const result = await self.apos.doc.db.updateOne(
+          {
+            _id: docId,
+            // Idempotent and race-safe: only write when still absent.
+            [areaDotPath]: { $eq: null }
+          },
+          {
+            $set: { [areaDotPath]: self.apos.util.clonePermanent(area) }
+          }
+        );
+        if (result.modifiedCount === 0) {
+          // Another request stubbed it first (or it already existed): adopt
+          // the persisted `_id` so we render the same area.
+          const refreshed = await self.apos.doc.db.findOne({ _id: docId });
+          const persisted = refreshed && self.apos.util.get(refreshed, areaDotPath);
+          if (persisted?._id) {
+            area._id = persisted._id;
+          }
+        }
+        return area;
+      },
+
+      // Resolve the MongoDB dot-path at which `parent[name]` should be stored,
+      // computed from the *persisted* document so it always reflects real
+      // storage (not the in-memory graph with its loaded relationships). The
+      // `parent` object is located inside the freshly read document by its
+      // `_id`. Returns the dot-path string, or `null` when the area cannot be
+      // safely persisted (no doc id, doc not in the database, or `parent` is
+      // not part of the persisted document, e.g. loaded relationship data).
+      async resolvePersistedAreaDotPath(parent, name) {
+        const docId = parent._docId ??
+          (parent.metaType === 'doc' ? parent._id : null);
+        if (!docId) {
+          return null;
+        }
+        const mainDoc = await self.apos.doc.db.findOne({ _id: docId });
+        if (!mainDoc) {
+          return null;
+        }
+        if (parent._id === docId) {
+          return name;
+        }
+        if (!parent._id) {
+          return null;
+        }
+        const found = self.apos.util.findNestedObjectAndDotPathById(
+          mainDoc,
+          parent._id,
+          { ignoreDynamicProperties: true }
+        );
+        if (!found) {
+          return null;
+        }
+        return `${found.dotPath}.${name}`;
       },
       prepForRender(area, context, fieldName) {
         const manager = self.apos.util.getManagerOf(context);
@@ -451,7 +540,10 @@ module.exports = {
         // Loop over the docs in the array passed in.
         for (const doc of within) {
           if (self.apos.externalFrontKey) {
-            self.apos.template.annotateDocForExternalFront(doc, { scene: req.scene });
+            await self.apos.template.annotateDocForExternalFront(
+              doc,
+              { scene: req.scene }
+            );
           }
 
           const rendered = [];

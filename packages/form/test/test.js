@@ -746,10 +746,12 @@ describe('Forms module', function () {
 
   it('should accept multiple files for a single file field when allowMultiple is true', async function () {
     // Update the existing form's file field to allow multiple
+    const formDoc = await apos.doc.db.findOne({ _id: savedForm1._id });
+    const item = formDoc.contents.items.find(i => i._id === 'dogPhotoId');
+    item.allowMultiple = true;
     await apos.doc.db.updateOne(
       { _id: savedForm1._id },
-      { $set: { 'contents.items.$[w].allowMultiple': true } },
-      { arrayFilters: [ { 'w._id': 'dogPhotoId' } ] }
+      { $set: { contents: formDoc.contents } }
     );
 
     const formData = new FormData();

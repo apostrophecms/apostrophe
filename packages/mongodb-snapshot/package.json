@@ -22,6 +22,9 @@
     "bson": "^6.10.1",
     "mongodb": "^6.12.0"
   },
+  "apostropheTestConfig": {
+    "mongodbOnly": true
+  },
   "devDependencies": {
     "mocha": "^11.7.5"
   },

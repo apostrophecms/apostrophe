@@ -252,6 +252,9 @@ export default {
     @include apos-transition();
 
     & {
+      // Contain the visually hidden (`.apos-sr-only`, position: absolute)
+      // file input so focusing it does not scroll a distant ancestor.
+      position: relative;
       display: flex;
       box-sizing: border-box;
       align-items: center;

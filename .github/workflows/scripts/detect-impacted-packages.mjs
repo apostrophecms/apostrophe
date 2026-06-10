@@ -73,7 +73,8 @@ async function main() {
       package: name,
       directory: packages.get(name).relativeDir,
       requiresMongo: packages.get(name).requiresMongo !== false,
-      requiresRedis: packages.get(name).requiresRedis === true
+      requiresRedis: packages.get(name).requiresRedis === true,
+      mongodbOnly: packages.get(name).mongodbOnly === true
     }))
   };
 
@@ -130,6 +131,7 @@ async function loadPackages() {
       const testConfig = manifest.apostropheTestConfig || {};
       const requiresMongo = testConfig.requiresMongo !== false;
       const requiresRedis = testConfig.requiresRedis === true;
+      const mongodbOnly = testConfig.mongodbOnly === true;
 
       map.set(manifest.name, {
         name: manifest.name,
@@ -137,7 +139,8 @@ async function loadPackages() {
         dependencies,
         hasTestScript,
         requiresMongo,
-        requiresRedis
+        requiresRedis,
+        mongodbOnly
       });
     }));
 

@@ -297,6 +297,8 @@ The module automatically provides an `/llms.txt` route to communicate your AI us
 
 Works seamlessly with `@apostrophecms/sitemap` to generate XML sitemaps that help search engines discover and index your content. The sitemap is automatically referenced in the `/llms.txt` file for AI crawlers.
 
+**Hreflang:** This module does not output `<link rel="alternate" hreflang="...">` tags. Generating them at render time requires fetching each locale's true URL, which is expensive. Google accepts hreflang via XML sitemap as an equivalent signal, and [`@apostrophecms/sitemap`](https://apostrophecms.com/extensions/sitemap) handles this without the per-request overhead.
+
 ### Performance Optimization
 
 **Critical Font Preloading** - Automatically preload critical fonts to improve Core Web Vitals scores and SEO performance:
