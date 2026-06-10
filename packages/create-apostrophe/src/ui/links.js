@@ -14,12 +14,12 @@ const LINKS = Object.freeze({
 
 /** Per-kit "get oriented" guides. `*-demo` and `*-demo-data` share a guide. */
 const KIT_GUIDES = Object.freeze({
-  'apostrophe-astro-essentials': 'https://apostrophecms.com/guides/astro-essentials-overview',
-  'apostrophe-astro-demo': 'https://apostrophecms.com/guides/astro-demo-overview',
-  'apostrophe-astro-demo-data': 'https://apostrophecms.com/guides/astro-demo-overview',
-  'apostrophe-essentials': 'https://apostrophecms.com/guides/apostrophe-standalone-essentials-overview',
-  'apostrophe-demo': 'https://apostrophecms.com/guides/apostrophe-demo-overview',
-  'apostrophe-demo-data': 'https://apostrophecms.com/guides/apostrophe-demo-overview'
+  'apostrophe-astro-essentials': 'https://apostrophecms.com/docs/guide/astro-essentials-overview.html',
+  'apostrophe-astro-demo': 'https://apostrophecms.com/docs/guide/astro-demo-overview.html',
+  'apostrophe-astro-demo-data': 'https://apostrophecms.com/docs/guide/astro-demo-overview.html',
+  'apostrophe-essentials': 'https://apostrophecms.com/docs/guide/apostrophe-standalone-essentials-overview.html',
+  'apostrophe-demo': 'https://apostrophecms.com/docs/guides/apostrophe-demo-overview.html',
+  'apostrophe-demo-data': 'https://apostrophecms.com/docs/guide/apostrophe-demo-overview.html'
 });
 
 /** @typedef {keyof typeof LINKS} LinkName */
