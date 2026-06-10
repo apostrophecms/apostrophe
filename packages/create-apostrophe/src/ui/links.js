@@ -7,9 +7,9 @@
 const LINKS = Object.freeze({
   telemetryPolicy: 'https://apostrophecms.com/telemetry-policy?utm_source=cli',
   docs: 'https://docs.apostrophecms.com',
-  discord: 'https://discord.gg/apostrophe',
+  discord: 'https://chat.apostrophecms.com',
   demoSite: 'https://demo.apostrophecms.com',
-  dbGuide: 'https://apostrophecms.com/guides/choosing-a-db'
+  dbGuide: 'https://apostrophecms.com/docs/guide/choosing-a-database.html'
 });
 
 /** Per-kit "get oriented" guides. `*-demo` and `*-demo-data` share a guide. */
