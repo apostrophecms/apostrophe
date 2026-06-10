@@ -35,6 +35,13 @@ const util = require('util');
 const { stripIndent } = require('common-tags');
 const glob = require('../../../lib/glob.js');
 
+// Dot-path segments that must never be traversed when walking a
+// user-supplied path in `apos.util.get` and `apos.util.set`. Following any
+// of these reaches the prototype chain and enables server-side prototype
+// pollution (CWE-1321), e.g. a PATCH `$pullAll` key of
+// `__proto__.publicApiProjection`.
+const unsafePathSegments = new Set([ '__proto__', 'constructor', 'prototype' ]);
+
 module.exports = {
   options: {
     alias: 'util',
@@ -755,6 +762,10 @@ module.exports = {
             if (o == null) {
               return undefined;
             }
+            if (unsafePathSegments.has(p)) {
+              // Never read through the prototype chain (CWE-1321)
+              return undefined;
+            }
             o = o[p];
           }
         }
@@ -819,6 +830,12 @@ module.exports = {
           }
         }
         path = path.split('.');
+        for (p of path) {
+          if (unsafePathSegments.has(p)) {
+            // Refuse to write through the prototype chain (CWE-1321)
+            throw self.apos.error('invalid', `Unsafe property name "${p}" in dot path`);
+          }
+        }
         for (i = 0; (i < (path.length - 1)); i++) {
           p = path[i];
           o = o[p];
