@@ -372,6 +372,109 @@ describe('Utils', async function() {
       assert(data.shoes[0].size === 8);
     });
 
+    // Server-Side Prototype Pollution (CWE-1321) regression coverage.
+    // apos.util.set and apos.util.get traverse user-supplied dot-notation
+    // paths. A segment of `__proto__`, `constructor` or `prototype` must
+    // never be followed, or an authenticated editor could write to
+    // Object.prototype (for example via the $pullAll patch operator) and
+    // poison authorization checks process-wide. See GHSA-6h5j-32cf-4253.
+
+    it('utils.set must reject a __proto__ segment instead of polluting Object.prototype', function() {
+      const data = {};
+      try {
+        assert.throws(() => {
+          apos.util.set(data, '__proto__.polluted', 'yes');
+        }, { name: 'invalid' });
+        assert.strictEqual({}.polluted, undefined);
+        assert.strictEqual(data.polluted, undefined);
+      } finally {
+        // Belt and suspenders: if the guard ever regresses, do not leak a
+        // polluted prototype into the rest of the suite.
+        delete Object.prototype.polluted;
+      }
+    });
+
+    it('utils.set must reject a constructor.prototype segment', function() {
+      const data = {};
+      try {
+        assert.throws(() => {
+          apos.util.set(data, 'constructor.prototype.polluted', 'yes');
+        }, { name: 'invalid' });
+        assert.strictEqual({}.polluted, undefined);
+      } finally {
+        delete Object.prototype.polluted;
+      }
+    });
+
+    it('utils.set must reject a trailing __proto__ segment rather than replacing the prototype', function() {
+      const data = {};
+      assert.throws(() => {
+        apos.util.set(data, '__proto__', { polluted: 'yes' });
+      }, { name: 'invalid' });
+      assert.strictEqual(Object.getPrototypeOf(data), Object.prototype);
+      assert.strictEqual(data.polluted, undefined);
+    });
+
+    it('utils.set must reject a dangerous segment exposed after an @ reference', function() {
+      const data = {
+        items: [
+          {
+            _id: 'abc',
+            sub: {}
+          }
+        ]
+      };
+      try {
+        assert.throws(() => {
+          apos.util.set(data, '@abc.__proto__.polluted', 'yes');
+        }, { name: 'invalid' });
+        assert.strictEqual({}.polluted, undefined);
+      } finally {
+        delete Object.prototype.polluted;
+      }
+    });
+
+    it('utils.get must not traverse into the prototype chain via __proto__', function() {
+      // Without the guard this returns Object.prototype.toString (a function).
+      assert.strictEqual(apos.util.get({ a: 1 }, '__proto__.toString'), undefined);
+      assert.strictEqual(apos.util.get({ a: 1 }, '__proto__'), undefined);
+    });
+
+    it('implementPatchOperators must not let a $pullAll key pollute Object.prototype', function() {
+      // The reported attack vector: an authenticated editor PATCH body of
+      // { $pullAll: { '__proto__.publicApiProjection': [] } } reached
+      // apos.util.set with a fully attacker-controlled key.
+      const patch = {
+        $pullAll: {
+          '__proto__.publicApiProjection': []
+        }
+      };
+      try {
+        assert.throws(() => {
+          apos.schema.implementPatchOperators(patch, {});
+        }, { name: 'invalid' });
+        assert.strictEqual({}.publicApiProjection, undefined);
+      } finally {
+        delete Object.prototype.publicApiProjection;
+      }
+    });
+
+    it('implementPatchOperators must not let a direct dot-notation key pollute Object.prototype', function() {
+      // The second documented entry point: a top-level dotted key whose value
+      // is fully attacker-controlled.
+      const patch = {
+        '__proto__.publicApiProjection': { title: 1 }
+      };
+      try {
+        assert.throws(() => {
+          apos.schema.implementPatchOperators(patch, {});
+        }, { name: 'invalid' });
+        assert.strictEqual({}.publicApiProjection, undefined);
+      } finally {
+        delete Object.prototype.publicApiProjection;
+      }
+    });
+
     it('should slugify', function () {
       // Basic
       assert.equal(

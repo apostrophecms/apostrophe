@@ -132,6 +132,34 @@ describe('Files', function() {
     }
   });
 
+  it('should ignore a spoofed Host header when proxying the pretty URL (SSRF regression)', async function() {
+    const req = apos.task.getAnonReq();
+    try {
+      apos.file.options.prettyUrls = true;
+      const files = await apos.file.find(req).toArray();
+      assert.strictEqual(files.length, 1);
+      const file = files[0];
+      const attachment = apos.attachment.first(file);
+      const url = apos.attachment.url(attachment);
+      assert(url);
+      // Send an attacker-controlled Host header (e.g. the cloud metadata
+      // address from the advisory). The upstream fetch must be resolved
+      // against the server-trusted baseUrl, not this header, so the
+      // legitimate content is still served and the request is never
+      // steered at the spoofed host.
+      const response = await apos.http.get(url, {
+        headers: {
+          Host: '169.254.169.254'
+        },
+        fullResponse: true
+      });
+      assert.strictEqual(response.status, 200);
+      assert.strictEqual(response.body, attachment.data);
+    } finally {
+      apos.file.options.prettyUrls = false;
+    }
+  });
+
 });
 
 describe('Files with i18n locale prefixes', function() {

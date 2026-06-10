@@ -1718,6 +1718,182 @@ describe('@apostrophecms/seo', function () {
     });
   });
 
+  describe('XSS prevention in analytics scripts', function () {
+    const safeJsonForScript = require('apostrophe/lib/safe-json-script');
+
+    // Breaks out of the single-quoted JS string literal AND closes the
+    // surrounding <script> element under the old raw interpolation.
+    const payload = 'G-FAKE\'); alert(document.cookie); </script><script>alert(1)//';
+
+    it('should emit seoGoogleTrackingId as a json node, not raw interpolation', function () {
+      const { getMetaHead } = require('../lib/nodes');
+
+      const data = {
+        page: { _url: 'https://example.com/' },
+        global: { seoGoogleTrackingId: payload },
+        req: {}
+      };
+
+      const nodes = getMetaHead(data, {});
+
+      // The inline gtag() config script (a body array, not the async src
+      // loader, and not the application/ld+json block).
+      const inlineScript = nodes.find(n =>
+        n.name === 'script' &&
+        Array.isArray(n.body) &&
+        n.attrs?.type !== 'application/ld+json'
+      );
+      assert(inlineScript, 'inline gtag config script node should exist');
+
+      // The tracking id must be a json node so renderNodes escapes it, not a
+      // raw string with the id interpolated in.
+      const jsonSegment = inlineScript.body.find(seg => seg.json != null);
+      assert(jsonSegment, 'tracking id must be emitted as a json node');
+      assert.strictEqual(jsonSegment.json, payload);
+
+      const rawWithPayload = inlineScript.body.find(
+        seg => seg.raw != null && seg.raw.includes(payload)
+      );
+      assert(!rawWithPayload, 'tracking id must not be interpolated into a raw segment');
+
+      // Once rendered, the payload cannot terminate the <script> element.
+      const rendered = safeJsonForScript(jsonSegment.json);
+      assert(
+        !/<\/script/i.test(rendered),
+        'rendered tracking id must not contain an unescaped </script> sequence'
+      );
+    });
+
+    it('should emit seoGoogleTagManager as a json node, not raw interpolation', function () {
+      const { getTagManagerHead } = require('../lib/nodes');
+
+      const data = {
+        global: { seoGoogleTagManager: payload },
+        req: {}
+      };
+
+      const nodes = getTagManagerHead(data);
+
+      const script = nodes.find(n =>
+        n.name === 'script' && Array.isArray(n.body)
+      );
+      assert(script, 'GTM loader script node should exist');
+
+      const jsonSegment = script.body.find(seg => seg.json != null);
+      assert(jsonSegment, 'GTM id must be emitted as a json node');
+      assert.strictEqual(jsonSegment.json, payload);
+
+      const rawWithPayload = script.body.find(
+        seg => seg.raw != null && seg.raw.includes(payload)
+      );
+      assert(!rawWithPayload, 'GTM id must not be interpolated into a raw segment');
+
+      const rendered = safeJsonForScript(jsonSegment.json);
+      assert(
+        !/<\/script/i.test(rendered),
+        'rendered GTM id must not contain an unescaped </script> sequence'
+      );
+    });
+  });
+
+  describe('analytics scripts with valid IDs', function () {
+    const safeJsonForScript = require('apostrophe/lib/safe-json-script');
+
+    // Render a script body the same way apos.template.renderNodes does: raw
+    // segments pass through verbatim, json segments go through the safe
+    // encoder. This lets us assert on the real rendered output (and prove the
+    // escaping fix did not break the normal, working snippet) without booting
+    // a full Apostrophe instance.
+    function renderBody(body) {
+      return body
+        .map(seg => {
+          if (seg.raw != null) {
+            return seg.raw;
+          }
+          if (seg.json != null) {
+            return safeJsonForScript(seg.json);
+          }
+          return '';
+        })
+        .join('');
+    }
+
+    it('should emit a working gtag config call when seoGoogleTrackingId is a normal id', function () {
+      const { getMetaHead } = require('../lib/nodes');
+
+      const trackingId = 'G-ABC1234567';
+
+      const data = {
+        page: { _url: 'https://example.com/' },
+        global: { seoGoogleTrackingId: trackingId },
+        req: {}
+      };
+
+      const nodes = getMetaHead(data, {});
+
+      // The async gtag.js loader carries the id in its src.
+      const loader = nodes.find(n =>
+        n.name === 'script' &&
+        n.attrs?.src?.startsWith('https://www.googletagmanager.com/gtag/js')
+      );
+      assert(loader, 'gtag.js loader script should exist');
+      assert.strictEqual(
+        loader.attrs.src,
+        `https://www.googletagmanager.com/gtag/js?id=${trackingId}`
+      );
+
+      // The inline config script carries the id as a json node.
+      const inlineScript = nodes.find(n =>
+        n.name === 'script' &&
+        Array.isArray(n.body) &&
+        n.attrs?.type !== 'application/ld+json'
+      );
+      assert(inlineScript, 'inline gtag config script node should exist');
+
+      const jsonSegment = inlineScript.body.find(seg => seg.json != null);
+      assert(jsonSegment, 'tracking id should be emitted as a json node');
+      assert.strictEqual(jsonSegment.json, trackingId);
+
+      // Rendered, the snippet is valid, working JS that configures gtag with
+      // the exact id as a quoted string: gtag('config', "G-ABC1234567");
+      const rendered = renderBody(inlineScript.body);
+      assert(
+        rendered.includes(`gtag('config', "${trackingId}");`),
+        'rendered gtag config should call gtag with the exact id as a quoted string'
+      );
+    });
+
+    it('should emit a working GTM loader call when seoGoogleTagManager is a normal id', function () {
+      const { getTagManagerHead } = require('../lib/nodes');
+
+      const containerId = 'GTM-ABCD123';
+
+      const data = {
+        global: { seoGoogleTagManager: containerId },
+        req: {}
+      };
+
+      const nodes = getTagManagerHead(data);
+
+      const script = nodes.find(n =>
+        n.name === 'script' && Array.isArray(n.body)
+      );
+      assert(script, 'GTM loader script node should exist');
+
+      const jsonSegment = script.body.find(seg => seg.json != null);
+      assert(jsonSegment, 'GTM id should be emitted as a json node');
+      assert.strictEqual(jsonSegment.json, containerId);
+
+      // Rendered, the IIFE receives the exact id as a quoted string:
+      // ...,'dataLayer',"GTM-ABCD123");
+      const rendered = renderBody(script.body);
+      assert(
+        rendered.includes(`'dataLayer',"${containerId}");`),
+        'rendered GTM snippet should pass the exact id as a quoted string'
+      );
+    });
+  });
+
   describe('Schema Validation', function () {
 
     it('should validate Article schema requirements', function () {

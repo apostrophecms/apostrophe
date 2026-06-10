@@ -182,7 +182,14 @@ selfClosing: [ 'img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', '
 // URL schemes we permit
 allowedSchemes: [ 'http', 'https', 'ftp', 'mailto', 'tel' ],
 allowedSchemesByTag: {},
-allowedSchemesAppliedToAttributes: [ 'href', 'src', 'cite' ],
+allowedSchemesAppliedToAttributes: [
+  'href', 'src', 'cite',
+  'action', 'formaction', 'data', 'xlink:href',
+  'poster', 'background', 'ping',
+  'longdesc', 'usemap', 'codebase', 'classid', 'archive',
+  'profile', 'manifest', 'itemid',
+  'dynsrc', 'lowsrc'
+],
 allowProtocolRelative: true,
 enforceHtmlBoundary: false,
 parseStyleAttributes: true
