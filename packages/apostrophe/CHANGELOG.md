@@ -1,5 +1,31 @@
 # Changelog
 
+## 4.31.0 (2026-06-10)
+
+### Adds
+
+- Added support for `draggable: false` on non-inline `array` schema fields. Previously this option was only respected when `inline: true`. When set on a standard (modal-based) array field, drag-and-drop reordering and keyboard reordering are now disabled in the array editor's slat list.
+- Introduced support for postgres://, sqlite://, and multipostgres:// database URIs in addition to mongodb://. The new db-connect API supports all of the database operations currently used in our own core, pro and multisite modules. For more information see the documentation.
+- JSX support for templates within ApostropheCMS. JSX is now co-equal with Nunjucks, with a gradual migration strategy. Anyone who is familiar with React will be very comfortable writing JSX templates, which also offer a superior debugging experience, and templates can be migrated gradually. JSX is a great option for those who don't wish to create parallel Astro and ApostropheCMS projects, but still prefer a modern syntax. For more information, see the new [JSX templates guide](https://apostrophecms.com/docs/guide/jsx-templates.html).
+- The session secret and the uploadfs `disabledFileKey` can now be supplied via the `APOS_SESSION_SECRET` and `APOS_UPLOADFS_DISABLED_FILE_KEY` environment variables. As with other Apostrophe environment variables, these take precedence over the corresponding `app.js` configuration.
+
+### Fixes
+
+- Fixed an issue where using the Tab key to navigate within modals could incorrectly jump focus to a wrong element instead of the next input field.
+Fixed Tab navigation escaping out of modals when the form contained hidden sections or elements that became disabled after editing.
+- Fixed adding or removing an area field from a schema breaking existing documents on an external front such as Astro.
+- For Astro: `AposArea` now renders only schema-backed areas. A missing area no longer throws, and an area orphaned by removing its field from the schema (while its content remains in the document) renders nothing instead of breaking sibling areas in edit mode. Logged-in editors get a diagnostic message in place of an orphaned area; anonymous visitors see nothing.
+- Editable documents sent to an external front (Asgtro) now materialize empty area objects for schema area fields added after the document was created, so they can be edited in context.
+- `apos.util.getManagerOf` accepts a `{ log }` option to suppress its error log when probing objects that may not have a manager.
+- Fix more admin UI a11y issues.
+- Selecting an item in a relationship "browse" dialog no longer scrolls the title and Cancel/Select buttons out of view when the item is far down the list.
+- Sites with a custom filterByIndexPage method no longer experience failures in the sitemap module and potential creeping CPU performance penalties. A regression introduced with our static site support, but not specific to static sites.
+
+### Security
+
+- Server-side prototype pollution (CWE-1321) via dot-notation paths. `apos.util.set()` and `apos.util.get()` now refuse to traverse `__proto__`, `constructor` and `prototype` path segments. Previously an authenticated editor could send a PATCH REST API request whose patch operators (for example `$pullAll` with a key of `__proto__.publicApiProjection`) wrote to `Object.prototype`. A polluted `publicApiProjection` defeated the `publicApiCheck()` authorization gate on piece-type REST endpoints for subsequent unauthenticated requests, for the lifetime of the Node.js process. All users should update. Thanks to [tonghuaroot](https://github.com/tonghuaroot), [H3xV0rT3x](https://github.com/H3xV0rT3x), and [5h1kh4r](https://github.com/5h1kh4r) for reporting the vulnerability.
+- When `@apostrophecms/file` pretty URLs are enabled (`prettyUrls: true`), the upstream request used to serve the file is no longer built from the incoming `Host` header. The self-request is now resolved against the site's configured `baseUrl` (via `req.baseUrl`), falling back to the request host only when no `baseUrl` is configured. This closes a server-side request forgery (SSRF) vector in which the `Host` header could steer the proxied fetch at another host. The real-world risk was low: the path is constrained to an existing attachment's `/uploads/attachments/<cuid>-<slug>.<ext>`, and cuids are unique and immutable, so any reachable content was already public via the front door. Thanks to [EchoSkorJjj](https://github.com/EchoSkorJjj) for reporting the issue.
+
 ## 4.30.0
 
 ### Adds
@@ -21,7 +47,7 @@
 - **XSS via full name field:** A malicious full name containing HTML was executed in the page title tooltip in the admin bar, posing an XSS risk to other users. All multi-user projects should update promptly. Thanks to [Muhammad Uwais](https://github.com/MuhammadUwais) for reporting.
 - **XSS via image widget link URL:** Users with editing privileges could trigger arbitrary JavaScript via a `javascript:` URL in the image widget's link URL field. A migration is included to strip any such URLs already in the database. Thanks to [Muhammad Uwais](https://github.com/MuhammadUwais) for reporting.
 - **SSRF via rich text HTML import:** The rich text widget's HTML import feature no longer fetches images from arbitrary hosts, which could be used to probe internal networks or exfiltrate internal images. Configure `imageImportAllowedHostnames` on `@apostrophecms/rich-text-widget` to opt in. Thanks to [Yiğit Şengezer](https://github.com/yigitsengezer) and [Sainithin0309](https://github.com/Sainithin0309) for reporting.
--  **the xmp tag could be used to pass forbidden markup through sanitize-html**, even when xmp itself. This was fixed in `sanitize-html` and the dependency was bumped. Thanks to [Vincenzo Turturro](https://github.com/sushi-gif) for reporting the vulnerability.
+- **the xmp tag could be used to pass forbidden markup through sanitize-html**, even when xmp itself. This was fixed in `sanitize-html` and the dependency was bumped. Thanks to [Vincenzo Turturro](https://github.com/sushi-gif) for reporting the vulnerability.
 - **the `linkHref` field of image widgets was an XSS vulnerability** because it did not use the `url` field type. This means that a user with editing privileges could potentially carry out XSS. In addition, we have updated the `launder` module to sanitize URLs more robustly for the `url` field type, and bumped that dependency. Also, a database migration is included to clean any XSS attacks that could be present in existing links. Thanks to [Muhammad Uwais](https://github.com/MuhammadUwais) for reporting the issue.
 
 ### Accessibility
@@ -32,7 +58,6 @@
 - The Recently Edited Documents tray icon now exposes its action via `aria-label`.
 - Fixed `.apos-sr-only` so screen-reader-only content is correctly exposed to the accessibility tree.
 - Icon-only context-utility buttons in the admin bar tray (e.g. the global settings cog) now expose their action via `aria-label`.
-
 
 ## 4.29.0 (2026-04-15)
 
