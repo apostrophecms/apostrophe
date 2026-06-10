@@ -18,7 +18,7 @@ const KIT_GUIDES = Object.freeze({
   'apostrophe-astro-demo': 'https://apostrophecms.com/docs/guide/astro-demo-overview.html',
   'apostrophe-astro-demo-data': 'https://apostrophecms.com/docs/guide/astro-demo-overview.html',
   'apostrophe-essentials': 'https://apostrophecms.com/docs/guide/apostrophe-standalone-essentials-overview.html',
-  'apostrophe-demo': 'https://apostrophecms.com/docs/guides/apostrophe-demo-overview.html',
+  'apostrophe-demo': 'https://apostrophecms.com/docs/guide/apostrophe-demo-overview.html',
   'apostrophe-demo-data': 'https://apostrophecms.com/docs/guide/apostrophe-demo-overview.html'
 });
 
