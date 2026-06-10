@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.17.5 (2026-06-10)
+
+### Security
+
+- Added a number of new attributes to be protected against unsafe URLs, e.g. `javascript:` and similar. None of these are used in the default configuration of `sanitize-html` or `apostrophe` or likely to be used there, and some attributes, like an `action` for a `form`, are inherently unsafe to allow if XSS protection is your goal. Nevertheless it makes sense to block certain URL types where they are not appropriate. Some attributes are not supported at all by modern browsers but are included for completeness. Thanks to [crattack](https://github.com/crattack) for reporting the vulnerability.
+- Address a potential vulnerability when nonTextTags is configured in a nonstandard way. While it is never a good idea to remove known non-text tags from the standard list e.g. script, styles, etc., this change ensures that doing so does not result in nested tags being passed through without sanitization when they are not expressly allowed. (ApostropheCMS would never trigger this situation.) Thanks to [Dipanshu singh](https://github.com/Dipanshusinghh) for pointing out the issue and contributing the fix.
+
 ## 2.17.4
 
 ### Changes
