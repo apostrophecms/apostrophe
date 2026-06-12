@@ -3304,7 +3304,7 @@ database.`);
         });
       },
       composeFilters() {
-        self.filters = require('../../../../lib/compose-filters')(self.filters);
+        self.filters = require('../../../lib/compose-filters')(self.filters);
       },
       async getBatchArchivePatches(req, ids) {
         const batchReq = req.clone({

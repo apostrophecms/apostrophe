@@ -1675,7 +1675,7 @@ module.exports = {
       },
 
       composeFilters() {
-        self.filters = require('../../../../lib/compose-filters')(self.filters);
+        self.filters = require('../../../lib/compose-filters')(self.filters);
       },
 
       composeColumns() {
