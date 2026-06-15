@@ -43,7 +43,7 @@ if (isEdit) {
   };
 }
 const Wrapper = isEdit || forceWrapper ? "div" : Fragment;
-const widgetOptions = getWidgetOptions(area.options);
+const widgetOptions = getWidgetOptions(area?.options ?? {});
 
 function getWidgetOptions(options) {
   let widgets = options.widgets || {};
