@@ -83,6 +83,28 @@ The default configuration of the `skip` option is:
 
 If you wish to skip other patterns, we recommend keeping the default one as it speeds up API calls.
 
+### `caseInsensitive`
+*Defaults to `false`*
+
+By passing `caseInsensitive: true` to your configuration, the "Old URL" of every redirect is matched against incoming request URLs without regard to case. This is useful when migrating from a case-insensitive web server (e.g. IIS), where redirect rules may have been entered with mixed-case slugs such as `/Events` or `/About-Us/Partners`, but inbound traffic (old bookmarks, search engine results, external links) may arrive with any casing, such as `/events` or `/EVENTS`.
+
+```javascript
+// Other modules, then...
+'@apostrophecms/redirect': {
+  options: {
+    caseInsensitive: true
+  }
+}
+```
+
+When this option is enabled:
+
+- New and edited redirects have their "Old URL" stored in lowercase automatically.
+- A migration runs to lowercase the "Old URL" of any existing redirects.
+- Incoming request URLs are lowercased before being matched against stored redirects (the original casing of the request is still used when substituting a wildcard match into a destination URL).
+
+⚠️ **This option does not support "mixing" case-sensitive and case-insensitive redirects.** Enabling it lowercases all existing "Old URL" values, and this migration is **not reversible**. If you later disable `caseInsensitive`, your pre-existing redirects will only match lowercase request URLs, since their stored "Old URL" values remain lowercase. If this matters to you, you would need to manually recreate the affected redirects with their original mixed-case "Old URL" values.
+
 ## Usage
 
 While logged in as an admin, click the "Redirects" button. A list of redirects appears, initially empty. Add as many redirects as you like. The "from" URL must begin with a `/`. The "to" URL may be anything and need not be on your site. The "description" field is for your own convenience.
