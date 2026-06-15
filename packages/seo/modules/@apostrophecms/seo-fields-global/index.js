@@ -413,6 +413,12 @@ module.exports = {
             });
           }
         }
+      },
+      '@apostrophecms/url:getLiteralContentRoutes': {
+        addSeoRoutes(req, patterns) {
+          patterns.push('/robots.txt');
+          patterns.push('/llms.txt');
+        }
       }
     };
   },
