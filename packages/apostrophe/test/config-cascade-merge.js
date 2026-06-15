@@ -8,22 +8,19 @@ const assert = require('assert');
 // further merge so index.js can fill gaps; cascade sections like `fields` do not
 // merge — the app.js declaration replaces the project-level one.
 //
-// This is intentional and long-standing; changing it is a major BC break. It is
-// the reason multisite enhances @apostrophecms/user through the module chain (a
-// bundled improvement) rather than inline config, so it composes with a
-// project's dashboard/modules/@apostrophecms/user/index.js instead of clobbering
-// it. This test guards the contract so it is not "fixed" by accident.
+// This is intentional and long-standing; changing it is a major BC break.
+// This test guards the contract so it is not "fixed" by accident.
 //
 // The project-level fixture lives in test/modules/collision-piece/index.js.
 
-describe('config-object vs project-level cascade merge (moog-require contract)', function() {
+describe('config-object vs project-level cascade merge (moog-require contract)', function () {
   this.timeout(t.timeout);
   let apos;
   after(async () => {
     await t.destroy(apos);
   });
 
-  it('app.js `fields` wins over the project-level file when both declare it', async function() {
+  it('app.js `fields` wins over the project-level file when both declare it', async function () {
     apos = await t.create({
       root: module,
       modules: {
@@ -40,7 +37,7 @@ describe('config-object vs project-level cascade merge (moog-require contract)',
             group: {
               configGroup: {
                 label: 'Config Group',
-                fields: [ 'configField' ]
+                fields: ['configField']
               }
             }
           }
