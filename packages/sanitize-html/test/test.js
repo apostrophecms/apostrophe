@@ -23,6 +23,18 @@ describe('sanitizeHtml', function() {
   it('should pass through simple, well-formed markup', function() {
     assert.equal(sanitizeHtml('<div><p>Hello <b>there</b></p></div>'), '<div><p>Hello <b>there</b></p></div>');
   });
+  it('should preserve col as a self closing tag', function() {
+    assert.equal(
+      sanitizeHtml(
+        '<table><colgroup><col span="2"></colgroup></table>',
+        {
+          allowedTags: false,
+          allowedAttributes: false
+        }
+      ),
+      '<table><colgroup><col span="2" /></colgroup></table>'
+    );
+  });
   it('should not pass through any text outside html tag boundary since html tag is found and option is ON', function() {
     assert.equal(sanitizeHtml('Text before html tag<html><div><p>Hello <b>there</b></p></div></html>Text after html tag!P�X��[<p>paragraph after closing html</p>', {
       enforceHtmlBoundary: true
