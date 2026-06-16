@@ -23,6 +23,18 @@ describe('sanitizeHtml', function() {
   it('should pass through simple, well-formed markup', function() {
     assert.equal(sanitizeHtml('<div><p>Hello <b>there</b></p></div>'), '<div><p>Hello <b>there</b></p></div>');
   });
+  it('should preserve col as a self closing tag', function() {
+    assert.equal(
+      sanitizeHtml(
+        '<table><colgroup><col span="2"></colgroup></table>',
+        {
+          allowedTags: false,
+          allowedAttributes: false
+        }
+      ),
+      '<table><colgroup><col span="2" /></colgroup></table>'
+    );
+  });
   it('should not pass through any text outside html tag boundary since html tag is found and option is ON', function() {
     assert.equal(sanitizeHtml('Text before html tag<html><div><p>Hello <b>there</b></p></div></html>Text after html tag!P�X��[<p>paragraph after closing html</p>', {
       enforceHtmlBoundary: true
@@ -967,6 +979,98 @@ describe('sanitizeHtml', function() {
         allowedAttributes: { img: [ 'src', 'srcset' ] }
       }),
       '<img src="fallback.jpg" srcset="/upload/f_auto,q_auto:eco,c_fit,w_1460,h_2191/abc.jpg 1460w, /upload/f_auto,q_auto:eco,c_fit,w_1360,h_2041/abc.jpg" />'
+    );
+  });
+  it('should drop javascript: in form action', function() {
+    assert.equal(
+      sanitizeHtml('<form action="javascript:alert(1)"><button>x</button></form>', {
+        allowedTags: [ 'form', 'button' ],
+        allowedAttributes: { form: [ 'action' ] }
+      }),
+      '<form><button>x</button></form>'
+    );
+  });
+  it('should allow http(s) in form action', function() {
+    assert.equal(
+      sanitizeHtml('<form action="https://example.com/submit"><button>x</button></form>', {
+        allowedTags: [ 'form', 'button' ],
+        allowedAttributes: { form: [ 'action' ] }
+      }),
+      '<form action="https://example.com/submit"><button>x</button></form>'
+    );
+  });
+  it('should drop javascript: in button formaction', function() {
+    assert.equal(
+      sanitizeHtml('<button formaction="javascript:alert(1)">x</button>', {
+        allowedTags: [ 'button' ],
+        allowedAttributes: { button: [ 'formaction' ] }
+      }),
+      '<button>x</button>'
+    );
+  });
+  it('should allow http(s) in button formaction', function() {
+    assert.equal(
+      sanitizeHtml('<button formaction="https://example.com/submit">x</button>', {
+        allowedTags: [ 'button' ],
+        allowedAttributes: { button: [ 'formaction' ] }
+      }),
+      '<button formaction="https://example.com/submit">x</button>'
+    );
+  });
+  it('should drop javascript: in object data', function() {
+    assert.equal(
+      sanitizeHtml('<object data="javascript:alert(1)"></object>', {
+        allowedTags: [ 'object' ],
+        allowedAttributes: { object: [ 'data' ] }
+      }),
+      '<object></object>'
+    );
+  });
+  it('should allow http(s) in object data', function() {
+    assert.equal(
+      sanitizeHtml('<object data="https://example.com/file.pdf"></object>', {
+        allowedTags: [ 'object' ],
+        allowedAttributes: { object: [ 'data' ] }
+      }),
+      '<object data="https://example.com/file.pdf"></object>'
+    );
+  });
+  it('should drop javascript: in SVG xlink:href', function() {
+    assert.equal(
+      sanitizeHtml('<svg><a xlink:href="javascript:alert(1)"><text>x</text></a></svg>', {
+        allowedTags: [ 'svg', 'a', 'text' ],
+        allowedAttributes: { a: [ 'xlink:href' ] }
+      }),
+      '<svg><a><text>x</text></a></svg>'
+    );
+  });
+  it('should allow http(s) in SVG xlink:href', function() {
+    assert.equal(
+      sanitizeHtml('<svg><a xlink:href="https://example.com/"><text>x</text></a></svg>', {
+        allowedTags: [ 'svg', 'a', 'text' ],
+        allowedAttributes: { a: [ 'xlink:href' ] }
+      }),
+      '<svg><a xlink:href="https://example.com/"><text>x</text></a></svg>'
+    );
+  });
+  it('should drop bogus imagesrcset', function() {
+    assert.equal(
+      sanitizeHtml('<link rel="preload" as="image" imagesrcset="foo.jpg 1x, javascript:alert(1) 2x" />', {
+        allowedTags: [ 'link' ],
+        allowedAttributes: { link: [ 'rel', 'as', 'imagesrcset' ] },
+        selfClosing: [ 'link' ]
+      }),
+      '<link rel="preload" as="image" imagesrcset="foo.jpg 1x" />'
+    );
+  });
+  it('should accept valid imagesrcset', function() {
+    assert.equal(
+      sanitizeHtml('<link rel="preload" as="image" imagesrcset="foo.jpg 1x, bar.jpg 2x" />', {
+        allowedTags: [ 'link' ],
+        allowedAttributes: { link: [ 'rel', 'as', 'imagesrcset' ] },
+        selfClosing: [ 'link' ]
+      }),
+      '<link rel="preload" as="image" imagesrcset="foo.jpg 1x, bar.jpg 2x" />'
     );
   });
 

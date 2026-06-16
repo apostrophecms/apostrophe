@@ -58,6 +58,104 @@ describe('@apostrophecms/redirect', function () {
     assert.equal(redirected, '<title>page 2</title>\n');
   });
 
+  it('should prevent insertion of infinite redirects to external URLs', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+
+    const actual = async () => redirectModule.insert(req, {
+      ...instance,
+      title: 'infinite redirect',
+      urlType: 'external',
+      redirectSlug: '/page-1',
+      externalUrl: '/page-1'
+    });
+    const expected = {
+      name: 'invalid',
+      message: 'Infinite redirect: Old URL cannot be the same as URL'
+    };
+
+    await assert.rejects(actual, expected);
+  });
+
+  it('should prevent insertion of infinite redirects to external URLs including UTF8', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+
+    const actual = async () => redirectModule.insert(req, {
+      ...instance,
+      title: 'infinite redirect',
+      urlType: 'external',
+      redirectSlug: '/page-✅',
+      externalUrl: '/page-✅'
+    });
+    const expected = {
+      name: 'invalid',
+      message: 'Infinite redirect: Old URL cannot be the same as URL'
+    };
+
+    await assert.rejects(actual, expected);
+  });
+
+  it('should prevent update if infinite redirect to external URLs is detected', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+
+    const { _id } = await redirectModule.insert(req, {
+      ...instance,
+      title: 'infinite redirect',
+      urlType: 'external',
+      redirectSlug: '/page-1',
+      externalUrl: '/new-page-1'
+    });
+
+    const previousDraft = await redirectModule.findOneForEditing(
+      apos.task.getReq({ mode: 'draft' }),
+      { _id }
+    );
+
+    const actual = async () => redirectModule.update(req, {
+      ...previousDraft,
+      // redirectSlug: '/page-1',
+      externalUrl: '/page-1'
+    });
+    const expected = {
+      name: 'invalid',
+      message: 'Infinite redirect: Old URL cannot be the same as URL'
+    };
+
+    await assert.rejects(actual, expected);
+  });
+
+  it('should prevent insertion of infinite redirects to external URLs including UTF8', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+
+    const { _id } = await redirectModule.insert(req, {
+      ...instance,
+      title: 'infinite redirect',
+      urlType: 'external',
+      redirectSlug: '/page-✅',
+      externalUrl: '/new-page-✅'
+    });
+
+    const previousDraft = await redirectModule.findOneForEditing(
+      apos.task.getReq({ mode: 'draft' }),
+      { _id }
+    );
+
+    const actual = async () => redirectModule.update(req, {
+      ...previousDraft,
+      // redirectSlug: '/page-✅',
+      externalUrl: '/page-✅'
+    });
+    const expected = {
+      name: 'invalid',
+      message: 'Infinite redirect: Old URL cannot be the same as URL'
+    };
+
+    await assert.rejects(actual, expected);
+  });
+
   it('query string matters by default', async function() {
     const req = apos.task.getReq();
     const instance = redirectModule.newInstance();

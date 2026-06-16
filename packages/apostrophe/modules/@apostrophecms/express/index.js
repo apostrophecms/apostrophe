@@ -579,6 +579,8 @@ module.exports = {
           name: self.apos.shortName + '.sid',
           cookie: {}
         });
+        // Env overrides config, per Apostrophe convention.
+        sessionOptions.secret = process.env.APOS_SESSION_SECRET || sessionOptions.secret;
         _.defaults(sessionOptions.cookie, {
           path: '/',
           httpOnly: true,

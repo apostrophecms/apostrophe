@@ -248,14 +248,15 @@ module.exports = {
             const uglyUrl = self.apos.attachment.url(file.attachment, {
               prettyUrl: false
             });
-            // For relative URLs (local uploadfs, not CDN), resolve
-            // against the current server's origin so the proxy can
-            // make the self-request.  During static builds
-            // `attachment.url()` may return only a path.
-            const proxyUrl = uglyUrl.startsWith('/')
-              ? `${req.protocol}://${req.get('host')}${uglyUrl}`
-              : uglyUrl;
-            return await streamProxy(req, proxyUrl, { error: self.apos.util.error });
+            // `uglyUrl` may be relative (local uploadfs) or absolute
+            // (S3/CDN). For the relative case `streamProxy` resolves it
+            // against `req.baseUrl`, which reflects the configured
+            // `baseUrl` (or locale hostname) and only falls back to the
+            // request host when the site has none. We deliberately do
+            // not build the upstream URL from the raw `Host` header
+            // here, as that is attacker-controlled and would allow the
+            // self-request to be redirected to an arbitrary host (SSRF).
+            return await streamProxy(req, uglyUrl, { error: self.apos.util.error });
           } catch (e) {
             self.apos.util.error('Error in pretty URL route:', e);
             return res.status(500).send('error');

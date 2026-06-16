@@ -76,6 +76,32 @@ module.exports = {
     self.insertions = {};
     self.runtimeNodes = {};
 
+    // Install the .jsx require hook and teach the JSX runtime about
+    // Nunjucks' SafeString class so its instances pass through unescaped.
+    self.initJsx();
+
+    // Wire up the view-folder watcher with the two default invalidation
+    // handlers — Nunjucks loader caches and compiled .jsx modules. Both
+    // engines share a single set of chokidar watchers so we don't pay
+    // twice for watching the same directories.
+    const jsxLoader = require('./lib/jsxLoader.js');
+    self.onViewChange(function clearNunjucksLoaderCaches() {
+      // Setting `cache = {}` mirrors the historical in-loader behavior
+      // and is exactly what Nunjucks itself reads when looking up a
+      // previously-loaded template.
+      for (const loader of Object.values(self.loaders || {})) {
+        loader.cache = {};
+      }
+    });
+    self.onViewChange(function invalidateJsxModules(filePath) {
+      if (filePath && filePath.endsWith('.jsx')) {
+        jsxLoader.invalidate(path.resolve(filePath));
+      } else {
+        // Anything else (e.g. a Nunjucks file) might be a template imported
+        // by a `.jsx` file via require()/import — be safe and drop them all.
+        jsxLoader.invalidateAll();
+      }
+    });
   },
   handlers(self) {
     return {
@@ -117,9 +143,15 @@ module.exports = {
       },
       'apostrophe:destroy': {
         async nunjucksLoaderCleanup() {
+          // Older code paths used to manage chokidar watchers per loader;
+          // a no-op `destroy()` is still defined for backwards compat.
           for (const loader of Object.values(self.loaders || {})) {
             await loader.destroy();
           }
+        },
+        async closeViewWatchers() {
+          // Tear down chokidar watchers (Nunjucks + JSX share these).
+          await self.closeViewWatchers();
         }
       }
     };
@@ -127,6 +159,19 @@ module.exports = {
   methods(self) {
     return {
       ...require('./lib/bundlesLoader')(self),
+      ...require('./lib/jsxRender')(self),
+      ...require('./lib/viewWatcher')(self),
+
+      // Arm chokidar for the view-folder chain of the module whose views
+      // actually contain the resolved JSX file. For a same-module render
+      // that's the caller; for a cross-module render like
+      // `@apostrophecms/page` rendering `@apostrophecms/home-page:page`
+      // it's the target module. Idempotent per absolute directory.
+      watchJsxRenderTargets(callerModule, resolved) {
+        const owner = (resolved && self.apos.modules[resolved.moduleName]) ||
+          callerModule;
+        self.watchViewFolders(self.getViewFolders(owner));
+      },
 
       // Add helpers in the namespace for a particular module.
       // They will be visible in nunjucks at
@@ -260,6 +305,24 @@ module.exports = {
       async renderBody(req, type, s, data, module) {
 
         let result;
+
+        // For named files, resolve through the module's view-folder
+        // chain. Chain position wins: a closer directory's .html/.njk
+        // beats a more distant directory's .jsx. JSX only takes
+        // precedence over Nunjucks within the same directory. See
+        // resolveTemplate. Falling back to Nunjucks happens automatically
+        // below when the resolved file is not JSX.
+        if (type === 'file') {
+          const resolved = self.resolveTemplate(module, s);
+          if (resolved && resolved.kind === 'jsx') {
+            const renderData = self.getRenderDataArgs(req, data, module);
+            result = await self.renderJsxTemplate(req, resolved, renderData, module);
+            if (process.platform === 'win32') {
+              result = result.replaceAll('\r', '');
+            }
+            return result;
+          }
+        }
 
         const args = self.getRenderArgs(req, data, module);
 
@@ -495,6 +558,9 @@ module.exports = {
         }
         if (!self.loaders[key]) {
           self.loaders[key] = self.newLoader(moduleName, dirs);
+          // Register these dirs with the shared view watcher (idempotent
+          // per absolute path, so calling it for every loader is fine).
+          self.watchViewFolders(dirs);
         }
         return self.loaders[key];
       },
@@ -1231,7 +1297,7 @@ module.exports = {
       async annotateDataForExternalFront(req, template, data, moduleName) {
         const docs = self.getDocsForExternalFront(req, template, data, moduleName);
         for (const doc of docs) {
-          self.annotateDocForExternalFront(doc, { scene: req.scene });
+          await self.annotateDocForExternalFront(doc, { scene: req.scene });
         }
         data.aposBodyData = await self.getBodyData(req);
         // Already contains module name too
@@ -1283,16 +1349,31 @@ module.exports = {
         ].filter(doc => !!doc);
       },
 
-      annotateDocForExternalFront(doc, { scene } = {}) {
+      async annotateDocForExternalFront(doc, { scene } = {}) {
+        const handled = new WeakSet();
+        const missingAreas = [];
         self.apos.doc.walk(doc, (o, k, v) => {
+          if (o._edit === true && !handled.has(o)) {
+            handled.add(o);
+            for (const field of self.missingSchemaAreas(o)) {
+              missingAreas.push([ o, field ]);
+            }
+          }
           if (v && v.metaType === 'area') {
-            const manager = self.apos.util.getManagerOf(o);
+            // A missing manager here is expected (e.g. an area reached on a
+            // container without a manager) and handled below, so suppress the
+            // low-level per-call log and rely on the once-per-process warning.
+            const manager = self.apos.util.getManagerOf(o, { log: false });
             if (!manager) {
-              self.apos.util.warnDevOnce('noManagerForDocInExternalFront', `No manager for: ${o.metaType} ${o.type || ''}`);
+              self.apos.util.warnDevOnce(
+                'noManagerForDocInExternalFront',
+                `No manager for: ${o.metaType} ${o.type || ''}`
+              );
               return;
             }
             const field = manager.schema.find(f => f.name === k);
             if (!field) {
+              v._isOrphan = true;
               self.apos.util.warnDevOnce(
                 'noSchemaFieldForAreaInExternalFront',
                 `Area ${k} has no matching schema field in ${o.metaType} ${o.type || ''}`
@@ -1302,6 +1383,14 @@ module.exports = {
             return self.annotateAreaForExternalFront(field, v, { scene });
           }
         });
+        // Materialize every missing area, after the walk so we never add keys
+        // to an object while it is being traversed.
+        for (const [ o, field ] of missingAreas) {
+          const area = await self.apos.area.addMissingArea(o, field.name);
+          area._edit = true;
+          area._docId = o._docId ?? (o.metaType === 'doc' ? o._id : null);
+          self.annotateAreaForExternalFront(field, area, { scene });
+        }
       },
 
       // Annotate an area for easy rendering by an external front end
@@ -1310,6 +1399,7 @@ module.exports = {
       // at least as an empty array.
 
       annotateAreaForExternalFront(field, area, { scene } = {}) {
+        area._aposAnnotated = true;
         area.field = field;
         area.options = field.options;
         // Really widget configurations, but the method name is already set in
@@ -1324,25 +1414,41 @@ module.exports = {
           };
         }).filter(choice => !!choice);
 
-        area.items ||= [];
+        // Drop corrupt items (null, or not a widget).
+        area.items = (area.items || []).filter((item) => {
+          const valid = item && item.metaType === 'widget' && item.type;
+          if (!valid) {
+            self.apos.util.warnDevOnce(
+              'corruptAreaItemInExternalFront',
+              `Dropping malformed item in area ${area._id || ''}`
+            );
+          }
+          return valid;
+        });
+
         for (const item of area.items) {
           // Add _docId if area has one
           if (area._docId) {
             item._docId = area._docId;
           }
 
-          // Annotate each individual widget with its options
-          // Each widget must elect into this by creating an
-          // `annotateWidgetForExternalFront() method.
+          // Annotate each individual widget with its options. Each widget must
+          // elect into this by creating an `annotateWidgetForExternalFront()`
+          // method.
           const manager = self.apos.area.getWidgetManager(item.type);
           if (manager) {
-            const widgetOptions = manager.annotateWidgetForExternalFront(item, { scene });
-            item._options = widgetOptions;
+            item._options = manager.annotateWidgetForExternalFront(item, { scene });
           } else {
             self.apos.area.warnMissingWidgetType(item.type);
-            throw self.apos.error('invalid', 'Missing widget type');
           }
         }
+      },
+
+      // The schema area fields of `object` that have no value yet. Returns an
+      // empty array for anything without a schema manager.
+      missingSchemaAreas(object) {
+        const schema = self.apos.util.getManagerOf(object, { log: false })?.schema ?? [];
+        return schema.filter(field => field.type === 'area' && !object[field.name]);
       }
     };
   }

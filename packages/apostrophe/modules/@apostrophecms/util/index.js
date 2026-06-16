@@ -35,6 +35,13 @@ const util = require('util');
 const { stripIndent } = require('common-tags');
 const glob = require('../../../lib/glob.js');
 
+// Dot-path segments that must never be traversed when walking a
+// user-supplied path in `apos.util.get` and `apos.util.set`. Following any
+// of these reaches the prototype chain and enables server-side prototype
+// pollution (CWE-1321), e.g. a PATCH `$pullAll` key of
+// `__proto__.publicApiProjection`.
+const unsafePathSegments = new Set([ '__proto__', 'constructor', 'prototype' ]);
+
 module.exports = {
   options: {
     alias: 'util',
@@ -724,7 +731,7 @@ module.exports = {
       },
       // Given a widget or doc, return the appropriate manager module. If the manager
       // cannot be determined for any reason, undefined is returned.
-      getManagerOf(object) {
+      getManagerOf(object, { log = true } = {}) {
         if (object.metaType === 'doc') {
           return self.apos.doc.getManager(object.type);
         } else if (object.metaType === 'widget') {
@@ -733,10 +740,10 @@ module.exports = {
           return self.apos.schema.getArrayManager(object.scopedArrayName);
         } else if (object.metaType === 'object') {
           return self.apos.schema.getObjectManager(object.scopedObjectName);
-        } else {
+        } else if (log) {
           self.apos.util.error(`Unsupported metaType in getManagerOf: ${object.metaType}`);
-          return undefined;
         }
+        return undefined;
       },
       // fetch the value at the given path from the object or
       // array `o`. `path` supports dot notation like MongoDB, and
@@ -753,6 +760,10 @@ module.exports = {
             o = self.apos.util.findNestedObjectById(o, p.substring(1));
           } else {
             if (o == null) {
+              return undefined;
+            }
+            if (unsafePathSegments.has(p)) {
+              // Never read through the prototype chain (CWE-1321)
               return undefined;
             }
             o = o[p];
@@ -819,6 +830,12 @@ module.exports = {
           }
         }
         path = path.split('.');
+        for (p of path) {
+          if (unsafePathSegments.has(p)) {
+            // Refuse to write through the prototype chain (CWE-1321)
+            throw self.apos.error('invalid', `Unsafe property name "${p}" in dot path`);
+          }
+        }
         for (i = 0; (i < (path.length - 1)); i++) {
           p = path[i];
           o = o[p];

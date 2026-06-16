@@ -7,23 +7,26 @@
 // Note that if @apostrophecms/template has a project-level override
 // of outerLayout.html, that will be loaded instead. This is
 // intentional.
+//
+// File watching and cache invalidation are deliberately NOT handled here:
+// the template module wires up `viewWatcher.js` once for both Nunjucks and
+// JSX, and clears every loader's `cache` (read by Nunjucks itself) when a
+// view file changes.
 
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');
-const chokidar = require('chokidar');
 
 module.exports = function(moduleName, searchPaths, noWatch, templates, options) {
 
   const self = this;
-  self.watches = [];
   options = options || {};
   const extensions = options.extensions || [ 'njk', 'html' ];
   self.moduleName = moduleName;
   self.templates = templates;
 
-  self.init = function(searchPaths, noWatch) {
+  self.init = function(searchPaths) {
     self.pathsToNames = {};
     if (searchPaths) {
       searchPaths = Array.isArray(searchPaths) ? searchPaths : [ searchPaths ];
@@ -31,34 +34,6 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
       self.searchPaths = _.map(searchPaths, path.normalize);
     } else {
       self.searchPaths = [];
-    }
-    // Unless and until chokidar declares this a supported config,
-    // no watching in WSL (it doesn't work without chokidar either)
-    if ((!noWatch) && (!require('is-wsl'))) {
-      _.each(self.searchPaths, function(p) {
-        if (fs.existsSync(p)) {
-          try {
-            const watcher = chokidar.watch(p);
-            watcher.on('change', (path, stats) => {
-              // Just blow the whole cache if anything is modified. Much
-              // simpler, avoids several false negatives, and works well for a
-              // CMS in dev. -Tom
-              self.cache = {};
-            });
-            self.watches.push(watcher);
-          } catch (e) {
-            if (!self.firstWatchFailure) {
-              // Don't crash in broken environments (not sure if any are left
-              // thanks to chokidar, but still a useful warning to have if it
-              // comes up)
-              self.firstWatchFailure = true;
-              self.templates.apos.util.warn('WARNING: fs.watch does not work on this system. That is OK but you\n' +
-                'will have to restart to see any template changes take effect.');
-            }
-            self.templates.apos.util.error(e);
-          }
-        }
-      });
     }
   };
 
@@ -183,11 +158,11 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
     }
   };
 
-  self.destroy = async () => {
-    for (const watch of self.watches) {
-      await watch.close();
-    }
-  };
+  // Retained for backwards compatibility — file watching now lives in
+  // `viewWatcher.js`, owned by the template module itself, so there is
+  // nothing for the loader to dispose of. Callers (Apostrophe internals
+  // and tests) may still invoke `destroy()` and that must keep working.
+  self.destroy = async () => {};
 
   self.init(searchPaths, noWatch);
 };

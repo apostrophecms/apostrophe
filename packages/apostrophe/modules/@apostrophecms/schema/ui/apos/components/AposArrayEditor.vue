@@ -58,6 +58,7 @@
             class="apos-modal-array-items__items"
             :selected="currentId"
             :model-value="withLabels(next)"
+            :draggable="field.draggable !== false"
             @update:model-value="update"
             @select="select"
           />

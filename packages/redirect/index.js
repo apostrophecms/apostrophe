@@ -28,6 +28,14 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
+        preventInfiniteRedirect(req, doc) {
+          if (doc.urlType === 'external' && doc.redirectSlug === doc.externalUrl) {
+            throw self.apos.error('invalid', req.t('aposRedirect:errorInfiniteRedirect', {
+              originalSlug: req.t('aposRedirect:originalSlug'),
+              external: req.t('aposRedirect:external')
+            }));
+          }
+        },
         slugPrefix(req, doc) {
           doc.slug = 'redirect-' + doc.redirectSlug;
 

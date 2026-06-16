@@ -1,5 +1,5 @@
 /* global describe, it */
-/* eslint-disable no-unused-expressions */
+
 const { expect } = require('chai');
 const {
   extractAnchoredLiteralPrefix,

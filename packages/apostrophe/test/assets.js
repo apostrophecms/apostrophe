@@ -171,6 +171,29 @@ describe('Assets', function() {
 
   this.timeout(5 * 60 * 1000);
 
+  it('should include the site prefix in asset URLs', async function() {
+    let prefixApos;
+
+    try {
+      prefixApos = await t.create({
+        root: module,
+        prefix: '/apos'
+      });
+
+      assert.equal(
+        prefixApos.asset.getAssetBaseUrl(),
+        '/apos/apos-frontend/default'
+      );
+
+      assert.equal(
+        prefixApos.asset.url('/modules/foo/bar.js'),
+        '/apos/apos-frontend/default/modules/foo/bar.js'
+      );
+    } finally {
+      await t.destroy(prefixApos);
+    }
+  });
+
   it('should exist on the apos object', async function() {
     apos = await t.create({
       root: module,

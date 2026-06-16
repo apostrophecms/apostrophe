@@ -27,15 +27,6 @@ apos create <shortname-without-spaces>
 
 This will create a local copy of the [ApostropheCMS public demo](https://github.com/apostrophecms/public-demo).
 
-### options
-
-#### `--starter`
-
-Run `create` with a `--starter` flag to start from a Github repository other than the standard starters. For example, `apos create <shortname-without-spaces> --starter=https://github.com/apostrophecms/apostrophe-open-museum.git` would create a project using the [Open Museum](https://github.com/apostrophecms/apostrophe-open-museum) demo. The `--starter` flag also accepts shortened names for any of the [existing starter kits](https://github.com/orgs/apostrophecms/repositories?q=starter-kit&type=all) that consists of the name of the repo with the `starter-kit-` prefix removed. For example, `apos create <shortname-without-spaces> --starter=ecommerce` for the `starter-kit-ecommerce` repo. Finally, if you are using a personal or organizational repo, you can prefix your repo with it's location followed by the name to automatically add `https://github.com/`. For example, `apos create <shortname-without-spaces> --starter=mycoolcompany/my-starter`.
-
-#### `--mongodb-uri`
-If you are not using a locally hosted MongoDB server, you can provide a connection string with the `--mongodb-uri` flag. For the standard Atlas connection string, you will need to add quotes around the connection string due to the query parameters. This allows for the creation of an admin user during project creation. **Note**: this will not add your connection string to the project. It needs to be included through the `APOS_MONGODB_URI` environment variable, potentially through a `.env` file.
-
 ### Astro projects
 
 Hybrid ApostropheCMS + Astro projects are automatically detected by the presence of a `backend/` directory. When detected, the CLI will:

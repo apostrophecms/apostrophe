@@ -440,11 +440,11 @@ function sanitizeHtml(html, options, _recursing) {
                 return;
               }
             }
-            if (a === 'srcset') {
+            if (a === 'srcset' || a === 'imagesrcset') {
               try {
                 let parsed = parseSrcset(value);
                 parsed.forEach(function(value) {
-                  if (naughtyHref('srcset', value.url)) {
+                  if (naughtyHref(a, value.url)) {
                     value.evil = true;
                   }
                 });
@@ -953,11 +953,18 @@ sanitizeHtml.defaults = {
     'alt'
   ],
   // Lots of these won't come up by default because we don't allow them
-  selfClosing: [ 'img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta' ],
+  selfClosing: [ 'img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta', 'col' ],
   // URL schemes we permit
   allowedSchemes: [ 'http', 'https', 'ftp', 'mailto', 'tel' ],
   allowedSchemesByTag: {},
-  allowedSchemesAppliedToAttributes: [ 'href', 'src', 'cite' ],
+  allowedSchemesAppliedToAttributes: [
+    'href', 'src', 'cite',
+    'action', 'formaction', 'data', 'xlink:href',
+    'poster', 'background', 'ping',
+    'longdesc', 'usemap', 'codebase', 'classid', 'archive',
+    'profile', 'manifest', 'itemid',
+    'dynsrc', 'lowsrc'
+  ],
   allowProtocolRelative: true,
   enforceHtmlBoundary: false,
   parseStyleAttributes: true,
