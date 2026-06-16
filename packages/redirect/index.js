@@ -229,15 +229,14 @@ module.exports = {
             // URL must be lowercased for matching purposes. The original
             // (cased) pathOnly is preserved separately for use in wildcard
             // substitutions.
-            const matchSlug = self.options.caseInsensitive
-              ? slug.toLowerCase()
-              : slug;
-            const matchPathOnly = self.options.caseInsensitive
-              ? pathOnly.toLowerCase()
-              : pathOnly;
-            const matchPrefixes = self.options.caseInsensitive
-              ? prefixes.map(prefix => prefix.toLowerCase())
-              : prefixes;
+            let matchSlug = slug;
+            let matchPathOnly = pathOnly;
+            let matchPrefixes = prefixes;
+            if (self.options.caseInsensitive) {
+              matchSlug = slug.toLowerCase();
+              matchPathOnly = pathOnly.toLowerCase();
+              matchPrefixes = prefixes.map(prefix => prefix.toLowerCase());
+            }
 
             // Build query conditions
             const orConditions = [
@@ -499,11 +498,14 @@ module.exports = {
             return;
           }
           await self.apos.migration.eachDoc({
-            type: self.__meta.name,
-            redirectSlug: /[A-Z]/
+            type: self.__meta.name
           }, async redirect => {
+            const loweredSlug = redirect.redirectSlug.toLowerCase();
+            if (loweredSlug === redirect.redirectSlug) {
+              return;
+            }
             const $set = {
-              redirectSlug: redirect.redirectSlug.toLowerCase()
+              redirectSlug: loweredSlug
             };
             if (redirect.redirectSlugPrefix) {
               $set.redirectSlugPrefix = redirect.redirectSlugPrefix.toLowerCase();
