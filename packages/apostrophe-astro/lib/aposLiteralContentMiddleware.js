@@ -11,23 +11,26 @@
 // The pattern list is the manifest served by the backend at
 // `/api/v1/@apostrophecms/url/literal-routes` (the
 // `@apostrophecms/url:getLiteralContentRoutes` event). It is fetched lazily on
-// the first request and cached with a TTL, so a newly declared route appears
-// without a frontend restart.
+// the first request and kept for the lifetime of the process — the route list
+// is static once the backend is up. A failed fetch is not cached, so it is
+// retried on the next request; this gracefully handles any boot racing conditions.
 import { defineMiddleware } from 'astro:middleware';
 import config from 'virtual:apostrophe-config';
 import aposResponse from './aposResponse.js';
 
-// Cache the compiled manifest for this long before refetching.
-// TODO: expose as a config option.
-const TTL_MS = 5 * 60 * 1000;
-// Shorter retry window when a fetch fails, so a briefly-unavailable backend
-// is not hammered on every request.
-const ERROR_TTL_MS = 15 * 1000;
-
 const EXTERNAL_FRONT_KEY = process.env.APOS_EXTERNAL_FRONT_KEY;
 
-let cache = null; // { matchers, expires }
+// After this many consecutive 404s the endpoint is assumed absent (an
+// Apostrophe version without literal-content support) and the feature is
+// disabled for the lifetime of the process rather than probed on every request.
+const MAX_NOT_FOUND = 5;
+
+// Compiled matchers, fetched once and kept for the lifetime of the process.
+// Stays null until the first successful fetch, so a failed fetch is retried
+// on the next request.
+let cached = null;
 let inflight = null;
+let notFoundCount = 0;
 
 // Compile a prefix-free path pattern to a RegExp.
 // `*` matches within a path segment; `**` matches across segments.
@@ -52,6 +55,11 @@ async function fetchManifest() {
       'apos-external-front-key': EXTERNAL_FRONT_KEY
     }
   });
+  if (res.status === 404) {
+    const err = new Error('literal-routes endpoint not found (404)');
+    err.notFound = true;
+    throw err;
+  }
   if (!res.ok) {
     throw new Error(`literal-routes manifest fetch failed (${res.status})`);
   }
@@ -60,21 +68,32 @@ async function fetchManifest() {
 }
 
 function getMatchers() {
-  if (cache && cache.expires > Date.now()) {
-    return Promise.resolve(cache.matchers);
+  if (cached) {
+    return Promise.resolve(cached);
   }
   if (!inflight) {
     inflight = fetchManifest()
       .then((matchers) => {
-        cache = { matchers, expires: Date.now() + TTL_MS };
+        cached = matchers;
+        notFoundCount = 0;
         return matchers;
       })
       .catch((err) => {
-        // Fail open: no interception until the next retry window. Literal
-        // routes 500 in this state, but normal pages are unaffected.
-        console.error('[apostrophe-astro] literal-content middleware:', err.message);
-        cache = { matchers: [], expires: Date.now() + ERROR_TTL_MS };
-        return cache.matchers;
+        if (err.notFound) {
+          // Disable permanently (until restart).
+          if (++notFoundCount >= MAX_NOT_FOUND) {
+            cached = [];
+            console.error(
+              '[apostrophe-astro] literal-content: endpoint not found after ' +
+              `${notFoundCount} attempts; disabling. Please upgrade your Apostrophe version.`
+            );
+            return cached;
+          }
+        } else {
+          notFoundCount = 0;
+          console.error('[apostrophe-astro] literal-content middleware:', err.message);
+        }
+        return [];
       })
       .finally(() => {
         inflight = null;
