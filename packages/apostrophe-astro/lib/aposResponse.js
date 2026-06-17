@@ -50,10 +50,17 @@ export default async function aposResponse(req) {
     const aposUrl = new URL(aposHost + pathname);
     aposUrl.search = url.search;
 
+    // Headers that undici rejects unconditionally — strip them before
+    // forwarding to the backend regardless of user configuration.
+    // `Connection: Upgrade` and a bare `Upgrade` header both trigger
+    // UND_ERR_INVALID_ARG in undici when passed through a proxy.
+    const undiciRejectedHeaders = new Set([ 'connection', 'upgrade' ]);
+
     // Prepare headers, excluding any specified in config
     const requestHeaders = {};
     for (const [name, value] of req.headers) {
-      if (!excludedHeadersLower.has(name.toLowerCase())) {
+      const lower = name.toLowerCase();
+      if (!excludedHeadersLower.has(lower) && !undiciRejectedHeaders.has(lower)) {
         requestHeaders[name] = value;
       }
     }

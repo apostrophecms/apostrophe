@@ -45,8 +45,6 @@ export default function(req) {
     request = new Request(req);
     request.headers.set('x-requested-with', 'AposExternalFront');
     request.headers.set('apos-external-front-key', key);
-    // Prevent certain values of Connection, such as Upgrade, from causing an undici error in Node.js fetch
-    request.headers.delete('Connection');
   }
 
   return request;
