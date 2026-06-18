@@ -76,8 +76,12 @@ export default async function aposResponse(req) {
 
     const { headers, statusCode, ...rest } = res;
 
-    // Handle empty responses (status codes that should not have bodies)
-    if ([204, 304].includes(statusCode)) {
+    // Statuses whose body we never send to the client: 204/304 carry none,
+    // and redirects (301/302/307/308) become a fresh Astro redirect built
+    // from the Location header in aposProxy. Dump the undici body so its
+    // socket returns to the pool instead of being held open until GC.
+    if ([204, 304, 301, 302, 307, 308].includes(statusCode)) {
+      await res.body.dump().catch(() => {});
       return new Response(null, { ...rest, status: statusCode, headers: responseHeaders });
     }
 
