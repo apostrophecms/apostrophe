@@ -24,8 +24,15 @@ module.exports = {
 
         if (widget.anchorId && self.options.anchors !== false) {
           // Apply a wrapper div with the anchor attribute.
-          const attr = self.options.anchorAttribute || 'id';
-          const opener = `<div ${attr}=${widget.anchorId}>`;
+          // Sanitize attribute name to a whitelist
+          let attr = self.options.anchorAttribute || 'id';
+          if (![ 'id', 'name', 'data-anchor' ].includes(attr)) {
+            attr = 'id';
+          }
+
+          // Escape the anchorId to prevent XSS
+          const escapedId = self.apos.util.escapeHtml(widget.anchorId);
+          const opener = `<div ${attr}="${escapedId}">`;
 
           return opener + rendered + '</div>';
         } else {
