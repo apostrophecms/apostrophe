@@ -94,7 +94,7 @@ export default function apostropheIntegration(options) {
   return {
     name: 'apostrophe-integration',
     hooks: {
-      "astro:config:setup": async ({ config, injectRoute, updateConfig, injectScript }) => {
+      "astro:config:setup": async ({ config, injectRoute, addMiddleware, updateConfig, injectScript }) => {
         isStaticBuild = config.output === 'static';
         if (!options.widgetsMapping || !options.templatesMapping) {
           throw new Error('Missing required options')
@@ -166,6 +166,13 @@ export default function apostropheIntegration(options) {
         if (isStaticBuild) {
           return;
         }
+        // Runtime literal-content routing: a per-request middleware sends
+        // module-declared literal URLs (robots.txt, sitemap.xml, …) to the raw
+        // proxy instead of the page renderer. Additive to `proxyRoutes` below.
+        addMiddleware({
+          order: 'pre',
+          entrypoint: '@apostrophecms/apostrophe-astro/lib/aposLiteralContentMiddleware.js'
+        });
         const inject = [
           '/apos-frontend/[...slug]',
           '/api/v1/[...slug]',
