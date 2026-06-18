@@ -58,6 +58,25 @@ module.exports = {
     };
   },
 
+  apiRoutes(self) {
+    return {
+      get: {
+        // GET /api/v1/@apostrophecms/url/literal-routes
+        //
+        // Returns `{ patterns: [ ... ] }`.
+        // See the `getLiteralContentRoutes` method.
+        'literal-routes': async (req) => {
+          if (!self.isExternalFront(req)) {
+            throw self.apos.error('forbidden');
+          }
+          return {
+            patterns: await self.getLiteralContentRoutes(req)
+          };
+        }
+      }
+    };
+  },
+
   handlers(self) {
     return {
       '@apostrophecms/page:beforeSend': {
@@ -92,6 +111,41 @@ module.exports = {
       // directly.
       isExternalFront(req) {
         return !!req.aposExternalFront;
+      },
+
+      // Returns the list of "literal content" route patterns declared by
+      // modules — URLs that serve non-page content (e.g. `/robots.txt`,
+      // `/sitemap.xml`, `/sitemaps/*`) and must be proxied raw by an external
+      // front rather than routed through its page renderer.
+      //
+      // Emits `@apostrophecms/url:getLiteralContentRoutes`; handlers in any
+      // module push prefix-free path patterns onto the `patterns` array
+      // (exact like `/robots.txt`, or glob like `/sitemaps/*`). Patterns are
+      // declared unconditionally and independent of `req`: the consumer only
+      // needs to know "this path is literal content", and a pattern that 404s
+      // is harmless. This differs from `getAllUrlMetadata`, which enumerates
+      // exact, existing URLs per locale for static builds and sitemaps.
+      //
+      // Example module level implementation:
+      // ```js
+      // handlers(self) {
+      //   return {
+      //     '@apostrophecms/url:getLiteralContentRoutes': {
+      //       addSitemapRoutes(req, patterns) {
+      //         patterns.push('/sitemap.xml');
+      //         if (self.options.perLocale) {
+      //           patterns.push('/sitemaps/*');
+      //         }
+      //       }
+      //     }
+      //   };
+      // }
+      // ```
+      //
+      async getLiteralContentRoutes(req) {
+        const patterns = [];
+        await self.emit('getLiteralContentRoutes', req, patterns);
+        return [ ...new Set(patterns) ];
       },
 
       // Returns the effective base URL for the given request.
