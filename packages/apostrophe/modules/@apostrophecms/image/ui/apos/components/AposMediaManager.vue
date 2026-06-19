@@ -823,7 +823,8 @@ export default {
             qs: {
               sort: {
                 title: 1
-              }
+              },
+              perPage: this.moduleOptions.tagPickerPerPage
             }
           }
         );

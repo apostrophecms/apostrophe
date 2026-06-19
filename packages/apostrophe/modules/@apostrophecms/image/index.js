@@ -22,6 +22,9 @@ module.exports = {
     pluralLabel: 'apostrophe:images',
     alias: 'image',
     perPage: 50,
+    // How many image tags to load into the batch-tag popover at once. Raise it
+    // for sites with an unusually large number of tags.
+    tagPickerPerPage: 400,
     sort: { createdAt: -1 },
     quickCreate: false,
     insertViaUpload: true,
@@ -333,15 +336,24 @@ module.exports = {
         });
 
         const imageTagManager = self.apos.doc.getManager('@apostrophecms/image-tag');
-        const tag = (operation === 'create')
-          ? await imageTagManager.insert(
-            req,
-            {
+        let tag;
+        if (operation === 'create') {
+          // Reuse an existing tag with the same slug instead of inserting a
+          // duplicate.
+          const desiredSlug = self.apos.util.slugify(title);
+          const lockName = `@apostrophecms/image-tag:create:${req.locale}:${desiredSlug}`;
+          tag = await self.apos.lock.withLock(lockName, async () => {
+            const existing = await imageTagManager
+              .find(req, { slug: desiredSlug })
+              .toObject();
+            return existing || imageTagManager.insert(req, {
               ...imageTagManager.newInstance(),
               title
-            }
-          )
-          : await imageTagManager.find(req, { slug }).toObject();
+            });
+          });
+        } else {
+          tag = await imageTagManager.find(req, { slug }).toObject();
+        }
 
         return self.apos.modules['@apostrophecms/job'].runBatch(
           req,
@@ -725,6 +737,7 @@ module.exports = {
       getBrowserData(_super, req) {
         const data = _super(req);
         data.components.managerModal = 'AposMediaManager';
+        data.tagPickerPerPage = self.options.tagPickerPerPage;
         return data;
       }
     };
