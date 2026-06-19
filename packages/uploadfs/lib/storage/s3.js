@@ -8,6 +8,7 @@ const {
   S3Client,
   GetObjectCommand,
   DeleteObjectCommand,
+  CopyObjectCommand,
   PutObjectAclCommand
 } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
@@ -48,7 +49,7 @@ module.exports = function() {
       }
 
       bucket = options.bucket;
-      bucketObjectsACL = options.bucketObjectsACL || 'public-read';
+      bucketObjectsACL = (options.bucketObjectsACL === false) ? false : (options.bucketObjectsACL || 'public-read');
       disabledBucketObjectsACL = options.disabledBucketObjectsACL || 'private';
       noGzipContentTypes = options.noGzipContentTypes || require('./noGzipContentTypes');
       addNoGzipContentTypes = options.addNoGzipContentTypes || [];
@@ -116,11 +117,14 @@ module.exports = function() {
 
       const params = {
         Bucket: bucket,
-        ACL: bucketObjectsACL,
         Key: utils.removeLeadingSlash(self.options, path),
         Body: inputStream,
         ContentType: contentType
       };
+
+      if (bucketObjectsACL !== false) {
+        params.ACL = bucketObjectsACL;
+      }
 
       if (gzipAppropriate(contentType)) {
         params.ContentEncoding = 'gzip';
@@ -230,24 +234,36 @@ module.exports = function() {
     },
 
     enable: function(path, callback) {
+      if (self.options.disabledFileKey) {
+        const dPath = utils.getDisabledPath(path, self.options.disabledFileKey);
+        return self._copyObject(dPath, path, function(err) {
+          if (err) return callback(err);
+          return self.remove(dPath, callback);
+        });
+      }
       const command = new PutObjectAclCommand({
         Bucket: bucket,
         ACL: bucketObjectsACL,
         Key: utils.removeLeadingSlash(self.options, path)
       });
-
       client.send(command)
         .then(result => callback(null, result))
         .catch(err => callback(err));
     },
 
     disable: function(path, callback) {
+      if (self.options.disabledFileKey) {
+        const dPath = utils.getDisabledPath(path, self.options.disabledFileKey);
+        return self._copyObject(path, dPath, function(err) {
+          if (err) return callback(err);
+          return self.remove(path, callback);
+        });
+      }
       const command = new PutObjectAclCommand({
         Bucket: bucket,
         ACL: disabledBucketObjectsACL,
         Key: utils.removeLeadingSlash(self.options, path)
       });
-
       client.send(command)
         .then(result => callback(null, result))
         .catch(err => callback(err));
@@ -262,6 +278,17 @@ module.exports = function() {
         url = (https ? 'https://' : 'http://') + bucket + '.' + noProtoEndpoint;
       }
       return utils.addPathToUrl(self.options, url, path);
+    },
+
+    _copyObject: function(srcPath, destPath, callback) {
+      const command = new CopyObjectCommand({
+        Bucket: bucket,
+        CopySource: bucket + '/' + utils.removeLeadingSlash(self.options, srcPath),
+        Key: utils.removeLeadingSlash(self.options, destPath)
+      });
+      client.send(command)
+        .then(result => callback(null, result))
+        .catch(err => callback(err));
     },
 
     destroy: function(callback) {
