@@ -86,7 +86,9 @@ module.exports = {
       // The `options` object is passed on to `oembetter.fetch`.
       //
       // Responses are automatically cached, by default for one hour. See the
-      // cacheLifetime option to the module.
+      // cacheLifetime option to the module. Failures are cached as well, so
+      // that a bad or removed URL does not lead to repeated requests that can
+      // trigger rate-limiting (e.g. YouTube 429 errors and lockouts).
       async query(req, url, options) {
         if (!options) {
           options = {};
@@ -112,18 +114,44 @@ module.exports = {
           throw self.apos.error('invalid', req.t('apostrophe:oembedVideoUrlInvalid'));
         }
         const key = url + ':' + JSON.stringify(options);
-        let response = await self.apos.cache.get('@apostrophecms/oembed', key);
-        if (response !== undefined) {
-          return response;
-        }
-        if (options.alwaysIframe) {
-          response = await self.iframe(req, url, options);
-        } else {
-          try {
-            response = await require('util').promisify(self.oembetter.fetch)(url, options);
-          } catch (err) {
-            throw self.apos.error('invalid', req.t('apostrophe:oembedVideoUrlInvalid'));
+        const cached = await self.apos.cache.get('@apostrophecms/oembed', key);
+        if (cached !== undefined) {
+          // Cache entries are wrapped so that both successes and failures can
+          // be remembered. Caching failures prevents a bad or removed URL
+          // (such as a deleted YouTube video) from being requested over and
+          // over, which can trigger 429 rate-limiting and temporary lockouts.
+          //
+          // Legacy entries written before this wrapping existed are the raw
+          // oembed response object, so tolerate them by returning them as-is.
+          if (cached && cached.aposOembedCache) {
+            if (cached.error) {
+              throw self.apos.error('invalid', req.t('apostrophe:oembedVideoUrlInvalid'));
+            }
+            return cached.response;
           }
+          return cached;
+        }
+        let response;
+        try {
+          if (options.alwaysIframe) {
+            response = await self.iframe(req, url, options);
+          } else {
+            response = await require('util').promisify(self.oembetter.fetch)(url, options);
+          }
+        } catch (err) {
+          // Log the underlying cause first, since the higher-level error
+          // thrown below would otherwise obscure it.
+          self.logError(req, 'query-failed', err.message, {
+            url,
+            stack: err.stack
+          });
+          // Cache the failure too, so we don't keep hammering the provider
+          // for a URL that is currently failing.
+          await self.apos.cache.set('@apostrophecms/oembed', key, {
+            aposOembedCache: true,
+            error: true
+          }, self.options.cacheLifetime);
+          throw self.apos.error('invalid', req.t('apostrophe:oembedVideoUrlInvalid'));
         }
         // Make non-secure URLs protocol relative and
         // let the browser upgrade them to https if needed
@@ -137,8 +165,13 @@ module.exports = {
         if (response.html) {
           response.html = makeProtocolRelative(response.html);
         }
-        // cache oembed responses for one hour
-        await self.apos.cache.set('@apostrophecms/oembed', key, response, self.options.cacheLifetime);
+        // Cache the successful response (by default for one hour; see the
+        // cacheLifetime option).
+        await self.apos.cache.set('@apostrophecms/oembed', key, {
+          aposOembedCache: true,
+          error: false,
+          response
+        }, self.options.cacheLifetime);
         return response;
       },
       // Not currently used. Present for backwards compatibility
