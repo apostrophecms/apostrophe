@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/apostrophe",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "apostrophe",
@@ -102,7 +102,6 @@
     "minimatch": "^3.1.4",
     "mkdirp": "^0.5.5",
     "multer": "^2.1.1",
-    "node-fetch": "^2.6.1",
     "nodemailer": "^8.0.5",
     "nunjucks": "^3.2.1",
     "oembetter": "workspace:^",

@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
+const http = require('node:http');
 
 const setupPackages = ({ folder = 'test' }) => {
   const testNodeModules = path.join(__dirname, '../', folder, 'node_modules/');
@@ -57,5 +58,37 @@ const setupPackages = ({ folder = 'test' }) => {
 };
 setupPackages({ folder: 'test' });
 
+// Performs a GET via the raw node:http client, sending `headers` to the server
+// verbatim. Use this in tests that must control headers the built-in fetch
+// (used by apos.http) would otherwise refuse or rewrite: e.g. a forbidden
+// `Host` header, or the `Cache-Control: no-cache` it adds to any request that
+// carries a conditional header (If-None-Match / If-Modified-Since). `url` may
+// be absolute or site-relative (resolved against `apos.http.getBase()`).
+// Resolves with a fullResponse-shaped { status, headers, body }.
+const rawGet = (apos, url, headers = {}) => {
+  const target = url.startsWith('/') ? `${apos.http.getBase()}${url}` : url;
+  const parsed = new URL(target);
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      hostname: parsed.hostname,
+      port: parsed.port,
+      path: parsed.pathname + parsed.search,
+      method: 'GET',
+      headers
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => resolve({
+        status: res.statusCode,
+        headers: res.headers,
+        body: Buffer.concat(chunks).toString()
+      }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+};
+
 module.exports = require('./util.js');
 module.exports.setupPackages = setupPackages;
+module.exports.rawGet = rawGet;
