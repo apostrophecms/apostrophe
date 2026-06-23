@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.31.1-beta.1
+
+### Fixes
+
+The `@apostrophecms/oembed` module now caches failed lookups in addition to successful ones. Previously only successes were cached, so a bad or removed URL (such as a deleted YouTube video) could be requested over and over, triggering provider rate-limiting (e.g. YouTube 429 errors) and temporary lockouts. Cached entries written by older versions of Apostrophe are still tolerated, so no cache clearing is required when upgrading. In addition, the underlying error is now logged (via structured logging) before the higher-level "Video URL invalid" error is thrown, making the original cause easier to diagnose.
+
 ## 4.31.0 (2026-06-10)
 
 ### Adds
@@ -12,7 +18,7 @@
 ### Fixes
 
 - Fixed an issue where using the Tab key to navigate within modals could incorrectly jump focus to a wrong element instead of the next input field.
-Fixed Tab navigation escaping out of modals when the form contained hidden sections or elements that became disabled after editing.
+  Fixed Tab navigation escaping out of modals when the form contained hidden sections or elements that became disabled after editing.
 - Fixed adding or removing an area field from a schema breaking existing documents on an external front such as Astro.
 - For Astro: `AposArea` now renders only schema-backed areas. A missing area no longer throws, and an area orphaned by removing its field from the schema (while its content remains in the document) renders nothing instead of breaking sibling areas in edit mode. Logged-in editors get a diagnostic message in place of an orphaned area; anonymous visitors see nothing.
 - Editable documents sent to an external front (Asgtro) now materialize empty area objects for schema area fields added after the document was created, so they can be edited in context.
