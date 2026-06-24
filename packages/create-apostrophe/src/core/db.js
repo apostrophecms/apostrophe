@@ -9,6 +9,7 @@
 // (enforced by test/boundary.test.js).
 
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import dbConnect from '@apostrophecms/db-connect';
 import { assertSafeShortName } from './validate.js';
 
@@ -49,6 +50,38 @@ export function resolveDbUri({
     throw new TypeError(`resolveDbUri: ${dbChoice} requires a dbUri.`);
   }
   return dbUri;
+}
+
+/**
+ * The freshly-installed project's own `@apostrophecms/db-connect`, so any
+ * post-install sqlite work runs against the same driver the app will use —
+ * i.e. the `better-sqlite3` the project's `allowScripts` block actually built.
+ * create-apostrophe's own `better-sqlite3` is never built in npx / global
+ * installs (no project root → `allowScripts` doesn't apply), so its bundled
+ * copy must never construct a sqlite database.
+ *
+ * db-connect is resolved the way the project's Apostrophe resolves it
+ * (Apostrophe depends on it directly), so it is found whether npm hoisted it
+ * to the project root or nested it under `apostrophe`. All sqlite operations
+ * in this installer happen *after* the project install, so the module is
+ * always present by the time this is called.
+ *
+ * Returns `fallback` (the bundled copy) when the project module can't be
+ * resolved.
+ *
+ * @param {string} appRoot  Installed app root (where node_modules/apostrophe lives).
+ * @param {{ fallback?: typeof dbConnect }} [opts]
+ * @returns {typeof dbConnect}
+ */
+export function loadProjectDbConnect(appRoot, { fallback = dbConnect } = {}) {
+  try {
+    const requireFromApp = createRequire(path.join(appRoot, 'package.json'));
+    const apostropheEntry = requireFromApp.resolve('apostrophe');
+    const requireFromApostrophe = createRequire(apostropheEntry);
+    return requireFromApostrophe('@apostrophecms/db-connect');
+  } catch {
+    return fallback;
+  }
 }
 
 /**
