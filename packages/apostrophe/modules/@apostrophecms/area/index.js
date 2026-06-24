@@ -886,7 +886,8 @@ module.exports = {
           area.items.push({
             _id: self.apos.util.generateId(),
             type: '@apostrophecms/rich-text',
-            content: html
+            content: html,
+            metaType: 'widget'
           });
         }
         return area;
