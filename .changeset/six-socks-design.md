@@ -13,4 +13,7 @@
 - Keep lib/aposPageFetch.js as the internal implementation (starter kit entrypoint only)
 - Reduce lib/util.js, lib/aposSetQueryParameter.js, lib/static.js to deprecated shims
 - Add MIGRATION.md
-- Bump undici to ^7.x for Node.js 24+ compatibility
+- Bump `undici` to ^7.x for Node.js 24+ compatibility
+- Add `peerDependencies` declaring Astro v5, v6, and v7 support.
+- Fix `virtual:apostrophe-config` import in `aposLiteralContentMiddleware.js` to use the generated-file module path.
+- Drop deprecated entryPoint shim from injectRoute calls.
