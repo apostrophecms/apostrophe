@@ -75,7 +75,7 @@ Your new ApostropheCMS site will be available at `http://localhost:3000` with a 
 **Get started with Astro integration** - the easiest way to build headless sites while keeping visual editing:
 
 - **[Apollo Starter Kit (Astro)](https://apostrophecms.com/starter-kits/apollo-starter-kit-for-astro-cms)** - Production-ready foundation with beautiful design system and rich content features
-- **[Essentials Starter Kit (Astro)](git clone https://github.com/apostrophecms/starter-kit-astro-essentials)** - Minimal, clean foundation for building custom designs from scratch
+- **[Essentials Starter Kit (Astro)](https://github.com/apostrophecms/starter-kit-astro-essentials)** - Minimal, clean foundation for building custom designs from scratch
 
 Both starter kits provide headless CMS power with in-context editing, letting content creators edit directly on the live site while you build with modern frontend tools. Our Astro integration handles all the content fetching automatically—no REST API calls to write.
 
