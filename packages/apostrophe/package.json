@@ -87,7 +87,7 @@
     "express-cache-on-demand": "workspace:^",
     "express-session": "^1.18.2",
     "fs-extra": "^7.0.1",
-    "glob": "^10.4.5",
+    "glob": "^13.0.0",
     "he": "^1.2.0",
     "html-to-text": "^9.0.5",
     "i18next": "^20.3.2",
