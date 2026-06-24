@@ -67,12 +67,11 @@ setupPackages({ folder: 'test' });
 // Resolves with a fullResponse-shaped { status, headers, body }.
 const rawGet = (apos, url, headers = {}) => {
   const target = url.startsWith('/') ? `${apos.http.getBase()}${url}` : url;
-  const parsed = new URL(target);
   return new Promise((resolve, reject) => {
-    const req = http.request({
-      hostname: parsed.hostname,
-      port: parsed.port,
-      path: parsed.pathname + parsed.search,
+    // Pass the URL string (rather than a split hostname/port) so an IPv6 base
+    // such as `http://[::1]:3000` from getBase() is handled correctly; a
+    // bracketed hostname passed on its own is treated as a name to DNS-resolve.
+    const req = http.request(target, {
       method: 'GET',
       headers
     }, (res) => {

@@ -4,6 +4,8 @@
 
 The server-side HTTP client (`apos.http`) now uses Node's built-in `fetch` instead of `node-fetch`.
 
+`node-fetch` is no longer maintained, and Node's built-in `fetch` is its standard, actively maintained successor, available in every Node.js version Apostrophe supports - so this is the right time to adopt it. We do not consider this a breaking change: common `apos.http.*` usage is unchanged, and we deliberately preserved compatibility where it mattered - `form-data` request bodies, cookie jars, the `timeout` option (now backed by an `AbortSignal`), and absolute redirect `Location` headers all behave as before.
+
 Most code that calls `apos.http.get()`, `apos.http.post()`, etc. needs no changes. A few things to be aware of if you use advanced options or read raw responses:
 
 - The `agent` option is no longer supported (the built-in `fetch` has no equivalent). Pass an undici `dispatcher` instead; `apos.http` throws if `agent` is given.
