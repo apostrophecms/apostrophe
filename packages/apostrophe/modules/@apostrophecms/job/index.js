@@ -110,7 +110,9 @@ module.exports = {
           // sends a response with a jobId to the browser
           job = await self.start(options);
 
-          self.setTotal(job, ids.length);
+          // Persist the total before work begins so the completed notification
+          // and job document always report it, even if processing finishes fast.
+          await self.setTotal(job, ids.length);
           // Runs after response is already sent
           run();
 

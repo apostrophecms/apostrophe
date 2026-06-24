@@ -1,6 +1,9 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 const fs = require('fs');
+// rawGet (raw node:http) lets this suite send a spoofed `Host` header, which
+// the built-in fetch used by apos.http would drop as a forbidden header.
+const { rawGet } = t;
 
 describe('Files', function() {
 
@@ -142,17 +145,13 @@ describe('Files', function() {
       const attachment = apos.attachment.first(file);
       const url = apos.attachment.url(attachment);
       assert(url);
-      // Send an attacker-controlled Host header (e.g. the cloud metadata
-      // address from the advisory). The upstream fetch must be resolved
-      // against the server-trusted baseUrl, not this header, so the
-      // legitimate content is still served and the request is never
-      // steered at the spoofed host.
-      const response = await apos.http.get(url, {
-        headers: {
-          Host: '169.254.169.254'
-        },
-        fullResponse: true
-      });
+      // Spoof the Host header (the cloud-metadata address from the advisory)
+      // over a raw request: apos.http uses the built-in fetch, which drops a
+      // forbidden `Host` header and so cannot deliver the spoof. The server
+      // must resolve the upstream fetch against its trusted baseUrl, not this
+      // header, so the legitimate content is still served and the request is
+      // never steered at the spoofed host.
+      const response = await rawGet(apos, url, { Host: '169.254.169.254' });
       assert.strictEqual(response.status, 200);
       assert.strictEqual(response.body, attachment.data);
     } finally {
