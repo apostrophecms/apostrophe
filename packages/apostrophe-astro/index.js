@@ -238,23 +238,18 @@ export default function apostropheIntegration(options) {
           ...(options.proxyRoutes || [])
         ];
         for (const pattern of inject) {
-          // duplication of entrypoint needed for Astro 3.x support per
-          // https://docs.astro.build/en/guides/upgrade-to/v4/#renamed-entrypoint-integrations-api
           injectRoute({
             pattern,
-            entryPoint: '@apostrophecms/apostrophe-astro/endpoints/aposProxy.js',
             entrypoint: '@apostrophecms/apostrophe-astro/endpoints/aposProxy.js'
           });
         }
         // Different pattern from the rest
         injectRoute({
           pattern: '/[locale]/api/v1/@apostrophecms/area/render-widget',
-          entryPoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro',
           entrypoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro'
         });
         injectRoute({
           pattern: '/api/v1/@apostrophecms/area/render-widget',
-          entryPoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro',
           entrypoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro'
         });
       },
