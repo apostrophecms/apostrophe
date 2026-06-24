@@ -1,4 +1,4 @@
-const XLSX = require('xlsx');
+const XLSX = require('@e965/xlsx');
 
 module.exports = {
   label: 'XLSX',
