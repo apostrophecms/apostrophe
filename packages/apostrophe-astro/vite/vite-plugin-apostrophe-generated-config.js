@@ -56,20 +56,12 @@ async function writeGeneratedRuntimeFiles({
 
   // ── config.js ──────────────────────────────────────────────────────────────
   // Serialise the resolved integration config as a static ES module export.
-  // All keys are always present so consumer code can rely on their shape.
-  const configObj = {
-    aposHost: integrationConfig.aposHost ?? null,
-    aposPrefix: integrationConfig.aposPrefix ?? '',
-    includeResponseHeaders: integrationConfig.includeResponseHeaders ?? null,
-    excludeRequestHeaders: integrationConfig.excludeRequestHeaders ?? null,
-    viewTransitionWorkaround: integrationConfig.viewTransitionWorkaround ?? false,
-    staticBuild: integrationConfig.staticBuild ?? null
-  };
-
+  // All keys are guaranteed to have concrete values by the time integrationConfig
+  // is constructed in index.js, so we serialise it directly.
   const configContent =
     GENERATED_HEADER +
     '\nexport default ' +
-    JSON.stringify(configObj, null, 2) +
+    JSON.stringify(integrationConfig, null, 2) +
     ';\n';
 
   await writeFile(join(dotDir, 'config.js'), configContent);

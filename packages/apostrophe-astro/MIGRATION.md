@@ -1,12 +1,12 @@
 # Migrating to @apostrophecms/apostrophe-astro v1.13
 
-## Astro v6 support
+## Astro v6 and v7 support
 
-v1.13 adds support for Astro v6 (Vite 7). Astro v5 continues to work.
+v1.13 adds support for Astro v6 (Vite 7) and Astro v7 (Vite 8). Astro v5 continues to work.
 
 ---
 
-## Astro v6: remove `security.allowedDomains` from static builds
+## Remove `security.allowedDomains` from static builds
 
 If your project uses `security.allowedDomains` in `astro.config.mjs` **and** runs static builds, guard it to SSR-only. In a static build Astro v6 reads `request.headers` to validate forwarded headers even during prerendering, producing a spurious warning for every page:
 
@@ -23,7 +23,7 @@ const isStatic = process.env.APOS_BUILD === 'static'; // or however you detect i
 export default defineConfig({
   output: isStatic ? 'static' : 'server',
   // Only configure allowedDomains for SSR — it is meaningless during
-  // static prerendering and triggers a spurious headers warning in Astro v6.
+  // static prerendering and triggers a spurious headers warning in Astro v6 and v7.
   ...(!isStatic && {
     security: { allowedDomains }
   }),
@@ -59,4 +59,7 @@ import { getAllStaticPaths } from '@apostrophecms/apostrophe-astro/helpers/serve
 
 ## Removed: Vite virtual modules
 
-`virtual:apostrophe-config` and `virtual:apostrophe-doctypes` were private implementation details and are no longer available. If you were importing either of these directly, remove those imports — there is no public replacement, as they were never part of the supported API.
+`virtual:apostrophe-config` and `virtual:apostrophe-doctypes` were private implementation details and are no longer available.
+
+- If you imported `virtual:apostrophe-config` to read values like `aposHost` or `aposPrefix`, use your own application config instead — these values are set by you in `astro.config.mjs` and should be sourced from there.
+- If you imported `virtual:apostrophe-doctypes` to access `widgets` or `templates`, import your own mapping files directly.
