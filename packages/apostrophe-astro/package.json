@@ -10,11 +10,24 @@
   },
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/apostrophe-astro#readme",
   "main": "index.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "build:types": "tsc",
+    "test": "mocha"
+  },
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "dependencies": {
     "lodash.deburr": "^4.1.0",
     "sluggo": "^1.0.0",
     "undici": "^8.5.0"
+  },
+  "peerDependencies": {
+    "astro": ">=5.0.0 <8.0.0"
+  },
+  "devDependencies": {
+    "esmock": "^2.7.6",
+    "mocha": "^11.7.6",
+    "typescript": "^6.0.3"
   }
 }

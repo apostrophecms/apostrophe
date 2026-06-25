@@ -1,11 +1,39 @@
+import config from 'apostrophe-astro-config/config';
 import aposResponse from './aposResponse.js';
-import aposRequest from './aposRequest.js';
-import config from 'virtual:apostrophe-config';
+import aposRequest, { isAstroPrerenderedRequest } from './aposRequest.js';
 
-export default async function aposPageFetch(req) {
+/**
+ * Fetch a full Apostrophe page data object for the given Astro request.
+ *
+ * @internal
+ * This is for internal use by the starter kit's `[...slug].astro` entrypoint
+ * only. It is not part of the public helper API. For fetching arbitrary
+ * Apostrophe data in your own components, use `aposFetch` from
+ * `@apostrophecms/apostrophe-astro/helpers/server` instead.
+ *
+ * It wraps `aposRequest` and `aposResponse` to forward the incoming
+ * request to the Apostrophe backend and return the parsed JSON page data,
+ * including automatic handling of trailing-slash redirects.
+ *
+ * @param {Request} req - The incoming Astro request (`Astro.request`).
+ * @returns {Promise<object>} The Apostrophe page data object. On error,
+ *   returns an object with `errorFetchingPage` set to the caught error
+ *   and `page.type` set to `'apos-fetch-error'`.
+ */
+export async function aposPageFetch(req) {
   let aposData = {};
   try {
-    let request = aposRequest(req);
+    // Pass only the URL (as a plain string) when the request is Astro's
+    // prerendered request. Astro v6 installs a warning getter on
+    // Astro.request.headers for prerendered pages; we detect this via
+    // isAstroPrerenderedRequest() which inspects the property descriptor
+    // without triggering the getter. Fall back to env-var / config checks
+    // for any edge cases where the request was already unwrapped.
+    const isStaticBuild = isAstroPrerenderedRequest(req)
+      || process.env.APOS_ASTRO_STATIC_BUILD === '1'
+      || Boolean(config.staticBuild);
+    const input = (isStaticBuild && req && typeof req !== 'string') ? req.url : req;
+    let request = aposRequest(input);
     if (request.method === 'HEAD') {
       request = new Request(request, {
         method: 'GET'
@@ -66,3 +94,5 @@ export default async function aposPageFetch(req) {
   }
   return aposData;
 }
+
+export default aposPageFetch;

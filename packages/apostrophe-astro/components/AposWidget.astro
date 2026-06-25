@@ -1,5 +1,5 @@
 ---
-import { widgets } from "virtual:apostrophe-doctypes";
+import { widgets } from 'apostrophe-astro-config/doctypes';
 
 const { widget, options, ...props } = Astro.props;
 const isEdit = widget._edit && Astro.url.searchParams.get("aposEdit");

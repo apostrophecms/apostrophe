@@ -1,6 +1,8 @@
-import { vitePluginApostropheDoctype } from './vite/vite-plugin-apostrophe-doctype.js';
-import { vitePluginApostropheConfig } from './vite/vite-plugin-apostrophe-config.js';
+import { vitePluginApostropheGeneratedConfig } from './vite/vite-plugin-apostrophe-generated-config.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
+  setStaticCacheDir,
   writeConfigCache,
   writeLiteralContent,
   writeAttachments,
@@ -133,33 +135,86 @@ export default function apostropheIntegration(options) {
             : (userStatic.attachmentScope || 'used')
         };
 
+        // config.root is a URL in Astro 5+ — convert to a file-system path.
+        const projectRoot = config.root instanceof URL
+          ? fileURLToPath(config.root)
+          : config.root;
+
         // Persist static build config so `lib/static.js` can read
         // it without depending on the Vite virtual module (which
         // is unavailable at config load time).
         if (isStaticBuild) {
           resolvedStaticBuild = staticBuild;
+          setStaticCacheDir(path.join(
+            projectRoot,
+            'node_modules',
+            '.apostrophe-astro-static'
+          ));
           await writeConfigCache(staticBuild);
+          // Set a process-level flag so aposRequest can reliably detect
+          // the static build context across all Vite environments and
+          // module instances, avoiding Astro.request.headers access
+          // during prerendering which triggers a warning in Astro v6.
+          process.env.APOS_ASTRO_STATIC_BUILD = '1';
         }
+
+        // Build the integration config object that will be serialised
+        // into node_modules/.apostrophe-astro-config/config.js.
+        // forwardHeaders is normalised into includeResponseHeaders so
+        // the generated file has a single canonical field.
+        const integrationConfig = {
+          aposHost: resolvedAposHost,
+          aposPrefix,
+          includeResponseHeaders:
+            options.includeResponseHeaders || options.forwardHeaders || null,
+          excludeRequestHeaders: options.excludeRequestHeaders || null,
+          viewTransitionWorkaround: options.viewTransitionWorkaround || false,
+          staticBuild: isStaticBuild ? staticBuild : null
+        };
+
+        const generatedDir = path.join(
+          projectRoot,
+          'node_modules',
+          '.apostrophe-astro-config'
+        );
 
         updateConfig({
           vite: {
             plugins: [
-              vitePluginApostropheDoctype(
-                options.widgetsMapping,
-                options.templatesMapping,
-                options.onBeforeWidgetRender
-              ),
-              vitePluginApostropheConfig({
-                aposHost: resolvedAposHost,
-                forwardHeaders: options.forwardHeaders,
-                viewTransitionWorkaround: options.viewTransitionWorkaround,
-                includeResponseHeaders: options.includeResponseHeaders,
-                excludeRequestHeaders: options.excludeRequestHeaders,
-                staticBuild: isStaticBuild ? staticBuild : undefined,
-                aposPrefix
-              }),
+              vitePluginApostropheGeneratedConfig(
+                options,
+                integrationConfig,
+                projectRoot
+              )
             ],
-          },
+            define: {
+              'process.env.APOS_ASTRO_STATIC_BUILD': JSON.stringify(isStaticBuild ? '1' : '')
+            },
+            resolve: {
+              alias: {
+                'apostrophe-astro-config/config': path.join(generatedDir, 'config.js'),
+                'apostrophe-astro-config/doctypes': path.join(generatedDir, 'doctypes.js')
+              }
+            },
+            // Ensure this package is always processed by Vite (not externalized)
+            // so that the generated-config aliases are applied. In Astro v6 the
+            // `vite.ssr` option only covers the SSR environment; the prerender
+            // environment used for static builds needs the same treatment via
+            // `vite.environments.prerender`. We set both for forward-compat.
+            ssr: {
+              noExternal: [ '@apostrophecms/apostrophe-astro' ]
+            },
+            environments: {
+              prerender: {
+                resolve: {
+                  noExternal: [ '@apostrophecms/apostrophe-astro' ]
+                },
+                define: {
+                  'process.env.APOS_ASTRO_STATIC_BUILD': JSON.stringify(isStaticBuild ? '1' : '')
+                }
+              }
+            }
+          }
         });
         // Proxy routes are only needed for SSR — in static mode all data
         // is fetched at build time via getStaticPaths / aposPageFetch.
@@ -183,23 +238,18 @@ export default function apostropheIntegration(options) {
           ...(options.proxyRoutes || [])
         ];
         for (const pattern of inject) {
-          // duplication of entrypoint needed for Astro 3.x support per
-          // https://docs.astro.build/en/guides/upgrade-to/v4/#renamed-entrypoint-integrations-api
           injectRoute({
             pattern,
-            entryPoint: '@apostrophecms/apostrophe-astro/endpoints/aposProxy.js',
             entrypoint: '@apostrophecms/apostrophe-astro/endpoints/aposProxy.js'
           });
         }
         // Different pattern from the rest
         injectRoute({
           pattern: '/[locale]/api/v1/@apostrophecms/area/render-widget',
-          entryPoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro',
           entrypoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro'
         });
         injectRoute({
           pattern: '/api/v1/@apostrophecms/area/render-widget',
-          entryPoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro',
           entrypoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro'
         });
       },

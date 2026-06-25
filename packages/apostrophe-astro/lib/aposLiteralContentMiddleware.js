@@ -15,7 +15,7 @@
 // is static once the backend is up. A failed fetch is not cached, so it is
 // retried on the next request; this gracefully handles any boot racing conditions.
 import { defineMiddleware } from 'astro:middleware';
-import config from 'virtual:apostrophe-config';
+import config from 'apostrophe-astro-config/config';
 import aposResponse from './aposResponse.js';
 
 const EXTERNAL_FRONT_KEY = process.env.APOS_EXTERNAL_FRONT_KEY;
