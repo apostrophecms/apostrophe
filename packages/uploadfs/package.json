@@ -39,7 +39,7 @@
     "@azure/storage-blob": "^12.14.0",
     "@google-cloud/storage": "^7.19.0",
     "@smithy/node-http-handler": "^4.4.0",
-    "sharp": "^0.32.6"
+    "sharp": "^0.35.2"
   },
   "devDependencies": {
     "eslint": "^9.39.1",
