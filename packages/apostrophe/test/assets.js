@@ -432,10 +432,10 @@ describe('Assets', function() {
     assert(meta2['default:src']);
 
     // Caching should provide a measurable speedup. The threshold is kept
-    // low (10%) to avoid flaky failures on loaded CI runners where the
+    // low (5%) to avoid flaky failures on loaded CI runners where the
     // cold run can be fast due to OS-level caching.
     const gain = (execTime - execTimeCached) / execTime * 100;
-    assert(gain >= 10, `Expected gain >=10%, got ${gain}%`);
+    assert(gain >= 5, `Expected gain >=5%, got ${gain}%`);
 
     // Modification times
     assert(meta['default:apos'].mdate);

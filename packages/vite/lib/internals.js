@@ -85,8 +85,6 @@ module.exports = (self) => {
       self.printDebug('build-apos', { viteConfig: config });
       await build(config);
       self.printLabels('apos', false);
-
-      return Date.now();
     },
 
     // Builds the public assets.
@@ -154,26 +152,22 @@ module.exports = (self) => {
       if (options.isTask || process.env.APOS_DEV === '1') {
         return true;
       }
+      // The core detects lock file (dependency) changes by content and forces
+      // a rebuild, clearing our cache beforehand.
+      if (options.lockChanged) {
+        return true;
+      }
+      // No previous build to reuse.
       if (!self.hasViteBuildManifest(id)) {
         return true;
       }
-
-      // Detect last apos build time and compare it with the last system change.
-      const aposManifest = await self.apos.asset.loadSavedBuildManifest();
-      const lastBuildMs = aposManifest.ts || 0;
-      const lastSystemChange = await self.apos.asset.getSystemLastChangeMs();
-      if (lastSystemChange !== false && lastBuildMs > lastSystemChange) {
-        return false;
-      }
-
-      // Forced build by type. Keeping the core current logic.
-      // In play when asset option `publicBundle: false` is set - forces apos build
-      // if not cached.
+      // Forced build by type. In play when asset option `publicBundle: false`
+      // is set - forces the apos build.
       if (options.types?.includes(id)) {
         return true;
       }
-
-      return true;
+      // A previous build exists and no dependency change was detected - reuse it.
+      return false;
     },
 
     // The CLI info labels for the build process.

@@ -547,6 +547,16 @@ describe('@apostrophecms/vite', function () {
       }
     });
 
+    it('shouldBuild forces a rebuild when the lock file changed', async function () {
+      assert.strictEqual(
+        await apos.vite.shouldBuild('apos', {
+          isTask: false,
+          lockChanged: true
+        }),
+        true
+      );
+    });
+
     it('should copy public bundled assets', async function () {
       const build = async () => {
         await apos.vite.reset();
