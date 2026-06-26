@@ -136,7 +136,7 @@ module.exports = {
         await self.buildBefore(options);
 
         await self.buildPublic(options);
-        const ts = await self.buildApos(options);
+        await self.buildApos(options);
 
         const viteManifest = await self.getViteBuildManifest();
         self.entrypointsManifest = await self.applyManifest(
@@ -145,8 +145,7 @@ module.exports = {
         return {
           entrypoints: self.entrypointsManifest,
           sourceMapsRoot: self.distRoot,
-          devServerUrl: null,
-          ts
+          devServerUrl: null
         };
       },
       // A required interface for the asset module.
@@ -163,12 +162,11 @@ module.exports = {
 
         self.ensureViteClientEntry(self.entrypointsManifest, currentScenes, options);
 
-        let ts;
         if (currentBuild === 'public') {
           await self.buildPublic(options);
         }
         if (currentBuild === 'apos') {
-          ts = await self.buildApos(options);
+          await self.buildApos(options);
         }
 
         const viteManifest = await self.getViteBuildManifest(currentBuild);
@@ -182,7 +180,6 @@ module.exports = {
             self.getBuildEntrypointsFor(options.devServer)
               .map((entry) => entry.type)
           ) ],
-          ts,
           devServerUrl: self.getDevServerUrl()
         };
       },
