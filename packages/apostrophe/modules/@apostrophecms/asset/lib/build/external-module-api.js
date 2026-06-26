@@ -212,28 +212,19 @@ function invoke() {
     // Helper function for external build modules to find the last package
     // change timestamp in milliseconds. Works with Node.js and npm, yarn, and
     // pnpm package managers. Might be extended if a need arises.
+    //
+    // @deprecated Lock file modified times are unreliable (fresh checkouts,
+    // restored build artifacts, clock skew). The core now detects dependency
+    // changes by hashing the lock file content and forces a rebuild via the
+    // `lockChanged` build option, so build modules no longer need this. Kept
+    // for backwards compatibility and will be removed in the next major version.
     async getSystemLastChangeMs() {
-      const packageLock = await findPackageLock();
+      const packageLock = await self.findPackageLockPath();
       if (!packageLock) {
         return false;
       }
 
       return (await fs.stat(packageLock)).mtimeMs;
-
-      async function findPackageLock() {
-        const packageLockPath = path.join(self.apos.npmRootDir, 'package-lock.json');
-        const yarnPath = path.join(self.apos.npmRootDir, 'yarn.lock');
-        const pnpmPath = path.join(self.apos.npmRootDir, 'pnpm-lock.yaml');
-        if (await fs.pathExists(packageLockPath)) {
-          return packageLockPath;
-        } else if (await fs.pathExists(yarnPath)) {
-          return yarnPath;
-        } else if (await fs.pathExists(pnpmPath)) {
-          return pnpmPath;
-        } else {
-          return false;
-        }
-      }
     },
 
     // Retrieve saved during build core metadata. The metadata is saved in the
