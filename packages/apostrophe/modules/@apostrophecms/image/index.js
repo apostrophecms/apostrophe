@@ -22,9 +22,6 @@ module.exports = {
     pluralLabel: 'apostrophe:images',
     alias: 'image',
     perPage: 50,
-    // How many image tags to load into the batch-tag popover at once. Raise it
-    // for sites with an unusually large number of tags.
-    tagPickerPerPage: 400,
     sort: { createdAt: -1 },
     quickCreate: false,
     insertViaUpload: true,
@@ -737,7 +734,6 @@ module.exports = {
       getBrowserData(_super, req) {
         const data = _super(req);
         data.components.managerModal = 'AposMediaManager';
-        data.tagPickerPerPage = self.options.tagPickerPerPage;
         return data;
       }
     };
