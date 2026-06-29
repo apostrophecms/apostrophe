@@ -1,6 +1,6 @@
 # @apostrophecms/font-size
 
-!Screenshot(https://static.apostrophecms.com/apostrophecms/font-size/images/font-size.png)
+![Screenshot](https://static.apostrophecms.com/apostrophecms/font-size/images/font-size.png)
 
 Adds a free-form **font size** tool to the ApostropheCMS rich text editor
 toolbar. Editors select text and set its size in pixels, either by typing a
