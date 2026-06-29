@@ -127,6 +127,10 @@ module.exports = {
     placeholderTextWithInsertMenu: 'apostrophe:richTextPlaceholderWithInsertMenu',
     defaultData: { content: '' },
     className: false,
+    // Preset pixel sizes offered by the "size" toolbar item. The amount
+    // remains free-form; these are simply quick choices. Set to an empty
+    // array to offer only the free-form input.
+    fontSizes: [ 12, 14, 16, 18, 24, 32, 48 ],
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Hostnames from which `<img>` tags in `import.html` may be fetched.
     // The list is empty by default, which disables image fetching during
@@ -171,7 +175,8 @@ module.exports = {
         'anchor',
         'bulletList',
         'orderedList',
-        'color'
+        'color',
+        'size'
       ],
       styles: [
         // you may also use a `class` property with these
@@ -365,6 +370,11 @@ module.exports = {
         label: 'apostrophe:richTextColor',
         command: 'setColor'
       },
+      size: {
+        component: 'AposTiptapFontSize',
+        label: 'apostrophe:richTextFontSize',
+        command: 'setFontSize'
+      },
       importTable: {
         component: 'AposTiptapImportTable',
         icon: 'cloud-upload-icon',
@@ -440,6 +450,7 @@ module.exports = {
   },
   icons: {
     'format-text-icon': 'FormatText',
+    'format-size-icon': 'FormatSize',
     'format-color-highlight-icon': 'FormatColorHighlight',
     'table-icon': 'Table',
     'palette-swatch-icon': 'PaletteSwatch',
@@ -602,7 +613,8 @@ module.exports = {
           table: [ 'table', 'tr', 'td', 'th', 'colgroup', 'col', 'div' ],
           image: [ 'figure', 'img', 'figcaption' ],
           div: [ 'div' ],
-          color: [ 'span' ]
+          color: [ 'span' ],
+          size: [ 'span' ]
         };
         for (const item of self.combinedItems(options)) {
           if (simple[item]) {
@@ -707,6 +719,10 @@ module.exports = {
           color: {
             tag: '*',
             attributes: [ 'style' ]
+          },
+          size: {
+            tag: '*',
+            attributes: [ 'style' ]
           }
         };
         for (const item of self.combinedItems(options)) {
@@ -770,6 +786,13 @@ module.exports = {
                 // CSS Variable value
                 /^var\(--[a-zA-Z0-9-]+\)$/
               ]
+            }
+          },
+          size: {
+            selector: '*',
+            properties: {
+              // Font sizes are always expressed in pixels, e.g. 16px or 16.5px.
+              'font-size': [ /^\d*\.?\d+px$/i ]
             }
           },
           table: {
@@ -1220,6 +1243,7 @@ module.exports = {
           linkSchema: self.linkSchema,
           imageStyles: self.options.imageStyles,
           color: self.options.color,
+          fontSizes: self.options.fontSizes,
           tableOptions: self.options.tableOptions
         };
         return finalData;
