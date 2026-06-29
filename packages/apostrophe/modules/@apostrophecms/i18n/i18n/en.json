@@ -561,6 +561,8 @@
   "richTextBulletedList": "Bulleted List",
   "richTextCodeBlock": "Code Block",
   "richTextColor": "Color",
+  "richTextFontSize": "Font Size",
+  "richTextRemoveFontSize": "Remove Size",
   "richTextH1": "Heading 1 (H1)",
   "richTextH2": "Heading 2 (H2)",
   "richTextH3": "Heading 3 (H3)",
