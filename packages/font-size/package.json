@@ -1,0 +1,42 @@
+{
+  "name": "@apostrophecms/font-size",
+  "version": "1.0.0",
+  "description": "Adds a free-form font size tool to the ApostropheCMS rich text editor.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint && npm run stylelint",
+    "eslint": "eslint .",
+    "stylelint": "stylelint ui/**/*.{scss,vue}",
+    "mocha": "mocha",
+    "test": "npm run lint && mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/font-size"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/font-size#readme",
+  "keywords": [
+    "apostrophecms",
+    "apostrophe",
+    "rich-text",
+    "tiptap",
+    "font-size"
+  ],
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "peerDependencies": {
+    "@tiptap/core": "^2.4.0"
+  },
+  "devDependencies": {
+    "apostrophe": "workspace:^",
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:^",
+    "mocha": "^11.7.5",
+    "stylelint": "^16.0.0",
+    "stylelint-config-apostrophe": "workspace:^"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

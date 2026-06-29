@@ -43,13 +43,13 @@
         >
           <AposButton
             type="quiet"
-            label="apostrophe:richTextRemoveFontSize"
+            label="aposFontSize:removeFontSize"
             @click="clear"
           />
         </div>
         <div class="apos-font-size-control__body">
           <label class="apos-font-size-control__label">
-            {{ $t('apostrophe:richTextFontSize') }}
+            {{ $t('aposFontSize:fontSize') }}
           </label>
           <div class="apos-font-size-control__inputs">
             <input
@@ -59,7 +59,7 @@
               type="number"
               min="1"
               step="1"
-              :aria-label="$t('apostrophe:richTextFontSize')"
+              :aria-label="$t('aposFontSize:fontSize')"
               @input="applyControls"
             >
             <span class="apos-font-size-control__suffix">px</span>
@@ -137,12 +137,12 @@ const presets = computed(() => {
   };
   return Array.isArray(merged.fontSizes) ? merged.fontSizes : defaultPresets;
 });
-const hasSelection = computed(() => !props.editor.state.selection.empty);
 // While the field is blank we hide the native up/down arrows, otherwise a
 // first tap would snap an empty field to 1 rather than a sensible size.
 const isEmpty = computed(() => {
   return amount.value === null || amount.value === undefined || amount.value === '';
 });
+const hasSelection = computed(() => !props.editor.state.selection.empty);
 
 // Extract a pixel number from a preset (12, '12' or '12px') or from a stored
 // CSS value such as "16px". Returns null when there is no usable number.
@@ -195,7 +195,13 @@ function setFontSize(pixels) {
 }
 
 function applyControls() {
-  if (amount.value == null || Number.isNaN(amount.value) || amount.value <= 0) {
+  // Blanking the field removes the size, the same as clicking "Remove Size"
+  // (but without closing the popover, so a new value can be typed).
+  if (amount.value === null || amount.value === undefined || amount.value === '') {
+    props.editor.chain().unsetFontSize().run();
+    return;
+  }
+  if (Number.isNaN(amount.value) || amount.value <= 0) {
     return;
   }
   setFontSize(amount.value);

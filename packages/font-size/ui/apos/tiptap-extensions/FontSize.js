@@ -1,8 +1,8 @@
-// Allows the font size of selected rich text to be freely set. Like the
-// Color extension (Color.js, which wraps @tiptap/extension-color), it stores
-// its value as an attribute of the shared `textStyle` mark, so the result is
-// rendered as <span style="font-size: ...">...</span>. This relies on the
-// TextStyle extension (TextStyle.js), which is always loaded.
+// Allows the font size of selected rich text to be freely set. Like the core
+// Color extension (which wraps @tiptap/extension-color), it stores its value
+// as an attribute of the shared `textStyle` mark, so the result is rendered
+// as <span style="font-size: ...">...</span>. This relies on the TextStyle
+// extension, which the core rich text widget always loads.
 import { Extension } from '@tiptap/core';
 
 export default (options) => {
