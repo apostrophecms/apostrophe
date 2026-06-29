@@ -1,5 +1,7 @@
 # @apostrophecms/font-size
 
+!Screenshot(https://static.apostrophecms.com/apostrophecms/font-size/images/font-size.png)
+
 Adds a free-form **font size** tool to the ApostropheCMS rich text editor
 toolbar. Editors select text and set its size in pixels, either by typing a
 value or picking a preset. The size is stored as inline `font-size` styling on
@@ -32,8 +34,9 @@ require('apostrophe')({
 ```
 
 The module *improves* `@apostrophecms/rich-text-widget`, so there is nothing
-else to wire up. The `size` tool is added to the rich text default toolbar
-automatically.
+else to wire up.
+
+If you are not explicitly configuring the toolbars of your rich text widgets... that's it! The feature is available by default. If you are configuring each rich text widget toolbar explicitly, read on.
 
 ## Options
 
@@ -45,6 +48,8 @@ so it cannot be configured under its own name. **Set these options on
 ```javascript
 modules: {
   '@apostrophecms/font-size': {},
+  // Configure the rich-text-widget module, NOT
+  // the font-size module
   '@apostrophecms/rich-text-widget': {
     options: {
       fontSizes: [ 14, 16, 20, 28, 40 ],
@@ -59,13 +64,8 @@ modules: {
 | `fontSizes` | `[ 12, 14, 16, 18, 24, 32, 48 ]` | Preset pixel sizes offered as quick choices. The numeric input remains free-form. Set to `[]` for free-form only. |
 | `addFontSizeToDefaultToolbar` | `true` | Whether to add `size` to the rich text default toolbar. Set to `false` to make the tool available but opt in per area via the `toolbar` option. |
 
-Because these options live in the rich text widget's option namespace, their
-names are deliberately specific (for example `addFontSizeToDefaultToolbar`
-rather than a generic `addToDefaultToolbar`) to avoid colliding with options
-introduced by other modules that also improve the rich text widget.
-
-To use the tool only in specific areas, set `addFontSizeToDefaultToolbar: false`
-and add `'size'` to that area's `toolbar` array.
+To offer the tool only in specific widgets, set `addFontSizeToDefaultToolbar: false`
+and add `'size'` to each widget's `toolbar` array.
 
 ## How it works
 
