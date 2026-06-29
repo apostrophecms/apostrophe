@@ -3304,40 +3304,7 @@ database.`);
         });
       },
       composeFilters() {
-        // TODO: keep in sync with doc-type/index.js composeFilters
-        self.filters = Object.entries(self.filters)
-          .map(([ name, filter ]) => ({
-            name,
-            ...filter,
-            inputType: filter.inputType || 'select'
-          }));
-
-        // Add a null choice if not already added or set to `required`
-        self.filters.forEach((filter) => {
-          if (Array.isArray(filter.choices)) {
-            if (
-              !filter.required &&
-              !filter.choices.find((choice) => choice.value === null)
-            ) {
-              filter.def = null;
-              filter.choices = filter.inputType === 'checkbox'
-                ? filter.choices
-                : filter.choices.concat({
-                  value: null,
-                  label: 'apostrophe:none'
-                });
-            }
-          } else {
-            // Dynamic choices from the REST API, but
-            // we need a label for "no opinion"
-            filter.nullLabel = filter.inputType === 'radio'
-              ? 'apostrophe:any'
-              : 'apostrophe:filterMenuChooseOne';
-          }
-          if (filter.inputType === 'checkbox') {
-            filter.def = [];
-          }
-        });
+        self.filters = require('../../../lib/compose-filters')(self.filters);
       },
       async getBatchArchivePatches(req, ids) {
         const batchReq = req.clone({
