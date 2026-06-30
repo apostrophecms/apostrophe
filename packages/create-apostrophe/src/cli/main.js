@@ -10,6 +10,7 @@ import { parseArgs } from 'node:util';
 import { createStore as defaultCreateStore } from '../core/store.js';
 import { createProject as defaultCreateProject } from '../core/create-project.js';
 import { isKnownKit } from '../core/kits.js';
+import { resolveStarter, CUSTOM_KIT_ID } from '../core/starter.js';
 import { assertSafeShortName } from '../core/validate.js';
 import { createTelemetry as defaultCreateTelemetry } from '../telemetry/index.js';
 import { DB_CHOICES } from '../telemetry/schema.js';
@@ -40,6 +41,7 @@ const DEFAULT_USERNAME = 'admin';
 const OPTION_SPEC = Object.freeze({
   'project-name': { type: 'string' },
   kit: { type: 'string' },
+  starter: { type: 'string' },
   db: { type: 'string' },
   'db-uri': { type: 'string' },
   username: { type: 'string' },
@@ -58,11 +60,15 @@ const OPTION_SPEC = Object.freeze({
 
 const USAGE = `${render.bold('Usage:')}
   npm create apostrophe@latest                                           ${render.dim('Run the guided installer')}
+  npm create apostrophe@latest -- --starter=NAME|URL                     ${render.dim('Start from a custom starter (skips the kit prompt)')}
   npm create apostrophe@latest -- --unattended [flags]                   ${render.dim('Run without prompts')}
   npm create apostrophe@latest -- telemetry [status|on|off|preview]      ${render.dim('Manage telemetry preference')}
   npm create apostrophe@latest -- --help | --version
 
 ${render.dim('(everything after the `--` is forwarded to the installer; npm consumes args without it)')}
+
+${render.bold('Starter selection')} ${render.dim('(either path; --starter overrides --kit)')}:
+  --starter=NAME|ORG/REPO|URL   ${render.dim('Custom starter: a starter-kit name (e.g. ecommerce), an org/repo, or a git URL')}
 
 ${render.bold('Unattended flags')} ${render.dim('(--unattended is the only trigger for the headless path)')}:
   ${render.bold('Required:')}
@@ -71,7 +77,7 @@ ${render.bold('Unattended flags')} ${render.dim('(--unattended is the only trigg
   --telemetry=on|off            ${render.dim('Telemetry consent (no default — explicit choice)')}
 
   ${render.bold('Defaulted (override to change):')}
-  --kit=KITID                   ${render.dim(`Starter kit id (default: ${DEFAULT_KIT})`)}
+  --kit=KITID                   ${render.dim(`Starter kit id (default: ${DEFAULT_KIT}); ignored when --starter is set`)}
   --db=sqlite|mongodb|postgres  ${render.dim(`Database choice (default: ${DEFAULT_DB})`)}
   --db-uri=URI                  ${render.dim('Connection string (required when --db is mongodb or postgres)')}
   --username=NAME               ${render.dim(`Admin username or email (default: ${DEFAULT_USERNAME})`)}
@@ -147,6 +153,7 @@ export async function main(argv, deps = {}) {
     });
   }
   return runInteractive({
+    starter: values.starter,
     createProject,
     createStore,
     createTelemetry,
@@ -161,16 +168,24 @@ export async function main(argv, deps = {}) {
  * flow without going through argv parsing — their command framework keeps
  * ownership of help text and subcommand routing.
  *
- * @param {MainDeps} [deps]
+ * `starter` is the only non-injectable option here: a raw `--starter` value
+ * (starter-kit name, org/repo, or git URL). When present, it's resolved to a
+ * clone URL and the guided flow skips the kit-selection questions entirely.
+ *
+ * @param {MainDeps & { starter?: string }} [deps]
  * @returns {Promise<number>}
  */
 export async function runInteractive(deps = {}) {
   const {
+    starter: rawStarter,
     createProject = defaultCreateProject,
     createStore = defaultCreateStore,
     createTelemetry = defaultCreateTelemetry,
     runFlow = defaultRunFlow
   } = deps;
+  const starter = (typeof rawStarter === 'string' && rawStarter.trim().length > 0)
+    ? resolveStarter(rawStarter)
+    : undefined;
   const cwd = process.cwd();
   const env = process.env;
   const store = createStore();
@@ -180,7 +195,8 @@ export async function runInteractive(deps = {}) {
     answers = await runFlow({
       store,
       cliVersion: CLI_VERSION,
-      env
+      env,
+      starter
     });
   } catch (err) {
     if (err instanceof UserCancelled) {
@@ -201,6 +217,7 @@ export async function runInteractive(deps = {}) {
       shortName: answers.shortName,
       cwd,
       kitId: answers.kitId,
+      starter,
       dbChoice: answers.dbChoice,
       dbUri: answers.dbUri,
       dbReset: answers.dbReset,
@@ -245,8 +262,19 @@ async function runUnattended(values, {
     }
   }
 
-  const kitId = values.kit ?? DEFAULT_KIT;
-  if (!isKnownKit(kitId)) {
+  // --starter overrides --kit: clone an arbitrary repo instead of a registry
+  // kit. Validate the empty and both-given cases up front.
+  const usingStarter =
+    typeof values.starter === 'string' && values.starter.trim().length > 0;
+  if (values.starter !== undefined && !usingStarter) {
+    issues.push('--starter cannot be empty');
+  }
+  if (usingStarter && values.kit !== undefined) {
+    issues.push('Use either --kit or --starter, not both');
+  }
+  const starter = usingStarter ? resolveStarter(values.starter) : undefined;
+  const kitId = usingStarter ? CUSTOM_KIT_ID : (values.kit ?? DEFAULT_KIT);
+  if (!usingStarter && !isKnownKit(kitId)) {
     issues.push(`Unknown --kit: ${JSON.stringify(kitId)}`);
   }
 
@@ -306,6 +334,7 @@ async function runUnattended(values, {
     shortName,
     cwd,
     kitId,
+    starter,
     dbChoice,
     dbUri,
     // Unattended never drops a pre-existing DB — that needs interactive
@@ -324,12 +353,19 @@ async function runUnattended(values, {
     logger
   });
 
+  // A custom starter has no kit to derive build/startingPoint from; its layout
+  // (and thus the dev-server port the success screen shows) comes back on the
+  // result. The kit-derived fields are filled only for a registry kit.
   /** @type {import('../ui/flow.js').FlowAnswers} */
   const answers = {
     shortName,
-    build: kitId.startsWith('apostrophe-astro') ? 'astro' : 'standalone',
-    startingPoint: kitId.endsWith('-essentials') ? 'essentials' : 'demo',
-    sampleContent: kitId.endsWith('-demo-data'),
+    ...(usingStarter
+      ? { starter }
+      : {
+        build: kitId.startsWith('apostrophe-astro') ? 'astro' : 'standalone',
+        startingPoint: kitId.endsWith('-essentials') ? 'essentials' : 'demo',
+        sampleContent: kitId.endsWith('-demo-data')
+      }),
     kitId,
     dbChoice,
     dbUri,
