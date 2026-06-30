@@ -540,8 +540,13 @@ function sanitizeHtml(html, options, _recursing) {
         result += ' />';
       } else {
         result += '>';
-        if (frame.innerText && !hasText && !options.textFilter) {
-          result += escapeHtml(frame.innerText);
+        if (frame.innerText && !hasText) {
+          const escaped = escapeHtml(frame.innerText);
+          if (options.textFilter) {
+            result += options.textFilter(escaped, name);
+          } else {
+            result += escaped;
+          }
           addedText = true;
         }
       }

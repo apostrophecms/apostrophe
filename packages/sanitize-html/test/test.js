@@ -323,6 +323,24 @@ describe('sanitizeHtml', function() {
     }), '<a href="http://somelink">some new text</a>');
   });
 
+  it('should add new text to an empty tag when transforming function sets it and an identity textFilter is present', function () {
+    assert.equal(sanitizeHtml('<a></a>', {
+      allowedTags: [ 'a' ],
+      textFilter: function (text) {
+        return text;
+      },
+      transformTags: {
+        a: function (tagName, attribs) {
+          return {
+            tagName,
+            attribs,
+            text: 'some new text'
+          };
+        }
+      }
+    }), '<a>some new text</a>');
+  });
+
   it('should preserve text when initially set and replace attributes when they are changed by transforming function', function () {
     assert.equal(sanitizeHtml('<a href="http://somelink">some initial text</a>', {
       transformTags: {
