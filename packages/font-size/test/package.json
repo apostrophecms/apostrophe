@@ -1,0 +1,9 @@
+{
+  "note1": "This package.json file is not actually installed.",
+  "note2": "Apostrophe requires that all npm modules to be loaded by moog",
+  "note3": "exist in package.json at project level, which for a test is here.",
+  "dependencies": {
+    "apostrophe": "workspace:^",
+    "@apostrophecms/font-size": "workspace:^"
+  }
+}

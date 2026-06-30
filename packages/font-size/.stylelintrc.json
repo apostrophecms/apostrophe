@@ -1,0 +1,6 @@
+{
+  "extends": "stylelint-config-apostrophe",
+  "rules": {
+    "scale-unlimited/declaration-strict-value": "off"
+  }
+}
