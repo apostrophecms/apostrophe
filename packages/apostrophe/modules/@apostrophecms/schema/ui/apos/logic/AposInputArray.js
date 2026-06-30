@@ -399,7 +399,9 @@ export default {
       return newInstance(this.schema);
     },
     getLabel(id, index) {
-      const titleField = this.field.titleField || 'title';
+      const titleField = this.field.titleField === false
+        ? null
+        : (this.field.titleField || 'title');
       const item = this.items.find(item => item._id === id);
       return get(item.schemaInput.data, titleField) || `Item ${index + 1}`;
     },
