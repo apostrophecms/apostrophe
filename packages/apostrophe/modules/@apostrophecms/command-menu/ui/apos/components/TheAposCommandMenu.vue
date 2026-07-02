@@ -55,7 +55,9 @@ export default {
                     shortcut.toUpperCase(),
                     {
                       ...command.action,
-                      requireWidgetFocus: command.requireWidgetFocus || false
+                      requireWidgetFocus: command.requireWidgetFocus || false,
+                      skipOnTextSelection: command.skipOnTextSelection || false,
+                      trigger: command.trigger || 'keydown'
                     }
                   ]);
               });
@@ -96,6 +98,10 @@ export default {
         ? this.getFirstNonShortcutModal(index + -1)
         : properties.itemName || 'default';
     },
+    hasTextSelection() {
+      const selection = window.getSelection();
+      return !!selection && !selection.isCollapsed;
+    },
     keyboardShortcutListener(event) {
       // Keys already handled by more specific UI must not trigger shortcuts
       if (event.defaultPrevented) {
@@ -123,6 +129,16 @@ export default {
             : keys];
         if (action) {
           if (action.requireWidgetFocus && !useWidgetStore().focusedWidget) {
+            return;
+          }
+          // A text selection wins over the shortcut, the browser
+          // performs its native action (e.g. copy the selected text)
+          if (action.skipOnTextSelection && this.hasTextSelection()) {
+            return;
+          }
+          // Handled by a native event listener (e.g. paste) when the
+          // Clipboard API is available; keydown is the legacy fallback
+          if (action.trigger === 'native' && navigator.clipboard) {
             return;
           }
           event.preventDefault();
