@@ -52,6 +52,7 @@
       :editor="editor"
       role="listbox"
       tabindex="0"
+      @keydown="closeInsertMenu"
     >
       <div class="apos-rich-text-insert-menu-heading">
         {{ $t('apostrophe:richTextInsertMenuHeading') }}
@@ -60,7 +61,6 @@
         class="apos-rich-text-insert-menu-wrapper"
         @keydown.prevent.arrow-up="focusInsertMenuItem(true)"
         @keydown.prevent.arrow-down="focusInsertMenuItem()"
-        @keydown="closeInsertMenu"
       >
         <li
           v-for="(item, index) in insert"
@@ -152,6 +152,7 @@ import merge from 'lodash/merge';
 import { useAposStyles } from 'Modules/@apostrophecms/styles/composables/AposStyles.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import removeSlash from 'Modules/@apostrophecms/rich-text-widget/lib/remove-slash.js';
 
 export default {
   name: 'AposRichTextWidgetEditor',
@@ -835,6 +836,14 @@ export default {
         [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
         this.activeInsertMenuComponent
       ) {
+        return;
+      }
+      if (e.key === 'Backspace') {
+        // Don't let the global remove-widget shortcut see this key
+        e.preventDefault();
+        e.stopPropagation();
+        removeSlash(this.editor);
+        this.editor.commands.focus();
         return;
       }
       this.editor.commands.focus();
