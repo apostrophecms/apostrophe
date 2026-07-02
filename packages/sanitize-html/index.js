@@ -578,24 +578,32 @@ function sanitizeHtml(html, options, _recursing) {
         // which have their own collection of XSS vectors.
         result += text;
       } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
-        // htmlparser2 treats <textarea> and <xmp> as raw text elements and
-        // does NOT decode entities inside them, so their content arrives here
-        // already entity-encoded; running it through escapeHtml would
-        // double-encode existing entities (see the CVE-2026-40186 regression
-        // tests). We cannot pass it through verbatim either: htmlparser2 <= 10.x
-        // fails to recognize an end tag with a trailing solidus (e.g.
-        // `</textarea/>` or `</xmp/>`) as a close and keeps the following markup
-        // as raw text, whereas a spec-compliant browser treats `</textarea/>` as
-        // a valid close and parses that markup as live elements — a
-        // mutation-XSS / allowedTags bypass (GHSA-jxwj-j7wr-gfrw). Escaping only
-        // the angle brackets neutralizes any such literal `<`/`>` so nothing can
-        // reopen a tag when the output is re-parsed, while leaving `&` untouched
-        // so already-encoded entities are preserved without double-encoding.
+        // <textarea> and <xmp> hold text that must not be re-emitted verbatim:
+        // if a raw `<` survives into the output it can reopen a tag when the
+        // result is re-parsed by a browser, smuggling non-allowlisted markup
+        // through the allowlist (mutation-XSS, GHSA-jxwj-j7wr-gfrw — e.g. the
+        // `</textarea/>` solidus mis-close). The two tags need different
+        // escaping because htmlparser2 tokenizes them differently:
+        if (tag === 'xmp') {
+          // <xmp> is a raw-text (CDATA) element: entities are NOT decoded, so
+          // its content reaches us as raw source that is already entity-encoded.
+          // Escape only the angle brackets so a literal `<` cannot reopen a tag,
+          // while leaving `&` untouched to avoid double-encoding entities that
+          // are already encoded in the source.
+          result += text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        } else {
+          // <textarea> is an RCDATA element: htmlparser2 (>= 11) decodes
+          // entities inside it, so its content reaches us as plain decoded text.
+          // It must therefore be fully escaped like any other text — escaping
+          // `&` as well as `<`/`>` — so entities round-trip faithfully (no
+          // double-encoding, see the CVE-2026-40186 regression tests) and no
+          // `<` can reopen a tag.
+          result += escapeHtml(text, false);
+        }
         // Other "nonTextTags" like <option> are not raw text elements in
         // htmlparser2, so their contents are decoded and must be escaped below
         // like any other text (important to prevent XSS via entity-encoded
         // payloads such as <option>&lt;script&gt;...&lt;/script&gt;</option>).
-        result += text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       } else if (!addedText) {
         const escaped = escapeHtml(text, false);
         if (options.textFilter) {

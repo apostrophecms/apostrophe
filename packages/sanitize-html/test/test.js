@@ -2101,35 +2101,45 @@ describe('sanitizeHtml', function() {
     });
 
     it('should handle sibling raw-text elements correctly without leaking states', function() {
+      // htmlparser2 >= 11 treats <noembed> as a raw-text element, so its inner
+      // `<script>...</script>` arrives as literal text and is escaped (inert)
+      // rather than unwrapped. <noscript> content is still parsed normally, so
+      // its disallowed <style> is dropped and only `body{}` is kept. Either way
+      // nothing executable leaks.
       assert.strictEqual(
         sanitizeHtml('<noembed><script>alert(1)</script></noembed><noscript><style>body{}</style></noscript>', {
           nonTextTags: []
         }),
-        'alert(1)body{}'
+        '&lt;script&gt;alert(1)&lt;/script&gt;body{}'
       );
     });
   });
 
   describe('GHSA-jxwj-j7wr-gfrw: literal-solidus RCDATA end-tag bypass in raw-text tags', function() {
-    // htmlparser2 <= 10.x does not recognize an end tag that has a trailing
-    // solidus (e.g. `</textarea/>` or `</xmp/>`) as closing a raw-text element,
-    // so it keeps everything after it as raw text. A spec-compliant browser
-    // (parse5/WHATWG) DOES treat `</textarea/>` as a valid close, so any markup
-    // after it is parsed as a live element. Because textarea/xmp content was
-    // previously re-emitted without escaping (on the assumption it was already
-    // properly encoded), the smuggled live markup passed through and executed —
-    // an allowedTags bypass / mutation-XSS. The fix escapes angle brackets in
-    // the raw-text passthrough so no `<` can survive to reopen a tag when the
-    // output is re-parsed, while leaving `&` untouched so already-encoded
-    // entities are not double-encoded (preserving the CVE-2026-40186 fix).
+    // Original vulnerability: htmlparser2 <= 10.x did not recognize an end tag
+    // with a trailing solidus (e.g. `</textarea/>` or `</xmp/>`) as closing a
+    // raw-text element, so it kept everything after it as raw text. A
+    // spec-compliant browser (parse5/WHATWG) DOES treat `</textarea/>` as a
+    // valid close, so any markup after it is parsed as a live element. Because
+    // textarea/xmp content was re-emitted without escaping, that smuggled live
+    // markup passed through — an allowedTags bypass / mutation-XSS.
+    //
+    // This is now defended at two layers, so the whole family of solidus
+    // breakouts is inert:
+    //   1. htmlparser2 >= 11 fixes the tokenization, so `</textarea/>` closes
+    //      the element and the trailing markup becomes a separate,
+    //      non-allowlisted tag that is dropped (output `<textarea></textarea>`).
+    //   2. sanitize-html still escapes any raw text it emits for these tags, so
+    //      even a mis-tokenizing parser cannot leak a live `<`. textarea is an
+    //      RCDATA element (htmlparser2 decodes its entities) and is escaped like
+    //      normal text via escapeHtml; xmp is a raw-text element (entities not
+    //      decoded) and has only its angle brackets escaped to avoid
+    //      double-encoding already-encoded entities.
     it('should neutralize a </textarea/> solidus close that smuggles an img/onerror sink', function() {
       const out = sanitizeHtml('<textarea></textarea/><img src=x onerror="alert(document.domain)">', {
         allowedTags: [ 'textarea' ]
       });
-      assert.strictEqual(
-        out,
-        '<textarea>&lt;/textarea/&gt;&lt;img src=x onerror="alert(document.domain)"&gt;</textarea>'
-      );
+      assert.strictEqual(out, '<textarea></textarea>');
       // Defense in depth: no live sink element may survive in the output.
       assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
     });
@@ -2138,10 +2148,7 @@ describe('sanitizeHtml', function() {
       const out = sanitizeHtml('<textarea></textarea/><img src=x onerror="alert(document.domain)">', {
         allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'textarea' ])
       });
-      assert.strictEqual(
-        out,
-        '<textarea>&lt;/textarea/&gt;&lt;img src=x onerror="alert(document.domain)"&gt;</textarea>'
-      );
+      assert.strictEqual(out, '<textarea></textarea>');
       assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
     });
 
@@ -2150,7 +2157,7 @@ describe('sanitizeHtml', function() {
         sanitizeHtml('<textarea></TEXTAREA/><img src=x onerror=alert(1)>', {
           allowedTags: [ 'textarea' ]
         }),
-        '<textarea>&lt;/TEXTAREA/&gt;&lt;img src=x onerror=alert(1)&gt;</textarea>'
+        '<textarea></textarea>'
       );
     });
 
@@ -2159,7 +2166,7 @@ describe('sanitizeHtml', function() {
         sanitizeHtml('<textarea></textarea/foo><img src=x onerror=alert(1)>', {
           allowedTags: [ 'textarea' ]
         }),
-        '<textarea>&lt;/textarea/foo&gt;&lt;img src=x onerror=alert(1)&gt;</textarea>'
+        '<textarea></textarea>'
       );
     });
 
@@ -2168,7 +2175,7 @@ describe('sanitizeHtml', function() {
         sanitizeHtml('<textarea></textarea/><script>alert(1)</script>', {
           allowedTags: [ 'textarea' ]
         }),
-        '<textarea>&lt;/textarea/&gt;&lt;script&gt;alert(1)&lt;/script&gt;</textarea>'
+        '<textarea></textarea>'
       );
     });
 
@@ -2177,7 +2184,7 @@ describe('sanitizeHtml', function() {
         sanitizeHtml('<textarea></textarea/><svg onload=alert(1)>', {
           allowedTags: [ 'textarea' ]
         }),
-        '<textarea>&lt;/textarea/&gt;&lt;svg onload=alert(1)&gt;</textarea>'
+        '<textarea></textarea>'
       );
     });
 
@@ -2186,7 +2193,7 @@ describe('sanitizeHtml', function() {
         sanitizeHtml('<textarea></textarea/><iframe src=javascript:alert(1)>', {
           allowedTags: [ 'textarea' ]
         }),
-        '<textarea>&lt;/textarea/&gt;&lt;iframe src=javascript:alert(1)&gt;</textarea>'
+        '<textarea></textarea>'
       );
     });
 
@@ -2194,10 +2201,7 @@ describe('sanitizeHtml', function() {
       const out = sanitizeHtml('<xmp></xmp/><img src=x onerror=alert(1)>', {
         allowedTags: [ 'xmp' ]
       });
-      assert.strictEqual(
-        out,
-        '<xmp>&lt;/xmp/&gt;&lt;img src=x onerror=alert(1)&gt;</xmp>'
-      );
+      assert.strictEqual(out, '<xmp></xmp>');
       assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
     });
 
@@ -2206,7 +2210,29 @@ describe('sanitizeHtml', function() {
         sanitizeHtml('<xmp></xmp/><script>alert(1)</script>', {
           allowedTags: [ 'xmp' ]
         }),
-        '<xmp>&lt;/xmp/&gt;&lt;script&gt;alert(1)&lt;/script&gt;</xmp>'
+        '<xmp></xmp>'
+      );
+    });
+
+    it('should escape literal raw markup inside an allowed xmp so it cannot go live', function() {
+      // Exercises the xmp raw-text escaping directly: <xmp> is a raw-text
+      // element, so htmlparser2 hands us `<img ...>` as literal text; escaping
+      // the angle brackets keeps it inert when the output is re-parsed.
+      const out = sanitizeHtml('<xmp><img src=x onerror=alert(1)></xmp>', {
+        allowedTags: [ 'xmp' ]
+      });
+      assert.strictEqual(out, '<xmp>&lt;img src=x onerror=alert(1)&gt;</xmp>');
+      assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
+    });
+
+    it('should round-trip decoded entities inside an allowed textarea without under- or double-encoding', function() {
+      // Exercises the textarea RCDATA escaping directly: htmlparser2 decodes
+      // `&lt;` and `&amp;` to `<` and `&`, and escapeHtml must re-encode both.
+      assert.strictEqual(
+        sanitizeHtml('<textarea>a &lt; b &amp; c</textarea>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>a &lt; b &amp; c</textarea>'
       );
     });
 
