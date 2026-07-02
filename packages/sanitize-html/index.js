@@ -579,13 +579,23 @@ function sanitizeHtml(html, options, _recursing) {
         result += text;
       } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
         // htmlparser2 treats <textarea> and <xmp> as raw text elements and
-        // does NOT decode entities inside them. The text is already properly
-        // encoded, so pass it through without additional escaping to avoid
-        // double-encoding. Other "nonTextTags" like <option> are not raw text
-        // elements in htmlparser2, so their contents are decoded and must be
-        // escaped below like any other text (important to prevent XSS via
-        // entity-encoded payloads such as <option>&lt;script&gt;...&lt;/script&gt;</option>).
-        result += text;
+        // does NOT decode entities inside them, so their content arrives here
+        // already entity-encoded; running it through escapeHtml would
+        // double-encode existing entities (see the CVE-2026-40186 regression
+        // tests). We cannot pass it through verbatim either: htmlparser2 <= 10.x
+        // fails to recognize an end tag with a trailing solidus (e.g.
+        // `</textarea/>` or `</xmp/>`) as a close and keeps the following markup
+        // as raw text, whereas a spec-compliant browser treats `</textarea/>` as
+        // a valid close and parses that markup as live elements — a
+        // mutation-XSS / allowedTags bypass (GHSA-jxwj-j7wr-gfrw). Escaping only
+        // the angle brackets neutralizes any such literal `<`/`>` so nothing can
+        // reopen a tag when the output is re-parsed, while leaving `&` untouched
+        // so already-encoded entities are preserved without double-encoding.
+        // Other "nonTextTags" like <option> are not raw text elements in
+        // htmlparser2, so their contents are decoded and must be escaped below
+        // like any other text (important to prevent XSS via entity-encoded
+        // payloads such as <option>&lt;script&gt;...&lt;/script&gt;</option>).
+        result += text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       } else if (!addedText) {
         const escaped = escapeHtml(text, false);
         if (options.textFilter) {

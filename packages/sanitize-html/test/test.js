@@ -2109,4 +2109,123 @@ describe('sanitizeHtml', function() {
       );
     });
   });
+
+  describe('GHSA-jxwj-j7wr-gfrw: literal-solidus RCDATA end-tag bypass in raw-text tags', function() {
+    // htmlparser2 <= 10.x does not recognize an end tag that has a trailing
+    // solidus (e.g. `</textarea/>` or `</xmp/>`) as closing a raw-text element,
+    // so it keeps everything after it as raw text. A spec-compliant browser
+    // (parse5/WHATWG) DOES treat `</textarea/>` as a valid close, so any markup
+    // after it is parsed as a live element. Because textarea/xmp content was
+    // previously re-emitted without escaping (on the assumption it was already
+    // properly encoded), the smuggled live markup passed through and executed —
+    // an allowedTags bypass / mutation-XSS. The fix escapes angle brackets in
+    // the raw-text passthrough so no `<` can survive to reopen a tag when the
+    // output is re-parsed, while leaving `&` untouched so already-encoded
+    // entities are not double-encoded (preserving the CVE-2026-40186 fix).
+    it('should neutralize a </textarea/> solidus close that smuggles an img/onerror sink', function() {
+      const out = sanitizeHtml('<textarea></textarea/><img src=x onerror="alert(document.domain)">', {
+        allowedTags: [ 'textarea' ]
+      });
+      assert.strictEqual(
+        out,
+        '<textarea>&lt;/textarea/&gt;&lt;img src=x onerror="alert(document.domain)"&gt;</textarea>'
+      );
+      // Defense in depth: no live sink element may survive in the output.
+      assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
+    });
+
+    it('should neutralize the advisory PoC with the default allowedTags plus textarea', function() {
+      const out = sanitizeHtml('<textarea></textarea/><img src=x onerror="alert(document.domain)">', {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'textarea' ])
+      });
+      assert.strictEqual(
+        out,
+        '<textarea>&lt;/textarea/&gt;&lt;img src=x onerror="alert(document.domain)"&gt;</textarea>'
+      );
+      assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
+    });
+
+    it('should neutralize a case-insensitive </TEXTAREA/> solidus close', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></TEXTAREA/><img src=x onerror=alert(1)>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>&lt;/TEXTAREA/&gt;&lt;img src=x onerror=alert(1)&gt;</textarea>'
+      );
+    });
+
+    it('should neutralize a solidus close with trailing junk (</textarea/foo>)', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></textarea/foo><img src=x onerror=alert(1)>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>&lt;/textarea/foo&gt;&lt;img src=x onerror=alert(1)&gt;</textarea>'
+      );
+    });
+
+    it('should neutralize a <script> sink smuggled after </textarea/>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></textarea/><script>alert(1)</script>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>&lt;/textarea/&gt;&lt;script&gt;alert(1)&lt;/script&gt;</textarea>'
+      );
+    });
+
+    it('should neutralize an <svg onload> sink smuggled after </textarea/>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></textarea/><svg onload=alert(1)>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>&lt;/textarea/&gt;&lt;svg onload=alert(1)&gt;</textarea>'
+      );
+    });
+
+    it('should neutralize an <iframe> javascript: sink smuggled after </textarea/>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></textarea/><iframe src=javascript:alert(1)>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>&lt;/textarea/&gt;&lt;iframe src=javascript:alert(1)&gt;</textarea>'
+      );
+    });
+
+    it('should neutralize a </xmp/> solidus close that smuggles an img/onerror sink', function() {
+      const out = sanitizeHtml('<xmp></xmp/><img src=x onerror=alert(1)>', {
+        allowedTags: [ 'xmp' ]
+      });
+      assert.strictEqual(
+        out,
+        '<xmp>&lt;/xmp/&gt;&lt;img src=x onerror=alert(1)&gt;</xmp>'
+      );
+      assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
+    });
+
+    it('should neutralize a <script> sink smuggled after </xmp/>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<xmp></xmp/><script>alert(1)</script>', {
+          allowedTags: [ 'xmp' ]
+        }),
+        '<xmp>&lt;/xmp/&gt;&lt;script&gt;alert(1)&lt;/script&gt;</xmp>'
+      );
+    });
+
+    it('should still not double-encode already-encoded entities inside an allowed textarea', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</textarea>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</textarea>'
+      );
+    });
+
+    it('should still not double-encode already-encoded entities inside an allowed xmp', function() {
+      assert.strictEqual(
+        sanitizeHtml('<xmp>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</xmp>', {
+          allowedTags: [ 'xmp' ]
+        }),
+        '<xmp>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</xmp>'
+      );
+    });
+  });
 });

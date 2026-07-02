@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Security
+
+- Fixed a mutation-XSS / `allowedTags` bypass affecting configurations that allow the `textarea` or `xmp` raw-text tags. `htmlparser2` 10.x does not recognize an end tag with a trailing solidus (e.g. `</textarea/>`) as closing the element, so it keeps the following markup as raw text, but a spec-compliant browser treats `</textarea/>` as a valid close and parses that markup as live elements. Because raw-text content was re-emitted without escaping, a payload such as `<textarea></textarea/><img src=x onerror=...>` could smuggle non-allowlisted, executable markup through the sanitizer. Raw-text passthrough now escapes angle brackets (while leaving `&` untouched to avoid double-encoding already-encoded entities), so nothing can reopen a tag when the output is re-parsed. The default configuration was not affected. Thanks to [bibu123456](https://github.com/bibu123456) for reporting the vulnerability (GHSA-jxwj-j7wr-gfrw).
+
 ## 2.17.5 (2026-06-10)
 
 ### Security
