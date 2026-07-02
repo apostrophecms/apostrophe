@@ -97,6 +97,10 @@ export default {
         : properties.itemName || 'default';
     },
     keyboardShortcutListener(event) {
+      // Keys already handled by more specific UI must not trigger shortcuts
+      if (event.defaultPrevented) {
+        return;
+      }
       if (event.target.nodeName !== 'INPUT' && event.target.nodeName !== 'TEXTAREA' && document.activeElement.contentEditable !== 'true') {
         const key = [
           [ 'ALT', event.altKey ],
