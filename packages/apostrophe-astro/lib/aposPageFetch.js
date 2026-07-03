@@ -56,15 +56,27 @@ export async function aposPageFetch(req) {
     // the same terms, then re-add it when constructing the retry URL.
     if (aposData.redirect && aposData.url !== '/') {
       const prefix = config.aposPrefix || '';
-      let from = new URL(request.url).pathname.replace(/\/+$/, '');
+      const requestUrl = new URL(request.url);
+      let from = requestUrl.pathname.replace(/\/+$/, '');
       if (prefix && from.startsWith(prefix + '/')) {
         from = from.slice(prefix.length);
       } else if (prefix && from === prefix) {
         from = '/';
       }
-      const to = (aposData.url || '').replace(/\/+$/, '');
-      if (from === to) {
-        const retryUrl = prefix + aposData.url;
+      // Parse the redirect target so the trailing-slash comparison
+      // sees only the path, even if the URL carries a query string.
+      // Absolute redirects to other hosts never qualify for an
+      // internal retry — they must reach the browser.
+      const target = new URL(aposData.url || '', requestUrl);
+      const to = target.pathname.replace(/\/+$/, '');
+      if (target.origin === requestUrl.origin && from === to) {
+        // Preserve the query string across the internal retry: the
+        // target's own if present, otherwise the original request's.
+        // Apostrophe's trailing-slash redirect drops the query string
+        // (e.g. /articles/?page=2 redirects to /articles), so without
+        // this the retry would render page 1.
+        const search = target.search || requestUrl.search;
+        const retryUrl = prefix + target.pathname + search;
         const retry = new Request(new URL(retryUrl, request.url), request);
         const retryResponse = await aposResponse(retry);
         headers = retryResponse.headers;
