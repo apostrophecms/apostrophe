@@ -1651,11 +1651,27 @@ database.`);
             // Move outside tree
             throw self.apos.error('forbidden');
           }
+          // Enforce destination-parent authorization: a cross-parent move
+          // into a non-archive destination requires "create" permission on
+          // that destination (the same boundary the page-insert route
+          // enforces). The one exception is restoring a page out of the
+          // archive, which is permitted into any destination the actor may
+          // edit even without "create".
+          //
+          // That exception is NOT dead code: with @apostrophecms-pro/advanced-
+          // permission, per-document permissions grant edit (and view/publish)
+          // independently of type-level create, so a page can legitimately have
+          // _edit true while _create is false. Do not "simplify" this away.
+          //
+          // The exception must be negated and ANDed onto the guard, NOT ANDed
+          // on unnegated: doing the latter (a past regression, GHSA-wr5r-wqp2-
+          // x4fh) gated the whole check on "moving out of the archive" and
+          // disabled create enforcement for every normal move.
           if (
             (oldParent._id !== parent._id) &&
             (parent.type !== '@apostrophecms/archive-page') &&
             (!parent._create) &&
-            (oldParent.type === '@apostrophecms/archive-page' && !parent._edit)
+            !(oldParent.type === '@apostrophecms/archive-page' && parent._edit)
           ) {
             throw self.apos.error('forbidden');
           }
