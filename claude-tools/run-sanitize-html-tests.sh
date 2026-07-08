@@ -1,12 +1,14 @@
 #!/bin/bash
-# Run the sanitize-html package mocha suite and log full output to
-# claude-tools/logs/sanitize-html.log. Prints a summary of failing tests.
+# Run the sanitize-html mocha suite, logging full output to
+# claude-tools/logs/sanitize-html.log and printing a summary of ONLY the
+# specific tests that failed (so we never have to re-run from scratch to find
+# out what broke). Optional first arg is a mocha --grep filter, e.g.:
 #
-# Usage:
 #   ./claude-tools/run-sanitize-html-tests.sh                 # whole suite
-#   ./claude-tools/run-sanitize-html-tests.sh "<grep string>" # filter by title
+#   ./claude-tools/run-sanitize-html-tests.sh 'GHSA-jxwj'     # just matching tests
 #
-# Runs one suite at a time only. Does not run lint (use `npm test` for that).
+# NEVER run test suites in parallel — they are designed to run one at a time
+# and the host has limited resources.
 
 set -u
 grep_filter="${1:-}"
@@ -19,24 +21,25 @@ log="$logdir/sanitize-html.log"
 
 cd "$root/packages/sanitize-html"
 
-echo "=== sanitize-html tests ${grep_filter:+(grep: $grep_filter) }($(date -Is)) ===" | tee -a "$log"
+echo "=== sanitize-html mocha ${grep_filter:+(grep: $grep_filter) }($(date +%Y-%m-%dT%H:%M:%S%z)) ===" | tee -a "$log"
 
 if [[ -n "$grep_filter" ]]; then
-  ./node_modules/.bin/mocha --reporter spec --grep "$grep_filter" >> "$log" 2>&1
+  ./node_modules/.bin/mocha --grep "$grep_filter" >> "$log" 2>&1
 else
-  ./node_modules/.bin/mocha --reporter spec >> "$log" 2>&1
+  ./node_modules/.bin/mocha >> "$log" 2>&1
 fi
 code=$?
 
 echo "=== exit=$code ===" | tee -a "$log"
-
-# Surface the passing/failing counts and any failing test titles.
-echo "--- summary ---"
-grep -E "passing|failing|pending" "$log" | tail -3
-if [[ "$code" -ne 0 ]]; then
-  echo "--- failing tests ---"
-  # Mocha lists failures as a numbered block after the spec output.
-  awk '/^  [0-9]+\) /{flag=1} flag' "$log" | grep -E "^\s+[0-9]+\)" || true
+echo
+echo "----- passing/failing summary -----"
+# mocha default (spec) reporter: passing/failing counts and the failure list.
+grep -E '[0-9]+ (passing|pending|failing)' "$log" || true
+if grep -qE '[1-9][0-9]* failing' "$log"; then
+  echo
+  echo "----- FAILED TESTS -----"
+  # Numbered failure headers look like "  1) sanitizeHtml ... : <title>"
+  grep -E '^[[:space:]]+[0-9]+\)' "$log" || true
 fi
-echo "Full log: $log"
+echo "(full log: $log)"
 exit "$code"
