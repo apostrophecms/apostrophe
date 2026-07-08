@@ -2101,86 +2101,236 @@ describe('sanitizeHtml', function() {
     });
 
     it('should handle sibling raw-text elements correctly without leaking states', function() {
+      // htmlparser2 >= 11 treats <noembed> as a raw-text element, so its inner
+      // `<script>...</script>` arrives as literal text and is escaped (inert)
+      // rather than unwrapped. <noscript> content is still parsed normally, so
+      // its disallowed <style> is dropped and only `body{}` is kept. Either way
+      // nothing executable leaks.
       assert.strictEqual(
         sanitizeHtml('<noembed><script>alert(1)</script></noembed><noscript><style>body{}</style></noscript>', {
           nonTextTags: []
         }),
-        'alert(1)body{}'
+        '&lt;script&gt;alert(1)&lt;/script&gt;body{}'
+      );
+    });
+  });
+
+  describe('GHSA-jxwj-j7wr-gfrw: literal-solidus RCDATA end-tag bypass in raw-text tags', function() {
+    // Original vulnerability: htmlparser2 <= 10.x did not recognize an end tag
+    // with a trailing solidus (e.g. `</textarea/>` or `</xmp/>`) as closing a
+    // raw-text element, so it kept everything after it as raw text. A
+    // spec-compliant browser (parse5/WHATWG) DOES treat `</textarea/>` as a
+    // valid close, so any markup after it is parsed as a live element. Because
+    // textarea/xmp content was re-emitted without escaping, that smuggled live
+    // markup passed through — an allowedTags bypass / mutation-XSS.
+    //
+    // This is now defended at two layers, so the whole family of solidus
+    // breakouts is inert:
+    //   1. htmlparser2 >= 11 fixes the tokenization, so `</textarea/>` closes
+    //      the element and the trailing markup becomes a separate,
+    //      non-allowlisted tag that is dropped (output `<textarea></textarea>`).
+    //   2. sanitize-html still escapes any raw text it emits for these tags, so
+    //      even a mis-tokenizing parser cannot leak a live `<`. textarea is an
+    //      RCDATA element (htmlparser2 decodes its entities) and is escaped like
+    //      normal text via escapeHtml; xmp is a raw-text element (entities not
+    //      decoded) and has only its angle brackets escaped to avoid
+    //      double-encoding already-encoded entities.
+    it('should neutralize a </textarea/> solidus close that smuggles an img/onerror sink', function() {
+      const out = sanitizeHtml('<textarea></textarea/><img src=x onerror="alert(document.domain)">', {
+        allowedTags: [ 'textarea' ]
+      });
+      assert.strictEqual(out, '<textarea></textarea>');
+      // Defense in depth: no live sink element may survive in the output.
+      assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
+    });
+
+    it('should neutralize the advisory PoC with the default allowedTags plus textarea', function() {
+      const out = sanitizeHtml('<textarea></textarea/><img src=x onerror="alert(document.domain)">', {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'textarea' ])
+      });
+      assert.strictEqual(out, '<textarea></textarea>');
+      assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
+    });
+
+    it('should neutralize a case-insensitive </TEXTAREA/> solidus close', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></TEXTAREA/><img src=x onerror=alert(1)>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea></textarea>'
+      );
+    });
+
+    it('should neutralize a solidus close with trailing junk (</textarea/foo>)', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></textarea/foo><img src=x onerror=alert(1)>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea></textarea>'
+      );
+    });
+
+    it('should neutralize a <script> sink smuggled after </textarea/>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></textarea/><script>alert(1)</script>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea></textarea>'
+      );
+    });
+
+    it('should neutralize an <svg onload> sink smuggled after </textarea/>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></textarea/><svg onload=alert(1)>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea></textarea>'
+      );
+    });
+
+    it('should neutralize an <iframe> javascript: sink smuggled after </textarea/>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea></textarea/><iframe src=javascript:alert(1)>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea></textarea>'
+      );
+    });
+
+    it('should neutralize a </xmp/> solidus close that smuggles an img/onerror sink', function() {
+      const out = sanitizeHtml('<xmp></xmp/><img src=x onerror=alert(1)>', {
+        allowedTags: [ 'xmp' ]
+      });
+      assert.strictEqual(out, '<xmp></xmp>');
+      assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
+    });
+
+    it('should neutralize a <script> sink smuggled after </xmp/>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<xmp></xmp/><script>alert(1)</script>', {
+          allowedTags: [ 'xmp' ]
+        }),
+        '<xmp></xmp>'
+      );
+    });
+
+    it('should escape literal raw markup inside an allowed xmp so it cannot go live', function() {
+      // Exercises the xmp raw-text escaping directly: <xmp> is a raw-text
+      // element, so htmlparser2 hands us `<img ...>` as literal text; escaping
+      // the angle brackets keeps it inert when the output is re-parsed.
+      const out = sanitizeHtml('<xmp><img src=x onerror=alert(1)></xmp>', {
+        allowedTags: [ 'xmp' ]
+      });
+      assert.strictEqual(out, '<xmp>&lt;img src=x onerror=alert(1)&gt;</xmp>');
+      assert.ok(!/<img/i.test(out), 'a live <img> must not survive: ' + out);
+    });
+
+    it('should round-trip decoded entities inside an allowed textarea without under- or double-encoding', function() {
+      // Exercises the textarea RCDATA escaping directly: htmlparser2 decodes
+      // `&lt;` and `&amp;` to `<` and `&`, and escapeHtml must re-encode both.
+      assert.strictEqual(
+        sanitizeHtml('<textarea>a &lt; b &amp; c</textarea>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>a &lt; b &amp; c</textarea>'
+      );
+    });
+
+    it('should still not double-encode already-encoded entities inside an allowed textarea', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</textarea>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</textarea>'
+      );
+    });
+
+    it('should still not double-encode already-encoded entities inside an allowed xmp', function() {
+      assert.strictEqual(
+        sanitizeHtml('<xmp>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</xmp>', {
+          allowedTags: [ 'xmp' ]
+        }),
+        '<xmp>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</xmp>'
       );
     });
   });
 
   describe('SVG/MathML foreign-content raw-text XSS (allowlist bypass)', function() {
-    // sanitize-html re-emits the text content of raw-text elements (textarea,
-    // xmp) without HTML-escaping it, on the assumption that a browser will
-    // always re-read that content as plain text. That assumption is false
-    // inside SVG and MathML foreign content: the HTML5 parser treats
-    // <textarea>/<xmp> as ordinary foreign elements there, NOT raw-text
-    // elements, so their contents are parsed as live markup. htmlparser2 marks
-    // an element as raw-text purely by tag name and ignores the namespace,
-    // producing the differential. The precondition is an allowedTags that
-    // includes an svg or math root together with textarea or xmp. Raw-text
-    // content must therefore be HTML-escaped whenever it appears inside an
-    // svg/math subtree.
+    // Background: sanitize-html reads the content of raw-text elements
+    // (<textarea>, <xmp>) as plain text, because in the HTML namespace a browser
+    // does the same. That assumption breaks inside SVG/MathML foreign content,
+    // where the HTML5 parser treats <textarea>/<xmp> as ordinary foreign
+    // elements and parses their contents as live markup — an allowlist bypass
+    // if a sanitizer keeps the raw text (e.g.
+    // `<svg><textarea><img src=x onerror=alert(1)></textarea></svg>`).
+    //
+    // htmlparser2 >= 11 is namespace-aware and closes this differential in the
+    // parser: inside <svg>/<math> it also parses <textarea>/<xmp> as ordinary
+    // elements, so a nested <img> arrives as a real CHILD element and is dropped
+    // by the allowlist (or has its handler attributes stripped) instead of
+    // surviving as text. At HTML integration points (<foreignObject>, <mtext>)
+    // and everywhere outside foreign content these tags are still raw-text, and
+    // sanitize-html escapes that text (GHSA-jxwj-j7wr-gfrw, see the suite
+    // above). Either path neutralizes the payload; the tests below pin the exact
+    // safe output for each. The precondition for the original bug was an
+    // allowedTags that paired an svg/math root with textarea or xmp.
 
-    it('should escape <img> inside a <textarea> nested directly in <svg>', function() {
-      assert.strictEqual(
-        sanitizeHtml('<svg><textarea><img src=x onerror=alert(1)></textarea></svg>', {
-          allowedTags: [ 'svg', 'textarea' ],
-          allowedAttributes: {}
-        }),
-        '<svg><textarea>&lt;img src=x onerror=alert(1)&gt;</textarea></svg>'
-      );
+    it('should drop an <img> parsed as a real child of a <textarea> directly inside <svg>', function() {
+      // In foreign content htmlparser2 >= 11 parses <img> as a real element,
+      // not textarea raw-text, so the allowlist drops it (it is not allowed).
+      const out = sanitizeHtml('<svg><textarea><img src=x onerror=alert(1)></textarea></svg>', {
+        allowedTags: [ 'svg', 'textarea' ],
+        allowedAttributes: {}
+      });
+      assert.strictEqual(out, '<svg><textarea></textarea></svg>');
+      assert.ok(!/onerror/i.test(out), 'no live sink may survive: ' + out);
     });
 
-    it('should escape <img> inside a <textarea> nested directly in <math>', function() {
-      assert.strictEqual(
-        sanitizeHtml('<math><textarea><img src=x onerror=alert(1)></textarea></math>', {
-          allowedTags: [ 'math', 'textarea' ],
-          allowedAttributes: {}
-        }),
-        '<math><textarea>&lt;img src=x onerror=alert(1)&gt;</textarea></math>'
-      );
+    it('should drop an <img> parsed as a real child of a <textarea> directly inside <math>', function() {
+      const out = sanitizeHtml('<math><textarea><img src=x onerror=alert(1)></textarea></math>', {
+        allowedTags: [ 'math', 'textarea' ],
+        allowedAttributes: {}
+      });
+      assert.strictEqual(out, '<math><textarea></textarea></math>');
+      assert.ok(!/onerror/i.test(out), 'no live sink may survive: ' + out);
     });
 
-    it('should escape <img> inside an <xmp> nested directly in <svg>', function() {
-      assert.strictEqual(
-        sanitizeHtml('<svg><xmp><img src=x onerror=alert(1)></xmp></svg>', {
-          allowedTags: [ 'svg', 'xmp' ],
-          allowedAttributes: {}
-        }),
-        '<svg><xmp>&lt;img src=x onerror=alert(1)&gt;</xmp></svg>'
-      );
+    it('should drop an <img> parsed as a real child of an <xmp> directly inside <svg>', function() {
+      const out = sanitizeHtml('<svg><xmp><img src=x onerror=alert(1)></xmp></svg>', {
+        allowedTags: [ 'svg', 'xmp' ],
+        allowedAttributes: {}
+      });
+      assert.strictEqual(out, '<svg><xmp></xmp></svg>');
+      assert.ok(!/onerror/i.test(out), 'no live sink may survive: ' + out);
     });
 
-    it('should escape <img> inside an <xmp> nested directly in <math>', function() {
-      assert.strictEqual(
-        sanitizeHtml('<math><xmp><img src=x onerror=alert(1)></xmp></math>', {
-          allowedTags: [ 'math', 'xmp' ],
-          allowedAttributes: {}
-        }),
-        '<math><xmp>&lt;img src=x onerror=alert(1)&gt;</xmp></math>'
-      );
+    it('should drop an <img> parsed as a real child of an <xmp> directly inside <math>', function() {
+      const out = sanitizeHtml('<math><xmp><img src=x onerror=alert(1)></xmp></math>', {
+        allowedTags: [ 'math', 'xmp' ],
+        allowedAttributes: {}
+      });
+      assert.strictEqual(out, '<math><xmp></xmp></math>');
+      assert.ok(!/onerror/i.test(out), 'no live sink may survive: ' + out);
     });
 
-    it('should escape a nested <svg onload> payload inside a <textarea> in <svg>', function() {
-      assert.strictEqual(
-        sanitizeHtml('<svg><textarea><svg onload=alert(1)></textarea></svg>', {
-          allowedTags: [ 'svg', 'textarea' ],
-          allowedAttributes: {}
-        }),
-        '<svg><textarea>&lt;svg onload=alert(1)&gt;</textarea></svg>'
-      );
+    it('should strip onload from a nested <svg> parsed inside a <textarea> in <svg>', function() {
+      // <svg onload> is parsed as a real (allowed) element here, so the element
+      // is kept but its event-handler attribute is stripped, leaving it inert.
+      const out = sanitizeHtml('<svg><textarea><svg onload=alert(1)></textarea></svg>', {
+        allowedTags: [ 'svg', 'textarea' ],
+        allowedAttributes: {}
+      });
+      assert.strictEqual(out, '<svg><textarea><svg></svg></textarea></svg>');
+      assert.ok(!/onload/i.test(out), 'no live handler may survive: ' + out);
     });
 
-    it('should escape raw-text content when the raw-text element is not a direct child of svg/math', function() {
-      assert.strictEqual(
-        sanitizeHtml('<svg><g><textarea><img src=x onerror=alert(1)></textarea></g></svg>', {
-          allowedTags: [ 'svg', 'g', 'textarea' ],
-          allowedAttributes: {}
-        }),
-        '<svg><g><textarea>&lt;img src=x onerror=alert(1)&gt;</textarea></g></svg>'
-      );
+    it('should drop an <img> parsed as a real child of a <textarea> not directly under svg/math', function() {
+      const out = sanitizeHtml('<svg><g><textarea><img src=x onerror=alert(1)></textarea></g></svg>', {
+        allowedTags: [ 'svg', 'g', 'textarea' ],
+        allowedAttributes: {}
+      });
+      assert.strictEqual(out, '<svg><g><textarea></textarea></g></svg>');
+      assert.ok(!/onerror/i.test(out), 'no live sink may survive: ' + out);
     });
 
     it('should escape raw-text content when an intervening integration point is stripped from the output', function() {
@@ -2214,13 +2364,17 @@ describe('sanitizeHtml', function() {
 
     // --- Regression guards: legitimate behavior must be preserved ---
 
-    it('should still pass through raw-text content unescaped outside foreign content', function() {
+    it('should escape raw-text content outside foreign content so it cannot break out', function() {
+      // Under the GHSA-jxwj-j7wr-gfrw fix (with htmlparser2 >= 11) raw-text
+      // content is always escaped rather than re-emitted verbatim. The escaped
+      // form renders identically in a real <textarea> yet cannot reopen a tag
+      // if the output is re-parsed (mutation-XSS defense in depth).
       assert.strictEqual(
         sanitizeHtml('<textarea><b>x</b></textarea>', {
           allowedTags: [ 'textarea' ],
           allowedAttributes: {}
         }),
-        '<textarea><b>x</b></textarea>'
+        '<textarea>&lt;b&gt;x&lt;/b&gt;</textarea>'
       );
     });
 
@@ -2230,6 +2384,13 @@ describe('sanitizeHtml', function() {
           allowedTags: [ 'textarea' ]
         }),
         '<textarea>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</textarea>'
+      );
+    });
+
+    it('should not allow a disallowed tag inside a disallowed textarea to remain in any form', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><textarea><img src="alert(1)" /></textarea></div>'),
+        '<div></div>'
       );
     });
 

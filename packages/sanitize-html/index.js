@@ -12,14 +12,6 @@ const mediaTags = [
 ];
 // Tags that are inherently vulnerable to being used in XSS attacks.
 const vulnerableTags = [ 'script', 'style' ];
-// Tags that establish an SVG or MathML "foreign content" subtree. Inside such
-// a subtree the HTML5 parser treats raw-text elements like <textarea> and
-// <xmp> as ordinary foreign elements rather than raw-text elements, so a
-// browser parses their contents as live markup instead of plain text.
-// htmlparser2 decides raw-text purely by tag name and ignores the namespace,
-// so we must not re-emit raw-text content unescaped when it appears anywhere
-// inside one of these roots (see the `ontext` handler).
-const foreignContentRootTags = [ 'svg', 'math' ];
 
 function each(obj, cb) {
   if (obj) {
@@ -585,24 +577,40 @@ function sanitizeHtml(html, options, _recursing) {
         // your concern, don't allow them. The same is essentially true for style tags
         // which have their own collection of XSS vectors.
         result += text;
-      } else if (tag && tagAllowed(tag) && ((options.disallowedTagsMode === 'discard') || (options.disallowedTagsMode === 'completelyDiscard')) && ((tag === 'textarea') || (tag === 'xmp')) && !insideForeignContent()) {
-        // htmlparser2 treats <textarea> and <xmp> as raw text elements and
-        // does NOT decode entities inside them. The text is already properly
-        // encoded, so pass it through without additional escaping to avoid
-        // double-encoding. Other "nonTextTags" like <option> are not raw text
-        // elements in htmlparser2, so their contents are decoded and must be
-        // escaped below like any other text (important to prevent XSS via
-        // entity-encoded payloads such as
-        // <option>&lt;script&gt;...&lt;/script&gt;</option>).
-        //
-        // This raw-text pass-through is ONLY safe in the HTML namespace. Inside
-        // an <svg> or <math> foreign-content subtree the HTML5 parser treats
-        // <textarea>/<xmp> as ordinary foreign elements, so a browser re-parses
-        // their contents as live markup. `insideForeignContent()` detects that
-        // case and forces the text through the escaping branch below, closing
-        // an allowlist/XSS bypass such as
-        // `<svg><textarea><img src=x onerror=alert(1)></textarea></svg>`.
-        result += text;
+      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
+        // <textarea> and <xmp> hold text that must not be re-emitted verbatim:
+        // if a raw `<` survives into the output it can reopen a tag when the
+        // result is re-parsed by a browser, smuggling non-allowlisted markup
+        // through the allowlist (mutation-XSS, GHSA-jxwj-j7wr-gfrw — e.g. the
+        // `</textarea/>` solidus mis-close). We therefore ALWAYS escape this
+        // content rather than passing it through. Escaping unconditionally also
+        // closes the related SVG/MathML foreign-content bypass (where the HTML5
+        // parser treats <textarea>/<xmp> as ordinary foreign elements and a
+        // browser re-parses their contents as live markup, e.g.
+        // `<svg><textarea><img src=x onerror=alert(1)></textarea></svg>`): since
+        // we never re-emit raw text for these tags, no namespace check is
+        // needed. The two tags need different escaping because htmlparser2
+        // tokenizes them differently:
+        if (tag === 'xmp') {
+          // <xmp> is a raw-text (CDATA) element: entities are NOT decoded, so
+          // its content reaches us as raw source that is already entity-encoded.
+          // Escape only the angle brackets so a literal `<` cannot reopen a tag,
+          // while leaving `&` untouched to avoid double-encoding entities that
+          // are already encoded in the source.
+          result += text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        } else {
+          // <textarea> is an RCDATA element: htmlparser2 (>= 11) decodes
+          // entities inside it, so its content reaches us as plain decoded text.
+          // It must therefore be fully escaped like any other text — escaping
+          // `&` as well as `<`/`>` — so entities round-trip faithfully (no
+          // double-encoding, see the CVE-2026-40186 regression tests) and no
+          // `<` can reopen a tag.
+          result += escapeHtml(text, false);
+        }
+        // Other "nonTextTags" like <option> are not raw text elements in
+        // htmlparser2, so their contents are decoded and must be escaped below
+        // like any other text (important to prevent XSS via entity-encoded
+        // payloads such as <option>&lt;script&gt;...&lt;/script&gt;</option>).
       } else if (!addedText) {
         const escaped = escapeHtml(text, false);
         if (options.textFilter) {
@@ -727,30 +735,6 @@ function sanitizeHtml(html, options, _recursing) {
     transformMap = {};
     skipText = false;
     skipTextDepth = 0;
-  }
-
-  // True when the currently open element is inside an <svg> or <math>
-  // foreign-content subtree. We check the effective *output* tag name of each
-  // ancestor (`frame.name`, set when a tag is renamed by transformTags, else
-  // `frame.tag`) so that a tag renamed to svg/math is caught and a svg/math
-  // renamed to something else is not. We deliberately do NOT treat HTML
-  // integration points (e.g. <foreignObject>, <mtext>) as escapes from foreign
-  // content: such a point only re-establishes the HTML namespace if it survives
-  // in the output, and it may be dropped (not allowlisted) or altered, which
-  // would leave the raw-text element as a direct child of svg/math again. Since
-  // escaping is always safe, treating the whole svg/math subtree as foreign is
-  // the robust, bypass-free choice.
-  function insideForeignContent() {
-    for (let i = stack.length - 1; i >= 0; i--) {
-      const frame = stack[i];
-      // The effective *output* tag name: frame.name is set when transformTags
-      // renamed the element, otherwise fall back to the original parsed tag.
-      const outputTag = frame.name || frame.tag;
-      if (foreignContentRootTags.includes(outputTag)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   function escapeHtml(s, quote) {
