@@ -540,8 +540,13 @@ function sanitizeHtml(html, options, _recursing) {
         result += ' />';
       } else {
         result += '>';
-        if (frame.innerText && !hasText && !options.textFilter) {
-          result += escapeHtml(frame.innerText);
+        if (frame.innerText && !hasText) {
+          const escaped = escapeHtml(frame.innerText);
+          if (options.textFilter) {
+            result += options.textFilter(escaped, name);
+          } else {
+            result += escaped;
+          }
           addedText = true;
         }
       }
@@ -573,14 +578,39 @@ function sanitizeHtml(html, options, _recursing) {
         // which have their own collection of XSS vectors.
         result += text;
       } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
-        // htmlparser2 treats <textarea> and <xmp> as raw text elements and
-        // does NOT decode entities inside them. The text is already properly
-        // encoded, so pass it through without additional escaping to avoid
-        // double-encoding. Other "nonTextTags" like <option> are not raw text
-        // elements in htmlparser2, so their contents are decoded and must be
-        // escaped below like any other text (important to prevent XSS via
-        // entity-encoded payloads such as <option>&lt;script&gt;...&lt;/script&gt;</option>).
-        result += text;
+        // <textarea> and <xmp> hold text that must not be re-emitted verbatim:
+        // if a raw `<` survives into the output it can reopen a tag when the
+        // result is re-parsed by a browser, smuggling non-allowlisted markup
+        // through the allowlist (mutation-XSS, GHSA-jxwj-j7wr-gfrw — e.g. the
+        // `</textarea/>` solidus mis-close). We therefore ALWAYS escape this
+        // content rather than passing it through. Escaping unconditionally also
+        // closes the related SVG/MathML foreign-content bypass (where the HTML5
+        // parser treats <textarea>/<xmp> as ordinary foreign elements and a
+        // browser re-parses their contents as live markup, e.g.
+        // `<svg><textarea><img src=x onerror=alert(1)></textarea></svg>`): since
+        // we never re-emit raw text for these tags, no namespace check is
+        // needed. The two tags need different escaping because htmlparser2
+        // tokenizes them differently:
+        if (tag === 'xmp') {
+          // <xmp> is a raw-text (CDATA) element: entities are NOT decoded, so
+          // its content reaches us as raw source that is already entity-encoded.
+          // Escape only the angle brackets so a literal `<` cannot reopen a tag,
+          // while leaving `&` untouched to avoid double-encoding entities that
+          // are already encoded in the source.
+          result += text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        } else {
+          // <textarea> is an RCDATA element: htmlparser2 (>= 11) decodes
+          // entities inside it, so its content reaches us as plain decoded text.
+          // It must therefore be fully escaped like any other text — escaping
+          // `&` as well as `<`/`>` — so entities round-trip faithfully (no
+          // double-encoding, see the CVE-2026-40186 regression tests) and no
+          // `<` can reopen a tag.
+          result += escapeHtml(text, false);
+        }
+        // Other "nonTextTags" like <option> are not raw text elements in
+        // htmlparser2, so their contents are decoded and must be escaped below
+        // like any other text (important to prevent XSS via entity-encoded
+        // payloads such as <option>&lt;script&gt;...&lt;/script&gt;</option>).
       } else if (!addedText) {
         const escaped = escapeHtml(text, false);
         if (options.textFilter) {
@@ -953,7 +983,7 @@ sanitizeHtml.defaults = {
     'alt'
   ],
   // Lots of these won't come up by default because we don't allow them
-  selfClosing: [ 'img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta' ],
+  selfClosing: [ 'img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta', 'col' ],
   // URL schemes we permit
   allowedSchemes: [ 'http', 'https', 'ftp', 'mailto', 'tel' ],
   allowedSchemesByTag: {},
