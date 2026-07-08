@@ -21,7 +21,7 @@ log="$logdir/sanitize-html.log"
 
 cd "$root/packages/sanitize-html"
 
-echo "=== sanitize-html mocha ${grep_filter:+(grep: $grep_filter) }($(date -Is)) ===" | tee -a "$log"
+echo "=== sanitize-html mocha ${grep_filter:+(grep: $grep_filter) }($(date +%Y-%m-%dT%H:%M:%S%z)) ===" | tee -a "$log"
 
 if [[ -n "$grep_filter" ]]; then
   ./node_modules/.bin/mocha --grep "$grep_filter" >> "$log" 2>&1

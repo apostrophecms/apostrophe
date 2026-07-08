@@ -44,6 +44,8 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import removeEditorSlash from 'Modules/@apostrophecms/rich-text-widget/lib/remove-slash.js';
+
 const props = defineProps({
   name: {
     type: String,
@@ -87,20 +89,7 @@ function activate() {
 }
 
 function removeSlash() {
-  const state = props.editor.state;
-  const { $to } = state.selection;
-  if (state.selection.empty && $to?.nodeBefore?.text) {
-    const text = $to.nodeBefore.text;
-    if (text.slice(-1) === '/') {
-      const pos = props.editor.view.state.selection.$anchor.pos;
-      // Select the slash so an insert operation can replace it
-      props.editor.commands.setTextSelection({
-        from: pos - 1,
-        to: pos
-      });
-      props.editor.commands.deleteSelection();
-    }
-  }
+  removeEditorSlash(props.editor);
 }
 
 function closeInsertMenuItem() {

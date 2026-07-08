@@ -582,8 +582,15 @@ function sanitizeHtml(html, options, _recursing) {
         // if a raw `<` survives into the output it can reopen a tag when the
         // result is re-parsed by a browser, smuggling non-allowlisted markup
         // through the allowlist (mutation-XSS, GHSA-jxwj-j7wr-gfrw — e.g. the
-        // `</textarea/>` solidus mis-close). The two tags need different
-        // escaping because htmlparser2 tokenizes them differently:
+        // `</textarea/>` solidus mis-close). We therefore ALWAYS escape this
+        // content rather than passing it through. Escaping unconditionally also
+        // closes the related SVG/MathML foreign-content bypass (where the HTML5
+        // parser treats <textarea>/<xmp> as ordinary foreign elements and a
+        // browser re-parses their contents as live markup, e.g.
+        // `<svg><textarea><img src=x onerror=alert(1)></textarea></svg>`): since
+        // we never re-emit raw text for these tags, no namespace check is
+        // needed. The two tags need different escaping because htmlparser2
+        // tokenizes them differently:
         if (tag === 'xmp') {
           // <xmp> is a raw-text (CDATA) element: entities are NOT decoded, so
           // its content reaches us as raw source that is already entity-encoded.

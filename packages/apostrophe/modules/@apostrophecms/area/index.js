@@ -20,7 +20,8 @@ module.exports = {
             type: 'command-menu-area-cut-widget'
           },
           shortcut: 'Ctrl+X Meta+X',
-          requireWidgetFocus: true
+          requireWidgetFocus: true,
+          skipOnTextSelection: true
         },
         [`${self.__meta.name}:copy-widget`]: {
           type: 'item',
@@ -29,7 +30,8 @@ module.exports = {
             type: 'command-menu-area-copy-widget'
           },
           shortcut: 'Ctrl+C Meta+C',
-          requireWidgetFocus: true
+          requireWidgetFocus: true,
+          skipOnTextSelection: true
         },
         [`${self.__meta.name}:paste-widget`]: {
           type: 'item',
@@ -38,7 +40,12 @@ module.exports = {
             type: 'command-menu-area-paste-widget'
           },
           shortcut: 'Ctrl+V Meta+V',
-          requireWidgetFocus: true
+          requireWidgetFocus: true,
+          // Dispatched by the native paste event listener (see AposAreas.js),
+          // not by the command menu keydown listener, so the clipboard
+          // contents can arbitrate; keydown remains a fallback when the
+          // Clipboard API is unavailable
+          trigger: 'native'
         },
         [`${self.__meta.name}:duplicate-widget`]: {
           type: 'item',
@@ -56,7 +63,8 @@ module.exports = {
             type: 'command-menu-area-remove-widget'
           },
           shortcut: 'Backspace',
-          requireWidgetFocus: true
+          requireWidgetFocus: true,
+          skipOnTextSelection: true
         }
       },
       modal: {
