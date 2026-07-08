@@ -1621,6 +1621,50 @@ module.exports = {
         return doc;
       },
 
+      // Resolve a `choices` / `counts` filter (i.e. a query builder name) to
+      // the schema field whose distinct values that builder would expose, or
+      // `undefined` when it does not correspond to a schema field.
+      //
+      // Most field types register a query builder named exactly after the
+      // field, so an exact-name match is enough. Relationship fields are the
+      // exception: they register additional builders whose names differ from
+      // the schema field name — the `And` variant of the field name
+      // (`_authorAnd`) and the "slug" builders that drop the leading
+      // underscore (`author`, `authorAnd`). All of those run
+      // `toDistinct(field.idsStorage)` against the host collection, so they
+      // must resolve back to the underlying relationship field to be gated
+      // exactly like the field itself. Dot-notated sub-field builders resolve
+      // to their top-level schema field.
+      choicesFilterField(filter) {
+        if (typeof filter !== 'string') {
+          return undefined;
+        }
+        // Exact match: covers every non-relationship field type, plus the
+        // relationship field's own `field.name` builder.
+        const exact = self.schema.find(f => f.name === filter);
+        if (exact) {
+          return exact;
+        }
+        // Dot-notated filters are gated by their top-level schema field.
+        const topLevel = filter.split('.')[0];
+        if (topLevel !== filter) {
+          const parent = self.schema.find(f => f.name === topLevel);
+          if (parent) {
+            return parent;
+          }
+        }
+        // Relationship alias builders. Strip an optional trailing `And`
+        // operator suffix, then match either the relationship field name
+        // (`_author`, reached via the `_authorAnd` operation builder) or the
+        // field name without its leading underscore (`author`, reached via
+        // the slug builders `author` / `authorAnd`).
+        const base = filter.replace(/And$/, '');
+        return self.schema.find(f =>
+          f.type === 'relationship' &&
+          (f.name === base || f.name.replace(/^_/, '') === base)
+        );
+      },
+
       // Returns true if the named filter is permitted to expose distinct
       // values through the `choices` / `counts` query builders given the
       // publicApiProjection. When no publicApiProjection is in effect
@@ -1635,35 +1679,49 @@ module.exports = {
         if (!projection || !Object.keys(projection).length) {
           return true;
         }
-        // Builders that aren't named after a top-level schema field are
-        // not gated by the projection.
-        const field = self.schema.find(f => f.name === filter);
+        // Resolve the builder to its underlying schema field, mapping
+        // relationship alias builders back to the relationship field so the
+        // projection check cannot be bypassed by requesting the alias name.
+        // Builders not backed by a schema field are not gated.
+        const field = self.choicesFilterField(filter);
         if (!field) {
           return true;
         }
-        const topLevel = filter.split('.')[0];
+        // Projection keys that would expose this field's values to the client.
+        // For a relationship, exposure of either the relationship property
+        // itself or its `idsStorage` (the property MongoDB's `distinct`
+        // actually reads) permits the choices.
+        const keys = [ field.name ];
+        if (field.idsStorage) {
+          keys.push(field.idsStorage);
+        }
         const values = Object.values(projection);
         const hasInclusion = values.some(v => v && v !== 0);
         const hasExclusion = values.some(v => v === 0 || v === false);
         if (hasInclusion) {
-          // Inclusion projection: field must be explicitly included.
-          return Boolean(projection[topLevel]);
+          // Inclusion projection: at least one relevant key must be included.
+          return keys.some(key => Boolean(projection[key]));
         }
         if (hasExclusion) {
-          // Exclusion projection: field must not be explicitly excluded.
-          return projection[topLevel] !== 0 && projection[topLevel] !== false;
+          // Exclusion projection: no relevant key may be explicitly excluded.
+          return keys.every(
+            key => projection[key] !== 0 && projection[key] !== false
+          );
         }
         return true;
       },
 
-      // Returns true if the current user is permitted to view the named
-      // schema field according to any schema-level `viewPermission`.
-      // Non-schema filters are permitted. A dot-notated filter is matched
-      // against the top-level schema field, since `viewPermission` is
-      // declared on top-level fields (see `removeForbiddenFields`).
+      // Returns true if the current user is permitted to view the field
+      // exposed by the named filter according to any schema-level
+      // `viewPermission`. Filters that don't resolve to a schema field are
+      // permitted. Relationship alias builders and dot-notated sub-field
+      // builders resolve to their underlying top-level field (see
+      // `choicesFilterField`), since `viewPermission` is declared on
+      // top-level fields (see `removeForbiddenFields`) — matching only the
+      // literal filter name would let the relationship alias builders bypass
+      // this check the same way they bypassed the projection check.
       choicesFieldAllowedByViewPermission(req, filter) {
-        const topLevel = filter.split('.')[0];
-        const field = self.schema.find(f => f.name === topLevel);
+        const field = self.choicesFilterField(filter);
         if (!field || !field.viewPermission) {
           return true;
         }
