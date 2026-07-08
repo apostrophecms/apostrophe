@@ -2029,7 +2029,7 @@ describe('sanitizeHtml', function() {
   });
   it('should not allow script tag injection via escaped entities in option tag', () => {
     const inputHtml = '<option>&lt;script&gt;alert(1)&lt;/script&gt;</option>';
-    const result = sanitizeHtml(inputHtml, { allowedTags: ['option'] });
+    const result = sanitizeHtml(inputHtml, { allowedTags: [ 'option' ] });
     assert.strictEqual(result, '<option>&lt;script&gt;alert(1)&lt;/script&gt;</option>');
   });
   it('should not double-encode entities inside an allowed option element', function() {
@@ -2058,7 +2058,7 @@ describe('sanitizeHtml', function() {
     it('should escape raw-text inner content when xmp tag is disallowed and discarded under custom nonTextTags', function() {
       assert.strictEqual(
         sanitizeHtml('<xmp><script>alert(1)</script></xmp>', {
-          nonTextTags: ['script', 'style']
+          nonTextTags: [ 'script', 'style' ]
         }),
         '&lt;script&gt;alert(1)&lt;/script&gt;'
       );
@@ -2094,7 +2094,7 @@ describe('sanitizeHtml', function() {
     it('should handle malformed or unclosed raw-text tags correctly', function() {
       assert.strictEqual(
         sanitizeHtml('<xmp><script>alert(1)', {
-          nonTextTags: ['script', 'style']
+          nonTextTags: [ 'script', 'style' ]
         }),
         '&lt;script&gt;alert(1)'
       );
@@ -2106,6 +2106,160 @@ describe('sanitizeHtml', function() {
           nonTextTags: []
         }),
         'alert(1)body{}'
+      );
+    });
+  });
+
+  describe('SVG/MathML foreign-content raw-text XSS (allowlist bypass)', function() {
+    // sanitize-html re-emits the text content of raw-text elements (textarea,
+    // xmp) without HTML-escaping it, on the assumption that a browser will
+    // always re-read that content as plain text. That assumption is false
+    // inside SVG and MathML foreign content: the HTML5 parser treats
+    // <textarea>/<xmp> as ordinary foreign elements there, NOT raw-text
+    // elements, so their contents are parsed as live markup. htmlparser2 marks
+    // an element as raw-text purely by tag name and ignores the namespace,
+    // producing the differential. The precondition is an allowedTags that
+    // includes an svg or math root together with textarea or xmp. Raw-text
+    // content must therefore be HTML-escaped whenever it appears inside an
+    // svg/math subtree.
+
+    it('should escape <img> inside a <textarea> nested directly in <svg>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><textarea><img src=x onerror=alert(1)></textarea></svg>', {
+          allowedTags: [ 'svg', 'textarea' ],
+          allowedAttributes: {}
+        }),
+        '<svg><textarea>&lt;img src=x onerror=alert(1)&gt;</textarea></svg>'
+      );
+    });
+
+    it('should escape <img> inside a <textarea> nested directly in <math>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<math><textarea><img src=x onerror=alert(1)></textarea></math>', {
+          allowedTags: [ 'math', 'textarea' ],
+          allowedAttributes: {}
+        }),
+        '<math><textarea>&lt;img src=x onerror=alert(1)&gt;</textarea></math>'
+      );
+    });
+
+    it('should escape <img> inside an <xmp> nested directly in <svg>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><xmp><img src=x onerror=alert(1)></xmp></svg>', {
+          allowedTags: [ 'svg', 'xmp' ],
+          allowedAttributes: {}
+        }),
+        '<svg><xmp>&lt;img src=x onerror=alert(1)&gt;</xmp></svg>'
+      );
+    });
+
+    it('should escape <img> inside an <xmp> nested directly in <math>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<math><xmp><img src=x onerror=alert(1)></xmp></math>', {
+          allowedTags: [ 'math', 'xmp' ],
+          allowedAttributes: {}
+        }),
+        '<math><xmp>&lt;img src=x onerror=alert(1)&gt;</xmp></math>'
+      );
+    });
+
+    it('should escape a nested <svg onload> payload inside a <textarea> in <svg>', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><textarea><svg onload=alert(1)></textarea></svg>', {
+          allowedTags: [ 'svg', 'textarea' ],
+          allowedAttributes: {}
+        }),
+        '<svg><textarea>&lt;svg onload=alert(1)&gt;</textarea></svg>'
+      );
+    });
+
+    it('should escape raw-text content when the raw-text element is not a direct child of svg/math', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><g><textarea><img src=x onerror=alert(1)></textarea></g></svg>', {
+          allowedTags: [ 'svg', 'g', 'textarea' ],
+          allowedAttributes: {}
+        }),
+        '<svg><g><textarea>&lt;img src=x onerror=alert(1)&gt;</textarea></g></svg>'
+      );
+    });
+
+    it('should escape raw-text content when an intervening integration point is stripped from the output', function() {
+      // <foreignObject> is an HTML integration point, but here it is not in
+      // allowedTags, so it is discarded. In the sanitized output the <textarea>
+      // becomes a direct child of <svg> (foreign content), so its contents must
+      // be escaped or the <img> would execute. This is why we cannot rely on
+      // integration points to relax escaping.
+      assert.strictEqual(
+        sanitizeHtml('<svg><foreignObject><textarea><img src=x onerror=alert(1)></textarea></foreignObject></svg>', {
+          allowedTags: [ 'svg', 'textarea' ],
+          allowedAttributes: {}
+        }),
+        '<svg><textarea>&lt;img src=x onerror=alert(1)&gt;</textarea></svg>'
+      );
+    });
+
+    it('should conservatively escape raw-text content inside a preserved integration point', function() {
+      // Inside a *preserved* <mtext> the browser would treat <textarea> as raw
+      // text, so the payload is inert there. We nonetheless escape it: escaping
+      // is always safe, avoids parser-differential surprises, and keeps the
+      // output safe even if the integration point is stripped by another layer.
+      assert.strictEqual(
+        sanitizeHtml('<math><mtext><textarea><img src=x onerror=alert(1)></textarea></mtext></math>', {
+          allowedTags: [ 'math', 'mtext', 'textarea' ],
+          allowedAttributes: {}
+        }),
+        '<math><mtext><textarea>&lt;img src=x onerror=alert(1)&gt;</textarea></mtext></math>'
+      );
+    });
+
+    // --- Regression guards: legitimate behavior must be preserved ---
+
+    it('should still pass through raw-text content unescaped outside foreign content', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea><b>x</b></textarea>', {
+          allowedTags: [ 'textarea' ],
+          allowedAttributes: {}
+        }),
+        '<textarea><b>x</b></textarea>'
+      );
+    });
+
+    it('should not double-encode entities in a plain allowed textarea (unaffected by the fix)', function() {
+      assert.strictEqual(
+        sanitizeHtml('<textarea>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</textarea>', {
+          allowedTags: [ 'textarea' ]
+        }),
+        '<textarea>&lt;div&gt;hello&lt;/div&gt;&amp;amp;</textarea>'
+      );
+    });
+
+    it('should leave benign textarea text unchanged inside svg', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><textarea>Nifty</textarea></svg>', {
+          allowedTags: [ 'svg', 'textarea' ],
+          allowedAttributes: {}
+        }),
+        '<svg><textarea>Nifty</textarea></svg>'
+      );
+    });
+
+    it('should strip event-handler attributes from a real element placed after </textarea> in svg', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><textarea></textarea><img src=x onerror=alert(1)></svg>', {
+          allowedTags: [ 'svg', 'textarea' ],
+          allowedAttributes: {}
+        }),
+        '<svg><textarea></textarea></svg>'
+      );
+    });
+
+    it('should discard decoded markup inside <option> in svg (option is not a raw-text element)', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><option><img src=x onerror=alert(1)></option></svg>', {
+          allowedTags: [ 'svg', 'option' ],
+          allowedAttributes: {}
+        }),
+        '<svg><option></option></svg>'
       );
     });
   });

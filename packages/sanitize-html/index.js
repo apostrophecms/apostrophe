@@ -12,6 +12,14 @@ const mediaTags = [
 ];
 // Tags that are inherently vulnerable to being used in XSS attacks.
 const vulnerableTags = [ 'script', 'style' ];
+// Tags that establish an SVG or MathML "foreign content" subtree. Inside such
+// a subtree the HTML5 parser treats raw-text elements like <textarea> and
+// <xmp> as ordinary foreign elements rather than raw-text elements, so a
+// browser parses their contents as live markup instead of plain text.
+// htmlparser2 decides raw-text purely by tag name and ignores the namespace,
+// so we must not re-emit raw-text content unescaped when it appears anywhere
+// inside one of these roots (see the `ontext` handler).
+const foreignContentRootTags = [ 'svg', 'math' ];
 
 function each(obj, cb) {
   if (obj) {
@@ -577,14 +585,23 @@ function sanitizeHtml(html, options, _recursing) {
         // your concern, don't allow them. The same is essentially true for style tags
         // which have their own collection of XSS vectors.
         result += text;
-      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
+      } else if (tag && tagAllowed(tag) && ((options.disallowedTagsMode === 'discard') || (options.disallowedTagsMode === 'completelyDiscard')) && ((tag === 'textarea') || (tag === 'xmp')) && !insideForeignContent()) {
         // htmlparser2 treats <textarea> and <xmp> as raw text elements and
         // does NOT decode entities inside them. The text is already properly
         // encoded, so pass it through without additional escaping to avoid
         // double-encoding. Other "nonTextTags" like <option> are not raw text
         // elements in htmlparser2, so their contents are decoded and must be
         // escaped below like any other text (important to prevent XSS via
-        // entity-encoded payloads such as <option>&lt;script&gt;...&lt;/script&gt;</option>).
+        // entity-encoded payloads such as
+        // <option>&lt;script&gt;...&lt;/script&gt;</option>).
+        //
+        // This raw-text pass-through is ONLY safe in the HTML namespace. Inside
+        // an <svg> or <math> foreign-content subtree the HTML5 parser treats
+        // <textarea>/<xmp> as ordinary foreign elements, so a browser re-parses
+        // their contents as live markup. `insideForeignContent()` detects that
+        // case and forces the text through the escaping branch below, closing
+        // an allowlist/XSS bypass such as
+        // `<svg><textarea><img src=x onerror=alert(1)></textarea></svg>`.
         result += text;
       } else if (!addedText) {
         const escaped = escapeHtml(text, false);
@@ -710,6 +727,30 @@ function sanitizeHtml(html, options, _recursing) {
     transformMap = {};
     skipText = false;
     skipTextDepth = 0;
+  }
+
+  // True when the currently open element is inside an <svg> or <math>
+  // foreign-content subtree. We check the effective *output* tag name of each
+  // ancestor (`frame.name`, set when a tag is renamed by transformTags, else
+  // `frame.tag`) so that a tag renamed to svg/math is caught and a svg/math
+  // renamed to something else is not. We deliberately do NOT treat HTML
+  // integration points (e.g. <foreignObject>, <mtext>) as escapes from foreign
+  // content: such a point only re-establishes the HTML namespace if it survives
+  // in the output, and it may be dropped (not allowlisted) or altered, which
+  // would leave the raw-text element as a direct child of svg/math again. Since
+  // escaping is always safe, treating the whole svg/math subtree as foreign is
+  // the robust, bypass-free choice.
+  function insideForeignContent() {
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const frame = stack[i];
+      // The effective *output* tag name: frame.name is set when transformTags
+      // renamed the element, otherwise fall back to the original parsed tag.
+      const outputTag = frame.name || frame.tag;
+      if (foreignContentRootTags.includes(outputTag)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function escapeHtml(s, quote) {
