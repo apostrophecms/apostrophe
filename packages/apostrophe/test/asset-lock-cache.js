@@ -35,6 +35,11 @@ describe('Assets - lock file cache invalidation', function() {
     await fs.writeFile(lockPath, lockSnapshot);
   });
 
+  beforeEach(function() {
+    // Each test starts as if the process had just booted.
+    apos.asset.lockFileChecked = false;
+  });
+
   function mutateLock(key) {
     const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
     lock[key] = (lock[key] || 0) + 1;
@@ -85,6 +90,39 @@ describe('Assets - lock file cache invalidation', function() {
     assert.strictEqual(changed, true);
   });
 
+  it('runs the lock check once per process', async function() {
+    await apos.asset.saveLockFileHash('an-old-hash');
+    const first = await apos.asset.checkLockFile();
+    assert.strictEqual(first.committed, false);
+    assert.strictEqual(first.changed, true);
+    await apos.asset.commitLockFileCheck(first);
+
+    // A watcher-triggered rebuild in the same process reports no change,
+    // even if the lock content mutated meanwhile.
+    mutateLock('__test-memo');
+    const again = await apos.asset.checkLockFile();
+    assert.strictEqual(again.committed, true);
+    assert.strictEqual(again.changed, false);
+  });
+
+  it('reports no change on rebuilds when there is no lock file', async function() {
+    const original = apos.asset.getLockFileHash;
+    apos.asset.getLockFileHash = async () => null;
+    try {
+      // No lock file: the first build of the process is forced...
+      const first = await apos.asset.checkLockFile();
+      assert.strictEqual(first.changed, true);
+      assert.strictEqual(first.hash, null);
+      await apos.asset.commitLockFileCheck(first);
+      // ...but watcher-triggered rebuilds are not.
+      const again = await apos.asset.checkLockFile();
+      assert.strictEqual(again.committed, true);
+      assert.strictEqual(again.changed, false);
+    } finally {
+      apos.asset.getLockFileHash = original;
+    }
+  });
+
   it('forces a rebuild when content changed but the lock mtime is older', async function() {
     const tsFile = path.join(
       apos.asset.getBundleRootDir(), 'apos-build-timestamp.txt'
@@ -100,6 +138,8 @@ describe('Assets - lock file cache invalidation', function() {
 
     // Dependency change: the lock content changes, but its mtime is OLDER than
     // the freshly built artifacts (fresh checkout / restored build cache).
+    // This happens across process starts, so reset the per-process check.
+    apos.asset.lockFileChecked = false;
     mutateLock('__test2');
     const older = new Date(Date.now() - 5 * 60 * 1000);
     await fs.utimes(lockPath, older, older);
