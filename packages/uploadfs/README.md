@@ -330,14 +330,14 @@ And, an equivalent configuration for Google Cloud Storage:
       parallel: 4
 }
 ```
-Note that GCS assumes the presence of a service account file and an environment variable of `GOOGLE_APPLICATION_CREDENTIALS` set pointing to this file. For example:
-```sh
-export GOOGLE_APPLICATION_CREDENTIALS=./projectname-f7f5e919aa79.json
-```
 
-In the above example, the file named `projectname-f7f5e919aa79.json` is sitting in the root of the module
+Note that the Google Cloud Storage client auth relies on the presence of Application Default Credentials. i.e., one of:
+- `GOOGLE_APPLICATION_CREDENTIALS` environment variable and service account file
+- A credential file created by using the gcloud auth application-default login command
+- The attached service account, returned by the metadata server
 
-For more information, see [Creating and Managing Service Accounts](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) at cloud.google.com.
+For more information, see https://docs.cloud.google.com/docs/authentication/application-default-credentials
+
 
 > When using Google Cloud Storage, you **must enable object ACLs for the
 bucket**. Otherwise you will get this error: "cannot use ACL API to set object policy when object policies are disabled." You have 90 days to do this after first creating a bucket, otherwise you will need to use a new bucket for uploadfs.
@@ -345,7 +345,7 @@ bucket**. Otherwise you will get this error: "cannot use ACL API to set object p
 ## Less Frequently Used Options
 
 * If you are using the `local` backend (files on your server's drive), you might not like that when `disable` is called, the permissions of a file are set to `000` (no one has access). We suggest using the `disabledFileKey` option to completely avoid this issue. However, if you wish, you can pass the `disablePermissions` option. As usual with Unix permissions, this is an OCTAL NUMBER, not a decimal one. Octal constants have been deprecated, so in modern JavaScript it is best to write it like this:
-* 
+*
 ```javascript
 // Only the owner can read. This is handy if
 // your proxy server serves static files for you and
@@ -363,7 +363,7 @@ enablePermissions: parseInt("0440", 8)
 * In backends like sharp or imagemagick that support it, even the "original" is rotated for you if it is not oriented "top left," as with some iPhone photos. This is necessary for the original to be of any use on the web. But it does modify the original. So if you really don't want this, you can set the `orientOriginals` option to `false`.
 
 * It is possible to pass your own custom storage module instead of `local` or `s3`. Follow `local.js` or `s3.js` as a model, and specify your backend like this:
-* 
+*
 ```javascript
 storage: require('mystorage.js')
 ```
@@ -403,18 +403,18 @@ If you want to make your S3 bucket private and serve content through the Amazon 
 
 There is also a list which contains content types that should not be gzipped for faster delivery from s3. Note that gzip content delivery is completely transparent to the end user and supported by all browsers, so the only types that should be excluded are those that are already compressed (i.e. a waste of CPU to unzip) unless there is an issue with the gzip feature in a particular s3-compatible backend.
 
-You can override this default list by setting the `noGzipContentTypes` option: 
+You can override this default list by setting the `noGzipContentTypes` option:
 
 ```javascript
   // Don't gzip jpeg and zip files, but gzip everything else (override default list)
-  noGzipContentTypes: ['image/jpeg', 'application/zip'] 
+  noGzipContentTypes: ['image/jpeg', 'application/zip']
 ```
 
 Alternatively you can just extend the standard list of types not to be gzipped by setting `addNoGzipContentTypes`:
 
 ```javascript
   // Additionally don't gzip pdf files (append to default list)
-  addNoGzipContentTypes: ['application/pdf'] 
+  addNoGzipContentTypes: ['application/pdf']
 ```
 
 ## Important Concerns With S3
