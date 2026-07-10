@@ -344,6 +344,158 @@ describe('@apostrophecms/redirect', function () {
     const redirected = await apos.http.get(`http://localhost:${server.address().port}/manufacturers/mercedes-benz/cl600`);
     assert.equal(redirected, '<title>cl600</title>\n');
   });
+
+  it('should require exact case by default', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+    await redirectModule.insert(req, {
+      ...instance,
+      title: 'mixed case redirect',
+      urlType: 'external',
+      redirectSlug: '/Page-1',
+      externalUrl: `http://localhost:${server.address().port}/page-2`
+    });
+
+    try {
+      await apos.http.get(`http://localhost:${server.address().port}/page-1`);
+      assert(false, 'should not have matched a differently-cased slug');
+    } catch (e) {
+      // good, should 404
+    }
+  });
+});
+
+describe('@apostrophecms/redirect (caseInsensitive option)', function () {
+  let apos;
+  let redirectModule;
+  let server;
+
+  this.timeout(t.timeout);
+
+  after(async function() {
+    await t.destroy(apos);
+  });
+
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      testModule: true,
+      modules: getAppConfig({ caseInsensitive: true })
+    });
+
+    redirectModule = apos.modules['@apostrophecms/redirect'];
+    server = apos.modules['@apostrophecms/express'].server;
+    await insertPages(apos);
+  });
+
+  this.afterEach(async function() {
+    await apos.doc.db.deleteMany({ type: '@apostrophecms/redirect' });
+  });
+
+  it('should lowercase the redirectSlug on save', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+    const inserted = await redirectModule.insert(req, {
+      ...instance,
+      title: 'mixed case redirect',
+      urlType: 'external',
+      redirectSlug: '/Page-1',
+      externalUrl: `http://localhost:${server.address().port}/page-2`
+    });
+
+    assert.equal(inserted.redirectSlug, '/page-1');
+  });
+
+  it('should match a mixed-case stored slug against a differently-cased request', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+    await redirectModule.insert(req, {
+      ...instance,
+      title: 'mixed case redirect',
+      urlType: 'external',
+      redirectSlug: '/Page-1',
+      externalUrl: `http://localhost:${server.address().port}/page-2`
+    });
+
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/PAGE-1`);
+    assert.equal(redirected, '<title>page 2</title>\n');
+  });
+
+  it('should match multi-segment mixed-case slugs case-insensitively', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+    await redirectModule.insert(req, {
+      ...instance,
+      title: 'multi-segment redirect',
+      urlType: 'external',
+      redirectSlug: '/Krescent/About-Us/Partners',
+      externalUrl: `http://localhost:${server.address().port}/page-2`
+    });
+
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/KRESCENT/About-Us/PARTNERS`);
+    assert.equal(redirected, '<title>page 2</title>\n');
+  });
+
+  it('should match wildcard prefixes case-insensitively', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+    await redirectModule.insert(req, {
+      ...instance,
+      title: 'wildcard redirect',
+      urlType: 'external',
+      redirectSlug: '/Manufacturers/*',
+      externalUrl: '/auto/manufacturers'
+    });
+
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/MANUFACTURERS/bmw/k-1100-lt`);
+    assert.equal(redirected, '<title>manufacturers</title>\n');
+  });
+
+  it('should match wildcard captures case-insensitively while preserving the request casing in the substitution', async function() {
+    const req = apos.task.getReq();
+    const instance = redirectModule.newInstance();
+    await redirectModule.insert(req, {
+      ...instance,
+      title: 'wildcard capture redirect',
+      urlType: 'external',
+      redirectSlug: '/Manufacturers/Mercedes-Benz/*',
+      externalUrl: '/auto/manufacturers/mercedes-benz/*'
+    });
+
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/MANUFACTURERS/Mercedes-Benz/cl600`);
+    assert.equal(redirected, '<title>cl600</title>\n');
+  });
+
+  it('should lowercase existing mixed-case slugs via the migration', async function() {
+    const migration = apos.migration.migrations.find(
+      m => m.name === '@apostrophecms/redirect:caseInsensitive'
+    );
+    assert(migration, 'expected the caseInsensitive migration to be registered');
+
+    await apos.doc.db.insertOne({
+      _id: 'legacyRedirect:en:published',
+      aposDocId: 'legacyRedirect',
+      aposLocale: 'en:published',
+      aposMode: 'published',
+      type: '@apostrophecms/redirect',
+      title: '/Legacy-Slug',
+      slug: 'redirect-/Legacy-Slug',
+      visibility: 'public',
+      redirectSlug: '/Legacy-Slug',
+      redirectSlugPrefix: null,
+      urlType: 'external',
+      externalUrl: `http://localhost:${server.address().port}/page-2`,
+      ignoreQueryString: false,
+      forwardQueryString: false,
+      statusCode: '302',
+      targetLocale: null
+    });
+
+    await migration.fn();
+
+    const migrated = await apos.doc.db.findOne({ _id: 'legacyRedirect:en:published' });
+    assert.equal(migrated.redirectSlug, '/legacy-slug');
+  });
 });
 
 async function insertPages(apos) {
@@ -379,7 +531,7 @@ async function insertPages(apos) {
   });
 }
 
-function getAppConfig() {
+function getAppConfig(redirectOptions = {}) {
   return {
     '@apostrophecms/express': {
       options: {
@@ -400,7 +552,8 @@ function getAppConfig() {
     },
     '@apostrophecms/redirect': {
       options: {
-        alias: 'redirect'
+        alias: 'redirect',
+        ...redirectOptions
       }
     },
     'default-page': {},

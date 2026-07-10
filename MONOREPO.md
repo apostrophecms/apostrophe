@@ -41,7 +41,7 @@ packages:
     "test": "pnpm --recursive run test",
     "eslint": "pnpm --recursive run eslint",
     "mocha": "pnpm --recursive run mocha",
-    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules && rm pnpm-lock.yaml"
+    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules && rm -f pnpm-lock.yaml"
   },
 ```
 

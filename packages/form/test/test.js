@@ -312,6 +312,62 @@ describe('Forms module', function () {
     assert(doc.data.malicious === undefined);
   });
 
+  // Security (GHSA-rgg4-476q-xgcg) — happy path. A valid submission with a
+  // file MUST create and keep its attachment. This is the symmetric guard for
+  // the rejection tests: the cleanup performed when a submission fails must
+  // never remove the attachment of a submission that succeeds.
+  it('should store and keep the attachment for a valid submission with a file', async function () {
+    const before = (await apos.attachment.db.find({}).toArray()).length;
+
+    const valid = {
+      ...submission1,
+      _id: savedForm1._id,
+      DogName: 'Rex',
+      DogPhoto: 'files-pending' // Indicating a file upload.
+    };
+
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(valid));
+    formData.append(
+      'DogPhoto-0',
+      fs.createReadStream(path.join(__dirname, '/lib/upload_tests/upload-test.txt'))
+    );
+
+    let error;
+    try {
+      await apos.http.post(
+        '/api/v1/@apostrophecms/form/submit?apikey=skeleton_key',
+        { body: formData }
+      );
+    } catch (e) {
+      error = e;
+    }
+    assert(!error, 'a valid submission should be accepted');
+
+    // Exactly one attachment should have been created and left in place.
+    const after = (await apos.attachment.db.find({}).toArray()).length;
+    assert.equal(
+      after,
+      before + 1,
+      'a valid submission must create and keep its attachment'
+    );
+
+    // The specific attachment referenced by the stored submission must still
+    // exist in the database.
+    const doc = await apos.db.collection('aposFormSubmissions').findOne({
+      'data.DogName': 'Rex'
+    });
+    const match = doc.data.DogPhoto[0]
+      .match(/^\/uploads\/attachments\/(\w+)-upload-test\.txt$/);
+    assert(match, 'the submission should store the attachment URL');
+
+    const attachment = await apos.attachment.db.findOne({ _id: match[1] });
+    assert(
+      attachment,
+      'the attachment record must still exist after a successful submission'
+    );
+  });
+
   // Submission is not stored in the db if disabled.
   let apos2;
   const form2 = { ...form1 };
@@ -409,6 +465,51 @@ describe('Forms module', function () {
       assert(error.body.data.formErrors[0].error === 'required');
       assert(error.body.data.formErrors[1].error === 'required');
     }
+  });
+
+  // Security (GHSA-rgg4-476q-xgcg): a submission that is rejected for
+  // validation errors must not leave a stored, publicly accessible attachment
+  // behind. Here a required field (DogName) is intentionally omitted so the
+  // submission is rejected with a 400, but a file is still attached to the
+  // request. No orphan attachment should remain in the database afterward.
+  it('should not store an attachment when a submission is rejected for validation errors', async function () {
+    const before = (await apos.attachment.db.find({}).toArray()).length;
+
+    const rejected = {
+      _id: savedForm1._id,
+      // DogName (required) intentionally omitted to force a validation error.
+      DogTraits: [ 'Runs fast', 'Likes treats' ],
+      DogBreed: 'Irish Wolfhound',
+      DogPhoto: 'files-pending', // Indicating a file upload.
+      agree: true
+    };
+
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(rejected));
+    formData.append(
+      'DogPhoto-0',
+      fs.createReadStream(path.join(__dirname, '/lib/upload_tests/upload-test.txt'))
+    );
+
+    let error;
+    try {
+      await apos.http.post(
+        '/api/v1/@apostrophecms/form/submit?apikey=skeleton_key',
+        { body: formData }
+      );
+    } catch (e) {
+      error = e;
+    }
+
+    assert(error, 'submission should have been rejected');
+    assert.equal(error.status, 400);
+
+    const after = (await apos.attachment.db.find({}).toArray()).length;
+    assert.equal(
+      after,
+      before,
+      'a rejected submission must not create a persistent attachment'
+    );
   });
 
   // Test basic reCAPTCHA requirements.
@@ -520,6 +621,53 @@ describe('Forms module', function () {
       assert(error.body.data.formErrors[0].error === 'recaptcha');
       assert(error.body.data.formErrors[0].global === true);
     }
+  });
+
+  // Security (GHSA-rgg4-476q-xgcg): the documented exploit. With reCAPTCHA
+  // enabled and no token supplied, the submission is rejected with a 400, but
+  // a file is attached to the request. That file must NOT be stored, because a
+  // rejected submission would otherwise leave a persistent, publicly
+  // accessible attachment that garbage collection never reclaims.
+  it('should not store an attachment when reCAPTCHA validation fails', async function () {
+    const before = (await apos3.attachment.db.find({}).toArray()).length;
+
+    const rejected = {
+      _id: savedForm3._id,
+      DogName: 'Jasper',
+      DogTraits: [ 'Runs fast', 'Likes treats' ],
+      DogBreed: 'Irish Wolfhound',
+      DogPhoto: 'files-pending', // Indicating a file upload.
+      agree: true
+      // recaptcha token intentionally omitted to force a reCAPTCHA failure.
+    };
+
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(rejected));
+    formData.append(
+      'DogPhoto-0',
+      fs.createReadStream(path.join(__dirname, '/lib/upload_tests/upload-test.txt'))
+    );
+
+    let error;
+    try {
+      await apos3.http.post(
+        '/api/v1/@apostrophecms/form/submit?apikey=skeleton_key',
+        { body: formData }
+      );
+    } catch (e) {
+      error = e;
+    }
+
+    assert(error, 'submission should have been rejected');
+    assert.equal(error.status, 400);
+    assert.equal(error.body.data.formErrors[0].error, 'recaptcha');
+
+    const after = (await apos3.attachment.db.find({}).toArray()).length;
+    assert.equal(
+      after,
+      before,
+      'a reCAPTCHA-rejected submission must not create a persistent attachment'
+    );
   });
 
   it('should submit successfully with a reCAPTCHA token', async function () {

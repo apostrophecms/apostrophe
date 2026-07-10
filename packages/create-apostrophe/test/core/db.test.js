@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import {
-  mkdtempSync, rmSync, existsSync
+  mkdtempSync, rmSync, existsSync, mkdirSync, writeFileSync
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import dbConnect from '@apostrophecms/db-connect';
 import {
-  resolveDbUri, inspect, checkConnection, dropDatabase, clearDatabase, restore
+  resolveDbUri, inspect, checkConnection, dropDatabase, clearDatabase, restore,
+  loadProjectDbConnect
 } from '../../src/core/db.js';
 
 // A fake db-connect client whose db() exposes just the surface db.js uses.
@@ -357,5 +358,74 @@ describe('core/db — restore (via injected impl)', function () {
     await restore('mongodb://h/db', 'the-source', { restore: restoreImpl });
     assert.equal(seen.uri, 'mongodb://h/db');
     assert.equal(seen.source, 'the-source');
+  });
+});
+
+describe('core/db — loadProjectDbConnect', function () {
+  let appRoot;
+
+  // Materialize a fake CJS package on disk under <root>/node_modules.
+  // `body` is appended after `module.exports = ...;`.
+  function fakePackage(root, name, exportsExpr, body = '') {
+    const dir = join(root, 'node_modules', ...name.split('/'));
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({
+        name,
+        version: '0.0.0',
+        main: 'index.js'
+      })
+    );
+    writeFileSync(join(dir, 'index.js'), `module.exports = ${exportsExpr};\n${body}`);
+    return dir;
+  }
+
+  beforeEach(function () {
+    appRoot = mkdtempSync(join(tmpdir(), 'ca-pdc-'));
+    writeFileSync(join(appRoot, 'package.json'), JSON.stringify({ name: 'proj' }));
+  });
+
+  afterEach(function () {
+    rmSync(appRoot, {
+      recursive: true,
+      force: true
+    });
+  });
+
+  it('returns the project copy when db-connect is hoisted to the project root', function () {
+    fakePackage(appRoot, 'apostrophe', '{}');
+    fakePackage(
+      appRoot,
+      '@apostrophecms/db-connect',
+      'function connect() {}',
+      'module.exports.SENTINEL = "hoisted";\nmodule.exports.restore = function () {};\n'
+    );
+    const dbc = loadProjectDbConnect(appRoot);
+    assert.equal(dbc.SENTINEL, 'hoisted');
+    assert.notEqual(dbc, dbConnect, 'must not be the bundled copy');
+  });
+
+  it('finds db-connect nested under apostrophe (resolved the way Apostrophe does)', function () {
+    const aposDir = fakePackage(appRoot, 'apostrophe', '{}');
+    // No top-level db-connect — only nested inside apostrophe's node_modules.
+    fakePackage(
+      aposDir,
+      '@apostrophecms/db-connect',
+      'function connect() {}',
+      'module.exports.SENTINEL = "nested";\nmodule.exports.restore = function () {};\n'
+    );
+    const dbc = loadProjectDbConnect(appRoot);
+    assert.equal(dbc.SENTINEL, 'nested');
+  });
+
+  it('falls back to the bundled copy when apostrophe is not installed', function () {
+    // appRoot has package.json but no node_modules/apostrophe.
+    const fallback = { SENTINEL: 'fallback' };
+    assert.equal(loadProjectDbConnect(appRoot, { fallback }), fallback);
+  });
+
+  it('falls back to the bundled db-connect by default', function () {
+    assert.equal(loadProjectDbConnect(appRoot), dbConnect);
   });
 });

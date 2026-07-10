@@ -5,7 +5,6 @@ const stream = require('node:stream/promises');
 const zlib = require('node:zlib');
 const tar = require('tar-stream');
 const { EJSON } = require('bson');
-const { Writable } = require('stream');
 
 module.exports = {
   label: 'gzip',
@@ -39,13 +38,43 @@ module.exports = {
     const parsedDocs = EJSON.parse(docs);
     const parsedAttachments = EJSON.parse(attachments);
 
-    const attachmentsInfo = parsedAttachments.map(attachment => ({
-      attachment,
-      file: {
-        name: `${attachment.name}.${attachment.extension}`,
-        path: path.join(attachmentFilesPath, `${attachment._id}-${attachment.name}.${attachment.extension}`)
+    const attachmentsInfo = parsedAttachments.map(attachment => {
+      // The archive is parsed with EJSON, which can revive objects such as
+      // `{ $ne: null }`. Require the identity fields to be plain strings so
+      // they cannot (a) smuggle a MongoDB query operator into the later
+      // `attachment.db.findOne({ _id })` lookup, nor (b) coerce into an
+      // unexpected on-disk path below.
+      if (
+        typeof attachment._id !== 'string' ||
+        typeof attachment.name !== 'string' ||
+        typeof attachment.extension !== 'string'
+      ) {
+        throw new Error('Invalid attachment metadata in import archive: _id, name and extension must be strings');
       }
-    }));
+
+      const filename = `${attachment._id}-${attachment.name}.${attachment.extension}`;
+      const filePath = path.join(attachmentFilesPath, filename);
+
+      // Guard against path traversal (GHSA-79qf-vqgc-7xx3): the `_id`, `name`
+      // and `extension` fields come straight from the untrusted archive, so a
+      // `../` sequence (or an absolute path) could otherwise point `file.path`
+      // at an arbitrary host file, which would then be read and copied into the
+      // public uploads directory. Reject any entry whose reconstructed source
+      // path escapes the extraction's attachments directory. The tar entry
+      // names are guarded separately in `extract()` above.
+      const base = path.resolve(attachmentFilesPath) + path.sep;
+      if (!path.resolve(filePath).startsWith(base)) {
+        throw new Error(`Invalid attachment path in import archive: ${filename}`);
+      }
+
+      return {
+        attachment,
+        file: {
+          name: `${attachment.name}.${attachment.extension}`,
+          path: filePath
+        }
+      };
+    });
 
     return {
       docs: parsedDocs,
@@ -141,16 +170,13 @@ async function extract(filepath, exportPath) {
       // Normalize \ to / before checking for zip-slip
       const name = header.name.replace(/\\/g, '/');
       if (name.includes('../')) {
-        // Reject zip-slip attacks without revealing information
-        if (header.type !== 'directory') {
-          // Pipe the file to nowhere so we can reach the next file
-          stream.pipe(new Writable({
-            write(chunk, encoding, cb) {
-              cb();
-            }
-          }));
-          stream.on('end', next);
-        }
+        // Reject zip-slip attacks without revealing information. Discard any
+        // body and ALWAYS advance to the next entry. Directory entries carry
+        // no body but tar-stream still requires next() to be called; skipping
+        // it (as a previous version did for directories) stalls the whole
+        // extraction, hanging the import indefinitely (a denial of service).
+        stream.on('end', next);
+        stream.resume();
         return;
       }
       if (header.type === 'directory') {

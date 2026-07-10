@@ -55,6 +55,7 @@ describe('Asset - External Build', function () {
                 };
               },
               async watch() { },
+              async clearCache() { },
               async startDevServer() {
                 actualDevServer = true;
                 return {
@@ -124,6 +125,7 @@ describe('Asset - External Build', function () {
             return {
               async build() { },
               async watch() { },
+              async clearCache() { },
               async startDevServer() {},
               async entrypoints() {
                 return [];
@@ -291,6 +293,7 @@ describe('Asset - External Build', function () {
                 };
               },
               async watch() { },
+              async clearCache() { },
               async startDevServer() {
                 return {
                   entrypoints: []
