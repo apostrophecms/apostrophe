@@ -168,7 +168,7 @@ module.exports = (self) => {
     // more information.
     async saveBuildManifest(manifest) {
       const {
-        entrypoints, ts, devServerUrl, hmrTypes
+        entrypoints, devServerUrl, hmrTypes
       } = manifest;
       const content = [];
 
@@ -186,11 +186,9 @@ module.exports = (self) => {
           bundles: Array.from(bundles ?? [])
         });
       }
-      const current = await self.loadSavedBuildManifest(true);
       await fs.outputJson(
         path.join(self.getBundleRootDir(), '.manifest.json'),
         {
-          ts: ts || current.ts,
           devServerUrl,
           hmrTypes,
           manifest: content

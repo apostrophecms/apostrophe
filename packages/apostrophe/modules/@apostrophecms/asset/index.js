@@ -123,6 +123,9 @@ module.exports = {
     self.externalBuildModuleConfig = {};
 
     self.restartId = self.apos.util.generateId();
+    // Set to `true` once a build in this process has run the lock file
+    // dependency check and succeeded. See `checkLockFile()`.
+    self.lockFileChecked = false;
     self.iconMap = {
       ...globalIcons
     };
@@ -254,20 +257,35 @@ module.exports = {
         afterModuleInit: true,
         async task(argv = {}) {
           self.inBuildTask = true;
+          // If the lock file changed since the last successful build, force a
+          // full rebuild (and clear the build module cache) so a stale admin
+          // UI is never served after a dependency change (npm install/update).
+          // The check runs once per process, so watcher-triggered rebuilds
+          // stay scoped to the detected changes.
+          const lockCheck = await self.checkLockFile();
+          argv = {
+            ...argv,
+            lockChanged: lockCheck.changed
+          };
+          let result;
           if (self.hasBuildModule()) {
-            return self.build(argv);
+            result = await self.build(argv);
+          } else {
+            // Debugging but only if we don't have an external build module.
+            // If we do, the debug output is handled by the respective setter.
+            self.printDebug('setWebpackExtensions', {
+              builds: self.builds,
+              extraBundles: self.extraBundles,
+              webpackExtensions: self.webpackExtensions,
+              webpackExtensionOptions: self.webpackExtensionOptions,
+              verifiedBundles: self.verifiedBundles,
+              rebundleModules: self.rebundleModules
+            });
+            result = await webpackBuild.task(argv);
           }
-          // Debugging but only if we don't have an external build module.
-          // If we do, the debug output is handled by the respective setter.
-          self.printDebug('setWebpackExtensions', {
-            builds: self.builds,
-            extraBundles: self.extraBundles,
-            webpackExtensions: self.webpackExtensions,
-            webpackExtensionOptions: self.webpackExtensionOptions,
-            verifiedBundles: self.verifiedBundles,
-            rebundleModules: self.rebundleModules
-          });
-          return webpackBuild.task(argv);
+          // Record the check now that the build has succeeded.
+          await self.commitLockFileCheck(lockCheck);
+          return result;
         }
       },
 
@@ -402,12 +420,13 @@ module.exports = {
       // development related properties: * `devServerUrl` (optional, string or
       // null) the base server URL for the dev server when available. *
       // `hmrTypes` (optional, array of strings) the entrypoint types that are
-      // currently served with HMR. * `ts` (optional, number) the timestamp ms
-      // of the last `apos` build. This number will be written to the
-      // `.manifest.json` file to allow the external build module to optimize
-      // the build time based on the last build change. The module can retrieve
-      // both `getSystemLastChangeMs()` and `loadSavedBuildManifest()` methods
-      // to perform a cache check.
+      // currently served with HMR.
+      //
+      // Lock file (dependency) changes are detected by the core (by hashing the
+      // lock file content) and signalled to the build module via the
+      // `lockChanged` build option, which should force a rebuild. The
+      // `getSystemLastChangeMs()` modified-time helper is deprecated and no
+      // longer needed for that purpose.
       //
       // ** `async watch(watcher, options)`: the method to attach the watcher
       // to the external build module.
@@ -500,11 +519,16 @@ module.exports = {
       // - `changes` is an array of changed files. This is reserved for the
       // legacy build system and should never appear in the external build
       // module.
+      // - `lockChanged` is a boolean flag set by the core when the lock file
+      // content changed since the last build (or no lock file was found). The
+      // build module should force a rebuild when it is `true`.
       //
       // Returns an object:
       // - `isTask`: if `true`, the build is executed as a task. If false
       // optimization can be applied (e.g. build apostrophe admin UI only
-      // once). - `hmr`: if `true`, the hot module replacement is enabled. -
+      // once). - `lockChanged`: if `true`, dependencies changed since the last
+      // build (or there is no lock file); the build module should force a
+      // rebuild. - `hmr`: if `true`, the hot module replacement is enabled. -
       // `hmrPort`: the port for the HMR WS server. If not set, the default port
       // is used. - `devServer`: if `false`, the dev server is disabled.
       // Otherwise, it's a string (enum) `public` or `apos`. Note that if `hmr`
@@ -527,6 +551,7 @@ module.exports = {
         }
         const options = {
           isTask: !argv['check-apos-build'],
+          lockChanged: !!argv.lockChanged,
           hmr: self.hasHMR(),
           hmrPort: self.options.hmrPort,
           modulePreloadPolyfill: self.options.modulePreloadPolyfill,
@@ -845,20 +870,144 @@ module.exports = {
       },
       getAssetBaseUrl() {
         const namespace = self.getNamespace();
+        const prefix = self.apos.prefix || '';
         if (self.isProductionMode()) {
           const releaseId = self.getReleaseId();
           const releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
           if (process.env.APOS_UPLOADFS_ASSETS) {
             return `${self.uploadfs.getUrl()}${releaseDir}`;
           } else {
-            return releaseDir;
+            return `${prefix}${releaseDir}`;
           }
         }
-        return `/apos-frontend/${namespace}`;
+        return `${prefix}/apos-frontend/${namespace}`;
       },
       getCacheBasePath() {
         return process.env.APOS_ASSET_CACHE ||
               path.join(self.apos.rootDir, 'data/temp/webpack-cache');
+      },
+
+      // Absolute path to the project package manager lock file, or `false`
+      // when none is found. Shared by the webpack and external build paths.
+      async findPackageLockPath() {
+        const candidates = [ 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml' ];
+        for (const name of candidates) {
+          const candidate = path.join(self.apos.npmRootDir, name);
+          if (await fs.pathExists(candidate)) {
+            return candidate;
+          }
+        }
+        return false;
+      },
+
+      // md5 of the current lock file content, or `null` when there is no lock
+      // file (e.g. in tests). Used to detect dependency changes reliably,
+      // where modified times cannot be trusted (fresh checkouts, restored
+      // build artifacts, clock skew).
+      async getLockFileHash() {
+        const lockPath = await self.findPackageLockPath();
+        if (!lockPath) {
+          return null;
+        }
+        return self.apos.util.md5(await fs.readFile(lockPath, 'utf8'));
+      },
+
+      // Where the lock file hash from the last build is persisted.
+      getLockFileHashPath() {
+        return path.join(
+          self.apos.rootDir, 'data/temp', self.getNamespace(), 'lock-file-hash'
+        );
+      },
+
+      async readSavedLockFileHash() {
+        try {
+          const value = (await fs.readFile(self.getLockFileHashPath(), 'utf8')).trim();
+          return value || null;
+        } catch (e) {
+          return null;
+        }
+      },
+
+      async saveLockFileHash(hash) {
+        const file = self.getLockFileHashPath();
+        if (!hash) {
+          await fs.remove(file);
+          return;
+        }
+        await fs.mkdirp(path.dirname(file));
+        await fs.writeFile(file, hash, 'utf8');
+      },
+
+      // Clear the external build module's cache (e.g. @apostrophecms/vite),
+      // whose cache directory is not keyed on the lock file content. The
+      // webpack file system cache is keyed on the lock file content and
+      // self-invalidates, so it is left in place; forcing a rebuild is enough
+      // for it to produce a fresh bundle.
+      async clearBuildModuleCache() {
+        if (self.hasBuildModule()) {
+          await self.getBuildModule().clearCache();
+        }
+      },
+
+      // Decide whether the build should be forced because of a dependency
+      // change, returning `true` so callers can force a full rebuild.
+      // `currentHash` is accepted to avoid reading the lock file twice; it is
+      // `null` when no lock file was found.
+      //
+      // - No lock file (e.g. some monorepo setups): force a rebuild so a stale
+      //   admin UI is never served, but do NOT clear the build module cache -
+      //   there is no evidence dependencies changed and clearing it on every
+      //   run would be needlessly expensive.
+      // - Lock content changed, or there is no record of a previous build:
+      //   clear the build module cache so the rebuild cannot reuse stale
+      //   modules, and force a rebuild.
+      // - Lock content unchanged: no forced rebuild.
+      //
+      // The new hash is persisted by the caller via `saveLockFileHash()` only
+      // after the build succeeds, so a failed build is retried.
+      async checkLockFileChanged(currentHash) {
+        if (currentHash === null) {
+          return true;
+        }
+        const saved = await self.readSavedLockFileHash();
+        if (saved === currentHash) {
+          return false;
+        }
+        await self.clearBuildModuleCache();
+        return true;
+      },
+
+      // Run the dependency (lock file) check that drives the `lockChanged`
+      // build option, once per process. The first build performs the real
+      // comparison; later invocations (e.g. watcher-triggered rebuilds)
+      // report no change, because a dependency change while the process is
+      // running requires a restart anyway. The result must be handed back
+      // to `commitLockFileCheck()` after the build succeeds.
+      async checkLockFile() {
+        if (self.lockFileChecked) {
+          return {
+            committed: true,
+            changed: false,
+            hash: null
+          };
+        }
+        const hash = await self.getLockFileHash();
+        const changed = await self.checkLockFileChanged(hash);
+        return {
+          committed: false,
+          changed,
+          hash
+        };
+      },
+
+      // Persist the result of `checkLockFile()`. Called only after a
+      // successful build, so a failed build repeats the forced rebuild.
+      async commitLockFileCheck({ committed, hash }) {
+        if (committed) {
+          return;
+        }
+        await self.saveLockFileHash(hash);
+        self.lockFileChecked = true;
       },
 
       // Override to set externally a build watcher (a `chokidar` instance).

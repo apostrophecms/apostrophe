@@ -1,3 +1,14 @@
-export { getAposHost, isStaticBuild, buildPageUrl, getFilterBaseUrl, aposSetQueryParameter } from './url.js';
-export { slugify } from './slug.js';
-export { aposFetch } from './fetch.js';
+/**
+ * @deprecated Import from the scoped sub-paths instead:
+ *
+ * ```js
+ * // Server-side helpers (Astro frontmatter, endpoints, prerendering)
+ * import { aposFetch, getAposHost, isStaticBuild, getAllStaticPaths } from '@apostrophecms/apostrophe-astro/helpers/server';
+ *
+ * // Universal helpers (server + client)
+ * import { slugify, getAttachmentUrl, aposSetQueryParameter } from '@apostrophecms/apostrophe-astro/helpers/universal';
+ * ```
+ */
+
+export { aposFetch, getAposHost, isStaticBuild, getAllStaticPaths, getAllUrlMetadata, getLocales } from './server/index.js';
+export { buildPageUrl, getFilterBaseUrl, aposSetQueryParameter, slugify, stylesElements, stylesAttributes, getFocalPoint, getAttachmentUrl, getAttachmentSrcset, getWidth, getHeight } from './universal/index.js';

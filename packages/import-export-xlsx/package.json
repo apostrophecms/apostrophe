@@ -24,6 +24,6 @@
     "stylelint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
+    "@e965/xlsx": "^0.20.3"
   }
 }

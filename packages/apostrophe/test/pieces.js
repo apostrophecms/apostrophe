@@ -6,6 +6,12 @@ const _ = require('lodash');
 const FormData = require('form-data');
 const t = require('../test-lib/test.js');
 
+// The etag tests below issue their conditional request via rawGet (raw
+// node:http): the built-in fetch used by apos.http adds Cache-Control: no-cache
+// to any request carrying a conditional header (Fetch standard), which would
+// suppress the asserted 304s.
+const { rawGet } = t;
+
 describe('Pieces', function() {
 
   let apos;
@@ -1807,11 +1813,8 @@ describe('Pieces', function() {
     };
 
     const response1 = await apos.http.get('/api/v1/thing/testThing:en:published', { fullResponse: true });
-    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', {
-      fullResponse: true,
-      headers: {
-        'if-none-match': response1.headers.etag
-      }
+    const response2 = await rawGet(apos, '/api/v1/thing/testThing:en:published', {
+      'if-none-match': response1.headers.etag
     });
 
     assert(response1.status === 200);
@@ -1845,11 +1848,8 @@ describe('Pieces', function() {
     // so requesting it again should not return a 304 status code
     const pieceUpdateResponse = await apos.doc.update(apos.task.getReq(), pieceDoc);
 
-    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', {
-      fullResponse: true,
-      headers: {
-        'if-none-match': response1.headers.etag
-      }
+    const response2 = await rawGet(apos, '/api/v1/thing/testThing:en:published', {
+      'if-none-match': response1.headers.etag
     });
 
     const eTag1Parts = response1.headers.etag.split(':');
@@ -1885,11 +1885,8 @@ describe('Pieces', function() {
     outOfDateETagParts[2] = Number(outOfDateETagParts[2]) -
       (4444 + 1) * 1000; // 1s outdated
 
-    const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', {
-      fullResponse: true,
-      headers: {
-        'if-none-match': outOfDateETagParts.join(':')
-      }
+    const response2 = await rawGet(apos, '/api/v1/thing/testThing:en:published', {
+      'if-none-match': outOfDateETagParts.join(':')
     });
 
     const eTag1Parts = response1.headers.etag.split(':');

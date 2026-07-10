@@ -17,9 +17,9 @@
 
 This module improves [@apostrophecms/import-export](https://github.com/apostrophecms/import-export) by adding the `xlsx` format.
 
-> Why does this specific format lies in another module?
+> Why does this specific format live in another module?
 
-Because it relies on a [dependency that is not hosted on NPM](https://github.com/SheetJS/sheetjs/issues/2667), which could lead to installation issues on networks that limit connections to NPM repository only.
+Historically because it relied on a [dependency that was not hosted on NPM](https://github.com/SheetJS/sheetjs/issues/2667). It now depends on [`@e965/xlsx`](https://www.npmjs.com/package/@e965/xlsx), a registry-published mirror of SheetJS Community Edition with the same API, so it installs from the npm registry like any other module. The format remains in its own module for backwards compatibility.
 
 ## Requirement
 

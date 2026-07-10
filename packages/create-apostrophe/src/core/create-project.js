@@ -6,7 +6,13 @@
 import { getKit } from './kits.js';
 import { detectPackageManager, assertSupportedPackageManager } from './pm.js';
 import { StageError, UnsupportedPackageManagerError } from './errors.js';
-import { checkConnection, dropDatabase } from './db.js';
+import {
+  checkConnection,
+  dropDatabase,
+  clearDatabase as clearDb,
+  restore as restoreDb,
+  loadProjectDbConnect
+} from './db.js';
 import { clone as realClone } from './steps/clone.js';
 import { scaffold as realScaffold } from './steps/scaffold.js';
 import { install as realInstall } from './steps/install.js';
@@ -115,20 +121,24 @@ export function makeCreateProject({
           shortName: options.shortName,
           dbReset: options.dbReset
         }, {
-          verifyConnection: checkConnection,
+          verifyConnection: options.dbChoice === 'sqlite' ? undefined : checkConnection,
           dropDatabase
         }));
 
       // Runs before admin-user so the admin reconciles against the restored
       // dump. Renders its own tasks, so it is not wrapped in step().
       if (kit.seedData) {
+        const projectDbConnect = loadProjectDbConnect(appRoot);
         await importSampleData({
           appRoot,
           dbChoice: options.dbChoice,
           dbUri: options.dbUri,
           shortName: options.shortName
         }, {
-          task: (label, taskOpts) => logger.task(label, taskOpts)
+          task: (label, taskOpts) => logger.task(label, taskOpts),
+          clearDatabase: (uri) => clearDb(uri, { connect: projectDbConnect }),
+          restore: (uri, source) =>
+            restoreDb(uri, source, { restore: projectDbConnect.restore })
         });
       }
 

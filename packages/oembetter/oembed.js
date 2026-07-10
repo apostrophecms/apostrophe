@@ -1,4 +1,3 @@
-const fetch = require('node-fetch');
 const { XMLParser } = require('fast-xml-parser');
 
 const cheerio = require('cheerio');

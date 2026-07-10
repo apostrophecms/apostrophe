@@ -276,16 +276,26 @@ module.exports = function (baseClass) {
     // }
   }
 
-  Object.defineProperty(
-    baseClass.prototype,
-    toEmulate,
-    {
-      enumerable: false,
-      value: function () {
-        return Object.setPrototypeOf(this, EmulateCollection.prototype);
+  // `toEmulate` is a global `Symbol.for()` key, so every copy of this module
+  // shares it. When more than one copy is loaded against the same
+  // `mongodb-legacy` classes (e.g. a version/source skew between a direct and a
+  // transitive dependency), each copy tries to patch the same shared prototype.
+  // Patch only once, and use `configurable: true` so that an older, unguarded
+  // copy loading afterwards can still redefine it instead of throwing
+  // "Cannot redefine property: Symbol(@@mdb.callbacks.toEmulate)".
+  if (!Object.prototype.hasOwnProperty.call(baseClass.prototype, toEmulate)) {
+    Object.defineProperty(
+      baseClass.prototype,
+      toEmulate,
+      {
+        enumerable: false,
+        configurable: true,
+        value: function () {
+          return Object.setPrototypeOf(this, EmulateCollection.prototype);
+        }
       }
-    }
-  );
+    );
+  }
 
   return EmulateCollection;
 };

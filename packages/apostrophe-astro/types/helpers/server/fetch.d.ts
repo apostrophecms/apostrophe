@@ -1,12 +1,9 @@
-import config from 'virtual:apostrophe-config';
-import { getAposHost } from './url.js';
-
 /**
  * A transparent proxy around the native `fetch` API for **server-side
  * Astro code only** (`.astro` frontmatter, server endpoints, etc.).
  *
  * **Do NOT use in client-side code** — it depends on
- * `virtual:apostrophe-config` and exposes the internal backend host.
+ * `apostrophe-astro-config/config` and exposes the internal backend host.
  * For browser requests use plain `fetch` with relative URLs
  * (e.g. `/api/v1/...`).
  *
@@ -28,25 +25,10 @@ import { getAposHost } from './url.js';
  * @example
  * ```astro
  * ---
- * import { aposFetch } from '@apostrophecms/apostrophe-astro/helpers';
+ * import { aposFetch } from '@apostrophecms/apostrophe-astro/helpers/server';
  * const response = await aposFetch('/api/v1/article?perPage=5');
  * const data = await response.json();
  * ---
  * ```
  */
-export async function aposFetch(input, init) {
-  let url = input;
-
-  if (typeof url === 'string' && url.startsWith('/')) {
-    url = getAposHost() + url;
-  }
-  const headers = new Headers(init?.headers);
-  if (config.staticBuild) {
-    headers.set('x-apos-static-base-url', '1');
-  }
-
-  return fetch(url, {
-    ...init || {},
-    headers
-  });
-}
+export function aposFetch(input: string | URL | Request, init?: RequestInit): Promise<Response>;

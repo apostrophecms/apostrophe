@@ -25,10 +25,13 @@
   ],
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "dependencies": {
     "deepmerge": "^4.2.2",
     "escape-string-regexp": "^4.0.0",
-    "htmlparser2": "^10.1.0",
+    "htmlparser2": "^12.0.0",
     "is-plain-object": "^5.0.0",
     "launder": "workspace:^",
     "parse-srcset": "^1.0.2",
