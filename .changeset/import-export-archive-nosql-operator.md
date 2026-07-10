@@ -1,5 +1,0 @@
----
-"@apostrophecms/import-export": patch
----
-
-Security: hardened the importer against MongoDB query-operator smuggling through archive metadata (CWE-943). The `aposDocs.json` / `aposAttachments.json` files inside an uploaded archive are parsed with EJSON, which revives objects such as `{ "$ne": null }` as live values. Several attacker-controlled fields — an attachment's `_id`, and a document's `aposLocale`, `parkedId` and `type` — flowed unlaundered into MongoDB selectors (`attachment.db.findOne({ _id })` and the singleton/parked-document lookups), where an object value could act as a query operator. Imported attachment `_id`, `name` and `extension` must now be plain strings, and the singleton/parked lookup selectors coerce their inputs to strings, so no operator can reach the database. The practical impact was limited (field-level operators only — no top-level `$where`/`$expr`, no authentication or privilege escalation, and the importer already owns the documents), but untrusted archive data should never reach a query unlaundered. Found during an internal security review.
