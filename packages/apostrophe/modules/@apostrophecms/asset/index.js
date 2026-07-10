@@ -123,6 +123,9 @@ module.exports = {
     self.externalBuildModuleConfig = {};
 
     self.restartId = self.apos.util.generateId();
+    // Set to `true` once a build in this process has run the lock file
+    // dependency check and succeeded. See `checkLockFile()`.
+    self.lockFileChecked = false;
     self.iconMap = {
       ...globalIcons
     };
@@ -254,14 +257,15 @@ module.exports = {
         afterModuleInit: true,
         async task(argv = {}) {
           self.inBuildTask = true;
-          // If the lock file changed since the last build, force a full
-          // rebuild (and clear the build module cache) so a stale admin UI is
-          // never served after a dependency change (npm install/update).
-          const lockFileHash = await self.getLockFileHash();
-          const lockChanged = await self.checkLockFileChanged(lockFileHash);
+          // If the lock file changed since the last successful build, force a
+          // full rebuild (and clear the build module cache) so a stale admin
+          // UI is never served after a dependency change (npm install/update).
+          // The check runs once per process, so watcher-triggered rebuilds
+          // stay scoped to the detected changes.
+          const lockCheck = await self.checkLockFile();
           argv = {
             ...argv,
-            lockChanged
+            lockChanged: lockCheck.changed
           };
           let result;
           if (self.hasBuildModule()) {
@@ -279,8 +283,8 @@ module.exports = {
             });
             result = await webpackBuild.task(argv);
           }
-          // Record the lock file hash now that the build has succeeded.
-          await self.saveLockFileHash(lockFileHash);
+          // Record the check now that the build has succeeded.
+          await self.commitLockFileCheck(lockCheck);
           return result;
         }
       },
@@ -971,6 +975,39 @@ module.exports = {
         }
         await self.clearBuildModuleCache();
         return true;
+      },
+
+      // Run the dependency (lock file) check that drives the `lockChanged`
+      // build option, once per process. The first build performs the real
+      // comparison; later invocations (e.g. watcher-triggered rebuilds)
+      // report no change, because a dependency change while the process is
+      // running requires a restart anyway. The result must be handed back
+      // to `commitLockFileCheck()` after the build succeeds.
+      async checkLockFile() {
+        if (self.lockFileChecked) {
+          return {
+            committed: true,
+            changed: false,
+            hash: null
+          };
+        }
+        const hash = await self.getLockFileHash();
+        const changed = await self.checkLockFileChanged(hash);
+        return {
+          committed: false,
+          changed,
+          hash
+        };
+      },
+
+      // Persist the result of `checkLockFile()`. Called only after a
+      // successful build, so a failed build repeats the forced rebuild.
+      async commitLockFileCheck({ committed, hash }) {
+        if (committed) {
+          return;
+        }
+        await self.saveLockFileHash(hash);
+        self.lockFileChecked = true;
       },
 
       // Override to set externally a build watcher (a `chokidar` instance).
