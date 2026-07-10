@@ -1,5 +1,26 @@
 # Changelog
 
+## 4.31.1 (2026-07-10)
+
+### Fixes
+
+- The lock file dependency check that forces a full rebuild now runs once per process. Watcher-triggered rebuilds stay scoped to the detected changes instead of rebuilding everything on every file change when the lock file changed or is absent. This bug was in effect only for projects missing a lock file in their `npmRoot` (e.g. npm monorepos).
+- Fixed the admin UI sometimes serving a stale build after dependencies changed (for example after `npm install` or `npm update`). Apostrophe now detects dependency changes from the content of the lock file rather than its modified time, which could be misleading after a fresh checkout or a restored CI/Docker build cache.
+- Fixed pressing Backspace right after typing `/` in a rich text widget deleting the entire widget. Backspace now removes the slash and closes the insert menu. Global command menu shortcuts also no longer fire for key events already handled and prevented by other UI components.
+- fromRichText adds metatype to new widget
+- Fixed the widget copy shortcut (Ctrl+C / Cmd+C) hijacking native text copy in edit mode. With an active text selection, the cut, copy and remove (Backspace) widget shortcuts now defer to the browser. Pasting a widget with Ctrl+V / Cmd+V now checks that the widget copy is still the most recent thing in the system clipboard, so text copied elsewhere in the meantime is no longer shadowed by a stale widget paste. The widget clipboard storage remains backward compatible with entries written by previous releases.
+- Fix invalid HTML output for <col> elements in sanitize-html (treat void elements correctly)
+- Fixed a layout issue where `dateAndTime` schema fields could overflow and trigger horizontal scrolling in narrow containers.
+- Dependency bumps for stability and security.
+
+### Security
+
+- `.choices()` / `.counts()` query builders were not adequately guarded for variants like `authorAnd` and `_authorAnd`. Fixed.
+- Restored destination-parent authorization in the page `move()` operation (GHSA-wr5r-wqp2-x4fh).
+- Bumped the `nodemailer` dependency from 8.x to 9.x to pick up the fix for GHSA-p6gq-j5cr-w38f, where a message's `raw` option could bypass nodemailer's `disableFileAccess`/`disableUrlAccess` controls and enable arbitrary file reads or SSRF. The real-world risk to Apostrophe is low: core only sends mail from trusted server-side code (such as password-reset emails), never sets those controls, and gives site visitors no way to control a message's `raw` field. nodemailer 9 is a security-only major release with one behavior change worth noting for projects: outbound HTTPS used to fetch remote content (remote-URL attachments, OAuth2 token endpoints, HTTP/HTTPS proxies) now validates TLS certificates by default — if you depend on self-signed or otherwise invalid certificates, opt out per request with `tls.rejectUnauthorized: false`. As a precaution, make sure your own project code never forwards untrusted input into the `raw` field of a module's `email()` call.
+- `sanitize-html` fixes related to `textarea`, `xmp`, `svg`, `math`
+- Dependency bumps for stability and security.
+
 ## 4.31.0 (2026-06-10)
 
 ### Fixes
