@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/emulate-mongo-3-driver",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Emulate the Mongo 3.x nodejs driver on top of the Mongo 6.x nodejs driver, for bc",
   "main": "index.js",
   "scripts": {
