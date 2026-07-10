@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0 (2026-07-10)
+
+### Adds
+
+- The generated `sitemap.xml` (or per-locale sitemaps) is now declared as a _literal content_ route, so external front-end integrations (such as the Astro integration) serve it correctly in SSR mode automatically, with no per-route configuration. Requires a compatible version of Apostrophe core.
+
 ## 1.4.0 (2026-04-15)
 
 ### Adds

@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.14.0 (2026-07-10)
+
+### Adds
+
+- In SSR mode, the integration now automatically serves _literal content_ files declared by Apostrophe modules - such as `robots.txt`, `sitemap.xml`, and `llms.txt` - by proxying them directly to Apostrophe instead of rendering them as pages. These files no longer need to be listed individually in the `proxyRoutes` option, which continues to work as before for any additional routes you wish to proxy.
+
+### Changes
+
+- Upgraded the `undici` HTTP client from v6 to v8, which requires Node.js 22.19 or newer, and fixed a connection leak in the Astro proxy where responses that are not streamed on to the browser — redirects (301/302/307/308) and bodyless responses (204/304) — now release their backend response body immediately instead of leaving it for garbage collection, which under load could hold connections open and exhaust the connection pool.
+- Replace vite-plugin-apostrophe-config and vite-plugin-apostrophe-doctype with vite/vite-plugin-apostrophe-generated-config.js, which writes real files to node_modules/.apostrophe-astro-config/ (config.js, doctypes.js)
+
+  - Register Vite aliases for apostrophe-astro-config/config and /doctypes
+  - Update all internal virtual: imports to alias specifiers
+  - Rename static build cache dir to node_modules/.apostrophe-astro-static/
+  - Add helpers/server/ (aposFetch, getAposHost, isStaticBuild)
+  - Add helpers/universal/ (URL, slug, styles, attachment helpers)
+  - Keep lib/aposPageFetch.js as the internal implementation (starter kit entrypoint only)
+  - Reduce lib/util.js, lib/aposSetQueryParameter.js, lib/static.js to deprecated shims
+  - Add MIGRATION.md
+  - Bump `undici` to ^7.x for Node.js 24+ compatibility
+  - Add `peerDependencies` declaring Astro v5, v6, and v7 support.
+  - Fix `virtual:apostrophe-config` import in `aposLiteralContentMiddleware.js` to use the generated-file module path.
+  - Drop deprecated entryPoint shim from injectRoute calls.
+
+### Fixes
+
+- Query string parameters are no longer lost when a URL with a trailing slash is normalized, so `/articles/?page=2` now renders the same content as `/articles?page=2`. Previously such URLs were redirected to the page URL alone (e.g. `/articles`), losing the query string and showing the first page. Redirects to a different origin are now always passed through to the browser.
+
 ## 1.13.0 (2026-06-10)
 
 ### Fixes
