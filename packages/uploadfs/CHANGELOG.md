@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.27.0 (2026-07-10)
+
+### Changes
+
+- Upgraded the optional `sharp` image-processing dependency from `^0.32.6` to `^0.35.2`. Since 0.33, sharp distributes its prebuilt binaries as platform-specific `@img/sharp-*` packages, and as of 0.35 it no longer runs an install script (the previous `node-gyp`/`prebuild-install` step). This removes a deprecation warning and prepares projects for npm v12, where dependency install scripts are disabled by default.
+- Bumped `glob` to `^13` (core) and `rimraf` to `^6` (uploadfs) to clear the deprecated `glob@10` warning shown on every install. The old `glob@10` arrived both directly from core and transitively through `uploadfs` → `rimraf@5`; both now resolve to the current, supported `glob@13` (`rimraf@6` depends on `glob@13` as well). No API or behavior changes.
+
 ## 1.26.1
 
 ### Fixes

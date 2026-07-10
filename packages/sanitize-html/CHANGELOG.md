@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.17.6 (2026-07-10)
+
+### Fixes
+
+- Allow transformTags to emit text when textFilter is set, even if the tag is initially empty. This is consistent with the documentation. Thanks to [spokodev](https://github.com/spokodev) for the fix.
+
+### Security
+
+- Fixed an XSS/allowlist bypass in which the contents of a raw-text element (`textarea` or `xmp`) nested inside an `svg` or `math` root were re-emitted without HTML-escaping. `sanitize-html` treated that content as inert raw text because `htmlparser2` 10.x classified raw-text elements by tag name and ignored the namespace, but a real HTML5 parser treats `textarea`/`xmp` as ordinary foreign elements inside SVG/MathML and re-parses their contents as live markup. As a result, markup and event-handler attributes that the allowlist never permitted (for example `<svg><textarea><img src=x onerror=alert(1)>`) could survive sanitization and execute in the browser. This is now fixed on two fronts: `htmlparser2` was upgraded to 12.x, which is namespace-aware and parses `textarea`/`xmp` inside SVG/MathML as ordinary elements, so their non-allowlisted children (such as the injected `img`) are dropped by the allowlist instead of being preserved as raw text; and any raw-text content `sanitize-html` still emits for these tags (at HTML integration points such as `foreignObject`/`mtext`, or outside foreign content) is always HTML-escaped. The default configuration is not affected; the precondition is an `allowedTags` that includes `svg` or `math` together with `textarea` or `xmp`. Thanks to [khoadb175](https://github.com/khoadb175) for responsibly disclosing the vulnerability.
+- Fixed a mutation-XSS / `allowedTags` bypass affecting configurations that allow the `textarea` or `xmp` raw-text tags. `htmlparser2` 10.x did not recognize an end tag with a trailing solidus (e.g. `</textarea/>`) as closing the element, so it kept the following markup as raw text, but a spec-compliant browser treats `</textarea/>` as a valid close and parses that markup as a live element. Because raw-text content was re-emitted without escaping, a payload such as `<textarea></textarea/><img src=x onerror=...>` could smuggle non-allowlisted, executable markup through the sanitizer. The default configuration was not affected. This is now defended at two layers: `htmlparser2` was upgraded to 12.x, whose tokenizer closes these end tags correctly, and the raw text sanitize-html emits for these tags is always escaped so no `<` can reopen a tag when the output is re-parsed (`textarea`, an RCDATA element whose entities `htmlparser2` decodes, is escaped like normal text, while `xmp`, a raw-text element, has only its angle brackets escaped to avoid double-encoding already-encoded entities). Because `htmlparser2` is ESM-only from version 11 onward, `sanitize-html` now requires Node.js `>=22.12.0` (the first 22.x release in which `require()` of an ES module is available unflagged). Thanks to [bibu123456](https://github.com/bibu123456) for reporting the vulnerability and [Kayiz-PT](https://github.com/Kayiz-PT) for coordinating the disclosure (GHSA-jxwj-j7wr-gfrw).
+
 ## 2.17.5 (2026-06-10)
 
 ### Security

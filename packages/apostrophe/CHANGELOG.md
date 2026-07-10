@@ -1,5 +1,52 @@
 # Changelog
 
+## 4.32.0 (2026-07-10)
+
+### Adds
+
+- Added support for modules to declare _literal content_ routes - URLs that serve non-page files such as `robots.txt`, `sitemap.xml`, or `llms.txt` rather than rendered pages. External front-end integrations (such as the Astro integration) can now read these routes and serve such files correctly instead of attempting to render them as pages. Custom modules can contribute their own routes by handling the new `@apostrophecms/url:getLiteralContentRoutes` event.
+
+### Changes
+
+- The server-side HTTP client (`apos.http`) now uses Node's built-in `fetch` instead of `node-fetch`.
+
+  `node-fetch` is no longer maintained, and Node's built-in `fetch` is its standard, actively maintained successor, available in every Node.js version Apostrophe supports - so this is the right time to adopt it. We do not consider this a breaking change: common `apos.http.*` usage is unchanged, and we deliberately preserved compatibility where it mattered - `form-data` request bodies, cookie jars, the `timeout` option (now backed by an `AbortSignal`), and absolute redirect `Location` headers all behave as before.
+
+  Most code that calls `apos.http.get()`, `apos.http.post()`, etc. needs no changes. A few things to be aware of if you use advanced options or read raw responses:
+
+  - The `agent` option is no longer supported (the built-in `fetch` has no equivalent). Pass an undici `dispatcher` instead; `apos.http` throws if `agent` is given.
+  - A `Host` request header can no longer be set (it is disallowed by the fetch standard and is silently ignored).
+  - `originalResponse: true` now resolves with the built-in `fetch` `Response`. Its `body` is a web `ReadableStream` (use `require('node:stream').Readable.fromWeb()` to read it as a Node stream), and node-fetch-only helpers such as `.buffer()` are no longer available.
+  - Requests that send a conditional header (`If-None-Match` / `If-Modified-Since`) now also send `Cache-Control: no-cache`, as required by the fetch standard. An endpoint that returns `304 Not Modified` based on those headers may return `200` to such a request.
+
+  New capabilities:
+
+  - The `timeout` option (in milliseconds) and the standard `signal` (`AbortSignal`) and undici `dispatcher` options are supported.
+  - A request `body` may be a native `FormData`, in addition to a `form-data` package instance.
+
+- Bumped `glob` to `^13` (core) and `rimraf` to `^6` (uploadfs) to clear the deprecated `glob@10` warning shown on every install. The old `glob@10` arrived both directly from core and transitively through `uploadfs` → `rimraf@5`; both now resolve to the current, supported `glob@13` (`rimraf@6` depends on `glob@13` as well). No API or behavior changes.
+
+### Fixes
+
+- Fixed the tag popover in the media library (used to apply tags to images in bulk) so it loads all image tags instead of only the first 50. Tags beyond the first 50 can now be found and applied, and creating a tag whose name already exists no longer produces a duplicate.
+- The lock file dependency check that forces a full rebuild now runs once per process. Watcher-triggered rebuilds stay scoped to the detected changes instead of rebuilding everything on every file change when the lock file changed or is absent. This bug was in effect only for projects missing a lock file in their `npmRoot` (e.g. npm monorepos).
+- Fixed the admin UI sometimes serving a stale build after dependencies changed (for example after `npm install` or `npm update`). Apostrophe now detects dependency changes from the content of the lock file rather than its modified time, which could be misleading after a fresh checkout or a restored CI/Docker build cache.
+
+  For external build module authors: lock file change detection now happens in the core and is passed to the build module via the `lockChanged` build option. The `apos.asset.getSystemLastChangeMs()` helper is deprecated and the build manifest no longer includes a `ts` timestamp.
+
+- Fixed pressing Backspace right after typing `/` in a rich text widget deleting the entire widget. Backspace now removes the slash and closes the insert menu. Global command menu shortcuts also no longer fire for key events already handled and prevented by other UI components.
+- Fix invalid HTML output for <col> elements in sanitize-html (treat void elements correctly)
+- Fixed a layout issue where `dateAndTime` schema fields could overflow and trigger horizontal scrolling in narrow containers.
+- fromRichText adds metatype to new widget
+- Fixed the widget copy shortcut (Ctrl+C / Cmd+C) hijacking native text copy in edit mode. With an active text selection, the cut, copy and remove (Backspace) widget shortcuts now defer to the browser. Pasting a widget with Ctrl+V / Cmd+V now checks that the widget copy is still the most recent thing in the system clipboard, so text copied elsewhere in the meantime is no longer shadowed by a stale widget paste. The widget clipboard storage remains backward compatible with entries written by previous releases.
+- Batch jobs now reliably record their total item count, so completion notifications no longer occasionally report a null total.
+
+### Security
+
+- Completed the fix for CVE-2026-39857 (GHSA-xmpp-f9v3-r7qh). The `.choices()` / `.counts()` query builders (`?choices=` / `?counts=` on the public REST API) guarded against leaking distinct values of fields excluded from `publicApiProjection` by resolving the schema field with an exact-name match. A relationship field registers extra query builders whose names differ from the field name — the "slug" alias builders that drop the leading underscore (`author` / `authorAnd` for a field named `_author`) and the `_authorAnd` operation builder — so those aliases were not gated and could still be used by an unauthenticated caller to extract the relationship's distinct choices (the referenced, publicly visible related documents by title/slug, plus per-value counts via `?counts=`) for a relationship an operator intentionally excluded from `publicApiProjection`. Relationship alias builders are now resolved back to their underlying schema field (matching the field name or its `idsStorage`) before the `publicApiProjection` and `viewPermission` checks are applied, so the alias names are gated exactly like the field itself. Thanks to Ta Duc Thien ([thientd](https://github.com/thientd)) for reporting this issue.
+- Restored destination-parent authorization in the page `move()` operation (GHSA-wr5r-wqp2-x4fh). A regression had gated the destination "create" permission check on the source page being restored out of the archive, which silently disabled that check for every ordinary move. As a result a low-privileged but content-editing user (for example an editor) who could edit at least one page could relocate that page under a parent of a restricted page type they have no create/edit rights over (such as one declaring a higher `editRole`/`publishRole`), and in doing so trigger an unchecked re-ranking of the restricted parent's existing children. A cross-parent move into a non-archive destination now again requires "create" permission on the destination, with the archive-restore path handled as an explicit exception. Thanks to 5ud0 / Tarmo Technologies for reporting the issue.
+- Bumped the `nodemailer` dependency from 8.x to 9.x to pick up the fix for GHSA-p6gq-j5cr-w38f, where a message's `raw` option could bypass nodemailer's `disableFileAccess`/`disableUrlAccess` controls and enable arbitrary file reads or SSRF. The real-world risk to Apostrophe is low: core only sends mail from trusted server-side code (such as password-reset emails), never sets those controls, and gives site visitors no way to control a message's `raw` field. nodemailer 9 is a security-only major release with one behavior change worth noting for projects: outbound HTTPS used to fetch remote content (remote-URL attachments, OAuth2 token endpoints, HTTP/HTTPS proxies) now validates TLS certificates by default — if you depend on self-signed or otherwise invalid certificates, opt out per request with `tls.rejectUnauthorized: false`. As a precaution, make sure your own project code never forwards untrusted input into the `raw` field of a module's `email()` call.
+
 ## 4.31.0 (2026-06-10)
 
 ### Adds
@@ -12,7 +59,7 @@
 ### Fixes
 
 - Fixed an issue where using the Tab key to navigate within modals could incorrectly jump focus to a wrong element instead of the next input field.
-Fixed Tab navigation escaping out of modals when the form contained hidden sections or elements that became disabled after editing.
+  Fixed Tab navigation escaping out of modals when the form contained hidden sections or elements that became disabled after editing.
 - Fixed adding or removing an area field from a schema breaking existing documents on an external front such as Astro.
 - For Astro: `AposArea` now renders only schema-backed areas. A missing area no longer throws, and an area orphaned by removing its field from the schema (while its content remains in the document) renders nothing instead of breaking sibling areas in edit mode. Logged-in editors get a diagnostic message in place of an orphaned area; anonymous visitors see nothing.
 - Editable documents sent to an external front (Asgtro) now materialize empty area objects for schema area fields added after the document was created, so they can be edited in context.

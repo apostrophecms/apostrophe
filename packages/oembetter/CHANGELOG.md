@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 (2026-07-10)
+
+### Changes
+
+- Replaced the `node-fetch` dependency with Node's built-in `fetch`. This is an internal change with no effect on the public API.
+
 ## 1.2.0
 
 ### Changes
