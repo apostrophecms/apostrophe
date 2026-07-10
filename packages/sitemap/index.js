@@ -115,6 +115,12 @@ module.exports = {
             });
           }
         }
+      },
+      '@apostrophecms/url:getLiteralContentRoutes': {
+        addSitemapRoutes(req, patterns) {
+          patterns.push('/sitemap.xml');
+          patterns.push('/sitemaps/*');
+        }
       }
     };
   },

@@ -27,17 +27,23 @@ module.exports = function (baseClass) {
     }
   }
 
-  Object.defineProperty(
-    baseClass.prototype,
-    toEmulate,
-    {
-      enumerable: false,
-      value: function () {
-        Object.setPrototypeOf(this, EmulateFindCursor.prototype);
-        return this;
+  // See collection.js for why this is guarded and `configurable`: multiple
+  // copies of this module may patch the same shared `mongodb-legacy` prototype
+  // via the global `Symbol.for()` key.
+  if (!Object.prototype.hasOwnProperty.call(baseClass.prototype, toEmulate)) {
+    Object.defineProperty(
+      baseClass.prototype,
+      toEmulate,
+      {
+        enumerable: false,
+        configurable: true,
+        value: function () {
+          Object.setPrototypeOf(this, EmulateFindCursor.prototype);
+          return this;
+        }
       }
-    }
-  );
+    );
+  }
 
   return EmulateFindCursor;
 };

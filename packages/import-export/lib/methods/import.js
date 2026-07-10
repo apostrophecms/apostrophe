@@ -1331,13 +1331,17 @@ module.exports = self => {
     // make sure the singleton exists.
     // Singletons are pieces having option `singleton: true`.
     async findSingletonAposDocId({ type, aposLocale }) {
+      // `type` and `aposLocale` originate from the untrusted archive and are
+      // parsed with EJSON, which can revive query operators such as
+      // `{ $ne: null }`. Coerce them to plain strings so they cannot act as
+      // MongoDB operators in this selector (a no-op for valid values).
       const singleton = await self.apos.doc.db.findOne({
         $and: [
-          { type },
+          { type: self.apos.launder.string(type) },
           {
             $or: [
               { aposLocale: { $exists: false } },
-              { aposLocale }
+              { aposLocale: self.apos.launder.string(aposLocale) }
             ]
           }
         ]
@@ -1354,16 +1358,20 @@ module.exports = self => {
     async findParkedAposDocId({
       parkedId, type, aposLocale
     }) {
+      // `parkedId`, `type` and `aposLocale` originate from the untrusted
+      // archive and are parsed with EJSON, which can revive query operators
+      // such as `{ $ne: null }`. Coerce them to plain strings so they cannot
+      // act as MongoDB operators in this selector (a no-op for valid values).
       const parked = await self.apos.doc.db.findOne({
         $and: [
           {
-            parkedId,
-            type
+            parkedId: self.apos.launder.string(parkedId),
+            type: self.apos.launder.string(type)
           },
           {
             $or: [
               { aposLocale: { $exists: false } },
-              { aposLocale }
+              { aposLocale: self.apos.launder.string(aposLocale) }
             ]
           }
         ]

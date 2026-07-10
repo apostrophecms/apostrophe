@@ -18,16 +18,23 @@ module.exports = {
     openGraph: false, // Disables @apostrophecms/open-graph for redirects
     seoFields: false, // Disables @apostrophecms/seo for redirects
     skip: [ /\/api\/v1\/.*/ ],
-    before: null
+    before: null,
+    caseInsensitive: false
   },
   init(self) {
     self.addUnlocalizedMigration();
     self.addTargetLocaleMigration();
+    self.addCaseInsensitiveMigration();
     self.createIndexes();
   },
   handlers(self) {
     return {
       beforeSave: {
+        normalizeRedirectSlug(req, doc) {
+          if (self.options.caseInsensitive && typeof doc.redirectSlug === 'string') {
+            doc.redirectSlug = doc.redirectSlug.toLowerCase();
+          }
+        },
         preventInfiniteRedirect(req, doc) {
           if (doc.urlType === 'external' && doc.redirectSlug === doc.externalUrl) {
             throw self.apos.error('invalid', req.t('aposRedirect:errorInfiniteRedirect', {
@@ -217,21 +224,35 @@ module.exports = {
               slug = pathOnly;
             }
 
+            // When caseInsensitive is enabled, redirectSlug and
+            // redirectSlugPrefix are stored in lowercase, so the inbound
+            // URL must be lowercased for matching purposes. The original
+            // (cased) pathOnly is preserved separately for use in wildcard
+            // substitutions.
+            let matchSlug = slug;
+            let matchPathOnly = pathOnly;
+            let matchPrefixes = prefixes;
+            if (self.options.caseInsensitive) {
+              matchSlug = slug.toLowerCase();
+              matchPathOnly = pathOnly.toLowerCase();
+              matchPrefixes = prefixes.map(prefix => prefix.toLowerCase());
+            }
+
             // Build query conditions
             const orConditions = [
-              { redirectSlug: slug }
+              { redirectSlug: matchSlug }
             ];
 
-            if (pathOnly !== slug) {
+            if (matchPathOnly !== matchSlug) {
               orConditions.push({
-                redirectSlug: pathOnly
+                redirectSlug: matchPathOnly
               });
             }
 
             // Add wildcard prefix matching
             orConditions.push({
               redirectSlugPrefix: {
-                $in: prefixes
+                $in: matchPrefixes
               }
             });
 
@@ -261,7 +282,7 @@ module.exports = {
             let validMatches = [];
             for (const redirect of results) {
               // Exact match
-              if (redirect.redirectSlug === slug) {
+              if (redirect.redirectSlug === matchSlug) {
                 redirect.matchType = 'exact';
                 redirect.matchLength = 0;
                 redirect.wildcardMatch = null;
@@ -272,7 +293,7 @@ module.exports = {
               }
 
               // Exact match ignoring query string
-              if (redirect.redirectSlug === pathOnly && redirect.ignoreQueryString) {
+              if (redirect.redirectSlug === matchPathOnly && redirect.ignoreQueryString) {
                 redirect.matchType = 'exact';
                 redirect.matchLength = 0;
                 redirect.wildcardMatch = null;
@@ -285,16 +306,22 @@ module.exports = {
               // Wildcard match
               if (
                 redirect.redirectSlugPrefix &&
-                pathOnly.startsWith(redirect.redirectSlugPrefix)
+                matchPathOnly.startsWith(redirect.redirectSlugPrefix)
               ) {
                 const wildcardIndex = redirect.redirectSlug.indexOf('*');
                 const suffixPattern = redirect.redirectSlug.substring(wildcardIndex + 1);
+                // Used for matching against the (possibly lowercased) stored
+                // suffix pattern
+                const matchCapturedPart = matchPathOnly
+                  .substring(redirect.redirectSlugPrefix.length);
+                // Preserves the original request casing so it can be
+                // substituted verbatim into external URL wildcards
                 const capturedPart = pathOnly
                   .substring(redirect.redirectSlugPrefix.length);
 
                 // Check if the URL matches the suffix pattern
                 if (suffixPattern) {
-                  if (capturedPart.endsWith(suffixPattern)) {
+                  if (matchCapturedPart.endsWith(suffixPattern)) {
                     redirect.matchType = 'wildcard';
                     redirect.matchLength = redirect.redirectSlugPrefix.length;
                     redirect.wildcardMatch = capturedPart
@@ -460,6 +487,33 @@ module.exports = {
                 // the user can just edit or remove the redirect
                 targetLocale: self.apos.i18n.defaultLocale
               }
+            });
+          });
+        });
+      },
+
+      addCaseInsensitiveMigration() {
+        self.apos.migration.add('@apostrophecms/redirect:caseInsensitive', async () => {
+          if (!self.options.caseInsensitive) {
+            return;
+          }
+          await self.apos.migration.eachDoc({
+            type: self.__meta.name
+          }, async redirect => {
+            const loweredSlug = redirect.redirectSlug.toLowerCase();
+            if (loweredSlug === redirect.redirectSlug) {
+              return;
+            }
+            const $set = {
+              redirectSlug: loweredSlug
+            };
+            if (redirect.redirectSlugPrefix) {
+              $set.redirectSlugPrefix = redirect.redirectSlugPrefix.toLowerCase();
+            }
+            await self.apos.doc.db.updateOne({
+              _id: redirect._id
+            }, {
+              $set
             });
           });
         });

@@ -2,6 +2,7 @@
 import createApp, { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { nextTick } from 'vue';
+import { createId } from '@paralleldrive/cuid2';
 
 export default function() {
   const mountedApps = new Map();
@@ -182,22 +183,90 @@ export default function() {
   }
 
   function createWidgetClipboardApp() {
+    const key = 'aposWidgetClipboard';
+    const marker = 'apos-widget:';
 
     // Simpler and more reliable to just talk to localStorage always and avoid the
     // storage event handle
     class Clipboard {
       set(widget) {
-        localStorage.setItem('aposWidgetClipboard', JSON.stringify(widget));
+        const id = createId();
+        localStorage.setItem(key, JSON.stringify({
+          id,
+          widget
+        }));
+        // Stamp the OS clipboard so a later paste can tell whether this
+        // widget copy is still the most recent thing the user copied
+        navigator.clipboard?.writeText(`${marker}${id}`).catch(e => {
+          // eslint-disable-next-line no-console
+          console.warn('Unable to write the widget marker to the clipboard', e);
+        });
       }
 
       get() {
-        const existing = window.localStorage.getItem('aposWidgetClipboard');
-        return existing ? JSON.parse(existing) : null;
+        return this.getEntry()?.widget || null;
+      }
+
+      getId() {
+        return this.getEntry()?.id || null;
+      }
+
+      // Returns { id, widget } or null. Entries written by older releases
+      // hold a bare widget object and are returned with a null id.
+      getEntry() {
+        const existing = window.localStorage.getItem(key);
+        if (!existing) {
+          return null;
+        }
+        let parsed;
+        try {
+          parsed = JSON.parse(existing);
+        } catch (e) {
+          return null;
+        }
+        if (!parsed || typeof parsed !== 'object') {
+          return null;
+        }
+        if (typeof parsed.id === 'string' && parsed.widget?.type) {
+          return parsed;
+        }
+        return {
+          id: null,
+          widget: parsed
+        };
       }
     }
 
     apos.area.widgetClipboard = new Clipboard();
 
+    // Widget paste arrives through the native paste event rather than a
+    // Ctrl+V keydown interception, so the clipboard contents decide: a
+    // widget is pasted only when our marker is still the most recent copy
+    document.addEventListener('paste', e => {
+      if (isInsideEditable()) {
+        // User is typing, native paste wins
+        return;
+      }
+      const text = e.clipboardData?.getData('text/plain') || '';
+      if (!text.startsWith(marker)) {
+        return;
+      }
+      // Never paste the marker itself as text at area level
+      e.preventDefault();
+      if (text.slice(marker.length) === apos.area.widgetClipboard.getId()) {
+        apos.bus.$emit('command-menu-area-paste-widget');
+      }
+    });
+
+    function isInsideEditable() {
+      const el = document.activeElement;
+      return !!el && (
+        el.nodeName === 'INPUT' ||
+        el.nodeName === 'TEXTAREA' ||
+        el.isContentEditable ||
+        !!el.closest?.('[contenteditable]')
+      );
+    }
   }
 
   function cleanupOrphanedApps() {

@@ -1,4 +1,4 @@
-import config from 'virtual:apostrophe-config';
+import config from 'apostrophe-astro-config/config';
 import { request } from 'undici';
 import zlib from 'zlib';
 import { promisify } from 'util';
@@ -50,10 +50,17 @@ export default async function aposResponse(req) {
     const aposUrl = new URL(aposHost + pathname);
     aposUrl.search = url.search;
 
+    // Headers that undici rejects unconditionally — strip them before
+    // forwarding to the backend regardless of user configuration.
+    // `Connection: Upgrade` and a bare `Upgrade` header both trigger
+    // UND_ERR_INVALID_ARG in undici when passed through a proxy.
+    const undiciRejectedHeaders = new Set([ 'connection', 'upgrade' ]);
+
     // Prepare headers, excluding any specified in config
     const requestHeaders = {};
     for (const [name, value] of req.headers) {
-      if (!excludedHeadersLower.has(name.toLowerCase())) {
+      const lower = name.toLowerCase();
+      if (!excludedHeadersLower.has(lower) && !undiciRejectedHeaders.has(lower)) {
         requestHeaders[name] = value;
       }
     }
@@ -76,8 +83,12 @@ export default async function aposResponse(req) {
 
     const { headers, statusCode, ...rest } = res;
 
-    // Handle empty responses (status codes that should not have bodies)
-    if ([204, 304].includes(statusCode)) {
+    // Statuses whose body we never send to the client: 204/304 carry none,
+    // and redirects (301/302/307/308) become a fresh Astro redirect built
+    // from the Location header in aposProxy. Dump the undici body so its
+    // socket returns to the pool instead of being held open until GC.
+    if ([204, 304, 301, 302, 307, 308].includes(statusCode)) {
+      await res.body.dump().catch(() => {});
       return new Response(null, { ...rest, status: statusCode, headers: responseHeaders });
     }
 

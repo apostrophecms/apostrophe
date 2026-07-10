@@ -147,83 +147,11 @@ jobs:
           docker pull "postgres:${{ env.POSTGRES_VERSION }}"
           docker save "postgres:${{ env.POSTGRES_VERSION }}" -o ".github/docker-cache/postgres-${{ env.POSTGRES_VERSION }}.tar"
 
-  warm-sharp-cache:
-    name: Warm sharp/libvips cache (Node ${{ matrix.nodeVersion }})
-    runs-on: ubuntu-latest
-    needs:
-      - setup
-      - shared-runtime
-    if: needs.setup.outputs.has-packages == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        nodeVersion: ${{ fromJson(needs.setup.outputs['node-versions']) }}
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Download pnpm lockfile
-        uses: actions/download-artifact@v4
-        with:
-          name: pnpm-lock
-          path: .
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.18.0
-
-      - name: Use Node.js ${{ matrix.nodeVersion }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.nodeVersion }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      # Provide headers so sharp can compile from source when
-      # prebuilt binaries fail to download.
-      # Disabled for now as it adds time for each job. If we
-      # keep seeing related issues we can re-enable it.
-      # - name: Install libvips build dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y --no-install-recommends libvips-dev
-
-      - name: Grant private repositories access
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY }}
-
-      - name: Cache sharp/libvips downloads
-        id: sharp-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm/_libvips
-          key: sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-
-            sharp-libvips-${{ runner.os }}-
-
-      - name: Warm cache by installing dependencies once
-        run: pnpm install --frozen-lockfile
-
-      - name: Debug sharp/libvips cache contents
-        if: always()
-        run: |
-          echo "-- ~/.npm/_libvips"
-          ls -alh ~/.npm/_libvips || true
-          du -sh ~/.npm/_libvips || true
-
   package-tests:
     name: ${{ format('{0} ({1}, {2}{3})', matrix.group, matrix.nodeVersion, matrix.adapter || 'n/a', matrix.needsMongo && format(' mongo {0}', matrix.mongodbVersion) || '') }}
     needs:
       - setup
       - shared-runtime
-      - warm-sharp-cache
     if: needs.setup.outputs.has-packages == 'true'
     runs-on: ubuntu-latest
     strategy:
@@ -253,31 +181,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Cache sharp/libvips downloads
-        id: sharp-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm/_libvips
-          key: sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            sharp-libvips-${{ runner.os }}-node${{ matrix.nodeVersion }}-
-            sharp-libvips-${{ runner.os }}-
-
       - name: Grant private repositories access
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: |
             ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY }}
-
-      # Same safety net: ensures node-gyp builds succeed when
-      # sharp's prebuild-install hits the network fallback.
-      # Disabled for now as it adds time for each job. If we
-      # keep seeing related issues we can re-enable it.
-      # - name: Install libvips build dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y --no-install-recommends libvips-dev
 
       - name: Restore docker image cache
         id: docker-cache-restore
