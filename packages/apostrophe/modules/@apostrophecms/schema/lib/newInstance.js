@@ -1,6 +1,5 @@
 const { klona } = require('klona');
-const { createId } = require('@paralleldrive/cuid2');
-const { merge } = require('lodash');
+const { merge, createId } = require('../../../../lib/beneath.js');
 
 module.exports = newInstance;
 

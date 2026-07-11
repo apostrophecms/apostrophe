@@ -1,6 +1,6 @@
 
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 
 export default {
   name: 'AposInputArea',

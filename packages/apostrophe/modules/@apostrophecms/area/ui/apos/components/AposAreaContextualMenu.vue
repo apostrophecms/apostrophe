@@ -94,7 +94,7 @@
 </template>
 
 <script>
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 import filterCreateWidgetOperations from '../lib/filter-create-widget-operations.js';
 
 export default {

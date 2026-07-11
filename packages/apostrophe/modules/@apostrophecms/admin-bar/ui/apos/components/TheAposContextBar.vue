@@ -51,7 +51,7 @@
 <script>
 import { mapState } from 'pinia';
 import { klona } from 'klona';
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';

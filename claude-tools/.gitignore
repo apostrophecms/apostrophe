@@ -1,0 +1,3 @@
+# Ephemeral / large analysis artifacts — keep the tools, not their output.
+logs/
+bundle-baselines/

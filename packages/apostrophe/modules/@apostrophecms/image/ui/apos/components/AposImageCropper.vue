@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import debounce from 'lodash/debounce';
+import { debounce } from 'apostrophe/lib/beneath.js';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
