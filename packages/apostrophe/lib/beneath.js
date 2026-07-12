@@ -28,38 +28,40 @@
 const ID_LENGTH = 24;
 const ID_LETTERS = 'abcdefghijklmnopqrstuvwxyz';
 const ID_ALPHANUM = 'abcdefghijklmnopqrstuvwxyz0123456789';
+// Largest multiple of each alphabet size that fits in a byte. Bytes at or above
+// it are rejected so every symbol is equally likely (no modulo bias from
+// mapping 256 byte values onto a 26- or 36-symbol alphabet).
+const ID_LETTERS_LIMIT = 256 - (256 % ID_LETTERS.length); // 234
+const ID_ALPHANUM_LIMIT = 256 - (256 % ID_ALPHANUM.length); // 252
+
+// A pool of random bytes persisted across createId() calls, so the Web Crypto
+// API is hit roughly once per ~10 ids instead of once per id, with no per-call
+// allocation. Filled lazily on first use (idPoolPos starts past the end).
+const idPool = new Uint8Array(256);
+let idPoolPos = idPool.length;
+
+function nextIdByte() {
+  if (idPoolPos >= idPool.length) {
+    globalThis.crypto.getRandomValues(idPool);
+    idPoolPos = 0;
+  }
+  return idPool[idPoolPos++];
+}
 
 // A collision-resistant id generator matching the shape of
 // @paralleldrive/cuid2's createId(): 24 lowercase base36 characters starting
-// with a letter. Entropy comes from the Web Crypto API, and characters are
-// chosen by rejection sampling so the distribution is uniform (no modulo bias
-// from mapping 256 byte values onto a 26- or 36-symbol alphabet).
+// with a letter, uniformly distributed via rejection sampling.
 export function createId() {
-  let pool = null;
-  let poolPos = 0;
-  const nextByte = () => {
-    if (!pool || poolPos >= pool.length) {
-      pool = new Uint8Array(ID_LENGTH * 2);
-      globalThis.crypto.getRandomValues(pool);
-      poolPos = 0;
-    }
-    return pool[poolPos++];
-  };
-  // Uniform index into `alphabet`: discard bytes in the final, partial block of
-  // 256 (>= the largest exact multiple of the alphabet size) and redraw, so no
-  // symbol is favored.
-  const pick = (alphabet) => {
-    const size = alphabet.length;
-    const limit = 256 - (256 % size);
-    let byte;
-    do {
-      byte = nextByte();
-    } while (byte >= limit);
-    return alphabet[byte % size];
-  };
-  let id = pick(ID_LETTERS);
+  let byte;
+  do {
+    byte = nextIdByte();
+  } while (byte >= ID_LETTERS_LIMIT);
+  let id = ID_LETTERS[byte % ID_LETTERS.length];
   for (let i = 1; i < ID_LENGTH; i++) {
-    id += pick(ID_ALPHANUM);
+    do {
+      byte = nextIdByte();
+    } while (byte >= ID_ALPHANUM_LIMIT);
+    id += ID_ALPHANUM[byte % ID_ALPHANUM.length];
   }
   return id;
 }
