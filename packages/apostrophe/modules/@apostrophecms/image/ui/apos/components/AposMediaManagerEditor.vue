@@ -129,9 +129,8 @@ import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixi
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 import dayjs from 'dayjs';
-import { isEqual } from 'lodash';
+import { createId, isEqual } from 'apostrophe/lib/beneath.js';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
-import { createId } from '@paralleldrive/cuid2';
 
 dayjs.extend(advancedFormat);
 

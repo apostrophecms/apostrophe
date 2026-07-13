@@ -110,7 +110,7 @@
 </template>
 
 <script>
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 import { klona } from 'klona';
 import { mapState } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';

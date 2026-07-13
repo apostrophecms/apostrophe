@@ -3,7 +3,7 @@
 // or emitting an update event
 // Optionally returns an array of differeing field names
 
-import { isEqual } from 'lodash';
+import { isEqual } from 'apostrophe/lib/beneath.js';
 
 export function detectDocChange(schema, v1, v2, options = {}) {
   // Handle null docs

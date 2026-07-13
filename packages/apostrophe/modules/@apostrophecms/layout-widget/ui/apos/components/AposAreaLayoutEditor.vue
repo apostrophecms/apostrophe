@@ -122,7 +122,7 @@
 
 <script>
 import { mapActions } from 'pinia';
-import get from 'lodash/get';
+import { get } from 'apostrophe/lib/beneath.js';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
 import walkWidgets from 'Modules/@apostrophecms/area/lib/walk-widgets.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';

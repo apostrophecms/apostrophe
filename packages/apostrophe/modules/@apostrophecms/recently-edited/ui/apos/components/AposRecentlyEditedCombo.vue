@@ -110,7 +110,7 @@
 import {
   computed, nextTick, onBeforeUnmount, ref
 } from 'vue';
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 
 const props = defineProps({
   field: {

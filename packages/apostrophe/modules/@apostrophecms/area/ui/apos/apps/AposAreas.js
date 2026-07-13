@@ -2,7 +2,7 @@
 import createApp, { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { nextTick } from 'vue';
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 
 export default function() {
   const mountedApps = new Map();

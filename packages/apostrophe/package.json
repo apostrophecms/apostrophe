@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/apostrophe",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   },
   "keywords": [
     "apostrophe",

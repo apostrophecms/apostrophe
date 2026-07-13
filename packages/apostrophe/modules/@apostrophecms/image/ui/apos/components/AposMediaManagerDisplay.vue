@@ -89,7 +89,7 @@
 </template>
 
 <script>
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 
 export default {
   // Custom model to handle the v-model connection on the parent.
