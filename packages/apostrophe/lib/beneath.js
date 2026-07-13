@@ -225,8 +225,16 @@ export function merge(object, ...sources) {
   return object;
 }
 
+// Keys that could reach Object.prototype or a constructor when written to a
+// target, so they are never merged (guards against prototype pollution). lodash
+// guards these too; they never occur in the JSON-shaped data Apostrophe merges.
+const UNSAFE_MERGE_KEYS = new Set([ '__proto__', 'constructor', 'prototype' ]);
+
 function baseMerge(target, source) {
   for (const key of Object.keys(source)) {
+    if (UNSAFE_MERGE_KEYS.has(key)) {
+      continue;
+    }
     const sv = source[key];
     const tv = target[key];
     if (Array.isArray(sv)) {

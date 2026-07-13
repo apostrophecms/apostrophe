@@ -144,6 +144,20 @@ describe('lib/beneath.js matches lodash', function () {
     }
   });
 
+  it('merge: does not allow prototype pollution', function () {
+    // `__proto__` etc. must never reach Object.prototype, at the top level or
+    // nested. JSON.parse produces an OWN `__proto__` key (the vector).
+    merge({}, JSON.parse('{"__proto__": {"polluted": "yes"}}'));
+    merge({ a: {} }, JSON.parse('{"a": {"__proto__": {"polluted": "yes"}}}'));
+    merge({}, JSON.parse('{"constructor": {"prototype": {"polluted": "yes"}}}'));
+    assert.equal({}.polluted, undefined, 'Object.prototype was not polluted');
+    // A dangerous key sitting next to a normal one must not block the normal one.
+    assert.deepEqual(
+      merge({ keep: 1 }, JSON.parse('{"keep": 2, "__proto__": {"x": 1}}')),
+      { keep: 2 }
+    );
+  });
+
   it('debounce: trailing invoke once with last args + cancel', async function () {
     let calls = 0;
     let lastArg;
