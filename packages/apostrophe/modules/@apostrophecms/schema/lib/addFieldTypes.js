@@ -569,18 +569,17 @@ module.exports = (self) => {
     vueComponent: 'AposInputString',
     convert: function (req, field, data, destination) {
       destination[field.name] = self.apos.launder.string(data[field.name]);
-      if (!data[field.name]) {
+      if (!destination[field.name]) {
         if (field.required) {
           throw self.apos.error('required');
         }
       } else {
         // regex source: https://emailregex.com/
-        const matches = data[field.name].match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
+        const matches = destination[field.name].match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
         if (!matches) {
           throw self.apos.error('invalid');
         }
       }
-      destination[field.name] = data[field.name];
     },
     validate(field, options, warn, fail) {
       if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
