@@ -593,6 +593,27 @@ describe('Schemas', function() {
     assert(result.name === 'Apost');
   });
 
+  it('should trim surrounding whitespace from a valid value for an email field type', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'email',
+          name: 'authorEmail',
+          label: 'Author Email'
+        }
+      ]
+    });
+    assert(schema.length === 1);
+    const input = {
+      authorEmail: '  test@example.com  '
+    };
+    const req = apos.task.getReq();
+    const result = {};
+    await apos.schema.convert(req, schema, input, result);
+    assert(_.keys(result).length === 1);
+    assert(result.authorEmail === 'test@example.com');
+  });
+
   it('should allow saving a 0 value provided as a number if a field is required for an integer field type', async function() {
     const schema = apos.schema.compose({
       addFields: [
