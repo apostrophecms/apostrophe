@@ -153,6 +153,28 @@ describe('aposResponse', () => {
         assert.equal(res.body, null);
       });
     }
+
+    for (const status of [ 204, 304, 301, 302, 307, 308 ]) {
+      it(`strips entity headers describing the dropped body for ${status}`, async () => {
+        const { default: aposResponse } = await loadAposResponse({}, async () => ({
+          statusCode: status,
+          headers: {
+            location: '/dashboard',
+            'set-cookie': 'apos.sid=abc123; Path=/; HttpOnly',
+            'content-length': '1234',
+            'content-encoding': 'gzip',
+            'transfer-encoding': 'chunked'
+          },
+          body: makeBody('')
+        }));
+        const res = await aposResponse(makeRequest());
+        assert.equal(res.status, status);
+        assert.equal(res.headers.get('set-cookie'), 'apos.sid=abc123; Path=/; HttpOnly');
+        assert.equal(res.headers.get('content-length'), null);
+        assert.equal(res.headers.get('content-encoding'), null);
+        assert.equal(res.headers.get('transfer-encoding'), null);
+      });
+    }
   });
 
   describe('normal response', () => {
