@@ -25,9 +25,6 @@
   ],
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
-  "engines": {
-    "node": ">=22.12.0"
-  },
   "dependencies": {
     "deepmerge": "^4.2.2",
     "escape-string-regexp": "^4.0.0",
