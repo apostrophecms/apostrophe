@@ -19,18 +19,142 @@ module.exports = {
     maxSteps: 5
   },
   init(self) {
+    self.adapters = {};
+    self.providers = {};
+    self.effortTable = {};
     self.validateOptions(self.options);
+    self.defaultProvider = self.options.provider ||
+      Object.keys(self.options.providers)[0] || null;
+    self.effortDefault = self.options.effort?.default || 'medium';
+  },
+  handlers(self) {
+    return {
+      'apostrophe:ready': {
+        async activate() {
+          await self.activateProviders();
+        }
+      }
+    };
   },
   methods(self) {
+    function fail(message) {
+      throw new Error(`@apostrophecms/ai: ${message}`);
+    }
+
     return {
+      // Register a provider adapter. Adapters self-register in their own
+      // module's init; re-registering an existing name overrides, so a
+      // custom adapter can replace a standard one.
+      addAdapter(adapter) {
+        if (!adapter || typeof adapter.name !== 'string') {
+          fail('addAdapter requires an adapter definition with a "name" string');
+        }
+        self.adapters[adapter.name] = adapter;
+      },
+      getAdapter(name) {
+        return self.adapters[name];
+      },
+      // Activate every configured provider entry: instantiate the adapter
+      // it names with the entry's config, validate it, merge the entry's
+      // service description (models, effort rows, capabilities) over the
+      // adapter's declared data, then build the effort routing table.
+      // Misconfigurations fail the startup.
+      async activateProviders() {
+        const {
+          providers = {}, effort = {}, image
+        } = self.options;
+
+        for (const [ name, entry ] of Object.entries(providers)) {
+          const adapterName = entry.adapter || name;
+          const adapter = self.getAdapter(adapterName);
+          if (!adapter) {
+            fail(`"providers.${name}" names unknown adapter "${adapterName}"`);
+          }
+          if (typeof adapter.validate !== 'function') {
+            fail(`adapter "${adapterName}" does not implement validate()`);
+          }
+          const aliased = adapterName !== name;
+          const instance = {
+            ...adapter,
+            provider: name,
+            apiKey: entry.apiKey,
+            baseUrl: entry.baseUrl || adapter.baseUrl
+          };
+          if (!process.env.APOS_AI_MOCK) {
+            await instance.validate();
+          }
+          self.providers[name] = {
+            name,
+            adapterName,
+            adapter: instance,
+            capabilities: {
+              ...adapter.capabilities,
+              ...entry.capabilities
+            },
+            models: self.mergeModels(adapter.models, entry.models),
+            // An aliased entry describes a different service than the
+            // adapter's native one, so the native effort rows do not apply
+            effort: aliased
+              ? { ...entry.effort }
+              : {
+                ...adapter.effort,
+                ...entry.effort
+              }
+          };
+        }
+
+        for (const [ level, row ] of Object.entries(effort.levels || {})) {
+          if (!self.providers[row.provider]) {
+            fail(`"effort.levels.${level}" references unconfigured provider "${row.provider}"`);
+          }
+        }
+        if (image && !self.providers[image.provider]) {
+          fail(`"image" references unconfigured provider "${image.provider}"`);
+        }
+
+        self.effortTable = self.buildEffortTable();
+        if (self.defaultProvider && !self.effortTable[self.effortDefault]) {
+          fail(`the default effort level "${self.effortDefault}" resolves to no routing entry; add it to "effort.levels" or configure a default provider whose adapter declares it`);
+        }
+      },
+      // The routing table: the default provider's rows are the base,
+      // the project's "effort.levels" replace it level by level
+      buildEffortTable() {
+        const table = {};
+        const base = self.providers[self.defaultProvider];
+        if (base) {
+          for (const [ level, row ] of Object.entries(base.effort)) {
+            table[level] = {
+              ...row,
+              provider: base.name
+            };
+          }
+        }
+        for (const [ level, row ] of Object.entries(self.options.effort?.levels || {})) {
+          table[level] = { ...row };
+        }
+        return table;
+      },
+      // Union of the adapter's and the entry's model metadata,
+      // merged per model id with the entry's fields winning
+      mergeModels(adapterModels = {}, entryModels = {}) {
+        const models = {};
+        for (const id of Object.keys({
+          ...adapterModels,
+          ...entryModels
+        })) {
+          models[id] = {
+            ...adapterModels[id],
+            ...entryModels[id]
+          };
+        }
+        return models;
+      },
       // Validate the shape of the module options, throwing a clear error
       // naming the offending entry. Checks that need the adapter registry
       // (unknown adapters, dangling routing references, effort levels with
       // no row) happen later, at activation.
       validateOptions(options) {
-        const fail = (message) => {
-          throw new Error(message);
-        };
         const isObject = (value) => value && typeof value === 'object' &&
           !Array.isArray(value);
         const checkString = (value, name) => {
@@ -99,6 +223,9 @@ module.exports = {
         checkString(provider, 'provider');
         if (provider && !providers[provider]) {
           fail(`"provider" names "${provider}" which is not a configured provider`);
+        }
+        if (!provider && Object.keys(providers).length > 1) {
+          fail('"provider" must name the default provider when several providers are configured');
         }
 
         if (effort !== undefined) {
