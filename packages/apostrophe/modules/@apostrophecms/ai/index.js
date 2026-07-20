@@ -9,7 +9,8 @@
 module.exports = {
   options: {
     alias: 'ai',
-    // providers: { name: { apiKey, baseUrl, adapter, models, effort, capabilities } }
+    // providers: { name: { apiKey, envKey, baseUrl, adapter, models,
+    //   effort, capabilities } }
     providers: {},
     // provider: the default provider name; inferred when only one is configured
     // effort: { default, levels: { name: { provider, model, reasoning } } }
@@ -76,7 +77,9 @@ module.exports = {
       // it names with the entry's config, validate it, merge the entry's
       // service description (models, effort rows, capabilities) over the
       // adapter's declared data, then build the effort routing table.
-      // Misconfigurations fail the startup.
+      // Misconfigurations fail the startup. An entry's key prefers the
+      // environment: the variable named by its envKey (the entry's own
+      // over the adapter's default) overrides the configured apiKey.
       async activateProviders() {
         const {
           providers = {}, effort = {}, image
@@ -94,10 +97,12 @@ module.exports = {
             fail(`adapter "${adapterName}" does not implement validate()`);
           }
           const aliased = adapterName !== name;
+          const envKey = entry.envKey || adapter.envKey;
+          const envApiKey = envKey && process.env[envKey];
           const instance = {
             ...adapter,
             provider: name,
-            apiKey: entry.apiKey,
+            apiKey: envApiKey || entry.apiKey,
             baseUrl: entry.baseUrl || adapter.baseUrl
           };
           if (!self.mockMode) {
@@ -661,6 +666,22 @@ module.exports = {
       // whole, so response validation belongs inside it: a truncated
       // body must travel the same retry path.
       //
+      // A normalized error may carry hints in `error.data`, the only
+      // properties the engine reads — all optional, attached by the
+      // adapter's normalizeError:
+      // `status` (integer): the provider's HTTP status code;
+      // `kind` (string, on the transient code): which transient
+      //   failure this is — 'rateLimit', 'overload', 'timeout' or
+      //   'network';
+      // `retryAfter` (number, in SECONDS): the provider's Retry-After;
+      //   replaces the computed backoff delay (see retryDelay);
+      // `requestId` (string): the provider's request id, for support.
+      // Hints shape the delay and the records, never the routing: the
+      // error's code alone decides retry versus stop. All of these
+      // are written to the failure and retry log records — treat
+      // `error.data` as log-bound and never put sensitive data (keys,
+      // credentials, personal data) in it.
+      //
       // Every failure and every retry decision emits one structured log
       // record: type `retry` (warn) when the call will be retried, type
       // `failure` (error) when it stops, with { provider, model, code,
@@ -858,6 +879,7 @@ module.exports = {
             fail(`"providers.${name}" must be an object`);
           }
           checkString(entry.apiKey, `providers.${name}.apiKey`);
+          checkString(entry.envKey, `providers.${name}.envKey`);
           checkString(entry.baseUrl, `providers.${name}.baseUrl`);
           checkString(entry.adapter, `providers.${name}.adapter`);
           if (entry.models !== undefined) {
