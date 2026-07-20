@@ -18,7 +18,12 @@ module.exports = {
     // Conservative agent-loop cap; any call may override it
     maxSteps: 5,
     // Transient-failure retry cap, counting calls
-    retryAttempts: 5
+    retryAttempts: 5,
+    // Base delay in milliseconds for the exponential retry curve
+    retryBaseDelay: 1000,
+    // Elapsed-time budget in milliseconds for one call including its
+    // retry waits; a delay that would land past it stops the call
+    retryMaxElapsed: 60000
   },
   init(self) {
     self.adapters = {};
@@ -509,7 +514,7 @@ module.exports = {
           request
         };
         await self.emit('beforeGenerate', req, context);
-        const turn = await self.callAdapter(record, async () => {
+        const turn = await self.callAdapter(req, record, context.request, async () => {
           return self.validateTurn(await record.adapter.chat(req, context.request));
         });
         if (turn.finishReason === 'refusal') {
@@ -538,27 +543,104 @@ module.exports = {
           );
         }
       },
-      // Run one adapter call with retries. `record` is an activated
-      // entry of `self.providers` (supplies the adapter and its
-      // normalizeError); `call` is an async thunk performing a single
-      // adapter call and validating its response. Resolves with the
-      // thunk's value; throws normalized apos errors — every throw is
-      // routed through the adapter's required normalizeError, the core
-      // reacts on codes only, and only the transient code is retried.
-      // `call` is retried whole, so response validation belongs inside
-      // it: a truncated body must travel the same retry path. Backoff,
-      // budgets and failure records arrive with the retry policy.
-      async callAdapter(record, call) {
+      // Run one adapter call with retries. `req` is the caller's
+      // request, enriching the failure records; `record` is an
+      // activated entry of `self.providers` (supplies the adapter and
+      // its normalizeError); `request` is the normalized adapter
+      // request, read only for record context; `call` is an async thunk
+      // performing a single adapter call and validating its response.
+      // Resolves with the thunk's value; throws normalized apos errors
+      // — every throw is routed through the adapter's required
+      // normalizeError, the core reacts on codes only, and only the
+      // transient code is retried, waiting per retryDelay under the
+      // retryAttempts and retryMaxElapsed budgets. `call` is retried
+      // whole, so response validation belongs inside it: a truncated
+      // body must travel the same retry path.
+      //
+      // Every failure and every retry decision emits one structured log
+      // record: type `retry` (warn) when the call will be retried, type
+      // `failure` (error) when it stops, with { provider, model, code,
+      // status, kind, requestId, retryAfter, attempt, elapsed, action,
+      // reason?, delay? } — enough to tell a rate limit from an
+      // overload, a timeout or bad config from the one record. A
+      // `failure` record also carries the stack of the original throw.
+      async callAdapter(req, record, request, call) {
+        const started = Date.now();
         for (let attempt = 1; ; attempt++) {
           try {
             return await call();
           } catch (e) {
             const error = (e?.aposError ? e : record.adapter.normalizeError(e)) || e;
-            if (error.name !== 'aiRetry' || attempt >= self.options.retryAttempts) {
+            const elapsed = Date.now() - started;
+            const data = {
+              provider: record.name,
+              model: request.model,
+              code: error.name,
+              status: error.data?.status,
+              kind: error.data?.kind,
+              requestId: error.data?.requestId,
+              retryAfter: error.data?.retryAfter,
+              attempt,
+              elapsed
+            };
+            // The original throw site is the useful trace when the
+            // adapter wrapped a client error
+            const stack = e?.stack || error.stack;
+            if (error.name !== 'aiRetry') {
+              self.logError(req, 'failure', error.message, {
+                ...data,
+                action: 'stop',
+                stack
+              });
               throw error;
             }
+            if (attempt >= self.options.retryAttempts) {
+              self.logError(req, 'failure', error.message, {
+                ...data,
+                action: 'stop',
+                reason: 'attempts',
+                stack
+              });
+              throw error;
+            }
+            const delay = self.retryDelay(attempt, error);
+            if (elapsed + delay > self.options.retryMaxElapsed) {
+              self.logError(req, 'failure', error.message, {
+                ...data,
+                action: 'stop',
+                reason: 'budget',
+                delay,
+                stack
+              });
+              throw error;
+            }
+            self.logWarn(req, 'retry', error.message, {
+              ...data,
+              action: 'retry',
+              delay
+            });
+            await self.pause(delay);
           }
         }
+      },
+      // The wait in milliseconds before the attempt following `attempt`
+      // (1-based), after the normalized transient failure `error`: the
+      // provider's Retry-After (seconds, in the error's
+      // `data.retryAfter`) when it sent one, else exponential backoff
+      // with jitter — retryBaseDelay * 2^(attempt - 1), scaled by a
+      // random factor in [1, 2) so synchronized clients spread out.
+      retryDelay(attempt, error) {
+        const retryAfter = error.data?.retryAfter;
+        if (Number.isFinite(retryAfter) && retryAfter >= 0) {
+          return retryAfter * 1000;
+        }
+        const curve = self.options.retryBaseDelay * Math.pow(2, attempt - 1);
+        return Math.round(curve * (1 + Math.random()));
+      },
+      // Wait `ms` before the next attempt; a separate method so tests
+      // can observe or skip real waiting
+      pause(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
       },
       // Enforce the assistant-turn contract on `turn`, an adapter chat
       // response { content, finishReason, usage, model? }, and return
@@ -660,7 +742,8 @@ module.exports = {
         };
 
         const {
-          providers, provider, effort, image, maxSteps, mock, retryAttempts
+          providers, provider, effort, image, maxSteps, mock,
+          retryAttempts, retryBaseDelay, retryMaxElapsed
         } = options;
 
         if (!isObject(providers)) {
@@ -741,8 +824,14 @@ module.exports = {
           fail('"mock" must be a function');
         }
 
-        if (!Number.isInteger(retryAttempts) || retryAttempts < 1) {
-          fail('"retryAttempts" must be a positive integer');
+        for (const [ name, value ] of Object.entries({
+          retryAttempts,
+          retryBaseDelay,
+          retryMaxElapsed
+        })) {
+          if (!Number.isInteger(value) || value < 1) {
+            fail(`"${name}" must be a positive integer`);
+          }
         }
       }
     };

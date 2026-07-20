@@ -70,6 +70,8 @@ describe('AI engine', function() {
     assert.strictEqual(apos.ai.defaultProvider, null);
     assert.strictEqual(apos.ai.active, false);
     assert.strictEqual(apos.ai.options.retryAttempts, 5);
+    assert.strictEqual(apos.ai.options.retryBaseDelay, 1000);
+    assert.strictEqual(apos.ai.options.retryMaxElapsed, 60000);
     // Unconfigured: a call falls through to an empty routing table
     assert.throws(() => apos.ai.modelInfo(), (e) => {
       assert.strictEqual(e.name, 'invalid');
@@ -83,7 +85,9 @@ describe('AI engine', function() {
     const valid = () => ({
       providers: {},
       maxSteps: 5,
-      retryAttempts: 5
+      retryAttempts: 5,
+      retryBaseDelay: 1000,
+      retryMaxElapsed: 60000
     });
 
     it('accepts the minimal single-provider configuration', function() {
@@ -275,7 +279,7 @@ describe('AI engine', function() {
       }, /"mock" must be a function/);
     });
 
-    it('rejects malformed retryAttempts', function() {
+    it('rejects malformed retry options', function() {
       rejects({
         ...valid(),
         retryAttempts: 0
@@ -284,6 +288,14 @@ describe('AI engine', function() {
         ...valid(),
         retryAttempts: 'many'
       }, /"retryAttempts" must be a positive integer/);
+      rejects({
+        ...valid(),
+        retryBaseDelay: -1
+      }, /"retryBaseDelay" must be a positive integer/);
+      rejects({
+        ...valid(),
+        retryMaxElapsed: 1.5
+      }, /"retryMaxElapsed" must be a positive integer/);
     });
   });
 

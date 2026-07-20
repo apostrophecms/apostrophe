@@ -433,6 +433,8 @@ describe('AI generate', function() {
     // one consumed per call, returning a turn or throwing
     let chatScript;
     let chatCalls;
+    // Captured structured failure records, [{ severity, type, message, data }]
+    let logRecords;
     const events = [];
 
     const turn = (extras = {}) => ({
@@ -471,15 +473,19 @@ describe('AI generate', function() {
                   return step();
                 },
                 normalizeError(err) {
+                  // Optional hints a real adapter would parse from the
+                  // response, passed through for the tests to script
+                  const hints = {
+                    status: err.status,
+                    ...(err.retryAfter !== undefined && { retryAfter: err.retryAfter }),
+                    ...(err.kind !== undefined && { kind: err.kind }),
+                    ...(err.requestId !== undefined && { requestId: err.requestId })
+                  };
                   if (err.status === 429 || err.status >= 500) {
-                    return self.apos.error('aiRetry', 'transient failure', {
-                      status: err.status
-                    });
+                    return self.apos.error('aiRetry', 'transient failure', hints);
                   }
                   if (err.status === 401 || err.status === 403) {
-                    return self.apos.error('forbidden', 'bad credentials', {
-                      status: err.status
-                    });
+                    return self.apos.error('forbidden', 'bad credentials', hints);
                   }
                   return err;
                 }
@@ -512,7 +518,9 @@ describe('AI generate', function() {
                   apiKey: 'k2',
                   capabilities: { text: false }
                 }
-              }
+              },
+              // Keep retried tests fast; the delay engine has its own suite
+              retryBaseDelay: 1
             }
           }
         }
@@ -527,6 +535,19 @@ describe('AI generate', function() {
       chatScript = [];
       chatCalls = [];
       events.length = 0;
+      // Capture the structured failure records (and keep them off the
+      // test output)
+      logRecords = [];
+      for (const severity of [ 'Warn', 'Error' ]) {
+        apos.ai[`log${severity}`] = (req, type, message, data) => {
+          logRecords.push({
+            severity: severity.toLowerCase(),
+            type,
+            message,
+            data
+          });
+        };
+      }
     });
 
     it('generates text end to end', async function() {
@@ -730,6 +751,168 @@ describe('AI generate', function() {
       );
       assert.strictEqual(chatCalls.length, 0);
       assert.strictEqual(events.length, 0);
+    });
+
+    describe('retry policy', function() {
+      let waits;
+      let savedPause;
+
+      beforeEach(function() {
+        // Observe the delays without really waiting
+        waits = [];
+        savedPause = apos.ai.pause;
+        apos.ai.pause = async (ms) => {
+          waits.push(ms);
+        };
+      });
+
+      afterEach(function() {
+        apos.ai.pause = savedPause;
+      });
+
+      it('computes exponential backoff with jitter within bounds', function() {
+        const saved = apos.ai.options.retryBaseDelay;
+        try {
+          apos.ai.options.retryBaseDelay = 1000;
+          const error = apos.error('aiRetry', 'x');
+          for (const [ attempt, min, max ] of [
+            [ 1, 1000, 2000 ],
+            [ 2, 2000, 4000 ],
+            [ 3, 4000, 8000 ]
+          ]) {
+            for (let i = 0; i < 25; i++) {
+              const delay = apos.ai.retryDelay(attempt, error);
+              assert(
+                delay >= min && delay < max,
+                `delay ${delay} out of [${min}, ${max}) at attempt ${attempt}`
+              );
+            }
+          }
+        } finally {
+          apos.ai.options.retryBaseDelay = saved;
+        }
+      });
+
+      it('honors Retry-After over the computed curve', function() {
+        const error = apos.error('aiRetry', 'x', { retryAfter: 7 });
+        assert.strictEqual(apos.ai.retryDelay(1, error), 7000);
+        assert.strictEqual(apos.ai.retryDelay(3, error), 7000);
+      });
+
+      it('waits the Retry-After delay between attempts', async function() {
+        chatScript = [
+          () => {
+            const e = httpError(429);
+            e.retryAfter = 3;
+            throw e;
+          },
+          () => turn()
+        ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p');
+        assert.strictEqual(result.text, 'a haiku');
+        assert.deepStrictEqual(waits, [ 3000 ]);
+      });
+
+      it('stops without sleeping when the delay would exceed the elapsed budget', async function() {
+        chatScript = [ () => {
+          const e = httpError(429);
+          // Beyond the 60s budget
+          e.retryAfter = 120;
+          throw e;
+        } ];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+          assert.strictEqual(e.name, 'aiRetry');
+          return true;
+        });
+        assert.strictEqual(chatCalls.length, 1);
+        assert.deepStrictEqual(waits, []);
+        const [ record ] = logRecords;
+        assert.strictEqual(record.severity, 'error');
+        assert.strictEqual(record.type, 'failure');
+        assert.strictEqual(record.data.action, 'stop');
+        assert.strictEqual(record.data.reason, 'budget');
+        assert.strictEqual(record.data.retryAfter, 120);
+        assert.strictEqual(record.data.delay, 120000);
+      });
+
+      it('emits one record per retry decision with the failure context', async function() {
+        chatScript = [
+          () => {
+            const e = httpError(429);
+            e.kind = 'rateLimit';
+            throw e;
+          },
+          () => {
+            throw httpError(503);
+          },
+          () => turn()
+        ];
+        await apos.ai.generate(apos.task.getReq(), 'p');
+        assert.strictEqual(logRecords.length, 2);
+        const [ first, second ] = logRecords;
+        assert.strictEqual(first.severity, 'warn');
+        assert.strictEqual(first.type, 'retry');
+        assert.strictEqual(first.data.provider, 'fake');
+        assert.strictEqual(first.data.model, 'fake-medium');
+        assert.strictEqual(first.data.code, 'aiRetry');
+        assert.strictEqual(first.data.status, 429);
+        assert.strictEqual(first.data.kind, 'rateLimit');
+        assert.strictEqual(first.data.attempt, 1);
+        assert.strictEqual(first.data.action, 'retry');
+        assert(Number.isFinite(first.data.delay));
+        assert.strictEqual(second.data.status, 503);
+        assert.strictEqual(second.data.attempt, 2);
+      });
+
+      it('records a hard stop with its context', async function() {
+        chatScript = [ () => {
+          const e = httpError(401);
+          e.requestId = 'req_123';
+          throw e;
+        } ];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+          assert.strictEqual(e.name, 'forbidden');
+          return true;
+        });
+        assert.strictEqual(logRecords.length, 1);
+        const [ record ] = logRecords;
+        assert.strictEqual(record.severity, 'error');
+        assert.strictEqual(record.type, 'failure');
+        assert.strictEqual(record.message, 'bad credentials');
+        assert.strictEqual(record.data.code, 'forbidden');
+        assert.strictEqual(record.data.status, 401);
+        assert.strictEqual(record.data.requestId, 'req_123');
+        assert.strictEqual(record.data.attempt, 1);
+        assert.strictEqual(record.data.action, 'stop');
+        assert.strictEqual(record.data.reason, undefined);
+        // The stack of the original throw, not the normalized wrapper
+        assert.match(record.data.stack, /HTTP error 401/);
+      });
+
+      it('records exhausted attempts as the stop reason', async function() {
+        const saved = apos.ai.options.retryAttempts;
+        try {
+          apos.ai.options.retryAttempts = 2;
+          chatScript = [
+            () => {
+              throw httpError(429);
+            },
+            () => {
+              throw httpError(429);
+            }
+          ];
+          await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+            assert.strictEqual(e.name, 'aiRetry');
+            return true;
+          });
+          assert.deepStrictEqual(
+            logRecords.map((record) => [ record.type, record.data.reason ]),
+            [ [ 'retry', undefined ], [ 'failure', 'attempts' ] ]
+          );
+        } finally {
+          apos.ai.options.retryAttempts = saved;
+        }
+      });
     });
   });
 });
