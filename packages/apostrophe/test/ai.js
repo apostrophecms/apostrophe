@@ -68,6 +68,13 @@ describe('AI engine', function() {
     assert.strictEqual(apos.ai.options.maxSteps, 5);
     assert.deepStrictEqual(apos.ai.options.providers, {});
     assert.strictEqual(apos.ai.defaultProvider, null);
+    assert.strictEqual(apos.ai.active, false);
+    // Unconfigured: a call falls through to an empty routing table
+    assert.throws(() => apos.ai.modelInfo(), (e) => {
+      assert.strictEqual(e.name, 'invalid');
+      assert.match(e.message, /effort level "medium" resolves to no routing entry/);
+      return true;
+    });
   });
 
   describe('options validation', function() {
@@ -330,6 +337,7 @@ describe('AI engine', function() {
       assert(apos.ai.providers.fake);
       assert(apos.ai.providers.other);
       assert(apos.ai.providers.custom);
+      assert.strictEqual(apos.ai.active, true);
     });
 
     it('instantiates adapters with the entry config', function() {
@@ -390,6 +398,31 @@ describe('AI engine', function() {
       });
     });
 
+    it('panics on activation when providers exist but no default resolves', async function() {
+      const saved = apos.ai.defaultProvider;
+      try {
+        apos.ai.defaultProvider = null;
+        await assert.rejects(
+          apos.ai.activateProviders(),
+          /@apostrophecms\/ai: no default provider is available/
+        );
+        // A failed activation leaves the engine inactive
+        assert.strictEqual(apos.ai.active, false);
+      } finally {
+        apos.ai.defaultProvider = saved;
+        await apos.ai.activateProviders();
+        assert.strictEqual(apos.ai.active, true);
+      }
+    });
+
+    it('rejects an image resolution when no image route is configured', function() {
+      assert.throws(() => apos.ai.modelInfo({ capability: 'image' }), (e) => {
+        assert.strictEqual(e.name, 'invalid');
+        assert.match(e.message, /no "image" route is configured/);
+        return true;
+      });
+    });
+
     it('overrides an adapter on re-registration and requires a name', function() {
       assert.strictEqual(apos.ai.getAdapter('fake').label, 'Fake (fake)');
       apos.ai.addAdapter(fakeAdapter('fake', { label: 'Replaced' }));
@@ -423,6 +456,7 @@ describe('AI engine', function() {
         assert(mockApos.ai.providers.fake);
         // The sole configured provider is inferred as the default
         assert.strictEqual(mockApos.ai.defaultProvider, 'fake');
+        assert.strictEqual(mockApos.ai.active, true);
       } finally {
         delete process.env.APOS_AI_MOCK;
         await t.destroy(mockApos);
@@ -525,6 +559,201 @@ describe('AI engine', function() {
           }
         }, /@apostrophecms\/ai: the default effort level "medium" resolves to no routing entry/);
       });
+    });
+  });
+
+  describe('resolution and modelInfo', function() {
+    // The fake adapter's declared capabilities, unchanged by the entries
+    const capabilities = {
+      text: true,
+      tools: true,
+      structured: true,
+      imageInput: true,
+      image: false,
+      caching: true
+    };
+
+    before(async function() {
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {
+          'fake-adapters': {
+            init(self) {
+              self.apos.ai.addAdapter(fakeAdapter('fake'));
+              self.apos.ai.addAdapter(fakeAdapter('other'));
+            }
+          },
+          '@apostrophecms/ai': {
+            options: {
+              provider: 'fake',
+              providers: {
+                fake: { apiKey: 'k1' },
+                other: {
+                  apiKey: 'k2',
+                  models: {
+                    'other-image': { aspects: [ '1:1', '16:9' ] }
+                  }
+                }
+              },
+              effort: {
+                levels: {
+                  high: {
+                    provider: 'other',
+                    model: 'other-large'
+                  },
+                  ultra: {
+                    provider: 'other',
+                    model: 'other-ultra',
+                    reasoning: 'max',
+                    contextWindow: 1000000,
+                    maxOutputTokens: 64000
+                  }
+                }
+              },
+              image: {
+                provider: 'other',
+                model: 'other-image',
+                aspect: 'square',
+                quality: 'medium'
+              }
+            }
+          }
+        }
+      });
+    });
+
+    after(async function() {
+      return t.destroy(apos);
+    });
+
+    it('resolves the default effort level', function() {
+      assert.deepStrictEqual(apos.ai.modelInfo(), {
+        provider: 'fake',
+        model: 'fake-medium',
+        contextWindow: 200000,
+        maxOutputTokens: 16000,
+        capabilities
+      });
+    });
+
+    it('resolves a call effort level', function() {
+      assert.deepStrictEqual(apos.ai.modelInfo({ effort: 'low' }), {
+        provider: 'fake',
+        model: 'fake-small',
+        contextWindow: 100000,
+        maxOutputTokens: 8000,
+        capabilities
+      });
+    });
+
+    it('resolves an overridden level routed to another provider', function() {
+      assert.deepStrictEqual(apos.ai.modelInfo({ effort: 'high' }), {
+        provider: 'other',
+        model: 'other-large',
+        contextWindow: 400000,
+        maxOutputTokens: 32000,
+        capabilities
+      });
+    });
+
+    it('merges inline routing-entry metadata over the model maps', function() {
+      assert.deepStrictEqual(apos.ai.modelInfo({ effort: 'ultra' }), {
+        provider: 'other',
+        model: 'other-ultra',
+        reasoning: 'max',
+        contextWindow: 1000000,
+        maxOutputTokens: 64000,
+        capabilities
+      });
+    });
+
+    it('resolves an explicit provider and model directly', function() {
+      assert.deepStrictEqual(apos.ai.modelInfo({
+        provider: 'other',
+        model: 'other-medium'
+      }), {
+        provider: 'other',
+        model: 'other-medium',
+        contextWindow: 200000,
+        maxOutputTokens: 16000,
+        capabilities
+      });
+    });
+
+    it('yields undefined limits for an unknown model, never an error', function() {
+      assert.deepStrictEqual(apos.ai.modelInfo({
+        provider: 'fake',
+        model: 'mystery'
+      }), {
+        provider: 'fake',
+        model: 'mystery',
+        contextWindow: undefined,
+        maxOutputTokens: undefined,
+        capabilities
+      });
+    });
+
+    it('resolves the image route via capability', function() {
+      assert.deepStrictEqual(apos.ai.modelInfo({ capability: 'image' }), {
+        provider: 'other',
+        model: 'other-image',
+        contextWindow: undefined,
+        maxOutputTokens: undefined,
+        capabilities,
+        aspects: [ '1:1', '16:9' ]
+      });
+    });
+
+    it('reports aspects for an explicit image model too', function() {
+      assert.deepStrictEqual(apos.ai.modelInfo({
+        capability: 'image',
+        provider: 'other',
+        model: 'other-image'
+      }), {
+        provider: 'other',
+        model: 'other-image',
+        contextWindow: undefined,
+        maxOutputTokens: undefined,
+        capabilities,
+        aspects: [ '1:1', '16:9' ]
+      });
+    });
+
+    it('applies a call-level reasoning override', function() {
+      assert.strictEqual(
+        apos.ai.modelInfo({
+          effort: 'ultra',
+          reasoning: 'low'
+        }).reasoning,
+        'low'
+      );
+      assert.strictEqual(
+        apos.ai.modelInfo({
+          provider: 'fake',
+          model: 'fake-large',
+          reasoning: 'high'
+        }).reasoning,
+        'high'
+      );
+    });
+
+    it('rejects unresolvable calls with "invalid"', function() {
+      const rejects = (options, pattern) => {
+        assert.throws(() => apos.ai.modelInfo(options), (e) => {
+          assert.strictEqual(e.name, 'invalid');
+          assert.match(e.message, pattern);
+          return true;
+        });
+      };
+      rejects({
+        provider: 'nope',
+        model: 'some-model'
+      }, /"nope" is not a configured provider/);
+      rejects({ provider: 'fake' }, /"provider" and "model" must be given together/);
+      rejects({ model: 'fake-small' }, /"provider" and "model" must be given together/);
+      rejects({ effort: 'unknown' }, /effort level "unknown" resolves to no routing entry/);
+      rejects({ capability: 'tools' }, /unknown capability "tools"/);
     });
   });
 

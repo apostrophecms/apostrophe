@@ -22,6 +22,9 @@ module.exports = {
     self.adapters = {};
     self.providers = {};
     self.effortTable = {};
+    // "Is AI operational?" — true only once activation has configured
+    // at least one provider, so feature code can ask before calling
+    self.active = false;
     self.validateOptions(self.options);
     self.defaultProvider = self.options.provider ||
       Object.keys(self.options.providers)[0] || null;
@@ -64,6 +67,8 @@ module.exports = {
           providers = {}, effort = {}, image
         } = self.options;
 
+        self.active = false;
+
         for (const [ name, entry ] of Object.entries(providers)) {
           const adapterName = entry.adapter || name;
           const adapter = self.getAdapter(adapterName);
@@ -103,6 +108,11 @@ module.exports = {
           };
         }
 
+        if (Object.keys(providers).length &&
+          !self.providers[self.defaultProvider]) {
+          fail('no default provider is available; name one with the "provider" option');
+        }
+
         for (const [ level, row ] of Object.entries(effort.levels || {})) {
           if (!self.providers[row.provider]) {
             fail(`"effort.levels.${level}" references unconfigured provider "${row.provider}"`);
@@ -116,6 +126,8 @@ module.exports = {
         if (self.defaultProvider && !self.effortTable[self.effortDefault]) {
           fail(`the default effort level "${self.effortDefault}" resolves to no routing entry; add it to "effort.levels" or configure a default provider whose adapter declares it`);
         }
+
+        self.active = Object.keys(self.providers).length > 0;
       },
       // The routing table: the default provider's rows are the base,
       // the project's "effort.levels" replace it level by level
@@ -134,6 +146,97 @@ module.exports = {
           table[level] = { ...row };
         }
         return table;
+      },
+      // Resolve a call's routing options to a concrete routing entry,
+      // with the same precedence generate will use: explicit
+      // provider+model, else the call's effort level, else the default
+      // level. Throws "invalid" on unresolvable calls; unknown models
+      // are not an error.
+      //
+      // Options:
+      // `provider`, `model` (strings, only together): the explicit
+      //   target, bypassing the routing table;
+      // `effort` (string): the routing level to resolve;
+      // `capability` (only 'image'): resolve the image route instead of
+      //   the effort table;
+      // `reasoning` (string): override the resolved entry's reasoning.
+      resolve(options = {}) {
+        const invalid = (message) => {
+          throw self.apos.error('invalid', message);
+        };
+        const {
+          provider, model, effort, capability, reasoning
+        } = options;
+
+        if (capability !== undefined && capability !== 'image') {
+          invalid(`unknown capability "${capability}"`);
+        }
+        if (provider || model) {
+          if (!provider || !model) {
+            invalid('"provider" and "model" must be given together');
+          }
+          if (!self.providers[provider]) {
+            invalid(`"${provider}" is not a configured provider`);
+          }
+          return {
+            provider,
+            model,
+            ...(reasoning !== undefined && { reasoning })
+          };
+        }
+        let row;
+        if (capability === 'image') {
+          if (!self.options.image) {
+            invalid('no "image" route is configured');
+          }
+          row = self.options.image;
+        } else {
+          const level = effort || self.effortDefault;
+          row = self.effortTable[level];
+          if (!row) {
+            invalid(`effort level "${level}" resolves to no routing entry`);
+          }
+        }
+        return {
+          ...row,
+          ...(reasoning !== undefined && { reasoning })
+        };
+      },
+      // Synchronous introspection: the model a call with these options
+      // would hit and what it offers. Accepts the same options as
+      // `resolve` and resolves exactly like a call would, including
+      // its "invalid" errors — a call that cannot resolve here would
+      // fail the same way for real. An unknown model is different: the
+      // call would work, so it yields undefined limits, never an error.
+      // Check `self.active` first to ask whether AI is configured at
+      // all.
+      //
+      // Returns `{ provider, model, reasoning?, contextWindow,
+      // maxOutputTokens, capabilities }`, plus the model's declared
+      // `aspects` for an image resolution. Model metadata merges the
+      // provider's model maps with any fields carried inline on the
+      // routing entry.
+      modelInfo(options = {}) {
+        const {
+          provider, model, reasoning, aspect, quality, ...inline
+        } = self.resolve(options);
+        const record = self.providers[provider];
+        const metadata = {
+          ...record.models[model],
+          ...inline
+        };
+        const info = {
+          provider,
+          model,
+          ...(reasoning !== undefined && { reasoning }),
+          contextWindow: metadata.contextWindow,
+          maxOutputTokens: metadata.maxOutputTokens,
+          capabilities: { ...record.capabilities }
+        };
+        if (options.capability === 'image') {
+          info.aspects = metadata.aspects;
+        }
+        return info;
       },
       // Union of the adapter's and the entry's model metadata,
       // merged per model id with the entry's fields winning
