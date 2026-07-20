@@ -1,5 +1,5 @@
 const t = require('../test-lib/test.js');
-const assert = require('assert');
+const assert = require('assert/strict');
 
 // A registrable fake adapter following the adapter contract, minus
 // anything that would talk to a network
@@ -79,14 +79,14 @@ describe('AI generate', function() {
   // Error-throwing assertion helpers for the normalized apos codes
   const throwsInvalid = (fn, pattern) => {
     assert.throws(fn, (e) => {
-      assert.strictEqual(e.name, 'invalid');
+      assert.equal(e.name, 'invalid');
       assert.match(e.message, pattern);
       return true;
     });
   };
   const throwsUnimplemented = (fn, pattern) => {
     assert.throws(fn, (e) => {
-      assert.strictEqual(e.name, 'unimplemented');
+      assert.equal(e.name, 'unimplemented');
       assert.match(e.message, pattern);
       return true;
     });
@@ -95,14 +95,14 @@ describe('AI generate', function() {
   describe('argument sugar', function() {
     it('turns a string positional into the sole user message', function() {
       const canonical = apos.ai.normalizeGenerateOptions('write a haiku about cats');
-      assert.deepStrictEqual(canonical.messages, [ {
+      assert.deepEqual(canonical.messages, [ {
         role: 'user',
         content: [ {
           type: 'text',
           text: 'write a haiku about cats'
         } ]
       } ]);
-      assert.strictEqual(canonical.cache, 'short');
+      assert.equal(canonical.cache, 'short');
     });
 
     it('appends a string positional to messages as the latest user turn', function() {
@@ -118,8 +118,8 @@ describe('AI generate', function() {
           }
         ]
       });
-      assert.strictEqual(canonical.messages.length, 3);
-      assert.deepStrictEqual(canonical.messages[2], {
+      assert.equal(canonical.messages.length, 3);
+      assert.deepEqual(canonical.messages[2], {
         role: 'user',
         content: [ {
           type: 'text',
@@ -137,9 +137,9 @@ describe('AI generate', function() {
         } ],
         effort: 'high'
       });
-      assert.strictEqual(canonical.system, 'You help editors.');
-      assert.strictEqual(canonical.effort, 'high');
-      assert.strictEqual(canonical.messages.length, 1);
+      assert.equal(canonical.system, 'You help editors.');
+      assert.equal(canonical.effort, 'high');
+      assert.equal(canonical.messages.length, 1);
     });
 
     it('rejects an options object followed by a second argument', function() {
@@ -211,12 +211,12 @@ describe('AI generate', function() {
     });
 
     it('defaults cache to short and honors an explicit false', function() {
-      assert.strictEqual(apos.ai.normalizeGenerateOptions('p').cache, 'short');
-      assert.strictEqual(
+      assert.equal(apos.ai.normalizeGenerateOptions('p').cache, 'short');
+      assert.equal(
         apos.ai.normalizeGenerateOptions('p', { cache: false }).cache,
         false
       );
-      assert.strictEqual(
+      assert.equal(
         apos.ai.normalizeGenerateOptions('p', { cache: 'long' }).cache,
         'long'
       );
@@ -225,7 +225,7 @@ describe('AI generate', function() {
 
   describe('message normalization', function() {
     it('collapses string content to a text part', function() {
-      assert.deepStrictEqual(apos.ai.normalizeMessages([ {
+      assert.deepEqual(apos.ai.normalizeMessages([ {
         role: 'assistant',
         content: 'No, I did not find one.'
       } ]), [ {
@@ -262,7 +262,7 @@ describe('AI generate', function() {
           }
         ]
       } ]);
-      assert.deepStrictEqual(normalized, [ {
+      assert.deepEqual(normalized, [ {
         role: 'user',
         content: [
           {
@@ -355,8 +355,8 @@ describe('AI generate', function() {
 
     it('assembles the default-effort request', function() {
       const { provider, request } = apos.ai.buildRequest(canonical('write a haiku'));
-      assert.strictEqual(provider, 'fake');
-      assert.deepStrictEqual(request, {
+      assert.equal(provider, 'fake');
+      assert.deepEqual(request, {
         messages: [ {
           role: 'user',
           content: [ {
@@ -373,17 +373,17 @@ describe('AI generate', function() {
 
     it('resolves effort and honors per-call overrides', function() {
       const high = apos.ai.buildRequest(canonical('p', { effort: 'high' }));
-      assert.strictEqual(high.request.model, 'fake-large');
-      assert.strictEqual(high.request.reasoning, 'high');
-      assert.strictEqual(high.request.maxTokens, 32000);
+      assert.equal(high.request.model, 'fake-large');
+      assert.equal(high.request.reasoning, 'high');
+      assert.equal(high.request.maxTokens, 32000);
 
       const overridden = apos.ai.buildRequest(canonical('p', {
         effort: 'high',
         reasoning: 'low',
         maxTokens: 500
       }));
-      assert.strictEqual(overridden.request.reasoning, 'low');
-      assert.strictEqual(overridden.request.maxTokens, 500);
+      assert.equal(overridden.request.reasoning, 'low');
+      assert.equal(overridden.request.maxTokens, 500);
     });
 
     it('omits maxTokens for a model with no declared metadata', function() {
@@ -391,16 +391,16 @@ describe('AI generate', function() {
         provider: 'fake',
         model: 'fake-next'
       }));
-      assert.strictEqual(request.model, 'fake-next');
+      assert.equal(request.model, 'fake-next');
       assert(!('maxTokens' in request));
     });
 
     it('translates the cache level to the { ttl } policy', function() {
-      assert.deepStrictEqual(
+      assert.deepEqual(
         apos.ai.buildRequest(canonical('p', { cache: 'long' })).request.cache,
         { ttl: 'long' }
       );
-      assert.strictEqual(
+      assert.equal(
         apos.ai.buildRequest(canonical('p', { cache: false })).request.cache,
         false
       );
@@ -412,15 +412,15 @@ describe('AI generate', function() {
         system: 'You are terse.',
         signal: controller.signal
       }));
-      assert.strictEqual(request.system, 'You are terse.');
-      assert.strictEqual(request.signal, controller.signal);
+      assert.equal(request.system, 'You are terse.');
+      assert.equal(request.signal, controller.signal);
     });
 
     it('throws the routing errors a real call would', function() {
       assert.throws(
         () => apos.ai.buildRequest(canonical('p', { effort: 'extreme' })),
         (e) => {
-          assert.strictEqual(e.name, 'invalid');
+          assert.equal(e.name, 'invalid');
           assert.match(e.message, /effort level "extreme" resolves to no routing entry/);
           return true;
         }
@@ -520,7 +520,11 @@ describe('AI generate', function() {
                 }
               },
               // Keep retried tests fast; the delay engine has its own suite
-              retryBaseDelay: 1
+              retryBaseDelay: 1,
+              // Must stay inert without APOS_AI_MOCK
+              mock() {
+                throw new Error('the mock option was consulted without APOS_AI_MOCK');
+              }
             }
           }
         }
@@ -556,7 +560,7 @@ describe('AI generate', function() {
         apos.task.getReq(),
         'write a haiku about cats'
       );
-      assert.deepStrictEqual(result, {
+      assert.deepEqual(result, {
         text: 'a haiku',
         messages: [
           {
@@ -583,10 +587,10 @@ describe('AI generate', function() {
         provider: 'fake'
       });
       // The adapter received the assembled request
-      assert.strictEqual(chatCalls.length, 1);
-      assert.strictEqual(chatCalls[0].model, 'fake-medium');
-      assert.strictEqual(chatCalls[0].maxTokens, 16000);
-      assert.deepStrictEqual(chatCalls[0].cache, { ttl: 'short' });
+      assert.equal(chatCalls.length, 1);
+      assert.equal(chatCalls[0].model, 'fake-medium');
+      assert.equal(chatCalls[0].maxTokens, 16000);
+      assert.deepEqual(chatCalls[0].cache, { ttl: 'short' });
     });
 
     it('continues a conversation with the string positional appended', async function() {
@@ -611,11 +615,11 @@ describe('AI generate', function() {
             }
           ]
         });
-      assert.strictEqual(chatCalls[0].messages.length, 3);
-      assert.strictEqual(result.text, 'Done.');
+      assert.equal(chatCalls[0].messages.length, 3);
+      assert.equal(result.text, 'Done.');
       // The transcript is resumable: it ends with the assistant turn
-      assert.strictEqual(result.messages.length, 4);
-      assert.deepStrictEqual(result.messages[3], {
+      assert.equal(result.messages.length, 4);
+      assert.deepEqual(result.messages[3], {
         role: 'assistant',
         content: [ {
           type: 'text',
@@ -627,13 +631,13 @@ describe('AI generate', function() {
     it('emits beforeGenerate and afterGenerate around the call', async function() {
       chatScript = [ () => turn() ];
       await apos.ai.generate(apos.task.getReq(), 'p');
-      assert.deepStrictEqual(events.map(([ name ]) => name), [ 'before', 'after' ]);
+      assert.deepEqual(events.map(([ name ]) => name), [ 'before', 'after' ]);
       const [ [ , beforeContext ], [ , afterContext ] ] = events;
       // One shared, mutable context correlates the two
-      assert.strictEqual(beforeContext, afterContext);
-      assert.strictEqual(beforeContext.provider, 'fake');
+      assert.equal(beforeContext, afterContext);
+      assert.equal(beforeContext.provider, 'fake');
       assert(Array.isArray(beforeContext.request.messages));
-      assert.strictEqual(afterContext.result.text, 'a haiku');
+      assert.equal(afterContext.result.text, 'a haiku');
     });
 
     it('retries the transient code and succeeds', async function() {
@@ -647,8 +651,8 @@ describe('AI generate', function() {
         () => turn()
       ];
       const result = await apos.ai.generate(apos.task.getReq(), 'p');
-      assert.strictEqual(result.text, 'a haiku');
-      assert.strictEqual(chatCalls.length, 3);
+      assert.equal(result.text, 'a haiku');
+      assert.equal(chatCalls.length, 3);
     });
 
     it('gives up when the attempts cap is exhausted', async function() {
@@ -656,10 +660,10 @@ describe('AI generate', function() {
         throw httpError(429);
       });
       await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-        assert.strictEqual(e.name, 'aiRetry');
+        assert.equal(e.name, 'aiRetry');
         return true;
       });
-      assert.strictEqual(chatCalls.length, 5);
+      assert.equal(chatCalls.length, 5);
     });
 
     it('honors the retryAttempts option', async function() {
@@ -670,10 +674,10 @@ describe('AI generate', function() {
           throw httpError(429);
         });
         await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-          assert.strictEqual(e.name, 'aiRetry');
+          assert.equal(e.name, 'aiRetry');
           return true;
         });
-        assert.strictEqual(chatCalls.length, 2);
+        assert.equal(chatCalls.length, 2);
       } finally {
         apos.ai.options.retryAttempts = saved;
       }
@@ -684,12 +688,12 @@ describe('AI generate', function() {
         throw httpError(401);
       } ];
       await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-        assert.strictEqual(e.name, 'forbidden');
+        assert.equal(e.name, 'forbidden');
         return true;
       });
-      assert.strictEqual(chatCalls.length, 1);
+      assert.equal(chatCalls.length, 1);
       // beforeGenerate fired, afterGenerate did not
-      assert.deepStrictEqual(events.map(([ name ]) => name), [ 'before' ]);
+      assert.deepEqual(events.map(([ name ]) => name), [ 'before' ]);
     });
 
     it('passes an adapter-thrown normalized error through untouched', async function() {
@@ -698,10 +702,10 @@ describe('AI generate', function() {
         throw refusal;
       } ];
       await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-        assert.strictEqual(e, refusal);
+        assert.equal(e, refusal);
         return true;
       });
-      assert.strictEqual(chatCalls.length, 1);
+      assert.equal(chatCalls.length, 1);
     });
 
     it('treats a truncated turn as transient and retries it', async function() {
@@ -716,14 +720,14 @@ describe('AI generate', function() {
         () => turn()
       ];
       const result = await apos.ai.generate(apos.task.getReq(), 'p');
-      assert.strictEqual(result.text, 'a haiku');
-      assert.strictEqual(chatCalls.length, 2);
+      assert.equal(result.text, 'a haiku');
+      assert.equal(chatCalls.length, 2);
     });
 
     it('converts a refusal finish reason to the refusal error', async function() {
       chatScript = [ () => turn({ finishReason: 'refusal' }) ];
       await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-        assert.strictEqual(e.name, 'aiRefusal');
+        assert.equal(e.name, 'aiRefusal');
         return true;
       });
     });
@@ -731,10 +735,22 @@ describe('AI generate', function() {
     it('rejects unexpected tool calls from the adapter', async function() {
       chatScript = [ () => turn({ finishReason: 'toolCalls' }) ];
       await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-        assert.strictEqual(e.name, 'invalid');
+        assert.equal(e.name, 'invalid');
         assert.match(e.message, /tool calls/);
         return true;
       });
+    });
+
+    it('ignores APOS_AI_MOCK set after startup', async function() {
+      try {
+        process.env.APOS_AI_MOCK = '1';
+        chatScript = [ () => turn() ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p');
+        assert.equal(result.text, 'a haiku');
+        assert.equal(chatCalls.length, 1);
+      } finally {
+        delete process.env.APOS_AI_MOCK;
+      }
     });
 
     it('refuses to route to a provider lacking the needed capability', async function() {
@@ -744,13 +760,13 @@ describe('AI generate', function() {
           model: 'fake-medium'
         }),
         (e) => {
-          assert.strictEqual(e.name, 'invalid');
+          assert.equal(e.name, 'invalid');
           assert.match(e.message, /does not declare the "text" capability/);
           return true;
         }
       );
-      assert.strictEqual(chatCalls.length, 0);
-      assert.strictEqual(events.length, 0);
+      assert.equal(chatCalls.length, 0);
+      assert.equal(events.length, 0);
     });
 
     describe('retry policy', function() {
@@ -795,8 +811,8 @@ describe('AI generate', function() {
 
       it('honors Retry-After over the computed curve', function() {
         const error = apos.error('aiRetry', 'x', { retryAfter: 7 });
-        assert.strictEqual(apos.ai.retryDelay(1, error), 7000);
-        assert.strictEqual(apos.ai.retryDelay(3, error), 7000);
+        assert.equal(apos.ai.retryDelay(1, error), 7000);
+        assert.equal(apos.ai.retryDelay(3, error), 7000);
       });
 
       it('waits the Retry-After delay between attempts', async function() {
@@ -809,8 +825,8 @@ describe('AI generate', function() {
           () => turn()
         ];
         const result = await apos.ai.generate(apos.task.getReq(), 'p');
-        assert.strictEqual(result.text, 'a haiku');
-        assert.deepStrictEqual(waits, [ 3000 ]);
+        assert.equal(result.text, 'a haiku');
+        assert.deepEqual(waits, [ 3000 ]);
       });
 
       it('stops without sleeping when the delay would exceed the elapsed budget', async function() {
@@ -821,18 +837,18 @@ describe('AI generate', function() {
           throw e;
         } ];
         await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-          assert.strictEqual(e.name, 'aiRetry');
+          assert.equal(e.name, 'aiRetry');
           return true;
         });
-        assert.strictEqual(chatCalls.length, 1);
-        assert.deepStrictEqual(waits, []);
+        assert.equal(chatCalls.length, 1);
+        assert.deepEqual(waits, []);
         const [ record ] = logRecords;
-        assert.strictEqual(record.severity, 'error');
-        assert.strictEqual(record.type, 'failure');
-        assert.strictEqual(record.data.action, 'stop');
-        assert.strictEqual(record.data.reason, 'budget');
-        assert.strictEqual(record.data.retryAfter, 120);
-        assert.strictEqual(record.data.delay, 120000);
+        assert.equal(record.severity, 'error');
+        assert.equal(record.type, 'failure');
+        assert.equal(record.data.action, 'stop');
+        assert.equal(record.data.reason, 'budget');
+        assert.equal(record.data.retryAfter, 120);
+        assert.equal(record.data.delay, 120000);
       });
 
       it('emits one record per retry decision with the failure context', async function() {
@@ -848,20 +864,20 @@ describe('AI generate', function() {
           () => turn()
         ];
         await apos.ai.generate(apos.task.getReq(), 'p');
-        assert.strictEqual(logRecords.length, 2);
+        assert.equal(logRecords.length, 2);
         const [ first, second ] = logRecords;
-        assert.strictEqual(first.severity, 'warn');
-        assert.strictEqual(first.type, 'retry');
-        assert.strictEqual(first.data.provider, 'fake');
-        assert.strictEqual(first.data.model, 'fake-medium');
-        assert.strictEqual(first.data.code, 'aiRetry');
-        assert.strictEqual(first.data.status, 429);
-        assert.strictEqual(first.data.kind, 'rateLimit');
-        assert.strictEqual(first.data.attempt, 1);
-        assert.strictEqual(first.data.action, 'retry');
+        assert.equal(first.severity, 'warn');
+        assert.equal(first.type, 'retry');
+        assert.equal(first.data.provider, 'fake');
+        assert.equal(first.data.model, 'fake-medium');
+        assert.equal(first.data.code, 'aiRetry');
+        assert.equal(first.data.status, 429);
+        assert.equal(first.data.kind, 'rateLimit');
+        assert.equal(first.data.attempt, 1);
+        assert.equal(first.data.action, 'retry');
         assert(Number.isFinite(first.data.delay));
-        assert.strictEqual(second.data.status, 503);
-        assert.strictEqual(second.data.attempt, 2);
+        assert.equal(second.data.status, 503);
+        assert.equal(second.data.attempt, 2);
       });
 
       it('records a hard stop with its context', async function() {
@@ -871,20 +887,20 @@ describe('AI generate', function() {
           throw e;
         } ];
         await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-          assert.strictEqual(e.name, 'forbidden');
+          assert.equal(e.name, 'forbidden');
           return true;
         });
-        assert.strictEqual(logRecords.length, 1);
+        assert.equal(logRecords.length, 1);
         const [ record ] = logRecords;
-        assert.strictEqual(record.severity, 'error');
-        assert.strictEqual(record.type, 'failure');
-        assert.strictEqual(record.message, 'bad credentials');
-        assert.strictEqual(record.data.code, 'forbidden');
-        assert.strictEqual(record.data.status, 401);
-        assert.strictEqual(record.data.requestId, 'req_123');
-        assert.strictEqual(record.data.attempt, 1);
-        assert.strictEqual(record.data.action, 'stop');
-        assert.strictEqual(record.data.reason, undefined);
+        assert.equal(record.severity, 'error');
+        assert.equal(record.type, 'failure');
+        assert.equal(record.message, 'bad credentials');
+        assert.equal(record.data.code, 'forbidden');
+        assert.equal(record.data.status, 401);
+        assert.equal(record.data.requestId, 'req_123');
+        assert.equal(record.data.attempt, 1);
+        assert.equal(record.data.action, 'stop');
+        assert.equal(record.data.reason, undefined);
         // The stack of the original throw, not the normalized wrapper
         assert.match(record.data.stack, /HTTP error 401/);
       });
@@ -902,16 +918,315 @@ describe('AI generate', function() {
             }
           ];
           await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-            assert.strictEqual(e.name, 'aiRetry');
+            assert.equal(e.name, 'aiRetry');
             return true;
           });
-          assert.deepStrictEqual(
+          assert.deepEqual(
             logRecords.map((record) => [ record.type, record.data.reason ]),
             [ [ 'retry', undefined ], [ 'failure', 'attempts' ] ]
           );
         } finally {
           apos.ai.options.retryAttempts = saved;
         }
+      });
+    });
+  });
+
+  describe('mock mode', function() {
+    before(function() {
+      process.env.APOS_AI_MOCK = '1';
+    });
+
+    after(function() {
+      delete process.env.APOS_AI_MOCK;
+    });
+
+    describe('with providers configured', function() {
+      // Thunks consumed by the mock option, one per call; empty means
+      // the request-aware default
+      let mockScript;
+      let chatCalls;
+      let logRecords;
+
+      before(async function() {
+        await t.destroy(apos);
+        apos = await t.create({
+          root: module,
+          modules: {
+            'fake-adapters': {
+              init(self) {
+                self.apos.ai.addAdapter(fakeAdapter('fake', {
+                  async chat(req, request) {
+                    chatCalls.push(request);
+                    throw new Error('a real adapter was called in mock mode');
+                  }
+                }));
+              }
+            },
+            '@apostrophecms/ai': {
+              options: {
+                provider: 'fake',
+                providers: {
+                  // No apiKey: booting proves validate() is skipped
+                  fake: {},
+                  notext: {
+                    adapter: 'fake',
+                    capabilities: { text: false }
+                  }
+                },
+                retryBaseDelay: 1,
+                mock(request) {
+                  const step = mockScript.shift();
+                  return step && step(request);
+                }
+              }
+            }
+          }
+        });
+      });
+
+      beforeEach(function() {
+        mockScript = [];
+        chatCalls = [];
+        logRecords = [];
+        for (const severity of [ 'Warn', 'Error' ]) {
+          apos.ai[`log${severity}`] = (req, type, message, data) => {
+            logRecords.push({
+              severity: severity.toLowerCase(),
+              type,
+              message,
+              data
+            });
+          };
+        }
+      });
+
+      it('answers with the request-aware default and no adapter call', async function() {
+        const result = await apos.ai.generate(
+          apos.task.getReq(),
+          'write a haiku about cats'
+        );
+        assert.deepEqual(result, {
+          text: '[mock] write a haiku about cats',
+          messages: [
+            {
+              role: 'user',
+              content: [ {
+                type: 'text',
+                text: 'write a haiku about cats'
+              } ]
+            },
+            {
+              role: 'assistant',
+              content: [ {
+                type: 'text',
+                text: '[mock] write a haiku about cats'
+              } ]
+            }
+          ],
+          finishReason: 'stop',
+          usage: {
+            inputTokens: 6,
+            outputTokens: 8
+          },
+          // Routing still resolves for real
+          model: 'fake-medium',
+          provider: 'fake'
+        });
+        assert.equal(chatCalls.length, 0);
+      });
+
+      it('hands the fully assembled request to the mock option', async function() {
+        let seen;
+        mockScript = [ (request) => {
+          seen = request;
+          return { text: 'scripted' };
+        } ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p', {
+          system: 'You are terse.',
+          effort: 'high'
+        });
+        assert.equal(result.text, 'scripted');
+        assert.equal(seen.model, 'fake-large');
+        assert.equal(seen.reasoning, 'high');
+        assert.equal(seen.system, 'You are terse.');
+        assert.equal(seen.maxTokens, 32000);
+      });
+
+      it('returns a complete assistant turn from the mock option as-is', async function() {
+        mockScript = [ () => ({
+          content: [ {
+            type: 'text',
+            text: 'full turn'
+          } ],
+          finishReason: 'length',
+          usage: {
+            inputTokens: 100,
+            outputTokens: 200
+          },
+          model: 'scripted-model'
+        }) ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p');
+        assert.equal(result.text, 'full turn');
+        assert.equal(result.finishReason, 'length');
+        assert.deepEqual(result.usage, {
+          inputTokens: 100,
+          outputTokens: 200
+        });
+        assert.equal(result.model, 'scripted-model');
+      });
+
+      it('falls through to the default when the mock option returns undefined', async function() {
+        mockScript = [ () => undefined ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'hello there');
+        assert.equal(result.text, '[mock] hello there');
+      });
+
+      it('rejects a mock return that is neither a turn nor { text }', async function() {
+        mockScript = [ () => 'a plain string' ];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+          assert.equal(e.name, 'invalid');
+          assert.match(e.message, /"mock" must return/);
+          return true;
+        });
+      });
+
+      it('mimics transient failures through the real retry path', async function() {
+        mockScript = [
+          () => {
+            throw apos.error('aiRetry', 'scripted overload', { kind: 'overload' });
+          },
+          () => ({ text: 'recovered' })
+        ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p');
+        assert.equal(result.text, 'recovered');
+        assert.equal(logRecords.length, 1);
+        const [ record ] = logRecords;
+        assert.equal(record.type, 'retry');
+        assert.equal(record.data.kind, 'overload');
+        assert.equal(record.data.provider, 'fake');
+      });
+
+      it('mimics a hard failure with its failure record', async function() {
+        mockScript = [ () => {
+          throw apos.error('forbidden', 'scripted bad key');
+        } ];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+          assert.equal(e.name, 'forbidden');
+          return true;
+        });
+        assert.deepEqual(
+          logRecords.map((record) => [ record.type, record.data.code ]),
+          [ [ 'failure', 'forbidden' ] ]
+        );
+      });
+
+      it('converts a mock refusal turn to the refusal error', async function() {
+        mockScript = [ () => ({
+          content: [],
+          finishReason: 'refusal',
+          usage: {
+            inputTokens: 1,
+            outputTokens: 0
+          }
+        }) ];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+          assert.equal(e.name, 'aiRefusal');
+          return true;
+        });
+      });
+
+      it('still refuses routing to a provider lacking the capability', async function() {
+        await assert.rejects(
+          apos.ai.generate(apos.task.getReq(), 'p', {
+            provider: 'notext',
+            model: 'fake-medium'
+          }),
+          (e) => {
+            assert.equal(e.name, 'invalid');
+            assert.match(e.message, /does not declare the "text" capability/);
+            return true;
+          }
+        );
+      });
+    });
+
+    describe('with zero configuration', function() {
+      before(async function() {
+        await t.destroy(apos);
+        apos = await t.create({
+          root: module,
+          modules: {}
+        });
+      });
+
+      it('is active and generates with no providers, keys or adapters', async function() {
+        assert.equal(apos.ai.mockMode, true);
+        assert.equal(apos.ai.active, true);
+        const result = await apos.ai.generate(
+          apos.task.getReq(),
+          'write a haiku about cats'
+        );
+        assert.equal(result.text, '[mock] write a haiku about cats');
+        assert.equal(result.provider, 'mock');
+        assert.equal(result.model, 'mock');
+        assert.equal(result.finishReason, 'stop');
+        assert(Number.isFinite(result.usage.inputTokens));
+        assert(Number.isFinite(result.usage.outputTokens));
+      });
+
+      it('echoes an explicit provider and model into the placeholder routing', async function() {
+        const result = await apos.ai.generate(apos.task.getReq(), 'p', {
+          provider: 'anthropic',
+          model: 'claude-sonnet-x'
+        });
+        assert.equal(result.provider, 'anthropic');
+        assert.equal(result.model, 'claude-sonnet-x');
+      });
+
+      it('continues a conversation', async function() {
+        const result = await apos.ai.generate(
+          apos.task.getReq(),
+          'Create one from the standard template.',
+          {
+            messages: [
+              {
+                role: 'user',
+                content: 'Do we have a pricing page?'
+              },
+              {
+                role: 'assistant',
+                content: 'No, I did not find one.'
+              }
+            ]
+          }
+        );
+        assert.equal(result.messages.length, 4);
+        assert.equal(result.text, '[mock] Create one from the standard template.');
+      });
+    });
+  });
+
+  describe('APOS_AI_MOCK=0', function() {
+    before(async function() {
+      process.env.APOS_AI_MOCK = '0';
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {}
+      });
+    });
+
+    after(function() {
+      delete process.env.APOS_AI_MOCK;
+    });
+
+    it('means off: no mock rescue for a zero configuration', async function() {
+      assert.equal(apos.ai.mockMode, false);
+      assert.equal(apos.ai.active, false);
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.equal(e.name, 'invalid');
+        return true;
       });
     });
   });

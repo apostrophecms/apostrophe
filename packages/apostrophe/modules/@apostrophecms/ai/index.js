@@ -29,13 +29,15 @@ module.exports = {
     self.adapters = {};
     self.providers = {};
     self.effortTable = {};
-    // "Is AI operational?" — true only once activation has configured
-    // at least one provider, so feature code can ask before calling
+    // "Is AI operational?" — true once activation has configured at
+    // least one provider, or unconditionally under APOS_AI_MOCK, so
+    // feature code can ask before calling
     self.active = false;
     self.validateOptions(self.options);
     self.defaultProvider = self.options.provider ||
       Object.keys(self.options.providers)[0] || null;
     self.effortDefault = self.options.effort?.default || 'medium';
+    self.mockMode = process.env.APOS_AI_MOCK === '1';
     self.apos.http.addError('aiRetry', 503);
     self.apos.http.addError('aiRefusal', 422);
   },
@@ -98,7 +100,7 @@ module.exports = {
             apiKey: entry.apiKey,
             baseUrl: entry.baseUrl || adapter.baseUrl
           };
-          if (!process.env.APOS_AI_MOCK) {
+          if (!self.mockMode) {
             await instance.validate();
           }
           self.providers[name] = {
@@ -140,7 +142,8 @@ module.exports = {
           fail(`the default effort level "${self.effortDefault}" resolves to no routing entry; add it to "effort.levels" or configure a default provider whose adapter declares it`);
         }
 
-        self.active = Object.keys(self.providers).length > 0;
+        self.active = Object.keys(self.providers).length > 0 ||
+          self.mockMode;
       },
       // The routing table: the default provider's rows are the base,
       // the project's "effort.levels" replace it level by level
@@ -462,6 +465,89 @@ module.exports = {
           }
         };
       },
+      // Assemble the adapter request without routing, for mock mode
+      // with no providers configured. Same input and return shape as
+      // buildRequest, with the call's explicit provider and model when
+      // given and "mock" placeholders otherwise; no model metadata
+      // exists here, so maxTokens appears only when the call sets it.
+      buildMockRequest(options) {
+        return {
+          provider: options.provider ?? 'mock',
+          request: {
+            ...(options.system !== undefined && { system: options.system }),
+            messages: options.messages,
+            model: options.model ?? 'mock',
+            ...(options.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+            ...(options.reasoning !== undefined && { reasoning: options.reasoning }),
+            cache: options.cache === false
+              ? false
+              : { ttl: options.cache },
+            ...(options.signal !== undefined && { signal: options.signal })
+          }
+        };
+      },
+      // The built-in mock standing in for every adapter chat under
+      // APOS_AI_MOCK. Consults the "mock" option first when the module
+      // has one: it may return a complete assistant turn, a { text }
+      // shorthand filled out into one, or undefined to fall through to
+      // the deterministic default — canned text echoing the
+      // conversation's final message, usage estimated from the text
+      // sizes. Runs inside the same retry and validation seam as a
+      // real adapter call, so a mock that throws normalized codes
+      // exercises the real error paths.
+      async mockChat(req, request) {
+        const custom = self.options.mock
+          ? await self.options.mock(request)
+          : undefined;
+        if (custom == null) {
+          const tail = textOf(request.messages.at(-1).content);
+          return turn(`[mock] ${tail}`);
+        }
+        if (isObject(custom) && Array.isArray(custom.content)) {
+          return custom;
+        }
+        if (isObject(custom) && typeof custom.text === 'string') {
+          return turn(custom.text);
+        }
+        throw self.apos.error(
+          'invalid',
+          '"mock" must return an assistant turn, a { text } object or undefined'
+        );
+
+        function turn(text) {
+          const input = [
+            request.system,
+            ...request.messages.map((message) => textOf(message.content))
+          ].filter(Boolean).join(' ');
+          return {
+            content: [ {
+              type: 'text',
+              text
+            } ],
+            finishReason: 'stop',
+            usage: {
+              inputTokens: tokens(input),
+              outputTokens: tokens(text)
+            }
+          };
+        }
+        function textOf(content) {
+          return content
+            .filter((part) => part.type === 'text')
+            .map((part) => part.text)
+            .join(' ');
+        }
+        // ~4 characters per token, the usual plain-text ballpark
+        function tokens(text) {
+          return Math.max(1, Math.round(text.length / 4));
+        }
+      },
+      // The mock adapter's error normalization: errors pass through
+      // untouched, so a mock throwing normalized codes exercises the
+      // real error paths
+      mockNormalizeError(error) {
+        return error;
+      },
       // The language method: plain text and multi-turn chat against the
       // routed provider.
       //
@@ -502,11 +588,29 @@ module.exports = {
       // for bad calls, "aiRetry" when transient provider failures
       // outlast the retry budget, "aiRefusal" when the model refuses.
       // Emits `beforeGenerate` and `afterGenerate` around the call.
+      //
+      // Under APOS_AI_MOCK the built-in mock answers every call in
+      // place of any adapter — same pipeline, no network; with no
+      // providers configured at all, placeholder routing stands in.
       async generate(req, stringOrOptions, options) {
         const canonical = self.normalizeGenerateOptions(stringOrOptions, options);
-        const { provider, request } = self.buildRequest(canonical);
-        self.checkCapability(provider, 'text');
-        const record = self.providers[provider];
+        let provider;
+        let request;
+        if (self.mockMode && !Object.keys(self.providers).length) {
+          ({ provider, request } = self.buildMockRequest(canonical));
+        } else {
+          ({ provider, request } = self.buildRequest(canonical));
+          self.checkCapability(provider, 'text');
+        }
+        const record = self.mockMode
+          ? {
+            name: provider,
+            adapter: {
+              chat: self.mockChat,
+              normalizeError: self.mockNormalizeError
+            }
+          }
+          : self.providers[provider];
         // One shared, mutable payload for both events, so handlers can
         // enrich the request and correlate the two
         const context = {
