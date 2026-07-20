@@ -427,4 +427,309 @@ describe('AI generate', function() {
       );
     });
   });
+
+  describe('the call pipeline', function() {
+    // Each test scripts the fake adapter's chat: an array of thunks,
+    // one consumed per call, returning a turn or throwing
+    let chatScript;
+    let chatCalls;
+    const events = [];
+
+    const turn = (extras = {}) => ({
+      content: [ {
+        type: 'text',
+        text: 'a haiku'
+      } ],
+      finishReason: 'stop',
+      usage: {
+        inputTokens: 12,
+        outputTokens: 7
+      },
+      model: 'fake-medium',
+      ...extras
+    });
+    const httpError = (status) => {
+      const error = new Error(`HTTP error ${status}`);
+      error.status = status;
+      return error;
+    };
+
+    before(async function() {
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {
+          'fake-adapters': {
+            init(self) {
+              self.apos.ai.addAdapter(fakeAdapter('fake', {
+                async chat(req, request) {
+                  chatCalls.push(request);
+                  const step = chatScript.shift();
+                  if (step === undefined) {
+                    throw new Error('chat called beyond its script');
+                  }
+                  return step();
+                },
+                normalizeError(err) {
+                  if (err.status === 429 || err.status >= 500) {
+                    return self.apos.error('aiRetry', 'transient failure', {
+                      status: err.status
+                    });
+                  }
+                  if (err.status === 401 || err.status === 403) {
+                    return self.apos.error('forbidden', 'bad credentials', {
+                      status: err.status
+                    });
+                  }
+                  return err;
+                }
+              }));
+            }
+          },
+          'ai-events': {
+            handlers(self) {
+              return {
+                '@apostrophecms/ai:beforeGenerate': {
+                  record(req, context) {
+                    events.push([ 'before', context ]);
+                  }
+                },
+                '@apostrophecms/ai:afterGenerate': {
+                  record(req, context) {
+                    events.push([ 'after', context ]);
+                  }
+                }
+              };
+            }
+          },
+          '@apostrophecms/ai': {
+            options: {
+              provider: 'fake',
+              providers: {
+                fake: { apiKey: 'k1' },
+                notext: {
+                  adapter: 'fake',
+                  apiKey: 'k2',
+                  capabilities: { text: false }
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+
+    after(async function() {
+      return t.destroy(apos);
+    });
+
+    beforeEach(function() {
+      chatScript = [];
+      chatCalls = [];
+      events.length = 0;
+    });
+
+    it('generates text end to end', async function() {
+      chatScript = [ () => turn() ];
+      const result = await apos.ai.generate(
+        apos.task.getReq(),
+        'write a haiku about cats'
+      );
+      assert.deepStrictEqual(result, {
+        text: 'a haiku',
+        messages: [
+          {
+            role: 'user',
+            content: [ {
+              type: 'text',
+              text: 'write a haiku about cats'
+            } ]
+          },
+          {
+            role: 'assistant',
+            content: [ {
+              type: 'text',
+              text: 'a haiku'
+            } ]
+          }
+        ],
+        finishReason: 'stop',
+        usage: {
+          inputTokens: 12,
+          outputTokens: 7
+        },
+        model: 'fake-medium',
+        provider: 'fake'
+      });
+      // The adapter received the assembled request
+      assert.strictEqual(chatCalls.length, 1);
+      assert.strictEqual(chatCalls[0].model, 'fake-medium');
+      assert.strictEqual(chatCalls[0].maxTokens, 16000);
+      assert.deepStrictEqual(chatCalls[0].cache, { ttl: 'short' });
+    });
+
+    it('continues a conversation with the string positional appended', async function() {
+      chatScript = [ () => turn({
+        content: [ {
+          type: 'text',
+          text: 'Done.'
+        } ]
+      }) ];
+      const result = await apos.ai.generate(
+        apos.task.getReq(),
+        'Create one from the standard template.',
+        {
+          messages: [
+            {
+              role: 'user',
+              content: 'Do we have a pricing page?'
+            },
+            {
+              role: 'assistant',
+              content: 'No, I did not find one.'
+            }
+          ]
+        });
+      assert.strictEqual(chatCalls[0].messages.length, 3);
+      assert.strictEqual(result.text, 'Done.');
+      // The transcript is resumable: it ends with the assistant turn
+      assert.strictEqual(result.messages.length, 4);
+      assert.deepStrictEqual(result.messages[3], {
+        role: 'assistant',
+        content: [ {
+          type: 'text',
+          text: 'Done.'
+        } ]
+      });
+    });
+
+    it('emits beforeGenerate and afterGenerate around the call', async function() {
+      chatScript = [ () => turn() ];
+      await apos.ai.generate(apos.task.getReq(), 'p');
+      assert.deepStrictEqual(events.map(([ name ]) => name), [ 'before', 'after' ]);
+      const [ [ , beforeContext ], [ , afterContext ] ] = events;
+      // One shared, mutable context correlates the two
+      assert.strictEqual(beforeContext, afterContext);
+      assert.strictEqual(beforeContext.provider, 'fake');
+      assert(Array.isArray(beforeContext.request.messages));
+      assert.strictEqual(afterContext.result.text, 'a haiku');
+    });
+
+    it('retries the transient code and succeeds', async function() {
+      chatScript = [
+        () => {
+          throw httpError(429);
+        },
+        () => {
+          throw httpError(503);
+        },
+        () => turn()
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), 'p');
+      assert.strictEqual(result.text, 'a haiku');
+      assert.strictEqual(chatCalls.length, 3);
+    });
+
+    it('gives up when the attempts cap is exhausted', async function() {
+      chatScript = Array.from({ length: 5 }, () => () => {
+        throw httpError(429);
+      });
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.strictEqual(e.name, 'aiRetry');
+        return true;
+      });
+      assert.strictEqual(chatCalls.length, 5);
+    });
+
+    it('honors the retryAttempts option', async function() {
+      const saved = apos.ai.options.retryAttempts;
+      try {
+        apos.ai.options.retryAttempts = 2;
+        chatScript = Array.from({ length: 3 }, () => () => {
+          throw httpError(429);
+        });
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+          assert.strictEqual(e.name, 'aiRetry');
+          return true;
+        });
+        assert.strictEqual(chatCalls.length, 2);
+      } finally {
+        apos.ai.options.retryAttempts = saved;
+      }
+    });
+
+    it('hard-stops on a standard code without retrying', async function() {
+      chatScript = [ () => {
+        throw httpError(401);
+      } ];
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.strictEqual(e.name, 'forbidden');
+        return true;
+      });
+      assert.strictEqual(chatCalls.length, 1);
+      // beforeGenerate fired, afterGenerate did not
+      assert.deepStrictEqual(events.map(([ name ]) => name), [ 'before' ]);
+    });
+
+    it('passes an adapter-thrown normalized error through untouched', async function() {
+      const refusal = apos.error('aiRefusal', 'safety policy');
+      chatScript = [ () => {
+        throw refusal;
+      } ];
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.strictEqual(e, refusal);
+        return true;
+      });
+      assert.strictEqual(chatCalls.length, 1);
+    });
+
+    it('treats a truncated turn as transient and retries it', async function() {
+      chatScript = [
+        // No finishReason, no usage
+        () => ({
+          content: [ {
+            type: 'text',
+            text: 'half a hai'
+          } ]
+        }),
+        () => turn()
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), 'p');
+      assert.strictEqual(result.text, 'a haiku');
+      assert.strictEqual(chatCalls.length, 2);
+    });
+
+    it('converts a refusal finish reason to the refusal error', async function() {
+      chatScript = [ () => turn({ finishReason: 'refusal' }) ];
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.strictEqual(e.name, 'aiRefusal');
+        return true;
+      });
+    });
+
+    it('rejects unexpected tool calls from the adapter', async function() {
+      chatScript = [ () => turn({ finishReason: 'toolCalls' }) ];
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.strictEqual(e.name, 'invalid');
+        assert.match(e.message, /tool calls/);
+        return true;
+      });
+    });
+
+    it('refuses to route to a provider lacking the needed capability', async function() {
+      await assert.rejects(
+        apos.ai.generate(apos.task.getReq(), 'p', {
+          provider: 'notext',
+          model: 'fake-medium'
+        }),
+        (e) => {
+          assert.strictEqual(e.name, 'invalid');
+          assert.match(e.message, /does not declare the "text" capability/);
+          return true;
+        }
+      );
+      assert.strictEqual(chatCalls.length, 0);
+      assert.strictEqual(events.length, 0);
+    });
+  });
 });

@@ -16,7 +16,9 @@ module.exports = {
     // image: { provider, model, aspect, quality }
     // mock: (request) => assistant turn, consulted only under APOS_AI_MOCK
     // Conservative agent-loop cap; any call may override it
-    maxSteps: 5
+    maxSteps: 5,
+    // Transient-failure retry cap, counting calls
+    retryAttempts: 5
   },
   init(self) {
     self.adapters = {};
@@ -244,13 +246,14 @@ module.exports = {
         }
         return info;
       },
-      // Parse and validate generate's (stringOrOptions, options)
-      // arguments into one canonical options object. The positional
-      // string is the final user turn: the sole message alone, appended
-      // when "messages" is present. Message content collapses to
-      // content-part form and "cache" defaults to 'short'. Unknown
-      // options are rejected as "invalid"; the reserved ones (tools,
-      // schema, maxSteps) as "unimplemented" until their phase ships.
+      // Parse and validate generate's `(stringOrOptions, options)`
+      // arguments, exactly as passed to it, into one canonical options
+      // object `{ system, messages, effort, provider, model, reasoning,
+      // maxTokens, cache, signal }` — the positional prompt string
+      // appended to `messages` as the final user turn, message content
+      // collapsed to content-part form, `cache` defaulted to 'short',
+      // unset options left undefined. Unknown options are rejected as
+      // "invalid".
       normalizeGenerateOptions(stringOrOptions, options) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
@@ -337,11 +340,13 @@ module.exports = {
           signal
         };
       },
-      // Validate and normalize chat messages to content-part form:
-      // roles user/assistant, string content becomes a single text
-      // part. Messages are rebuilt from the recognized properties, so a
-      // stored transcript carrying app metadata round-trips. Tool
-      // messages arrive with the loop and are rejected until then.
+      // Validate and normalize an array of chat messages, as accepted
+      // by generate's `messages` option (undefined is an empty
+      // conversation). Returns a new array of { role, content } with
+      // `content` always an array of content parts: roles user or
+      // assistant, string content becomes a single text part. Messages
+      // are rebuilt from the recognized properties, so a stored
+      // transcript carrying app metadata round-trips.
       normalizeMessages(messages = []) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
@@ -420,10 +425,15 @@ module.exports = {
           });
         }
       },
-      // Assemble the normalized adapter request from canonical generate
-      // options: resolve routing, default maxTokens to the model's
-      // declared output ceiling when it is known, translate the cache
-      // level to the { ttl } policy. Returns { provider, request }.
+      // Assemble the normalized adapter request from `options`, a
+      // canonical object as produced by normalizeGenerateOptions:
+      // resolve routing, default maxTokens to the model's declared
+      // output ceiling when it is known, translate the cache level to
+      // the { ttl } policy. Returns { provider, request }: the resolved
+      // provider name and the request handed to its adapter —
+      // { system?, messages, model, maxTokens?, reasoning?,
+      // cache: false | { ttl }, signal? }, optional fields present only
+      // when they resolved to a value.
       buildRequest(options) {
         const info = self.modelInfo({
           provider: options.provider,
@@ -445,6 +455,170 @@ module.exports = {
               : { ttl: options.cache },
             ...(options.signal !== undefined && { signal: options.signal })
           }
+        };
+      },
+      // The language method: plain text and multi-turn chat against the
+      // routed provider.
+      //
+      // `req` is the caller's request object, carried into events, the
+      // adapter and (later) tool handlers — the core never invents auth.
+      //
+      // `stringOrOptions` is either the user prompt string, optionally
+      // followed by an `options` object, or one options object alone
+      // (then a third argument is not accepted). A prompt string is the
+      // final user turn: the sole message alone, appended as the latest
+      // turn when `messages` is present.
+      //
+      // Options:
+      // `system` (string): the system prompt — a top-level option,
+      //   never a message;
+      // `messages` (array): the conversation so far, each entry
+      //   { role: 'user' | 'assistant', content } with content a string
+      //   or an array of `text` / `image` content parts;
+      // `effort` (string): the routing level to resolve, defaulting to
+      //   the module's default level;
+      // `provider`, `model` (strings, only together): the explicit
+      //   target, bypassing the routing table;
+      // `reasoning` (string): override the resolved entry's reasoning;
+      // `maxTokens` (positive integer): output-token cap, defaulting to
+      //   the routed model's declared ceiling when it is known;
+      // `cache` (false | 'short' | 'long', default 'short'): the
+      //   prompt-cache policy the adapter translates for its provider;
+      // `signal` (AbortSignal): aborts the in-flight provider call.
+      //
+      // Returns { text, messages, finishReason, usage, model, provider }:
+      // `text` is the assistant's text (may be ''), `messages` the full
+      // transcript ending with the assistant turn — pass it back as
+      // `messages` to continue the conversation — `finishReason` is
+      // 'stop' or 'length', `usage` counts { inputTokens, outputTokens }
+      // and `model` / `provider` name what actually answered.
+      //
+      // Throws normalized apos errors only: "invalid"
+      // for bad calls, "aiRetry" when transient provider failures
+      // outlast the retry budget, "aiRefusal" when the model refuses.
+      // Emits `beforeGenerate` and `afterGenerate` around the call.
+      async generate(req, stringOrOptions, options) {
+        const canonical = self.normalizeGenerateOptions(stringOrOptions, options);
+        const { provider, request } = self.buildRequest(canonical);
+        self.checkCapability(provider, 'text');
+        const record = self.providers[provider];
+        // One shared, mutable payload for both events, so handlers can
+        // enrich the request and correlate the two
+        const context = {
+          provider,
+          request
+        };
+        await self.emit('beforeGenerate', req, context);
+        const turn = await self.callAdapter(record, async () => {
+          return self.validateTurn(await record.adapter.chat(req, context.request));
+        });
+        if (turn.finishReason === 'refusal') {
+          throw self.apos.error('aiRefusal', 'the model refused this request');
+        }
+        if (turn.finishReason === 'toolCalls') {
+          throw self.apos.error(
+            'invalid',
+            'the model returned tool calls but the call sent no tools'
+          );
+        }
+        context.result = self.assembleResult(context, turn);
+        await self.emit('afterGenerate', req, context);
+        return context.result;
+      },
+      // Throw "invalid" when the configured provider named by
+      // `provider` does not declare `capability` (a key of the
+      // capabilities map, e.g. 'text'). A call needing a capability the
+      // routed provider lacks is a clear error, never a silent
+      // re-route.
+      checkCapability(provider, capability) {
+        if (!self.providers[provider]?.capabilities?.[capability]) {
+          throw self.apos.error(
+            'invalid',
+            `provider "${provider}" does not declare the "${capability}" capability`
+          );
+        }
+      },
+      // Run one adapter call with retries. `record` is an activated
+      // entry of `self.providers` (supplies the adapter and its
+      // normalizeError); `call` is an async thunk performing a single
+      // adapter call and validating its response. Resolves with the
+      // thunk's value; throws normalized apos errors — every throw is
+      // routed through the adapter's required normalizeError, the core
+      // reacts on codes only, and only the transient code is retried.
+      // `call` is retried whole, so response validation belongs inside
+      // it: a truncated body must travel the same retry path. Backoff,
+      // budgets and failure records arrive with the retry policy.
+      async callAdapter(record, call) {
+        for (let attempt = 1; ; attempt++) {
+          try {
+            return await call();
+          } catch (e) {
+            const error = (e?.aposError ? e : record.adapter.normalizeError(e)) || e;
+            if (error.name !== 'aiRetry' || attempt >= self.options.retryAttempts) {
+              throw error;
+            }
+          }
+        }
+      },
+      // Enforce the assistant-turn contract on `turn`, an adapter chat
+      // response { content, finishReason, usage, model? }, and return
+      // it unchanged. A missing or unknown finishReason, or malformed
+      // content or usage, is a truncated or malformed response: it
+      // throws the transient code so the call travels the retry path —
+      // never a shorter-than-intended "success".
+      validateTurn(turn) {
+        const malformed = (detail) => {
+          throw self.apos.error('aiRetry', `malformed assistant turn: ${detail}`);
+        };
+        if (!isObject(turn)) {
+          malformed('not an object');
+        }
+        if (!Array.isArray(turn.content)) {
+          malformed('"content" must be an array of content parts');
+        }
+        for (const part of turn.content) {
+          if (!isObject(part) || typeof part.type !== 'string') {
+            malformed('content parts must be objects with a "type"');
+          }
+          if (part.type === 'text' && typeof part.text !== 'string') {
+            malformed('text parts must carry a string "text"');
+          }
+        }
+        if (![ 'stop', 'toolCalls', 'length', 'refusal' ].includes(turn.finishReason)) {
+          malformed(`"${turn.finishReason}" is not a finish reason`);
+        }
+        if (!isObject(turn.usage) ||
+          !Number.isFinite(turn.usage.inputTokens) ||
+          !Number.isFinite(turn.usage.outputTokens)) {
+          malformed('"usage" must carry inputTokens and outputTokens');
+        }
+        return turn;
+      },
+      // Build generate's unified return object from `context` (the
+      // event payload carrying the provider name and the request) and
+      // `turn` (the validated adapter response). Returns { text,
+      // messages, finishReason, usage, model, provider }; which fields
+      // are populated tells the caller what happened. The transcript
+      // includes the assistant turn, so it is resumable as the next
+      // call's `messages`.
+      assembleResult(context, turn) {
+        const text = turn.content
+          .filter(part => part.type === 'text')
+          .map(part => part.text)
+          .join('');
+        return {
+          text,
+          messages: [
+            ...context.request.messages,
+            {
+              role: 'assistant',
+              content: turn.content
+            }
+          ],
+          finishReason: turn.finishReason,
+          usage: turn.usage,
+          model: turn.model || context.request.model,
+          provider: context.provider
         };
       },
       // Union of the adapter's and the entry's model metadata,
@@ -486,7 +660,7 @@ module.exports = {
         };
 
         const {
-          providers, provider, effort, image, maxSteps, mock
+          providers, provider, effort, image, maxSteps, mock, retryAttempts
         } = options;
 
         if (!isObject(providers)) {
@@ -565,6 +739,10 @@ module.exports = {
 
         if (mock !== undefined && typeof mock !== 'function') {
           fail('"mock" must be a function');
+        }
+
+        if (!Number.isInteger(retryAttempts) || retryAttempts < 1) {
+          fail('"retryAttempts" must be a positive integer');
         }
       }
     };

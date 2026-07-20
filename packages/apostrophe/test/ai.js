@@ -69,6 +69,7 @@ describe('AI engine', function() {
     assert.deepStrictEqual(apos.ai.options.providers, {});
     assert.strictEqual(apos.ai.defaultProvider, null);
     assert.strictEqual(apos.ai.active, false);
+    assert.strictEqual(apos.ai.options.retryAttempts, 5);
     // Unconfigured: a call falls through to an empty routing table
     assert.throws(() => apos.ai.modelInfo(), (e) => {
       assert.strictEqual(e.name, 'invalid');
@@ -81,7 +82,8 @@ describe('AI engine', function() {
     // A valid baseline the cases below mutate
     const valid = () => ({
       providers: {},
-      maxSteps: 5
+      maxSteps: 5,
+      retryAttempts: 5
     });
 
     it('accepts the minimal single-provider configuration', function() {
@@ -271,6 +273,17 @@ describe('AI engine', function() {
         ...valid(),
         mock: 'fixture reply'
       }, /"mock" must be a function/);
+    });
+
+    it('rejects malformed retryAttempts', function() {
+      rejects({
+        ...valid(),
+        retryAttempts: 0
+      }, /"retryAttempts" must be a positive integer/);
+      rejects({
+        ...valid(),
+        retryAttempts: 'many'
+      }, /"retryAttempts" must be a positive integer/);
     });
   });
 
