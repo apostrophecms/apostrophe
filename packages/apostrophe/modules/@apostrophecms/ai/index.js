@@ -29,6 +29,8 @@ module.exports = {
     self.defaultProvider = self.options.provider ||
       Object.keys(self.options.providers)[0] || null;
     self.effortDefault = self.options.effort?.default || 'medium';
+    self.apos.http.addError('aiRetry', 503);
+    self.apos.http.addError('aiRefusal', 422);
   },
   handlers(self) {
     return {
@@ -42,6 +44,10 @@ module.exports = {
   methods(self) {
     function fail(message) {
       throw new Error(`@apostrophecms/ai: ${message}`);
+    }
+    function isObject(value) {
+      return Boolean(value) && typeof value === 'object' &&
+        !Array.isArray(value);
     }
 
     return {
@@ -238,6 +244,209 @@ module.exports = {
         }
         return info;
       },
+      // Parse and validate generate's (stringOrOptions, options)
+      // arguments into one canonical options object. The positional
+      // string is the final user turn: the sole message alone, appended
+      // when "messages" is present. Message content collapses to
+      // content-part form and "cache" defaults to 'short'. Unknown
+      // options are rejected as "invalid"; the reserved ones (tools,
+      // schema, maxSteps) as "unimplemented" until their phase ships.
+      normalizeGenerateOptions(stringOrOptions, options) {
+        const invalid = (message) => {
+          throw self.apos.error('invalid', message);
+        };
+        let prompt = null;
+        if (typeof stringOrOptions === 'string') {
+          if (!stringOrOptions) {
+            invalid('the prompt string must not be empty');
+          }
+          prompt = stringOrOptions;
+          options = options === undefined ? {} : options;
+          if (!isObject(options)) {
+            invalid('"options" must be an object');
+          }
+        } else if (isObject(stringOrOptions)) {
+          if (options !== undefined) {
+            invalid('a second argument is not accepted when the first is an options object');
+          }
+          options = stringOrOptions;
+        } else {
+          invalid('a prompt string or an options object is required');
+        }
+        for (const name of [ 'tools', 'schema', 'maxSteps' ]) {
+          if (options[name] !== undefined) {
+            throw self.apos.error('unimplemented', `"${name}" is not yet supported`);
+          }
+        }
+        const known = [
+          'system', 'messages', 'effort', 'provider', 'model',
+          'reasoning', 'maxTokens', 'cache', 'signal'
+        ];
+        for (const name of Object.keys(options)) {
+          if (!known.includes(name)) {
+            invalid(`unknown option "${name}"`);
+          }
+        }
+        const {
+          system, effort, provider, model, reasoning,
+          maxTokens, cache = 'short', signal
+        } = options;
+        for (const [ name, value ] of Object.entries({
+          system,
+          effort,
+          provider,
+          model,
+          reasoning
+        })) {
+          if (value !== undefined && typeof value !== 'string') {
+            invalid(`"${name}" must be a string`);
+          }
+        }
+        if (maxTokens !== undefined &&
+          (!Number.isInteger(maxTokens) || maxTokens < 1)) {
+          invalid('"maxTokens" must be a positive integer');
+        }
+        if (cache !== false && cache !== 'short' && cache !== 'long') {
+          invalid('"cache" must be false, "short" or "long"');
+        }
+        if (signal !== undefined && !(signal instanceof AbortSignal)) {
+          invalid('"signal" must be an AbortSignal');
+        }
+        const messages = self.normalizeMessages(options.messages);
+        if (prompt !== null) {
+          messages.push({
+            role: 'user',
+            content: [ {
+              type: 'text',
+              text: prompt
+            } ]
+          });
+        }
+        if (!messages.length) {
+          invalid('a prompt string or "messages" is required');
+        }
+        return {
+          system,
+          messages,
+          effort,
+          provider,
+          model,
+          reasoning,
+          maxTokens,
+          cache,
+          signal
+        };
+      },
+      // Validate and normalize chat messages to content-part form:
+      // roles user/assistant, string content becomes a single text
+      // part. Messages are rebuilt from the recognized properties, so a
+      // stored transcript carrying app metadata round-trips. Tool
+      // messages arrive with the loop and are rejected until then.
+      normalizeMessages(messages = []) {
+        const invalid = (message) => {
+          throw self.apos.error('invalid', message);
+        };
+        if (!Array.isArray(messages)) {
+          invalid('"messages" must be an array');
+        }
+        return messages.map((message, index) => {
+          const name = `messages[${index}]`;
+          if (!isObject(message)) {
+            invalid(`${name} must be an object like { role, content }`);
+          }
+          if (message.role === 'tool') {
+            throw self.apos.error('unimplemented', `${name}: "tool" messages are not yet supported`);
+          }
+          if (message.role !== 'user' && message.role !== 'assistant') {
+            invalid(`${name}.role must be "user" or "assistant"`);
+          }
+          return {
+            role: message.role,
+            content: contentParts(message.content, name)
+          };
+        });
+
+        // One message's content → validated content-part array, rebuilt
+        // so extra properties never travel. A plain string is shorthand
+        // for a single text part.
+        function contentParts(content, name) {
+          if (typeof content === 'string') {
+            return [ {
+              type: 'text',
+              text: content
+            } ];
+          }
+          if (!Array.isArray(content) || !content.length) {
+            throw self.apos.error('invalid', `${name}.content must be a string or a non-empty array of content parts`);
+          }
+          return content.map((part, index) => {
+            const partName = `${name}.content[${index}]`;
+            if (!isObject(part)) {
+              throw self.apos.error('invalid', `${partName} must be an object like { type }`);
+            }
+            if (part.type === 'toolCall' || part.type === 'toolResult') {
+              throw self.apos.error('unimplemented', `${partName}: "${part.type}" parts are not yet supported`);
+            }
+            if (part.type === 'text') {
+              if (typeof part.text !== 'string') {
+                throw self.apos.error('invalid', `${partName}.text must be a string`);
+              }
+              return {
+                type: 'text',
+                text: part.text
+              };
+            }
+            if (part.type === 'image') {
+              const image = part.image;
+              if (isObject(image) && typeof image.url === 'string') {
+                return {
+                  type: 'image',
+                  image: { url: image.url }
+                };
+              }
+              if (isObject(image) && typeof image.data === 'string' &&
+                typeof image.mediaType === 'string') {
+                return {
+                  type: 'image',
+                  image: {
+                    data: image.data,
+                    mediaType: image.mediaType
+                  }
+                };
+              }
+              throw self.apos.error('invalid', `${partName}.image must be an object like { url } or { data, mediaType }`);
+            }
+            throw self.apos.error('invalid', `${partName}.type "${part.type}" is unknown`);
+          });
+        }
+      },
+      // Assemble the normalized adapter request from canonical generate
+      // options: resolve routing, default maxTokens to the model's
+      // declared output ceiling when it is known, translate the cache
+      // level to the { ttl } policy. Returns { provider, request }.
+      buildRequest(options) {
+        const info = self.modelInfo({
+          provider: options.provider,
+          model: options.model,
+          effort: options.effort,
+          reasoning: options.reasoning
+        });
+        const maxTokens = options.maxTokens ?? info.maxOutputTokens;
+        return {
+          provider: info.provider,
+          request: {
+            ...(options.system !== undefined && { system: options.system }),
+            messages: options.messages,
+            model: info.model,
+            ...(maxTokens !== undefined && { maxTokens }),
+            ...(info.reasoning !== undefined && { reasoning: info.reasoning }),
+            cache: options.cache === false
+              ? false
+              : { ttl: options.cache },
+            ...(options.signal !== undefined && { signal: options.signal })
+          }
+        };
+      },
       // Union of the adapter's and the entry's model metadata,
       // merged per model id with the entry's fields winning
       mergeModels(adapterModels = {}, entryModels = {}) {
@@ -258,8 +467,6 @@ module.exports = {
       // (unknown adapters, dangling routing references, effort levels with
       // no row) happen later, at activation.
       validateOptions(options) {
-        const isObject = (value) => value && typeof value === 'object' &&
-          !Array.isArray(value);
         const checkString = (value, name) => {
           if (value !== undefined && typeof value !== 'string') {
             fail(`"${name}" must be a string`);
