@@ -27,6 +27,7 @@ module.exports = {
     '@apostrophecms/login': {},
     '@apostrophecms/doc': {},
     '@apostrophecms/job': {},
+    '@apostrophecms/ai': {},
     '@apostrophecms/modal': {},
     '@apostrophecms/oembed': {},
     '@apostrophecms/pager': {},
