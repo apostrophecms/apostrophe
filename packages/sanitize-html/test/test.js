@@ -2054,6 +2054,13 @@ describe('sanitizeHtml', function() {
     );
   });
 
+  it('should sanitize away disallowed tags entirely, not quote them', function() {
+    assert.equal(
+      sanitizeHtml('<img src="https://dodgy-site.xxx/nsfw.jpeg"/>'),
+      ''
+    );
+  });
+
   describe('CVE-2026-44990 regression and raw-text edge cases', function() {
     it('should escape raw-text inner content when xmp tag is disallowed and discarded under custom nonTextTags', function() {
       assert.strictEqual(
