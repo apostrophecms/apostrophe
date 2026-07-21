@@ -28,6 +28,7 @@ module.exports = {
     '@apostrophecms/doc': {},
     '@apostrophecms/job': {},
     '@apostrophecms/ai': {},
+    '@apostrophecms/ai-adapter-anthropic': {},
     '@apostrophecms/modal': {},
     '@apostrophecms/oembed': {},
     '@apostrophecms/pager': {},

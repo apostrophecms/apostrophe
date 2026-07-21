@@ -1,5 +1,5 @@
 const t = require('../test-lib/test.js');
-const assert = require('assert');
+const assert = require('assert/strict');
 const { spawn } = require('child_process');
 
 // A registrable fake adapter following the adapter contract, minus
@@ -65,13 +65,16 @@ describe('AI engine', function() {
 
   it('boots with no AI configuration and exposes apos.ai', function() {
     assert(apos.ai);
-    assert.strictEqual(apos.ai.options.maxSteps, 5);
-    assert.deepStrictEqual(apos.ai.options.providers, {});
-    assert.strictEqual(apos.ai.defaultProvider, null);
-    assert.strictEqual(apos.ai.active, false);
+    assert.equal(apos.ai.options.maxSteps, 5);
+    assert.deepEqual(apos.ai.options.providers, {});
+    assert.equal(apos.ai.defaultProvider, null);
+    assert.equal(apos.ai.active, false);
+    assert.equal(apos.ai.options.retryAttempts, 5);
+    assert.equal(apos.ai.options.retryBaseDelay, 1000);
+    assert.equal(apos.ai.options.retryMaxElapsed, 60000);
     // Unconfigured: a call falls through to an empty routing table
     assert.throws(() => apos.ai.modelInfo(), (e) => {
-      assert.strictEqual(e.name, 'invalid');
+      assert.equal(e.name, 'invalid');
       assert.match(e.message, /effort level "medium" resolves to no routing entry/);
       return true;
     });
@@ -81,7 +84,10 @@ describe('AI engine', function() {
     // A valid baseline the cases below mutate
     const valid = () => ({
       providers: {},
-      maxSteps: 5
+      maxSteps: 5,
+      retryAttempts: 5,
+      retryBaseDelay: 1000,
+      retryMaxElapsed: 60000
     });
 
     it('accepts the minimal single-provider configuration', function() {
@@ -272,6 +278,25 @@ describe('AI engine', function() {
         mock: 'fixture reply'
       }, /"mock" must be a function/);
     });
+
+    it('rejects malformed retry options', function() {
+      rejects({
+        ...valid(),
+        retryAttempts: 0
+      }, /"retryAttempts" must be a positive integer/);
+      rejects({
+        ...valid(),
+        retryAttempts: 'many'
+      }, /"retryAttempts" must be a positive integer/);
+      rejects({
+        ...valid(),
+        retryBaseDelay: -1
+      }, /"retryBaseDelay" must be a positive integer/);
+      rejects({
+        ...valid(),
+        retryMaxElapsed: 1.5
+      }, /"retryMaxElapsed" must be a positive integer/);
+    });
   });
 
   describe('registry and activation', function() {
@@ -337,23 +362,23 @@ describe('AI engine', function() {
       assert(apos.ai.providers.fake);
       assert(apos.ai.providers.other);
       assert(apos.ai.providers.custom);
-      assert.strictEqual(apos.ai.active, true);
+      assert.equal(apos.ai.active, true);
     });
 
     it('instantiates adapters with the entry config', function() {
       const { fake, custom } = apos.ai.providers;
-      assert.strictEqual(fake.adapterName, 'fake');
-      assert.strictEqual(fake.adapter.apiKey, 'k1');
-      assert.strictEqual(custom.adapterName, 'fake');
-      assert.strictEqual(custom.adapter.provider, 'custom');
-      assert.strictEqual(custom.adapter.apiKey, 'k3');
-      assert.strictEqual(custom.adapter.baseUrl, 'https://custom.example/v1');
+      assert.equal(fake.adapterName, 'fake');
+      assert.equal(fake.adapter.apiKey, 'k1');
+      assert.equal(custom.adapterName, 'fake');
+      assert.equal(custom.adapter.provider, 'custom');
+      assert.equal(custom.adapter.apiKey, 'k3');
+      assert.equal(custom.adapter.baseUrl, 'https://custom.example/v1');
     });
 
     it('merges the entry service description over the adapter data', function() {
       const { fake, custom } = apos.ai.providers;
       // Native entry: adapter rows with entry overrides, level by level
-      assert.deepStrictEqual(fake.effort, {
+      assert.deepEqual(fake.effort, {
         low: { model: 'fake-small' },
         medium: { model: 'fake-medium-2' },
         high: {
@@ -362,27 +387,27 @@ describe('AI engine', function() {
         }
       });
       // Aliased entry: its own rows only, the native table does not apply
-      assert.deepStrictEqual(custom.effort, {
+      assert.deepEqual(custom.effort, {
         low: { model: 'custom-small' },
         medium: { model: 'custom-large' }
       });
-      assert.strictEqual(custom.capabilities.imageInput, false);
-      assert.strictEqual(custom.capabilities.text, true);
-      assert.deepStrictEqual(custom.models['custom-small'], {
+      assert.equal(custom.capabilities.imageInput, false);
+      assert.equal(custom.capabilities.text, true);
+      assert.deepEqual(custom.models['custom-small'], {
         contextWindow: 32000,
         maxOutputTokens: 4000
       });
       // Per-model metadata merge, entry fields winning
-      assert.deepStrictEqual(custom.models['fake-small'], {
+      assert.deepEqual(custom.models['fake-small'], {
         contextWindow: 100000,
         maxOutputTokens: 1234
       });
     });
 
     it('builds the effort routing table from the default provider plus level overrides', function() {
-      assert.strictEqual(apos.ai.defaultProvider, 'fake');
-      assert.strictEqual(apos.ai.effortDefault, 'medium');
-      assert.deepStrictEqual(apos.ai.effortTable, {
+      assert.equal(apos.ai.defaultProvider, 'fake');
+      assert.equal(apos.ai.effortDefault, 'medium');
+      assert.deepEqual(apos.ai.effortTable, {
         low: {
           provider: 'fake',
           model: 'fake-small'
@@ -407,26 +432,26 @@ describe('AI engine', function() {
           /@apostrophecms\/ai: no default provider is available/
         );
         // A failed activation leaves the engine inactive
-        assert.strictEqual(apos.ai.active, false);
+        assert.equal(apos.ai.active, false);
       } finally {
         apos.ai.defaultProvider = saved;
         await apos.ai.activateProviders();
-        assert.strictEqual(apos.ai.active, true);
+        assert.equal(apos.ai.active, true);
       }
     });
 
     it('rejects an image resolution when no image route is configured', function() {
       assert.throws(() => apos.ai.modelInfo({ capability: 'image' }), (e) => {
-        assert.strictEqual(e.name, 'invalid');
+        assert.equal(e.name, 'invalid');
         assert.match(e.message, /no "image" route is configured/);
         return true;
       });
     });
 
     it('overrides an adapter on re-registration and requires a name', function() {
-      assert.strictEqual(apos.ai.getAdapter('fake').label, 'Fake (fake)');
+      assert.equal(apos.ai.getAdapter('fake').label, 'Fake (fake)');
       apos.ai.addAdapter(fakeAdapter('fake', { label: 'Replaced' }));
-      assert.strictEqual(apos.ai.getAdapter('fake').label, 'Replaced');
+      assert.equal(apos.ai.getAdapter('fake').label, 'Replaced');
       assert.throws(
         () => apos.ai.addAdapter({ label: 'anonymous' }),
         /requires an adapter definition with a "name" string/
@@ -455,8 +480,8 @@ describe('AI engine', function() {
         });
         assert(mockApos.ai.providers.fake);
         // The sole configured provider is inferred as the default
-        assert.strictEqual(mockApos.ai.defaultProvider, 'fake');
-        assert.strictEqual(mockApos.ai.active, true);
+        assert.equal(mockApos.ai.defaultProvider, 'fake');
+        assert.equal(mockApos.ai.active, true);
       } finally {
         delete process.env.APOS_AI_MOCK;
         await t.destroy(mockApos);
@@ -628,7 +653,7 @@ describe('AI engine', function() {
     });
 
     it('resolves the default effort level', function() {
-      assert.deepStrictEqual(apos.ai.modelInfo(), {
+      assert.deepEqual(apos.ai.modelInfo(), {
         provider: 'fake',
         model: 'fake-medium',
         contextWindow: 200000,
@@ -638,7 +663,7 @@ describe('AI engine', function() {
     });
 
     it('resolves a call effort level', function() {
-      assert.deepStrictEqual(apos.ai.modelInfo({ effort: 'low' }), {
+      assert.deepEqual(apos.ai.modelInfo({ effort: 'low' }), {
         provider: 'fake',
         model: 'fake-small',
         contextWindow: 100000,
@@ -648,7 +673,7 @@ describe('AI engine', function() {
     });
 
     it('resolves an overridden level routed to another provider', function() {
-      assert.deepStrictEqual(apos.ai.modelInfo({ effort: 'high' }), {
+      assert.deepEqual(apos.ai.modelInfo({ effort: 'high' }), {
         provider: 'other',
         model: 'other-large',
         contextWindow: 400000,
@@ -658,7 +683,7 @@ describe('AI engine', function() {
     });
 
     it('merges inline routing-entry metadata over the model maps', function() {
-      assert.deepStrictEqual(apos.ai.modelInfo({ effort: 'ultra' }), {
+      assert.deepEqual(apos.ai.modelInfo({ effort: 'ultra' }), {
         provider: 'other',
         model: 'other-ultra',
         reasoning: 'max',
@@ -669,7 +694,7 @@ describe('AI engine', function() {
     });
 
     it('resolves an explicit provider and model directly', function() {
-      assert.deepStrictEqual(apos.ai.modelInfo({
+      assert.deepEqual(apos.ai.modelInfo({
         provider: 'other',
         model: 'other-medium'
       }), {
@@ -682,7 +707,7 @@ describe('AI engine', function() {
     });
 
     it('yields undefined limits for an unknown model, never an error', function() {
-      assert.deepStrictEqual(apos.ai.modelInfo({
+      assert.deepEqual(apos.ai.modelInfo({
         provider: 'fake',
         model: 'mystery'
       }), {
@@ -695,7 +720,7 @@ describe('AI engine', function() {
     });
 
     it('resolves the image route via capability', function() {
-      assert.deepStrictEqual(apos.ai.modelInfo({ capability: 'image' }), {
+      assert.deepEqual(apos.ai.modelInfo({ capability: 'image' }), {
         provider: 'other',
         model: 'other-image',
         contextWindow: undefined,
@@ -706,7 +731,7 @@ describe('AI engine', function() {
     });
 
     it('reports aspects for an explicit image model too', function() {
-      assert.deepStrictEqual(apos.ai.modelInfo({
+      assert.deepEqual(apos.ai.modelInfo({
         capability: 'image',
         provider: 'other',
         model: 'other-image'
@@ -721,14 +746,14 @@ describe('AI engine', function() {
     });
 
     it('applies a call-level reasoning override', function() {
-      assert.strictEqual(
+      assert.equal(
         apos.ai.modelInfo({
           effort: 'ultra',
           reasoning: 'low'
         }).reasoning,
         'low'
       );
-      assert.strictEqual(
+      assert.equal(
         apos.ai.modelInfo({
           provider: 'fake',
           model: 'fake-large',
@@ -741,7 +766,7 @@ describe('AI engine', function() {
     it('rejects unresolvable calls with "invalid"', function() {
       const rejects = (options, pattern) => {
         assert.throws(() => apos.ai.modelInfo(options), (e) => {
-          assert.strictEqual(e.name, 'invalid');
+          assert.equal(e.name, 'invalid');
           assert.match(e.message, pattern);
           return true;
         });
@@ -766,7 +791,7 @@ describe('AI engine', function() {
     });
 
     child.on('close', (code) => {
-      assert.strictEqual(code, 1);
+      assert.equal(code, 1);
       assert.match(stderr, /@apostrophecms\/ai: "providers\.openai" must be an object/);
       done();
     });
