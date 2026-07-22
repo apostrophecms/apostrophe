@@ -6,6 +6,9 @@
 // each provider under `options.providers[name]` and (with more than one)
 // name the default with `options.provider`.
 
+const _ = require('lodash');
+const Ajv = require('ajv/dist/2020').default;
+
 module.exports = {
   options: {
     alias: 'ai',
@@ -30,6 +33,14 @@ module.exports = {
     self.adapters = {};
     self.providers = {};
     self.effortTable = {};
+    self.tools = {};
+    // getTools query caches, built once at activation — the registry
+    // is static, contains "references" so no memory waste.
+    self.toolList = [];
+    self.toolsByTag = new Map();
+    // Flips once activateTools has validated the registry; the
+    // registry is frozen from then on
+    self.toolsActive = false;
     // "Is AI operational?" — true once activation has configured at
     // least one provider, or unconditionally under APOS_AI_MOCK, so
     // feature code can ask before calling
@@ -39,14 +50,17 @@ module.exports = {
       Object.keys(self.options.providers)[0] || null;
     self.effortDefault = self.options.effort?.default || 'medium';
     self.mockMode = process.env.APOS_AI_MOCK === '1';
+    self.ajv = new Ajv({ allErrors: true });
     self.apos.http.addError('aiRetry', 503);
     self.apos.http.addError('aiRefusal', 422);
+    self.apos.http.addError('aiToolError', 422);
   },
   handlers(self) {
     return {
       'apostrophe:ready': {
         async activate() {
           await self.activateProviders();
+          self.activateTools();
         }
       }
     };
@@ -436,6 +450,255 @@ module.exports = {
             }
             throw self.apos.error('invalid', `${partName}.type "${part.type}" is unknown`);
           });
+        }
+      },
+      // Register an AI tool definition. Feature modules call this in
+      // their own init; core, project and third-party modules all use
+      // the same call. Re-registering an existing name overrides (last
+      // wins), so a project can replace a standard tool. Tools are
+      // static: only registered tools can participate in AI calls —
+      // generate selects them by name, definitions never travel
+      // through a call — and the registry is frozen once activated on
+      // "apostrophe:ready", so registering later fails. Only the name
+      // is checked here; everything else is validated at activation,
+      // failing the startup on any problem (see activateTools).
+      //
+      // The definition properties:
+      //
+      // `name` (required): the unique registry identifier, 1 to 64
+      //   letters, digits, "_" or "-", starting with a letter — the
+      //   intersection of the provider naming rules;
+      // `label`: a human-facing name — what a chat log or an activity
+      //   trail shows for the tool; may be an i18n key; defaults from
+      //   the name ('find_pages' → 'Find Pages'); never sent to the
+      //   model;
+      // `description` (required): non-empty text the model chooses
+      //   the tool by — treat it as part of the prompt;
+      // `tags`: an array of strings to query the registry by, see
+      //   getTools;
+      // `input` (required): the JSON Schema (draft 2020-12) the
+      //   model's arguments must satisfy; sent to the provider; must
+      //   declare an object root;
+      // `schema` (required): the handler result's shape as Apostrophe
+      //   schema fields, like a module's `add` configuration;
+      //   internal — never sent to the model — every result is
+      //   validated against it via apos.schema.convert;
+      // `access`: 'read' or 'write' (the default) — orders execution
+      //   within one batch of tool calls, reads in parallel, writes
+      //   serial in model order; not a permission;
+      // `handler` (required): the implementation — an async
+      //   (req, args) function or a 'moduleName:methodName'
+      //   reference. Runs with the caller's req and the validated
+      //   model arguments, plus the core-injected args._context, and
+      //   returns an object matching `schema`.
+      addTool(tool) {
+        if (self.toolsActive) {
+          fail('tools must be registered before "apostrophe:ready"');
+        }
+        if (!isObject(tool) || typeof tool.name !== 'string' ||
+          !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(tool.name)) {
+          fail('addTool requires a definition with a "name" of 1 to 64 letters, digits, "_" or "-", starting with a letter');
+        }
+        self.tools[tool.name] = tool;
+      },
+      // The activated canonical definition registered under `name`,
+      // or undefined. Guarded against prototype-chain names
+      // ('constructor', …): lookups here may carry model-provided or
+      // browser-provided names, which must only ever select a
+      // registered tool
+      getTool(name) {
+        return self.hasTool(name) ? self.tools[name] : undefined;
+      },
+      // An efficient way of checking (by name) if a tool exists
+      hasTool(name) {
+        return Object.hasOwn(self.tools, name);
+      },
+      // All activated tool definitions; with `tags`, those carrying
+      // at least one of them. A single tag may be passed as a string.
+      // Served from caches built at activation, so treat the returned
+      // arrays and definitions as read-only.
+      getTools({ tags } = {}) {
+        if (typeof tags === 'string') {
+          tags = [ tags ];
+        }
+        if (tags !== undefined && !Array.isArray(tags)) {
+          throw self.apos.error('invalid', '"tags" must be an array of tag strings');
+        }
+        if (!tags) {
+          return self.toolList;
+        }
+        // Union of the per-tag lists: a tool matching several of the
+        // given tags appears once
+        const found = new Set();
+        for (const tag of tags) {
+          const tools = self.toolsByTag.get(tag);
+          if (tools) {
+            for (const tool of tools) {
+              found.add(tool);
+            }
+          }
+        }
+        return [ ...found ];
+      },
+      // Validate every registered tool definition (the shape is
+      // documented on addTool) and replace it in the registry with its
+      // activated canonical form: label and access defaulted, `input`
+      // compiled into the `validateArgs` argument validator, `schema`
+      // composed to the array form apos.schema.convert consumes, and
+      // `handler` always a callable — a 'moduleName:methodName'
+      // reference is resolved here, which is why activation waits for
+      // "apostrophe:ready": every module's init has run by then, so
+      // references resolve and overrides are settled regardless of
+      // registration order. A bad definition fails the startup. The
+      // registry is frozen afterwards.
+      activateTools() {
+        for (const [ name, tool ] of Object.entries(self.tools)) {
+          self.tools[name] = activate(tool, `tool "${name}"`);
+        }
+        self.toolList = Object.values(self.tools);
+        self.toolsByTag = new Map();
+        for (const tool of self.toolList) {
+          for (const tag of tool.tags) {
+            const tools = self.toolsByTag.get(tag);
+            if (tools) {
+              tools.push(tool);
+            } else {
+              self.toolsByTag.set(tag, [ tool ]);
+            }
+          }
+        }
+        self.toolsActive = true;
+
+        function activate(tool, name) {
+          if (typeof tool.description !== 'string' || !tool.description) {
+            fail(`${name}: "description" must be a non-empty string`);
+          }
+          if (tool.label !== undefined &&
+            (typeof tool.label !== 'string' || !tool.label)) {
+            fail(`${name}: "label" must be a non-empty string`);
+          }
+          if (tool.tags !== undefined && (!Array.isArray(tool.tags) ||
+            tool.tags.some(tag => typeof tag !== 'string' || !tag))) {
+            fail(`${name}: "tags" must be an array of tag strings`);
+          }
+          if (!isObject(tool.input) || tool.input.type !== 'object') {
+            fail(`${name}: "input" must be a JSON Schema with an object root`);
+          }
+          let validateArgs;
+          try {
+            validateArgs = self.ajv.compile(tool.input);
+          } catch (e) {
+            fail(`${name}: "input" is not a valid JSON Schema: ${e.message}`);
+          }
+          if (!isObject(tool.schema)) {
+            fail(`${name}: "schema" must be an object of schema fields describing the result`);
+          }
+          let schema;
+          try {
+            schema = self.apos.schema.compose({
+              addFields: self.apos.schema.fieldsToArray(`AI tool ${tool.name}`, tool.schema)
+            });
+            self.apos.schema.validate(schema, {
+              type: 'AI tool',
+              subtype: tool.name
+            });
+          } catch (e) {
+            fail(`${name}: "schema" is not a valid schema: ${e.message}`);
+          }
+          const access = tool.access === undefined ? 'write' : tool.access;
+          if (access !== 'read' && access !== 'write') {
+            fail(`${name}: "access" must be "read" or "write"`);
+          }
+          return {
+            name: tool.name,
+            label: tool.label || _.startCase(tool.name),
+            description: tool.description,
+            tags: tool.tags || [],
+            input: tool.input,
+            validateArgs,
+            schema,
+            access,
+            handler: resolveHandler(tool.handler, name)
+          };
+        }
+
+        // The handler option → the callable the loop runs: an inline
+        // function as given, a 'moduleName:methodName' reference
+        // resolved against the named module
+        function resolveHandler(value, name) {
+          if (typeof value === 'function') {
+            return value;
+          }
+          if (typeof value !== 'string') {
+            fail(`${name}: "handler" must be a function or a "moduleName:methodName" string`);
+          }
+          const [ moduleName, methodName, ...rest ] = value.split(':');
+          if (!moduleName || !methodName || rest.length) {
+            fail(`${name}: handler "${value}" must name a module and a method, like "moduleName:methodName"`);
+          }
+          // Own-property checks: a reference must never resolve
+          // through the prototype chain ('constructor', 'toString', …)
+          if (!Object.hasOwn(self.apos.modules, moduleName)) {
+            fail(`${name}: handler names unknown module "${moduleName}"`);
+          }
+          const module = self.apos.modules[moduleName];
+          if (!Object.hasOwn(module, methodName) ||
+            typeof module[methodName] !== 'function') {
+            fail(`${name}: handler names unknown method "${methodName}" of "${moduleName}"`);
+          }
+          return (req, args) => module[methodName](req, args);
+        }
+      },
+      // Execute one model-requested tool call `call`, a toolCall
+      // content part { id, name, input }, against `tool`, its
+      // activated registry definition (getTool). Returns the
+      // handler's result converted through the tool's schema — every
+      // declared field present in normalized form — ready to be
+      // serialized for the model.
+      //
+      // The model's input is validated against the tool's `input`
+      // schema first; invalid arguments never reach the handler — they
+      // throw 'aiToolError', the recoverable code, so the loop can
+      // feed the validation message back to the model. The handler
+      // runs with the caller's `req` and a copy of the validated
+      // arguments; `context` is written to `args._context` after
+      // validation, so a model-provided property can never pose as
+      // core injection.
+      //
+      // A handler throw passes through untouched: recovery is decided
+      // elsewhere, by the error code alone. A handler result the
+      // schema rejects is a handler bug, not model misbehaviour: it
+      // throws 'invalid' naming the tool — a standard code breaks the
+      // AI chain, no retries, no further AI work — and no detail of it
+      // is ever fed back to the model.
+      async executeToolCall(req, tool, call, context = {}) {
+        if (!tool.validateArgs(call.input)) {
+          throw self.apos.error('aiToolError', `invalid arguments for tool "${tool.name}": ${self.ajv.errorsText(tool.validateArgs.errors, { dataVar: 'arguments' })}`);
+        }
+        const args = {
+          ...call.input,
+          _context: context
+        };
+        const result = await tool.handler(req, args);
+        if (!isObject(result)) {
+          throw self.apos.error('invalid', `tool "${tool.name}" must return an object matching its schema`);
+        }
+        const converted = {};
+        try {
+          await self.apos.schema.convert(req, tool.schema, result, converted);
+        } catch (errors) {
+          throw self.apos.error('invalid', `tool "${tool.name}" returned a result that does not match its schema: ${detail(errors)}`);
+        }
+        return converted;
+
+        // The convert rejection → one readable line naming each field
+        function detail(errors) {
+          if (!Array.isArray(errors)) {
+            return errors.message || String(errors);
+          }
+          return errors
+            .map((error) => `${error.path}: ${error.message || error.name}`)
+            .join('; ');
         }
       },
       // Assemble the normalized adapter request from `options`, a
