@@ -169,18 +169,33 @@ describe('AI generate', function() {
   });
 
   describe('option validation', function() {
-    it('rejects the reserved options as not yet supported', function() {
-      throwsUnimplemented(
-        () => apos.ai.normalizeGenerateOptions('p', { tools: [] }),
-        /"tools" is not yet supported/
-      );
+    it('rejects the reserved schema option as not yet supported', function() {
       throwsUnimplemented(
         () => apos.ai.normalizeGenerateOptions('p', { schema: { type: 'object' } }),
         /"schema" is not yet supported/
       );
-      throwsUnimplemented(
-        () => apos.ai.normalizeGenerateOptions('p', { maxSteps: 3 }),
-        /"maxSteps" is not yet supported/
+    });
+
+    it('validates tools and maxSteps', function() {
+      const canonical = apos.ai.normalizeGenerateOptions('p');
+      assert.deepEqual(canonical.tools, []);
+      // The module option is the default cap
+      assert.equal(canonical.maxSteps, 5);
+      assert.equal(
+        apos.ai.normalizeGenerateOptions('p', { maxSteps: 8 }).maxSteps,
+        8
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { maxSteps: 0 }),
+        /"maxSteps" must be a positive integer/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { tools: 'find_pages' }),
+        /"tools" must be an array of registered tool names/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { tools: [ 'ghost' ] }),
+        /"tools" names unknown tool "ghost"/
       );
     });
 
@@ -284,25 +299,105 @@ describe('AI generate', function() {
       } ]);
     });
 
-    it('rejects tool messages and tool parts as not yet supported', function() {
-      throwsUnimplemented(
+    it('normalizes tool messages and tool parts', function() {
+      const messages = apos.ai.normalizeMessages([
+        {
+          role: 'assistant',
+          content: [ {
+            type: 'toolCall',
+            id: 'call_1',
+            name: 'find_pages',
+            input: { query: 'pricing' },
+            extra: 'dropped'
+          } ]
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'toolResult',
+              toolCallId: 'call_1',
+              output: { found: true }
+            },
+            {
+              type: 'toolResult',
+              toolCallId: 'call_2',
+              error: 'unknown tool "ghost"'
+            }
+          ]
+        }
+      ]);
+      assert.deepEqual(messages, [
+        {
+          role: 'assistant',
+          content: [ {
+            type: 'toolCall',
+            id: 'call_1',
+            name: 'find_pages',
+            input: { query: 'pricing' }
+          } ]
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'toolResult',
+              toolCallId: 'call_1',
+              output: { found: true }
+            },
+            {
+              type: 'toolResult',
+              toolCallId: 'call_2',
+              error: 'unknown tool "ghost"'
+            }
+          ]
+        }
+      ]);
+    });
+
+    it('rejects tool parts in the wrong role and malformed tool parts', function() {
+      throwsInvalid(
+        () => apos.ai.normalizeMessages([ {
+          role: 'user',
+          content: [ {
+            type: 'toolCall',
+            id: 'x',
+            name: 'y',
+            input: {}
+          } ]
+        } ]),
+        /a "toolCall" part is not valid in a "user" message/
+      );
+      throwsInvalid(
         () => apos.ai.normalizeMessages([ {
           role: 'tool',
           content: 'result'
         } ]),
-        /"tool" messages are not yet supported/
+        /a "text" part is not valid in a "tool" message/
       );
-      throwsUnimplemented(
+      throwsInvalid(
         () => apos.ai.normalizeMessages([ {
           role: 'assistant',
           content: [ {
             type: 'toolCall',
-            id: 'x',
-            name: 'find_pages',
+            id: '',
+            name: 'y',
             input: {}
           } ]
         } ]),
-        /"toolCall" parts are not yet supported/
+        /must be an object like \{ type, id, name, input \}/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeMessages([ {
+          role: 'tool',
+          content: [ {
+            type: 'toolResult',
+            toolCallId: 'x',
+            output: { a: 1 },
+            error: 'both'
+          } ]
+        } ]),
+        /must carry an object "output" or a string "error", not both/
       );
     });
 
@@ -320,7 +415,7 @@ describe('AI generate', function() {
           role: 'system',
           content: 'x'
         } ]),
-        /messages\[0\]\.role must be "user" or "assistant"/
+        /messages\[0\]\.role must be "user", "assistant" or "tool"/
       );
       throwsInvalid(
         () => apos.ai.normalizeMessages([ {
@@ -465,7 +560,11 @@ describe('AI generate', function() {
             init(self) {
               self.apos.ai.addAdapter(fakeAdapter('fake', {
                 async chat(req, request) {
-                  chatCalls.push(request);
+                  // Snapshot: the loop keeps growing request.messages
+                  chatCalls.push({
+                    ...request,
+                    messages: [ ...request.messages ]
+                  });
                   const step = chatScript.shift();
                   if (step === undefined) {
                     throw new Error('chat called beyond its script');
@@ -733,7 +832,15 @@ describe('AI generate', function() {
     });
 
     it('rejects unexpected tool calls from the adapter', async function() {
-      chatScript = [ () => turn({ finishReason: 'toolCalls' }) ];
+      chatScript = [ () => turn({
+        content: [ {
+          type: 'toolCall',
+          id: 'c1',
+          name: 'find_pages',
+          input: {}
+        } ],
+        finishReason: 'toolCalls'
+      }) ];
       await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
         assert.equal(e.name, 'invalid');
         assert.match(e.message, /tool calls/);

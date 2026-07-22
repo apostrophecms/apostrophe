@@ -338,7 +338,7 @@ describe('AI tools', function() {
     });
 
     it('panics on a bad access value', async function() {
-      await failsToBoot(minimal({ access: 'delete' }), /"access" must be "read" or "write"/);
+      await failsToBoot(minimal({ access: 'delete' }), /"access" must be "read", "write" or "agent"/);
     });
 
     it('panics on an unresolvable handler', async function() {
@@ -486,6 +486,686 @@ describe('AI tools', function() {
           return true;
         }
       );
+    });
+  });
+
+  describe('the agent loop', function() {
+    // Each test scripts the fake adapter's chat: an array of thunks,
+    // one consumed per call
+    let chatScript;
+    let chatCalls;
+    // Handler activity: 'start:<tool>' / 'end:<tool>' entries
+    const log = [];
+    // [ [ toolName, args._context.depth ] ]
+    const depths = [];
+    // Set by the scheduling test: reads block until all expected
+    // reads have started, proving they overlap
+    let readGate = null;
+    // [ [ 'before' | 'after', toolName, resultOrError ] ]
+    const toolEvents = [];
+
+    const toolCall = (id, name, input = {}) => ({
+      type: 'toolCall',
+      id,
+      name,
+      input
+    });
+    const toolTurn = (...calls) => () => ({
+      content: calls,
+      finishReason: 'toolCalls',
+      usage: {
+        inputTokens: 10,
+        outputTokens: 5
+      },
+      model: 'fake-medium'
+    });
+    const textTurn = (text = 'done') => () => ({
+      content: [ {
+        type: 'text',
+        text
+      } ],
+      finishReason: 'stop',
+      usage: {
+        inputTokens: 20,
+        outputTokens: 3
+      },
+      model: 'fake-medium'
+    });
+    const okSchema = { ok: { type: 'boolean' } };
+    const okInput = {
+      type: 'object',
+      properties: {}
+    };
+
+    const track = (name) => async () => {
+      log.push(`start:${name}`);
+      if (readGate && name.startsWith('read')) {
+        readGate.started++;
+        if (readGate.started === readGate.expected) {
+          readGate.release();
+        }
+        await readGate.opened;
+      }
+      log.push(`end:${name}`);
+      return { ok: true };
+    };
+
+    before(async function() {
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {
+          'fake-adapters': {
+            init(self) {
+              self.apos.ai.addAdapter({
+                name: 'fake',
+                label: 'Fake',
+                capabilities: {
+                  text: true,
+                  tools: true
+                },
+                effort: {
+                  medium: { model: 'fake-medium' }
+                },
+                models: {
+                  'fake-medium': {
+                    contextWindow: 200000,
+                    maxOutputTokens: 16000
+                  }
+                },
+                validate() {},
+                async chat(req, request) {
+                  // Snapshot: the loop keeps growing request.messages
+                  chatCalls.push({
+                    ...request,
+                    messages: [ ...request.messages ]
+                  });
+                  const step = chatScript.shift();
+                  if (step === undefined) {
+                    throw new Error('chat called beyond its script');
+                  }
+                  return step();
+                },
+                normalizeError(err) {
+                  return err;
+                }
+              });
+            }
+          },
+          'loop-tools': {
+            init(self) {
+              const add = (tool) => self.apos.ai.addTool({
+                description: `The ${tool.name} tool.`,
+                input: okInput,
+                schema: okSchema,
+                ...tool
+              });
+              add({
+                name: 'read_a',
+                access: 'read',
+                handler: track('read_a')
+              });
+              add({
+                name: 'read_b',
+                access: 'read',
+                handler: track('read_b')
+              });
+              add({
+                name: 'write_a',
+                handler: track('write_a')
+              });
+              add({
+                name: 'write_b',
+                handler: track('write_b')
+              });
+              add({
+                name: 'agent_a',
+                access: 'agent',
+                handler: track('agent_a')
+              });
+              add({
+                name: 'echo',
+                input: {
+                  type: 'object',
+                  properties: {
+                    value: { type: 'string' }
+                  },
+                  required: [ 'value' ]
+                },
+                schema: {
+                  value: { type: 'string' }
+                },
+                handler: async (req, args) => {
+                  log.push('start:echo');
+                  depths.push([ 'echo', args._context.depth ]);
+                  return { value: args.value };
+                }
+              });
+              add({
+                name: 'sub_agent',
+                access: 'agent',
+                schema: {
+                  value: { type: 'string' }
+                },
+                handler: async (req, args) => {
+                  depths.push([ 'sub_agent', args._context.depth ]);
+                  const inner = await self.apos.ai.generate(req, 'inner question', {
+                    tools: [ 'echo' ]
+                  });
+                  return { value: inner.text };
+                }
+              });
+              add({
+                name: 'sub_sub',
+                access: 'agent',
+                schema: {
+                  value: { type: 'string' }
+                },
+                handler: async (req) => {
+                  const inner = await self.apos.ai.generate(req, 'nested', {
+                    tools: [ 'sub_agent', 'echo' ]
+                  });
+                  return { value: inner.text };
+                }
+              });
+              add({
+                name: 'spawner',
+                handler: async (req) => {
+                  await self.apos.ai.generate(req, 'too deep');
+                  return { ok: true };
+                }
+              });
+              add({
+                name: 'sub_deep',
+                access: 'agent',
+                handler: async (req) => {
+                  await self.apos.ai.generate(req, 'inner', {
+                    tools: [ 'spawner' ]
+                  });
+                  return { ok: true };
+                }
+              });
+              add({
+                name: 'boom_recover',
+                handler: async () => {
+                  throw self.apos.error('aiToolError', 'the search index is rebuilding');
+                }
+              });
+              add({
+                name: 'boom_forbidden',
+                handler: async () => {
+                  throw self.apos.error('forbidden', 'not for you');
+                }
+              });
+              add({
+                name: 'bad_shape',
+                schema: {
+                  count: {
+                    type: 'integer',
+                    required: true
+                  }
+                },
+                handler: async () => ({ wrong: true })
+              });
+            }
+          },
+          'ai-events': {
+            handlers(self) {
+              return {
+                '@apostrophecms/ai:beforeToolCall': {
+                  record(req, payload) {
+                    toolEvents.push([ 'before', payload.tool.name ]);
+                  }
+                },
+                '@apostrophecms/ai:afterToolCall': {
+                  record(req, payload) {
+                    toolEvents.push([ 'after', payload.tool.name, payload.result ?? payload.error ]);
+                  }
+                }
+              };
+            }
+          },
+          '@apostrophecms/ai': {
+            options: {
+              provider: 'fake',
+              providers: {
+                fake: { apiKey: 'k1' }
+              },
+              retryBaseDelay: 1
+            }
+          }
+        }
+      });
+    });
+
+    beforeEach(function() {
+      chatScript = [];
+      chatCalls = [];
+      log.length = 0;
+      depths.length = 0;
+      toolEvents.length = 0;
+      readGate = null;
+    });
+
+    it('runs the loop to completion with transcript, steps and aggregated usage', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'pricing' })),
+        textTurn('all done')
+      ];
+      const result = await apos.ai.generate(req, 'find it', { tools: [ 'echo' ] });
+
+      assert.equal(result.text, 'all done');
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(result.toolCalls, undefined);
+      assert.deepEqual(result.steps, [ {
+        toolCall: toolCall('c1', 'echo', { value: 'pricing' }),
+        result: { value: 'pricing' }
+      } ]);
+      assert.deepEqual(result.usage, {
+        inputTokens: 30,
+        outputTokens: 8
+      });
+      assert.deepEqual(result.messages.map(message => message.role),
+        [ 'user', 'assistant', 'tool', 'assistant' ]);
+      assert.deepEqual(result.messages[2].content, [ {
+        type: 'toolResult',
+        toolCallId: 'c1',
+        output: { value: 'pricing' }
+      } ]);
+      // The adapter sees only the model-facing face of a tool
+      assert.deepEqual(chatCalls[0].tools, [ {
+        name: 'echo',
+        description: 'The echo tool.',
+        input: apos.ai.getTool('echo').input
+      } ]);
+      // The second call carried the grown transcript
+      assert.equal(chatCalls[1].messages.length, 3);
+      assert.deepEqual(toolEvents, [
+        [ 'before', 'echo' ],
+        [ 'after', 'echo', { value: 'pricing' } ]
+      ]);
+    });
+
+    it('runs reads in parallel first, then writes serially in model order', async function() {
+      const req = apos.task.getReq();
+      let release;
+      const opened = new Promise((resolve) => {
+        release = resolve;
+      });
+      readGate = {
+        expected: 2,
+        started: 0,
+        release,
+        opened
+      };
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'read_a'),
+          toolCall('c2', 'write_a'),
+          toolCall('c3', 'agent_a'),
+          toolCall('c4', 'read_b'),
+          toolCall('c5', 'write_b')
+        ),
+        textTurn()
+      ];
+      const result = await apos.ai.generate(req, 'go', {
+        tools: [ 'read_a', 'read_b', 'write_a', 'write_b', 'agent_a' ]
+      });
+
+      // Both reads started before either finished; writes and agents
+      // followed, one at a time, in the order the model asked
+      assert.deepEqual(log.slice(0, 2).sort(), [ 'start:read_a', 'start:read_b' ]);
+      assert.deepEqual(log.slice(2, 4).sort(), [ 'end:read_a', 'end:read_b' ]);
+      assert.deepEqual(log.slice(4), [
+        'start:write_a', 'end:write_a', 'start:agent_a', 'end:agent_a',
+        'start:write_b', 'end:write_b'
+      ]);
+      // Steps stay in model order regardless of scheduling
+      assert.deepEqual(
+        result.steps.map(step => step.toolCall.name),
+        [ 'read_a', 'write_a', 'agent_a', 'read_b', 'write_b' ]
+      );
+    });
+
+    it('feeds recoverable failures back and leaves siblings unaffected', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'boom_recover'),
+          toolCall('c2', 'echo', { value: 'still runs' })
+        ),
+        textTurn()
+      ];
+      const result = await apos.ai.generate(req, 'go', {
+        tools: [ 'boom_recover', 'echo' ]
+      });
+
+      assert.deepEqual(result.steps, [
+        {
+          toolCall: toolCall('c1', 'boom_recover'),
+          error: 'the search index is rebuilding'
+        },
+        {
+          toolCall: toolCall('c2', 'echo', { value: 'still runs' }),
+          result: { value: 'still runs' }
+        }
+      ]);
+      // The model read the error back
+      assert.deepEqual(chatCalls[1].messages.at(-1).content[0], {
+        type: 'toolResult',
+        toolCallId: 'c1',
+        error: 'the search index is rebuilding'
+      });
+    });
+
+    it('feeds invalid arguments and unknown tools back without running anything', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'echo', { value: 42 }),
+          toolCall('c2', 'ghost')
+        ),
+        textTurn()
+      ];
+      const result = await apos.ai.generate(req, 'go', { tools: [ 'echo' ] });
+
+      assert.match(result.steps[0].error, /invalid arguments for tool "echo"/);
+      assert.match(result.steps[0].error, /value must be string/);
+      assert.equal(result.steps[1].error, 'unknown tool "ghost"');
+      // No handler ran
+      assert.deepEqual(log, []);
+    });
+
+    it('hard-stops on a standard code with nothing model-bound', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'boom_forbidden'),
+          toolCall('c2', 'echo', { value: 'never' })
+        )
+      ];
+      await assert.rejects(
+        apos.ai.generate(req, 'go', { tools: [ 'boom_forbidden', 'echo' ] }),
+        (e) => {
+          assert.equal(e.name, 'forbidden');
+          assert.equal(e.message, 'not for you');
+          return true;
+        }
+      );
+      // The batch aborted: the later write never ran, the model was
+      // never called again
+      assert.deepEqual(log, []);
+      assert.equal(chatCalls.length, 1);
+    });
+
+    it('hard-stops on a handler bug', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'bad_shape'))
+      ];
+      await assert.rejects(
+        apos.ai.generate(req, 'go', { tools: [ 'bad_shape' ] }),
+        (e) => {
+          assert.equal(e.name, 'invalid');
+          assert.match(e.message, /does not match its schema/);
+          return true;
+        }
+      );
+      assert.equal(chatCalls.length, 1);
+    });
+
+    it('returns pending tool calls unexecuted when maxSteps is spent', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'first' })),
+        toolTurn(toolCall('c2', 'echo', { value: 'second' }))
+      ];
+      const result = await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        maxSteps: 2
+      });
+
+      assert.equal(result.finishReason, 'maxSteps');
+      // The first round executed, the second is pending, untouched
+      assert.deepEqual(result.steps, [ {
+        toolCall: toolCall('c1', 'echo', { value: 'first' }),
+        result: { value: 'first' }
+      } ]);
+      assert.deepEqual(result.toolCalls, [
+        toolCall('c2', 'echo', { value: 'second' })
+      ]);
+      assert.deepEqual(log, [ 'start:echo' ]);
+      assert.equal(result.messages.at(-1).role, 'assistant');
+    });
+
+    it('maxSteps: 1 is manual mode', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'manual' }))
+      ];
+      const result = await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        maxSteps: 1
+      });
+
+      assert.equal(result.finishReason, 'maxSteps');
+      assert.deepEqual(result.steps, []);
+      assert.deepEqual(result.toolCalls, [
+        toolCall('c1', 'echo', { value: 'manual' })
+      ]);
+      assert.deepEqual(log, []);
+    });
+
+    it('resumes from a returned transcript with hand-run tool results', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'manual' }))
+      ];
+      const first = await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        maxSteps: 1
+      });
+
+      chatScript = [ textTurn('resumed') ];
+      const second = await apos.ai.generate(req, {
+        messages: [
+          ...first.messages,
+          {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: 'c1',
+              output: { value: 'ran by hand' }
+            } ]
+          }
+        ],
+        tools: [ 'echo' ]
+      });
+
+      assert.equal(second.text, 'resumed');
+      // The adapter received the full round-tripped transcript
+      assert.deepEqual(
+        chatCalls.at(-1).messages.map(message => message.role),
+        [ 'user', 'assistant', 'tool' ]
+      );
+    });
+
+    it('an agent tool runs a subagent, one level deep', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        // Outer turn: request the agent tool
+        toolTurn(toolCall('c1', 'sub_agent')),
+        // Inner conversation: request echo, then answer
+        toolTurn(toolCall('c2', 'echo', { value: 'from below' })),
+        textTurn('inner done'),
+        // Outer conversation resumes
+        textTurn('outer done')
+      ];
+      const result = await apos.ai.generate(req, 'go', { tools: [ 'sub_agent' ] });
+
+      assert.equal(result.text, 'outer done');
+      assert.deepEqual(result.steps, [ {
+        toolCall: toolCall('c1', 'sub_agent'),
+        result: { value: 'inner done' }
+      } ]);
+      // The handler ran at depth 1, the subagent's own handler at 2
+      assert.deepEqual(depths, [
+        [ 'sub_agent', 1 ],
+        [ 'echo', 2 ]
+      ]);
+      // Handlers run on stamped clones; the caller's req is untouched
+      assert.equal(req.aposAiDepth, undefined);
+    });
+
+    it('a subagent silently drops agent tools from its set', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'sub_sub')),
+        // The nested conversation: only the non-agent tool survived
+        toolTurn(toolCall('c2', 'echo', { value: 'kept' })),
+        textTurn('inner done'),
+        textTurn('outer done')
+      ];
+      const result = await apos.ai.generate(req, 'go', { tools: [ 'sub_sub' ] });
+
+      assert.equal(result.text, 'outer done');
+      assert.deepEqual(result.steps[0].result, { value: 'inner done' });
+      // The nested request offered the model only the non-agent tool
+      assert.deepEqual(
+        chatCalls[1].tools.map(tool => tool.name),
+        [ 'echo' ]
+      );
+    });
+
+    it('limits generation to one level of nesting', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'sub_deep')),
+        // The subagent's conversation requests a plain write tool,
+        // whose handler tries to generate again
+        toolTurn(toolCall('c2', 'spawner'))
+      ];
+      await assert.rejects(
+        apos.ai.generate(req, 'go', { tools: [ 'sub_deep' ] }),
+        (e) => {
+          assert.equal(e.name, 'invalid');
+          assert.match(e.message, /one level of nesting/);
+          return true;
+        }
+      );
+      assert.equal(chatCalls.length, 2);
+    });
+
+    it('rejects malformed tool turns into the retry path', function() {
+      const usage = {
+        inputTokens: 1,
+        outputTokens: 1
+      };
+      assert.throws(() => apos.ai.validateTurn({
+        content: [ {
+          type: 'text',
+          text: 'x'
+        } ],
+        finishReason: 'toolCalls',
+        usage
+      }), (e) => {
+        assert.equal(e.name, 'aiRetry');
+        assert.match(e.message, /"toolCalls" finish reason without toolCall parts/);
+        return true;
+      });
+      assert.throws(() => apos.ai.validateTurn({
+        content: [ {
+          type: 'toolCall',
+          name: 'echo',
+          input: {}
+        } ],
+        finishReason: 'toolCalls',
+        usage
+      }), (e) => {
+        assert.equal(e.name, 'aiRetry');
+        assert.match(e.message, /toolCall parts must carry/);
+        return true;
+      });
+    });
+  });
+
+  describe('the agent loop under APOS_AI_MOCK', function() {
+    const log = [];
+
+    before(async function() {
+      process.env.APOS_AI_MOCK = '1';
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {
+          'loop-tools': {
+            init(self) {
+              self.apos.ai.addTool({
+                name: 'echo',
+                description: 'Echo a value.',
+                input: {
+                  type: 'object',
+                  properties: {
+                    value: { type: 'string' }
+                  },
+                  required: [ 'value' ]
+                },
+                schema: {
+                  value: { type: 'string' }
+                },
+                handler: async (req, args) => {
+                  log.push(args.value);
+                  return { value: args.value };
+                }
+              });
+            }
+          },
+          '@apostrophecms/ai': {
+            options: {
+              // A scripted model: request a tool once, then answer
+              mock(request) {
+                if (request.messages.at(-1).role !== 'tool') {
+                  return {
+                    content: [ {
+                      type: 'toolCall',
+                      id: 'c1',
+                      name: 'echo',
+                      input: { value: 'offline' }
+                    } ],
+                    finishReason: 'toolCalls',
+                    usage: {
+                      inputTokens: 1,
+                      outputTokens: 1
+                    }
+                  };
+                }
+                return { text: 'offline done' };
+              }
+            }
+          }
+        }
+      });
+    });
+
+    after(async function() {
+      delete process.env.APOS_AI_MOCK;
+    });
+
+    it('scripted mock tool calls run the real handlers offline', async function() {
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(req, 'go', { tools: [ 'echo' ] });
+      assert.equal(result.text, 'offline done');
+      assert.deepEqual(log, [ 'offline' ]);
+      assert.deepEqual(result.steps, [ {
+        toolCall: {
+          type: 'toolCall',
+          id: 'c1',
+          name: 'echo',
+          input: { value: 'offline' }
+        },
+        result: { value: 'offline' }
+      } ]);
     });
   });
 });

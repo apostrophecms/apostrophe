@@ -45,6 +45,8 @@ module.exports = {
     // least one provider, or unconditionally under APOS_AI_MOCK, so
     // feature code can ask before calling
     self.active = false;
+    // Allowed sub-agent depth (spawned by tools), zero based index
+    self.allowedDepth = 1;
     self.validateOptions(self.options);
     self.defaultProvider = self.options.provider ||
       Object.keys(self.options.providers)[0] || null;
@@ -275,11 +277,13 @@ module.exports = {
       },
       // Parse and validate generate's `(stringOrOptions, options)`
       // arguments, exactly as passed to it, into one canonical options
-      // object `{ system, messages, effort, provider, model, reasoning,
-      // maxTokens, cache, signal }` — the positional prompt string
-      // appended to `messages` as the final user turn, message content
-      // collapsed to content-part form, `cache` defaulted to 'short',
-      // unset options left undefined. Unknown options are rejected as
+      // object `{ system, messages, tools, maxSteps, effort, provider,
+      // model, reasoning, maxTokens, cache, signal }` — the positional
+      // prompt string appended to `messages` as the final user turn,
+      // message content collapsed to content-part form, `tools` names
+      // resolved to their activated definitions, `maxSteps` defaulted
+      // from the module option, `cache` defaulted to 'short', unset
+      // options left undefined. Unknown options are rejected as
       // "invalid".
       normalizeGenerateOptions(stringOrOptions, options) {
         const invalid = (message) => {
@@ -303,14 +307,12 @@ module.exports = {
         } else {
           invalid('a prompt string or an options object is required');
         }
-        for (const name of [ 'tools', 'schema', 'maxSteps' ]) {
-          if (options[name] !== undefined) {
-            throw self.apos.error('unimplemented', `"${name}" is not yet supported`);
-          }
+        if (options.schema !== undefined) {
+          throw self.apos.error('unimplemented', '"schema" is not yet supported');
         }
         const known = [
-          'system', 'messages', 'effort', 'provider', 'model',
-          'reasoning', 'maxTokens', 'cache', 'signal'
+          'system', 'messages', 'tools', 'maxSteps', 'effort', 'provider',
+          'model', 'reasoning', 'maxTokens', 'cache', 'signal'
         ];
         for (const name of Object.keys(options)) {
           if (!known.includes(name)) {
@@ -342,6 +344,13 @@ module.exports = {
         if (signal !== undefined && !(signal instanceof AbortSignal)) {
           invalid('"signal" must be an AbortSignal');
         }
+        const maxSteps = options.maxSteps === undefined
+          ? self.options.maxSteps
+          : options.maxSteps;
+        if (!Number.isInteger(maxSteps) || maxSteps < 1) {
+          invalid('"maxSteps" must be a positive integer');
+        }
+        const tools = toolDefinitions(options.tools);
         const messages = self.normalizeMessages(options.messages);
         if (prompt !== null) {
           messages.push({
@@ -358,6 +367,8 @@ module.exports = {
         return {
           system,
           messages,
+          tools,
+          maxSteps,
           effort,
           provider,
           model,
@@ -366,14 +377,42 @@ module.exports = {
           cache,
           signal
         };
+
+        // The tools option → the activated definitions it names; every
+        // name must be registered, each at most once
+        function toolDefinitions(names = []) {
+          if (!Array.isArray(names)) {
+            invalid('"tools" must be an array of registered tool names');
+          }
+          const seen = new Set();
+          return names.map((toolName) => {
+            if (typeof toolName !== 'string') {
+              invalid('"tools" must be an array of registered tool names');
+            }
+            if (seen.has(toolName)) {
+              invalid(`"tools" names "${toolName}" twice`);
+            }
+            seen.add(toolName);
+            const tool = self.getTool(toolName);
+            if (!tool) {
+              invalid(`"tools" names unknown tool "${toolName}"`);
+            }
+            return tool;
+          });
+        }
       },
       // Validate and normalize an array of chat messages, as accepted
       // by generate's `messages` option (undefined is an empty
       // conversation). Returns a new array of { role, content } with
-      // `content` always an array of content parts: roles user or
-      // assistant, string content becomes a single text part. Messages
-      // are rebuilt from the recognized properties, so a stored
-      // transcript carrying app metadata round-trips.
+      // `content` always an array of content parts: string content
+      // becomes a single text part. Roles are user, assistant and
+      // tool; each part type is valid in specific roles only — text
+      // and image in user or assistant messages, toolCall (a model's
+      // tool request) in assistant messages, toolResult (its answer)
+      // in tool messages — so a returned transcript round-trips and a
+      // hand-built one fails clearly. Messages are rebuilt from the
+      // recognized properties, so a stored transcript carrying app
+      // metadata round-trips.
       normalizeMessages(messages = []) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
@@ -386,24 +425,22 @@ module.exports = {
           if (!isObject(message)) {
             invalid(`${name} must be an object like { role, content }`);
           }
-          if (message.role === 'tool') {
-            throw self.apos.error('unimplemented', `${name}: "tool" messages are not yet supported`);
-          }
-          if (message.role !== 'user' && message.role !== 'assistant') {
-            invalid(`${name}.role must be "user" or "assistant"`);
+          if (![ 'user', 'assistant', 'tool' ].includes(message.role)) {
+            invalid(`${name}.role must be "user", "assistant" or "tool"`);
           }
           return {
             role: message.role,
-            content: contentParts(message.content, name)
+            content: contentParts(message.content, name, message.role)
           };
         });
 
         // One message's content → validated content-part array, rebuilt
         // so extra properties never travel. A plain string is shorthand
-        // for a single text part.
-        function contentParts(content, name) {
+        // for a single text part. Every part type is checked against
+        // the message's role.
+        function contentParts(content, name, role) {
           if (typeof content === 'string') {
-            return [ {
+            content = [ {
               type: 'text',
               text: content
             } ];
@@ -416,8 +453,49 @@ module.exports = {
             if (!isObject(part)) {
               throw self.apos.error('invalid', `${partName} must be an object like { type }`);
             }
-            if (part.type === 'toolCall' || part.type === 'toolResult') {
-              throw self.apos.error('unimplemented', `${partName}: "${part.type}" parts are not yet supported`);
+            const roles = {
+              text: [ 'user', 'assistant' ],
+              image: [ 'user', 'assistant' ],
+              toolCall: [ 'assistant' ],
+              toolResult: [ 'tool' ]
+            }[part.type];
+            if (!roles) {
+              throw self.apos.error('invalid', `${partName}.type "${part.type}" is unknown`);
+            }
+            if (!roles.includes(role)) {
+              throw self.apos.error('invalid', `${partName}: a "${part.type}" part is not valid in a "${role}" message`);
+            }
+            if (part.type === 'toolCall') {
+              if (typeof part.id !== 'string' || !part.id ||
+                typeof part.name !== 'string' || !isObject(part.input)) {
+                throw self.apos.error('invalid', `${partName} must be an object like { type, id, name, input }`);
+              }
+              return {
+                type: 'toolCall',
+                id: part.id,
+                name: part.name,
+                input: part.input
+              };
+            }
+            if (part.type === 'toolResult') {
+              if (typeof part.toolCallId !== 'string' || !part.toolCallId) {
+                throw self.apos.error('invalid', `${partName}.toolCallId must be a string`);
+              }
+              if (typeof part.error === 'string' && part.output === undefined) {
+                return {
+                  type: 'toolResult',
+                  toolCallId: part.toolCallId,
+                  error: part.error
+                };
+              }
+              if (isObject(part.output) && part.error === undefined) {
+                return {
+                  type: 'toolResult',
+                  toolCallId: part.toolCallId,
+                  output: part.output
+                };
+              }
+              throw self.apos.error('invalid', `${partName} must carry an object "output" or a string "error", not both`);
             }
             if (part.type === 'text') {
               if (typeof part.text !== 'string') {
@@ -428,27 +506,25 @@ module.exports = {
                 text: part.text
               };
             }
-            if (part.type === 'image') {
-              const image = part.image;
-              if (isObject(image) && typeof image.url === 'string') {
-                return {
-                  type: 'image',
-                  image: { url: image.url }
-                };
-              }
-              if (isObject(image) && typeof image.data === 'string' &&
-                typeof image.mediaType === 'string') {
-                return {
-                  type: 'image',
-                  image: {
-                    data: image.data,
-                    mediaType: image.mediaType
-                  }
-                };
-              }
-              throw self.apos.error('invalid', `${partName}.image must be an object like { url } or { data, mediaType }`);
+            // image, the only remaining type
+            const image = part.image;
+            if (isObject(image) && typeof image.url === 'string') {
+              return {
+                type: 'image',
+                image: { url: image.url }
+              };
             }
-            throw self.apos.error('invalid', `${partName}.type "${part.type}" is unknown`);
+            if (isObject(image) && typeof image.data === 'string' &&
+              typeof image.mediaType === 'string') {
+              return {
+                type: 'image',
+                image: {
+                  data: image.data,
+                  mediaType: image.mediaType
+                }
+              };
+            }
+            throw self.apos.error('invalid', `${partName}.image must be an object like { url } or { data, mediaType }`);
           });
         }
       },
@@ -483,9 +559,14 @@ module.exports = {
       //   schema fields, like a module's `add` configuration;
       //   internal — never sent to the model — every result is
       //   validated against it via apos.schema.convert;
-      // `access`: 'read' or 'write' (the default) — orders execution
-      //   within one batch of tool calls, reads in parallel, writes
-      //   serial in model order; not a permission;
+      // `access`: 'read', 'write' (the default) or 'agent' — not a
+      //   permission. Reads run in parallel within one batch of tool
+      //   calls; writes and agents follow serially in model order.
+      //   'agent' declares that the handler makes its own generate
+      //   call (a subagent, with its own budgets). One level of
+      //   nesting is allowed: a nested call silently drops agent
+      //   tools from its set — a subagent cannot spawn subagents —
+      //   and generation below the subagent level fails;
       // `handler` (required): the implementation — an async
       //   (req, args) function or a 'moduleName:methodName'
       //   reference. Runs with the caller's req and the validated
@@ -606,8 +687,8 @@ module.exports = {
             fail(`${name}: "schema" is not a valid schema: ${e.message}`);
           }
           const access = tool.access === undefined ? 'write' : tool.access;
-          if (access !== 'read' && access !== 'write') {
-            fail(`${name}: "access" must be "read" or "write"`);
+          if (![ 'read', 'write', 'agent' ].includes(access)) {
+            fail(`${name}: "access" must be "read", "write" or "agent"`);
           }
           return {
             name: tool.name,
@@ -707,9 +788,11 @@ module.exports = {
       // output ceiling when it is known, translate the cache level to
       // the { ttl } policy. Returns { provider, request }: the resolved
       // provider name and the request handed to its adapter —
-      // { system?, messages, model, maxTokens?, reasoning?,
+      // { system?, messages, tools?, model, maxTokens?, reasoning?,
       // cache: false | { ttl }, signal? }, optional fields present only
-      // when they resolved to a value.
+      // when they resolved to a value. Request tools carry only
+      // { name, description, input } — handlers and result schemas
+      // never reach an adapter.
       buildRequest(options) {
         const info = self.modelInfo({
           provider: options.provider,
@@ -723,6 +806,7 @@ module.exports = {
           request: {
             ...(options.system !== undefined && { system: options.system }),
             messages: options.messages,
+            ...(options.tools.length && { tools: self.wireTools(options.tools) }),
             model: info.model,
             ...(maxTokens !== undefined && { maxTokens }),
             ...(info.reasoning !== undefined && { reasoning: info.reasoning }),
@@ -744,6 +828,7 @@ module.exports = {
           request: {
             ...(options.system !== undefined && { system: options.system }),
             messages: options.messages,
+            ...(options.tools.length && { tools: self.wireTools(options.tools) }),
             model: options.model ?? 'mock',
             ...(options.maxTokens !== undefined && { maxTokens: options.maxTokens }),
             ...(options.reasoning !== undefined && { reasoning: options.reasoning }),
@@ -753,6 +838,15 @@ module.exports = {
             ...(options.signal !== undefined && { signal: options.signal })
           }
         };
+      },
+      // The model-facing face of activated tool definitions, as placed
+      // on the adapter request
+      wireTools(tools) {
+        return tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          input: tool.input
+        }));
       },
       // The built-in mock standing in for every adapter chat under
       // APOS_AI_MOCK. Consults the "mock" option first when the module
@@ -816,11 +910,11 @@ module.exports = {
       mockNormalizeError(error) {
         return error;
       },
-      // The language method: plain text and multi-turn chat against the
-      // routed provider.
+      // The language method: text, multi-turn chat and the tool-calling
+      // agent loop against the routed provider.
       //
       // `req` is the caller's request object, carried into events, the
-      // adapter and (later) tool handlers — the core never invents auth.
+      // adapter and every tool handler — the core never invents auth.
       //
       // `stringOrOptions` is either the user prompt string, optionally
       // followed by an `options` object, or one options object alone
@@ -832,8 +926,20 @@ module.exports = {
       // `system` (string): the system prompt — a top-level option,
       //   never a message;
       // `messages` (array): the conversation so far, each entry
-      //   { role: 'user' | 'assistant', content } with content a string
-      //   or an array of `text` / `image` content parts;
+      //   { role, content } as normalizeMessages accepts — including a
+      //   transcript a previous call returned;
+      // `tools` (array of registered tool names): what the model may
+      //   call — see addTool. The loop validates the model's
+      //   arguments, executes the handlers by their `access`
+      //   scheduling (reads in parallel first, writes serial in model
+      //   order), feeds results back, and asks the model again until
+      //   it answers or `maxSteps` is spent;
+      // `maxSteps` (positive integer, defaults to the module's
+      //   `maxSteps` option): the cap on model turns for this call.
+      //   When the last allowed turn still requests tools, the call
+      //   finishes as 'maxSteps' and the requests come back unexecuted
+      //   on `toolCalls` — so `maxSteps: 1` is manual mode: one turn,
+      //   inspect, run them yourself;
       // `effort` (string): the routing level to resolve, defaulting to
       //   the module's default level;
       // `provider`, `model` (strings, only together): the explicit
@@ -843,25 +949,54 @@ module.exports = {
       //   the routed model's declared ceiling when it is known;
       // `cache` (false | 'short' | 'long', default 'short'): the
       //   prompt-cache policy the adapter translates for its provider;
-      // `signal` (AbortSignal): aborts the in-flight provider call.
+      // `signal` (AbortSignal): aborts the in-flight provider call;
+      //   also injected into every handler's `args._context`.
       //
-      // Returns { text, messages, finishReason, usage, model, provider }:
-      // `text` is the assistant's text (may be ''), `messages` the full
-      // transcript ending with the assistant turn — pass it back as
-      // `messages` to continue the conversation — `finishReason` is
-      // 'stop' or 'length', `usage` counts { inputTokens, outputTokens }
-      // and `model` / `provider` name what actually answered.
+      // Returns { text, messages, finishReason, usage, model,
+      // provider }, plus `steps` when the call carried tools and
+      // `toolCalls` when it stopped with pending requests. `text` is
+      // the final assistant text (may be ''); `messages` is the full
+      // transcript — tool requests and results included — resumable as
+      // the next call's `messages`; `steps` lists what the loop
+      // executed in model order, { toolCall, result } per success and
+      // { toolCall, error } per recoverable failure the model was told
+      // about; `toolCalls` are unexecuted requests the caller must run
+      // itself; `finishReason` is 'stop', 'length' or — whenever
+      // `toolCalls` is present — 'maxSteps', the step budget's
+      // counterpart of 'length'; `usage` aggregates { inputTokens,
+      // outputTokens } across every model turn; `model` / `provider`
+      // name what actually answered.
       //
-      // Throws normalized apos errors only: "invalid"
-      // for bad calls, "aiRetry" when transient provider failures
-      // outlast the retry budget, "aiRefusal" when the model refuses.
-      // Emits `beforeGenerate` and `afterGenerate` around the call.
+      // Throws normalized apos errors: "invalid" for bad calls,
+      // "aiRetry" when transient provider failures outlast the retry
+      // budget, "aiRefusal" when the model refuses; a tool handler's
+      // standard-coded throw (and any handler bug) stops the call
+      // as-is, with no trace of it in any model-bound message. Emits
+      // `beforeGenerate` and `afterGenerate` around the call and
+      // `beforeToolCall` / `afterToolCall` around each handler
+      // execution.
       //
       // Under APOS_AI_MOCK the built-in mock answers every call in
       // place of any adapter — same pipeline, no network; with no
-      // providers configured at all, placeholder routing stands in.
+      // providers configured at all, placeholder routing stands in. A
+      // scripted mock turn may request tools: the loop then runs the
+      // real handlers, so tool code is testable offline.
       async generate(req, stringOrOptions, options) {
         const canonical = self.normalizeGenerateOptions(stringOrOptions, options);
+        // Tool handlers receive a req clone stamped with their depth
+        // (executeToolCalls). One level of nesting is allowed: a
+        // handler may run a subagent, whose own tools may not generate
+        // further, whatever they carry. At the allowed level, agent
+        // tools are dropped rather than rejected — a toolset needs no
+        // curating per depth — so a subagent simply cannot spawn
+        // subagents.
+        const depth = req.aposAiDepth || 0;
+        if (depth > self.allowedDepth) {
+          throw self.apos.error('invalid', 'AI generation is limited to one level of nesting: the tools of a subagent cannot generate');
+        }
+        if (depth === self.allowedDepth) {
+          canonical.tools = canonical.tools.filter((tool) => tool.access !== 'agent');
+        }
         let provider;
         let request;
         if (self.mockMode && !Object.keys(self.providers).length) {
@@ -869,6 +1004,9 @@ module.exports = {
         } else {
           ({ provider, request } = self.buildRequest(canonical));
           self.checkCapability(provider, 'text');
+          if (canonical.tools.length) {
+            self.checkCapability(provider, 'tools');
+          }
         }
         const record = self.mockMode
           ? {
@@ -879,28 +1017,162 @@ module.exports = {
             }
           }
           : self.providers[provider];
-        // One shared, mutable payload for both events, so handlers can
-        // enrich the request and correlate the two
+        const tools = new Map(canonical.tools.map((tool) => [ tool.name, tool ]));
+        const handlerContext = request.signal ? { signal: request.signal } : {};
+        // One shared, mutable payload for both generate events, so
+        // handlers can enrich the request and correlate the two; its
+        // messages grow as the loop appends turns
         const context = {
           provider,
           request
         };
         await self.emit('beforeGenerate', req, context);
-        const turn = await self.callAdapter(req, record, context.request, async () => {
-          return self.validateTurn(await record.adapter.chat(req, context.request));
+        const steps = [];
+        const usage = {
+          inputTokens: 0,
+          outputTokens: 0
+        };
+        let turn;
+        let pending = null;
+        for (let turns = 1; ; turns++) {
+          turn = await self.callAdapter(req, record, context.request, async () => {
+            return self.validateTurn(await record.adapter.chat(req, context.request));
+          });
+          usage.inputTokens += turn.usage.inputTokens;
+          usage.outputTokens += turn.usage.outputTokens;
+          if (turn.finishReason === 'refusal') {
+            throw self.apos.error('aiRefusal', 'the model refused this request');
+          }
+          if (turn.finishReason === 'toolCalls' && !tools.size) {
+            throw self.apos.error(
+              'invalid',
+              'the model returned tool calls but the call sent no tools'
+            );
+          }
+          context.request.messages.push({
+            role: 'assistant',
+            content: turn.content
+          });
+          if (turn.finishReason !== 'toolCalls') {
+            break;
+          }
+          const calls = turn.content.filter((part) => part.type === 'toolCall');
+          if (turns === canonical.maxSteps) {
+            pending = calls;
+            break;
+          }
+          const outcomes = await self.executeToolCalls(req, tools, calls, handlerContext);
+          steps.push(...outcomes);
+          context.request.messages.push({
+            role: 'tool',
+            content: outcomes.map((outcome) => ({
+              type: 'toolResult',
+              toolCallId: outcome.toolCall.id,
+              ...(outcome.error !== undefined
+                ? { error: outcome.error }
+                : { output: outcome.result })
+            }))
+          });
+        }
+        context.result = self.assembleResult(context, turn, {
+          steps,
+          usage,
+          pending,
+          hadTools: tools.size > 0
         });
-        if (turn.finishReason === 'refusal') {
-          throw self.apos.error('aiRefusal', 'the model refused this request');
-        }
-        if (turn.finishReason === 'toolCalls') {
-          throw self.apos.error(
-            'invalid',
-            'the model returned tool calls but the call sent no tools'
-          );
-        }
-        context.result = self.assembleResult(context, turn);
         await self.emit('afterGenerate', req, context);
         return context.result;
+      },
+      // Execute one batch of model-requested tool calls — the toolCall
+      // parts of a single assistant turn — against `tools`, the call's
+      // selected definitions as a Map by name. Reads run first, in
+      // parallel; writes follow serially, in the order the model
+      // requested them; `context` reaches every handler as
+      // `args._context`, extended with `depth` — 1 inside a top-level
+      // call's batch, deeper inside a subagent's. Handlers run on a
+      // clone of the caller's req stamped with that depth
+      // (`aposAiDepth`) — an immutable property of the request each
+      // handler received, never shared mutable state — so a generate
+      // call a handler makes with its own req knows it is nested, even
+      // delayed or from a stashed reference, while the caller's
+      // original req is untouched and concurrent calls sharing it are
+      // unaffected. Every batch is stamped, not only agent tools, so a
+      // handler that spawns without declaring `access: 'agent'` is
+      // contained all the same; `_context.depth` is the informational
+      // copy a handler may act on. Returns outcomes in model order
+      // regardless of
+      // scheduling: { toolCall, result } per success, { toolCall,
+      // error } per recoverable failure — a call naming a tool outside
+      // the selected set, invalid arguments, or a handler's
+      // aiToolError; the error message is what the model reads back,
+      // and siblings are unaffected. Any other throw is a hard stop:
+      // it propagates immediately, before any write runs when thrown
+      // by a read, aborting the remaining writes when thrown by one —
+      // and no trace of it is ever model-bound. Emits beforeToolCall
+      // and afterToolCall around each execution.
+      async executeToolCalls(req, tools, calls, context = {}) {
+        const outcomes = new Array(calls.length);
+        const depth = (req.aposAiDepth || 0) + 1;
+        const handlerReq = req.clone({ aposAiDepth: depth });
+        const handlerContext = {
+          ...context,
+          depth
+        };
+        const run = async (call, index) => {
+          const tool = tools.get(call.name);
+          if (!tool) {
+            outcomes[index] = {
+              toolCall: call,
+              error: `unknown tool "${call.name}"`
+            };
+            return;
+          }
+          const payload = {
+            call,
+            tool
+          };
+          await self.emit('beforeToolCall', req, payload);
+          try {
+            payload.result = await self.executeToolCall(
+              handlerReq, tool, call, handlerContext
+            );
+            outcomes[index] = {
+              toolCall: call,
+              result: payload.result
+            };
+          } catch (e) {
+            if (e?.name !== 'aiToolError') {
+              throw e;
+            }
+            payload.error = e.message;
+            outcomes[index] = {
+              toolCall: call,
+              error: e.message
+            };
+          }
+          await self.emit('afterToolCall', req, payload);
+        };
+        const reads = [];
+        const writes = [];
+        calls.forEach((call, index) => {
+          if (tools.get(call.name)?.access === 'read') {
+            reads.push([ call, index ]);
+          } else {
+            writes.push([ call, index ]);
+          }
+        });
+        const settled = await Promise.allSettled(
+          reads.map(([ call, index ]) => run(call, index))
+        );
+        for (const read of settled) {
+          if (read.status === 'rejected') {
+            throw read.reason;
+          }
+        }
+        for (const [ call, index ] of writes) {
+          await run(call, index);
+        }
+        return outcomes;
       },
       // Throw "invalid" when the configured provider named by
       // `provider` does not declare `capability` (a key of the
@@ -1053,9 +1325,19 @@ module.exports = {
           if (part.type === 'text' && typeof part.text !== 'string') {
             malformed('text parts must carry a string "text"');
           }
+          if (part.type === 'toolCall' && (
+            typeof part.id !== 'string' || !part.id ||
+            typeof part.name !== 'string' || !isObject(part.input)
+          )) {
+            malformed('toolCall parts must carry a string "id" and "name" and an object "input"');
+          }
         }
         if (![ 'stop', 'toolCalls', 'length', 'refusal' ].includes(turn.finishReason)) {
           malformed(`"${turn.finishReason}" is not a finish reason`);
+        }
+        if (turn.finishReason === 'toolCalls' &&
+          !turn.content.some(part => part.type === 'toolCall')) {
+          malformed('a "toolCalls" finish reason without toolCall parts');
         }
         if (!isObject(turn.usage) ||
           !Number.isFinite(turn.usage.inputTokens) ||
@@ -1065,28 +1347,33 @@ module.exports = {
         return turn;
       },
       // Build generate's unified return object from `context` (the
-      // event payload carrying the provider name and the request) and
-      // `turn` (the validated adapter response). Returns { text,
-      // messages, finishReason, usage, model, provider }; which fields
-      // are populated tells the caller what happened. The transcript
-      // includes the assistant turn, so it is resumable as the next
-      // call's `messages`.
-      assembleResult(context, turn) {
+      // event payload carrying the provider name and the live request,
+      // whose messages already include every appended turn), `turn`
+      // (the final validated adapter response) and the loop's
+      // accumulations: executed `steps`, `usage` aggregated across
+      // every model turn, the `pending` tool calls when the step
+      // budget cut the loop, and whether the call had tools at all
+      // (`steps` appears only then). Returns { text, messages,
+      // finishReason, usage, model, provider } plus `steps` and
+      // `toolCalls` as described on generate; which fields are
+      // populated tells the caller what happened. The transcript is
+      // resumable as the next call's `messages`.
+      assembleResult(context, turn, {
+        steps, usage, pending, hadTools
+      }) {
         const text = turn.content
           .filter(part => part.type === 'text')
           .map(part => part.text)
           .join('');
         return {
           text,
-          messages: [
-            ...context.request.messages,
-            {
-              role: 'assistant',
-              content: turn.content
-            }
-          ],
-          finishReason: turn.finishReason,
-          usage: turn.usage,
+          messages: [ ...context.request.messages ],
+          ...(hadTools && { steps }),
+          ...(pending && { toolCalls: pending }),
+          // The step budget cutting the loop is its own finish reason,
+          // like the token budget's 'length'
+          finishReason: pending ? 'maxSteps' : turn.finishReason,
+          usage,
           model: turn.model || context.request.model,
           provider: context.provider
         };
