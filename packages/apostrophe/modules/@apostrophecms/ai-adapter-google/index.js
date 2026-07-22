@@ -98,10 +98,14 @@ module.exports = {
       // becomes `systemInstruction`, the assistant role becomes
       // `model`, `maxTokens` and `reasoning` travel in
       // `generationConfig` (as `maxOutputTokens` and the thinking
-      // level, verbatim), each omitted when unresolved. The model is
-      // not part of the body — it rides in the request URL. The cache
-      // policy places nothing: the provider caches prompt prefixes
-      // automatically and the ttl level is not settable per request.
+      // level, verbatim), each omitted when unresolved. A thought
+      // signature parseResponse carried on a part is restored at the
+      // part level, exactly as received — Gemini requires it back when
+      // a function call is replayed. Part types this dialect does not
+      // own are skipped. The model is not part of the body — it rides
+      // in the request URL. The cache policy places nothing: the
+      // provider caches prompt prefixes automatically and the ttl
+      // level is not settable per request.
       buildBody(request) {
         const {
           system, messages, maxTokens, reasoning, tools, schema
@@ -141,7 +145,7 @@ module.exports = {
           }),
           contents: messages.map((message) => ({
             role: message.role === 'assistant' ? 'model' : 'user',
-            parts: message.content.map(toPart)
+            parts: message.content.map(toPart).filter(Boolean)
           })),
           ...(functionDeclarations.length && {
             tools: [ { functionDeclarations } ]
@@ -172,15 +176,23 @@ module.exports = {
           };
         }
         function toPart(part) {
+          // The thought signature parseResponse carried over, restored
+          // at the part level exactly as the service sent it
+          const signature = part.thoughtSignature !== undefined &&
+            { thoughtSignature: part.thoughtSignature };
           if (part.type === 'text') {
-            return { text: part.text };
+            return {
+              text: part.text,
+              ...signature
+            };
           }
           if (part.type === 'toolCall') {
             return {
               functionCall: {
                 name: part.name,
                 args: part.input
-              }
+              },
+              ...signature
             };
           }
           if (part.type === 'toolResult') {
@@ -193,17 +205,21 @@ module.exports = {
               }
             };
           }
-          // part.type === 'image', in one of the two normalized forms
-          return part.image.url !== undefined
-            ? {
-              fileData: { fileUri: part.image.url }
-            }
-            : {
-              inlineData: {
-                mimeType: part.image.mediaType,
-                data: part.image.data
+          if (part.type === 'image') {
+            // In one of the two normalized forms
+            return part.image.url !== undefined
+              ? {
+                fileData: { fileUri: part.image.url }
               }
-            };
+              : {
+                inlineData: {
+                  mimeType: part.image.mediaType,
+                  data: part.image.data
+                }
+              };
+          }
+          // Another dialect's part; not ours to translate
+          return null;
         }
       },
       // Translate a generateContent response to the normalized
@@ -222,10 +238,13 @@ module.exports = {
       // arguments on `object` (and their JSON in the text, so the
       // transcript round-trips). Anything else — free text, a real
       // function call — parses normally, leaving no `object` for the
-      // engine backstop to retry on. Thought parts are not conversation
-      // content and do not travel. Thinking tokens are billed as output,
-      // so they add into outputTokens. An unknown finish reason maps to
-      // no finishReason — the engine's turn validation treats that as a
+      // engine backstop to retry on. Thought summary parts are not
+      // conversation content and do not travel, but a part-level
+      // thought signature does: it rides the normalized part, and
+      // buildBody must send it back exactly as received when the part
+      // is replayed. Thinking tokens are billed as output, so they add
+      // into outputTokens. An unknown finish reason maps to no
+      // finishReason — the engine's turn validation treats that as a
       // malformed (retryable) response, never a truncated success.
       parseResponse(response, request = {}) {
         const blockReason = response.promptFeedback?.blockReason;
@@ -281,10 +300,17 @@ module.exports = {
         };
 
         function fromPart(part) {
+          // Gemini attaches a thought signature at the part level and
+          // requires it back, exactly as received, when the part is
+          // replayed — it rides the normalized part for buildBody to
+          // restore
+          const signature = part.thoughtSignature !== undefined &&
+            { thoughtSignature: part.thoughtSignature };
           if (typeof part.text === 'string') {
             return {
               type: 'text',
-              text: part.text
+              text: part.text,
+              ...signature
             };
           }
           if (part.functionCall) {
@@ -292,7 +318,8 @@ module.exports = {
               type: 'toolCall',
               id: `${part.functionCall.name}-${callIndex++}`,
               name: part.functionCall.name,
-              input: part.functionCall.args || {}
+              input: part.functionCall.args || {},
+              ...signature
             };
           }
           return null;
