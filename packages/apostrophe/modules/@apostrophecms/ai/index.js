@@ -652,6 +652,18 @@ module.exports = {
         }
         return [ ...found ];
       },
+      // The AI permission seam: whether this AI action is permitted
+      // for `req`. Same signature and semantics as
+      // `apos.permission.can(req, action, docOrType, mode)`, and today
+      // a pure proxy to it — but tool handlers and AI feature code
+      // must call this method, never `apos.permission.can` directly,
+      // so that AI-specific policy (actions denied to the AI even for
+      // an admin's req) can later be layered here, centrally, without
+      // touching a single handler. It can only ever be as restrictive
+      // as `apos.permission.can` or more, never looser.
+      can(req, ...args) {
+        return self.apos.permission.can(req, ...args);
+      },
       // Validate every registered tool definition (the shape is
       // documented on addTool) and replace it in the registry with its
       // activated canonical form: label and access defaulted, `input`
