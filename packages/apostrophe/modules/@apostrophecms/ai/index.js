@@ -277,14 +277,16 @@ module.exports = {
       },
       // Parse and validate generate's `(stringOrOptions, options)`
       // arguments, exactly as passed to it, into one canonical options
-      // object `{ system, messages, tools, maxSteps, effort, provider,
-      // model, reasoning, maxTokens, cache, signal }` — the positional
-      // prompt string appended to `messages` as the final user turn,
-      // message content collapsed to content-part form, `tools` names
-      // resolved to their activated definitions, `maxSteps` defaulted
-      // from the module option, `cache` defaulted to 'short', unset
-      // options left undefined. Unknown options are rejected as
-      // "invalid".
+      // object `{ system, messages, tools, maxSteps, schema,
+      // validateObject, effort, provider, model, reasoning, maxTokens,
+      // cache, signal }` — the positional prompt string appended to
+      // `messages` as the final user turn, message content collapsed to
+      // content-part form, `tools` names resolved to their activated
+      // definitions, `maxSteps` defaulted from the module option, a
+      // structured-output `schema` validated as a JSON Schema and
+      // compiled into the `validateObject` backstop, `cache` defaulted
+      // to 'short', unset options left undefined. Unknown options are
+      // rejected as "invalid".
       normalizeGenerateOptions(stringOrOptions, options) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
@@ -307,12 +309,9 @@ module.exports = {
         } else {
           invalid('a prompt string or an options object is required');
         }
-        if (options.schema !== undefined) {
-          throw self.apos.error('unimplemented', '"schema" is not yet supported');
-        }
         const known = [
-          'system', 'messages', 'tools', 'maxSteps', 'effort', 'provider',
-          'model', 'reasoning', 'maxTokens', 'cache', 'signal'
+          'system', 'messages', 'tools', 'maxSteps', 'schema', 'effort',
+          'provider', 'model', 'reasoning', 'maxTokens', 'cache', 'signal'
         ];
         for (const name of Object.keys(options)) {
           if (!known.includes(name)) {
@@ -351,6 +350,7 @@ module.exports = {
           invalid('"maxSteps" must be a positive integer');
         }
         const tools = toolDefinitions(options.tools);
+        const { schema, validateObject } = structuredSchema(options.schema);
         const messages = self.normalizeMessages(options.messages);
         if (prompt !== null) {
           messages.push({
@@ -369,6 +369,8 @@ module.exports = {
           messages,
           tools,
           maxSteps,
+          schema,
+          validateObject,
           effort,
           provider,
           model,
@@ -399,6 +401,35 @@ module.exports = {
             }
             return tool;
           });
+        }
+
+        // The schema option → `{ schema, validateObject }`, or empty
+        // when absent. A per-call JSON Schema with an object root (what
+        // providers require for structured output), compiled into the
+        // AJV backstop here so a malformed schema fails the call before
+        // any provider request. The compile is evicted from AJV's cache
+        // (a strong-referenced Map keyed by the schema object) so
+        // per-call schemas do not accumulate; the returned validator
+        // keeps working.
+        function structuredSchema(schema) {
+          if (schema === undefined) {
+            return {};
+          }
+          if (!isObject(schema) || schema.type !== 'object') {
+            invalid('"schema" must be a JSON Schema with an object root');
+          }
+          let validateObject;
+          try {
+            validateObject = self.ajv.compile(schema);
+          } catch (e) {
+            invalid(`"schema" is not a valid JSON Schema: ${e.message}`);
+          } finally {
+            self.ajv.removeSchema(schema);
+          }
+          return {
+            schema,
+            validateObject
+          };
         }
       },
       // Validate and normalize an array of chat messages, as accepted
@@ -788,11 +819,13 @@ module.exports = {
       // output ceiling when it is known, translate the cache level to
       // the { ttl } policy. Returns { provider, request }: the resolved
       // provider name and the request handed to its adapter —
-      // { system?, messages, tools?, model, maxTokens?, reasoning?,
-      // cache: false | { ttl }, signal? }, optional fields present only
-      // when they resolved to a value. Request tools carry only
-      // { name, description, input } — handlers and result schemas
-      // never reach an adapter.
+      // { system?, messages, tools?, schema?, model, maxTokens?,
+      // reasoning?, cache: false | { ttl }, signal? }, optional fields
+      // present only when they resolved to a value. Request tools carry
+      // only { name, description, input } — handlers and result schemas
+      // never reach an adapter; a structured-output `schema` (JSON
+      // Schema) passes through for the adapter to place on its
+      // provider's native structured mode.
       buildRequest(options) {
         const info = self.modelInfo({
           provider: options.provider,
@@ -807,6 +840,7 @@ module.exports = {
             ...(options.system !== undefined && { system: options.system }),
             messages: options.messages,
             ...(options.tools.length && { tools: self.wireTools(options.tools) }),
+            ...(options.schema !== undefined && { schema: options.schema }),
             model: info.model,
             ...(maxTokens !== undefined && { maxTokens }),
             ...(info.reasoning !== undefined && { reasoning: info.reasoning }),
@@ -829,6 +863,7 @@ module.exports = {
             ...(options.system !== undefined && { system: options.system }),
             messages: options.messages,
             ...(options.tools.length && { tools: self.wireTools(options.tools) }),
+            ...(options.schema !== undefined && { schema: options.schema }),
             model: options.model ?? 'mock',
             ...(options.maxTokens !== undefined && { maxTokens: options.maxTokens }),
             ...(options.reasoning !== undefined && { reasoning: options.reasoning }),
@@ -852,16 +887,23 @@ module.exports = {
       // APOS_AI_MOCK. Consults the "mock" option first when the module
       // has one: it may return a complete assistant turn, a { text }
       // shorthand filled out into one, or undefined to fall through to
-      // the deterministic default — canned text echoing the
-      // conversation's final message, usage estimated from the text
-      // sizes. Runs inside the same retry and validation seam as a
-      // real adapter call, so a mock that throws normalized codes
-      // exercises the real error paths.
+      // the deterministic default. That default is request-aware: for a
+      // structured request (`request.schema`) it synthesizes a
+      // schema-conforming object and returns it as the assistant text —
+      // a JSON string the pipeline parses and backstop-validates like a
+      // real one — otherwise canned text echoing the conversation's
+      // final message; usage is estimated from the text sizes. Runs
+      // inside the same retry and validation seam as a real adapter
+      // call, so a mock that throws normalized codes exercises the real
+      // error paths.
       async mockChat(req, request) {
         const custom = self.options.mock
           ? await self.options.mock(request)
           : undefined;
         if (custom == null) {
+          if (request.schema) {
+            return turn(JSON.stringify(sample(request.schema)));
+          }
           const tail = textOf(request.messages.at(-1).content);
           return turn(`[mock] ${tail}`);
         }
@@ -903,6 +945,47 @@ module.exports = {
         function tokens(text) {
           return Math.max(1, Math.round(text.length / 4));
         }
+        // A deterministic value conforming to `schema`, enough to pass
+        // the structured-output backstop: `const`/`enum` honored, every
+        // declared property of an object filled, arrays sized to
+        // minItems, the simplest in-range value for a scalar
+        function sample(schema) {
+          if (!isObject(schema)) {
+            return null;
+          }
+          if (schema.const !== undefined) {
+            return schema.const;
+          }
+          if (Array.isArray(schema.enum) && schema.enum.length) {
+            return schema.enum[0];
+          }
+          const type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
+          if (type === 'object') {
+            const object = {};
+            const properties = isObject(schema.properties) ? schema.properties : {};
+            for (const [ key, subschema ] of Object.entries(properties)) {
+              object[key] = sample(subschema);
+            }
+            return object;
+          }
+          if (type === 'array') {
+            const min = Number.isInteger(schema.minItems) ? schema.minItems : 0;
+            const items = isObject(schema.items) ? schema.items : {};
+            return Array.from({ length: min }, () => sample(items));
+          }
+          if (type === 'boolean') {
+            return false;
+          }
+          if (type === 'null') {
+            return null;
+          }
+          if (type === 'number' || type === 'integer') {
+            return Number.isFinite(schema.minimum) ? schema.minimum : 0;
+          }
+          // string, and the no-type case (any value validates)
+          const min = Number.isInteger(schema.minLength) ? schema.minLength : 0;
+          return 'x'.repeat(min);
+        }
       },
       // The mock adapter's error normalization: errors pass through
       // untouched, so a mock throwing normalized codes exercises the
@@ -910,8 +993,8 @@ module.exports = {
       mockNormalizeError(error) {
         return error;
       },
-      // The language method: text, multi-turn chat and the tool-calling
-      // agent loop against the routed provider.
+      // The language method: text, multi-turn chat, the tool-calling
+      // agent loop and structured output against the routed provider.
       //
       // `req` is the caller's request object, carried into events, the
       // adapter and every tool handler — the core never invents auth.
@@ -940,6 +1023,13 @@ module.exports = {
       //   finishes as 'maxSteps' and the requests come back unexecuted
       //   on `toolCalls` — so `maxSteps: 1` is manual mode: one turn,
       //   inspect, run them yourself;
+      // `schema` (JSON Schema with an object root): request structured
+      //   output — the provider's native structured mode is constrained
+      //   to it, and the validated result comes back on `object`.
+      //   Capability-gated on `structured`. Combines with `tools`: the
+      //   schema constrains only the final answer — tool turns run the
+      //   loop unchanged, with their own argument and result
+      //   validation;
       // `effort` (string): the routing level to resolve, defaulting to
       //   the module's default level;
       // `provider`, `model` (strings, only together): the explicit
@@ -953,9 +1043,12 @@ module.exports = {
       //   also injected into every handler's `args._context`.
       //
       // Returns { text, messages, finishReason, usage, model,
-      // provider }, plus `steps` when the call carried tools and
-      // `toolCalls` when it stopped with pending requests. `text` is
-      // the final assistant text (may be ''); `messages` is the full
+      // provider }, plus `steps` when the call carried tools,
+      // `toolCalls` when it stopped with pending requests, and `object`
+      // — the validated structured output — when the call passed
+      // `schema` and finished 'stop' (a 'length' or 'maxSteps' finish
+      // has no complete answer to validate). `text` is the final
+      // assistant text (may be ''); `messages` is the full
       // transcript — tool requests and results included — resumable as
       // the next call's `messages`; `steps` lists what the loop
       // executed in model order, { toolCall, result } per success and
@@ -1007,6 +1100,9 @@ module.exports = {
           if (canonical.tools.length) {
             self.checkCapability(provider, 'tools');
           }
+          if (canonical.schema) {
+            self.checkCapability(provider, 'structured');
+          }
         }
         const record = self.mockMode
           ? {
@@ -1036,7 +1132,20 @@ module.exports = {
         let pending = null;
         for (let turns = 1; ; turns++) {
           turn = await self.callAdapter(req, record, context.request, async () => {
-            return self.validateTurn(await record.adapter.chat(req, context.request));
+            const answer = self.validateTurn(
+              await record.adapter.chat(req, context.request)
+            );
+            // Structured output arrives as the final answer's text;
+            // parse and backstop-validate it here so a malformed one
+            // travels the same retry path as the turn. Only a 'stop'
+            // turn is the answer: tool turns run the loop with their
+            // own validation, a refusal surfaces as aiRefusal below,
+            // and a 'length' turn's truncated text returns as-is —
+            // no object, the finish reason tells the caller why
+            if (canonical.schema && answer.finishReason === 'stop') {
+              answer.object = self.parseStructured(answer, canonical.validateObject);
+            }
+            return answer;
           });
           usage.inputTokens += turn.usage.inputTokens;
           usage.outputTokens += turn.usage.outputTokens;
@@ -1078,6 +1187,7 @@ module.exports = {
           steps,
           usage,
           pending,
+          object: turn.object,
           hadTools: tools.size > 0
         });
         await self.emit('afterGenerate', req, context);
@@ -1346,20 +1456,47 @@ module.exports = {
         }
         return turn;
       },
+      // The anti-hallucination backstop for structured output: parse
+      // `turn`'s text — the final answer of a structured call — as the
+      // model's JSON object and validate it against `validate`, the
+      // compiled validator for the call's `schema`
+      // (normalizeGenerateOptions). The provider's native structured
+      // mode does the real work — this only catches a stray
+      // non-conforming response. A parse failure or a schema mismatch is
+      // a malformed model response: like a malformed turn it throws the
+      // transient code so the call travels the retry path. Returns the
+      // validated object.
+      parseStructured(turn, validate) {
+        const text = turn.content
+          .filter(part => part.type === 'text')
+          .map(part => part.text)
+          .join('');
+        let object;
+        try {
+          object = JSON.parse(text);
+        } catch (e) {
+          throw self.apos.error('aiRetry', `structured output is not valid JSON: ${e.message}`);
+        }
+        if (!validate(object)) {
+          throw self.apos.error('aiRetry', `structured output does not match the schema: ${self.ajv.errorsText(validate.errors, { dataVar: 'object' })}`);
+        }
+        return object;
+      },
       // Build generate's unified return object from `context` (the
       // event payload carrying the provider name and the live request,
       // whose messages already include every appended turn), `turn`
       // (the final validated adapter response) and the loop's
       // accumulations: executed `steps`, `usage` aggregated across
       // every model turn, the `pending` tool calls when the step
-      // budget cut the loop, and whether the call had tools at all
+      // budget cut the loop, the validated structured `object` when the
+      // call passed a `schema`, and whether the call had tools at all
       // (`steps` appears only then). Returns { text, messages,
-      // finishReason, usage, model, provider } plus `steps` and
-      // `toolCalls` as described on generate; which fields are
+      // finishReason, usage, model, provider } plus `object`, `steps`
+      // and `toolCalls` as described on generate; which fields are
       // populated tells the caller what happened. The transcript is
       // resumable as the next call's `messages`.
       assembleResult(context, turn, {
-        steps, usage, pending, hadTools
+        steps, usage, pending, object, hadTools
       }) {
         const text = turn.content
           .filter(part => part.type === 'text')
@@ -1367,6 +1504,7 @@ module.exports = {
           .join('');
         return {
           text,
+          ...(object !== undefined && { object }),
           messages: [ ...context.request.messages ],
           ...(hadTools && { steps }),
           ...(pending && { toolCalls: pending }),

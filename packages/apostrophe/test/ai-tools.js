@@ -562,7 +562,8 @@ describe('AI tools', function() {
                 label: 'Fake',
                 capabilities: {
                   text: true,
-                  tools: true
+                  tools: true,
+                  structured: true
                 },
                 effort: {
                   medium: { model: 'fake-medium' }
@@ -785,6 +786,34 @@ describe('AI tools', function() {
         [ 'before', 'echo' ],
         [ 'after', 'echo', { value: 'pricing' } ]
       ]);
+    });
+
+    it('combines tools and schema: the loop runs free, the final answer validates', async function() {
+      const req = apos.task.getReq();
+      const object = { found: 'pricing' };
+      chatScript = [
+        // The tool turn is not the answer and must never reach the
+        // backstop — it has no JSON to offer
+        toolTurn(toolCall('c1', 'echo', { value: 'pricing' })),
+        textTurn(JSON.stringify(object))
+      ];
+      const result = await apos.ai.generate(req, 'find it', {
+        tools: [ 'echo' ],
+        schema: {
+          type: 'object',
+          properties: {
+            found: { type: 'string' }
+          },
+          required: [ 'found' ]
+        }
+      });
+
+      assert.deepEqual(result.object, object);
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(result.steps.length, 1);
+      // The adapter request carried both faces
+      assert.equal(chatCalls[0].tools.length, 1);
+      assert.equal(chatCalls[0].schema.type, 'object');
     });
 
     it('runs reads in parallel first, then writes serially in model order', async function() {

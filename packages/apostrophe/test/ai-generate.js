@@ -61,6 +61,21 @@ describe('AI generate', function() {
             self.apos.ai.addAdapter(fakeAdapter('fake'));
           }
         },
+        'tool-fixtures': {
+          init(self) {
+            self.apos.ai.addTool({
+              name: 'echo',
+              description: 'Echo the text back',
+              access: 'read',
+              input: {
+                type: 'object',
+                properties: { text: { type: 'string' } }
+              },
+              schema: { text: { type: 'string' } },
+              handler: (req, args) => ({ text: args.text })
+            });
+          }
+        },
         '@apostrophecms/ai': {
           options: {
             providers: {
@@ -84,14 +99,6 @@ describe('AI generate', function() {
       return true;
     });
   };
-  const throwsUnimplemented = (fn, pattern) => {
-    assert.throws(fn, (e) => {
-      assert.equal(e.name, 'unimplemented');
-      assert.match(e.message, pattern);
-      return true;
-    });
-  };
-
   describe('argument sugar', function() {
     it('turns a string positional into the sole user message', function() {
       const canonical = apos.ai.normalizeGenerateOptions('write a haiku about cats');
@@ -169,11 +176,52 @@ describe('AI generate', function() {
   });
 
   describe('option validation', function() {
-    it('rejects the reserved schema option as not yet supported', function() {
-      throwsUnimplemented(
-        () => apos.ai.normalizeGenerateOptions('p', { schema: { type: 'object' } }),
-        /"schema" is not yet supported/
+    it('accepts a structured-output schema and compiles a backstop validator', function() {
+      const canonical = apos.ai.normalizeGenerateOptions('p', {
+        schema: {
+          type: 'object',
+          properties: { title: { type: 'string' } },
+          required: [ 'title' ]
+        }
+      });
+      assert.equal(canonical.schema.type, 'object');
+      assert.equal(typeof canonical.validateObject, 'function');
+      // The compiled backstop validates against that schema
+      assert.equal(canonical.validateObject({ title: 'ok' }), true);
+      assert.equal(canonical.validateObject({}), false);
+    });
+
+    it('rejects a schema without an object root', function() {
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { schema: { type: 'string' } }),
+        /"schema" must be a JSON Schema with an object root/
       );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { schema: 'nope' }),
+        /"schema" must be a JSON Schema with an object root/
+      );
+    });
+
+    it('rejects a malformed JSON Schema', function() {
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', {
+          schema: {
+            type: 'object',
+            properties: 'not an object'
+          }
+        }),
+        /"schema" is not a valid JSON Schema/
+      );
+    });
+
+    it('combines tools and schema', function() {
+      const canonical = apos.ai.normalizeGenerateOptions('p', {
+        tools: [ 'echo' ],
+        schema: { type: 'object' }
+      });
+      assert.equal(canonical.tools.length, 1);
+      assert.equal(canonical.tools[0].name, 'echo');
+      assert.equal(typeof canonical.validateObject, 'function');
     });
 
     it('validates tools and maxSteps', function() {
@@ -511,6 +559,16 @@ describe('AI generate', function() {
       assert.equal(request.signal, controller.signal);
     });
 
+    it('passes a structured-output schema through to the adapter request', function() {
+      const schema = {
+        type: 'object',
+        properties: { title: { type: 'string' } },
+        required: [ 'title' ]
+      };
+      const { request } = apos.ai.buildRequest(canonical('p', { schema }));
+      assert.deepEqual(request.schema, schema);
+    });
+
     it('throws the routing errors a real call would', function() {
       assert.throws(
         () => apos.ai.buildRequest(canonical('p', { effort: 'extreme' })),
@@ -616,6 +674,11 @@ describe('AI generate', function() {
                   adapter: 'fake',
                   apiKey: 'k2',
                   capabilities: { text: false }
+                },
+                nostructured: {
+                  adapter: 'fake',
+                  apiKey: 'k3',
+                  capabilities: { structured: false }
                 }
               },
               // Keep retried tests fast; the delay engine has its own suite
@@ -874,6 +937,150 @@ describe('AI generate', function() {
       );
       assert.equal(chatCalls.length, 0);
       assert.equal(events.length, 0);
+    });
+
+    describe('structured output', function() {
+      const schema = {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            maxLength: 60
+          },
+          description: {
+            type: 'string',
+            maxLength: 160
+          }
+        },
+        required: [ 'title', 'description' ]
+      };
+      const structuredCall = (extras) => apos.ai.generate(apos.task.getReq(), {
+        messages: [ {
+          role: 'user',
+          content: 'write the metadata'
+        } ],
+        schema,
+        ...extras
+      });
+      const jsonTurn = (object) => turn({
+        content: [ {
+          type: 'text',
+          text: JSON.stringify(object)
+        } ]
+      });
+
+      it('returns the validated object and sends the schema on the request', async function() {
+        const object = {
+          title: 'Pricing',
+          description: 'Our plans'
+        };
+        chatScript = [ () => jsonTurn(object) ];
+        const result = await structuredCall();
+        assert.deepEqual(result.object, object);
+        // The raw JSON stays on text; no tools means no steps/toolCalls
+        assert.equal(result.text, JSON.stringify(object));
+        assert.equal(result.finishReason, 'stop');
+        assert.equal('steps' in result, false);
+        assert.equal('toolCalls' in result, false);
+        // The adapter received the schema to constrain its provider
+        assert.deepEqual(chatCalls[0].schema, schema);
+      });
+
+      it('refuses a structured call to a provider without the capability', async function() {
+        await assert.rejects(
+          structuredCall({
+            provider: 'nostructured',
+            model: 'fake-medium'
+          }),
+          (e) => {
+            assert.equal(e.name, 'invalid');
+            assert.match(e.message, /does not declare the "structured" capability/);
+            return true;
+          }
+        );
+        assert.equal(chatCalls.length, 0);
+      });
+
+      it('retries a non-conforming response through the backstop, then succeeds', async function() {
+        const object = {
+          title: 'ok',
+          description: 'good'
+        };
+        chatScript = [
+          // Not JSON at all
+          () => turn({
+            content: [ {
+              type: 'text',
+              text: 'here is your metadata'
+            } ]
+          }),
+          // JSON, but missing a required field
+          () => jsonTurn({ title: 'ok' }),
+          () => jsonTurn(object)
+        ];
+        const result = await structuredCall();
+        assert.deepEqual(result.object, object);
+        assert.equal(chatCalls.length, 3);
+        // Each backstop failure travelled the normal retry path
+        assert.equal(logRecords.filter((r) => r.type === 'retry').length, 2);
+      });
+
+      it('gives up when the response never parses as JSON', async function() {
+        chatScript = Array.from({ length: 5 }, () => () => turn({
+          content: [ {
+            type: 'text',
+            text: 'not json'
+          } ]
+        }));
+        await assert.rejects(structuredCall(), (e) => {
+          assert.equal(e.name, 'aiRetry');
+          assert.match(e.message, /not valid JSON/);
+          return true;
+        });
+      });
+
+      it('treats a schema-mismatching response as transient', async function() {
+        chatScript = Array.from({ length: 5 }, () => () => jsonTurn({ title: 'only a title' }));
+        await assert.rejects(structuredCall(), (e) => {
+          assert.equal(e.name, 'aiRetry');
+          assert.match(e.message, /does not match the schema/);
+          return true;
+        });
+      });
+
+      it('surfaces a refusal rather than a backstop retry', async function() {
+        chatScript = [ () => turn({
+          finishReason: 'refusal',
+          content: [ {
+            type: 'text',
+            text: 'I cannot help with that'
+          } ]
+        }) ];
+        await assert.rejects(structuredCall(), (e) => {
+          assert.equal(e.name, 'aiRefusal');
+          return true;
+        });
+        // The non-JSON refusal was not retried as a malformed response
+        assert.equal(chatCalls.length, 1);
+      });
+
+      it('returns a length finish without an object and without retrying', async function() {
+        // Truncated output: re-asking cannot fix a too-small maxTokens,
+        // so the backstop must not treat it as malformed
+        chatScript = [ () => turn({
+          finishReason: 'length',
+          content: [ {
+            type: 'text',
+            text: '{"title": "Pric'
+          } ]
+        }) ];
+        const result = await structuredCall();
+        assert.equal(result.finishReason, 'length');
+        assert.equal('object' in result, false);
+        assert.equal(result.text, '{"title": "Pric');
+        assert.equal(chatCalls.length, 1);
+        assert.equal(logRecords.length, 0);
+      });
     });
 
     describe('retry policy', function() {
@@ -1310,6 +1517,41 @@ describe('AI generate', function() {
         );
         assert.equal(result.messages.length, 4);
         assert.equal(result.text, '[mock] Create one from the standard template.');
+      });
+
+      it('synthesizes a schema-conforming object for a structured call', async function() {
+        const result = await apos.ai.generate(apos.task.getReq(), {
+          messages: [ {
+            role: 'user',
+            content: 'write the metadata'
+          } ],
+          schema: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              count: {
+                type: 'integer',
+                minimum: 3
+              },
+              tags: {
+                type: 'array',
+                items: { type: 'string' },
+                minItems: 1
+              },
+              kind: { enum: [ 'a', 'b' ] }
+            },
+            required: [ 'title', 'count', 'tags', 'kind' ]
+          }
+        });
+        // Deterministic: '' string, the minimum integer, one item at
+        // minItems, the first enum value — and it passed the backstop
+        assert.deepEqual(result.object, {
+          title: '',
+          count: 3,
+          tags: [ '' ],
+          kind: 'a'
+        });
+        assert.equal(result.provider, 'mock');
       });
     });
   });
