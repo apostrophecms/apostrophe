@@ -8,7 +8,10 @@
 //
 // For OpenAI proper, prefer the `openai` adapter, which speaks OpenAI's
 // first-class Responses API; this dialect still works against
-// api.openai.com (the default `baseUrl`) for cases that want it.
+// api.openai.com (the default `baseUrl`) for cases that want it —
+// though there a tools request drops `reasoning` (the service rejects
+// the combination in this dialect). Aliased entries describe other
+// services, which accept it, and pass through untouched.
 //
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
@@ -23,6 +26,9 @@ module.exports = {
     self.apos.ai.addAdapter(self.adapter());
   },
   methods(self) {
+    // OpenAI proper's endpoint: an instance still pointing here fronts
+    // the native service, where the reasoning degrade applies
+    const NATIVE_BASE_URL = 'https://api.openai.com/v1';
     return {
       // The adapter definition registered with `apos.ai`. The engine
       // instantiates it per configured provider entry, assigning
@@ -33,7 +39,7 @@ module.exports = {
         return {
           name: 'openai-compatible',
           label: 'OpenAI Completions',
-          baseUrl: 'https://api.openai.com/v1',
+          baseUrl: NATIVE_BASE_URL,
           envKey: 'APOS_OPENAI_KEY',
           capabilities: {
             text: true,
@@ -47,10 +53,10 @@ module.exports = {
           effort: {
             low: { model: 'gpt-5.6-luna' },
             medium: { model: 'gpt-5.6-terra' },
-            high: {
-              model: 'gpt-5.6-sol',
-              reasoning: 'high'
-            }
+            // No reasoning on the high row: the native service rejects
+            // it beside tools in this dialect, and the openai adapter
+            // is the reasoning path for OpenAI proper
+            high: { model: 'gpt-5.6-sol' }
           },
           models: {
             'gpt-5.6-luna': {
@@ -72,6 +78,9 @@ module.exports = {
             }
           },
           async chat(req, request) {
+            if (this.baseUrl === NATIVE_BASE_URL) {
+              request = self.nativeRequest(request);
+            }
             const response = await self.apos.http.post(`${this.baseUrl}/chat/completions`, {
               headers: {
                 authorization: `Bearer ${this.apiKey}`
@@ -86,6 +95,23 @@ module.exports = {
             return self.normalizeError(error);
           }
         };
+      },
+      // Adjust a request for OpenAI proper, which this adapter fronts
+      // only when the entry keeps the native baseUrl: since gpt-5.4 the
+      // service rejects function tools combined with a reasoning effort
+      // other than 'none' in this dialect, so reasoning is dropped from
+      // a tools request rather than failing the call. The openai
+      // adapter's Responses dialect accepts the combination and is the
+      // reasoning path for OpenAI proper; aliased entries describe
+      // other services, which accept it too, and never pass through
+      // here.
+      nativeRequest(request) {
+        if (request.tools &&
+          request.reasoning !== undefined && request.reasoning !== 'none') {
+          const { reasoning, ...rest } = request;
+          return rest;
+        }
+        return request;
       },
       // Translate a normalized adapter request (see the engine's
       // buildRequest) to a Chat Completions body: the system prompt
@@ -153,7 +179,11 @@ module.exports = {
           }
           if (message.role === 'assistant') {
             const calls = message.content.filter((part) => part.type === 'toolCall');
-            const rest = message.content.filter((part) => part.type !== 'toolCall');
+            // Text and image parts only: part types another dialect
+            // owns are not ours to translate
+            const rest = message.content.filter(
+              (part) => [ 'text', 'image' ].includes(part.type)
+            );
             return [ {
               role: 'assistant',
               content: rest.length ? toContent(rest) : null,

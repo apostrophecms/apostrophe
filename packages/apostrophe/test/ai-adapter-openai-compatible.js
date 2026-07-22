@@ -17,6 +17,22 @@ describe('AI adapter: openai-compatible', function() {
     apos = await t.create({
       root: module,
       modules: {
+        'tool-fixtures': {
+          init(self) {
+            self.apos.ai.addTool({
+              name: 'echo',
+              description: 'Echo the value back',
+              access: 'read',
+              input: {
+                type: 'object',
+                properties: { value: { type: 'string' } },
+                required: [ 'value' ]
+              },
+              schema: { value: { type: 'string' } },
+              handler: (req, args) => ({ value: args.value })
+            });
+          }
+        },
         '@apostrophecms/ai': {
           options: {
             provider: 'openai-compatible',
@@ -105,7 +121,9 @@ describe('AI adapter: openai-compatible', function() {
     assert.equal(info.maxOutputTokens, 128000);
     const high = apos.ai.modelInfo({ effort: 'high' });
     assert.equal(high.model, 'gpt-5.6-sol');
-    assert.equal(high.reasoning, 'high');
+    // No reasoning on the native high row: the reasoning path for
+    // OpenAI proper is the openai adapter
+    assert.equal(high.reasoning, undefined);
   });
 
   describe('request translation', function() {
@@ -295,6 +313,25 @@ describe('AI adapter: openai-compatible', function() {
             arguments: '{}'
           }
         } ]
+      });
+    });
+
+    it('skips assistant parts another dialect owns', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            {
+              type: 'reasoning',
+              item: { type: 'reasoning' }
+            },
+            text('visible')
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0], {
+        role: 'assistant',
+        content: 'visible'
       });
     });
 
@@ -585,6 +622,44 @@ describe('AI adapter: openai-compatible', function() {
       assert.equal(call.url, 'https://llm-gateway.example.com/openai/v1/chat/completions');
       assert.equal(call.options.headers.authorization, 'Bearer sk-gw');
       assert.equal(call.options.body.max_completion_tokens, 128000);
+    });
+
+    it('drops reasoning from a native tools request, keeping it everywhere else', async function() {
+      // Native, tools + reasoning: the service rejects the
+      // combination, so reasoning is dropped
+      httpScript = [ () => fixture() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', {
+        tools: [ 'echo' ],
+        reasoning: 'high'
+      });
+      assert(httpCalls[0].options.body.tools);
+      assert.equal('reasoning_effort' in httpCalls[0].options.body, false);
+
+      // Native, tools + the explicit 'none' level: the one value the
+      // service accepts beside tools passes through
+      httpScript = [ () => fixture() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', {
+        tools: [ 'echo' ],
+        reasoning: 'none'
+      });
+      assert.equal(httpCalls[1].options.body.reasoning_effort, 'none');
+
+      // Native, reasoning without tools: nothing to degrade
+      httpScript = [ () => fixture() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', { reasoning: 'high' });
+      assert.equal(httpCalls[2].options.body.reasoning_effort, 'high');
+
+      // An aliased entry describes another service, which accepts the
+      // combination: everything passes through untouched
+      httpScript = [ () => fixture() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', {
+        provider: 'gateway',
+        model: 'gpt-5.6-sol',
+        tools: [ 'echo' ],
+        reasoning: 'high'
+      });
+      assert(httpCalls[3].options.body.tools);
+      assert.equal(httpCalls[3].options.body.reasoning_effort, 'high');
     });
 
     it('returns a validated object for a structured call over the wire', async function() {
