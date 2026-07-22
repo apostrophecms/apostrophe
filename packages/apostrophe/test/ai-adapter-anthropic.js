@@ -359,6 +359,56 @@ describe('AI adapter: anthropic', function() {
       });
     });
 
+    it('replays a thinking part as its raw signed block, in place', function() {
+      const block = {
+        type: 'thinking',
+        thinking: 'let me see',
+        signature: 'x'
+      };
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            {
+              type: 'thinking',
+              block
+            },
+            {
+              type: 'toolCall',
+              id: 'toolu_1',
+              name: 'find_pages',
+              input: { title: 'Pricing' }
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0].content, [
+        block,
+        {
+          type: 'tool_use',
+          id: 'toolu_1',
+          name: 'find_pages',
+          input: { title: 'Pricing' }
+        }
+      ]);
+    });
+
+    it('skips assistant parts another dialect owns', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            {
+              type: 'reasoning',
+              item: { type: 'reasoning' }
+            },
+            text('visible')
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0].content, [ text('visible') ]);
+    });
+
     it('adds the synthetic final-answer tool and forces it for a pure structured call', function() {
       const schema = {
         type: 'object',
@@ -429,14 +479,20 @@ describe('AI adapter: anthropic', function() {
       }
     });
 
-    it('translates tool_use blocks and drops thinking blocks', function() {
+    it('translates tool_use blocks and carries thinking blocks as opaque parts', function() {
+      const thinking = {
+        type: 'thinking',
+        thinking: 'let me see',
+        signature: 'x'
+      };
+      const redacted = {
+        type: 'redacted_thinking',
+        data: 'opaque'
+      };
       const turn = adapter.parseResponse(fixture({
         content: [
-          {
-            type: 'thinking',
-            thinking: 'let me see',
-            signature: 'x'
-          },
+          thinking,
+          redacted,
           text('checking'),
           {
             type: 'tool_use',
@@ -448,6 +504,14 @@ describe('AI adapter: anthropic', function() {
         stop_reason: 'tool_use'
       }));
       assert.deepEqual(turn.content, [
+        {
+          type: 'thinking',
+          block: thinking
+        },
+        {
+          type: 'thinking',
+          block: redacted
+        },
         text('checking'),
         {
           type: 'toolCall',
@@ -694,6 +758,66 @@ describe('AI adapter: anthropic', function() {
         }
       } ]);
       // The second carried the tool result back as a user message
+      assert.deepEqual(httpCalls[1].options.body.messages.at(-1), {
+        role: 'user',
+        content: [ {
+          type: 'tool_result',
+          tool_use_id: 'toolu_1',
+          content: JSON.stringify({ value: 'pricing' })
+        } ]
+      });
+    });
+
+    it('drives a thinking tool loop end to end, replaying the signed blocks', async function() {
+      const thinking = {
+        type: 'thinking',
+        thinking: 'let me see',
+        signature: 'x'
+      };
+      httpScript = [
+        () => fixture({
+          content: [
+            thinking,
+            {
+              type: 'tool_use',
+              id: 'toolu_1',
+              name: 'echo',
+              input: { value: 'pricing' }
+            }
+          ],
+          stop_reason: 'tool_use'
+        }),
+        () => fixture({ content: [ text('done') ] })
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), 'use the tool', {
+        tools: [ 'echo' ],
+        reasoning: 'high',
+        cache: false
+      });
+      assert.equal(result.text, 'done');
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(httpCalls.length, 2);
+      // Thinking was on for both turns of the loop
+      for (const call of httpCalls) {
+        assert.deepEqual(call.options.body.thinking, {
+          type: 'enabled',
+          budget_tokens: 16384
+        });
+      }
+      // The second call replays the assistant turn with its signed
+      // thinking block restored, unmodified, ahead of the tool use
+      assert.deepEqual(httpCalls[1].options.body.messages[1], {
+        role: 'assistant',
+        content: [
+          thinking,
+          {
+            type: 'tool_use',
+            id: 'toolu_1',
+            name: 'echo',
+            input: { value: 'pricing' }
+          }
+        ]
+      });
       assert.deepEqual(httpCalls[1].options.body.messages.at(-1), {
         role: 'user',
         content: [ {

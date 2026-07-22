@@ -109,10 +109,14 @@ module.exports = {
       // requests and results ride the conversation as `tool_use` and
       // `tool_result` blocks; the dialect has no tool role, so a
       // normalized `tool` message becomes a `user` message of
-      // `tool_result` blocks. A structured-output `schema` adds the
-      // synthetic final-answer tool, forced when nothing competes for
-      // the turn. Throws "invalid" on requests the dialect cannot
-      // express.
+      // `tool_result` blocks. This adapter's own opaque `thinking`
+      // parts are replayed as the raw signed blocks they carry, ahead
+      // of the turn's other blocks — Anthropic requires an assistant
+      // turn's thinking preserved unmodified when its tool results come
+      // back. Part types this dialect does not own are skipped. A
+      // structured-output `schema` adds the synthetic final-answer
+      // tool, forced when nothing competes for the turn. Throws
+      // "invalid" on requests the dialect cannot express.
       buildBody(request) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
@@ -151,7 +155,7 @@ module.exports = {
           }),
           messages: messages.map((message) => ({
             role: message.role === 'tool' ? 'user' : message.role,
-            content: message.content.map(toBlock)
+            content: message.content.map(toBlock).filter(Boolean)
           }))
         };
         if (reasoning !== undefined) {
@@ -212,20 +216,28 @@ module.exports = {
                 : { content: JSON.stringify(part.output) })
             };
           }
-          // part.type === 'image', in one of the two normalized forms
-          return {
-            type: 'image',
-            source: part.image.url !== undefined
-              ? {
-                type: 'url',
-                url: part.image.url
-              }
-              : {
-                type: 'base64',
-                media_type: part.image.mediaType,
-                data: part.image.data
-              }
-          };
+          // The raw signed thinking block this adapter's parseResponse
+          // carried over, replayed verbatim
+          if (part.type === 'thinking') {
+            return part.block;
+          }
+          if (part.type === 'image') {
+            return {
+              type: 'image',
+              source: part.image.url !== undefined
+                ? {
+                  type: 'url',
+                  url: part.image.url
+                }
+                : {
+                  type: 'base64',
+                  media_type: part.image.mediaType,
+                  data: part.image.data
+                }
+            };
+          }
+          // Another dialect's part; not ours to translate
+          return null;
         }
         // Anthropic wants an absolute token budget, mapped by the
         // thinkingBudgets option; the budget must leave max_tokens
@@ -245,10 +257,13 @@ module.exports = {
         }
       },
       // Translate an Anthropic Messages response to the normalized
-      // assistant turn { content, finishReason, usage, model }. Thinking
-      // blocks are not conversation content and do not travel. A
-      // `refusal` stop reason throws the refusal error here, so
-      // "refused" always arrives as an error. When the request asked for
+      // assistant turn { content, finishReason, usage, model }. A
+      // thinking (or redacted thinking) block rides along as this
+      // adapter's opaque `thinking` part carrying the raw signed block:
+      // Anthropic requires it back, unmodified, when the turn's tool
+      // results are submitted, so the loop replays what buildBody then
+      // restores. A `refusal` stop reason throws the refusal error
+      // here, so "refused" always arrives as an error. When the request asked for
       // structured output and the model called the synthetic
       // final-answer tool, that call is the answer, not a tool for the
       // core to run: it becomes a `stop` turn carrying the arguments on
@@ -311,6 +326,12 @@ module.exports = {
               id: block.id,
               name: block.name,
               input: block.input
+            };
+          }
+          if (block.type === 'thinking' || block.type === 'redacted_thinking') {
+            return {
+              type: 'thinking',
+              block
             };
           }
           return null;
