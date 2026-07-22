@@ -793,9 +793,22 @@ describe('AI tools', function() {
       const object = { found: 'pricing' };
       chatScript = [
         // The tool turn is not the answer and must never reach the
-        // backstop — it has no JSON to offer
+        // backstop — it has no object to offer
         toolTurn(toolCall('c1', 'echo', { value: 'pricing' })),
-        textTurn(JSON.stringify(object))
+        // The final answer: the adapter placed the object on the turn
+        () => ({
+          content: [ {
+            type: 'text',
+            text: JSON.stringify(object)
+          } ],
+          object,
+          finishReason: 'stop',
+          usage: {
+            inputTokens: 20,
+            outputTokens: 3
+          },
+          model: 'fake-medium'
+        })
       ];
       const result = await apos.ai.generate(req, 'find it', {
         tools: [ 'echo' ],

@@ -962,11 +962,15 @@ describe('AI generate', function() {
         schema,
         ...extras
       });
+      // The adapter extracts the structured answer onto the turn's
+      // `object` ([D35]); its JSON also stays in the content so the
+      // transcript round-trips
       const jsonTurn = (object) => turn({
         content: [ {
           type: 'text',
           text: JSON.stringify(object)
-        } ]
+        } ],
+        object
       });
 
       it('returns the validated object and sends the schema on the request', async function() {
@@ -977,7 +981,7 @@ describe('AI generate', function() {
         chatScript = [ () => jsonTurn(object) ];
         const result = await structuredCall();
         assert.deepEqual(result.object, object);
-        // The raw JSON stays on text; no tools means no steps/toolCalls
+        // The JSON stays on text; no tools means no steps/toolCalls
         assert.equal(result.text, JSON.stringify(object));
         assert.equal(result.finishReason, 'stop');
         assert.equal('steps' in result, false);
@@ -1007,14 +1011,14 @@ describe('AI generate', function() {
           description: 'good'
         };
         chatScript = [
-          // Not JSON at all
+          // A stop turn that produced no structured object
           () => turn({
             content: [ {
               type: 'text',
               text: 'here is your metadata'
             } ]
           }),
-          // JSON, but missing a required field
+          // An object missing a required field
           () => jsonTurn({ title: 'ok' }),
           () => jsonTurn(object)
         ];
@@ -1025,21 +1029,21 @@ describe('AI generate', function() {
         assert.equal(logRecords.filter((r) => r.type === 'retry').length, 2);
       });
 
-      it('gives up when the response never parses as JSON', async function() {
+      it('gives up when no structured object is ever returned', async function() {
         chatScript = Array.from({ length: 5 }, () => () => turn({
           content: [ {
             type: 'text',
-            text: 'not json'
+            text: 'not structured'
           } ]
         }));
         await assert.rejects(structuredCall(), (e) => {
           assert.equal(e.name, 'aiRetry');
-          assert.match(e.message, /not valid JSON/);
+          assert.match(e.message, /no structured output/);
           return true;
         });
       });
 
-      it('treats a schema-mismatching response as transient', async function() {
+      it('treats a schema-mismatching object as transient', async function() {
         chatScript = Array.from({ length: 5 }, () => () => jsonTurn({ title: 'only a title' }));
         await assert.rejects(structuredCall(), (e) => {
           assert.equal(e.name, 'aiRetry');

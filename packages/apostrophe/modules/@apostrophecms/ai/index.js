@@ -889,20 +889,21 @@ module.exports = {
       // shorthand filled out into one, or undefined to fall through to
       // the deterministic default. That default is request-aware: for a
       // structured request (`request.schema`) it synthesizes a
-      // schema-conforming object and returns it as the assistant text —
-      // a JSON string the pipeline parses and backstop-validates like a
-      // real one — otherwise canned text echoing the conversation's
-      // final message; usage is estimated from the text sizes. Runs
-      // inside the same retry and validation seam as a real adapter
-      // call, so a mock that throws normalized codes exercises the real
-      // error paths.
+      // schema-conforming object and returns it on the turn's `object`,
+      // as a real adapter would ([D35]) — the pipeline backstop-validates
+      // it like a real one — otherwise canned text echoing the
+      // conversation's final message; usage is estimated from the text
+      // sizes. Runs inside the same retry and validation seam as a real
+      // adapter call, so a mock that throws normalized codes exercises
+      // the real error paths.
       async mockChat(req, request) {
         const custom = self.options.mock
           ? await self.options.mock(request)
           : undefined;
         if (custom == null) {
           if (request.schema) {
-            return turn(JSON.stringify(sample(request.schema)));
+            const object = sample(request.schema);
+            return turn(JSON.stringify(object), object);
           }
           const tail = textOf(request.messages.at(-1).content);
           return turn(`[mock] ${tail}`);
@@ -918,7 +919,13 @@ module.exports = {
           '"mock" must return an assistant turn, a { text } object or undefined'
         );
 
-        function turn(text) {
+        // A canned assistant turn. `text` is the answer's text; a
+        // structured call passes the synthesized `object` too, which
+        // rides the turn ([D35]). The text stays in the content — for a
+        // structured turn it is the object's JSON, so the transcript's
+        // assistant message is non-empty and re-normalizes on resume,
+        // as a real provider's structured answer would.
+        function turn(text, object) {
           const input = [
             request.system,
             ...request.messages.map((message) => textOf(message.content))
@@ -928,6 +935,7 @@ module.exports = {
               type: 'text',
               text
             } ],
+            ...(object !== undefined && { object }),
             finishReason: 'stop',
             usage: {
               inputTokens: tokens(input),
@@ -1135,15 +1143,15 @@ module.exports = {
             const answer = self.validateTurn(
               await record.adapter.chat(req, context.request)
             );
-            // Structured output arrives as the final answer's text;
-            // parse and backstop-validate it here so a malformed one
-            // travels the same retry path as the turn. Only a 'stop'
-            // turn is the answer: tool turns run the loop with their
-            // own validation, a refusal surfaces as aiRefusal below,
-            // and a 'length' turn's truncated text returns as-is —
-            // no object, the finish reason tells the caller why
+            // The adapter placed the final answer on `answer.object`;
+            // backstop-validate it here so a malformed one travels the
+            // same retry path as the turn. Only a 'stop' turn is the
+            // answer: tool turns run the loop with their own validation,
+            // a refusal surfaces as aiRefusal below, and a 'length'
+            // turn returns as-is — no object, the finish reason tells
+            // the caller why
             if (canonical.schema && answer.finishReason === 'stop') {
-              answer.object = self.parseStructured(answer, canonical.validateObject);
+              self.validateStructured(answer, canonical.validateObject);
             }
             return answer;
           });
@@ -1456,31 +1464,23 @@ module.exports = {
         }
         return turn;
       },
-      // The anti-hallucination backstop for structured output: parse
-      // `turn`'s text — the final answer of a structured call — as the
-      // model's JSON object and validate it against `validate`, the
-      // compiled validator for the call's `schema`
-      // (normalizeGenerateOptions). The provider's native structured
-      // mode does the real work — this only catches a stray
-      // non-conforming response. A parse failure or a schema mismatch is
-      // a malformed model response: like a malformed turn it throws the
-      // transient code so the call travels the retry path. Returns the
-      // validated object.
-      parseStructured(turn, validate) {
-        const text = turn.content
-          .filter(part => part.type === 'text')
-          .map(part => part.text)
-          .join('');
-        let object;
-        try {
-          object = JSON.parse(text);
-        } catch (e) {
-          throw self.apos.error('aiRetry', `structured output is not valid JSON: ${e.message}`);
+      // The anti-hallucination backstop for structured output. The
+      // adapter has already extracted the final answer into `turn.object`
+      // from its provider's structured mode ([D35] — an adapter concern,
+      // since only the dialect knows where the object lives); this
+      // validates it against `validate`, the compiled validator for the
+      // call's `schema` (normalizeGenerateOptions). The provider's
+      // native mode does the real work — this only catches a stray
+      // non-conforming or missing response. A missing object or a schema
+      // mismatch is a malformed model response: like a malformed turn it
+      // throws the transient code so the call travels the retry path.
+      validateStructured(turn, validate) {
+        if (turn.object === undefined) {
+          throw self.apos.error('aiRetry', 'the provider returned no structured output');
         }
-        if (!validate(object)) {
+        if (!validate(turn.object)) {
           throw self.apos.error('aiRetry', `structured output does not match the schema: ${self.ajv.errorsText(validate.errors, { dataVar: 'object' })}`);
         }
-        return object;
       },
       // Build generate's unified return object from `context` (the
       // event payload carrying the provider name and the live request,

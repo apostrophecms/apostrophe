@@ -307,6 +307,35 @@ describe('AI adapter: google', function() {
         }
       });
     });
+
+    it('adds the synthetic final-answer function and forces it for a pure structured call', function() {
+      const schema = {
+        type: 'object',
+        properties: { title: { type: 'string' } },
+        required: [ 'title' ]
+      };
+      const body = adapter.buildBody(request({ schema }));
+      const [ tool ] = body.tools;
+      assert.equal(tool.functionDeclarations.length, 1);
+      assert.equal(tool.functionDeclarations[0].name, '_final_answer');
+      assert.equal(typeof tool.functionDeclarations[0].description, 'string');
+      assert.deepEqual(tool.functionDeclarations[0].parameters, schema);
+      assert.deepEqual(body.toolConfig, {
+        functionCallingConfig: {
+          mode: 'ANY',
+          allowedFunctionNames: [ '_final_answer' ]
+        }
+      });
+    });
+
+    it('does not force the final-answer function when thinking is on', function() {
+      const body = adapter.buildBody(request({
+        schema: { type: 'object' },
+        reasoning: 'high'
+      }));
+      assert.equal(body.tools[0].functionDeclarations[0].name, '_final_answer');
+      assert.equal('toolConfig' in body, false);
+    });
   });
 
   describe('response parsing', function() {
@@ -432,6 +461,39 @@ describe('AI adapter: google', function() {
           return true;
         }
       );
+    });
+
+    it('turns a final-answer function call into a structured stop turn', function() {
+      const object = { title: 'Pricing' };
+      const turn = adapter.parseResponse(
+        fixture({
+          candidates: [ candidate({
+            content: {
+              role: 'model',
+              parts: [ {
+                functionCall: {
+                  name: '_final_answer',
+                  args: object
+                }
+              } ]
+            },
+            finishReason: 'STOP'
+          }) ]
+        }),
+        request({ schema: { type: 'object' } })
+      );
+      assert.deepEqual(turn.object, object);
+      assert.equal(turn.finishReason, 'stop');
+      assert.deepEqual(turn.content, [ text(JSON.stringify(object)) ]);
+    });
+
+    it('leaves a free-text answer without an object for the backstop to retry', function() {
+      const turn = adapter.parseResponse(
+        fixture(),
+        request({ schema: { type: 'object' } })
+      );
+      assert.equal('object' in turn, false);
+      assert.equal(turn.finishReason, 'stop');
     });
   });
 

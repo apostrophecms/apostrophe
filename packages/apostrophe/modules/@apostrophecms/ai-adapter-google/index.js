@@ -22,6 +22,14 @@ module.exports = {
     self.apos.ai.addAdapter(self.adapter());
   },
   methods(self) {
+    // Gemini forbids a response schema alongside function calling, so
+    // structured output is delivered through a synthetic tool whose
+    // parameters are the request's `schema`. The model calls it to
+    // answer; parseResponse turns that call back into a plain structured
+    // answer. Its name leads with an underscore, which the engine's
+    // tool-name rule forbids, so it can never collide with a real tool.
+    const FINAL_ANSWER = '_final_answer';
+    const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this function with the required fields. This is the only way to return your response.';
     return {
       // The adapter definition registered with `apos.ai`. The engine
       // instantiates it per configured provider entry, assigning
@@ -78,7 +86,7 @@ module.exports = {
                 ...(request.signal && { signal: request.signal })
               }
             );
-            return self.parseResponse(response);
+            return self.parseResponse(response, request);
           },
           normalizeError(error) {
             return self.normalizeError(error);
@@ -96,7 +104,7 @@ module.exports = {
       // automatically and the ttl level is not settable per request.
       buildBody(request) {
         const {
-          system, messages, maxTokens, reasoning, tools
+          system, messages, maxTokens, reasoning, tools, schema
         } = request;
         const generationConfig = {
           ...(maxTokens !== undefined && { maxOutputTokens: maxTokens }),
@@ -115,6 +123,16 @@ module.exports = {
             }
           }
         }
+        const functionDeclarations = [
+          ...(tools || []).map(toFunctionDeclaration),
+          ...(schema
+            ? [ {
+              name: FINAL_ANSWER,
+              description: FINAL_ANSWER_DESCRIPTION,
+              parameters: schema
+            } ]
+            : [])
+        ];
         return {
           ...(system !== undefined && {
             systemInstruction: {
@@ -125,8 +143,20 @@ module.exports = {
             role: message.role === 'assistant' ? 'model' : 'user',
             parts: message.content.map(toPart)
           })),
-          ...(tools && {
-            tools: [ { functionDeclarations: tools.map(toFunctionDeclaration) } ]
+          ...(functionDeclarations.length && {
+            tools: [ { functionDeclarations } ]
+          }),
+          // Force the structured answer only when nothing else needs the
+          // turn: a real tool the model must be free to call first, or
+          // thinking. Otherwise the description drives it and the
+          // engine's backstop retries a miss.
+          ...(schema && !(tools && tools.length) && reasoning === undefined && {
+            toolConfig: {
+              functionCallingConfig: {
+                mode: 'ANY',
+                allowedFunctionNames: [ FINAL_ANSWER ]
+              }
+            }
           }),
           ...(Object.keys(generationConfig).length && { generationConfig })
         };
@@ -185,13 +215,19 @@ module.exports = {
       // parts force the toolCalls finish reason. Gemini function calls
       // carry no id, but the normalized shape needs one to pair a
       // result back to its call: the adapter synthesizes a per-turn id
-      // (buildBody recovers the tool name from it). Thought parts are
-      // not conversation content and do not travel. Thinking tokens are
-      // billed as output, so they add into outputTokens. An unknown
-      // finish reason maps to no finishReason — the engine's turn
-      // validation treats that as a malformed (retryable) response,
-      // never a truncated success.
-      parseResponse(response) {
+      // (buildBody recovers the tool name from it). When the request
+      // asked for structured output and the model called the synthetic
+      // final-answer function, that call is the answer, not a function
+      // for the core to run: it becomes a `stop` turn carrying the
+      // arguments on `object` (and their JSON in the text, so the
+      // transcript round-trips). Anything else — free text, a real
+      // function call — parses normally, leaving no `object` for the
+      // engine backstop to retry on. Thought parts are not conversation
+      // content and do not travel. Thinking tokens are billed as output,
+      // so they add into outputTokens. An unknown finish reason maps to
+      // no finishReason — the engine's turn validation treats that as a
+      // malformed (retryable) response, never a truncated success.
+      parseResponse(response, request = {}) {
         const blockReason = response.promptFeedback?.blockReason;
         if (blockReason) {
           throw self.apos.error('aiRefusal', `the model blocked this request: ${blockReason}`);
@@ -203,6 +239,29 @@ module.exports = {
           .map(fromPart)
           .filter(Boolean);
         const usage = response.usageMetadata;
+        const usageTokens = {
+          inputTokens: usage?.promptTokenCount,
+          outputTokens: usage?.candidatesTokenCount === undefined
+            ? undefined
+            : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0)
+        };
+        if (request.schema) {
+          const answer = content.find(
+            (part) => part.type === 'toolCall' && part.name === FINAL_ANSWER
+          );
+          if (answer) {
+            return {
+              content: [ {
+                type: 'text',
+                text: JSON.stringify(answer.input)
+              } ],
+              object: answer.input,
+              finishReason: 'stop',
+              usage: usageTokens,
+              model: response.modelVersion
+            };
+          }
+        }
         return {
           content,
           finishReason: content.some((part) => part.type === 'toolCall')
@@ -217,12 +276,7 @@ module.exports = {
               SPII: 'refusal',
               IMAGE_SAFETY: 'refusal'
             }[candidate?.finishReason],
-          usage: {
-            inputTokens: usage?.promptTokenCount,
-            outputTokens: usage?.candidatesTokenCount === undefined
-              ? undefined
-              : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0)
-          },
+          usage: usageTokens,
           model: response.modelVersion
         };
 

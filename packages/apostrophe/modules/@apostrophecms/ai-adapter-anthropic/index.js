@@ -26,6 +26,14 @@ module.exports = {
     self.apos.ai.addAdapter(self.adapter());
   },
   methods(self) {
+    // Anthropic has no response-schema mode, so structured output is
+    // delivered through tool use: a synthetic tool whose input schema is
+    // the request's `schema`. The model calls it to answer; parseResponse
+    // turns that call back into a plain structured answer. Its name leads
+    // with an underscore, which the engine's tool-name rule forbids, so
+    // it can never collide with a real tool.
+    const FINAL_ANSWER = '_final_answer';
+    const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this tool with the required fields. This is the only way to return your response.';
     return {
       // The adapter definition registered with `apos.ai`. The engine
       // instantiates it per configured provider entry, assigning
@@ -84,7 +92,7 @@ module.exports = {
               timeout: self.options.timeout,
               ...(request.signal && { signal: request.signal })
             });
-            return self.parseResponse(response);
+            return self.parseResponse(response, request);
           },
           normalizeError(error) {
             return self.normalizeError(error);
@@ -101,23 +109,46 @@ module.exports = {
       // requests and results ride the conversation as `tool_use` and
       // `tool_result` blocks; the dialect has no tool role, so a
       // normalized `tool` message becomes a `user` message of
-      // `tool_result` blocks. Throws "invalid" on requests the dialect
-      // cannot express.
+      // `tool_result` blocks. A structured-output `schema` adds the
+      // synthetic final-answer tool, forced when nothing competes for
+      // the turn. Throws "invalid" on requests the dialect cannot
+      // express.
       buildBody(request) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
         };
         const {
-          system, messages, model, maxTokens, reasoning, cache, tools
+          system, messages, model, maxTokens, reasoning, cache, tools, schema
         } = request;
         if (!Number.isInteger(maxTokens)) {
           invalid(`"maxTokens" is required: model "${model}" declares no maxOutputTokens to default to`);
         }
+        const wireTools = [
+          ...(tools || []).map(toTool),
+          ...(schema
+            ? [ {
+              name: FINAL_ANSWER,
+              description: FINAL_ANSWER_DESCRIPTION,
+              input_schema: schema
+            } ]
+            : [])
+        ];
         const body = {
           model,
           max_tokens: maxTokens,
           ...(system !== undefined && { system }),
-          ...(tools && { tools: tools.map(toTool) }),
+          ...(wireTools.length && { tools: wireTools }),
+          // Force the structured answer only when nothing else needs the
+          // turn: a real tool the model must be free to call first, or
+          // extended thinking, which Anthropic forbids alongside a forced
+          // tool. Otherwise the tool's description drives it and the
+          // engine's backstop retries a miss.
+          ...(schema && !(tools && tools.length) && reasoning === undefined && {
+            tool_choice: {
+              type: 'tool',
+              name: FINAL_ANSWER
+            }
+          }),
           messages: messages.map((message) => ({
             role: message.role === 'tool' ? 'user' : message.role,
             content: message.content.map(toBlock)
@@ -217,28 +248,53 @@ module.exports = {
       // assistant turn { content, finishReason, usage, model }. Thinking
       // blocks are not conversation content and do not travel. A
       // `refusal` stop reason throws the refusal error here, so
-      // "refused" always arrives as an error. An unknown stop reason
-      // maps to no finishReason — the engine's turn validation treats
-      // that as a malformed (retryable) response, never a truncated
-      // success.
-      parseResponse(response) {
+      // "refused" always arrives as an error. When the request asked for
+      // structured output and the model called the synthetic
+      // final-answer tool, that call is the answer, not a tool for the
+      // core to run: it becomes a `stop` turn carrying the arguments on
+      // `object` (and their JSON in the text, so the transcript
+      // round-trips). Anything else — free text, a real tool call —
+      // parses normally, leaving no `object` for the engine backstop to
+      // retry on. An unknown stop reason maps to no finishReason — the
+      // engine's turn validation treats that as a malformed (retryable)
+      // response, never a truncated success.
+      parseResponse(response, request = {}) {
         if (response.stop_reason === 'refusal') {
           throw self.apos.error('aiRefusal', 'the model refused this request');
         }
+        const usage = {
+          inputTokens: response.usage?.input_tokens,
+          outputTokens: response.usage?.output_tokens
+        };
+        const content = (response.content || [])
+          .map(fromBlock)
+          .filter(Boolean);
+        if (request.schema) {
+          const answer = content.find(
+            (part) => part.type === 'toolCall' && part.name === FINAL_ANSWER
+          );
+          if (answer) {
+            return {
+              content: [ {
+                type: 'text',
+                text: JSON.stringify(answer.input)
+              } ],
+              object: answer.input,
+              finishReason: 'stop',
+              usage,
+              model: response.model
+            };
+          }
+        }
         return {
-          content: (response.content || [])
-            .map(fromBlock)
-            .filter(Boolean),
+          content,
           finishReason: {
             end_turn: 'stop',
             stop_sequence: 'stop',
             max_tokens: 'length',
             tool_use: 'toolCalls'
           }[response.stop_reason],
-          usage: {
-            inputTokens: response.usage?.input_tokens,
-            outputTokens: response.usage?.output_tokens
-          },
+          usage,
           model: response.model
         };
 

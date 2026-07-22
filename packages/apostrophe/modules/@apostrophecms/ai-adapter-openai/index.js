@@ -81,7 +81,7 @@ module.exports = {
               timeout: self.options.timeout,
               ...(request.signal && { signal: request.signal })
             });
-            return self.parseResponse(response);
+            return self.parseResponse(response, request);
           },
           normalizeError(error) {
             return self.normalizeError(error);
@@ -91,10 +91,11 @@ module.exports = {
       // Translate a normalized adapter request (see the engine's
       // buildRequest) to a Chat Completions body: the system prompt
       // leads the messages as a `system` turn, tool definitions become
-      // `tools`, `maxTokens` becomes `max_completion_tokens` (optional
-      // here, so an unresolved cap is omitted) and `reasoning` travels
-      // as `reasoning_effort`, verbatim. A message whose content is a
-      // single text part collapses to the plain-string form every
+      // `tools`, a structured-output `schema` becomes a `json_schema`
+      // response format, `maxTokens` becomes `max_completion_tokens`
+      // (optional here, so an unresolved cap is omitted) and `reasoning`
+      // travels as `reasoning_effort`, verbatim. A message whose content
+      // is a single text part collapses to the plain-string form every
       // compatible host accepts; anything else stays a parts array. Tool
       // requests ride an assistant message's `tool_calls`; the dialect
       // wants one `tool` message per result, so a normalized `tool`
@@ -104,7 +105,7 @@ module.exports = {
       // dialect.
       buildBody(request) {
         const {
-          system, messages, model, maxTokens, reasoning, tools
+          system, messages, model, maxTokens, reasoning, tools, schema
         } = request;
         return {
           model,
@@ -118,6 +119,21 @@ module.exports = {
             ...messages.flatMap(toMessages)
           ],
           ...(tools && { tools: tools.map(toTool) }),
+          // The portable JSON Schema goes as the response format without
+          // `strict`: strict mode would demand an OpenAI-specific schema
+          // subset (every object additionalProperties:false, every
+          // property required), which the same schema on Anthropic and
+          // Google does not — so the model is schema-guided here and the
+          // engine's backstop catches a stray.
+          ...(schema && {
+            response_format: {
+              type: 'json_schema',
+              json_schema: {
+                name: 'response',
+                schema
+              }
+            }
+          }),
           ...(maxTokens !== undefined && { max_completion_tokens: maxTokens }),
           ...(reasoning !== undefined && { reasoning_effort: reasoning })
         };
@@ -202,11 +218,14 @@ module.exports = {
       // `content_filter` finish reason maps to the refusal finish
       // reason — "refused" always arrives as an error, never a silent
       // empty turn. Tool calls carry their arguments as a JSON string,
-      // parsed into the normalized input object. An unknown finish
-      // reason maps to no finishReason — the engine's turn validation
-      // treats that as a malformed (retryable) response, never a
-      // truncated success.
-      parseResponse(response) {
+      // parsed into the normalized input object. When the request asked
+      // for structured output, the final answer's text is the JSON
+      // object: it is parsed onto the turn's `object` ([D35]), which the
+      // engine backstop-validates; malformed JSON is a retryable
+      // response. An unknown finish reason maps to no finishReason — the
+      // engine's turn validation treats that as a malformed (retryable)
+      // response, never a truncated success.
+      parseResponse(response, request = {}) {
         const [ choice ] = response.choices || [];
         const message = choice?.message || {};
         if (message.refusal) {
@@ -227,20 +246,29 @@ module.exports = {
             input: JSON.parse(call.function?.arguments || '{}')
           });
         }
-        return {
+        const finishReason = {
+          stop: 'stop',
+          length: 'length',
+          tool_calls: 'toolCalls',
+          content_filter: 'refusal'
+        }[choice?.finish_reason];
+        const turn = {
           content,
-          finishReason: {
-            stop: 'stop',
-            length: 'length',
-            tool_calls: 'toolCalls',
-            content_filter: 'refusal'
-          }[choice?.finish_reason],
+          finishReason,
           usage: {
             inputTokens: response.usage?.prompt_tokens,
             outputTokens: response.usage?.completion_tokens
           },
           model: response.model
         };
+        if (request.schema && finishReason === 'stop') {
+          try {
+            turn.object = JSON.parse(message.content);
+          } catch (e) {
+            throw self.apos.error('aiRetry', 'the model returned malformed structured JSON');
+          }
+        }
+        return turn;
       },
       // Map any error the transport produced to a normalized apos
       // error, the only shape the engine reacts to. Transient failures

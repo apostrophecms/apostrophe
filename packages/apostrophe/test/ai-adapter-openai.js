@@ -297,6 +297,22 @@ describe('AI adapter: openai', function() {
         } ]
       });
     });
+
+    it('sends a structured-output schema as a json_schema response format', function() {
+      const schema = {
+        type: 'object',
+        properties: { title: { type: 'string' } },
+        required: [ 'title' ]
+      };
+      const body = adapter.buildBody(request({ schema }));
+      assert.deepEqual(body.response_format, {
+        type: 'json_schema',
+        json_schema: {
+          name: 'response',
+          schema
+        }
+      });
+    });
   });
 
   describe('response parsing', function() {
@@ -378,6 +394,45 @@ describe('AI adapter: openai', function() {
           return true;
         }
       );
+    });
+
+    it('parses the structured answer onto the turn object', function() {
+      const object = {
+        title: 'Pricing',
+        description: 'Our plans'
+      };
+      const turn = adapter.parseResponse(
+        fixture({
+          choices: [ choice({ message: { content: JSON.stringify(object) } }) ]
+        }),
+        request({ schema: { type: 'object' } })
+      );
+      assert.deepEqual(turn.object, object);
+      // The JSON also stays on the content so the transcript round-trips
+      assert.deepEqual(turn.content, [ text(JSON.stringify(object)) ]);
+    });
+
+    it('treats malformed structured JSON as a retryable response', function() {
+      assert.throws(
+        () => adapter.parseResponse(
+          fixture({
+            choices: [ choice({ message: { content: 'not json' } }) ]
+          }),
+          request({ schema: { type: 'object' } })
+        ),
+        (e) => {
+          assert.equal(e.name, 'aiRetry');
+          assert.match(e.message, /malformed structured JSON/);
+          return true;
+        }
+      );
+    });
+
+    it('leaves the turn object unset without a schema request', function() {
+      const turn = adapter.parseResponse(fixture({
+        choices: [ choice({ message: { content: '{"a":1}' } }) ]
+      }));
+      assert.equal('object' in turn, false);
     });
   });
 
@@ -530,6 +585,44 @@ describe('AI adapter: openai', function() {
       assert.equal(call.url, 'https://llm-gateway.example.com/openai/v1/chat/completions');
       assert.equal(call.options.headers.authorization, 'Bearer sk-gw');
       assert.equal(call.options.body.max_completion_tokens, 128000);
+    });
+
+    it('returns a validated object for a structured call over the wire', async function() {
+      const object = {
+        title: 'Pricing',
+        description: 'Our plans'
+      };
+      httpScript = [ () => fixture({
+        choices: [ choice({ message: { content: JSON.stringify(object) } }) ]
+      }) ];
+      const result = await apos.ai.generate(apos.task.getReq(), {
+        messages: [ {
+          role: 'user',
+          content: 'write the metadata'
+        } ],
+        schema: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              maxLength: 60
+            },
+            description: {
+              type: 'string',
+              maxLength: 160
+            }
+          },
+          required: [ 'title', 'description' ]
+        }
+      });
+      assert.deepEqual(result.object, object);
+      // The schema went out as the json_schema response format
+      const { body } = httpCalls[0].options;
+      assert.equal(body.response_format.type, 'json_schema');
+      assert.deepEqual(
+        body.response_format.json_schema.schema.required,
+        [ 'title', 'description' ]
+      );
     });
 
     it('retries a 429 at the Retry-After delay', async function() {
