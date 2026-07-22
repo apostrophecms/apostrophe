@@ -1425,7 +1425,7 @@ module.exports = {
           return retryAfter * 1000;
         }
         const curve = self.options.retryBaseDelay * Math.pow(2, attempt - 1);
-        return Math.round(curve * (1 + Math.random()));
+        return Math.floor(curve * (1 + Math.random()));
       },
       // Wait `ms` before the next attempt; a separate method so tests
       // can observe or skip real waiting
