@@ -1,7 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 
-describe('AI adapter: openai', function() {
+describe('AI adapter: openai-compatible', function() {
   this.timeout(t.timeout);
 
   let apos;
@@ -19,11 +19,11 @@ describe('AI adapter: openai', function() {
       modules: {
         '@apostrophecms/ai': {
           options: {
-            provider: 'openai',
+            provider: 'openai-compatible',
             providers: {
-              openai: { apiKey: 'sk-test' },
+              'openai-compatible': { apiKey: 'sk-test' },
               gateway: {
-                adapter: 'openai',
+                adapter: 'openai-compatible',
                 apiKey: 'sk-gw',
                 baseUrl: 'https://llm-gateway.example.com/openai/v1'
               }
@@ -34,7 +34,7 @@ describe('AI adapter: openai', function() {
         }
       }
     });
-    adapter = apos.modules['@apostrophecms/ai-adapter-openai'];
+    adapter = apos.modules['@apostrophecms/ai-adapter-openai-compatible'];
   });
 
   after(async function() {
@@ -95,11 +95,11 @@ describe('AI adapter: openai', function() {
   );
 
   it('registers the adapter and activates the provider', function() {
-    assert(apos.ai.getAdapter('openai'));
-    assert.equal(apos.ai.getAdapter('openai').envKey, 'APOS_OPENAI_KEY');
+    assert(apos.ai.getAdapter('openai-compatible'));
+    assert.equal(apos.ai.getAdapter('openai-compatible').envKey, 'APOS_OPENAI_KEY');
     assert.equal(apos.ai.active, true);
     const info = apos.ai.modelInfo();
-    assert.equal(info.provider, 'openai');
+    assert.equal(info.provider, 'openai-compatible');
     assert.equal(info.model, 'gpt-5.6-terra');
     assert.equal(info.contextWindow, 1050000);
     assert.equal(info.maxOutputTokens, 128000);
@@ -552,7 +552,7 @@ describe('AI adapter: openai', function() {
       );
       assert.equal(result.text, 'a haiku');
       assert.equal(result.finishReason, 'stop');
-      assert.equal(result.provider, 'openai');
+      assert.equal(result.provider, 'openai-compatible');
       // The model the response named, not the routed alias
       assert.equal(result.model, 'gpt-5.6-terra-2026-06-26');
       assert.deepEqual(result.usage, {
@@ -731,7 +731,7 @@ describe('AI adapter: openai', function() {
           '@apostrophecms/ai': {
             options: {
               providers: {
-                openai: { apiKey: liveKey }
+                'openai-compatible': { apiKey: liveKey }
               }
             }
           }
@@ -757,7 +757,7 @@ describe('AI adapter: openai', function() {
         }
       );
       assert(result.text.length > 0);
-      assert.equal(result.provider, 'openai');
+      assert.equal(result.provider, 'openai-compatible');
       assert.equal(result.finishReason, 'stop');
       assert(Number.isFinite(result.usage.inputTokens));
       assert(Number.isFinite(result.usage.outputTokens));

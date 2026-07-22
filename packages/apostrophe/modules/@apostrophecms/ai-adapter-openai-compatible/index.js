@@ -1,15 +1,14 @@
-// The standard OpenAI adapter for `apos.ai`. It registers itself with
-// the AI engine at startup; configure the provider with just a key
-// under the engine's `providers.openai` entry to use it. All knowledge
-// of the OpenAI dialect — request translation, response parsing, error
-// mapping — lives here.
+// The OpenAI-compatible adapter for `apos.ai`: the Chat Completions
+// dialect, the de facto wire standard of the ecosystem. It registers
+// itself with the AI engine at startup. An aliased provider entry
+// (`adapter: 'openai-compatible'`) pointing `baseUrl` at any compatible
+// vendor or local runtime (Groq, Mistral, OpenRouter, Ollama, vLLM, …)
+// is a custom provider with zero adapter code — the entry's own
+// `models`, `effort` and `capabilities` describe the actual service.
 //
-// The adapter speaks the Chat Completions dialect only, the de facto
-// wire standard of the ecosystem: an aliased provider entry
-// (`adapter: 'openai'`) pointing `baseUrl` at any compatible vendor or
-// local runtime (Groq, Mistral, OpenRouter, Ollama, vLLM, …) is a
-// custom provider with zero adapter code — the entry's own `models`,
-// `effort` and `capabilities` describe the actual service.
+// For OpenAI proper, prefer the `openai` adapter, which speaks OpenAI's
+// first-class Responses API; this dialect still works against
+// api.openai.com (the default `baseUrl`) for cases that want it.
 //
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
@@ -32,8 +31,8 @@ module.exports = {
       // delegates to the module's methods.
       adapter() {
         return {
-          name: 'openai',
-          label: 'OpenAI',
+          name: 'openai-compatible',
+          label: 'OpenAI Completions',
           baseUrl: 'https://api.openai.com/v1',
           envKey: 'APOS_OPENAI_KEY',
           capabilities: {
