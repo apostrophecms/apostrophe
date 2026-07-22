@@ -93,18 +93,22 @@ module.exports = {
       },
       // Translate a normalized adapter request (see the engine's
       // buildRequest) to an Anthropic Messages API body: content parts
-      // become Anthropic blocks, `reasoning` becomes a thinking budget,
-      // and the cache policy is placed as `cache_control` markers — one
-      // on the system tail (the static prefix) and a rolling one on the
-      // last message, so the next call in a conversation reads what
-      // this one wrote. Throws "invalid" on requests the dialect cannot
-      // express.
+      // become Anthropic blocks, tool definitions become `tools`,
+      // `reasoning` becomes a thinking budget, and the cache policy is
+      // placed as `cache_control` markers — one on the system tail (the
+      // static prefix) and a rolling one on the last message, so the
+      // next call in a conversation reads what this one wrote. Tool
+      // requests and results ride the conversation as `tool_use` and
+      // `tool_result` blocks; the dialect has no tool role, so a
+      // normalized `tool` message becomes a `user` message of
+      // `tool_result` blocks. Throws "invalid" on requests the dialect
+      // cannot express.
       buildBody(request) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
         };
         const {
-          system, messages, model, maxTokens, reasoning, cache
+          system, messages, model, maxTokens, reasoning, cache, tools
         } = request;
         if (!Number.isInteger(maxTokens)) {
           invalid(`"maxTokens" is required: model "${model}" declares no maxOutputTokens to default to`);
@@ -113,8 +117,9 @@ module.exports = {
           model,
           max_tokens: maxTokens,
           ...(system !== undefined && { system }),
+          ...(tools && { tools: tools.map(toTool) }),
           messages: messages.map((message) => ({
-            role: message.role,
+            role: message.role === 'tool' ? 'user' : message.role,
             content: message.content.map(toBlock)
           }))
         };
@@ -138,11 +143,42 @@ module.exports = {
         }
         return body;
 
+        // The model-facing tool definition; the JSON Schema travels
+        // verbatim as input_schema
+        function toTool(tool) {
+          return {
+            name: tool.name,
+            description: tool.description,
+            input_schema: tool.input
+          };
+        }
         function toBlock(part) {
           if (part.type === 'text') {
             return {
               type: 'text',
               text: part.text
+            };
+          }
+          if (part.type === 'toolCall') {
+            return {
+              type: 'tool_use',
+              id: part.id,
+              name: part.name,
+              input: part.input
+            };
+          }
+          if (part.type === 'toolResult') {
+            // Anthropic carries the result as a string; an object output
+            // is serialized, an error is flagged
+            return {
+              type: 'tool_result',
+              tool_use_id: part.toolCallId,
+              ...(part.error !== undefined
+                ? {
+                  content: part.error,
+                  is_error: true
+                }
+                : { content: JSON.stringify(part.output) })
             };
           }
           // part.type === 'image', in one of the two normalized forms

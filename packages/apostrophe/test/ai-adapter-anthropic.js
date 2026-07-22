@@ -17,6 +17,22 @@ describe('AI adapter: anthropic', function() {
     apos = await t.create({
       root: module,
       modules: {
+        'tool-fixtures': {
+          init(self) {
+            self.apos.ai.addTool({
+              name: 'echo',
+              description: 'Echo the value back',
+              access: 'read',
+              input: {
+                type: 'object',
+                properties: { value: { type: 'string' } },
+                required: [ 'value' ]
+              },
+              schema: { value: { type: 'string' } },
+              handler: (req, args) => ({ value: args.value })
+            });
+          }
+        },
         '@apostrophecms/ai': {
           options: {
             provider: 'anthropic',
@@ -251,6 +267,97 @@ describe('AI adapter: anthropic', function() {
         /"maxTokens" is required/
       );
     });
+
+    it('translates tool definitions to the tools array', function() {
+      const input = {
+        type: 'object',
+        properties: { title: { type: 'string' } }
+      };
+      const body = adapter.buildBody(request({
+        tools: [ {
+          name: 'find_pages',
+          description: 'Find pages',
+          input
+        } ]
+      }));
+      assert.deepEqual(body.tools, [ {
+        name: 'find_pages',
+        description: 'Find pages',
+        input_schema: input
+      } ]);
+    });
+
+    it('carries tool requests and results as tool_use and tool_result blocks', function() {
+      const body = adapter.buildBody(request({
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              text('searching'),
+              {
+                type: 'toolCall',
+                id: 'c1',
+                name: 'find_pages',
+                input: { title: 'Pricing' }
+              }
+            ]
+          },
+          {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: 'c1',
+              output: { id: 'p1' }
+            } ]
+          }
+        ]
+      }));
+      assert.deepEqual(body.messages, [
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'searching'
+            },
+            {
+              type: 'tool_use',
+              id: 'c1',
+              name: 'find_pages',
+              input: { title: 'Pricing' }
+            }
+          ]
+        },
+        {
+          // No tool role in this dialect: results ride a user message
+          role: 'user',
+          content: [ {
+            type: 'tool_result',
+            tool_use_id: 'c1',
+            content: JSON.stringify({ id: 'p1' })
+          } ]
+        }
+      ]);
+    });
+
+    it('flags a tool error result', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'tool',
+          content: [ {
+            type: 'toolResult',
+            toolCallId: 'c1',
+            error: 'the index is rebuilding'
+          } ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0].content[0], {
+        type: 'tool_result',
+        tool_use_id: 'c1',
+        content: 'the index is rebuilding',
+        is_error: true
+      });
+    });
   });
 
   describe('response parsing', function() {
@@ -476,6 +583,57 @@ describe('AI adapter: anthropic', function() {
       assert.equal(call.url, 'https://llm-gateway.example.com/anthropic/v1/messages');
       assert.equal(call.options.headers['x-api-key'], 'sk-gw');
       assert.equal(call.options.body.max_tokens, 64000);
+    });
+
+    it('drives a tool loop end to end over the wire', async function() {
+      httpScript = [
+        () => fixture({
+          content: [ {
+            type: 'tool_use',
+            id: 'toolu_1',
+            name: 'echo',
+            input: { value: 'pricing' }
+          } ],
+          stop_reason: 'tool_use'
+        }),
+        () => fixture({ content: [ text('done') ] })
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), 'use the tool', {
+        tools: [ 'echo' ],
+        // Keep the cache markers out of the message assertion below
+        cache: false
+      });
+      assert.equal(result.text, 'done');
+      assert.equal(result.finishReason, 'stop');
+      assert.deepEqual(result.steps, [ {
+        toolCall: {
+          type: 'toolCall',
+          id: 'toolu_1',
+          name: 'echo',
+          input: { value: 'pricing' }
+        },
+        result: { value: 'pricing' }
+      } ]);
+      assert.equal(httpCalls.length, 2);
+      // The first wire call described the tool to the model
+      assert.deepEqual(httpCalls[0].options.body.tools, [ {
+        name: 'echo',
+        description: 'Echo the value back',
+        input_schema: {
+          type: 'object',
+          properties: { value: { type: 'string' } },
+          required: [ 'value' ]
+        }
+      } ]);
+      // The second carried the tool result back as a user message
+      assert.deepEqual(httpCalls[1].options.body.messages.at(-1), {
+        role: 'user',
+        content: [ {
+          type: 'tool_result',
+          tool_use_id: 'toolu_1',
+          content: JSON.stringify({ value: 'pricing' })
+        } ]
+      });
     });
 
     it('retries a 429 at the Retry-After delay', async function() {

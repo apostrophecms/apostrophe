@@ -191,6 +191,112 @@ describe('AI adapter: openai', function() {
         );
       }
     });
+
+    it('translates tool definitions to function tools', function() {
+      const input = {
+        type: 'object',
+        properties: { title: { type: 'string' } }
+      };
+      const body = adapter.buildBody(request({
+        tools: [ {
+          name: 'find_pages',
+          description: 'Find pages',
+          input
+        } ]
+      }));
+      assert.deepEqual(body.tools, [ {
+        type: 'function',
+        function: {
+          name: 'find_pages',
+          description: 'Find pages',
+          parameters: input
+        }
+      } ]);
+    });
+
+    it('carries an assistant tool call and fans a tool batch into one message per result', function() {
+      const body = adapter.buildBody(request({
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              text('searching'),
+              {
+                type: 'toolCall',
+                id: 'c1',
+                name: 'find_pages',
+                input: { title: 'Pricing' }
+              }
+            ]
+          },
+          {
+            role: 'tool',
+            content: [
+              {
+                type: 'toolResult',
+                toolCallId: 'c1',
+                output: { id: 'p1' }
+              },
+              {
+                type: 'toolResult',
+                toolCallId: 'c2',
+                error: 'not found'
+              }
+            ]
+          }
+        ]
+      }));
+      assert.deepEqual(body.messages, [
+        {
+          role: 'assistant',
+          content: 'searching',
+          tool_calls: [ {
+            id: 'c1',
+            type: 'function',
+            function: {
+              name: 'find_pages',
+              arguments: JSON.stringify({ title: 'Pricing' })
+            }
+          } ]
+        },
+        {
+          role: 'tool',
+          tool_call_id: 'c1',
+          content: JSON.stringify({ id: 'p1' })
+        },
+        {
+          role: 'tool',
+          tool_call_id: 'c2',
+          content: 'not found'
+        }
+      ]);
+    });
+
+    it('sends null content for an assistant turn that is only tool calls', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [ {
+            type: 'toolCall',
+            id: 'c1',
+            name: 'ping',
+            input: {}
+          } ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0], {
+        role: 'assistant',
+        content: null,
+        tool_calls: [ {
+          id: 'c1',
+          type: 'function',
+          function: {
+            name: 'ping',
+            arguments: '{}'
+          }
+        } ]
+      });
+    });
   });
 
   describe('response parsing', function() {

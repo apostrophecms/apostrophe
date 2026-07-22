@@ -90,18 +90,21 @@ module.exports = {
       },
       // Translate a normalized adapter request (see the engine's
       // buildRequest) to a Chat Completions body: the system prompt
-      // leads the messages as a `system` turn, `maxTokens` becomes
-      // `max_completion_tokens` (optional here, so an unresolved cap
-      // is omitted) and `reasoning` travels as `reasoning_effort`,
-      // verbatim. A message whose content is a single text part
-      // collapses to the plain-string form every compatible host
-      // accepts; anything else stays a parts array. The cache policy
-      // places nothing: the provider caches prompt prefixes
+      // leads the messages as a `system` turn, tool definitions become
+      // `tools`, `maxTokens` becomes `max_completion_tokens` (optional
+      // here, so an unresolved cap is omitted) and `reasoning` travels
+      // as `reasoning_effort`, verbatim. A message whose content is a
+      // single text part collapses to the plain-string form every
+      // compatible host accepts; anything else stays a parts array. Tool
+      // requests ride an assistant message's `tool_calls`; the dialect
+      // wants one `tool` message per result, so a normalized `tool`
+      // message (all of a batch's results) fans out into several. The
+      // cache policy places nothing: the provider caches prompt prefixes
       // automatically and the ttl level is not settable in this
       // dialect.
       buildBody(request) {
         const {
-          system, messages, model, maxTokens, reasoning
+          system, messages, model, maxTokens, reasoning, tools
         } = request;
         return {
           model,
@@ -112,15 +115,63 @@ module.exports = {
                 content: system
               } ]
               : []),
-            ...messages.map((message) => ({
-              role: message.role,
-              content: toContent(message.content)
-            }))
+            ...messages.flatMap(toMessages)
           ],
+          ...(tools && { tools: tools.map(toTool) }),
           ...(maxTokens !== undefined && { max_completion_tokens: maxTokens }),
           ...(reasoning !== undefined && { reasoning_effort: reasoning })
         };
 
+        // One normalized message → one or more Chat Completions
+        // messages. An assistant turn carries its tool requests as
+        // `tool_calls` beside any text; a `tool` batch splits into one
+        // `tool` message per result
+        function toMessages(message) {
+          if (message.role === 'tool') {
+            return message.content.map((part) => ({
+              role: 'tool',
+              tool_call_id: part.toolCallId,
+              content: part.error !== undefined
+                ? part.error
+                : JSON.stringify(part.output)
+            }));
+          }
+          if (message.role === 'assistant') {
+            const calls = message.content.filter((part) => part.type === 'toolCall');
+            const rest = message.content.filter((part) => part.type !== 'toolCall');
+            return [ {
+              role: 'assistant',
+              content: rest.length ? toContent(rest) : null,
+              ...(calls.length && { tool_calls: calls.map(toToolCall) })
+            } ];
+          }
+          return [ {
+            role: 'user',
+            content: toContent(message.content)
+          } ];
+        }
+        function toToolCall(call) {
+          return {
+            id: call.id,
+            type: 'function',
+            function: {
+              name: call.name,
+              arguments: JSON.stringify(call.input)
+            }
+          };
+        }
+        // The model-facing tool definition; the JSON Schema travels
+        // verbatim as the function parameters
+        function toTool(tool) {
+          return {
+            type: 'function',
+            function: {
+              name: tool.name,
+              description: tool.description,
+              parameters: tool.input
+            }
+          };
+        }
         function toContent(parts) {
           if (parts.length === 1 && parts[0].type === 'text') {
             return parts[0].text;

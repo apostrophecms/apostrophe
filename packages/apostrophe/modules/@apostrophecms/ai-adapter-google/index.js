@@ -96,7 +96,7 @@ module.exports = {
       // automatically and the ttl level is not settable per request.
       buildBody(request) {
         const {
-          system, messages, maxTokens, reasoning
+          system, messages, maxTokens, reasoning, tools
         } = request;
         const generationConfig = {
           ...(maxTokens !== undefined && { maxOutputTokens: maxTokens }),
@@ -104,6 +104,17 @@ module.exports = {
             thinkingConfig: { thinkingLevel: reasoning }
           })
         };
+        // Gemini pairs a function response to its call by name, not id,
+        // so recover the name of the call the engine's synthesized id
+        // refers to (parseResponse mints those ids)
+        const toolNamesById = new Map();
+        for (const message of messages) {
+          for (const part of message.content) {
+            if (part.type === 'toolCall') {
+              toolNamesById.set(part.id, part.name);
+            }
+          }
+        }
         return {
           ...(system !== undefined && {
             systemInstruction: {
@@ -114,12 +125,43 @@ module.exports = {
             role: message.role === 'assistant' ? 'model' : 'user',
             parts: message.content.map(toPart)
           })),
+          ...(tools && {
+            tools: [ { functionDeclarations: tools.map(toFunctionDeclaration) } ]
+          }),
           ...(Object.keys(generationConfig).length && { generationConfig })
         };
 
+        // The model-facing tool definition; the JSON Schema travels
+        // verbatim as the OpenAPI-subset parameters (the service polices
+        // any keyword it does not accept)
+        function toFunctionDeclaration(tool) {
+          return {
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.input
+          };
+        }
         function toPart(part) {
           if (part.type === 'text') {
             return { text: part.text };
+          }
+          if (part.type === 'toolCall') {
+            return {
+              functionCall: {
+                name: part.name,
+                args: part.input
+              }
+            };
+          }
+          if (part.type === 'toolResult') {
+            return {
+              functionResponse: {
+                name: toolNamesById.get(part.toolCallId),
+                response: part.error !== undefined
+                  ? { error: part.error }
+                  : part.output
+              }
+            };
           }
           // part.type === 'image', in one of the two normalized forms
           return part.image.url !== undefined
@@ -140,18 +182,22 @@ module.exports = {
       // refusal error here; a safety-family finish reason maps to the
       // refusal finish reason — "refused" always arrives as an error.
       // The dialect reports STOP on tool-call turns, so functionCall
-      // parts force the toolCalls finish reason; they carry no call
-      // id. Thought parts are not conversation content and do not
-      // travel. Thinking tokens are billed as output, so they add
-      // into outputTokens. An unknown finish reason maps to no
-      // finishReason — the engine's turn validation treats that as a
-      // malformed (retryable) response, never a truncated success.
+      // parts force the toolCalls finish reason. Gemini function calls
+      // carry no id, but the normalized shape needs one to pair a
+      // result back to its call: the adapter synthesizes a per-turn id
+      // (buildBody recovers the tool name from it). Thought parts are
+      // not conversation content and do not travel. Thinking tokens are
+      // billed as output, so they add into outputTokens. An unknown
+      // finish reason maps to no finishReason — the engine's turn
+      // validation treats that as a malformed (retryable) response,
+      // never a truncated success.
       parseResponse(response) {
         const blockReason = response.promptFeedback?.blockReason;
         if (blockReason) {
           throw self.apos.error('aiRefusal', `the model blocked this request: ${blockReason}`);
         }
         const [ candidate ] = response.candidates || [];
+        let callIndex = 0;
         const content = (candidate?.content?.parts || [])
           .filter((part) => !part.thought)
           .map(fromPart)
@@ -190,8 +236,9 @@ module.exports = {
           if (part.functionCall) {
             return {
               type: 'toolCall',
+              id: `${part.functionCall.name}-${callIndex++}`,
               name: part.functionCall.name,
-              input: part.functionCall.args
+              input: part.functionCall.args || {}
             };
           }
           return null;

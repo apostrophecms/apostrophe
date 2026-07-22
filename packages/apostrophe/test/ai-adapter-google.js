@@ -206,6 +206,107 @@ describe('AI adapter: google', function() {
         );
       }
     });
+
+    it('translates tool definitions to functionDeclarations', function() {
+      const input = {
+        type: 'object',
+        properties: { title: { type: 'string' } }
+      };
+      const body = adapter.buildBody(request({
+        tools: [ {
+          name: 'find_pages',
+          description: 'Find pages',
+          input
+        } ]
+      }));
+      assert.deepEqual(body.tools, [ {
+        functionDeclarations: [ {
+          name: 'find_pages',
+          description: 'Find pages',
+          parameters: input
+        } ]
+      } ]);
+    });
+
+    it('carries tool calls and results, recovering the response name from the call id', function() {
+      const body = adapter.buildBody(request({
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              text('searching'),
+              {
+                type: 'toolCall',
+                id: 'find_pages-0',
+                name: 'find_pages',
+                input: { title: 'Pricing' }
+              }
+            ]
+          },
+          {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: 'find_pages-0',
+              output: { id: 'p1' }
+            } ]
+          }
+        ]
+      }));
+      assert.deepEqual(body.contents, [
+        {
+          role: 'model',
+          parts: [
+            { text: 'searching' },
+            {
+              functionCall: {
+                name: 'find_pages',
+                args: { title: 'Pricing' }
+              }
+            }
+          ]
+        },
+        {
+          role: 'user',
+          parts: [ {
+            functionResponse: {
+              name: 'find_pages',
+              response: { id: 'p1' }
+            }
+          } ]
+        }
+      ]);
+    });
+
+    it('wraps a tool error result in the functionResponse', function() {
+      const body = adapter.buildBody(request({
+        messages: [
+          {
+            role: 'assistant',
+            content: [ {
+              type: 'toolCall',
+              id: 'x-0',
+              name: 'x',
+              input: {}
+            } ]
+          },
+          {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: 'x-0',
+              error: 'boom'
+            } ]
+          }
+        ]
+      }));
+      assert.deepEqual(body.contents[1].parts[0], {
+        functionResponse: {
+          name: 'x',
+          response: { error: 'boom' }
+        }
+      });
+    });
   });
 
   describe('response parsing', function() {
@@ -284,11 +385,39 @@ describe('AI adapter: google', function() {
         text('checking'),
         {
           type: 'toolCall',
+          // Synthesized: Gemini function calls carry no id
+          id: 'find_pages-0',
           name: 'find_pages',
           input: { title: 'Pricing' }
         }
       ]);
       assert.equal(turn.finishReason, 'toolCalls');
+    });
+
+    it('synthesizes a distinct id per function call in a turn', function() {
+      const turn = adapter.parseResponse(fixture({
+        candidates: [ candidate({
+          content: {
+            role: 'model',
+            parts: [
+              {
+                functionCall: {
+                  name: 'search',
+                  args: { q: 'a' }
+                }
+              },
+              {
+                functionCall: {
+                  name: 'search',
+                  args: { q: 'b' }
+                }
+              }
+            ]
+          },
+          finishReason: 'STOP'
+        }) ]
+      }));
+      assert.deepEqual(turn.content.map((part) => part.id), [ 'search-0', 'search-1' ]);
     });
 
     it('throws the refusal error on a blocked prompt', function() {
