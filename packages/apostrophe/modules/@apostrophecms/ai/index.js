@@ -662,6 +662,13 @@ module.exports = {
           return sources.map((source, index) => {
             const name = `images[${index}]`;
             if (isObject(source) && typeof source.url === 'string') {
+              // The adapter fetches this server-side, so only web urls
+              // pass — no data:, file: or relative forms. Vetting and
+              // authorizing a user-supplied url is the caller's job
+              // before it reaches this surface.
+              if (![ 'http:', 'https:' ].includes(urlProtocol(source.url))) {
+                throw self.apos.error('invalid', `${name}.url must be an absolute http(s) url`);
+              }
               return { url: source.url };
             }
             if (isObject(source) && typeof source.data === 'string' &&
@@ -676,6 +683,15 @@ module.exports = {
               `${name} must be an object like { url } or { data, mediaType }`
             );
           });
+        }
+
+        // The parsed protocol of an absolute url, or undefined
+        function urlProtocol(url) {
+          try {
+            return new URL(url).protocol;
+          } catch (e) {
+            return undefined;
+          }
         }
       },
       // Normalize an aspect dial to its canonical 'W:H' string. The named

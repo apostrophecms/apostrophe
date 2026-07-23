@@ -13,8 +13,14 @@
 // the combination in this dialect). Aliased entries describe other
 // services, which accept it, and pass through untouched.
 //
+// Image generation uses the OpenAI Images API — a REST surface separate
+// from Chat Completions, shared with the openai adapter (its lib/image.js)
+// since it does not depend on the chat dialect.
+//
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
+
+const image = require('../ai-adapter-openai/lib/image');
 
 module.exports = {
   options: {
@@ -70,7 +76,8 @@ module.exports = {
             'gpt-5.6-sol': {
               contextWindow: 1050000,
               maxOutputTokens: 128000
-            }
+            },
+            ...image.models
           },
           validate() {
             if (!this.apiKey) {
@@ -90,6 +97,19 @@ module.exports = {
               ...(request.signal && { signal: request.signal })
             });
             return self.parseResponse(response, request);
+          },
+          // Image generation is the Images API, a REST surface
+          // independent of the Chat Completions dialect, so it is the
+          // same call the openai adapter makes. The default target is
+          // OpenAI proper, which serves it; an aliased host that cannot
+          // declares `capabilities.image: false`.
+          async image(req, request) {
+            return image({
+              apos: self.apos,
+              apiKey: this.apiKey,
+              baseUrl: this.baseUrl,
+              timeout: self.options.timeout
+            }, request);
           },
           normalizeError(error) {
             return self.normalizeError(error);

@@ -142,6 +142,25 @@ describe('AI adapter: openai', function() {
     assert.equal(high.reasoning, 'high');
   });
 
+  it('declares the image models and their aspects', function() {
+    const { models } = apos.ai.getAdapter('openai');
+    assert.deepEqual(
+      models['gpt-image-2'].aspects,
+      [ '1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16' ]
+    );
+    assert.deepEqual(models['gpt-image-1'].aspects, [ '1:1', '3:2', '2:3' ]);
+    // What the core's aspect resolution sees for an image call
+    const info = apos.ai.modelInfo({
+      provider: 'openai',
+      model: 'gpt-image-2',
+      capability: 'image'
+    });
+    assert.deepEqual(
+      info.aspects,
+      [ '1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16' ]
+    );
+  });
+
   describe('request translation', function() {
     it('builds the minimal stateless body', function() {
       assert.deepEqual(adapter.buildBody(request()), {
@@ -805,6 +824,193 @@ describe('AI adapter: openai', function() {
     });
   });
 
+  describe('image', function() {
+    let httpScript;
+    let httpCalls;
+    let originalPost;
+    let originalFetch;
+    let fetchCalls;
+
+    before(function() {
+      originalPost = apos.http.post;
+      originalFetch = global.fetch;
+    });
+
+    after(function() {
+      apos.http.post = originalPost;
+      global.fetch = originalFetch;
+    });
+
+    beforeEach(function() {
+      httpScript = [];
+      httpCalls = [];
+      fetchCalls = [];
+      apos.http.post = async (url, options) => {
+        httpCalls.push({
+          url,
+          options
+        });
+        const step = httpScript.shift();
+        if (step === undefined) {
+          throw new Error('post called beyond its script');
+        }
+        return step();
+      };
+    });
+
+    // The provider instance the engine bound with this suite's config
+    const instance = () => apos.ai.providers.openai.adapter;
+    const imageResponse = (extras = {}) => ({
+      created: 1,
+      data: [ { b64_json: 'aW1n' } ],
+      usage: {
+        input_tokens: 9,
+        output_tokens: 42
+      },
+      ...extras
+    });
+
+    it('generates from a prompt, mapping aspect and quality to the dialect', async function() {
+      httpScript = [ () => imageResponse() ];
+      const result = await instance().image(apos.task.getReq(), {
+        prompt: 'a watercolor fox',
+        count: 1,
+        // The core resolved the requested aspect to a declared 'W:H'
+        aspect: '3:2',
+        quality: 'high',
+        model: 'gpt-image-1'
+      });
+      const [ call ] = httpCalls;
+      assert.equal(call.url, 'https://api.openai.com/v1/images/generations');
+      assert.equal(call.options.headers.authorization, 'Bearer sk-test');
+      assert.equal(call.options.timeout, 600000);
+      assert.deepEqual(call.options.body, {
+        model: 'gpt-image-1',
+        prompt: 'a watercolor fox',
+        n: 1,
+        size: '1536x1024',
+        quality: 'high'
+      });
+      assert.deepEqual(result, {
+        images: [ {
+          type: 'png',
+          data: 'aW1n'
+        } ],
+        model: 'gpt-image-1',
+        usage: {
+          inputTokens: 9,
+          outputTokens: 42
+        },
+        size: '1536x1024'
+      });
+    });
+
+    it('maps the wide aspects gpt-image-2 declares', async function() {
+      httpScript = [ () => imageResponse() ];
+      const result = await instance().image(apos.task.getReq(), {
+        prompt: 'a fox',
+        count: 1,
+        aspect: '16:9',
+        model: 'gpt-image-2'
+      });
+      assert.equal(httpCalls[0].options.body.size, '1536x864');
+      assert.equal(result.size, '1536x864');
+    });
+
+    it('omits an unset aspect and quality, and usage the service never reported', async function() {
+      httpScript = [ () => imageResponse({ usage: undefined }) ];
+      const result = await instance().image(apos.task.getReq(), {
+        prompt: 'a fox',
+        count: 2,
+        model: 'gpt-image-1'
+      });
+      assert.deepEqual(httpCalls[0].options.body, {
+        model: 'gpt-image-1',
+        prompt: 'a fox',
+        n: 2
+      });
+      assert.deepEqual(result, {
+        images: [ {
+          type: 'png',
+          data: 'aW1n'
+        } ],
+        model: 'gpt-image-1'
+      });
+    });
+
+    it('edits inline source images as a multipart upload', async function() {
+      httpScript = [ () => imageResponse() ];
+      const result = await instance().image(apos.task.getReq(), {
+        prompt: 'make the fox wear a red scarf',
+        count: 1,
+        aspect: '1:1',
+        model: 'gpt-image-1',
+        images: [ {
+          data: 'aGk=',
+          mediaType: 'image/png'
+        } ]
+      });
+      const [ call ] = httpCalls;
+      assert.equal(call.url, 'https://api.openai.com/v1/images/edits');
+      assert(call.options.body instanceof FormData);
+      const form = call.options.body;
+      assert.equal(form.get('model'), 'gpt-image-1');
+      assert.equal(form.get('prompt'), 'make the fox wear a red scarf');
+      assert.equal(form.get('n'), '1');
+      assert.equal(form.get('size'), '1024x1024');
+      const files = form.getAll('image[]');
+      assert.equal(files.length, 1);
+      assert.equal(files[0].type, 'image/png');
+      assert.equal(files[0].name, 'source-0.png');
+      assert.deepEqual(result.images, [ {
+        type: 'png',
+        data: 'aW1n'
+      } ]);
+    });
+
+    it('fetches a url source before uploading it', async function() {
+      global.fetch = async (url, options) => {
+        fetchCalls.push({
+          url,
+          options
+        });
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: (name) => (name === 'content-type' ? 'image/jpeg' : null) },
+          arrayBuffer: async () => new Uint8Array([ 1, 2, 3 ]).buffer
+        };
+      };
+      httpScript = [ () => imageResponse() ];
+      await instance().image(apos.task.getReq(), {
+        prompt: 'edit',
+        count: 1,
+        model: 'gpt-image-1',
+        images: [ { url: 'https://example.com/fox.png' } ]
+      });
+      assert.equal(fetchCalls[0].url, 'https://example.com/fox.png');
+      const files = httpCalls[0].options.body.getAll('image[]');
+      assert.equal(files.length, 1);
+      assert.equal(files[0].type, 'image/jpeg');
+      assert.equal(files[0].name, 'source-0.jpg');
+    });
+
+    it('rejects a url source that will not load', async function() {
+      global.fetch = async () => ({
+        ok: false,
+        status: 404,
+        headers: { get: () => null }
+      });
+      await assert.rejects(instance().image(apos.task.getReq(), {
+        prompt: 'edit',
+        count: 1,
+        model: 'gpt-image-1',
+        images: [ { url: 'https://example.com/missing.png' } ]
+      }), (e) => e.name === 'invalid');
+      assert.equal(httpCalls.length, 0);
+    });
+  });
+
   describe('live smoke', function() {
     const liveKey = process.env.APOS_OPENAI_KEY;
     let liveApos;
@@ -851,6 +1057,23 @@ describe('AI adapter: openai', function() {
       assert.equal(result.finishReason, 'stop');
       assert(Number.isFinite(result.usage.inputTokens));
       assert(Number.isFinite(result.usage.outputTokens));
+    });
+
+    it('generates an image against OpenAI for real', async function() {
+      const result = await liveApos.ai.providers.openai.adapter.image(
+        liveApos.task.getReq(),
+        {
+          prompt: 'a small watercolor fox',
+          count: 1,
+          aspect: '1:1',
+          quality: 'low',
+          model: 'gpt-image-2'
+        }
+      );
+      assert.equal(result.images.length, 1);
+      assert.equal(result.images[0].type, 'png');
+      assert(result.images[0].data.length > 0);
+      assert.equal(result.size, '1024x1024');
     });
   });
 });

@@ -1,9 +1,10 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 
-// The two standard image adapters' declared aspect sets — what the core's
+// The standard image models' declared aspect sets — what the core's
 // nearest-match resolves against
-const OPENAI = [ '1:1', '3:2', '2:3' ];
+const GPT_IMAGE_1 = [ '1:1', '3:2', '2:3' ];
+const GPT_IMAGE_2 = [ '1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16' ];
 const GOOGLE = [ '1:1', '3:4', '4:3', '9:16', '16:9' ];
 
 describe('AI image dials', function() {
@@ -48,23 +49,28 @@ describe('AI image dials', function() {
   describe('resolveAspect nearest-match', function() {
     // [ requested, declared aspects, resolved native aspect ]
     const cases = [
-      // named tokens against each standard adapter's set
-      [ 'square', OPENAI, '1:1' ],
-      [ 'portrait', OPENAI, '2:3' ],
-      [ 'landscape', OPENAI, '3:2' ],
+      // named tokens against each standard model's set
+      [ 'square', GPT_IMAGE_1, '1:1' ],
+      [ 'portrait', GPT_IMAGE_1, '2:3' ],
+      [ 'landscape', GPT_IMAGE_1, '3:2' ],
+      [ 'square', GPT_IMAGE_2, '1:1' ],
+      [ 'portrait', GPT_IMAGE_2, '3:4' ],
+      [ 'landscape', GPT_IMAGE_2, '4:3' ],
       [ 'square', GOOGLE, '1:1' ],
       [ 'portrait', GOOGLE, '3:4' ],
       [ 'landscape', GOOGLE, '4:3' ],
       // explicit W:H — exact when declared, nearest otherwise
-      [ '1:1', OPENAI, '1:1' ],
+      [ '1:1', GPT_IMAGE_1, '1:1' ],
       [ '1:1', GOOGLE, '1:1' ],
-      [ '16:9', OPENAI, '3:2' ],
+      [ '16:9', GPT_IMAGE_1, '3:2' ],
+      [ '16:9', GPT_IMAGE_2, '16:9' ],
       [ '16:9', GOOGLE, '16:9' ],
-      [ '9:16', OPENAI, '2:3' ],
+      [ '9:16', GPT_IMAGE_1, '2:3' ],
       [ '9:16', GOOGLE, '9:16' ],
-      [ '3:2', OPENAI, '3:2' ],
+      [ '3:2', GPT_IMAGE_1, '3:2' ],
       [ '3:2', GOOGLE, '4:3' ],
-      [ '2:1', OPENAI, '3:2' ],
+      [ '2:1', GPT_IMAGE_1, '3:2' ],
+      [ '2:1', GPT_IMAGE_2, '16:9' ],
       [ '2:1', GOOGLE, '16:9' ],
       // reciprocal tie → the larger ratio wins
       [ '1:1', [ '3:2', '2:3' ], '3:2' ],
@@ -80,7 +86,7 @@ describe('AI image dials', function() {
     }
 
     it('an omitted dial resolves to undefined', function() {
-      assert.equal(apos.ai.resolveAspect(undefined, OPENAI), undefined);
+      assert.equal(apos.ai.resolveAspect(undefined, GPT_IMAGE_1), undefined);
     });
 
     it('a model with no declared aspects passes the canonical ratio through', function() {
@@ -163,6 +169,9 @@ describe('AI image dials', function() {
       [ 'an unknown quality', 'a fox', { quality: 'ultra' } ],
       [ 'an empty images array', 'a fox', { images: [] } ],
       [ 'a malformed image source', 'a fox', { images: [ { path: 'x' } ] } ],
+      [ 'a non-http(s) source url', 'a fox', { images: [ { url: 'file:///etc/passwd' } ] } ],
+      [ 'a data: source url', 'a fox', { images: [ { url: 'data:image/png;base64,aGk=' } ] } ],
+      [ 'a relative source url', 'a fox', { images: [ { url: '/uploads/fox.png' } ] } ],
       [ 'provider without model', 'a fox', { provider: 'openai' } ],
       [ 'model without provider', 'a fox', { model: 'gpt-image-1' } ],
       [ 'a non-AbortSignal signal', 'a fox', { signal: {} } ]
