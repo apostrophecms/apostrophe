@@ -1,7 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 
-describe('AI adapter: openai', function() {
+describe('AI adapter: openai-compatible', function() {
   this.timeout(t.timeout);
 
   let apos;
@@ -35,11 +35,11 @@ describe('AI adapter: openai', function() {
         },
         '@apostrophecms/ai': {
           options: {
-            provider: 'openai',
+            provider: 'openai-compatible',
             providers: {
-              openai: { apiKey: 'sk-test' },
+              'openai-compatible': { apiKey: 'sk-test' },
               gateway: {
-                adapter: 'openai',
+                adapter: 'openai-compatible',
                 apiKey: 'sk-gw',
                 baseUrl: 'https://llm-gateway.example.com/openai/v1'
               }
@@ -50,7 +50,7 @@ describe('AI adapter: openai', function() {
         }
       }
     });
-    adapter = apos.modules['@apostrophecms/ai-adapter-openai'];
+    adapter = apos.modules['@apostrophecms/ai-adapter-openai-compatible'];
   });
 
   after(async function() {
@@ -78,43 +78,25 @@ describe('AI adapter: openai', function() {
     cache: false,
     ...extras
   });
-  // Canned Responses API output items and response body
-  const messageItem = (value) => ({
-    type: 'message',
-    id: 'msg_1',
-    role: 'assistant',
-    status: 'completed',
-    content: [ {
-      type: 'output_text',
-      text: value,
-      annotations: []
-    } ]
-  });
-  const callItem = (extras = {}) => ({
-    type: 'function_call',
-    id: 'fc_1',
-    call_id: 'call_1',
-    name: 'find_pages',
-    arguments: '{"title":"Pricing"}',
-    status: 'completed',
-    ...extras
-  });
-  const reasoningItem = (extras = {}) => ({
-    type: 'reasoning',
-    id: 'rs_1',
-    summary: [],
-    encrypted_content: 'gAAAAB-opaque',
+  // A canned Chat Completions choice and response body
+  const choice = (extras = {}) => ({
+    index: 0,
+    message: {
+      role: 'assistant',
+      content: 'a haiku',
+      refusal: null
+    },
+    finish_reason: 'stop',
     ...extras
   });
   const fixture = (extras = {}) => ({
-    id: 'resp_1',
-    object: 'response',
-    status: 'completed',
+    id: 'chatcmpl-1',
+    object: 'chat.completion',
     model: 'gpt-5.6-terra-2026-06-26',
-    output: [ messageItem('a haiku') ],
+    choices: [ choice() ],
     usage: {
-      input_tokens: 12,
-      output_tokens: 7
+      prompt_tokens: 12,
+      completion_tokens: 7
     },
     ...extras
   });
@@ -129,43 +111,48 @@ describe('AI adapter: openai', function() {
   );
 
   it('registers the adapter and activates the provider', function() {
-    assert(apos.ai.getAdapter('openai'));
-    assert.equal(apos.ai.getAdapter('openai').envKey, 'APOS_OPENAI_KEY');
+    assert(apos.ai.getAdapter('openai-compatible'));
+    assert.equal(apos.ai.getAdapter('openai-compatible').envKey, 'APOS_OPENAI_KEY');
     assert.equal(apos.ai.active, true);
     const info = apos.ai.modelInfo();
-    assert.equal(info.provider, 'openai');
+    assert.equal(info.provider, 'openai-compatible');
     assert.equal(info.model, 'gpt-5.6-terra');
     assert.equal(info.contextWindow, 1050000);
     assert.equal(info.maxOutputTokens, 128000);
     const high = apos.ai.modelInfo({ effort: 'high' });
     assert.equal(high.model, 'gpt-5.6-sol');
-    assert.equal(high.reasoning, 'high');
+    // No reasoning on the native high row: the reasoning path for
+    // OpenAI proper is the openai adapter
+    assert.equal(high.reasoning, undefined);
   });
 
   describe('request translation', function() {
-    it('builds the minimal stateless body', function() {
+    it('builds the minimal body, collapsing one text part to a string', function() {
       assert.deepEqual(adapter.buildBody(request()), {
         model: 'gpt-5.6-terra',
-        store: false,
-        input: [ {
+        messages: [ {
           role: 'user',
-          content: [ {
-            type: 'input_text',
-            text: 'write a haiku about cats'
-          } ]
+          content: 'write a haiku about cats'
         } ],
-        max_output_tokens: 128000
+        max_completion_tokens: 128000
       });
     });
 
-    it('sends the system prompt as instructions', function() {
+    it('leads with the system prompt as a system message', function() {
       const body = adapter.buildBody(request({ system: 'You help editors.' }));
-      assert.equal(body.instructions, 'You help editors.');
-      assert.equal(body.input.length, 1);
-      assert.equal(body.input[0].role, 'user');
+      assert.deepEqual(body.messages, [
+        {
+          role: 'system',
+          content: 'You help editors.'
+        },
+        {
+          role: 'user',
+          content: 'write a haiku about cats'
+        }
+      ]);
     });
 
-    it('translates both image forms to input_image parts', function() {
+    it('keeps multi-part content as parts and translates both image forms', function() {
       const body = adapter.buildBody(request({
         messages: [ {
           role: 'user',
@@ -185,56 +172,33 @@ describe('AI adapter: openai', function() {
           ]
         } ]
       }));
-      assert.deepEqual(body.input[0].content, [
+      assert.deepEqual(body.messages[0].content, [
         {
-          type: 'input_text',
+          type: 'text',
           text: 'describe these'
         },
         {
-          type: 'input_image',
-          image_url: 'https://example.com/a.png'
+          type: 'image_url',
+          image_url: { url: 'https://example.com/a.png' }
         },
         {
-          type: 'input_image',
-          image_url: 'data:image/png;base64,aGk='
+          type: 'image_url',
+          image_url: { url: 'data:image/png;base64,aGk=' }
         }
       ]);
     });
 
-    it('sends reasoning as the effort object', function() {
-      assert.equal(adapter.buildBody(request()).reasoning, undefined);
-      assert.deepEqual(
-        adapter.buildBody(request({ reasoning: 'high' })).reasoning,
-        { effort: 'high' }
-      );
-    });
-
-    it('asks for encrypted reasoning content only when tools ride along', function() {
-      const tools = [ {
-        name: 'find_pages',
-        description: 'Find pages',
-        input: { type: 'object' }
-      } ];
+    it('passes reasoning through as reasoning_effort', function() {
+      assert.equal(adapter.buildBody(request()).reasoning_effort, undefined);
       assert.equal(
-        'include' in adapter.buildBody(request({ reasoning: 'high' })),
-        false
-      );
-      assert.equal(
-        'include' in adapter.buildBody(request({ tools })),
-        false
-      );
-      assert.deepEqual(
-        adapter.buildBody(request({
-          reasoning: 'high',
-          tools
-        })).include,
-        [ 'reasoning.encrypted_content' ]
+        adapter.buildBody(request({ reasoning: 'high' })).reasoning_effort,
+        'high'
       );
     });
 
     it('omits the token cap when none resolved', function() {
       const body = adapter.buildBody(request({ maxTokens: undefined }));
-      assert.equal('max_output_tokens' in body, false);
+      assert.equal('max_completion_tokens' in body, false);
     });
 
     it('places nothing for any cache policy', function() {
@@ -246,7 +210,7 @@ describe('AI adapter: openai', function() {
       }
     });
 
-    it('translates tool definitions to flattened non-strict function tools', function() {
+    it('translates tool definitions to function tools', function() {
       const input = {
         type: 'object',
         properties: { title: { type: 'string' } }
@@ -260,49 +224,96 @@ describe('AI adapter: openai', function() {
       }));
       assert.deepEqual(body.tools, [ {
         type: 'function',
-        name: 'find_pages',
-        description: 'Find pages',
-        parameters: input,
-        strict: false
+        function: {
+          name: 'find_pages',
+          description: 'Find pages',
+          parameters: input
+        }
       } ]);
     });
 
-    it('translates an assistant turn part by part, in order', function() {
-      const item = reasoningItem();
+    it('carries an assistant tool call and fans a tool batch into one message per result', function() {
       const body = adapter.buildBody(request({
-        messages: [ {
-          role: 'assistant',
-          content: [
-            {
-              type: 'reasoning',
-              item
-            },
-            text('searching'),
-            {
-              type: 'toolCall',
-              id: 'call_1',
-              name: 'find_pages',
-              input: { title: 'Pricing' }
-            }
-          ]
-        } ]
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              text('searching'),
+              {
+                type: 'toolCall',
+                id: 'c1',
+                name: 'find_pages',
+                input: { title: 'Pricing' }
+              }
+            ]
+          },
+          {
+            role: 'tool',
+            content: [
+              {
+                type: 'toolResult',
+                toolCallId: 'c1',
+                output: { id: 'p1' }
+              },
+              {
+                type: 'toolResult',
+                toolCallId: 'c2',
+                error: 'not found'
+              }
+            ]
+          }
+        ]
       }));
-      assert.deepEqual(body.input, [
-        item,
+      assert.deepEqual(body.messages, [
         {
           role: 'assistant',
-          content: [ {
-            type: 'output_text',
-            text: 'searching'
+          content: 'searching',
+          tool_calls: [ {
+            id: 'c1',
+            type: 'function',
+            function: {
+              name: 'find_pages',
+              arguments: JSON.stringify({ title: 'Pricing' })
+            }
           } ]
         },
         {
-          type: 'function_call',
-          call_id: 'call_1',
-          name: 'find_pages',
-          arguments: JSON.stringify({ title: 'Pricing' })
+          role: 'tool',
+          tool_call_id: 'c1',
+          content: JSON.stringify({ id: 'p1' })
+        },
+        {
+          role: 'tool',
+          tool_call_id: 'c2',
+          content: 'not found'
         }
       ]);
+    });
+
+    it('sends null content for an assistant turn that is only tool calls', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [ {
+            type: 'toolCall',
+            id: 'c1',
+            name: 'ping',
+            input: {}
+          } ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0], {
+        role: 'assistant',
+        content: null,
+        tool_calls: [ {
+          id: 'c1',
+          type: 'function',
+          function: {
+            name: 'ping',
+            arguments: '{}'
+          }
+        } ]
+      });
     });
 
     it('skips assistant parts another dialect owns', function() {
@@ -311,68 +322,31 @@ describe('AI adapter: openai', function() {
           role: 'assistant',
           content: [
             {
-              type: 'thinking',
-              thinking: 'hidden',
-              signature: 'sig'
+              type: 'reasoning',
+              item: { type: 'reasoning' }
             },
             text('visible')
           ]
         } ]
       }));
-      assert.deepEqual(body.input, [ {
+      assert.deepEqual(body.messages[0], {
         role: 'assistant',
-        content: [ {
-          type: 'output_text',
-          text: 'visible'
-        } ]
-      } ]);
+        content: 'visible'
+      });
     });
 
-    it('fans a tool batch into one function_call_output item per result', function() {
-      const body = adapter.buildBody(request({
-        messages: [ {
-          role: 'tool',
-          content: [
-            {
-              type: 'toolResult',
-              toolCallId: 'call_1',
-              output: { id: 'p1' }
-            },
-            {
-              type: 'toolResult',
-              toolCallId: 'call_2',
-              error: 'not found'
-            }
-          ]
-        } ]
-      }));
-      assert.deepEqual(body.input, [
-        {
-          type: 'function_call_output',
-          call_id: 'call_1',
-          output: JSON.stringify({ id: 'p1' })
-        },
-        {
-          type: 'function_call_output',
-          call_id: 'call_2',
-          output: 'not found'
-        }
-      ]);
-    });
-
-    it('sends a structured-output schema as the non-strict json_schema text format', function() {
+    it('sends a structured-output schema as a json_schema response format', function() {
       const schema = {
         type: 'object',
         properties: { title: { type: 'string' } },
         required: [ 'title' ]
       };
       const body = adapter.buildBody(request({ schema }));
-      assert.deepEqual(body.text, {
-        format: {
-          type: 'json_schema',
+      assert.deepEqual(body.response_format, {
+        type: 'json_schema',
+        json_schema: {
           name: 'response',
-          schema,
-          strict: false
+          schema
         }
       });
     });
@@ -391,36 +365,45 @@ describe('AI adapter: openai', function() {
       });
     });
 
-    it('derives the finish reason from status and output', function() {
-      for (const [ extras, ours ] of [
-        [ {}, 'stop' ],
-        [ { output: [ callItem() ] }, 'toolCalls' ],
-        [ {
-          status: 'incomplete',
-          incomplete_details: { reason: 'max_output_tokens' }
-        }, 'length' ],
-        [ {
-          status: 'incomplete',
-          incomplete_details: { reason: 'content_filter' }
-        }, 'refusal' ],
-        [ {
-          status: 'incomplete',
-          incomplete_details: { reason: 'weird' }
-        }, undefined ],
-        // Unknown statuses yield none: the engine treats the turn as
+    it('maps the finish reasons', function() {
+      for (const [ theirs, ours ] of [
+        [ 'stop', 'stop' ],
+        [ 'length', 'length' ],
+        [ 'tool_calls', 'toolCalls' ],
+        // The engine converts the refusal finish reason to the
+        // refusal error
+        [ 'content_filter', 'refusal' ],
+        // Unknown reasons yield none: the engine treats the turn as
         // malformed and retries, never a truncated success
-        [ { status: 'failed' }, undefined ]
+        [ 'weird', undefined ]
       ]) {
         assert.equal(
-          adapter.parseResponse(fixture(extras)).finishReason,
+          adapter.parseResponse(fixture({
+            choices: [ choice({ finish_reason: theirs }) ]
+          })).finishReason,
           ours
         );
       }
     });
 
-    it('translates function calls, parsing their arguments', function() {
+    it('translates tool calls, parsing their arguments', function() {
       const turn = adapter.parseResponse(fixture({
-        output: [ callItem() ]
+        choices: [ choice({
+          message: {
+            role: 'assistant',
+            content: null,
+            refusal: null,
+            tool_calls: [ {
+              id: 'call_1',
+              type: 'function',
+              function: {
+                name: 'find_pages',
+                arguments: '{"title":"Pricing"}'
+              }
+            } ]
+          },
+          finish_reason: 'tool_calls'
+        }) ]
       }));
       assert.deepEqual(turn.content, [ {
         type: 'toolCall',
@@ -431,39 +414,16 @@ describe('AI adapter: openai', function() {
       assert.equal(turn.finishReason, 'toolCalls');
     });
 
-    it('carries a replayable reasoning item as an opaque part, drops a bare one', function() {
-      const item = reasoningItem();
-      const turn = adapter.parseResponse(fixture({
-        output: [ item, callItem() ]
-      }));
-      assert.deepEqual(turn.content[0], {
-        type: 'reasoning',
-        item
-      });
-      assert.equal(turn.content[1].type, 'toolCall');
-
-      const bare = adapter.parseResponse(fixture({
-        output: [
-          reasoningItem({ encrypted_content: undefined }),
-          messageItem('a haiku')
-        ]
-      }));
-      assert.deepEqual(bare.content, [ text('a haiku') ]);
-    });
-
-    it('throws the refusal error on a refusal part', function() {
+    it('throws the refusal error on an in-body refusal', function() {
       assert.throws(
         () => adapter.parseResponse(fixture({
-          output: [ {
-            type: 'message',
-            id: 'msg_1',
-            role: 'assistant',
-            status: 'completed',
-            content: [ {
-              type: 'refusal',
+          choices: [ choice({
+            message: {
+              role: 'assistant',
+              content: null,
               refusal: 'I cannot help with that.'
-            } ]
-          } ]
+            }
+          }) ]
         })),
         (e) => {
           assert.equal(e.name, 'aiRefusal');
@@ -479,7 +439,9 @@ describe('AI adapter: openai', function() {
         description: 'Our plans'
       };
       const turn = adapter.parseResponse(
-        fixture({ output: [ messageItem(JSON.stringify(object)) ] }),
+        fixture({
+          choices: [ choice({ message: { content: JSON.stringify(object) } }) ]
+        }),
         request({ schema: { type: 'object' } })
       );
       assert.deepEqual(turn.object, object);
@@ -490,7 +452,9 @@ describe('AI adapter: openai', function() {
     it('treats malformed structured JSON as a retryable response', function() {
       assert.throws(
         () => adapter.parseResponse(
-          fixture({ output: [ messageItem('not json') ] }),
+          fixture({
+            choices: [ choice({ message: { content: 'not json' } }) ]
+          }),
           request({ schema: { type: 'object' } })
         ),
         (e) => {
@@ -503,7 +467,7 @@ describe('AI adapter: openai', function() {
 
     it('leaves the turn object unset without a schema request', function() {
       const turn = adapter.parseResponse(fixture({
-        output: [ messageItem('{"a":1}') ]
+        choices: [ choice({ message: { content: '{"a":1}' } }) ]
       }));
       assert.equal('object' in turn, false);
     });
@@ -625,7 +589,7 @@ describe('AI adapter: openai', function() {
       );
       assert.equal(result.text, 'a haiku');
       assert.equal(result.finishReason, 'stop');
-      assert.equal(result.provider, 'openai');
+      assert.equal(result.provider, 'openai-compatible');
       // The model the response named, not the routed alias
       assert.equal(result.model, 'gpt-5.6-terra-2026-06-26');
       assert.deepEqual(result.usage, {
@@ -634,21 +598,17 @@ describe('AI adapter: openai', function() {
       });
 
       const [ call ] = httpCalls;
-      assert.equal(call.url, 'https://api.openai.com/v1/responses');
+      assert.equal(call.url, 'https://api.openai.com/v1/chat/completions');
       assert.equal(call.options.headers.authorization, 'Bearer sk-test');
       assert.equal(call.options.timeout, 600000);
       // The whole body: the default short cache policy adds nothing
       assert.deepEqual(call.options.body, {
         model: 'gpt-5.6-terra',
-        store: false,
-        input: [ {
+        messages: [ {
           role: 'user',
-          content: [ {
-            type: 'input_text',
-            text: 'write a haiku about cats'
-          } ]
+          content: 'write a haiku about cats'
         } ],
-        max_output_tokens: 128000
+        max_completion_tokens: 128000
       });
     });
 
@@ -659,62 +619,47 @@ describe('AI adapter: openai', function() {
         model: 'gpt-5.6-terra'
       });
       const [ call ] = httpCalls;
-      assert.equal(call.url, 'https://llm-gateway.example.com/openai/v1/responses');
+      assert.equal(call.url, 'https://llm-gateway.example.com/openai/v1/chat/completions');
       assert.equal(call.options.headers.authorization, 'Bearer sk-gw');
-      assert.equal(call.options.body.max_output_tokens, 128000);
+      assert.equal(call.options.body.max_completion_tokens, 128000);
     });
 
-    it('drives a reasoning tool loop end to end, replaying the reasoning item', async function() {
-      const item = reasoningItem();
-      httpScript = [
-        () => fixture({
-          output: [
-            item,
-            callItem({
-              name: 'echo',
-              arguments: JSON.stringify({ value: 'pricing' })
-            })
-          ]
-        }),
-        () => fixture({ output: [ messageItem('done') ] })
-      ];
-      const result = await apos.ai.generate(apos.task.getReq(), 'use the tool', {
+    it('drops reasoning from a native tools request, keeping it everywhere else', async function() {
+      // Native, tools + reasoning: the service rejects the
+      // combination, so reasoning is dropped
+      httpScript = [ () => fixture() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', {
         tools: [ 'echo' ],
         reasoning: 'high'
       });
-      assert.equal(result.text, 'done');
-      assert.equal(result.finishReason, 'stop');
-      assert.deepEqual(result.steps, [ {
-        toolCall: {
-          type: 'toolCall',
-          id: 'call_1',
-          name: 'echo',
-          input: { value: 'pricing' }
-        },
-        result: { value: 'pricing' }
-      } ]);
-      assert.equal(httpCalls.length, 2);
-      // The first wire call asked for the replayable reasoning content
-      assert.deepEqual(
-        httpCalls[0].options.body.include,
-        [ 'reasoning.encrypted_content' ]
-      );
-      // The second replays the whole exchange: the reasoning item
-      // verbatim ahead of its function call, then the result
-      assert.deepEqual(httpCalls[1].options.body.input.slice(1), [
-        item,
-        {
-          type: 'function_call',
-          call_id: 'call_1',
-          name: 'echo',
-          arguments: JSON.stringify({ value: 'pricing' })
-        },
-        {
-          type: 'function_call_output',
-          call_id: 'call_1',
-          output: JSON.stringify({ value: 'pricing' })
-        }
-      ]);
+      assert(httpCalls[0].options.body.tools);
+      assert.equal('reasoning_effort' in httpCalls[0].options.body, false);
+
+      // Native, tools + the explicit 'none' level: the one value the
+      // service accepts beside tools passes through
+      httpScript = [ () => fixture() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', {
+        tools: [ 'echo' ],
+        reasoning: 'none'
+      });
+      assert.equal(httpCalls[1].options.body.reasoning_effort, 'none');
+
+      // Native, reasoning without tools: nothing to degrade
+      httpScript = [ () => fixture() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', { reasoning: 'high' });
+      assert.equal(httpCalls[2].options.body.reasoning_effort, 'high');
+
+      // An aliased entry describes another service, which accepts the
+      // combination: everything passes through untouched
+      httpScript = [ () => fixture() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', {
+        provider: 'gateway',
+        model: 'gpt-5.6-sol',
+        tools: [ 'echo' ],
+        reasoning: 'high'
+      });
+      assert(httpCalls[3].options.body.tools);
+      assert.equal(httpCalls[3].options.body.reasoning_effort, 'high');
     });
 
     it('returns a validated object for a structured call over the wire', async function() {
@@ -723,7 +668,7 @@ describe('AI adapter: openai', function() {
         description: 'Our plans'
       };
       httpScript = [ () => fixture({
-        output: [ messageItem(JSON.stringify(object)) ]
+        choices: [ choice({ message: { content: JSON.stringify(object) } }) ]
       }) ];
       const result = await apos.ai.generate(apos.task.getReq(), {
         messages: [ {
@@ -746,11 +691,11 @@ describe('AI adapter: openai', function() {
         }
       });
       assert.deepEqual(result.object, object);
-      // The schema went out as the json_schema text format
+      // The schema went out as the json_schema response format
       const { body } = httpCalls[0].options;
-      assert.equal(body.text.format.type, 'json_schema');
+      assert.equal(body.response_format.type, 'json_schema');
       assert.deepEqual(
-        body.text.format.schema.required,
+        body.response_format.json_schema.schema.required,
         [ 'title', 'description' ]
       );
     });
@@ -784,21 +729,61 @@ describe('AI adapter: openai', function() {
       assert.equal(record.data.requestId, 'req_9');
     });
 
-    it('surfaces a refusal part as the refusal error, without a retry', async function() {
+    it('hard-stops a 401 as forbidden', async function() {
+      httpScript = [ () => {
+        throw httpError(401, { 'x-request-id': 'req_1' }, {
+          error: {
+            message: 'Incorrect API key provided',
+            type: 'invalid_request_error',
+            code: 'invalid_api_key'
+          }
+        });
+      } ];
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.equal(e.name, 'forbidden');
+        assert.equal(e.message, 'Incorrect API key provided');
+        return true;
+      });
+      assert.equal(httpCalls.length, 1);
+      assert.deepEqual(
+        logRecords.map((record) => [ record.type, record.data.code ]),
+        [ [ 'failure', 'forbidden' ] ]
+      );
+    });
+
+    it('surfaces an in-body refusal as the refusal error, without a retry', async function() {
       httpScript = [ () => fixture({
-        output: [ {
-          type: 'message',
-          id: 'msg_1',
-          role: 'assistant',
-          status: 'completed',
-          content: [ {
-            type: 'refusal',
+        choices: [ choice({
+          message: {
+            role: 'assistant',
+            content: null,
             refusal: 'I cannot help with that.'
-          } ]
-        } ]
+          }
+        }) ]
       }) ];
       await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
         assert.equal(e.name, 'aiRefusal');
+        return true;
+      });
+      assert.equal(httpCalls.length, 1);
+    });
+
+    it('retries an unknown finish reason as a malformed turn', async function() {
+      httpScript = [
+        () => fixture({ choices: [ choice({ finish_reason: 'weird' }) ] }),
+        () => fixture()
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), 'p');
+      assert.equal(result.text, 'a haiku');
+      assert.equal(httpCalls.length, 2);
+    });
+
+    it('lets a caller abort surface as its own error', async function() {
+      httpScript = [ () => {
+        throw new DOMException('The operation was aborted', 'AbortError');
+      } ];
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.equal(e.name, 'AbortError');
         return true;
       });
       assert.equal(httpCalls.length, 1);
@@ -821,7 +806,7 @@ describe('AI adapter: openai', function() {
           '@apostrophecms/ai': {
             options: {
               providers: {
-                openai: { apiKey: liveKey }
+                'openai-compatible': { apiKey: liveKey }
               }
             }
           }
@@ -847,7 +832,7 @@ describe('AI adapter: openai', function() {
         }
       );
       assert(result.text.length > 0);
-      assert.equal(result.provider, 'openai');
+      assert.equal(result.provider, 'openai-compatible');
       assert.equal(result.finishReason, 'stop');
       assert(Number.isFinite(result.usage.inputTokens));
       assert(Number.isFinite(result.usage.outputTokens));

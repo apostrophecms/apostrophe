@@ -26,6 +26,14 @@ module.exports = {
     self.apos.ai.addAdapter(self.adapter());
   },
   methods(self) {
+    // Anthropic has no response-schema mode, so structured output is
+    // delivered through tool use: a synthetic tool whose input schema is
+    // the request's `schema`. The model calls it to answer; parseResponse
+    // turns that call back into a plain structured answer. Its name leads
+    // with an underscore, which the engine's tool-name rule forbids, so
+    // it can never collide with a real tool.
+    const FINAL_ANSWER = '_final_answer';
+    const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this tool with the required fields. This is the only way to return your response.';
     return {
       // The adapter definition registered with `apos.ai`. The engine
       // instantiates it per configured provider entry, assigning
@@ -84,7 +92,7 @@ module.exports = {
               timeout: self.options.timeout,
               ...(request.signal && { signal: request.signal })
             });
-            return self.parseResponse(response);
+            return self.parseResponse(response, request);
           },
           normalizeError(error) {
             return self.normalizeError(error);
@@ -93,29 +101,61 @@ module.exports = {
       },
       // Translate a normalized adapter request (see the engine's
       // buildRequest) to an Anthropic Messages API body: content parts
-      // become Anthropic blocks, `reasoning` becomes a thinking budget,
-      // and the cache policy is placed as `cache_control` markers — one
-      // on the system tail (the static prefix) and a rolling one on the
-      // last message, so the next call in a conversation reads what
-      // this one wrote. Throws "invalid" on requests the dialect cannot
-      // express.
+      // become Anthropic blocks, tool definitions become `tools`,
+      // `reasoning` becomes a thinking budget, and the cache policy is
+      // placed as `cache_control` markers — one on the system tail (the
+      // static prefix) and a rolling one on the last message, so the
+      // next call in a conversation reads what this one wrote. Tool
+      // requests and results ride the conversation as `tool_use` and
+      // `tool_result` blocks; the dialect has no tool role, so a
+      // normalized `tool` message becomes a `user` message of
+      // `tool_result` blocks. This adapter's own opaque `thinking`
+      // parts are replayed as the raw signed blocks they carry, ahead
+      // of the turn's other blocks — Anthropic requires an assistant
+      // turn's thinking preserved unmodified when its tool results come
+      // back. Part types this dialect does not own are skipped. A
+      // structured-output `schema` adds the synthetic final-answer
+      // tool, forced when nothing competes for the turn. Throws
+      // "invalid" on requests the dialect cannot express.
       buildBody(request) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
         };
         const {
-          system, messages, model, maxTokens, reasoning, cache
+          system, messages, model, maxTokens, reasoning, cache, tools, schema
         } = request;
         if (!Number.isInteger(maxTokens)) {
           invalid(`"maxTokens" is required: model "${model}" declares no maxOutputTokens to default to`);
         }
+        const wireTools = [
+          ...(tools || []).map(toTool),
+          ...(schema
+            ? [ {
+              name: FINAL_ANSWER,
+              description: FINAL_ANSWER_DESCRIPTION,
+              input_schema: schema
+            } ]
+            : [])
+        ];
         const body = {
           model,
           max_tokens: maxTokens,
           ...(system !== undefined && { system }),
+          ...(wireTools.length && { tools: wireTools }),
+          // Force the structured answer only when nothing else needs the
+          // turn: a real tool the model must be free to call first, or
+          // extended thinking, which Anthropic forbids alongside a forced
+          // tool. Otherwise the tool's description drives it and the
+          // engine's backstop retries a miss.
+          ...(schema && !(tools && tools.length) && reasoning === undefined && {
+            tool_choice: {
+              type: 'tool',
+              name: FINAL_ANSWER
+            }
+          }),
           messages: messages.map((message) => ({
-            role: message.role,
-            content: message.content.map(toBlock)
+            role: message.role === 'tool' ? 'user' : message.role,
+            content: message.content.map(toBlock).filter(Boolean)
           }))
         };
         if (reasoning !== undefined) {
@@ -138,6 +178,15 @@ module.exports = {
         }
         return body;
 
+        // The model-facing tool definition; the JSON Schema travels
+        // verbatim as input_schema
+        function toTool(tool) {
+          return {
+            name: tool.name,
+            description: tool.description,
+            input_schema: tool.input
+          };
+        }
         function toBlock(part) {
           if (part.type === 'text') {
             return {
@@ -145,20 +194,50 @@ module.exports = {
               text: part.text
             };
           }
-          // part.type === 'image', in one of the two normalized forms
-          return {
-            type: 'image',
-            source: part.image.url !== undefined
-              ? {
-                type: 'url',
-                url: part.image.url
-              }
-              : {
-                type: 'base64',
-                media_type: part.image.mediaType,
-                data: part.image.data
-              }
-          };
+          if (part.type === 'toolCall') {
+            return {
+              type: 'tool_use',
+              id: part.id,
+              name: part.name,
+              input: part.input
+            };
+          }
+          if (part.type === 'toolResult') {
+            // Anthropic carries the result as a string; an object output
+            // is serialized, an error is flagged
+            return {
+              type: 'tool_result',
+              tool_use_id: part.toolCallId,
+              ...(part.error !== undefined
+                ? {
+                  content: part.error,
+                  is_error: true
+                }
+                : { content: JSON.stringify(part.output) })
+            };
+          }
+          // The raw signed thinking block this adapter's parseResponse
+          // carried over, replayed verbatim
+          if (part.type === 'thinking') {
+            return part.block;
+          }
+          if (part.type === 'image') {
+            return {
+              type: 'image',
+              source: part.image.url !== undefined
+                ? {
+                  type: 'url',
+                  url: part.image.url
+                }
+                : {
+                  type: 'base64',
+                  media_type: part.image.mediaType,
+                  data: part.image.data
+                }
+            };
+          }
+          // Another dialect's part; not ours to translate
+          return null;
         }
         // Anthropic wants an absolute token budget, mapped by the
         // thinkingBudgets option; the budget must leave max_tokens
@@ -178,31 +257,59 @@ module.exports = {
         }
       },
       // Translate an Anthropic Messages response to the normalized
-      // assistant turn { content, finishReason, usage, model }. Thinking
-      // blocks are not conversation content and do not travel. A
-      // `refusal` stop reason throws the refusal error here, so
-      // "refused" always arrives as an error. An unknown stop reason
-      // maps to no finishReason — the engine's turn validation treats
-      // that as a malformed (retryable) response, never a truncated
-      // success.
-      parseResponse(response) {
+      // assistant turn { content, finishReason, usage, model }. A
+      // thinking (or redacted thinking) block rides along as this
+      // adapter's opaque `thinking` part carrying the raw signed block:
+      // Anthropic requires it back, unmodified, when the turn's tool
+      // results are submitted, so the loop replays what buildBody then
+      // restores. A `refusal` stop reason throws the refusal error
+      // here, so "refused" always arrives as an error. When the request asked for
+      // structured output and the model called the synthetic
+      // final-answer tool, that call is the answer, not a tool for the
+      // core to run: it becomes a `stop` turn carrying the arguments on
+      // `object` (and their JSON in the text, so the transcript
+      // round-trips). Anything else — free text, a real tool call —
+      // parses normally, leaving no `object` for the engine backstop to
+      // retry on. An unknown stop reason maps to no finishReason — the
+      // engine's turn validation treats that as a malformed (retryable)
+      // response, never a truncated success.
+      parseResponse(response, request = {}) {
         if (response.stop_reason === 'refusal') {
           throw self.apos.error('aiRefusal', 'the model refused this request');
         }
+        const usage = {
+          inputTokens: response.usage?.input_tokens,
+          outputTokens: response.usage?.output_tokens
+        };
+        const content = (response.content || [])
+          .map(fromBlock)
+          .filter(Boolean);
+        if (request.schema) {
+          const answer = content.find(
+            (part) => part.type === 'toolCall' && part.name === FINAL_ANSWER
+          );
+          if (answer) {
+            return {
+              content: [ {
+                type: 'text',
+                text: JSON.stringify(answer.input)
+              } ],
+              object: answer.input,
+              finishReason: 'stop',
+              usage,
+              model: response.model
+            };
+          }
+        }
         return {
-          content: (response.content || [])
-            .map(fromBlock)
-            .filter(Boolean),
+          content,
           finishReason: {
             end_turn: 'stop',
             stop_sequence: 'stop',
             max_tokens: 'length',
             tool_use: 'toolCalls'
           }[response.stop_reason],
-          usage: {
-            inputTokens: response.usage?.input_tokens,
-            outputTokens: response.usage?.output_tokens
-          },
+          usage,
           model: response.model
         };
 
@@ -219,6 +326,12 @@ module.exports = {
               id: block.id,
               name: block.name,
               input: block.input
+            };
+          }
+          if (block.type === 'thinking' || block.type === 'redacted_thinking') {
+            return {
+              type: 'thinking',
+              block
             };
           }
           return null;

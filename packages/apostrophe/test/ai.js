@@ -782,6 +782,49 @@ describe('AI engine', function() {
     });
   });
 
+  describe('the permission seam', function() {
+    it('answers exactly as apos.permission.can does', function() {
+      const admin = apos.task.getReq();
+      const anon = apos.task.getAnonReq();
+      for (const [ req, action, docOrType ] of [
+        [ admin, 'edit', '@apostrophecms/any-page-type' ],
+        [ anon, 'edit', '@apostrophecms/any-page-type' ],
+        [ anon, 'view', '@apostrophecms/any-page-type' ]
+      ]) {
+        assert.equal(
+          apos.ai.can(req, action, docOrType),
+          apos.permission.can(req, action, docOrType)
+        );
+      }
+      // Sanity that the tuples above exercise both outcomes
+      assert.equal(apos.ai.can(admin, 'edit', '@apostrophecms/any-page-type'), true);
+      assert.equal(apos.ai.can(anon, 'edit', '@apostrophecms/any-page-type'), false);
+    });
+
+    it('proxies every argument and the return value verbatim', function() {
+      const original = apos.permission.can;
+      const calls = [];
+      const sentinel = Symbol('answer');
+      try {
+        apos.permission.can = (...args) => {
+          calls.push(args);
+          return sentinel;
+        };
+        const req = apos.task.getReq();
+        const doc = { _id: 'd1' };
+        assert.equal(apos.ai.can(req, 'edit', doc, 'draft'), sentinel);
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].length, 4);
+        assert.equal(calls[0][0], req);
+        assert.equal(calls[0][1], 'edit');
+        assert.equal(calls[0][2], doc);
+        assert.equal(calls[0][3], 'draft');
+      } finally {
+        apos.permission.can = original;
+      }
+    });
+  });
+
   it('fails fast at startup on a malformed configuration', function(done) {
     const child = spawn('node', [ './test/ai-children/ai-malformed-child.js' ]);
     let stderr = '';

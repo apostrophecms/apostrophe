@@ -17,6 +17,22 @@ describe('AI adapter: anthropic', function() {
     apos = await t.create({
       root: module,
       modules: {
+        'tool-fixtures': {
+          init(self) {
+            self.apos.ai.addTool({
+              name: 'echo',
+              description: 'Echo the value back',
+              access: 'read',
+              input: {
+                type: 'object',
+                properties: { value: { type: 'string' } },
+                required: [ 'value' ]
+              },
+              schema: { value: { type: 'string' } },
+              handler: (req, args) => ({ value: args.value })
+            });
+          }
+        },
         '@apostrophecms/ai': {
           options: {
             provider: 'anthropic',
@@ -251,6 +267,186 @@ describe('AI adapter: anthropic', function() {
         /"maxTokens" is required/
       );
     });
+
+    it('translates tool definitions to the tools array', function() {
+      const input = {
+        type: 'object',
+        properties: { title: { type: 'string' } }
+      };
+      const body = adapter.buildBody(request({
+        tools: [ {
+          name: 'find_pages',
+          description: 'Find pages',
+          input
+        } ]
+      }));
+      assert.deepEqual(body.tools, [ {
+        name: 'find_pages',
+        description: 'Find pages',
+        input_schema: input
+      } ]);
+    });
+
+    it('carries tool requests and results as tool_use and tool_result blocks', function() {
+      const body = adapter.buildBody(request({
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              text('searching'),
+              {
+                type: 'toolCall',
+                id: 'c1',
+                name: 'find_pages',
+                input: { title: 'Pricing' }
+              }
+            ]
+          },
+          {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: 'c1',
+              output: { id: 'p1' }
+            } ]
+          }
+        ]
+      }));
+      assert.deepEqual(body.messages, [
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'searching'
+            },
+            {
+              type: 'tool_use',
+              id: 'c1',
+              name: 'find_pages',
+              input: { title: 'Pricing' }
+            }
+          ]
+        },
+        {
+          // No tool role in this dialect: results ride a user message
+          role: 'user',
+          content: [ {
+            type: 'tool_result',
+            tool_use_id: 'c1',
+            content: JSON.stringify({ id: 'p1' })
+          } ]
+        }
+      ]);
+    });
+
+    it('flags a tool error result', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'tool',
+          content: [ {
+            type: 'toolResult',
+            toolCallId: 'c1',
+            error: 'the index is rebuilding'
+          } ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0].content[0], {
+        type: 'tool_result',
+        tool_use_id: 'c1',
+        content: 'the index is rebuilding',
+        is_error: true
+      });
+    });
+
+    it('replays a thinking part as its raw signed block, in place', function() {
+      const block = {
+        type: 'thinking',
+        thinking: 'let me see',
+        signature: 'x'
+      };
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            {
+              type: 'thinking',
+              block
+            },
+            {
+              type: 'toolCall',
+              id: 'toolu_1',
+              name: 'find_pages',
+              input: { title: 'Pricing' }
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0].content, [
+        block,
+        {
+          type: 'tool_use',
+          id: 'toolu_1',
+          name: 'find_pages',
+          input: { title: 'Pricing' }
+        }
+      ]);
+    });
+
+    it('skips assistant parts another dialect owns', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            {
+              type: 'reasoning',
+              item: { type: 'reasoning' }
+            },
+            text('visible')
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0].content, [ text('visible') ]);
+    });
+
+    it('adds the synthetic final-answer tool and forces it for a pure structured call', function() {
+      const schema = {
+        type: 'object',
+        properties: { title: { type: 'string' } },
+        required: [ 'title' ]
+      };
+      const body = adapter.buildBody(request({ schema }));
+      assert.equal(body.tools.length, 1);
+      assert.equal(body.tools[0].name, '_final_answer');
+      assert.equal(typeof body.tools[0].description, 'string');
+      assert.deepEqual(body.tools[0].input_schema, schema);
+      assert.deepEqual(body.tool_choice, {
+        type: 'tool',
+        name: '_final_answer'
+      });
+    });
+
+    it('does not force the final-answer tool when thinking is on', function() {
+      const body = adapter.buildBody(request({
+        schema: { type: 'object' },
+        reasoning: 'high'
+      }));
+      assert.equal(body.tools[0].name, '_final_answer');
+      assert.equal('tool_choice' in body, false);
+    });
+
+    it('adds the final-answer tool beside real tools without forcing', function() {
+      const body = adapter.buildBody(request({
+        schema: { type: 'object' },
+        tools: [ {
+          name: 'find_pages',
+          description: 'Find pages',
+          input: { type: 'object' }
+        } ]
+      }));
+      assert.deepEqual(body.tools.map((tool) => tool.name), [ 'find_pages', '_final_answer' ]);
+      assert.equal('tool_choice' in body, false);
+    });
   });
 
   describe('response parsing', function() {
@@ -283,14 +479,20 @@ describe('AI adapter: anthropic', function() {
       }
     });
 
-    it('translates tool_use blocks and drops thinking blocks', function() {
+    it('translates tool_use blocks and carries thinking blocks as opaque parts', function() {
+      const thinking = {
+        type: 'thinking',
+        thinking: 'let me see',
+        signature: 'x'
+      };
+      const redacted = {
+        type: 'redacted_thinking',
+        data: 'opaque'
+      };
       const turn = adapter.parseResponse(fixture({
         content: [
-          {
-            type: 'thinking',
-            thinking: 'let me see',
-            signature: 'x'
-          },
+          thinking,
+          redacted,
           text('checking'),
           {
             type: 'tool_use',
@@ -302,6 +504,14 @@ describe('AI adapter: anthropic', function() {
         stop_reason: 'tool_use'
       }));
       assert.deepEqual(turn.content, [
+        {
+          type: 'thinking',
+          block: thinking
+        },
+        {
+          type: 'thinking',
+          block: redacted
+        },
         text('checking'),
         {
           type: 'toolCall',
@@ -321,6 +531,35 @@ describe('AI adapter: anthropic', function() {
           return true;
         }
       );
+    });
+
+    it('turns a final-answer tool call into a structured stop turn', function() {
+      const object = { title: 'Pricing' };
+      const turn = adapter.parseResponse(
+        fixture({
+          content: [ {
+            type: 'tool_use',
+            id: 'toolu_1',
+            name: '_final_answer',
+            input: object
+          } ],
+          stop_reason: 'tool_use'
+        }),
+        request({ schema: { type: 'object' } })
+      );
+      assert.deepEqual(turn.object, object);
+      assert.equal(turn.finishReason, 'stop');
+      // The JSON stays on the text so the transcript round-trips
+      assert.deepEqual(turn.content, [ text(JSON.stringify(object)) ]);
+    });
+
+    it('leaves a free-text answer without an object for the backstop to retry', function() {
+      const turn = adapter.parseResponse(
+        fixture({ content: [ text('here is your answer') ] }),
+        request({ schema: { type: 'object' } })
+      );
+      assert.equal('object' in turn, false);
+      assert.equal(turn.finishReason, 'stop');
     });
   });
 
@@ -476,6 +715,190 @@ describe('AI adapter: anthropic', function() {
       assert.equal(call.url, 'https://llm-gateway.example.com/anthropic/v1/messages');
       assert.equal(call.options.headers['x-api-key'], 'sk-gw');
       assert.equal(call.options.body.max_tokens, 64000);
+    });
+
+    it('drives a tool loop end to end over the wire', async function() {
+      httpScript = [
+        () => fixture({
+          content: [ {
+            type: 'tool_use',
+            id: 'toolu_1',
+            name: 'echo',
+            input: { value: 'pricing' }
+          } ],
+          stop_reason: 'tool_use'
+        }),
+        () => fixture({ content: [ text('done') ] })
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), 'use the tool', {
+        tools: [ 'echo' ],
+        // Keep the cache markers out of the message assertion below
+        cache: false
+      });
+      assert.equal(result.text, 'done');
+      assert.equal(result.finishReason, 'stop');
+      assert.deepEqual(result.steps, [ {
+        toolCall: {
+          type: 'toolCall',
+          id: 'toolu_1',
+          name: 'echo',
+          input: { value: 'pricing' }
+        },
+        result: { value: 'pricing' }
+      } ]);
+      assert.equal(httpCalls.length, 2);
+      // The first wire call described the tool to the model
+      assert.deepEqual(httpCalls[0].options.body.tools, [ {
+        name: 'echo',
+        description: 'Echo the value back',
+        input_schema: {
+          type: 'object',
+          properties: { value: { type: 'string' } },
+          required: [ 'value' ]
+        }
+      } ]);
+      // The second carried the tool result back as a user message
+      assert.deepEqual(httpCalls[1].options.body.messages.at(-1), {
+        role: 'user',
+        content: [ {
+          type: 'tool_result',
+          tool_use_id: 'toolu_1',
+          content: JSON.stringify({ value: 'pricing' })
+        } ]
+      });
+    });
+
+    it('drives a thinking tool loop end to end, replaying the signed blocks', async function() {
+      const thinking = {
+        type: 'thinking',
+        thinking: 'let me see',
+        signature: 'x'
+      };
+      httpScript = [
+        () => fixture({
+          content: [
+            thinking,
+            {
+              type: 'tool_use',
+              id: 'toolu_1',
+              name: 'echo',
+              input: { value: 'pricing' }
+            }
+          ],
+          stop_reason: 'tool_use'
+        }),
+        () => fixture({ content: [ text('done') ] })
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), 'use the tool', {
+        tools: [ 'echo' ],
+        reasoning: 'high',
+        cache: false
+      });
+      assert.equal(result.text, 'done');
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(httpCalls.length, 2);
+      // Thinking was on for both turns of the loop
+      for (const call of httpCalls) {
+        assert.deepEqual(call.options.body.thinking, {
+          type: 'enabled',
+          budget_tokens: 16384
+        });
+      }
+      // The second call replays the assistant turn with its signed
+      // thinking block restored, unmodified, ahead of the tool use
+      assert.deepEqual(httpCalls[1].options.body.messages[1], {
+        role: 'assistant',
+        content: [
+          thinking,
+          {
+            type: 'tool_use',
+            id: 'toolu_1',
+            name: 'echo',
+            input: { value: 'pricing' }
+          }
+        ]
+      });
+      assert.deepEqual(httpCalls[1].options.body.messages.at(-1), {
+        role: 'user',
+        content: [ {
+          type: 'tool_result',
+          tool_use_id: 'toolu_1',
+          content: JSON.stringify({ value: 'pricing' })
+        } ]
+      });
+    });
+
+    it('returns a validated object for a structured call, forcing the final-answer tool', async function() {
+      const object = {
+        title: 'Pricing',
+        description: 'Our plans'
+      };
+      httpScript = [ () => fixture({
+        content: [ {
+          type: 'tool_use',
+          id: 'toolu_1',
+          name: '_final_answer',
+          input: object
+        } ],
+        stop_reason: 'tool_use'
+      }) ];
+      const result = await apos.ai.generate(apos.task.getReq(), {
+        messages: [ {
+          role: 'user',
+          content: 'write the metadata'
+        } ],
+        schema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            description: { type: 'string' }
+          },
+          required: [ 'title', 'description' ]
+        }
+      });
+      assert.deepEqual(result.object, object);
+      // No real tools and no reasoning at medium effort: the tool is forced
+      assert.deepEqual(httpCalls[0].options.body.tool_choice, {
+        type: 'tool',
+        name: '_final_answer'
+      });
+    });
+
+    it('retries a structured call that answered in free text, then succeeds', async function() {
+      // The detail that the answer is a hidden tool must not cut off the
+      // engine's retry: a miss leaves no object, so the backstop re-asks
+      const object = {
+        title: 'Pricing',
+        description: 'Our plans'
+      };
+      httpScript = [
+        () => fixture({ content: [ text('here is the metadata') ] }),
+        () => fixture({
+          content: [ {
+            type: 'tool_use',
+            id: 'toolu_1',
+            name: '_final_answer',
+            input: object
+          } ],
+          stop_reason: 'tool_use'
+        })
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), {
+        messages: [ {
+          role: 'user',
+          content: 'write the metadata'
+        } ],
+        schema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            description: { type: 'string' }
+          },
+          required: [ 'title', 'description' ]
+        }
+      });
+      assert.deepEqual(result.object, object);
+      assert.equal(httpCalls.length, 2);
     });
 
     it('retries a 429 at the Retry-After delay', async function() {

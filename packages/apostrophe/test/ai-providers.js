@@ -3,7 +3,7 @@ const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 
 // The provider ecosystem story, end to end: a free-named provider entry
-// over the openai adapter runs against any host speaking the Chat
+// over the openai-compatible adapter runs against any host speaking the Chat
 // Completions dialect — here a real local HTTP server standing in for
 // Groq, Ollama, vLLM or an internal gateway — with zero adapter code.
 // Unlike the adapter suites, nothing is stubbed: the request travels
@@ -77,7 +77,7 @@ describe('AI: named providers and baseUrl', function() {
               // The named-provider recipe: the entry describes the
               // actual service, the adapter supplies the dialect
               groq: {
-                adapter: 'openai',
+                adapter: 'openai-compatible',
                 baseUrl,
                 apiKey: 'gsk-test',
                 models: {
@@ -124,9 +124,9 @@ describe('AI: named providers and baseUrl', function() {
     hits.length = 0;
   });
 
-  it('activates the free-named entry over the openai adapter', function() {
+  it('activates the free-named entry over the openai-compatible adapter', function() {
     assert.equal(apos.ai.active, true);
-    assert.equal(apos.ai.providers.groq.adapterName, 'openai');
+    assert.equal(apos.ai.providers.groq.adapterName, 'openai-compatible');
     assert.equal(apos.ai.providers.groq.adapter.apiKey, 'gsk-test');
   });
 
@@ -219,7 +219,7 @@ describe('AI: named providers and baseUrl', function() {
             options: {
               providers: {
                 // Same service, different door: only the endpoint moves
-                openai: {
+                'openai-compatible': {
                   apiKey: 'sk-test',
                   baseUrl
                 }
@@ -232,7 +232,7 @@ describe('AI: named providers and baseUrl', function() {
 
     it('keeps the native defaults: effort table and model metadata', function() {
       const info = apos.ai.modelInfo();
-      assert.equal(info.provider, 'openai');
+      assert.equal(info.provider, 'openai-compatible');
       assert.equal(info.model, 'gpt-5.6-terra');
       assert.equal(info.contextWindow, 1050000);
       assert.equal(info.maxOutputTokens, 128000);
@@ -241,7 +241,7 @@ describe('AI: named providers and baseUrl', function() {
 
     it('sends the native-routed call through the gateway door', async function() {
       const result = await apos.ai.generate(apos.task.getReq(), 'p');
-      assert.equal(result.provider, 'openai');
+      assert.equal(result.provider, 'openai-compatible');
       assert.equal(result.model, 'gpt-5.6-terra');
       const [ hit ] = hits;
       assert.equal(hit.url, '/v1/chat/completions');

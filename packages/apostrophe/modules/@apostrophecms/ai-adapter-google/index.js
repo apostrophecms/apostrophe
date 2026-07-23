@@ -22,6 +22,14 @@ module.exports = {
     self.apos.ai.addAdapter(self.adapter());
   },
   methods(self) {
+    // Gemini forbids a response schema alongside function calling, so
+    // structured output is delivered through a synthetic tool whose
+    // parameters are the request's `schema`. The model calls it to
+    // answer; parseResponse turns that call back into a plain structured
+    // answer. Its name leads with an underscore, which the engine's
+    // tool-name rule forbids, so it can never collide with a real tool.
+    const FINAL_ANSWER = '_final_answer';
+    const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this function with the required fields. This is the only way to return your response.';
     return {
       // The adapter definition registered with `apos.ai`. The engine
       // instantiates it per configured provider entry, assigning
@@ -78,7 +86,7 @@ module.exports = {
                 ...(request.signal && { signal: request.signal })
               }
             );
-            return self.parseResponse(response);
+            return self.parseResponse(response, request);
           },
           normalizeError(error) {
             return self.normalizeError(error);
@@ -90,13 +98,17 @@ module.exports = {
       // becomes `systemInstruction`, the assistant role becomes
       // `model`, `maxTokens` and `reasoning` travel in
       // `generationConfig` (as `maxOutputTokens` and the thinking
-      // level, verbatim), each omitted when unresolved. The model is
-      // not part of the body — it rides in the request URL. The cache
-      // policy places nothing: the provider caches prompt prefixes
-      // automatically and the ttl level is not settable per request.
+      // level, verbatim), each omitted when unresolved. A thought
+      // signature parseResponse carried on a part is restored at the
+      // part level, exactly as received — Gemini requires it back when
+      // a function call is replayed. Part types this dialect does not
+      // own are skipped. The model is not part of the body — it rides
+      // in the request URL. The cache policy places nothing: the
+      // provider caches prompt prefixes automatically and the ttl
+      // level is not settable per request.
       buildBody(request) {
         const {
-          system, messages, maxTokens, reasoning
+          system, messages, maxTokens, reasoning, tools, schema
         } = request;
         const generationConfig = {
           ...(maxTokens !== undefined && { maxOutputTokens: maxTokens }),
@@ -104,6 +116,27 @@ module.exports = {
             thinkingConfig: { thinkingLevel: reasoning }
           })
         };
+        // Gemini pairs a function response to its call by name, not id,
+        // so recover the name of the call the engine's synthesized id
+        // refers to (parseResponse mints those ids)
+        const toolNamesById = new Map();
+        for (const message of messages) {
+          for (const part of message.content) {
+            if (part.type === 'toolCall') {
+              toolNamesById.set(part.id, part.name);
+            }
+          }
+        }
+        const functionDeclarations = [
+          ...(tools || []).map(toFunctionDeclaration),
+          ...(schema
+            ? [ {
+              name: FINAL_ANSWER,
+              description: FINAL_ANSWER_DESCRIPTION,
+              parameters: schema
+            } ]
+            : [])
+        ];
         return {
           ...(system !== undefined && {
             systemInstruction: {
@@ -112,26 +145,81 @@ module.exports = {
           }),
           contents: messages.map((message) => ({
             role: message.role === 'assistant' ? 'model' : 'user',
-            parts: message.content.map(toPart)
+            parts: message.content.map(toPart).filter(Boolean)
           })),
+          ...(functionDeclarations.length && {
+            tools: [ { functionDeclarations } ]
+          }),
+          // Force the structured answer only when nothing else needs the
+          // turn: a real tool the model must be free to call first, or
+          // thinking. Otherwise the description drives it and the
+          // engine's backstop retries a miss.
+          ...(schema && !(tools && tools.length) && reasoning === undefined && {
+            toolConfig: {
+              functionCallingConfig: {
+                mode: 'ANY',
+                allowedFunctionNames: [ FINAL_ANSWER ]
+              }
+            }
+          }),
           ...(Object.keys(generationConfig).length && { generationConfig })
         };
 
+        // The model-facing tool definition; the JSON Schema travels
+        // verbatim as the OpenAPI-subset parameters (the service polices
+        // any keyword it does not accept)
+        function toFunctionDeclaration(tool) {
+          return {
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.input
+          };
+        }
         function toPart(part) {
+          // The thought signature parseResponse carried over, restored
+          // at the part level exactly as the service sent it
+          const signature = part.thoughtSignature !== undefined &&
+            { thoughtSignature: part.thoughtSignature };
           if (part.type === 'text') {
-            return { text: part.text };
+            return {
+              text: part.text,
+              ...signature
+            };
           }
-          // part.type === 'image', in one of the two normalized forms
-          return part.image.url !== undefined
-            ? {
-              fileData: { fileUri: part.image.url }
-            }
-            : {
-              inlineData: {
-                mimeType: part.image.mediaType,
-                data: part.image.data
+          if (part.type === 'toolCall') {
+            return {
+              functionCall: {
+                name: part.name,
+                args: part.input
+              },
+              ...signature
+            };
+          }
+          if (part.type === 'toolResult') {
+            return {
+              functionResponse: {
+                name: toolNamesById.get(part.toolCallId),
+                response: part.error !== undefined
+                  ? { error: part.error }
+                  : part.output
               }
             };
+          }
+          if (part.type === 'image') {
+            // In one of the two normalized forms
+            return part.image.url !== undefined
+              ? {
+                fileData: { fileUri: part.image.url }
+              }
+              : {
+                inlineData: {
+                  mimeType: part.image.mediaType,
+                  data: part.image.data
+                }
+              };
+          }
+          // Another dialect's part; not ours to translate
+          return null;
         }
       },
       // Translate a generateContent response to the normalized
@@ -140,23 +228,59 @@ module.exports = {
       // refusal error here; a safety-family finish reason maps to the
       // refusal finish reason — "refused" always arrives as an error.
       // The dialect reports STOP on tool-call turns, so functionCall
-      // parts force the toolCalls finish reason; they carry no call
-      // id. Thought parts are not conversation content and do not
-      // travel. Thinking tokens are billed as output, so they add
+      // parts force the toolCalls finish reason. Gemini function calls
+      // carry no id, but the normalized shape needs one to pair a
+      // result back to its call: the adapter synthesizes a per-turn id
+      // (buildBody recovers the tool name from it). When the request
+      // asked for structured output and the model called the synthetic
+      // final-answer function, that call is the answer, not a function
+      // for the core to run: it becomes a `stop` turn carrying the
+      // arguments on `object` (and their JSON in the text, so the
+      // transcript round-trips). Anything else — free text, a real
+      // function call — parses normally, leaving no `object` for the
+      // engine backstop to retry on. Thought summary parts are not
+      // conversation content and do not travel, but a part-level
+      // thought signature does: it rides the normalized part, and
+      // buildBody must send it back exactly as received when the part
+      // is replayed. Thinking tokens are billed as output, so they add
       // into outputTokens. An unknown finish reason maps to no
       // finishReason — the engine's turn validation treats that as a
       // malformed (retryable) response, never a truncated success.
-      parseResponse(response) {
+      parseResponse(response, request = {}) {
         const blockReason = response.promptFeedback?.blockReason;
         if (blockReason) {
           throw self.apos.error('aiRefusal', `the model blocked this request: ${blockReason}`);
         }
         const [ candidate ] = response.candidates || [];
+        let callIndex = 0;
         const content = (candidate?.content?.parts || [])
           .filter((part) => !part.thought)
           .map(fromPart)
           .filter(Boolean);
         const usage = response.usageMetadata;
+        const usageTokens = {
+          inputTokens: usage?.promptTokenCount,
+          outputTokens: usage?.candidatesTokenCount === undefined
+            ? undefined
+            : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0)
+        };
+        if (request.schema) {
+          const answer = content.find(
+            (part) => part.type === 'toolCall' && part.name === FINAL_ANSWER
+          );
+          if (answer) {
+            return {
+              content: [ {
+                type: 'text',
+                text: JSON.stringify(answer.input)
+              } ],
+              object: answer.input,
+              finishReason: 'stop',
+              usage: usageTokens,
+              model: response.modelVersion
+            };
+          }
+        }
         return {
           content,
           finishReason: content.some((part) => part.type === 'toolCall')
@@ -171,27 +295,31 @@ module.exports = {
               SPII: 'refusal',
               IMAGE_SAFETY: 'refusal'
             }[candidate?.finishReason],
-          usage: {
-            inputTokens: usage?.promptTokenCount,
-            outputTokens: usage?.candidatesTokenCount === undefined
-              ? undefined
-              : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0)
-          },
+          usage: usageTokens,
           model: response.modelVersion
         };
 
         function fromPart(part) {
+          // Gemini attaches a thought signature at the part level and
+          // requires it back, exactly as received, when the part is
+          // replayed — it rides the normalized part for buildBody to
+          // restore
+          const signature = part.thoughtSignature !== undefined &&
+            { thoughtSignature: part.thoughtSignature };
           if (typeof part.text === 'string') {
             return {
               type: 'text',
-              text: part.text
+              text: part.text,
+              ...signature
             };
           }
           if (part.functionCall) {
             return {
               type: 'toolCall',
+              id: `${part.functionCall.name}-${callIndex++}`,
               name: part.functionCall.name,
-              input: part.functionCall.args
+              input: part.functionCall.args || {},
+              ...signature
             };
           }
           return null;

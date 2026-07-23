@@ -6,6 +6,9 @@
 // each provider under `options.providers[name]` and (with more than one)
 // name the default with `options.provider`.
 
+const _ = require('lodash');
+const Ajv = require('ajv/dist/2020').default;
+
 module.exports = {
   options: {
     alias: 'ai',
@@ -30,23 +33,36 @@ module.exports = {
     self.adapters = {};
     self.providers = {};
     self.effortTable = {};
+    self.tools = {};
+    // getTools query caches, built once at activation — the registry
+    // is static, contains "references" so no memory waste.
+    self.toolList = [];
+    self.toolsByTag = new Map();
+    // Flips once activateTools has validated the registry; the
+    // registry is frozen from then on
+    self.toolsActive = false;
     // "Is AI operational?" — true once activation has configured at
     // least one provider, or unconditionally under APOS_AI_MOCK, so
     // feature code can ask before calling
     self.active = false;
+    // Allowed sub-agent depth (spawned by tools), zero based index
+    self.allowedDepth = 1;
     self.validateOptions(self.options);
     self.defaultProvider = self.options.provider ||
       Object.keys(self.options.providers)[0] || null;
     self.effortDefault = self.options.effort?.default || 'medium';
     self.mockMode = process.env.APOS_AI_MOCK === '1';
+    self.ajv = new Ajv({ allErrors: true });
     self.apos.http.addError('aiRetry', 503);
     self.apos.http.addError('aiRefusal', 422);
+    self.apos.http.addError('aiToolError', 422);
   },
   handlers(self) {
     return {
       'apostrophe:ready': {
         async activate() {
           await self.activateProviders();
+          self.activateTools();
         }
       }
     };
@@ -261,12 +277,16 @@ module.exports = {
       },
       // Parse and validate generate's `(stringOrOptions, options)`
       // arguments, exactly as passed to it, into one canonical options
-      // object `{ system, messages, effort, provider, model, reasoning,
-      // maxTokens, cache, signal }` — the positional prompt string
-      // appended to `messages` as the final user turn, message content
-      // collapsed to content-part form, `cache` defaulted to 'short',
-      // unset options left undefined. Unknown options are rejected as
-      // "invalid".
+      // object `{ system, messages, tools, maxSteps, schema,
+      // validateObject, effort, provider, model, reasoning, maxTokens,
+      // cache, signal }` — the positional prompt string appended to
+      // `messages` as the final user turn, message content collapsed to
+      // content-part form, `tools` names resolved to their activated
+      // definitions, `maxSteps` defaulted from the module option, a
+      // structured-output `schema` validated as a JSON Schema and
+      // compiled into the `validateObject` backstop, `cache` defaulted
+      // to 'short', unset options left undefined. Unknown options are
+      // rejected as "invalid".
       normalizeGenerateOptions(stringOrOptions, options) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
@@ -289,14 +309,9 @@ module.exports = {
         } else {
           invalid('a prompt string or an options object is required');
         }
-        for (const name of [ 'tools', 'schema', 'maxSteps' ]) {
-          if (options[name] !== undefined) {
-            throw self.apos.error('unimplemented', `"${name}" is not yet supported`);
-          }
-        }
         const known = [
-          'system', 'messages', 'effort', 'provider', 'model',
-          'reasoning', 'maxTokens', 'cache', 'signal'
+          'system', 'messages', 'tools', 'maxSteps', 'schema', 'effort',
+          'provider', 'model', 'reasoning', 'maxTokens', 'cache', 'signal'
         ];
         for (const name of Object.keys(options)) {
           if (!known.includes(name)) {
@@ -328,6 +343,14 @@ module.exports = {
         if (signal !== undefined && !(signal instanceof AbortSignal)) {
           invalid('"signal" must be an AbortSignal');
         }
+        const maxSteps = options.maxSteps === undefined
+          ? self.options.maxSteps
+          : options.maxSteps;
+        if (!Number.isInteger(maxSteps) || maxSteps < 1) {
+          invalid('"maxSteps" must be a positive integer');
+        }
+        const tools = toolDefinitions(options.tools);
+        const { schema, validateObject } = structuredSchema(options.schema);
         const messages = self.normalizeMessages(options.messages);
         if (prompt !== null) {
           messages.push({
@@ -344,6 +367,10 @@ module.exports = {
         return {
           system,
           messages,
+          tools,
+          maxSteps,
+          schema,
+          validateObject,
           effort,
           provider,
           model,
@@ -352,14 +379,71 @@ module.exports = {
           cache,
           signal
         };
+
+        // The tools option → the activated definitions it names; every
+        // name must be registered, each at most once
+        function toolDefinitions(names = []) {
+          if (!Array.isArray(names)) {
+            invalid('"tools" must be an array of registered tool names');
+          }
+          const seen = new Set();
+          return names.map((toolName) => {
+            if (typeof toolName !== 'string') {
+              invalid('"tools" must be an array of registered tool names');
+            }
+            if (seen.has(toolName)) {
+              invalid(`"tools" names "${toolName}" twice`);
+            }
+            seen.add(toolName);
+            const tool = self.getTool(toolName);
+            if (!tool) {
+              invalid(`"tools" names unknown tool "${toolName}"`);
+            }
+            return tool;
+          });
+        }
+
+        // The schema option → `{ schema, validateObject }`, or empty
+        // when absent. A per-call JSON Schema with an object root (what
+        // providers require for structured output), compiled into the
+        // AJV backstop here so a malformed schema fails the call before
+        // any provider request. The compile is evicted from AJV's cache
+        // (a strong-referenced Map keyed by the schema object) so
+        // per-call schemas do not accumulate; the returned validator
+        // keeps working.
+        function structuredSchema(schema) {
+          if (schema === undefined) {
+            return {};
+          }
+          if (!isObject(schema) || schema.type !== 'object') {
+            invalid('"schema" must be a JSON Schema with an object root');
+          }
+          let validateObject;
+          try {
+            validateObject = self.ajv.compile(schema);
+          } catch (e) {
+            invalid(`"schema" is not a valid JSON Schema: ${e.message}`);
+          } finally {
+            self.ajv.removeSchema(schema);
+          }
+          return {
+            schema,
+            validateObject
+          };
+        }
       },
       // Validate and normalize an array of chat messages, as accepted
       // by generate's `messages` option (undefined is an empty
       // conversation). Returns a new array of { role, content } with
-      // `content` always an array of content parts: roles user or
-      // assistant, string content becomes a single text part. Messages
-      // are rebuilt from the recognized properties, so a stored
-      // transcript carrying app metadata round-trips.
+      // `content` always an array of content parts: string content
+      // becomes a single text part. Roles are user, assistant and
+      // tool; each part type is valid in specific roles only — text
+      // and image in user or assistant messages, toolCall (a model's
+      // tool request) in assistant messages, toolResult (its answer)
+      // in tool messages — so a returned transcript round-trips and a
+      // hand-built one fails clearly. Messages are rebuilt from the
+      // recognized properties, so a stored transcript carrying app
+      // metadata round-trips.
       normalizeMessages(messages = []) {
         const invalid = (message) => {
           throw self.apos.error('invalid', message);
@@ -372,24 +456,22 @@ module.exports = {
           if (!isObject(message)) {
             invalid(`${name} must be an object like { role, content }`);
           }
-          if (message.role === 'tool') {
-            throw self.apos.error('unimplemented', `${name}: "tool" messages are not yet supported`);
-          }
-          if (message.role !== 'user' && message.role !== 'assistant') {
-            invalid(`${name}.role must be "user" or "assistant"`);
+          if (![ 'user', 'assistant', 'tool' ].includes(message.role)) {
+            invalid(`${name}.role must be "user", "assistant" or "tool"`);
           }
           return {
             role: message.role,
-            content: contentParts(message.content, name)
+            content: contentParts(message.content, name, message.role)
           };
         });
 
         // One message's content → validated content-part array, rebuilt
         // so extra properties never travel. A plain string is shorthand
-        // for a single text part.
-        function contentParts(content, name) {
+        // for a single text part. Every part type is checked against
+        // the message's role.
+        function contentParts(content, name, role) {
           if (typeof content === 'string') {
-            return [ {
+            content = [ {
               type: 'text',
               text: content
             } ];
@@ -402,8 +484,49 @@ module.exports = {
             if (!isObject(part)) {
               throw self.apos.error('invalid', `${partName} must be an object like { type }`);
             }
-            if (part.type === 'toolCall' || part.type === 'toolResult') {
-              throw self.apos.error('unimplemented', `${partName}: "${part.type}" parts are not yet supported`);
+            const roles = {
+              text: [ 'user', 'assistant' ],
+              image: [ 'user', 'assistant' ],
+              toolCall: [ 'assistant' ],
+              toolResult: [ 'tool' ]
+            }[part.type];
+            if (!roles) {
+              throw self.apos.error('invalid', `${partName}.type "${part.type}" is unknown`);
+            }
+            if (!roles.includes(role)) {
+              throw self.apos.error('invalid', `${partName}: a "${part.type}" part is not valid in a "${role}" message`);
+            }
+            if (part.type === 'toolCall') {
+              if (typeof part.id !== 'string' || !part.id ||
+                typeof part.name !== 'string' || !isObject(part.input)) {
+                throw self.apos.error('invalid', `${partName} must be an object like { type, id, name, input }`);
+              }
+              return {
+                type: 'toolCall',
+                id: part.id,
+                name: part.name,
+                input: part.input
+              };
+            }
+            if (part.type === 'toolResult') {
+              if (typeof part.toolCallId !== 'string' || !part.toolCallId) {
+                throw self.apos.error('invalid', `${partName}.toolCallId must be a string`);
+              }
+              if (typeof part.error === 'string' && part.output === undefined) {
+                return {
+                  type: 'toolResult',
+                  toolCallId: part.toolCallId,
+                  error: part.error
+                };
+              }
+              if (isObject(part.output) && part.error === undefined) {
+                return {
+                  type: 'toolResult',
+                  toolCallId: part.toolCallId,
+                  output: part.output
+                };
+              }
+              throw self.apos.error('invalid', `${partName} must carry an object "output" or a string "error", not both`);
             }
             if (part.type === 'text') {
               if (typeof part.text !== 'string') {
@@ -414,28 +537,292 @@ module.exports = {
                 text: part.text
               };
             }
-            if (part.type === 'image') {
-              const image = part.image;
-              if (isObject(image) && typeof image.url === 'string') {
-                return {
-                  type: 'image',
-                  image: { url: image.url }
-                };
-              }
-              if (isObject(image) && typeof image.data === 'string' &&
-                typeof image.mediaType === 'string') {
-                return {
-                  type: 'image',
-                  image: {
-                    data: image.data,
-                    mediaType: image.mediaType
-                  }
-                };
-              }
-              throw self.apos.error('invalid', `${partName}.image must be an object like { url } or { data, mediaType }`);
+            // image, the only remaining type
+            const image = part.image;
+            if (isObject(image) && typeof image.url === 'string') {
+              return {
+                type: 'image',
+                image: { url: image.url }
+              };
             }
-            throw self.apos.error('invalid', `${partName}.type "${part.type}" is unknown`);
+            if (isObject(image) && typeof image.data === 'string' &&
+              typeof image.mediaType === 'string') {
+              return {
+                type: 'image',
+                image: {
+                  data: image.data,
+                  mediaType: image.mediaType
+                }
+              };
+            }
+            throw self.apos.error('invalid', `${partName}.image must be an object like { url } or { data, mediaType }`);
           });
+        }
+      },
+      // Register an AI tool definition. Feature modules call this in
+      // their own init; core, project and third-party modules all use
+      // the same call. Re-registering an existing name overrides (last
+      // wins), so a project can replace a standard tool. Tools are
+      // static: only registered tools can participate in AI calls —
+      // generate selects them by name, definitions never travel
+      // through a call — and the registry is frozen once activated on
+      // "apostrophe:ready", so registering later fails. Only the name
+      // is checked here; everything else is validated at activation,
+      // failing the startup on any problem (see activateTools).
+      //
+      // The definition properties:
+      //
+      // `name` (required): the unique registry identifier, 1 to 64
+      //   letters, digits, "_" or "-", starting with a letter — the
+      //   intersection of the provider naming rules;
+      // `label`: a human-facing name — what a chat log or an activity
+      //   trail shows for the tool; may be an i18n key; defaults from
+      //   the name ('find_pages' → 'Find Pages'); never sent to the
+      //   model;
+      // `description` (required): non-empty text the model chooses
+      //   the tool by — treat it as part of the prompt;
+      // `tags`: an array of strings to query the registry by, see
+      //   getTools;
+      // `input` (required): the JSON Schema (draft 2020-12) the
+      //   model's arguments must satisfy; sent to the provider; must
+      //   declare an object root;
+      // `schema` (required): the handler result's shape as Apostrophe
+      //   schema fields, like a module's `add` configuration;
+      //   internal — never sent to the model — every result is
+      //   validated against it via apos.schema.convert;
+      // `access`: 'read', 'write' (the default) or 'agent' — not a
+      //   permission. Reads run in parallel within one batch of tool
+      //   calls; writes and agents follow serially in model order.
+      //   'agent' declares that the handler makes its own generate
+      //   call (a subagent, with its own budgets). One level of
+      //   nesting is allowed: a nested call silently drops agent
+      //   tools from its set — a subagent cannot spawn subagents —
+      //   and generation below the subagent level fails;
+      // `handler` (required): the implementation — an async
+      //   (req, args) function or a 'moduleName:methodName'
+      //   reference. Runs with the caller's req and the validated
+      //   model arguments, plus the core-injected args._context, and
+      //   returns an object matching `schema`.
+      addTool(tool) {
+        if (self.toolsActive) {
+          fail('tools must be registered before "apostrophe:ready"');
+        }
+        if (!isObject(tool) || typeof tool.name !== 'string' ||
+          !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(tool.name)) {
+          fail('addTool requires a definition with a "name" of 1 to 64 letters, digits, "_" or "-", starting with a letter');
+        }
+        self.tools[tool.name] = tool;
+      },
+      // The activated canonical definition registered under `name`,
+      // or undefined. Guarded against prototype-chain names
+      // ('constructor', …): lookups here may carry model-provided or
+      // browser-provided names, which must only ever select a
+      // registered tool
+      getTool(name) {
+        return self.hasTool(name) ? self.tools[name] : undefined;
+      },
+      // An efficient way of checking (by name) if a tool exists
+      hasTool(name) {
+        return Object.hasOwn(self.tools, name);
+      },
+      // All activated tool definitions; with `tags`, those carrying
+      // at least one of them. A single tag may be passed as a string.
+      // Served from caches built at activation, so treat the returned
+      // arrays and definitions as read-only.
+      getTools({ tags } = {}) {
+        if (typeof tags === 'string') {
+          tags = [ tags ];
+        }
+        if (tags !== undefined && !Array.isArray(tags)) {
+          throw self.apos.error('invalid', '"tags" must be an array of tag strings');
+        }
+        if (!tags) {
+          return self.toolList;
+        }
+        // Union of the per-tag lists: a tool matching several of the
+        // given tags appears once
+        const found = new Set();
+        for (const tag of tags) {
+          const tools = self.toolsByTag.get(tag);
+          if (tools) {
+            for (const tool of tools) {
+              found.add(tool);
+            }
+          }
+        }
+        return [ ...found ];
+      },
+      // The AI permission seam: whether this AI action is permitted
+      // for `req`. Same signature and semantics as
+      // `apos.permission.can(req, action, docOrType, mode)`, and today
+      // a pure proxy to it — but tool handlers and AI feature code
+      // must call this method, never `apos.permission.can` directly,
+      // so that AI-specific policy (actions denied to the AI even for
+      // an admin's req) can later be layered here, centrally, without
+      // touching a single handler. It can only ever be as restrictive
+      // as `apos.permission.can` or more, never looser.
+      can(req, ...args) {
+        return self.apos.permission.can(req, ...args);
+      },
+      // Validate every registered tool definition (the shape is
+      // documented on addTool) and replace it in the registry with its
+      // activated canonical form: label and access defaulted, `input`
+      // compiled into the `validateArgs` argument validator, `schema`
+      // composed to the array form apos.schema.convert consumes, and
+      // `handler` always a callable — a 'moduleName:methodName'
+      // reference is resolved here, which is why activation waits for
+      // "apostrophe:ready": every module's init has run by then, so
+      // references resolve and overrides are settled regardless of
+      // registration order. A bad definition fails the startup. The
+      // registry is frozen afterwards.
+      activateTools() {
+        for (const [ name, tool ] of Object.entries(self.tools)) {
+          self.tools[name] = activate(tool, `tool "${name}"`);
+        }
+        self.toolList = Object.values(self.tools);
+        self.toolsByTag = new Map();
+        for (const tool of self.toolList) {
+          for (const tag of tool.tags) {
+            const tools = self.toolsByTag.get(tag);
+            if (tools) {
+              tools.push(tool);
+            } else {
+              self.toolsByTag.set(tag, [ tool ]);
+            }
+          }
+        }
+        self.toolsActive = true;
+
+        function activate(tool, name) {
+          if (typeof tool.description !== 'string' || !tool.description) {
+            fail(`${name}: "description" must be a non-empty string`);
+          }
+          if (tool.label !== undefined &&
+            (typeof tool.label !== 'string' || !tool.label)) {
+            fail(`${name}: "label" must be a non-empty string`);
+          }
+          if (tool.tags !== undefined && (!Array.isArray(tool.tags) ||
+            tool.tags.some(tag => typeof tag !== 'string' || !tag))) {
+            fail(`${name}: "tags" must be an array of tag strings`);
+          }
+          if (!isObject(tool.input) || tool.input.type !== 'object') {
+            fail(`${name}: "input" must be a JSON Schema with an object root`);
+          }
+          let validateArgs;
+          try {
+            validateArgs = self.ajv.compile(tool.input);
+          } catch (e) {
+            fail(`${name}: "input" is not a valid JSON Schema: ${e.message}`);
+          }
+          if (!isObject(tool.schema)) {
+            fail(`${name}: "schema" must be an object of schema fields describing the result`);
+          }
+          let schema;
+          try {
+            schema = self.apos.schema.compose({
+              addFields: self.apos.schema.fieldsToArray(`AI tool ${tool.name}`, tool.schema)
+            });
+            self.apos.schema.validate(schema, {
+              type: 'AI tool',
+              subtype: tool.name
+            });
+          } catch (e) {
+            fail(`${name}: "schema" is not a valid schema: ${e.message}`);
+          }
+          const access = tool.access === undefined ? 'write' : tool.access;
+          if (![ 'read', 'write', 'agent' ].includes(access)) {
+            fail(`${name}: "access" must be "read", "write" or "agent"`);
+          }
+          return {
+            name: tool.name,
+            label: tool.label || _.startCase(tool.name),
+            description: tool.description,
+            tags: tool.tags || [],
+            input: tool.input,
+            validateArgs,
+            schema,
+            access,
+            handler: resolveHandler(tool.handler, name)
+          };
+        }
+
+        // The handler option → the callable the loop runs: an inline
+        // function as given, a 'moduleName:methodName' reference
+        // resolved against the named module
+        function resolveHandler(value, name) {
+          if (typeof value === 'function') {
+            return value;
+          }
+          if (typeof value !== 'string') {
+            fail(`${name}: "handler" must be a function or a "moduleName:methodName" string`);
+          }
+          const [ moduleName, methodName, ...rest ] = value.split(':');
+          if (!moduleName || !methodName || rest.length) {
+            fail(`${name}: handler "${value}" must name a module and a method, like "moduleName:methodName"`);
+          }
+          // Own-property checks: a reference must never resolve
+          // through the prototype chain ('constructor', 'toString', …)
+          if (!Object.hasOwn(self.apos.modules, moduleName)) {
+            fail(`${name}: handler names unknown module "${moduleName}"`);
+          }
+          const module = self.apos.modules[moduleName];
+          if (!Object.hasOwn(module, methodName) ||
+            typeof module[methodName] !== 'function') {
+            fail(`${name}: handler names unknown method "${methodName}" of "${moduleName}"`);
+          }
+          return (req, args) => module[methodName](req, args);
+        }
+      },
+      // Execute one model-requested tool call `call`, a toolCall
+      // content part { id, name, input }, against `tool`, its
+      // activated registry definition (getTool). Returns the
+      // handler's result converted through the tool's schema — every
+      // declared field present in normalized form — ready to be
+      // serialized for the model.
+      //
+      // The model's input is validated against the tool's `input`
+      // schema first; invalid arguments never reach the handler — they
+      // throw 'aiToolError', the recoverable code, so the loop can
+      // feed the validation message back to the model. The handler
+      // runs with the caller's `req` and a copy of the validated
+      // arguments; `context` is written to `args._context` after
+      // validation, so a model-provided property can never pose as
+      // core injection.
+      //
+      // A handler throw passes through untouched: recovery is decided
+      // elsewhere, by the error code alone. A handler result the
+      // schema rejects is a handler bug, not model misbehaviour: it
+      // throws 'invalid' naming the tool — a standard code breaks the
+      // AI chain, no retries, no further AI work — and no detail of it
+      // is ever fed back to the model.
+      async executeToolCall(req, tool, call, context = {}) {
+        if (!tool.validateArgs(call.input)) {
+          throw self.apos.error('aiToolError', `invalid arguments for tool "${tool.name}": ${self.ajv.errorsText(tool.validateArgs.errors, { dataVar: 'arguments' })}`);
+        }
+        const args = {
+          ...call.input,
+          _context: context
+        };
+        const result = await tool.handler(req, args);
+        if (!isObject(result)) {
+          throw self.apos.error('invalid', `tool "${tool.name}" must return an object matching its schema`);
+        }
+        const converted = {};
+        try {
+          await self.apos.schema.convert(req, tool.schema, result, converted);
+        } catch (errors) {
+          throw self.apos.error('invalid', `tool "${tool.name}" returned a result that does not match its schema: ${detail(errors)}`);
+        }
+        return converted;
+
+        // The convert rejection → one readable line naming each field
+        function detail(errors) {
+          if (!Array.isArray(errors)) {
+            return errors.message || String(errors);
+          }
+          return errors
+            .map((error) => `${error.path}: ${error.message || error.name}`)
+            .join('; ');
         }
       },
       // Assemble the normalized adapter request from `options`, a
@@ -444,9 +831,13 @@ module.exports = {
       // output ceiling when it is known, translate the cache level to
       // the { ttl } policy. Returns { provider, request }: the resolved
       // provider name and the request handed to its adapter —
-      // { system?, messages, model, maxTokens?, reasoning?,
-      // cache: false | { ttl }, signal? }, optional fields present only
-      // when they resolved to a value.
+      // { system?, messages, tools?, schema?, model, maxTokens?,
+      // reasoning?, cache: false | { ttl }, signal? }, optional fields
+      // present only when they resolved to a value. Request tools carry
+      // only { name, description, input } — handlers and result schemas
+      // never reach an adapter; a structured-output `schema` (JSON
+      // Schema) passes through for the adapter to place on its
+      // provider's native structured mode.
       buildRequest(options) {
         const info = self.modelInfo({
           provider: options.provider,
@@ -460,6 +851,8 @@ module.exports = {
           request: {
             ...(options.system !== undefined && { system: options.system }),
             messages: options.messages,
+            ...(options.tools.length && { tools: self.wireTools(options.tools) }),
+            ...(options.schema !== undefined && { schema: options.schema }),
             model: info.model,
             ...(maxTokens !== undefined && { maxTokens }),
             ...(info.reasoning !== undefined && { reasoning: info.reasoning }),
@@ -481,6 +874,8 @@ module.exports = {
           request: {
             ...(options.system !== undefined && { system: options.system }),
             messages: options.messages,
+            ...(options.tools.length && { tools: self.wireTools(options.tools) }),
+            ...(options.schema !== undefined && { schema: options.schema }),
             model: options.model ?? 'mock',
             ...(options.maxTokens !== undefined && { maxTokens: options.maxTokens }),
             ...(options.reasoning !== undefined && { reasoning: options.reasoning }),
@@ -491,20 +886,37 @@ module.exports = {
           }
         };
       },
+      // The model-facing face of activated tool definitions, as placed
+      // on the adapter request
+      wireTools(tools) {
+        return tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          input: tool.input
+        }));
+      },
       // The built-in mock standing in for every adapter chat under
       // APOS_AI_MOCK. Consults the "mock" option first when the module
       // has one: it may return a complete assistant turn, a { text }
       // shorthand filled out into one, or undefined to fall through to
-      // the deterministic default — canned text echoing the
-      // conversation's final message, usage estimated from the text
-      // sizes. Runs inside the same retry and validation seam as a
-      // real adapter call, so a mock that throws normalized codes
-      // exercises the real error paths.
+      // the deterministic default. That default is request-aware: for a
+      // structured request (`request.schema`) it synthesizes a
+      // schema-conforming object and returns it on the turn's `object`,
+      // as a real adapter would ([D35]) — the pipeline backstop-validates
+      // it like a real one — otherwise canned text echoing the
+      // conversation's final message; usage is estimated from the text
+      // sizes. Runs inside the same retry and validation seam as a real
+      // adapter call, so a mock that throws normalized codes exercises
+      // the real error paths.
       async mockChat(req, request) {
         const custom = self.options.mock
           ? await self.options.mock(request)
           : undefined;
         if (custom == null) {
+          if (request.schema) {
+            const object = sample(request.schema);
+            return turn(JSON.stringify(object), object);
+          }
           const tail = textOf(request.messages.at(-1).content);
           return turn(`[mock] ${tail}`);
         }
@@ -519,7 +931,13 @@ module.exports = {
           '"mock" must return an assistant turn, a { text } object or undefined'
         );
 
-        function turn(text) {
+        // A canned assistant turn. `text` is the answer's text; a
+        // structured call passes the synthesized `object` too, which
+        // rides the turn ([D35]). The text stays in the content — for a
+        // structured turn it is the object's JSON, so the transcript's
+        // assistant message is non-empty and re-normalizes on resume,
+        // as a real provider's structured answer would.
+        function turn(text, object) {
           const input = [
             request.system,
             ...request.messages.map((message) => textOf(message.content))
@@ -529,6 +947,7 @@ module.exports = {
               type: 'text',
               text
             } ],
+            ...(object !== undefined && { object }),
             finishReason: 'stop',
             usage: {
               inputTokens: tokens(input),
@@ -546,6 +965,47 @@ module.exports = {
         function tokens(text) {
           return Math.max(1, Math.round(text.length / 4));
         }
+        // A deterministic value conforming to `schema`, enough to pass
+        // the structured-output backstop: `const`/`enum` honored, every
+        // declared property of an object filled, arrays sized to
+        // minItems, the simplest in-range value for a scalar
+        function sample(schema) {
+          if (!isObject(schema)) {
+            return null;
+          }
+          if (schema.const !== undefined) {
+            return schema.const;
+          }
+          if (Array.isArray(schema.enum) && schema.enum.length) {
+            return schema.enum[0];
+          }
+          const type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
+          if (type === 'object') {
+            const object = {};
+            const properties = isObject(schema.properties) ? schema.properties : {};
+            for (const [ key, subschema ] of Object.entries(properties)) {
+              object[key] = sample(subschema);
+            }
+            return object;
+          }
+          if (type === 'array') {
+            const min = Number.isInteger(schema.minItems) ? schema.minItems : 0;
+            const items = isObject(schema.items) ? schema.items : {};
+            return Array.from({ length: min }, () => sample(items));
+          }
+          if (type === 'boolean') {
+            return false;
+          }
+          if (type === 'null') {
+            return null;
+          }
+          if (type === 'number' || type === 'integer') {
+            return Number.isFinite(schema.minimum) ? schema.minimum : 0;
+          }
+          // string, and the no-type case (any value validates)
+          const min = Number.isInteger(schema.minLength) ? schema.minLength : 0;
+          return 'x'.repeat(min);
+        }
       },
       // The mock adapter's error normalization: errors pass through
       // untouched, so a mock throwing normalized codes exercises the
@@ -553,11 +1013,11 @@ module.exports = {
       mockNormalizeError(error) {
         return error;
       },
-      // The language method: plain text and multi-turn chat against the
-      // routed provider.
+      // The language method: text, multi-turn chat, the tool-calling
+      // agent loop and structured output against the routed provider.
       //
       // `req` is the caller's request object, carried into events, the
-      // adapter and (later) tool handlers — the core never invents auth.
+      // adapter and every tool handler — the core never invents auth.
       //
       // `stringOrOptions` is either the user prompt string, optionally
       // followed by an `options` object, or one options object alone
@@ -569,8 +1029,27 @@ module.exports = {
       // `system` (string): the system prompt — a top-level option,
       //   never a message;
       // `messages` (array): the conversation so far, each entry
-      //   { role: 'user' | 'assistant', content } with content a string
-      //   or an array of `text` / `image` content parts;
+      //   { role, content } as normalizeMessages accepts — including a
+      //   transcript a previous call returned;
+      // `tools` (array of registered tool names): what the model may
+      //   call — see addTool. The loop validates the model's
+      //   arguments, executes the handlers by their `access`
+      //   scheduling (reads in parallel first, writes serial in model
+      //   order), feeds results back, and asks the model again until
+      //   it answers or `maxSteps` is spent;
+      // `maxSteps` (positive integer, defaults to the module's
+      //   `maxSteps` option): the cap on model turns for this call.
+      //   When the last allowed turn still requests tools, the call
+      //   finishes as 'maxSteps' and the requests come back unexecuted
+      //   on `toolCalls` — so `maxSteps: 1` is manual mode: one turn,
+      //   inspect, run them yourself;
+      // `schema` (JSON Schema with an object root): request structured
+      //   output — the provider's native structured mode is constrained
+      //   to it, and the validated result comes back on `object`.
+      //   Capability-gated on `structured`. Combines with `tools`: the
+      //   schema constrains only the final answer — tool turns run the
+      //   loop unchanged, with their own argument and result
+      //   validation;
       // `effort` (string): the routing level to resolve, defaulting to
       //   the module's default level;
       // `provider`, `model` (strings, only together): the explicit
@@ -580,25 +1059,57 @@ module.exports = {
       //   the routed model's declared ceiling when it is known;
       // `cache` (false | 'short' | 'long', default 'short'): the
       //   prompt-cache policy the adapter translates for its provider;
-      // `signal` (AbortSignal): aborts the in-flight provider call.
+      // `signal` (AbortSignal): aborts the in-flight provider call;
+      //   also injected into every handler's `args._context`.
       //
-      // Returns { text, messages, finishReason, usage, model, provider }:
-      // `text` is the assistant's text (may be ''), `messages` the full
-      // transcript ending with the assistant turn — pass it back as
-      // `messages` to continue the conversation — `finishReason` is
-      // 'stop' or 'length', `usage` counts { inputTokens, outputTokens }
-      // and `model` / `provider` name what actually answered.
+      // Returns { text, messages, finishReason, usage, model,
+      // provider }, plus `steps` when the call carried tools,
+      // `toolCalls` when it stopped with pending requests, and `object`
+      // — the validated structured output — when the call passed
+      // `schema` and finished 'stop' (a 'length' or 'maxSteps' finish
+      // has no complete answer to validate). `text` is the final
+      // assistant text (may be ''); `messages` is the full
+      // transcript — tool requests and results included — resumable as
+      // the next call's `messages`; `steps` lists what the loop
+      // executed in model order, { toolCall, result } per success and
+      // { toolCall, error } per recoverable failure the model was told
+      // about; `toolCalls` are unexecuted requests the caller must run
+      // itself; `finishReason` is 'stop', 'length' or — whenever
+      // `toolCalls` is present — 'maxSteps', the step budget's
+      // counterpart of 'length'; `usage` aggregates { inputTokens,
+      // outputTokens } across every model turn; `model` / `provider`
+      // name what actually answered.
       //
-      // Throws normalized apos errors only: "invalid"
-      // for bad calls, "aiRetry" when transient provider failures
-      // outlast the retry budget, "aiRefusal" when the model refuses.
-      // Emits `beforeGenerate` and `afterGenerate` around the call.
+      // Throws normalized apos errors: "invalid" for bad calls,
+      // "aiRetry" when transient provider failures outlast the retry
+      // budget, "aiRefusal" when the model refuses; a tool handler's
+      // standard-coded throw (and any handler bug) stops the call
+      // as-is, with no trace of it in any model-bound message. Emits
+      // `beforeGenerate` and `afterGenerate` around the call and
+      // `beforeToolCall` / `afterToolCall` around each handler
+      // execution.
       //
       // Under APOS_AI_MOCK the built-in mock answers every call in
       // place of any adapter — same pipeline, no network; with no
-      // providers configured at all, placeholder routing stands in.
+      // providers configured at all, placeholder routing stands in. A
+      // scripted mock turn may request tools: the loop then runs the
+      // real handlers, so tool code is testable offline.
       async generate(req, stringOrOptions, options) {
         const canonical = self.normalizeGenerateOptions(stringOrOptions, options);
+        // Tool handlers receive a req clone stamped with their depth
+        // (executeToolCalls). One level of nesting is allowed: a
+        // handler may run a subagent, whose own tools may not generate
+        // further, whatever they carry. At the allowed level, agent
+        // tools are dropped rather than rejected — a toolset needs no
+        // curating per depth — so a subagent simply cannot spawn
+        // subagents.
+        const depth = req.aposAiDepth || 0;
+        if (depth > self.allowedDepth) {
+          throw self.apos.error('invalid', 'AI generation is limited to one level of nesting: the tools of a subagent cannot generate');
+        }
+        if (depth === self.allowedDepth) {
+          canonical.tools = canonical.tools.filter((tool) => tool.access !== 'agent');
+        }
         let provider;
         let request;
         if (self.mockMode && !Object.keys(self.providers).length) {
@@ -606,6 +1117,12 @@ module.exports = {
         } else {
           ({ provider, request } = self.buildRequest(canonical));
           self.checkCapability(provider, 'text');
+          if (canonical.tools.length) {
+            self.checkCapability(provider, 'tools');
+          }
+          if (canonical.schema) {
+            self.checkCapability(provider, 'structured');
+          }
         }
         const record = self.mockMode
           ? {
@@ -616,28 +1133,176 @@ module.exports = {
             }
           }
           : self.providers[provider];
-        // One shared, mutable payload for both events, so handlers can
-        // enrich the request and correlate the two
+        const tools = new Map(canonical.tools.map((tool) => [ tool.name, tool ]));
+        const handlerContext = request.signal ? { signal: request.signal } : {};
+        // One shared, mutable payload for both generate events, so
+        // handlers can enrich the request and correlate the two; its
+        // messages grow as the loop appends turns
         const context = {
           provider,
           request
         };
         await self.emit('beforeGenerate', req, context);
-        const turn = await self.callAdapter(req, record, context.request, async () => {
-          return self.validateTurn(await record.adapter.chat(req, context.request));
+        const steps = [];
+        const usage = {
+          inputTokens: 0,
+          outputTokens: 0
+        };
+        let turn;
+        let pending = null;
+        for (let turns = 1; ; turns++) {
+          turn = await self.callAdapter(req, record, context.request, async () => {
+            const answer = self.validateTurn(
+              await record.adapter.chat(req, context.request)
+            );
+            // The adapter placed the final answer on `answer.object`;
+            // backstop-validate it here so a malformed one travels the
+            // same retry path as the turn. Only a 'stop' turn is the
+            // answer: tool turns run the loop with their own validation,
+            // a refusal surfaces as aiRefusal below, and a 'length'
+            // turn returns as-is — no object, the finish reason tells
+            // the caller why
+            if (canonical.schema && answer.finishReason === 'stop') {
+              self.validateStructured(answer, canonical.validateObject);
+            }
+            return answer;
+          });
+          usage.inputTokens += turn.usage.inputTokens;
+          usage.outputTokens += turn.usage.outputTokens;
+          if (turn.finishReason === 'refusal') {
+            throw self.apos.error('aiRefusal', 'the model refused this request');
+          }
+          if (turn.finishReason === 'toolCalls' && !tools.size) {
+            throw self.apos.error(
+              'invalid',
+              'the model returned tool calls but the call sent no tools'
+            );
+          }
+          context.request.messages.push({
+            role: 'assistant',
+            content: turn.content
+          });
+          if (turn.finishReason !== 'toolCalls') {
+            break;
+          }
+          const calls = turn.content.filter((part) => part.type === 'toolCall');
+          if (turns === canonical.maxSteps) {
+            pending = calls;
+            break;
+          }
+          const outcomes = await self.executeToolCalls(req, tools, calls, handlerContext);
+          steps.push(...outcomes);
+          context.request.messages.push({
+            role: 'tool',
+            content: outcomes.map((outcome) => ({
+              type: 'toolResult',
+              toolCallId: outcome.toolCall.id,
+              ...(outcome.error !== undefined
+                ? { error: outcome.error }
+                : { output: outcome.result })
+            }))
+          });
+        }
+        context.result = self.assembleResult(context, turn, {
+          steps,
+          usage,
+          pending,
+          object: turn.object,
+          hadTools: tools.size > 0
         });
-        if (turn.finishReason === 'refusal') {
-          throw self.apos.error('aiRefusal', 'the model refused this request');
-        }
-        if (turn.finishReason === 'toolCalls') {
-          throw self.apos.error(
-            'invalid',
-            'the model returned tool calls but the call sent no tools'
-          );
-        }
-        context.result = self.assembleResult(context, turn);
         await self.emit('afterGenerate', req, context);
         return context.result;
+      },
+      // Execute one batch of model-requested tool calls — the toolCall
+      // parts of a single assistant turn — against `tools`, the call's
+      // selected definitions as a Map by name. Reads run first, in
+      // parallel; writes follow serially, in the order the model
+      // requested them; `context` reaches every handler as
+      // `args._context`, extended with `depth` — 1 inside a top-level
+      // call's batch, deeper inside a subagent's. Handlers run on a
+      // clone of the caller's req stamped with that depth
+      // (`aposAiDepth`) — an immutable property of the request each
+      // handler received, never shared mutable state — so a generate
+      // call a handler makes with its own req knows it is nested, even
+      // delayed or from a stashed reference, while the caller's
+      // original req is untouched and concurrent calls sharing it are
+      // unaffected. Every batch is stamped, not only agent tools, so a
+      // handler that spawns without declaring `access: 'agent'` is
+      // contained all the same; `_context.depth` is the informational
+      // copy a handler may act on. Returns outcomes in model order
+      // regardless of
+      // scheduling: { toolCall, result } per success, { toolCall,
+      // error } per recoverable failure — a call naming a tool outside
+      // the selected set, invalid arguments, or a handler's
+      // aiToolError; the error message is what the model reads back,
+      // and siblings are unaffected. Any other throw is a hard stop:
+      // it propagates immediately, before any write runs when thrown
+      // by a read, aborting the remaining writes when thrown by one —
+      // and no trace of it is ever model-bound. Emits beforeToolCall
+      // and afterToolCall around each execution.
+      async executeToolCalls(req, tools, calls, context = {}) {
+        const outcomes = new Array(calls.length);
+        const depth = (req.aposAiDepth || 0) + 1;
+        const handlerReq = req.clone({ aposAiDepth: depth });
+        const handlerContext = {
+          ...context,
+          depth
+        };
+        const run = async (call, index) => {
+          const tool = tools.get(call.name);
+          if (!tool) {
+            outcomes[index] = {
+              toolCall: call,
+              error: `unknown tool "${call.name}"`
+            };
+            return;
+          }
+          const payload = {
+            call,
+            tool
+          };
+          await self.emit('beforeToolCall', req, payload);
+          try {
+            payload.result = await self.executeToolCall(
+              handlerReq, tool, call, handlerContext
+            );
+            outcomes[index] = {
+              toolCall: call,
+              result: payload.result
+            };
+          } catch (e) {
+            if (e?.name !== 'aiToolError') {
+              throw e;
+            }
+            payload.error = e.message;
+            outcomes[index] = {
+              toolCall: call,
+              error: e.message
+            };
+          }
+          await self.emit('afterToolCall', req, payload);
+        };
+        const reads = [];
+        const writes = [];
+        calls.forEach((call, index) => {
+          if (tools.get(call.name)?.access === 'read') {
+            reads.push([ call, index ]);
+          } else {
+            writes.push([ call, index ]);
+          }
+        });
+        const settled = await Promise.allSettled(
+          reads.map(([ call, index ]) => run(call, index))
+        );
+        for (const read of settled) {
+          if (read.status === 'rejected') {
+            throw read.reason;
+          }
+        }
+        for (const [ call, index ] of writes) {
+          await run(call, index);
+        }
+        return outcomes;
       },
       // Throw "invalid" when the configured provider named by
       // `provider` does not declare `capability` (a key of the
@@ -760,7 +1425,7 @@ module.exports = {
           return retryAfter * 1000;
         }
         const curve = self.options.retryBaseDelay * Math.pow(2, attempt - 1);
-        return Math.round(curve * (1 + Math.random()));
+        return Math.floor(curve * (1 + Math.random()));
       },
       // Wait `ms` before the next attempt; a separate method so tests
       // can observe or skip real waiting
@@ -790,9 +1455,19 @@ module.exports = {
           if (part.type === 'text' && typeof part.text !== 'string') {
             malformed('text parts must carry a string "text"');
           }
+          if (part.type === 'toolCall' && (
+            typeof part.id !== 'string' || !part.id ||
+            typeof part.name !== 'string' || !isObject(part.input)
+          )) {
+            malformed('toolCall parts must carry a string "id" and "name" and an object "input"');
+          }
         }
         if (![ 'stop', 'toolCalls', 'length', 'refusal' ].includes(turn.finishReason)) {
           malformed(`"${turn.finishReason}" is not a finish reason`);
+        }
+        if (turn.finishReason === 'toolCalls' &&
+          !turn.content.some(part => part.type === 'toolCall')) {
+          malformed('a "toolCalls" finish reason without toolCall parts');
         }
         if (!isObject(turn.usage) ||
           !Number.isFinite(turn.usage.inputTokens) ||
@@ -801,29 +1476,54 @@ module.exports = {
         }
         return turn;
       },
+      // The anti-hallucination backstop for structured output. The
+      // adapter has already extracted the final answer into `turn.object`
+      // from its provider's structured mode ([D35] — an adapter concern,
+      // since only the dialect knows where the object lives); this
+      // validates it against `validate`, the compiled validator for the
+      // call's `schema` (normalizeGenerateOptions). The provider's
+      // native mode does the real work — this only catches a stray
+      // non-conforming or missing response. A missing object or a schema
+      // mismatch is a malformed model response: like a malformed turn it
+      // throws the transient code so the call travels the retry path.
+      validateStructured(turn, validate) {
+        if (turn.object === undefined) {
+          throw self.apos.error('aiRetry', 'the provider returned no structured output');
+        }
+        if (!validate(turn.object)) {
+          throw self.apos.error('aiRetry', `structured output does not match the schema: ${self.ajv.errorsText(validate.errors, { dataVar: 'object' })}`);
+        }
+      },
       // Build generate's unified return object from `context` (the
-      // event payload carrying the provider name and the request) and
-      // `turn` (the validated adapter response). Returns { text,
-      // messages, finishReason, usage, model, provider }; which fields
-      // are populated tells the caller what happened. The transcript
-      // includes the assistant turn, so it is resumable as the next
-      // call's `messages`.
-      assembleResult(context, turn) {
+      // event payload carrying the provider name and the live request,
+      // whose messages already include every appended turn), `turn`
+      // (the final validated adapter response) and the loop's
+      // accumulations: executed `steps`, `usage` aggregated across
+      // every model turn, the `pending` tool calls when the step
+      // budget cut the loop, the validated structured `object` when the
+      // call passed a `schema`, and whether the call had tools at all
+      // (`steps` appears only then). Returns { text, messages,
+      // finishReason, usage, model, provider } plus `object`, `steps`
+      // and `toolCalls` as described on generate; which fields are
+      // populated tells the caller what happened. The transcript is
+      // resumable as the next call's `messages`.
+      assembleResult(context, turn, {
+        steps, usage, pending, object, hadTools
+      }) {
         const text = turn.content
           .filter(part => part.type === 'text')
           .map(part => part.text)
           .join('');
         return {
           text,
-          messages: [
-            ...context.request.messages,
-            {
-              role: 'assistant',
-              content: turn.content
-            }
-          ],
-          finishReason: turn.finishReason,
-          usage: turn.usage,
+          ...(object !== undefined && { object }),
+          messages: [ ...context.request.messages ],
+          ...(hadTools && { steps }),
+          ...(pending && { toolCalls: pending }),
+          // The step budget cutting the loop is its own finish reason,
+          // like the token budget's 'length'
+          finishReason: pending ? 'maxSteps' : turn.finishReason,
+          usage,
           model: turn.model || context.request.model,
           provider: context.provider
         };

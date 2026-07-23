@@ -17,6 +17,22 @@ describe('AI adapter: google', function() {
     apos = await t.create({
       root: module,
       modules: {
+        'tool-fixtures': {
+          init(self) {
+            self.apos.ai.addTool({
+              name: 'echo',
+              description: 'Echo the value back',
+              access: 'read',
+              input: {
+                type: 'object',
+                properties: { value: { type: 'string' } },
+                required: [ 'value' ]
+              },
+              schema: { value: { type: 'string' } },
+              handler: (req, args) => ({ value: args.value })
+            });
+          }
+        },
         '@apostrophecms/ai': {
           options: {
             provider: 'google',
@@ -206,6 +222,191 @@ describe('AI adapter: google', function() {
         );
       }
     });
+
+    it('translates tool definitions to functionDeclarations', function() {
+      const input = {
+        type: 'object',
+        properties: { title: { type: 'string' } }
+      };
+      const body = adapter.buildBody(request({
+        tools: [ {
+          name: 'find_pages',
+          description: 'Find pages',
+          input
+        } ]
+      }));
+      assert.deepEqual(body.tools, [ {
+        functionDeclarations: [ {
+          name: 'find_pages',
+          description: 'Find pages',
+          parameters: input
+        } ]
+      } ]);
+    });
+
+    it('carries tool calls and results, recovering the response name from the call id', function() {
+      const body = adapter.buildBody(request({
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              text('searching'),
+              {
+                type: 'toolCall',
+                id: 'find_pages-0',
+                name: 'find_pages',
+                input: { title: 'Pricing' }
+              }
+            ]
+          },
+          {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: 'find_pages-0',
+              output: { id: 'p1' }
+            } ]
+          }
+        ]
+      }));
+      assert.deepEqual(body.contents, [
+        {
+          role: 'model',
+          parts: [
+            { text: 'searching' },
+            {
+              functionCall: {
+                name: 'find_pages',
+                args: { title: 'Pricing' }
+              }
+            }
+          ]
+        },
+        {
+          role: 'user',
+          parts: [ {
+            functionResponse: {
+              name: 'find_pages',
+              response: { id: 'p1' }
+            }
+          } ]
+        }
+      ]);
+    });
+
+    it('wraps a tool error result in the functionResponse', function() {
+      const body = adapter.buildBody(request({
+        messages: [
+          {
+            role: 'assistant',
+            content: [ {
+              type: 'toolCall',
+              id: 'x-0',
+              name: 'x',
+              input: {}
+            } ]
+          },
+          {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: 'x-0',
+              error: 'boom'
+            } ]
+          }
+        ]
+      }));
+      assert.deepEqual(body.contents[1].parts[0], {
+        functionResponse: {
+          name: 'x',
+          response: { error: 'boom' }
+        }
+      });
+    });
+
+    it('restores part-level thought signatures exactly as received', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'searching',
+              thoughtSignature: 'sig-text'
+            },
+            {
+              type: 'toolCall',
+              id: 'find_pages-0',
+              name: 'find_pages',
+              input: { title: 'Pricing' },
+              thoughtSignature: 'sig-call'
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.contents[0].parts, [
+        {
+          text: 'searching',
+          thoughtSignature: 'sig-text'
+        },
+        {
+          functionCall: {
+            name: 'find_pages',
+            args: { title: 'Pricing' }
+          },
+          thoughtSignature: 'sig-call'
+        }
+      ]);
+    });
+
+    it('skips assistant parts another dialect owns', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            {
+              type: 'thinking',
+              block: {
+                type: 'thinking',
+                thinking: 'hidden',
+                signature: 'x'
+              }
+            },
+            text('visible')
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.contents[0].parts, [ { text: 'visible' } ]);
+    });
+
+    it('adds the synthetic final-answer function and forces it for a pure structured call', function() {
+      const schema = {
+        type: 'object',
+        properties: { title: { type: 'string' } },
+        required: [ 'title' ]
+      };
+      const body = adapter.buildBody(request({ schema }));
+      const [ tool ] = body.tools;
+      assert.equal(tool.functionDeclarations.length, 1);
+      assert.equal(tool.functionDeclarations[0].name, '_final_answer');
+      assert.equal(typeof tool.functionDeclarations[0].description, 'string');
+      assert.deepEqual(tool.functionDeclarations[0].parameters, schema);
+      assert.deepEqual(body.toolConfig, {
+        functionCallingConfig: {
+          mode: 'ANY',
+          allowedFunctionNames: [ '_final_answer' ]
+        }
+      });
+    });
+
+    it('does not force the final-answer function when thinking is on', function() {
+      const body = adapter.buildBody(request({
+        schema: { type: 'object' },
+        reasoning: 'high'
+      }));
+      assert.equal(body.tools[0].functionDeclarations[0].name, '_final_answer');
+      assert.equal('toolConfig' in body, false);
+    });
   });
 
   describe('response parsing', function() {
@@ -284,11 +485,77 @@ describe('AI adapter: google', function() {
         text('checking'),
         {
           type: 'toolCall',
+          // Synthesized: Gemini function calls carry no id
+          id: 'find_pages-0',
           name: 'find_pages',
           input: { title: 'Pricing' }
         }
       ]);
       assert.equal(turn.finishReason, 'toolCalls');
+    });
+
+    it('synthesizes a distinct id per function call in a turn', function() {
+      const turn = adapter.parseResponse(fixture({
+        candidates: [ candidate({
+          content: {
+            role: 'model',
+            parts: [
+              {
+                functionCall: {
+                  name: 'search',
+                  args: { q: 'a' }
+                }
+              },
+              {
+                functionCall: {
+                  name: 'search',
+                  args: { q: 'b' }
+                }
+              }
+            ]
+          },
+          finishReason: 'STOP'
+        }) ]
+      }));
+      assert.deepEqual(turn.content.map((part) => part.id), [ 'search-0', 'search-1' ]);
+    });
+
+    it('carries part-level thought signatures on the normalized parts', function() {
+      const turn = adapter.parseResponse(fixture({
+        candidates: [ candidate({
+          content: {
+            role: 'model',
+            parts: [
+              {
+                text: 'searching',
+                thoughtSignature: 'sig-text'
+              },
+              {
+                functionCall: {
+                  name: 'find_pages',
+                  args: { title: 'Pricing' }
+                },
+                thoughtSignature: 'sig-call'
+              }
+            ]
+          },
+          finishReason: 'STOP'
+        }) ]
+      }));
+      assert.deepEqual(turn.content, [
+        {
+          type: 'text',
+          text: 'searching',
+          thoughtSignature: 'sig-text'
+        },
+        {
+          type: 'toolCall',
+          id: 'find_pages-0',
+          name: 'find_pages',
+          input: { title: 'Pricing' },
+          thoughtSignature: 'sig-call'
+        }
+      ]);
     });
 
     it('throws the refusal error on a blocked prompt', function() {
@@ -303,6 +570,39 @@ describe('AI adapter: google', function() {
           return true;
         }
       );
+    });
+
+    it('turns a final-answer function call into a structured stop turn', function() {
+      const object = { title: 'Pricing' };
+      const turn = adapter.parseResponse(
+        fixture({
+          candidates: [ candidate({
+            content: {
+              role: 'model',
+              parts: [ {
+                functionCall: {
+                  name: '_final_answer',
+                  args: object
+                }
+              } ]
+            },
+            finishReason: 'STOP'
+          }) ]
+        }),
+        request({ schema: { type: 'object' } })
+      );
+      assert.deepEqual(turn.object, object);
+      assert.equal(turn.finishReason, 'stop');
+      assert.deepEqual(turn.content, [ text(JSON.stringify(object)) ]);
+    });
+
+    it('leaves a free-text answer without an object for the backstop to retry', function() {
+      const turn = adapter.parseResponse(
+        fixture(),
+        request({ schema: { type: 'object' } })
+      );
+      assert.equal('object' in turn, false);
+      assert.equal(turn.finishReason, 'stop');
     });
   });
 
@@ -476,6 +776,72 @@ describe('AI adapter: google', function() {
       );
       assert.equal(call.options.headers['x-goog-api-key'], 'sk-gw');
       assert.equal(call.options.body.generationConfig.maxOutputTokens, 65536);
+    });
+
+    it('drives a thinking tool loop end to end, replaying the thought signature', async function() {
+      httpScript = [
+        () => fixture({
+          candidates: [ candidate({
+            content: {
+              role: 'model',
+              parts: [ {
+                functionCall: {
+                  name: 'echo',
+                  args: { value: 'pricing' }
+                },
+                thoughtSignature: 'sig-call'
+              } ]
+            },
+            finishReason: 'STOP'
+          }) ]
+        }),
+        () => fixture({
+          candidates: [ candidate({
+            content: {
+              role: 'model',
+              parts: [ { text: 'done' } ]
+            }
+          }) ]
+        })
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), 'use the tool', {
+        tools: [ 'echo' ],
+        reasoning: 'high'
+      });
+      assert.equal(result.text, 'done');
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(httpCalls.length, 2);
+      // Thinking was on for both turns of the loop
+      for (const call of httpCalls) {
+        assert.deepEqual(
+          call.options.body.generationConfig.thinkingConfig,
+          { thinkingLevel: 'high' }
+        );
+      }
+      // The second call replays the function call with its thought
+      // signature restored, exactly as received, and pairs the
+      // function response back by name
+      assert.deepEqual(httpCalls[1].options.body.contents.slice(1), [
+        {
+          role: 'model',
+          parts: [ {
+            functionCall: {
+              name: 'echo',
+              args: { value: 'pricing' }
+            },
+            thoughtSignature: 'sig-call'
+          } ]
+        },
+        {
+          role: 'user',
+          parts: [ {
+            functionResponse: {
+              name: 'echo',
+              response: { value: 'pricing' }
+            }
+          } ]
+        }
+      ]);
     });
 
     it('retries a 429 at the RetryInfo delay', async function() {
