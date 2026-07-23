@@ -18,7 +18,10 @@ module.exports = {
     // provider: the default provider name; inferred when only one is configured
     // effort: { default, levels: { name: { provider, model, reasoning } } }
     // image: { provider, model, aspect, quality }
-    // mock: (request) => assistant turn, consulted only under APOS_AI_MOCK
+    // mock: (req, request) => assistant turn, consulted only under
+    //   APOS_AI_MOCK
+    // mockImage: (req, request) => adapter image result, consulted only
+    //   under APOS_AI_MOCK
     // Conservative agent-loop cap; any call may override it
     maxSteps: 5,
     // Transient-failure retry cap, counting calls
@@ -1108,9 +1111,11 @@ module.exports = {
       },
       // The built-in mock standing in for every adapter chat under
       // APOS_AI_MOCK. Consults the "mock" option first when the module
-      // has one: it may return a complete assistant turn, a { text }
-      // shorthand filled out into one, or undefined to fall through to
-      // the deterministic default. That default is request-aware: for a
+      // has one — called (req, request), req-first like every AI
+      // surface, so a mock can answer per current user: it may return
+      // a complete assistant turn, a { text } shorthand filled out
+      // into one, or undefined to fall through to the deterministic
+      // default. That default is request-aware: for a
       // structured request (`request.schema`) it synthesizes a
       // schema-conforming object and returns it on the turn's `object`,
       // as a real adapter would — the pipeline backstop-validates
@@ -1121,7 +1126,7 @@ module.exports = {
       // the real error paths.
       async mockChat(req, request) {
         const custom = self.options.mock
-          ? await self.options.mock(request)
+          ? await self.options.mock(req, request)
           : undefined;
         if (custom == null) {
           if (request.schema) {
@@ -1225,23 +1230,50 @@ module.exports = {
         return error;
       },
       // The built-in mock standing in for every adapter image call
-      // under APOS_AI_MOCK: `count` copies of a placeholder pixel in
-      // the adapter's return shape, no network or keys. Runs inside
-      // the same retry and validation seam as a real call. Usage is
-      // the chat mock's text ballpark for the prompt plus a flat
-      // per-image output, the order images bill at.
+      // under APOS_AI_MOCK. Consults the "mockImage" option first when
+      // the module has one — called (req, request), req-first like
+      // every AI surface, so a mock can answer per current user: it
+      // may return a complete adapter image result ({ images, model?,
+      // usage?, size? }), an images array shorthand filled out into
+      // one, or undefined to fall through to the deterministic
+      // default — `count` copies of a placeholder pixel, no network
+      // or keys. Filled-in usage is the chat mock's
+      // text ballpark for the prompt plus a flat per-image output, the
+      // order images bill at. Runs inside the same retry and
+      // validation seam as a real call.
       async mockImage(req, request) {
-        return {
-          images: Array.from({ length: request.count }, () => ({
+        const custom = self.options.mockImage
+          ? await self.options.mockImage(req, request)
+          : undefined;
+        if (custom == null) {
+          return result(Array.from({ length: request.count }, () => ({
             type: 'png',
             data: MOCK_PIXEL
-          })),
-          model: request.model,
-          usage: {
-            inputTokens: Math.max(1, Math.round(request.prompt.length / 4)),
-            outputTokens: 1000 * request.count
-          }
-        };
+          })));
+        }
+        if (isObject(custom) && Array.isArray(custom.images)) {
+          return custom;
+        }
+        if (Array.isArray(custom)) {
+          return result(custom);
+        }
+        throw self.apos.error(
+          'invalid',
+          '"mockImage" must return an image result, an images array or undefined'
+        );
+
+        // The adapter return shape around `images`, with the model and
+        // a plausible usage supplied
+        function result(images) {
+          return {
+            images,
+            model: request.model,
+            usage: {
+              inputTokens: Math.max(1, Math.round(request.prompt.length / 4)),
+              outputTokens: 1000 * images.length
+            }
+          };
+        }
       },
       // The language method: text, multi-turn chat, the tool-calling
       // agent loop and structured output against the routed provider.
@@ -1480,7 +1512,8 @@ module.exports = {
       // `size` the native pixel size when the provider works in
       // pixels. Throws the same normalized codes as generate, with
       // the same retries, log records and mock behavior (placeholder
-      // images, no network). Emits `beforeGenerateImage` and
+      // images, no network — scriptable via the `mockImage` option,
+      // see mockImage). Emits `beforeGenerateImage` and
       // `afterGenerateImage` around the call, sharing one mutable
       // context.
       async generateImage(req, prompt, options) {
@@ -1968,7 +2001,7 @@ module.exports = {
         };
 
         const {
-          providers, provider, effort, image, maxSteps, mock,
+          providers, provider, effort, image, maxSteps, mock, mockImage,
           retryAttempts, retryBaseDelay, retryMaxElapsed
         } = options;
 
@@ -2065,6 +2098,10 @@ module.exports = {
 
         if (mock !== undefined && typeof mock !== 'function') {
           fail('"mock" must be a function');
+        }
+
+        if (mockImage !== undefined && typeof mockImage !== 'function') {
+          fail('"mockImage" must be a function');
         }
 
         for (const [ name, value ] of Object.entries({

@@ -298,6 +298,10 @@ describe('AI engine', function() {
         ...valid(),
         mock: 'fixture reply'
       }, /"mock" must be a function/);
+      rejects({
+        ...valid(),
+        mockImage: 'fixture pixel'
+      }, /"mockImage" must be a function/);
     });
 
     it('rejects malformed retry options', function() {

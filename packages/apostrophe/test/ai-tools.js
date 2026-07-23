@@ -1166,7 +1166,7 @@ describe('AI tools', function() {
           '@apostrophecms/ai': {
             options: {
               // A scripted model: request a tool once, then answer
-              mock(request) {
+              mock(req, request) {
                 if (request.messages.at(-1).role !== 'tool') {
                   return {
                     content: [ {

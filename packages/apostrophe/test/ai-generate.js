@@ -1293,7 +1293,7 @@ describe('AI generate', function() {
                   }
                 },
                 retryBaseDelay: 1,
-                mock(request) {
+                mock(req, request) {
                   const step = mockScript.shift();
                   return step && step(request);
                 }

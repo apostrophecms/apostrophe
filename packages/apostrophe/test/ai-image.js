@@ -523,12 +523,56 @@ describe('AI image dials', function() {
   });
 
   describe('generateImage under APOS_AI_MOCK', function() {
+    // The caller's req, as the mock option received it
+    let seenReq;
+
     before(async function() {
       await t.destroy(apos);
       process.env.APOS_AI_MOCK = '1';
-      // No providers, no keys: placeholder routing stands in
+      // No providers, no keys: placeholder routing stands in. The
+      // mockImage option scripts by prompt and falls through for the
+      // rest
       apos = await t.create({
-        root: module
+        root: module,
+        modules: {
+          '@apostrophecms/ai': {
+            options: {
+              mockImage(req, request) {
+                seenReq = req;
+                if (request.prompt === 'scripted') {
+                  return {
+                    images: [ {
+                      type: 'png',
+                      data: 'c2NyaXB0ZWQ='
+                    } ],
+                    model: 'scripted-model',
+                    usage: {
+                      inputTokens: 3,
+                      outputTokens: 7
+                    },
+                    size: '512x512'
+                  };
+                }
+                if (request.prompt === 'shorthand') {
+                  return [
+                    {
+                      type: 'png',
+                      data: 'c2hvcnQ='
+                    },
+                    {
+                      type: 'png',
+                      data: 'c2hvcnQy'
+                    }
+                  ];
+                }
+                if (request.prompt === 'broken') {
+                  return 42;
+                }
+                return undefined;
+              }
+            }
+          }
+        }
       });
     });
 
@@ -561,6 +605,56 @@ describe('AI image dials', function() {
       });
       assert.equal(result.provider, 'openai');
       assert.equal(result.model, 'gpt-image-2');
+    });
+
+    it('uses a complete result the mockImage option returns, passing the caller req', async function() {
+      const req = apos.task.getReq();
+      const result = await apos.ai.generateImage(req, 'scripted', {
+        aspect: 'square'
+      });
+      assert.equal(seenReq, req);
+      assert.deepEqual(result, {
+        images: [ {
+          type: 'png',
+          data: 'c2NyaXB0ZWQ='
+        } ],
+        provider: 'mock',
+        model: 'scripted-model',
+        usage: {
+          inputTokens: 3,
+          outputTokens: 7
+        },
+        aspect: '1:1',
+        size: '512x512'
+      });
+    });
+
+    it('fills an images array shorthand out into a result', async function() {
+      const result = await apos.ai.generateImage(apos.task.getReq(), 'shorthand');
+      assert.deepEqual(result.images, [
+        {
+          type: 'png',
+          data: 'c2hvcnQ='
+        },
+        {
+          type: 'png',
+          data: 'c2hvcnQy'
+        }
+      ]);
+      assert.equal(result.model, 'mock');
+      assert(Number.isFinite(result.usage.inputTokens));
+      assert(Number.isFinite(result.usage.outputTokens));
+    });
+
+    it('rejects a mockImage return it does not recognize', async function() {
+      await assert.rejects(
+        apos.ai.generateImage(apos.task.getReq(), 'broken'),
+        (e) => {
+          assert.equal(e.name, 'invalid');
+          assert.match(e.message, /"mockImage" must return an image result/);
+          return true;
+        }
+      );
     });
   });
 
