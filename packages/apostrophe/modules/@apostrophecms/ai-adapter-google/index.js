@@ -53,7 +53,11 @@ module.exports = {
   options: {
     // Per-request timeout in milliseconds; a timed-out call is a
     // transient failure the engine retries
-    timeout: 600000
+    timeout: 600000,
+    // Milliseconds between the starts of the fanned-out image
+    // requests a count > 1 spawns, jittered per request, so a burst
+    // does not trip the provider's rate limit
+    imageStagger: 500
   },
   init(self) {
     self.apos.ai.addAdapter(self.adapter());
@@ -131,24 +135,33 @@ module.exports = {
           // generateContent surface; the core resolved `aspect` to a
           // declared ratio the dialect takes verbatim. The dialect
           // returns one image per call — no count knob — so `count`
-          // fans out as that many concurrent requests. A partial
-          // failure does not scrap the survivors: what generated is
-          // delivered (possibly fewer than `count`) and each lost
-          // request is logged; only losing every request throws.
+          // fans out as that many concurrent requests, their starts
+          // staggered with jitter (imageStagger) so the burst does
+          // not trip the rate limit. A partial failure does not scrap
+          // the survivors: what generated is delivered (possibly
+          // fewer than `count`) and each lost request is logged; only
+          // losing every request throws.
           async image(req, request) {
             const body = await self.buildImageBody(request, this.baseUrl);
             const settled = await Promise.allSettled(
-              Array.from({ length: request.count }, () => self.apos.http.post(
-                `${this.baseUrl}/v1beta/models/${request.model}:generateContent`,
-                {
-                  headers: {
-                    'x-goog-api-key': this.apiKey
-                  },
-                  body,
-                  timeout: self.options.timeout,
-                  ...(request.signal && { signal: request.signal })
+              Array.from({ length: request.count }, async (item, index) => {
+                if (index) {
+                  await self.apos.ai.pause(
+                    (index + Math.random()) * self.options.imageStagger
+                  );
                 }
-              ))
+                return self.apos.http.post(
+                  `${this.baseUrl}/v1beta/models/${request.model}:generateContent`,
+                  {
+                    headers: {
+                      'x-goog-api-key': this.apiKey
+                    },
+                    body,
+                    timeout: self.options.timeout,
+                    ...(request.signal && { signal: request.signal })
+                  }
+                );
+              })
             );
             const responses = settled
               .filter((outcome) => outcome.status === 'fulfilled')

@@ -1028,6 +1028,10 @@ describe('AI adapter: openai', function() {
             options: {
               providers: {
                 openai: { apiKey: liveKey }
+              },
+              image: {
+                provider: 'openai',
+                model: 'gpt-image-2'
               }
             }
           }
@@ -1059,21 +1063,36 @@ describe('AI adapter: openai', function() {
       assert(Number.isFinite(result.usage.outputTokens));
     });
 
-    it('generates an image against OpenAI for real', async function() {
-      const result = await liveApos.ai.providers.openai.adapter.image(
+    it('generates and edits an image against OpenAI for real', async function() {
+      const result = await liveApos.ai.generateImage(
         liveApos.task.getReq(),
+        'a small watercolor fox',
         {
-          prompt: 'a small watercolor fox',
-          count: 1,
           aspect: '1:1',
-          quality: 'low',
-          model: 'gpt-image-2'
+          quality: 'low'
         }
       );
-      assert.equal(result.images.length, 1);
-      assert.equal(result.images[0].type, 'png');
-      assert(result.images[0].data.length > 0);
+      const [ image ] = result.images;
+      assert.equal(image.type, 'png');
+      assert(image.data.length > 0);
+      assert.equal(result.provider, 'openai');
+      assert.equal(result.aspect, '1:1');
       assert.equal(result.size, '1024x1024');
+      // The generated image comes back as the edit's source
+      const { images: [ edited ], aspect } = await liveApos.ai.generateImage(
+        liveApos.task.getReq(),
+        'make the fox wear a red scarf',
+        {
+          images: [ {
+            data: image.data,
+            mediaType: 'image/png'
+          } ],
+          aspect: 'square',
+          quality: 'low'
+        }
+      );
+      assert(edited.data.length > 0);
+      assert.equal(aspect, '1:1');
     });
   });
 });

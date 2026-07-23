@@ -258,14 +258,35 @@ describe('AI engine', function() {
         ...valid(),
         image: { provider: 'openai' }
       }, /"image\.model" must be a string/);
+      for (const aspect of [ 16, 'wide', '16x9' ]) {
+        rejects({
+          ...valid(),
+          image: {
+            provider: 'openai',
+            model: 'gpt-image-1-mini',
+            aspect
+          }
+        }, /"image\.aspect" must be "square", "portrait", "landscape" or a "W:H" ratio/);
+      }
       rejects({
         ...valid(),
         image: {
           provider: 'openai',
           model: 'gpt-image-1-mini',
-          aspect: 16
+          quality: 'ultra'
         }
-      }, /"image\.aspect" must be a string/);
+      }, /"image\.quality" must be "low", "medium" or "high"/);
+      // Inline aspects on the entry get the declared-model vetting
+      for (const aspects of [ [], [ '1:1', 'wide' ], '1:1' ]) {
+        rejects({
+          ...valid(),
+          image: {
+            provider: 'openai',
+            model: 'gpt-image-1-mini',
+            aspects
+          }
+        }, /"image\.aspects" must be a non-empty array of "W:H" ratios/);
+      }
     });
 
     it('rejects malformed maxSteps and mock', function() {
@@ -569,6 +590,16 @@ describe('AI engine', function() {
         }, /@apostrophecms\/ai: "image" references unconfigured provider "openai"/);
       });
 
+      it('fails on an image route to a provider without the image capability', async function() {
+        await failsToActivate({
+          providers: { fake: { apiKey: 'k' } },
+          image: {
+            provider: 'fake',
+            model: 'fake-image'
+          }
+        }, /@apostrophecms\/ai: "image" references provider "fake" which does not declare the "image" capability/);
+      });
+
       it('fails on a malformed declared aspect', async function() {
         await failsToActivate({
           providers: {
@@ -624,6 +655,12 @@ describe('AI engine', function() {
       image: false,
       caching: true
     };
+    // The "other" entry overrides image on, so the image route it
+    // hosts passes the activation capability check
+    const imageCapable = {
+      ...capabilities,
+      image: true
+    };
 
     before(async function() {
       await t.destroy(apos);
@@ -643,6 +680,7 @@ describe('AI engine', function() {
                 fake: { apiKey: 'k1' },
                 other: {
                   apiKey: 'k2',
+                  capabilities: { image: true },
                   models: {
                     'other-image': { aspects: [ '1:1', '16:9' ] }
                   }
@@ -705,7 +743,7 @@ describe('AI engine', function() {
         model: 'other-large',
         contextWindow: 400000,
         maxOutputTokens: 32000,
-        capabilities
+        capabilities: imageCapable
       });
     });
 
@@ -716,7 +754,7 @@ describe('AI engine', function() {
         reasoning: 'max',
         contextWindow: 1000000,
         maxOutputTokens: 64000,
-        capabilities
+        capabilities: imageCapable
       });
     });
 
@@ -729,7 +767,7 @@ describe('AI engine', function() {
         model: 'other-medium',
         contextWindow: 200000,
         maxOutputTokens: 16000,
-        capabilities
+        capabilities: imageCapable
       });
     });
 
@@ -752,7 +790,7 @@ describe('AI engine', function() {
         model: 'other-image',
         contextWindow: undefined,
         maxOutputTokens: undefined,
-        capabilities,
+        capabilities: imageCapable,
         aspects: [ '1:1', '16:9' ]
       });
     });
@@ -767,7 +805,7 @@ describe('AI engine', function() {
         model: 'other-image',
         contextWindow: undefined,
         maxOutputTokens: undefined,
-        capabilities,
+        capabilities: imageCapable,
         aspects: [ '1:1', '16:9' ]
       });
     });

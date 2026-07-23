@@ -933,6 +933,7 @@ describe('AI adapter: google', function() {
     let httpScript;
     let httpCalls;
     let logRecords;
+    let waits;
     let originalPost;
     let originalFetch;
     let fetchCalls;
@@ -952,6 +953,7 @@ describe('AI adapter: google', function() {
       httpCalls = [];
       fetchCalls = [];
       logRecords = [];
+      waits = [];
       apos.http.post = async (url, options) => {
         httpCalls.push({
           url,
@@ -962,6 +964,9 @@ describe('AI adapter: google', function() {
           throw new Error('post called beyond its script');
         }
         return step();
+      };
+      apos.ai.pause = async (ms) => {
+        waits.push(ms);
       };
       for (const severity of [ 'Warn', 'Error' ]) {
         apos.ai[`log${severity}`] = (req, type, message, data) => {
@@ -1099,6 +1104,10 @@ describe('AI adapter: google', function() {
         model: 'gemini-3.1-flash-image'
       });
       assert.equal(httpCalls.length, 2);
+      // The second request start is staggered with jitter into its
+      // own imageStagger slot; the first fires immediately
+      assert.equal(waits.length, 1);
+      assert(waits[0] >= 500 && waits[0] < 1000);
       // One image per request, the same body each time; commentary
       // text parts do not travel
       assert.deepEqual(httpCalls[0].options.body, httpCalls[1].options.body);
@@ -1314,6 +1323,10 @@ describe('AI adapter: google', function() {
             options: {
               providers: {
                 google: { apiKey: liveKey }
+              },
+              image: {
+                provider: 'google',
+                model: 'gemini-3.1-flash-image'
               }
             }
           }
@@ -1345,20 +1358,37 @@ describe('AI adapter: google', function() {
       assert(Number.isFinite(result.usage.outputTokens));
     });
 
-    it('generates an image against Google for real', async function() {
-      const result = await liveApos.ai.providers.google.adapter.image(
+    it('generates and edits an image against Google for real', async function() {
+      const result = await liveApos.ai.generateImage(
         liveApos.task.getReq(),
+        'a small watercolor fox',
         {
-          prompt: 'a small watercolor fox',
-          count: 1,
           aspect: '1:1',
-          quality: 'low',
-          model: 'gemini-3.1-flash-image'
+          quality: 'low'
         }
       );
-      assert.equal(result.images.length, 1);
-      assert(result.images[0].data.length > 0);
+      const [ image ] = result.images;
+      assert(image.data.length > 0);
+      assert.equal(result.provider, 'google');
+      assert.equal(result.aspect, '1:1');
+      // No pixel size: this dialect works in ratios
+      assert.equal(result.size, undefined);
       assert(Number.isFinite(result.usage.outputTokens));
+      // The generated image comes back as the edit's source
+      const { images: [ edited ], aspect } = await liveApos.ai.generateImage(
+        liveApos.task.getReq(),
+        'make the fox wear a red scarf',
+        {
+          images: [ {
+            data: image.data,
+            mediaType: `image/${image.type}`
+          } ],
+          aspect: 'square',
+          quality: 'low'
+        }
+      );
+      assert(edited.data.length > 0);
+      assert.equal(aspect, '1:1');
     });
   });
 });
