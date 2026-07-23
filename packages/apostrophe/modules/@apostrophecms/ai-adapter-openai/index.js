@@ -239,7 +239,7 @@ module.exports = {
       // validation treats that as a malformed (retryable) response,
       // never a truncated success. When the request asked for structured
       // output, the final answer's text is the JSON object: it is parsed
-      // onto the turn's `object` ([D35]), which the engine
+      // onto the turn's `object`, which the engine
       // backstop-validates; malformed JSON is a retryable response.
       parseResponse(response, request = {}) {
         const content = [];

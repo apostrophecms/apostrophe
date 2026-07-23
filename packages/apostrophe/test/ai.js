@@ -569,6 +569,33 @@ describe('AI engine', function() {
         }, /@apostrophecms\/ai: "image" references unconfigured provider "openai"/);
       });
 
+      it('fails on a malformed declared aspect', async function() {
+        await failsToActivate({
+          providers: {
+            fake: {
+              apiKey: 'k',
+              models: { 'fake-medium': { aspects: [ '1:1', 'wide' ] } }
+            }
+          }
+        }, /@apostrophecms\/ai: "providers\.fake" model "fake-medium" declares an invalid aspect "wide"/);
+        await failsToActivate({
+          providers: {
+            fake: {
+              apiKey: 'k',
+              models: { 'fake-medium': { aspects: '1:1' } }
+            }
+          }
+        }, /@apostrophecms\/ai: "providers\.fake" model "fake-medium": "aspects" must be a non-empty array/);
+        await failsToActivate({
+          providers: {
+            fake: {
+              apiKey: 'k',
+              models: { 'fake-medium': { aspects: [] } }
+            }
+          }
+        }, /@apostrophecms\/ai: "providers\.fake" model "fake-medium": "aspects" must be a non-empty array/);
+      });
+
       it('fails when the default effort level resolves to no row', async function() {
         await failsToActivate({
           providers: { fake: { apiKey: 'k' } },

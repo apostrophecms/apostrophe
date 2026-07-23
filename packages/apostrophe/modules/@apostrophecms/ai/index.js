@@ -75,6 +75,21 @@ module.exports = {
       return Boolean(value) && typeof value === 'object' &&
         !Array.isArray(value);
     }
+    // A 'W:H' aspect string → its [ width, height ] positive numbers, or
+    // null when it is not a well-formed ratio. Named tokens are not
+    // accepted here.
+    function parseAspect(value) {
+      if (typeof value !== 'string') {
+        return null;
+      }
+      const match = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(value);
+      if (!match) {
+        return null;
+      }
+      const w = Number(match[1]);
+      const h = Number(match[2]);
+      return w > 0 && h > 0 ? [ w, h ] : null;
+    }
 
     return {
       // Register a provider adapter. Adapters self-register in their own
@@ -142,6 +157,7 @@ module.exports = {
                 ...entry.effort
               }
           };
+          self.validateAspects(name, self.providers[name].models);
         }
 
         if (Object.keys(providers).length &&
@@ -559,6 +575,177 @@ module.exports = {
           });
         }
       },
+      // Parse and validate generateImage's `(prompt, options)` arguments
+      // into one canonical options object `{ prompt, count, aspect,
+      // quality, images, provider, model, signal }`. `prompt` is the
+      // required instruction — the subject to generate, or the edit to
+      // apply when `images` are present. Unknown options are rejected as
+      // "invalid"; `aspect` is checked as a recognized dial here (a named
+      // token or a 'W:H' ratio) but resolved against the routed model's
+      // declared aspects later, at call time. Unset options are left
+      // undefined so buildImageRequest omits them and the provider's own
+      // default applies.
+      normalizeImageOptions(prompt, options) {
+        const invalid = (message) => {
+          throw self.apos.error('invalid', message);
+        };
+        if (typeof prompt !== 'string' || !prompt) {
+          invalid('the image prompt must be a non-empty string');
+        }
+        options = options === undefined ? {} : options;
+        if (!isObject(options)) {
+          invalid('"options" must be an object');
+        }
+        const known = [
+          'count', 'aspect', 'quality', 'images', 'provider', 'model', 'signal'
+        ];
+        for (const name of Object.keys(options)) {
+          if (!known.includes(name)) {
+            invalid(`unknown option "${name}"`);
+          }
+        }
+        const {
+          count = 1, aspect, quality, provider, model, signal
+        } = options;
+        if (!Number.isInteger(count) || count < 1) {
+          invalid('"count" must be a positive integer');
+        }
+        if (aspect !== undefined) {
+          if (typeof aspect !== 'string') {
+            invalid('"aspect" must be a string');
+          }
+          // Reject a malformed dial now; the nearest-match resolution
+          // against the routed model happens at call time
+          self.canonicalAspect(aspect);
+        }
+        if (quality !== undefined &&
+          ![ 'low', 'medium', 'high' ].includes(quality)) {
+          invalid('"quality" must be "low", "medium" or "high"');
+        }
+        if ((provider === undefined) !== (model === undefined)) {
+          invalid('"provider" and "model" must be given together');
+        }
+        for (const [ name, value ] of Object.entries({
+          provider,
+          model
+        })) {
+          if (value !== undefined && typeof value !== 'string') {
+            invalid(`"${name}" must be a string`);
+          }
+        }
+        if (signal !== undefined && !(signal instanceof AbortSignal)) {
+          invalid('"signal" must be an AbortSignal');
+        }
+        return {
+          prompt,
+          count,
+          aspect,
+          quality,
+          images: imageSources(options.images),
+          provider,
+          model,
+          signal
+        };
+
+        // The images option → normalized source refs, or undefined when
+        // absent (a plain text→image generation). Its presence is what
+        // makes the call an edit. Each source is a public url or
+        // inline base64 data with its media type — the same two shapes an
+        // image content part accepts (normalizeMessages).
+        function imageSources(sources) {
+          if (sources === undefined) {
+            return undefined;
+          }
+          if (!Array.isArray(sources) || !sources.length) {
+            invalid('"images" must be a non-empty array of image sources');
+          }
+          return sources.map((source, index) => {
+            const name = `images[${index}]`;
+            if (isObject(source) && typeof source.url === 'string') {
+              return { url: source.url };
+            }
+            if (isObject(source) && typeof source.data === 'string' &&
+              typeof source.mediaType === 'string') {
+              return {
+                data: source.data,
+                mediaType: source.mediaType
+              };
+            }
+            throw self.apos.error(
+              'invalid',
+              `${name} must be an object like { url } or { data, mediaType }`
+            );
+          });
+        }
+      },
+      // Normalize an aspect dial to its canonical 'W:H' string. The named
+      // tokens square, portrait and landscape ground to the conventional
+      // photo ratios (1:1, 3:4, 4:3); an explicit 'W:H' of two positive
+      // numbers is returned as given. Throws "invalid" on anything else.
+      // Every aspect the core hands an adapter passes through here, so an
+      // adapter only ever sees 'W:H', never a named token.
+      canonicalAspect(aspect) {
+        const named = {
+          square: '1:1',
+          portrait: '3:4',
+          landscape: '4:3'
+        };
+        if (Object.hasOwn(named, aspect)) {
+          return named[aspect];
+        }
+        if (parseAspect(aspect)) {
+          return aspect;
+        }
+        throw self.apos.error('invalid', `"${aspect}" is not a valid aspect: use "square", "portrait", "landscape" or a "W:H" ratio`);
+      },
+      // The numeric width/height ratio of an aspect dial.
+      aspectRatio(aspect) {
+        const [ w, h ] = parseAspect(self.canonicalAspect(aspect));
+        return w / h;
+      },
+      // Resolve a requested aspect dial to the nearest aspect the routed
+      // model declares, returning that declared string verbatim — echoed
+      // to the caller in metadata and translated to the provider's dialect
+      // by the adapter. `requested` is the call's `aspect` option (a named
+      // token or 'W:H'), or undefined to leave the dial unset (returns
+      // undefined; the provider default applies). `declared` is the
+      // model's supported aspect strings (modelInfo). Nearest match
+      // minimizes the log-ratio distance to the requested ratio; a tie
+      // resolves to the larger ratio, then to declaration order. A model
+      // that declares no aspects (an unknown model) is a pass-through: the
+      // requested ratio returns as its canonical 'W:H' — never a named
+      // token, so the adapter's input is uniform — for the adapter to
+      // best-effort, and the provider may reject it.
+      resolveAspect(requested, declared) {
+        if (requested === undefined) {
+          return undefined;
+        }
+        const target = self.aspectRatio(requested);
+        if (!Array.isArray(declared) || !declared.length) {
+          return self.canonicalAspect(requested);
+        }
+        let best = describe(declared[0]);
+        for (const aspect of declared) {
+          const candidate = describe(aspect);
+          if (candidate.distance < best.distance - 1e-9 ||
+            (Math.abs(candidate.distance - best.distance) <= 1e-9 &&
+              candidate.ratio > best.ratio)) {
+            best = candidate;
+          }
+        }
+        return best.aspect;
+
+        // An aspect string with its ratio and its log-ratio distance from
+        // the requested target
+        function describe(aspect) {
+          const ratio = self.aspectRatio(aspect);
+          return {
+            aspect,
+            ratio,
+            distance: Math.abs(Math.log(target / ratio))
+          };
+        }
+      },
       // Register an AI tool definition. Feature modules call this in
       // their own init; core, project and third-party modules all use
       // the same call. Re-registering an existing name overrides (last
@@ -902,7 +1089,7 @@ module.exports = {
       // the deterministic default. That default is request-aware: for a
       // structured request (`request.schema`) it synthesizes a
       // schema-conforming object and returns it on the turn's `object`,
-      // as a real adapter would ([D35]) — the pipeline backstop-validates
+      // as a real adapter would — the pipeline backstop-validates
       // it like a real one — otherwise canned text echoing the
       // conversation's final message; usage is estimated from the text
       // sizes. Runs inside the same retry and validation seam as a real
@@ -933,7 +1120,7 @@ module.exports = {
 
         // A canned assistant turn. `text` is the answer's text; a
         // structured call passes the synthesized `object` too, which
-        // rides the turn ([D35]). The text stays in the content — for a
+        // rides the turn. The text stays in the content — for a
         // structured turn it is the object's JSON, so the transcript's
         // assistant message is non-empty and re-normalizes on resume,
         // as a real provider's structured answer would.
@@ -1478,7 +1665,7 @@ module.exports = {
       },
       // The anti-hallucination backstop for structured output. The
       // adapter has already extracted the final answer into `turn.object`
-      // from its provider's structured mode ([D35] — an adapter concern,
+      // from its provider's structured mode (an adapter concern,
       // since only the dialect knows where the object lives); this
       // validates it against `validate`, the compiled validator for the
       // call's `schema` (normalizeGenerateOptions). The provider's
@@ -1527,6 +1714,26 @@ module.exports = {
           model: turn.model || context.request.model,
           provider: context.provider
         };
+      },
+      // Fail startup when a model's declared image `aspects` are
+      // malformed. resolveAspect trusts these to be well-formed 'W:H'
+      // strings at call time, so a bad declaration — from an adapter or a
+      // provider entry — is caught here, once, with a clear message,
+      // rather than surfacing as a caller-facing error on a real call.
+      validateAspects(providerName, models) {
+        for (const [ model, meta ] of Object.entries(models)) {
+          if (meta.aspects === undefined) {
+            continue;
+          }
+          if (!Array.isArray(meta.aspects) || !meta.aspects.length) {
+            fail(`"providers.${providerName}" model "${model}": "aspects" must be a non-empty array of "W:H" ratios`);
+          }
+          for (const aspect of meta.aspects) {
+            if (!parseAspect(aspect)) {
+              fail(`"providers.${providerName}" model "${model}" declares an invalid aspect "${aspect}"; use a "W:H" ratio`);
+            }
+          }
+        }
       },
       // Union of the adapter's and the entry's model metadata,
       // merged per model id with the entry's fields winning

@@ -249,7 +249,7 @@ module.exports = {
       // empty turn. Tool calls carry their arguments as a JSON string,
       // parsed into the normalized input object. When the request asked
       // for structured output, the final answer's text is the JSON
-      // object: it is parsed onto the turn's `object` ([D35]), which the
+      // object: it is parsed onto the turn's `object`, which the
       // engine backstop-validates; malformed JSON is a retryable
       // response. An unknown finish reason maps to no finishReason — the
       // engine's turn validation treats that as a malformed (retryable)
