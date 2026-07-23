@@ -5,7 +5,9 @@ const assert = require('assert/strict');
 // nearest-match resolves against
 const GPT_IMAGE_1 = [ '1:1', '3:2', '2:3' ];
 const GPT_IMAGE_2 = [ '1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16' ];
-const GOOGLE = [ '1:1', '3:4', '4:3', '9:16', '16:9' ];
+const GOOGLE = [
+  '1:1', '3:2', '2:3', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'
+];
 
 describe('AI image dials', function() {
   this.timeout(t.timeout);
@@ -68,10 +70,11 @@ describe('AI image dials', function() {
       [ '9:16', GPT_IMAGE_1, '2:3' ],
       [ '9:16', GOOGLE, '9:16' ],
       [ '3:2', GPT_IMAGE_1, '3:2' ],
-      [ '3:2', GOOGLE, '4:3' ],
+      [ '3:2', GOOGLE, '3:2' ],
       [ '2:1', GPT_IMAGE_1, '3:2' ],
       [ '2:1', GPT_IMAGE_2, '16:9' ],
       [ '2:1', GOOGLE, '16:9' ],
+      [ '2.39:1', GOOGLE, '21:9' ],
       // reciprocal tie → the larger ratio wins
       [ '1:1', [ '3:2', '2:3' ], '3:2' ],
       // larger beats declaration order (2:3 declared first, 3:2 still wins)
