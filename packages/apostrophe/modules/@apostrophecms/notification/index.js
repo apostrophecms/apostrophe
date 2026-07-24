@@ -270,6 +270,16 @@ module.exports = {
       // `_id` and, for the 'completed' stage, the job `action`,
       // e.g., 'archive'.
       //
+      // `options.event`, an object with `name` and optional `data`
+      // properties, is emitted on the browser bus (`apos.bus`) in exactly
+      // one tab when the notification arrives.
+      //
+      // If `options.bus` is set to `true`, the notification is a pure
+      // message-bus carrier: it is never rendered — the browser emits its
+      // `event` and dismisses it. `event` is then required, the `message`
+      // argument becomes optional, and the options object may be passed in
+      // its place: `apos.notify(req, { bus: true, event })`.
+      //
       // Throws an error if there is no `req.user`.
       //
       // `interpolate` may contain an object with properties to be
@@ -291,7 +301,15 @@ module.exports = {
         if (!req.user) {
           throw self.apos.error('forbidden');
         }
-        if (!message) {
+        if (message && (typeof message === 'object') && !Array.isArray(message)) {
+          // The options object may be passed in place of the message
+          options = message;
+          message = null;
+        }
+        if (options.bus && !options.event?.name) {
+          throw self.apos.error('invalid', 'a bus notification requires an event');
+        }
+        if (!message && !options.bus) {
           throw self.apos.error('required');
         }
 
@@ -301,7 +319,7 @@ module.exports = {
           _id: self.apos.util.generateId(),
           createdAt: new Date(),
           userId: req.user._id,
-          message,
+          message: message || null,
           icon: options.icon,
           interpolate: interpolate || options.interpolate || {},
           // Defaults to true, otherwise launder as boolean

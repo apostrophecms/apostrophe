@@ -180,13 +180,12 @@ describe('AI generateJob', function() {
     // The job module logs background failures; keep the output clean
     apos.util.error = () => {};
     triggered = [];
-    apos.notification.trigger = (req, message, options) => {
+    apos.notification.trigger = (req, options) => {
       // Snapshot: trigger normalizes the options object in place
       triggered.push({
-        message,
         options: { ...options }
       });
-      return realTrigger.call(apos.notification, req, message, options);
+      return realTrigger.call(apos.notification, req, options);
     };
     await jobModule.db.deleteMany({});
     await apos.notification.db.deleteMany({});
@@ -450,7 +449,7 @@ describe('AI generateJob', function() {
     ]);
   });
 
-  it('publishes started, per-turn and ended events over hidden notifications', async function() {
+  it('publishes started, per-turn and ended events over bus notifications', async function() {
     const req = apos.task.getReq({ user: { _id: 'owner1' } });
     const seen = [];
     chatScript = [
@@ -487,16 +486,18 @@ describe('AI generateJob', function() {
     });
     // The caller's own hook ran alongside the publisher
     assert.equal(seen.length, 1);
-    // Every stage travels as an invisible notification dismissing at
-    // the fastest rate the knob offers
-    for (const { message, options } of triggered) {
-      assert.equal(message, ' ');
-      assert.deepEqual(options.classes, [ 'apos-notification--hidden' ]);
-      assert.equal(options.dismiss, 1);
+    // Every stage travels as a pure bus carrier, nothing to render
+    for (const { options } of triggered) {
+      assert.equal(options.bus, true);
+      assert.equal(options.classes, undefined);
+      assert.equal(options.dismiss, undefined);
     }
     // Delivered for real, to the job owner
     assert.equal(
-      await apos.notification.db.countDocuments({ userId: 'owner1' }),
+      await apos.notification.db.countDocuments({
+        userId: 'owner1',
+        bus: true
+      }),
       3
     );
   });

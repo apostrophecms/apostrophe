@@ -1739,10 +1739,10 @@ module.exports = {
       // The built-in progress publisher for generateJob: deliver one
       // stage of a background run — 'started', 'message' or 'ended',
       // with `data` as the stage's payload — to the job owner's
-      // browser over the notification channel. Each stage is an
-      // invisible, auto-dismissing notification whose real cargo is
-      // the one-shot browser-bus event "ai-generate-job", emitted in
-      // exactly one tab, carrying { jobId, stage, ...data }:
+      // browser over the notification channel. Each stage is a bus
+      // notification — never rendered — whose one-shot browser-bus
+      // event "ai-generate-job" is emitted in exactly one tab,
+      // carrying { jobId, stage, ...data }:
       // apos.bus.$on('ai-generate-job', (data) => ...) and filter by
       // jobId. Notifications reach logged-in users only, so a req
       // without a user _id is a silent no-op — there is nobody to
@@ -1753,11 +1753,8 @@ module.exports = {
           return;
         }
         try {
-          await self.apos.notification.trigger(req, ' ', {
-            classes: [ 'apos-notification--hidden' ],
-            // Seconds; the shortest the dismiss knob offers, so the
-            // carrier leaves the DOM and the database promptly
-            dismiss: 1,
+          await self.apos.notification.trigger(req, {
+            bus: true,
             event: {
               name: 'ai-generate-job',
               data: {
