@@ -226,9 +226,13 @@ module.exports = {
       //
       // `reporting.isCanceling()` resolves to `true` once cancellation of
       // the job has been requested (see the cancel route and
-      // `requestCancel`). `doTheWork` may check it at convenient points
-      // and wind down early; the job then ends with a `cancelled` status.
-      // Jobs that never check it simply run to completion.
+      // `requestCancel`) — or when the job document is gone or already
+      // marked ended: a record nobody can observe or cancel anymore is a
+      // standing instruction to stop, so an expired (`expireAfter`) or
+      // externally deleted record winds down its own orphaned run.
+      // `doTheWork` may check it at convenient points and wind down
+      // early; the job then ends with a `cancelled` status. Jobs that
+      // never check it simply run to completion.
       //
       // If `doTheWork` throws, the job ends with a `failed` status and the
       // error is recorded on the job document (see `end`).
@@ -305,9 +309,12 @@ module.exports = {
               },
               async isCanceling () {
                 const found = await self.db.findOne({ _id: job._id }, {
-                  projection: { cancelRequested: 1 }
+                  projection: {
+                    cancelRequested: 1,
+                    ended: 1
+                  }
                 });
-                return Boolean(found && found.cancelRequested);
+                return !found || Boolean(found.cancelRequested || found.ended);
               }
             }, info);
             good = true;

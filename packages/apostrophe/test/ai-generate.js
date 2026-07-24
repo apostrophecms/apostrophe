@@ -271,6 +271,10 @@ describe('AI generate', function() {
         () => apos.ai.normalizeGenerateOptions('p', { signal: {} }),
         /"signal" must be an AbortSignal/
       );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { onMessage: 'notify me' }),
+        /"onMessage" must be a function/
+      );
     });
 
     it('defaults cache to short and honors an explicit false', function() {

@@ -72,6 +72,8 @@ describe('AI engine', function() {
     assert.equal(apos.ai.options.retryAttempts, 5);
     assert.equal(apos.ai.options.retryBaseDelay, 1000);
     assert.equal(apos.ai.options.retryMaxElapsed, 60000);
+    assert.equal(apos.ai.options.jobExpireAfter, 86400);
+    assert.equal(apos.ai.options.jobPollInterval, 2000);
     // Unconfigured: a call falls through to an empty routing table
     assert.throws(() => apos.ai.modelInfo(), (e) => {
       assert.equal(e.name, 'invalid');
@@ -87,7 +89,9 @@ describe('AI engine', function() {
       maxSteps: 5,
       retryAttempts: 5,
       retryBaseDelay: 1000,
-      retryMaxElapsed: 60000
+      retryMaxElapsed: 60000,
+      jobExpireAfter: 86400,
+      jobPollInterval: 2000
     });
 
     it('accepts the minimal single-provider configuration', function() {
@@ -321,6 +325,21 @@ describe('AI engine', function() {
         ...valid(),
         retryMaxElapsed: 1.5
       }, /"retryMaxElapsed" must be a positive integer/);
+    });
+
+    it('rejects malformed job options', function() {
+      rejects({
+        ...valid(),
+        jobPollInterval: 0
+      }, /"jobPollInterval" must be a positive integer/);
+      rejects({
+        ...valid(),
+        jobExpireAfter: -1
+      }, /"jobExpireAfter" must be a non-negative integer/);
+      rejects({
+        ...valid(),
+        jobExpireAfter: 'never'
+      }, /"jobExpireAfter" must be a non-negative integer/);
     });
   });
 

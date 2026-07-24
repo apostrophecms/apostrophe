@@ -30,7 +30,15 @@ module.exports = {
     retryBaseDelay: 1000,
     // Elapsed-time budget in milliseconds for one call including its
     // retry waits; a delay that would land past it stops the call
-    retryMaxElapsed: 60000
+    retryMaxElapsed: 60000,
+    // Seconds an AI job record is kept before the job layer deletes it;
+    // 0 keeps records forever. Overridable per call (generateJob's
+    // expireAfter). Also the upper bound on a background run's
+    // cancellation watcher: a deleted record cancels its own run
+    jobExpireAfter: 86400,
+    // Milliseconds between checks of the job's cancellation flag while
+    // a background run is in flight
+    jobPollInterval: 2000
   },
   init(self) {
     self.adapters = {};
@@ -77,6 +85,11 @@ module.exports = {
     function isObject(value) {
       return Boolean(value) && typeof value === 'object' &&
         !Array.isArray(value);
+    }
+    // An abort-shaped throw: the AbortError the http stack raises when
+    // an AbortSignal fires, or Node's ABORT_ERR code
+    function isAbort(error) {
+      return error?.name === 'AbortError' || error?.code === 'ABORT_ERR';
     }
     // A 1×1 transparent PNG, the placeholder pixel mock image calls
     // return
@@ -306,7 +319,7 @@ module.exports = {
       // arguments, exactly as passed to it, into one canonical options
       // object `{ system, messages, tools, maxSteps, schema,
       // validateObject, effort, provider, model, reasoning, maxTokens,
-      // cache, signal }` — the positional prompt string appended to
+      // cache, signal, onMessage }` — the positional prompt string appended to
       // `messages` as the final user turn, message content collapsed to
       // content-part form, `tools` names resolved to their activated
       // definitions, `maxSteps` defaulted from the module option, a
@@ -338,7 +351,8 @@ module.exports = {
         }
         const known = [
           'system', 'messages', 'tools', 'maxSteps', 'schema', 'effort',
-          'provider', 'model', 'reasoning', 'maxTokens', 'cache', 'signal'
+          'provider', 'model', 'reasoning', 'maxTokens', 'cache', 'signal',
+          'onMessage'
         ];
         for (const name of Object.keys(options)) {
           if (!known.includes(name)) {
@@ -347,7 +361,7 @@ module.exports = {
         }
         const {
           system, effort, provider, model, reasoning,
-          maxTokens, cache = 'short', signal
+          maxTokens, cache = 'short', signal, onMessage
         } = options;
         for (const [ name, value ] of Object.entries({
           system,
@@ -369,6 +383,9 @@ module.exports = {
         }
         if (signal !== undefined && !(signal instanceof AbortSignal)) {
           invalid('"signal" must be an AbortSignal');
+        }
+        if (onMessage !== undefined && typeof onMessage !== 'function') {
+          invalid('"onMessage" must be a function');
         }
         const maxSteps = options.maxSteps === undefined
           ? self.options.maxSteps
@@ -404,7 +421,8 @@ module.exports = {
           reasoning,
           maxTokens,
           cache,
-          signal
+          signal,
+          onMessage
         };
 
         // The tools option → the activated definitions it names; every
@@ -1321,8 +1339,14 @@ module.exports = {
       //   the routed model's declared ceiling when it is known;
       // `cache` (false | 'short' | 'long', default 'short'): the
       //   prompt-cache policy the adapter translates for its provider;
-      // `signal` (AbortSignal): aborts the in-flight provider call;
-      //   also injected into every handler's `args._context`.
+      // `signal` (AbortSignal): cancels the call — see the cancellation
+      //   paragraph below; also injected into every handler's
+      //   `args._context`;
+      // `onMessage` (async function): called with each intermediate
+      //   assistant message — a turn whose tool requests the loop goes
+      //   on to execute — as { role, content }, awaited before the
+      //   tools run. The final answer is not reported here, it is the
+      //   return value; a throw stops the call.
       //
       // Returns { text, messages, finishReason, usage, model,
       // provider }, plus `steps` when the call carried tools,
@@ -1336,11 +1360,20 @@ module.exports = {
       // executed in model order, { toolCall, result } per success and
       // { toolCall, error } per recoverable failure the model was told
       // about; `toolCalls` are unexecuted requests the caller must run
-      // itself; `finishReason` is 'stop', 'length' or — whenever
-      // `toolCalls` is present — 'maxSteps', the step budget's
-      // counterpart of 'length'; `usage` aggregates { inputTokens,
-      // outputTokens } across every model turn; `model` / `provider`
-      // name what actually answered.
+      // itself; `finishReason` is 'stop', 'length', 'cancel' or —
+      // whenever the step budget cut the loop — 'maxSteps', the step
+      // budget's counterpart of 'length'; `usage` aggregates
+      // { inputTokens, outputTokens } across every model turn; `model` /
+      // `provider` name what actually answered.
+      //
+      // Cancellation: when the call's `signal` fires the loop winds
+      // down instead of failing. The in-flight step is waited out — a
+      // running handler is never abandoned, its completed work stays
+      // recorded — while the aborted provider call is not retried, and
+      // the call returns normally with finishReason 'cancel': partial
+      // text, steps and usage preserved, unexecuted requests on
+      // `toolCalls`. Only abort-shaped throws convert; a genuine
+      // failure racing a cancel still throws.
       //
       // Throws normalized apos errors: "invalid" for bad calls,
       // "aiRetry" when transient provider failures outlast the retry
@@ -1410,70 +1443,255 @@ module.exports = {
           inputTokens: 0,
           outputTokens: 0
         };
-        let turn;
+        let turn = null;
         let pending = null;
-        for (let turns = 1; ; turns++) {
-          turn = await self.callAdapter(req, record, context.request, async () => {
-            const answer = self.validateTurn(
-              await record.adapter.chat(req, context.request)
-            );
-            // The adapter placed the final answer on `answer.object`;
-            // backstop-validate it here so a malformed one travels the
-            // same retry path as the turn. Only a 'stop' turn is the
-            // answer: tool turns run the loop with their own validation,
-            // a refusal surfaces as aiRefusal below, and a 'length'
-            // turn returns as-is — no object, the finish reason tells
-            // the caller why
-            if (canonical.schema && answer.finishReason === 'stop') {
-              self.validateStructured(answer, canonical.validateObject);
+        let cancelled = false;
+        try {
+          for (let turns = 1; ; turns++) {
+            turn = await self.callAdapter(req, record, context.request, async () => {
+              const answer = self.validateTurn(
+                await record.adapter.chat(req, context.request)
+              );
+              // The adapter placed the final answer on `answer.object`;
+              // backstop-validate it here so a malformed one travels the
+              // same retry path as the turn. Only a 'stop' turn is the
+              // answer: tool turns run the loop with their own validation,
+              // a refusal surfaces as aiRefusal below, and a 'length'
+              // turn returns as-is — no object, the finish reason tells
+              // the caller why
+              if (canonical.schema && answer.finishReason === 'stop') {
+                self.validateStructured(answer, canonical.validateObject);
+              }
+              return answer;
+            });
+            usage.inputTokens += turn.usage.inputTokens;
+            usage.outputTokens += turn.usage.outputTokens;
+            if (turn.finishReason === 'refusal') {
+              throw self.apos.error('aiRefusal', 'the model refused this request');
             }
-            return answer;
-          });
-          usage.inputTokens += turn.usage.inputTokens;
-          usage.outputTokens += turn.usage.outputTokens;
-          if (turn.finishReason === 'refusal') {
-            throw self.apos.error('aiRefusal', 'the model refused this request');
-          }
-          if (turn.finishReason === 'toolCalls' && !tools.size) {
-            throw self.apos.error(
-              'invalid',
-              'the model returned tool calls but the call sent no tools'
+            if (turn.finishReason === 'toolCalls' && !tools.size) {
+              throw self.apos.error(
+                'invalid',
+                'the model returned tool calls but the call sent no tools'
+              );
+            }
+            context.request.messages.push({
+              role: 'assistant',
+              content: turn.content
+            });
+            if (turn.finishReason !== 'toolCalls') {
+              break;
+            }
+            const calls = turn.content.filter((part) => part.type === 'toolCall');
+            if (turns === canonical.maxSteps) {
+              pending = calls;
+              break;
+            }
+            // A cancellation observed between steps ends the run before
+            // more work starts; the turn's requests stay unexecuted on
+            // `toolCalls`
+            if (canonical.signal?.aborted) {
+              pending = calls;
+              cancelled = true;
+              break;
+            }
+            if (canonical.onMessage) {
+              await canonical.onMessage({
+                role: 'assistant',
+                content: turn.content
+              });
+            }
+            const outcomes = await self.executeToolCalls(
+              req, tools, calls, handlerContext
             );
+            steps.push(...outcomes);
+            context.request.messages.push({
+              role: 'tool',
+              content: outcomes.map((outcome) => ({
+                type: 'toolResult',
+                toolCallId: outcome.toolCall.id,
+                ...(outcome.error !== undefined
+                  ? { error: outcome.error }
+                  : { output: outcome.result })
+              }))
+            });
+            // The batch was waited out and recorded; wind down before
+            // asking the model again
+            if (canonical.signal?.aborted) {
+              cancelled = true;
+              break;
+            }
           }
-          context.request.messages.push({
-            role: 'assistant',
-            content: turn.content
-          });
-          if (turn.finishReason !== 'toolCalls') {
-            break;
+        } catch (e) {
+          // Only an abort-shaped throw converts to a cancelled run, and
+          // only while this call's signal has fired — a genuine failure
+          // racing a cancel still throws
+          if (!isAbort(e) || !canonical.signal?.aborted) {
+            throw e;
           }
-          const calls = turn.content.filter((part) => part.type === 'toolCall');
-          if (turns === canonical.maxSteps) {
-            pending = calls;
-            break;
-          }
-          const outcomes = await self.executeToolCalls(req, tools, calls, handlerContext);
-          steps.push(...outcomes);
-          context.request.messages.push({
-            role: 'tool',
-            content: outcomes.map((outcome) => ({
-              type: 'toolResult',
-              toolCallId: outcome.toolCall.id,
-              ...(outcome.error !== undefined
-                ? { error: outcome.error }
-                : { output: outcome.result })
-            }))
-          });
+          cancelled = true;
         }
         context.result = self.assembleResult(context, turn, {
           steps,
           usage,
           pending,
-          object: turn.object,
-          hadTools: tools.size > 0
+          object: turn?.object,
+          hadTools: tools.size > 0,
+          ...(cancelled && { finishReason: 'cancel' })
         });
         await self.emit('afterGenerate', req, context);
         return context.result;
+      },
+      // The non-blocking form of `generate`: the same flow wrapped in a
+      // job on `@apostrophecms/job`. The `await` covers job creation
+      // only — the method returns { jobId, cancel } as soon as the job
+      // record exists, the run continues in the background, and the
+      // exact object `generate` would have returned is stored on the
+      // record as `results` (a failure stores its error instead),
+      // readable via the job module's status route.
+      //
+      // Accepts everything `generate` accepts, passed through
+      // untouched — `onMessage` is called as `(message, { jobId })`
+      // here — plus:
+      // `onEnd` (async function): called once with `(error, result)`
+      //   when the run ends — the error it failed with, or the unified
+      //   result (a cancelled run is a result, finishReason 'cancel').
+      //   Its own throw is logged, never recorded on the job;
+      // `expireAfter` (seconds): how long the job record is kept,
+      //   defaulting to the `jobExpireAfter` option; 0 keeps it
+      //   forever.
+      //
+      // `cancel()` requests cancellation, in process; the job module's
+      // cancel route does the same cross-process, by jobId. Either way
+      // the flag travels through the job record, the abort signal
+      // reaches the in-flight provider call and every handler, the run
+      // winds down per generate's cancellation semantics with the
+      // partial result stored, and the job ends 'cancelled'.
+      //
+      // Invalid options throw here, synchronously — a job record is
+      // created only for a run that can start. Tool handlers may not
+      // start jobs: a subagent's work is blocking by design.
+      async generateJob(req, stringOrOptions, options) {
+        if ((req.aposAiDepth || 0) > 0) {
+          throw self.apos.error('invalid', 'generateJob cannot be called from a tool handler: a subagent is blocking only');
+        }
+        const isPrompt = typeof stringOrOptions === 'string';
+        let source;
+        if (isPrompt && (options === undefined || isObject(options))) {
+          source = options || {};
+        } else if (!isPrompt && isObject(stringOrOptions) &&
+          options === undefined) {
+          source = stringOrOptions;
+        } else {
+          // Malformed argument shapes: the normalizer throws its own
+          // message for every one of them
+          self.normalizeGenerateOptions(stringOrOptions, options);
+        }
+        const {
+          onEnd, expireAfter, ...generateOptions
+        } = source;
+        if (onEnd !== undefined && typeof onEnd !== 'function') {
+          throw self.apos.error('invalid', '"onEnd" must be a function');
+        }
+        if (expireAfter !== undefined &&
+          (!Number.isInteger(expireAfter) || expireAfter < 0)) {
+          throw self.apos.error('invalid', '"expireAfter" must be a non-negative integer');
+        }
+        // Fail bad generate options now, before any record exists
+        self.normalizeGenerateOptions(
+          isPrompt ? stringOrOptions : generateOptions,
+          isPrompt ? generateOptions : undefined
+        );
+        const jobModule = self.apos.modules['@apostrophecms/job'];
+        const controller = new AbortController();
+        const signal = generateOptions.signal
+          ? AbortSignal.any([ controller.signal, generateOptions.signal ])
+          : controller.signal;
+        const ttl = expireAfter !== undefined
+          ? expireAfter
+          : self.options.jobExpireAfter;
+        let jobId = null;
+        const backgroundOptions = {
+          ...generateOptions,
+          signal,
+          ...(generateOptions.onMessage && {
+            onMessage: (message) => generateOptions.onMessage(message, { jobId })
+          })
+        };
+        const returned = await jobModule.run(req, doTheWork, {
+          notifications: false,
+          ...(req.user?._id && { userId: req.user._id }),
+          ...(ttl > 0 && { expireAfter: ttl })
+        });
+        jobId = returned?.jobId;
+        if (!jobId) {
+          throw self.apos.error('error', 'the job record could not be created');
+        }
+        return {
+          jobId,
+          cancel: async () => {
+            // The record first, so the status can only end 'cancelled',
+            // then the local signal — no waiting for the poll
+            await jobModule.requestCancel(jobId);
+            controller.abort();
+          }
+        };
+
+        async function doTheWork(workReq, reporting) {
+          let running = true;
+          watchCancellation();
+          try {
+            const result = isPrompt
+              ? await self.generate(workReq, stringOrOptions, backgroundOptions)
+              : await self.generate(workReq, backgroundOptions);
+            reporting.setResults(result);
+            await report(null, result);
+          } catch (error) {
+            await report(error, undefined);
+            throw error;
+          } finally {
+            running = false;
+          }
+
+          // A cross-process cancel only reaches this process through
+          // the job record: watch the flag while the run is live and
+          // fire the local signal when it appears. The loop cannot
+          // outlive the record: isCanceling also reports true once the
+          // record is gone or ended, so even a run stuck forever has
+          // its watcher stop — and its signal fired — no later than the
+          // record's expiry
+          async function watchCancellation() {
+            try {
+              for (;;) {
+                await self.pause(self.options.jobPollInterval);
+                if (!running || signal.aborted) {
+                  break;
+                }
+                if (await reporting.isCanceling()) {
+                  controller.abort();
+                  break;
+                }
+              }
+            } catch (e) {
+              self.apos.util.error(e);
+            }
+          }
+
+          async function report(error, result) {
+            if (!onEnd) {
+              return;
+            }
+            try {
+              await onEnd(error, result);
+            } catch (e) {
+              self.logError(workReq, 'hook', e.message, {
+                jobId,
+                hook: 'onEnd',
+                stack: e.stack
+              });
+            }
+          }
+        }
       },
       // The image method: text → image against the routed image
       // provider, or image(s) + text → image (editing) when `images`
@@ -1748,6 +1966,11 @@ module.exports = {
           try {
             return await call();
           } catch (e) {
+            // A fired abort signal is the caller's own doing, not a
+            // provider failure: no failure record, no retry
+            if (isAbort(e)) {
+              throw e;
+            }
             const error = (e?.aposError ? e : record.adapter.normalizeError(e)) || e;
             const elapsed = Date.now() - started;
             const data = {
@@ -1922,9 +2145,12 @@ module.exports = {
       // populated tells the caller what happened. The transcript is
       // resumable as the next call's `messages`.
       assembleResult(context, turn, {
-        steps, usage, pending, object, hadTools
+        steps, usage, pending, object, hadTools, finishReason
       }) {
-        const text = turn.content
+        // `turn` is null when a cancellation aborted the first provider
+        // call of a step: there is no final assistant turn, only the
+        // work recorded so far
+        const text = (turn ? turn.content : [])
           .filter(part => part.type === 'text')
           .map(part => part.text)
           .join('');
@@ -1935,10 +2161,12 @@ module.exports = {
           ...(hadTools && { steps }),
           ...(pending && { toolCalls: pending }),
           // The step budget cutting the loop is its own finish reason,
-          // like the token budget's 'length'
-          finishReason: pending ? 'maxSteps' : turn.finishReason,
+          // like the token budget's 'length'; an explicit override wins
+          // (a cancelled run)
+          finishReason: finishReason ||
+            (pending ? 'maxSteps' : turn.finishReason),
           usage,
-          model: turn.model || context.request.model,
+          model: turn?.model || context.request.model,
           provider: context.provider
         };
       },
@@ -2002,7 +2230,8 @@ module.exports = {
 
         const {
           providers, provider, effort, image, maxSteps, mock, mockImage,
-          retryAttempts, retryBaseDelay, retryMaxElapsed
+          retryAttempts, retryBaseDelay, retryMaxElapsed,
+          jobExpireAfter, jobPollInterval
         } = options;
 
         if (!isObject(providers)) {
@@ -2107,11 +2336,16 @@ module.exports = {
         for (const [ name, value ] of Object.entries({
           retryAttempts,
           retryBaseDelay,
-          retryMaxElapsed
+          retryMaxElapsed,
+          jobPollInterval
         })) {
           if (!Number.isInteger(value) || value < 1) {
             fail(`"${name}" must be a positive integer`);
           }
+        }
+
+        if (!Number.isInteger(jobExpireAfter) || jobExpireAfter < 0) {
+          fail('"jobExpireAfter" must be a non-negative integer');
         }
       }
     };

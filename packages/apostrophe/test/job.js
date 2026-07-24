@@ -571,6 +571,28 @@ describe('Job module', function() {
       assert.deepEqual(actual, expected);
     });
 
+    it('run: isCanceling reports true once the job record is gone', async function() {
+      const req = apos.task.getReq();
+      const observed = [];
+
+      const { jobId } = await jobModule.run(req, async function(_req, reporting) {
+        observed.push(await reporting.isCanceling());
+        await jobModule.db.deleteMany({ _id: jobId });
+        observed.push(await reporting.isCanceling());
+      });
+
+      // The record is deleted mid-run, so poll the observations instead
+      const deadline = Date.now() + 10000;
+      while (observed.length < 2) {
+        if (Date.now() > deadline) {
+          throw new Error('Timed out waiting for the run to observe both states');
+        }
+        await delay(25);
+      }
+
+      assert.deepEqual(observed, [ false, true ]);
+    });
+
     it('run: records a failed status and the error payload when doTheWork throws', async function() {
       const req = apos.task.getReq();
       const originalError = apos.util.error;
