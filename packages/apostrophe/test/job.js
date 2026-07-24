@@ -135,14 +135,11 @@ describe('Job module', function() {
       { route: `${jobModule.action}/${jobId}` },
       { jar }
     );
+    const notifications = await waitForNotifications({
+      'context._id': jobId,
+      message: /^Tested/
+    });
     const job = await jobModule.db.findOne({ _id: jobId });
-
-    const notifications = await apos.notification.db
-      .find({
-        'context._id': job._id,
-        message: /^Tested/
-      })
-      .toArray();
 
     const actual = {
       job,
@@ -211,14 +208,11 @@ describe('Job module', function() {
       { route: `${jobModule.action}/${jobId}` },
       { jar }
     );
+    const notifications = await waitForNotifications({
+      'context._id': jobId,
+      message: /^Testing.*failed\.$/
+    });
     const job = await jobModule.db.findOne({ _id: jobId });
-
-    const notifications = await apos.notification.db
-      .find({
-        'context._id': job._id,
-        message: /^Testing.*failed\.$/
-      })
-      .toArray();
 
     const actual = {
       job,
@@ -675,6 +669,23 @@ describe('Job module', function() {
         total
       };
     }
+  }
+
+  // The completion notification is written after the run's counters reach the
+  // total, so a poll that only waits for the counters can read ahead of it.
+  async function waitForNotifications(query, deadline = Date.now() + 10000) {
+    const notifications = await apos.notification.db.find(query).toArray();
+
+    if (!notifications.length) {
+      if (Date.now() > deadline) {
+        throw new Error(`Timed out waiting for notifications ${JSON.stringify(query)}`);
+      }
+      await delay(50);
+
+      return waitForNotifications(query, deadline);
+    }
+
+    return notifications;
   }
 
   async function waitForEnded(jobId, deadline = Date.now() + 10000) {
