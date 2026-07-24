@@ -214,7 +214,7 @@ module.exports = {
       // This is not the way to implement a batch operation on pieces; see the
       // `batchSimple` method of that module.
       //
-      // The `doTheWork` function receives `(req, reporting)` and may
+      // The `doTheWork` function receives `(req, reporting, info)` and may
       // optionally invoke `reporting.success()` and `reporting.failure()` to
       // update the progress and error counters, and `reporting.setTotal()` to
       // indicate the total number of counts expected so a progress meter can be
@@ -223,6 +223,9 @@ module.exports = {
       //
       // `reporting.setResults(object)` may also be called to pass a
       // results object, which will be available on the finished job document.
+      //
+      // `info` carries the job's `jobId` — the same id returned to the
+      // caller — so the work can label its own progress transport.
       //
       // `reporting.isCanceling()` resolves to `true` once cancellation of
       // the job has been requested (see the cancel route and
@@ -264,7 +267,10 @@ module.exports = {
             docTypes: options.docTypes
           });
 
-          run({ notificationId: notification && notification.noteId });
+          run({
+            notificationId: notification && notification.noteId,
+            jobId: job._id
+          });
 
           return {
             jobId: job._id

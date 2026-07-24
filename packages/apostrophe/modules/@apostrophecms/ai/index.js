@@ -1559,7 +1559,18 @@ module.exports = {
       //   Its own throw is logged, never recorded on the job;
       // `expireAfter` (seconds): how long the job record is kept,
       //   defaulting to the `jobExpireAfter` option; 0 keeps it
-      //   forever.
+      //   forever;
+      // `notify` (boolean, default true): publish the run's progress
+      //   to the caller's browser (see publishJobEvent) — 'started'
+      //   once the record exists, 'message' per intermediate assistant
+      //   turn with the turn as `message`, and 'ended' with the
+      //   record's terminal `status` plus the result's `finishReason`
+      //   or the failure's `error` ({ name, message }). Correlate by
+      //   `jobId` and read the stored result from the job's status
+      //   route — the record may flip to its terminal status moments
+      //   after the event. `false` opts out; the hooks then own the
+      //   whole transport, while cancellation stays on the job layer
+      //   either way.
       //
       // `cancel()` requests cancellation, in process; the job module's
       // cancel route does the same cross-process, by jobId. Either way
@@ -1588,10 +1599,13 @@ module.exports = {
           self.normalizeGenerateOptions(stringOrOptions, options);
         }
         const {
-          onEnd, expireAfter, ...generateOptions
+          onEnd, expireAfter, notify = true, ...generateOptions
         } = source;
         if (onEnd !== undefined && typeof onEnd !== 'function') {
           throw self.apos.error('invalid', '"onEnd" must be a function');
+        }
+        if (typeof notify !== 'boolean') {
+          throw self.apos.error('invalid', '"notify" must be a boolean');
         }
         if (expireAfter !== undefined &&
           (!Number.isInteger(expireAfter) || expireAfter < 0)) {
@@ -1614,8 +1628,15 @@ module.exports = {
         const backgroundOptions = {
           ...generateOptions,
           signal,
-          ...(generateOptions.onMessage && {
-            onMessage: (message) => generateOptions.onMessage(message, { jobId })
+          ...((notify || generateOptions.onMessage) && {
+            onMessage: async (message) => {
+              if (notify) {
+                await self.publishJobEvent(req, jobId, 'message', { message });
+              }
+              if (generateOptions.onMessage) {
+                await generateOptions.onMessage(message, { jobId });
+              }
+            }
           })
         };
         const returned = await jobModule.run(req, doTheWork, {
@@ -1637,9 +1658,15 @@ module.exports = {
           }
         };
 
-        async function doTheWork(workReq, reporting) {
+        async function doTheWork(workReq, reporting, info) {
+          // Known here before the creating call has even returned, so
+          // the started event can only precede every message event
+          jobId = info.jobId;
           let running = true;
           watchCancellation();
+          if (notify) {
+            await self.publishJobEvent(workReq, jobId, 'started');
+          }
           try {
             const result = isPrompt
               ? await self.generate(workReq, stringOrOptions, backgroundOptions)
@@ -1678,6 +1705,22 @@ module.exports = {
           }
 
           async function report(error, result) {
+            if (notify) {
+              await self.publishJobEvent(workReq, jobId, 'ended', error
+                ? {
+                  status: 'failed',
+                  error: {
+                    name: error.name,
+                    message: error.message
+                  }
+                }
+                : {
+                  status: result.finishReason === 'cancel'
+                    ? 'cancelled'
+                    : 'completed',
+                  finishReason: result.finishReason
+                });
+            }
             if (!onEnd) {
               return;
             }
@@ -1691,6 +1734,45 @@ module.exports = {
               });
             }
           }
+        }
+      },
+      // The built-in progress publisher for generateJob: deliver one
+      // stage of a background run — 'started', 'message' or 'ended',
+      // with `data` as the stage's payload — to the job owner's
+      // browser over the notification channel. Each stage is an
+      // invisible, auto-dismissing notification whose real cargo is
+      // the one-shot browser-bus event "ai-generate-job", emitted in
+      // exactly one tab, carrying { jobId, stage, ...data }:
+      // apos.bus.$on('ai-generate-job', (data) => ...) and filter by
+      // jobId. Notifications reach logged-in users only, so a req
+      // without a user _id is a silent no-op — there is nobody to
+      // deliver to. A delivery failure is logged and never fails the
+      // run it reports on.
+      async publishJobEvent(req, jobId, stage, data = {}) {
+        if (!req.user?._id) {
+          return;
+        }
+        try {
+          await self.apos.notification.trigger(req, ' ', {
+            classes: [ 'apos-notification--hidden' ],
+            // Seconds; the shortest the dismiss knob offers, so the
+            // carrier leaves the DOM and the database promptly
+            dismiss: 1,
+            event: {
+              name: 'ai-generate-job',
+              data: {
+                jobId,
+                stage,
+                ...data
+              }
+            }
+          });
+        } catch (e) {
+          self.logError(req, 'notify', e.message, {
+            jobId,
+            stage,
+            stack: e.stack
+          });
         }
       },
       // The image method: text → image against the routed image
