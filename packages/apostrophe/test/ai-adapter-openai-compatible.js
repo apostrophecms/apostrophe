@@ -126,6 +126,15 @@ describe('AI adapter: openai-compatible', function() {
     assert.equal(high.reasoning, undefined);
   });
 
+  it('declares the same image models as the openai adapter', function() {
+    const { models } = apos.ai.getAdapter('openai-compatible');
+    assert.deepEqual(
+      models['gpt-image-2'].aspects,
+      [ '1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16' ]
+    );
+    assert.deepEqual(models['gpt-image-1'].aspects, [ '1:1', '3:2', '2:3' ]);
+  });
+
   describe('request translation', function() {
     it('builds the minimal body, collapsing one text part to a string', function() {
       assert.deepEqual(adapter.buildBody(request()), {
@@ -787,6 +796,66 @@ describe('AI adapter: openai-compatible', function() {
         return true;
       });
       assert.equal(httpCalls.length, 1);
+    });
+  });
+
+  // Image generation is the shared OpenAI Images API (lib/image.js), the
+  // same call the openai adapter makes — so this adapter reaches it too,
+  // under its own baseUrl
+  describe('image', function() {
+    let httpCalls;
+    let originalPost;
+
+    before(function() {
+      originalPost = apos.http.post;
+    });
+
+    after(function() {
+      apos.http.post = originalPost;
+    });
+
+    beforeEach(function() {
+      httpCalls = [];
+      apos.http.post = async (url, options) => {
+        httpCalls.push({
+          url,
+          options
+        });
+        return {
+          data: [ { b64_json: 'aW1n' } ],
+          usage: {
+            input_tokens: 3,
+            output_tokens: 8
+          }
+        };
+      };
+    });
+
+    it('generates through the shared Images API', async function() {
+      const result = await apos.ai.providers['openai-compatible'].adapter.image(
+        apos.task.getReq(),
+        {
+          prompt: 'a watercolor fox',
+          count: 1,
+          aspect: '2:3',
+          model: 'gpt-image-1'
+        }
+      );
+      const [ call ] = httpCalls;
+      assert.equal(call.url, 'https://api.openai.com/v1/images/generations');
+      assert.equal(call.options.body.size, '1024x1536');
+      assert.deepEqual(result, {
+        images: [ {
+          type: 'png',
+          data: 'aW1n'
+        } ],
+        model: 'gpt-image-1',
+        usage: {
+          inputTokens: 3,
+          outputTokens: 8
+        },
+        size: '1024x1536'
+      });
     });
   });
 

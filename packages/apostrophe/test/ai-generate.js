@@ -963,7 +963,7 @@ describe('AI generate', function() {
         ...extras
       });
       // The adapter extracts the structured answer onto the turn's
-      // `object` ([D35]); its JSON also stays in the content so the
+      // `object`; its JSON also stays in the content so the
       // transcript round-trips
       const jsonTurn = (object) => turn({
         content: [ {
@@ -1293,7 +1293,7 @@ describe('AI generate', function() {
                   }
                 },
                 retryBaseDelay: 1,
-                mock(request) {
+                mock(req, request) {
                   const step = mockScript.shift();
                   return step && step(request);
                 }

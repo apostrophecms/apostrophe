@@ -4,16 +4,20 @@
 // of the OpenAI dialect — request translation, response parsing, error
 // mapping — lives here.
 //
-// The adapter speaks the Responses API, OpenAI's first-class surface,
-// where function tools and reasoning work together. Requests are
-// stateless (`store: false`): the engine drives its own loop and owns
-// the transcript, so no server-side conversation state is created. For
+// Chat uses the Responses API, OpenAI's first-class surface, where
+// function tools and reasoning work together; requests are stateless
+// (`store: false`) since the engine drives its own loop and owns the
+// transcript. Image generation uses the Images API, a separate REST
+// surface under the same endpoint — shared with the openai-compatible
+// adapter (lib/image.js), as it does not depend on the chat dialect. For
 // the OpenAI-compatible ecosystem (Groq, Mistral, Ollama, vLLM, …) use
 // the `openai-compatible` adapter, which speaks the Chat Completions
 // dialect those hosts implement.
 //
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
+
+const image = require('./lib/image');
 
 module.exports = {
   options: {
@@ -66,7 +70,8 @@ module.exports = {
             'gpt-5.6-sol': {
               contextWindow: 1050000,
               maxOutputTokens: 128000
-            }
+            },
+            ...image.models
           },
           validate() {
             if (!this.apiKey) {
@@ -83,6 +88,17 @@ module.exports = {
               ...(request.signal && { signal: request.signal })
             });
             return self.parseResponse(response, request);
+          },
+          // text → image and image(s) + text → image, via the shared
+          // Images API; the core resolved `aspect` to a declared 'W:H'
+          // and the lib maps it to the size string
+          async image(req, request) {
+            return image({
+              apos: self.apos,
+              apiKey: this.apiKey,
+              baseUrl: this.baseUrl,
+              timeout: self.options.timeout
+            }, request);
           },
           normalizeError(error) {
             return self.normalizeError(error);
@@ -239,7 +255,7 @@ module.exports = {
       // validation treats that as a malformed (retryable) response,
       // never a truncated success. When the request asked for structured
       // output, the final answer's text is the JSON object: it is parsed
-      // onto the turn's `object` ([D35]), which the engine
+      // onto the turn's `object`, which the engine
       // backstop-validates; malformed JSON is a retryable response.
       parseResponse(response, request = {}) {
         const content = [];

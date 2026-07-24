@@ -18,7 +18,10 @@ module.exports = {
     // provider: the default provider name; inferred when only one is configured
     // effort: { default, levels: { name: { provider, model, reasoning } } }
     // image: { provider, model, aspect, quality }
-    // mock: (request) => assistant turn, consulted only under APOS_AI_MOCK
+    // mock: (req, request) => assistant turn, consulted only under
+    //   APOS_AI_MOCK
+    // mockImage: (req, request) => adapter image result, consulted only
+    //   under APOS_AI_MOCK
     // Conservative agent-loop cap; any call may override it
     maxSteps: 5,
     // Transient-failure retry cap, counting calls
@@ -74,6 +77,24 @@ module.exports = {
     function isObject(value) {
       return Boolean(value) && typeof value === 'object' &&
         !Array.isArray(value);
+    }
+    // A 1×1 transparent PNG, the placeholder pixel mock image calls
+    // return
+    const MOCK_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    // A 'W:H' aspect string → its [ width, height ] positive numbers, or
+    // null when it is not a well-formed ratio. Named tokens are not
+    // accepted here.
+    function parseAspect(value) {
+      if (typeof value !== 'string') {
+        return null;
+      }
+      const match = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(value);
+      if (!match) {
+        return null;
+      }
+      const w = Number(match[1]);
+      const h = Number(match[2]);
+      return w > 0 && h > 0 ? [ w, h ] : null;
     }
 
     return {
@@ -142,6 +163,7 @@ module.exports = {
                 ...entry.effort
               }
           };
+          self.validateAspects(name, self.providers[name].models);
         }
 
         if (Object.keys(providers).length &&
@@ -154,8 +176,13 @@ module.exports = {
             fail(`"effort.levels.${level}" references unconfigured provider "${row.provider}"`);
           }
         }
-        if (image && !self.providers[image.provider]) {
-          fail(`"image" references unconfigured provider "${image.provider}"`);
+        if (image) {
+          if (!self.providers[image.provider]) {
+            fail(`"image" references unconfigured provider "${image.provider}"`);
+          }
+          if (!self.providers[image.provider].capabilities.image) {
+            fail(`"image" references provider "${image.provider}" which does not declare the "image" capability`);
+          }
         }
 
         self.effortTable = self.buildEffortTable();
@@ -559,6 +586,193 @@ module.exports = {
           });
         }
       },
+      // Parse and validate generateImage's `(prompt, options)` arguments
+      // into one canonical options object `{ prompt, count, aspect,
+      // quality, images, provider, model, signal }`. `prompt` is the
+      // required instruction — the subject to generate, or the edit to
+      // apply when `images` are present. Unknown options are rejected as
+      // "invalid"; `aspect` is checked as a recognized dial here (a named
+      // token or a 'W:H' ratio) but resolved against the routed model's
+      // declared aspects later, at call time. Unset options are left
+      // undefined so buildImageRequest omits them and the provider's own
+      // default applies.
+      normalizeImageOptions(prompt, options) {
+        const invalid = (message) => {
+          throw self.apos.error('invalid', message);
+        };
+        if (typeof prompt !== 'string' || !prompt) {
+          invalid('the image prompt must be a non-empty string');
+        }
+        options = options === undefined ? {} : options;
+        if (!isObject(options)) {
+          invalid('"options" must be an object');
+        }
+        const known = [
+          'count', 'aspect', 'quality', 'images', 'provider', 'model', 'signal'
+        ];
+        for (const name of Object.keys(options)) {
+          if (!known.includes(name)) {
+            invalid(`unknown option "${name}"`);
+          }
+        }
+        const {
+          count = 1, aspect, quality, provider, model, signal
+        } = options;
+        if (!Number.isInteger(count) || count < 1) {
+          invalid('"count" must be a positive integer');
+        }
+        if (aspect !== undefined) {
+          if (typeof aspect !== 'string') {
+            invalid('"aspect" must be a string');
+          }
+          // Reject a malformed dial now; the nearest-match resolution
+          // against the routed model happens at call time
+          self.canonicalAspect(aspect);
+        }
+        if (quality !== undefined &&
+          ![ 'low', 'medium', 'high' ].includes(quality)) {
+          invalid('"quality" must be "low", "medium" or "high"');
+        }
+        if ((provider === undefined) !== (model === undefined)) {
+          invalid('"provider" and "model" must be given together');
+        }
+        for (const [ name, value ] of Object.entries({
+          provider,
+          model
+        })) {
+          if (value !== undefined && typeof value !== 'string') {
+            invalid(`"${name}" must be a string`);
+          }
+        }
+        if (signal !== undefined && !(signal instanceof AbortSignal)) {
+          invalid('"signal" must be an AbortSignal');
+        }
+        return {
+          prompt,
+          count,
+          aspect,
+          quality,
+          images: imageSources(options.images),
+          provider,
+          model,
+          signal
+        };
+
+        // The images option → normalized source refs, or undefined when
+        // absent (a plain text→image generation). Its presence is what
+        // makes the call an edit. Each source is a public url or
+        // inline base64 data with its media type — the same two shapes an
+        // image content part accepts (normalizeMessages).
+        function imageSources(sources) {
+          if (sources === undefined) {
+            return undefined;
+          }
+          if (!Array.isArray(sources) || !sources.length) {
+            invalid('"images" must be a non-empty array of image sources');
+          }
+          return sources.map((source, index) => {
+            const name = `images[${index}]`;
+            if (isObject(source) && typeof source.url === 'string') {
+              // The adapter fetches this server-side, so only web urls
+              // pass — no data:, file: or relative forms. Vetting and
+              // authorizing a user-supplied url is the caller's job
+              // before it reaches this surface.
+              if (![ 'http:', 'https:' ].includes(urlProtocol(source.url))) {
+                throw self.apos.error('invalid', `${name}.url must be an absolute http(s) url`);
+              }
+              return { url: source.url };
+            }
+            if (isObject(source) && typeof source.data === 'string' &&
+              typeof source.mediaType === 'string') {
+              return {
+                data: source.data,
+                mediaType: source.mediaType
+              };
+            }
+            throw self.apos.error(
+              'invalid',
+              `${name} must be an object like { url } or { data, mediaType }`
+            );
+          });
+        }
+
+        // The parsed protocol of an absolute url, or undefined
+        function urlProtocol(url) {
+          try {
+            return new URL(url).protocol;
+          } catch (e) {
+            return undefined;
+          }
+        }
+      },
+      // Normalize an aspect dial to its canonical 'W:H' string. The named
+      // tokens square, portrait and landscape ground to the conventional
+      // photo ratios (1:1, 3:4, 4:3); an explicit 'W:H' of two positive
+      // numbers is returned as given. Throws "invalid" on anything else.
+      // Every aspect the core hands an adapter passes through here, so an
+      // adapter only ever sees 'W:H', never a named token.
+      canonicalAspect(aspect) {
+        const named = {
+          square: '1:1',
+          portrait: '3:4',
+          landscape: '4:3'
+        };
+        if (Object.hasOwn(named, aspect)) {
+          return named[aspect];
+        }
+        if (parseAspect(aspect)) {
+          return aspect;
+        }
+        throw self.apos.error('invalid', `"${aspect}" is not a valid aspect: use "square", "portrait", "landscape" or a "W:H" ratio`);
+      },
+      // The numeric width/height ratio of an aspect dial.
+      aspectRatio(aspect) {
+        const [ w, h ] = parseAspect(self.canonicalAspect(aspect));
+        return w / h;
+      },
+      // Resolve a requested aspect dial to the nearest aspect the routed
+      // model declares, returning that declared string verbatim — echoed
+      // to the caller in metadata and translated to the provider's dialect
+      // by the adapter. `requested` is the call's `aspect` option (a named
+      // token or 'W:H'), or undefined to leave the dial unset (returns
+      // undefined; the provider default applies). `declared` is the
+      // model's supported aspect strings (modelInfo). Nearest match
+      // minimizes the log-ratio distance to the requested ratio; a tie
+      // resolves to the larger ratio, then to declaration order. A model
+      // that declares no aspects (an unknown model) is a pass-through: the
+      // requested ratio returns as its canonical 'W:H' — never a named
+      // token, so the adapter's input is uniform — for the adapter to
+      // best-effort, and the provider may reject it.
+      resolveAspect(requested, declared) {
+        if (requested === undefined) {
+          return undefined;
+        }
+        const target = self.aspectRatio(requested);
+        if (!Array.isArray(declared) || !declared.length) {
+          return self.canonicalAspect(requested);
+        }
+        let best = describe(declared[0]);
+        for (const aspect of declared) {
+          const candidate = describe(aspect);
+          if (candidate.distance < best.distance - 1e-9 ||
+            (Math.abs(candidate.distance - best.distance) <= 1e-9 &&
+              candidate.ratio > best.ratio)) {
+            best = candidate;
+          }
+        }
+        return best.aspect;
+
+        // An aspect string with its ratio and its log-ratio distance from
+        // the requested target
+        function describe(aspect) {
+          const ratio = self.aspectRatio(aspect);
+          return {
+            aspect,
+            ratio,
+            distance: Math.abs(Math.log(target / ratio))
+          };
+        }
+      },
       // Register an AI tool definition. Feature modules call this in
       // their own init; core, project and third-party modules all use
       // the same call. Re-registering an existing name overrides (last
@@ -897,12 +1111,14 @@ module.exports = {
       },
       // The built-in mock standing in for every adapter chat under
       // APOS_AI_MOCK. Consults the "mock" option first when the module
-      // has one: it may return a complete assistant turn, a { text }
-      // shorthand filled out into one, or undefined to fall through to
-      // the deterministic default. That default is request-aware: for a
+      // has one — called (req, request), req-first like every AI
+      // surface, so a mock can answer per current user: it may return
+      // a complete assistant turn, a { text } shorthand filled out
+      // into one, or undefined to fall through to the deterministic
+      // default. That default is request-aware: for a
       // structured request (`request.schema`) it synthesizes a
       // schema-conforming object and returns it on the turn's `object`,
-      // as a real adapter would ([D35]) — the pipeline backstop-validates
+      // as a real adapter would — the pipeline backstop-validates
       // it like a real one — otherwise canned text echoing the
       // conversation's final message; usage is estimated from the text
       // sizes. Runs inside the same retry and validation seam as a real
@@ -910,7 +1126,7 @@ module.exports = {
       // the real error paths.
       async mockChat(req, request) {
         const custom = self.options.mock
-          ? await self.options.mock(request)
+          ? await self.options.mock(req, request)
           : undefined;
         if (custom == null) {
           if (request.schema) {
@@ -933,7 +1149,7 @@ module.exports = {
 
         // A canned assistant turn. `text` is the answer's text; a
         // structured call passes the synthesized `object` too, which
-        // rides the turn ([D35]). The text stays in the content — for a
+        // rides the turn. The text stays in the content — for a
         // structured turn it is the object's JSON, so the transcript's
         // assistant message is non-empty and re-normalizes on resume,
         // as a real provider's structured answer would.
@@ -1012,6 +1228,52 @@ module.exports = {
       // real error paths
       mockNormalizeError(error) {
         return error;
+      },
+      // The built-in mock standing in for every adapter image call
+      // under APOS_AI_MOCK. Consults the "mockImage" option first when
+      // the module has one — called (req, request), req-first like
+      // every AI surface, so a mock can answer per current user: it
+      // may return a complete adapter image result ({ images, model?,
+      // usage?, size? }), an images array shorthand filled out into
+      // one, or undefined to fall through to the deterministic
+      // default — `count` copies of a placeholder pixel, no network
+      // or keys. Filled-in usage is the chat mock's
+      // text ballpark for the prompt plus a flat per-image output, the
+      // order images bill at. Runs inside the same retry and
+      // validation seam as a real call.
+      async mockImage(req, request) {
+        const custom = self.options.mockImage
+          ? await self.options.mockImage(req, request)
+          : undefined;
+        if (custom == null) {
+          return result(Array.from({ length: request.count }, () => ({
+            type: 'png',
+            data: MOCK_PIXEL
+          })));
+        }
+        if (isObject(custom) && Array.isArray(custom.images)) {
+          return custom;
+        }
+        if (Array.isArray(custom)) {
+          return result(custom);
+        }
+        throw self.apos.error(
+          'invalid',
+          '"mockImage" must return an image result, an images array or undefined'
+        );
+
+        // The adapter return shape around `images`, with the model and
+        // a plausible usage supplied
+        function result(images) {
+          return {
+            images,
+            model: request.model,
+            usage: {
+              inputTokens: Math.max(1, Math.round(request.prompt.length / 4)),
+              outputTokens: 1000 * images.length
+            }
+          };
+        }
       },
       // The language method: text, multi-turn chat, the tool-calling
       // agent loop and structured output against the routed provider.
@@ -1211,6 +1473,132 @@ module.exports = {
           hadTools: tools.size > 0
         });
         await self.emit('afterGenerate', req, context);
+        return context.result;
+      },
+      // The image method: text → image against the routed image
+      // provider, or image(s) + text → image (editing) when `images`
+      // sources are passed — `prompt` is then the edit instruction and
+      // the images are the source.
+      //
+      // Options:
+      // `count` (positive integer, default 1): how many images;
+      // `aspect` ('square' | 'portrait' | 'landscape', or a 'W:H'
+      //   ratio): the shape dial, resolved to the nearest aspect the
+      //   routed model declares (resolveAspect); the adapter
+      //   translates the resolved ratio to its dialect. Omitted ⇒ not
+      //   sent, the provider default applies;
+      // `quality` ('low' | 'medium' | 'high'): the spend dial, mapped
+      //   to the provider's native knob; providers without one ignore
+      //   it. Omitted ⇒ not sent;
+      // `images` (array of { url } | { data, mediaType } sources):
+      //   the presence of sources makes the call an edit;
+      // `provider`, `model` (strings, only together): the explicit
+      //   target, bypassing the `image` routing entry — the entry's
+      //   default dials do not apply then;
+      // `signal` (AbortSignal): aborts the in-flight provider call.
+      //
+      // Routing: the module's `image` option ({ provider, model,
+      // aspect, quality }) names the project's image route and its
+      // default dials; per-call dials win. Capability-gated on
+      // `image`: routing image work to a provider that cannot
+      // generate images is a clear error, never a silent re-route.
+      //
+      // Returns one call-level result object, like generate:
+      // { images, provider, model, usage, aspect?, size? }. `images`
+      // is [ { type, data } ], `data` base64 and `type` its format;
+      // everything else is said once on the envelope — `usage` is the
+      // whole call's token total (providers bill the batch, not the
+      // image), `aspect` the resolved native ratio when a dial ran,
+      // `size` the native pixel size when the provider works in
+      // pixels. Throws the same normalized codes as generate, with
+      // the same retries, log records and mock behavior (placeholder
+      // images, no network — scriptable via the `mockImage` option,
+      // see mockImage). Emits `beforeGenerateImage` and
+      // `afterGenerateImage` around the call, sharing one mutable
+      // context.
+      async generateImage(req, prompt, options) {
+        const canonical = self.normalizeImageOptions(prompt, options);
+        // Mock answers unconditionally: real routing still applies
+        // under mock when it can resolve — the configuration stays
+        // exercised — but a missing image route (an optional entry,
+        // unlike the always-present effort table) or missing providers
+        // never block a mock call; placeholder routing stands in
+        let route;
+        if (self.mockMode && (
+          !Object.keys(self.providers).length ||
+          (!canonical.provider && !self.options.image)
+        )) {
+          route = {
+            provider: canonical.provider ?? 'mock',
+            model: canonical.model ?? 'mock'
+          };
+        } else {
+          route = self.resolve({
+            provider: canonical.provider,
+            model: canonical.model,
+            capability: 'image'
+          });
+          self.checkCapability(route.provider, 'image');
+        }
+        const {
+          provider, model, aspect: routeAspect, quality: routeQuality,
+          ...inline
+        } = route;
+        // The routed model's metadata, inline routing-entry fields
+        // winning — its declared aspects ground the nearest-match
+        const metadata = {
+          ...self.providers[provider]?.models?.[model],
+          ...inline
+        };
+        const aspect = self.resolveAspect(
+          canonical.aspect ?? routeAspect,
+          metadata.aspects
+        );
+        const quality = canonical.quality ?? routeQuality;
+        const request = {
+          prompt: canonical.prompt,
+          count: canonical.count,
+          ...(aspect !== undefined && { aspect }),
+          ...(quality !== undefined && { quality }),
+          ...(canonical.images && { images: canonical.images }),
+          model,
+          ...(canonical.signal && { signal: canonical.signal })
+        };
+        const record = self.mockMode
+          ? {
+            name: provider,
+            adapter: {
+              image: self.mockImage,
+              normalizeError: self.mockNormalizeError
+            }
+          }
+          : self.providers[provider];
+        const context = {
+          provider,
+          request
+        };
+        await self.emit('beforeGenerateImage', req, context);
+        const result = await self.callAdapter(req, record, context.request, async () =>
+          self.validateImageResult(
+            await record.adapter.image(req, context.request)
+          )
+        );
+        // The envelope: the adapter's minimal result plus what the
+        // core knows — the provider and the resolved aspect it sent;
+        // the pixel size only when the adapter reported one
+        context.result = {
+          images: result.images.map((image) => ({
+            type: image.type,
+            data: image.data
+          })),
+          provider: context.provider,
+          model: result.model || context.request.model,
+          ...(result.usage && { usage: { ...result.usage } }),
+          ...(context.request.aspect !== undefined &&
+            { aspect: context.request.aspect }),
+          ...(result.size !== undefined && { size: result.size })
+        };
+        await self.emit('afterGenerateImage', req, context);
         return context.result;
       },
       // Execute one batch of model-requested tool calls — the toolCall
@@ -1476,9 +1864,35 @@ module.exports = {
         }
         return turn;
       },
+      // Enforce the adapter image contract on `result` ({ images,
+      // model?, usage?, size? }) and return it unchanged. A missing or
+      // empty image list, or a malformed image, is a malformed
+      // response: it throws the transient code so the call travels
+      // the retry path — a model whim never returns an empty success.
+      validateImageResult(result) {
+        const malformed = (detail) => {
+          throw self.apos.error('aiRetry', `malformed image result: ${detail}`);
+        };
+        if (!isObject(result)) {
+          malformed('not an object');
+        }
+        if (!Array.isArray(result.images) || !result.images.length) {
+          malformed('"images" must be a non-empty array');
+        }
+        for (const image of result.images) {
+          if (!isObject(image) || typeof image.type !== 'string' ||
+            typeof image.data !== 'string' || !image.data) {
+            malformed('images must carry a string "type" and a non-empty "data"');
+          }
+        }
+        if (result.usage !== undefined && !isObject(result.usage)) {
+          malformed('"usage" must be an object');
+        }
+        return result;
+      },
       // The anti-hallucination backstop for structured output. The
       // adapter has already extracted the final answer into `turn.object`
-      // from its provider's structured mode ([D35] — an adapter concern,
+      // from its provider's structured mode (an adapter concern,
       // since only the dialect knows where the object lives); this
       // validates it against `validate`, the compiled validator for the
       // call's `schema` (normalizeGenerateOptions). The provider's
@@ -1528,6 +1942,26 @@ module.exports = {
           provider: context.provider
         };
       },
+      // Fail startup when a model's declared image `aspects` are
+      // malformed. resolveAspect trusts these to be well-formed 'W:H'
+      // strings at call time, so a bad declaration — from an adapter or a
+      // provider entry — is caught here, once, with a clear message,
+      // rather than surfacing as a caller-facing error on a real call.
+      validateAspects(providerName, models) {
+        for (const [ model, meta ] of Object.entries(models)) {
+          if (meta.aspects === undefined) {
+            continue;
+          }
+          if (!Array.isArray(meta.aspects) || !meta.aspects.length) {
+            fail(`"providers.${providerName}" model "${model}": "aspects" must be a non-empty array of "W:H" ratios`);
+          }
+          for (const aspect of meta.aspects) {
+            if (!parseAspect(aspect)) {
+              fail(`"providers.${providerName}" model "${model}" declares an invalid aspect "${aspect}"; use a "W:H" ratio`);
+            }
+          }
+        }
+      },
       // Union of the adapter's and the entry's model metadata,
       // merged per model id with the entry's fields winning
       mergeModels(adapterModels = {}, entryModels = {}) {
@@ -1567,7 +2001,7 @@ module.exports = {
         };
 
         const {
-          providers, provider, effort, image, maxSteps, mock,
+          providers, provider, effort, image, maxSteps, mock, mockImage,
           retryAttempts, retryBaseDelay, retryMaxElapsed
         } = options;
 
@@ -1638,8 +2072,24 @@ module.exports = {
 
         if (image !== undefined) {
           checkEffortRow(image, 'image', { provider: true });
-          checkString(image.aspect, 'image.aspect');
-          checkString(image.quality, 'image.quality');
+          if (image.aspect !== undefined &&
+            ![ 'square', 'portrait', 'landscape' ].includes(image.aspect) &&
+            !parseAspect(image.aspect)) {
+            fail('"image.aspect" must be "square", "portrait", "landscape" or a "W:H" ratio');
+          }
+          if (image.quality !== undefined &&
+            ![ 'low', 'medium', 'high' ].includes(image.quality)) {
+            fail('"image.quality" must be "low", "medium" or "high"');
+          }
+          // Inline model metadata on the routing entry participates in
+          // aspect resolution (metadata merge), so it gets the same
+          // startup vetting as a declared model's
+          if (image.aspects !== undefined && (
+            !Array.isArray(image.aspects) || !image.aspects.length ||
+            image.aspects.some((aspect) => !parseAspect(aspect))
+          )) {
+            fail('"image.aspects" must be a non-empty array of "W:H" ratios');
+          }
         }
 
         if (!Number.isInteger(maxSteps) || maxSteps < 1) {
@@ -1648,6 +2098,10 @@ module.exports = {
 
         if (mock !== undefined && typeof mock !== 'function') {
           fail('"mock" must be a function');
+        }
+
+        if (mockImage !== undefined && typeof mockImage !== 'function') {
+          fail('"mockImage" must be a function');
         }
 
         for (const [ name, value ] of Object.entries({

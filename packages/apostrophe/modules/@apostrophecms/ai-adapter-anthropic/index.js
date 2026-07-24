@@ -7,6 +7,15 @@
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
 
+// Anthropic has no response-schema mode, so structured output is
+// delivered through tool use: a synthetic tool whose input schema is
+// the request's `schema`. The model calls it to answer; parseResponse
+// turns that call back into a plain structured answer. Its name leads
+// with an underscore, which the engine's tool-name rule forbids, so
+// it can never collide with a real tool.
+const FINAL_ANSWER = '_final_answer';
+const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this tool with the required fields. This is the only way to return your response.';
+
 module.exports = {
   options: {
     // The anthropic-version request header
@@ -26,14 +35,6 @@ module.exports = {
     self.apos.ai.addAdapter(self.adapter());
   },
   methods(self) {
-    // Anthropic has no response-schema mode, so structured output is
-    // delivered through tool use: a synthetic tool whose input schema is
-    // the request's `schema`. The model calls it to answer; parseResponse
-    // turns that call back into a plain structured answer. Its name leads
-    // with an underscore, which the engine's tool-name rule forbids, so
-    // it can never collide with a real tool.
-    const FINAL_ANSWER = '_final_answer';
-    const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this tool with the required fields. This is the only way to return your response.';
     return {
       // The adapter definition registered with `apos.ai`. The engine
       // instantiates it per configured provider entry, assigning
