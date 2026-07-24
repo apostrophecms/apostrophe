@@ -788,6 +788,31 @@ describe('AI tools', function() {
       ]);
     });
 
+    it('onMessage reports each intermediate assistant turn, never the final answer', async function() {
+      const req = apos.task.getReq();
+      const messages = [];
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'one' })),
+        toolTurn(toolCall('c2', 'echo', { value: 'two' })),
+        textTurn('all done')
+      ];
+      const result = await apos.ai.generate(req, 'find it', {
+        tools: [ 'echo' ],
+        onMessage(message) {
+          messages.push(message);
+        }
+      });
+
+      assert.equal(result.text, 'all done');
+      assert.deepEqual(messages, [ {
+        role: 'assistant',
+        content: [ toolCall('c1', 'echo', { value: 'one' }) ]
+      }, {
+        role: 'assistant',
+        content: [ toolCall('c2', 'echo', { value: 'two' }) ]
+      } ]);
+    });
+
     it('combines tools and schema: the loop runs free, the final answer validates', async function() {
       const req = apos.task.getReq();
       const object = { found: 'pricing' };

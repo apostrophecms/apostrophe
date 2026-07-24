@@ -44,6 +44,30 @@ module.exports = {
           `);
 
           return {};
+        },
+        // Request cancellation of a running job. The running process
+        // observes the flag via `reporting.isCanceling` and decides how
+        // to wind down; the request is a no-op for jobs that never
+        // check it and for jobs that already ended.
+        async ':_id/cancel'(req) {
+          if (!self.apos.permission.can(req, 'view-draft')) {
+            throw self.apos.error('notfound');
+          }
+
+          const jobId = self.apos.launder.id(req.params._id);
+          const job = await self.db.findOne({ _id: jobId });
+
+          if (!job) {
+            throw self.apos.error('notfound');
+          }
+
+          if (job.userId && job.userId !== (req.user && req.user._id)) {
+            throw self.apos.error('notfound');
+          }
+
+          await self.requestCancel(jobId);
+
+          return {};
         }
       }
     };
@@ -59,6 +83,10 @@ module.exports = {
         const job = await self.db.findOne({ _id: jobId });
 
         if (!job) {
+          throw self.apos.error('notfound');
+        }
+
+        if (job.userId && job.userId !== (req.user && req.user._id)) {
           throw self.apos.error('notfound');
         }
 
@@ -98,10 +126,13 @@ module.exports = {
       // operation on a single type of piece.
       //
       // Notification messages should be included on a `req.body.messages`
-      // object. See `triggerNotification for details`.
+      // object. See `triggerNotification for details`. Pass
+      // `notifications: false` in `options` to skip that wiring entirely,
+      // e.g. when the caller provides its own progress transport.
       async runBatch(req, ids, change, options = {}) {
         let job;
         let notification;
+        const notifications = options.notifications !== false;
         const total = ids.length;
 
         const results = {};
@@ -117,7 +148,7 @@ module.exports = {
           run();
 
           // Trigger the "in progress" notification.
-          notification = await self.triggerNotification(req, 'progress', {
+          notification = notifications && await self.triggerNotification(req, 'progress', {
             // It's only relevant to pass a job ID to the notification if
             // the notification will show progress. Without a total number we
             // can't show progress.
@@ -136,7 +167,7 @@ module.exports = {
             return res.status(500).send('error');
           }
           try {
-            return await self.end(job, false);
+            return await self.end(job, false, undefined, err);
           } catch (err) {
             // Not a lot we can do about this since we already
             // stopped talking to the user
@@ -161,15 +192,19 @@ module.exports = {
             await self.end(job, good, results);
             // Wait for increments to be updated in DB
             await Promise.allSettled(promises);
-            // Trigger the completed notification.
-            await self.triggerNotification(req, 'completed', {
-              contextId: job._id,
-              dismiss: true
-            });
-            // Dismiss the progress notification. It will delay 4 seconds
-            // because "completed" notification will dismiss in 5 and we want
-            // to maintain the feeling of process order for users.
-            await self.apos.notification.dismiss(req, notification.noteId, 4000);
+            if (notifications) {
+              // Trigger the completed notification.
+              await self.triggerNotification(req, 'completed', {
+                contextId: job._id,
+                dismiss: true
+              });
+              // Dismiss the progress notification. It will delay 4 seconds
+              // because "completed" notification will dismiss in 5 and we want
+              // to maintain the feeling of process order for users.
+              if (notification && notification.noteId) {
+                await self.apos.notification.dismiss(req, notification.noteId, 4000);
+              }
+            }
           }
         }
       },
@@ -179,7 +214,7 @@ module.exports = {
       // This is not the way to implement a batch operation on pieces; see the
       // `batchSimple` method of that module.
       //
-      // The `doTheWork` function receives `(req, reporting)` and may
+      // The `doTheWork` function receives `(req, reporting, info)` and may
       // optionally invoke `reporting.success()` and `reporting.failure()` to
       // update the progress and error counters, and `reporting.setTotal()` to
       // indicate the total number of counts expected so a progress meter can be
@@ -189,29 +224,53 @@ module.exports = {
       // `reporting.setResults(object)` may also be called to pass a
       // results object, which will be available on the finished job document.
       //
+      // `info` carries the job's `jobId` — the same id returned to the
+      // caller — so the work can label its own progress transport.
+      //
+      // `reporting.isCanceling()` resolves to `true` once cancellation of
+      // the job has been requested (see the cancel route and
+      // `requestCancel`) — or when the job document is gone or already
+      // marked ended: a record nobody can observe or cancel anymore is a
+      // standing instruction to stop, so an expired (`expireAfter`) or
+      // externally deleted record winds down its own orphaned run.
+      // `doTheWork` may check it at convenient points and wind down
+      // early; the job then ends with a `cancelled` status. Jobs that
+      // never check it simply run to completion.
+      //
+      // If `doTheWork` throws, the job ends with a `failed` status and the
+      // error is recorded on the job document (see `end`).
+      //
       // This method will return an object with a `jobId` identifier as soon as
       // the job is ready to start, and the actual job will continue in the
       // background afterwards. You can pass `jobId` to the `progress` API route
       // of this module as `_id` on the request body to get job status info.
       //
       // Notification messages should be included on a `req.body.messages`
-      // object. See `triggerNotification for details`.
+      // object. See `triggerNotification for details`. Pass
+      // `notifications: false` in `options` to skip that wiring entirely,
+      // e.g. when the caller provides its own progress transport
+      // (`req.body` is client-controlled, so callers cannot rely on the
+      // absence of `messages`).
       async run(req, doTheWork, options = {}) {
         const res = req.res;
+        const notifications = options.notifications !== false;
         let job;
         let total;
 
         try {
           job = await self.start(options);
 
-          const notification = await self.triggerNotification(req, 'progress', {
+          const notification = notifications && await self.triggerNotification(req, 'progress', {
             jobId: job._id,
             ids: options.ids,
             action: options.action,
             docTypes: options.docTypes
           });
 
-          run({ notificationId: notification.noteId });
+          run({
+            notificationId: notification && notification.noteId,
+            jobId: job._id
+          });
 
           return {
             jobId: job._id
@@ -228,6 +287,7 @@ module.exports = {
 
         async function run(info) {
           let results;
+          let error;
           let good = false;
           const promises = [];
           try {
@@ -252,23 +312,39 @@ module.exports = {
               },
               setResults (_results) {
                 results = _results;
+              },
+              async isCanceling () {
+                const found = await self.db.findOne({ _id: job._id }, {
+                  projection: {
+                    cancelRequested: 1,
+                    ended: 1
+                  }
+                });
+                return !found || Boolean(found.cancelRequested || found.ended);
               }
             }, info);
             good = true;
+          } catch (err) {
+            error = err;
+            self.apos.util.error(err);
           } finally {
-            await self.end(job, good, results);
+            await self.end(job, good, results, error);
             // Wait for increments to be updated in DB
             await Promise.allSettled(promises);
-            // Trigger the completed notification.
-            await self.triggerNotification(req, 'completed', {
-              contextId: job._id,
-              count: total,
-              dismiss: true
-            }, results);
-            // Dismiss the progress notification. It will delay 4 seconds
-            // because "completed" notification will dismiss in 5 and we want
-            // to maintain the feeling of process order for users.
-            await self.apos.notification.dismiss(req, info.notificationId, 4000);
+            if (notifications) {
+              // Trigger the completed notification.
+              await self.triggerNotification(req, 'completed', {
+                contextId: job._id,
+                count: total,
+                dismiss: true
+              }, results);
+              // Dismiss the progress notification. It will delay 4 seconds
+              // because "completed" notification will dismiss in 5 and we want
+              // to maintain the feeling of process order for users.
+              if (info.notificationId) {
+                await self.apos.notification.dismiss(req, info.notificationId, 4000);
+              }
+            }
           }
         }
       },
@@ -351,7 +427,21 @@ module.exports = {
       // to indicate the success or failure of one "row" or other item
       // processed, and you *may* call `setTotal(job, n)` to indicate
       // how many rows to expect for better progress display.
-      async start(options) {
+      //
+      // `options` may include:
+      //
+      // `userId`: the `_id` of the user who owns the job. When present,
+      // the status and cancel routes are restricted to that user; jobs
+      // without a `userId` remain readable by anyone who can `view-draft`.
+      //
+      // `expireAfter`: a number of seconds after which the job document
+      // is deleted from the database (a TTL index on `expireAt`). The
+      // countdown starts now, not at completion, so pick a value
+      // comfortably above the longest expected run — this also cleans up
+      // orphaned records whose process died before calling `end`. Jobs
+      // without `expireAfter` are kept forever, as before.
+      async start(options = {}) {
+        const now = new Date();
         const job = {
           _id: self.apos.util.generateId(),
           good: 0,
@@ -359,7 +449,15 @@ module.exports = {
           processed: 0,
           status: 'running',
           ended: false,
-          when: new Date()
+          cancelRequested: false,
+          when: now,
+          // same instant as the legacy `when`, which is kept for
+          // backwards compatibility; startedAt/endedAt are the pair to use
+          startedAt: now,
+          ...(options.userId && { userId: options.userId }),
+          ...(options.expireAfter && {
+            expireAt: new Date(now.getTime() + options.expireAfter * 1000)
+          })
         };
         const context = {
           _id: job._id,
@@ -433,20 +531,79 @@ module.exports = {
       // If the results parameter is not omitted entirely,
       // it is added to the job object in the database
       // as the `results` property.
-      async end(job, success, results) {
+      //
+      // A successful end after cancellation was requested is recorded
+      // with the `cancelled` status instead of `completed` — a
+      // cooperatively cancelled job winds down and ends normally, with
+      // any partial results preserved. A failure is always `failed`.
+      //
+      // If `error` is present it is recorded on the job document:
+      // an `Error` instance is reduced to `{ name, message, data? }`
+      // (already-serializable payloads are stored as given).
+      async end(job, success, results, error) {
         // context object gets an update to avoid a
         // race condition with checkStopped
         job.ended = true;
+        // Read-then-update leaves a small window: a cancel request landing
+        // between the two ends up `completed` with `cancelRequested: true`,
+        // which is acceptable — cancellation is a request that arrived too
+        // late. Closing the window would take an aggregation-pipeline
+        // update, which not every supported database backend understands;
+        // revisit if a stricter guarantee is ever needed.
+        const current = await self.db.findOne({ _id: job._id }, {
+          projection: { cancelRequested: 1 }
+        });
+        const status = success
+          ? (current && current.cancelRequested ? 'cancelled' : 'completed')
+          : 'failed';
         return self.db.updateOne({ _id: job._id }, {
           $set: {
             ended: true,
-            status: success ? 'completed' : 'failed',
-            results
+            endedAt: new Date(),
+            status,
+            results,
+            ...(error !== undefined && { error: serializeError(error) })
           }
+        });
+
+        function serializeError(error) {
+          if (error instanceof Error) {
+            return {
+              name: error.name,
+              message: error.message,
+              ...(error.data !== undefined && { data: error.data })
+            };
+          }
+          return error;
+        }
+      },
+      // Request cancellation of a running job. Sets the `cancelRequested`
+      // flag the running process observes via `reporting.isCanceling`,
+      // whichever process that is — the flag travels through the
+      // database, so it works across processes. Like SIGTERM, this is a
+      // request rather than preemption: the job decides when and whether
+      // to wind down, and its status flips to `cancelled` only once it
+      // actually ends. Unlike SIGTERM there is no default handler — a
+      // job that never checks the flag simply runs to completion.
+      // Has no effect on jobs that already ended.
+      async requestCancel(jobId) {
+        return self.db.updateOne({
+          _id: jobId,
+          ended: false
+        }, {
+          $set: { cancelRequested: true }
         });
       },
       async ensureCollection() {
         self.db = await self.apos.db.collection(self.options.collectionName);
+        // Per-document TTL: `expireAfterSeconds: 0` expires each document
+        // at the exact time stored in its `expireAt` field; documents
+        // without the field never expire, and `sparse` keeps them out of
+        // the index entirely.
+        await self.db.createIndex({ expireAt: 1 }, {
+          expireAfterSeconds: 0,
+          sparse: true
+        });
       },
       getBrowserData(req) {
         return {
