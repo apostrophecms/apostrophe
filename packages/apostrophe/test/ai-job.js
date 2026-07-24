@@ -364,8 +364,8 @@ describe('AI generateJob', function() {
       }
     });
     await startedPromise;
-    // What the expiry sweep — or any external cleanup — does; the
-    // record is the only handle on the run, so its removal must stop it
+    // What record expiry — or any external cleanup — does; the record
+    // is the only handle on the run, so its removal must stop it
     await jobModule.db.deleteMany({});
     await endedPromise;
 

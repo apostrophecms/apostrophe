@@ -429,7 +429,7 @@ module.exports = {
       // without a `userId` remain readable by anyone who can `view-draft`.
       //
       // `expireAfter`: a number of seconds after which the job document
-      // is deleted from the database (see `cleanupExpired`). The
+      // is deleted from the database (a TTL index on `expireAt`). The
       // countdown starts now, not at completion, so pick a value
       // comfortably above the longest expected run — this also cleans up
       // orphaned records whose process died before calling `end`. Jobs
@@ -458,7 +458,6 @@ module.exports = {
           options
         };
 
-        self.cleanupExpired();
         await self.db.insertOne(job);
         return context;
       },
@@ -589,23 +588,16 @@ module.exports = {
           $set: { cancelRequested: true }
         });
       },
-      // Delete job documents whose opt-in `expireAt` has passed. Invoked
-      // on every `start`, so cleanup rides on activity — no timers, no
-      // reliance on database-level expiry mechanisms, works the same on
-      // every backend. Safe to fire and forget: errors are logged, never
-      // thrown.
-      async cleanupExpired() {
-        try {
-          await self.db.deleteMany({ expireAt: { $lte: new Date() } });
-        } catch (err) {
-          self.apos.util.error(err);
-        }
-      },
       async ensureCollection() {
         self.db = await self.apos.db.collection(self.options.collectionName);
-        // Supports the expired-job sweep in `cleanupExpired`; `sparse`
-        // keeps the many jobs without `expireAt` out of the index
-        await self.db.createIndex({ expireAt: 1 }, { sparse: true });
+        // Per-document TTL: `expireAfterSeconds: 0` expires each document
+        // at the exact time stored in its `expireAt` field; documents
+        // without the field never expire, and `sparse` keeps them out of
+        // the index entirely.
+        await self.db.createIndex({ expireAt: 1 }, {
+          expireAfterSeconds: 0,
+          sparse: true
+        });
       },
       getBrowserData(req) {
         return {

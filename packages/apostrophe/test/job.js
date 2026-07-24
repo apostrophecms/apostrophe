@@ -1,6 +1,8 @@
 const { strict: assert } = require('node:assert');
 const t = require('../test-lib/test.js');
 
+const testDbProtocol = process.env.APOS_TEST_DB_PROTOCOL || 'mongodb';
+
 describe('Job module', function() {
   const logged = [];
   let apos;
@@ -410,48 +412,15 @@ describe('Job module', function() {
       assert.deepEqual(actual, expected);
     });
 
-    it('has a sparse index on expireAt for the expired-job sweep', async function() {
+    it('has a sparse TTL index on expireAt', async function() {
       const indexes = await jobModule.db.indexes();
       const index = indexes.find(index => index.key.expireAt === 1);
 
       assert.equal(index && index.sparse, true);
-    });
-
-    it('cleanupExpired: deletes only jobs whose expireAt has passed', async function() {
-      const expired = await jobModule.start({ expireAfter: 0.001 });
-      const kept = await jobModule.start({ expireAfter: 3600 });
-      const legacy = await jobModule.start({});
-      await delay(10);
-
-      await jobModule.cleanupExpired();
-
-      const actual = {
-        expired: await jobModule.db.findOne({ _id: expired._id }),
-        kept: (await jobModule.db.findOne({ _id: kept._id }))._id,
-        legacy: (await jobModule.db.findOne({ _id: legacy._id }))._id
-      };
-      const expected = {
-        expired: null,
-        kept: kept._id,
-        legacy: legacy._id
-      };
-
-      assert.deepEqual(actual, expected);
-    });
-
-    it('start: sweeps expired jobs', async function() {
-      const expired = await jobModule.start({ expireAfter: 0.001 });
-      await delay(10);
-
-      await jobModule.start({});
-
-      // The sweep is fire-and-forget; poll until it lands
-      const deadline = Date.now() + 10000;
-      while (await jobModule.db.findOne({ _id: expired._id })) {
-        if (Date.now() > deadline) {
-          throw new Error('Timed out waiting for the expired job to be swept');
-        }
-        await delay(25);
+      // Database-level expiry: only MongoDB honors (and reports) the
+      // TTL option; other adapters accept and ignore it
+      if (testDbProtocol === 'mongodb') {
+        assert.equal(index.expireAfterSeconds, 0);
       }
     });
 

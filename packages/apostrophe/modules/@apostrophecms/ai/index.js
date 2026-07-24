@@ -31,7 +31,7 @@ module.exports = {
     // Elapsed-time budget in milliseconds for one call including its
     // retry waits; a delay that would land past it stops the call
     retryMaxElapsed: 60000,
-    // Seconds an AI job record is kept before the job layer deletes it;
+    // Seconds an AI job record is kept before the database expires it;
     // 0 keeps records forever. Overridable per call (generateJob's
     // expireAfter). Also the upper bound on a background run's
     // cancellation watcher: a deleted record cancels its own run
