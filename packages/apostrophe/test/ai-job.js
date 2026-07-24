@@ -669,6 +669,102 @@ describe('AI generateJob', function() {
     assert.equal(job.expireAt, undefined);
   });
 
+  describe('cross-process cancellation', function() {
+    // A second apos instance on the same database — two processes of
+    // one production cluster. The run lives in the first instance;
+    // the cancel arrives through this one, and only the shared job
+    // record connects them.
+    let apos2;
+    let jobModule2;
+
+    before(async function() {
+      apos2 = await t.create({
+        root: module,
+        shortName: apos.options.shortName
+      });
+      jobModule2 = apos2.modules['@apostrophecms/job'];
+    });
+
+    after(async function() {
+      // Close the second instance without dropping the shared
+      // database the first one is still using
+      if (apos2) {
+        await apos2.destroy();
+      }
+    });
+
+    it('a cancel landing on the other process stops the loop', async function() {
+      const req = apos.task.getReq();
+      let started;
+      const startedPromise = new Promise((resolve) => {
+        started = resolve;
+      });
+      abortNotify = started;
+      chatScript = [
+        toolTurn(toolCall('c1', 'until_abort'))
+      ];
+
+      const { jobId } = await apos.ai.generateJob(req, 'go', {
+        tools: [ 'until_abort' ]
+      });
+      await startedPromise;
+      await jobModule2.requestCancel(jobId);
+      const job = await waitForJob(jobId);
+
+      assert.equal(job.status, 'cancelled');
+      assert.equal(job.results.finishReason, 'cancel');
+      // The handler honored the signal the poll fired; its work is
+      // preserved on the stored partial result
+      assert.deepEqual(job.results.steps, [ {
+        toolCall: toolCall('c1', 'until_abort'),
+        result: { sawAbort: true }
+      } ]);
+      // No further model turn after the cancelled batch
+      assert.equal(chatCalls.length, 1);
+    });
+
+    it('the status flips only after the in-flight step finishes', async function() {
+      const req = apos.task.getReq();
+      let started;
+      let release;
+      const startedPromise = new Promise((resolve) => {
+        started = resolve;
+      });
+      gateNotify = started;
+      gateWait = new Promise((resolve) => {
+        release = resolve;
+      });
+      chatScript = [
+        toolTurn(toolCall('c1', 'gate'))
+      ];
+
+      const { jobId } = await apos.ai.generateJob(req, 'go', {
+        tools: [ 'gate' ]
+      });
+      await startedPromise;
+      await jobModule2.requestCancel(jobId);
+      // Ample watcher polls: the request is observed, yet the run
+      // keeps waiting out the in-flight handler rather than preempt it
+      await delay(200);
+      const current = await jobModule2.db.findOne({ _id: jobId });
+      assert.equal(current.cancelRequested, true);
+      assert.equal(current.ended, false);
+      assert.equal(current.status, 'running');
+
+      release();
+      const job = await waitForJob(jobId);
+
+      assert.equal(job.status, 'cancelled');
+      assert.equal(job.results.finishReason, 'cancel');
+      // The handler ignored the signal; the loop waited it out and
+      // its completed work is recorded
+      assert.deepEqual(job.results.steps, [ {
+        toolCall: toolCall('c1', 'gate'),
+        result: { ok: true }
+      } ]);
+    });
+  });
+
   async function waitForJob(jobId, deadline = Date.now() + 10000) {
     const job = await jobModule.db.findOne({ _id: jobId });
 

@@ -343,12 +343,14 @@ describe('Job module', function() {
 
     {
       const route = `${jobModule.action}/${jobThree.jobId}`;
-      const { total } = await apos.http.get(route, { jar });
 
+      // The total is read from the finished record: reading it right
+      // after run() returns races the background setTotal write
       const {
         completed,
         good,
-        bad
+        bad,
+        total
       } = await pollJob({
         route
       }, {
@@ -659,7 +661,9 @@ describe('Job module', function() {
       bad
     } = await apos.http.get(job.route, { jar });
 
-    if (processed < total) {
+    // No total yet means the run's setTotal write has not landed:
+    // keep polling, or an early poll would read as already done
+    if (total === undefined || processed < total) {
       await delay(100);
 
       return await pollJob(job, { jar });
@@ -667,7 +671,8 @@ describe('Job module', function() {
       return {
         completed: processed,
         good,
-        bad
+        bad,
+        total
       };
     }
   }
