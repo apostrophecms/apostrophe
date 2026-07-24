@@ -1,10 +1,14 @@
 const { strict: assert } = require('node:assert');
 const t = require('../test-lib/test.js');
 
+const testDbProtocol = process.env.APOS_TEST_DB_PROTOCOL || 'mongodb';
+
 describe('Job module', function() {
   const logged = [];
   let apos;
+  let admin;
   let jar;
+  let editorJar;
   let jobModule;
 
   this.timeout(t.timeout);
@@ -22,8 +26,10 @@ describe('Job module', function() {
 
     jobModule = apos.modules['@apostrophecms/job'];
 
-    await t.createAdmin(apos);
+    admin = await t.createAdmin(apos);
     jar = await t.getUserJar(apos);
+    await t.createUser(apos, 'editor');
+    editorJar = await t.loginAs(apos, 'editor');
   });
 
   after(function() {
@@ -129,14 +135,11 @@ describe('Job module', function() {
       { route: `${jobModule.action}/${jobId}` },
       { jar }
     );
+    const notifications = await waitForNotifications({
+      'context._id': jobId,
+      message: /^Tested/
+    });
     const job = await jobModule.db.findOne({ _id: jobId });
-
-    const notifications = await apos.notification.db
-      .find({
-        'context._id': job._id,
-        message: /^Tested/
-      })
-      .toArray();
 
     const actual = {
       job,
@@ -150,10 +153,13 @@ describe('Job module', function() {
       job: {
         _id: job._id,
         bad: 50,
+        cancelRequested: false,
         ended: true,
+        endedAt: job.endedAt,
         good: 450,
         processed: 500,
         results: job.results,
+        startedAt: job.startedAt,
         status: 'completed',
         total: 500,
         when: job.when
@@ -202,14 +208,11 @@ describe('Job module', function() {
       { route: `${jobModule.action}/${jobId}` },
       { jar }
     );
+    const notifications = await waitForNotifications({
+      'context._id': jobId,
+      message: /^Testing.*failed\.$/
+    });
     const job = await jobModule.db.findOne({ _id: jobId });
-
-    const notifications = await apos.notification.db
-      .find({
-        'context._id': job._id,
-        message: /^Testing.*failed\.$/
-      })
-      .toArray();
 
     const actual = {
       job,
@@ -223,10 +226,13 @@ describe('Job module', function() {
       job: {
         _id: job._id,
         bad: 50,
+        cancelRequested: false,
         ended: true,
+        endedAt: job.endedAt,
         good: 0,
         processed: 50,
         results: job.results,
+        startedAt: job.startedAt,
         status: 'completed',
         total: 50,
         when: job.when
@@ -331,12 +337,14 @@ describe('Job module', function() {
 
     {
       const route = `${jobModule.action}/${jobThree.jobId}`;
-      const { total } = await apos.http.get(route, { jar });
 
+      // The total is read from the finished record: reading it right
+      // after run() returns races the background setTotal write
       const {
         completed,
         good,
-        bad
+        bad,
+        total
       } = await pollJob({
         route
       }, {
@@ -358,6 +366,252 @@ describe('Job module', function() {
 
       assert.deepEqual(actual, expected, 'can follow the third job as it works');
     };
+  });
+
+  describe('ownership, cancellation, error payload and TTL', function() {
+    it('start: stamps startedAt and cancelRequested, records opt-in userId and expireAt', async function() {
+      const job = await jobModule.start({
+        userId: admin._id,
+        expireAfter: 3600
+      });
+      const found = await jobModule.db.findOne({ _id: job._id });
+
+      const actual = {
+        cancelRequested: found.cancelRequested,
+        startedAt: found.startedAt,
+        userId: found.userId,
+        expireAt: found.expireAt
+      };
+      const expected = {
+        cancelRequested: false,
+        startedAt: found.when,
+        userId: admin._id,
+        expireAt: new Date(found.when.getTime() + 3600 * 1000)
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('start: jobs carry no userId or expireAt unless requested', async function() {
+      const job = await jobModule.start({});
+      const found = await jobModule.db.findOne({ _id: job._id });
+
+      const actual = {
+        userId: found.userId,
+        expireAt: found.expireAt
+      };
+      const expected = {
+        userId: undefined,
+        expireAt: undefined
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('has a sparse TTL index on expireAt', async function() {
+      const indexes = await jobModule.db.indexes();
+      const index = indexes.find(index => index.key.expireAt === 1);
+
+      assert.equal(index && index.sparse, true);
+      // Database-level expiry: only MongoDB honors (and reports) the
+      // TTL option; other adapters accept and ignore it
+      if (testDbProtocol === 'mongodb') {
+        assert.equal(index.expireAfterSeconds, 0);
+      }
+    });
+
+    it('getOne: a job with userId is visible to its owner only', async function() {
+      const job = await jobModule.start({ userId: admin._id });
+      const route = `${jobModule.action}/${job._id}`;
+
+      const fetched = await apos.http.get(route, { jar });
+      assert.equal(fetched._id, job._id);
+
+      await assert.rejects(
+        apos.http.get(route, { jar: editorJar }),
+        { status: 404 }
+      );
+    });
+
+    it('getOne: a job without userId keeps the legacy access rule', async function() {
+      const job = await jobModule.start({});
+
+      const fetched = await apos.http.get(`${jobModule.action}/${job._id}`, {
+        jar: editorJar
+      });
+
+      assert.equal(fetched._id, job._id);
+    });
+
+    it('cancel route: the owner can request cancellation, others cannot', async function() {
+      const job = await jobModule.start({ userId: admin._id });
+      const route = `${jobModule.action}/${job._id}/cancel`;
+
+      await assert.rejects(
+        apos.http.post(route, {
+          jar: editorJar,
+          body: {}
+        }),
+        { status: 404 }
+      );
+
+      await apos.http.post(route, {
+        jar,
+        body: {}
+      });
+      const found = await jobModule.db.findOne({ _id: job._id });
+
+      assert.equal(found.cancelRequested, true);
+    });
+
+    it('requestCancel: has no effect on an ended job', async function() {
+      const job = await jobModule.start({});
+      await jobModule.end(job, true);
+
+      await jobModule.requestCancel(job._id);
+      const found = await jobModule.db.findOne({ _id: job._id });
+
+      const actual = {
+        cancelRequested: found.cancelRequested,
+        status: found.status
+      };
+      const expected = {
+        cancelRequested: false,
+        status: 'completed'
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('end: stamps endedAt and a cancelled status when cancellation was requested', async function() {
+      const job = await jobModule.start({});
+      await jobModule.requestCancel(job._id);
+
+      await jobModule.end(job, true, { partial: true });
+      const found = await jobModule.db.findOne({ _id: job._id });
+
+      const actual = {
+        status: found.status,
+        ended: found.ended,
+        results: found.results,
+        endedAt: found.endedAt instanceof Date
+      };
+      const expected = {
+        status: 'cancelled',
+        ended: true,
+        results: { partial: true },
+        endedAt: true
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('run: a cooperatively cancelled job ends cancelled with partial results', async function() {
+      const req = apos.task.getReq();
+
+      const { jobId } = await jobModule.run(req, async function(_req, reporting) {
+        reporting.setTotal(20);
+        for (let i = 0; i < 20; i++) {
+          if (await reporting.isCanceling()) {
+            reporting.setResults({ stoppedAt: i });
+            return;
+          }
+          reporting.success();
+          await delay(25);
+        }
+        reporting.setResults({ stoppedAt: null });
+      });
+      await jobModule.requestCancel(jobId);
+      const job = await waitForEnded(jobId);
+
+      const actual = {
+        status: job.status,
+        stoppedEarly: job.results.stoppedAt !== null && job.results.stoppedAt < 20
+      };
+      const expected = {
+        status: 'cancelled',
+        stoppedEarly: true
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('run: isCanceling reports true once the job record is gone', async function() {
+      const req = apos.task.getReq();
+      const observed = [];
+
+      const { jobId } = await jobModule.run(req, async function(_req, reporting) {
+        observed.push(await reporting.isCanceling());
+        await jobModule.db.deleteMany({ _id: jobId });
+        observed.push(await reporting.isCanceling());
+      });
+
+      // The record is deleted mid-run, so poll the observations instead
+      const deadline = Date.now() + 10000;
+      while (observed.length < 2) {
+        if (Date.now() > deadline) {
+          throw new Error('Timed out waiting for the run to observe both states');
+        }
+        await delay(25);
+      }
+
+      assert.deepEqual(observed, [ false, true ]);
+    });
+
+    it('run: records a failed status and the error payload when doTheWork throws', async function() {
+      const req = apos.task.getReq();
+      const originalError = apos.util.error;
+      apos.util.error = () => {};
+
+      try {
+        const { jobId } = await jobModule.run(req, async function() {
+          throw apos.error('invalid', 'boom', { reason: 'testing' });
+        });
+        const job = await waitForEnded(jobId);
+
+        const actual = {
+          status: job.status,
+          error: job.error
+        };
+        const expected = {
+          status: 'failed',
+          error: {
+            name: 'invalid',
+            message: 'boom',
+            data: { reason: 'testing' }
+          }
+        };
+
+        assert.deepEqual(actual, expected);
+      } finally {
+        apos.util.error = originalError;
+      }
+    });
+
+    it('run: notifications: false skips the legacy messages wiring', async function() {
+      const req = apos.task.getReq({
+        body: {
+          messages: {
+            progress: 'Opted out progress...',
+            completed: 'Opted out done.'
+          }
+        }
+      });
+
+      const { jobId } = await jobModule.run(req, async function(_req, reporting) {
+        reporting.setTotal(1);
+        reporting.success();
+      }, {
+        notifications: false
+      });
+      await waitForEnded(jobId);
+
+      const notifications = await apos.notification.db
+        .find({ message: /^Opted out/ })
+        .toArray();
+
+      assert.equal(notifications.length, 0);
+    });
   });
 
   function padInteger (i, places) {
@@ -401,7 +655,9 @@ describe('Job module', function() {
       bad
     } = await apos.http.get(job.route, { jar });
 
-    if (processed < total) {
+    // No total yet means the run's setTotal write has not landed:
+    // keep polling, or an early poll would read as already done
+    if (total === undefined || processed < total) {
       await delay(100);
 
       return await pollJob(job, { jar });
@@ -409,9 +665,42 @@ describe('Job module', function() {
       return {
         completed: processed,
         good,
-        bad
+        bad,
+        total
       };
     }
+  }
+
+  // The completion notification is written after the run's counters reach the
+  // total, so a poll that only waits for the counters can read ahead of it.
+  async function waitForNotifications(query, deadline = Date.now() + 10000) {
+    const notifications = await apos.notification.db.find(query).toArray();
+
+    if (!notifications.length) {
+      if (Date.now() > deadline) {
+        throw new Error(`Timed out waiting for notifications ${JSON.stringify(query)}`);
+      }
+      await delay(50);
+
+      return waitForNotifications(query, deadline);
+    }
+
+    return notifications;
+  }
+
+  async function waitForEnded(jobId, deadline = Date.now() + 10000) {
+    const job = await jobModule.db.findOne({ _id: jobId });
+
+    if (!job || !job.ended) {
+      if (Date.now() > deadline) {
+        throw new Error(`Timed out waiting for job ${jobId} to end`);
+      }
+      await delay(50);
+
+      return waitForEnded(jobId, deadline);
+    }
+
+    return job;
   }
 
   function delay(ms) {

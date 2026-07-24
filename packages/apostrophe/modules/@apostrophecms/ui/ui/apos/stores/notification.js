@@ -97,9 +97,13 @@ export const useNotificationStore = defineStore('notification', () => {
           })
         });
 
+        const incoming = res.notifications || [];
+        // Bus notifications are pure event carriers: emit their events
+        // and keep them out of the visible list
+        await emitBusEvents(incoming.filter((notif) => notif.bus));
         backendNotifs.value = [
           ...backendNotifs.value,
-          ...(res.notifications || [])
+          ...incoming.filter((notif) => !notif.bus)
         ];
         dismissed.value = [ ...dismissed.value, ...(res.dismissed || []) ];
         if (res.dismissed.length) {
@@ -119,6 +123,19 @@ export const useNotificationStore = defineStore('notification', () => {
       // eslint-disable-next-line no-console
       console.error(err);
       setTimeout(poll, 5000);
+    }
+
+    // Emit each bus notification's event, oldest first — clearEvent
+    // makes exactly one tab the emitter — then dismiss the carrier.
+    // An already-cleared event is dismissed without emitting
+    async function emitBusEvents(notifs) {
+      notifs.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1);
+      for (const notif of notifs) {
+        if (notif.event?.name && await clearEvent(notif._id)) {
+          apos.bus.$emit(notif.event.name, notif.event.data);
+        }
+        await dismiss(notif._id);
+      }
     }
   }
 
