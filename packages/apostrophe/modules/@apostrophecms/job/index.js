@@ -440,7 +440,7 @@ module.exports = {
       // comfortably above the longest expected run — this also cleans up
       // orphaned records whose process died before calling `end`. Jobs
       // without `expireAfter` are kept forever, as before.
-      async start(options) {
+      async start(options = {}) {
         const now = new Date();
         const job = {
           _id: self.apos.util.generateId(),
