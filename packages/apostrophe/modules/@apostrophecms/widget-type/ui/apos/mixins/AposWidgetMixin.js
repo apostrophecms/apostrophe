@@ -1,4 +1,3 @@
-import { klona } from 'klona';
 import props from '../composables/AposWidgetProps.js';
 import {
   _renderContent, _emitWidgetRendered, _getClasses
@@ -45,7 +44,6 @@ export default {
       if (this.active) {
         // Wait for the current render request to finish
         await this.active;
-        console.log('after the wait');
         if (renderId < this.renderId) {
           // Skip this render request, a newer one has shown up
           // in the meantime
@@ -54,7 +52,6 @@ export default {
       }
       // We didn't get skipped and it's our turn now
       this.active = (async () => {
-        console.log('starting');
         const result = await _renderContent(this.$props);
         this.active = false;
         if (renderId < this.lastShownRenderId) {
@@ -72,7 +69,6 @@ export default {
             _emitWidgetRendered(this.modelValue.aposLivePreview, { el: this.$el });
           });
         }
-        console.log('finished');
       })();
     }
   }
