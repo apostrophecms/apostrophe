@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.32.1-beta.1 (2026-07-26)
+
+### Fixes
+
+- Fixed `piecesFilters` navigation (with `static: true`) reverting to the unfiltered index when logged in and an editor had clicked Edit at least once. It now recognizes filter path segments appended to the context doc's URL and preserves both the browser URL and the correctly filtered content on refresh.
+- The `email` schema field now validates and stores the laundered value, so surrounding whitespace is trimmed rather than causing a valid address to be rejected as invalid. Non-string input (for example a number sent through the REST API) is now coerced by the launder step instead of throwing an uncaught error. Thanks to +[spokodev](https://github.com/spokodev) for the fix.
+- Widget preview rendering is now properly debounced in cases where the server does not return the first preview before
+  the timeout to generate a second preview arrives. Apostrophe will always wait for a previous render before attempting
+  a new one based on the latest data available. This greatly mitigates the performance impact on the server if a widget is particularly slow and
+  expensive to preview.
+- Reduced the size of the logged-in admin UI JavaScript bundle by roughly 200KB minified (about 90KB gzipped) with no change in behavior. Neither `lodash` nor `@paralleldrive/cuid2` is bundled into the admin UI any more; the few things the browser needed from them now come from small, dependency-free implementations in `apostrophe/lib/beneath.js`, which browser code imports explicitly.
+
 ## 4.32.0 (2026-07-10)
 
 ### Adds
