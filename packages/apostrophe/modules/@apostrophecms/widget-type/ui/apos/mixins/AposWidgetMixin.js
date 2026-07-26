@@ -35,7 +35,7 @@ export default {
     getClasses() {
       return _getClasses(this.modelValue, this.moduleOptions);
     },
-    // This method id fire-and-forget. It uses async internally to
+    // This method is fire-and-forget. It uses async internally to
     // debounce simultaneous async requests
     async renderContent() {
       this.renderId++;
