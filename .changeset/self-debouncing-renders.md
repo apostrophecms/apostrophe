@@ -1,5 +1,5 @@
 ---
-"@apostrophecms/apostrophe": patch
+"apostrophe": patch
 ---
 
 Widget preview rendering are now properly debounced in cases where the server does not return the first preview before
