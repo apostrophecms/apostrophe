@@ -15,17 +15,13 @@ module.exports = (self) => {
 
   return {
     // Parse and validate generate's `(stringOrOptions, options)`
-    // arguments, exactly as passed to it, into one canonical options
-    // object `{ system, messages, tools, maxSteps, schema,
+    // arguments into the canonical options object every later stage
+    // reads: `{ system, messages, tools, maxSteps, schema,
     // validateObject, effort, provider, model, reasoning, maxTokens,
-    // cache, signal, onMessage }` — the positional prompt string appended to
-    // `messages` as the final user turn, message content collapsed to
-    // content-part form, `tools` names resolved to their activated
-    // definitions, `maxSteps` defaulted from the module option, a
-    // structured-output `schema` validated as a JSON Schema and
-    // compiled into the `validateObject` backstop, `cache` defaulted
-    // to 'short', unset options left undefined. Unknown options are
-    // rejected as "invalid".
+    // cache, signal, onMessage }`, with a positional prompt string
+    // appended to `messages` as the final user turn, `tools` names
+    // resolved to their activated definitions and unset options left
+    // undefined.
     normalizeGenerateOptions(stringOrOptions, options) {
       let prompt = null;
       if (typeof stringOrOptions === 'string') {
@@ -116,8 +112,7 @@ module.exports = (self) => {
         onMessage
       };
 
-      // The tools option → the activated definitions it names; every
-      // name must be registered, each at most once
+      // The tools option → the activated definitions it names
       function toolDefinitions(names = []) {
         if (!Array.isArray(names)) {
           invalid('"tools" must be an array of registered tool names');
@@ -139,14 +134,13 @@ module.exports = (self) => {
         });
       }
 
-      // The schema option → `{ schema, validateObject }`, or empty
-      // when absent. A per-call JSON Schema with an object root (what
-      // providers require for structured output), compiled into the
-      // AJV backstop here so a malformed schema fails the call before
-      // any provider request. The compile is evicted from AJV's cache
-      // (a strong-referenced Map keyed by the schema object) so
-      // per-call schemas do not accumulate; the returned validator
-      // keeps working.
+      // The schema option → `{ schema, validateObject }`. An object
+      // root is what providers require for structured output; the AJV
+      // backstop is compiled here so a malformed schema fails the call
+      // before any provider request, then evicted from AJV's cache (a
+      // strong-referenced Map keyed by the schema object) so per-call
+      // schemas do not accumulate — the returned validator keeps
+      // working.
       function structuredSchema(schema) {
         if (schema === undefined) {
           return {};
@@ -168,18 +162,13 @@ module.exports = (self) => {
         };
       }
     },
-    // Validate and normalize an array of chat messages, as accepted
-    // by generate's `messages` option (undefined is an empty
-    // conversation). Returns a new array of { role, content } with
-    // `content` always an array of content parts: string content
-    // becomes a single text part. Roles are user, assistant and
-    // tool; each part type is valid in specific roles only — text
-    // and image in user or assistant messages, toolCall (a model's
-    // tool request) in assistant messages, toolResult (its answer)
-    // in tool messages — so a returned transcript round-trips and a
-    // hand-built one fails clearly. Messages are rebuilt from the
-    // recognized properties, so a stored transcript carrying app
-    // metadata round-trips.
+    // Validate and normalize generate's `messages` option into a new
+    // array of { role, content }, `content` always an array of content
+    // parts and a string collapsed to a single text part. Each part
+    // type is valid in specific roles only, so a returned transcript
+    // round-trips and a hand-built one fails clearly; messages are
+    // rebuilt from the recognized properties, so one carrying app
+    // metadata round-trips too.
     normalizeMessages(messages = []) {
       if (!Array.isArray(messages)) {
         invalid('"messages" must be an array');
@@ -198,10 +187,8 @@ module.exports = (self) => {
         };
       });
 
-      // One message's content → validated content-part array, rebuilt
-      // so extra properties never travel. A plain string is shorthand
-      // for a single text part. Every part type is checked against
-      // the message's role.
+      // One message's content → its validated content-part array, each
+      // part checked against the message's role
       function contentParts(content, name, role) {
         if (typeof content === 'string') {
           content = [ {
@@ -288,15 +275,13 @@ module.exports = (self) => {
       }
     },
     // Parse and validate generateImage's `(prompt, options)` arguments
-    // into one canonical options object `{ prompt, count, aspect,
+    // into the canonical options object `{ prompt, count, aspect,
     // quality, images, provider, model, signal }`. `prompt` is the
-    // required instruction — the subject to generate, or the edit to
-    // apply when `images` are present. Unknown options are rejected as
-    // "invalid"; `aspect` is checked as a recognized dial here (a named
-    // token or a 'W:H' ratio) but resolved against the routed model's
-    // declared aspects later, at call time. Unset options are left
-    // undefined so the image request omits them and the provider's own
-    // default applies.
+    // subject to generate, or the edit to apply when `images` are
+    // present. `aspect` is only checked as a recognized dial here — it
+    // resolves against the routed model's declared aspects at call
+    // time. Unset options are left undefined so the image request omits
+    // them and the provider's own default applies.
     normalizeImageOptions(prompt, options) {
       if (typeof prompt !== 'string' || !prompt) {
         invalid('the image prompt must be a non-empty string');
@@ -320,8 +305,7 @@ module.exports = (self) => {
         if (typeof aspect !== 'string') {
           invalid('"aspect" must be a string');
         }
-        // Reject a malformed dial now; the nearest-match resolution
-        // against the routed model happens at call time
+        // Called for its rejection alone
         self.canonicalAspect(aspect);
       }
       if (quality !== undefined && !QUALITIES.includes(quality)) {
@@ -353,10 +337,9 @@ module.exports = (self) => {
       };
 
       // The images option → normalized source refs, or undefined when
-      // absent (a plain text→image generation). Its presence is what
-      // makes the call an edit. Each source is a public url or
-      // inline base64 data with its media type — the same two shapes an
-      // image content part accepts (normalizeMessages).
+      // absent. Each source is a public url or inline base64 data with
+      // its media type — the same two shapes an image content part
+      // accepts (normalizeMessages).
       function imageSources(sources) {
         if (sources === undefined) {
           return undefined;

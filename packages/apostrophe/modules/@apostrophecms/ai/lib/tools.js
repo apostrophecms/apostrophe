@@ -6,28 +6,21 @@ const { isObject } = require('./util');
 
 module.exports = (self) => {
   return {
-    // Execute one model-requested tool call `call`, a toolCall
-    // content part { id, name, input }, against `tool`, its
-    // activated registry definition (getTool). Returns the
-    // handler's result converted through the tool's schema — every
-    // declared field present in normalized form — ready to be
-    // serialized for the model.
+    // Execute one model-requested tool call — a toolCall content part —
+    // against `tool`, its activated registry definition (getTool),
+    // returning the handler's result converted through the tool's
+    // schema, ready to be serialized for the model.
     //
-    // The model's input is validated against the tool's `input`
-    // schema first; invalid arguments never reach the handler — they
-    // throw 'aiToolError', the recoverable code, so the loop can
-    // feed the validation message back to the model. The handler
-    // runs with the caller's `req` and a copy of the validated
-    // arguments; `context` is written to `args._context` after
-    // validation, so a model-provided property can never pose as
-    // core injection.
-    //
-    // A handler throw passes through untouched: recovery is decided
-    // elsewhere, by the error code alone. A handler result the
-    // schema rejects is a handler bug, not model misbehaviour: it
-    // throws 'invalid' naming the tool — a standard code breaks the
-    // AI chain, no retries, no further AI work — and no detail of it
-    // is ever fed back to the model.
+    // Invalid arguments never reach the handler: they throw
+    // 'aiToolError', the recoverable code, so the loop can feed the
+    // validation message back to the model. `context` is written to
+    // `args._context` after validation, so a model-provided property
+    // can never pose as core injection. A handler throw passes through
+    // untouched — recovery is decided elsewhere, by the error code
+    // alone. A result the schema rejects is a handler bug, not model
+    // misbehaviour: it throws 'invalid', a standard code that breaks
+    // the AI chain with no retries, and no detail of it is ever fed
+    // back to the model.
     async executeToolCall(req, tool, call, context = {}) {
       if (!tool.validateArgs(call.input)) {
         throw self.apos.error('aiToolError', `invalid arguments for tool "${tool.name}": ${self.ajv.errorsText(tool.validateArgs.errors, { dataVar: 'arguments' })}`);
@@ -62,29 +55,26 @@ module.exports = (self) => {
     // parts of a single assistant turn — against `tools`, the call's
     // selected definitions as a Map by name. Reads run first, in
     // parallel; writes follow serially, in the order the model
-    // requested them; `context` reaches every handler as
-    // `args._context`, extended with `depth` — 1 inside a top-level
-    // call's batch, deeper inside a subagent's. Handlers run on a
-    // clone of the caller's req stamped with that depth
-    // (`aposAiDepth`) — an immutable property of the request each
-    // handler received, never shared mutable state — so a generate
-    // call a handler makes with its own req knows it is nested, even
-    // delayed or from a stashed reference, while the caller's
-    // original req is untouched and concurrent calls sharing it are
-    // unaffected. Every batch is stamped, not only agent tools, so a
-    // handler that spawns without declaring `access: 'agent'` is
+    // requested them. Returns outcomes in model order regardless of
+    // scheduling: { toolCall, result } per success, { toolCall, error }
+    // per recoverable failure — a call naming a tool outside the
+    // selected set, invalid arguments, or a handler's aiToolError. The
+    // error message is what the model reads back, and siblings are
+    // unaffected. Any other throw is a hard stop: it propagates
+    // immediately, before any write runs when thrown by a read,
+    // aborting the remaining writes when thrown by one — and no trace
+    // of it is ever model-bound.
+    //
+    // Handlers run on a clone of the caller's req stamped with the
+    // batch's depth (`aposAiDepth`) — an immutable property of the
+    // request each handler received, never shared mutable state — so a
+    // generate call a handler makes with its own req knows it is
+    // nested, even delayed or from a stashed reference, while the
+    // caller's original req is untouched and concurrent calls sharing
+    // it are unaffected. Every batch is stamped, not only agent tools,
+    // so a handler that spawns without declaring `access: 'agent'` is
     // contained all the same; `_context.depth` is the informational
-    // copy a handler may act on. Returns outcomes in model order
-    // regardless of
-    // scheduling: { toolCall, result } per success, { toolCall,
-    // error } per recoverable failure — a call naming a tool outside
-    // the selected set, invalid arguments, or a handler's
-    // aiToolError; the error message is what the model reads back,
-    // and siblings are unaffected. Any other throw is a hard stop:
-    // it propagates immediately, before any write runs when thrown
-    // by a read, aborting the remaining writes when thrown by one —
-    // and no trace of it is ever model-bound. Emits beforeToolCall
-    // and afterToolCall around each execution.
+    // copy a handler may act on.
     async executeToolCalls(req, tools, calls, context = {}) {
       const outcomes = new Array(calls.length);
       const depth = (req.aposAiDepth || 0) + 1;
@@ -115,9 +105,8 @@ module.exports = (self) => {
       }
       return outcomes;
 
-      // One requested call: hand it to its tool and record the outcome at
-      // its model-order index, whichever schedule ran it. A recoverable
-      // failure is recorded as the message the model reads back.
+      // One requested call: hand it to its tool and record the outcome
+      // at its model-order index, whichever schedule ran it
       async function run(call, index) {
         const tool = tools.get(call.name);
         if (!tool) {

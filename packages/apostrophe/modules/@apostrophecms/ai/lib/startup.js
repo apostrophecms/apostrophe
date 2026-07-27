@@ -14,11 +14,10 @@ module.exports = (self) => {
   return {
     // Activate every configured provider entry: instantiate the adapter
     // it names with the entry's config, validate it, merge the entry's
-    // service description (models, effort rows, capabilities) over the
-    // adapter's declared data, then build the effort routing table.
-    // Misconfigurations fail the startup. An entry's key prefers the
-    // environment: the variable named by its envKey (the entry's own
-    // over the adapter's default) overrides the configured apiKey.
+    // service description over the adapter's declared data, then build
+    // the effort routing table. An entry's key prefers the environment:
+    // the variable named by its envKey (the entry's own over the
+    // adapter's default) overrides the configured apiKey.
     async activateProviders() {
       const {
         providers = {}, effort = {}, image
@@ -115,15 +114,12 @@ module.exports = (self) => {
     },
     // Validate every registered tool definition (the shape is
     // documented on addTool) and replace it in the registry with its
-    // activated canonical form: label and access defaulted, `input`
-    // compiled into the `validateArgs` argument validator, `schema`
-    // composed to the array form apos.schema.convert consumes, and
-    // `handler` always a callable — a 'moduleName:methodName'
-    // reference is resolved here, which is why activation waits for
-    // "apostrophe:ready": every module's init has run by then, so
-    // references resolve and overrides are settled regardless of
-    // registration order. A bad definition fails the startup. The
-    // registry is frozen afterwards.
+    // activated canonical form, `handler` always a callable. A
+    // 'moduleName:methodName' reference is resolved here, which is why
+    // activation waits for "apostrophe:ready": every module's init has
+    // run by then, so references resolve and overrides are settled
+    // regardless of registration order. The registry is frozen
+    // afterwards.
     activateTools() {
       for (const [ name, tool ] of Object.entries(self.tools)) {
         self.tools[name] = activate(tool, `tool "${name}"`);
@@ -195,9 +191,8 @@ module.exports = (self) => {
         };
       }
 
-      // The handler option → the callable the loop runs: an inline
-      // function as given, a 'moduleName:methodName' reference
-      // resolved against the named module
+      // The handler option → the callable the loop runs, resolving a
+      // 'moduleName:methodName' reference against the named module
       function resolveHandler(value, name) {
         if (typeof value === 'function') {
           return value;
@@ -224,9 +219,8 @@ module.exports = (self) => {
     },
     // Fail startup when a model's declared image `aspects` are
     // malformed. resolveAspect (aspect.js) trusts these to be
-    // well-formed 'W:H' strings at call time, so a bad declaration —
-    // from an adapter or a provider entry — is caught here, once, with
-    // a clear message, rather than surfacing as a caller-facing error
+    // well-formed 'W:H' strings at call time, so a bad declaration is
+    // caught here, once, rather than surfacing as a caller-facing error
     // on a real call.
     validateAspects(providerName, models) {
       for (const [ model, meta ] of Object.entries(models)) {
@@ -258,10 +252,10 @@ module.exports = (self) => {
       }
       return models;
     },
-    // Validate the shape of the module options, throwing a clear error
-    // naming the offending entry. Checks that need the adapter registry
-    // (unknown adapters, dangling routing references, effort levels with
-    // no row) happen later, at activation.
+    // Validate the shape of the module options, naming the offending
+    // entry. Checks that need the adapter registry (unknown adapters,
+    // dangling routing references, effort levels with no row) happen
+    // later, at activation.
     validateOptions(options) {
       function checkString(value, name) {
         if (value !== undefined && typeof value !== 'string') {
@@ -364,8 +358,8 @@ module.exports = (self) => {
           fail('"image.quality" must be "low", "medium" or "high"');
         }
         // Inline model metadata on the routing entry participates in
-        // aspect resolution (metadata merge), so it gets the same
-        // startup vetting as a declared model's
+        // aspect resolution, so it gets the same startup vetting as a
+        // declared model's
         if (image.aspects !== undefined && (
           !Array.isArray(image.aspects) || !image.aspects.length ||
           image.aspects.some((aspect) => !parseAspect(aspect))

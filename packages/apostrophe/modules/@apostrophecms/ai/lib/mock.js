@@ -14,20 +14,13 @@ function tokens(text) {
 module.exports = (self) => {
   return {
     // The built-in mock standing in for every adapter chat under
-    // APOS_AI_MOCK. Consults the "mock" option first when the module
-    // has one — called (req, request), req-first like every AI
-    // surface, so a mock can answer per current user: it may return
-    // a complete assistant turn, a { text } shorthand filled out
-    // into one, or undefined to fall through to the deterministic
-    // default. That default is request-aware: for a
-    // structured request (`request.schema`) it synthesizes a
-    // schema-conforming object and returns it on the turn's `object`,
-    // as a real adapter would — the pipeline backstop-validates
-    // it like a real one — otherwise canned text echoing the
-    // conversation's final message; usage is estimated from the text
-    // sizes. Runs inside the same retry and validation seam as a real
-    // adapter call, so a mock that throws normalized codes exercises
-    // the real error paths.
+    // APOS_AI_MOCK. The "mock" option is consulted first when the
+    // module has one, called (req, request) — req-first like every AI
+    // surface, so a mock can answer per current user — and may return a
+    // complete assistant turn, a { text } shorthand, or undefined to
+    // fall through to the deterministic default. Runs inside the same
+    // retry and validation seam as a real adapter call, so a mock that
+    // throws normalized codes exercises the real error paths.
     async mockChat(req, request) {
       const custom = self.options.mock
         ? await self.options.mock(req, request)
@@ -51,12 +44,10 @@ module.exports = (self) => {
         '"mock" must return an assistant turn, a { text } object or undefined'
       );
 
-      // A canned assistant turn. `text` is the answer's text; a
-      // structured call passes the synthesized `object` too, which
-      // rides the turn. The text stays in the content — for a
-      // structured turn it is the object's JSON, so the transcript's
-      // assistant message is non-empty and re-normalizes on resume,
-      // as a real provider's structured answer would.
+      // A canned assistant turn. For a structured call the text is the
+      // synthesized object's JSON, so the transcript's assistant
+      // message is non-empty and re-normalizes on resume, as a real
+      // provider's structured answer would.
       function turn(text, object) {
         const input = [
           request.system,
@@ -82,9 +73,7 @@ module.exports = (self) => {
           .join(' ');
       }
       // A deterministic value conforming to `schema`, enough to pass
-      // the structured-output backstop: `const`/`enum` honored, every
-      // declared property of an object filled, arrays sized to
-      // minItems, the simplest in-range value for a scalar
+      // the structured-output backstop
       function sample(schema) {
         if (!isObject(schema)) {
           return null;
@@ -123,18 +112,13 @@ module.exports = (self) => {
         return 'x'.repeat(min);
       }
     },
-    // The built-in mock standing in for every adapter image call
-    // under APOS_AI_MOCK. Consults the "mockImage" option first when
-    // the module has one — called (req, request), req-first like
-    // every AI surface, so a mock can answer per current user: it
-    // may return a complete adapter image result ({ images, model?,
-    // usage?, size? }), an images array shorthand filled out into
-    // one, or undefined to fall through to the deterministic
-    // default — `count` copies of a placeholder pixel, no network
-    // or keys. Filled-in usage is the chat mock's
-    // text ballpark for the prompt plus a flat per-image output, the
-    // order images bill at. Runs inside the same retry and
-    // validation seam as a real call.
+    // The built-in mock standing in for every adapter image call under
+    // APOS_AI_MOCK, scriptable through the "mockImage" option exactly
+    // as mockChat is through "mock": a complete adapter image result,
+    // an images array shorthand, or undefined for the deterministic
+    // default of `count` placeholder pixels. Filled-in usage is the
+    // chat mock's text ballpark for the prompt plus a flat per-image
+    // output, the order images bill at.
     async mockImage(req, request) {
       const custom = self.options.mockImage
         ? await self.options.mockImage(req, request)
@@ -156,8 +140,7 @@ module.exports = (self) => {
         '"mockImage" must return an image result, an images array or undefined'
       );
 
-      // The adapter return shape around `images`, with the model and
-      // a plausible usage supplied
+      // The adapter return shape around `images`, with a plausible usage
       function result(images) {
         return {
           images,
@@ -187,8 +170,8 @@ module.exports = (self) => {
       };
     },
     // The mock adapter's error normalization: errors pass through
-    // untouched, so a mock throwing normalized codes exercises the
-    // real error paths
+    // untouched, which is what lets a mock exercise the real error
+    // paths by throwing normalized codes
     mockNormalizeError(error) {
       return error;
     }

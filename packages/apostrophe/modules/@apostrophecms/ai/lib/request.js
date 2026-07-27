@@ -7,12 +7,11 @@ module.exports = (self) => {
     throw self.apos.error('invalid', message);
   }
 
-  // The adapter request literal, from `options` — a canonical options
-  // object as produced by normalizeGenerateOptions (normalize.js) —
-  // and `info`, the resolved routing it is sent with: { provider,
-  // model, reasoning?, maxOutputTokens? } as modelInfo reports it.
-  // Optional fields appear only when they resolved to a value, so an
-  // unset dial leaves the provider's own default in place.
+  // The adapter request literal, from a canonical options object
+  // (normalizeGenerateOptions in normalize.js) and `info`, the resolved
+  // routing it is sent with as modelInfo reports it. Optional fields
+  // appear only when they resolved to a value, so an unset dial leaves
+  // the provider's own default in place.
   function assembleRequest(options, info) {
     const maxTokens = options.maxTokens ?? info.maxOutputTokens;
     return {
@@ -35,10 +34,9 @@ module.exports = (self) => {
 
   return {
     // Resolve a call's routing options to a concrete routing entry,
-    // with the same precedence generate will use: explicit
-    // provider+model, else the call's effort level, else the default
-    // level. Throws "invalid" on unresolvable calls; unknown models
-    // are not an error.
+    // with the same precedence generate uses: explicit provider+model,
+    // else the call's effort level, else the default level. Unknown
+    // models are deliberately not an error — the call would work.
     //
     // Options:
     // `provider`, `model` (strings, only together): the explicit
@@ -86,28 +84,22 @@ module.exports = (self) => {
         ...(reasoning !== undefined && { reasoning })
       };
     },
-    // Throw "invalid" when the configured provider named by
-    // `provider` does not declare `capability` (a key of the
-    // capabilities map, e.g. 'text'). A call needing a capability the
-    // routed provider lacks is a clear error, never a silent
-    // re-route.
+    // Throw "invalid" when the configured provider named by `provider`
+    // does not declare `capability`. A call needing a capability the
+    // routed provider lacks is a clear error, never a silent re-route.
     checkCapability(provider, capability) {
       if (!self.providers[provider]?.capabilities?.[capability]) {
         invalid(`provider "${provider}" does not declare the "${capability}" capability`);
       }
     },
-    // Assemble the normalized adapter request from `options`, a
-    // canonical object as produced by normalizeGenerateOptions
-    // (normalize.js): resolve routing, default maxTokens to the model's
-    // declared output ceiling when it is known, translate the cache
-    // level to the { ttl } policy. Returns { provider, request }: the
-    // resolved provider name and the request handed to its adapter —
-    // { system?, messages, tools?, schema?, model, maxTokens?,
-    // reasoning?, cache: false | { ttl }, signal? }, optional fields
-    // present only when they resolved to a value. Request tools carry
-    // only { name, description, input } — handlers and result schemas
-    // never reach an adapter; a structured-output `schema` (JSON
-    // Schema) passes through for the adapter to place on its
+    // The routed adapter request for a canonical options object
+    // (normalizeGenerateOptions in normalize.js). Returns
+    // { provider, request }: the resolved provider name and the request
+    // handed to its adapter — { system?, messages, tools?, schema?,
+    // model, maxTokens?, reasoning?, cache: false | { ttl }, signal? }.
+    // Request tools carry only { name, description, input }: handlers
+    // and result schemas never reach an adapter. A structured-output
+    // `schema` passes through for the adapter to place on its
     // provider's native structured mode.
     buildRequest(options) {
       return assembleRequest(options, self.modelInfo({
@@ -117,11 +109,10 @@ module.exports = (self) => {
         reasoning: options.reasoning
       }));
     },
-    // Assemble the adapter request without routing, for mock mode
-    // with no providers configured. Same input and return shape as
-    // buildRequest, with the call's explicit provider and model when
-    // given and "mock" placeholders otherwise; no model metadata
-    // exists here, so maxTokens appears only when the call sets it.
+    // The same request without routing, for mock mode with no providers
+    // configured: the call's explicit provider and model when given,
+    // "mock" placeholders otherwise. No model metadata exists here, so
+    // maxTokens appears only when the call sets it.
     buildMockRequest(options) {
       return assembleRequest(options, {
         provider: options.provider ?? 'mock',
@@ -139,19 +130,9 @@ module.exports = (self) => {
         input: tool.input
       }));
     },
-    // Build generate's unified return object from `context` (the
-    // event payload carrying the provider name and the live request,
-    // whose messages already include every appended turn), `turn`
-    // (the final validated adapter response) and the loop's
-    // accumulations: executed `steps`, `usage` aggregated across
-    // every model turn, the `pending` tool calls when the step
-    // budget cut the loop, the validated structured `object` when the
-    // call passed a `schema`, and whether the call had tools at all
-    // (`steps` appears only then). Returns { text, messages,
-    // finishReason, usage, model, provider } plus `object`, `steps`
-    // and `toolCalls` as described on generate; which fields are
-    // populated tells the caller what happened. The transcript is
-    // resumable as the next call's `messages`.
+    // Build generate's unified return object. Which fields are
+    // populated is what tells the caller what happened; the transcript
+    // is resumable as the next call's `messages`.
     assembleResult(context, turn, {
       steps, usage, pending, object, hadTools, finishReason
     }) {

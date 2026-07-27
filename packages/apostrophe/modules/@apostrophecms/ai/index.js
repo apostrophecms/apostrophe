@@ -398,13 +398,10 @@ module.exports = {
               const answer = self.validateTurn(
                 await record.adapter.chat(req, context.request)
               );
-              // The adapter placed the final answer on `answer.object`;
-              // backstop-validate it here so a malformed one travels the
-              // same retry path as the turn. Only a 'stop' turn is the
-              // answer: tool turns run the loop with their own validation,
-              // a refusal surfaces as aiRefusal below, and a 'length'
-              // turn returns as-is — no object, the finish reason tells
-              // the caller why
+              // Only a 'stop' turn is the answer: tool turns run the loop
+              // with their own validation, a refusal surfaces as aiRefusal
+              // below, and a 'length' turn returns as-is — no object, the
+              // finish reason tells the caller why
               if (canonical.schema && answer.finishReason === 'stop') {
                 self.validateStructured(answer, canonical.validateObject);
               }

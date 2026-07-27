@@ -7,51 +7,37 @@ const { FINISH_REASONS } = require('./constants');
 const { isObject, isAbort } = require('./util');
 
 module.exports = (self) => {
-  // A response that broke its contract: `what` names the shape, `detail`
-  // says what was wrong. The transient code sends the call back down the
-  // retry path.
+  // A response that broke its contract. The transient code sends the
+  // call back down the retry path.
   function malformed(what, detail) {
     throw self.apos.error('aiRetry', `malformed ${what}: ${detail}`);
   }
 
   return {
-    // Run one adapter call with retries. `req` is the caller's
-    // request, enriching the failure records; `record` is an
-    // activated entry of `self.providers` (supplies the adapter and
-    // its normalizeError); `request` is the normalized adapter
-    // request, read only for record context; `call` is an async thunk
-    // performing a single adapter call and validating its response.
-    // Resolves with the thunk's value; throws normalized apos errors
-    // — every throw is routed through the adapter's required
-    // normalizeError, the core reacts on codes only, and only the
-    // transient code is retried, waiting per retryDelay under the
-    // retryAttempts and retryMaxElapsed budgets. `call` is retried
-    // whole, so response validation belongs inside it: a truncated
-    // body must travel the same retry path.
+    // Run one adapter call with retries, resolving with the value of
+    // `call`, an async thunk performing a single adapter call and
+    // validating its response. `call` is retried whole, so response
+    // validation belongs inside it: a truncated body must travel the
+    // same retry path. Every throw is routed through the adapter's
+    // required normalizeError, and only the transient code is retried —
+    // the core reacts on codes alone — under the retryAttempts and
+    // retryMaxElapsed budgets.
     //
-    // A normalized error may carry hints in `error.data`, the only
-    // properties the engine reads — all optional, attached by the
-    // adapter's normalizeError:
-    // `status` (integer): the provider's HTTP status code;
-    // `kind` (string, on the transient code): which transient
-    //   failure this is — 'rateLimit', 'overload', 'timeout' or
-    //   'network';
-    // `retryAfter` (number, in SECONDS): the provider's Retry-After;
-    //   replaces the computed backoff delay (see retryDelay);
-    // `requestId` (string): the provider's request id, for support.
-    // Hints shape the delay and the records, never the routing: the
-    // error's code alone decides retry versus stop. All of these
-    // are written to the failure and retry log records — treat
-    // `error.data` as log-bound and never put sensitive data (keys,
-    // credentials, personal data) in it.
+    // A normalized error's `error.data` carries the only adapter hints
+    // the engine reads, all optional: `status` (the provider's HTTP
+    // status code), `kind` ('rateLimit', 'overload', 'timeout' or
+    // 'network', on the transient code), `retryAfter` (in SECONDS,
+    // replacing the computed backoff delay) and `requestId` (for
+    // support). They shape the delay and the records, never the
+    // routing: the error's code alone decides retry versus stop. All of
+    // them are written to the log records, so treat `error.data` as
+    // log-bound and never put keys, credentials or personal data in it.
     //
     // Every failure and every retry decision emits one structured log
-    // record: type `retry` (warn) when the call will be retried, type
-    // `failure` (error) when it stops, with { provider, model, code,
-    // status, kind, requestId, retryAfter, attempt, elapsed, action,
-    // reason?, delay? } — enough to tell a rate limit from an
-    // overload, a timeout or bad config from the one record. A
-    // `failure` record also carries the stack of the original throw.
+    // record — type `retry` (warn) or `failure` (error, also carrying
+    // the stack of the original throw) — with enough context to tell a
+    // rate limit from an overload, a timeout or bad config from the one
+    // record.
     async callAdapter(req, record, request, call) {
       const started = Date.now();
       for (let attempt = 1; ; attempt++) {
@@ -117,11 +103,9 @@ module.exports = (self) => {
       }
     },
     // The wait in milliseconds before the attempt following `attempt`
-    // (1-based), after the normalized transient failure `error`: the
-    // provider's Retry-After (seconds, in the error's
-    // `data.retryAfter`) when it sent one, else exponential backoff
-    // with jitter — retryBaseDelay * 2^(attempt - 1), scaled by a
-    // random factor in [1, 2) so synchronized clients spread out.
+    // (1-based): the provider's Retry-After when it sent one, else
+    // exponential backoff scaled by a random factor in [1, 2) so
+    // synchronized clients spread out.
     retryDelay(attempt, error) {
       const retryAfter = error.data?.retryAfter;
       if (Number.isFinite(retryAfter) && retryAfter >= 0) {
@@ -130,17 +114,16 @@ module.exports = (self) => {
       const curve = self.options.retryBaseDelay * Math.pow(2, attempt - 1);
       return Math.floor(curve * (1 + Math.random()));
     },
-    // Wait `ms` before the next attempt; a separate method so tests
-    // can observe or skip real waiting
+    // A method rather than a plain function so tests can substitute it
+    // and skip the real waiting
     pause(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
-    // Enforce the assistant-turn contract on `turn`, an adapter chat
-    // response { content, finishReason, usage, model? }, and return
-    // it unchanged. A missing or unknown finishReason, or malformed
-    // content or usage, is a truncated or malformed response: it
-    // throws the transient code so the call travels the retry path —
-    // never a shorter-than-intended "success".
+    // Enforce the assistant-turn contract on an adapter chat response
+    // ({ content, finishReason, usage, model? }) and return it
+    // unchanged. A truncated or malformed response throws the transient
+    // code so the call travels the retry path — never a
+    // shorter-than-intended "success".
     validateTurn(turn) {
       if (!isObject(turn)) {
         malformed('assistant turn', 'not an object');
@@ -176,11 +159,10 @@ module.exports = (self) => {
       }
       return turn;
     },
-    // Enforce the adapter image contract on `result` ({ images,
-    // model?, usage?, size? }) and return it unchanged. A missing or
-    // empty image list, or a malformed image, is a malformed
-    // response: it throws the transient code so the call travels
-    // the retry path — a model whim never returns an empty success.
+    // Enforce the adapter image contract on an image result
+    // ({ images, model?, usage?, size? }) and return it unchanged. A
+    // missing, empty or malformed image list travels the retry path
+    // too: a model whim never returns an empty success.
     validateImageResult(result) {
       if (!isObject(result)) {
         malformed('image result', 'not an object');
@@ -200,16 +182,13 @@ module.exports = (self) => {
       return result;
     },
     // The anti-hallucination backstop for structured output. The
-    // adapter has already extracted the final answer into `turn.object`
-    // from its provider's structured mode (an adapter concern,
-    // since only the dialect knows where the object lives); this
-    // validates it against `validate`, the compiled validator for the
-    // call's `schema` (normalizeGenerateOptions in normalize.js). The
-    // provider's native mode does the real work — this only catches a
-    // stray non-conforming or missing response. A missing object or a
-    // schema mismatch is a malformed model response: like a malformed
-    // turn it throws the transient code so the call travels the retry
-    // path.
+    // adapter has already extracted the final answer onto `turn.object`
+    // from its provider's structured mode — only the dialect knows
+    // where the object lives — and that native mode does the real work,
+    // so this only catches a stray missing or non-conforming response,
+    // on the retry path like a malformed turn. `validate` is the
+    // compiled validator for the call's `schema`
+    // (normalizeGenerateOptions in normalize.js).
     validateStructured(turn, validate) {
       if (turn.object === undefined) {
         throw self.apos.error('aiRetry', 'the provider returned no structured output');
