@@ -204,11 +204,12 @@ module.exports = (self) => {
     // from its provider's structured mode (an adapter concern,
     // since only the dialect knows where the object lives); this
     // validates it against `validate`, the compiled validator for the
-    // call's `schema` (normalizeGenerateOptions). The provider's
-    // native mode does the real work — this only catches a stray
-    // non-conforming or missing response. A missing object or a schema
-    // mismatch is a malformed model response: like a malformed turn it
-    // throws the transient code so the call travels the retry path.
+    // call's `schema` (normalizeGenerateOptions in normalize.js). The
+    // provider's native mode does the real work — this only catches a
+    // stray non-conforming or missing response. A missing object or a
+    // schema mismatch is a malformed model response: like a malformed
+    // turn it throws the transient code so the call travels the retry
+    // path.
     validateStructured(turn, validate) {
       if (turn.object === undefined) {
         throw self.apos.error('aiRetry', 'the provider returned no structured output');

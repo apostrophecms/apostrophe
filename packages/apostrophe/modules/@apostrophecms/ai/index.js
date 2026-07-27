@@ -47,8 +47,9 @@ module.exports = {
     self.providers = {};
     self.effortTable = {};
     self.tools = {};
-    // getTools query caches, built once at activation — the registry
-    // is static, contains "references" so no memory waste.
+    // getTools query caches, built once at activation: the registry is
+    // static, so they never go stale, and they hold the same
+    // definition objects it does, not copies.
     self.toolList = [];
     self.toolsByTag = new Map();
     // Flips once activateTools has validated the registry; the
@@ -111,7 +112,8 @@ module.exports = {
       // through a call — and the registry is frozen once activated on
       // "apostrophe:ready", so registering later fails. Only the name
       // is checked here; everything else is validated at activation,
-      // failing the startup on any problem (see activateTools).
+      // failing the startup on any problem (see activateTools in
+      // lib/startup.js).
       //
       // The definition properties:
       //
@@ -197,12 +199,12 @@ module.exports = {
       },
       // Synchronous introspection: the model a call with these options
       // would hit and what it offers. Accepts the same options as
-      // `resolve` and resolves exactly like a call would, including
-      // its "invalid" errors — a call that cannot resolve here would
-      // fail the same way for real. An unknown model is different: the
-      // call would work, so it yields undefined limits, never an error.
-      // Check `self.active` first to ask whether AI is configured at
-      // all.
+      // `resolve` (lib/request.js) and resolves exactly like a call
+      // would, including its "invalid" errors — a call that cannot
+      // resolve here would fail the same way for real. An unknown model
+      // is different: the call would work, so it yields undefined
+      // limits, never an error. Check `self.active` first to ask
+      // whether AI is configured at all.
       //
       // Returns `{ provider, model, reasoning?, contextWindow,
       // maxOutputTokens, capabilities }`, plus the model's declared
@@ -259,8 +261,8 @@ module.exports = {
       // `system` (string): the system prompt — a top-level option,
       //   never a message;
       // `messages` (array): the conversation so far, each entry
-      //   { role, content } as normalizeMessages accepts — including a
-      //   transcript a previous call returned;
+      //   { role, content } as normalizeMessages (lib/normalize.js)
+      //   accepts — including a transcript a previous call returned;
       // `tools` (array of registered tool names): what the model may
       //   call — see addTool. The loop validates the model's
       //   arguments, executes the handlers by their `access`
@@ -342,12 +344,12 @@ module.exports = {
       async generate(req, stringOrOptions, options) {
         const canonical = self.normalizeGenerateOptions(stringOrOptions, options);
         // Tool handlers receive a req clone stamped with their depth
-        // (executeToolCalls). One level of nesting is allowed: a
-        // handler may run a subagent, whose own tools may not generate
-        // further, whatever they carry. At the allowed level, agent
-        // tools are dropped rather than rejected — a toolset needs no
-        // curating per depth — so a subagent simply cannot spawn
-        // subagents.
+        // (executeToolCalls in lib/tools.js). One level of nesting is
+        // allowed: a handler may run a subagent, whose own tools may
+        // not generate further, whatever they carry. At the allowed
+        // level, agent tools are dropped rather than rejected — a
+        // toolset needs no curating per depth — so a subagent simply
+        // cannot spawn subagents.
         const depth = req.aposAiDepth || 0;
         if (depth > self.allowedDepth) {
           throw self.apos.error('invalid', 'AI generation is limited to one level of nesting: the tools of a subagent cannot generate');
@@ -495,9 +497,9 @@ module.exports = {
       // `count` (positive integer, default 1): how many images;
       // `aspect` ('square' | 'portrait' | 'landscape', or a 'W:H'
       //   ratio): the shape dial, resolved to the nearest aspect the
-      //   routed model declares (resolveAspect); the adapter
-      //   translates the resolved ratio to its dialect. Omitted ⇒ not
-      //   sent, the provider default applies;
+      //   routed model declares (resolveAspect in lib/aspect.js); the
+      //   adapter translates the resolved ratio to its dialect.
+      //   Omitted ⇒ not sent, the provider default applies;
       // `quality` ('low' | 'medium' | 'high'): the spend dial, mapped
       //   to the provider's native knob; providers without one ignore
       //   it. Omitted ⇒ not sent;
@@ -524,7 +526,7 @@ module.exports = {
       // pixels. Throws the same normalized codes as generate, with
       // the same retries, log records and mock behavior (placeholder
       // images, no network — scriptable via the `mockImage` option,
-      // see mockImage). Emits `beforeGenerateImage` and
+      // see mockImage in lib/mock.js). Emits `beforeGenerateImage` and
       // `afterGenerateImage` around the call, sharing one mutable
       // context.
       async generateImage(req, prompt, options) {

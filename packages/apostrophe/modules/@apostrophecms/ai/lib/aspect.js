@@ -1,3 +1,6 @@
+// The image aspect dial: a caller's named token or 'W:H' ratio canonicalized
+// to one 'W:H' form, then resolved to the nearest aspect a model declares.
+
 const { NAMED_ASPECTS } = require('./constants');
 const { parseAspect } = require('./util');
 

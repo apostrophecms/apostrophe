@@ -223,10 +223,11 @@ module.exports = (self) => {
       }
     },
     // Fail startup when a model's declared image `aspects` are
-    // malformed. resolveAspect trusts these to be well-formed 'W:H'
-    // strings at call time, so a bad declaration — from an adapter or a
-    // provider entry — is caught here, once, with a clear message,
-    // rather than surfacing as a caller-facing error on a real call.
+    // malformed. resolveAspect (aspect.js) trusts these to be
+    // well-formed 'W:H' strings at call time, so a bad declaration —
+    // from an adapter or a provider entry — is caught here, once, with
+    // a clear message, rather than surfacing as a caller-facing error
+    // on a real call.
     validateAspects(providerName, models) {
       for (const [ model, meta ] of Object.entries(models)) {
         if (meta.aspects === undefined) {

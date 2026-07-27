@@ -6,6 +6,11 @@ const { isObject } = require('./util');
 // A 1×1 transparent PNG, the placeholder pixel mock image calls return
 const MOCK_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
+// ~4 characters per token, the usual plain-text ballpark
+function tokens(text) {
+  return Math.max(1, Math.round(text.length / 4));
+}
+
 module.exports = (self) => {
   return {
     // The built-in mock standing in for every adapter chat under
@@ -75,10 +80,6 @@ module.exports = (self) => {
           .filter((part) => part.type === 'text')
           .map((part) => part.text)
           .join(' ');
-      }
-      // ~4 characters per token, the usual plain-text ballpark
-      function tokens(text) {
-        return Math.max(1, Math.round(text.length / 4));
       }
       // A deterministic value conforming to `schema`, enough to pass
       // the structured-output backstop: `const`/`enum` honored, every
@@ -162,7 +163,7 @@ module.exports = (self) => {
           images,
           model: request.model,
           usage: {
-            inputTokens: Math.max(1, Math.round(request.prompt.length / 4)),
+            inputTokens: tokens(request.prompt),
             outputTokens: 1000 * images.length
           }
         };

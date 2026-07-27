@@ -8,11 +8,11 @@ module.exports = (self) => {
   }
 
   // The adapter request literal, from `options` — a canonical options
-  // object as produced by normalizeGenerateOptions — and `info`, the
-  // resolved routing it is sent with: { provider, model, reasoning?,
-  // maxOutputTokens? } as modelInfo reports it. Optional fields appear
-  // only when they resolved to a value, so an unset dial leaves the
-  // provider's own default in place.
+  // object as produced by normalizeGenerateOptions (normalize.js) —
+  // and `info`, the resolved routing it is sent with: { provider,
+  // model, reasoning?, maxOutputTokens? } as modelInfo reports it.
+  // Optional fields appear only when they resolved to a value, so an
+  // unset dial leaves the provider's own default in place.
   function assembleRequest(options, info) {
     const maxTokens = options.maxTokens ?? info.maxOutputTokens;
     return {
@@ -97,11 +97,11 @@ module.exports = (self) => {
       }
     },
     // Assemble the normalized adapter request from `options`, a
-    // canonical object as produced by normalizeGenerateOptions:
-    // resolve routing, default maxTokens to the model's declared
-    // output ceiling when it is known, translate the cache level to
-    // the { ttl } policy. Returns { provider, request }: the resolved
-    // provider name and the request handed to its adapter —
+    // canonical object as produced by normalizeGenerateOptions
+    // (normalize.js): resolve routing, default maxTokens to the model's
+    // declared output ceiling when it is known, translate the cache
+    // level to the { ttl } policy. Returns { provider, request }: the
+    // resolved provider name and the request handed to its adapter —
     // { system?, messages, tools?, schema?, model, maxTokens?,
     // reasoning?, cache: false | { ttl }, signal? }, optional fields
     // present only when they resolved to a value. Request tools carry
