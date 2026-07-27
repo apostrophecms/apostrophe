@@ -8,6 +8,13 @@
 
 const _ = require('lodash');
 const Ajv = require('ajv/dist/2020').default;
+const {
+  QUALITIES, NAMED_ASPECTS, CACHE_POLICIES, MESSAGE_ROLES, PART_ROLES,
+  FINISH_REASONS, TOOL_ACCESS, GENERATE_OPTIONS, IMAGE_OPTIONS
+} = require('./lib/constants');
+const {
+  isObject, isAbort, parseAspect
+} = require('./lib/util');
 
 module.exports = {
   options: {
@@ -82,35 +89,13 @@ module.exports = {
     function fail(message) {
       throw new Error(`@apostrophecms/ai: ${message}`);
     }
-    function isObject(value) {
-      return Boolean(value) && typeof value === 'object' &&
-        !Array.isArray(value);
-    }
-    // An abort-shaped throw: the AbortError the http stack raises when
-    // an AbortSignal fires, or Node's ABORT_ERR code
-    function isAbort(error) {
-      return error?.name === 'AbortError' || error?.code === 'ABORT_ERR';
-    }
     // A 1×1 transparent PNG, the placeholder pixel mock image calls
     // return
     const MOCK_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-    // A 'W:H' aspect string → its [ width, height ] positive numbers, or
-    // null when it is not a well-formed ratio. Named tokens are not
-    // accepted here.
-    function parseAspect(value) {
-      if (typeof value !== 'string') {
-        return null;
-      }
-      const match = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(value);
-      if (!match) {
-        return null;
-      }
-      const w = Number(match[1]);
-      const h = Number(match[2]);
-      return w > 0 && h > 0 ? [ w, h ] : null;
-    }
 
     return {
+      ...require('./lib/aspect')(self),
+
       // Register a provider adapter. Adapters self-register in their own
       // module's init; re-registering an existing name overrides, so a
       // custom adapter can replace a standard one.
@@ -349,13 +334,8 @@ module.exports = {
         } else {
           invalid('a prompt string or an options object is required');
         }
-        const known = [
-          'system', 'messages', 'tools', 'maxSteps', 'schema', 'effort',
-          'provider', 'model', 'reasoning', 'maxTokens', 'cache', 'signal',
-          'onMessage'
-        ];
         for (const name of Object.keys(options)) {
-          if (!known.includes(name)) {
+          if (!GENERATE_OPTIONS.includes(name)) {
             invalid(`unknown option "${name}"`);
           }
         }
@@ -378,7 +358,7 @@ module.exports = {
           (!Number.isInteger(maxTokens) || maxTokens < 1)) {
           invalid('"maxTokens" must be a positive integer');
         }
-        if (cache !== false && cache !== 'short' && cache !== 'long') {
+        if (cache !== false && !CACHE_POLICIES.includes(cache)) {
           invalid('"cache" must be false, "short" or "long"');
         }
         if (signal !== undefined && !(signal instanceof AbortSignal)) {
@@ -501,7 +481,7 @@ module.exports = {
           if (!isObject(message)) {
             invalid(`${name} must be an object like { role, content }`);
           }
-          if (![ 'user', 'assistant', 'tool' ].includes(message.role)) {
+          if (!MESSAGE_ROLES.includes(message.role)) {
             invalid(`${name}.role must be "user", "assistant" or "tool"`);
           }
           return {
@@ -529,12 +509,7 @@ module.exports = {
             if (!isObject(part)) {
               throw self.apos.error('invalid', `${partName} must be an object like { type }`);
             }
-            const roles = {
-              text: [ 'user', 'assistant' ],
-              image: [ 'user', 'assistant' ],
-              toolCall: [ 'assistant' ],
-              toolResult: [ 'tool' ]
-            }[part.type];
+            const roles = PART_ROLES[part.type];
             if (!roles) {
               throw self.apos.error('invalid', `${partName}.type "${part.type}" is unknown`);
             }
@@ -625,11 +600,8 @@ module.exports = {
         if (!isObject(options)) {
           invalid('"options" must be an object');
         }
-        const known = [
-          'count', 'aspect', 'quality', 'images', 'provider', 'model', 'signal'
-        ];
         for (const name of Object.keys(options)) {
-          if (!known.includes(name)) {
+          if (!IMAGE_OPTIONS.includes(name)) {
             invalid(`unknown option "${name}"`);
           }
         }
@@ -647,8 +619,7 @@ module.exports = {
           // against the routed model happens at call time
           self.canonicalAspect(aspect);
         }
-        if (quality !== undefined &&
-          ![ 'low', 'medium', 'high' ].includes(quality)) {
+        if (quality !== undefined && !QUALITIES.includes(quality)) {
           invalid('"quality" must be "low", "medium" or "high"');
         }
         if ((provider === undefined) !== (model === undefined)) {
@@ -721,74 +692,6 @@ module.exports = {
           } catch (e) {
             return undefined;
           }
-        }
-      },
-      // Normalize an aspect dial to its canonical 'W:H' string. The named
-      // tokens square, portrait and landscape ground to the conventional
-      // photo ratios (1:1, 3:4, 4:3); an explicit 'W:H' of two positive
-      // numbers is returned as given. Throws "invalid" on anything else.
-      // Every aspect the core hands an adapter passes through here, so an
-      // adapter only ever sees 'W:H', never a named token.
-      canonicalAspect(aspect) {
-        const named = {
-          square: '1:1',
-          portrait: '3:4',
-          landscape: '4:3'
-        };
-        if (Object.hasOwn(named, aspect)) {
-          return named[aspect];
-        }
-        if (parseAspect(aspect)) {
-          return aspect;
-        }
-        throw self.apos.error('invalid', `"${aspect}" is not a valid aspect: use "square", "portrait", "landscape" or a "W:H" ratio`);
-      },
-      // The numeric width/height ratio of an aspect dial.
-      aspectRatio(aspect) {
-        const [ w, h ] = parseAspect(self.canonicalAspect(aspect));
-        return w / h;
-      },
-      // Resolve a requested aspect dial to the nearest aspect the routed
-      // model declares, returning that declared string verbatim — echoed
-      // to the caller in metadata and translated to the provider's dialect
-      // by the adapter. `requested` is the call's `aspect` option (a named
-      // token or 'W:H'), or undefined to leave the dial unset (returns
-      // undefined; the provider default applies). `declared` is the
-      // model's supported aspect strings (modelInfo). Nearest match
-      // minimizes the log-ratio distance to the requested ratio; a tie
-      // resolves to the larger ratio, then to declaration order. A model
-      // that declares no aspects (an unknown model) is a pass-through: the
-      // requested ratio returns as its canonical 'W:H' — never a named
-      // token, so the adapter's input is uniform — for the adapter to
-      // best-effort, and the provider may reject it.
-      resolveAspect(requested, declared) {
-        if (requested === undefined) {
-          return undefined;
-        }
-        const target = self.aspectRatio(requested);
-        if (!Array.isArray(declared) || !declared.length) {
-          return self.canonicalAspect(requested);
-        }
-        let best = describe(declared[0]);
-        for (const aspect of declared) {
-          const candidate = describe(aspect);
-          if (candidate.distance < best.distance - 1e-9 ||
-            (Math.abs(candidate.distance - best.distance) <= 1e-9 &&
-              candidate.ratio > best.ratio)) {
-            best = candidate;
-          }
-        }
-        return best.aspect;
-
-        // An aspect string with its ratio and its log-ratio distance from
-        // the requested target
-        function describe(aspect) {
-          const ratio = self.aspectRatio(aspect);
-          return {
-            aspect,
-            ratio,
-            distance: Math.abs(Math.log(target / ratio))
-          };
         }
       },
       // Register an AI tool definition. Feature modules call this in
@@ -962,7 +865,7 @@ module.exports = {
             fail(`${name}: "schema" is not a valid schema: ${e.message}`);
           }
           const access = tool.access === undefined ? 'write' : tool.access;
-          if (![ 'read', 'write', 'agent' ].includes(access)) {
+          if (!TOOL_ACCESS.includes(access)) {
             fail(`${name}: "access" must be "read", "write" or "agent"`);
           }
           return {
@@ -2152,7 +2055,7 @@ module.exports = {
             malformed('toolCall parts must carry a string "id" and "name" and an object "input"');
           }
         }
-        if (![ 'stop', 'toolCalls', 'length', 'refusal' ].includes(turn.finishReason)) {
+        if (!FINISH_REASONS.includes(turn.finishReason)) {
           malformed(`"${turn.finishReason}" is not a finish reason`);
         }
         if (turn.finishReason === 'toolCalls' &&
@@ -2381,12 +2284,12 @@ module.exports = {
         if (image !== undefined) {
           checkEffortRow(image, 'image', { provider: true });
           if (image.aspect !== undefined &&
-            ![ 'square', 'portrait', 'landscape' ].includes(image.aspect) &&
+            !Object.hasOwn(NAMED_ASPECTS, image.aspect) &&
             !parseAspect(image.aspect)) {
             fail('"image.aspect" must be "square", "portrait", "landscape" or a "W:H" ratio');
           }
           if (image.quality !== undefined &&
-            ![ 'low', 'medium', 'high' ].includes(image.quality)) {
+            !QUALITIES.includes(image.quality)) {
             fail('"image.quality" must be "low", "medium" or "high"');
           }
           // Inline model metadata on the routing entry participates in
