@@ -31,8 +31,16 @@ function parseAspect(value) {
   return w > 0 && h > 0 ? [ w, h ] : null;
 }
 
+// Startup-only: a bad configuration must kill the boot with a plain prefixed
+// Error. Runtime code throws self.apos.error(...) instead, so the name says
+// where this belongs.
+function startupFail(message) {
+  throw new Error(`@apostrophecms/ai: ${message}`);
+}
+
 module.exports = {
   isObject,
   isAbort,
-  parseAspect
+  parseAspect,
+  startupFail
 };

@@ -6,14 +6,13 @@
 // each provider under `options.providers[name]` and (with more than one)
 // name the default with `options.provider`.
 
-const _ = require('lodash');
 const Ajv = require('ajv/dist/2020').default;
 const {
-  QUALITIES, NAMED_ASPECTS, CACHE_POLICIES, MESSAGE_ROLES, PART_ROLES,
-  FINISH_REASONS, TOOL_ACCESS, GENERATE_OPTIONS, IMAGE_OPTIONS
+  QUALITIES, CACHE_POLICIES, MESSAGE_ROLES, PART_ROLES, FINISH_REASONS,
+  GENERATE_OPTIONS, IMAGE_OPTIONS
 } = require('./lib/constants');
 const {
-  isObject, isAbort, parseAspect
+  isObject, isAbort, startupFail
 } = require('./lib/util');
 
 module.exports = {
@@ -86,14 +85,12 @@ module.exports = {
     };
   },
   methods(self) {
-    function fail(message) {
-      throw new Error(`@apostrophecms/ai: ${message}`);
-    }
     // A 1×1 transparent PNG, the placeholder pixel mock image calls
     // return
     const MOCK_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
     return {
+      ...require('./lib/startup')(self),
       ...require('./lib/aspect')(self),
 
       // Register a provider adapter. Adapters self-register in their own
@@ -101,113 +98,12 @@ module.exports = {
       // custom adapter can replace a standard one.
       addAdapter(adapter) {
         if (!adapter || typeof adapter.name !== 'string') {
-          fail('addAdapter requires an adapter definition with a "name" string');
+          startupFail('addAdapter requires an adapter definition with a "name" string');
         }
         self.adapters[adapter.name] = adapter;
       },
       getAdapter(name) {
         return self.adapters[name];
-      },
-      // Activate every configured provider entry: instantiate the adapter
-      // it names with the entry's config, validate it, merge the entry's
-      // service description (models, effort rows, capabilities) over the
-      // adapter's declared data, then build the effort routing table.
-      // Misconfigurations fail the startup. An entry's key prefers the
-      // environment: the variable named by its envKey (the entry's own
-      // over the adapter's default) overrides the configured apiKey.
-      async activateProviders() {
-        const {
-          providers = {}, effort = {}, image
-        } = self.options;
-
-        self.active = false;
-
-        for (const [ name, entry ] of Object.entries(providers)) {
-          const adapterName = entry.adapter || name;
-          const adapter = self.getAdapter(adapterName);
-          if (!adapter) {
-            fail(`"providers.${name}" names unknown adapter "${adapterName}"`);
-          }
-          if (typeof adapter.validate !== 'function') {
-            fail(`adapter "${adapterName}" does not implement validate()`);
-          }
-          const aliased = adapterName !== name;
-          const envKey = entry.envKey || adapter.envKey;
-          const envApiKey = envKey && process.env[envKey];
-          const instance = {
-            ...adapter,
-            provider: name,
-            apiKey: envApiKey || entry.apiKey,
-            baseUrl: entry.baseUrl || adapter.baseUrl
-          };
-          if (!self.mockMode) {
-            await instance.validate();
-          }
-          self.providers[name] = {
-            name,
-            adapterName,
-            adapter: instance,
-            capabilities: {
-              ...adapter.capabilities,
-              ...entry.capabilities
-            },
-            models: self.mergeModels(adapter.models, entry.models),
-            // An aliased entry describes a different service than the
-            // adapter's native one, so the native effort rows do not apply
-            effort: aliased
-              ? { ...entry.effort }
-              : {
-                ...adapter.effort,
-                ...entry.effort
-              }
-          };
-          self.validateAspects(name, self.providers[name].models);
-        }
-
-        if (Object.keys(providers).length &&
-          !self.providers[self.defaultProvider]) {
-          fail('no default provider is available; name one with the "provider" option');
-        }
-
-        for (const [ level, row ] of Object.entries(effort.levels || {})) {
-          if (!self.providers[row.provider]) {
-            fail(`"effort.levels.${level}" references unconfigured provider "${row.provider}"`);
-          }
-        }
-        if (image) {
-          if (!self.providers[image.provider]) {
-            fail(`"image" references unconfigured provider "${image.provider}"`);
-          }
-          if (!self.providers[image.provider].capabilities.image) {
-            fail(`"image" references provider "${image.provider}" which does not declare the "image" capability`);
-          }
-        }
-
-        self.effortTable = self.buildEffortTable();
-        if (self.defaultProvider && !self.effortTable[self.effortDefault]) {
-          fail(`the default effort level "${self.effortDefault}" resolves to no routing entry; add it to "effort.levels" or configure a default provider whose adapter declares it`);
-        }
-
-        self.active = Object.keys(self.providers).length > 0 ||
-          self.mockMode;
-      },
-      // The routing table: the default provider's rows are the base,
-      // the project's "effort.levels" replace it level by level
-      buildEffortTable() {
-        const table = {};
-        const base = self.providers[self.defaultProvider];
-        if (base) {
-          for (const [ level, row ] of Object.entries(base.effort)) {
-            table[level] = {
-              ...row,
-              provider: base.name
-            };
-          }
-        }
-        for (const [ level, row ] of Object.entries(self.options.effort?.levels || {})) {
-          table[level] = { ...row };
-        }
-        return table;
       },
       // Resolve a call's routing options to a concrete routing entry,
       // with the same precedence generate will use: explicit
@@ -740,11 +636,11 @@ module.exports = {
       //   returns an object matching `schema`.
       addTool(tool) {
         if (self.toolsActive) {
-          fail('tools must be registered before "apostrophe:ready"');
+          startupFail('tools must be registered before "apostrophe:ready"');
         }
         if (!isObject(tool) || typeof tool.name !== 'string' ||
           !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(tool.name)) {
-          fail('addTool requires a definition with a "name" of 1 to 64 letters, digits, "_" or "-", starting with a letter');
+          startupFail('addTool requires a definition with a "name" of 1 to 64 letters, digits, "_" or "-", starting with a letter');
         }
         self.tools[tool.name] = tool;
       },
@@ -798,115 +694,6 @@ module.exports = {
       // as `apos.permission.can` or more, never looser.
       can(req, ...args) {
         return self.apos.permission.can(req, ...args);
-      },
-      // Validate every registered tool definition (the shape is
-      // documented on addTool) and replace it in the registry with its
-      // activated canonical form: label and access defaulted, `input`
-      // compiled into the `validateArgs` argument validator, `schema`
-      // composed to the array form apos.schema.convert consumes, and
-      // `handler` always a callable — a 'moduleName:methodName'
-      // reference is resolved here, which is why activation waits for
-      // "apostrophe:ready": every module's init has run by then, so
-      // references resolve and overrides are settled regardless of
-      // registration order. A bad definition fails the startup. The
-      // registry is frozen afterwards.
-      activateTools() {
-        for (const [ name, tool ] of Object.entries(self.tools)) {
-          self.tools[name] = activate(tool, `tool "${name}"`);
-        }
-        self.toolList = Object.values(self.tools);
-        self.toolsByTag = new Map();
-        for (const tool of self.toolList) {
-          for (const tag of tool.tags) {
-            const tools = self.toolsByTag.get(tag);
-            if (tools) {
-              tools.push(tool);
-            } else {
-              self.toolsByTag.set(tag, [ tool ]);
-            }
-          }
-        }
-        self.toolsActive = true;
-
-        function activate(tool, name) {
-          if (typeof tool.description !== 'string' || !tool.description) {
-            fail(`${name}: "description" must be a non-empty string`);
-          }
-          if (tool.label !== undefined &&
-            (typeof tool.label !== 'string' || !tool.label)) {
-            fail(`${name}: "label" must be a non-empty string`);
-          }
-          if (tool.tags !== undefined && (!Array.isArray(tool.tags) ||
-            tool.tags.some(tag => typeof tag !== 'string' || !tag))) {
-            fail(`${name}: "tags" must be an array of tag strings`);
-          }
-          if (!isObject(tool.input) || tool.input.type !== 'object') {
-            fail(`${name}: "input" must be a JSON Schema with an object root`);
-          }
-          let validateArgs;
-          try {
-            validateArgs = self.ajv.compile(tool.input);
-          } catch (e) {
-            fail(`${name}: "input" is not a valid JSON Schema: ${e.message}`);
-          }
-          if (!isObject(tool.schema)) {
-            fail(`${name}: "schema" must be an object of schema fields describing the result`);
-          }
-          let schema;
-          try {
-            schema = self.apos.schema.compose({
-              addFields: self.apos.schema.fieldsToArray(`AI tool ${tool.name}`, tool.schema)
-            });
-            self.apos.schema.validate(schema, {
-              type: 'AI tool',
-              subtype: tool.name
-            });
-          } catch (e) {
-            fail(`${name}: "schema" is not a valid schema: ${e.message}`);
-          }
-          const access = tool.access === undefined ? 'write' : tool.access;
-          if (!TOOL_ACCESS.includes(access)) {
-            fail(`${name}: "access" must be "read", "write" or "agent"`);
-          }
-          return {
-            name: tool.name,
-            label: tool.label || _.startCase(tool.name),
-            description: tool.description,
-            tags: tool.tags || [],
-            input: tool.input,
-            validateArgs,
-            schema,
-            access,
-            handler: resolveHandler(tool.handler, name)
-          };
-        }
-
-        // The handler option → the callable the loop runs: an inline
-        // function as given, a 'moduleName:methodName' reference
-        // resolved against the named module
-        function resolveHandler(value, name) {
-          if (typeof value === 'function') {
-            return value;
-          }
-          if (typeof value !== 'string') {
-            fail(`${name}: "handler" must be a function or a "moduleName:methodName" string`);
-          }
-          const [ moduleName, methodName, ...rest ] = value.split(':');
-          if (!moduleName || !methodName || rest.length) {
-            fail(`${name}: handler "${value}" must name a module and a method, like "moduleName:methodName"`);
-          }
-          // Own-property checks: a reference must never resolve
-          // through the prototype chain ('constructor', 'toString', …)
-          if (!Object.hasOwn(self.apos.modules, moduleName)) {
-            fail(`${name}: handler names unknown module "${moduleName}"`);
-          }
-          const module = self.apos.modules[moduleName];
-          if (!Object.hasOwn(module, methodName) ||
-            typeof module[methodName] !== 'function') {
-            fail(`${name}: handler names unknown method "${methodName}" of "${moduleName}"`);
-          }
-          return (req, args) => module[methodName](req, args);
-        }
       },
       // Execute one model-requested tool call `call`, a toolCall
       // content part { id, name, input }, against `tool`, its
@@ -2151,184 +1938,6 @@ module.exports = {
           model: turn?.model || context.request.model,
           provider: context.provider
         };
-      },
-      // Fail startup when a model's declared image `aspects` are
-      // malformed. resolveAspect trusts these to be well-formed 'W:H'
-      // strings at call time, so a bad declaration — from an adapter or a
-      // provider entry — is caught here, once, with a clear message,
-      // rather than surfacing as a caller-facing error on a real call.
-      validateAspects(providerName, models) {
-        for (const [ model, meta ] of Object.entries(models)) {
-          if (meta.aspects === undefined) {
-            continue;
-          }
-          if (!Array.isArray(meta.aspects) || !meta.aspects.length) {
-            fail(`"providers.${providerName}" model "${model}": "aspects" must be a non-empty array of "W:H" ratios`);
-          }
-          for (const aspect of meta.aspects) {
-            if (!parseAspect(aspect)) {
-              fail(`"providers.${providerName}" model "${model}" declares an invalid aspect "${aspect}"; use a "W:H" ratio`);
-            }
-          }
-        }
-      },
-      // Union of the adapter's and the entry's model metadata,
-      // merged per model id with the entry's fields winning
-      mergeModels(adapterModels = {}, entryModels = {}) {
-        const models = {};
-        for (const id of Object.keys({
-          ...adapterModels,
-          ...entryModels
-        })) {
-          models[id] = {
-            ...adapterModels[id],
-            ...entryModels[id]
-          };
-        }
-        return models;
-      },
-      // Validate the shape of the module options, throwing a clear error
-      // naming the offending entry. Checks that need the adapter registry
-      // (unknown adapters, dangling routing references, effort levels with
-      // no row) happen later, at activation.
-      validateOptions(options) {
-        const checkString = (value, name) => {
-          if (value !== undefined && typeof value !== 'string') {
-            fail(`"${name}" must be a string`);
-          }
-        };
-        const checkEffortRow = (row, name, { provider = false } = {}) => {
-          if (!isObject(row)) {
-            fail(`"${name}" must be an object like { provider, model }`);
-          }
-          if (provider && typeof row.provider !== 'string') {
-            fail(`"${name}.provider" must be a string`);
-          }
-          if (typeof row.model !== 'string') {
-            fail(`"${name}.model" must be a string`);
-          }
-          checkString(row.reasoning, `${name}.reasoning`);
-        };
-
-        const {
-          providers, provider, effort, image, maxSteps, mock, mockImage,
-          retryAttempts, retryBaseDelay, retryMaxElapsed,
-          jobExpireAfter, jobPollInterval
-        } = options;
-
-        if (!isObject(providers)) {
-          fail('"providers" must be an object of provider entries');
-        }
-        for (const [ name, entry ] of Object.entries(providers)) {
-          if (!isObject(entry)) {
-            fail(`"providers.${name}" must be an object`);
-          }
-          checkString(entry.apiKey, `providers.${name}.apiKey`);
-          checkString(entry.envKey, `providers.${name}.envKey`);
-          checkString(entry.baseUrl, `providers.${name}.baseUrl`);
-          checkString(entry.adapter, `providers.${name}.adapter`);
-          if (entry.models !== undefined) {
-            if (!isObject(entry.models)) {
-              fail(`"providers.${name}.models" must be an object of model entries`);
-            }
-            for (const [ model, info ] of Object.entries(entry.models)) {
-              if (!isObject(info)) {
-                fail(`"providers.${name}.models.${model}" must be an object`);
-              }
-            }
-          }
-          if (entry.effort !== undefined) {
-            if (!isObject(entry.effort)) {
-              fail(`"providers.${name}.effort" must be an object of effort rows`);
-            }
-            for (const [ level, row ] of Object.entries(entry.effort)) {
-              // The provider is implicit (the entry itself), rows carry model
-              checkEffortRow(row, `providers.${name}.effort.${level}`);
-            }
-          }
-          if (entry.capabilities !== undefined) {
-            if (!isObject(entry.capabilities)) {
-              fail(`"providers.${name}.capabilities" must be an object`);
-            }
-            for (const [ capability, value ] of Object.entries(entry.capabilities)) {
-              if (typeof value !== 'boolean') {
-                fail(`"providers.${name}.capabilities.${capability}" must be a boolean`);
-              }
-            }
-          }
-        }
-
-        checkString(provider, 'provider');
-        if (provider && !providers[provider]) {
-          fail(`"provider" names "${provider}" which is not a configured provider`);
-        }
-        if (!provider && Object.keys(providers).length > 1) {
-          fail('"provider" must name the default provider when several providers are configured');
-        }
-
-        if (effort !== undefined) {
-          if (!isObject(effort)) {
-            fail('"effort" must be an object like { default, levels }');
-          }
-          checkString(effort.default, 'effort.default');
-          if (effort.levels !== undefined) {
-            if (!isObject(effort.levels)) {
-              fail('"effort.levels" must be an object of routing entries');
-            }
-            for (const [ level, row ] of Object.entries(effort.levels)) {
-              checkEffortRow(row, `effort.levels.${level}`, { provider: true });
-            }
-          }
-        }
-
-        if (image !== undefined) {
-          checkEffortRow(image, 'image', { provider: true });
-          if (image.aspect !== undefined &&
-            !Object.hasOwn(NAMED_ASPECTS, image.aspect) &&
-            !parseAspect(image.aspect)) {
-            fail('"image.aspect" must be "square", "portrait", "landscape" or a "W:H" ratio');
-          }
-          if (image.quality !== undefined &&
-            !QUALITIES.includes(image.quality)) {
-            fail('"image.quality" must be "low", "medium" or "high"');
-          }
-          // Inline model metadata on the routing entry participates in
-          // aspect resolution (metadata merge), so it gets the same
-          // startup vetting as a declared model's
-          if (image.aspects !== undefined && (
-            !Array.isArray(image.aspects) || !image.aspects.length ||
-            image.aspects.some((aspect) => !parseAspect(aspect))
-          )) {
-            fail('"image.aspects" must be a non-empty array of "W:H" ratios');
-          }
-        }
-
-        if (!Number.isInteger(maxSteps) || maxSteps < 1) {
-          fail('"maxSteps" must be a positive integer');
-        }
-
-        if (mock !== undefined && typeof mock !== 'function') {
-          fail('"mock" must be a function');
-        }
-
-        if (mockImage !== undefined && typeof mockImage !== 'function') {
-          fail('"mockImage" must be a function');
-        }
-
-        for (const [ name, value ] of Object.entries({
-          retryAttempts,
-          retryBaseDelay,
-          retryMaxElapsed,
-          jobPollInterval
-        })) {
-          if (!Number.isInteger(value) || value < 1) {
-            fail(`"${name}" must be a positive integer`);
-          }
-        }
-
-        if (!Number.isInteger(jobExpireAfter) || jobExpireAfter < 0) {
-          fail('"jobExpireAfter" must be a non-negative integer');
-        }
       }
     };
   }
