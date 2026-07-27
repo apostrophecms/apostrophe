@@ -11,6 +11,18 @@ const {
   isObject, isAbort, startupFail
 } = require('./lib/util');
 
+// The protocol shapes this surface hands out or takes in, named once so the
+// blocks below can use them bare. lib/types.js declares them and nothing else.
+/**
+ * @typedef {import('./lib/types.js').AiAdapter} AiAdapter
+ * @typedef {import('./lib/types.js').AiToolDefinition} AiToolDefinition
+ * @typedef {import('./lib/types.js').AiMessage} AiMessage
+ * @typedef {import('./lib/types.js').AiResult} AiResult
+ * @typedef {import('./lib/types.js').AiImageSource} AiImageSource
+ * @typedef {import('./lib/types.js').AiImageResult} AiImageResult
+ * @typedef {import('./lib/types.js').AiModelInfo} AiModelInfo
+ */
+
 module.exports = {
   options: {
     alias: 'ai',
@@ -91,63 +103,81 @@ module.exports = {
       ...require('./lib/mock')(self),
       ...require('./lib/aspect')(self),
 
-      // Register a provider adapter. Adapters self-register in their own
-      // module's init; re-registering an existing name overrides, so a
-      // custom adapter can replace a standard one.
+      /**
+       * Register a provider adapter. Adapters self-register in their own
+       * module's init; re-registering an existing name overrides, so a custom
+       * adapter can replace a standard one.
+       *
+       * @param {AiAdapter} adapter
+       */
       addAdapter(adapter) {
         if (!adapter || typeof adapter.name !== 'string') {
           startupFail('addAdapter requires an adapter definition with a "name" string');
         }
         self.adapters[adapter.name] = adapter;
       },
+
+      /**
+       * The adapter registered under `name`, or undefined.
+       *
+       * @param {string} name
+       * @returns {AiAdapter|undefined}
+       */
       getAdapter(name) {
         return self.adapters[name];
       },
-      // Register an AI tool definition. Feature modules call this in
-      // their own init; core, project and third-party modules all use
-      // the same call. Re-registering an existing name overrides (last
-      // wins), so a project can replace a standard tool. Tools are
-      // static: only registered tools can participate in AI calls —
-      // generate selects them by name, definitions never travel
-      // through a call — and the registry is frozen once activated on
-      // "apostrophe:ready", so registering later fails. Only the name
-      // is checked here; everything else is validated at activation,
-      // failing the startup on any problem (see activateTools in
-      // lib/startup.js).
-      //
-      // The definition properties:
-      //
-      // `name` (required): the unique registry identifier, 1 to 64
-      //   letters, digits, "_" or "-", starting with a letter — the
-      //   intersection of the provider naming rules;
-      // `label`: a human-facing name — what a chat log or an activity
-      //   trail shows for the tool; may be an i18n key; defaults from
-      //   the name ('find_pages' → 'Find Pages'); never sent to the
-      //   model;
-      // `description` (required): non-empty text the model chooses
-      //   the tool by — treat it as part of the prompt;
-      // `tags`: an array of strings to query the registry by, see
-      //   getTools;
-      // `input` (required): the JSON Schema (draft 2020-12) the
-      //   model's arguments must satisfy; sent to the provider; must
-      //   declare an object root;
-      // `schema` (required): the handler result's shape as Apostrophe
-      //   schema fields, like a module's `add` configuration;
-      //   internal — never sent to the model — every result is
-      //   validated against it via apos.schema.convert;
-      // `access`: 'read', 'write' (the default) or 'agent' — not a
-      //   permission. Reads run in parallel within one batch of tool
-      //   calls; writes and agents follow serially in model order.
-      //   'agent' declares that the handler makes its own generate
-      //   call (a subagent, with its own budgets). One level of
-      //   nesting is allowed: a nested call silently drops agent
-      //   tools from its set — a subagent cannot spawn subagents —
-      //   and generation below the subagent level fails;
-      // `handler` (required): the implementation — an async
-      //   (req, args) function or a 'moduleName:methodName'
-      //   reference. Runs with the caller's req and the validated
-      //   model arguments, plus the core-injected args._context, and
-      //   returns an object matching `schema`.
+
+      /**
+       * A tool definition as addTool accepts it. Only the name is checked on
+       * registration; everything else is validated at activation, failing the
+       * startup on any problem (see activateTools in lib/startup.js).
+       *
+       * @typedef {object} AiToolRegistration
+       * @property {string} name The unique registry identifier, 1 to 64
+       *   letters, digits, "_" or "-", starting with a letter — the
+       *   intersection of the provider naming rules.
+       * @property {string} description Non-empty text the model chooses the
+       *   tool by; treat it as part of the prompt.
+       * @property {object} input The JSON Schema (draft 2020-12) the model's
+       *   arguments must satisfy. Sent to the provider; must declare an object
+       *   root.
+       * @property {object} schema The handler result's shape as Apostrophe
+       *   schema fields, like a module's `add` configuration. Internal — never
+       *   sent to the model — and every result is validated against it via
+       *   apos.schema.convert.
+       * @property {((req: object, args: object) => Promise<object>)|string}
+       *   handler The implementation: an async (req, args) function, or a
+       *   'moduleName:methodName' reference resolved at activation. Runs with
+       *   the caller's req and the validated model arguments, plus the
+       *   core-injected args._context, and returns an object matching `schema`.
+       * @property {string} [label] A human-facing name — what a chat log or an
+       *   activity trail shows for the tool; may be an i18n key. Defaults from
+       *   the name ('find_pages' → 'Find Pages'). Never sent to the model.
+       * @property {string[]} [tags] Strings to query the registry by, see
+       *   getTools.
+       * @property {'read'|'write'|'agent'} [access] Not a permission but a
+       *   scheduling class; 'write' by default. Reads run in parallel within
+       *   one batch of tool calls; writes and agents follow serially in model
+       *   order. 'agent' declares that the handler makes its own generate call
+       *   (a subagent, with its own budgets). One level of nesting is allowed:
+       *   a nested call silently drops agent tools from its set — a subagent
+       *   cannot spawn subagents — and generation below the subagent level
+       *   fails.
+       */
+
+      /**
+       * Register an AI tool definition. Feature modules call this in their own
+       * init; core, project and third-party modules all use the same call.
+       * Re-registering an existing name overrides (last wins), so a project can
+       * replace a standard tool.
+       *
+       * Tools are static: only registered tools can participate in AI calls —
+       * generate selects them by name, definitions never travel through a
+       * call — and the registry is frozen once activated on "apostrophe:ready",
+       * so registering later fails.
+       *
+       * @param {AiToolRegistration} tool
+       */
       addTool(tool) {
         if (self.toolsActive) {
           startupFail('tools must be registered before "apostrophe:ready"');
@@ -158,18 +188,30 @@ module.exports = {
         }
         self.tools[tool.name] = tool;
       },
-      // The activated canonical definition registered under `name`,
-      // or undefined. Guarded against prototype-chain names
-      // ('constructor', …): lookups here may carry model-provided or
-      // browser-provided names, which must only ever select a
-      // registered tool
+
+      /**
+       * The activated canonical definition registered under `name`, or
+       * undefined. Guarded against prototype-chain names ('constructor', …):
+       * lookups here may carry model-provided or browser-provided names, which
+       * must only ever select a registered tool.
+       *
+       * @param {string} name
+       * @returns {AiToolDefinition|undefined}
+       */
       getTool(name) {
         return self.hasTool(name) ? self.tools[name] : undefined;
       },
-      // All activated tool definitions; with `tags`, those carrying
-      // at least one of them. A single tag may be passed as a string.
-      // Served from caches built at activation, so treat the returned
-      // arrays and definitions as read-only.
+
+      /**
+       * All activated tool definitions; with `tags`, those carrying at least
+       * one of them. Served from caches built at activation, so treat the
+       * returned array and its definitions as read-only.
+       *
+       * @param {object} [options]
+       * @param {string|string[]} [options.tags] A single tag may be passed as a
+       *   string.
+       * @returns {AiToolDefinition[]}
+       */
       getTools({ tags } = {}) {
         if (typeof tags === 'string') {
           tags = [ tags ];
@@ -193,24 +235,40 @@ module.exports = {
         }
         return [ ...found ];
       },
-      // An efficient way of checking (by name) if a tool exists
+
+      /**
+       * An efficient way of checking (by name) if a tool exists.
+       *
+       * @param {string} name
+       * @returns {boolean}
+       */
       hasTool(name) {
         return Object.hasOwn(self.tools, name);
       },
-      // Synchronous introspection: the model a call with these options
-      // would hit and what it offers. Accepts the same options as
-      // `resolve` (lib/request.js) and resolves exactly like a call
-      // would, including its "invalid" errors — a call that cannot
-      // resolve here would fail the same way for real. An unknown model
-      // is different: the call would work, so it yields undefined
-      // limits, never an error. Check `self.active` first to ask
-      // whether AI is configured at all.
-      //
-      // Returns `{ provider, model, reasoning?, contextWindow,
-      // maxOutputTokens, capabilities }`, plus the model's declared
-      // `aspects` for an image resolution. Model metadata merges the
-      // provider's model maps with any fields carried inline on the
-      // routing entry.
+
+      /**
+       * Synchronous introspection: the model a call with these options would
+       * hit and what it offers. Resolves exactly as a call would, including its
+       * "invalid" errors — a call that cannot resolve here would fail the same
+       * way for real. An unknown model is different: the call would work, so it
+       * yields undefined limits, never an error. Check `self.active` first to
+       * ask whether AI is configured at all.
+       *
+       * Model metadata merges the provider's model maps with any fields carried
+       * inline on the routing entry.
+       *
+       * @param {object} [options] The routing options, which `resolve`
+       *   (lib/request.js) applies to a call as it does here.
+       * @param {string} [options.provider] With `model`, the explicit target,
+       *   bypassing the routing table.
+       * @param {string} [options.model]
+       * @param {string} [options.effort] The routing level to resolve.
+       * @param {'image'} [options.capability] Resolve the image route instead
+       *   of the effort table.
+       * @param {string} [options.reasoning] Override the resolved entry's
+       *   reasoning.
+       * @returns {AiModelInfo}
+       */
       modelInfo(options = {}) {
         const {
           provider, model, reasoning, aspect, quality, ...inline
@@ -233,114 +291,106 @@ module.exports = {
         }
         return info;
       },
-      // The AI permission seam: whether this AI action is permitted
-      // for `req`. Same signature and semantics as
-      // `apos.permission.can(req, action, docOrType, mode)`, and today
-      // a pure proxy to it — but tool handlers and AI feature code
-      // must call this method, never `apos.permission.can` directly,
-      // so that AI-specific policy (actions denied to the AI even for
-      // an admin's req) can later be layered here, centrally, without
-      // touching a single handler. It can only ever be as restrictive
-      // as `apos.permission.can` or more, never looser.
+
+      /**
+       * The AI permission seam: whether this AI action is permitted for `req`.
+       * Same signature and semantics as
+       * `apos.permission.can(req, action, docOrType, mode)`, and today a pure
+       * proxy to it — but tool handlers and AI feature code must call this
+       * method, never `apos.permission.can` directly, so that AI-specific
+       * policy (actions denied to the AI even for an admin's req) can later be
+       * layered here, centrally, without touching a single handler. It can only
+       * ever be as restrictive as `apos.permission.can` or more, never looser.
+       *
+       * @param {object} req
+       * @param {...*} args As `apos.permission.can`: action, docOrType, mode.
+       * @returns {boolean}
+       */
       can(req, ...args) {
         return self.apos.permission.can(req, ...args);
       },
-      // The language method: text, multi-turn chat, the tool-calling
-      // agent loop and structured output against the routed provider.
-      //
-      // `req` is the caller's request object, carried into events, the
-      // adapter and every tool handler — the core never invents auth.
-      //
-      // `stringOrOptions` is either the user prompt string, optionally
-      // followed by an `options` object, or one options object alone
-      // (then a third argument is not accepted). A prompt string is the
-      // final user turn: the sole message alone, appended as the latest
-      // turn when `messages` is present.
-      //
-      // Options:
-      // `system` (string): the system prompt — a top-level option,
-      //   never a message;
-      // `messages` (array): the conversation so far, each entry
-      //   { role, content } as normalizeMessages (lib/normalize.js)
-      //   accepts — including a transcript a previous call returned;
-      // `tools` (array of registered tool names): what the model may
-      //   call — see addTool. The loop validates the model's
-      //   arguments, executes the handlers by their `access`
-      //   scheduling (reads in parallel first, writes serial in model
-      //   order), feeds results back, and asks the model again until
-      //   it answers or `maxSteps` is spent;
-      // `maxSteps` (positive integer, defaults to the module's
-      //   `maxSteps` option): the cap on model turns for this call.
-      //   When the last allowed turn still requests tools, the call
-      //   finishes as 'maxSteps' and the requests come back unexecuted
-      //   on `toolCalls` — so `maxSteps: 1` is manual mode: one turn,
-      //   inspect, run them yourself;
-      // `schema` (JSON Schema with an object root): request structured
-      //   output — the provider's native structured mode is constrained
-      //   to it, and the validated result comes back on `object`.
-      //   Capability-gated on `structured`. Combines with `tools`: the
-      //   schema constrains only the final answer — tool turns run the
-      //   loop unchanged, with their own argument and result
-      //   validation;
-      // `effort` (string): the routing level to resolve, defaulting to
-      //   the module's default level;
-      // `provider`, `model` (strings, only together): the explicit
-      //   target, bypassing the routing table;
-      // `reasoning` (string): override the resolved entry's reasoning;
-      // `maxTokens` (positive integer): output-token cap, defaulting to
-      //   the routed model's declared ceiling when it is known;
-      // `cache` (false | 'short' | 'long', default 'short'): the
-      //   prompt-cache policy the adapter translates for its provider;
-      // `signal` (AbortSignal): cancels the call — see the cancellation
-      //   paragraph below; also injected into every handler's
-      //   `args._context`;
-      // `onMessage` (async function): called with each intermediate
-      //   assistant message — a turn whose tool requests the loop goes
-      //   on to execute — as { role, content }, awaited before the
-      //   tools run. The final answer is not reported here, it is the
-      //   return value; a throw stops the call.
-      //
-      // Returns { text, messages, finishReason, usage, model,
-      // provider }, plus `steps` when the call carried tools,
-      // `toolCalls` when it stopped with pending requests, and `object`
-      // — the validated structured output — when the call passed
-      // `schema` and finished 'stop' (a 'length' or 'maxSteps' finish
-      // has no complete answer to validate). `text` is the final
-      // assistant text (may be ''); `messages` is the full
-      // transcript — tool requests and results included — resumable as
-      // the next call's `messages`; `steps` lists what the loop
-      // executed in model order, { toolCall, result } per success and
-      // { toolCall, error } per recoverable failure the model was told
-      // about; `toolCalls` are unexecuted requests the caller must run
-      // itself; `finishReason` is 'stop', 'length', 'cancel' or —
-      // whenever the step budget cut the loop — 'maxSteps', the step
-      // budget's counterpart of 'length'; `usage` aggregates
-      // { inputTokens, outputTokens } across every model turn; `model` /
-      // `provider` name what actually answered.
-      //
-      // Cancellation: when the call's `signal` fires the loop winds
-      // down instead of failing. The in-flight step is waited out — a
-      // running handler is never abandoned, its completed work stays
-      // recorded — while the aborted provider call is not retried, and
-      // the call returns normally with finishReason 'cancel': partial
-      // text, steps and usage preserved, unexecuted requests on
-      // `toolCalls`. Only abort-shaped throws convert; a genuine
-      // failure racing a cancel still throws.
-      //
-      // Throws normalized apos errors: "invalid" for bad calls,
-      // "aiRetry" when transient provider failures outlast the retry
-      // budget, "aiRefusal" when the model refuses; a tool handler's
-      // standard-coded throw (and any handler bug) stops the call
-      // as-is, with no trace of it in any model-bound message. Emits
-      // `beforeGenerate` and `afterGenerate` around the call and
-      // `beforeToolCall` / `afterToolCall` around each handler
-      // execution.
-      //
-      // Under APOS_AI_MOCK the built-in mock answers every call in
-      // place of any adapter — same pipeline, no network; with no
-      // providers configured at all, placeholder routing stands in. A
-      // scripted mock turn may request tools: the loop then runs the
-      // real handlers, so tool code is testable offline.
+
+      /**
+       * Options accepted by generate. Unset options are left to the routed
+       * model's own defaults.
+       *
+       * @typedef {object} AiGenerateOptions
+       * @property {string} [system] The system prompt — a top-level option,
+       *   never a message.
+       * @property {AiMessage[]} [messages] The
+       *   conversation so far, including a transcript a previous call returned.
+       *   A message's content may also be given as a plain string, shorthand
+       *   for a single text part.
+       * @property {string[]} [tools] Registered tool names the model may
+       *   call — see addTool. The loop validates the model's arguments,
+       *   executes the handlers by their `access` scheduling (reads in parallel
+       *   first, writes serial in model order), feeds results back, and asks
+       *   the model again until it answers or `maxSteps` is spent.
+       * @property {number} [maxSteps] The cap on model turns for this call, a
+       *   positive integer defaulting to the module's `maxSteps` option. When
+       *   the last allowed turn still requests tools, the call finishes as
+       *   'maxSteps' and the requests come back unexecuted on `toolCalls` — so
+       *   `maxSteps: 1` is manual mode: one turn, inspect, run them yourself.
+       * @property {object} [schema] Request structured output: a JSON Schema
+       *   with an object root, which the provider's native structured mode is
+       *   constrained to, the validated result coming back on `object`.
+       *   Capability-gated on `structured`. Combines with `tools`: the schema
+       *   constrains only the final answer — tool turns run the loop unchanged,
+       *   with their own argument and result validation.
+       * @property {string} [effort] The routing level to resolve, defaulting to
+       *   the module's default level.
+       * @property {string} [provider] With `model`, the explicit target,
+       *   bypassing the routing table.
+       * @property {string} [model]
+       * @property {string} [reasoning] Override the resolved entry's reasoning.
+       * @property {number} [maxTokens] Output-token cap, defaulting to the
+       *   routed model's declared ceiling when it is known.
+       * @property {false|'short'|'long'} [cache] The prompt-cache policy the
+       *   adapter translates for its provider; 'short' by default.
+       * @property {AbortSignal} [signal] Cancels the call, as below; also
+       *   injected into every handler's `args._context`.
+       * @property {(message: AiMessage) => Promise<void>}
+       *   [onMessage] Called with each intermediate assistant message — a turn
+       *   whose tool requests the loop goes on to execute — and awaited before
+       *   those tools run. The final answer is not reported here, it is the
+       *   return value; a throw stops the call.
+       */
+
+      /**
+       * The language method: text, multi-turn chat, the tool-calling agent loop
+       * and structured output against the routed provider.
+       *
+       * Cancellation: when the call's `signal` fires the loop winds down
+       * instead of failing. The in-flight step is waited out — a running
+       * handler is never abandoned, its completed work stays recorded — while
+       * the aborted provider call is not retried, and the call returns normally
+       * with finishReason 'cancel': partial text, steps and usage preserved,
+       * unexecuted requests on `toolCalls`. Only abort-shaped throws convert; a
+       * genuine failure racing a cancel still throws.
+       *
+       * Under APOS_AI_MOCK the built-in mock answers every call in place of any
+       * adapter — same pipeline, no network; with no providers configured at
+       * all, placeholder routing stands in. A scripted mock turn may request
+       * tools: the loop then runs the real handlers, so tool code is testable
+       * offline.
+       *
+       * Emits `beforeGenerate` and `afterGenerate` around the call and
+       * `beforeToolCall` / `afterToolCall` around each handler execution.
+       *
+       * @param {object} req The caller's request object, carried into events,
+       *   the adapter and every tool handler — the core never invents auth.
+       * @param {string|AiGenerateOptions} stringOrOptions The user prompt, or
+       *   the options object alone (a third argument is not accepted then). A
+       *   prompt string is the final user turn: the sole message alone,
+       *   appended as the latest turn when `messages` is present.
+       * @param {AiGenerateOptions} [options] Only alongside a prompt string.
+       * @returns {Promise<AiResult>}
+       * @throws Normalized apos errors: "invalid" for bad calls, "aiRetry" when
+       *   transient provider failures outlast the retry budget, "aiRefusal"
+       *   when the model refuses. A tool handler's standard-coded throw (and
+       *   any handler bug) stops the call as-is, with no trace of it in any
+       *   model-bound message.
+       */
       async generate(req, stringOrOptions, options) {
         const canonical = self.normalizeGenerateOptions(stringOrOptions, options);
         // Tool handlers receive a req clone stamped with their depth
@@ -485,47 +535,51 @@ module.exports = {
         await self.emit('afterGenerate', req, context);
         return context.result;
       },
-      // The image method: text → image against the routed image
-      // provider, or image(s) + text → image (editing) when `images`
-      // sources are passed — `prompt` is then the edit instruction and
-      // the images are the source.
-      //
-      // Options:
-      // `count` (positive integer, default 1): how many images;
-      // `aspect` ('square' | 'portrait' | 'landscape', or a 'W:H'
-      //   ratio): the shape dial, resolved to the nearest aspect the
-      //   routed model declares (resolveAspect in lib/aspect.js); the
-      //   adapter translates the resolved ratio to its dialect.
-      //   Omitted ⇒ not sent, the provider default applies;
-      // `quality` ('low' | 'medium' | 'high'): the spend dial, mapped
-      //   to the provider's native knob; providers without one ignore
-      //   it. Omitted ⇒ not sent;
-      // `images` (array of { url } | { data, mediaType } sources):
-      //   the presence of sources makes the call an edit;
-      // `provider`, `model` (strings, only together): the explicit
-      //   target, bypassing the `image` routing entry — the entry's
-      //   default dials do not apply then;
-      // `signal` (AbortSignal): aborts the in-flight provider call.
-      //
-      // Routing: the module's `image` option ({ provider, model,
-      // aspect, quality }) names the project's image route and its
-      // default dials; per-call dials win. Capability-gated on
-      // `image`: routing image work to a provider that cannot
-      // generate images is a clear error, never a silent re-route.
-      //
-      // Returns one call-level result object, like generate:
-      // { images, provider, model, usage, aspect?, size? }. `images`
-      // is [ { type, data } ], `data` base64 and `type` its format;
-      // everything else is said once on the envelope — `usage` is the
-      // whole call's token total (providers bill the batch, not the
-      // image), `aspect` the resolved native ratio when a dial ran,
-      // `size` the native pixel size when the provider works in
-      // pixels. Throws the same normalized codes as generate, with
-      // the same retries, log records and mock behavior (placeholder
-      // images, no network — scriptable via the `mockImage` option,
-      // see mockImage in lib/mock.js). Emits `beforeGenerateImage` and
-      // `afterGenerateImage` around the call, sharing one mutable
-      // context.
+
+      /**
+       * Options accepted by generateImage. An omitted dial is not sent at all,
+       * leaving the provider's own default in place.
+       *
+       * @typedef {object} AiImageOptions
+       * @property {number} [count] How many images; 1 by default.
+       * @property {string} [aspect] The shape dial — 'square', 'portrait',
+       *   'landscape' or a 'W:H' ratio — resolved to the nearest aspect the
+       *   routed model declares (resolveAspect in lib/aspect.js); the adapter
+       *   translates the resolved ratio to its dialect.
+       * @property {'low'|'medium'|'high'} [quality] The spend dial, mapped to
+       *   the provider's native knob; providers without one ignore it.
+       * @property {AiImageSource[]} [images] The
+       *   presence of sources is what makes the call an edit.
+       * @property {string} [provider] With `model`, the explicit target,
+       *   bypassing the `image` routing entry — the entry's default dials do
+       *   not apply then.
+       * @property {string} [model]
+       * @property {AbortSignal} [signal] Aborts the in-flight provider call.
+       */
+
+      /**
+       * The image method: text → image against the routed image provider, or
+       * image(s) + text → image (editing) when `images` sources are passed.
+       *
+       * Routing: the module's `image` option ({ provider, model, aspect,
+       * quality }) names the project's image route and its default dials;
+       * per-call dials win. Capability-gated on `image`: routing image work to
+       * a provider that cannot generate images is a clear error, never a silent
+       * re-route.
+       *
+       * Throws the same normalized codes as generate, with the same retries,
+       * log records and mock behavior (placeholder images, no network —
+       * scriptable via the `mockImage` option, see mockImage in lib/mock.js).
+       * Emits `beforeGenerateImage` and `afterGenerateImage` around the call,
+       * sharing one mutable context.
+       *
+       * @param {object} req
+       * @param {string} prompt The subject to generate, or the edit to apply
+       *   when `images` are present.
+       * @param {AiImageOptions} [options]
+       * @returns {Promise<AiImageResult>} One
+       *   call-level envelope, like generate's.
+       */
       async generateImage(req, prompt, options) {
         const canonical = self.normalizeImageOptions(prompt, options);
         // Mock answers unconditionally: real routing still applies
@@ -605,46 +659,54 @@ module.exports = {
         await self.emit('afterGenerateImage', req, context);
         return context.result;
       },
-      // The non-blocking form of `generate`: the same flow wrapped in a
-      // job on `@apostrophecms/job`. The `await` covers job creation
-      // only — the method returns { jobId, cancel } as soon as the job
-      // record exists, the run continues in the background, and the
-      // exact object `generate` would have returned is stored on the
-      // record as `results` (a failure stores its error instead),
-      // readable via the job module's status route.
-      //
-      // Accepts everything `generate` accepts, passed through
-      // untouched — `onMessage` is called as `(message, { jobId })`
-      // here — plus:
-      // `onEnd` (async function): called once with `(error, result)`
-      //   when the run ends — the error it failed with, or the unified
-      //   result (a cancelled run is a result, finishReason 'cancel').
-      //   Its own throw is logged, never recorded on the job;
-      // `expireAfter` (seconds): how long the job record is kept,
-      //   defaulting to the `jobExpireAfter` option; 0 keeps it
-      //   forever;
-      // `notify` (boolean, default true): publish the run's progress
-      //   to the caller's browser (see publishJobEvent) — 'started'
-      //   once the record exists, 'message' per intermediate assistant
-      //   turn with the turn as `message`, and 'ended' with the
-      //   record's terminal `status` plus the result's `finishReason`
-      //   or the failure's `error` ({ name, message }). Correlate by
-      //   `jobId` and read the stored result from the job's status
-      //   route — the record may flip to its terminal status moments
-      //   after the event. `false` opts out; the hooks then own the
-      //   whole transport, while cancellation stays on the job layer
-      //   either way.
-      //
-      // `cancel()` requests cancellation, in process; the job module's
-      // cancel route does the same cross-process, by jobId. Either way
-      // the flag travels through the job record, the abort signal
-      // reaches the in-flight provider call and every handler, the run
-      // winds down per generate's cancellation semantics with the
-      // partial result stored, and the job ends 'cancelled'.
-      //
-      // Invalid options throw here, synchronously — a job record is
-      // created only for a run that can start. Tool handlers may not
-      // start jobs: a subagent's work is blocking by design.
+
+      /**
+       * What generateJob accepts on top of everything generate accepts, which
+       * is passed through untouched — `onMessage` is called as
+       * `(message, { jobId })` here.
+       *
+       * @typedef {object} AiJobOptions
+       * @property {(error: Error|null, result: AiResult|undefined) => Promise<void>}
+       *   [onEnd] Called once when the run ends, with the error it failed with
+       *   or the unified result (a cancelled run is a result, finishReason
+       *   'cancel'). Its own throw is logged, never recorded on the job.
+       * @property {number} [expireAfter] Seconds the job record is kept,
+       *   defaulting to the `jobExpireAfter` option; 0 keeps it forever.
+       * @property {boolean} [notify] Publish the run's progress to the caller's
+       *   browser (see publishJobEvent); true by default. 'started' once the
+       *   record exists, 'message' per intermediate assistant turn with the
+       *   turn as `message`, and 'ended' with the record's terminal `status`
+       *   plus the result's `finishReason` or the failure's `error`
+       *   ({ name, message }). Correlate by `jobId` and read the stored result
+       *   from the job's status route — the record may flip to its terminal
+       *   status moments after the event. `false` opts out; the hooks then own
+       *   the whole transport, while cancellation stays on the job layer either
+       *   way.
+       */
+
+      /**
+       * The non-blocking form of generate: the same flow wrapped in a job on
+       * `@apostrophecms/job`. The `await` covers job creation only — the method
+       * returns as soon as the job record exists, the run continues in the
+       * background, and the exact object generate would have returned is stored
+       * on the record as `results` (a failure stores its error instead),
+       * readable via the job module's status route.
+       *
+       * Invalid options throw here, synchronously — a job record is created
+       * only for a run that can start. Tool handlers may not start jobs: a
+       * subagent's work is blocking by design.
+       *
+       * @param {object} req
+       * @param {string|(AiGenerateOptions & AiJobOptions)} stringOrOptions
+       * @param {(AiGenerateOptions & AiJobOptions)} [options]
+       * @returns {Promise<{ jobId: string, cancel: () => Promise<void> }>}
+       *   `cancel()` requests cancellation in process; the job module's cancel
+       *   route does the same cross-process, by jobId. Either way the flag
+       *   travels through the job record, the abort signal reaches the
+       *   in-flight provider call and every handler, the run winds down per
+       *   generate's cancellation semantics with the partial result stored, and
+       *   the job ends 'cancelled'.
+       */
       async generateJob(req, stringOrOptions, options) {
         if ((req.aposAiDepth || 0) > 0) {
           throw self.apos.error('invalid', 'generateJob cannot be called from a tool handler: a subagent is blocking only');
@@ -799,18 +861,25 @@ module.exports = {
           }
         }
       },
-      // The built-in progress publisher for generateJob: deliver one
-      // stage of a background run — 'started', 'message' or 'ended',
-      // with `data` as the stage's payload — to the job owner's
-      // browser over the notification channel. Each stage is a bus
-      // notification — never rendered — whose one-shot browser-bus
-      // event "ai-generate-job" is emitted in exactly one tab,
-      // carrying { jobId, stage, ...data }:
-      // apos.bus.$on('ai-generate-job', (data) => ...) and filter by
-      // jobId. Notifications reach logged-in users only, so a req
-      // without a user _id is a silent no-op — there is nobody to
-      // deliver to. A delivery failure is logged and never fails the
-      // run it reports on.
+
+      /**
+       * The built-in progress publisher for generateJob: deliver one stage of a
+       * background run to the job owner's browser over the notification
+       * channel. Each stage is a bus notification — never rendered — whose
+       * one-shot browser-bus event "ai-generate-job" is emitted in exactly one
+       * tab, carrying { jobId, stage, ...data }:
+       * `apos.bus.$on('ai-generate-job', (data) => ...)`, filtered by jobId.
+       *
+       * Notifications reach logged-in users only, so a req without a user _id
+       * is a silent no-op — there is nobody to deliver to. A delivery failure
+       * is logged and never fails the run it reports on.
+       *
+       * @param {object} req
+       * @param {string} jobId
+       * @param {'started'|'message'|'ended'} stage
+       * @param {object} [data] The stage's payload.
+       * @returns {Promise<void>}
+       */
       async publishJobEvent(req, jobId, stage, data = {}) {
         if (!req.user?._id) {
           return;

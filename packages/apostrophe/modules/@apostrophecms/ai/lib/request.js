@@ -33,18 +33,11 @@ module.exports = (self) => {
   }
 
   return {
-    // Resolve a call's routing options to a concrete routing entry,
-    // with the same precedence generate uses: explicit provider+model,
-    // else the call's effort level, else the default level. Unknown
-    // models are deliberately not an error — the call would work.
-    //
-    // Options:
-    // `provider`, `model` (strings, only together): the explicit
-    //   target, bypassing the routing table;
-    // `effort` (string): the routing level to resolve;
-    // `capability` (only 'image'): resolve the image route instead of
-    //   the effort table;
-    // `reasoning` (string): override the resolved entry's reasoning.
+    // Resolve a call's routing options — the ones documented on modelInfo —
+    // to a concrete routing entry, with the same precedence generate uses:
+    // explicit provider+model, else the call's effort level, else the
+    // default level. Unknown models are deliberately not an error, since
+    // the call would work.
     resolve(options = {}) {
       const {
         provider, model, effort, capability, reasoning
