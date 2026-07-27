@@ -262,12 +262,12 @@ module.exports = (self) => {
     // (unknown adapters, dangling routing references, effort levels with
     // no row) happen later, at activation.
     validateOptions(options) {
-      const checkString = (value, name) => {
+      function checkString(value, name) {
         if (value !== undefined && typeof value !== 'string') {
           fail(`"${name}" must be a string`);
         }
-      };
-      const checkEffortRow = (row, name, { provider = false } = {}) => {
+      }
+      function checkEffortRow(row, name, { provider = false } = {}) {
         if (!isObject(row)) {
           fail(`"${name}" must be an object like { provider, model }`);
         }

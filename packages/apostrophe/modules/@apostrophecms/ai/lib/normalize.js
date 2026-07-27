@@ -9,9 +9,9 @@ const {
 const { isObject } = require('./util');
 
 module.exports = (self) => {
-  const invalid = (message) => {
+  function invalid(message) {
     throw self.apos.error('invalid', message);
-  };
+  }
 
   return {
     // Parse and validate generate's `(stringOrOptions, options)`
