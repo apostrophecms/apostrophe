@@ -102,42 +102,6 @@ module.exports = {
       getAdapter(name) {
         return self.adapters[name];
       },
-      // Synchronous introspection: the model a call with these options
-      // would hit and what it offers. Accepts the same options as
-      // `resolve` and resolves exactly like a call would, including
-      // its "invalid" errors — a call that cannot resolve here would
-      // fail the same way for real. An unknown model is different: the
-      // call would work, so it yields undefined limits, never an error.
-      // Check `self.active` first to ask whether AI is configured at
-      // all.
-      //
-      // Returns `{ provider, model, reasoning?, contextWindow,
-      // maxOutputTokens, capabilities }`, plus the model's declared
-      // `aspects` for an image resolution. Model metadata merges the
-      // provider's model maps with any fields carried inline on the
-      // routing entry.
-      modelInfo(options = {}) {
-        const {
-          provider, model, reasoning, aspect, quality, ...inline
-        } = self.resolve(options);
-        const record = self.providers[provider];
-        const metadata = {
-          ...record.models[model],
-          ...inline
-        };
-        const info = {
-          provider,
-          model,
-          ...(reasoning !== undefined && { reasoning }),
-          contextWindow: metadata.contextWindow,
-          maxOutputTokens: metadata.maxOutputTokens,
-          capabilities: { ...record.capabilities }
-        };
-        if (options.capability === 'image') {
-          info.aspects = metadata.aspects;
-        }
-        return info;
-      },
       // Register an AI tool definition. Feature modules call this in
       // their own init; core, project and third-party modules all use
       // the same call. Re-registering an existing name overrides (last
@@ -200,10 +164,6 @@ module.exports = {
       getTool(name) {
         return self.hasTool(name) ? self.tools[name] : undefined;
       },
-      // An efficient way of checking (by name) if a tool exists
-      hasTool(name) {
-        return Object.hasOwn(self.tools, name);
-      },
       // All activated tool definitions; with `tags`, those carrying
       // at least one of them. A single tag may be passed as a string.
       // Served from caches built at activation, so treat the returned
@@ -230,6 +190,46 @@ module.exports = {
           }
         }
         return [ ...found ];
+      },
+      // An efficient way of checking (by name) if a tool exists
+      hasTool(name) {
+        return Object.hasOwn(self.tools, name);
+      },
+      // Synchronous introspection: the model a call with these options
+      // would hit and what it offers. Accepts the same options as
+      // `resolve` and resolves exactly like a call would, including
+      // its "invalid" errors — a call that cannot resolve here would
+      // fail the same way for real. An unknown model is different: the
+      // call would work, so it yields undefined limits, never an error.
+      // Check `self.active` first to ask whether AI is configured at
+      // all.
+      //
+      // Returns `{ provider, model, reasoning?, contextWindow,
+      // maxOutputTokens, capabilities }`, plus the model's declared
+      // `aspects` for an image resolution. Model metadata merges the
+      // provider's model maps with any fields carried inline on the
+      // routing entry.
+      modelInfo(options = {}) {
+        const {
+          provider, model, reasoning, aspect, quality, ...inline
+        } = self.resolve(options);
+        const record = self.providers[provider];
+        const metadata = {
+          ...record.models[model],
+          ...inline
+        };
+        const info = {
+          provider,
+          model,
+          ...(reasoning !== undefined && { reasoning }),
+          contextWindow: metadata.contextWindow,
+          maxOutputTokens: metadata.maxOutputTokens,
+          capabilities: { ...record.capabilities }
+        };
+        if (options.capability === 'image') {
+          info.aspects = metadata.aspects;
+        }
+        return info;
       },
       // The AI permission seam: whether this AI action is permitted
       // for `req`. Same signature and semantics as
@@ -486,6 +486,126 @@ module.exports = {
         await self.emit('afterGenerate', req, context);
         return context.result;
       },
+      // The image method: text → image against the routed image
+      // provider, or image(s) + text → image (editing) when `images`
+      // sources are passed — `prompt` is then the edit instruction and
+      // the images are the source.
+      //
+      // Options:
+      // `count` (positive integer, default 1): how many images;
+      // `aspect` ('square' | 'portrait' | 'landscape', or a 'W:H'
+      //   ratio): the shape dial, resolved to the nearest aspect the
+      //   routed model declares (resolveAspect); the adapter
+      //   translates the resolved ratio to its dialect. Omitted ⇒ not
+      //   sent, the provider default applies;
+      // `quality` ('low' | 'medium' | 'high'): the spend dial, mapped
+      //   to the provider's native knob; providers without one ignore
+      //   it. Omitted ⇒ not sent;
+      // `images` (array of { url } | { data, mediaType } sources):
+      //   the presence of sources makes the call an edit;
+      // `provider`, `model` (strings, only together): the explicit
+      //   target, bypassing the `image` routing entry — the entry's
+      //   default dials do not apply then;
+      // `signal` (AbortSignal): aborts the in-flight provider call.
+      //
+      // Routing: the module's `image` option ({ provider, model,
+      // aspect, quality }) names the project's image route and its
+      // default dials; per-call dials win. Capability-gated on
+      // `image`: routing image work to a provider that cannot
+      // generate images is a clear error, never a silent re-route.
+      //
+      // Returns one call-level result object, like generate:
+      // { images, provider, model, usage, aspect?, size? }. `images`
+      // is [ { type, data } ], `data` base64 and `type` its format;
+      // everything else is said once on the envelope — `usage` is the
+      // whole call's token total (providers bill the batch, not the
+      // image), `aspect` the resolved native ratio when a dial ran,
+      // `size` the native pixel size when the provider works in
+      // pixels. Throws the same normalized codes as generate, with
+      // the same retries, log records and mock behavior (placeholder
+      // images, no network — scriptable via the `mockImage` option,
+      // see mockImage). Emits `beforeGenerateImage` and
+      // `afterGenerateImage` around the call, sharing one mutable
+      // context.
+      async generateImage(req, prompt, options) {
+        const canonical = self.normalizeImageOptions(prompt, options);
+        // Mock answers unconditionally: real routing still applies
+        // under mock when it can resolve — the configuration stays
+        // exercised — but a missing image route (an optional entry,
+        // unlike the always-present effort table) or missing providers
+        // never block a mock call; placeholder routing stands in
+        let route;
+        if (self.mockMode && (
+          !Object.keys(self.providers).length ||
+          (!canonical.provider && !self.options.image)
+        )) {
+          route = {
+            provider: canonical.provider ?? 'mock',
+            model: canonical.model ?? 'mock'
+          };
+        } else {
+          route = self.resolve({
+            provider: canonical.provider,
+            model: canonical.model,
+            capability: 'image'
+          });
+          self.checkCapability(route.provider, 'image');
+        }
+        const {
+          provider, model, aspect: routeAspect, quality: routeQuality,
+          ...inline
+        } = route;
+        // The routed model's metadata, inline routing-entry fields
+        // winning — its declared aspects ground the nearest-match
+        const metadata = {
+          ...self.providers[provider]?.models?.[model],
+          ...inline
+        };
+        const aspect = self.resolveAspect(
+          canonical.aspect ?? routeAspect,
+          metadata.aspects
+        );
+        const quality = canonical.quality ?? routeQuality;
+        const request = {
+          prompt: canonical.prompt,
+          count: canonical.count,
+          ...(aspect !== undefined && { aspect }),
+          ...(quality !== undefined && { quality }),
+          ...(canonical.images && { images: canonical.images }),
+          model,
+          ...(canonical.signal && { signal: canonical.signal })
+        };
+        const record = self.mockMode
+          ? self.mockRecord('image', provider)
+          : self.providers[provider];
+        const context = {
+          provider,
+          request
+        };
+        await self.emit('beforeGenerateImage', req, context);
+        const result = await self.callAdapter(req, record, context.request, async () =>
+          self.validateImageResult(
+            await record.adapter.image(req, context.request)
+          )
+        );
+        // The envelope: the adapter's minimal result plus what the
+        // core knows — the provider and the resolved aspect it sent;
+        // the pixel size only when the adapter reported one
+        context.result = {
+          images: result.images.map((image) => ({
+            type: image.type,
+            data: image.data
+          })),
+          provider: context.provider,
+          model: result.model || context.request.model,
+          ...(result.usage && { usage: { ...result.usage } }),
+          ...(context.request.aspect !== undefined &&
+            { aspect: context.request.aspect }),
+          ...(result.size !== undefined && { size: result.size })
+        };
+        await self.emit('afterGenerateImage', req, context);
+        return context.result;
+      },
       // The non-blocking form of `generate`: the same flow wrapped in a
       // job on `@apostrophecms/job`. The `await` covers job creation
       // only — the method returns { jobId, cancel } as soon as the job
@@ -715,126 +835,6 @@ module.exports = {
             stack: e.stack
           });
         }
-      },
-      // The image method: text → image against the routed image
-      // provider, or image(s) + text → image (editing) when `images`
-      // sources are passed — `prompt` is then the edit instruction and
-      // the images are the source.
-      //
-      // Options:
-      // `count` (positive integer, default 1): how many images;
-      // `aspect` ('square' | 'portrait' | 'landscape', or a 'W:H'
-      //   ratio): the shape dial, resolved to the nearest aspect the
-      //   routed model declares (resolveAspect); the adapter
-      //   translates the resolved ratio to its dialect. Omitted ⇒ not
-      //   sent, the provider default applies;
-      // `quality` ('low' | 'medium' | 'high'): the spend dial, mapped
-      //   to the provider's native knob; providers without one ignore
-      //   it. Omitted ⇒ not sent;
-      // `images` (array of { url } | { data, mediaType } sources):
-      //   the presence of sources makes the call an edit;
-      // `provider`, `model` (strings, only together): the explicit
-      //   target, bypassing the `image` routing entry — the entry's
-      //   default dials do not apply then;
-      // `signal` (AbortSignal): aborts the in-flight provider call.
-      //
-      // Routing: the module's `image` option ({ provider, model,
-      // aspect, quality }) names the project's image route and its
-      // default dials; per-call dials win. Capability-gated on
-      // `image`: routing image work to a provider that cannot
-      // generate images is a clear error, never a silent re-route.
-      //
-      // Returns one call-level result object, like generate:
-      // { images, provider, model, usage, aspect?, size? }. `images`
-      // is [ { type, data } ], `data` base64 and `type` its format;
-      // everything else is said once on the envelope — `usage` is the
-      // whole call's token total (providers bill the batch, not the
-      // image), `aspect` the resolved native ratio when a dial ran,
-      // `size` the native pixel size when the provider works in
-      // pixels. Throws the same normalized codes as generate, with
-      // the same retries, log records and mock behavior (placeholder
-      // images, no network — scriptable via the `mockImage` option,
-      // see mockImage). Emits `beforeGenerateImage` and
-      // `afterGenerateImage` around the call, sharing one mutable
-      // context.
-      async generateImage(req, prompt, options) {
-        const canonical = self.normalizeImageOptions(prompt, options);
-        // Mock answers unconditionally: real routing still applies
-        // under mock when it can resolve — the configuration stays
-        // exercised — but a missing image route (an optional entry,
-        // unlike the always-present effort table) or missing providers
-        // never block a mock call; placeholder routing stands in
-        let route;
-        if (self.mockMode && (
-          !Object.keys(self.providers).length ||
-          (!canonical.provider && !self.options.image)
-        )) {
-          route = {
-            provider: canonical.provider ?? 'mock',
-            model: canonical.model ?? 'mock'
-          };
-        } else {
-          route = self.resolve({
-            provider: canonical.provider,
-            model: canonical.model,
-            capability: 'image'
-          });
-          self.checkCapability(route.provider, 'image');
-        }
-        const {
-          provider, model, aspect: routeAspect, quality: routeQuality,
-          ...inline
-        } = route;
-        // The routed model's metadata, inline routing-entry fields
-        // winning — its declared aspects ground the nearest-match
-        const metadata = {
-          ...self.providers[provider]?.models?.[model],
-          ...inline
-        };
-        const aspect = self.resolveAspect(
-          canonical.aspect ?? routeAspect,
-          metadata.aspects
-        );
-        const quality = canonical.quality ?? routeQuality;
-        const request = {
-          prompt: canonical.prompt,
-          count: canonical.count,
-          ...(aspect !== undefined && { aspect }),
-          ...(quality !== undefined && { quality }),
-          ...(canonical.images && { images: canonical.images }),
-          model,
-          ...(canonical.signal && { signal: canonical.signal })
-        };
-        const record = self.mockMode
-          ? self.mockRecord('image', provider)
-          : self.providers[provider];
-        const context = {
-          provider,
-          request
-        };
-        await self.emit('beforeGenerateImage', req, context);
-        const result = await self.callAdapter(req, record, context.request, async () =>
-          self.validateImageResult(
-            await record.adapter.image(req, context.request)
-          )
-        );
-        // The envelope: the adapter's minimal result plus what the
-        // core knows — the provider and the resolved aspect it sent;
-        // the pixel size only when the adapter reported one
-        context.result = {
-          images: result.images.map((image) => ({
-            type: image.type,
-            data: image.data
-          })),
-          provider: context.provider,
-          model: result.model || context.request.model,
-          ...(result.usage && { usage: { ...result.usage } }),
-          ...(context.request.aspect !== undefined &&
-            { aspect: context.request.aspect }),
-          ...(result.size !== undefined && { size: result.size })
-        };
-        await self.emit('afterGenerateImage', req, context);
-        return context.result;
       }
     };
   }
