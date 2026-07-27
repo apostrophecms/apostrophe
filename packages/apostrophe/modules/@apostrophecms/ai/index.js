@@ -81,15 +81,13 @@ module.exports = {
     };
   },
   methods(self) {
-    // A 1×1 transparent PNG, the placeholder pixel mock image calls
-    // return
-    const MOCK_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-
     return {
       ...require('./lib/startup')(self),
       ...require('./lib/normalize')(self),
       ...require('./lib/request')(self),
       ...require('./lib/adapter-call')(self),
+      ...require('./lib/tools')(self),
+      ...require('./lib/mock')(self),
       ...require('./lib/aspect')(self),
 
       // Register a provider adapter. Adapters self-register in their own
@@ -245,224 +243,6 @@ module.exports = {
       can(req, ...args) {
         return self.apos.permission.can(req, ...args);
       },
-      // Execute one model-requested tool call `call`, a toolCall
-      // content part { id, name, input }, against `tool`, its
-      // activated registry definition (getTool). Returns the
-      // handler's result converted through the tool's schema — every
-      // declared field present in normalized form — ready to be
-      // serialized for the model.
-      //
-      // The model's input is validated against the tool's `input`
-      // schema first; invalid arguments never reach the handler — they
-      // throw 'aiToolError', the recoverable code, so the loop can
-      // feed the validation message back to the model. The handler
-      // runs with the caller's `req` and a copy of the validated
-      // arguments; `context` is written to `args._context` after
-      // validation, so a model-provided property can never pose as
-      // core injection.
-      //
-      // A handler throw passes through untouched: recovery is decided
-      // elsewhere, by the error code alone. A handler result the
-      // schema rejects is a handler bug, not model misbehaviour: it
-      // throws 'invalid' naming the tool — a standard code breaks the
-      // AI chain, no retries, no further AI work — and no detail of it
-      // is ever fed back to the model.
-      async executeToolCall(req, tool, call, context = {}) {
-        if (!tool.validateArgs(call.input)) {
-          throw self.apos.error('aiToolError', `invalid arguments for tool "${tool.name}": ${self.ajv.errorsText(tool.validateArgs.errors, { dataVar: 'arguments' })}`);
-        }
-        const args = {
-          ...call.input,
-          _context: context
-        };
-        const result = await tool.handler(req, args);
-        if (!isObject(result)) {
-          throw self.apos.error('invalid', `tool "${tool.name}" must return an object matching its schema`);
-        }
-        const converted = {};
-        try {
-          await self.apos.schema.convert(req, tool.schema, result, converted);
-        } catch (errors) {
-          throw self.apos.error('invalid', `tool "${tool.name}" returned a result that does not match its schema: ${detail(errors)}`);
-        }
-        return converted;
-
-        // The convert rejection → one readable line naming each field
-        function detail(errors) {
-          if (!Array.isArray(errors)) {
-            return errors.message || String(errors);
-          }
-          return errors
-            .map((error) => `${error.path}: ${error.message || error.name}`)
-            .join('; ');
-        }
-      },
-      // The built-in mock standing in for every adapter chat under
-      // APOS_AI_MOCK. Consults the "mock" option first when the module
-      // has one — called (req, request), req-first like every AI
-      // surface, so a mock can answer per current user: it may return
-      // a complete assistant turn, a { text } shorthand filled out
-      // into one, or undefined to fall through to the deterministic
-      // default. That default is request-aware: for a
-      // structured request (`request.schema`) it synthesizes a
-      // schema-conforming object and returns it on the turn's `object`,
-      // as a real adapter would — the pipeline backstop-validates
-      // it like a real one — otherwise canned text echoing the
-      // conversation's final message; usage is estimated from the text
-      // sizes. Runs inside the same retry and validation seam as a real
-      // adapter call, so a mock that throws normalized codes exercises
-      // the real error paths.
-      async mockChat(req, request) {
-        const custom = self.options.mock
-          ? await self.options.mock(req, request)
-          : undefined;
-        if (custom == null) {
-          if (request.schema) {
-            const object = sample(request.schema);
-            return turn(JSON.stringify(object), object);
-          }
-          const tail = textOf(request.messages.at(-1).content);
-          return turn(`[mock] ${tail}`);
-        }
-        if (isObject(custom) && Array.isArray(custom.content)) {
-          return custom;
-        }
-        if (isObject(custom) && typeof custom.text === 'string') {
-          return turn(custom.text);
-        }
-        throw self.apos.error(
-          'invalid',
-          '"mock" must return an assistant turn, a { text } object or undefined'
-        );
-
-        // A canned assistant turn. `text` is the answer's text; a
-        // structured call passes the synthesized `object` too, which
-        // rides the turn. The text stays in the content — for a
-        // structured turn it is the object's JSON, so the transcript's
-        // assistant message is non-empty and re-normalizes on resume,
-        // as a real provider's structured answer would.
-        function turn(text, object) {
-          const input = [
-            request.system,
-            ...request.messages.map((message) => textOf(message.content))
-          ].filter(Boolean).join(' ');
-          return {
-            content: [ {
-              type: 'text',
-              text
-            } ],
-            ...(object !== undefined && { object }),
-            finishReason: 'stop',
-            usage: {
-              inputTokens: tokens(input),
-              outputTokens: tokens(text)
-            }
-          };
-        }
-        function textOf(content) {
-          return content
-            .filter((part) => part.type === 'text')
-            .map((part) => part.text)
-            .join(' ');
-        }
-        // ~4 characters per token, the usual plain-text ballpark
-        function tokens(text) {
-          return Math.max(1, Math.round(text.length / 4));
-        }
-        // A deterministic value conforming to `schema`, enough to pass
-        // the structured-output backstop: `const`/`enum` honored, every
-        // declared property of an object filled, arrays sized to
-        // minItems, the simplest in-range value for a scalar
-        function sample(schema) {
-          if (!isObject(schema)) {
-            return null;
-          }
-          if (schema.const !== undefined) {
-            return schema.const;
-          }
-          if (Array.isArray(schema.enum) && schema.enum.length) {
-            return schema.enum[0];
-          }
-          const type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
-          if (type === 'object') {
-            const object = {};
-            const properties = isObject(schema.properties) ? schema.properties : {};
-            for (const [ key, subschema ] of Object.entries(properties)) {
-              object[key] = sample(subschema);
-            }
-            return object;
-          }
-          if (type === 'array') {
-            const min = Number.isInteger(schema.minItems) ? schema.minItems : 0;
-            const items = isObject(schema.items) ? schema.items : {};
-            return Array.from({ length: min }, () => sample(items));
-          }
-          if (type === 'boolean') {
-            return false;
-          }
-          if (type === 'null') {
-            return null;
-          }
-          if (type === 'number' || type === 'integer') {
-            return Number.isFinite(schema.minimum) ? schema.minimum : 0;
-          }
-          // string, and the no-type case (any value validates)
-          const min = Number.isInteger(schema.minLength) ? schema.minLength : 0;
-          return 'x'.repeat(min);
-        }
-      },
-      // The mock adapter's error normalization: errors pass through
-      // untouched, so a mock throwing normalized codes exercises the
-      // real error paths
-      mockNormalizeError(error) {
-        return error;
-      },
-      // The built-in mock standing in for every adapter image call
-      // under APOS_AI_MOCK. Consults the "mockImage" option first when
-      // the module has one — called (req, request), req-first like
-      // every AI surface, so a mock can answer per current user: it
-      // may return a complete adapter image result ({ images, model?,
-      // usage?, size? }), an images array shorthand filled out into
-      // one, or undefined to fall through to the deterministic
-      // default — `count` copies of a placeholder pixel, no network
-      // or keys. Filled-in usage is the chat mock's
-      // text ballpark for the prompt plus a flat per-image output, the
-      // order images bill at. Runs inside the same retry and
-      // validation seam as a real call.
-      async mockImage(req, request) {
-        const custom = self.options.mockImage
-          ? await self.options.mockImage(req, request)
-          : undefined;
-        if (custom == null) {
-          return result(Array.from({ length: request.count }, () => ({
-            type: 'png',
-            data: MOCK_PIXEL
-          })));
-        }
-        if (isObject(custom) && Array.isArray(custom.images)) {
-          return custom;
-        }
-        if (Array.isArray(custom)) {
-          return result(custom);
-        }
-        throw self.apos.error(
-          'invalid',
-          '"mockImage" must return an image result, an images array or undefined'
-        );
-
-        // The adapter return shape around `images`, with the model and
-        // a plausible usage supplied
-        function result(images) {
-          return {
-            images,
-            model: request.model,
-            usage: {
-              inputTokens: Math.max(1, Math.round(request.prompt.length / 4)),
-              outputTokens: 1000 * images.length
-            }
-          };
-        }
-      },
       // The language method: text, multi-turn chat, the tool-calling
       // agent loop and structured output against the routed provider.
       //
@@ -590,13 +370,7 @@ module.exports = {
           }
         }
         const record = self.mockMode
-          ? {
-            name: provider,
-            adapter: {
-              chat: self.mockChat,
-              normalizeError: self.mockNormalizeError
-            }
-          }
+          ? self.mockRecord('chat', provider)
           : self.providers[provider];
         const tools = new Map(canonical.tools.map((tool) => [ tool.name, tool ]));
         const handlerContext = request.signal ? { signal: request.signal } : {};
@@ -1032,13 +806,7 @@ module.exports = {
           ...(canonical.signal && { signal: canonical.signal })
         };
         const record = self.mockMode
-          ? {
-            name: provider,
-            adapter: {
-              image: self.mockImage,
-              normalizeError: self.mockNormalizeError
-            }
-          }
+          ? self.mockRecord('image', provider)
           : self.providers[provider];
         const context = {
           provider,
@@ -1067,97 +835,6 @@ module.exports = {
         };
         await self.emit('afterGenerateImage', req, context);
         return context.result;
-      },
-      // Execute one batch of model-requested tool calls — the toolCall
-      // parts of a single assistant turn — against `tools`, the call's
-      // selected definitions as a Map by name. Reads run first, in
-      // parallel; writes follow serially, in the order the model
-      // requested them; `context` reaches every handler as
-      // `args._context`, extended with `depth` — 1 inside a top-level
-      // call's batch, deeper inside a subagent's. Handlers run on a
-      // clone of the caller's req stamped with that depth
-      // (`aposAiDepth`) — an immutable property of the request each
-      // handler received, never shared mutable state — so a generate
-      // call a handler makes with its own req knows it is nested, even
-      // delayed or from a stashed reference, while the caller's
-      // original req is untouched and concurrent calls sharing it are
-      // unaffected. Every batch is stamped, not only agent tools, so a
-      // handler that spawns without declaring `access: 'agent'` is
-      // contained all the same; `_context.depth` is the informational
-      // copy a handler may act on. Returns outcomes in model order
-      // regardless of
-      // scheduling: { toolCall, result } per success, { toolCall,
-      // error } per recoverable failure — a call naming a tool outside
-      // the selected set, invalid arguments, or a handler's
-      // aiToolError; the error message is what the model reads back,
-      // and siblings are unaffected. Any other throw is a hard stop:
-      // it propagates immediately, before any write runs when thrown
-      // by a read, aborting the remaining writes when thrown by one —
-      // and no trace of it is ever model-bound. Emits beforeToolCall
-      // and afterToolCall around each execution.
-      async executeToolCalls(req, tools, calls, context = {}) {
-        const outcomes = new Array(calls.length);
-        const depth = (req.aposAiDepth || 0) + 1;
-        const handlerReq = req.clone({ aposAiDepth: depth });
-        const handlerContext = {
-          ...context,
-          depth
-        };
-        const run = async (call, index) => {
-          const tool = tools.get(call.name);
-          if (!tool) {
-            outcomes[index] = {
-              toolCall: call,
-              error: `unknown tool "${call.name}"`
-            };
-            return;
-          }
-          const payload = {
-            call,
-            tool
-          };
-          await self.emit('beforeToolCall', req, payload);
-          try {
-            payload.result = await self.executeToolCall(
-              handlerReq, tool, call, handlerContext
-            );
-            outcomes[index] = {
-              toolCall: call,
-              result: payload.result
-            };
-          } catch (e) {
-            if (e?.name !== 'aiToolError') {
-              throw e;
-            }
-            payload.error = e.message;
-            outcomes[index] = {
-              toolCall: call,
-              error: e.message
-            };
-          }
-          await self.emit('afterToolCall', req, payload);
-        };
-        const reads = [];
-        const writes = [];
-        calls.forEach((call, index) => {
-          if (tools.get(call.name)?.access === 'read') {
-            reads.push([ call, index ]);
-          } else {
-            writes.push([ call, index ]);
-          }
-        });
-        const settled = await Promise.allSettled(
-          reads.map(([ call, index ]) => run(call, index))
-        );
-        for (const read of settled) {
-          if (read.status === 'rejected') {
-            throw read.reason;
-          }
-        }
-        for (const [ call, index ] of writes) {
-          await run(call, index);
-        }
-        return outcomes;
       }
     };
   }
