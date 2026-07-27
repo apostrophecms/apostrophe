@@ -99,6 +99,7 @@ module.exports = {
       ...require('./lib/normalize')(self),
       ...require('./lib/request')(self),
       ...require('./lib/adapter-call')(self),
+      ...require('./lib/adapter-api')(self),
       ...require('./lib/tools')(self),
       ...require('./lib/mock')(self),
       ...require('./lib/aspect')(self),

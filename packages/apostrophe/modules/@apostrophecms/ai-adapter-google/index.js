@@ -113,9 +113,7 @@ module.exports = {
             }
           },
           validate() {
-            if (!this.apiKey) {
-              throw new Error(`the "${this.provider}" provider requires an apiKey`);
-            }
+            self.apos.ai.requireApiKey(this);
           },
           async chat(req, request) {
             const response = await self.apos.http.post(
@@ -540,70 +538,16 @@ module.exports = {
         };
       },
       // Map any error the transport produced to a normalized apos
-      // error, the only shape the engine reacts to. Transient failures
-      // — 429, 5xx, network trouble, our own timeout — become the
-      // retryable code with a `kind` hint. The provider's retry hint
-      // is read from the Retry-After header or, failing that, from
-      // the RetryInfo detail Gemini puts in the error body, into
-      // `retryAfter` seconds. No request id header exists on this
-      // API. A caller's own abort is not a provider failure and
-      // passes through untouched.
+      // error, the only shape the engine reacts to: the engine's shared
+      // status ladder, plus the one thing this service does its own way
+      // — when no Retry-After header arrives, the retry delay is in the
+      // RetryInfo detail Gemini puts in the error body. No request id
+      // header exists on this API.
       normalizeError(error) {
-        if (error?.name === 'AbortError') {
-          return error;
-        }
-        if (error?.name === 'TimeoutError') {
-          return self.apos.error('aiRetry', 'the provider request timed out', {
-            kind: 'timeout'
-          });
-        }
-        const status = error?.status;
-        if (!Number.isInteger(status)) {
-          return self.apos.error('aiRetry', `network failure: ${error?.message}`, {
-            kind: 'network'
-          });
-        }
-        const retryAfter = retryAfterSeconds(error.headers?.['retry-after']) ??
-          retryInfoSeconds(error.body?.error?.details);
-        const data = {
-          status,
-          ...(retryAfter !== undefined && { retryAfter })
-        };
-        const message = error.body?.error?.message || error.message;
-        if (status === 429) {
-          return self.apos.error('aiRetry', message, {
-            ...data,
-            kind: 'rateLimit'
-          });
-        }
-        if (status >= 500) {
-          return self.apos.error('aiRetry', message, {
-            ...data,
-            kind: 'overload'
-          });
-        }
-        if (status === 401 || status === 403) {
-          return self.apos.error('forbidden', message, data);
-        }
-        if (status === 404) {
-          return self.apos.error('notfound', message, data);
-        }
-        return self.apos.error('invalid', message, data);
+        return self.apos.ai.normalizeHttpError(error, {
+          retryHint: (e) => retryInfoSeconds(e.body?.error?.details)
+        });
 
-        function retryAfterSeconds(value) {
-          if (value === undefined) {
-            return undefined;
-          }
-          const seconds = Number(value);
-          if (Number.isFinite(seconds)) {
-            return Math.max(0, seconds);
-          }
-          const date = Date.parse(value);
-          if (Number.isNaN(date)) {
-            return undefined;
-          }
-          return Math.max(0, Math.ceil((date - Date.now()) / 1000));
-        }
         // The google.rpc.RetryInfo detail carries a protobuf Duration
         // like "37s"
         function retryInfoSeconds(details) {

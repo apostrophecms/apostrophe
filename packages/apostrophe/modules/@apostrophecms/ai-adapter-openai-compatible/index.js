@@ -80,9 +80,7 @@ module.exports = {
             ...image.models
           },
           validate() {
-            if (!this.apiKey) {
-              throw new Error(`the "${this.provider}" provider requires an apiKey`);
-            }
+            self.apos.ai.requireApiKey(this);
           },
           async chat(req, request) {
             if (this.baseUrl === NATIVE_BASE_URL) {
@@ -320,70 +318,14 @@ module.exports = {
         return turn;
       },
       // Map any error the transport produced to a normalized apos
-      // error, the only shape the engine reacts to. Transient failures
-      // — 429, 5xx, network trouble, our own timeout — become the
-      // retryable code with a `kind` hint; the provider's Retry-After
-      // (seconds or an HTTP date) is parsed into `retryAfter` seconds
-      // and its request id is carried for the failure records. A
-      // caller's own abort is not a provider failure and passes
-      // through untouched.
+      // error, the only shape the engine reacts to: the engine's shared
+      // status ladder, plus the `x-request-id` header the dialect's
+      // hosts echo from OpenAI proper. A host that sends no such header
+      // simply carries no request id.
       normalizeError(error) {
-        if (error?.name === 'AbortError') {
-          return error;
-        }
-        if (error?.name === 'TimeoutError') {
-          return self.apos.error('aiRetry', 'the provider request timed out', {
-            kind: 'timeout'
-          });
-        }
-        const status = error?.status;
-        if (!Number.isInteger(status)) {
-          return self.apos.error('aiRetry', `network failure: ${error?.message}`, {
-            kind: 'network'
-          });
-        }
-        const headers = error.headers || {};
-        const retryAfter = retryAfterSeconds(headers['retry-after']);
-        const data = {
-          status,
-          ...(headers['x-request-id'] !== undefined && { requestId: headers['x-request-id'] }),
-          ...(retryAfter !== undefined && { retryAfter })
-        };
-        const message = error.body?.error?.message || error.message;
-        if (status === 429) {
-          return self.apos.error('aiRetry', message, {
-            ...data,
-            kind: 'rateLimit'
-          });
-        }
-        if (status >= 500) {
-          return self.apos.error('aiRetry', message, {
-            ...data,
-            kind: 'overload'
-          });
-        }
-        if (status === 401 || status === 403) {
-          return self.apos.error('forbidden', message, data);
-        }
-        if (status === 404) {
-          return self.apos.error('notfound', message, data);
-        }
-        return self.apos.error('invalid', message, data);
-
-        function retryAfterSeconds(value) {
-          if (value === undefined) {
-            return undefined;
-          }
-          const seconds = Number(value);
-          if (Number.isFinite(seconds)) {
-            return Math.max(0, seconds);
-          }
-          const date = Date.parse(value);
-          if (Number.isNaN(date)) {
-            return undefined;
-          }
-          return Math.max(0, Math.ceil((date - Date.now()) / 1000));
-        }
+        return self.apos.ai.normalizeHttpError(error, {
+          requestIdHeader: 'x-request-id'
+        });
       }
     };
   }
