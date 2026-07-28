@@ -202,6 +202,15 @@ module.exports = {
 
     self.label = self.options.label;
 
+    const extractable = self.options.extractable;
+    const validExtractable = extractable === undefined ||
+      typeof extractable === 'boolean' ||
+      (Array.isArray(extractable) &&
+        extractable.every(tag => typeof tag === 'string' && tag.length));
+    if (!validExtractable) {
+      throw new Error(`${self.__meta.name}: "extractable" must be true, false or an array of tag strings`);
+    }
+
     self.composeSchema();
     self.composeWidgetOperations();
 
@@ -629,6 +638,35 @@ module.exports = {
 
       addSearchTexts(widget, texts) {
         self.apos.schema.indexFields(self.schema, widget, texts);
+      },
+
+      // Extract the widget's content for `apos.schema.extract`, which
+      // documents the item shape and drives this walk. By default the
+      // widget's own schema is walked, which covers any widget built from
+      // ordinary fields and areas. Override to contribute content only
+      // this widget knows about, returning your own items ahead of a
+      // recursive walk of the sub-schema:
+      //
+      // ```js
+      // extract(req, widget, options) {
+      //   return [
+      //     { text: widget.special },
+      //     ...self.apos.schema.extract(req, self.schema, widget, options)
+      //   ];
+      // }
+      // ```
+      //
+      // `options` carries the `path`, `schemaPath` and `tags` context of
+      // the walk and must travel to the recursive call unchanged. Missing
+      // item properties are filled in by the caller, so a minimal item
+      // needs only its content (`text` or `image`) and any tags of its
+      // own.
+
+      extract(req, widget, options) {
+        if (self.isEmpty(widget)) {
+          return [];
+        }
+        return self.apos.schema.extract(req, self.schema, widget, options);
       },
 
       // Return true if this widget should be considered

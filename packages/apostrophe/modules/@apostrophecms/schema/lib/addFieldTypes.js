@@ -3,6 +3,7 @@ const dayjs = require('dayjs');
 const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const joinr = require('./joinr');
+const { finalize } = require('./extract.js');
 
 const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
 
@@ -72,7 +73,7 @@ module.exports = (self) => {
         for (const group of Object.keys(field.options.groups)) {
           widgets = {
             ...widgets,
-            ...group.widgets
+            ...field.options.groups[group].widgets
           };
         }
       }
@@ -80,6 +81,8 @@ module.exports = (self) => {
       for (const name of Object.keys(widgets)) {
         check(name);
       }
+
+      resolveWidgetExtractable();
 
       function check(name) {
         if (!self.apos.modules[`${name}-widget`]) {
@@ -93,6 +96,82 @@ module.exports = (self) => {
           }
         }
       }
+      // Resolves the extraction policy of every widget type configured in
+      // this area to `false | [tags]`, merging the widget module's
+      // `extractable` option with the per-widget area configuration, so
+      // the extraction walk is a single read per widget. The module
+      // option's form is validated by the widget-type module itself.
+      function resolveWidgetExtractable() {
+        field._extractableWidgets = {};
+        const configured = self.apos.area.getWidgets(field.options || {});
+        for (const [ name, widgetOptions ] of Object.entries(configured)) {
+          const manager = self.apos.area.getWidgetManager(name);
+          if (!manager) {
+            continue;
+          }
+          const moduleTags = normalizeExtractable(manager.options.extractable ?? true);
+          const configTags = normalizeExtractable(widgetOptions?.extractable ?? true);
+          if (configTags === undefined) {
+            fail(`The "${name}" widget's "extractable" property must be true, false or an array of tag strings.`);
+          }
+          field._extractableWidgets[name] =
+            (moduleTags === false || configTags === false)
+              ? false
+              : _.uniq([ ...moduleTags, ...configTags ]);
+        }
+      }
+      function normalizeExtractable(value) {
+        if (value === false) {
+          return false;
+        }
+        if (value === true) {
+          return [];
+        }
+        if (Array.isArray(value) &&
+          value.every(tag => typeof tag === 'string' && tag.length)) {
+          return value;
+        }
+        return undefined;
+      }
+    },
+    extract(req, field, value, path) {
+      const widgets = value?.items;
+      if (!Array.isArray(widgets) || !widgets.length) {
+        return [];
+      }
+      const policies = field._extractableWidgets ?? {};
+      const items = [];
+      for (const widget of widgets) {
+        // An unconfigured or opted-out widget type is skipped whole
+        const policy = policies[widget.type];
+        if (!policy) {
+          continue;
+        }
+        const manager = self.apos.area.getWidgetManager(widget.type);
+        if (!manager) {
+          continue;
+        }
+        const context = {
+          path: `@${widget._id}`,
+          schemaPath: `${path.schema}.${widget.type}`,
+          tags: policy.length ? _.uniq([ ...path.tags, ...policy ]) : path.tags
+        };
+        const found = manager.extract(req, widget, context);
+        const defaults = {
+          path: context.path,
+          schemaPath: context.schemaPath,
+          type: `widget:${widget.type}`,
+          label: manager.label,
+          tags: context.tags
+        };
+        for (const item of found) {
+          items.push(finalize(item, defaults));
+        }
+      }
+      if (items.length) {
+        items.push({ metaOnly: true });
+      }
+      return items;
     },
     index: function (value, field, texts) {
       for (const item of ((value && value.items) || [])) {
@@ -110,6 +189,10 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'string',
+    extractable: [ 'text' ],
+    extract(req, field, value) {
+      return value ? [ { text: value } ] : [];
+    },
     convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.string(data[field.name]);
       destination[field.name] = checkStringLength(
@@ -758,6 +841,8 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'password',
+    // A hard "never extract"
+    extractable: false,
     async convert(req, field, data, destination) {
       // This is the only field type that we never update unless
       // there is actually a new value — a blank password is not cool. -Tom
@@ -922,6 +1007,27 @@ module.exports = (self) => {
         self.apos.schema.indexFields(field.schema, item, texts);
       });
     },
+    extract(req, field, value, path) {
+      if (!Array.isArray(value) || !value.length) {
+        return [];
+      }
+      const items = [];
+      for (const item of value) {
+        // Anchor on the item's _id so paths survive reordering
+        const found = self.apos.schema.extract(req, field.schema, item, {
+          path: `@${item._id}`,
+          schemaPath: path.schema,
+          tags: path.tags
+        });
+        for (const sub of found) {
+          items.push(sub);
+        }
+      }
+      if (items.length) {
+        items.push({ metaOnly: true });
+      }
+      return items;
+    },
     validate: function (field, options, warn, fail) {
       for (const subField of field.schema || field.fields.add) {
         self.validateField(subField, options, field);
@@ -1037,6 +1143,16 @@ module.exports = (self) => {
       if (value) {
         self.apos.schema.indexFields(field.schema, value, texts);
       }
+    },
+    extract(req, field, value, path) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return [];
+      }
+      return self.apos.schema.extract(req, field.schema, value, {
+        path: path.value,
+        schemaPath: path.schema,
+        tags: path.tags
+      });
     },
     def: {}
   });
