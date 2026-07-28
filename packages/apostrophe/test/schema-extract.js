@@ -959,3 +959,619 @@ describe('Schema extraction policy', function() {
     });
   });
 });
+
+describe('Schema extraction parity with legacy extraction', function() {
+  this.timeout(t.timeout);
+
+  let apos;
+  let req;
+  let schema;
+
+  // The live output of a legacy translation extract implementation for
+  // the document below, captured against the same schema expressed
+  // through that implementation's `translate` flags: field-level
+  // `translate: false` on `brand`, `offRows.hidden` and `specs.secret`;
+  // type-level `translate` on `legacyOnText`/`legacyOffText`;
+  // module-level `translate: false` on the parity-legacy-off widget;
+  // the double-nested area configuration form
+  // `{ options: { translate: false } }` on the parity-plain widget.
+  // Here every one of those flags is expressed as `extractable`
+  // vocabulary instead, and the translation query below must reproduce
+  // this output through the legacy shape mapping.
+  const legacyFields = [
+    {
+      valuePath: 'title',
+      schemaPath: 'title',
+      type: 'string',
+      text: 'Parity product'
+    },
+    {
+      valuePath: 'slug',
+      schemaPath: 'slug',
+      type: 'slug',
+      text: 'parity product',
+      original: 'parity-product'
+    },
+    {
+      valuePath: 'subtitle',
+      schemaPath: 'subtitle',
+      type: 'string',
+      text: 'A machine for testing'
+    },
+    {
+      valuePath: 'body',
+      schemaPath: 'body',
+      type: 'string',
+      text: 'Long body text for the parity audit.'
+    },
+    {
+      valuePath: 'nickname',
+      schemaPath: 'nickname',
+      type: 'slug',
+      text: 'hello world',
+      original: 'products/hello-world'
+    },
+    {
+      valuePath: 'blurb',
+      schemaPath: 'blurb',
+      type: 'legacyOnText',
+      text: 'Legacy opt-in text'
+    },
+    {
+      valuePath: '@row1.cell',
+      schemaPath: 'rows.cell',
+      type: 'string',
+      text: 'Row one'
+    },
+    {
+      valuePath: '@row1.deep.inner',
+      schemaPath: 'rows.deep.inner',
+      type: 'string',
+      text: 'Deep one'
+    },
+    {
+      valuePath: '@sub1.subCell',
+      schemaPath: 'rows.subRows.subCell',
+      type: 'string',
+      text: 'Sub one'
+    },
+    {
+      valuePath: '@row1.subRows',
+      schemaPath: '@row1.subRows',
+      type: 'array',
+      metaOnly: true
+    },
+    {
+      valuePath: '@row2.cell',
+      schemaPath: 'rows.cell',
+      type: 'string',
+      text: 'Row two'
+    },
+    {
+      valuePath: 'rows',
+      schemaPath: 'rows',
+      type: 'array',
+      metaOnly: true
+    },
+    {
+      valuePath: '@inline1.line',
+      schemaPath: 'inlineRows.line',
+      type: 'string',
+      text: 'Inline one'
+    },
+    {
+      valuePath: '@table1.cellText',
+      schemaPath: 'tableRows.cellText',
+      type: 'string',
+      text: 'Table one'
+    },
+    {
+      valuePath: 'tableRows',
+      schemaPath: 'tableRows',
+      type: 'array',
+      metaOnly: true
+    },
+    {
+      valuePath: 'specs.name',
+      schemaPath: 'specs.name',
+      type: 'string',
+      text: 'Spec name'
+    },
+    {
+      valuePath: '@w1.content',
+      schemaPath: 'main.widget:@apostrophecms/rich-text',
+      type: 'widget:@apostrophecms/rich-text',
+      metaPath: '@w1',
+      text: '<p>Rich text content</p>'
+    },
+    {
+      valuePath: '@w3.caption',
+      schemaPath: 'main.widget:@apostrophecms/image.caption',
+      type: 'string',
+      text: 'A caption'
+    },
+    {
+      valuePath: '@w4.heading',
+      schemaPath: 'main.widget:parity-hero.heading',
+      type: 'string',
+      text: 'Hero heading'
+    },
+    {
+      valuePath: '@w5.content',
+      schemaPath: 'main.widget:parity-hero.nested.widget:@apostrophecms/rich-text',
+      type: 'widget:@apostrophecms/rich-text',
+      metaPath: '@w5',
+      text: '<p>Nested rich text</p>'
+    },
+    {
+      valuePath: '@w4.nested.items',
+      schemaPath: 'main.widget:parity-hero.nested',
+      type: 'area',
+      metaPath: '@w4.nested',
+      metaOnly: true
+    },
+    {
+      valuePath: 'main.items',
+      schemaPath: 'main',
+      type: 'area',
+      metaPath: 'main',
+      metaOnly: true
+    }
+  ];
+
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        'parity-types': {
+          init(self) {
+            self.apos.schema.addFieldType({
+              name: 'legacyOnText',
+              extend: 'string'
+            });
+            self.apos.schema.addFieldType({
+              name: 'legacyOffText',
+              extend: 'string',
+              extractable: [ 'notranslate' ]
+            });
+          }
+        },
+        'parity-hero-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Parity Hero'
+          },
+          fields: {
+            add: {
+              heading: { type: 'string' },
+              nested: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {}
+                  }
+                }
+              }
+            }
+          }
+        },
+        'parity-legacy-off-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Parity Legacy Off',
+            extractable: [ 'notranslate' ]
+          },
+          fields: {
+            add: {
+              note: { type: 'string' }
+            }
+          }
+        },
+        'parity-plain-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Parity Plain'
+          },
+          fields: {
+            add: {
+              message: { type: 'string' }
+            }
+          }
+        },
+        'parity-product': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            label: 'Parity Product'
+          },
+          fields: {
+            add: {
+              subtitle: { type: 'string' },
+              body: {
+                type: 'string',
+                textarea: true
+              },
+              nickname: { type: 'slug' },
+              brand: {
+                type: 'string',
+                extractable: [ 'notranslate' ]
+              },
+              blurb: { type: 'legacyOnText' },
+              // A legacy custom type only translated fields carrying
+              // their own `translate: true`; a field without one maps
+              // to the marker tag to keep translation output identical
+              blurbDefault: {
+                type: 'legacyOnText',
+                extractable: [ 'notranslate' ]
+              },
+              internalCode: { type: 'legacyOffText' },
+              stock: { type: 'integer' },
+              tagline: { type: 'string' },
+              rows: {
+                type: 'array',
+                fields: {
+                  add: {
+                    cell: { type: 'string' },
+                    deep: {
+                      type: 'object',
+                      fields: {
+                        add: {
+                          inner: { type: 'string' }
+                        }
+                      }
+                    },
+                    subRows: {
+                      type: 'array',
+                      fields: {
+                        add: {
+                          subCell: { type: 'string' }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              inlineRows: {
+                type: 'array',
+                inline: true,
+                fields: {
+                  add: {
+                    line: { type: 'string' }
+                  }
+                }
+              },
+              tableRows: {
+                type: 'array',
+                inline: true,
+                style: 'table',
+                fields: {
+                  add: {
+                    cellText: { type: 'string' }
+                  }
+                }
+              },
+              offRows: {
+                type: 'array',
+                fields: {
+                  add: {
+                    hidden: {
+                      type: 'string',
+                      extractable: [ 'notranslate' ]
+                    }
+                  }
+                }
+              },
+              specs: {
+                type: 'object',
+                fields: {
+                  add: {
+                    name: { type: 'string' },
+                    secret: {
+                      type: 'string',
+                      extractable: [ 'notranslate' ]
+                    }
+                  }
+                }
+              },
+              main: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {},
+                    '@apostrophecms/image': {},
+                    'parity-hero': {},
+                    'parity-legacy-off': {},
+                    'parity-plain': {
+                      extractable: [ 'notranslate' ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+    req = apos.task.getReq();
+    schema = apos.modules['parity-product'].schema;
+  });
+
+  after(async function() {
+    return t.destroy(apos);
+  });
+
+  // The same document the capture was extracted from; keep in sync
+  // with the capture by hand
+  function parityDoc() {
+    return {
+      title: 'Parity product',
+      slug: 'parity-product',
+      subtitle: 'A machine for testing',
+      body: 'Long body text for the parity audit.',
+      nickname: 'products/hello-world',
+      brand: 'Acme',
+      blurb: 'Legacy opt-in text',
+      blurbDefault: 'Legacy default text',
+      internalCode: 'X-123',
+      stock: 5,
+      tagline: '',
+      rows: [
+        {
+          _id: 'row1',
+          cell: 'Row one',
+          deep: {
+            _id: 'deep1',
+            inner: 'Deep one'
+          },
+          subRows: [
+            {
+              _id: 'sub1',
+              subCell: 'Sub one'
+            }
+          ]
+        },
+        {
+          _id: 'row2',
+          cell: 'Row two',
+          deep: {
+            _id: 'deep2',
+            inner: ''
+          },
+          subRows: []
+        }
+      ],
+      inlineRows: [
+        {
+          _id: 'inline1',
+          line: 'Inline one'
+        }
+      ],
+      tableRows: [
+        {
+          _id: 'table1',
+          cellText: 'Table one'
+        }
+      ],
+      offRows: [
+        {
+          _id: 'off1',
+          hidden: 'Hidden text'
+        }
+      ],
+      specs: {
+        _id: 'specs1',
+        name: 'Spec name',
+        secret: 'Spec secret'
+      },
+      main: {
+        _id: 'area1',
+        metaType: 'area',
+        items: [
+          {
+            _id: 'w1',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: '<p>Rich text content</p>'
+          },
+          {
+            _id: 'w2',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: ''
+          },
+          {
+            _id: 'w3',
+            metaType: 'widget',
+            type: '@apostrophecms/image',
+            caption: 'A caption',
+            _image: [
+              {
+                _id: 'image1',
+                attachment: {
+                  _id: 'att1',
+                  name: 'sample',
+                  extension: 'jpg',
+                  group: 'images',
+                  width: 800,
+                  height: 600
+                }
+              }
+            ]
+          },
+          {
+            _id: 'w4',
+            metaType: 'widget',
+            type: 'parity-hero',
+            heading: 'Hero heading',
+            nested: {
+              _id: 'area2',
+              metaType: 'area',
+              items: [
+                {
+                  _id: 'w5',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '<p>Nested rich text</p>'
+                }
+              ]
+            }
+          },
+          {
+            _id: 'w6',
+            metaType: 'widget',
+            type: 'parity-legacy-off',
+            note: 'Widget module opt-out'
+          },
+          {
+            _id: 'w7',
+            metaType: 'widget',
+            type: 'parity-plain',
+            message: 'Area config opt-out'
+          }
+        ]
+      }
+    };
+  }
+
+  // The translation consumer's query: translatable text only, minus
+  // the marker tag, with the unslugify transform applied per call
+  function translationQuery() {
+    return apos.schema.extract(req, schema, parityDoc(), {
+      include: [ 'text' ],
+      exclude: [ 'notranslate' ],
+      extend: {
+        slug(item) {
+          return {
+            ...item,
+            original: item.text,
+            text: apos.util.slugify(item.text.split('/').pop(), {
+              separator: ' ',
+              stripAccents: false
+            })
+          };
+        }
+      }
+    });
+  }
+
+  // Resolve an item's dot schemaPath against the schema, returning the
+  // legacy component form (widget components prefixed `widget:`) and
+  // the schema field the path ends on, when it ends on one
+  function resolveLegacy(schemaPath) {
+    const components = [];
+    let fields = schema;
+    let areaField = null;
+    let field = null;
+    for (const part of schemaPath.split('.')) {
+      const found = fields && fields.find(f => f.name === part);
+      if (found) {
+        field = found;
+        components.push(part);
+        fields = found.schema;
+        areaField = (found.type === 'area') ? found : null;
+        continue;
+      }
+      if (areaField) {
+        components.push(`widget:${part}`);
+        fields = apos.area.getWidgetManager(part)?.schema;
+        field = null;
+        areaField = null;
+        continue;
+      }
+      components.push(part);
+      field = null;
+    }
+    return {
+      schemaPath: components.join('.'),
+      field
+    };
+  }
+
+  // Map a core item to the legacy field meta shape
+  function toLegacyShape(item) {
+    const legacy = {
+      valuePath: item.path,
+      schemaPath: resolveLegacy(item.schemaPath).schemaPath,
+      type: item.type
+    };
+    if (item.metaOnly) {
+      if (item.type === 'area') {
+        // Legacy area markers pointed their value path at the items
+        // array and their meta path at the field
+        legacy.valuePath = `${item.path}.items`;
+        legacy.metaPath = item.path;
+      }
+      legacy.metaOnly = true;
+      return legacy;
+    }
+    if (item.type === 'widget:@apostrophecms/rich-text') {
+      // Legacy anchored the rich text meta on the widget itself
+      legacy.metaPath = item.path.replace(/\.content$/, '');
+    }
+    legacy.text = item.text;
+    if (item.original !== undefined) {
+      legacy.original = item.original;
+    }
+    return legacy;
+  }
+
+  // Legacy suppressed the container marker of inline arrays not
+  // styled as tables
+  function isInlineMarker(item) {
+    if (!item.metaOnly || item.type !== 'array') {
+      return false;
+    }
+    const { field } = resolveLegacy(item.schemaPath);
+    return !!(field && field.inline && field.style !== 'table');
+  }
+
+  it('reproduces the legacy translation extraction through the shape mapping', function() {
+    const mapped = translationQuery()
+      .filter(item => !isInlineMarker(item))
+      .map(toLegacyShape);
+    const expected = legacyFields.map(entry => {
+      // Deviation: legacy composed a nested array marker's schemaPath
+      // from its value path components; the walk reports the real
+      // schema location
+      return (entry.metaOnly && entry.valuePath === '@row1.subRows')
+        ? {
+          ...entry,
+          schemaPath: 'rows.subRows'
+        }
+        : entry;
+    });
+    // Deviation: a container whose content is entirely excluded by the
+    // query still emits its marker; legacy emitted nothing for it
+    expected.splice(
+      expected.findIndex(entry => entry.valuePath === 'specs.name'),
+      0,
+      {
+        valuePath: 'offRows',
+        schemaPath: 'offRows',
+        type: 'array',
+        metaOnly: true
+      }
+    );
+    assert.deepEqual(mapped, expected);
+  });
+
+  it('keeps every legacy opt-out visible to non-translation queries', function() {
+    const items = apos.schema.extract(req, schema, parityDoc(), {
+      include: [ 'text' ]
+    });
+    const optedOut = [
+      'brand',
+      'blurbDefault',
+      'internalCode',
+      '@off1.hidden',
+      'specs.secret',
+      '@w6.note',
+      '@w7.message'
+    ];
+    for (const path of optedOut) {
+      const item = items.find(i => i.path === path);
+      assert(item, `expected an item at ${path}`);
+      assert(item.tags.includes('text'), `${path} must stay a text item`);
+      assert(item.tags.includes('notranslate'), `${path} must carry the marker`);
+    }
+  });
+});
