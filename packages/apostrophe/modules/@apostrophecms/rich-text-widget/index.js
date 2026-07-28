@@ -865,6 +865,21 @@ module.exports = {
         });
       },
 
+      // The widget's HTML markup is its content; there is no sub-schema
+      // to walk
+      extract(req, widget, options) {
+        if (self.isEmpty(widget)) {
+          return [];
+        }
+        return [
+          {
+            path: `${options.path}.content`,
+            text: widget.content,
+            tags: [ 'text' ]
+          }
+        ];
+      },
+
       isEmpty(widget) {
         const content = (widget.content || '').trim();
         const text = self.apos.util.htmlToPlaintext(content).trim();
