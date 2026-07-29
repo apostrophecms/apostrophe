@@ -1098,12 +1098,26 @@ module.exports = {
       // as part of trusted logic that will address missing documents in
       // relationships later.
       async applyPatch(req, piece, input, { fetchRelationships = true } = {}) {
-        self.apos.schema.implementPatchOperators(input, piece);
-        const schema = self.apos.schema.subsetSchemaForPatch(
-          self.allowedSchema(req),
-          input
+        const allowedSchema = self.allowedSchema(req);
+        // Shortcut for a patch that replaces just one widget, which spares us
+        // converting the rest of the document
+        const patched = await self.apos.schema.patchWidgetIfSuitable(
+          req,
+          allowedSchema,
+          input,
+          piece,
+          { fetchRelationships }
         );
-        await self.apos.schema.convert(req, schema, input, piece, { fetchRelationships });
+        if (!patched) {
+          self.apos.schema.implementPatchOperators(input, piece);
+          const schema = self.apos.schema.subsetSchemaForPatch(
+            allowedSchema,
+            input
+          );
+          await self.apos.schema.convert(req, schema, input, piece, {
+            fetchRelationships
+          });
+        }
         await self.emit('afterConvert', req, input, piece);
       },
       // Generate a sample piece of this type. The `i` counter
