@@ -1262,7 +1262,7 @@ database.`);
                 force
               });
             }
-            self.enforceParkedProperties(req, page, input);
+            self.enforceParkedProperties(req, page, input, { onlyIfPresent: true });
             if (possiblePatchedFields) {
               await self.applyPatch(req, page, input, { fetchRelationships });
             }
@@ -1308,14 +1308,28 @@ database.`);
         if (!manager) {
           throw self.apos.error('invalid');
         }
-        self.apos.schema.implementPatchOperators(input, page);
         const parentPage = page._ancestors.length &&
           page._ancestors[page._ancestors.length - 1];
-        const schema = self.apos.schema.subsetSchemaForPatch(manager.allowedSchema(req, {
+        const allowedSchema = manager.allowedSchema(req, {
           ...page,
           type: manager.name
-        }, parentPage), input);
-        await self.apos.schema.convert(req, schema, input, page, { fetchRelationships });
+        }, parentPage);
+        // Shortcut for a patch that replaces just one widget, which spares us
+        // converting the rest of the document
+        const patched = await self.apos.schema.patchWidgetIfSuitable(
+          req,
+          allowedSchema,
+          input,
+          page,
+          { fetchRelationships }
+        );
+        if (!patched) {
+          self.apos.schema.implementPatchOperators(input, page);
+          const schema = self.apos.schema.subsetSchemaForPatch(allowedSchema, input);
+          await self.apos.schema.convert(req, schema, input, page, {
+            fetchRelationships
+          });
+        }
         await manager.emit('afterConvert', req, input, page);
       },
       // True delete. Will throw an error if the page
@@ -3043,10 +3057,33 @@ database.`);
         return self.apos.i18n.inferIdLocaleAndMode(req, _id);
       },
       // Copy any parked properties of `page` back into `input` to
-      // prevent any attempt to alter them via the PUT or PATCH APIs
-      enforceParkedProperties(req, page, input) {
+      // prevent any attempt to alter them via the PUT or PATCH APIs.
+      //
+      // With `onlyIfPresent: true`, parked properties `input` says nothing
+      // about are left out of it altogether. Pass this when `input` is a patch
+      // rather than a complete replacement for the page. A property a patch
+      // never mentions is not converted in any case, and adding it makes the
+      // patch look like it touches more of the document than it really does,
+      // which costs the patch code path its shortcuts.
+      enforceParkedProperties(req, page, input, { onlyIfPresent = false } = {}) {
         for (const field of (page.parked || [])) {
+          if (onlyIfPresent && !mentions(field)) {
+            continue;
+          }
           input[field] = page[field];
+        }
+        // Dot notation and the patch operators can reach a parked property
+        // just as a plain property name can
+        function mentions(field) {
+          return [
+            input,
+            input.$push,
+            input.$pullAll,
+            input.$pullAllById,
+            input.$move
+          ].some(object => object && ((typeof object) === 'object') &&
+            Object.keys(object).some(key => key.split('.')[0] === field)
+          );
         }
       },
       async implementParkAllInDefaultLocale() {
