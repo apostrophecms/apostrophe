@@ -357,6 +357,61 @@ describe('Login', function () {
 
   });
 
+  it('should be able to log in again on a session invalidated by a password change', async function () {
+
+    // Uses its own user so the shared password sequence is not disturbed
+    const req = apos.task.getReq();
+    const instance = apos.user.newInstance();
+    instance.title = 'Ginny Weasel';
+    instance.username = 'GinnyWeasel';
+    instance.password = 'firstPassword';
+    instance.email = 'gweasel@aol.com';
+    instance.role = 'admin';
+    await apos.user.insert(req, instance);
+
+    const jar = apos.http.jar();
+    await apos.http.get('/', { jar });
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'GinnyWeasel',
+          password: 'firstPassword',
+          session: true
+        },
+        jar
+      }
+    );
+
+    let page = await apos.http.get('/', { jar });
+    assert(page.match(/logged in/));
+
+    const user = await apos.user.find(req, {
+      username: 'GinnyWeasel'
+    }).toObject();
+    user.password = 'secondPassword';
+    await apos.user.update(req, user);
+
+    // No request in between, so this login is the first one to carry the
+    // invalidated session
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'GinnyWeasel',
+          password: 'secondPassword',
+          session: true
+        },
+        jar
+      }
+    );
+
+    page = await apos.http.get('/', { jar });
+    assert(page.match(/logged in/));
+  });
+
   it('changing a user\'s password should invalidate bearer tokens for that user', async function () {
 
     // Log in

@@ -1180,8 +1180,12 @@ module.exports = {
             req.user.loginInvalidBefore &&
             (!req.session.loginAt || (req.session.loginAt < req.user.loginInvalidBefore))
           ) {
-            req.session.destroy();
             delete req.user;
+            // Regenerate rather than destroy. `destroy` removes `req.session`
+            // right away and does not wait for the store, so later middleware
+            // and routes, such as a fresh login attempt, are left without a
+            // session, and the old one can still be loaded by the next request.
+            return req.session.regenerate(() => next());
           }
           return next();
         }
