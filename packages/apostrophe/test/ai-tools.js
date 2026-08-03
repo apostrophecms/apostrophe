@@ -28,8 +28,12 @@ describe('AI tools', function() {
                 required: [ 'query' ]
               },
               schema: {
-                found: { type: 'boolean' },
-                summary: { type: 'string' }
+                type: 'object',
+                properties: {
+                  found: { type: 'boolean' },
+                  summary: { type: 'string' }
+                },
+                required: [ 'found', 'summary' ]
               },
               handler: 'tool-handlers:findPages'
             });
@@ -45,7 +49,10 @@ describe('AI tools', function() {
                 }
               },
               schema: {
-                ok: { type: 'boolean' }
+                type: 'object',
+                properties: {
+                  ok: { type: 'boolean' }
+                }
               },
               handler: async () => ({ ok: true })
             });
@@ -57,24 +64,18 @@ describe('AI tools', function() {
                 type: 'object',
                 properties: {}
               },
-              schema: {
-                ok: { type: 'boolean' }
-              },
               handler: async () => ({ ok: 'original' })
             });
             self.apos.ai.addTool({
-              name: 'normalizer',
-              description: 'Returns a result needing coercion.',
+              name: 'schemaless',
+              description: 'Declares no result schema.',
               input: {
                 type: 'object',
                 properties: {}
               },
-              schema: {
-                count: { type: 'integer' }
-              },
               handler: async () => ({
                 count: '5',
-                leaked: 'never'
+                anything: 'goes'
               })
             });
             self.apos.ai.addTool({
@@ -83,9 +84,6 @@ describe('AI tools', function() {
               input: {
                 type: 'object',
                 properties: {}
-              },
-              schema: {
-                ok: { type: 'boolean' }
               },
               handler: async () => {
                 throw self.apos.error('aiToolError', 'the search index is rebuilding');
@@ -98,9 +96,6 @@ describe('AI tools', function() {
                 type: 'object',
                 properties: {}
               },
-              schema: {
-                ok: { type: 'boolean' }
-              },
               handler: async () => {
                 throw self.apos.error('forbidden', 'not for you');
               }
@@ -112,9 +107,6 @@ describe('AI tools', function() {
                 type: 'object',
                 properties: {}
               },
-              schema: {
-                ok: { type: 'boolean' }
-              },
               handler: async () => 'not an object'
             });
             self.apos.ai.addTool({
@@ -125,10 +117,11 @@ describe('AI tools', function() {
                 properties: {}
               },
               schema: {
-                count: {
-                  type: 'integer',
-                  required: true
-                }
+                type: 'object',
+                properties: {
+                  count: { type: 'integer' }
+                },
+                required: [ 'count' ]
               },
               handler: async () => ({ wrong: true })
             });
@@ -139,8 +132,9 @@ describe('AI tools', function() {
                 seen.req = req;
                 seen.args = args;
                 return {
-                  found: 'yes',
-                  summary: 'one match'
+                  found: true,
+                  summary: 'one match',
+                  extra: 'kept'
                 };
               }
             };
@@ -155,9 +149,6 @@ describe('AI tools', function() {
               input: {
                 type: 'object',
                 properties: {}
-              },
-              schema: {
-                ok: { type: 'string' }
               },
               handler: async () => ({ ok: 'replaced' })
             });
@@ -175,26 +166,29 @@ describe('AI tools', function() {
     it('activates canonical definitions', function() {
       const tool = apos.ai.getTool('find_pages');
       assert.deepEqual(Object.keys(tool).sort(), [
-        'access', 'description', 'handler', 'input', 'label',
-        'name', 'schema', 'tags', 'validateArgs'
+        'access', 'description', 'handler', 'input', 'label', 'name',
+        'schema', 'tags', 'validateArgs', 'validateResult'
       ]);
       assert.equal(tool.label, 'Find Pages');
       assert.deepEqual(tool.tags, [ 'content', 'pages' ]);
       assert.equal(tool.access, 'read');
       assert.equal(typeof tool.handler, 'function');
       assert.equal(typeof tool.validateArgs, 'function');
-      assert.deepEqual(
-        tool.schema.map(field => [ field.name, field.type ]),
-        [ [ 'found', 'boolean' ], [ 'summary', 'string' ] ]
-      );
+      // The result schema is JSON Schema, kept as registered, with its
+      // compiled validator alongside
+      assert.deepEqual(Object.keys(tool.schema.properties), [ 'found', 'summary' ]);
+      assert.equal(typeof tool.validateResult, 'function');
     });
 
-    it('keeps an explicit label, defaults access to write and tags to none', function() {
+    it('keeps an explicit label, defaults access to write, tags and schema to none', function() {
       const tool = apos.ai.getTool('create_page');
       assert.equal(tool.label, 'Add a page');
       assert.equal(tool.access, 'write');
       const plain = apos.ai.getTool('no_object');
       assert.deepEqual(plain.tags, []);
+      // The result schema is optional
+      assert.equal(plain.schema, undefined);
+      assert.equal(plain.validateResult, undefined);
     });
 
     it('the last registration of a name wins', async function() {
@@ -224,7 +218,7 @@ describe('AI tools', function() {
         apos.ai.getTools().map(tool => tool.name).sort(),
         [
           'create_page', 'find_pages', 'forbidden_tool', 'no_object',
-          'normalizer', 'send_email', 'tool_trouble', 'wrong_shape'
+          'schemaless', 'send_email', 'tool_trouble', 'wrong_shape'
         ]
       );
       assert.deepEqual(
@@ -288,7 +282,10 @@ describe('AI tools', function() {
         properties: {}
       },
       schema: {
-        ok: { type: 'boolean' }
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' }
+        }
       },
       handler: async () => ({ ok: true }),
       ...extras
@@ -317,24 +314,20 @@ describe('AI tools', function() {
     });
 
     it('panics on a bad result schema', async function() {
-      await failsToBoot(minimal({ schema: undefined }), /"schema" must be an object of schema fields/);
+      // Missing an object root — including the apos-schema shape the
+      // earlier contract accepted here
+      await failsToBoot(minimal({ schema: { type: 'array' } }), /"schema" must be a JSON Schema with an object root/);
       await failsToBoot(minimal({
         schema: {
-          found: { type: 'nonsense' }
+          found: { type: 'boolean' }
         }
-      }), /Unknown schema field type/);
+      }), /"schema" must be a JSON Schema with an object root/);
       await failsToBoot(minimal({
         schema: {
-          docs: {
-            type: 'array',
-            fields: {
-              add: {
-                title: { type: 'nonsense' }
-              }
-            }
-          }
+          type: 'object',
+          propreties: {}
         }
-      }), /Unknown schema field type/);
+      }), /"schema" is not a valid JSON Schema.*propreties/);
     });
 
     it('panics on a bad access value', async function() {
@@ -353,7 +346,7 @@ describe('AI tools', function() {
   });
 
   describe('executing a tool call', function() {
-    it('runs the handler with req and validated args, returns the converted result', async function() {
+    it('runs the handler with req and validated args, returns the result verbatim', async function() {
       const req = apos.task.getReq();
       const result = await apos.ai.executeToolCall(req, apos.ai.getTool('find_pages'), {
         id: 'call_1',
@@ -369,21 +362,25 @@ describe('AI tools', function() {
         limit: 3,
         _context: {}
       });
-      // Converted: laundered to the schema's types, every field present
+      // Validated, never mutated: undeclared fields survive
       assert.deepEqual(result, {
         found: true,
-        summary: 'one match'
+        summary: 'one match',
+        extra: 'kept'
       });
     });
 
-    it('normalizes the result and drops what the schema does not declare', async function() {
+    it('a tool without a result schema passes any object through', async function() {
       const req = apos.task.getReq();
-      const result = await apos.ai.executeToolCall(req, apos.ai.getTool('normalizer'), {
+      const result = await apos.ai.executeToolCall(req, apos.ai.getTool('schemaless'), {
         id: 'call_1',
-        name: 'normalizer',
+        name: 'schemaless',
         input: {}
       });
-      assert.deepEqual(result, { count: 5 });
+      assert.deepEqual(result, {
+        count: '5',
+        anything: 'goes'
+      });
     });
 
     it('injects _context after validation, replacing any model-provided value', async function() {
@@ -531,7 +528,6 @@ describe('AI tools', function() {
       },
       model: 'fake-medium'
     });
-    const okSchema = { ok: { type: 'boolean' } };
     const okInput = {
       type: 'object',
       properties: {}
@@ -598,7 +594,6 @@ describe('AI tools', function() {
               const add = (tool) => self.apos.ai.addTool({
                 description: `The ${tool.name} tool.`,
                 input: okInput,
-                schema: okSchema,
                 ...tool
               });
               add({
@@ -634,7 +629,11 @@ describe('AI tools', function() {
                   required: [ 'value' ]
                 },
                 schema: {
-                  value: { type: 'string' }
+                  type: 'object',
+                  properties: {
+                    value: { type: 'string' }
+                  },
+                  required: [ 'value' ]
                 },
                 handler: async (req, args) => {
                   log.push('start:echo');
@@ -645,9 +644,6 @@ describe('AI tools', function() {
               add({
                 name: 'sub_agent',
                 access: 'agent',
-                schema: {
-                  value: { type: 'string' }
-                },
                 handler: async (req, args) => {
                   depths.push([ 'sub_agent', args._context.depth ]);
                   const inner = await self.apos.ai.generate(req, 'inner question', {
@@ -659,9 +655,6 @@ describe('AI tools', function() {
               add({
                 name: 'sub_sub',
                 access: 'agent',
-                schema: {
-                  value: { type: 'string' }
-                },
                 handler: async (req) => {
                   const inner = await self.apos.ai.generate(req, 'nested', {
                     tools: [ 'sub_agent', 'echo' ]
@@ -701,10 +694,11 @@ describe('AI tools', function() {
               add({
                 name: 'bad_shape',
                 schema: {
-                  count: {
-                    type: 'integer',
-                    required: true
-                  }
+                  type: 'object',
+                  properties: {
+                    count: { type: 'integer' }
+                  },
+                  required: [ 'count' ]
                 },
                 handler: async () => ({ wrong: true })
               });
@@ -1177,9 +1171,6 @@ describe('AI tools', function() {
                     value: { type: 'string' }
                   },
                   required: [ 'value' ]
-                },
-                schema: {
-                  value: { type: 'string' }
                 },
                 handler: async (req, args) => {
                   log.push(args.value);

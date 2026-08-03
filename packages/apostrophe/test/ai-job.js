@@ -96,12 +96,10 @@ describe('AI generateJob', function() {
               type: 'object',
               properties: {}
             };
-            const okSchema = { ok: { type: 'boolean' } };
             self.apos.ai.addTool({
               name: 'echo',
               description: 'The echo tool.',
               input: okInput,
-              schema: okSchema,
               handler: async () => ({ ok: true })
             });
             // Ignores the abort signal: runs until the test releases it
@@ -109,7 +107,6 @@ describe('AI generateJob', function() {
               name: 'gate',
               description: 'The gate tool.',
               input: okInput,
-              schema: okSchema,
               handler: async () => {
                 if (gateNotify) {
                   gateNotify();
@@ -125,7 +122,6 @@ describe('AI generateJob', function() {
               name: 'until_abort',
               description: 'The until_abort tool.',
               input: okInput,
-              schema: { sawAbort: { type: 'boolean' } },
               handler: async (req, args) => {
                 if (abortNotify) {
                   abortNotify();

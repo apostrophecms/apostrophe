@@ -71,7 +71,6 @@ describe('AI generate', function() {
                 type: 'object',
                 properties: { text: { type: 'string' } }
               },
-              schema: { text: { type: 'string' } },
               handler: (req, args) => ({ text: args.text })
             });
           }

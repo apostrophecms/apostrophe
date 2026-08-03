@@ -92,8 +92,10 @@
  * @property {object} input The JSON Schema the model's arguments must satisfy.
  * @property {(args: object) => boolean} validateArgs The compiled `input`
  *   validator.
- * @property {object[]} schema The result's Apostrophe schema, composed to the
- *   array form apos.schema.convert consumes.
+ * @property {object} [schema] The result's JSON Schema, as registered.
+ *   Internal — never sent to the model.
+ * @property {(result: object) => boolean} [validateResult] The compiled
+ *   `schema` validator; absent when the tool declares no result schema.
  * @property {'read'|'write'|'agent'} access
  * @property {(req: object, args: object) => Promise<object>} handler
  */

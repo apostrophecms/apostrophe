@@ -28,7 +28,6 @@ describe('AI adapter: anthropic', function() {
                 properties: { value: { type: 'string' } },
                 required: [ 'value' ]
               },
-              schema: { value: { type: 'string' } },
               handler: (req, args) => ({ value: args.value })
             });
           }

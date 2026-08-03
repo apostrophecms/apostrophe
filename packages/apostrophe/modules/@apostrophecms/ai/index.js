@@ -79,6 +79,13 @@ module.exports = {
     self.effortDefault = self.options.effort?.default || 'medium';
     self.mockMode = process.env.APOS_AI_MOCK === '1';
     self.ajv = new Ajv({ allErrors: true });
+    // Tool input schemas only: declared "default" values are written
+    // into the arguments a handler receives. Results and structured
+    // output stay on the plain instance — those are never mutated
+    self.ajvArgs = new Ajv({
+      allErrors: true,
+      useDefaults: true
+    });
     self.apos.http.addError('aiRetry', 503);
     self.apos.http.addError('aiRefusal', 422);
     self.apos.http.addError('aiToolError', 422);
@@ -142,15 +149,19 @@ module.exports = {
        * @property {object} input The JSON Schema (draft 2020-12) the model's
        *   arguments must satisfy. Sent to the provider; must declare an object
        *   root.
-       * @property {object} schema The handler result's shape as Apostrophe
-       *   schema fields, like a module's `add` configuration. Internal — never
-       *   sent to the model — and every result is validated against it via
-       *   apos.schema.convert.
+       * @property {object} [schema] The handler result's shape as a JSON
+       *   Schema (draft 2020-12) with an object root — the same format as
+       *   `input`, but internal: never sent to the model. When present, every
+       *   result is validated against it and a mismatch is a handler bug that
+       *   fails the call; when absent, the result only has to be an object.
+       *   Either way the handler's object is serialized for the model as-is,
+       *   never coerced or normalized.
        * @property {((req: object, args: object) => Promise<object>)|string}
        *   handler The implementation: an async (req, args) function, or a
        *   'moduleName:methodName' reference resolved at activation. Runs with
        *   the caller's req and the validated model arguments, plus the
-       *   core-injected args._context, and returns an object matching `schema`.
+       *   core-injected args._context, and returns an object matching `schema`
+       *   when one is declared.
        * @property {string} [label] A human-facing name — what a chat log or an
        *   activity trail shows for the tool; may be an i18n key. Defaults from
        *   the name ('find_pages' → 'Find Pages'). Never sent to the model.

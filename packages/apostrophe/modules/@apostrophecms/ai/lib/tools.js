@@ -8,48 +8,40 @@ module.exports = (self) => {
   return {
     // Execute one model-requested tool call — a toolCall content part —
     // against `tool`, its activated registry definition (getTool),
-    // returning the handler's result converted through the tool's
-    // schema, ready to be serialized for the model.
+    // returning the handler's result ready to be serialized for the
+    // model.
     //
     // Invalid arguments never reach the handler: they throw
     // 'aiToolError', the recoverable code, so the loop can feed the
-    // validation message back to the model. `context` is written to
-    // `args._context` after validation, so a model-provided property
-    // can never pose as core injection. A handler throw passes through
-    // untouched — recovery is decided elsewhere, by the error code
-    // alone. A result the schema rejects is a handler bug, not model
-    // misbehaviour: it throws 'invalid', a standard code that breaks
-    // the AI chain with no retries, and no detail of it is ever fed
-    // back to the model.
+    // validation message back to the model. Validation runs on a deep
+    // clone of the requested arguments — the input schema's declared
+    // "default" values are written into what the handler receives,
+    // while the transcript's own toolCall part is never mutated.
+    // `context` is written to `args._context` after validation, so a
+    // model-provided property can never pose as core injection. A
+    // handler throw passes through untouched — recovery is decided
+    // elsewhere, by the error code alone. The result must be an
+    // object; a tool that declares a result schema gets it validated,
+    // never mutated — the handler's object is what the model reads
+    // either way. A result the schema rejects is a handler bug, not
+    // model misbehaviour: it throws 'invalid', a standard code that
+    // breaks the AI chain with no retries, and no detail of it is
+    // ever fed back to the model.
     async executeToolCall(req, tool, call, context = {}) {
-      if (!tool.validateArgs(call.input)) {
+      const args = structuredClone(call.input);
+      if (!tool.validateArgs(args)) {
         throw self.apos.error('aiToolError', `invalid arguments for tool "${tool.name}": ${self.ajv.errorsText(tool.validateArgs.errors, { dataVar: 'arguments' })}`);
       }
-      const args = {
-        ...call.input,
-        _context: context
-      };
+      args._context = context;
       const result = await tool.handler(req, args);
       if (!isObject(result)) {
-        throw self.apos.error('invalid', `tool "${tool.name}" must return an object matching its schema`);
+        throw self.apos.error('invalid', `tool "${tool.name}" must return an object`);
       }
-      const converted = {};
-      try {
-        await self.apos.schema.convert(req, tool.schema, result, converted);
-      } catch (errors) {
-        throw self.apos.error('invalid', `tool "${tool.name}" returned a result that does not match its schema: ${detail(errors)}`);
+      if (tool.validateResult && !tool.validateResult(result)) {
+        const errors = self.ajv.errorsText(tool.validateResult.errors, { dataVar: 'result' });
+        throw self.apos.error('invalid', `tool "${tool.name}" returned a result that does not match its schema: ${errors}`);
       }
-      return converted;
-
-      // The convert rejection → one readable line naming each field
-      function detail(errors) {
-        if (!Array.isArray(errors)) {
-          return errors.message || String(errors);
-        }
-        return errors
-          .map((error) => `${error.path}: ${error.message || error.name}`)
-          .join('; ');
-      }
+      return result;
     },
     // Execute one batch of model-requested tool calls — the toolCall
     // parts of a single assistant turn — against `tools`, the call's

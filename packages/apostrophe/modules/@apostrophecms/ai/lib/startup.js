@@ -155,24 +155,20 @@ module.exports = (self) => {
         }
         let validateArgs;
         try {
-          validateArgs = self.ajv.compile(tool.input);
+          validateArgs = self.ajvArgs.compile(tool.input);
         } catch (e) {
           fail(`${name}: "input" is not a valid JSON Schema: ${e.message}`);
         }
-        if (!isObject(tool.schema)) {
-          fail(`${name}: "schema" must be an object of schema fields describing the result`);
-        }
-        let schema;
-        try {
-          schema = self.apos.schema.compose({
-            addFields: self.apos.schema.fieldsToArray(`AI tool ${tool.name}`, tool.schema)
-          });
-          self.apos.schema.validate(schema, {
-            type: 'AI tool',
-            subtype: tool.name
-          });
-        } catch (e) {
-          fail(`${name}: "schema" is not a valid schema: ${e.message}`);
+        let validateResult;
+        if (tool.schema !== undefined) {
+          if (!isObject(tool.schema) || tool.schema.type !== 'object') {
+            fail(`${name}: "schema" must be a JSON Schema with an object root`);
+          }
+          try {
+            validateResult = self.ajv.compile(tool.schema);
+          } catch (e) {
+            fail(`${name}: "schema" is not a valid JSON Schema: ${e.message}`);
+          }
         }
         const access = tool.access === undefined ? 'write' : tool.access;
         if (!TOOL_ACCESS.includes(access)) {
@@ -185,7 +181,8 @@ module.exports = (self) => {
           tags: tool.tags || [],
           input: tool.input,
           validateArgs,
-          schema,
+          schema: tool.schema,
+          validateResult,
           access,
           handler: resolveHandler(tool.handler, name)
         };
