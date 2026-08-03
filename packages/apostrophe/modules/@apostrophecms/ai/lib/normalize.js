@@ -169,6 +169,15 @@ module.exports = (self) => {
     // round-trips and a hand-built one fails clearly; messages are
     // rebuilt from the recognized properties, so one carrying app
     // metadata round-trips too.
+    //
+    // A provider's own artifacts are the exception, and they are the
+    // reason a returned transcript can be handed straight back: a
+    // reasoning block is a part type only its own dialect knows, and a
+    // reasoning signature is an extra property on an ordinary part.
+    // Neither is ours to understand, both are assistant-side, and an
+    // adapter that does not own them skips them — so unrecognized
+    // assistant parts and unrecognized part properties travel verbatim
+    // instead of being refused or quietly dropped.
     normalizeMessages(messages = []) {
       if (!Array.isArray(messages)) {
         invalid('"messages" must be an array');
@@ -206,6 +215,11 @@ module.exports = (self) => {
           }
           const roles = PART_ROLES[part.type];
           if (!roles) {
+            // Another dialect's part, replayed as it was received
+            if (role === 'assistant' && typeof part.type === 'string' &&
+              part.type.length) {
+              return { ...part };
+            }
             invalid(`${partName}.type "${part.type}" is unknown`);
           }
           if (!roles.includes(role)) {
@@ -216,30 +230,30 @@ module.exports = (self) => {
               typeof part.name !== 'string' || !isObject(part.input)) {
               invalid(`${partName} must be an object like { type, id, name, input }`);
             }
-            return {
+            return withDialect(part, {
               type: 'toolCall',
               id: part.id,
               name: part.name,
               input: part.input
-            };
+            });
           }
           if (part.type === 'toolResult') {
             if (typeof part.toolCallId !== 'string' || !part.toolCallId) {
               invalid(`${partName}.toolCallId must be a string`);
             }
             if (typeof part.error === 'string' && part.output === undefined) {
-              return {
+              return withDialect(part, {
                 type: 'toolResult',
                 toolCallId: part.toolCallId,
                 error: part.error
-              };
+              });
             }
             if (isObject(part.output) && part.error === undefined) {
-              return {
+              return withDialect(part, {
                 type: 'toolResult',
                 toolCallId: part.toolCallId,
                 output: part.output
-              };
+              });
             }
             invalid(`${partName} must carry an object "output" or a string "error", not both`);
           }
@@ -247,31 +261,49 @@ module.exports = (self) => {
             if (typeof part.text !== 'string') {
               invalid(`${partName}.text must be a string`);
             }
-            return {
+            return withDialect(part, {
               type: 'text',
               text: part.text
-            };
+            });
           }
           // image, the only remaining type
           const image = part.image;
           if (isObject(image) && typeof image.url === 'string') {
-            return {
+            return withDialect(part, {
               type: 'image',
               image: { url: image.url }
-            };
+            });
           }
           if (isObject(image) && typeof image.data === 'string' &&
             typeof image.mediaType === 'string') {
-            return {
+            return withDialect(part, {
               type: 'image',
               image: {
                 data: image.data,
                 mediaType: image.mediaType
               }
-            };
+            });
           }
           return invalid(`${partName}.image must be an object like { url } or { data, mediaType }`);
         });
+      }
+
+      // A validated part plus whatever else the caller put on it. A
+      // dialect may hang its own artifact on an ordinary part — a
+      // reasoning signature on a text part or a tool call — and rebuilding
+      // the part without it costs that provider its reasoning continuity
+      // on the next turn, silently. Message properties are still dropped:
+      // app metadata belongs to the app, not to the provider.
+      function withDialect(part, canonical) {
+        const extra = Object.fromEntries(
+          Object.entries(part).filter(([ key ]) => !(key in canonical))
+        );
+        return Object.keys(extra).length
+          ? {
+            ...canonical,
+            ...extra
+          }
+          : canonical;
       }
     },
     // Parse and validate generateImage's `(prompt, options)` arguments

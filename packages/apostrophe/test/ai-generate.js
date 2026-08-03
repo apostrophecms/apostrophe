@@ -306,13 +306,15 @@ describe('AI generate', function() {
     it('rebuilds text and image parts in canonical form', function() {
       const normalized = apos.ai.normalizeMessages([ {
         role: 'user',
-        // Extra properties, as on a stored transcript, do not travel
+        // App metadata on a message, as on a stored transcript, does not
+        // travel; a property on a part does, because that is where a
+        // dialect puts its own artifacts
         _id: 'stored',
         content: [
           {
             type: 'text',
             text: 'describe this',
-            stray: true
+            dialectArtifact: true
           },
           {
             type: 'image',
@@ -333,7 +335,8 @@ describe('AI generate', function() {
         content: [
           {
             type: 'text',
-            text: 'describe this'
+            text: 'describe this',
+            dialectArtifact: true
           },
           {
             type: 'image',
@@ -359,7 +362,9 @@ describe('AI generate', function() {
             id: 'call_1',
             name: 'find_pages',
             input: { query: 'pricing' },
-            extra: 'dropped'
+            // A dialect's own artifact on an ordinary part: kept, because
+            // the provider that made it needs it back
+            thoughtSignature: 'sig'
           } ]
         },
         {
@@ -385,7 +390,8 @@ describe('AI generate', function() {
             type: 'toolCall',
             id: 'call_1',
             name: 'find_pages',
-            input: { query: 'pricing' }
+            input: { query: 'pricing' },
+            thoughtSignature: 'sig'
           } ]
         },
         {
@@ -491,6 +497,66 @@ describe('AI generate', function() {
           } ]
         } ]),
         /messages\[0\]\.content\[0\]\.image must be an object/
+      );
+    });
+
+    it('replays a provider\'s own artifacts, so a returned transcript resumes', function() {
+      const transcript = [
+        {
+          role: 'user',
+          content: 'why?'
+        },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'thinking',
+              block: {
+                signature: 'opaque',
+                thinking: 'because'
+              }
+            },
+            {
+              type: 'text',
+              text: 'because.',
+              thoughtSignature: 'sig'
+            },
+            {
+              type: 'toolCall',
+              id: 'call-1',
+              name: 'find_pages',
+              input: {},
+              thoughtSignature: 'sig2'
+            }
+          ]
+        }
+      ];
+      const normalized = apos.ai.normalizeMessages(transcript);
+      // The dialect's own part type, untouched
+      assert.deepEqual(normalized[1].content[0], transcript[1].content[0]);
+      // And its signature on parts we do understand
+      assert.equal(normalized[1].content[1].thoughtSignature, 'sig');
+      assert.equal(normalized[1].content[1].text, 'because.');
+      assert.equal(normalized[1].content[2].thoughtSignature, 'sig2');
+      assert.equal(normalized[1].content[2].name, 'find_pages');
+      // A copy, never the caller's own objects
+      assert.notEqual(normalized[1].content[0], transcript[1].content[0]);
+    });
+
+    it('refuses an unknown part type outside an assistant turn', function() {
+      throwsInvalid(
+        () => apos.ai.normalizeMessages([ {
+          role: 'user',
+          content: [ { type: 'thinking' } ]
+        } ]),
+        /messages\[0\]\.content\[0\]\.type "thinking" is unknown/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeMessages([ {
+          role: 'assistant',
+          content: [ { type: '' } ]
+        } ]),
+        /messages\[0\]\.content\[0\]\.type "" is unknown/
       );
     });
   });
