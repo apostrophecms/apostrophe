@@ -96,6 +96,8 @@
  *   Internal — never sent to the model.
  * @property {(result: object) => boolean} [validateResult] The compiled
  *   `schema` validator; absent when the tool declares no result schema.
+ * @property {number} [maxResultChars] The result-size budget in serialized
+ *   characters; absent means unlimited.
  * @property {'read'|'write'|'agent'} access
  * @property {(req: object, args: object) => Promise<object>} handler
  */

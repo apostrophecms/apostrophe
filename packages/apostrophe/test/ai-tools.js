@@ -23,7 +23,10 @@ describe('AI tools', function() {
                 type: 'object',
                 properties: {
                   query: { type: 'string' },
-                  limit: { type: 'integer' }
+                  limit: {
+                    type: 'integer',
+                    default: 10
+                  }
                 },
                 required: [ 'query' ]
               },
@@ -73,9 +76,24 @@ describe('AI tools', function() {
                 type: 'object',
                 properties: {}
               },
+              // Under budget: the result passes through untouched
+              maxResultChars: 10000,
               handler: async () => ({
                 count: '5',
                 anything: 'goes'
+              })
+            });
+            self.apos.ai.addTool({
+              name: 'bulky',
+              description: 'Returns more than its result budget.',
+              input: {
+                type: 'object',
+                properties: {}
+              },
+              maxResultChars: 80,
+              handler: async () => ({
+                ok: true,
+                blob: 'x'.repeat(200)
               })
             });
             self.apos.ai.addTool({
@@ -166,8 +184,9 @@ describe('AI tools', function() {
     it('activates canonical definitions', function() {
       const tool = apos.ai.getTool('find_pages');
       assert.deepEqual(Object.keys(tool).sort(), [
-        'access', 'description', 'handler', 'input', 'label', 'name',
-        'schema', 'tags', 'validateArgs', 'validateResult'
+        'access', 'description', 'handler', 'input', 'label',
+        'maxResultChars', 'name', 'schema', 'tags', 'validateArgs',
+        'validateResult'
       ]);
       assert.equal(tool.label, 'Find Pages');
       assert.deepEqual(tool.tags, [ 'content', 'pages' ]);
@@ -217,8 +236,9 @@ describe('AI tools', function() {
       assert.deepEqual(
         apos.ai.getTools().map(tool => tool.name).sort(),
         [
-          'create_page', 'find_pages', 'forbidden_tool', 'no_object',
-          'schemaless', 'send_email', 'tool_trouble', 'wrong_shape'
+          'bulky', 'create_page', 'find_pages', 'forbidden_tool',
+          'no_object', 'schemaless', 'send_email', 'tool_trouble',
+          'wrong_shape'
         ]
       );
       assert.deepEqual(
@@ -334,6 +354,11 @@ describe('AI tools', function() {
       await failsToBoot(minimal({ access: 'delete' }), /"access" must be "read", "write" or "agent"/);
     });
 
+    it('panics on a bad result budget', async function() {
+      await failsToBoot(minimal({ maxResultChars: 0 }), /"maxResultChars" must be a positive integer/);
+      await failsToBoot(minimal({ maxResultChars: 'big' }), /"maxResultChars" must be a positive integer/);
+    });
+
     it('panics on an unresolvable handler', async function() {
       await failsToBoot(minimal({ handler: 42 }), /"handler" must be a function or a "moduleName:methodName" string/);
       await failsToBoot(minimal({ handler: 'findPages' }), /must name a module and a method/);
@@ -381,6 +406,20 @@ describe('AI tools', function() {
         count: '5',
         anything: 'goes'
       });
+    });
+
+    it('applies input-schema defaults to the args, never to the transcript', async function() {
+      const req = apos.task.getReq();
+      const call = {
+        id: 'call_1',
+        name: 'find_pages',
+        input: { query: 'pricing' }
+      };
+      await apos.ai.executeToolCall(req, apos.ai.getTool('find_pages'), call);
+      // The handler received the declared default
+      assert.equal(seen.args.limit, 10);
+      // The recorded call still reads exactly as the model made it
+      assert.deepEqual(call.input, { query: 'pricing' });
     });
 
     it('injects _context after validation, replacing any model-provided value', async function() {
@@ -447,6 +486,24 @@ describe('AI tools', function() {
         (e) => {
           assert.equal(e.name, 'forbidden');
           assert.equal(e.message, 'not for you');
+          return true;
+        }
+      );
+    });
+
+    it('withholds an oversized result and reports the sizes to the model', async function() {
+      const req = apos.task.getReq();
+      await assert.rejects(
+        apos.ai.executeToolCall(req, apos.ai.getTool('bulky'), {
+          id: 'call_1',
+          name: 'bulky',
+          input: {}
+        }),
+        (e) => {
+          assert.equal(e.name, 'aiToolError');
+          assert.match(e.message, /too large: 221 characters against the tool's budget of 80/);
+          // Largest first, so the model sees what to narrow
+          assert.match(e.message, /largest properties: blob \(202\), ok \(4\)/);
           return true;
         }
       );

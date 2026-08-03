@@ -148,7 +148,9 @@ module.exports = {
        *   tool by; treat it as part of the prompt.
        * @property {object} input The JSON Schema (draft 2020-12) the model's
        *   arguments must satisfy. Sent to the provider; must declare an object
-       *   root.
+       *   root. Declared "default" values are written into the arguments the
+       *   handler receives when the model omits them; the conversation
+       *   transcript keeps the call as the model made it.
        * @property {object} [schema] The handler result's shape as a JSON
        *   Schema (draft 2020-12) with an object root — the same format as
        *   `input`, but internal: never sent to the model. When present, every
@@ -162,6 +164,11 @@ module.exports = {
        *   the caller's req and the validated model arguments, plus the
        *   core-injected args._context, and returns an object matching `schema`
        *   when one is declared.
+       * @property {number} [maxResultChars] The result-size budget: the
+       *   JSON-serialized result may not exceed this many characters. An
+       *   oversized result is withheld and a recoverable tool error naming
+       *   the actual size, the budget and the largest properties is fed back
+       *   to the model instead. Absent means unlimited.
        * @property {string} [label] A human-facing name — what a chat log or an
        *   activity trail shows for the tool; may be an i18n key. Defaults from
        *   the name ('find_pages' → 'Find Pages'). Never sent to the model.

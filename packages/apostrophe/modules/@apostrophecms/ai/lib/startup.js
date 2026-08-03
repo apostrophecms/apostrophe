@@ -174,6 +174,10 @@ module.exports = (self) => {
         if (!TOOL_ACCESS.includes(access)) {
           fail(`${name}: "access" must be "read", "write" or "agent"`);
         }
+        if (tool.maxResultChars !== undefined &&
+          (!Number.isInteger(tool.maxResultChars) || tool.maxResultChars < 1)) {
+          fail(`${name}: "maxResultChars" must be a positive integer`);
+        }
         return {
           name: tool.name,
           label: tool.label || startCase(tool.name),
@@ -183,6 +187,7 @@ module.exports = (self) => {
           validateArgs,
           schema: tool.schema,
           validateResult,
+          maxResultChars: tool.maxResultChars,
           access,
           handler: resolveHandler(tool.handler, name)
         };

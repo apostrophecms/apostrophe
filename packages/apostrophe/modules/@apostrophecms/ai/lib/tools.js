@@ -26,7 +26,11 @@ module.exports = (self) => {
     // either way. A result the schema rejects is a handler bug, not
     // model misbehaviour: it throws 'invalid', a standard code that
     // breaks the AI chain with no retries, and no detail of it is
-    // ever fed back to the model.
+    // ever fed back to the model. A result over the tool's declared
+    // maxResultChars budget is the opposite — data-dependent, so the
+    // model can correct it: the oversized result is withheld and an
+    // 'aiToolError' report (actual size, budget, largest properties)
+    // is fed back instead.
     async executeToolCall(req, tool, call, context = {}) {
       const args = structuredClone(call.input);
       if (!tool.validateArgs(args)) {
@@ -41,7 +45,27 @@ module.exports = (self) => {
         const errors = self.ajv.errorsText(tool.validateResult.errors, { dataVar: 'result' });
         throw self.apos.error('invalid', `tool "${tool.name}" returned a result that does not match its schema: ${errors}`);
       }
+      if (tool.maxResultChars) {
+        const size = JSON.stringify(result).length;
+        if (size > tool.maxResultChars) {
+          throw self.apos.error('aiToolError', `the result is too large: ${size} characters ` +
+            `against the tool's budget of ${tool.maxResultChars}; ` +
+            `largest properties: ${largestProperties(result)}; ` +
+            'request less data, like fewer items or specific properties');
+        }
+      }
       return result;
+
+      // The size report: top-level properties by serialized size,
+      // largest first, so the model sees what to narrow
+      function largestProperties(result) {
+        return Object.entries(result)
+          .map(([ key, value ]) => [ key, JSON.stringify(value)?.length || 0 ])
+          .sort(([ , a ], [ , b ]) => b - a)
+          .slice(0, 5)
+          .map(([ key, length ]) => `${key} (${length})`)
+          .join(', ');
+      }
     },
     // Execute one batch of model-requested tool calls — the toolCall
     // parts of a single assistant turn — against `tools`, the call's
