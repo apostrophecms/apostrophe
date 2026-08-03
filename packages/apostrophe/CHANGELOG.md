@@ -1,5 +1,31 @@
 # Changelog
 
+## 4.33.0-beta.1
+
+### Minor Changes
+
+- efea66b: Schema field `_id` properties are now derived from the position of the field in the schema tree, such as `doc.article.pets.petName`, rather than hashed from the field definition. Ids hashed from the definition changed whenever an unrelated property such as a label was edited, so two processes running slightly different code, as during a rolling deploy, did not agree on them and a field id already held by the browser could be rejected as invalid. Position-based ids only change when a field is renamed or moved, and are readable when debugging.
+
+  `apos.schema.register` now requires a fourth `parentPath` argument and throws if it is missing. If you have overridden a method that calls `apos.schema.register` you must pass it through; the error message includes guidance.
+
+  The `scopedArrayName` and `scopedObjectName` properties are unchanged, keeping their existing form and continuing to honor the `arrayName` and `objectName` options, because they are stored in the database on every array item and object. No migration is required.
+
+### Patch Changes
+
+- 5843073: Fixed `piecesFilters` navigation (with `static: true`) reverting to the unfiltered index when logged in and an editor had clicked Edit at least once. It now recognizes filter path segments appended to the context doc's URL and preserves both the browser URL and the correctly filtered content on refresh.
+- 7b19fff: The performance of patches to deeply nested properties on the page has been optimized. As a result, each edit to a widget "in context" on the page does not require the same amount of time necessary to save the entire page via the page settings dialog. We consider this a bug fix rather than a feature because the issue was acute enough to prevent effective editing in some cases.
+- 4d488d3: The `email` schema field now validates and stores the laundered value, so surrounding whitespace is trimmed rather than causing a valid address to be rejected as invalid. Non-string input (for example a number sent through the REST API) is now coerced by the launder step instead of throwing an uncaught error. Thanks to +[spokodev](https://github.com/spokodev) for the fix.
+- 1bd5d0a: Fixed a 500 error when logging in on a session that had just been invalidated by a password change or by a disabled account. Such sessions are now regenerated rather than destroyed, so the request keeps a usable session and the invalidated one is removed from the store before the response is sent.
+- 74d08b2: Widget preview rendering are now properly debounced in cases where the server does not return the first preview before
+  the timeout to generate a second preview arrives. Apostrophe will always wait for a previous render before attempting
+  a new one based on the latest data available. This greatly mitigates the performance impact on the server if
+  a widget is particularly slow and expensive to preview.
+- 7c83cf1: Reduced the size of the logged-in admin UI JavaScript bundle by roughly 200KB minified (about 90KB gzipped) with no change in behavior. Neither `lodash` nor `@paralleldrive/cuid2` is bundled into the admin UI any more; the few things the browser needed from them now come from small, dependency-free implementations in `apostrophe/lib/beneath.js`, which browser code imports explicitly.
+
+  - lodash (previously ~165KB, in part duplicated) is gone. `lodash` is CommonJS and not tree-shakeable, so a single `import { isEqual } from 'lodash'` pulled the whole library in for one function. The handful of methods the admin UI uses (`isEqual`, `get`, `merge`, `isPlainObject`, `deburr`, `debounce`, `throttle`) are now in `beneath.js`, fuzz-tested against the real lodash.
+  - `@paralleldrive/cuid2` (which drags in `@noble/hashes`, and under some dependency layouts `bignumber.js`) is gone from the bundle. `beneath.js` exports a `createId()` that produces the same 24-character id shape using the Web Crypto API, with uniform character distribution. Server-side id generation elsewhere (`apos.util.generateId`) still uses the real cuid2.
+  - Because these are ordinary module imports rather than build-time aliases, the change applies to any bundler (Vite and webpack), and the source honestly shows where these functions come from. `beneath.js` is an ES module; the one universal file that also uses it on the server (`schema/lib/newInstance.js`) `require()`s it, so **Apostrophe now requires Node 22.12 or newer** (for `require(esm)`). The package's `engines` field has been updated accordingly.
+
 ## 4.32.0 (2026-07-10)
 
 ### Adds
