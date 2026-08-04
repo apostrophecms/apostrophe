@@ -30,7 +30,16 @@ module.exports = (options, apos, srcBuildNames) => {
               }
             },
             // Parses SASS imports
-            'sass-loader'
+            {
+              loader: 'sass-loader',
+              options: {
+                sassOptions: {
+                  // Without this Sass emits a BOM, which postcss 8.5.24+ keeps.
+                  // A BOM in the middle of a stylesheet kills the rule after it.
+                  charset: false
+                }
+              }
+            }
           ],
           // https://stackoverflow.com/a/60482491/389684
           sideEffects: true
