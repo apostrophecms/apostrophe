@@ -107,11 +107,15 @@ describe('AI adapter: anthropic', function() {
     assert.equal(apos.ai.active, true);
     const info = apos.ai.modelInfo();
     assert.equal(info.provider, 'anthropic');
-    assert.equal(info.model, 'claude-sonnet-4-6');
-    assert.equal(info.contextWindow, 200000);
+    assert.equal(info.model, 'claude-sonnet-5');
+    assert.equal(info.contextWindow, 1000000);
     assert.equal(info.maxOutputTokens, 64000);
+    assert.equal(info.reasoning, 'medium');
+    const low = apos.ai.modelInfo({ effort: 'low' });
+    assert.equal(low.model, 'claude-haiku-4-5');
+    assert.equal(low.reasoning, undefined);
     const high = apos.ai.modelInfo({ effort: 'high' });
-    assert.equal(high.model, 'claude-opus-4-8');
+    assert.equal(high.model, 'claude-opus-5');
     assert.equal(high.reasoning, 'high');
   });
 
@@ -226,6 +230,38 @@ describe('AI adapter: anthropic', function() {
       }
     });
 
+    it('maps reasoning levels to effort on an adaptive model', function() {
+      for (const level of [ 'low', 'medium', 'high', 'xhigh', 'max' ]) {
+        const body = adapter.buildBody(request({
+          model: 'claude-opus-5',
+          reasoning: level
+        }));
+        assert.deepEqual(body.thinking, { type: 'adaptive' });
+        assert.deepEqual(body.output_config, { effort: level });
+      }
+    });
+
+    it('never sends a token budget to an adaptive model', function() {
+      const body = adapter.buildBody(request({
+        model: 'claude-sonnet-5',
+        reasoning: 'high'
+      }));
+      assert.equal(body.thinking.budget_tokens, undefined);
+    });
+
+    it('reads which models are adaptive from the adaptiveModels option', function() {
+      const saved = adapter.options.adaptiveModels;
+      try {
+        adapter.options.adaptiveModels = [ ...saved, 'claude-sonnet-4-6' ];
+        assert.deepEqual(
+          adapter.buildBody(request({ reasoning: 'high' })).thinking,
+          { type: 'adaptive' }
+        );
+      } finally {
+        adapter.options.adaptiveModels = saved;
+      }
+    });
+
     it('reads the budgets from the thinkingBudgets option', function() {
       const saved = adapter.options.thinkingBudgets;
       try {
@@ -253,6 +289,13 @@ describe('AI adapter: anthropic', function() {
       throwsInvalid(
         () => adapter.buildBody(request({ reasoning: 'extreme' })),
         /no thinking budget is configured for reasoning "extreme"/
+      );
+      throwsInvalid(
+        () => adapter.buildBody(request({
+          model: 'claude-opus-5',
+          reasoning: 'extreme'
+        })),
+        /reasoning "extreme" is not an effort level/
       );
       throwsInvalid(
         () => adapter.buildBody(request({
@@ -691,7 +734,7 @@ describe('AI adapter: anthropic', function() {
       assert.equal(call.options.headers['x-api-key'], 'sk-test');
       assert.equal(call.options.headers['anthropic-version'], '2023-06-01');
       assert.equal(call.options.timeout, 600000);
-      assert.equal(call.options.body.model, 'claude-sonnet-4-6');
+      assert.equal(call.options.body.model, 'claude-sonnet-5');
       assert.equal(call.options.body.max_tokens, 64000);
       // The default short cache policy became the rolling marker
       assert.deepEqual(call.options.body.messages, [ {
@@ -708,7 +751,7 @@ describe('AI adapter: anthropic', function() {
       httpScript = [ () => fixture() ];
       await apos.ai.generate(apos.task.getReq(), 'p', {
         provider: 'gateway',
-        model: 'claude-sonnet-4-6'
+        model: 'claude-sonnet-5'
       });
       const [ call ] = httpCalls;
       assert.equal(call.url, 'https://llm-gateway.example.com/anthropic/v1/messages');
@@ -796,12 +839,11 @@ describe('AI adapter: anthropic', function() {
       assert.equal(result.text, 'done');
       assert.equal(result.finishReason, 'stop');
       assert.equal(httpCalls.length, 2);
-      // Thinking was on for both turns of the loop
+      // Thinking was on for both turns of the loop, at the level the
+      // call asked for
       for (const call of httpCalls) {
-        assert.deepEqual(call.options.body.thinking, {
-          type: 'enabled',
-          budget_tokens: 16384
-        });
+        assert.deepEqual(call.options.body.thinking, { type: 'adaptive' });
+        assert.deepEqual(call.options.body.output_config, { effort: 'high' });
       }
       // The second call replays the assistant turn with its signed
       // thinking block restored, unmodified, ahead of the tool use

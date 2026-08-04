@@ -16,6 +16,11 @@
 const FINAL_ANSWER = '_final_answer';
 const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this tool with the required fields. This is the only way to return your response.';
 
+// The levels Anthropic's own effort parameter accepts, which is what a
+// reasoning level names on a model whose thinking is adaptive. Not every
+// model accepts every level, so the provider has the final word
+const EFFORT_LEVELS = Object.freeze([ 'low', 'medium', 'high', 'xhigh', 'max' ]);
+
 module.exports = {
   options: {
     // The anthropic-version request header
@@ -24,12 +29,18 @@ module.exports = {
     // transient failure the engine retries
     timeout: 600000,
     // reasoning level - extended-thinking budget_tokens (Anthropic's
-    // floor for a budget is 1024).
+    // floor for a budget is 1024). Read for the models that take a
+    // budget; the adaptive ones below reject one outright
     thinkingBudgets: {
       low: 1024,
       medium: 4096,
       high: 16384
-    }
+    },
+    // Models whose thinking is adaptive: the model decides when and how
+    // deeply to think, and a reasoning level names an effort level
+    // instead of a token budget. Extend the list when configuring a
+    // newer model of the same kind
+    adaptiveModels: [ 'claude-opus-5', 'claude-sonnet-5' ]
   },
   init(self) {
     self.apos.ai.addAdapter(self.adapter());
@@ -58,23 +69,34 @@ module.exports = {
           },
           effort: {
             low: { model: 'claude-haiku-4-5' },
-            medium: { model: 'claude-sonnet-4-6' },
+            // The adaptive models think whether or not a request says
+            // so, so both rungs name the level they think at rather
+            // than leaving it to the provider's default
+            medium: {
+              model: 'claude-sonnet-5',
+              reasoning: 'medium'
+            },
             high: {
-              model: 'claude-opus-4-8',
+              model: 'claude-opus-5',
               reasoning: 'high'
             }
           },
+          // maxOutputTokens is the default cap a call inherits, not the
+          // model's ceiling: this adapter posts and waits for a whole
+          // answer, so the default stays where one response comfortably
+          // completes inside the timeout. The published ceilings are
+          // 128k for the Claude 5 models and 64k for Haiku 4.5
           models: {
             'claude-haiku-4-5': {
               contextWindow: 200000,
               maxOutputTokens: 32000
             },
-            'claude-sonnet-4-6': {
-              contextWindow: 200000,
+            'claude-sonnet-5': {
+              contextWindow: 1000000,
               maxOutputTokens: 64000
             },
-            'claude-opus-4-8': {
-              contextWindow: 200000,
+            'claude-opus-5': {
+              contextWindow: 1000000,
               maxOutputTokens: 64000
             }
           },
@@ -101,7 +123,8 @@ module.exports = {
       // Translate a normalized adapter request (see the engine's
       // buildRequest) to an Anthropic Messages API body: content parts
       // become Anthropic blocks, tool definitions become `tools`,
-      // `reasoning` becomes a thinking budget, and the cache policy is
+      // `reasoning` becomes whichever thinking the model speaks — a
+      // token budget, or a mode plus an effort level — and the cache is
       // placed as `cache_control` markers — one on the system tail (the
       // static prefix) and a rolling one on the last message, so the
       // next call in a conversation reads what this one wrote. Tool
@@ -126,6 +149,10 @@ module.exports = {
         if (!Number.isInteger(maxTokens)) {
           invalid(`"maxTokens" is required: model "${model}" declares no maxOutputTokens to default to`);
         }
+        const adaptive = self.options.adaptiveModels.includes(model);
+        // A turn that reserves part of max_tokens for thinking, which is
+        // the shape of thinking a forced tool cannot share the turn with
+        const budgeted = reasoning !== undefined && !adaptive;
         const wireTools = [
           ...(tools || []).map(toTool),
           ...(schema
@@ -142,11 +169,12 @@ module.exports = {
           ...(system !== undefined && { system }),
           ...(wireTools.length && { tools: wireTools }),
           // Force the structured answer only when nothing else needs the
-          // turn: a real tool the model must be free to call first, or
-          // extended thinking, which Anthropic forbids alongside a forced
-          // tool. Otherwise the tool's description drives it and the
-          // engine's backstop retries a miss.
-          ...(schema && !(tools && tools.length) && reasoning === undefined && {
+          // turn: a real tool the model must be free to call first, or a
+          // budgeted thinking turn, which Anthropic forbids alongside a
+          // forced tool — adaptive thinking carries no such restriction.
+          // Otherwise the tool's description drives it and the engine's
+          // backstop retries a miss.
+          ...(schema && !(tools && tools.length) && !budgeted && {
             tool_choice: {
               type: 'tool',
               name: FINAL_ANSWER
@@ -158,7 +186,9 @@ module.exports = {
           }))
         };
         if (reasoning !== undefined) {
-          body.thinking = toThinking(reasoning);
+          Object.assign(body, adaptive
+            ? toAdaptive(reasoning)
+            : { thinking: toThinking(reasoning) });
         }
         if (cache) {
           const marker = {
@@ -237,6 +267,18 @@ module.exports = {
           }
           // Another dialect's part; not ours to translate
           return null;
+        }
+        // An adaptive model is told to think and how hard to work,
+        // never how many tokens to spend: a budget is refused outright
+        // by the models that take this path
+        function toAdaptive(reasoning) {
+          if (!EFFORT_LEVELS.includes(reasoning)) {
+            invalid(`reasoning "${reasoning}" is not an effort level; model "${model}" takes one of ${EFFORT_LEVELS.join(', ')}`);
+          }
+          return {
+            thinking: { type: 'adaptive' },
+            output_config: { effort: reasoning }
+          };
         }
         // Anthropic wants an absolute token budget, mapped by the
         // thinkingBudgets option; the budget must leave max_tokens
