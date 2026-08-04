@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Dropped support for Node.js 18, which reached end of life on 2025-04-30. Node.js 20 or later is now required. The `cheerio` dependency now pulls in `undici` 7, which does not run on Node.js 18.
+
 ### Fixes
 
 * Fixed incorrect sizing and spacing across the admin UI. A byte order mark preserved by PostCSS 8.5.24 invalidated the stylesheet rule setting `line-height` and `box-sizing` for `.apos-` elements. Sass is now compiled with `charset: false`, so the marker is never emitted.

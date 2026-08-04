@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20, 22]
         mongodb-version: [4.4, 5.0, 6.0, 7.0]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
