@@ -1699,11 +1699,31 @@ module.exports = {
       // be "doc" or "widget" and `type` will be the type name. This is used to
       // dynamically assign sufficiently unique `arrayName` properties to array
       // fields and may be used for similar scoping tasks.
+      //
+      // parentPath is a complete path describing the parent context
+      // sufficiently to set the field _id from the field's position in the
+      // schema tree rather than from its definition. It begins with
+      // metaType.type and is followed by breadcrumbs for each array or object
+      // field name until we reach the immediate parent.
+      //
+      // Deriving the _id this way keeps it stable when unrelated properties of
+      // the field, such as its label, change. Ids hashed from the definition
+      // differ between processes running slightly different code, as during a
+      // rolling deploy, which invalidates any field id already held by the
+      // browser.
 
-      register(metaType, type, schema) {
+      register(metaType, type, schema, parentPath) {
+        if (!parentPath) {
+          throw self.apos.error('error', 'Field ids are now derived from the position of the field in the\n' +
+            'schema tree, so calls to schema.register must include the new parentPath argument.\n' +
+            'If you are seeing this message you have overridden a method that calls\n' +
+            'schema.register and must update it. See the stack trace.'
+          );
+        }
         for (const field of schema) {
+          const fieldPath = `${parentPath}.${field.name}`;
           // _id needs to be consistent across processes
-          field._id = self.apos.util.md5(JSON.stringify(_.omit(field, '_id', 'group')));
+          field._id = fieldPath;
           if (field.def === undefined) {
             // Pull fallback default into field definition to save
             // code and so that it is available on the browser side
@@ -1712,7 +1732,7 @@ module.exports = {
           self.fieldsById[field._id] = field;
           const fieldType = self.fieldTypes[field.type];
           if (fieldType.register) {
-            fieldType.register(metaType, type, field);
+            fieldType.register(metaType, type, field, fieldPath);
           }
         }
       },
@@ -2163,7 +2183,7 @@ module.exports = {
         function registerMetaType(managers, metaType) {
           for (const [ type, manager ] of Object.entries(managers)) {
             const schema = manager.schema;
-            self.register(metaType, type, schema);
+            self.register(metaType, type, schema, `${metaType}.${type}`);
             const pointer = {
               parent: null,
               fieldIdsByName: getFieldIdsByName(schema)
