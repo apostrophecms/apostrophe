@@ -41,6 +41,10 @@ const FINISH_REASONS = {
 const ASPECTS = [
   '1:1', '3:2', '2:3', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'
 ];
+// The `thinkingLevel` values every current text model accepts
+const THINKING_LEVELS = Object.freeze([
+  'minimal', 'low', 'medium', 'high'
+]);
 // The normalized quality tiers → the dialect's output resolution
 // (the uppercase K is required)
 const IMAGE_SIZES = {
@@ -93,22 +97,31 @@ module.exports = {
               reasoning: 'high'
             }
           },
+          // `reasoning` is the dialect's `thinkingLevel` vocabulary,
+          // shared by both current text models
           models: {
             'gemini-3.1-flash-lite': {
+              label: 'Gemini 3.1 Flash-Lite',
               contextWindow: 1048576,
-              maxOutputTokens: 65536
+              maxOutputTokens: 65536,
+              reasoning: THINKING_LEVELS
             },
             'gemini-3.5-flash': {
+              label: 'Gemini 3.5 Flash',
               contextWindow: 1048576,
-              maxOutputTokens: 65536
+              maxOutputTokens: 65536,
+              reasoning: THINKING_LEVELS
             },
             'gemini-3.1-flash-image': {
+              label: 'Gemini 3.1 Flash Image',
               aspects: ASPECTS
             },
             'gemini-3-pro-image': {
+              label: 'Gemini 3 Pro Image',
               aspects: ASPECTS
             },
             'gemini-3.1-flash-lite-image': {
+              label: 'Gemini 3.1 Flash-Lite Image',
               aspects: ASPECTS
             }
           },

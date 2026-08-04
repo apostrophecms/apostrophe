@@ -1041,6 +1041,49 @@ describe('AI adapter: anthropic', function() {
     });
   });
 
+  describe('model metadata', function() {
+    it('labels every model', function() {
+      const { models } = adapter.adapter();
+      const labels = Object.fromEntries(
+        Object.entries(models).map(([ id, meta ]) => [ id, meta.label ])
+      );
+      assert.deepEqual(labels, {
+        'claude-haiku-4-5': 'Haiku 4.5',
+        'claude-sonnet-5': 'Sonnet 5',
+        'claude-opus-5': 'Opus 5'
+      });
+    });
+
+    it('declares effort levels as the reasoning of an adaptive model', function() {
+      const { models } = adapter.adapter();
+      const levels = [ 'low', 'medium', 'high', 'xhigh', 'max' ];
+      assert.deepEqual(models['claude-sonnet-5'].reasoning, levels);
+      assert.deepEqual(models['claude-opus-5'].reasoning, levels);
+    });
+
+    it('declares the configured budget names as the reasoning of a budgeted model', function() {
+      assert.deepEqual(
+        adapter.adapter().models['claude-haiku-4-5'].reasoning,
+        [ 'low', 'medium', 'high' ]
+      );
+      // The definition is built from the options, so an extended budget
+      // table reaches a declaration built afterwards
+      const saved = adapter.options.thinkingBudgets;
+      try {
+        adapter.options.thinkingBudgets = {
+          ...saved,
+          xhigh: 32768
+        };
+        assert.deepEqual(
+          adapter.adapter().models['claude-haiku-4-5'].reasoning,
+          [ 'low', 'medium', 'high', 'xhigh' ]
+        );
+      } finally {
+        adapter.options.thinkingBudgets = saved;
+      }
+    });
+  });
+
   describe('environment key', function() {
     before(async function() {
       process.env.APOS_ANTHROPIC_KEY = 'sk-env';

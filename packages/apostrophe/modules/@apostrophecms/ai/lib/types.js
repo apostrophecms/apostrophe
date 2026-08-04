@@ -246,8 +246,14 @@
  * provider entry's, merged, the entry winning.
  *
  * @typedef {object} AiModelMeta
+ * @property {string} [label] The model's human name, for pickers and
+ * receipts ("Opus 5"); the id stays the wire truth.
  * @property {number} [contextWindow]
  * @property {number} [maxOutputTokens]
+ * @property {string[]} [reasoning] The values a call may pass as its
+ * `reasoning` for this model, in the provider's own vocabulary.
+ * Informational: read back by modelCatalog, never enforced by the engine —
+ * the adapter keeps its own rejections.
  * @property {string[]} [aspects] The image ratios the model supports, as 'W:H'.
  */
 
@@ -266,6 +272,20 @@
  */
 
 /**
+ * What modelCatalog reports: the whole routing configuration, shaped for
+ * building pickers. Every object is a copy, safe to serialize or amend.
+ *
+ * @typedef {object} AiModelCatalog
+ * @property {{ default: string, levels: Object<string, { provider: string,
+ * model: string, reasoning?: string }> }} effort The resolved routing
+ * table and the level an effortless call lands on.
+ * @property {Object<string, { label: string,
+ * capabilities: Object<string, boolean>,
+ * models: Object<string, AiModelMeta> }>} providers Configured providers
+ * by name, each with its adapter's label and merged model metadata.
+ */
+
+/**
  * A provider adapter: the translation between the normalized protocol above and
  * one service's dialect. Registered with addAdapter and instantiated per
  * provider entry at startup, with `provider`, `apiKey` and `baseUrl` filled in
@@ -274,6 +294,7 @@
  * @typedef {object} AiAdapter
  * @property {string} name The registry name. A provider entry names it with
  *   `adapter`, or shares its own key with it.
+ * @property {string} label The service's human name ("Anthropic (Claude)").
  * @property {string} [envKey] The environment variable the key is read from
  *   unless the entry names its own.
  * @property {string} [baseUrl]

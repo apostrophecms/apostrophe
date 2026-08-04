@@ -50,9 +50,11 @@ module.exports = async function image(deps, request) {
 // fixed to its three.
 module.exports.models = {
   'gpt-image-2': {
+    label: 'GPT Image 2',
     aspects: Object.keys(SIZES)
   },
   'gpt-image-1': {
+    label: 'GPT Image 1',
     aspects: [ '1:1', '3:2', '2:3' ]
   }
 };

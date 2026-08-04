@@ -312,6 +312,53 @@ module.exports = {
       },
 
       /**
+       * Synchronous introspection of the whole routing configuration, shaped
+       * for building pickers: the resolved effort table with its default
+       * level, and every configured provider with its adapter's label,
+       * capabilities and merged per-model metadata. A model's optional
+       * `reasoning` array lists the values a call may pass as `reasoning`
+       * for it, in the provider's own vocabulary — declared by the adapter,
+       * extendable per model on the provider entry, and never enforced: the
+       * adapter keeps its own rejections, and a model without a declaration
+       * still answers. Everything returned is a copy, safe to serialize or
+       * amend, and nothing here reaches the browser unless the caller sends
+       * it there. Under mock mode with no providers the catalog is empty —
+       * `self.active` answers "is AI usable", this method answers "what is
+       * configured".
+       *
+       * @returns {AiModelCatalog}
+       */
+      modelCatalog() {
+        const providers = {};
+        for (const [ name, record ] of Object.entries(self.providers)) {
+          const models = {};
+          for (const [ id, meta ] of Object.entries(record.models)) {
+            models[id] = {
+              ...meta,
+              ...(meta.reasoning && { reasoning: [ ...meta.reasoning ] }),
+              ...(meta.aspects && { aspects: [ ...meta.aspects ] })
+            };
+          }
+          providers[name] = {
+            label: record.adapter.label,
+            capabilities: { ...record.capabilities },
+            models
+          };
+        }
+        const levels = {};
+        for (const [ level, row ] of Object.entries(self.effortTable)) {
+          levels[level] = { ...row };
+        }
+        return {
+          effort: {
+            default: self.effortDefault,
+            levels
+          },
+          providers
+        };
+      },
+
+      /**
        * The AI permission seam: whether this AI action is permitted for `req`.
        * Same signature and semantics as
        * `apos.permission.can(req, action, docOrType, mode)`, and today a pure

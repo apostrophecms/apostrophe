@@ -22,6 +22,14 @@
 
 const image = require('../ai-adapter-openai/lib/image');
 
+// The `reasoning_effort` values the native service accepts on every
+// current text model. The native tools-request degrade drops reasoning
+// as behavior; the vocabulary itself is unchanged by it. Aliased
+// entries describe other services and declare their own.
+const REASONING_EFFORTS = Object.freeze([
+  'none', 'low', 'medium', 'high', 'xhigh', 'max'
+]);
+
 module.exports = {
   options: {
     // Per-request timeout in milliseconds; a timed-out call is a
@@ -66,16 +74,22 @@ module.exports = {
           },
           models: {
             'gpt-5.6-luna': {
+              label: 'GPT-5.6 Luna',
               contextWindow: 1050000,
-              maxOutputTokens: 128000
+              maxOutputTokens: 128000,
+              reasoning: REASONING_EFFORTS
             },
             'gpt-5.6-terra': {
+              label: 'GPT-5.6 Terra',
               contextWindow: 1050000,
-              maxOutputTokens: 128000
+              maxOutputTokens: 128000,
+              reasoning: REASONING_EFFORTS
             },
             'gpt-5.6-sol': {
+              label: 'GPT-5.6 Sol',
               contextWindow: 1050000,
-              maxOutputTokens: 128000
+              maxOutputTokens: 128000,
+              reasoning: REASONING_EFFORTS
             },
             ...image.models
           },

@@ -85,19 +85,28 @@ module.exports = {
           // model's ceiling: this adapter posts and waits for a whole
           // answer, so the default stays where one response comfortably
           // completes inside the timeout. The published ceilings are
-          // 128k for the Claude 5 models and 64k for Haiku 4.5
+          // 128k for the Claude 5 models and 64k for Haiku 4.5.
+          // `reasoning` declares what a call may pass, in this dialect's
+          // own vocabulary: effort levels on the adaptive models, the
+          // configured budget names on the budgeted ones.
           models: {
             'claude-haiku-4-5': {
+              label: 'Haiku 4.5',
               contextWindow: 200000,
-              maxOutputTokens: 32000
+              maxOutputTokens: 32000,
+              reasoning: reasoningValues('claude-haiku-4-5')
             },
             'claude-sonnet-5': {
+              label: 'Sonnet 5',
               contextWindow: 1000000,
-              maxOutputTokens: 64000
+              maxOutputTokens: 64000,
+              reasoning: reasoningValues('claude-sonnet-5')
             },
             'claude-opus-5': {
+              label: 'Opus 5',
               contextWindow: 1000000,
-              maxOutputTokens: 64000
+              maxOutputTokens: 64000,
+              reasoning: reasoningValues('claude-opus-5')
             }
           },
           validate() {
@@ -119,6 +128,11 @@ module.exports = {
             return self.normalizeError(error);
           }
         };
+        function reasoningValues(model) {
+          return self.options.adaptiveModels.includes(model)
+            ? [ ...EFFORT_LEVELS ]
+            : Object.keys(self.options.thinkingBudgets);
+        }
       },
       // Translate a normalized adapter request (see the engine's
       // buildRequest) to an Anthropic Messages API body: content parts

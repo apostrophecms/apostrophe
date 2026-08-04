@@ -532,6 +532,32 @@ describe('AI engine', function() {
       }
     });
 
+    it('answers modelCatalog with the empty shape under mock alone', async function() {
+      // Mock adds nothing to the catalog: it reports configuration,
+      // and `active` answers whether AI is usable
+      process.env.APOS_AI_MOCK = '1';
+      let mockApos;
+      try {
+        mockApos = await t.create({
+          root: module,
+          modules: {
+            '@apostrophecms/ai': {}
+          }
+        });
+        assert.equal(mockApos.ai.active, true);
+        assert.deepEqual(mockApos.ai.modelCatalog(), {
+          effort: {
+            default: 'medium',
+            levels: {}
+          },
+          providers: {}
+        });
+      } finally {
+        delete process.env.APOS_AI_MOCK;
+        await t.destroy(mockApos);
+      }
+    });
+
     describe('activation failures', function() {
       // Activation throws on ready, after every init has run, so the
       // partially booted instance can be captured and destroyed
