@@ -38,7 +38,7 @@ const TOOL_ACCESS = Object.freeze([ 'read', 'write', 'agent' ]);
 const GENERATE_OPTIONS = Object.freeze([
   'system', 'messages', 'tools', 'maxSteps', 'schema', 'effort',
   'provider', 'model', 'reasoning', 'maxTokens', 'cache', 'signal',
-  'onMessage'
+  'onMessage', 'onToolCall'
 ]);
 
 // The options generateImage accepts

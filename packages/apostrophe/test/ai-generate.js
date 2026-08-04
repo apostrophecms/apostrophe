@@ -274,6 +274,10 @@ describe('AI generate', function() {
         () => apos.ai.normalizeGenerateOptions('p', { onMessage: 'notify me' }),
         /"onMessage" must be a function/
       );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { onToolCall: 'tell me' }),
+        /"onToolCall" must be a function/
+      );
     });
 
     it('defaults cache to short and honors an explicit false', function() {

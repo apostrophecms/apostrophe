@@ -368,11 +368,18 @@ module.exports = {
        *   adapter translates for its provider; 'short' by default.
        * @property {AbortSignal} [signal] Cancels the call, as below; also
        *   injected into every handler's `args._context`.
-       * @property {(message: AiMessage) => Promise<void>}
+       * @property {(message: AiMessage, meta: { step: number }) => Promise<void>}
        *   [onMessage] Called with each intermediate assistant message — a turn
        *   whose tool requests the loop goes on to execute — and awaited before
-       *   those tools run. The final answer is not reported here, it is the
-       *   return value; a throw stops the call.
+       *   those tools run, with the model turn it came from. The final answer
+       *   is not reported here, it is the return value; a throw stops the call.
+       * @property {(event: AiToolCallEvent) => Promise<void>} [onToolCall]
+       *   Called twice around every tool handler the loop runs — `phase`
+       *   'start' before it, 'end' after it — and awaited, so the tool round
+       *   reports itself while it happens rather than when it is over. A call
+       *   naming no registered tool never starts and is not reported. A throw
+       *   stops the call, except from the end report of a handler whose own
+       *   failure is already stopping it.
        */
 
       /**
@@ -511,10 +518,17 @@ module.exports = {
               await canonical.onMessage({
                 role: 'assistant',
                 content: turn.content
-              });
+              }, { step: turns });
             }
+            // The loop owns step numbering, so the executor never has to
+            // know which turn it is running for
+            const onToolCall = canonical.onToolCall &&
+              ((event) => canonical.onToolCall({
+                ...event,
+                step: turns
+              }));
             const outcomes = await self.executeToolCalls(
-              req, tools, calls, handlerContext
+              req, tools, calls, handlerContext, onToolCall
             );
             steps.push(...outcomes);
             context.request.messages.push({
@@ -681,8 +695,8 @@ module.exports = {
 
       /**
        * What generateJob accepts on top of everything generate accepts, which
-       * is passed through untouched — `onMessage` is called as
-       * `(message, { jobId })` here.
+       * is passed through untouched — `onMessage` and `onToolCall` are called
+       * with `{ jobId }` merged into their meta here.
        *
        * @typedef {object} AiJobOptions
        * @property {(error: Error|null, result: AiResult|undefined) => Promise<void>}
@@ -694,7 +708,9 @@ module.exports = {
        * @property {boolean} [notify] Publish the run's progress to the caller's
        *   browser (see publishJobEvent); true by default. 'started' once the
        *   record exists, 'message' per intermediate assistant turn with the
-       *   turn as `message`, and 'ended' with the record's terminal `status`
+       *   turn as `message`, 'tool' as each tool call starts and ends —
+       *   summarized, never the result itself, which the transcript carries —
+       *   and 'ended' with the record's terminal `status`
        *   plus the result's `finishReason` or the failure's `error`
        *   ({ name, message }). Correlate by `jobId` and read the stored result
        *   from the job's status route — the record may flip to its terminal
@@ -773,12 +789,30 @@ module.exports = {
           ...generateOptions,
           signal,
           ...((notify || generateOptions.onMessage) && {
-            onMessage: async (message) => {
+            onMessage: async (message, meta) => {
               if (notify) {
-                await self.publishJobEvent(req, jobId, 'message', { message });
+                await self.publishJobEvent(req, jobId, 'message', {
+                  message,
+                  step: meta.step
+                });
               }
               if (generateOptions.onMessage) {
-                await generateOptions.onMessage(message, { jobId });
+                await generateOptions.onMessage(message, {
+                  ...meta,
+                  jobId
+                });
+              }
+            }
+          }),
+          ...((notify || generateOptions.onToolCall) && {
+            onToolCall: async (event) => {
+              if (notify) {
+                await self.publishJobEvent(
+                  req, jobId, 'tool', toolEventSummary(event)
+                );
+              }
+              if (generateOptions.onToolCall) {
+                await generateOptions.onToolCall(event, { jobId });
               }
             }
           })
@@ -879,6 +913,25 @@ module.exports = {
             }
           }
         }
+
+        // What a tool call puts on the wire: a progress line, not the
+        // work itself. A result runs to the tool's own size budget and
+        // the transcript carries it when the run ends, so only its size
+        // travels here
+        function toolEventSummary({
+          phase, call, step, result, error
+        }) {
+          return {
+            phase,
+            id: call.id,
+            name: call.name,
+            step,
+            ...(result !== undefined && {
+              chars: JSON.stringify(result).length
+            }),
+            ...(error !== undefined && { error })
+          };
+        }
       },
 
       /**
@@ -895,7 +948,7 @@ module.exports = {
        *
        * @param {object} req
        * @param {string} jobId
-       * @param {'started'|'message'|'ended'} stage
+       * @param {'started'|'message'|'tool'|'ended'} stage
        * @param {object} [data] The stage's payload.
        * @returns {Promise<void>}
        */

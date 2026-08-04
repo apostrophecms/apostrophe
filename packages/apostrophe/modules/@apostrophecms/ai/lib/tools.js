@@ -18,7 +18,9 @@ module.exports = (self) => {
     // "default" values are written into what the handler receives,
     // while the transcript's own toolCall part is never mutated.
     // `context` is written to `args._context` after validation, so a
-    // model-provided property can never pose as core injection. A
+    // model-provided property can never pose as core injection, and it
+    // carries the executing call's own `id` and `name` — a handler that
+    // records what it did can say which request it was answering. A
     // handler throw passes through untouched — recovery is decided
     // elsewhere, by the error code alone. The result must be an
     // object; a tool that declares a result schema gets it validated,
@@ -36,7 +38,13 @@ module.exports = (self) => {
       if (!tool.validateArgs(args)) {
         throw self.apos.error('aiToolError', `invalid arguments for tool "${tool.name}": ${self.ajv.errorsText(tool.validateArgs.errors, { dataVar: 'arguments' })}`);
       }
-      args._context = context;
+      args._context = {
+        ...context,
+        call: {
+          id: call.id,
+          name: call.name
+        }
+      };
       const result = await tool.handler(req, args);
       if (!isObject(result)) {
         throw self.apos.error('invalid', `tool "${tool.name}" must return an object`);
@@ -91,7 +99,14 @@ module.exports = (self) => {
     // so a handler that spawns without declaring `access: 'agent'` is
     // contained all the same; `_context.depth` is the informational
     // copy a handler may act on.
-    async executeToolCalls(req, tools, calls, context = {}) {
+    //
+    // `onToolCall`, the caller's per-call progress hook, is awaited
+    // around each handler that runs — a call naming no registered tool
+    // never starts, so it is not reported. Its throw stops the call,
+    // like every other hook; the one exception is the end report of a
+    // handler that is already ending the call, where a failing hook
+    // must not replace the failure on its way out.
+    async executeToolCalls(req, tools, calls, context = {}, onToolCall = null) {
       const outcomes = new Array(calls.length);
       const depth = (req.aposAiDepth || 0) + 1;
       const handlerReq = req.clone({ aposAiDepth: depth });
@@ -137,6 +152,7 @@ module.exports = (self) => {
           tool
         };
         await self.emit('beforeToolCall', req, payload);
+        await report({ phase: 'start' });
         try {
           payload.result = await self.executeToolCall(
             handlerReq, tool, call, handlerContext
@@ -147,6 +163,19 @@ module.exports = (self) => {
           };
         } catch (e) {
           if (e?.name !== 'aiToolError') {
+            // A call that started is always reported finished, so a
+            // consumer never waits on a step that ended the run
+            try {
+              await report({
+                phase: 'end',
+                error: e.message
+              });
+            } catch (hookError) {
+              self.logError(req, 'hook', hookError.message, {
+                tool: call.name,
+                stack: hookError.stack
+              });
+            }
             throw e;
           }
           payload.error = e.message;
@@ -156,6 +185,24 @@ module.exports = (self) => {
           };
         }
         await self.emit('afterToolCall', req, payload);
+        await report({
+          phase: 'end',
+          ...(payload.error !== undefined
+            ? { error: payload.error }
+            : { result: payload.result })
+        });
+
+        // The call is what the model asked for, verbatim; the step the
+        // hook also carries is the loop's, bound before it got here
+        async function report(event) {
+          if (!onToolCall) {
+            return;
+          }
+          await onToolCall({
+            ...event,
+            call
+          });
+        }
       }
     }
   };

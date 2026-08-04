@@ -385,7 +385,12 @@ describe('AI tools', function() {
       assert.deepEqual(seen.args, {
         query: 'pricing',
         limit: 3,
-        _context: {}
+        _context: {
+          call: {
+            id: 'call_1',
+            name: 'find_pages'
+          }
+        }
       });
       // Validated, never mutated: undeclared fields survive
       assert.deepEqual(result, {
@@ -434,7 +439,13 @@ describe('AI tools', function() {
       };
       const context = { signal: 'the abort signal' };
       await apos.ai.executeToolCall(req, apos.ai.getTool('find_pages'), call, context);
-      assert.deepEqual(seen.args._context, context);
+      assert.deepEqual(seen.args._context, {
+        ...context,
+        call: {
+          id: 'call_1',
+          name: 'find_pages'
+        }
+      });
       // The transcript's own part is never mutated
       assert.equal(call.input._context, 'evil');
     });
@@ -862,6 +873,192 @@ describe('AI tools', function() {
         role: 'assistant',
         content: [ toolCall('c2', 'echo', { value: 'two' }) ]
       } ]);
+    });
+
+    it('onMessage carries the model turn it came from', async function() {
+      const req = apos.task.getReq();
+      const steps = [];
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'one' })),
+        toolTurn(toolCall('c2', 'echo', { value: 'two' })),
+        textTurn('all done')
+      ];
+      await apos.ai.generate(req, 'find it', {
+        tools: [ 'echo' ],
+        onMessage(message, meta) {
+          steps.push(meta.step);
+        }
+      });
+
+      assert.deepEqual(steps, [ 1, 2 ]);
+    });
+
+    it('onToolCall reports every handler that runs, around its run', async function() {
+      const req = apos.task.getReq();
+      const events = [];
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'one' })),
+        toolTurn(toolCall('c2', 'echo', { value: 'two' })),
+        textTurn('all done')
+      ];
+      await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        onToolCall(event) {
+          events.push(event);
+          log.push(`${event.phase}:hook`);
+        }
+      });
+
+      assert.deepEqual(events, [
+        {
+          phase: 'start',
+          call: toolCall('c1', 'echo', { value: 'one' }),
+          step: 1
+        },
+        {
+          phase: 'end',
+          call: toolCall('c1', 'echo', { value: 'one' }),
+          result: { value: 'one' },
+          step: 1
+        },
+        {
+          phase: 'start',
+          call: toolCall('c2', 'echo', { value: 'two' }),
+          step: 2
+        },
+        {
+          phase: 'end',
+          call: toolCall('c2', 'echo', { value: 'two' }),
+          result: { value: 'two' },
+          step: 2
+        }
+      ]);
+      // Around the handler, not around the turn
+      assert.deepEqual(log, [
+        'start:hook', 'start:echo', 'end:hook',
+        'start:hook', 'start:echo', 'end:hook'
+      ]);
+    });
+
+    it('onToolCall follows the schedule, and a call with no tool never starts', async function() {
+      const req = apos.task.getReq();
+      const events = [];
+      let release;
+      const opened = new Promise((resolve) => {
+        release = resolve;
+      });
+      readGate = {
+        expected: 2,
+        started: 0,
+        release,
+        opened
+      };
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'read_a'),
+          toolCall('c2', 'ghost'),
+          toolCall('c3', 'write_a'),
+          toolCall('c4', 'read_b')
+        ),
+        textTurn()
+      ];
+      await apos.ai.generate(req, 'go', {
+        tools: [ 'read_a', 'read_b', 'write_a' ],
+        onToolCall(event) {
+          events.push([ event.phase, event.call.name ]);
+        }
+      });
+
+      // Both reads are reported started before either is reported
+      // finished; the write follows on its own
+      assert.deepEqual(events.slice(0, 2).sort(), [
+        [ 'start', 'read_a' ], [ 'start', 'read_b' ]
+      ]);
+      assert.deepEqual(events.slice(2, 4).sort(), [
+        [ 'end', 'read_a' ], [ 'end', 'read_b' ]
+      ]);
+      assert.deepEqual(events.slice(4), [
+        [ 'start', 'write_a' ], [ 'end', 'write_a' ]
+      ]);
+    });
+
+    it('onToolCall ends a call the model can recover from, and one that stops the run', async function() {
+      const req = apos.task.getReq();
+      const recoverable = [];
+      chatScript = [
+        toolTurn(toolCall('c1', 'boom_recover')),
+        textTurn()
+      ];
+      await apos.ai.generate(req, 'go', {
+        tools: [ 'boom_recover' ],
+        onToolCall(event) {
+          recoverable.push(event);
+        }
+      });
+      assert.equal(recoverable.at(-1).error, 'the search index is rebuilding');
+      assert.equal(recoverable.at(-1).result, undefined);
+
+      const stopping = [];
+      chatScript = [
+        toolTurn(toolCall('c1', 'boom_forbidden'))
+      ];
+      await assert.rejects(
+        apos.ai.generate(req, 'go', {
+          tools: [ 'boom_forbidden' ],
+          onToolCall(event) {
+            stopping.push(event);
+          }
+        }),
+        (e) => {
+          assert.equal(e.name, 'forbidden');
+          return true;
+        }
+      );
+      // A call that started is always reported finished
+      assert.deepEqual(stopping.map((event) => event.phase), [ 'start', 'end' ]);
+      assert.equal(stopping.at(-1).error, 'not for you');
+    });
+
+    it('a throwing onToolCall stops the call, except on the way out', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'one' }))
+      ];
+      await assert.rejects(
+        apos.ai.generate(req, 'go', {
+          tools: [ 'echo' ],
+          onToolCall() {
+            throw new Error('hook bug');
+          }
+        }),
+        (e) => {
+          assert.equal(e.message, 'hook bug');
+          return true;
+        }
+      );
+      // It threw on 'start', so the handler never ran
+      assert.deepEqual(log, []);
+
+      // The end report of a handler that is already stopping the run:
+      // the hook's own failure must not replace it
+      chatScript = [
+        toolTurn(toolCall('c1', 'boom_forbidden'))
+      ];
+      await assert.rejects(
+        apos.ai.generate(req, 'go', {
+          tools: [ 'boom_forbidden' ],
+          onToolCall(event) {
+            if (event.phase === 'end') {
+              throw new Error('hook bug');
+            }
+          }
+        }),
+        (e) => {
+          assert.equal(e.name, 'forbidden');
+          assert.equal(e.message, 'not for you');
+          return true;
+        }
+      );
     });
 
     it('combines tools and schema: the loop runs free, the final answer validates', async function() {

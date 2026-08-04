@@ -205,6 +205,21 @@
  */
 
 /**
+ * One tool call reporting itself to the caller's `onToolCall` hook, as it
+ * starts and again as it ends. `result` and `error` are the outcome of an
+ * 'end' report and are absent from a 'start' one; a recoverable error is the
+ * message the model was told, a hard-stopping one the message that is about
+ * to be thrown.
+ *
+ * @typedef {object} AiToolCallEvent
+ * @property {'start'|'end'} phase
+ * @property {AiToolCallPart} call The request, exactly as the model made it.
+ * @property {number} step The model turn that asked for it, counting from 1.
+ * @property {object} [result]
+ * @property {string} [error]
+ */
+
+/**
  * What generate resolves with. Which fields are populated is what tells the
  * caller what happened.
  *

@@ -18,7 +18,7 @@ module.exports = (self) => {
     // arguments into the canonical options object every later stage
     // reads: `{ system, messages, tools, maxSteps, schema,
     // validateObject, effort, provider, model, reasoning, maxTokens,
-    // cache, signal, onMessage }`, with a positional prompt string
+    // cache, signal, onMessage, onToolCall }`, with a positional prompt string
     // appended to `messages` as the final user turn, `tools` names
     // resolved to their activated definitions and unset options left
     // undefined.
@@ -48,7 +48,7 @@ module.exports = (self) => {
       }
       const {
         system, effort, provider, model, reasoning,
-        maxTokens, cache = 'short', signal, onMessage
+        maxTokens, cache = 'short', signal, onMessage, onToolCall
       } = options;
       for (const [ name, value ] of Object.entries({
         system,
@@ -71,8 +71,13 @@ module.exports = (self) => {
       if (signal !== undefined && !(signal instanceof AbortSignal)) {
         invalid('"signal" must be an AbortSignal');
       }
-      if (onMessage !== undefined && typeof onMessage !== 'function') {
-        invalid('"onMessage" must be a function');
+      for (const [ name, hook ] of Object.entries({
+        onMessage,
+        onToolCall
+      })) {
+        if (hook !== undefined && typeof hook !== 'function') {
+          invalid(`"${name}" must be a function`);
+        }
       }
       const maxSteps = options.maxSteps === undefined
         ? self.options.maxSteps
@@ -109,7 +114,8 @@ module.exports = (self) => {
         maxTokens,
         cache,
         signal,
-        onMessage
+        onMessage,
+        onToolCall
       };
 
       // The tools option → the activated definitions it names

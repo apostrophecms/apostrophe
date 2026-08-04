@@ -245,7 +245,10 @@ describe('AI generateJob', function() {
         role: 'assistant',
         content: [ toolCall('c1', 'echo') ]
       },
-      meta: { jobId }
+      meta: {
+        step: 1,
+        jobId
+      }
     } ]);
     assert.equal(ended.err, null);
     assert.equal(ended.result.finishReason, 'stop');
@@ -445,7 +448,7 @@ describe('AI generateJob', function() {
     ]);
   });
 
-  it('publishes started, per-turn and ended events over bus notifications', async function() {
+  it('publishes started, per-turn, per-tool-call and ended events over bus notifications', async function() {
     const req = apos.task.getReq({ user: { _id: 'owner1' } });
     const seen = [];
     chatScript = [
@@ -467,6 +470,8 @@ describe('AI generateJob', function() {
       [
         [ 'ai-generate-job', 'started', jobId ],
         [ 'ai-generate-job', 'message', jobId ],
+        [ 'ai-generate-job', 'tool', jobId ],
+        [ 'ai-generate-job', 'tool', jobId ],
         [ 'ai-generate-job', 'ended', jobId ]
       ]
     );
@@ -474,7 +479,7 @@ describe('AI generateJob', function() {
       role: 'assistant',
       content: [ toolCall('c1', 'echo') ]
     });
-    assert.deepEqual(events[2].data, {
+    assert.deepEqual(events[4].data, {
       jobId,
       stage: 'ended',
       status: 'completed',
@@ -494,8 +499,68 @@ describe('AI generateJob', function() {
         userId: 'owner1',
         bus: true
       }),
-      3
+      5
     );
+  });
+
+  it('a tool stage reports the call, not its result', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo'), toolCall('c2', 'nosuchtool')),
+      textTurn('all done')
+    ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'go', { tools: [ 'echo' ] });
+    await waitForJob(jobId);
+
+    const tools = triggered
+      .map(({ options }) => options.event.data)
+      .filter((data) => data.stage === 'tool');
+    // The call naming no registered tool never starts, so it is not
+    // reported; the size of the result stands in for the result
+    assert.deepEqual(tools, [
+      {
+        jobId,
+        stage: 'tool',
+        phase: 'start',
+        id: 'c1',
+        name: 'echo',
+        step: 1
+      },
+      {
+        jobId,
+        stage: 'tool',
+        phase: 'end',
+        id: 'c1',
+        name: 'echo',
+        step: 1,
+        chars: JSON.stringify({ ok: true }).length
+      }
+    ]);
+  });
+
+  it('a caller hook sees the whole event, the wire sees the summary', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    const seen = [];
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo')),
+      textTurn('all done')
+    ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'go', {
+      tools: [ 'echo' ],
+      onToolCall(event, meta) {
+        seen.push({
+          event,
+          meta
+        });
+      }
+    });
+    await waitForJob(jobId);
+
+    assert.deepEqual(seen.map(({ event }) => event.phase), [ 'start', 'end' ]);
+    assert.deepEqual(seen[1].event.result, { ok: true });
+    assert.deepEqual(seen[0].meta, { jobId });
   });
 
   it('a failed run publishes an ended event carrying the error', async function() {
