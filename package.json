@@ -154,7 +154,7 @@
     "nyc": "^15.1.0",
     "replace-in-file": "^6.1.0",
     "stylelint": "^14.6.1",
-    "stylelint-declaration-strict-value": "^1.8.0",
+    "stylelint-declaration-strict-value": "~1.10.11",
     "stylelint-order": "^5.0.0",
     "vue-eslint-parser": "^7.1.1"
   },
