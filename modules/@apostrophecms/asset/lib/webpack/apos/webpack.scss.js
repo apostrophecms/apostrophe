@@ -45,6 +45,11 @@ module.exports = (options, apos) => {
             {
               loader: 'sass-loader',
               options: {
+                sassOptions: {
+                  // Without this Sass emits a BOM, which postcss 8.5.24+ keeps.
+                  // A BOM in the middle of a stylesheet kills the rule after it.
+                  charset: false
+                },
                 sourceMap: false,
                 // "use" rules must come first or sass throws an error
                 additionalData: `

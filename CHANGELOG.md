@@ -1,5 +1,15 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Dropped support for Node.js 18 and Node.js 20.
+
+### Fixes
+
+* Fixed incorrect sizing and spacing across the admin UI. A byte order mark preserved by PostCSS 8.5.24 invalidated the stylesheet rule setting `line-height` and `box-sizing` for `.apos-` elements. Sass is now compiled with `charset: false`, so the marker is never emitted.
+
 ## 3.67.3 (2025-03-31)
 
 ### Fixes
