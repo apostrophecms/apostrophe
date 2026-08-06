@@ -1,7 +1,7 @@
 ---
 import { templates } from 'apostrophe-astro-config/doctypes';
 
-const { aposData } = Astro.props;
+const { aposData, ...props } = Astro.props;
 
 // Handle connection and authentication errors
 if (aposData.errorFetchingPage || aposData.page?.type === 'apos-fetch-error') {
@@ -36,4 +36,4 @@ const Template = templates[aposData.template]
   || templates['apos-no-template'];
 
 ---
-{ Template && <Template {aposData} /> }
+{ Template && <Template {aposData} {...props} /> }
