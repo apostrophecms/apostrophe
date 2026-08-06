@@ -19,9 +19,9 @@
   - [Security](#security)
   - [Configuration (Astro)](#configuration-astro)
   - [Options](#options)
-    - [`aposHost` (mandatory)](#aposhost-mandatory)
-    - [`widgetsMapping` (mandatory)](#widgetsmapping-mandatory)
-    - [`templatesMapping` (mandatory)](#templatesmapping-mandatory)
+    - [`aposHost` (required)](#aposhost-required)
+    - [`widgetsMapping` (required)](#widgetsmapping-required)
+    - [`templatesMapping` (required)](#templatesmapping-required)
     - [`onBeforeWidgetRender` (optional)](#onbeforewidgetrender-optional)
     - [`viewTransitionWorkaround` (optional)](#viewtransitionworkaround-optional)
     - [`includeResponseHeaders`](#includeresponseheaders)
@@ -157,7 +157,7 @@ export default defineConfig({
 
 ## Options
 
-### `aposHost` (mandatory)
+### `aposHost` (required)
 
 This option is the base URL of your Apostrophe instance. It must contain the
 port number if testing locally and/or communicating directly with another instance
@@ -166,11 +166,11 @@ at runtime with the `APOS_HOST` environment variable.
 
 During development it defaults automatically to: `http://localhost:3000`
 
-### `widgetsMapping` (mandatory)
+### `widgetsMapping` (required)
 
 The file in your project that contains the mapping between Apostrophe widget types and your Astro components (see below).
 
-### `templatesMapping` (mandatory)
+### `templatesMapping` (required)
 
 The file in your project that contains the mapping between Apostrophe templates and your Astro templates (see below).
 
@@ -180,13 +180,8 @@ Path to a hook function that runs before rendering widgets in edit mode. See [Wi
 
 ### `viewTransitionWorkaround` (optional)
 
-If set to `true`, Apostrophe will refresh its admin UI JavaScript on
-every page transition, to ensure compatibility with Astro
-[view transitions](https://docs.astro.build/en/guides/view-transitions/).
-If you are not using this feature of Astro, you can omit this flag to
-improve performance for editors. Ordinary website visitors are
-not impacted in any case. We are seeking an alternative solution to
-eliminate this option.
+If set to `true`, Apostrophe will refresh its admin UI JavaScript on every page transition, to ensure compatibility with Astro [view transitions](https://docs.astro.build/en/guides/view-transitions/).
+If you are not using this feature of Astro, you can omit this flag to improve performance for editors. Ordinary website visitors are not impacted in any case. We are seeking an alternative solution to eliminate this option.
 
 ### `includeResponseHeaders`
 
@@ -206,12 +201,9 @@ This option has been replaced by `includeResponseHeaders` which provides clearer
 
 ### Mapping Apostrophe templates to Astro components
 
-Since the front end of our project is entirely Astro, we'll need to create Astro components corresponding to each
-template that Apostrophe would normally render with Nunjucks.
+Since the front end of our project is entirely Astro, we'll need to create Astro components corresponding to each template that Apostrophe would normally render with Nunjucks.
 
-Create your template mapping in `src/templates/index.js` file.
-As shown above, this file path must then be added to your `astro.config.mjs` file,
-in the `templatesMapping` option of the `apostrophe` integration.
+Create your template mapping in `src/templates/index.js` file. As shown above, this file path must then be added to your `astro.config.mjs` file, in the `templatesMapping` option of the `apostrophe` integration.
 
 ```js
 // src/templates/index.js
@@ -257,17 +249,13 @@ You should not add a module name to these special names:
 * `apos-fetch-error`: served when Apostrophe generates a 500-class error. The integration will set Astro's response status to 500.
 * `apos-no-template`: served when there is no mapping corresponding to the Apostrophe page type for this page.
 
-See below for an example Astro template for the `@apostrophe-cms/home-page` type. But first,
-let's look at widgets.
+See below for an example Astro template for the `@apostrophe-cms/home-page` type. But first, let's look at widgets.
 
 ### Mapping Apostrophe widgets to Astro components
 
-Similar to Astro page components, Astro widget components replace Apostrophe's usual
-widget rendering.
+Similar to Astro page components, Astro widget components replace Apostrophe's usual widget rendering.
 
-Create your template mapping in a file in your application, for example in a
-`src/widgets/index.js` file. This file path must then be added to your `astro.config.mjs` file,
-in the `widgetsMapping` option of the `apostrophe` integration, as seen above.
+Create your template mapping in a file in your application, for example in a `src/widgets/index.js` file. This file path must then be added to your `astro.config.mjs` file, in the `widgetsMapping` option of the `apostrophe` integration, as seen above.
 
 ```js
 // src/widgets/index.js
@@ -290,26 +278,20 @@ const widgetComponents = {
 export default widgetComponents;
 ```
 
-> Note that even basic widget types like `@apostrophecms/image` do need an Astro
-template in your project. This integration does not currently ship with built-in
-Astro templates for all of the common Apostrophe widgets. However, all of the starter kits referenced in this document include all the necessary code for the most common core widgets.
+> Note that even basic widget types like `@apostrophecms/image` do need an Astro template in your project. This integration does not currently ship with built-in Astro templates for all the common Apostrophe widgets. However, all of the starter kits referenced in this document include all the necessary code for the most common core widgets.
 
-Note that the Apostrophe widget name (on the left) is the name of your widget module **without**
-the `-widget` part.
+Note that the Apostrophe widget name (on the left) is the name of your widget module **without** the `-widget` part.
 
 > [!TIP]
 > The `@apostrophecms/layout-widget` needs some extra configuration and addition to areas in your ApostropheCMS project. You can read more in the [documentation](https://docs.apostrophecms.org/guide/core-widgets.html#layout-widget).
 
-The naming of your Astro widget templates is up to you. The above convention is just
-a suggestion.
+The naming of your Astro widget templates is up to you. The above convention is just a suggestion.
 
 ### Creating the `[...slug.astro]` component and fetching Apostrophe data
 
-Since Apostrophe is responsible for managing URLs to content, including creating new content and pages
-on the fly, you will only need one top-level Astro page component: the `[...slug].astro` route.
+Since Apostrophe is responsible for managing URLs to content, including creating new content and pages on the fly, you will only need one top-level Astro page component: the `[...slug].astro` route.
 
-The integration comes with an `aposPageFetch` method that can be used to automatically
-fetch the relevant data for the current URL.
+The integration comes with an `aposPageFetch` method that can be used to automatically fetch the relevant data for the current URL.
 
 Your `[...slug].astro` component should look like this:
 
@@ -347,14 +329,10 @@ if (aposData.notFound) {
 </AposLayout>
 ```
 
-> Note `aposPageFetch` is imported from `lib/aposPageFetch.js`, not from
-> `helpers/server`. It's an internal helper reserved for this one call site;
-> for fetching your own Apostrophe data elsewhere, use `aposFetch` from
-> `@apostrophecms/apostrophe-astro/helpers/server` instead.
+> Note `aposPageFetch` is imported from `lib/aposPageFetch.js`, not from `helpers/server`. It's an internal helper reserved for this one call site; for fetching your own Apostrophe data elsewhere, use `aposFetch` from `@apostrophecms/apostrophe-astro/helpers/server` instead.
 
-Thanks to the `aposPageFetch` call, the `aposData` object will then contain all of
-the information normally provided by `data` in an ApostropheCMS Nunjucks template.
-This includes, but is not limited to:
+Thanks to the `aposPageFetch` call, the `aposData` object will then contain all
+the information normally provided by `data` in an ApostropheCMS Nunjucks template. This includes, but is not limited to:
 
 * `page`: the page document for the current URL, if any
 * `piece`: the piece document when on a "show page" for a piece page type
@@ -364,8 +342,7 @@ This includes, but is not limited to:
 headers and footers, etc.
 * `query`: the `req.query` object, giving access to query parameters in the URL.
 
-Any other data that your custom Apostrophe code attaches to `req.data` is also
-available here.
+Any other data that your custom Apostrophe code attaches to `req.data` is also available here.
 
 #### Understanding `AposLayout`
 
@@ -375,8 +352,7 @@ used in Nunjucks page templates.
 In your `[...slug].astro` file, use the `AposLayout` component built into this
 integration to leverage the global layout.
 
-To override any aspect of the global layout, take advantage of the following Astro slots,
-which are closely related to what ApostropheCMS offers in Nunjucks:
+To override any aspect of the global layout, take advantage of the following Astro slots, which are closely related to what ApostropheCMS offers in Nunjucks:
 
 * `startHead`: slot in the very beginning of the `<head>`
 * `standardHead`: slot in the middle of `<head>`, just after `<title>`
@@ -400,18 +376,26 @@ page requests.
 
 #### Understanding `AposTemplate`
 
-The role of `AposTemplate` is to automatically find the right Astro component
-to render based on the template mapping you created earlier. It accepts one
-prop, the full `aposData` object.
+The role of `AposTemplate` is to automatically find the right Astro component to render based on the template mapping you created earlier. It accepts an `aposData` prop, and passes through any other props you give it to that template component. This is handy for supplying data that isn't part of `aposData`, such as values computed in `[...slug].astro` itself:
+
+```js
+<AposTemplate {aposData} slot="main" nonce={cspNonce} />
+```
+
+Here, whichever component the template mapping resolves to would receive both `aposData` and `nonce` on `Astro.props`:
+
+```js
+---
+const { aposData, nonce } = Astro.props;
+const { page } = aposData;
+---
+```
 
 ### Creating Astro page components
 
-Next we'll look at how to write Astro page components, such as the
-`src/templates/HomePage.astro` file mentioned above.
+Next we'll look at how to write Astro page components, such as the `src/templates/HomePage.astro` file mentioned above.
 
-> We do not recommend placing these in `src/pages` because their names are not
-> routes and Astro should not try to compile them as routes. Place them in
-> `src/templates` instead. `src/pages` should only contain the `[...slug.astro]` file.
+> We do not recommend placing these in `src/pages` because their names are not routes and Astro should not try to compile them as routes. Place them in `src/templates` instead. `src/pages` should only contain the `[...slug.astro]` file.
 
 As an example, let's take a look at a simple home page template:
 
@@ -429,31 +413,23 @@ const { main } = page;
 </section>
 ```
 
-Notice that we receive the `page` object from Apostrophe, which gives us
-access to `page.title`. This is similar to `data.page` in a Nunjucks template.
+Notice that we receive the `page` object from Apostrophe, which gives us access to `page.title`. This is similar to `data.page` in a Nunjucks template.
 
 #### Understanding the `AposArea` component
 
-This component allows Astro to render Apostrophe areas, and provides a
-standard Apostrophe editing experience when doing so. Astro will automatically
-call our widget components once content exists in the area. All we have to do is
-pass on the area object, in this case the `main` schema field of `page`.
+This component allows Astro to render Apostrophe areas, and provides a standard Apostrophe editing experience when doing so. Astro will automatically call our widget components once content exists in the area. All we have to do is pass on the area object, in this case the `main` schema field of `page`.
 
-Note that we can also pass area objects that are schema fields of widgets.
-This allows for nested widgets, such as multiple-column widgets often used
-for page layout.
+Note that we can also pass area objects that are schema fields of widgets. This allows for nested widgets, such as multiple-column widgets often used for page layout.
 
-Note that additional props can be passed to the `AposArea` component and will be made
-accessible to widget components.
+Note that additional props can be passed to the `AposArea` component and will be made accessible to widget components.
 
 ### Creating Astro widget components
 
-Earlier we created a mapping from Apostrophe widget names to Astro components.
-Let's take a look at how to implement these.
+Earlier we created a mapping from Apostrophe widget names to Astro components. Let's take a look at how to implement these.
 
 You Astro widget will receive a `widget` property, in addition to any custom props
 you passed to the `AposArea` component. This `widget` property contains the
-the schema fields of your Apostrophe widget.  
+the schema fields of your Apostrophe widget.
 
 As an example, here is a simple Astro component to render `@apostrophecms/image` widgets:
 
@@ -475,25 +451,17 @@ const src = placeholder ?
 
 #### Placeholders are important in widgets that use them
 
-Why are we checking for `aposPlaceholder`? Apostrophe's `@apostrophecms/image`
-widget displays a placeholder image until the user clicks the edit pencil to
-select their image of choice. When rendered by Astro, Apostrophe still expects
-this to be the case. So we need to provide our own placeholder rendering.
+Why are we checking for `aposPlaceholder`? Apostrophe's `@apostrophecms/image` widget displays a placeholder image until the user clicks the edit pencil to select their image of choice. When rendered by Astro, Apostrophe still expects this to be the case. So we need to provide our own placeholder rendering.
 
 In this case, a suitably named file must exist in `public/images` in our Astro project.
 
 #### Remember, relationship properties might not be populated
 
-It is always possible that the image associated with an image widget has
-been archived. The `?.` syntax is a simple way to avoid a 500 error
-in such a situation. You may wish to add a more sophisticated fallback.
+It is always possible that the image associated with an image widget has been archived. The `?.` syntax is a simple way to avoid a 500 error in such a situation. You may wish to add a more sophisticated fallback.
 
 ### Accessing image and URLs
 
-Properties like `.attachment._urls['full']` exist on all image pieces,
-while properties like `.attachment._url` exist on non-image attachments
-such as PDFs. For more information, see
-the [attachment field format](https://v3.docs.apostrophecms.org/reference/api/field-formats.html#attachment).
+Properties like `.attachment._urls['full']` exist on all image pieces, while properties like `.attachment._url` exist on non-image attachments such as PDFs. For more information, see the [attachment field format](https://v3.docs.apostrophecms.org/reference/api/field-formats.html#attachment).
 
 ## What to change in your Apostrophe project
 
@@ -501,12 +469,9 @@ Nothing! Well, almost.
 
 * Your project must be using Apostrophe 4.x.
 * You'll need to `npm update` your project to the latest version of `apostrophe`.
-* You'll need to set the `APOS_EXTERNAL_FRONT_KEY` environment variable to a secret
-value of your choosing when running Apostrphe.
+* You'll need to set the `APOS_EXTERNAL_FRONT_KEY` environment variable to a secret value of your choosing when running Apostrophe.
 * Make sure you set that **same value** when running your Astro project.
-* To avoid developer confusion, we recommend changing any page templates in your
-Apostrophe project to provide a link to your Astro frontend site and
-remove all other output. Everyone, editors included, should go straight to Astro.
+* To avoid developer confusion, we recommend changing any page templates in your Apostrophe project to provide a link to your Astro frontend site and remove all other output. Everyone, editors included, should go straight to Astro.
 
 ## Starting up your combined project
 
@@ -528,22 +493,15 @@ export APOS_EXTERNAL_FRONT_KEY=your-secret-goes-here
 npm run dev
 ```
 
-For convenience, Astro generally defaults to port `4321`, while
-Apostrophe defaults to port `3000`.
+For convenience, Astro generally defaults to port `4321`, while Apostrophe defaults to port `3000`.
 
 ## Logging in
 
-Once your integration is complete, you will be able to reach the login page in
-the usual way at `http://localhost:4321/login`. Astro proxies this route directly
-to Apostrophe. Therefore any additional extensions you have added such as
-Apostrophe's hCaptcha and TOTP modules will work as expected.
+Once your integration is complete, you will be able to reach the login page in the usual way at `http://localhost:4321/login`. Astro proxies this route directly to Apostrophe. Therefore any additional extensions you have added such as Apostrophe's hCaptcha and TOTP modules will work as expected.
 
 ## Redirections
 
-When Apostrophe sends a response as a redirection, you will receive a specially
-formatted `aposData` object containing `redirect: true`, a `url` property for the url
-to redirect to, and a `status` for the redirection HTTP status code. This is handled
-in the earlier example, repeated here for convenience:
+When Apostrophe sends a response as a redirection, you will receive a specially formatted `aposData` object containing `redirect: true`, a `url` property for the url to redirect to, and a `status` for the redirection HTTP status code. This is handled in the earlier example, repeated here for convenience:
 
 ```js
 const aposData = await aposPageFetch(Astro.request)
@@ -555,10 +513,7 @@ if (aposData.redirect) {
 
 ## 404 Not Found
 
-Much like the redirect case, when Apostrophe determines that the page was not
-found, `aposData.notFound` will be set to true. The example `[...slug].astro`
-file provided above includes logic to set Astro's status code to 404 in this
-situation.
+Much like the redirect case, when Apostrophe determines that the page was not found, `aposData.notFound` will be set to true. The example `[...slug].astro` file provided above includes logic to set Astro's status code to 404 in this situation.
 
 ## Reserved routes
 
@@ -569,39 +524,21 @@ As this integration proxies certain Apostrophe endpoints, there are some routes 
 * `/api/v1/[...slug]` and `/[locale]/api/v1/[...slug]` for Apostrophe API endpoints
 * `/login` and `/[locale]/login` for the login page
 
-As all Apostrophe API endpoints are proxied, you can expose new api routes as usual in your Apostrophe modules, and be able to request them through your Astro application.
-Those proxies are forwarding all of the original request headers, such as cookies, so that Apostrophe login works normally.
+As all Apostrophe API endpoints are proxied, you can expose new api routes as usual in your Apostrophe modules, and be able to request them through your Astro application. Those proxies are forwarding all of the original request headers, such as cookies, so that Apostrophe login works normally.
 
 ## What about widget players?
 
 ApostropheCMS is very unopinionated on the front end, but it does include one
 important front end feature: widget players. These provide a way for developers
-to provide special behavior to widgets, calling each widget's player exactly
-once at page load and when new widgets are inserted or replaced with new values.
-Users appreciate this and expect interactive widget features to work normally
-without a page refresh, even if the widget was just added to the page.
+to provide special behavior to widgets, calling each widget's player exactly once at page load and when new widgets are inserted or replaced with new values. Users appreciate this and expect interactive widget features to work normally without a page refresh, even if the widget was just added to the page.
 
-In Astro, web components are a recommended strategy to achieve the same thing.
-Defining and using a web component in an Astro widget component has much
-the same effect as defining a widget player in a standalone Apostrophe project.
+In Astro, web components are a recommended strategy to achieve the same thing. Defining and using a web component in an Astro widget component has much the same effect as defining a widget player in a standalone Apostrophe project.
 
-> **Define the web component in its own module, not inline in the widget's
-> `.astro` file.** If `customElements.define()` only runs because that widget's
-> `.astro` component happened to be rendered on the current page, then a
-> brand-new page with zero instances of that widget hasn't registered the
-> element yet. The first time an editor adds that widget to such a page, the
-> browser has no matching definition to upgrade it with. The fix is to define
-> every widget's web component in its own module, collect those modules in
-> one file, and import that file once from `[...slug].astro` (as shown above)
-> so every page — including new ones — already has all the widget definitions
-> in place before the first widget is ever added.
+> **Define the web component in its own module, not inline in the widget's `.astro` file.** If `customElements.define()` only runs because that widget's `.astro` component happened to be rendered on the current page, then a brand-new page with zero instances of that widget hasn't registered the element yet. The first time an editor adds that widget to such a page, the browser has no matching definition to upgrade it with. The fix is to define every widget's web component in its own module, collect those modules in one file, and import that file once from `[...slug].astro` (as shown above) so every page — including new ones — already has all the widget definitions in place before the first widget is ever added.
 
-Here is a simple outline of this pattern. For a complete example of the same
-widget, check out `VideoWidget.astro` and `VideoWidget.ts` in our
-[astro-public-demo](https://github.com/apostrophecms/astro-public-demo/tree/main/frontend/src/widgets) project.
+Here is a simple outline of this pattern. For a complete example of the same widget, check out `VideoWidget.astro` and `VideoWidget.ts` in our [astro-public-demo](https://github.com/apostrophecms/astro-public-demo/tree/main/frontend/src/widgets) project.
 
-The Astro component only renders markup for the custom element — it does not
-define it:
+The Astro component only renders markup for the custom element — it does not define it:
 
 ```js
 ---
@@ -653,9 +590,7 @@ import './VideoWidget';
 // a web component
 ```
 
-`[...slug].astro` imports `players` once, in the `endBody` slot, so the
-definitions are registered as soon as the page loads, regardless of whether
-that particular widget appears on the page yet:
+`[...slug].astro` imports `players` once, in the `endBody` slot, so the definitions are registered as soon as the page loads, regardless of whether that particular widget appears on the page yet:
 
 ```js
 <Fragment slot="endBody">
@@ -665,26 +600,15 @@ that particular widget appears on the page yet:
 </Fragment>
 ```
 
-> Note that Astro script tags aren't really plain vanilla HTML script tags.
-> They are efficiently compiled, support TypeScript and are only executed
-> once even if the component appears may times on the page. Defining a
-> web component allows us to leverage that code more than once by using
-> the newly defined element as often as we wish.
+> Note that Astro script tags aren't really plain vanilla HTML script tags. They are efficiently compiled, support TypeScript and are only executed once even if the component appears may times on the page. Defining a web component allows us to leverage that code more than once by using the newly defined element as often as we wish.
 
 ## `aposSetQueryParameter`: working with query parameters
 
-One last thing: query parameters. Sometimes we want to create pagination
-links with page numbers, add filters to a URL's query string, and so on.
-But, working with query parameters coming from Apostrophe can
-be a little bit tricky because there are often special query parameters
-present during editing that should not be part of a visible URL.
+One last thing: query parameters. Sometimes we want to create pagination links with page numbers, add filters to a URL's query string, and so on. But, working with query parameters coming from Apostrophe can be a little bit tricky because there are often special query parameters present during editing that should not be part of a visible URL.
 
-As a convenience, Apostrophe provides `aposSetQueryParameter` to abstract
-all that away.
+As a convenience, Apostrophe provides `aposSetQueryParameter` to abstract all that away.
 
-Here is how the `BlogIndexPage.astro` component of the
-[Starter Kit Astro Essentials](https://github.com/apostrophecms/starter-kit-astro-essentials/blob/main/frontend/src/templates/BlogIndexPage.astro) project generates
-links to each page of blog posts:
+Here is how the `BlogIndexPage.astro` component of the [Starter Kit Astro Essentials](https://github.com/apostrophecms/starter-kit-astro-essentials/blob/main/frontend/src/templates/BlogIndexPage.astro) project generates links to each page of blog posts:
 
 ```js
 ---
@@ -726,27 +650,16 @@ for (let i = 1; (i <= totalPages); i++) {
 </section>
 ```
 
-Imported here as `setParameter`, `aposSetQueryParameter` allows
-us to do two things:
+Imported here as `setParameter`, `aposSetQueryParameter` allows us to do two things:
 
-1. Take a URL and return a new URL with a certain query parameter set
-to a new value.
-2. Remove a query parameter completely by passing the empty string as
-a value, or by passing `null` or `undefined`.
+1. Take a URL and return a new URL with a certain query parameter set to a new value.
+2. Remove a query parameter completely by passing the empty string as a value, or by passing `null` or `undefined`.
 
-While you can get the same result by manipulating `Astro.url` yourself,
-you'll be able to avoid the confusing presence of query parameters
-like `aposMode` by using this convenient feature.
+While you can get the same result by manipulating `Astro.url` yourself, you'll be able to avoid the confusing presence of query parameters like `aposMode` by using this convenient feature.
 
 #### Prefer `buildPageUrl` for piece index page pagination
 
-For pagination links on a piece index page specifically, like the example
-above, use `buildPageUrl` rather than calling `aposSetQueryParameter` for each
-page number. It produces the right kind of URL whether your project uses the
-default query-string pagination (`/blog?page=2`) or path-based pagination
-(`/blog/page/2`, when the `@apostrophecms/url` module's `static` option is
-enabled for static builds), and it takes any active filter into account
-automatically:
+For pagination links on a piece index page specifically, like the example above, use `buildPageUrl` rather than calling `aposSetQueryParameter` for each page number. It produces the right kind of URL whether your project uses the default query-string pagination (`/blog?page=2`) or path-based pagination (`/blog/page/2`, when the `@apostrophecms/url` module's `static` option is enabled for static builds), and it takes any active filter into account automatically:
 
 ```js
 ---
@@ -765,41 +678,23 @@ const { currentPage, totalPages } = aposData;
 
 See `ArticleIndexPage.astro` in [astro-public-demo](https://github.com/apostrophecms/astro-public-demo/blob/main/frontend/src/templates/ArticleIndexPage.astro) for `buildPageUrl` used alongside category filters in a complete pagination UI.
 
-`aposSetQueryParameter` remains the right tool for any other query parameter
-you need to set yourself, such as a filter or sort order.
+`aposSetQueryParameter` remains the right tool for any other query parameter you need to set yourself, such as a filter or sort order.
 
 ## What about Vue, React, SvelteJS, etc.?
 
-While not shown directly in the examples above, **Astro can import components
-written in any of these frameworks.** Just use `astro add` to install
-the appropriate integration, then `import` your components freely in your
-`.astro` files. For complete documentation and examples, see the
-[`@astrojs/react` integration](https://docs.astro.build/en/guides/integrations-guide/react/).
+While not shown directly in the examples above, **Astro can import components written in any of these frameworks.** Just use `astro add` to install the appropriate integration, then `import` your components freely in your `.astro` files. For complete documentation and examples, see the [`@astrojs/react` integration](https://docs.astro.build/en/guides/integrations-guide/react/).
 
-In this way, Astro acts as a **universal bridge** to essentially all modern
-frontend frameworks.
+In this way, Astro acts as a **universal bridge** to essentially all modern frontend frameworks.
 
 ## A note on production use
 
-For production use, any Astro hosting adapter that supports `mode: 'server'` should
-be acceptable. In particular, our [Starter Kit Astro Essentials](https://github.com/apostrophecms/starter-kit-astro-essentials) project comes pre-configured
-for the `node` adapter, and includes `npm run build` and `npm run serve`
-support to take advantage of that. In `server` mode there is not a great
-deal of difference between these and `npm run dev`, but there is less
-overhead and less information exposed to the public, so we recommend following
-this best practice.
+For production use, any Astro hosting adapter that supports `mode: 'server'` should be acceptable. In particular, our [Starter Kit Astro Essentials](https://github.com/apostrophecms/starter-kit-astro-essentials) project comes pre-configured for the `node` adapter, and includes `npm run build` and `npm run serve` support to take advantage of that. In `server` mode there is not a great deal of difference between these and `npm run dev`, but there is less overhead and less information exposed to the public, so we recommend following this best practice.
 
 ## Debugging
 
-In most cases, Astro prints helpful error messages directly in the browser
-when in a development environment.
+In most cases, Astro prints helpful error messages directly in the browser when in a development environment.
 
-> If you're working from an older project or tutorial and see a build error
-> mentioning `Received protocol 'virtual:'`, that project predates the
-> removal of this package's `virtual:` module implementation. Upgrade
-> `@apostrophecms/apostrophe-astro` to the latest version — the replacement
-> (real generated config files, aliased via Vite) does not use `virtual:`
-> URLs, so the error no longer applies. See `MIGRATION.md` for details.
+> If you're working from an older project or tutorial and see a build error mentioning `Received protocol 'virtual:'`, that project predates the removal of this package's `virtual:` module implementation. Upgrade `@apostrophecms/apostrophe-astro` to the latest version — the replacement (real generated config files, aliased via Vite) does not use `virtual:` URLs, so the error no longer applies. See `MIGRATION.md` for details.
 
 ### Widget Render Hook
 
@@ -926,20 +821,10 @@ Once you’ve added these mappings, restart your Apostrophe server and refresh t
 
 ## Conclusion
 
-This module provides a new way to use ApostropheCMS: as a back end
-for modern front end development in Astro. But more than that, it
-provides a future-proof bridge to many different front-end frameworks.
+This module provides a new way to use ApostropheCMS: as a back end for modern front end development in Astro. But more than that, it provides a future-proof bridge to many different front-end frameworks.
 
-Also important, Apostrophe fully maintains the on-page, in-context editing
-experience when integrated with Astro, going beyond "side-by-side"
-editing experiences to achieve integration close enough that we often
-have to look at the address bar to know whether we are looking at
-Astro or Apostrophe.
-
-That being said, this integration is also new, and we encourage you
-to share your feedback.
+Also important, Apostrophe fully maintains the on-page, in-context editing experience when integrated with Astro, going beyond "side-by-side" editing experiences to achieve integration close enough that we often have to look at the address bar to know whether we are looking at Astro or Apostrophe.
 
 ## Acknowledgements
 
-Development of this module began with Stéphane Maccari and Clément Ravier of
-Michelin. We are grateful for their generous support of ApostropheCMS.
+Development of this module began with Stéphane Maccari and Clément Ravier of Michelin. We are grateful for their generous support of ApostropheCMS.
