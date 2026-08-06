@@ -4,7 +4,7 @@
 
 ### Changes
 
-* Dropped support for Node.js 18, which reached end of life on 2025-04-30. Node.js 20.18.1 or later is now required, as expected by the `cheerio` and `undici` dependencies.
+* Dropped support for Node.js 18 and Node.js 20.
 
 ### Fixes
 
