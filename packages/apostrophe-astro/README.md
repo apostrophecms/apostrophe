@@ -58,16 +58,11 @@ This module integrates ApostropheCMS into your [Astro](https://astro.build/) app
 
 ## About Astro
 
-Astro provides a "universal bridge" to run modern frontend frameworks like React, Vue,
-and SvelteJS on the server side, as well as a straightforward, JSX-like template
-language of its own to meld everything together.
+Astro provides a "universal bridge" to run modern frontend frameworks like React, Vue, and SvelteJS on the server side, as well as a straightforward, JSX-like template language of its own to meld everything together.
 
 ## Bringing ApostropheCMS and Astro together
 
-The intent of this integration is to let Apostrophe manage content, handle routing of URLs and fetch content,
-and let Astro take the responsibility for the rendering of pages
-and any associated logic using your framework(s) of choice like React, Vue.js,
-Svelte, etc. (see the [Astro integrations page](https://docs.astro.build/en/guides/integrations-guide/) for more).
+The intent of this integration is to let Apostrophe manage content, handle routing of URLs and fetch content, and let Astro take the responsibility for the rendering of pages and any associated logic using your framework(s) of choice like React, Vue.js, Svelte, etc. (see the [Astro integrations page](https://docs.astro.build/en/guides/integrations-guide/) for more).
 
 **This module also brings the ApostropheCMS Admin UI in your Astro application**, so you can manage your site exactly as if you were in a "normal" Apostrophe instance.
 
@@ -75,32 +70,34 @@ When you use this module, you will have **two** projects:
 
 1. An Astro project. This is where you write your templates and frontend code.
 
-2. An Apostrophe project. This is where you define your page types, widget types
-and other content types with their schemas and other customizations.
+2. An Apostrophe project. This is where you define your page types, widget types and other content types with their schemas and other customizations.
 
 This kind of dual-project CMS integration is typical for Astro.
 
 The best way to keep everything consistent is to build these in `frontend` and `backend` subdirectories of the same git repository.
 
-To get you started quickly, we recommend one of our official Astro starter kits:
+To get you started quickly, we recommend one of these two options:
 
 * [apostrophecms/starter-kit-astro-essentials](https://github.com/apostrophecms/starter-kit-astro-essentials) is best for a clean start with as little extra code as possible.
-* [apostrophecms/starter-kit-astro-apollo](https://github.com/apostrophecms/starter-kit-astro-apollo) is a full-fledged project with a blog, a design system and other nice touches.
-* [apostrophecms/starter-kit-astro-apollo-pro](https://github.com/apostrophecms/starter-kit-astro-apollo-pro) is great for those who expect to use our [Pro features](https://apostrophecms.com/pro) right away, but keep in mind you can add those modules to any project later.
+* [apostrophecms/astro-public-demo](https://github.com/apostrophecms/astro-public-demo) is the source of our public Astro + Apostrophe demo site — a fuller example with a blog, marketing widgets, and layout patterns. It's kept up to date with current best practices, so it also doubles as a living reference for the patterns described later in this document (see its `frontend/src/widgets` and `frontend/src/templates` folders).
 
-> 💡 These combined Astro + Apostrophe projects are best launched by forking the repository, not using our CLI. Follow the links to see how to fork these projects and get started on your own.
+Both of these can be installed using our CLI:
+```
+npm create apostrophe@latest
+```
+
+> [!NOTE]
+> The Apollo starter kits ([apostrophecms/starter-kit-astro-apollo](https://github.com/apostrophecms/starter-kit-astro-apollo) is deprecated for new projects. It remains available for teaching purposes, but new projects should start from one of the two options above.
 
 You can also adapt your own existing ApostropheCMS project as explained below.
 
-> Note that this module, `@apostrophecms/apostrophe-astro`, is meant to be installed as a dependency of your *Astro project*,
-> not your Apostrophe project.
+> Note that this module, `@apostrophecms/apostrophe-astro`, is meant to be installed as a dependency of your *Astro project*, not your Apostrophe project.
 
-This module is currently designed for use with Astro's `output: 'server'` setting (SSR mode), so that you can edit your content
-directly on the page. Support for export as a static site is under consideration for the future.
+This module is primarily designed for use with Astro's `output: 'server'` setting (SSR mode), so that you can edit your content directly on the page. However, static builds (`output: 'static'`) are also supported via `getAllStaticPaths` and `isStaticBuild`, exported from `@apostrophecms/apostrophe-astro/helpers/server`, for projects that want to prerender content instead. See `astro-public-demo`'s ["Static Build" instructions](https://github.com/apostrophecms/astro-public-demo#static-build) for a working example, including deployment to GitHub Pages.
 
 ## Installation
 
-If you did not fork the sample projects above, you will need to install this
+If you did not create a project using one of the starter kits, you will need to install this
 module into your Astro project. Install this module in your
 **Astro project**, not your ApostropheCMS project:
 
@@ -109,19 +106,13 @@ cd my-astro-project
 npm install @apostrophecms/apostrophe-astro
 ```
 
-*Astro 3.x and 4.x are both supported.*
-
 ## Security
 
-You **must** set the `APOS_EXTERNAL_FRONT_KEY` environment variable to a secret
-value when running your Astro project, and also set the same variable to the same value when running your Apostrophe application.
-This ensures that other sites on the web cannot fetch excessive amounts of
-information from ApostropheCMS without your permission.
+You **must** set the `APOS_EXTERNAL_FRONT_KEY` environment variable to a secret value when running your Astro project, and also set the same variable to the same value when running your Apostrophe application. This ensures that other sites on the web cannot fetch excessive amounts of information from ApostropheCMS without your permission.
 
 ## Configuration (Astro)
 
-Since this is an Astro integration, you will need to add it to your Astro project's `astro.config.mjs` file.
-Here is a working `astro.config.mjs` file for a project with an Apostrophe CMS backend.
+Since this is an Astro integration, you will need to add it to your Astro project's `astro.config.mjs` file. Here is a working `astro.config.mjs` file for a project with an Apostrophe CMS backend.
 
 ```js
 import { defineConfig } from 'astro/config';
@@ -153,21 +144,14 @@ export default defineConfig({
       excludeRequestHeaders: [
         // For single-site setups or hosting on multiple servers, block the host header
         'host'
-      ]
+      ],
       proxyRoutes: [
         // Custom URLs that should be proxied to Apostrophe.
         // Note that all of `/api/v1` is already proxied, so
         // this is usually unnecessary
       ]
     })
-  ],
-  vite: {
-    ssr: {
-      // Do not externalize the @apostrophecms/apostrophe-astro plugin, we need
-      // to be able to use virtual: URLs there
-      noExternal: [ '@apostrophecms/apostrophe-astro' ],
-    }
-  }
+  ]
 });
 ```
 
@@ -331,7 +315,7 @@ Your `[...slug].astro` component should look like this:
 
 ```js
 ---
-import { aposPageFetch } from '@apostrophecms/apostrophe-astro/helpers/server';
+import aposPageFetch from '@apostrophecms/apostrophe-astro/lib/aposPageFetch.js';
 import AposLayout from '@apostrophecms/apostrophe-astro/components/layouts/AposLayout.astro';
 import AposTemplate from '@apostrophecms/apostrophe-astro/components/AposTemplate.astro';
 
@@ -352,8 +336,21 @@ if (aposData.notFound) {
       <meta charset="UTF-8" />
     </Fragment>
     <AposTemplate {aposData} slot="main" />
+    <Fragment slot="endBody">
+      <script>
+        // Registers the web components used by interactive widgets (see
+        // "What about widget players?" below) so they are already defined
+        // before the first widget of that type is ever added to a page.
+        import '../widgets/players';
+      </script>
+    </Fragment>
 </AposLayout>
 ```
+
+> Note `aposPageFetch` is imported from `lib/aposPageFetch.js`, not from
+> `helpers/server`. It's an internal helper reserved for this one call site;
+> for fetching your own Apostrophe data elsewhere, use `aposFetch` from
+> `@apostrophecms/apostrophe-astro/helpers/server` instead.
 
 Thanks to the `aposPageFetch` call, the `aposData` object will then contain all of
 the information normally provided by `data` in an ApostropheCMS Nunjucks template.
@@ -588,9 +585,23 @@ In Astro, web components are a recommended strategy to achieve the same thing.
 Defining and using a web component in an Astro widget component has much
 the same effect as defining a widget player in a standalone Apostrophe project.
 
-Here is a simple outline of such a web component. For a complete example of
-the same widget, check out the source code of `VideoWidget.astro` in our
-[Astro Essentials Starter Kit](https://github.com/apostrophecms/starter-kit-astro-essentials/blob/main/frontend/src/widgets/VideoWidget.astro) project.
+> **Define the web component in its own module, not inline in the widget's
+> `.astro` file.** If `customElements.define()` only runs because that widget's
+> `.astro` component happened to be rendered on the current page, then a
+> brand-new page with zero instances of that widget hasn't registered the
+> element yet. The first time an editor adds that widget to such a page, the
+> browser has no matching definition to upgrade it with. The fix is to define
+> every widget's web component in its own module, collect those modules in
+> one file, and import that file once from `[...slug].astro` (as shown above)
+> so every page — including new ones — already has all the widget definitions
+> in place before the first widget is ever added.
+
+Here is a simple outline of this pattern. For a complete example of the same
+widget, check out `VideoWidget.astro` and `VideoWidget.ts` in our
+[astro-public-demo](https://github.com/apostrophecms/astro-public-demo/tree/main/frontend/src/widgets) project.
+
+The Astro component only renders markup for the custom element — it does not
+define it:
 
 ```js
 ---
@@ -608,24 +619,50 @@ const url = widget?.video?.url;
   url={placeholder ? 'https://youtu.be/Q5UX9yexEyM' : url }
 >
 </video-widget>
-<script>
-  class VideoWidget extends HTMLElement {
-    constructor() {
-      super();
-      this.init();
-    }
-    async init() {
-      const videoUrl = this.getAttribute('url');
-      // Your logic here!
-      //
-      // Fetch details about the video URL,
-      // create an iframe to embed it, append it
-      // to the component's HTML element with this.append(),
-      // etc.
-    }
+```
+
+The web component class and its `customElements.define()` call live in a
+separate module instead:
+
+```js
+// src/widgets/VideoWidget.ts
+class VideoWidget extends HTMLElement {
+  constructor() {
+    super();
+    this.init();
   }
-  customElements.define('video-widget', VideoWidget);
-</script>
+  async init() {
+    const videoUrl = this.getAttribute('url');
+    // Your logic here!
+    //
+    // Fetch details about the video URL,
+    // create an iframe to embed it, append it
+    // to the component's HTML element with this.append(),
+    // etc.
+  }
+}
+customElements.define('video-widget', VideoWidget);
+```
+
+A single `players` file imports every widget's definition module:
+
+```js
+// src/widgets/players.ts
+import './VideoWidget';
+// import './OtherInteractiveWidget'; — one line per widget that defines
+// a web component
+```
+
+`[...slug].astro` imports `players` once, in the `endBody` slot, so the
+definitions are registered as soon as the page loads, regardless of whether
+that particular widget appears on the page yet:
+
+```js
+<Fragment slot="endBody">
+  <script>
+    import '../widgets/players';
+  </script>
+</Fragment>
 ```
 
 > Note that Astro script tags aren't really plain vanilla HTML script tags.
@@ -701,6 +738,36 @@ While you can get the same result by manipulating `Astro.url` yourself,
 you'll be able to avoid the confusing presence of query parameters
 like `aposMode` by using this convenient feature.
 
+#### Prefer `buildPageUrl` for piece index page pagination
+
+For pagination links on a piece index page specifically, like the example
+above, use `buildPageUrl` rather than calling `aposSetQueryParameter` for each
+page number. It produces the right kind of URL whether your project uses the
+default query-string pagination (`/blog?page=2`) or path-based pagination
+(`/blog/page/2`, when the `@apostrophecms/url` module's `static` option is
+enabled for static builds), and it takes any active filter into account
+automatically:
+
+```js
+---
+import { buildPageUrl } from '@apostrophecms/apostrophe-astro/helpers/universal';
+const { aposData } = Astro.props;
+const { currentPage, totalPages } = aposData;
+---
+
+{Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+  <a
+    class={pageNum === currentPage ? 'current' : ''}
+    href={buildPageUrl(aposData, pageNum)}
+  >{pageNum}</a>
+))}
+```
+
+See `ArticleIndexPage.astro` in [astro-public-demo](https://github.com/apostrophecms/astro-public-demo/blob/main/frontend/src/templates/ArticleIndexPage.astro) for `buildPageUrl` used alongside category filters in a complete pagination UI.
+
+`aposSetQueryParameter` remains the right tool for any other query parameter
+you need to set yourself, such as a filter or sort order.
+
 ## What about Vue, React, SvelteJS, etc.?
 
 While not shown directly in the examples above, **Astro can import components
@@ -727,30 +794,12 @@ this best practice.
 In most cases, Astro prints helpful error messages directly in the browser
 when in a development environment.
 
-However, if you receive the following error:
-
-```
-Only URLs with a scheme in: file and data are supported by the default ESM
-loader. Received protocol 'virtual:'
-```
-
-Then you most likely left out this part of the above `astro.config.mjs` file:
-
-```javascript
-export default defineConfig({
-  // ... other settings above here ...
-  vite: {
-    ssr: {
-      // Do not externalize the @apostrophecms/apostrophe-astro plugin, we need
-      // to be able to use virtual: URLs there
-      noExternal: [ '@apostrophecms/apostrophe-astro' ],
-    }
-  }
-});
-```
-
-Without this logic, the `virtual:` URLs used to access configuration information
-will cause the build to fail.
+> If you're working from an older project or tutorial and see a build error
+> mentioning `Received protocol 'virtual:'`, that project predates the
+> removal of this package's `virtual:` module implementation. Upgrade
+> `@apostrophecms/apostrophe-astro` to the latest version — the replacement
+> (real generated config files, aliased via Vite) does not use `virtual:`
+> URLs, so the error no longer applies. See `MIGRATION.md` for details.
 
 ### Widget Render Hook
 
