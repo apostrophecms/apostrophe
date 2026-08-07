@@ -172,7 +172,7 @@ module.exports = (self) => {
         }
         const kind = tool.kind === undefined ? 'action' : tool.kind;
         if (!TOOL_KINDS.includes(kind)) {
-          fail(`${name}: "kind" must be "query", "action" or "agent"`);
+          fail(`${name}: "kind" must be ${oneOf(TOOL_KINDS)}`);
         }
         if (tool.maxResultChars !== undefined &&
           (!Number.isInteger(tool.maxResultChars) || tool.maxResultChars < 1)) {
@@ -217,6 +217,12 @@ module.exports = (self) => {
           fail(`${name}: handler names unknown method "${methodName}" of "${moduleName}"`);
         }
         return (req, args) => module[methodName](req, args);
+      }
+
+      // An enum constant as its message states it: quoted, "or" last
+      function oneOf(values) {
+        const quoted = values.map((value) => `"${value}"`);
+        return `${quoted.slice(0, -1).join(', ')} or ${quoted.at(-1)}`;
       }
     },
     // Fail startup when a model's declared image `aspects` are
