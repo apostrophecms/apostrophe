@@ -21,8 +21,11 @@ module.exports = (self) => {
     // model-provided property can never pose as core injection, and it
     // carries the executing call's own `id` and `name` — a handler that
     // records what it did can say which request it was answering. A
-    // handler throw passes through untouched — recovery is decided
-    // elsewhere, by the error code alone. The result must be an
+    // context `inputs` map — the per-call answers a continuation
+    // carries — is never leaked wholesale: only the executing call's
+    // own entry surfaces, as `_context.input`. A handler throw passes
+    // through untouched — recovery is decided elsewhere, by the error
+    // code alone. The result must be an
     // object; a tool that declares a result schema gets it validated,
     // never mutated — the handler's object is what the model reads
     // either way. A result the schema rejects is a handler bug, not
@@ -38,8 +41,10 @@ module.exports = (self) => {
       if (!tool.validateArgs(args)) {
         throw self.apos.error('aiToolError', `invalid arguments for tool "${tool.name}": ${self.ajv.errorsText(tool.validateArgs.errors, { dataVar: 'arguments' })}`);
       }
+      const { inputs, ...injected } = context;
       args._context = {
-        ...context,
+        ...injected,
+        ...(inputs?.[call.id] !== undefined && { input: inputs[call.id] }),
         call: {
           id: call.id,
           name: call.name

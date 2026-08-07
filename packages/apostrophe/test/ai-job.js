@@ -106,7 +106,10 @@ describe('AI generateJob', function() {
               name: 'ask',
               description: 'The ask tool.',
               input: okInput,
-              handler: async () => {
+              handler: async (req, args) => {
+                if (args._context.input !== undefined) {
+                  return { ...args._context.input };
+                }
                 throw self.apos.error('aiInput', 'needs the editor', {
                   questions: [ 'Which one?' ]
                 });
@@ -245,6 +248,39 @@ describe('AI generateJob', function() {
     // The stored transcript ends in the partial tool message
     assert.equal(job.results.messages.at(-1).role, 'tool');
     assert.deepEqual(job.results.toolCalls.map(call => call.id), [ 'c2' ]);
+  });
+
+  it('a suspended job continues in a new job with the answer', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo'), toolCall('c2', 'ask'))
+    ];
+    const { jobId } = await apos.ai.generateJob(req, 'go', {
+      tools: [ 'echo', 'ask' ]
+    });
+    const job = await waitForJob(jobId);
+    assert.equal(job.results.finishReason, 'input');
+
+    chatScript = [ textTurn('resumed') ];
+    const { jobId: secondId } = await apos.ai.generateJob(req, {
+      messages: job.results.messages,
+      tools: [ 'echo', 'ask' ],
+      pending: 'execute',
+      toolInput: { c2: { answered: true } }
+    });
+    const second = await waitForJob(secondId);
+
+    assert.equal(second.status, 'completed');
+    assert.equal(second.results.finishReason, 'stop');
+    assert.equal(second.results.text, 'resumed');
+    assert.deepEqual(second.results.steps, [ {
+      toolCall: toolCall('c2', 'ask'),
+      result: { answered: true }
+    } ]);
+    // The stored transcript's tool message is complete, in call order
+    const tool = second.results.messages.at(-2);
+    assert.deepEqual(tool.content.map(part => part.toolCallId),
+      [ 'c1', 'c2' ]);
   });
 
   it('fires onMessage with the jobId and onEnd with the result', async function() {

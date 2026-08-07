@@ -4,9 +4,9 @@
 
 const {
   QUALITIES, CACHE_POLICIES, MESSAGE_ROLES, PART_ROLES,
-  GENERATE_OPTIONS, IMAGE_OPTIONS
+  PENDING_POLICIES, GENERATE_OPTIONS, IMAGE_OPTIONS
 } = require('./constants');
-const { isObject } = require('./util');
+const { isObject, oneOf } = require('./util');
 
 module.exports = (self) => {
   function invalid(message) {
@@ -16,12 +16,16 @@ module.exports = (self) => {
   return {
     // Parse and validate generate's `(stringOrOptions, options)`
     // arguments into the canonical options object every later stage
-    // reads: `{ system, messages, tools, maxSteps, schema,
-    // validateObject, effort, provider, model, reasoning, maxTokens,
-    // cache, signal, onMessage, onToolCall }`, with a positional prompt string
-    // appended to `messages` as the final user turn, `tools` names
-    // resolved to their activated definitions and unset options left
-    // undefined.
+    // reads: `{ system, messages, tools, maxSteps, pending,
+    // pendingCalls, toolInput, schema, validateObject, effort,
+    // provider, model, reasoning, maxTokens, cache, signal, onMessage,
+    // onToolCall }`, with a positional prompt string appended to
+    // `messages` as the final user turn, `tools` names resolved to
+    // their activated definitions and unset options left undefined.
+    // `pendingCalls` is computed, not an option: the transcript's
+    // trailing unanswered tool calls in model order, present only
+    // under pending: 'execute' — the default refuses the shape with a
+    // clear message, since no provider accepts it.
     normalizeGenerateOptions(stringOrOptions, options) {
       let prompt = null;
       if (typeof stringOrOptions === 'string') {
@@ -48,7 +52,8 @@ module.exports = (self) => {
       }
       const {
         system, effort, provider, model, reasoning,
-        maxTokens, cache = 'short', signal, onMessage, onToolCall
+        maxTokens, cache = 'short', signal, onMessage, onToolCall,
+        pending = 'refuse', toolInput
       } = options;
       for (const [ name, value ] of Object.entries({
         system,
@@ -79,6 +84,18 @@ module.exports = (self) => {
           invalid(`"${name}" must be a function`);
         }
       }
+      if (!PENDING_POLICIES.includes(pending)) {
+        invalid(`"pending" must be ${oneOf(PENDING_POLICIES)}`);
+      }
+      if (toolInput !== undefined) {
+        if (pending !== 'execute') {
+          invalid('"toolInput" requires pending: "execute"');
+        }
+        if (!isObject(toolInput) ||
+          Object.values(toolInput).some((value) => !isObject(value))) {
+          invalid('"toolInput" must map tool call ids to input objects');
+        }
+      }
       const maxSteps = options.maxSteps === undefined
         ? self.options.maxSteps
         : options.maxSteps;
@@ -88,6 +105,21 @@ module.exports = (self) => {
       const tools = toolDefinitions(options.tools);
       const { schema, validateObject } = structuredSchema(options.schema);
       const messages = self.normalizeMessages(options.messages);
+      const pendingCalls = trailingCalls(messages);
+      if (pendingCalls) {
+        if (pending === 'refuse') {
+          invalid('the transcript ends in unanswered tool calls; ' +
+            'pass pending: "execute" to run them first, or strip the unanswered turns');
+        }
+        if (prompt !== null) {
+          invalid('a prompt cannot be appended to a transcript ending in unanswered tool calls');
+        }
+      }
+      for (const id of Object.keys(toolInput || {})) {
+        if (!pendingCalls?.some((call) => call.id === id)) {
+          invalid(`"toolInput" answers "${id}", which is not an unanswered trailing tool call`);
+        }
+      }
       if (prompt !== null) {
         messages.push({
           role: 'user',
@@ -105,6 +137,9 @@ module.exports = (self) => {
         messages,
         tools,
         maxSteps,
+        pending,
+        pendingCalls,
+        toolInput,
         schema,
         validateObject,
         effort,
@@ -166,6 +201,47 @@ module.exports = (self) => {
           schema,
           validateObject
         };
+      }
+
+      // The transcript's trailing unanswered tool calls, in model
+      // order, or null when it ends complete: the final assistant
+      // turn's toolCall parts minus what a trailing tool message
+      // already answers. A trailing tool message must answer its own
+      // assistant turn — a result for a call that turn did not make is
+      // a malformed transcript, refused whatever the pending policy.
+      function trailingCalls(messages) {
+        let turn = messages.at(-1);
+        const answered = new Set();
+        if (turn?.role === 'tool') {
+          const previous = messages.at(-2);
+          if (previous?.role !== 'assistant') {
+            return null;
+          }
+          const ids = new Set(
+            toolCallParts(previous).map((call) => call.id)
+          );
+          for (const part of turn.content) {
+            if (part.type !== 'toolResult') {
+              continue;
+            }
+            if (!ids.has(part.toolCallId)) {
+              invalid(`the trailing tool message answers "${part.toolCallId}", ` +
+                'which the preceding assistant turn did not request');
+            }
+            answered.add(part.toolCallId);
+          }
+          turn = previous;
+        }
+        if (turn?.role !== 'assistant') {
+          return null;
+        }
+        const unanswered = toolCallParts(turn)
+          .filter((call) => !answered.has(call.id));
+        return unanswered.length ? unanswered : null;
+      }
+
+      function toolCallParts(message) {
+        return message.content.filter((part) => part.type === 'toolCall');
       }
     },
     // Validate and normalize generate's `messages` option into a new

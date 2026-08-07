@@ -7,7 +7,7 @@ const {
   NAMED_ASPECTS, QUALITIES, TOOL_KINDS
 } = require('./constants');
 const {
-  isObject, parseAspect, startupFail: fail
+  isObject, parseAspect, oneOf, startupFail: fail
 } = require('./util');
 
 module.exports = (self) => {
@@ -217,12 +217,6 @@ module.exports = (self) => {
           fail(`${name}: handler names unknown method "${methodName}" of "${moduleName}"`);
         }
         return (req, args) => module[methodName](req, args);
-      }
-
-      // An enum constant as its message states it: quoted, "or" last
-      function oneOf(values) {
-        const quoted = values.map((value) => `"${value}"`);
-        return `${quoted.slice(0, -1).join(', ')} or ${quoted.at(-1)}`;
       }
     },
     // Fail startup when a model's declared image `aspects` are

@@ -291,6 +291,149 @@ describe('AI generate', function() {
         'long'
       );
     });
+
+    it('validates pending and the trailing-calls rules', function() {
+      const call = (id) => ({
+        type: 'toolCall',
+        id,
+        name: 'echo',
+        input: {}
+      });
+      const pendingMessages = [
+        {
+          role: 'user',
+          content: 'go'
+        },
+        {
+          role: 'assistant',
+          content: [ call('c1') ]
+        }
+      ];
+      // A partial trailing tool message is the same pending state
+      const partial = [
+        {
+          role: 'user',
+          content: 'go'
+        },
+        {
+          role: 'assistant',
+          content: [ call('c1'), call('c2') ]
+        },
+        {
+          role: 'tool',
+          content: [ {
+            type: 'toolResult',
+            toolCallId: 'c1',
+            output: { ok: true }
+          } ]
+        }
+      ];
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { pending: 'maybe' }),
+        /"pending" must be "refuse" or "execute"/
+      );
+      // The default refuses both pending shapes with the clear message
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions({ messages: pendingMessages }),
+        /ends in unanswered tool calls/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions({ messages: partial }),
+        /ends in unanswered tool calls/
+      );
+      // 'execute' computes the unanswered calls, in model order
+      const canonical = apos.ai.normalizeGenerateOptions({
+        messages: partial,
+        pending: 'execute'
+      });
+      assert.deepEqual(
+        canonical.pendingCalls.map((pendingCall) => pendingCall.id),
+        [ 'c2' ]
+      );
+      // A complete transcript has nothing pending: 'execute' is a no-op
+      assert.equal(
+        apos.ai.normalizeGenerateOptions('p', { pending: 'execute' }).pendingCalls,
+        null
+      );
+      // A prompt cannot bury unanswered calls
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', {
+          messages: pendingMessages,
+          pending: 'execute'
+        }),
+        /a prompt cannot be appended to a transcript ending in unanswered tool calls/
+      );
+      // A trailing tool message must answer its own assistant turn
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions({
+          messages: [
+            partial[0],
+            partial[1],
+            {
+              role: 'tool',
+              content: [ {
+                type: 'toolResult',
+                toolCallId: 'zz',
+                output: {}
+              } ]
+            }
+          ]
+        }),
+        /answers "zz", which the preceding assistant turn did not request/
+      );
+    });
+
+    it('validates toolInput against the trailing calls', function() {
+      const messages = [
+        {
+          role: 'user',
+          content: 'go'
+        },
+        {
+          role: 'assistant',
+          content: [ {
+            type: 'toolCall',
+            id: 'c1',
+            name: 'echo',
+            input: {}
+          } ]
+        }
+      ];
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { toolInput: {} }),
+        /"toolInput" requires pending: "execute"/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', {
+          pending: 'execute',
+          toolInput: 'yes'
+        }),
+        /"toolInput" must map tool call ids to input objects/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions({
+          messages,
+          pending: 'execute',
+          toolInput: { c1: 'yes' }
+        }),
+        /"toolInput" must map tool call ids to input objects/
+      );
+      // Every key must name an unanswered trailing call
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions({
+          messages,
+          pending: 'execute',
+          toolInput: { c9: { answered: true } }
+        }),
+        /"toolInput" answers "c9", which is not an unanswered trailing tool call/
+      );
+      const canonical = apos.ai.normalizeGenerateOptions({
+        messages,
+        pending: 'execute',
+        toolInput: { c1: { answered: true } }
+      });
+      assert.deepEqual(canonical.toolInput, { c1: { answered: true } });
+    });
   });
 
   describe('message normalization', function() {

@@ -757,6 +757,21 @@ describe('AI tools', function() {
                 }
               });
               add({
+                name: 'ask_answer',
+                handler: async (req, args) => {
+                  log.push('start:ask_answer');
+                  if (args._context.input === undefined) {
+                    throw self.apos.error('aiInput', 'needs the editor', {
+                      questions: [ 'Which color?' ]
+                    });
+                  }
+                  return {
+                    answered: true,
+                    ...args._context.input
+                  };
+                }
+              });
+              add({
                 name: 'ask_query',
                 kind: 'query',
                 handler: async () => {
@@ -1501,6 +1516,133 @@ describe('AI tools', function() {
         finish: 'stop',
         report: 'a delegated run cannot wait for input'
       });
+    });
+
+    it('continues a suspended transcript, the answer on _context.input', async function() {
+      const req = apos.task.getReq();
+      const tools = [ 'read_a', 'ask_answer', 'write_b' ];
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'read_a'),
+          toolCall('c2', 'ask_answer'),
+          toolCall('c3', 'write_b')
+        )
+      ];
+      const first = await apos.ai.generate(req, 'go', { tools });
+      assert.equal(first.finishReason, 'input');
+
+      chatCalls = [];
+      chatScript = [ textTurn('continued') ];
+      const events = [];
+      const second = await apos.ai.generate(req, {
+        messages: first.messages,
+        tools,
+        pending: 'execute',
+        toolInput: { c2: { color: 'blue' } },
+        onToolCall: async (event) => events.push(event)
+      });
+
+      assert.equal(second.text, 'continued');
+      assert.equal(second.finishReason, 'stop');
+      // Only the unanswered calls ran, in model order — the answered
+      // read travels as recorded outcome, never re-run
+      assert.deepEqual(second.steps, [
+        {
+          toolCall: toolCall('c2', 'ask_answer'),
+          result: {
+            answered: true,
+            color: 'blue'
+          }
+        },
+        {
+          toolCall: toolCall('c3', 'write_b'),
+          result: { ok: true }
+        }
+      ]);
+      // The trailing tool message was completed in the assistant
+      // turn's call order before the model saw anything
+      const sent = chatCalls[0].messages;
+      assert.deepEqual(sent.map(message => message.role),
+        [ 'user', 'assistant', 'tool' ]);
+      assert.deepEqual(sent.at(-1).content.map(part => part.toolCallId),
+        [ 'c1', 'c2', 'c3' ]);
+      assert.deepEqual(sent.at(-1).content[1].output, {
+        answered: true,
+        color: 'blue'
+      });
+      // Continuation work reports at step 0, serial in model order
+      assert.deepEqual(
+        events.map(event => [ event.phase, event.call.id, event.step ]),
+        [
+          [ 'start', 'c2', 0 ],
+          [ 'end', 'c2', 0 ],
+          [ 'start', 'c3', 0 ],
+          [ 'end', 'c3', 0 ]
+        ]
+      );
+    });
+
+    it('a continuation without its answer suspends again', async function() {
+      const req = apos.task.getReq();
+      const tools = [ 'read_a', 'ask_answer', 'write_b' ];
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'read_a'),
+          toolCall('c2', 'ask_answer'),
+          toolCall('c3', 'write_b')
+        )
+      ];
+      const first = await apos.ai.generate(req, 'go', { tools });
+
+      chatCalls = [];
+      chatScript = [];
+      const again = await apos.ai.generate(req, {
+        messages: first.messages,
+        tools,
+        pending: 'execute'
+      });
+
+      assert.equal(again.finishReason, 'input');
+      assert.deepEqual(again.suspended, [ {
+        callId: 'c2',
+        name: 'ask_answer',
+        payload: { questions: [ 'Which color?' ] }
+      } ]);
+      assert.deepEqual(again.toolCalls.map(call => call.id), [ 'c2', 'c3' ]);
+      assert.deepEqual(again.steps, []);
+      // No model call was spent; the trailing message still answers
+      // only the executed read
+      assert.equal(chatCalls.length, 0);
+      assert.deepEqual(again.messages.at(-1).content.map(part => part.toolCallId),
+        [ 'c1' ]);
+    });
+
+    it('a continuation missing the tool feeds the unknown-tool error back', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'read_a'),
+          toolCall('c2', 'ask_answer')
+        )
+      ];
+      const first = await apos.ai.generate(req, 'go', {
+        tools: [ 'read_a', 'ask_answer' ]
+      });
+
+      chatCalls = [];
+      chatScript = [ textTurn('moving on') ];
+      const second = await apos.ai.generate(req, {
+        messages: first.messages,
+        tools: [ 'read_a' ],
+        pending: 'execute',
+        toolInput: { c2: { color: 'blue' } }
+      });
+
+      assert.equal(second.text, 'moving on');
+      const sent = chatCalls[0].messages;
+      assert.deepEqual(sent.at(-1).content.map(part => part.toolCallId),
+        [ 'c1', 'c2' ]);
+      assert.match(sent.at(-1).content[1].error, /unknown tool "ask_answer"/);
     });
 
     it('an agent tool runs a subagent, one level deep', async function() {

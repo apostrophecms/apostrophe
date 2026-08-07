@@ -399,6 +399,22 @@ module.exports = {
        *   the last allowed turn still requests tools, the call finishes as
        *   'maxSteps' and the requests come back unexecuted on `toolCalls` — so
        *   `maxSteps: 1` is manual mode: one turn, inspect, run them yourself.
+       * @property {'refuse'|'execute'} [pending] What to do with a transcript
+       *   ending in unanswered tool calls. 'refuse', the default, throws a
+       *   clear "invalid" — no provider accepts the shape. 'execute' turns
+       *   continuation on: the trailing calls run before any model turn — a
+       *   suspended call reading its answer on `args._context.input` — their
+       *   results complete the trailing tool message in model order, and only
+       *   then is the model asked; the engine never knows how long the
+       *   transcript was stored between calls. A prompt string cannot be
+       *   combined with unanswered trailing calls.
+       * @property {Object<string, object>} [toolInput] Per-call answers for
+       *   the trailing calls, keyed by tool call id — legal only with
+       *   pending: 'execute', and every key must name an unanswered trailing
+       *   call. The matching call's handler finds its entry on
+       *   `args._context.input`; calls with no entry run as usual, and a
+       *   handler still lacking what it needs may throw "aiInput" again —
+       *   the engine puts no bound on re-suspension.
        * @property {object} [schema] Request structured output: a JSON Schema
        *   with an object root, which the provider's native structured mode is
        *   constrained to, the validated result coming back on `object`.
@@ -455,6 +471,13 @@ module.exports = {
        * "aiToolError" instead — a delegated run cannot wait for input. A
        * cancellation observed at the suspension wins: the run ends 'cancel'
        * and no ask is surfaced.
+       *
+       * A suspended transcript continues by handing it back with
+       * pending: 'execute' and the answers on `toolInput`: the trailing
+       * calls run first and the completed tool message goes to the model as
+       * an ordinary tool round. Continuation, not resumption — a request
+       * built from a continued transcript is byte-shaped like a mid-loop
+       * step, and no adapter knows the difference.
        *
        * Under APOS_AI_MOCK the built-in mock answers every call in place of any
        * adapter — same pipeline, no network; with no providers configured at
@@ -532,6 +555,33 @@ module.exports = {
         let suspended = null;
         let cancelled = false;
         try {
+          await continuePending();
+          if (!suspended && !cancelled) {
+            await runLoop();
+          }
+        } catch (e) {
+          // Only an abort-shaped throw converts to a cancelled run, and
+          // only while this call's signal has fired — a genuine failure
+          // racing a cancel still throws
+          if (!isAbort(e) || !canonical.signal?.aborted) {
+            throw e;
+          }
+          cancelled = true;
+        }
+        context.result = self.assembleResult(context, turn, {
+          steps,
+          usage,
+          pending,
+          suspended,
+          object: turn?.object,
+          hadTools: tools.size > 0 || Boolean(canonical.pendingCalls),
+          ...(suspended && { finishReason: 'input' }),
+          ...(cancelled && { finishReason: 'cancel' })
+        });
+        await self.emit('afterGenerate', req, context);
+        return context.result;
+
+        async function runLoop() {
           for (let turns = 1; ; turns++) {
             turn = await self.callAdapter(req, record, context.request, async () => {
               const answer = self.validateTurn(
@@ -593,43 +643,16 @@ module.exports = {
             const outcomes = await self.executeToolCalls(
               req, tools, calls, handlerContext, onToolCall
             );
-            const executed = outcomes.filter(
-              (outcome) => outcome && outcome.suspended === undefined
-            );
+            const executed = executedOutcomes(outcomes);
             steps.push(...executed);
             if (executed.length) {
               context.request.messages.push({
                 role: 'tool',
-                content: executed.map((outcome) => ({
-                  type: 'toolResult',
-                  toolCallId: outcome.toolCall.id,
-                  ...(outcome.error !== undefined
-                    ? { error: outcome.error }
-                    : { output: outcome.result })
-                }))
+                content: toolResultParts(executed)
               });
             }
             if (executed.length < calls.length) {
-              // A handler suspended and the batch stopped at that call.
-              // The executed outcomes just became a partial tool
-              // message, so the transcript is the run's complete state;
-              // the suspended calls and the unstarted actions come back
-              // unexecuted. A cancellation observed here wins: the run
-              // ends 'cancel' and no ask is surfaced
-              pending = calls.filter((call, index) => !outcomes[index] ||
-                outcomes[index].suspended !== undefined);
-              if (canonical.signal?.aborted) {
-                cancelled = true;
-              } else {
-                suspended = outcomes
-                  .filter((outcome) => outcome &&
-                    outcome.suspended !== undefined)
-                  .map((outcome) => ({
-                    callId: outcome.toolCall.id,
-                    name: outcome.toolCall.name,
-                    payload: outcome.suspended
-                  }));
-              }
+              suspendRun(calls, outcomes);
               break;
             }
             // The batch was waited out and recorded; wind down before
@@ -639,27 +662,115 @@ module.exports = {
               break;
             }
           }
-        } catch (e) {
-          // Only an abort-shaped throw converts to a cancelled run, and
-          // only while this call's signal has fired — a genuine failure
-          // racing a cancel still throws
-          if (!isAbort(e) || !canonical.signal?.aborted) {
-            throw e;
-          }
-          cancelled = true;
         }
-        context.result = self.assembleResult(context, turn, {
-          steps,
-          usage,
-          pending,
-          suspended,
-          object: turn?.object,
-          hadTools: tools.size > 0,
-          ...(suspended && { finishReason: 'input' }),
-          ...(cancelled && { finishReason: 'cancel' })
-        });
-        await self.emit('afterGenerate', req, context);
-        return context.result;
+
+        // Executed outcomes alone: a suspended call's entry is not
+        // executed work, an unstarted call has none
+        function executedOutcomes(outcomes) {
+          return outcomes.filter(
+            (outcome) => outcome && outcome.suspended === undefined
+          );
+        }
+
+        // Executed outcomes as a tool message's toolResult parts
+        function toolResultParts(executed) {
+          return executed.map((outcome) => ({
+            type: 'toolResult',
+            toolCallId: outcome.toolCall.id,
+            ...(outcome.error !== undefined
+              ? { error: outcome.error }
+              : { output: outcome.result })
+          }));
+        }
+
+        // A handler suspended and the batch stopped at that call. The
+        // executed outcomes are already in the (partial) tool message,
+        // so the transcript is the run's complete state; the suspended
+        // calls and the unstarted actions come back unexecuted. A
+        // cancellation observed here wins: the run ends 'cancel' and
+        // no ask is surfaced
+        function suspendRun(calls, outcomes) {
+          pending = calls.filter((call, index) => !outcomes[index] ||
+            outcomes[index].suspended !== undefined);
+          if (canonical.signal?.aborted) {
+            cancelled = true;
+            return;
+          }
+          suspended = outcomes
+            .filter((outcome) => outcome &&
+              outcome.suspended !== undefined)
+            .map((outcome) => ({
+              callId: outcome.toolCall.id,
+              name: outcome.toolCall.name,
+              payload: outcome.suspended
+            }));
+        }
+
+        // The opt-in continuation of a transcript ending in unanswered
+        // tool calls (pending: 'execute'): the trailing calls run
+        // before any model turn — a suspended call reading its answer
+        // from toolInput on _context.input — and their results
+        // complete the trailing tool message, so the provider never
+        // sees the partial state. A call that suspends again winds the
+        // run down exactly like a mid-loop suspension, reported at
+        // step 0.
+        async function continuePending() {
+          const calls = canonical.pendingCalls;
+          if (!calls) {
+            return;
+          }
+          const onToolCall = canonical.onToolCall &&
+            ((event) => canonical.onToolCall({
+              ...event,
+              step: 0
+            }));
+          const outcomes = await self.executeToolCalls(
+            req,
+            tools,
+            calls,
+            {
+              ...handlerContext,
+              ...(canonical.toolInput && { inputs: canonical.toolInput })
+            },
+            onToolCall
+          );
+          const executed = executedOutcomes(outcomes);
+          steps.push(...executed);
+          mergeTrailing(executed);
+          if (executed.length < calls.length) {
+            suspendRun(calls, outcomes);
+            return;
+          }
+          if (canonical.signal?.aborted) {
+            cancelled = true;
+          }
+
+          // The new results into the trailing tool message, rebuilt in
+          // the assistant turn's call order; appended as a new message
+          // when nothing was answered before
+          function mergeTrailing(executed) {
+            if (!executed.length) {
+              return;
+            }
+            const messages = context.request.messages;
+            const last = messages.at(-1);
+            if (last?.role !== 'tool') {
+              messages.push({
+                role: 'tool',
+                content: toolResultParts(executed)
+              });
+              return;
+            }
+            const byId = new Map(
+              [ ...last.content, ...toolResultParts(executed) ]
+                .map((part) => [ part.toolCallId, part ])
+            );
+            last.content = messages.at(-2).content
+              .filter((part) => part.type === 'toolCall')
+              .map((call) => byId.get(call.id))
+              .filter(Boolean);
+          }
+        }
       },
 
       /**
