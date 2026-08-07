@@ -77,16 +77,16 @@ module.exports = (self) => {
     },
     // Execute one batch of model-requested tool calls — the toolCall
     // parts of a single assistant turn — against `tools`, the call's
-    // selected definitions as a Map by name. Reads run first, in
-    // parallel; writes follow serially, in the order the model
+    // selected definitions as a Map by name. Queries run first, in
+    // parallel; actions follow serially, in the order the model
     // requested them. Returns outcomes in model order regardless of
     // scheduling: { toolCall, result } per success, { toolCall, error }
     // per recoverable failure — a call naming a tool outside the
     // selected set, invalid arguments, or a handler's aiToolError. The
     // error message is what the model reads back, and siblings are
     // unaffected. Any other throw is a hard stop: it propagates
-    // immediately, before any write runs when thrown by a read,
-    // aborting the remaining writes when thrown by one — and no trace
+    // immediately, before any action runs when thrown by a query,
+    // aborting the remaining actions when thrown by one — and no trace
     // of it is ever model-bound.
     //
     // Handlers run on a clone of the caller's req stamped with the
@@ -96,7 +96,7 @@ module.exports = (self) => {
     // nested, even delayed or from a stashed reference, while the
     // caller's original req is untouched and concurrent calls sharing
     // it are unaffected. Every batch is stamped, not only agent tools,
-    // so a handler that spawns without declaring `access: 'agent'` is
+    // so a handler that spawns without declaring `kind: 'agent'` is
     // contained all the same; `_context.depth` is the informational
     // copy a handler may act on.
     //
@@ -114,24 +114,24 @@ module.exports = (self) => {
         ...context,
         depth
       };
-      const reads = [];
-      const writes = [];
+      const queries = [];
+      const actions = [];
       calls.forEach((call, index) => {
-        if (tools.get(call.name)?.access === 'read') {
-          reads.push([ call, index ]);
+        if (tools.get(call.name)?.kind === 'query') {
+          queries.push([ call, index ]);
         } else {
-          writes.push([ call, index ]);
+          actions.push([ call, index ]);
         }
       });
       const settled = await Promise.allSettled(
-        reads.map(([ call, index ]) => run(call, index))
+        queries.map(([ call, index ]) => run(call, index))
       );
-      for (const read of settled) {
-        if (read.status === 'rejected') {
-          throw read.reason;
+      for (const query of settled) {
+        if (query.status === 'rejected') {
+          throw query.reason;
         }
       }
-      for (const [ call, index ] of writes) {
+      for (const [ call, index ] of actions) {
         await run(call, index);
       }
       return outcomes;

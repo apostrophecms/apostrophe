@@ -22,7 +22,7 @@ describe('AI adapter: openai', function() {
             self.apos.ai.addTool({
               name: 'echo',
               description: 'Echo the value back',
-              access: 'read',
+              kind: 'query',
               input: {
                 type: 'object',
                 properties: { value: { type: 'string' } },

@@ -174,14 +174,15 @@ module.exports = {
        *   the name ('find_pages' → 'Find Pages'). Never sent to the model.
        * @property {string[]} [tags] Strings to query the registry by, see
        *   getTools.
-       * @property {'read'|'write'|'agent'} [access] Not a permission but a
-       *   scheduling class; 'write' by default. Reads run in parallel within
-       *   one batch of tool calls; writes and agents follow serially in model
-       *   order. 'agent' declares that the handler makes its own generate call
-       *   (a subagent, with its own budgets). One level of nesting is allowed:
-       *   a nested call silently drops agent tools from its set — a subagent
-       *   cannot spawn subagents — and generation below the subagent level
-       *   fails.
+       * @property {'query'|'action'|'agent'} [kind] The tool's consequence
+       *   class; 'action' by default. A query is effect-free: queries run in
+       *   parallel within one batch of tool calls. An action has effects:
+       *   actions and agents follow serially in model order, and are never
+       *   re-run or reordered. 'agent' declares that the handler makes its own
+       *   generate call (a subagent, with its own budgets). One level of
+       *   nesting is allowed: a nested call silently drops agent tools from
+       *   its set — a subagent cannot spawn subagents — and generation below
+       *   the subagent level fails.
        */
 
       /**
@@ -389,8 +390,8 @@ module.exports = {
        *   for a single text part.
        * @property {string[]} [tools] Registered tool names the model may
        *   call — see addTool. The loop validates the model's arguments,
-       *   executes the handlers by their `access` scheduling (reads in parallel
-       *   first, writes serial in model order), feeds results back, and asks
+       *   executes the handlers by their `kind` scheduling (queries in parallel
+       *   first, actions serial in model order), feeds results back, and asks
        *   the model again until it answers or `maxSteps` is spent.
        * @property {number} [maxSteps] The cap on model turns for this call, a
        *   positive integer defaulting to the module's `maxSteps` option. When
@@ -478,7 +479,7 @@ module.exports = {
           throw self.apos.error('invalid', 'AI generation is limited to one level of nesting: the tools of a subagent cannot generate');
         }
         if (depth === self.allowedDepth) {
-          canonical.tools = canonical.tools.filter((tool) => tool.access !== 'agent');
+          canonical.tools = canonical.tools.filter((tool) => tool.kind !== 'agent');
         }
         let provider;
         let request;

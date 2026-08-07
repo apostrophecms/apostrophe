@@ -31,8 +31,8 @@ const FINISH_REASONS = Object.freeze([
   'stop', 'toolCalls', 'length', 'refusal'
 ]);
 
-// A tool's scheduling class
-const TOOL_ACCESS = Object.freeze([ 'read', 'write', 'agent' ]);
+// A tool's consequence class; scheduling and nesting rules derive from it
+const TOOL_KINDS = Object.freeze([ 'query', 'action', 'agent' ]);
 
 // The options generate accepts
 const GENERATE_OPTIONS = Object.freeze([
@@ -53,7 +53,7 @@ module.exports = {
   MESSAGE_ROLES,
   PART_ROLES,
   FINISH_REASONS,
-  TOOL_ACCESS,
+  TOOL_KINDS,
   GENERATE_OPTIONS,
   IMAGE_OPTIONS
 };

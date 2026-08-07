@@ -98,7 +98,7 @@
  *   `schema` validator; absent when the tool declares no result schema.
  * @property {number} [maxResultChars] The result-size budget in serialized
  *   characters; absent means unlimited.
- * @property {'read'|'write'|'agent'} access
+ * @property {'query'|'action'|'agent'} kind
  * @property {(req: object, args: object) => Promise<object>} handler
  */
 

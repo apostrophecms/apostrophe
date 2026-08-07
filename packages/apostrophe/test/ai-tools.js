@@ -18,7 +18,7 @@ describe('AI tools', function() {
               name: 'find_pages',
               description: 'Search pages. Use when the user asks about existing content.',
               tags: [ 'content', 'pages' ],
-              access: 'read',
+              kind: 'query',
               input: {
                 type: 'object',
                 properties: {
@@ -184,13 +184,13 @@ describe('AI tools', function() {
     it('activates canonical definitions', function() {
       const tool = apos.ai.getTool('find_pages');
       assert.deepEqual(Object.keys(tool).sort(), [
-        'access', 'description', 'handler', 'input', 'label',
+        'description', 'handler', 'input', 'kind', 'label',
         'maxResultChars', 'name', 'schema', 'tags', 'validateArgs',
         'validateResult'
       ]);
       assert.equal(tool.label, 'Find Pages');
       assert.deepEqual(tool.tags, [ 'content', 'pages' ]);
-      assert.equal(tool.access, 'read');
+      assert.equal(tool.kind, 'query');
       assert.equal(typeof tool.handler, 'function');
       assert.equal(typeof tool.validateArgs, 'function');
       // The result schema is JSON Schema, kept as registered, with its
@@ -199,10 +199,10 @@ describe('AI tools', function() {
       assert.equal(typeof tool.validateResult, 'function');
     });
 
-    it('keeps an explicit label, defaults access to write, tags and schema to none', function() {
+    it('keeps an explicit label, defaults kind to action, tags and schema to none', function() {
       const tool = apos.ai.getTool('create_page');
       assert.equal(tool.label, 'Add a page');
-      assert.equal(tool.access, 'write');
+      assert.equal(tool.kind, 'action');
       const plain = apos.ai.getTool('no_object');
       assert.deepEqual(plain.tags, []);
       // The result schema is optional
@@ -350,8 +350,8 @@ describe('AI tools', function() {
       }), /"schema" is not a valid JSON Schema.*propreties/);
     });
 
-    it('panics on a bad access value', async function() {
-      await failsToBoot(minimal({ access: 'delete' }), /"access" must be "read", "write" or "agent"/);
+    it('panics on a bad kind value', async function() {
+      await failsToBoot(minimal({ kind: 'delete' }), /"kind" must be "query", "action" or "agent"/);
     });
 
     it('panics on a bad result budget', async function() {
@@ -666,12 +666,12 @@ describe('AI tools', function() {
               });
               add({
                 name: 'read_a',
-                access: 'read',
+                kind: 'query',
                 handler: track('read_a')
               });
               add({
                 name: 'read_b',
-                access: 'read',
+                kind: 'query',
                 handler: track('read_b')
               });
               add({
@@ -684,7 +684,7 @@ describe('AI tools', function() {
               });
               add({
                 name: 'agent_a',
-                access: 'agent',
+                kind: 'agent',
                 handler: track('agent_a')
               });
               add({
@@ -711,7 +711,7 @@ describe('AI tools', function() {
               });
               add({
                 name: 'sub_agent',
-                access: 'agent',
+                kind: 'agent',
                 handler: async (req, args) => {
                   depths.push([ 'sub_agent', args._context.depth ]);
                   const inner = await self.apos.ai.generate(req, 'inner question', {
@@ -722,7 +722,7 @@ describe('AI tools', function() {
               });
               add({
                 name: 'sub_sub',
-                access: 'agent',
+                kind: 'agent',
                 handler: async (req) => {
                   const inner = await self.apos.ai.generate(req, 'nested', {
                     tools: [ 'sub_agent', 'echo' ]
@@ -739,7 +739,7 @@ describe('AI tools', function() {
               });
               add({
                 name: 'sub_deep',
-                access: 'agent',
+                kind: 'agent',
                 handler: async (req) => {
                   await self.apos.ai.generate(req, 'inner', {
                     tools: [ 'spawner' ]
@@ -1102,7 +1102,7 @@ describe('AI tools', function() {
       assert.equal(chatCalls[0].schema.type, 'object');
     });
 
-    it('runs reads in parallel first, then writes serially in model order', async function() {
+    it('runs queries in parallel first, then actions serially in model order', async function() {
       const req = apos.task.getReq();
       let release;
       const opened = new Promise((resolve) => {
@@ -1357,7 +1357,7 @@ describe('AI tools', function() {
       const req = apos.task.getReq();
       chatScript = [
         toolTurn(toolCall('c1', 'sub_deep')),
-        // The subagent's conversation requests a plain write tool,
+        // The subagent's conversation requests a plain action tool,
         // whose handler tries to generate again
         toolTurn(toolCall('c2', 'spawner'))
       ];

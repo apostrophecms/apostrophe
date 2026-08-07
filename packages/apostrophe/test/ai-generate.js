@@ -66,7 +66,7 @@ describe('AI generate', function() {
             self.apos.ai.addTool({
               name: 'echo',
               description: 'Echo the text back',
-              access: 'read',
+              kind: 'query',
               input: {
                 type: 'object',
                 properties: { text: { type: 'string' } }

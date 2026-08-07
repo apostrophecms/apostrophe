@@ -4,7 +4,7 @@
 
 const startCase = require('lodash/startCase');
 const {
-  NAMED_ASPECTS, QUALITIES, TOOL_ACCESS
+  NAMED_ASPECTS, QUALITIES, TOOL_KINDS
 } = require('./constants');
 const {
   isObject, parseAspect, startupFail: fail
@@ -170,9 +170,9 @@ module.exports = (self) => {
             fail(`${name}: "schema" is not a valid JSON Schema: ${e.message}`);
           }
         }
-        const access = tool.access === undefined ? 'write' : tool.access;
-        if (!TOOL_ACCESS.includes(access)) {
-          fail(`${name}: "access" must be "read", "write" or "agent"`);
+        const kind = tool.kind === undefined ? 'action' : tool.kind;
+        if (!TOOL_KINDS.includes(kind)) {
+          fail(`${name}: "kind" must be "query", "action" or "agent"`);
         }
         if (tool.maxResultChars !== undefined &&
           (!Number.isInteger(tool.maxResultChars) || tool.maxResultChars < 1)) {
@@ -188,7 +188,7 @@ module.exports = (self) => {
           schema: tool.schema,
           validateResult,
           maxResultChars: tool.maxResultChars,
-          access,
+          kind,
           handler: resolveHandler(tool.handler, name)
         };
       }
