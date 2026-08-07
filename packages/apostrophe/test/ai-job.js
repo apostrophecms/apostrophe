@@ -102,6 +102,16 @@ describe('AI generateJob', function() {
               input: okInput,
               handler: async () => ({ ok: true })
             });
+            self.apos.ai.addTool({
+              name: 'ask',
+              description: 'The ask tool.',
+              input: okInput,
+              handler: async () => {
+                throw self.apos.error('aiInput', 'needs the editor', {
+                  questions: [ 'Which one?' ]
+                });
+              }
+            });
             // Ignores the abort signal: runs until the test releases it
             self.apos.ai.addTool({
               name: 'gate',
@@ -212,6 +222,29 @@ describe('AI generateJob', function() {
     assert.deepEqual(job.results, blocking);
     assert.equal(job.userId, 'owner1');
     assert.equal(job.expireAt instanceof Date, true);
+  });
+
+  it('a suspended run ends the job complete with the input finish reason', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo'), toolCall('c2', 'ask'))
+    ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'go', {
+      tools: [ 'echo', 'ask' ]
+    });
+    const job = await waitForJob(jobId);
+
+    assert.equal(job.status, 'completed');
+    assert.equal(job.results.finishReason, 'input');
+    assert.deepEqual(job.results.suspended, [ {
+      callId: 'c2',
+      name: 'ask',
+      payload: { questions: [ 'Which one?' ] }
+    } ]);
+    // The stored transcript ends in the partial tool message
+    assert.equal(job.results.messages.at(-1).role, 'tool');
+    assert.deepEqual(job.results.toolCalls.map(call => call.id), [ 'c2' ]);
   });
 
   it('fires onMessage with the jobId and onEnd with the result', async function() {

@@ -89,6 +89,7 @@ module.exports = {
     self.apos.http.addError('aiRetry', 503);
     self.apos.http.addError('aiRefusal', 422);
     self.apos.http.addError('aiToolError', 422);
+    self.apos.http.addError('aiInput', 422);
   },
   handlers(self) {
     return {
@@ -442,6 +443,19 @@ module.exports = {
        * unexecuted requests on `toolCalls`. Only abort-shaped throws convert; a
        * genuine failure racing a cancel still throws.
        *
+       * Suspension: a tool handler that cannot answer without outside input
+       * throws "aiInput", the ask riding the throw's `data`. The loop stops
+       * the batch at that call — queries all complete together, so several
+       * may suspend at once; no action past the earliest suspended call in
+       * model order ever starts — and the run returns normally with
+       * finishReason 'input': executed outcomes on `steps` and appended to
+       * the transcript as a partial tool message, the suspended calls and
+       * unstarted actions unexecuted on `toolCalls`, and the asks on
+       * `suspended`, in model order. In a nested run the throw converts to
+       * "aiToolError" instead — a delegated run cannot wait for input. A
+       * cancellation observed at the suspension wins: the run ends 'cancel'
+       * and no ask is surfaced.
+       *
        * Under APOS_AI_MOCK the built-in mock answers every call in place of any
        * adapter — same pipeline, no network; with no providers configured at
        * all, placeholder routing stands in. A scripted mock turn may request
@@ -515,6 +529,7 @@ module.exports = {
         };
         let turn = null;
         let pending = null;
+        let suspended = null;
         let cancelled = false;
         try {
           for (let turns = 1; ; turns++) {
@@ -578,17 +593,45 @@ module.exports = {
             const outcomes = await self.executeToolCalls(
               req, tools, calls, handlerContext, onToolCall
             );
-            steps.push(...outcomes);
-            context.request.messages.push({
-              role: 'tool',
-              content: outcomes.map((outcome) => ({
-                type: 'toolResult',
-                toolCallId: outcome.toolCall.id,
-                ...(outcome.error !== undefined
-                  ? { error: outcome.error }
-                  : { output: outcome.result })
-              }))
-            });
+            const executed = outcomes.filter(
+              (outcome) => outcome && outcome.suspended === undefined
+            );
+            steps.push(...executed);
+            if (executed.length) {
+              context.request.messages.push({
+                role: 'tool',
+                content: executed.map((outcome) => ({
+                  type: 'toolResult',
+                  toolCallId: outcome.toolCall.id,
+                  ...(outcome.error !== undefined
+                    ? { error: outcome.error }
+                    : { output: outcome.result })
+                }))
+              });
+            }
+            if (executed.length < calls.length) {
+              // A handler suspended and the batch stopped at that call.
+              // The executed outcomes just became a partial tool
+              // message, so the transcript is the run's complete state;
+              // the suspended calls and the unstarted actions come back
+              // unexecuted. A cancellation observed here wins: the run
+              // ends 'cancel' and no ask is surfaced
+              pending = calls.filter((call, index) => !outcomes[index] ||
+                outcomes[index].suspended !== undefined);
+              if (canonical.signal?.aborted) {
+                cancelled = true;
+              } else {
+                suspended = outcomes
+                  .filter((outcome) => outcome &&
+                    outcome.suspended !== undefined)
+                  .map((outcome) => ({
+                    callId: outcome.toolCall.id,
+                    name: outcome.toolCall.name,
+                    payload: outcome.suspended
+                  }));
+              }
+              break;
+            }
             // The batch was waited out and recorded; wind down before
             // asking the model again
             if (canonical.signal?.aborted) {
@@ -609,8 +652,10 @@ module.exports = {
           steps,
           usage,
           pending,
+          suspended,
           object: turn?.object,
           hadTools: tools.size > 0,
+          ...(suspended && { finishReason: 'input' }),
           ...(cancelled && { finishReason: 'cancel' })
         });
         await self.emit('afterGenerate', req, context);

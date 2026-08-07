@@ -206,10 +206,11 @@
 
 /**
  * One tool call reporting itself to the caller's `onToolCall` hook, as it
- * starts and again as it ends. `result` and `error` are the outcome of an
- * 'end' report and are absent from a 'start' one; a recoverable error is the
- * message the model was told, a hard-stopping one the message that is about
- * to be thrown.
+ * starts and again as it ends. `result`, `error` and `suspended` are the
+ * outcome of an 'end' report and are absent from a 'start' one; a
+ * recoverable error is the message the model was told, a hard-stopping one
+ * the message that is about to be thrown, and `suspended` is the ask of a
+ * handler that ended the run waiting for input.
  *
  * @typedef {object} AiToolCallEvent
  * @property {'start'|'end'} phase
@@ -217,6 +218,19 @@
  * @property {number} step The model turn that asked for it, counting from 1.
  * @property {object} [result]
  * @property {string} [error]
+ * @property {object|null} [suspended]
+ */
+
+/**
+ * One suspended tool call's ask: the handler threw "aiInput" because it
+ * cannot answer without outside input, and the run ended with finishReason
+ * 'input'. The call itself stays unexecuted on `toolCalls`.
+ *
+ * @typedef {object} AiSuspendedCall
+ * @property {string} callId
+ * @property {string} name The registered tool name.
+ * @property {object} payload The throw's `data`, authored by the handler —
+ *   what it needs to continue; {} when the throw carried none.
  */
 
 /**
@@ -233,9 +247,14 @@
  *   when the call carried tools.
  * @property {AiToolCallPart[]} [toolCalls] Unexecuted requests the caller must
  *   run itself.
- * @property {'stop'|'length'|'cancel'|'maxSteps'} finishReason 'maxSteps'
- *   whenever the step budget cut the loop, the step budget's counterpart of
- *   'length'.
+ * @property {AiSuspendedCall[]} [suspended] The asks of the calls that
+ *   suspended the run, in model order; present only with finishReason
+ *   'input'. The transcript already carries the executed outcomes as a
+ *   partial tool message.
+ * @property {'stop'|'length'|'cancel'|'maxSteps'|'input'} finishReason
+ *   'maxSteps' whenever the step budget cut the loop, the step budget's
+ *   counterpart of 'length'; 'input' when a tool handler suspended the run
+ *   for outside input.
  * @property {AiUsage} usage
  * @property {string} model What actually answered.
  * @property {string} provider

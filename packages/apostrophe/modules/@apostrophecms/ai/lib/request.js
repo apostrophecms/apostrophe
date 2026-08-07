@@ -127,7 +127,7 @@ module.exports = (self) => {
     // populated is what tells the caller what happened; the transcript
     // is resumable as the next call's `messages`.
     assembleResult(context, turn, {
-      steps, usage, pending, object, hadTools, finishReason
+      steps, usage, pending, suspended, object, hadTools, finishReason
     }) {
       // `turn` is null when a cancellation aborted the first provider
       // call of a step: there is no final assistant turn, only the
@@ -142,6 +142,7 @@ module.exports = (self) => {
         messages: [ ...context.request.messages ],
         ...(hadTools && { steps }),
         ...(pending && { toolCalls: pending }),
+        ...(suspended && { suspended }),
         // The step budget cutting the loop is its own finish reason,
         // like the token budget's 'length'; an explicit override wins
         // (a cancelled run)

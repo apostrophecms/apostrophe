@@ -89,6 +89,17 @@ module.exports = (self) => {
     // aborting the remaining actions when thrown by one — and no trace
     // of it is ever model-bound.
     //
+    // A handler that cannot answer without outside input throws
+    // 'aiInput', the ask riding the throw's `data`; the call stays
+    // unexecuted and its outcome is { toolCall, suspended } — the
+    // payload as apos.error attached it. Suspension stops the
+    // batch at the suspended call: queries all complete together, so
+    // several may suspend at once, and no action past the earliest
+    // suspended call in model order ever starts — it may depend on
+    // that call's outcome. Unstarted calls have no outcome entry. In
+    // a nested run the throw converts to 'aiToolError' instead — a
+    // delegated run has no one to ask.
+    //
     // Handlers run on a clone of the caller's req stamped with the
     // batch's depth (`aposAiDepth`) — an immutable property of the
     // request each handler received, never shared mutable state — so a
@@ -131,8 +142,22 @@ module.exports = (self) => {
           throw query.reason;
         }
       }
+      // The earliest suspended query bounds the action lane in model
+      // order: an action before it cannot depend on it and still runs
+      let bound = calls.length;
+      for (const [ , index ] of queries) {
+        if (outcomes[index]?.suspended !== undefined && index < bound) {
+          bound = index;
+        }
+      }
       for (const [ call, index ] of actions) {
+        if (index > bound) {
+          break;
+        }
         await run(call, index);
+        if (outcomes[index]?.suspended !== undefined) {
+          break;
+        }
       }
       return outcomes;
 
@@ -162,7 +187,22 @@ module.exports = (self) => {
             result: payload.result
           };
         } catch (e) {
-          if (e?.name !== 'aiToolError') {
+          if (e?.name === 'aiInput' && depth === 1) {
+            payload.suspended = e.data ?? null;
+            outcomes[index] = {
+              toolCall: call,
+              suspended: payload.suspended
+            };
+          } else if (e?.name === 'aiInput') {
+            // A delegated run has no one to ask: the suspend signal
+            // converts to the recoverable code so the child model can
+            // adapt or answer without the input
+            payload.error = 'a delegated run cannot wait for input';
+            outcomes[index] = {
+              toolCall: call,
+              error: payload.error
+            };
+          } else if (e?.name !== 'aiToolError') {
             // A call that started is always reported finished, so a
             // consumer never waits on a step that ended the run
             try {
@@ -177,20 +217,24 @@ module.exports = (self) => {
               });
             }
             throw e;
+          } else {
+            payload.error = e.message;
+            outcomes[index] = {
+              toolCall: call,
+              error: e.message
+            };
           }
-          payload.error = e.message;
-          outcomes[index] = {
-            toolCall: call,
-            error: e.message
-          };
         }
         await self.emit('afterToolCall', req, payload);
-        await report({
-          phase: 'end',
-          ...(payload.error !== undefined
-            ? { error: payload.error }
-            : { result: payload.result })
-        });
+        const end = { phase: 'end' };
+        if (payload.error !== undefined) {
+          end.error = payload.error;
+        } else if (payload.suspended !== undefined) {
+          end.suspended = payload.suspended;
+        } else {
+          end.result = payload.result;
+        }
+        await report(end);
 
         // The call is what the model asked for, verbatim; the step the
         // hook also carries is the loop's, bound before it got here

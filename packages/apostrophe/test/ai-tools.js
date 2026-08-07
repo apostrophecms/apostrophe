@@ -748,6 +748,42 @@ describe('AI tools', function() {
                 }
               });
               add({
+                name: 'ask_input',
+                handler: async () => {
+                  log.push('start:ask_input');
+                  throw self.apos.error('aiInput', 'needs the editor', {
+                    questions: [ 'Which color?' ]
+                  });
+                }
+              });
+              add({
+                name: 'ask_query',
+                kind: 'query',
+                handler: async () => {
+                  throw self.apos.error('aiInput', 'needs the editor', { ask: 'q' });
+                }
+              });
+              add({
+                name: 'ask_bare',
+                kind: 'query',
+                handler: async () => {
+                  throw self.apos.error('aiInput', 'needs the editor');
+                }
+              });
+              add({
+                name: 'sub_ask',
+                kind: 'agent',
+                handler: async (req) => {
+                  const inner = await self.apos.ai.generate(req, 'inner', {
+                    tools: [ 'ask_input' ]
+                  });
+                  return {
+                    finish: inner.finishReason,
+                    report: inner.steps[0].error
+                  };
+                }
+              });
+              add({
                 name: 'boom_recover',
                 handler: async () => {
                   throw self.apos.error('aiToolError', 'the search index is rebuilding');
@@ -1304,6 +1340,167 @@ describe('AI tools', function() {
         chatCalls.at(-1).messages.map(message => message.role),
         [ 'user', 'assistant', 'tool' ]
       );
+    });
+
+    it('a suspending action stops the batch and the run ends with the ask', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'read_a'),
+          toolCall('c2', 'ask_input'),
+          toolCall('c3', 'write_b')
+        )
+      ];
+      const events = [];
+      const result = await apos.ai.generate(req, 'go', {
+        tools: [ 'read_a', 'ask_input', 'write_b' ],
+        onToolCall: async (event) => events.push(event)
+      });
+
+      assert.equal(result.finishReason, 'input');
+      assert.equal(result.text, '');
+      assert.deepEqual(result.suspended, [ {
+        callId: 'c2',
+        name: 'ask_input',
+        payload: { questions: [ 'Which color?' ] }
+      } ]);
+      // The suspended call and the unstarted action, in model order
+      assert.deepEqual(result.toolCalls, [
+        toolCall('c2', 'ask_input'),
+        toolCall('c3', 'write_b')
+      ]);
+      assert.deepEqual(result.steps, [ {
+        toolCall: toolCall('c1', 'read_a'),
+        result: { ok: true }
+      } ]);
+      // The transcript ends in the partial tool message answering
+      // only the executed call
+      assert.deepEqual(result.messages.map(message => message.role),
+        [ 'user', 'assistant', 'tool' ]);
+      assert.deepEqual(result.messages.at(-1).content, [ {
+        type: 'toolResult',
+        toolCallId: 'c1',
+        output: { ok: true }
+      } ]);
+      // The action past the suspended call never started; the model
+      // was never asked again
+      assert.ok(!log.includes('start:write_b'));
+      assert.equal(chatCalls.length, 1);
+      // The end report carries the ask; afterToolCall fired for it
+      const end = events.find(
+        (event) => event.call.id === 'c2' && event.phase === 'end'
+      );
+      assert.deepEqual(end.suspended, { questions: [ 'Which color?' ] });
+      assert.ok(toolEvents.some(
+        ([ kind, name ]) => kind === 'after' && name === 'ask_input'
+      ));
+    });
+
+    it('parallel queries suspend together and later actions never start', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'ask_query'),
+          toolCall('c2', 'write_a'),
+          toolCall('c3', 'ask_bare')
+        )
+      ];
+      const result = await apos.ai.generate(req, 'go', {
+        tools: [ 'ask_query', 'write_a', 'ask_bare' ]
+      });
+
+      assert.equal(result.finishReason, 'input');
+      // Both asks, in model order; a throw without data carries {}
+      assert.deepEqual(result.suspended, [
+        {
+          callId: 'c1',
+          name: 'ask_query',
+          payload: { ask: 'q' }
+        },
+        {
+          callId: 'c3',
+          name: 'ask_bare',
+          payload: {}
+        }
+      ]);
+      assert.deepEqual(result.toolCalls.map(call => call.id),
+        [ 'c1', 'c2', 'c3' ]);
+      assert.deepEqual(result.steps, []);
+      // Nothing executed: no partial tool message is appended
+      assert.deepEqual(result.messages.map(message => message.role),
+        [ 'user', 'assistant' ]);
+      assert.ok(!log.includes('start:write_a'));
+    });
+
+    it('an action before the earliest suspended call still runs', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'write_a'),
+          toolCall('c2', 'ask_query')
+        )
+      ];
+      const result = await apos.ai.generate(req, 'go', {
+        tools: [ 'write_a', 'ask_query' ]
+      });
+
+      assert.equal(result.finishReason, 'input');
+      assert.deepEqual(result.steps.map(step => step.toolCall.id), [ 'c1' ]);
+      assert.deepEqual(result.messages.at(-1).content.map(part => part.toolCallId),
+        [ 'c1' ]);
+      assert.deepEqual(result.toolCalls.map(call => call.id), [ 'c2' ]);
+      assert.ok(log.includes('end:write_a'));
+    });
+
+    it('a cancellation observed at the suspension wins', async function() {
+      const req = apos.task.getReq();
+      const controller = new AbortController();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'read_a'),
+          toolCall('c2', 'ask_input')
+        )
+      ];
+      const result = await apos.ai.generate(req, 'go', {
+        tools: [ 'read_a', 'ask_input' ],
+        signal: controller.signal,
+        onToolCall: async (event) => {
+          if (event.call.id === 'c2' && event.phase === 'start') {
+            controller.abort();
+          }
+        }
+      });
+
+      assert.equal(result.finishReason, 'cancel');
+      // No ask is surfaced; the recorded work and the pending calls
+      // come back as on any cancel
+      assert.equal(result.suspended, undefined);
+      assert.deepEqual(result.steps.map(step => step.toolCall.id), [ 'c1' ]);
+      assert.deepEqual(result.messages.at(-1).content.map(part => part.toolCallId),
+        [ 'c1' ]);
+      assert.deepEqual(result.toolCalls.map(call => call.id), [ 'c2' ]);
+    });
+
+    it('a subagent tool suspending converts to the recoverable code', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        // Outer turn: request the agent tool
+        toolTurn(toolCall('c1', 'sub_ask')),
+        // Inner conversation: the suspend throw converts, the child
+        // model reads the report and adapts
+        toolTurn(toolCall('i1', 'ask_input')),
+        textTurn('adapted'),
+        // Outer conversation resumes
+        textTurn('outer done')
+      ];
+      const result = await apos.ai.generate(req, 'go', { tools: [ 'sub_ask' ] });
+
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(result.text, 'outer done');
+      assert.deepEqual(result.steps[0].result, {
+        finish: 'stop',
+        report: 'a delegated run cannot wait for input'
+      });
     });
 
     it('an agent tool runs a subagent, one level deep', async function() {
