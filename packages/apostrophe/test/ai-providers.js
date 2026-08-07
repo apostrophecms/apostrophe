@@ -82,8 +82,10 @@ describe('AI: named providers and baseUrl', function() {
                 apiKey: 'gsk-test',
                 models: {
                   'llama-3.1-8b-instant': {
+                    label: 'Llama 3.1 8B Instant',
                     contextWindow: 131072,
-                    maxOutputTokens: 8192
+                    maxOutputTokens: 8192,
+                    reasoning: [ 'none', 'low' ]
                   },
                   'llama-3.3-70b-versatile': {
                     contextWindow: 131072,
@@ -165,6 +167,78 @@ describe('AI: named providers and baseUrl', function() {
     apos.ai.checkCapability('anthropic', 'text');
   });
 
+  describe('modelCatalog', function() {
+    it('reports the effort table with its default level', function() {
+      const catalog = apos.ai.modelCatalog();
+      assert.equal(catalog.effort.default, 'medium');
+      assert.deepEqual(catalog.effort.levels.low, {
+        provider: 'groq',
+        model: 'llama-3.1-8b-instant'
+      });
+      assert.deepEqual(catalog.effort.levels.medium, {
+        provider: 'groq',
+        model: 'llama-3.3-70b-versatile'
+      });
+    });
+
+    it('reports each provider with its adapter label and merged models', function() {
+      const catalog = apos.ai.modelCatalog();
+      assert.deepEqual(
+        Object.keys(catalog.providers).sort(),
+        [ 'anthropic', 'groq' ]
+      );
+      assert.equal(catalog.providers.groq.label, 'OpenAI Completions');
+      assert.equal(catalog.providers.groq.capabilities.image, false);
+      // The entry's own declarations, label and reasoning included
+      assert.deepEqual(catalog.providers.groq.models['llama-3.1-8b-instant'], {
+        label: 'Llama 3.1 8B Instant',
+        contextWindow: 131072,
+        maxOutputTokens: 8192,
+        reasoning: [ 'none', 'low' ]
+      });
+      // A model declaring no reasoning simply carries none
+      assert.equal(
+        catalog.providers.groq.models['llama-3.3-70b-versatile'].reasoning,
+        undefined
+      );
+    });
+
+    it('reports the anthropic adapter\'s own declarations', function() {
+      const { models } = apos.ai.modelCatalog().providers.anthropic;
+      assert.equal(models['claude-sonnet-5'].label, 'Sonnet 5');
+      assert.deepEqual(
+        models['claude-sonnet-5'].reasoning,
+        [ 'low', 'medium', 'high', 'xhigh', 'max' ]
+      );
+      assert.deepEqual(
+        models['claude-haiku-4-5'].reasoning,
+        [ 'low', 'medium', 'high' ]
+      );
+    });
+
+    it('returns copies, never the registry', function() {
+      const catalog = apos.ai.modelCatalog();
+      catalog.effort.levels.low.model = 'clobbered';
+      delete catalog.effort.levels.medium;
+      catalog.providers.groq.label = 'clobbered';
+      catalog.providers.groq.models['llama-3.1-8b-instant'].reasoning
+        .push('clobbered');
+      catalog.providers.groq.capabilities.text = false;
+      const fresh = apos.ai.modelCatalog();
+      assert.equal(fresh.effort.levels.low.model, 'llama-3.1-8b-instant');
+      assert.deepEqual(fresh.effort.levels.medium, {
+        provider: 'groq',
+        model: 'llama-3.3-70b-versatile'
+      });
+      assert.equal(fresh.providers.groq.label, 'OpenAI Completions');
+      assert.deepEqual(
+        fresh.providers.groq.models['llama-3.1-8b-instant'].reasoning,
+        [ 'none', 'low' ]
+      );
+      assert.equal(fresh.providers.groq.capabilities.text, true);
+    });
+  });
+
   describe('the wire, for real', function() {
     it('generates through the stub host with zero adapter code', async function() {
       const result = await apos.ai.generate(
@@ -206,6 +280,17 @@ describe('AI: named providers and baseUrl', function() {
       const [ hit ] = hits;
       assert.equal(hit.body.model, 'llama-3.3-70b-versatile');
       assert.equal(hit.body.max_completion_tokens, 32768);
+    });
+
+    it('passes a reasoning value outside the declaration through untouched', async function() {
+      // The declared list is catalog information, not a gate: the
+      // adapter and the service keep their own rejections
+      await apos.ai.generate(apos.task.getReq(), 'p', {
+        effort: 'low',
+        reasoning: 'undeclared'
+      });
+      const [ hit ] = hits;
+      assert.equal(hit.body.reasoning_effort, 'undeclared');
     });
   });
 

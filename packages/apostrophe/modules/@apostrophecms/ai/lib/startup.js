@@ -4,10 +4,10 @@
 
 const startCase = require('lodash/startCase');
 const {
-  NAMED_ASPECTS, QUALITIES, TOOL_ACCESS
+  NAMED_ASPECTS, QUALITIES, TOOL_KINDS
 } = require('./constants');
 const {
-  isObject, parseAspect, startupFail: fail
+  isObject, parseAspect, oneOf, startupFail: fail
 } = require('./util');
 
 module.exports = (self) => {
@@ -155,28 +155,28 @@ module.exports = (self) => {
         }
         let validateArgs;
         try {
-          validateArgs = self.ajv.compile(tool.input);
+          validateArgs = self.ajvArgs.compile(tool.input);
         } catch (e) {
           fail(`${name}: "input" is not a valid JSON Schema: ${e.message}`);
         }
-        if (!isObject(tool.schema)) {
-          fail(`${name}: "schema" must be an object of schema fields describing the result`);
+        let validateResult;
+        if (tool.schema !== undefined) {
+          if (!isObject(tool.schema) || tool.schema.type !== 'object') {
+            fail(`${name}: "schema" must be a JSON Schema with an object root`);
+          }
+          try {
+            validateResult = self.ajv.compile(tool.schema);
+          } catch (e) {
+            fail(`${name}: "schema" is not a valid JSON Schema: ${e.message}`);
+          }
         }
-        let schema;
-        try {
-          schema = self.apos.schema.compose({
-            addFields: self.apos.schema.fieldsToArray(`AI tool ${tool.name}`, tool.schema)
-          });
-          self.apos.schema.validate(schema, {
-            type: 'AI tool',
-            subtype: tool.name
-          });
-        } catch (e) {
-          fail(`${name}: "schema" is not a valid schema: ${e.message}`);
+        const kind = tool.kind === undefined ? 'action' : tool.kind;
+        if (!TOOL_KINDS.includes(kind)) {
+          fail(`${name}: "kind" must be ${oneOf(TOOL_KINDS)}`);
         }
-        const access = tool.access === undefined ? 'write' : tool.access;
-        if (!TOOL_ACCESS.includes(access)) {
-          fail(`${name}: "access" must be "read", "write" or "agent"`);
+        if (tool.maxResultChars !== undefined &&
+          (!Number.isInteger(tool.maxResultChars) || tool.maxResultChars < 1)) {
+          fail(`${name}: "maxResultChars" must be a positive integer`);
         }
         return {
           name: tool.name,
@@ -185,8 +185,10 @@ module.exports = (self) => {
           tags: tool.tags || [],
           input: tool.input,
           validateArgs,
-          schema,
-          access,
+          schema: tool.schema,
+          validateResult,
+          maxResultChars: tool.maxResultChars,
+          kind,
           handler: resolveHandler(tool.handler, name)
         };
       }

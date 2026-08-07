@@ -31,14 +31,17 @@ const FINISH_REASONS = Object.freeze([
   'stop', 'toolCalls', 'length', 'refusal'
 ]);
 
-// A tool's scheduling class
-const TOOL_ACCESS = Object.freeze([ 'read', 'write', 'agent' ]);
+// A tool's consequence class; scheduling and nesting rules derive from it
+const TOOL_KINDS = Object.freeze([ 'query', 'action', 'agent' ]);
+
+// What generate does with a transcript ending in unanswered tool calls
+const PENDING_POLICIES = Object.freeze([ 'refuse', 'execute' ]);
 
 // The options generate accepts
 const GENERATE_OPTIONS = Object.freeze([
-  'system', 'messages', 'tools', 'maxSteps', 'schema', 'effort',
-  'provider', 'model', 'reasoning', 'maxTokens', 'cache', 'signal',
-  'onMessage'
+  'system', 'messages', 'tools', 'maxSteps', 'pending', 'toolInput',
+  'schema', 'effort', 'provider', 'model', 'reasoning', 'maxTokens',
+  'cache', 'signal', 'onMessage', 'onToolCall'
 ]);
 
 // The options generateImage accepts
@@ -53,7 +56,8 @@ module.exports = {
   MESSAGE_ROLES,
   PART_ROLES,
   FINISH_REASONS,
-  TOOL_ACCESS,
+  TOOL_KINDS,
+  PENDING_POLICIES,
   GENERATE_OPTIONS,
   IMAGE_OPTIONS
 };

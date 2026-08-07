@@ -31,6 +31,12 @@ function parseAspect(value) {
   return w > 0 && h > 0 ? [ w, h ] : null;
 }
 
+// An enum constant as its message states it: quoted, "or" last
+function oneOf(values) {
+  const quoted = values.map((value) => `"${value}"`);
+  return `${quoted.slice(0, -1).join(', ')} or ${quoted.at(-1)}`;
+}
+
 // Startup-only: a bad configuration must kill the boot with a plain prefixed
 // Error. Runtime code throws self.apos.error(...) instead, so the name says
 // where this belongs.
@@ -42,5 +48,6 @@ module.exports = {
   isObject,
   isAbort,
   parseAspect,
+  oneOf,
   startupFail
 };

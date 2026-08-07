@@ -19,6 +19,12 @@
 
 const image = require('./lib/image');
 
+// The `reasoning.effort` values every current text model accepts —
+// the whole GPT-5.6 tier shares one vocabulary
+const REASONING_EFFORTS = Object.freeze([
+  'none', 'low', 'medium', 'high', 'xhigh', 'max'
+]);
+
 module.exports = {
   options: {
     // Per-request timeout in milliseconds; a timed-out call is a
@@ -60,16 +66,22 @@ module.exports = {
           },
           models: {
             'gpt-5.6-luna': {
+              label: 'GPT-5.6 Luna',
               contextWindow: 1050000,
-              maxOutputTokens: 128000
+              maxOutputTokens: 128000,
+              reasoning: REASONING_EFFORTS
             },
             'gpt-5.6-terra': {
+              label: 'GPT-5.6 Terra',
               contextWindow: 1050000,
-              maxOutputTokens: 128000
+              maxOutputTokens: 128000,
+              reasoning: REASONING_EFFORTS
             },
             'gpt-5.6-sol': {
+              label: 'GPT-5.6 Sol',
               contextWindow: 1050000,
-              maxOutputTokens: 128000
+              maxOutputTokens: 128000,
+              reasoning: REASONING_EFFORTS
             },
             ...image.models
           },

@@ -96,20 +96,30 @@ describe('AI generateJob', function() {
               type: 'object',
               properties: {}
             };
-            const okSchema = { ok: { type: 'boolean' } };
             self.apos.ai.addTool({
               name: 'echo',
               description: 'The echo tool.',
               input: okInput,
-              schema: okSchema,
               handler: async () => ({ ok: true })
+            });
+            self.apos.ai.addTool({
+              name: 'ask',
+              description: 'The ask tool.',
+              input: okInput,
+              handler: async (req, args) => {
+                if (args._context.input !== undefined) {
+                  return { ...args._context.input };
+                }
+                throw self.apos.error('aiInput', 'needs the editor', {
+                  questions: [ 'Which one?' ]
+                });
+              }
             });
             // Ignores the abort signal: runs until the test releases it
             self.apos.ai.addTool({
               name: 'gate',
               description: 'The gate tool.',
               input: okInput,
-              schema: okSchema,
               handler: async () => {
                 if (gateNotify) {
                   gateNotify();
@@ -125,7 +135,6 @@ describe('AI generateJob', function() {
               name: 'until_abort',
               description: 'The until_abort tool.',
               input: okInput,
-              schema: { sawAbort: { type: 'boolean' } },
               handler: async (req, args) => {
                 if (abortNotify) {
                   abortNotify();
@@ -218,6 +227,62 @@ describe('AI generateJob', function() {
     assert.equal(job.expireAt instanceof Date, true);
   });
 
+  it('a suspended run ends the job complete with the input finish reason', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo'), toolCall('c2', 'ask'))
+    ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'go', {
+      tools: [ 'echo', 'ask' ]
+    });
+    const job = await waitForJob(jobId);
+
+    assert.equal(job.status, 'completed');
+    assert.equal(job.results.finishReason, 'input');
+    assert.deepEqual(job.results.suspended, [ {
+      callId: 'c2',
+      name: 'ask',
+      payload: { questions: [ 'Which one?' ] }
+    } ]);
+    // The stored transcript ends in the partial tool message
+    assert.equal(job.results.messages.at(-1).role, 'tool');
+    assert.deepEqual(job.results.toolCalls.map(call => call.id), [ 'c2' ]);
+  });
+
+  it('a suspended job continues in a new job with the answer', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo'), toolCall('c2', 'ask'))
+    ];
+    const { jobId } = await apos.ai.generateJob(req, 'go', {
+      tools: [ 'echo', 'ask' ]
+    });
+    const job = await waitForJob(jobId);
+    assert.equal(job.results.finishReason, 'input');
+
+    chatScript = [ textTurn('resumed') ];
+    const { jobId: secondId } = await apos.ai.generateJob(req, {
+      messages: job.results.messages,
+      tools: [ 'echo', 'ask' ],
+      pending: 'execute',
+      toolInput: { c2: { answered: true } }
+    });
+    const second = await waitForJob(secondId);
+
+    assert.equal(second.status, 'completed');
+    assert.equal(second.results.finishReason, 'stop');
+    assert.equal(second.results.text, 'resumed');
+    assert.deepEqual(second.results.steps, [ {
+      toolCall: toolCall('c2', 'ask'),
+      result: { answered: true }
+    } ]);
+    // The stored transcript's tool message is complete, in call order
+    const tool = second.results.messages.at(-2);
+    assert.deepEqual(tool.content.map(part => part.toolCallId),
+      [ 'c1', 'c2' ]);
+  });
+
   it('fires onMessage with the jobId and onEnd with the result', async function() {
     const req = apos.task.getReq();
     const seen = [];
@@ -249,7 +314,10 @@ describe('AI generateJob', function() {
         role: 'assistant',
         content: [ toolCall('c1', 'echo') ]
       },
-      meta: { jobId }
+      meta: {
+        step: 1,
+        jobId
+      }
     } ]);
     assert.equal(ended.err, null);
     assert.equal(ended.result.finishReason, 'stop');
@@ -449,7 +517,7 @@ describe('AI generateJob', function() {
     ]);
   });
 
-  it('publishes started, per-turn and ended events over bus notifications', async function() {
+  it('publishes started, per-turn, per-tool-call and ended events over bus notifications', async function() {
     const req = apos.task.getReq({ user: { _id: 'owner1' } });
     const seen = [];
     chatScript = [
@@ -471,6 +539,8 @@ describe('AI generateJob', function() {
       [
         [ 'ai-generate-job', 'started', jobId ],
         [ 'ai-generate-job', 'message', jobId ],
+        [ 'ai-generate-job', 'tool', jobId ],
+        [ 'ai-generate-job', 'tool', jobId ],
         [ 'ai-generate-job', 'ended', jobId ]
       ]
     );
@@ -478,7 +548,7 @@ describe('AI generateJob', function() {
       role: 'assistant',
       content: [ toolCall('c1', 'echo') ]
     });
-    assert.deepEqual(events[2].data, {
+    assert.deepEqual(events[4].data, {
       jobId,
       stage: 'ended',
       status: 'completed',
@@ -498,8 +568,68 @@ describe('AI generateJob', function() {
         userId: 'owner1',
         bus: true
       }),
-      3
+      5
     );
+  });
+
+  it('a tool stage reports the call, not its result', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo'), toolCall('c2', 'nosuchtool')),
+      textTurn('all done')
+    ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'go', { tools: [ 'echo' ] });
+    await waitForJob(jobId);
+
+    const tools = triggered
+      .map(({ options }) => options.event.data)
+      .filter((data) => data.stage === 'tool');
+    // The call naming no registered tool never starts, so it is not
+    // reported; the size of the result stands in for the result
+    assert.deepEqual(tools, [
+      {
+        jobId,
+        stage: 'tool',
+        phase: 'start',
+        id: 'c1',
+        name: 'echo',
+        step: 1
+      },
+      {
+        jobId,
+        stage: 'tool',
+        phase: 'end',
+        id: 'c1',
+        name: 'echo',
+        step: 1,
+        chars: JSON.stringify({ ok: true }).length
+      }
+    ]);
+  });
+
+  it('a caller hook sees the whole event, the wire sees the summary', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    const seen = [];
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo')),
+      textTurn('all done')
+    ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'go', {
+      tools: [ 'echo' ],
+      onToolCall(event, meta) {
+        seen.push({
+          event,
+          meta
+        });
+      }
+    });
+    await waitForJob(jobId);
+
+    assert.deepEqual(seen.map(({ event }) => event.phase), [ 'start', 'end' ]);
+    assert.deepEqual(seen[1].event.result, { ok: true });
+    assert.deepEqual(seen[0].meta, { jobId });
   });
 
   it('a failed run publishes an ended event carrying the error', async function() {

@@ -92,9 +92,13 @@
  * @property {object} input The JSON Schema the model's arguments must satisfy.
  * @property {(args: object) => boolean} validateArgs The compiled `input`
  *   validator.
- * @property {object[]} schema The result's Apostrophe schema, composed to the
- *   array form apos.schema.convert consumes.
- * @property {'read'|'write'|'agent'} access
+ * @property {object} [schema] The result's JSON Schema, as registered.
+ *   Internal — never sent to the model.
+ * @property {(result: object) => boolean} [validateResult] The compiled
+ *   `schema` validator; absent when the tool declares no result schema.
+ * @property {number} [maxResultChars] The result-size budget in serialized
+ *   characters; absent means unlimited.
+ * @property {'query'|'action'|'agent'} kind
  * @property {(req: object, args: object) => Promise<object>} handler
  */
 
@@ -201,6 +205,35 @@
  */
 
 /**
+ * One tool call reporting itself to the caller's `onToolCall` hook, as it
+ * starts and again as it ends. `result`, `error` and `suspended` are the
+ * outcome of an 'end' report and are absent from a 'start' one; a
+ * recoverable error is the message the model was told, a hard-stopping one
+ * the message that is about to be thrown, and `suspended` is the ask of a
+ * handler that ended the run waiting for input.
+ *
+ * @typedef {object} AiToolCallEvent
+ * @property {'start'|'end'} phase
+ * @property {AiToolCallPart} call The request, exactly as the model made it.
+ * @property {number} step The model turn that asked for it, counting from 1.
+ * @property {object} [result]
+ * @property {string} [error]
+ * @property {object|null} [suspended]
+ */
+
+/**
+ * One suspended tool call's ask: the handler threw "aiInput" because it
+ * cannot answer without outside input, and the run ended with finishReason
+ * 'input'. The call itself stays unexecuted on `toolCalls`.
+ *
+ * @typedef {object} AiSuspendedCall
+ * @property {string} callId
+ * @property {string} name The registered tool name.
+ * @property {object} payload The throw's `data`, authored by the handler —
+ *   what it needs to continue; {} when the throw carried none.
+ */
+
+/**
  * What generate resolves with. Which fields are populated is what tells the
  * caller what happened.
  *
@@ -214,9 +247,14 @@
  *   when the call carried tools.
  * @property {AiToolCallPart[]} [toolCalls] Unexecuted requests the caller must
  *   run itself.
- * @property {'stop'|'length'|'cancel'|'maxSteps'} finishReason 'maxSteps'
- *   whenever the step budget cut the loop, the step budget's counterpart of
- *   'length'.
+ * @property {AiSuspendedCall[]} [suspended] The asks of the calls that
+ *   suspended the run, in model order; present only with finishReason
+ *   'input'. The transcript already carries the executed outcomes as a
+ *   partial tool message.
+ * @property {'stop'|'length'|'cancel'|'maxSteps'|'input'} finishReason
+ *   'maxSteps' whenever the step budget cut the loop, the step budget's
+ *   counterpart of 'length'; 'input' when a tool handler suspended the run
+ *   for outside input.
  * @property {AiUsage} usage
  * @property {string} model What actually answered.
  * @property {string} provider
@@ -227,8 +265,14 @@
  * provider entry's, merged, the entry winning.
  *
  * @typedef {object} AiModelMeta
+ * @property {string} [label] The model's human name, for pickers and
+ * receipts ("Opus 5"); the id stays the wire truth.
  * @property {number} [contextWindow]
  * @property {number} [maxOutputTokens]
+ * @property {string[]} [reasoning] The values a call may pass as its
+ * `reasoning` for this model, in the provider's own vocabulary.
+ * Informational: read back by modelCatalog, never enforced by the engine —
+ * the adapter keeps its own rejections.
  * @property {string[]} [aspects] The image ratios the model supports, as 'W:H'.
  */
 
@@ -247,6 +291,20 @@
  */
 
 /**
+ * What modelCatalog reports: the whole routing configuration, shaped for
+ * building pickers. Every object is a copy, safe to serialize or amend.
+ *
+ * @typedef {object} AiModelCatalog
+ * @property {{ default: string, levels: Object<string, { provider: string,
+ * model: string, reasoning?: string }> }} effort The resolved routing
+ * table and the level an effortless call lands on.
+ * @property {Object<string, { label: string,
+ * capabilities: Object<string, boolean>,
+ * models: Object<string, AiModelMeta> }>} providers Configured providers
+ * by name, each with its adapter's label and merged model metadata.
+ */
+
+/**
  * A provider adapter: the translation between the normalized protocol above and
  * one service's dialect. Registered with addAdapter and instantiated per
  * provider entry at startup, with `provider`, `apiKey` and `baseUrl` filled in
@@ -255,6 +313,7 @@
  * @typedef {object} AiAdapter
  * @property {string} name The registry name. A provider entry names it with
  *   `adapter`, or shares its own key with it.
+ * @property {string} label The service's human name ("Anthropic (Claude)").
  * @property {string} [envKey] The environment variable the key is read from
  *   unless the entry names its own.
  * @property {string} [baseUrl]
