@@ -30,6 +30,6 @@
     "@paralleldrive/cuid2": "^3.0.4",
     "marked": "^4.3.0",
     "node-fetch": "^2.6.9",
-    "sharp": "^0.32.6"
+    "sharp": "^0.35.2"
   }
 }
