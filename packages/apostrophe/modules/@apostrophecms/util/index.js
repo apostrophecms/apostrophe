@@ -16,10 +16,11 @@
 // `apos.util.error`, etc. are routed through this object
 // by Apostrophe. This provides compatibility out of
 // the box with many popular logging modules, including `winston`.
-// NOTE: this option is deprecated, you should configure `@apostrophecms/log`
-// module instead. This option will still work for BC reasons, but switching
-// to structured logging and module `self.logInfo()`, `self.logError()`, etc
-// is highly recommended.
+// NOTE: this option is deprecated, you should use the top-level `log` option
+// of Apostrophe instead - which also covers everything emitted before the
+// module system exists, and ignores this option entirely when present. It
+// will still work for BC reasons, but switching to structured logging and
+// module `self.logInfo()`, `self.logError()`, etc is highly recommended.
 // Read more in the`@apostrophecms/log` module documentation.
 
 const _ = require('lodash');
@@ -558,12 +559,14 @@ module.exports = {
         }
       },
       enableLogger() {
-        // Legacy, configured via this module.
-        if (self.options.logger) {
+        // Legacy, configured via this module. Ignored, with a startup warning,
+        // when the top-level `log` option is present.
+        if (self.options.logger && !self.apos.structuredLog.topLevel) {
           self.logger = self.options.logger(self.apos);
           return;
         }
-        // New, configured via the `log` module.
+        // Configured via the `log` module, or via the top-level `log` option
+        // that replaces it.
         const logOpts = self.apos.structuredLog.options;
         if (logOpts.logger) {
           self.logger = typeof logOpts.logger === 'function'

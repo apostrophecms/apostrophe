@@ -37,6 +37,11 @@ const { supportsColor } = require('./style');
 const SEVERITIES = [ 'debug', 'info', 'warn', 'error' ];
 const TO_STDERR = new Set([ 'warn', 'error' ]);
 
+// Marks our own facades. A logger handed down from an outer process - the
+// orchestrator of many apos instances gives each one a `child()` of its own -
+// is that process's logger, not a custom backend to render into.
+const IS_LOGGER = Symbol.for('apostrophe.logger');
+
 module.exports = function createLogger(options = {}) {
   const {
     format = 'auto',
@@ -79,6 +84,7 @@ module.exports = function createLogger(options = {}) {
 
   function createFacade(facadeContext, withDestroy) {
     const facade = {
+      [IS_LOGGER]: true,
       format: resolved,
       // `destroy: true` hands the receiver the right to tear the destination
       // down; by default a child cannot, because it does not own it.
@@ -108,6 +114,12 @@ module.exports = function createLogger(options = {}) {
 };
 
 module.exports.FORMATS = FORMATS;
+
+// True for anything this factory produced, in this or any other copy of the
+// package.
+module.exports.isLogger = function (value) {
+  return Boolean(value && value[IS_LOGGER]);
+};
 
 // `APOS_LOG_FORMAT` > the configured format > auto detection. The environment
 // variable is the single switch that forces every logger instance in the

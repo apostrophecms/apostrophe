@@ -93,14 +93,18 @@ function renderHuman(envelope, {
   }
 
   let line = parts.join(' ');
-  const data = Object.entries(envelope).filter(([ key ]) => !COMPOSED_KEYS.has(key));
+  const stack = typeof envelope.stack === 'string' && envelope.stack.length
+    ? envelope.stack
+    : null;
+  const data = Object.entries(envelope)
+    .filter(([ key ]) => !COMPOSED_KEYS.has(key) || (key === 'stack' && !stack));
   if (data.length) {
     line += test
       ? '\n' + JSON.stringify(Object.fromEntries(data), null, 2)
       : renderData(data, style, color);
   }
-  if (typeof envelope.stack === 'string' && envelope.stack.length) {
-    line += '\n' + style('dim', indent(envelope.stack, 4));
+  if (stack) {
+    line += '\n' + style('dim', indent(stack, 4));
   }
   return line;
 }

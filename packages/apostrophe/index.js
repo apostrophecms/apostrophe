@@ -13,6 +13,7 @@ const npmResolve = require('resolve');
 const glob = require('./lib/glob.js');
 const moogRequire = require('./lib/moog-require');
 const importFresh = require('./lib/import-fresh');
+const createLogger = require('./logger');
 const { pathToFileURL } = require('node:url');
 let defaults = require('./defaults.js');
 
@@ -43,6 +44,30 @@ let defaults = require('./defaults.js');
 // Alternatively the `APOS_CLUSTER_PROCESSES` environment variable
 // can be set to a number, which will effectively set the cluster
 // option to `cluster: { processes: n }`.
+//
+// `log`
+//
+// The logging configuration of the whole process, read before anything can
+// emit - which is why it lives here and not in a module: cluster notices and
+// fatal startup failures happen long before `@apostrophecms/log` exists.
+//
+// ```js
+// log: {
+//   format: 'structured',  // structured | pretty | plain | legacy | auto
+//   logger: pino(),        // object only; bypasses the built-in renderer
+//   messageAs: 'msg',      // shape delivered to a custom logger
+//   filter: { '*': { severity: [ 'warn', 'error' ] } }
+// }
+// ```
+//
+// The keys are exactly the options `@apostrophecms/log` supports, and when
+// this option is present it is the *entire* logging configuration: the
+// module's own options and the legacy `logger` option of
+// `@apostrophecms/util` are ignored, with a startup warning listing them.
+// Without it, those legacy surfaces keep working as before.
+//
+// This option is read from `app.js` before `data/local.js` is merged, so it
+// has no effect there.
 //
 // `openTelemetryProvider`
 //
@@ -89,6 +114,10 @@ let defaults = require('./defaults.js');
 // The actual entry point, a wrapper that enables the telemetry and starts the
 // root span
 module.exports = async function(options) {
+  // Line zero: the one logger of the process, so that everything from here on
+  // - cluster notices, startup failures, every module - shares one destination
+  // and one format.
+  const logger = processLogger(options);
   const telemetry = opentelemetry(options);
   let spanName = 'apostrophe:boot';
   const guardTime = 20000;
@@ -159,7 +188,7 @@ module.exports = async function(options) {
 
   // Create and activate the root span for the boot tracer
   const self = await telemetry.startActiveSpan(spanName, async (span) => {
-    const res = await apostrophe(options, telemetry, span);
+    const res = await apostrophe(options, telemetry, span, { logger });
     span.setStatus(telemetry.api.SpanStatusCode.OK);
     span.end();
     return res;
@@ -168,8 +197,9 @@ module.exports = async function(options) {
   return self;
 };
 
-// The actual apostrophe bootstrap
-async function apostrophe(options, telemetry, rootSpan) {
+// The actual apostrophe bootstrap. `context` carries what the entry point
+// built before the boot began.
+async function apostrophe(options, telemetry, rootSpan, { logger }) {
   // The core is not a true moog object but it must look enough like one
   // to participate as an async event emitter
   const self = {
@@ -177,6 +207,10 @@ async function apostrophe(options, telemetry, rootSpan) {
       name: 'apostrophe'
     }
   };
+
+  // The process logger. `@apostrophecms/log` consumes it, and so does
+  // `apos.util` through the default logger.
+  self.logger = logger;
 
   // Terminates the process. Emits the `apostrophe:beforeExit` async event;
   // use this mechanism to invoke any pre-exit application level tasks. Any
@@ -261,6 +295,18 @@ async function apostrophe(options, telemetry, rootSpan) {
     testModule();
 
     self.options = await mergeConfiguration(options, defaults);
+    // The logger was built before merging, so `log` is what app.js passed and
+    // nothing else. Restoring it keeps the option and the live logger in
+    // agreement, whatever merging did to the copy.
+    if (options.log) {
+      self.options.log = options.log;
+    } else if (self.options.log) {
+      delete self.options.log;
+      self.logger.warn(
+        'log-option-ignored',
+        'The `log` option is read before data/local.js is merged. Configure it in app.js.'
+      );
+    }
     await autodetectBundles();
     acceptGlobalOptions();
 
@@ -869,6 +915,34 @@ module.exports.bundle = {
   modules: abstractClasses.concat(_.keys(defaults.modules)),
   directory: 'modules'
 };
+
+// Build the process logger from the top-level `log` option. An orchestrator
+// running many instances hands one down already built - taking it as is, with
+// its context, is what keeps a whole process on one logger.
+function processLogger(options) {
+  const log = options.log || {};
+  if (typeof log !== 'object') {
+    throw new Error(
+      'The `log` option must be an object with any of the format, logger, ' +
+      'messageAs and filter keys.'
+    );
+  }
+  if (createLogger.isLogger(log.logger)) {
+    return log.logger;
+  }
+  if (typeof log.logger === 'function') {
+    throw new Error(
+      'The `log.logger` option must be an object with debug, info, warn and ' +
+      'error methods. The factory function form is only accepted by the ' +
+      'legacy `logger` option of @apostrophecms/util.'
+    );
+  }
+  return createLogger({
+    format: log.format || 'auto',
+    logger: log.logger,
+    test: Boolean(options.test)
+  });
+}
 
 function seconds(msec) {
   return (Math.round(msec / 100) / 10) + ' seconds';

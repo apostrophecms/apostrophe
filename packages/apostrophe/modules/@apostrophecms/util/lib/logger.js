@@ -1,80 +1,64 @@
-// Default logger. You may pass an alternate implementation
-// as the `logger` top-level option when configuring Apostrophe.
+// The default logger: an adapter over the process logger, which core creates
+// from the top-level `log` option before anything can emit. You may pass an
+// alternate implementation as `log.logger`, or as the legacy `logger` option
+// of this module.
+//
+// Everything that reaches it becomes an envelope, legacy string calls
+// included, so `apos.util.log('Listening...')` is one JSON object in
+// structured mode and a normal event line in pretty mode.
+
+const { format } = require('node:util');
+const _ = require('lodash');
 
 module.exports = function (apos) {
-  const logModule = apos.structuredLog;
+  const logger = apos.logger;
+
+  function emit(severity) {
+    return (...args) => {
+      const { msg, data } = toEnvelope(args);
+      logger[severity](null, msg, data);
+    };
+  }
 
   return {
-    // Log a message. The default
-    // implementation wraps `console.log` and passes on
-    // all arguments, so substitution strings may be used.
-    //
-    // Overrides should be written with support for
-    // substitution strings in mind. See the
-    // `console.log` documentation.
+    // `apos.util.log` has never had a severity of its own; it means `info`.
+    log: emit('info'),
+    info: emit('info'),
+    debug: emit('debug'),
+    warn: emit('warn'),
+    error: emit('error'),
 
-    log: function(...args) {
-
-      console.log(...logModule.formatLogByEnv(args));
-    },
-
-    // Log an informational message.
-    //
-    // Overrides should be written with support for
-    // substitution strings in mind. See the
-    // `console.log` documentation.
-
-    info: function(...args) {
-
-      console.info(...logModule.formatLogByEnv(args));
-    },
-
-    // Log a debug message. Invokes
-    // `console.debug` if available, otherwise
-    // `console.log`.
-    //
-    // Overrides should be written with support for
-    // substitution strings in mind. See the
-    // `console.log` documentation.
-
-    debug: function(...args) {
-
-      console.debug(...logModule.formatLogByEnv(args));
-    },
-
-    // Log an error message. The default implementation
-    // wraps `console.error` and passes on all arguments,
-    // so substitution strings may be used.
-    //
-    // Overrides should be written with support for
-    // substitution strings in mind. See the
-    // `console.error` documentation.
-
-    error: function(...args) {
-
-      console.error(...logModule.formatLogByEnv(args));
-    },
-    // Log a warning. The default implementation wraps
-    // `console.warn` and passes on all arguments,
-    // so substitution strings may be used.
-    //
-    // Overrides should be written with support for
-    // substitution strings in mind. See the
-    // `console.warn` documentation.
-    //
-    // The intention is that `apos.util.warn` should be
-    // called for situations less dire than
-    // `apos.util.error`.
-
-    warn: function(...args) {
-
-      console.warn(...logModule.formatLogByEnv(args));
-    },
-
-    // Automatically tear down the logger if available.
-
+    // The process logger belongs to core, and outlives any one module.
     async destroy() {
       // Nothing to do
     }
   };
 };
+
+// `(data)` and `(message, data)` come from the structured pipeline. Anything
+// else is a legacy call and is composed into the message the way `console.*`
+// would compose it, substitution strings included.
+function toEnvelope(args) {
+  const [ first, second ] = args;
+  if (args.length === 1) {
+    if (_.isPlainObject(first)) {
+      return { data: first };
+    }
+    if (first instanceof Error) {
+      return {
+        msg: first.message,
+        data: { stack: first.stack }
+      };
+    }
+  }
+  if (
+    args.length === 2 && _.isPlainObject(second) &&
+    (typeof first === 'string' || first === undefined)
+  ) {
+    return {
+      msg: first,
+      data: second
+    };
+  }
+  return { msg: format(...args) };
+}
