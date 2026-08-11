@@ -96,6 +96,11 @@
 // module, are logged. The logs will be kept if *either* criterion is met.
 // `filter['*'] = true` enables logging of all events from all modules.
 //
+// When no `events` are given for `*`, the startup event `apos-listening` is
+// kept whatever the severity filter says, so that production logs still
+// confirm the site came up. Give `*` its own `events` - `[]` included - to
+// take that over.
+//
 // ## Environment Variables
 //
 // ### `APOS_FILTER_LOGS`
@@ -253,6 +258,15 @@ module.exports = {
             severity: self.getDefaultSeverity(isProduction)
           };
         }
+        // The site is up: worth having in every environment, including
+        // production, where the default severity keeps warnings and errors
+        // only. `events: []` drops it like any other event.
+        if (!self.filters['*'].events) {
+          self.filters['*'] = {
+            ...self.filters['*'],
+            events: self.getDefaultEvents()
+          };
+        }
 
         // Handle wildcards and validate.
         for (const [ module, config ] of Object.entries(self.filters)) {
@@ -312,6 +326,11 @@ module.exports = {
         return forProd
           ? [ 'warn', 'error' ]
           : [ 'debug', 'info', 'warn', 'error' ];
+      },
+      // Event types kept whatever the severity, unless the configuration
+      // names its own.
+      getDefaultEvents() {
+        return [ 'apos-listening' ];
       },
 
       // Internal method, do not use it directly. See `@apostrophecms/module`

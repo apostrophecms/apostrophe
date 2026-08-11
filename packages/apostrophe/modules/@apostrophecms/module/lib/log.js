@@ -15,21 +15,23 @@
 // Example:
 // self.logError('event-type', 'some message', { key: 'value' });
 // will log:
-// 'current-module-name: event-type: some message',
+// 'some message',
 // {
 //   type: 'event-type',
 //   severity: 'error',
 //   module: 'current-module-name',
 //   key: 'value',
 // }
+// The message stays exactly as written - the module name and the event type
+// are fields, and whatever renders the entry composes the visible line.
 // If the option `messageAs` of `@apostrophecms/log` is set to 'msg',
-// the result of the above log entry will be:
+// the message travels in the data object instead:
 // {
 //   type: 'event-type',
 //   severity: 'error',
 //   module: 'current-module-name',
 //   key: 'value',
-//   msg: 'current-module-name: event-type: some message',
+//   msg: 'some message',
 // }
 //
 // If `filter` option is set, the log entry will be logged only if the

@@ -79,7 +79,10 @@ describe('structured logging', function () {
       assert.equal(typeof apos.testModule.logWarn, 'function');
       assert.equal(typeof apos.testModule.logError, 'function');
       assert.deepEqual(apos.structuredLog.filters, {
-        '*': { severity: [ 'debug', 'info', 'warn', 'error' ] }
+        '*': {
+          severity: [ 'debug', 'info', 'warn', 'error' ],
+          events: [ 'apos-listening' ]
+        }
       });
     });
 
@@ -494,7 +497,8 @@ describe('structured logging', function () {
 
       assert.deepEqual(apos.structuredLog.filters, {
         '*': {
-          severity: [ 'error' ]
+          severity: [ 'error' ],
+          events: [ 'apos-listening' ]
         },
         'test-module': {
           events: [ 'type1' ]
@@ -829,7 +833,10 @@ describe('structured logging', function () {
 
     it('should set filter configuration', function () {
       assert.deepEqual(apos.structuredLog.filters, {
-        '*': { severity: [ 'warn', 'error' ] }
+        '*': {
+          severity: [ 'warn', 'error' ],
+          events: [ 'apos-listening' ]
+        }
       });
     });
 
@@ -865,6 +872,19 @@ describe('structured logging', function () {
       );
     });
 
+    it('should keep the startup event below the severity floor', async function () {
+      const express = apos.modules['@apostrophecms/express'];
+      const url = `http://${express.address}:${express.port}`;
+      assert.deepEqual(
+        (await captured(() => express.logListening())).out,
+        [
+          '@apostrophecms/express: apos-listening {"module":"@apostrophecms/express",' +
+          `"type":"apos-listening","severity":"info","url":"${url}",` +
+          `"adminUrl":"${url}/login"}`
+        ]
+      );
+    });
+
     it('should override default filter configuration', async function () {
       await t.destroy(apos);
       apos = await t.create({
@@ -881,7 +901,10 @@ describe('structured logging', function () {
       });
 
       assert.deepEqual(apos.structuredLog.filters, {
-        '*': { severity: [ 'info', 'warn', 'error' ] }
+        '*': {
+          severity: [ 'info', 'warn', 'error' ],
+          events: [ 'apos-listening' ]
+        }
       });
     });
   });
@@ -939,7 +962,8 @@ describe('structured logging', function () {
 
       assert.deepEqual(apos.structuredLog.filters, {
         '*': {
-          severity: [ 'warn', 'error' ]
+          severity: [ 'warn', 'error' ],
+          events: [ 'apos-listening' ]
         },
         'test-module': {
           severity: [ 'info' ],
@@ -1184,7 +1208,7 @@ describe('structured logging', function () {
       savedArgs = [];
       apos.util.warnDev('some message');
       assert.deepEqual(savedArgs, [ {
-        msg: '⚠️  some message'
+        msg: 'some message'
       } ]);
 
       savedArgs = [];
@@ -1198,14 +1222,14 @@ describe('structured logging', function () {
       apos.util.warnDev('some message', { foo: 'bar' });
       assert.deepEqual(savedArgs, [ {
         foo: 'bar',
-        msg: '⚠️  some message'
+        msg: 'some message'
       } ]);
 
       savedArgs = [];
       apos.util.warnDev('some message', 'more', { foo: 'bar' });
       assert.deepEqual(savedArgs, [ {
         foo: 'bar',
-        msg: '⚠️  some message',
+        msg: 'some message',
         args: [ 'more' ]
       } ]);
 
@@ -1659,6 +1683,33 @@ describe('structured logging', function () {
       } ]);
     });
 
+    it('should make the listening moment a typed event', async function () {
+      apos = await t.create({
+        modules: { ...testModule },
+        log: { format: 'structured' }
+      });
+      const express = apos.modules['@apostrophecms/express'];
+      const url = `http://${express.address}:${express.port}`;
+
+      assert.deepEqual(parsed((await captured(() => express.logListening())).out), [ {
+        severity: 'info',
+        module: '@apostrophecms/express',
+        type: 'apos-listening',
+        url,
+        adminUrl: `${url}/login`
+      } ]);
+
+      // No local login, no admin URL to point at
+      apos.login.options.localLogin = false;
+      assert.deepEqual(parsed((await captured(() => express.logListening())).out), [ {
+        severity: 'info',
+        module: '@apostrophecms/express',
+        type: 'apos-listening',
+        url
+      } ]);
+      apos.login.options.localLogin = true;
+    });
+
     it('should be the whole configuration, warning about what it displaced', async function () {
       let legacyCalled = false;
       const calls = [];
@@ -1691,7 +1742,10 @@ describe('structured logging', function () {
       assert.equal(apos.structuredLog.options.messageAs, undefined);
       assert.equal(apos.structuredLog.options.logger, undefined);
       assert.deepEqual(apos.structuredLog.filters, {
-        '*': { severity: [ 'warn', 'error' ] }
+        '*': {
+          severity: [ 'warn', 'error' ],
+          events: [ 'apos-listening' ]
+        }
       });
       // The default logger, not either of the legacy ones
       assert.equal(apos.util.logger.calls, undefined);

@@ -3,6 +3,7 @@
 
 const { inspect } = require('node:util');
 const { createStyle } = require('./style');
+const { isBanner, renderBanner } = require('./banner');
 
 // `legacy` is the output shape of previous releases: `message {json}`. `auto`
 // resolves to it in production for this release cycle, so that production
@@ -60,11 +61,16 @@ function createRenderer({
   // color twin, whatever the terminal is capable of.
   const useColor = color && format === 'pretty';
   const style = createStyle(useColor);
-  return (envelope) => renderHuman(envelope, {
-    style,
-    color: useColor,
-    test
-  });
+  // The banner is a development affordance, so it belongs to the format
+  // developers watch, whether or not that terminal takes color.
+  const banner = format === 'pretty';
+  return (envelope) => (banner && isBanner(envelope))
+    ? renderBanner(envelope, style)
+    : renderHuman(envelope, {
+      style,
+      color: useColor,
+      test
+    });
 }
 
 // `HH:mm:ss [WARN] [module] type: message  key=value`, with the data indented

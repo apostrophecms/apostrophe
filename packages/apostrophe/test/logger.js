@@ -39,6 +39,10 @@ function lines(chunks) {
   return chunks.map((chunk) => chunk.replace(/\n$/, ''));
 }
 
+function escaped(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 describe('standalone logger', function () {
   const savedEnv = {};
   const savedArgv = process.argv;
@@ -414,9 +418,9 @@ describe('standalone logger', function () {
         format: 'plain',
         context: { scope: 'multisite' }
       }, (logger) => {
-        logger.child({ site: 'site-a' }).info('listening');
+        logger.child({ site: 'site-a' }).info('apos-listening');
       });
-      assert.match(out[0], /\[site-a] \[multisite] listening$/);
+      assert.match(out[0], /\[site-a] \[multisite] apos-listening$/);
     });
 
     it('should label the module instead of the scope, and never both', function () {
@@ -491,6 +495,73 @@ describe('standalone logger', function () {
         logger.info('event-type', { key: 'value' });
       });
       assert.equal(out[0], 'event-type\n{\n  "key": "value"\n}');
+    });
+  });
+
+  describe('startup banner', function () {
+    const { version } = require('../package.json');
+
+    function render(options, data) {
+      const captured = capture(true);
+      const logger = createLogger({
+        ...captured,
+        ...options
+      });
+      logger.child({ module: '@apostrophecms/express' }).info('apos-listening', data);
+      return lines(captured.out)[0];
+    }
+
+    const urls = {
+      url: 'http://localhost:3000',
+      adminUrl: 'http://localhost:3000/login'
+    };
+
+    it('should render the listening event as a block in pretty mode', function () {
+      const banner = render({ format: 'pretty' }, urls).split('\n');
+      assert.deepEqual([ banner[0], banner[2], banner.at(-1) ], [ '', '', '' ]);
+      assert.match(
+        banner[1],
+        new RegExp(`^ {2}apostrophe v${escaped(version)}  ready in (\\d+ms|\\d+\\.\\d{2}s)$`)
+      );
+      assert.deepEqual(banner.slice(3, 6), [
+        '  ┃ Local     http://localhost:3000',
+        '  ┃ Admin     http://localhost:3000/login',
+        `  ┃ Node      ${process.version} · development`
+      ]);
+    });
+
+    it('should omit the admin line when there is no login URL to point at',
+      function () {
+        const banner = render({ format: 'pretty' }, { url: urls.url });
+        assert.match(banner, /┃ Local {5}http:\/\/localhost:3000\n/);
+        assert.equal(banner.includes('Admin'), false);
+      });
+
+    it('should color the banner when the terminal takes color', function () {
+      process.env.NO_COLOR = '';
+      process.env.FORCE_COLOR = '1';
+      assert.equal(render({ format: 'pretty' }, urls).includes(ESC), true);
+    });
+
+    it('should stay an ordinary event line in every other format', function () {
+      assert.match(
+        render({ format: 'plain' }, urls),
+        /^\d{2}:\d{2}:\d{2} \[@apostrophecms\/express] apos-listening {2}url=\S+ adminUrl=\S+$/
+      );
+      assert.deepEqual(JSON.parse(render({ format: 'structured' }, urls)), {
+        severity: 'info',
+        module: '@apostrophecms/express',
+        type: 'apos-listening',
+        ...urls
+      });
+    });
+
+    it('should stay a line for one site of many', function () {
+      const banner = render({
+        format: 'pretty',
+        context: { site: 'site-a' }
+      }, urls);
+      assert.match(banner, /\[site-a] \[@apostrophecms\/express] apos-listening/);
     });
   });
 
@@ -584,10 +655,10 @@ describe('standalone logger', function () {
 
     it('should merge child context before handing the envelope over', function () {
       const { calls, logger } = spy();
-      createLogger({ logger }).child({ site: 'site-a' }).info('listening');
+      createLogger({ logger }).child({ site: 'site-a' }).info('apos-listening');
       assert.deepEqual(calls[0][1], {
         severity: 'info',
-        type: 'listening',
+        type: 'apos-listening',
         site: 'site-a'
       });
     });

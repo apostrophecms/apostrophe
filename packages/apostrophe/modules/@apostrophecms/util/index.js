@@ -629,10 +629,9 @@ module.exports = {
         self.logger.warn(...self.convertLegacyLogPayload(args));
       },
 
-      // Identical to `apos.util.warn`, except that (1) the warning is
-      // not displayed if `process.env.NODE_ENV` is `production`, and
-      // (2) if the warning's first argument is a message it is
-      // automatically prefixed with a warning icon.
+      // Identical to `apos.util.warn`, except that the warning is not
+      // displayed if `process.env.NODE_ENV` is `production`. The message is
+      // passed on exactly as written: the renderer marks the severity.
       //
       // Also see `warnDevOnce` which is less likely to irritate
       // the developer until they stop paying attention.
@@ -640,10 +639,6 @@ module.exports = {
       warnDev(...args) {
         if (process.env.NODE_ENV === 'production') {
           return;
-        }
-        const m = args[0];
-        if ((typeof m) === 'string') {
-          args[0] = `⚠️  ${m}`;
         }
         self.warn(...args);
       },
@@ -947,9 +942,8 @@ module.exports = {
           return args;
         }
 
-        // Should also handle apos.util.warnDev() calls.
         const messageIndex = args
-          .findIndex(arg => typeof arg === 'string' && arg.trim() && arg !== '\n⚠️ ');
+          .findIndex(arg => typeof arg === 'string' && arg.trim());
         const firstObjectIndex = args.findIndex(arg => _.isPlainObject(arg));
         const message = messageIndex !== -1 ? args[messageIndex] : null;
         const firstObject = firstObjectIndex !== -1 ? { ...args[firstObjectIndex] } : {};
