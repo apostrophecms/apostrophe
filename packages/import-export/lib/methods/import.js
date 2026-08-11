@@ -160,6 +160,10 @@ module.exports = self => {
           // continue the import with the current locale overriding the docs one:
           const { noteId: notificationId } = await self.apos.notify(req, ' ', {
             type: 'warning',
+            // Hidden carrier for the event below. Nothing else dismisses it,
+            // so give it the shortest lifetime the option offers: the event
+            // fires on mount, independently of the dismiss timer
+            dismiss: 1,
             event: {
               name: 'import-export-import-locale-differs',
               data: {
@@ -314,6 +318,9 @@ module.exports = self => {
       // to display the duplicated docs modal
       await self.apos.notify(req, ' ', {
         type: 'warning',
+        // Hidden carrier, dismissed by nothing else; see the locale-differs
+        // notification above
+        dismiss: 1,
         event: {
           name: 'import-export-import-duplicates',
           data: results
