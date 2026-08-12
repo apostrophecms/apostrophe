@@ -6,6 +6,11 @@ const zlib = require('node:zlib');
 const tar = require('tar-stream');
 const { EJSON } = require('bson');
 
+// `logDebug`, `logInfo`, `logWarn` and `logError` are not declared here:
+// `registerFormats` in `lib/methods/index.js` stamps them onto every format it
+// registers, so a format reports through the module that owns it without
+// carrying an apos context. They are absent when a format object is used
+// outside the module, hence the optional calls.
 module.exports = {
   label: 'gzip',
   extension: '.tar.gz',
@@ -25,7 +30,7 @@ module.exports = {
 
       await extract(filepath, exportPath);
 
-      await remove(filepath);
+      await remove(filepath, this);
     }
 
     const docsPath = path.join(exportPath, 'aposDocs.json');
@@ -196,11 +201,14 @@ async function extract(filepath, exportPath) {
 // This independent function is designed for file removal.
 // Avoid invoking `self.remove` within this script,
 // as it should remain separate from the apos context.
-async function remove(filepath) {
+async function remove(filepath, format) {
   try {
     await fsp.unlink(filepath);
   } catch (error) {
-    console.error(error);
+    format?.logError?.('archive-remove-failed', `Unable to remove the archive: "${filepath}"`, {
+      filepath,
+      stack: error.stack
+    });
   }
 }
 

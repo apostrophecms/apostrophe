@@ -872,7 +872,9 @@ module.exports = {
         const { enableCacheOnDemand = true } = self.options;
         if (enableCacheOnDemand) {
           // Instantiate independently for this instance of ApostropheCMS
-          self.apos.expressCacheOnDemand = expressCacheOnDemand();
+          self.apos.expressCacheOnDemand = expressCacheOnDemand(undefined, {
+            logger: self.getConsoleLogger('cache-on-demand')
+          });
         }
       }
     };

@@ -13,11 +13,14 @@
 export class SchemaDiscovery {
   /**
    * @param {any} apos - Apostrophe instance.
+   * @param {any} [generatorModule] - The generator module, source of the
+   * custom field mappers and of the log seam.
    */
-  constructor(apos) {
+  constructor(apos, generatorModule) {
     this.apos = apos;
     this.fieldTypeMap = this.buildFieldTypeMap();
-    this.generatorModule = apos.modules['openapi-generator'];
+    this.generatorModule = generatorModule ||
+      apos.modules['@apostrophecms/openapi-generator'];
   }
 
   /**
@@ -34,7 +37,14 @@ export class SchemaDiscovery {
         const moduleSchemas = this.extractModuleSchemas(moduleName, module);
         Object.assign(schemas, moduleSchemas);
       } catch (error) {
-        console.warn(`Warning: Could not extract schemas from ${moduleName}:`, error.message);
+        this.generatorModule?.logWarn(
+          'schema-extract-failed',
+          `Could not extract schemas from ${moduleName}`,
+          {
+            moduleName,
+            stack: error.stack
+          }
+        );
       }
     }
 
@@ -83,10 +93,18 @@ export class SchemaDiscovery {
    * @returns {Record<string, any>}
    */
   getModuleFields(module) {
+    const moduleName = module.__meta?.name || module.name || 'unknown';
     // First, try to get the fully compiled schema from the module
     // This is set by @apostrophecms/doc-type and contains all inherited fields
     if (Array.isArray(module.schema)) {
-      console.log(`Using compiled schema for ${module.name || 'unknown'} (${module.schema.length} fields)`);
+      this.generatorModule?.logDebug(
+        'schema-source',
+        `Using compiled schema for ${moduleName}`,
+        {
+          moduleName,
+          fields: module.schema.length
+        }
+      );
 
       const fields = module.schema
         .filter(f => f && f.name)
@@ -106,7 +124,14 @@ export class SchemaDiscovery {
       try {
         const schema = module.getSchema();
         if (Array.isArray(schema)) {
-          console.log(`Using getSchema() for ${module.name || 'unknown'} (${schema.length} fields)`);
+          this.generatorModule?.logDebug(
+            'schema-source',
+            `Using getSchema() for ${moduleName}`,
+            {
+              moduleName,
+              fields: schema.length
+            }
+          );
 
           const fields = schema
             .filter(f => f && f.name)
@@ -119,12 +144,17 @@ export class SchemaDiscovery {
           return fields;
         }
       } catch (error) {
-        console.warn(`getSchema() failed for ${module.name}:`, error.message);
+        this.generatorModule?.logWarn('get-schema-failed', `getSchema() failed for ${moduleName}`, {
+          moduleName,
+          stack: error.stack
+        });
       }
     }
 
-    // Failure warning
-    console.log(`Skipping module ${module.name}: no schema available`);
+    this.generatorModule?.logDebug('schema-skipped', `Skipping module ${moduleName}`, {
+      moduleName,
+      reason: 'no schema available'
+    });
     return {};
   }
 
@@ -303,7 +333,14 @@ export class SchemaDiscovery {
       try {
         return customMappers[fieldType](field);
       } catch (error) {
-        console.warn(`Custom field mapper for ${fieldType} failed:`, error.message);
+        this.generatorModule?.logWarn(
+          'field-mapper-failed',
+          `Custom field mapper for ${fieldType} failed`,
+          {
+            fieldType,
+            stack: error.stack
+          }
+        );
       }
     }
 
