@@ -2424,4 +2424,176 @@ describe('sanitizeHtml', function() {
       );
     });
   });
+
+  describe('SVG SMIL animation retargeting a URL attribute (scheme policy bypass)', function() {
+    // Background: a SMIL animation element (<animate>, <set>, ...) names the
+    // attribute it animates with `attributeName`, and supplies the new values in
+    // sibling attributes (`values`, `from`, `to`, `by`). When `attributeName`
+    // selects `href` or `xlink:href`, those value attributes become URLs that a
+    // browser writes into the link sink *after* sanitization, so the sanitizer's
+    // scheme policy never sees them. `values` is worse still: it is a
+    // semicolon-separated LIST, so checking it as one flat URL only ever
+    // validates a prefix — `values="#safe;javascript:alert(1)"` passes as a
+    // relative fragment while the browser animates the link to `javascript:`.
+    //
+    // The precondition is an allowedTags/allowedAttributes pairing that permits
+    // an animation element together with `attributeName` and a value attribute.
+
+    const animationOptions = function(extra) {
+      return Object.assign({
+        allowedTags: [ 'svg', 'a', 'text', 'animate', 'set' ],
+        allowedAttributes: {
+          a: [ 'href', 'xlink:href' ],
+          text: [ 'y' ],
+          animate: [ 'attributename', 'values', 'from', 'to', 'by', 'dur', 'fill' ],
+          set: [ 'attributename', 'to', 'dur', 'fill' ]
+        }
+      }, extra || {});
+    };
+
+    it('should drop an <animate> whose values list smuggles javascript: after a safe fragment', function() {
+      // The advisory PoC: `values` is explicitly added to the scheme-checked
+      // attributes, yet the leading `#safe` entry made the whole list pass.
+      const out = sanitizeHtml(
+        '<svg><a><animate attributeName="href" values="#safe;javascript:alert(\'XSS\')" dur=".01s" fill="freeze"></animate><text y="30">Click me</text></a></svg>',
+        animationOptions({
+          allowedSchemesAppliedToAttributes:
+            sanitizeHtml.defaults.allowedSchemesAppliedToAttributes.concat([ 'values' ])
+        })
+      );
+      assert.strictEqual(out, '<svg><a><text y="30">Click me</text></a></svg>');
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should drop an <animate> retargeting href even when values is not scheme-checked', function() {
+      // The default configuration does not scheme-check `values` at all, so the
+      // payload does not even need the leading safe entry.
+      const out = sanitizeHtml(
+        '<svg><a><animate attributeName="href" values="javascript:alert(1)" dur=".01s" fill="freeze"></animate><text y="30">Click me</text></a></svg>',
+        animationOptions()
+      );
+      assert.strictEqual(out, '<svg><a><text y="30">Click me</text></a></svg>');
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should drop an <animate> retargeting href via from', function() {
+      const out = sanitizeHtml(
+        '<svg><a><animate attributeName="href" from="javascript:alert(1)" to="#safe" dur="1s"></animate><text>x</text></a></svg>',
+        animationOptions()
+      );
+      assert.strictEqual(out, '<svg><a><text>x</text></a></svg>');
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should drop a <set> retargeting href via to', function() {
+      const out = sanitizeHtml(
+        '<svg><a href="#safe"><set attributeName="href" to="javascript:alert(1)" fill="freeze"></set><text>x</text></a></svg>',
+        animationOptions()
+      );
+      assert.strictEqual(out, '<svg><a href="#safe"><text>x</text></a></svg>');
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should drop an <animate> retargeting href via by', function() {
+      const out = sanitizeHtml(
+        '<svg><a><animate attributeName="href" by="javascript:alert(1)" dur="1s"></animate><text>x</text></a></svg>',
+        animationOptions()
+      );
+      assert.strictEqual(out, '<svg><a><text>x</text></a></svg>');
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should drop an <animate> retargeting the xlink:href form of the link sink', function() {
+      const out = sanitizeHtml(
+        '<svg><a xlink:href="#safe"><animate attributeName="xlink:href" values="#safe;javascript:alert(1)" dur="1s"></animate><text>x</text></a></svg>',
+        animationOptions()
+      );
+      assert.strictEqual(out, '<svg><a xlink:href="#safe"><text>x</text></a></svg>');
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should drop an animation retargeting href regardless of case or surrounding whitespace', function() {
+      const out = sanitizeHtml(
+        '<svg><a><animate attributeName=" HREF " values="#safe;javascript:alert(1)" dur="1s"></animate><text>x</text></a></svg>',
+        animationOptions()
+      );
+      assert.strictEqual(out, '<svg><a><text>x</text></a></svg>');
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should drop an animation targeting any other attribute the scheme policy covers', function() {
+      // The rule is not specific to links: an animation must not be able to
+      // write an unchecked URL into any attribute we would scheme check.
+      const out = sanitizeHtml(
+        '<svg><image><animate attributeName="src" to="javascript:alert(1)" dur="1s"></animate></image></svg>',
+        animationOptions({
+          allowedTags: [ 'svg', 'image', 'animate' ],
+          allowedAttributes: { animate: [ 'attributename', 'to', 'dur' ] }
+        })
+      );
+      assert.strictEqual(out, '<svg><image></image></svg>');
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should escape rather than execute the animation under disallowedTagsMode escape', function() {
+      // In escape mode a rejected element becomes inert text, as it does for any
+      // other disallowed tag, so the payload is displayed and never animated.
+      assert.strictEqual(
+        sanitizeHtml(
+          '<svg><a><animate attributeName="href" values="#safe;javascript:alert(1)" dur="1s"></animate><text>x</text></a></svg>',
+          animationOptions({ disallowedTagsMode: 'escape' })
+        ),
+        '<svg><a>&lt;animate attributename="href" values="#safe;javascript:alert(1)" dur="1s"&gt;&lt;/animate&gt;<text>x</text></a></svg>'
+      );
+    });
+
+    it('should drop the animation even when the value attributes are not allowed', function() {
+      // The element is rejected on the strength of its target alone, so a
+      // payload cannot be reintroduced by another layer that reattaches values.
+      const out = sanitizeHtml(
+        '<svg><a><animate attributeName="href"></animate><text>x</text></a></svg>',
+        animationOptions({
+          allowedAttributes: { animate: [ 'attributename' ] }
+        })
+      );
+      assert.strictEqual(out, '<svg><a><text>x</text></a></svg>');
+    });
+
+    // --- Regression guards: harmless animations must be preserved ---
+
+    it('should keep an <animate> targeting a presentation attribute such as fill', function() {
+      assert.strictEqual(
+        sanitizeHtml(
+          '<svg><a><animate attributeName="fill" values="red;blue" dur="1s"></animate><text>x</text></a></svg>',
+          animationOptions()
+        ),
+        '<svg><a><animate attributename="fill" values="red;blue" dur="1s"></animate><text>x</text></a></svg>'
+      );
+    });
+
+    it('should keep a <set> targeting a harmless attribute', function() {
+      assert.strictEqual(
+        sanitizeHtml(
+          '<svg><a><set attributeName="opacity" to="0" dur="1s"></set><text>x</text></a></svg>',
+          animationOptions()
+        ),
+        '<svg><a><set attributename="opacity" to="0" dur="1s"></set><text>x</text></a></svg>'
+      );
+    });
+
+    it('should keep an href attribute on a non-animation element that happens to allow attributeName', function() {
+      assert.strictEqual(
+        sanitizeHtml(
+          '<svg><a href="#safe" attributeName="href"><text>x</text></a></svg>',
+          animationOptions({
+            allowedAttributes: {
+              a: [ 'href', 'attributename' ],
+              text: [ 'y' ]
+            }
+          })
+        ),
+        '<svg><a href="#safe" attributename="href"><text>x</text></a></svg>'
+      );
+    });
+  });
 });
