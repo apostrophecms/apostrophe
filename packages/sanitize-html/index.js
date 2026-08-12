@@ -12,6 +12,17 @@ const mediaTags = [
 ];
 // Tags that are inherently vulnerable to being used in XSS attacks.
 const vulnerableTags = [ 'script', 'style' ];
+// SVG SMIL animation elements. These do not carry a URL themselves: they
+// retarget an attribute of another element, naming it with `attributeName`
+// and supplying the new value(s) in `values`, `from`, `to` and `by`.
+const svgAnimationTags = [
+  'animate', 'animatecolor', 'animatemotion', 'animatetransform', 'set'
+];
+// Attribute names that always name a URL sink, whatever
+// `allowedSchemesAppliedToAttributes` has been narrowed to. A namespace prefix
+// is ignored when matching, so `xlink:href` and any other prefixed spelling of
+// `href` are covered.
+const alwaysUrlAttributes = [ 'href' ];
 
 function each(obj, cb) {
   if (obj) {
@@ -272,7 +283,7 @@ function sanitizeHtml(html, options, _recursing) {
         }
       }
 
-      if (!tagAllowed(name) || (options.disallowedTagsMode === 'recursiveEscape' && !isEmptyObject(skipMap)) || (options.nestingLimit != null && depth >= options.nestingLimit)) {
+      if (!tagAllowed(name) || animatesUrlAttribute(name, attribs) || (options.disallowedTagsMode === 'recursiveEscape' && !isEmptyObject(skipMap)) || (options.nestingLimit != null && depth >= options.nestingLimit)) {
         skip = true;
         skipMap[depth] = true;
         if (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') {
@@ -770,6 +781,39 @@ function sanitizeHtml(html, options, _recursing) {
     return launderNaughtyHref(href, {
       allowedSchemes,
       allowProtocolRelative: options.allowProtocolRelative
+    });
+  }
+
+  // True if this is an SVG SMIL animation element that animates a URL-bearing
+  // attribute, e.g. `<animate attributeName="href" values="#safe;javascript:...">`.
+  //
+  // Such an element carries no URL of its own: the browser copies the animation
+  // values into the target attribute *after* sanitization, so a `javascript:`
+  // destination reaches a live link sink without ever being scheme checked.
+  // `values` compounds this, because it is a semicolon-separated LIST of
+  // destinations: checking it as one flat URL only validates its first entry, so
+  // a leading `#safe` fragment carries the rest of the list past the policy.
+  //
+  // Re-checking each entry of each value attribute would leave the safety of the
+  // output resting on our imitation of SMIL list parsing, so we reject the
+  // animation on the strength of its target instead. Animations of attributes
+  // that are not URL sinks, such as `fill` or `opacity`, are unaffected.
+  function animatesUrlAttribute(name, attribs) {
+    if (svgAnimationTags.indexOf(name.toLowerCase()) === -1) {
+      return false;
+    }
+    const schemeCheckedAttributes = options.allowedSchemesAppliedToAttributes || [];
+    return Object.keys(attribs || {}).some(function(attributeName) {
+      if (attributeName.toLowerCase() !== 'attributename') {
+        return false;
+      }
+      const target = (attribs[attributeName] || '').trim().toLowerCase();
+      // The target may be namespace prefixed (`xlink:href`). Which prefixes are
+      // in scope depends on the document, so consider the local name too.
+      const localName = target.slice(target.lastIndexOf(':') + 1);
+      return alwaysUrlAttributes.indexOf(localName) !== -1 ||
+        schemeCheckedAttributes.indexOf(target) !== -1 ||
+        schemeCheckedAttributes.indexOf(localName) !== -1;
     });
   }
 

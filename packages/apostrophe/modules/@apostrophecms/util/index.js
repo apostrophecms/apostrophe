@@ -39,8 +39,29 @@ const glob = require('../../../lib/glob.js');
 // user-supplied path in `apos.util.get` and `apos.util.set`. Following any
 // of these reaches the prototype chain and enables server-side prototype
 // pollution (CWE-1321), e.g. a PATCH `$pullAll` key of
-// `__proto__.publicApiProjection`.
+// `__proto__.publicApiProjection`. Note that this list guards the last
+// segment of a path, where nothing is traversed and `ownProperty` below
+// therefore has no say; `__proto__` as a final segment would replace the
+// prototype of the object being written to.
 const unsafePathSegments = new Set([ '__proto__', 'constructor', 'prototype' ]);
+
+// Is `p` a property `o` carries itself, as opposed to one it inherits?
+//
+// Naming individual dangerous segments is not enough on its own: every
+// property inherited from `Object.prototype` or `Array.prototype` is a way
+// out of the document being patched and into state the whole process shares.
+// A path of `toString.call` walks to `Object.prototype.toString`, a single
+// function object shared process-wide, and shadows its `call` method,
+// breaking every later `Object.prototype.toString.call(...)` in Apostrophe,
+// lodash and Node itself until the process is restarted (CWE-1321,
+// GHSA-vmg4-6gfg-83qx).
+//
+// Traversing own properties only confines a path to the data it was meant
+// to address: the request body and clones of the document being patched.
+function ownProperty(o, p) {
+  // `Object.hasOwn` throws on null and undefined, which reach here routinely
+  return (o != null) && Object.hasOwn(o, p);
+}
 
 module.exports = {
   options: {
@@ -762,7 +783,7 @@ module.exports = {
             if (o == null) {
               return undefined;
             }
-            if (unsafePathSegments.has(p)) {
+            if (unsafePathSegments.has(p) || !ownProperty(o, p)) {
               // Never read through the prototype chain (CWE-1321)
               return undefined;
             }
@@ -838,6 +859,15 @@ module.exports = {
         }
         for (i = 0; (i < (path.length - 1)); i++) {
           p = path[i];
+          if (!ownProperty(o, p)) {
+            // Refuse to write through the prototype chain (CWE-1321). Anything
+            // this object does not carry itself is either inherited, and so
+            // shared with the rest of the process, or simply not there
+            throw self.apos.error(
+              'invalid',
+              `No own property "${p}" to traverse in dot path`
+            );
+          }
           o = o[p];
         }
         p = path[i];

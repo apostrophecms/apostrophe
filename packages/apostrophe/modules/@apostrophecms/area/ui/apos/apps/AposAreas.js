@@ -22,7 +22,6 @@ export default function() {
   apos.bus.$on('widget-rendered', options => {
     widgetsRendering--;
     createAreaAppsAndRunPlayersIfDone(options);
-
   });
 
   apos.bus.$on('refreshed', function() {

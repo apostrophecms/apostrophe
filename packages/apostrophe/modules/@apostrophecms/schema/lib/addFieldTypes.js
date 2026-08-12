@@ -569,18 +569,17 @@ module.exports = (self) => {
     vueComponent: 'AposInputString',
     convert: function (req, field, data, destination) {
       destination[field.name] = self.apos.launder.string(data[field.name]);
-      if (!data[field.name]) {
+      if (!destination[field.name]) {
         if (field.required) {
           throw self.apos.error('required');
         }
       } else {
         // regex source: https://emailregex.com/
-        const matches = data[field.name].match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
+        const matches = destination[field.name].match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
         if (!matches) {
           throw self.apos.error('invalid');
         }
       }
-      destination[field.name] = data[field.name];
     },
     validate(field, options, warn, fail) {
       if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
@@ -928,13 +927,16 @@ module.exports = (self) => {
         self.validateField(subField, options, field);
       }
     },
-    register: function (metaType, type, field) {
+    register: function (metaType, type, field, fieldPath) {
+      // Unlike the field _id, scopedArrayName is stored on every array item in
+      // the database, so it keeps its original flat form and continues to
+      // honor arrayName. Changing it would require a migration
       const localArrayName = field.arrayName || field.name;
       field.scopedArrayName = `${metaType}.${type}.${localArrayName}`;
       self.arrayManagers[field.scopedArrayName] = {
         schema: field.schema
       };
-      self.register(metaType, type, field.schema);
+      self.register(metaType, type, field.schema, fieldPath);
     },
     isEqual(req, field, one, two) {
       if (!(one[field.name] && two[field.name])) {
@@ -1000,13 +1002,15 @@ module.exports = (self) => {
         throw errors;
       }
     },
-    register: function (metaType, type, field) {
+    register: function (metaType, type, field, fieldPath) {
+      // Stored in the database on every object, so it keeps its original flat
+      // form and continues to honor objectName. See scopedArrayName above
       const localObjectName = field.objectName || field.name;
       field.scopedObjectName = `${metaType}.${type}.${localObjectName}`;
       self.objectManagers[field.scopedObjectName] = {
         schema: field.schema
       };
-      self.register(metaType, type, field.schema);
+      self.register(metaType, type, field.schema, fieldPath);
     },
     validate: function (field, options, warn, fail) {
       for (const subField of field.schema) {
