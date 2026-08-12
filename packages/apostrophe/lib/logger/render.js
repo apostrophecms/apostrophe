@@ -91,9 +91,9 @@ function renderHuman(envelope, {
       parts.push(style('cyan', `[${label}]`));
     }
   }
-  const message = [ envelope.type, envelope.msg ]
+  const message = hang([ envelope.type, envelope.msg ]
     .filter((part) => typeof part === 'string' && part.length)
-    .join(': ');
+    .join(': '), 4);
   if (message) {
     parts.push(envelope.severity === 'debug' ? style('dim', message) : message);
   }
@@ -188,6 +188,20 @@ function safeReplacer() {
 function indent(text, width) {
   const pad = ' '.repeat(width);
   return text.split('\n').map((line) => pad + line).join('\n');
+}
+
+// A message written as a block - a lint notice, a multi-line explanation -
+// keeps its first line on the entry and indents the rest, so that the block
+// reads as one entry rather than as a run of new ones.
+function hang(text, width) {
+  if (!text.includes('\n')) {
+    return text;
+  }
+  const pad = ' '.repeat(width);
+  return text
+    .split('\n')
+    .map((line, index) => (index && line.length) ? pad + line : line)
+    .join('\n');
 }
 
 function timestamp() {

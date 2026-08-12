@@ -665,9 +665,9 @@ module.exports = {
 
         // Log the initial watch message
         let loggedOnce = false;
-        const logOnce = (...msg) => {
+        const logOnce = (message) => {
           if (!loggedOnce) {
-            self.apos.util.log(...msg);
+            self.logInfo('watch-started', message);
             loggedOnce = true;
           }
         };
@@ -1153,9 +1153,9 @@ module.exports = {
         // chokidar may invoke ready event multiple times,
         // we want one "watch enabled" message.
         let loggedOnce = false;
-        const logOnce = (...msg) => {
+        const logOnce = (message) => {
           if (!loggedOnce) {
-            self.apos.util.log(...msg);
+            self.logInfo('watch-started', message);
             loggedOnce = true;
           }
         };

@@ -473,6 +473,19 @@ describe('standalone logger', function () {
       ]);
     });
 
+    it('should indent the continuation lines of a multi-line message', function () {
+      const { err } = render({ format: 'plain' }, (logger) => {
+        logger.warn(null, 'Something is wrong:\nthe module has no code.\n\nFix it.');
+      });
+      const [ first, ...rest ] = err[0].split('\n');
+      assert.match(first, /\[WARN] Something is wrong:$/);
+      assert.deepEqual(rest, [
+        '    the module has no code.',
+        '',
+        '    Fix it.'
+      ]);
+    });
+
     it('should color pretty output and only pretty output', function () {
       process.env.NO_COLOR = '';
       process.env.FORCE_COLOR = '1';

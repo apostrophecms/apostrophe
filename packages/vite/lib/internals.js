@@ -1,4 +1,5 @@
 const path = require('node:path');
+const { stripVTControlCharacters } = require('node:util');
 const fs = require('fs-extra');
 const postcssrc = require('postcss-load-config');
 const postcssViewportToContainerToggle = require('postcss-viewport-to-container-toggle');
@@ -7,6 +8,10 @@ const viteAposConfig = require('./vite-apos-config');
 const vitePublicConfig = require('./vite-public-config');
 const viteServeConfig = require('./vite-serve-config');
 const vitePostcssConfig = require('./vite-postcss-config');
+
+// Vite's own output is indented under the build entry that precedes it, which
+// is what the human formats do with anything belonging to the entry above.
+const VITE_INDENT = '    ';
 
 module.exports = (self) => {
   return {
@@ -179,8 +184,10 @@ module.exports = (self) => {
       ) ];
 
       if (labels.length) {
-        self.apos.util.log(
-          req.t(phrase, { label: labels.join(', ') })
+        self.logInfo(
+          before ? 'build-started' : 'build-complete',
+          req.t(phrase, { label: labels.join(', ') }),
+          { build: id }
         );
       }
     },
@@ -446,9 +453,9 @@ module.exports = (self) => {
       const instance = await createServer(viteConfig);
       self.viteDevInstance = instance;
 
-      self.apos.util.log(
-        `HMR for "${options.devServer}" started`
-      );
+      self.logInfo('hmr-started', `HMR for "${options.devServer}" started`, {
+        build: options.devServer
+      });
 
       self.printDebug('dev-middleware', { viteConfig });
     },
@@ -1027,19 +1034,75 @@ module.exports = (self) => {
       baseConfig.configFile = false;
       baseConfig.envFile = false;
 
-      if (env.command === 'build') {
-        return baseConfig;
+      let config = baseConfig;
+      if (env.command !== 'build') {
+        const { mergeConfig } = await import('vite');
+        const serveConfig = await viteServeConfig({
+          app: self.apos.app,
+          httpServer: self.apos.modules['@apostrophecms/express'].server,
+          hasHMR: buildOptions.hmr,
+          hmrPort: buildOptions.hmrPort
+        });
+        config = mergeConfig(baseConfig, serveConfig);
       }
 
-      const { mergeConfig } = await import('vite');
-      const serveConfig = await viteServeConfig({
-        app: self.apos.app,
-        httpServer: self.apos.modules['@apostrophecms/express'].server,
-        hasHMR: buildOptions.hmr,
-        hmrPort: buildOptions.hmrPort
-      });
+      const customLogger = await self.getViteLogger();
+      if (customLogger) {
+        config.customLogger = customLogger;
+      }
 
-      return mergeConfig(baseConfig, serveConfig);
+      return config;
+    },
+
+    // Vite reports its own progress - the version banner, the module count, the
+    // bundle table - through a logger of its own, which knows nothing of ours.
+    // What we do with it depends on who is reading the stream:
+    //
+    // - `pretty`, `plain`: it stays vite's own output, table and colors
+    //   included, indented under the build entry it belongs to, the way a stack
+    //   or a data dump is indented. `plain` drops the color, as it does for our
+    //   own lines.
+    // - `structured`, or a custom logger: the stream is machine readable, so
+    //   every line becomes an event like any other.
+    // - `legacy`: the output shape of previous releases, vite's own included.
+    //
+    // Built on vite's logger so that the parts we do not override keep working.
+    async getViteLogger() {
+      const { format } = self.apos.logger;
+      if (format === 'legacy') {
+        return null;
+      }
+      const { createLogger } = await import('vite');
+      const logger = createLogger();
+      const passThrough = (format === 'pretty') || (format === 'plain');
+      const toLines = (message) => (format === 'pretty'
+        ? String(message)
+        : stripVTControlCharacters(String(message)))
+        .split('\n')
+        .map((line) => line.trimEnd())
+        .filter((line) => line.length);
+
+      const emit = (severity, stream, warns) => (message) => {
+        if (warns) {
+          logger.hasWarned = true;
+        }
+        for (const line of toLines(message)) {
+          if (passThrough) {
+            stream.write(VITE_INDENT + line + '\n');
+          } else {
+            self[severity]('vite', line);
+          }
+        }
+      };
+      logger.info = emit('logInfo', process.stdout, false);
+      logger.warn = emit('logWarn', process.stderr, true);
+      logger.warnOnce = emit('logWarn', process.stderr, true);
+      logger.error = emit('logError', process.stderr, true);
+      // Nothing to clear: the lines are already gone to wherever they go, and
+      // clearing would take our own entries with them.
+      logger.clearScreen = () => {};
+
+      return logger;
     }
   };
 };
