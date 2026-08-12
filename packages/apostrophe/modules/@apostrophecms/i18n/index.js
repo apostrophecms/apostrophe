@@ -1292,9 +1292,24 @@ module.exports = {
             renamed,
             kept
           } = await self.rename(oldLocale, newLocale, { keep });
-          console.log(`Renamed ${renamed} documents from ${oldLocale} to ${newLocale}`);
+          self.logInfo(
+            'rename-locale-complete',
+            `Renamed ${renamed} documents from ${oldLocale} to ${newLocale}`,
+            {
+              renamed,
+              oldLocale,
+              newLocale
+            }
+          );
           if (keep) {
-            console.log(`Due to conflicts, kept ${kept} documents from ${keep}`);
+            self.logInfo(
+              'rename-locale-conflicts',
+              `Due to conflicts, kept ${kept} documents from ${keep}`,
+              {
+                kept,
+                keep
+              }
+            );
           }
         }
       },

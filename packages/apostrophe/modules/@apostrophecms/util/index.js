@@ -10,7 +10,7 @@
 // A function which accepts `apos` and returns an object with
 // at least `info`, `debug`, `warn` and `error` methods. These methods should
 // support placeholders (see `util.format`). If this option is
-// not supplied, logs are simply written to the Node.js `console`.
+// not supplied, logs are rendered by the process logger.
 // A `log` method may also be supplied; if it is not, `info`
 // is called in its place. Calls to `apos.util.log`,
 // `apos.util.error`, etc. are routed through this object
@@ -576,9 +576,9 @@ module.exports = {
         }
         self.logger = require('./lib/logger.js')(self.apos);
       },
-      // Log a message. The default
-      // implementation wraps `console.log` and passes on
-      // all arguments, so substitution strings may be used.
+      // Log a message. The default implementation hands it to the process
+      // logger as an envelope; substitution strings are composed first, the
+      // way `console.log` would compose them.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -594,9 +594,8 @@ module.exports = {
         }
         self.logger.log(...self.convertLegacyLogPayload(args));
       },
-      // Log an informational message. The default
-      // implementation wraps `console.info` and passes on
-      // all arguments, so substitution strings may be used.
+      // Log an informational message. Rendered by the process logger, with
+      // substitution strings composed first.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -604,9 +603,8 @@ module.exports = {
       info(...args) {
         self.logger.info(...self.convertLegacyLogPayload(args));
       },
-      // Log a debug message. The default implementation wraps
-      // `console.debug` if available, otherwise `console.log`,
-      // and passes on all arguments, so substitution strings may be used.
+      // Log a debug message. Rendered by the process logger, with
+      // substitution strings composed first.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -614,9 +612,8 @@ module.exports = {
       debug(...args) {
         self.logger.debug(...self.convertLegacyLogPayload(args));
       },
-      // Log a warning. The default implementation wraps
-      // `console.warn` and passes on all arguments,
-      // so substitution strings may be used.
+      // Log a warning. Rendered by the process logger, with substitution
+      // strings composed first.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -671,9 +668,8 @@ module.exports = {
         }
       },
 
-      // Log an error message. The default implementation
-      // wraps `console.error` and passes on all arguments,
-      // so substitution strings may be used.
+      // Log an error message. Rendered by the process logger, with
+      // substitution strings composed first.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -975,8 +971,7 @@ module.exports = {
       },
 
       // Log a message from a Nunjucks template. Great for debugging.
-      // Outputs nothing to the template. Invokes apos.util.log,
-      // which by default invokes console.log.
+      // Outputs nothing to the template. Invokes apos.util.log.
       log: function(msg) {
         self.log.apply(self.apos, arguments);
         return '';
