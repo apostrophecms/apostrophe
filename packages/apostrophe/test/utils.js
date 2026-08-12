@@ -475,6 +475,122 @@ describe('Utils', async function() {
       }
     });
 
+    // A blocklist of segment names is not enough on its own. Every property
+    // inherited from Object.prototype is another door out of the patch object
+    // and into state shared by the whole process. A PATCH body of
+    // `{ "toString.call": "x" }` walks to Object.prototype.toString, one
+    // function object the entire process shares, and shadows its `call`
+    // method, so every later `Object.prototype.toString.call(...)` in
+    // Apostrophe, lodash and Node itself throws. That is a persistent denial
+    // of service from a single request, until the process is restarted.
+    // The durable rule is to follow own properties only, never inherited
+    // ones. See GHSA-vmg4-6gfg-83qx.
+
+    // Runs an attack, records any process-wide damage it managed to do, and
+    // repairs that damage before the assertions run, so a regression fails
+    // the test at hand instead of taking down the rest of the suite with it.
+    // Returns the error the attack raised, if any, and the shared properties
+    // it clobbered, which must always come back empty.
+    function attack(fn) {
+      const sentinels = [
+        [ Object.prototype.toString, 'call' ],
+        [ Object.prototype.valueOf, 'polluted' ],
+        [ Array.prototype.push, 'polluted' ]
+      ];
+      let error = null;
+      try {
+        fn();
+      } catch (e) {
+        error = e;
+      }
+      // Note that clobbering `Object.prototype.toString.call` leaves
+      // `hasOwnProperty.call` alone, so this still works mid-attack
+      const polluted = sentinels
+        .filter(([ o, p ]) => Object.prototype.hasOwnProperty.call(o, p))
+        .map(([ o, p ]) => `${o.name}.${p}`);
+      for (const [ o, p ] of sentinels) {
+        delete o[p];
+      }
+      return {
+        error,
+        polluted
+      };
+    }
+
+    it('utils.set must not follow an inherited property such as toString', function() {
+      const { error, polluted } = attack(() => apos.util.set({}, 'toString.call', 'x'));
+
+      assert.deepStrictEqual(
+        polluted,
+        [],
+        'apos.util.set wrote to a function shared by the whole process'
+      );
+      assert(error, 'apos.util.set must refuse the path rather than follow it');
+      assert.strictEqual(error.name, 'invalid');
+    });
+
+    it('utils.set must not follow an inherited array method such as push', function() {
+      const { error, polluted } = attack(
+        () => apos.util.set({ items: [] }, 'items.push.polluted', 'yes')
+      );
+
+      assert.deepStrictEqual(
+        polluted,
+        [],
+        'apos.util.set wrote to a function shared by the whole process'
+      );
+      assert(error, 'apos.util.set must refuse the path rather than follow it');
+      assert.strictEqual(error.name, 'invalid');
+    });
+
+    it('utils.get must not read an inherited property', function() {
+      // Without the guard this hands back Object.prototype.toString itself,
+      // which callers such as implementPatchOperators then write into.
+      assert.strictEqual(apos.util.get({ a: 1 }, 'toString'), undefined);
+      assert.strictEqual(apos.util.get({ a: 1 }, 'valueOf.name'), undefined);
+      assert.strictEqual(apos.util.get({ items: [] }, 'items.push'), undefined);
+      // Own properties, including array indexes and string lengths, still work
+      assert.strictEqual(apos.util.get({ toString: 'mine' }, 'toString'), 'mine');
+      assert.strictEqual(apos.util.get({ items: [ 'a' ] }, 'items.0'), 'a');
+      assert.strictEqual(apos.util.get({ items: [ 'a' ] }, 'items.length'), 1);
+    });
+
+    it('implementPatchOperators must not break Object.prototype.toString via a dotted key', function() {
+      // The reported attack: PATCH /api/v1/article/:id as any editor, with a
+      // body of { "toString.call": "x" }.
+      const patch = { 'toString.call': 'x' };
+      const { error, polluted } = attack(
+        () => apos.schema.implementPatchOperators(patch, {})
+      );
+
+      assert.deepStrictEqual(
+        polluted,
+        [],
+        'a PATCH body clobbered Object.prototype.toString.call process-wide'
+      );
+      assert(error, 'the patch must be rejected');
+      assert.strictEqual(error.name, 'invalid');
+    });
+
+    it('implementPatchOperators must not reach an inherited property via $push', function() {
+      const patch = {
+        $push: {
+          'valueOf.polluted': 'yes'
+        }
+      };
+      const { error, polluted } = attack(
+        () => apos.schema.implementPatchOperators(patch, {})
+      );
+
+      assert.deepStrictEqual(
+        polluted,
+        [],
+        'a PATCH body wrote to Object.prototype.valueOf process-wide'
+      );
+      assert(error, 'the patch must be rejected');
+      assert.strictEqual(error.name, 'invalid');
+    });
+
     it('should slugify', function () {
       // Basic
       assert.equal(
