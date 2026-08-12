@@ -893,6 +893,35 @@ describe('Pieces', function() {
     assert(response.body.items.length);
   });
 
+  // A PATCH key is a dot path, and before GHSA-vmg4-6gfg-83qx those paths
+  // were walked through inherited properties as readily as own ones. A body
+  // of `{ "toString.call": "x" }` from any editor reached
+  // `Object.prototype.toString` -- a function object shared by the entire
+  // process -- and shadowed its `call` method, so every subsequent
+  // `Object.prototype.toString.call(...)` anywhere in the process threw:
+  // one request, and the site stayed down until it was restarted.
+  it('rejects a PATCH whose dot path walks into an inherited property', async function() {
+    let status;
+    try {
+      await apos.http.patch(`/api/v1/product/${updateProduct._id}`, {
+        body: {
+          'toString.call': 'x'
+        },
+        jar
+      });
+    } catch (e) {
+      status = e.status;
+    }
+    // Repair before asserting, so that a regression fails this test rather
+    // than every test that runs after it
+    const polluted = Object.prototype
+      .hasOwnProperty.call(Object.prototype.toString, 'call');
+    delete Object.prototype.toString.call;
+
+    assert(!polluted, 'one PATCH clobbered Object.prototype.toString.call process-wide');
+    assert.strictEqual(status, 400);
+  });
+
   it('can archive a product', async function() {
     return apos.http.patch(`/api/v1/product/${updateProduct._id}`, {
       body: {
