@@ -506,7 +506,7 @@ module.exports = {
         try {
           return await self.loadInlineRelationships(req, widgets, [ 'permalinkIds', 'imageIds' ]);
         } catch (e) {
-          console.error(e);
+          self.logError(req, 'load-error', e.message, { stack: e.stack });
           throw e;
         }
       },
@@ -1172,7 +1172,7 @@ module.exports = {
           // Because the trace for template errors is not very
           // useful, for now we log any error here up front
           // until we improve that or this has been stable for a while
-          console.error(e);
+          self.logError(req, 'sanitize-error', e.message, { stack: e.stack });
           throw e;
         }
       },
