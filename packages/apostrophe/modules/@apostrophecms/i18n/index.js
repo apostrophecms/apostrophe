@@ -42,6 +42,9 @@ const ExpressSessionCookie = require('express-session/session/cookie');
 const path = require('path');
 const { verifyLocales } = require('../../../lib/locales');
 
+// One progress line per this many documents, rather than one per document.
+const PROGRESS_EVERY = 100;
+
 const apostropheI18nDebugPlugin = {
   type: 'postProcessor',
   name: 'apostropheI18nDebugPlugin',
@@ -1316,16 +1319,31 @@ module.exports = {
       'strip-slug-accents': {
         usage: 'Remove Latin accent characters from all document slugs. Usage: node app @apostrophecms/i18n:strip-slug-accents',
         async task() {
+          let examined = 0;
           let docChanged = 0;
-          const docErrors = [];
+          let docFailed = 0;
           if (!self.shouldStripAccents()) {
-            self.apos.util.log('The option `stripUrlAccents` is not enabled. Aborting.');
+            self.logWarn(
+              'strip-slug-accents-disabled',
+              'The stripUrlAccents option is not enabled, aborting'
+            );
             return;
           }
+          self.logInfo(
+            'strip-slug-accents-start',
+            'Removing Latin accent characters from all document slugs'
+          );
 
           await self.apos.migration.eachDoc({}, 5, async doc => {
             const oldSlug = doc.slug;
             const newSlug = _.deburr(doc.slug);
+            examined++;
+            if (examined % PROGRESS_EVERY === 0) {
+              self.logInfo('strip-slug-accents-progress', `${examined} documents examined`, {
+                examined,
+                changed: docChanged
+              });
+            }
 
             try {
               if (oldSlug === newSlug) {
@@ -1336,38 +1354,47 @@ module.exports = {
                 { $set: { slug: newSlug } }
               );
               docChanged++;
-              self.apos.util.log(`[${doc.type}] [${doc.aposLocale}] "${oldSlug}" -> "${newSlug}"`);
+              self.logDebug('strip-slug-accents-doc', `"${oldSlug}" -> "${newSlug}"`, {
+                docId: doc._id,
+                docType: doc.type,
+                aposLocale: doc.aposLocale,
+                oldSlug,
+                newSlug
+              });
             } catch (e) {
+              docFailed++;
               const isUniqueIndexError = (e && e.code === 11000) || /E11000/.test(e?.message || '');
-              const message = isUniqueIndexError
-                ? `[ERROR] Duplicate slug "${newSlug}"`
-                : `[ERROR] Failed "${newSlug}" slug update: ${e.message}`;
-              docErrors.push({
-                message,
-                data: {
+              if (isUniqueIndexError) {
+                // The stack says nothing a duplicate key does not already say.
+                self.logError('strip-slug-accents-duplicate', 'Duplicate slug', {
                   docId: doc._id,
                   oldSlug,
                   newSlug
-                },
-                stack: isUniqueIndexError
-                  ? ''
-                  : e.stack
+                });
+                return;
+              }
+              self.logError('strip-slug-accents-error', 'Error updating a slug', {
+                docId: doc._id,
+                oldSlug,
+                newSlug,
+                error: e.message,
+                stack: e.stack
               });
             }
           });
 
-          if (docErrors.length) {
-            for (const err of docErrors) {
-              self.apos.util.error(err.message, err.data, err.stack);
+          self.logInfo(
+            'strip-slug-accents-complete',
+            `${docChanged} updated, ${docFailed} failed`,
+            {
+              examined,
+              changed: docChanged,
+              failed: docFailed
             }
-          }
-
-          self.apos.util.log(
-            `${docChanged} updated, ${docErrors.length} failed.`
           );
 
           // Ensure proper exit code for the task runner
-          if (docErrors.length) {
+          if (docFailed) {
             throw new Error('Some documents failed to update their slugs.');
           }
         }
