@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.31.2 (2026-08-13)
+
+### Changes
+
+- Schema field `_id` properties are now derived from the position of the field in the schema tree, such as `doc.article.pets.petName`, rather than hashed from the field definition. Ids hashed from the definition changed whenever an unrelated property such as a label was edited, so two processes running slightly different code, as during a rolling deploy, did not agree on them and a field id already held by the browser could be rejected as invalid. Position-based ids only change when a field is renamed or moved, and are readable when debugging.
+
+  `apos.schema.register` now requires a fourth `parentPath` argument and throws if it is missing. If you have overridden a method that calls `apos.schema.register` you must pass it through; the error message includes guidance.
+
+  The `scopedArrayName` and `scopedObjectName` properties are unchanged, keeping their existing form and continuing to honor the `arrayName` and `objectName` options, because they are stored in the database on every array item and object. No migration is required.
+
+### Fixes
+
+- Fixed `piecesFilters` navigation (with `static: true`) reverting to the unfiltered index when logged in and an editor had clicked Edit at least once. It now recognizes filter path segments appended to the context doc's URL and preserves both the browser URL and the correctly filtered content on refresh.
+- The performance of patches to deeply nested properties on the page has been optimized. As a result, each edit to a widget "in context" on the page does not require the same amount of time necessary to save the entire page via the page settings dialog. We consider this a bug fix rather than a feature because the issue was acute enough to prevent effective editing in some cases.
+- The `email` schema field now validates and stores the laundered value, so surrounding whitespace is trimmed rather than causing a valid address to be rejected as invalid. Non-string input (for example a number sent through the REST API) is now coerced by the launder step instead of throwing an uncaught error. Thanks to [spokodev](https://github.com/spokodev) for the fix.
+- Fixed a 500 error when logging in on a session that had just been invalidated by a password change or by a disabled account. Such sessions are now regenerated rather than destroyed, so the request keeps a usable session and the invalidated one is removed from the store before the response is sent.
+- Fixed incorrect sizing and spacing across the admin UI in webpack builds. A byte order mark preserved by PostCSS 8.5.24 invalidated the stylesheet rule setting `box-sizing` for `.apos-` elements. Sass is now compiled with `charset: false` in webpack builds, so the marker is never emitted. Vite builds were unaffected.
+- Widget preview renderings are now properly debounced in cases where the server does not return the first preview before the timeout to generate a second preview arrives. Apostrophe will always wait for a previous render before attempting a new one based on the latest data available. This greatly mitigates the performance impact on the server if a widget is particularly slow and expensive to preview.
+
+### Security
+
+- Completed the fix for server-side prototype pollution via dot-notation paths (CWE-1321, GHSA-vmg4-6gfg-83qx). `apos.util.set()` and `apos.util.get()` refused the `__proto__`, `constructor` and `prototype` segments, but followed every other property inherited from `Object.prototype` and `Array.prototype`. An authenticated editor could send a single PATCH REST API request with a body of `{ "toString.call": "x" }` to reach the shared `Object.prototype.toString` function and shadow its `call` method, breaking every later `Object.prototype.toString.call()` in the process, including those inside the MongoDB driver: one request took the site down until it was restarted. Both methods now traverse own properties only, which confines a dot path to the request body and the document being patched. All users should update. Thanks to Fabian Bräunlein of [Positive Security](https://positive.security/) for reporting the vulnerability.
+
 ## 4.31.1 (2026-07-10)
 
 ### Fixes
