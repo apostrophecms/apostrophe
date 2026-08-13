@@ -13,6 +13,22 @@ const mediaTags = [
 // Tags that are inherently vulnerable to being used in XSS attacks.
 const vulnerableTags = [ 'script', 'style' ];
 
+// Our own diagnostics. A console-shaped `logger` option takes them instead of
+// the console; missing methods fall back to it.
+const severities = [ 'debug', 'info', 'warn', 'error' ];
+
+function loggerFor(options) {
+  const source = (options && options.logger) || console;
+  const logger = {};
+  for (const severity of severities) {
+    logger[severity] = typeof source[severity] === 'function'
+      ? (...args) => source[severity](...args)
+      // eslint-disable-next-line no-console
+      : (...args) => console[severity](...args);
+  }
+  return logger;
+}
+
 function each(obj, cb) {
   if (obj) {
     Object.keys(obj).forEach(function (key) {
@@ -120,6 +136,8 @@ function sanitizeHtml(html, options, _recursing) {
   options = Object.assign({}, sanitizeHtml.defaults, options);
   options.parser = Object.assign({}, htmlParserDefaults, options.parser);
 
+  const logger = loggerFor(options);
+
   const tagAllowed = function (name) {
     return options.allowedTags === false ||
       (options.allowedTags || []).indexOf(name) > -1;
@@ -128,9 +146,12 @@ function sanitizeHtml(html, options, _recursing) {
   // vulnerableTags
   vulnerableTags.forEach(function (tag) {
     if (tagAllowed(tag) && !options.allowVulnerableTags) {
-      // A standalone library: the console is the only channel it has.
-      // eslint-disable-next-line no-console
-      console.warn(`\n\n⚠️ Your \`allowedTags\` option includes, \`${tag}\`, which is inherently\nvulnerable to XSS attacks. Please remove it from \`allowedTags\`.\nOr, to disable this warning, add the \`allowVulnerableTags\` option\nand ensure you are accounting for this risk.\n\n`);
+      logger.warn(
+        `Your \`allowedTags\` option includes \`${tag}\`, which is inherently ` +
+        'vulnerable to XSS attacks. Please remove it from `allowedTags`, or, ' +
+        'to disable this warning, add the `allowVulnerableTags` option and ' +
+        'ensure you are accounting for this risk.'
+      );
     }
   });
 
@@ -518,8 +539,14 @@ function sanitizeHtml(html, options, _recursing) {
                   }
                 } catch (e) {
                   if (typeof window !== 'undefined') {
-                    // eslint-disable-next-line no-console
-                    console.warn('Failed to parse "' + name + ' {' + value + '}' + '", If you\'re running this in a browser, we recommend to disable style parsing: options.parseStyleAttributes: false, since this only works in a node environment due to a postcss dependency, More info: https://github.com/apostrophecms/sanitize-html/issues/547');
+                    logger.warn(
+                      `Failed to parse "${name} {${value}}". If you are ` +
+                      'running this in a browser, we recommend disabling ' +
+                      'style parsing with the parseStyleAttributes option, ' +
+                      'since it only works in a node environment due to a ' +
+                      'postcss dependency. More info: ' +
+                      'https://github.com/apostrophecms/sanitize-html/issues/547'
+                    );
                   }
                   delete frame.attribs[a];
                   return;

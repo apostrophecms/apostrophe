@@ -874,9 +874,33 @@ module.exports = {
       },
 
       sanitizeHtml(html, options) {
-        html = sanitizeHtml(html, options);
+        html = sanitizeHtml(html, {
+          logger: self.getSanitizeLogger(),
+          ...options
+        });
         html = self.sanitizeAnchors(html);
         return html;
+      },
+
+      // sanitize-html warns from inside the sanitizing call, so it repeats a
+      // configuration warning on every piece of content. Ours says it once.
+      getSanitizeLogger() {
+        if (!self.sanitizeLogger) {
+          const logger = self.getConsoleLogger('sanitize-html');
+          const said = new Set();
+          self.sanitizeLogger = {
+            ...logger,
+            warn(...args) {
+              const key = args.join(' ');
+              if (said.has(key)) {
+                return;
+              }
+              said.add(key);
+              logger.warn(...args);
+            }
+          };
+        }
+        return self.sanitizeLogger;
       },
 
       sanitizeAnchors(html) {

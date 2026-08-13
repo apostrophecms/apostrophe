@@ -686,7 +686,11 @@ describe('sanitizeHtml', function() {
 
   it('should deliver a warning if using vulnerable tags', function() {
     const spy = sinon.spy(console, 'warn');
-    const message = '\n\n⚠️ Your `allowedTags` option includes, `style`, which is inherently\nvulnerable to XSS attacks. Please remove it from `allowedTags`.\nOr, to disable this warning, add the `allowVulnerableTags` option\nand ensure you are accounting for this risk.\n\n';
+    const message = 'Your `allowedTags` option includes `style`, which is ' +
+      'inherently vulnerable to XSS attacks. Please remove it from ' +
+      '`allowedTags`, or, to disable this warning, add the ' +
+      '`allowVulnerableTags` option and ensure you are accounting for this ' +
+      'risk.';
 
     sanitizeHtml(
       '<style></style>',
@@ -696,6 +700,28 @@ describe('sanitizeHtml', function() {
     );
 
     assert(spy.calledWith(message));
+    // Restore the spied-upon method
+    /* eslint-disable-next-line no-console */
+    console.warn.restore();
+  });
+
+  it('should deliver warnings to the logger option instead of the console', function() {
+    const spy = sinon.spy(console, 'warn');
+    const warnings = [];
+
+    sanitizeHtml(
+      '<style></style>',
+      {
+        allowedTags: [ 'style' ],
+        logger: {
+          warn: (message) => warnings.push(message)
+        }
+      }
+    );
+
+    assert.equal(warnings.length, 1);
+    assert(warnings[0].includes('`style`'));
+    assert(spy.notCalled);
     // Restore the spied-upon method
     /* eslint-disable-next-line no-console */
     console.warn.restore();
