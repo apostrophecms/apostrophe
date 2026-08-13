@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-beta.12 (2026-08-13)
+
+### Security
+
+- Bumped `sharp` from `^0.32.6` to `^0.35.2`, picking up the fix for [GHSA-f88m-g3jw-g9cj](https://github.com/advisories/GHSA-f88m-g3jw-g9cj).
+
 ## 1.0.0-beta.11 (2026-02-18)
 
 ### Adds
