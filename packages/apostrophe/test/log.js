@@ -1343,7 +1343,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1].query, {});
       assert.equal(savedArgs[1].requestId, 'test-id');
       assert.equal(savedArgs[1].name, 'invalid');
-      assert.equal(Array.isArray(savedArgs[1].stack), true);
+      assert.equal(typeof savedArgs[1].stack, 'string');
       assert.equal(savedArgs[1].errorPath, undefined);
       assert.deepEqual(savedArgs[1].data.errors, [
         {
@@ -1427,7 +1427,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1].query, { foo: 'bar' });
       assert.equal(savedArgs[1].requestId, 'test-id');
       assert.equal(savedArgs[1].name, 'conflict');
-      assert.equal(Array.isArray(savedArgs[1].stack), true);
+      assert.equal(typeof savedArgs[1].stack, 'string');
       assert.equal(savedArgs[1].errorPath, 'some.field');
       assert.deepEqual(savedArgs[1].data, { some: 'data' });
     });

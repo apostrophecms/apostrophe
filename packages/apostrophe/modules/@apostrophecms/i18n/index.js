@@ -962,7 +962,7 @@ module.exports = {
               {
                 id,
                 error: e.message,
-                stack: e.stack.split('\n').slice(1).map(line => line.trim())
+                stack: e.stack
               }
             );
             continue;
@@ -1096,7 +1096,7 @@ module.exports = {
                   type: doc.type,
                   title: doc.title,
                   error: e.message,
-                  stack: e.stack.split('\n').slice(1).map(line => line.trim())
+                  stack: e.stack
                 }
               );
               if (reporting) {
@@ -1152,7 +1152,7 @@ module.exports = {
                   ...payload,
                   error: e.message,
                   reason: e.name,
-                  stack: e.stack.split('\n').slice(1).map(line => line.trim())
+                  stack: e.stack
                 });
               }
             }
@@ -1351,7 +1351,7 @@ module.exports = {
                 },
                 stack: isUniqueIndexError
                   ? ''
-                  : e.stack.split('\n').slice(1).map(line => line.trim())
+                  : e.stack
               });
             }
           });

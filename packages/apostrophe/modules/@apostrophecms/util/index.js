@@ -578,7 +578,9 @@ module.exports = {
       },
       // Log a message. The default implementation hands it to the process
       // logger as an envelope; substitution strings are composed first, the
-      // way `console.log` would compose them.
+      // way `console.log` would compose them. A call of exactly
+      // `(message, object)` is the structured `(message, data)` pair instead:
+      // the message is left as written and the object becomes event data.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -595,7 +597,8 @@ module.exports = {
         self.logger.log(...self.convertLegacyLogPayload(args));
       },
       // Log an informational message. Rendered by the process logger, with
-      // substitution strings composed first.
+      // substitution strings composed first - except for a call of exactly
+      // `(message, object)`, which is the structured `(message, data)` pair.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -604,7 +607,8 @@ module.exports = {
         self.logger.info(...self.convertLegacyLogPayload(args));
       },
       // Log a debug message. Rendered by the process logger, with
-      // substitution strings composed first.
+      // substitution strings composed first - except for a call of exactly
+      // `(message, object)`, which is the structured `(message, data)` pair.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -613,7 +617,8 @@ module.exports = {
         self.logger.debug(...self.convertLegacyLogPayload(args));
       },
       // Log a warning. Rendered by the process logger, with substitution
-      // strings composed first.
+      // strings composed first - except for a call of exactly
+      // `(message, object)`, which is the structured `(message, data)` pair.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -669,7 +674,8 @@ module.exports = {
       },
 
       // Log an error message. Rendered by the process logger, with
-      // substitution strings composed first.
+      // substitution strings composed first - except for a call of exactly
+      // `(message, object)`, which is the structured `(message, data)` pair.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the

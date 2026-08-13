@@ -10,3 +10,4 @@ Logging is now fully structured. Every diagnostic Apostrophe emits - boot and cl
 - `require('apostrophe/logger')` is the same logger as a standalone factory, usable before or entirely without an `apos` object.
 - Libraries that have no `apos` object, including uploadfs, express-cache-on-demand and sanitize-html, receive a logger from Apostrophe and join the pipeline.
 - For custom loggers, the message no longer carries the `'<module>: <event-type>'` prefix - read the `module` and `type` fields instead. `apos.util.warnDev` no longer prefixes a warning icon, since the renderer marks severity.
+- An event's `stack` is the error's own stack string, no longer an array of trimmed lines with the first one dropped. The human formats indent it below the entry, and it stays a single escaped string in structured mode.
