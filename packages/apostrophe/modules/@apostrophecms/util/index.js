@@ -581,9 +581,9 @@ module.exports = {
       },
       // Log a message. The default implementation hands it to the process
       // logger as an envelope; substitution strings are composed first, the
-      // way `console.log` would compose them. A call of exactly
-      // `(message, object)` is the structured `(message, data)` pair instead:
-      // the message is left as written and the object becomes event data.
+      // way `console.log` would compose them, except for an object in final
+      // position: that object becomes the event data, and a message written as
+      // one argument is left exactly as written.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -600,8 +600,8 @@ module.exports = {
         self.logger.log(...self.convertLegacyLogPayload(args));
       },
       // Log an informational message. Rendered by the process logger, with
-      // substitution strings composed first - except for a call of exactly
-      // `(message, object)`, which is the structured `(message, data)` pair.
+      // substitution strings composed first, except for an object in final
+      // position, which becomes the event data rather than message text.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -610,8 +610,8 @@ module.exports = {
         self.logger.info(...self.convertLegacyLogPayload(args));
       },
       // Log a debug message. Rendered by the process logger, with
-      // substitution strings composed first - except for a call of exactly
-      // `(message, object)`, which is the structured `(message, data)` pair.
+      // substitution strings composed first, except for an object in final
+      // position, which becomes the event data rather than message text.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -620,8 +620,8 @@ module.exports = {
         self.logger.debug(...self.convertLegacyLogPayload(args));
       },
       // Log a warning. Rendered by the process logger, with substitution
-      // strings composed first - except for a call of exactly
-      // `(message, object)`, which is the structured `(message, data)` pair.
+      // strings composed first, except for an object in final position, which
+      // becomes the event data rather than message text.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the
@@ -677,8 +677,8 @@ module.exports = {
       },
 
       // Log an error message. Rendered by the process logger, with
-      // substitution strings composed first - except for a call of exactly
-      // `(message, object)`, which is the structured `(message, data)` pair.
+      // substitution strings composed first, except for an object in final
+      // position, which becomes the event data rather than message text.
       //
       // Overrides should be written with support for
       // substitution strings in mind. See the

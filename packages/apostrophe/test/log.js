@@ -1899,6 +1899,63 @@ describe('structured logging', function () {
       apos = null;
     });
 
+    it('should keep an object in final position as data, at any arity', async function () {
+      apos = await t.create({
+        modules: { ...testModule },
+        log: { format: 'structured' }
+      });
+
+      // The pair the structured pipeline itself uses
+      assert.deepEqual(
+        parsed((await captured(() => apos.util.log('My message', { id: 3 }))).out),
+        [ {
+          severity: 'info',
+          msg: 'My message',
+          id: 3
+        } ]
+      );
+
+      // Splitting the sentence must not turn the data into text
+      assert.deepEqual(
+        parsed(
+          (await captured(() => apos.util.log('My message', 'and another one', { id: 3 }))).out
+        ),
+        [ {
+          severity: 'info',
+          msg: 'My message and another one',
+          id: 3
+        } ]
+      );
+
+      // Substitution strings still compose, ahead of the data
+      assert.deepEqual(
+        parsed((await captured(() => apos.util.log('Loaded %s', 'a file', { id: 3 }))).out),
+        [ {
+          severity: 'info',
+          msg: 'Loaded a file',
+          id: 3
+        } ]
+      );
+
+      // Without a trailing object nothing changes: console composition
+      assert.deepEqual(
+        parsed((await captured(() => apos.util.log('two', 'strings'))).out),
+        [ {
+          severity: 'info',
+          msg: 'two strings'
+        } ]
+      );
+
+      // An Error is not a plain object, so `(message, error)` is composed the
+      // way `console.error` composes it - stack and all inside the message,
+      // with no `stack` field of its own.
+      const err = new Error('something failed');
+      const [ entry ] = parsed((await captured(() => apos.util.error('My message', err))).err);
+      assert.equal(entry.severity, 'error');
+      assert.equal(entry.stack, undefined);
+      assert.match(entry.msg, /^My message Error: something failed\n {4}at /);
+    });
+
     it('should give a library the console surface, log included', async function () {
       apos = await t.create({
         modules: { ...testModule },

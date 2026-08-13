@@ -35,11 +35,14 @@ module.exports = function (apos) {
   };
 };
 
-// `(data)` and `(message, data)` come from the structured pipeline. Anything
-// else is a legacy call and is composed into the message the way `console.*`
-// would compose it, substitution strings included.
+// `(data)` and `(message, data)` come from the structured pipeline, which is
+// why an object in final position is always the event data - splitting the
+// sentence in two should not turn the data into text. Everything before it is
+// composed into the message the way `console.*` would compose it, substitution
+// strings included.
 function toEnvelope(args) {
-  const [ first, second ] = args;
+  const [ first ] = args;
+  const last = args[args.length - 1];
   if (args.length === 1) {
     if (_.isPlainObject(first)) {
       return { data: first };
@@ -51,13 +54,15 @@ function toEnvelope(args) {
       };
     }
   }
-  if (
-    args.length === 2 && _.isPlainObject(second) &&
-    (typeof first === 'string' || first === undefined)
-  ) {
+  if (args.length >= 2 && _.isPlainObject(last)) {
+    const rest = args.slice(0, -1);
+    // The pipeline's own shape passes the message through untouched; a legacy
+    // call that wrote several arguments has them composed.
+    const single = rest.length === 1 &&
+      (typeof rest[0] === 'string' || rest[0] === undefined);
     return {
-      msg: first,
-      data: second
+      msg: single ? rest[0] : format(...rest),
+      data: last
     };
   }
   return { msg: format(...args) };
