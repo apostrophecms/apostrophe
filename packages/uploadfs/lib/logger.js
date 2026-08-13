@@ -3,6 +3,9 @@
 // every message uploadfs emits is delivered to it. Missing methods and no
 // option at all fall back to `console`.
 
+// `console` is the documented fallback here, not a stray diagnostic.
+/* eslint-disable no-console */
+
 const methods = [ 'error', 'warn', 'info', 'debug' ];
 
 module.exports = function createLogger(logger) {

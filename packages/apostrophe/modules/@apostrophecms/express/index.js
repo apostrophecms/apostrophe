@@ -185,6 +185,7 @@ module.exports = {
         async task(argv) {
           for (const info of self.finalModuleMiddlewareAndRoutes) {
             if (info.route) {
+              // eslint-disable-next-line no-console
               console.log(`${info.method.toUpperCase()} ${info.url}`);
             }
           }

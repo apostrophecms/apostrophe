@@ -128,6 +128,8 @@ function sanitizeHtml(html, options, _recursing) {
   // vulnerableTags
   vulnerableTags.forEach(function (tag) {
     if (tagAllowed(tag) && !options.allowVulnerableTags) {
+      // A standalone library: the console is the only channel it has.
+      // eslint-disable-next-line no-console
       console.warn(`\n\n⚠️ Your \`allowedTags\` option includes, \`${tag}\`, which is inherently\nvulnerable to XSS attacks. Please remove it from \`allowedTags\`.\nOr, to disable this warning, add the \`allowVulnerableTags\` option\nand ensure you are accounting for this risk.\n\n`);
     }
   });
@@ -516,6 +518,7 @@ function sanitizeHtml(html, options, _recursing) {
                   }
                 } catch (e) {
                   if (typeof window !== 'undefined') {
+                    // eslint-disable-next-line no-console
                     console.warn('Failed to parse "' + name + ' {' + value + '}' + '", If you\'re running this in a browser, we recommend to disable style parsing: options.parseStyleAttributes: false, since this only works in a node environment due to a postcss dependency, More info: https://github.com/apostrophecms/sanitize-html/issues/547');
                   }
                   delete frame.attribs[a];

@@ -814,6 +814,7 @@ module.exports = {
               // write something to stdout. Should
               // not become an apos.util.log call. -Tom
 
+              // eslint-disable-next-line no-console
               console.log(doc.slug + ':' + dotPath);
             }
           }

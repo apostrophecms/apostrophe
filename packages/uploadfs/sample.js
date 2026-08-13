@@ -1,3 +1,6 @@
+// A manually run script: its output is program output.
+/* eslint-disable no-console */
+
 // An extremely simple app that accepts uploaded files
 // and stores them in either a local folder or s3,
 // depending on which backend you choose.

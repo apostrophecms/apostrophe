@@ -86,6 +86,7 @@ function warn(self, type, message, data) {
     self.apos.schema.logWarn(type, message, data);
     return;
   }
+  // eslint-disable-next-line no-console
   console.warn(message);
 }
 
