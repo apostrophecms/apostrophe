@@ -37,6 +37,8 @@
 
 <script>
 
+import findActiveStyleIndex from 'Modules/@apostrophecms/rich-text-widget/lib/findActiveStyleIndex.js';
+
 export default {
   name: 'AposTiptapStyles',
   props: {
@@ -118,24 +120,7 @@ export default {
           if (activeEls[0].name === 'defaultNode') {
             return 1;
           } else {
-            // Match the most specific style first. When several styles
-            // share the same tag (e.g. a plain `<p>` and a `<p class="small">`)
-            // a `<p class="small">` would otherwise match the generic `<p>`
-            // style, marking the wrong option as active. We sort a copy of
-            // the nodes by descending class count and pick the first match,
-            // then resolve it back to its original index so the dropdown
-            // (which keeps the original order) highlights the correct option.
-            const sortedNodes = [ ...nodes ].sort((a, b) => {
-              const aCount = a.class ? a.class.trim().split(/\s+/).length : 0;
-              const bCount = b.class ? b.class.trim().split(/\s+/).length : 0;
-              return bCount - aCount;
-            });
-            const matchedNode = sortedNodes.find(node =>
-              node.class === activeEls[0].class &&
-              node.type === activeEls[0].name &&
-              node.level === activeEls[0].level
-            );
-            const match = nodes.indexOf(matchedNode);
+            const match = findActiveStyleIndex(nodes, activeEls[0]);
             return match + 1;
           }
         }
