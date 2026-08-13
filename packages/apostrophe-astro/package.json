@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/apostrophe-astro",
-  "version": "1.13.1",
+  "version": "1.13.2",
   "type": "module",
   "description": "Apostrophe integration for Astro",
   "repository": {
