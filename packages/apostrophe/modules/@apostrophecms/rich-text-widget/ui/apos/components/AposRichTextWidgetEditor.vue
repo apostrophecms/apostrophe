@@ -1,6 +1,7 @@
 <template>
   <div
     :id="widgetId"
+    class="apos-rich-text-widget-editor"
     :style="widgetStyles.inline"
     :class="widgetStyles.classes"
     @keyup="handleUIKeyup"
@@ -219,7 +220,10 @@ export default {
       suppressWidgetControls: false,
       suppressAddContentButtons: false,
       hasSelection: false,
-      openedPopover: false
+      openedPopover: false,
+      bubbleMenuTippy: null,
+      toolbarResizeObserver: null,
+      lastBubbleMenuMaxWidth: null
     };
   },
   computed: {
@@ -228,13 +232,27 @@ export default {
     bubbleMenuTippyOptions() {
       return {
         maxWidth: 'none',
-        duration: 300,
+        duration: 0,
         zIndex: 999,
         animation: 'fade',
         inertia: true,
         placement: 'bottom',
         hideOnClick: false,
         onHide: this.onBubbleHide,
+        onCreate: this.onBubbleMenuCreate,
+        onShow: this.onBubbleMenuShow,
+        popperOptions: {
+          modifiers: [
+            {
+              name: 'preventOverflow',
+              options: {
+                altAxis: true,
+                padding: 8,
+                boundary: this.$el
+              }
+            }
+          ]
+        },
         aria: {
           content: null,
           expanded: false
@@ -426,9 +444,20 @@ export default {
     this.getWidgetStyles(this.docFields.data, this.moduleOptions);
     this.instantiateEditor();
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
+    this.toolbarResizeObserver = new ResizeObserver(() => {
+      this.updateBubbleMenuMaxWidth();
+    });
+    this.toolbarResizeObserver.observe(this.$el);
+    this.observeBubbleMenuClipAncestors();
+    window.addEventListener('resize', this.onBubbleMenuViewportChange);
+    window.visualViewport?.addEventListener('resize', this.onBubbleMenuViewportChange);
+    this.updateBubbleMenuMaxWidth();
   },
 
   beforeUnmount() {
+    this.toolbarResizeObserver?.disconnect();
+    window.removeEventListener('resize', this.onBubbleMenuViewportChange);
+    window.visualViewport?.removeEventListener('resize', this.onBubbleMenuViewportChange);
     this.editor.destroy();
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
@@ -604,6 +633,149 @@ export default {
     },
     onBubbleHide() {
       apos.bus.$emit('close-context-menus', 'richText');
+    },
+    onBubbleMenuCreate(instance) {
+      this.bubbleMenuTippy = instance;
+      this.updateBubbleMenuMaxWidth(instance);
+    },
+    onBubbleMenuShow(instance) {
+      this.updateBubbleMenuMaxWidth(instance);
+    },
+    onBubbleMenuViewportChange() {
+      this.updateBubbleMenuMaxWidth();
+    },
+    // Visible width the toolbar may occupy: the widget intersected with
+    // overflow-clipping ancestors, overlapping modal rails (siblings, not
+    // ancestors — they paint over the body column), and the viewport.
+    getBubbleMenuAvailableWidth() {
+      if (!this.$el) {
+        return 0;
+      }
+      const gutter = 16;
+      const widgetRect = this.$el.getBoundingClientRect();
+      let left = widgetRect.left;
+      let right = widgetRect.right;
+      for (let el = this.$el.parentElement; el; el = el.parentElement) {
+        const { overflowX, overflowY } = window.getComputedStyle(el);
+        if (overflowX === 'visible' && overflowY === 'visible') {
+          continue;
+        }
+        const rect = el.getBoundingClientRect();
+        left = Math.max(left, rect.left);
+        right = Math.min(right, rect.right);
+      }
+      ({ left, right } = this.clipBubbleMenuToModalRails(left, right));
+      left = Math.max(left, 0);
+      right = Math.min(right, window.innerWidth);
+      return Math.max(Math.floor(right - left) - gutter, 0);
+    },
+    clipBubbleMenuToModalRails(left, right) {
+      const body = this.$el.closest('.apos-modal__body');
+      const main = body?.parentElement;
+      if (!main) {
+        return { left, right };
+      }
+      for (const rail of main.querySelectorAll(':scope > .apos-modal__rail')) {
+        const railRect = rail.getBoundingClientRect();
+        if (rail.classList.contains('apos-modal__rail--right')) {
+          if (railRect.left > left) {
+            right = Math.min(right, railRect.left);
+          }
+        } else if (railRect.right < right) {
+          left = Math.max(left, railRect.right);
+        }
+      }
+      return { left, right };
+    },
+    getBubbleMenuBoundaryEl() {
+      if (!this.$el) {
+        return document.body;
+      }
+      let boundary = this.$el;
+      let tightest = this.$el.getBoundingClientRect().width;
+      for (let el = this.$el.parentElement; el; el = el.parentElement) {
+        const { overflowX, overflowY } = window.getComputedStyle(el);
+        if (overflowX === 'visible' && overflowY === 'visible') {
+          continue;
+        }
+        const width = el.getBoundingClientRect().width;
+        if (width < tightest) {
+          boundary = el;
+          tightest = width;
+        }
+      }
+      return boundary;
+    },
+    observeBubbleMenuClipAncestors() {
+      if (!this.$el || !this.toolbarResizeObserver) {
+        return;
+      }
+      for (let el = this.$el.parentElement; el; el = el.parentElement) {
+        const { overflowX, overflowY } = window.getComputedStyle(el);
+        if (overflowX === 'visible' && overflowY === 'visible') {
+          continue;
+        }
+        this.toolbarResizeObserver.observe(el);
+      }
+      const body = this.$el.closest('.apos-modal__body');
+      const main = body?.parentElement;
+      if (main) {
+        for (const rail of main.querySelectorAll(':scope > .apos-modal__rail')) {
+          this.toolbarResizeObserver.observe(rail);
+        }
+      }
+    },
+    updateBubbleMenuMaxWidth(instance = this.bubbleMenuTippy) {
+      const maxWidth = this.getBubbleMenuAvailableWidth();
+      if (!maxWidth) {
+        return;
+      }
+      const maxWidthPx = `${maxWidth}px`;
+      let applied = false;
+      if (this.$el.style.getPropertyValue('--apos-rich-text-toolbar-max-width') !== maxWidthPx) {
+        this.$el.style.setProperty('--apos-rich-text-toolbar-max-width', maxWidthPx);
+        applied = true;
+      }
+      const els = [
+        this.$refs.toolbar,
+        this.$refs.toolbar?.closest('.bubble-menu'),
+        this.$refs.toolbar?.closest('.apos-rich-text-toolbar'),
+        this.$refs.toolbar?.closest('.apos-context-menu__pane'),
+        instance?.popper,
+        instance?.popper?.querySelector('.tippy-box'),
+        instance?.popper?.querySelector('.tippy-content')
+      ];
+      for (const el of els) {
+        if (el && el.style.maxWidth !== maxWidthPx) {
+          el.style.maxWidth = maxWidthPx;
+          applied = true;
+        }
+      }
+      if (!instance) {
+        return;
+      }
+      if (this.lastBubbleMenuMaxWidth !== maxWidth) {
+        this.lastBubbleMenuMaxWidth = maxWidth;
+        instance.setProps({
+          maxWidth,
+          popperOptions: {
+            modifiers: [
+              {
+                name: 'preventOverflow',
+                options: {
+                  altAxis: true,
+                  padding: 8,
+                  boundary: this.getBubbleMenuBoundaryEl()
+                }
+              }
+            ]
+          }
+        });
+        applied = true;
+      }
+      if (applied) {
+        instance.popperInstance?.update();
+      }
     },
     handleUIKeyup(event) {
       if (event.key === 'Escape') {
@@ -895,10 +1067,23 @@ function traverseNextNode(node) {
 <style lang="scss" scoped>
   $z-index-button-background: 1;
   $z-index-button-foreground: 2;
+  $toolbar-max-width: var(--apos-rich-text-toolbar-max-width, calc(100cqw - 16px));
+
+  .apos-rich-text-widget-editor {
+    container-type: inline-size;
+    min-width: 0;
+    max-width: 100%;
+  }
 
   .bubble-menu {
-    width: max-content;
-    max-width: 95vw;
+    box-sizing: border-box;
+    width: fit-content;
+    max-width: $toolbar-max-width;
+  }
+
+  :deep(.tippy-content) {
+    box-sizing: border-box;
+    max-width: $toolbar-max-width;
   }
 
   .apos-rich-text-toolbar.editor-menu-bubble {
@@ -908,7 +1093,12 @@ function traverseNextNode(node) {
   }
 
   :deep(.apos-rich-text-toolbar) {
+    max-width: $toolbar-max-width;
+    box-sizing: border-box;
+
     & > .apos-context-menu__pane {
+      max-width: 100%;
+      box-sizing: border-box;
       padding: 8px;
       border: 1px solid var(--a-primary-transparent-25);
       background-color: var(--a-background-primary);
@@ -1003,9 +1193,14 @@ function traverseNextNode(node) {
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
+    justify-content: flex-start;
     max-width: 100%;
     height: auto;
     gap: 6px;
+
+    > * {
+      flex: 0 0 auto;
+    }
   }
 
 /* stylelint-disable-next-line selector-class-pattern */
