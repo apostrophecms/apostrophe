@@ -35,6 +35,7 @@ const Promise = require('bluebird');
 const util = require('util');
 const { stripIndent } = require('common-tags');
 const glob = require('../../../lib/glob.js');
+const createLogger = require('../../../logger.js');
 
 // Dot-path segments that must never be traversed when walking a
 // user-supplied path in `apos.util.get` and `apos.util.set`. Following any
@@ -566,9 +567,11 @@ module.exports = {
           return;
         }
         // Configured via the `log` module, or via the top-level `log` option
-        // that replaces it.
+        // that replaces it. One of our own loggers is never installed here: it
+        // is this process's logger already, and it reads its first argument as
+        // an event type, which is not what this seam delivers.
         const logOpts = self.apos.structuredLog.options;
-        if (logOpts.logger) {
+        if (logOpts.logger && !createLogger.isLogger(logOpts.logger)) {
           self.logger = typeof logOpts.logger === 'function'
             ? logOpts.logger(self.apos)
             : logOpts.logger;

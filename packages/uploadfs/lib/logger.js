@@ -16,5 +16,11 @@ module.exports = function createLogger(logger) {
       ? (...args) => source[method](...args)
       : (...args) => console[method](...args);
   }
+  // `log` means `info`, as it does on the console. An injected logger that
+  // provides one but not the other - pino has no `log`, some pipelines have
+  // nothing else - still keeps the message.
+  result.log = typeof source.log === 'function'
+    ? (...args) => source.log(...args)
+    : result.info;
   return result;
 };

@@ -100,6 +100,23 @@ module.exports = function createLogger(options = {}) {
         deliver(buildEnvelope(severity, facadeContext, parseArgs(type, message, data)));
       };
     }
+    // There is no `log` severity here, and aliasing it to `info` would file the
+    // message of a console-shaped call as an event type. Fail the way the
+    // missing method already did, but say what to reach for instead.
+    //
+    // Not enumerable, so that a copy of this object - the legacy module option
+    // surface deep merges what it is given - carries the four severities and no
+    // method that only throws.
+    Object.defineProperty(facade, 'log', {
+      value: () => {
+        throw new TypeError(
+          'The logger has no `log` method. The severities are debug, info, warn ' +
+          'and error, and the first argument is an event type: ' +
+          'logger.info("site-theme-configured", { theme }).'
+        );
+      },
+      configurable: true
+    });
     if (withDestroy) {
       facade.destroy = async () => {
         if (logger && typeof logger.destroy === 'function') {

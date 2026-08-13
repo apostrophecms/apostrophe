@@ -105,6 +105,27 @@ describe('standalone logger', function () {
       assert.equal(logger.format, 'plain');
       assert.equal(logger.child({}).format, 'plain');
     });
+
+    it('should refuse `log` with an explanation, on children too', function () {
+      const { out, streams } = capture();
+      const logger = createLogger({
+        format: 'plain',
+        streams
+      });
+      for (const target of [ logger, logger.child({ site: 'site-a' }) ]) {
+        assert.throws(() => target.log('a message'), (e) => {
+          assert.ok(e instanceof TypeError);
+          assert.match(e.message, /has no `log` method/);
+          assert.match(e.message, /debug, info, warn and error/);
+          assert.match(e.message, /first argument is an event type/);
+          return true;
+        });
+      }
+      assert.equal(out.length, 0);
+      // A copy of the logger - the legacy option surface deep merges what it
+      // is given - carries the severities and not the guard.
+      assert.equal(typeof ({ ...logger }).log, 'undefined');
+    });
   });
 
   describe('mode selection', function () {

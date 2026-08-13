@@ -73,6 +73,10 @@ module.exports = function (self) {
     // module, with the given event type. An `Error` passed on its own travels
     // as a message plus a stack; anything else is composed the way `console.*`
     // would compose it.
+    //
+    // The library is handed the console's own surface, `log` included, because
+    // that is what it expects to have been given: the event type is ours to
+    // decide, so nothing here reads an argument as one.
     getConsoleLogger(eventType) {
       const emit = method => (...args) => {
         const [ first ] = args;
@@ -85,6 +89,9 @@ module.exports = function (self) {
       return {
         debug: emit('logDebug'),
         info: emit('logInfo'),
+        // `console.log` has no severity of its own; it means `info`, as it
+        // always has on `apos.util`.
+        log: emit('logInfo'),
         warn: emit('logWarn'),
         error: emit('logError')
       };

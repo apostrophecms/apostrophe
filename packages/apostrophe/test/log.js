@@ -1892,4 +1892,34 @@ describe('structured logging', function () {
       ] ]);
     });
   });
+
+  describe('getConsoleLogger', function () {
+    afterEach(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('should give a library the console surface, log included', async function () {
+      apos = await t.create({
+        modules: { ...testModule },
+        log: { format: 'structured' }
+      });
+      const logger = apos.testModule.getConsoleLogger('library-event');
+      for (const method of [ 'debug', 'info', 'log', 'warn', 'error' ]) {
+        assert.equal(typeof logger[method], 'function', method);
+      }
+
+      // `log` means `info`, and nothing here reads an argument as an event
+      // type: the type belongs to whoever built the logger.
+      assert.deepEqual(
+        parsed((await captured(() => logger.log('a plain %s', 'message'))).out),
+        [ {
+          severity: 'info',
+          module: 'test-module',
+          type: 'library-event',
+          msg: 'a plain message'
+        } ]
+      );
+    });
+  });
 });

@@ -8,9 +8,18 @@ describe('UploadFS logger', function () {
 
   it('should fall back to console when no logger is injected', function () {
     const logger = createLogger();
-    for (const method of [ 'error', 'warn', 'info', 'debug' ]) {
+    for (const method of [ 'error', 'warn', 'info', 'debug', 'log' ]) {
       assert.strictEqual(typeof logger[method], 'function');
     }
+  });
+
+  it('should route log to the injected info when the logger has no log', function () {
+    const calls = [];
+    const logger = createLogger({
+      info: (...args) => calls.push([ 'info', ...args ])
+    });
+    logger.log('a message');
+    assert.deepStrictEqual(calls, [ [ 'info', 'a message' ] ]);
   });
 
   it('should fill in the methods a partial logger does not provide', function () {
