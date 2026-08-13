@@ -20,6 +20,17 @@ const { stripIndents } = require('common-tags');
 const addFieldTypes = require('./lib/addFieldTypes');
 const newInstance = require('./lib/newInstance.js');
 
+// Properties of a patch that are acted upon by the PATCH routes themselves
+// and never reach `convert`. See `patchWidgetIfSuitable`.
+const patchControlProperties = new Set([
+  '_advisory',
+  '_advisoryLock',
+  '_patches',
+  '_position',
+  '_publish',
+  '_targetId'
+]);
+
 module.exports = {
   options: {
     alias: 'schema'
@@ -1688,11 +1699,31 @@ module.exports = {
       // be "doc" or "widget" and `type` will be the type name. This is used to
       // dynamically assign sufficiently unique `arrayName` properties to array
       // fields and may be used for similar scoping tasks.
+      //
+      // parentPath is a complete path describing the parent context
+      // sufficiently to set the field _id from the field's position in the
+      // schema tree rather than from its definition. It begins with
+      // metaType.type and is followed by breadcrumbs for each array or object
+      // field name until we reach the immediate parent.
+      //
+      // Deriving the _id this way keeps it stable when unrelated properties of
+      // the field, such as its label, change. Ids hashed from the definition
+      // differ between processes running slightly different code, as during a
+      // rolling deploy, which invalidates any field id already held by the
+      // browser.
 
-      register(metaType, type, schema) {
+      register(metaType, type, schema, parentPath) {
+        if (!parentPath) {
+          throw self.apos.error('error', 'Field ids are now derived from the position of the field in the\n' +
+            'schema tree, so calls to schema.register must include the new parentPath argument.\n' +
+            'If you are seeing this message you have overridden a method that calls\n' +
+            'schema.register and must update it. See the stack trace.'
+          );
+        }
         for (const field of schema) {
+          const fieldPath = `${parentPath}.${field.name}`;
           // _id needs to be consistent across processes
-          field._id = self.apos.util.md5(JSON.stringify(_.omit(field, '_id', 'group')));
+          field._id = fieldPath;
           if (field.def === undefined) {
             // Pull fallback default into field definition to save
             // code and so that it is available on the browser side
@@ -1701,7 +1732,7 @@ module.exports = {
           self.fieldsById[field._id] = field;
           const fieldType = self.fieldTypes[field.type];
           if (fieldType.register) {
-            fieldType.register(metaType, type, field);
+            fieldType.register(metaType, type, field, fieldPath);
           }
         }
       },
@@ -1711,6 +1742,139 @@ module.exports = {
       // modal.
       getFieldById(_id) {
         return self.fieldsById[_id];
+      },
+
+      // Optimization, called for you by the `applyPatch` methods of pieces
+      // and pages just before `implementPatchOperators`. If `patch` does
+      // nothing more than replace one widget in its entirety, via the `@_id`
+      // syntax, then sanitize just that widget, store it in place in
+      // `destination` and return `true`. The caller must then skip both
+      // `implementPatchOperators` and the `convert` call that normally
+      // follows it.
+      //
+      // The general code path has to copy every top level property touched by
+      // the patch out of the document and re-convert all of it, so that
+      // conditional fields can be evaluated with the whole picture in view.
+      // For a patch aimed at one widget of a large area that can easily mean
+      // thousands of awaits. Widget schemas are independent: a widget field
+      // may not depend on a field of the parent document, and vice versa. So
+      // when the patch is confined to a single widget the rest of the
+      // document does not have to be revisited at all.
+      //
+      // `schema` must be the document's allowed schema, i.e. what the caller
+      // would otherwise pass to `subsetSchemaForPatch`.
+      //
+      // Returns `false` if the patch is not that simple case, or if any part
+      // of it cannot be verified, in which case the caller must carry on with
+      // the general code path. Widgets can be patched in other valid ways
+      // too, those just don't benefit from this shortcut.
+
+      async patchWidgetIfSuitable(
+        req,
+        schema,
+        patch,
+        destination,
+        { fetchRelationships = true } = {}
+      ) {
+        const keys = Object.keys(patch)
+          .filter(key => !patchControlProperties.has(key));
+        if (keys.length !== 1) {
+          return false;
+        }
+        const [ key ] = keys;
+        // Must be an `@_id` reference to an entire widget, with no dot path
+        // narrowing it to a property of that widget
+        if ((key.charAt(0) !== '@') || (key.indexOf('.') !== -1)) {
+          return false;
+        }
+        const value = patch[key];
+        // The browser tells us it means to replace a widget. Take its word
+        // for it only if there really is one there already
+        if (
+          !value ||
+          ((typeof value) !== 'object') ||
+          (value.metaType !== 'widget') ||
+          ((typeof value.type) !== 'string')
+        ) {
+          return false;
+        }
+        const found = self.apos.util.findNestedObjectAndDotPathById(
+          destination,
+          key.substring(1),
+          { ignoreDynamicProperties: true }
+        );
+        if (!found || (found.object.metaType !== 'widget')) {
+          return false;
+        }
+        // The dot path looks like `main.items.3`, or `main.items.3.inner.
+        // items.0` for a widget of an area nested in another widget. Lop off
+        // the index and `items` to arrive at the area, and one more component
+        // to arrive at whatever object the area field belongs to
+        const components = found.dotPath.split('.');
+        const [ topLevelName ] = components;
+        const index = parseInt(components.pop(), 10);
+        components.pop();
+        const name = components.pop();
+        const ownerPath = components.join('.');
+        const owner = ownerPath.length
+          ? self.apos.util.get(destination, ownerPath)
+          : destination;
+        const area = owner && owner[name];
+        // Confirms in one stroke that we lopped off exactly the right
+        // components and that `area` really is the area containing the widget
+        if (!area || (area.items && area.items[index]) !== found.object) {
+          return false;
+        }
+        // However deep the widget lies, the general code path would reach it
+        // only through a top level field, so that field must be one this user
+        // is allowed to edit. `convert` also leaves read-only fields alone,
+        // so a patch aimed inside one is not ours to apply
+        const topLevelField = schema.find(field => field.name === topLevelName);
+        if (!topLevelField || topLevelField.readOnly) {
+          return false;
+        }
+        // At the top level the caller's schema already reflects the fields
+        // this user is allowed to edit. Deeper down that is the manager's job
+        const ownerSchema = (owner === destination)
+          ? schema
+          : ownerSchemaOf(owner);
+        const field = ownerSchema && ownerSchema
+          .find(field => field.name === name);
+        if (!field || (field.type !== 'area') || field.readOnly) {
+          return false;
+        }
+        const options = self.apos.area.getWidgets(field.options || {})[value.type];
+        const manager = self.apos.area.getWidgetManager(value.type);
+        if (!options || !manager) {
+          // Not a widget type this area accepts, or not one this site has at
+          // all. Let the general code path decide what to do about that
+          return false;
+        }
+        let widget;
+        try {
+          // Clone so that a failed attempt leaves nothing behind for the
+          // general code path to trip over
+          widget = await manager.sanitize(req, klona(value), options, {
+            fetchRelationships
+          });
+        } catch (e) {
+          // The general code path reports validation errors with the dot path
+          // context the browser expects, so let it do that work
+          return false;
+        }
+        area.items[index] = widget;
+        return true;
+        function ownerSchemaOf(owner) {
+          const manager = self.apos.util.getManagerOf(owner, { log: false });
+          if (!manager) {
+            return null;
+          }
+          // Widgets filter by permission, arrays and objects have no such
+          // concept and expose their schema directly
+          return manager.allowedSchema
+            ? manager.allowedSchema(req)
+            : manager.schema;
+        }
       },
 
       // Implementation detail, called for you by the PATCH routes.
@@ -2019,7 +2183,7 @@ module.exports = {
         function registerMetaType(managers, metaType) {
           for (const [ type, manager ] of Object.entries(managers)) {
             const schema = manager.schema;
-            self.register(metaType, type, schema);
+            self.register(metaType, type, schema, `${metaType}.${type}`);
             const pointer = {
               parent: null,
               fieldIdsByName: getFieldIdsByName(schema)

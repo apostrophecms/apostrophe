@@ -696,6 +696,19 @@ And you can forbid the use of protocol-relative URLs (starting with `//`) to acc
 allowProtocolRelative: false
 ```
 
+### SVG animations of URL attributes are discarded
+
+For security reasons, if your `allowedTags` includes the SVG animation elements (`animate`, `animateColor`, `animateMotion`, `animateTransform` and `set`), note that an animation which targets a URL attribute is always discarded:
+
+```html
+<!-- Discarded: this would set the link's href to javascript: after sanitization -->
+<animate attributeName="href" values="#safe;javascript:alert(1)" dur=".01s" fill="freeze">
+```
+
+An animation element carries no URL itself. It names the attribute it animates with `attributeName` and supplies the new value in `values`, `from`, `to` or `by`, which the browser copies into the target attribute after sanitization. Scheme checking those values is not sufficient, because `values` is a semicolon-separated *list* of destinations, so we discard the animation instead whenever `attributeName` selects `href`, `xlink:href` or any other attribute listed in `allowedSchemesAppliedToAttributes`.
+
+Animations of attributes that are not URLs, such as `fill` or `opacity`, are unaffected.
+
 ### Discarding the entire contents of a disallowed tag
 
 Normally, with a few exceptions, if a tag is not allowed, all of the text within it is preserved, and so are any allowed tags within it.

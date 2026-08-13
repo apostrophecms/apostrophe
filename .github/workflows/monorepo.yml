@@ -100,12 +100,6 @@ jobs:
         with:
           version: 10.18.0
 
-      - name: Grant private repositories access
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY }}
-
       - name: Generate pnpm lockfile
         run: pnpm install --lockfile-only --ignore-scripts
 
@@ -154,6 +148,9 @@ jobs:
       - shared-runtime
     if: needs.setup.outputs.has-packages == 'true'
     runs-on: ubuntu-latest
+    env:
+      # False on fork PRs, where secrets are unavailable.
+      HAS_PRO_KEY: ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY != '' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup.outputs['runtime-matrix']) }}
@@ -182,6 +179,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Grant private repositories access
+        if: env.HAS_PRO_KEY == 'true'
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: |
@@ -324,8 +322,9 @@ jobs:
           exit $failed
         env:
           CI: true
-          # Yes we want import-export to test with automatic-translation
-          TEST_WITH_PRO: "1"
+          # Yes we want import-export to test with automatic-translation,
+          # but only when the deploy key is available (not on fork PRs).
+          TEST_WITH_PRO: ${{ env.HAS_PRO_KEY == 'true' && '1' || '' }}
           # Adapter selection: mongodb (default), postgres, or sqlite.
           # ADAPTER is used by db-connect tests, APOS_TEST_DB_PROTOCOL by apostrophe tests.
           ADAPTER: ${{ matrix.adapter }}
