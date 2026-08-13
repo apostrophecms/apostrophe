@@ -138,7 +138,7 @@ function resolveFormat(configured, { test, color }) {
     return 'plain';
   }
   if (process.env.NODE_ENV === 'production') {
-    return 'legacy';
+    return 'structured';
   }
   return color ? 'pretty' : 'plain';
 }

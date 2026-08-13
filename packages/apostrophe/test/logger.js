@@ -119,9 +119,17 @@ describe('standalone logger', function () {
       assert.equal(createLogger(capture(false)).format, 'plain');
     });
 
-    it('should resolve auto to the legacy shape in production', function () {
+    it('should resolve auto to structured in production', function () {
       process.env.NODE_ENV = 'production';
-      assert.equal(createLogger(capture(true)).format, 'legacy');
+      assert.equal(createLogger(capture(true)).format, 'structured');
+    });
+
+    it('should render the shape of earlier releases when legacy is configured', function () {
+      process.env.NODE_ENV = 'production';
+      assert.equal(createLogger({
+        format: 'legacy',
+        ...capture(true)
+      }).format, 'legacy');
     });
 
     it('should resolve auto to plain in test mode', function () {
@@ -154,7 +162,7 @@ describe('standalone logger', function () {
       assert.equal(createLogger({
         format: 'pretty',
         ...capture()
-      }).format, 'legacy');
+      }).format, 'structured');
     });
 
     it('should reject an invalid format', function () {

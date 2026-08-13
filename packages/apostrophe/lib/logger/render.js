@@ -6,8 +6,8 @@ const { createStyle } = require('./style');
 const { isBanner, renderBanner } = require('./banner');
 
 // `legacy` is the output shape of previous releases: `message {json}`. `auto`
-// resolves to it in production for this release cycle, so that production
-// output does not change shape in a minor.
+// never resolves to it - it is configured explicitly, by a project that has
+// scrapers or dashboards built on that shape and needs time to move.
 const FORMATS = [ 'structured', 'pretty', 'plain', 'legacy' ];
 
 // Where the line came from. `site` and the emitting module - or the coarser

@@ -64,6 +64,10 @@ const CORE = 'apostrophe';
 // }
 // ```
 //
+// `format` defaults to `auto`: pretty output in development, one JSON object
+// per line in production. `APOS_LOG_FORMAT` overrides it for the whole
+// process, and `legacy` pins the `message {json}` shape of earlier releases.
+//
 // The keys are exactly the options `@apostrophecms/log` supports, and when
 // this option is present it is the *entire* logging configuration: the
 // module's own options and the legacy `logger` option of

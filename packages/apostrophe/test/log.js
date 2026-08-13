@@ -819,8 +819,8 @@ describe('structured logging', function () {
       process.env.NODE_ENV = 'production';
       apos = await t.create({
         modules: { ...testModule },
-        // What `auto` resolves to in production; test mode would otherwise
-        // pick the readable format.
+        // The opt-out from the production default, pinning the shape of past
+        // releases; test mode would otherwise pick the readable format.
         log: { format: 'legacy' }
       });
     });
