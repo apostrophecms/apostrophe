@@ -1,5 +1,0 @@
----
-"apostrophe": patch
----
-
-Security: bumped the `nodemailer` dependency from 8.x to 9.x to pick up the fix for GHSA-p6gq-j5cr-w38f, where a message's `raw` option could bypass nodemailer's `disableFileAccess`/`disableUrlAccess` controls and enable arbitrary file reads or SSRF. The real-world risk to Apostrophe is low: core only sends mail from trusted server-side code (such as password-reset emails), never sets those controls, and gives site visitors no way to control a message's `raw` field. nodemailer 9 is a security-only major release with one behavior change worth noting for projects: outbound HTTPS used to fetch remote content (remote-URL attachments, OAuth2 token endpoints, HTTP/HTTPS proxies) now validates TLS certificates by default — if you depend on self-signed or otherwise invalid certificates, opt out per request with `tls.rejectUnauthorized: false`. As a precaution, make sure your own project code never forwards untrusted input into the `raw` field of a module's `email()` call.
