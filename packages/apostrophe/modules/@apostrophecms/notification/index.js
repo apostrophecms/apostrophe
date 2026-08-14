@@ -26,6 +26,13 @@
 // option determines how often the browser polls for new notifications.
 // Not used when `longPolling` is `true` (the default).
 // `pollingInterval` defaults to 5000 (5 seconds).
+//
+// ### `expireAfter`: seconds a notification document is kept before the
+// database expires it. Dismissing a notification is browser-driven, so a
+// notification nobody ever dismisses would otherwise live forever and be
+// resent on every admin page load. Defaults to 86400 (one day); set it to
+// 0 to keep notifications until they are dismissed. Individual
+// notifications may override it via the `expireAfter` option of `trigger`.
 
 const delay = require('bluebird').delay;
 
@@ -36,12 +43,14 @@ module.exports = {
     longPollingTimeout: 10000,
     queryInterval: 1000,
     // Used only when longPolling is false
-    pollingInterval: 5000
+    pollingInterval: 5000,
+    expireAfter: 86400
   },
   extend: '@apostrophecms/module',
   async init(self) {
     self.apos.notify = self.trigger;
     await self.ensureCollection();
+    self.addMigrations();
     self.enableBrowserData();
   },
   restApiRoutes: (self) => ({
@@ -264,6 +273,10 @@ module.exports = {
       // `options.icon`, set to an active Vue Materials Icons icon name, will
       // set an icon on the notification.
       //
+      // `options.expireAfter` overrides the module option of the same name
+      // for this notification: a number of seconds after which the database
+      // expires the document, or 0 to keep it until it is dismissed.
+      //
       // `options.job` can be set to an object with properties related to an
       // Apostrophe Job (from the @apostrophecms/job module) for the
       // notification to track the job's progress. These can include the job
@@ -319,6 +332,14 @@ module.exports = {
 
         Object.assign(notification, options);
 
+        const expireAfter = (options.expireAfter != null)
+          ? options.expireAfter
+          : self.options.expireAfter;
+        delete notification.expireAfter;
+        if (expireAfter) {
+          notification.expireAt = new Date(Date.now() + expireAfter * 1000);
+        }
+
         await self.emit('beforeSave', req, notification);
 
         // We await here rather than returning because we expressly do not
@@ -369,8 +390,6 @@ module.exports = {
               $currentDate: {
                 updatedAt: true
               }
-            }, {
-              upsert: true
             }
           );
         } catch (error) {
@@ -397,6 +416,13 @@ module.exports = {
         try {
           const results = await self.db.find({
             userId: req.user._id,
+            // The database sweeps expired notifications periodically rather
+            // than instantly, and not every supported database honors expiry
+            // yet, so never send one that is still stored past its time
+            $or: [
+              { expireAt: null },
+              { expireAt: { $gt: new Date() } }
+            ],
             ...(options.modifiedOnOrSince && {
               updatedAt: {
                 $gt: new Date(options.modifiedOnOrSince)
@@ -440,6 +466,34 @@ module.exports = {
         await self.db.createIndex({
           userId: 1,
           createdAt: 1
+        });
+        // Per-document expiry: `expireAfterSeconds: 0` expires each document
+        // at the exact time stored in its `expireAt` field. `sparse` keeps
+        // notifications that opted out of expiry off the index entirely
+        await self.db.createIndex({ expireAt: 1 }, {
+          expireAfterSeconds: 0,
+          sparse: true
+        });
+      },
+
+      addMigrations() {
+        if (!self.options.expireAfter) {
+          return;
+        }
+        // Notifications predating `expireAt` never expire, so they pile up
+        // for the lifetime of the project. Discard those already past the
+        // expiry they would have been given, stamp the rest
+        self.apos.migration.add('notification-expire', async () => {
+          const ms = self.options.expireAfter * 1000;
+          const expireAt = new Date(Date.now() + ms);
+          await self.db.deleteMany({
+            expireAt: { $exists: false },
+            createdAt: { $lt: new Date(Date.now() - ms) }
+          });
+          await self.db.updateMany(
+            { expireAt: { $exists: false } },
+            { $set: { expireAt } }
+          );
         });
       }
     };
