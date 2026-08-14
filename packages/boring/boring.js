@@ -11,7 +11,7 @@ module.exports = function(options) {
       continue;
     }
     if (!optionsEnded) {
-      let matches = args[i].match(/^--([^\s\=]+)=(.*)$/);
+      let matches = args[i].match(/^--([^\s=]+)=(.*)$/);
       if (matches) {
         result[matches[1]] = matches[2];
         continue;

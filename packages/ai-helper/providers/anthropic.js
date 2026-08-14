@@ -58,7 +58,6 @@ module.exports = (apos, textOptions = {}) => {
       const maxTokens = options.maxTokens || textMaxTokens;
       const retries = options.textRetries || textRetries;
       const model = options.model || textModel;
-      console.log('options', options);
 
       const body = {
         model,

@@ -1590,10 +1590,12 @@ module.exports = {
                 }
               });
             } catch (e) {
-              console.error(e);
               // This condition shouldn't occur, but do warn the operator if it
               // does (possibly on input that is not really an SVG file at all)
-              self.apos.util.error(`Warning: unable to sanitize SVG file ${uploadfsPath}`);
+              self.logError('svg-sanitize-failed', `unable to sanitize SVG file ${uploadfsPath}`, {
+                path: uploadfsPath,
+                stack: e.stack
+              });
             }
           });
         });

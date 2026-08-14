@@ -6,8 +6,11 @@ const zlib = require('zlib');
 const async = require('async');
 const utils = require('../utils.js');
 const defaultGzipBlacklist = require('../../defaultGzipBlacklist');
+const createLogger = require('../logger.js');
 const verbose = false;
 const _ = require('lodash');
+
+let logger = createLogger();
 
 const DEFAULT_MAX_AGE_IN_SECONDS = 500;
 const DEFAULT_MAX_CACHE = 2628000;
@@ -33,9 +36,9 @@ function copyBlob(blob, src, dst, callback) {
     .catch(callback);
 }
 
-function __log() {
+function __log(...args) {
   if (verbose) {
-    console.error(arguments);
+    logger.error(...args);
   }
 }
 
@@ -257,6 +260,7 @@ module.exports = function() {
         return callback(new Error('You must set the disabledFileKey option to a random string when using the azure storage backend.'));
       }
       this.options = options;
+      logger = createLogger(options.logger);
       self.gzipBlacklist = self.getGzipBlacklist(options.gzipEncoding || {});
 
       if (!options.replicateClusters ||

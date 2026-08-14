@@ -69,7 +69,8 @@ module.exports = function() {
       }
 
       async function getProperties() {
-        // Parse identify output ourselves to avoid using unmaintained third party wrappers. -Tom
+        // Parse identify output ourselves to avoid using unmaintained
+        // third party wrappers. -Tom
         const { stdout } = await execFile('identify', [ '-verbose', path ], { encoding: 'utf8' });
         const parsed = Object.fromEntries(stdout.split('\n').filter(line => line.trim().includes(': ')).map(line => {
           const cat = line.indexOf(':');
@@ -198,7 +199,8 @@ module.exports = function() {
         function convertSize(size, callback) {
           const args = baseArgs.slice();
           args.push('--resize');
-          // "Largest that fits in the box" is not a built-in feature of gifsicle, so we do the math
+          // "Largest that fits in the box" is not a built-in feature of
+          // gifsicle, so we do the math
           const originalWidth = (crop && crop.width) || context.info.width;
           const originalHeight = (crop && crop.height) || context.info.height;
           let width = originalWidth;

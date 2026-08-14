@@ -210,7 +210,7 @@ module.exports = {
 
           return null;
         } catch (err) {
-          self.apos.util.error('⚠️ @apostrophecms/form submission email notification error: ', err);
+          self.logError('notification-email-failed', err.message, { stack: err.stack });
 
           return null;
         }
@@ -351,7 +351,7 @@ module.exports = {
 
             return null;
           } catch (err) {
-            self.apos.util.error('⚠️ @apostrophecms/form submission email confirmation error: ', err);
+            self.logError('confirmation-email-failed', err.message, { stack: err.stack });
 
             return null;
           }

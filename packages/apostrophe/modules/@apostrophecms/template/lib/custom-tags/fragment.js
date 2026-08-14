@@ -52,7 +52,7 @@ module.exports = function(self) {
           blocks: [ body ]
         };
       } catch (e) {
-        console.error(e);
+        self.logError('fragment-parse-error', e.message, { stack: e.stack });
         throw e;
       }
     },
@@ -73,7 +73,7 @@ module.exports = function(self) {
         }
         return '';
       } catch (e) {
-        console.error(e);
+        self.logError('fragment-run-error', e.message, { stack: e.stack });
         throw e;
       }
     }

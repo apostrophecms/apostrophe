@@ -61,7 +61,10 @@ module.exports = self => {
       try {
         await util.promisify(self.apos.attachment.uploadfs.remove)(target);
       } catch (error) {
-        console.error(error, `Unable to remove uploadfs path: "${target}"`);
+        self.logError('uploadfs-remove-failed', `Unable to remove uploadfs path: "${target}"`, {
+          path: target,
+          stack: error.stack
+        });
       }
     }
   };

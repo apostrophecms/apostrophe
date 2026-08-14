@@ -1,6 +1,21 @@
-/* eslint-disable no-console */
 const t = require('../test-lib/test.js');
 const assert = require('assert');
+
+// Errors are rendered to stderr by the logger, not by the console.
+async function capturedStderr(fn) {
+  const chunks = [];
+  const stderr = process.stderr.write;
+  process.stderr.write = (chunk) => {
+    chunks.push(chunk);
+    return true;
+  };
+  try {
+    await fn();
+  } finally {
+    process.stderr.write = stderr;
+  }
+  return chunks.join('');
+}
 
 describe('Don\'t crash on weird API errors', function() {
 
@@ -44,39 +59,29 @@ describe('Don\'t crash on weird API errors', function() {
     assert.strictEqual(body.nifty, true);
   });
   it('should fail politely in the weird case of a non-Error exception', async function() {
-    let msgWas;
-    const consoleError = console.error;
-    console.error = msg => {
-      msgWas = msg;
-    };
-    try {
-      await apos.http.get('/api/v1/api-test/fetch-it-fail-weird', {});
-      // Should not get here
-      assert(false);
-    } catch (e) {
-      // Make sure the logging system itself is not at fault
-      assert(!msgWas.toString().includes('Structured logging error'));
-    } finally {
-      console.error = consoleError;
-      console.error(msgWas);
-    }
+    let failed = false;
+    const logged = await capturedStderr(async () => {
+      try {
+        await apos.http.get('/api/v1/api-test/fetch-it-fail-weird', {});
+      } catch (e) {
+        failed = true;
+      }
+    });
+    assert(failed);
+    // Make sure the logging system itself is not at fault
+    assert(!logged.includes('Structured logging error'));
   });
   it('should fail politely in the normal case of an Error exception', async function() {
-    let msgWas;
-    const consoleError = console.error;
-    console.error = msg => {
-      msgWas = msg;
-    };
-    try {
-      await apos.http.get('/api/v1/api-test/fetch-it-fail-normal', {});
-      // Should not get here
-      assert(false);
-    } catch (e) {
-      // Make sure the logging system itself is not at fault
-      assert(!msgWas.toString().includes('Structured logging error'));
-    } finally {
-      console.error = consoleError;
-      console.error(msgWas);
-    }
+    let failed = false;
+    const logged = await capturedStderr(async () => {
+      try {
+        await apos.http.get('/api/v1/api-test/fetch-it-fail-normal', {});
+      } catch (e) {
+        failed = true;
+      }
+    });
+    assert(failed);
+    // Make sure the logging system itself is not at fault
+    assert(!logged.includes('Structured logging error'));
   });
 });

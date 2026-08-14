@@ -125,6 +125,8 @@ function profileQuery(sql, start) {
 }
 
 function profileReport() {
+  // The report is what the profiler was asked for.
+  /* eslint-disable no-console */
   console.log('\n=== PostgreSQL Adapter Profile ===\n');
 
   // High-level categories
@@ -146,6 +148,7 @@ function profileReport() {
   }
 
   console.log('\n=== End Profile ===\n');
+  /* eslint-enable no-console */
 }
 
 function profileReset() {

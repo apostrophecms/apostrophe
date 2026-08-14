@@ -1,3 +1,6 @@
+// A maintenance script: its report is program output.
+/* eslint-disable no-console */
+
 const glob = require('../lib/glob.js');
 const fs = require('fs');
 const ignoredKeys = require('./i18n-ignore.js');

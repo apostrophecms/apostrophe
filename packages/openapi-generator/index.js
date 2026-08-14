@@ -51,51 +51,72 @@ Options:
           const verbose = !!(argv && argv.verbose);
 
           try {
-            console.log('🚀 Starting OpenAPI generation...\n');
+            self.logInfo('generate-start', 'Starting OpenAPI generation', {
+              output,
+              dryRun,
+              routesOnly,
+              schemasOnly
+            });
 
             let routes = [];
             if (!schemasOnly) {
-              console.log('📍 Step 1: Discovering routes...');
+              self.logInfo('route-discovery-start', 'Discovering routes');
               const routeDiscovery = new RouteDiscovery(self.apos);
               routes = await routeDiscovery.discoverRoutes();
-              console.log(`   Found ${routes.length} routes`);
+              self.logInfo('route-discovery-end', `Found ${routes.length} routes`, {
+                routes: routes.length
+              });
 
               if (dryRun || routesOnly) {
+                // Program output: the listing the task was asked for
                 console.log('\n📋 Route Discovery Results:');
                 self.printRouteSummary(routes);
               }
 
               if (routesOnly) {
-                console.log('\n✅ Route discovery complete (routes-only mode)');
+                self.logInfo('generate-end', 'Route discovery complete', {
+                  mode: 'routes-only'
+                });
                 return;
               }
             }
 
             let schemas = {};
             if (!routesOnly) {
-              console.log('\n🔍 Step 2: Discovering schemas...');
-              const schemaDiscovery = new SchemaDiscovery(self.apos);
+              self.logInfo('schema-discovery-start', 'Discovering schemas');
+              const schemaDiscovery = new SchemaDiscovery(self.apos, self);
               schemas = await schemaDiscovery.discoverSchemas();
-              console.log(`   Found ${Object.keys(schemas || {}).length} schemas`);
+              self.logInfo(
+                'schema-discovery-end',
+                `Found ${Object.keys(schemas || {}).length} schemas`,
+                {
+                  schemas: Object.keys(schemas || {}).length
+                }
+              );
 
               if (dryRun || schemasOnly) {
+                // Program output: the listing the task was asked for
                 console.log('\n📋 Schema Discovery Results:');
                 self.printSchemaSummary(schemas);
               }
 
               if (schemasOnly) {
-                console.log('\n✅ Schema discovery complete (schemas-only mode)');
+                self.logInfo('generate-end', 'Schema discovery complete', {
+                  mode: 'schemas-only'
+                });
                 return;
               }
             }
 
             if (dryRun) {
-              console.log('\n✅ Dry run complete - no files written');
+              self.logInfo('generate-end', 'Dry run complete, no files written', {
+                mode: 'dry-run'
+              });
               return;
             }
 
             // 3) Merge with base spec and write
-            console.log('\n🔧 Step 3: Merging with base specification...');
+            self.logInfo('merge-start', 'Merging with base specification');
             const specMerger = new SpecMerger();
 
             const baseSpecPath = new URL('./templates/base-spec.yaml', import.meta.url);
@@ -112,15 +133,15 @@ Options:
               ? Object.keys(finalSpec.components.schemas).length
               : 0;
 
-            console.log(`\n✅ OpenAPI specification generated: ${outputPath}`);
-            console.log(`📊 Final spec contains:`);
-            console.log(`   • ${pathCount} paths`);
-            console.log(`   • ${schemaCount} schemas`);
+            self.logInfo('generate-end', `OpenAPI specification generated: ${outputPath}`, {
+              outputPath,
+              paths: pathCount,
+              schemas: schemaCount
+            });
           } catch (error) {
-            console.error('\n❌ Error generating OpenAPI spec:', error && error.message ? error.message : String(error));
-            if (verbose && error && error.stack) {
-              console.error(error.stack);
-            }
+            const message = error && error.message ? error.message : String(error);
+            self.logError('generate-error', `Error generating OpenAPI spec: ${message}`,
+              verbose && error && error.stack ? { stack: error.stack } : undefined);
             process.exit(1);
           }
         }
@@ -146,6 +167,7 @@ Options:
             const spec = await self.loadSpecFile(specPath);
             const validation = await self.validateSpec(spec);
 
+            // Program output: the validation report the task was asked for
             if (validation && validation.valid) {
               console.log('✅ OpenAPI specification is valid');
             } else {
@@ -159,7 +181,10 @@ Options:
               process.exit(1);
             }
           } catch (error) {
-            console.error('❌ Failed to validate specification:', error && error.message ? error.message : String(error));
+            const message = error && error.message ? error.message : String(error);
+            self.logError('validate-error', `Failed to validate specification: ${message}`, {
+              specPath
+            });
             process.exit(1);
           }
         }
@@ -261,12 +286,17 @@ Examples:
             // Use preset configuration
             generator = presets[language].generator;
             additionalProperties = presets[language].additionalProperties;
-            console.log(`Using preset configuration for ${language}`);
+            self.logInfo('sdk-preset', `Using preset configuration for ${language}`, {
+              language,
+              generator
+            });
           } else {
             // Treat language as the generator name directly
             generator = language;
             additionalProperties = argv['additional-properties'] || argv.props || '';
-            console.log(`Using custom generator: ${generator}`);
+            self.logInfo('sdk-custom-generator', `Using custom generator: ${generator}`, {
+              generator
+            });
           }
           const finalOutputDir = path.resolve(self.apos.rootDir, outputDir.replace(/^\.\//, ''));
 
@@ -298,12 +328,21 @@ Examples:
             args.push('-c', argv.config);
           }
 
-          console.log(`Generating SDK with generator "${generator}" to ${outputDir}...`);
+          self.logInfo(
+            'sdk-generate-start',
+            `Generating SDK with generator "${generator}" to ${outputDir}`,
+            {
+              generator,
+              outputDir
+            }
+          );
 
           // Create output directory if it doesn't exist
           const resolvedOutputDir = path.resolve(outputDir);
           await fs.mkdir(resolvedOutputDir, { recursive: true });
-          console.log(`Created output directory: ${resolvedOutputDir}`);
+          self.logDebug('sdk-output-dir', `Created output directory: ${resolvedOutputDir}`, {
+            outputDir: resolvedOutputDir
+          });
 
           // Try multiple approaches to run the generator
           const approaches = [
@@ -355,11 +394,16 @@ Examples:
               });
 
               if (result === 0) {
-                console.log(`✅ SDK generated successfully in ${outputDir}`);
+                self.logInfo('sdk-generate-end', `SDK generated successfully in ${outputDir}`, {
+                  generator,
+                  outputDir
+                });
                 return;
               }
             } catch (error) {
-              console.log(`Approach ${i + 1} failed: ${error.message}`);
+              self.logWarn('sdk-approach-failed', `Approach ${i + 1} failed: ${error.message}`, {
+                approach: i + 1
+              });
               if (i === approaches.length - 1) {
                 // All approaches failed
                 throw new Error(`Failed to generate SDK. Please ensure one of the following is available:
@@ -383,7 +427,8 @@ Error details: ${error.message}`);
     return {
       /**
        * Print a grouped summary of discovered routes.
-       * Groups by first path segment and honors base spec order
+       * Groups by first path segment and honors base spec order.
+       * Program output: stdout, never the log pipeline.
        *
        * @param {Array<{ method: string, path: string, module?: string }>} routes
        */
@@ -414,6 +459,7 @@ Error details: ${error.message}`);
 
       /**
        * Print a compact summary of discovered schemas and their field counts.
+       * Program output: stdout, never the log pipeline.
        *
        * @param {Object<string, { properties?: Object<string, any> }>} schemas
        */

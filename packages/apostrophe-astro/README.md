@@ -722,6 +722,10 @@ deal of difference between these and `npm run dev`, but there is less
 overhead and less information exposed to the public, so we recommend following
 this best practice.
 
+## Output and logging
+
+Everything this integration prints is Astro's output, not Apostrophe's: it runs in the Astro process, so it never travels through the Apostrophe log pipeline and is not affected by the `log` option of your Apostrophe project. Warnings and errors are written to the console with a consistent `[apostrophe-astro]` prefix and are colored only when the terminal accepts color, honoring `NO_COLOR`, `FORCE_COLOR` and `--no-color` like Astro itself.
+
 ## Debugging
 
 In most cases, Astro prints helpful error messages directly in the browser

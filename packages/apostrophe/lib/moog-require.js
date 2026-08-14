@@ -86,8 +86,15 @@ module.exports = async function(options) {
       );
       projectLevelDefinition = defaultProjectLevelDefinition;
       if (Object.keys(projectLevelDefinition).length === 0) {
-
-        console.warn(`⚠️ The file ${projectLevelPath}\ndoes not export anything, did you misspell or forget module.exports?\n`);
+        self.options.logger.warn(
+          'module-exports-nothing',
+          `The file ${projectLevelPath} does not export anything, ` +
+          'did you misspell or forget module.exports?',
+          {
+            module: type,
+            file: projectLevelPath
+          }
+        );
       }
     }
 
