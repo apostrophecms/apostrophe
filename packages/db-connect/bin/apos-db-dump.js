@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// A command line entry point: its output is the program's.
+/* eslint-disable no-console */
 
 const fs = require('fs');
 const dump = require('../lib/dump');

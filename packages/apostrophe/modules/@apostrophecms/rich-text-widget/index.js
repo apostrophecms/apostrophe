@@ -506,7 +506,7 @@ module.exports = {
         try {
           return await self.loadInlineRelationships(req, widgets, [ 'permalinkIds', 'imageIds' ]);
         } catch (e) {
-          console.error(e);
+          self.logError(req, 'load-error', e.message, { stack: e.stack });
           throw e;
         }
       },
@@ -889,9 +889,33 @@ module.exports = {
       },
 
       sanitizeHtml(html, options) {
-        html = sanitizeHtml(html, options);
+        html = sanitizeHtml(html, {
+          logger: self.getSanitizeLogger(),
+          ...options
+        });
         html = self.sanitizeAnchors(html);
         return html;
+      },
+
+      // sanitize-html warns from inside the sanitizing call, so it repeats a
+      // configuration warning on every piece of content. Ours says it once.
+      getSanitizeLogger() {
+        if (!self.sanitizeLogger) {
+          const logger = self.getConsoleLogger('sanitize-html');
+          const said = new Set();
+          self.sanitizeLogger = {
+            ...logger,
+            warn(...args) {
+              const key = args.join(' ');
+              if (said.has(key)) {
+                return;
+              }
+              said.add(key);
+              logger.warn(...args);
+            }
+          };
+        }
+        return self.sanitizeLogger;
       },
 
       sanitizeAnchors(html) {
@@ -1187,7 +1211,7 @@ module.exports = {
           // Because the trace for template errors is not very
           // useful, for now we log any error here up front
           // until we improve that or this has been stable for a while
-          console.error(e);
+          self.logError(req, 'sanitize-error', e.message, { stack: e.stack });
           throw e;
         }
       },
@@ -1247,7 +1271,13 @@ module.exports = {
         return true;
       }
 
-      console.log('This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. You can add --confirm to the command to skip this message and run the command');
+      self.logWarn(
+        'confirmation-required',
+        'This task will perform an update on all existing rich-text widget. ' +
+        'You should manually backup your database before running this command ' +
+        'in case it becomes necessary to revert the changes. You can add --confirm ' +
+        'to the command to skip this message and run the command'
+      );
 
       return false;
     };

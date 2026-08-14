@@ -23,7 +23,13 @@ describe('workspaces dependencies', function() {
       const actual = apos.util.logger.getMessages();
       const expected = {
         debug: [],
-        info: [ `Listening at http://${address}:${port}` ],
+        info: [ {
+          module: '@apostrophecms/express',
+          type: 'apos-listening',
+          severity: 'info',
+          url: `http://${address}:${port}`,
+          adminUrl: `http://${address}:${port}/login`
+        } ],
         warn: [],
         error: []
       };

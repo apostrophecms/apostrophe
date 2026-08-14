@@ -1,6 +1,0 @@
-// tsconfig.json
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-  }
-}

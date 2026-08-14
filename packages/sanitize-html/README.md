@@ -696,6 +696,19 @@ And you can forbid the use of protocol-relative URLs (starting with `//`) to acc
 allowProtocolRelative: false
 ```
 
+### SVG animations of URL attributes are discarded
+
+For security reasons, if your `allowedTags` includes the SVG animation elements (`animate`, `animateColor`, `animateMotion`, `animateTransform` and `set`), note that an animation which targets a URL attribute is always discarded:
+
+```html
+<!-- Discarded: this would set the link's href to javascript: after sanitization -->
+<animate attributeName="href" values="#safe;javascript:alert(1)" dur=".01s" fill="freeze">
+```
+
+An animation element carries no URL itself. It names the attribute it animates with `attributeName` and supplies the new value in `values`, `from`, `to` or `by`, which the browser copies into the target attribute after sanitization. Scheme checking those values is not sufficient, because `values` is a semicolon-separated *list* of destinations, so we discard the animation instead whenever `attributeName` selects `href`, `xlink:href` or any other attribute listed in `allowedSchemesAppliedToAttributes`.
+
+Animations of attributes that are not URLs, such as `fill` or `opacity`, are unaffected.
+
 ### Discarding the entire contents of a disallowed tag
 
 Normally, with a few exceptions, if a tag is not allowed, all of the text within it is preserved, and so are any allowed tags within it.
@@ -796,6 +809,20 @@ nestingLimit: 6
 ```
 
 This will prevent the user from nesting tags more than 6 levels deep. Tags deeper than that are stripped out exactly as if they were disallowed. Note that this means text is preserved in the usual ways where appropriate.
+
+### Routing warnings to your own logger
+
+sanitize-html writes its own diagnostics - the vulnerable tag notice above, and the style parsing notice in the browser - to the console. If your application has a logging pipeline of its own, pass any console-shaped object as the `logger` option and they are delivered to it instead:
+
+```javascript
+sanitizeHtml(dirty, {
+  logger: myLogger // an object with debug, info, warn and error methods
+});
+```
+
+Any of the four methods that your object does not provide falls back to the console, and without the option at all the console is still the destination, exactly as before.
+
+This matters for applications that write structured logs: a raw `console.warn` bypasses their filtering and formatting, and puts unparseable text on a stream that is expected to be one JSON object per line.
 
 ### Advanced filtering
 

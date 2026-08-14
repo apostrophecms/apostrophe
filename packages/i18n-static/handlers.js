@@ -54,9 +54,12 @@ module.exports = self => {
               .flat()
               .sort();
 
-            // We only have to rebuild if keys existing in the JSON files do not exist as pieces
+            // We only have to rebuild if keys existing in the JSON files do
+            // not exist as pieces
             if (_.difference(i18nextResourcesKeys, i18nStaticResourcesKeys).length > 0) {
               modified = true;
+              let inserted = 0;
+              let updated = 0;
 
               for (const [ namespace, resources ] of Object.entries(i18nextResources)) {
                 for (const [ key, value ] of Object.entries(resources || {})) {
@@ -70,23 +73,42 @@ module.exports = self => {
                   const existingPiece = await self.find(req, props).toObject();
 
                   if (!existingPiece) {
-                    // eslint-disable-next-line no-console
-                    console.log(`Add missing piece ${title} in i18n-static module for locale ${locale}...`);
+                    self.logDebug('missing-piece-add', `Add missing piece ${title}`, {
+                      title,
+                      namespace,
+                      locale
+                    });
                     await self.insert(req, {
                       ...props,
                       [valueToCheck]: value
                     });
+                    inserted++;
                   } else if (!existingPiece[valueToCheck]) {
-                    // eslint-disable-next-line no-console
-                    console.log(`Updating missing prop for piece ${title} in i18n-static module for locale ${locale}...`);
+                    self.logDebug(
+                      'missing-prop-update',
+                      `Updating missing prop for piece ${title}`,
+                      {
+                        title,
+                        namespace,
+                        prop: valueToCheck,
+                        locale
+                      }
+                    );
                     const newPiece = {
                       ...existingPiece,
                       [valueToCheck]: value
                     };
                     await self.update(req, newPiece);
+                    updated++;
                   }
                 }
               }
+
+              self.logInfo('missing-pieces-added', 'Added missing static i18n pieces', {
+                inserted,
+                updated,
+                locale
+              });
 
               self.generateNewGlobalIdAndUpdateCache(req);
             }
@@ -107,7 +129,12 @@ module.exports = self => {
             for (const field of i18nFields) {
               if (piece[field.name]) {
                 const updatedValue = piece[field.name];
-                self.apos.i18n.i18next.addResource(req.locale, piece.namespace, piece.title, updatedValue);
+                self.apos.i18n.i18next.addResource(
+                  req.locale,
+                  piece.namespace,
+                  piece.title,
+                  updatedValue
+                );
                 break;
               }
             }

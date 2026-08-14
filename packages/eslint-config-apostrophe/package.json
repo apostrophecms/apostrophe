@@ -3,6 +3,12 @@
   "version": "6.0.2",
   "description": "eslint configuration for apostrophe and related core modules",
   "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./strict": "./strict.js",
+    "./package.json": "./package.json",
+    "./*": "./*"
+  },
   "engines": {
     "node": ">=16"
   },

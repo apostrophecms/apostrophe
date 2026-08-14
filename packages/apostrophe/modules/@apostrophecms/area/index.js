@@ -697,7 +697,10 @@ module.exports = {
           data.type = type;
           return manager.output(req, data, options);
         } catch (e) {
-          console.error(e);
+          self.logError(req, 'widget-render-error', e.message, {
+            widgetType: type,
+            stack: e.stack
+          });
           throw e;
         }
       },

@@ -1,5 +1,9 @@
 const _ = require('lodash');
 
+// Long tasks report a start, one line per this many documents, and a summary,
+// so that a million documents do not become a million log entries.
+const PROGRESS_EVERY = 100;
+
 module.exports = {
   extend: '@apostrophecms/doc-type',
   cascades: [
@@ -1385,16 +1389,25 @@ module.exports = {
               throw new Error('Localized option not set to true, so the module cannot be localized.');
             }
 
-            console.log('Adding drafts and locales to documents');
-
             const locales = Object.keys(self.apos.i18n.locales);
             const lastPublishedAt = new Date();
             const inserts = [];
             const deletes = [];
+            let localized = 0;
+
+            self.logInfo('localize-start', 'Adding drafts and locales to documents', {
+              locales: locales.length
+            });
 
             await self.apos.migration.eachDoc({ type: self.name }, async doc => {
               if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
                 deletes.push(doc._id);
+                localized++;
+                if (localized % PROGRESS_EVERY === 0) {
+                  self.logInfo('localize-progress', `Localized ${localized} document(s)`, {
+                    localized
+                  });
+                }
 
                 for (const locale of locales) {
                   const newDraft = {
@@ -1423,7 +1436,9 @@ module.exports = {
             await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
             await self.apos.attachment.recomputeAllDocReferences();
 
-            console.log(`Done localizing module ${self.name}`);
+            self.logInfo('localize-complete', `Done localizing ${localized} document(s)`, {
+              localized
+            });
           }
         },
 
@@ -1442,13 +1457,27 @@ module.exports = {
             const mode = argv.mode || 'published';
             const inserts = [];
             const deletes = [];
+            let unlocalized = 0;
 
-            console.log(`Removing duplicated documents and updating ${mode} ones`);
+            self.logInfo(
+              'unlocalize-start',
+              `Removing duplicated documents and updating ${mode} ones`,
+              {
+                locale,
+                mode
+              }
+            );
 
             await self.apos.migration.eachDoc({ type: self.name }, async doc => {
               deletes.push(doc._id);
 
               if (doc.aposDocId && doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
+                unlocalized++;
+                if (unlocalized % PROGRESS_EVERY === 0) {
+                  self.logInfo('unlocalize-progress', `Unlocalized ${unlocalized} document(s)`, {
+                    unlocalized
+                  });
+                }
                 const newDoc = {
                   ...doc,
                   aposLocale: undefined,
@@ -1464,7 +1493,9 @@ module.exports = {
             await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
             await self.apos.attachment.recomputeAllDocReferences();
 
-            console.log(`Done unlocalizing module ${self.name}`);
+            self.logInfo('unlocalize-complete', `Done unlocalizing ${unlocalized} document(s)`, {
+              unlocalized
+            });
           }
         },
 
@@ -1492,19 +1523,31 @@ module.exports = {
                 try {
                   await self.update(req, doc);
                   count++;
+                  if (count % PROGRESS_EVERY === 0) {
+                    self.logInfo('touch-progress', `Touched ${count} doc(s)`, {
+                      touched: count,
+                      errors: errCount
+                    });
+                  }
                 } catch (e) {
                   errCount++;
-                  self.apos.util.error(e);
+                  self.logError('touch-error', e.message, {
+                    _id: doc._id,
+                    stack: e.stack
+                  });
                 }
               }
             } catch (error) {
-              self.apos.util.error(error);
+              self.logError('touch-error', error.message, { stack: error.stack });
             } finally {
               if (cursor) {
                 await cursor.close();
               }
             }
-            console.log(`Touched ${count} doc(s) with ${errCount} error(s)`);
+            self.logInfo('touch-complete', `Touched ${count} doc(s) with ${errCount} error(s)`, {
+              touched: count,
+              errors: errCount
+            });
 
             // Return, useful for tests and internal API's
             // It's in effect only when invoked via apos.task.invoke().

@@ -14,6 +14,8 @@
 // the first request and kept for the lifetime of the process — the route list
 // is static once the backend is up. A failed fetch is not cached, so it is
 // retried on the next request; this gracefully handles any boot racing conditions.
+import { logError } from './log.js';
+
 import { defineMiddleware } from 'astro:middleware';
 import config from 'apostrophe-astro-config/config';
 import aposResponse from './aposResponse.js';
@@ -83,15 +85,15 @@ function getMatchers() {
           // Disable permanently (until restart).
           if (++notFoundCount >= MAX_NOT_FOUND) {
             cached = [];
-            console.error(
-              '[apostrophe-astro] literal-content: endpoint not found after ' +
+            logError(
+              'literal-content: endpoint not found after ' +
               `${notFoundCount} attempts; disabling. Please upgrade your Apostrophe version.`
             );
             return cached;
           }
         } else {
           notFoundCount = 0;
-          console.error('[apostrophe-astro] literal-content middleware:', err.message);
+          logError('literal-content middleware:', err.message);
         }
         return [];
       })

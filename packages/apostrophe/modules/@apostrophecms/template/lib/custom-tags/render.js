@@ -78,7 +78,7 @@ module.exports = (self) => {
 
       return { args };
     } catch (e) {
-      console.error(e);
+      self.logError('render-parse-error', e.message, { stack: e.stack });
       throw e;
     }
   };
@@ -117,7 +117,7 @@ module.exports = (self) => {
       })(source, input);
       return result;
     } catch (e) {
-      console.error(e);
+      self.logError('render-run-error', e.message, { stack: e.stack });
       throw e;
     }
   };

@@ -51,7 +51,8 @@ module.exports = function() {
         });
         // Building new list for next pass
         removeCandidates = [];
-        // Parallelism here just removes things too soon preventing a parent from being removed
+        // Parallelism here just removes things too soon, preventing a parent
+        // from being removed
         // after a child
         return async.eachSeries(list, function(path, callback) {
           const uploadPath = uploadsPath + path;
@@ -59,13 +60,15 @@ module.exports = function() {
             // We're not fussy about the outcome, if it still has files in it we're
             // actually depending on this to fail
             if (!e) {
-              // It worked, so try to remove the parent (which will fail if not empty, etc.)
+              // It worked, so try to remove the parent (which will fail if
+              // not empty, etc.)
               add(dirname(path));
             }
             return callback(null);
           });
         }, function() {
-          // Try again in 1 second, typically removing another layer of parents if empty, etc.
+          // Try again in 1 second, typically removing another layer of
+          // parents if empty, etc.
           if (!self.destroyed) {
             timeout = setTimeout(cleanup, 1000);
           }
@@ -113,7 +116,11 @@ module.exports = function() {
 
     enable: function(path, callback) {
       if (self.options.disabledFileKey) {
-        return fs.rename(uploadsPath + utils.getDisabledPath(path, self.options.disabledFileKey), uploadsPath + path, callback);
+        return fs.rename(
+          uploadsPath + utils.getDisabledPath(path, self.options.disabledFileKey),
+          uploadsPath + path,
+          callback
+        );
       } else {
         // World readable, owner writable. Reasonable since
         // web accessible files are world readable in that
@@ -128,7 +135,11 @@ module.exports = function() {
 
     disable: function(path, callback) {
       if (self.options.disabledFileKey) {
-        return fs.rename(uploadsPath + path, uploadsPath + utils.getDisabledPath(path, self.options.disabledFileKey), callback);
+        return fs.rename(
+          uploadsPath + path,
+          uploadsPath + utils.getDisabledPath(path, self.options.disabledFileKey),
+          callback
+        );
       } else {
         // No access. Note this means you must explicitly
         // enable to get read access back, even with copyFileOut
@@ -186,7 +197,11 @@ module.exports = function() {
       return async.eachLimit(candidates, 5, function(file, callback) {
         return async.series([
           function(callback) {
-            return fs.rename(uploadsPath + file, removeDisabledSuffix(uploadsPath + file), callback);
+            return fs.rename(
+              uploadsPath + file,
+              removeDisabledSuffix(uploadsPath + file),
+              callback
+            );
           },
           function(callback) {
             return self.disable(removeDisabledSuffix(file), callback);

@@ -523,7 +523,7 @@ Allow: /
             req.res.setHeader('Content-Type', 'text/plain');
             return robotsTxtContent;
           } catch (err) {
-            console.error(err);
+            self.logError(req, 'robots-txt-error', err.message, { stack: err.stack });
             return 'An error occurred generating robots.txt';
           }
         },
@@ -620,7 +620,9 @@ Allow: /
                 });
               }
             } catch (err) {
-              console.error('Error fetching pages for llms.txt:', err);
+              self.logError(req, 'llms-txt-pages-error', 'Error fetching pages for llms.txt', {
+                stack: err.stack
+              });
             }
 
             // Content Types Available
@@ -691,7 +693,9 @@ Allow: /
             req.res.setHeader('Content-Type', 'text/plain; charset=utf-8');
             return content;
           } catch (err) {
-            console.error('Error generating llms.txt:', err);
+            self.logError(req, 'llms-txt-error', 'Error generating llms.txt', {
+              stack: err.stack
+            });
             req.res.status(500);
             return 'An error occurred generating llms.txt';
           }

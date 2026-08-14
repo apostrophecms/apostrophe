@@ -44,12 +44,18 @@ function newInstance(schema, self = null) {
             Object.keys(widgets)).flat();
         const widgets = field.def.map(type => {
           if (!available.includes(type)) {
-            console.warn(`${type} is not allowed in ${field.name} but is used in def`);
+            warn(self, 'widget-type-not-allowed', `${type} is not allowed in ${field.name} but is used in def`, {
+              widgetType: type,
+              field: field.name
+            });
             return null;
           }
           const manager = getManager(type, self);
           if (!manager) {
-            console.warn(`${type} is not a configured widget type but is used in def`);
+            warn(self, 'widget-type-not-configured', `${type} is not a configured widget type but is used in def`, {
+              widgetType: type,
+              field: field.name
+            });
             return null;
           }
           const wInstance = newInstance(
@@ -71,6 +77,17 @@ function newInstance(schema, self = null) {
     }
   }
   return instance;
+}
+
+// Context aware warning: the server has the logging pipeline, the browser has
+// the console.
+function warn(self, type, message, data) {
+  if (self) {
+    self.apos.schema.logWarn(type, message, data);
+    return;
+  }
+  // eslint-disable-next-line no-console
+  console.warn(message);
 }
 
 // Context aware manager retrieval
