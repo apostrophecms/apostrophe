@@ -28,7 +28,27 @@ function finalize(item, defaults) {
   return item;
 }
 
+// Consult a caller-supplied probe at a dispatch point. Returns the
+// items array the probe supplied in place of the default extraction,
+// or `null` when the probe declines (returns undefined or null). Any
+// other return value is a contract violation.
+function consultProbe(self, probe, context) {
+  const found = probe(context);
+  if (found == null) {
+    return null;
+  }
+  if (!Array.isArray(found)) {
+    throw self.apos.error(
+      'invalid',
+      'The extract "probe" must return an array of items or undefined, ' +
+      `got ${typeof found} at the ${context.kind} dispatch point "${context.schemaPath}"`
+    );
+  }
+  return found;
+}
+
 module.exports = {
   extracted,
-  finalize
+  finalize,
+  consultProbe
 };

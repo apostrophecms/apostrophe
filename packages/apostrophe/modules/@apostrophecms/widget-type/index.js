@@ -650,17 +650,28 @@ module.exports = {
       // ```js
       // extract(req, widget, options) {
       //   return [
-      //     { text: widget.special },
+      //     {
+      //       text: widget.special,
+      //       path: `${options.path}.special`,
+      //       tags: [ 'text' ]
+      //     },
       //     ...self.apos.schema.extract(req, self.schema, widget, options)
       //   ];
       // }
       // ```
       //
       // `options` carries the `path`, `schemaPath` and `tags` context of
-      // the walk and must travel to the recursive call unchanged. Missing
-      // item properties are filled in by the caller, so a minimal item
-      // needs only its content (`text` or `image`) and any tags of its
-      // own.
+      // the walk and must travel to the recursive call unchanged.
+      //
+      // An item for content the sub-schema does not own MUST carry an
+      // explicit `path` naming the property the content lives at, and the
+      // `tags` its consumers select on (`[ 'text' ]` for translatable
+      // text). Without a `path` the item defaults to the path of the whole
+      // widget object, which no consumer can safely write back to; without
+      // its own `tags` the item inherits only the area's tags and
+      // tag-filtered consumers will not see it. Other missing item
+      // properties (`type`, `label`, `schemaPath`) are filled in by the
+      // caller.
 
       extract(req, widget, options) {
         if (self.isEmpty(widget)) {

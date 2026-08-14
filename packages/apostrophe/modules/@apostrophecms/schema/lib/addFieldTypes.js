@@ -3,7 +3,7 @@ const dayjs = require('dayjs');
 const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const joinr = require('./joinr');
-const { finalize } = require('./extract.js');
+const { finalize, consultProbe } = require('./extract.js');
 
 const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
 
@@ -154,9 +154,18 @@ module.exports = (self) => {
         const context = {
           path: `@${widget._id}`,
           schemaPath: `${path.schema}.${widget.type}`,
-          tags: policy.length ? _.uniq([ ...path.tags, ...policy ]) : path.tags
+          tags: policy.length ? _.uniq([ ...path.tags, ...policy ]) : path.tags,
+          probe: path.probe
         };
-        const found = manager.extract(req, widget, context);
+        let found = path.probe && consultProbe(self, path.probe, {
+          kind: 'widget',
+          manager,
+          widget,
+          path: context.path,
+          schemaPath: context.schemaPath,
+          tags: context.tags
+        });
+        found ??= manager.extract(req, widget, context);
         const defaults = {
           path: context.path,
           schemaPath: context.schemaPath,
@@ -165,7 +174,27 @@ module.exports = (self) => {
           tags: context.tags
         };
         for (const item of found) {
-          items.push(finalize(item, defaults));
+          const final = finalize(item, defaults);
+          // A text item still on the bare widget anchor names no property
+          // to write back to: applying it would replace the whole widget
+          // object. Warn at the source, on every occurrence — a production
+          // audit trail of un-appliable content — without breaking
+          // mid-migration projects
+          if (final.text != null && !final.metaOnly && final.path === context.path) {
+            self.logWarn(req, 'widget-extract-pathless-item',
+              `The "${widget.type}" widget contributed an extract item without a "path". ` +
+              'The path defaulted to the whole widget and the item cannot be applied ' +
+              'back to the document. Give the item an explicit "path" (and "tags") — ' +
+              'see the extract method in @apostrophecms/widget-type.',
+              {
+                widgetType: widget.type,
+                widgetId: widget._id,
+                path: final.path,
+                schemaPath: final.schemaPath
+              }
+            );
+          }
+          items.push(final);
         }
       }
       if (items.length) {
@@ -1017,7 +1046,8 @@ module.exports = (self) => {
         const found = self.apos.schema.extract(req, field.schema, item, {
           path: `@${item._id}`,
           schemaPath: path.schema,
-          tags: path.tags
+          tags: path.tags,
+          probe: path.probe
         });
         for (const sub of found) {
           items.push(sub);
@@ -1156,7 +1186,8 @@ module.exports = (self) => {
       return self.apos.schema.extract(req, field.schema, value, {
         path: path.value,
         schemaPath: path.schema,
-        tags: path.tags
+        tags: path.tags,
+        probe: path.probe
       });
     },
     def: {}

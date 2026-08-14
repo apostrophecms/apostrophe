@@ -890,6 +890,304 @@ describe('Schema extraction policy', function() {
       assert.equal(byPath(translation, '@w6'), undefined);
       assert(byPath(translation, '@w6.caption'));
     });
+
+    it('logs a structured warning when a widget text item stays on the widget anchor', function() {
+      const calls = [];
+      const original = apos.schema.logWarn;
+      apos.schema.logWarn = (...args) => {
+        calls.push(args);
+      };
+      try {
+        apos.schema.extract(req, schema, areaDoc());
+      } finally {
+        apos.schema.logWarn = original;
+      }
+      // The fancy widget's own item names no path, so it defaulted to the
+      // widget anchor and cannot be applied back
+      const pathless = calls.filter(
+        ([ , type ]) => type === 'widget-extract-pathless-item'
+      );
+      assert.equal(pathless.length, 1);
+      const [ callReq, , message, data ] = pathless[0];
+      assert.equal(callReq, req);
+      assert.match(message, /"fancy" widget/);
+      assert.deepEqual(data, {
+        widgetType: 'fancy',
+        widgetId: 'w2',
+        path: '@w2',
+        schemaPath: 'body.fancy'
+      });
+      // The image widget's anchored item is an image, not text; the other
+      // widgets put their text on real property paths — one incident total
+    });
+  });
+
+  describe('the extract probe', function() {
+    let req;
+    let walkSchema;
+    let areaSchema;
+    let policySchema;
+
+    const walkDoc = () => ({
+      headline: 'Big News',
+      body: 'A long story',
+      rows: [
+        {
+          _id: 'r1',
+          cell: 'One',
+          deep: { inner: 'Deep one' }
+        }
+      ],
+      meta: { inner: 'About' }
+    });
+
+    const areaDoc = () => ({
+      body: {
+        metaType: 'area',
+        items: [
+          {
+            _id: 'w1',
+            type: '@apostrophecms/rich-text',
+            content: '<p>Rich text</p>'
+          },
+          {
+            _id: 'w2',
+            type: 'fancy',
+            special: 'Own data',
+            heading: 'Head',
+            nested: {
+              metaType: 'area',
+              items: [
+                {
+                  _id: 'w3',
+                  type: '@apostrophecms/rich-text',
+                  content: '<p>Deep</p>'
+                }
+              ]
+            }
+          },
+          {
+            _id: 'w4',
+            type: 'muted',
+            note: 'Never seen'
+          }
+        ]
+      },
+      mutedByConfig: {
+        metaType: 'area',
+        items: [
+          {
+            _id: 'w7',
+            type: 'tagged',
+            blurb: 'Hidden'
+          }
+        ]
+      }
+    });
+
+    before(function() {
+      req = apos.task.getReq();
+      walkSchema = apos.modules['walk-piece'].schema;
+      areaSchema = apos.modules['area-piece'].schema;
+      policySchema = apos.modules['policy-piece'].schema;
+    });
+
+    function byPath(items, path) {
+      return items.find(item => item.path === path);
+    }
+
+    it('replaces a field dispatch and finalizes with the same defaults', function() {
+      const items = apos.schema.extract(req, walkSchema, walkDoc(), {
+        probe(context) {
+          if (context.kind === 'field' && context.path === 'headline') {
+            return [ { text: 'Probed headline' } ];
+          }
+        }
+      });
+      assert.deepEqual(byPath(items, 'headline'), {
+        path: 'headline',
+        schemaPath: 'headline',
+        type: 'string',
+        label: 'Headline',
+        tags: [ 'text' ],
+        text: 'Probed headline'
+      });
+      // Every other dispatch point proceeds normally
+      assert.equal(byPath(items, 'body').text, 'A long story');
+      assert.equal(byPath(items, '@r1.cell').text, 'One');
+    });
+
+    it('declining everywhere leaves the extraction identical', function() {
+      const plain = apos.schema.extract(req, walkSchema, walkDoc());
+      const probed = apos.schema.extract(req, walkSchema, walkDoc(), {
+        probe() {}
+      });
+      assert.deepEqual(probed, plain);
+    });
+
+    it('an empty array suppresses a dispatch point', function() {
+      const items = apos.schema.extract(req, walkSchema, walkDoc(), {
+        probe(context) {
+          if (context.path === 'headline') {
+            return [];
+          }
+        }
+      });
+      assert.equal(byPath(items, 'headline'), undefined);
+      assert.equal(byPath(items, 'body').text, 'A long story');
+    });
+
+    it('replaces a widget dispatch, with the manager in hand', function() {
+      let manager;
+      const items = apos.schema.extract(req, areaSchema, areaDoc(), {
+        probe(context) {
+          if (context.kind === 'widget' && context.widget._id === 'w1') {
+            manager = context.manager;
+            return [
+              {
+                text: 'Probed rich text',
+                path: `${context.path}.content`
+              }
+            ];
+          }
+        }
+      });
+      assert.equal(manager, apos.modules['@apostrophecms/rich-text-widget']);
+      assert.deepEqual(byPath(items, '@w1.content'), {
+        path: '@w1.content',
+        schemaPath: 'body.@apostrophecms/rich-text',
+        type: 'widget:@apostrophecms/rich-text',
+        label: apos.modules['@apostrophecms/rich-text-widget'].label,
+        tags: [],
+        text: 'Probed rich text'
+      });
+    });
+
+    it('threads through areas, widget managers, arrays and objects', function() {
+      const seen = [];
+      apos.schema.extract(req, areaSchema, areaDoc(), {
+        probe(context) {
+          seen.push(`${context.kind}:${context.schemaPath}`);
+        }
+      });
+      // Fields and widgets at every depth, through the fancy widget's own
+      // extract override, which passes the walk context on unchanged
+      assert(seen.includes('field:body'));
+      assert(seen.includes('widget:body.@apostrophecms/rich-text'));
+      assert(seen.includes('widget:body.fancy'));
+      assert(seen.includes('field:body.fancy.heading'));
+      assert(seen.includes('field:body.fancy.nested'));
+      assert(seen.includes('widget:body.fancy.nested.@apostrophecms/rich-text'));
+      // Opted-out widgets are skipped without consulting the probe
+      assert(!seen.includes('widget:body.muted'));
+      assert(!seen.includes('widget:mutedByConfig.tagged'));
+
+      const arraySeen = [];
+      apos.schema.extract(req, walkSchema, walkDoc(), {
+        probe(context) {
+          arraySeen.push(`${context.kind}:${context.path}`);
+        }
+      });
+      assert(arraySeen.includes('field:@r1.cell'));
+      assert(arraySeen.includes('field:@r1.deep.inner'));
+      assert(arraySeen.includes('field:meta.inner'));
+    });
+
+    it('replaces a dispatch point at full depth', function() {
+      const items = apos.schema.extract(req, areaSchema, areaDoc(), {
+        probe(context) {
+          if (context.kind === 'widget' && context.widget._id === 'w3') {
+            return [
+              {
+                text: 'Probed deep',
+                path: `${context.path}.content`,
+                tags: [ 'deepTag' ]
+              }
+            ];
+          }
+        }
+      });
+      const item = byPath(items, '@w3.content');
+      assert.equal(item.text, 'Probed deep');
+      assert.equal(item.schemaPath, 'body.fancy.nested.@apostrophecms/rich-text');
+      assert.deepEqual(item.tags, [ 'deepTag' ]);
+      assert.equal(item.type, 'widget:@apostrophecms/rich-text');
+    });
+
+    it('is consulted for fields core cannot extract, which stay silent unclaimed', function() {
+      const doc = {
+        featured: 'raw value',
+        optOut: 'hidden',
+        secret: 'hunter2'
+      };
+      const plain = apos.schema.extract(req, policySchema, doc);
+      assert.equal(byPath(plain, 'featured'), undefined);
+      assert.equal(byPath(plain, 'optOut'), undefined);
+
+      const seen = [];
+      const items = apos.schema.extract(req, policySchema, doc, {
+        probe(context) {
+          seen.push(context.field.name);
+          if (context.field.name === 'featured') {
+            return [ {
+              text: context.value,
+              tags: [ 'claimed' ]
+            } ];
+          }
+        }
+      });
+      // Types with no extract method and opted-out fields are all seen:
+      // `_extractable: false` conflates the two and a probe may own either
+      assert(seen.includes('featured'));
+      assert(seen.includes('optOut'));
+      assert(seen.includes('secret'));
+      assert.deepEqual(byPath(items, 'featured'), {
+        path: 'featured',
+        schemaPath: 'featured',
+        type: 'noExtract',
+        label: 'Featured',
+        tags: [ 'claimed' ],
+        text: 'raw value'
+      });
+      // Unclaimed inactive fields still yield nothing
+      assert.equal(byPath(items, 'optOut'), undefined);
+      assert.equal(byPath(items, 'secret'), undefined);
+    });
+
+    it('never consults the probe for an unvalidated schema', function() {
+      let consulted = false;
+      const items = apos.schema.extract(
+        req,
+        [ {
+          name: 'free',
+          type: 'string'
+        } ],
+        { free: 'Hi' },
+        {
+          probe() {
+            consulted = true;
+          }
+        }
+      );
+      assert.deepEqual(items, []);
+      assert.equal(consulted, false);
+    });
+
+    it('rejects a probe that is not a function', function() {
+      assert.throws(() => {
+        apos.schema.extract(req, walkSchema, walkDoc(), { probe: true });
+      }, /probe/);
+    });
+
+    it('rejects a probe returning something other than an array', function() {
+      assert.throws(() => {
+        apos.schema.extract(req, walkSchema, walkDoc(), {
+          probe() {
+            return { text: 'not an array' };
+          }
+        });
+      }, /probe/);
+    });
   });
 
   describe('widget policy validation failures', function() {

@@ -19,7 +19,7 @@ const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const addFieldTypes = require('./lib/addFieldTypes');
 const newInstance = require('./lib/newInstance.js');
-const { finalize } = require('./lib/extract.js');
+const { finalize, consultProbe } = require('./lib/extract.js');
 
 // Properties of a patch that are acted upon by the PATCH routes themselves
 // and never reach `convert`. See `patchWidgetIfSuitable`.
@@ -560,6 +560,22 @@ module.exports = {
       //   and container tags to union into everything the sub-walk emits.
       //   Passed by extractors and widget managers reentering the walk for
       //   a sub-schema; rarely useful otherwise.
+      // - `probe`: a function consulted at each dispatch point before the
+      //   default extractor runs. It receives a context object — for
+      //   fields `{ kind: 'field', field, value, path, schemaPath, tags }`,
+      //   for widgets in areas `{ kind: 'widget', manager, widget, path,
+      //   schemaPath, tags }` — and returns an array of items to use in
+      //   place of the default extraction (finalized with the same
+      //   defaults; an empty array suppresses the dispatch point), or
+      //   `undefined` to proceed normally. With a probe, every field of a
+      //   validated schema is consulted, including fields whose type does
+      //   not extract or that are opted out — a consumer may own content
+      //   core cannot see — and their items inherit the container's tags.
+      //   Unvalidated schemas are never walked, probe or not. Widgets keep
+      //   their opt-out semantics: a widget opted out at the module or
+      //   area level is skipped without consulting the probe. The probe
+      //   travels with `path`/`schemaPath`/`tags` through container
+      //   extractors and widget managers to every depth.
       //
       // Container field types (arrays, objects, areas) implement `extract`
       // by calling this method again on their sub-schema, without query
@@ -573,7 +589,8 @@ module.exports = {
           maxLength = null,
           path = '',
           schemaPath = '',
-          tags: inherited = null
+          tags: inherited = null,
+          probe = null
         } = options;
         if (include !== null && !isTagArray(include)) {
           throw self.apos.error('invalid', '"include" must be an array of tag strings');
@@ -597,21 +614,41 @@ module.exports = {
         if (maxLength !== null && (!Number.isInteger(maxLength) || maxLength <= 0)) {
           throw self.apos.error('invalid', '"maxLength" must be a positive integer');
         }
+        if (probe !== null && typeof probe !== 'function') {
+          throw self.apos.error('invalid', '"probe" must be a function');
+        }
         const items = [];
         for (const field of schema) {
-          if (!Array.isArray(field._extractable)) {
+          // Only fields of validated schemas carry `_extractable`. The
+          // probe is consulted for all of them, even `false` ones — that
+          // value conflates "the type cannot extract" with "opted out",
+          // and a probe may own content core cannot see
+          const active = Array.isArray(field._extractable);
+          if (!active && !(probe && field._extractable === false)) {
             continue;
           }
+          const own = active ? field._extractable : [];
           const fieldTags = inherited?.length
-            ? _.uniq([ ...inherited, ...field._extractable ])
-            : field._extractable;
+            ? _.uniq([ ...inherited, ...own ])
+            : own;
           const fieldPath = {
             value: path ? `${path}.${field.name}` : field.name,
             schema: schemaPath ? `${schemaPath}.${field.name}` : field.name,
-            tags: fieldTags
+            tags: fieldTags,
+            probe
           };
-          const found = self.fieldTypes[field.type]
-            .extract(req, field, doc?.[field.name], fieldPath) ?? [];
+          let found = probe && consultProbe(self, probe, {
+            kind: 'field',
+            field,
+            value: doc?.[field.name],
+            path: fieldPath.value,
+            schemaPath: fieldPath.schema,
+            tags: fieldTags
+          });
+          found ??= active
+            ? self.fieldTypes[field.type]
+              .extract(req, field, doc?.[field.name], fieldPath) ?? []
+            : [];
           const defaults = {
             path: fieldPath.value,
             schemaPath: fieldPath.schema,
