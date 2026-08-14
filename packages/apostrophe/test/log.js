@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 
@@ -10,6 +9,45 @@ const testModule = {
     init() { }
   }
 };
+
+// What a logger is handed: the event data alone when the call had no message
+// of its own, the message and the data when it had one. The module name and
+// the event type are fields, never a prefix on the message.
+function assertEntry(args, message, data) {
+  assert.deepEqual(args, message === undefined ? [ data ] : [ message, data ]);
+}
+
+// The renderer writes to the streams, not through the console. Restoring them
+// in a finally block matters: an assertion throws, and a patched stdout would
+// swallow every report that follows.
+async function captured(fn) {
+  const out = [];
+  const err = [];
+  const stdout = process.stdout.write;
+  const stderr = process.stderr.write;
+  const collect = (lines) => (chunk) => {
+    lines.push(chunk.replace(/\n$/, ''));
+    return true;
+  };
+  process.stdout.write = collect(out);
+  process.stderr.write = collect(err);
+  let result;
+  try {
+    result = await fn();
+  } finally {
+    process.stdout.write = stdout;
+    process.stderr.write = stderr;
+  }
+  return {
+    result,
+    out,
+    err
+  };
+}
+
+function parsed(lines) {
+  return lines.map((line) => JSON.parse(line));
+}
 
 describe('structured logging', function () {
   this.timeout(t.timeout);
@@ -41,127 +79,77 @@ describe('structured logging', function () {
       assert.equal(typeof apos.testModule.logWarn, 'function');
       assert.equal(typeof apos.testModule.logError, 'function');
       assert.deepEqual(apos.structuredLog.filters, {
-        '*': { severity: [ 'debug', 'info', 'warn', 'error' ] }
+        '*': {
+          severity: [ 'debug', 'info', 'warn', 'error' ],
+          events: [ 'apos-listening' ]
+        }
       });
     });
 
-    it('should format entries for readability', function () {
+    it('should render entries for readability', async function () {
       // id spy
       const id = apos.util.generateId;
       apos.util.generateId = () => 'test-id';
-      let savedArgs = [];
 
       // ### DEBUG
-      const debug = console.debug;
-      console.debug = (...args) => {
-        savedArgs = args;
-      };
+      const debug = await captured(() => apos.testModule.logDebug('event-type'));
+      assert.deepEqual(debug.out, [ '[test-module] event-type' ]);
+      assert.deepEqual(debug.err, []);
 
-      // Validate formatting
-      savedArgs = [];
-      apos.testModule.logDebug('event-type');
-      assert.equal(savedArgs[0], 'test-module: event-type\n');
-      assert.equal(
-        savedArgs[1],
-`{
-  "module": "test-module",
-  "type": "event-type",
-  "severity": "debug"
+      // The developer's message, never a composed prefix
+      assert.deepEqual(
+        (await captured(() => apos.testModule.logDebug('event-type', 'some message'))).out,
+        [ '[test-module] event-type: some message' ]
+      );
+
+      // Event data below the line
+      assert.deepEqual(
+        (await captured(() => apos.testModule.logDebug('event-type', { foo: 'bar' }))).out,
+        [
+`[test-module] event-type
+{
+  "foo": "bar"
 }`
+        ]
       );
 
       // Message as
-      savedArgs = [];
       apos.structuredLog.options.messageAs = 'msg';
-      apos.testModule.logDebug('event-type', 'some message');
-      assert.equal(
-        savedArgs[0],
-`{
-  "msg": "test-module: event-type: some message",
-  "module": "test-module",
-  "type": "event-type",
-  "severity": "debug"
-}`
+      assert.deepEqual(
+        (await captured(() => apos.testModule.logDebug('event-type', 'some message'))).out,
+        [ '[test-module] event-type: some message' ]
       );
-      assert.equal(typeof savedArgs[1], 'undefined');
       delete apos.structuredLog.options.messageAs;
 
       // ### INFO
-      const info = console.info;
-      console.info = (...args) => {
-        savedArgs = args;
-      };
-
-      // Validate formatting
-      savedArgs = [];
-      apos.testModule.logInfo('event-type');
-      assert.equal(savedArgs[0], 'test-module: event-type\n');
-      assert.equal(
-        savedArgs[1],
-`{
-  "module": "test-module",
-  "type": "event-type",
-  "severity": "info"
-}`
+      assert.deepEqual(
+        (await captured(() => apos.testModule.logInfo('event-type'))).out,
+        [ '[test-module] event-type' ]
       );
 
-      // ### WARN
-      const warn = console.warn;
-      console.warn = (...args) => {
-        savedArgs = args;
-      };
-
-      // Validate formatting
-      savedArgs = [];
-      apos.testModule.logWarn('event-type');
-      assert.equal(savedArgs[0], 'test-module: event-type\n');
-      assert.equal(
-        savedArgs[1],
-`{
-  "module": "test-module",
-  "type": "event-type",
-  "severity": "warn"
-}`
-      );
+      // ### WARN - to stderr, with a badge
+      const warn = await captured(() => apos.testModule.logWarn('event-type'));
+      assert.deepEqual(warn.out, []);
+      assert.deepEqual(warn.err, [ '[WARN] [test-module] event-type' ]);
 
       // ### ERROR
-      const error = console.error;
-      console.error = (...args) => {
-        savedArgs = args;
-      };
-
-      // Validate formatting
-      savedArgs = [];
-      apos.testModule.logError('event-type');
-      assert.equal(savedArgs[0], 'test-module: event-type\n');
-      assert.equal(
-        savedArgs[1],
-`{
-  "module": "test-module",
-  "type": "event-type",
-  "severity": "error"
-}`
-      );
+      const error = await captured(() => apos.testModule.logError('event-type'));
+      assert.deepEqual(error.out, []);
+      assert.deepEqual(error.err, [ '[ERROR] [test-module] event-type' ]);
 
       // With req
-      savedArgs = [];
-      apos.testModule.logError(
-        apos.task.getReq({
-          originalUrl: '/module/test',
-          path: '/test',
-          method: 'GET',
-          ip: '1.2.3.4',
-          query: { foo: 'bar' }
-        }),
-        'event-type'
-      );
-      assert.equal(savedArgs[0], 'test-module: event-type\n');
-      assert.equal(
-        savedArgs[1],
-`{
-  "module": "test-module",
-  "type": "event-type",
-  "severity": "error",
+      const req = () => apos.task.getReq({
+        originalUrl: '/module/test',
+        path: '/test',
+        method: 'GET',
+        ip: '1.2.3.4',
+        query: { foo: 'bar' }
+      });
+      assert.deepEqual(
+        (await captured(() => apos.testModule.logError(req(), 'event-type'))).err,
+        [
+`[ERROR] [test-module] event-type
+{
   "url": "/module/test",
   "path": "/test",
   "method": "GET",
@@ -171,46 +159,10 @@ describe('structured logging', function () {
   },
   "requestId": "test-id"
 }`
+        ]
       );
-
-      // With req and message as
-      savedArgs = [];
-      apos.structuredLog.options.messageAs = 'message';
-      apos.testModule.logError(
-        apos.task.getReq({
-          originalUrl: '/module/test',
-          path: '/test',
-          method: 'GET',
-          ip: '1.2.3.4',
-          query: { foo: 'bar' }
-        }),
-        'event-type'
-      );
-      assert.equal(savedArgs.length, 1);
-      assert.equal(
-        savedArgs[0],
-`{
-  "message": "test-module: event-type",
-  "module": "test-module",
-  "type": "event-type",
-  "severity": "error",
-  "url": "/module/test",
-  "path": "/test",
-  "method": "GET",
-  "ip": "1.2.3.4",
-  "query": {
-    "foo": "bar"
-  },
-  "requestId": "test-id"
-}`
-      );
-      delete apos.structuredLog.options.messageAs;
 
       apos.util.generateId = id;
-      console.debug = debug;
-      console.info = info;
-      console.warn = warn;
-      console.error = error;
     });
 
     it('should log formatted entry: logDebug', function () {
@@ -253,24 +205,21 @@ describe('structured logging', function () {
 
       // Format
       apos.testModule.logDebug('event-type');
-      assert.equal(savedArgs[0], 'test-module: event-type');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, undefined, {
         type: 'event-type',
         severity: 'debug',
         module: 'test-module'
       });
 
       apos.testModule.logDebug('event-type', 'a message');
-      assert.equal(savedArgs[0], 'test-module: event-type: a message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'a message', {
         type: 'event-type',
         severity: 'debug',
         module: 'test-module'
       });
 
       apos.testModule.logDebug('event-type', 'a message', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type: a message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'a message', {
         type: 'event-type',
         severity: 'debug',
         module: 'test-module',
@@ -278,8 +227,7 @@ describe('structured logging', function () {
       });
 
       apos.testModule.logDebug('event-type', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, undefined, {
         type: 'event-type',
         severity: 'debug',
         module: 'test-module',
@@ -293,8 +241,7 @@ describe('structured logging', function () {
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type');
-      assert.equal(savedArgs[0], 'test-module: event-type');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, undefined, {
         url: '/module/test',
         path: '/test',
         method: 'GET',
@@ -313,8 +260,7 @@ describe('structured logging', function () {
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message');
-      assert.equal(savedArgs[0], 'test-module: event-type: some message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'some message', {
         url: '/module/test',
         path: '/test',
         method: 'GET',
@@ -333,8 +279,7 @@ describe('structured logging', function () {
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type: some message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'some message', {
         url: '/module/test',
         path: '/test',
         method: 'GET',
@@ -354,8 +299,7 @@ describe('structured logging', function () {
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, undefined, {
         url: '/module/test',
         path: '/test',
         method: 'GET',
@@ -394,8 +338,7 @@ describe('structured logging', function () {
 
       // Format
       apos.testModule.logInfo('event-type', 'a message', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type: a message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'a message', {
         type: 'event-type',
         severity: 'info',
         module: 'test-module',
@@ -409,8 +352,7 @@ describe('structured logging', function () {
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type: some message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'some message', {
         url: '/module/test',
         path: '/test',
         method: 'GET',
@@ -449,8 +391,7 @@ describe('structured logging', function () {
 
       // Format
       apos.testModule.logWarn('event-type', 'a message', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type: a message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'a message', {
         type: 'event-type',
         severity: 'warn',
         module: 'test-module',
@@ -464,8 +405,7 @@ describe('structured logging', function () {
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type: some message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'some message', {
         url: '/module/test',
         path: '/test',
         method: 'GET',
@@ -504,8 +444,7 @@ describe('structured logging', function () {
 
       // Format
       apos.testModule.logError('event-type', 'a message', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type: a message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'a message', {
         type: 'event-type',
         severity: 'error',
         module: 'test-module',
@@ -519,8 +458,7 @@ describe('structured logging', function () {
         ip: '1.2.3.4',
         query: { foo: 'bar' }
       }), 'event-type', 'some message', { foo: 'bar' });
-      assert.equal(savedArgs[0], 'test-module: event-type: some message');
-      assert.deepEqual(savedArgs[1], {
+      assertEntry(savedArgs, 'some message', {
         url: '/module/test',
         path: '/test',
         method: 'GET',
@@ -559,7 +497,8 @@ describe('structured logging', function () {
 
       assert.deepEqual(apos.structuredLog.filters, {
         '*': {
-          severity: [ 'error' ]
+          severity: [ 'error' ],
+          events: [ 'apos-listening' ]
         },
         'test-module': {
           events: [ 'type1' ]
@@ -597,25 +536,25 @@ describe('structured logging', function () {
       // Matches the global severity
       savedArgs = [];
       apos.global.logError('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
       savedArgs = [];
       apos.global.logError('type2');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // Matches the module type only
       savedArgs = [];
       apos.testModule.logDebug('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // Matches the global severity and module type
       savedArgs = [];
       apos.testModule.logError('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // Matches the global severity only
       savedArgs = [];
       apos.testModule.logError('type2');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // No match
       savedArgs = [];
@@ -670,14 +609,14 @@ describe('structured logging', function () {
       // ### DEBUG
       savedArgs = [];
       apos.testModule.logDebug('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
       savedArgs = [];
       apos.testModule.logInfo('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
       apos.testModule.logWarn('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
       apos.testModule.logError('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       apos.util.logger.debug = debug;
       apos.util.logger.info = info;
@@ -738,7 +677,7 @@ describe('structured logging', function () {
       savedArgs = [];
       // Match the global type only
       apos.global.logDebug('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       savedArgs = [];
       // No match
@@ -748,14 +687,14 @@ describe('structured logging', function () {
       // Always match because of the event type wildcard
       savedArgs = [];
       apos.testModule.logDebug('any-type');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
       savedArgs = [];
       apos.testModule.logInfo('any-type');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
       apos.testModule.logWarn('any-type');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
       apos.testModule.logError('any-type');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       apos.util.logger.debug = debug;
       apos.util.logger.info = info;
@@ -822,32 +761,32 @@ describe('structured logging', function () {
       // Matches the type only
       savedArgs = [];
       apos.global.logDebug('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // Matches the type and severity
       savedArgs = [];
       apos.global.logError('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // Matches the global type and module severity
       savedArgs = [];
       apos.testModule.logDebug('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // Matches the global type and severity
       savedArgs = [];
       apos.testModule.logError('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // Matches the global type only
       savedArgs = [];
       apos.testModule.logInfo('type1');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // Matches the module type only
       savedArgs = [];
       apos.testModule.logInfo('type2');
-      assert.equal(savedArgs.length, 2);
+      assert.equal(savedArgs.length, 1);
 
       // No match
       savedArgs = [];
@@ -879,7 +818,10 @@ describe('structured logging', function () {
     before(async function () {
       process.env.NODE_ENV = 'production';
       apos = await t.create({
-        modules: { ...testModule }
+        modules: { ...testModule },
+        // The opt-out from the production default, pinning the shape of past
+        // releases; test mode would otherwise pick the readable format.
+        log: { format: 'legacy' }
       });
     });
 
@@ -891,83 +833,56 @@ describe('structured logging', function () {
 
     it('should set filter configuration', function () {
       assert.deepEqual(apos.structuredLog.filters, {
-        '*': { severity: [ 'warn', 'error' ] }
+        '*': {
+          severity: [ 'warn', 'error' ],
+          events: [ 'apos-listening' ]
+        }
       });
     });
 
-    it('should filter and format entries', function () {
-      // id spy
-      const id = apos.util.generateId;
-      apos.util.generateId = () => 'test-id';
-      let savedArgs = [];
+    it('should filter and render entries in the shape of past releases', async function () {
+      // Below the production severity floor
+      const debug = await captured(() => apos.testModule.logDebug('event-type'));
+      assert.deepEqual(debug.out, []);
+      assert.deepEqual(debug.err, []);
 
-      // ### DEBUG
-      const debug = console.debug;
-      console.debug = (...args) => {
-        savedArgs = args;
-      };
-
-      // Validate formatting
-      savedArgs = [];
-      apos.testModule.logDebug('event-type');
-      assert.equal(typeof savedArgs[0], 'undefined');
-      assert.equal(typeof savedArgs[1], 'undefined');
-
-      // Message as
-      savedArgs = [];
       apos.structuredLog.options.messageAs = 'msg';
-      apos.testModule.logDebug('event-type', 'some message');
-      assert.equal(typeof savedArgs[0], 'undefined');
-      assert.equal(typeof savedArgs[1], 'undefined');
+      const withMessageAs = await captured(
+        () => apos.testModule.logDebug('event-type', 'some message')
+      );
+      assert.deepEqual(withMessageAs.out, []);
+      assert.deepEqual(withMessageAs.err, []);
       delete apos.structuredLog.options.messageAs;
 
-      // ### INFO
-      const info = console.info;
-      console.info = (...args) => {
-        savedArgs = args;
-      };
+      const info = await captured(() => apos.testModule.logInfo('event-type'));
+      assert.deepEqual(info.out, []);
+      assert.deepEqual(info.err, []);
 
-      // Validate formatting
-      savedArgs = [];
-      apos.testModule.logInfo('event-type');
-      assert.equal(typeof savedArgs[0], 'undefined');
-      assert.equal(typeof savedArgs[1], 'undefined');
-
-      // ### WARN
-      const warn = console.warn;
-      console.warn = (...args) => {
-        savedArgs = args;
-      };
-
-      // Validate formatting
-      savedArgs = [];
-      apos.testModule.logWarn('event-type');
-      assert.equal(savedArgs[0], 'test-module: event-type');
-      assert.equal(
-        savedArgs[1],
-        '{"module":"test-module","type":"event-type","severity":"warn"}'
+      // Kept, and rendered as the message followed by the event data
+      assert.deepEqual(
+        (await captured(() => apos.testModule.logWarn('event-type'))).err,
+        [ 'test-module: event-type {"module":"test-module","type":"event-type","severity":"warn"}' ]
       );
-
-      // ### ERROR
-      const error = console.error;
-      console.error = (...args) => {
-        savedArgs = args;
-      };
-
-      // Validate formatting
-      savedArgs = [];
-      apos.testModule.logError('event-type');
-      assert.equal(savedArgs[0], 'test-module: event-type');
-      assert.equal(
-        savedArgs[1],
-        '{"module":"test-module","type":"event-type","severity":"error"}'
+      assert.deepEqual(
+        (await captured(() => apos.testModule.logError('event-type', 'a message'))).err,
+        [
+          'test-module: event-type: a message ' +
+          '{"module":"test-module","type":"event-type","severity":"error"}'
+        ]
       );
+    });
 
-      apos.util.generateId = id;
-      console.debug = debug;
-      console.info = info;
-      console.warn = warn;
-      console.error = error;
+    it('should keep the startup event below the severity floor', async function () {
+      const express = apos.modules['@apostrophecms/express'];
+      const url = `http://${express.address}:${express.port}`;
+      assert.deepEqual(
+        (await captured(() => express.logListening())).out,
+        [
+          '@apostrophecms/express: apos-listening {"module":"@apostrophecms/express",' +
+          `"type":"apos-listening","severity":"info","url":"${url}",` +
+          `"adminUrl":"${url}/login"}`
+        ]
+      );
     });
 
     it('should override default filter configuration', async function () {
@@ -986,7 +901,10 @@ describe('structured logging', function () {
       });
 
       assert.deepEqual(apos.structuredLog.filters, {
-        '*': { severity: [ 'info', 'warn', 'error' ] }
+        '*': {
+          severity: [ 'info', 'warn', 'error' ],
+          events: [ 'apos-listening' ]
+        }
       });
     });
   });
@@ -1044,7 +962,8 @@ describe('structured logging', function () {
 
       assert.deepEqual(apos.structuredLog.filters, {
         '*': {
-          severity: [ 'warn', 'error' ]
+          severity: [ 'warn', 'error' ],
+          events: [ 'apos-listening' ]
         },
         'test-module': {
           severity: [ 'info' ],
@@ -1289,7 +1208,7 @@ describe('structured logging', function () {
       savedArgs = [];
       apos.util.warnDev('some message');
       assert.deepEqual(savedArgs, [ {
-        msg: '⚠️  some message'
+        msg: 'some message'
       } ]);
 
       savedArgs = [];
@@ -1303,14 +1222,14 @@ describe('structured logging', function () {
       apos.util.warnDev('some message', { foo: 'bar' });
       assert.deepEqual(savedArgs, [ {
         foo: 'bar',
-        msg: '⚠️  some message'
+        msg: 'some message'
       } ]);
 
       savedArgs = [];
       apos.util.warnDev('some message', 'more', { foo: 'bar' });
       assert.deepEqual(savedArgs, [ {
         foo: 'bar',
-        msg: '⚠️  some message',
+        msg: 'some message',
         args: [ 'more' ]
       } ]);
 
@@ -1330,7 +1249,6 @@ describe('structured logging', function () {
     let user;
     let jar;
     let aposError;
-    let consoleError;
     let generateId;
 
     async function login() {
@@ -1388,13 +1306,11 @@ describe('structured logging', function () {
       await login();
       aposError = apos.util.logger.error;
       generateId = apos.util.generateId;
-      consoleError = console.error;
     });
 
     beforeEach(async function () {
       apos.util.logger.error = aposError;
       apos.util.generateId = generateId;
-      console.error = consoleError;
     });
 
     after(async function () {
@@ -1416,7 +1332,7 @@ describe('structured logging', function () {
       } catch (e) {
         //
       }
-      assert.equal(savedArgs[0], 'test-piece: api-error-invalid: invalid');
+      assert.equal(savedArgs[0], 'invalid');
       assert.equal(savedArgs[1].module, 'test-piece');
       assert.equal(savedArgs[1].type, 'api-error-invalid');
       assert.equal(savedArgs[1].severity, 'error');
@@ -1427,7 +1343,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1].query, {});
       assert.equal(savedArgs[1].requestId, 'test-id');
       assert.equal(savedArgs[1].name, 'invalid');
-      assert.equal(Array.isArray(savedArgs[1].stack), true);
+      assert.equal(typeof savedArgs[1].stack, 'string');
       assert.equal(savedArgs[1].errorPath, undefined);
       assert.deepEqual(savedArgs[1].data.errors, [
         {
@@ -1455,8 +1371,7 @@ describe('structured logging', function () {
 
       // Test the property order
       savedArgs = [];
-      apos.util.logger.error = aposError;
-      console.error = (...args) => {
+      apos.util.logger.error = (...args) => {
         savedArgs = args;
       };
 
@@ -1468,67 +1383,23 @@ describe('structured logging', function () {
       } catch (e) {
         //
       }
-      // Skip IP as it might get changed in CI
-      assert.equal(savedArgs[0], 'test-piece: api-error-invalid: invalid\n');
-      assert.equal(
-        savedArgs[1].startsWith(
-`{
-  "module": "test-piece",
-  "type": "api-error-invalid",
-  "severity": "error",
-  "url": "/api/v1/test-piece",
-  "path": "/api/v1/test-piece",
-  "method": "POST",
-`
-        ),
-        true
-      );
-      assert.equal(
-        savedArgs[1].includes(
-`
-  "query": {},
-  "requestId": "test-id",
-  "name": "invalid",
-  "status": 400,
-  "stack": [
-`
-        ),
-        true
-      );
-      assert.equal(
-        savedArgs[1].endsWith(
-`
-  ],
-  "data": {
-    "errors": [
-      {
-        "name": "required",
-        "code": 422,
-        "message": "required",
-        "data": {},
-        "path": "title"
-      },
-      {
-        "name": "required",
-        "code": 422,
-        "message": "required",
-        "data": {},
-        "path": "field1"
-      },
-      {
-        "name": "required",
-        "code": 422,
-        "message": "required",
-        "data": {},
-        "path": "field2"
-      }
-    ]
-  }
-}`
-        ),
-        true
-      );
-
+      assert.deepEqual(Object.keys(savedArgs[1]), [
+        'module',
+        'type',
+        'severity',
+        'url',
+        'path',
+        'method',
+        'ip',
+        'query',
+        'requestId',
+        'name',
+        'status',
+        'stack',
+        'cause',
+        'errorPath',
+        'data'
+      ]);
     });
 
     it('should log conflict error with data and custom message', async function () {
@@ -1545,7 +1416,7 @@ describe('structured logging', function () {
       } catch (e) {
         //
       }
-      assert.equal(savedArgs[0], 'test-module: api-error-conflict: Conflict error');
+      assert.equal(savedArgs[0], 'Conflict error');
       assert.equal(savedArgs[1].module, 'test-module');
       assert.equal(savedArgs[1].type, 'api-error-conflict');
       assert.equal(savedArgs[1].severity, 'error');
@@ -1556,7 +1427,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs[1].query, { foo: 'bar' });
       assert.equal(savedArgs[1].requestId, 'test-id');
       assert.equal(savedArgs[1].name, 'conflict');
-      assert.equal(Array.isArray(savedArgs[1].stack), true);
+      assert.equal(typeof savedArgs[1].stack, 'string');
       assert.equal(savedArgs[1].errorPath, 'some.field');
       assert.deepEqual(savedArgs[1].data, { some: 'data' });
     });
@@ -1629,12 +1500,11 @@ describe('structured logging', function () {
         //
       }
 
-      assert.equal(savedArgs[0], '@apostrophecms/login: incorrect-username');
-      assert(savedArgs[1].ip);
-      assert(savedArgs[1].requestId);
-      delete savedArgs[1].ip;
-      delete savedArgs[1].requestId;
-      assert.deepEqual(savedArgs[1], {
+      assert(savedArgs[0].ip);
+      assert(savedArgs[0].requestId);
+      delete savedArgs[0].ip;
+      delete savedArgs[0].requestId;
+      assert.deepEqual(savedArgs[0], {
         module: '@apostrophecms/login',
         type: 'incorrect-username',
         severity: 'info',
@@ -1655,7 +1525,7 @@ describe('structured logging', function () {
       } catch (e) {
         //
       }
-      assert.equal(savedArgs[1].attempts, 2);
+      assert.equal(savedArgs[0].attempts, 2);
     });
 
     it('should log incorrect password', async function () {
@@ -1678,12 +1548,11 @@ describe('structured logging', function () {
       } catch (e) {
         //
       }
-      assert.equal(savedArgs[0], '@apostrophecms/login: incorrect-password');
-      assert(savedArgs[1].ip);
-      assert(savedArgs[1].requestId);
-      delete savedArgs[1].ip;
-      delete savedArgs[1].requestId;
-      assert.deepEqual(savedArgs[1], {
+      assert(savedArgs[0].ip);
+      assert(savedArgs[0].requestId);
+      delete savedArgs[0].ip;
+      delete savedArgs[0].requestId;
+      assert.deepEqual(savedArgs[0], {
         module: '@apostrophecms/login',
         type: 'incorrect-password',
         severity: 'info',
@@ -1704,7 +1573,7 @@ describe('structured logging', function () {
       } catch (e) {
         //
       }
-      assert.equal(savedArgs[1].attempts, 2);
+      assert.equal(savedArgs[0].attempts, 2);
     });
 
     it('should log login complete', async function () {
@@ -1742,12 +1611,11 @@ describe('structured logging', function () {
       } catch (e) {
         //
       }
-      assert.equal(savedArgs[0], '@apostrophecms/login: complete');
-      assert(savedArgs[1].ip);
-      assert(savedArgs[1].requestId);
-      delete savedArgs[1].ip;
-      delete savedArgs[1].requestId;
-      assert.deepEqual(savedArgs[1], {
+      assert(savedArgs[0].ip);
+      assert(savedArgs[0].requestId);
+      delete savedArgs[0].ip;
+      delete savedArgs[0].requestId;
+      assert.deepEqual(savedArgs[0], {
         module: '@apostrophecms/login',
         type: 'complete',
         severity: 'info',
@@ -1758,6 +1626,357 @@ describe('structured logging', function () {
         username: 'admin',
         attempts: 1
       });
+    });
+  });
+  describe('the top-level log option', function () {
+    afterEach(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    function fakeLogger(calls) {
+      const logger = { calls };
+      for (const severity of [ 'debug', 'info', 'warn', 'error' ]) {
+        logger[severity] = (...args) => calls.push([ severity, ...args ]);
+      }
+      return logger;
+    }
+
+    it('should make every line one JSON object in structured format', async function () {
+      apos = await t.create({
+        modules: { ...testModule },
+        log: { format: 'structured' }
+      });
+      assert.equal(apos.logger.format, 'structured');
+
+      // A legacy string call, in an envelope like everything else
+      assert.deepEqual(
+        parsed((await captured(() => apos.util.info('Listening at http://localhost:3000'))).out),
+        [ {
+          severity: 'info',
+          msg: 'Listening at http://localhost:3000'
+        } ]
+      );
+
+      // A structured event, with the message unprefixed
+      assert.deepEqual(
+        parsed(
+          (await captured(
+            () => apos.testModule.logInfo('event-type', 'a message', { foo: 'bar' })
+          )).out
+        ),
+        [ {
+          severity: 'info',
+          module: 'test-module',
+          type: 'event-type',
+          msg: 'a message',
+          foo: 'bar'
+        } ]
+      );
+
+      // Severity still decides the stream
+      const error = await captured(() => apos.util.error('failed'));
+      assert.deepEqual(error.out, []);
+      assert.deepEqual(parsed(error.err), [ {
+        severity: 'error',
+        msg: 'failed'
+      } ]);
+    });
+
+    it('should make the listening moment a typed event', async function () {
+      apos = await t.create({
+        modules: { ...testModule },
+        log: { format: 'structured' }
+      });
+      const express = apos.modules['@apostrophecms/express'];
+      const url = `http://${express.address}:${express.port}`;
+
+      assert.deepEqual(parsed((await captured(() => express.logListening())).out), [ {
+        severity: 'info',
+        module: '@apostrophecms/express',
+        type: 'apos-listening',
+        url,
+        adminUrl: `${url}/login`
+      } ]);
+
+      // No local login, no admin URL to point at
+      apos.login.options.localLogin = false;
+      assert.deepEqual(parsed((await captured(() => express.logListening())).out), [ {
+        severity: 'info',
+        module: '@apostrophecms/express',
+        type: 'apos-listening',
+        url
+      } ]);
+      apos.login.options.localLogin = true;
+    });
+
+    it('should be the whole configuration, warning about what it displaced', async function () {
+      let legacyCalled = false;
+      const calls = [];
+      const created = await captured(() => t.create({
+        modules: {
+          ...testModule,
+          '@apostrophecms/log': {
+            options: {
+              messageAs: 'msg',
+              logger: fakeLogger(calls),
+              filter: { '*': { severity: [ 'debug' ] } }
+            }
+          },
+          '@apostrophecms/util': {
+            options: {
+              logger() {
+                legacyCalled = true;
+                return fakeLogger(calls);
+              }
+            }
+          }
+        },
+        log: {
+          filter: { '*': { severity: [ 'warn', 'error' ] } }
+        }
+      }));
+      apos = created.result;
+
+      assert.equal(legacyCalled, false);
+      assert.equal(apos.structuredLog.options.messageAs, undefined);
+      assert.equal(apos.structuredLog.options.logger, undefined);
+      assert.deepEqual(apos.structuredLog.filters, {
+        '*': {
+          severity: [ 'warn', 'error' ],
+          events: [ 'apos-listening' ]
+        }
+      });
+      // The default logger, not either of the legacy ones
+      assert.equal(apos.util.logger.calls, undefined);
+      assert.equal(calls.length, 0);
+
+      const warning = created.err.join('\n');
+      assert(warning.includes('ignored-log-options'));
+      for (const key of [
+        '"@apostrophecms/log: logger"',
+        '"@apostrophecms/log: messageAs"',
+        '"@apostrophecms/log: filter"',
+        '"@apostrophecms/util: logger"'
+      ]) {
+        assert(warning.includes(key), key);
+      }
+    });
+
+    it('should leave the legacy surfaces in charge when absent', async function () {
+      const moduleCalls = [];
+      const legacyCalls = [];
+      apos = await t.create({
+        modules: {
+          ...testModule,
+          '@apostrophecms/log': {
+            options: { logger: fakeLogger(moduleCalls) }
+          }
+        }
+      });
+      moduleCalls.length = 0;
+      apos.util.info('a legacy message');
+      assert.deepEqual(moduleCalls, [ [ 'info', 'a legacy message' ] ]);
+      await t.destroy(apos);
+
+      // The legacy option of @apostrophecms/util still outranks it
+      apos = await t.create({
+        modules: {
+          ...testModule,
+          '@apostrophecms/log': {
+            options: { logger: fakeLogger(moduleCalls) }
+          },
+          '@apostrophecms/util': {
+            options: {
+              logger: () => fakeLogger(legacyCalls)
+            }
+          }
+        }
+      });
+      moduleCalls.length = 0;
+      legacyCalls.length = 0;
+      apos.util.info('a legacy message');
+      assert.deepEqual(moduleCalls, []);
+      assert.deepEqual(legacyCalls, [ [ 'info', 'a legacy message' ] ]);
+    });
+
+    it('should accept a custom logger as an object only', async function () {
+      await assert.rejects(
+        t.create({ log: { logger: () => fakeLogger([]) } }),
+        (e) => {
+          assert(e.message.includes('must be an object'));
+          return true;
+        }
+      );
+      await assert.rejects(
+        t.create({ log: { logger: { info() {} } } }),
+        (e) => {
+          assert(e.message.includes('Missing: debug, warn, error'));
+          return true;
+        }
+      );
+    });
+
+    it('should deliver to a custom logger as before, minus the prefix', async function () {
+      const calls = [];
+      const logger = fakeLogger(calls);
+      apos = await t.create({
+        modules: { ...testModule },
+        log: { logger }
+      });
+      assert.equal(apos.util.logger, logger);
+      assert.equal(apos.logger.format, null);
+
+      calls.length = 0;
+      apos.testModule.logInfo('event-type', 'a message', { foo: 'bar' });
+      assert.deepEqual(calls, [ [
+        'info',
+        'a message',
+        {
+          module: 'test-module',
+          type: 'event-type',
+          severity: 'info',
+          foo: 'bar'
+        }
+      ] ]);
+
+      // Nothing to pass separately when the call had no message
+      calls.length = 0;
+      apos.testModule.logWarn('event-type');
+      assert.deepEqual(calls, [ [
+        'warn',
+        {
+          module: 'test-module',
+          type: 'event-type',
+          severity: 'warn'
+        }
+      ] ]);
+
+      // Legacy calls reach it exactly as they always did
+      calls.length = 0;
+      apos.util.error('failed', { code: 1 });
+      assert.deepEqual(calls, [ [ 'error', 'failed', { code: 1 } ] ]);
+    });
+
+    it('should honor messageAs on the way to a custom logger', async function () {
+      const calls = [];
+      apos = await t.create({
+        modules: { ...testModule },
+        log: {
+          logger: fakeLogger(calls),
+          messageAs: 'msg'
+        }
+      });
+
+      calls.length = 0;
+      apos.testModule.logInfo('event-type', 'a message', { foo: 'bar' });
+      assert.deepEqual(calls, [ [
+        'info',
+        {
+          msg: 'a message',
+          module: 'test-module',
+          type: 'event-type',
+          severity: 'info',
+          foo: 'bar'
+        }
+      ] ]);
+
+      calls.length = 0;
+      apos.util.info('a legacy message', { foo: 'bar' });
+      assert.deepEqual(calls, [ [
+        'info',
+        {
+          foo: 'bar',
+          msg: 'a legacy message'
+        }
+      ] ]);
+    });
+  });
+
+  describe('getConsoleLogger', function () {
+    afterEach(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('should keep an object in final position as data, at any arity', async function () {
+      apos = await t.create({
+        modules: { ...testModule },
+        log: { format: 'structured' }
+      });
+
+      // The pair the structured pipeline itself uses
+      assert.deepEqual(
+        parsed((await captured(() => apos.util.log('My message', { id: 3 }))).out),
+        [ {
+          severity: 'info',
+          msg: 'My message',
+          id: 3
+        } ]
+      );
+
+      // Splitting the sentence must not turn the data into text
+      assert.deepEqual(
+        parsed(
+          (await captured(() => apos.util.log('My message', 'and another one', { id: 3 }))).out
+        ),
+        [ {
+          severity: 'info',
+          msg: 'My message and another one',
+          id: 3
+        } ]
+      );
+
+      // Substitution strings still compose, ahead of the data
+      assert.deepEqual(
+        parsed((await captured(() => apos.util.log('Loaded %s', 'a file', { id: 3 }))).out),
+        [ {
+          severity: 'info',
+          msg: 'Loaded a file',
+          id: 3
+        } ]
+      );
+
+      // Without a trailing object nothing changes: console composition
+      assert.deepEqual(
+        parsed((await captured(() => apos.util.log('two', 'strings'))).out),
+        [ {
+          severity: 'info',
+          msg: 'two strings'
+        } ]
+      );
+
+      // An Error is not a plain object, so `(message, error)` is composed the
+      // way `console.error` composes it - stack and all inside the message,
+      // with no `stack` field of its own.
+      const err = new Error('something failed');
+      const [ entry ] = parsed((await captured(() => apos.util.error('My message', err))).err);
+      assert.equal(entry.severity, 'error');
+      assert.equal(entry.stack, undefined);
+      assert.match(entry.msg, /^My message Error: something failed\n {4}at /);
+    });
+
+    it('should give a library the console surface, log included', async function () {
+      apos = await t.create({
+        modules: { ...testModule },
+        log: { format: 'structured' }
+      });
+      const logger = apos.testModule.getConsoleLogger('library-event');
+      for (const method of [ 'debug', 'info', 'log', 'warn', 'error' ]) {
+        assert.equal(typeof logger[method], 'function', method);
+      }
+
+      // `log` means `info`, and nothing here reads an argument as an event
+      // type: the type belongs to whoever built the logger.
+      assert.deepEqual(
+        parsed((await captured(() => logger.log('a plain %s', 'message'))).out),
+        [ {
+          severity: 'info',
+          module: 'test-module',
+          type: 'library-event',
+          msg: 'a plain message'
+        } ]
+      );
     });
   });
 });

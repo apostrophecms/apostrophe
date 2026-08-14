@@ -167,9 +167,27 @@ describe('vulnerability regression checks', function() {
     await fsp.writeFile(path.join(exportDir, 'aposDocs.json'), '[]');
 
     const payloads = [
-      { _id: { $ne: null }, name: 'loot', extension: 'txt', docIds: [], crops: [] },
-      { _id: 'evil', name: { $gt: '' }, extension: 'txt', docIds: [], crops: [] },
-      { _id: 'evil', name: 'loot', extension: { $gt: '' }, docIds: [], crops: [] }
+      {
+        _id: { $ne: null },
+        name: 'loot',
+        extension: 'txt',
+        docIds: [],
+        crops: []
+      },
+      {
+        _id: 'evil',
+        name: { $gt: '' },
+        extension: 'txt',
+        docIds: [],
+        crops: []
+      },
+      {
+        _id: 'evil',
+        name: 'loot',
+        extension: { $gt: '' },
+        docIds: [],
+        crops: []
+      }
     ];
 
     for (const attachment of payloads) {

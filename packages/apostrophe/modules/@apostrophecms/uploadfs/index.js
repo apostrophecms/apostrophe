@@ -54,6 +54,9 @@ module.exports = {
             region: process.env.APOS_S3_REGION
           });
         }
+        // Set after merging: a logger is not mergeable data.
+        uploadfsSettings.logger = options.logger ||
+          self.getConsoleLogger('uploadfs-message');
         safeMkdirp(uploadfsSettings.uploadsPath);
         safeMkdirp(uploadfsSettings.tempPath);
         const instance = uploadfs();

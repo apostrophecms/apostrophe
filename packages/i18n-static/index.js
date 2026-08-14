@@ -62,7 +62,8 @@ module.exports = {
           for (const namespace of namespaces) {
             const ns = namespace._id;
             const resources = self.formatPieces(namespace.pieces);
-            self.apos.i18n.i18next.addResourceBundle(req.locale, ns, resources, true, true);
+            self.apos.i18n.i18next
+              .addResourceBundle(req.locale, ns, resources, true, true);
           }
         }
 

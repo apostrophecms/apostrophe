@@ -4,7 +4,10 @@
   "description": "High-speed, unicode-aware, browser-friendly slug generator",
   "main": "sluggo.js",
   "scripts": {
-    "test": "mocha test/test.js"
+    "eslint": "eslint .",
+    "lint": "npm run eslint",
+    "mocha": "mocha test/test.js",
+    "test": "npm run lint && npm run mocha"
   },
   "repository": {
     "type": "git",
@@ -23,6 +26,8 @@
     "url": "https://github.com/apostrophecms/sluggo/issues"
   },
   "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:^",
     "mocha": "^11.7.5"
   },
   "apostropheTestConfig": {

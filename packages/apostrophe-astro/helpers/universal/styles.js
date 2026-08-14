@@ -24,6 +24,8 @@
  * <Fragment set:html={stylesElements(widget)} is:inline />
  * ```
  */
+import { logWarn } from '../../lib/log.js';
+
 export function stylesElements(widget) {
   return widget._options?.aposStylesElements || null;
 }
@@ -61,14 +63,14 @@ export function stylesAttributes(widget, additionalAttrs = {}) {
 
   if (additionalClasses) {
     if (!Array.isArray(additionalClasses) && typeof additionalClasses !== 'string') {
-      console.warn('class must be a string or an array of strings');
+      logWarn('class must be a string or an array of strings');
     }
     if (Array.isArray(additionalClasses) && !additionalClasses.every(cls => typeof cls === 'string')) {
-      console.warn('class array must contain only strings');
+      logWarn('class array must contain only strings');
     }
   }
   if (additionalStyle && typeof additionalStyle !== 'string') {
-    console.warn('style must be a string');
+    logWarn('style must be a string');
   }
 
   const stylesAttrs = widget._options?.aposStylesAttributes || {};

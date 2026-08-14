@@ -10,6 +10,7 @@
 
 // Direct use of `console` makes sense here because we're implementing an
 // interaction at the CLI.
+/* eslint-disable no-console */
 
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');

@@ -40,6 +40,12 @@ test/public/css/master-*.less
 # Dont commit test uploads
 test/public/uploads
 
+# Same, for the test projects that boot a real app of their own
+test/*-project/apos-build
+test/*-project/data
+test/*-project/public/apos-frontend
+test/*-project/public/uploads
+
 # vim swp files
 .*.sw*
 

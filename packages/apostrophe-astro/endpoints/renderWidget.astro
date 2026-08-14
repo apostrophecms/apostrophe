@@ -3,6 +3,7 @@ import AposWidget from "../components/AposWidget.astro";
 import aposRequest from "../lib/aposRequest.js";
 import aposResponse from "../lib/aposResponse.js";
 import { onBeforeWidgetRenderHook } from 'apostrophe-astro-config/doctypes';
+import { logError } from '../lib/log.js';
 
 const request = aposRequest(Astro.request);
 const response = await aposResponse(request);
@@ -23,7 +24,7 @@ try {
     renderWarn = true;
   }
 } catch (error) {
-  console.error("Error:", error);
+  logError("Error parsing a widget response:", error);
   throw new Error("There was an issue while parsing a widget response.");
 }
 

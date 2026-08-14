@@ -1,6 +1,7 @@
 import config from 'apostrophe-astro-config/config';
 import aposResponse from './aposResponse.js';
 import aposRequest, { isAstroPrerenderedRequest } from './aposRequest.js';
+import { logError } from './log.js';
 
 /**
  * Fetch a full Apostrophe page data object for the given Astro request.
@@ -98,7 +99,7 @@ export async function aposPageFetch(req) {
       aposData.notFound = true;
     }
   } catch (e) {
-    console.error('error:', e);
+    logError('Error fetching the page:', e);
     aposData.errorFetchingPage = e;
     aposData.page = {
       type: 'apos-fetch-error'

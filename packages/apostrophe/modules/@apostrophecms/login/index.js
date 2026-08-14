@@ -470,6 +470,14 @@ module.exports = {
         return self.options.loginUrl ? self.options.loginUrl : '/login';
       },
 
+      // The URL a human logs in at, or `null` when there is none to point at:
+      // local login can be turned off in favor of another mechanism, and a
+      // module that replaces it should override this to say where it moved.
+      // Callers must treat the answer as best effort.
+      getLoginUrl() {
+        return self.options.localLogin ? self.login() : null;
+      },
+
       // Set the `serializeUser` method of `passport` to serialize the
       // user by storing their user ID in the session.
 

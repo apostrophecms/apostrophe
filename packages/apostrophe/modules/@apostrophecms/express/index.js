@@ -185,6 +185,7 @@ module.exports = {
         async task(argv) {
           for (const info of self.finalModuleMiddlewareAndRoutes) {
             if (info.route) {
+              // eslint-disable-next-line no-console
               console.log(`${info.method.toUpperCase()} ${info.url}`);
             }
           }
@@ -759,7 +760,7 @@ module.exports = {
             }
           }
         }
-        self.apos.util.log(`Listening at http://${self.address}:${self.port}`);
+        self.logListening();
 
         // awaitable listen function
         function listen() {
@@ -786,6 +787,20 @@ module.exports = {
             });
           });
         }
+      },
+
+      // The moment the site is reachable. In development the pretty renderer
+      // turns this event into the startup banner; every other format prints it
+      // like any other event.
+      logListening() {
+        const url = `http://${self.address}:${self.port}${self.apos.prefix}`;
+        const loginUrl = self.apos.login?.getLoginUrl?.();
+        self.logInfo('apos-listening', {
+          url,
+          ...loginUrl
+            ? { adminUrl: `${url}${loginUrl}` }
+            : {}
+        });
       },
 
       // Locate modules with middleware and routes and add them to the list. By
@@ -858,7 +873,9 @@ module.exports = {
         const { enableCacheOnDemand = true } = self.options;
         if (enableCacheOnDemand) {
           // Instantiate independently for this instance of ApostropheCMS
-          self.apos.expressCacheOnDemand = expressCacheOnDemand();
+          self.apos.expressCacheOnDemand = expressCacheOnDemand(undefined, {
+            logger: self.getConsoleLogger('cache-on-demand')
+          });
         }
       }
     };

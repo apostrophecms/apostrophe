@@ -6,6 +6,8 @@
  * both server and client contexts.
  */
 
+import { logWarn } from '../../lib/log.js';
+
 const MISSING_ATTACHMENT_URL = '/images/missing-icon.svg';
 
 /**
@@ -214,7 +216,7 @@ export function getAttachmentUrl(imageObject, options = {}) {
   const attachment = getAttachment(imageObject);
 
   if (!attachment) {
-    console.warn('Template warning: Missing attachment, using fallback icon');
+    logWarn('Template warning: missing attachment, using fallback icon');
     return options.missingIcon || MISSING_ATTACHMENT_URL;
   }
 

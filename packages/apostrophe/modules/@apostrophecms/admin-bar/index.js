@@ -579,7 +579,7 @@ module.exports = {
         ready: true,
 
         async task(apos, argv) {
-
+          /* eslint-disable no-console */
           const allGroups = [
             ...self.groups,
             ...(self.options.addGroups || []),
@@ -675,6 +675,7 @@ module.exports = {
             });
           }
           console.log('\n✨ Inspection complete!\n');
+          /* eslint-enable no-console */
         }
       }
     };

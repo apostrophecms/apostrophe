@@ -294,6 +294,29 @@ describe('Rich Text Widget', function () {
     assert(text2.includes('src="/uploads/attachments/attachment-2-attachment-2.max.jpg" alt="Updated Test Image 2"'));
   });
 
+  describe('sanitize-html warnings', function () {
+    it('should log them as events, once each, rather than to the console', async function () {
+      apos = await t.create({
+        root: module,
+        modules: {}
+      });
+
+      const manager = apos.modules['@apostrophecms/rich-text-widget'];
+      const warnings = [];
+      manager.logWarn = (...args) => warnings.push(args);
+
+      const options = { allowedTags: [ 'style', 'p' ] };
+      const html = manager.sanitizeHtml('<p>hello</p>', options);
+      manager.sanitizeHtml('<p>again</p>', options);
+
+      assert.equal(html, '<p>hello</p>');
+      assert.equal(warnings.length, 1);
+      const [ type, message ] = warnings[0];
+      assert.equal(type, 'sanitize-html');
+      assert(message.includes('`style`'));
+    });
+  });
+
   describe('image import allowlist (SSRF mitigation)', function () {
     let originalConsoleError;
 
