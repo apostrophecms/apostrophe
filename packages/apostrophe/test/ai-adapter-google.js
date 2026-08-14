@@ -1151,7 +1151,7 @@ describe('AI adapter: google', function() {
       const [ record ] = logRecords;
       assert.equal(logRecords.length, 1);
       assert.equal(record.severity, 'error');
-      assert.equal(record.type, 'imagePartial');
+      assert.equal(record.type, 'image-partial');
       assert.equal(record.message, 'internal error');
       assert.equal(record.data.provider, 'google');
       assert.equal(record.data.model, 'gemini-3.1-flash-image');

@@ -183,7 +183,7 @@ module.exports = {
             for (const outcome of settled) {
               if (outcome.status === 'rejected') {
                 const error = self.normalizeError(outcome.reason);
-                self.apos.ai.logError(req, 'imagePartial', error.message, {
+                self.apos.ai.logError(req, 'image-partial', error.message, {
                   provider: this.provider,
                   model: request.model,
                   code: error.name,

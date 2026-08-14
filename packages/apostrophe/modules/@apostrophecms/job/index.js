@@ -326,7 +326,10 @@ module.exports = {
             good = true;
           } catch (err) {
             error = err;
-            self.apos.util.error(err);
+            self.logError(req, 'run-error', err.message, {
+              jobId: job._id,
+              stack: err.stack
+            });
           } finally {
             await self.end(job, good, results, error);
             // Wait for increments to be updated in DB

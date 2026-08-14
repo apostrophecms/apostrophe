@@ -1082,7 +1082,10 @@ module.exports = {
                 }
               }
             } catch (e) {
-              self.apos.util.error(e);
+              self.logError(workReq, 'watcher', e.message, {
+                jobId,
+                stack: e.stack
+              });
             }
           }
 
