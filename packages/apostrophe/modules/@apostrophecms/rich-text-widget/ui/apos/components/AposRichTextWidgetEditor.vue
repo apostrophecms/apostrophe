@@ -1,6 +1,7 @@
 <template>
   <div
     :id="widgetId"
+    class="apos-rich-text-widget-editor"
     :style="widgetStyles.inline"
     :class="widgetStyles.classes"
     @keyup="handleUIKeyup"
@@ -228,13 +229,25 @@ export default {
     bubbleMenuTippyOptions() {
       return {
         maxWidth: 'none',
-        duration: 300,
+        duration: 100,
         zIndex: 999,
         animation: 'fade',
         inertia: true,
         placement: 'bottom',
         hideOnClick: false,
         onHide: this.onBubbleHide,
+        popperOptions: {
+          modifiers: [
+            {
+              name: 'preventOverflow',
+              options: {
+                altAxis: true,
+                padding: 8,
+                boundary: this.$el
+              }
+            }
+          ]
+        },
         aria: {
           content: null,
           expanded: false
@@ -896,9 +909,16 @@ function traverseNextNode(node) {
   $z-index-button-background: 1;
   $z-index-button-foreground: 2;
 
+  .apos-rich-text-widget-editor {
+    container-type: inline-size;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .bubble-menu {
-    width: max-content;
-    max-width: 95vw;
+    box-sizing: border-box;
+    width: fit-content;
+    max-width: calc(100cqw - 16px);
   }
 
   .apos-rich-text-toolbar.editor-menu-bubble {
@@ -908,7 +928,12 @@ function traverseNextNode(node) {
   }
 
   :deep(.apos-rich-text-toolbar) {
+    max-width: 100%;
+    box-sizing: border-box;
+
     & > .apos-context-menu__pane {
+      max-width: 100%;
+      box-sizing: border-box;
       padding: 8px;
       border: 1px solid var(--a-primary-transparent-25);
       background-color: var(--a-background-primary);
@@ -1003,9 +1028,14 @@ function traverseNextNode(node) {
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
+    justify-content: flex-start;
     max-width: 100%;
     height: auto;
     gap: 6px;
+
+    > * {
+      flex: 0 0 auto;
+    }
   }
 
 /* stylelint-disable-next-line selector-class-pattern */
