@@ -49,6 +49,18 @@ const IMAGE_OPTIONS = Object.freeze([
   'count', 'aspect', 'quality', 'images', 'provider', 'model', 'signal'
 ]);
 
+// Doc types no AI action may touch, whatever the user's own permissions:
+// accounts and permission grants, where a model's mistake is a privilege
+// escalation. Not configurable, and deliberately every action, read
+// included — a feature that needs user data ships a narrow tool for it
+// rather than handing the model the doc.
+// TODO: let modules register their own denied types, so the group type
+// moves to the advanced permission module that owns it.
+const DENIED_TYPES = Object.freeze([
+  '@apostrophecms/user',
+  '@apostrophecms-pro/advanced-permission-group'
+]);
+
 module.exports = {
   QUALITIES,
   NAMED_ASPECTS,
@@ -59,5 +71,6 @@ module.exports = {
   TOOL_KINDS,
   PENDING_POLICIES,
   GENERATE_OPTIONS,
-  IMAGE_OPTIONS
+  IMAGE_OPTIONS,
+  DENIED_TYPES
 };

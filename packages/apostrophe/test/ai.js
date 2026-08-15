@@ -937,6 +937,43 @@ describe('AI engine', function() {
         apos.permission.can = original;
       }
     });
+
+    it('denies a denied type, as a type name or a document', function() {
+      const admin = apos.task.getReq();
+      const denied = [
+        '@apostrophecms/user',
+        '@apostrophecms-pro/advanced-permission-group'
+      ];
+      for (const type of denied) {
+        for (const action of [ 'view', 'edit', 'create', 'delete', 'publish' ]) {
+          assert.equal(apos.ai.can(admin, action, type), false);
+          assert.equal(apos.ai.can(admin, action, { type }, 'draft'), false);
+          assert.equal(apos.ai.can(admin, action, {
+            _id: 'u1',
+            type
+          }), false);
+        }
+      }
+      // The denial is the AI policy, not a permission the admin lacks
+      assert.equal(apos.permission.can(admin, 'edit', '@apostrophecms/user'), true);
+    });
+
+    it('denies without consulting apos.permission.can at all', function() {
+      const original = apos.permission.can;
+      let calls = 0;
+      try {
+        apos.permission.can = () => {
+          calls++;
+          return true;
+        };
+        const req = apos.task.getReq();
+        assert.equal(apos.ai.can(req, 'edit', '@apostrophecms/user'), false);
+        assert.equal(apos.ai.can(req, 'edit', { type: '@apostrophecms/user' }), false);
+        assert.equal(calls, 0);
+      } finally {
+        apos.permission.can = original;
+      }
+    });
   });
 
   it('fails fast at startup on a malformed configuration', function(done) {

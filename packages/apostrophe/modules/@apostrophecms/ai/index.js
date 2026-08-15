@@ -10,6 +10,7 @@ const Ajv = require('ajv/dist/2020').default;
 const {
   isObject, isAbort, startupFail
 } = require('./lib/util');
+const { DENIED_TYPES } = require('./lib/constants');
 
 // The protocol shapes this surface hands out or takes in, named once so the
 // blocks below can use them bare. lib/types.js declares them and nothing else.
@@ -363,18 +364,26 @@ module.exports = {
       /**
        * The AI permission seam: whether this AI action is permitted for `req`.
        * Same signature and semantics as
-       * `apos.permission.can(req, action, docOrType, mode)`, and today a pure
+       * `apos.permission.can(req, action, docOrType, mode)`, and otherwise a
        * proxy to it — but tool handlers and AI feature code must call this
        * method, never `apos.permission.can` directly, so that AI-specific
-       * policy (actions denied to the AI even for an admin's req) can later be
-       * layered here, centrally, without touching a single handler. It can only
-       * ever be as restrictive as `apos.permission.can` or more, never looser.
+       * policy (actions denied to the AI even for an admin's req) is layered
+       * here, centrally, without touching a single handler. It can only ever
+       * be as restrictive as `apos.permission.can` or more, never looser.
+       *
+       * Denied doc types are refused unconditionally, for every action and
+       * whether named as a type string or passed as a document.
        *
        * @param {object} req
        * @param {...*} args As `apos.permission.can`: action, docOrType, mode.
        * @returns {boolean}
        */
       can(req, ...args) {
+        const docOrType = args[1];
+        const type = isObject(docOrType) ? docOrType.type : docOrType;
+        if (DENIED_TYPES.includes(type)) {
+          return false;
+        }
         return self.apos.permission.can(req, ...args);
       },
 
