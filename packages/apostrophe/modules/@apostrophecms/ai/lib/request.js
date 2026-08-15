@@ -145,7 +145,7 @@ module.exports = (self) => {
         ...(suspended && { suspended }),
         // The step budget cutting the loop is its own finish reason,
         // like the token budget's 'length'; an explicit override wins
-        // (a cancelled run)
+        // (a canceled run)
         finishReason: finishReason ||
           (pending ? 'maxSteps' : turn.finishReason),
         usage,

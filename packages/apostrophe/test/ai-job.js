@@ -377,7 +377,7 @@ describe('AI generateJob', function() {
     release();
     const job = await waitForJob(jobId);
 
-    assert.equal(job.status, 'cancelled');
+    assert.equal(job.status, 'canceled');
     assert.equal(job.cancelRequested, true);
     assert.equal(job.results.finishReason, 'cancel');
     // The handler ignored the signal; the loop waited it out and its
@@ -386,7 +386,7 @@ describe('AI generateJob', function() {
       toolCall: toolCall('c1', 'gate'),
       result: { ok: true }
     } ]);
-    // No further model turn after the cancelled batch
+    // No further model turn after the canceled batch
     assert.equal(chatCalls.length, 1);
   });
 
@@ -410,7 +410,7 @@ describe('AI generateJob', function() {
     await jobModule.requestCancel(jobId);
     const job = await waitForJob(jobId);
 
-    assert.equal(job.status, 'cancelled');
+    assert.equal(job.status, 'canceled');
     assert.equal(job.results.finishReason, 'cancel');
     // The handler honored the signal the poll fired
     assert.deepEqual(job.results.steps, [ {
@@ -476,7 +476,7 @@ describe('AI generateJob', function() {
     await cancel();
     const job = await waitForJob(jobId);
 
-    assert.equal(job.status, 'cancelled');
+    assert.equal(job.status, 'canceled');
     assert.deepEqual(job.results, {
       text: '',
       messages: [ {
@@ -658,7 +658,7 @@ describe('AI generateJob', function() {
     });
   });
 
-  it('a cancelled run publishes an ended event with the cancelled status', async function() {
+  it('a canceled run publishes an ended event with the canceled status', async function() {
     const req = apos.task.getReq({ user: { _id: 'owner1' } });
     chatScript = [
       (request) => new Promise((resolve, reject) => {
@@ -675,11 +675,11 @@ describe('AI generateJob', function() {
     await cancel();
     const job = await waitForJob(jobId);
 
-    assert.equal(job.status, 'cancelled');
+    assert.equal(job.status, 'canceled');
     assert.deepEqual(triggered.at(-1).options.event.data, {
       jobId,
       stage: 'ended',
-      status: 'cancelled',
+      status: 'canceled',
       finishReason: 'cancel'
     });
   });
@@ -703,7 +703,7 @@ describe('AI generateJob', function() {
     await cancel();
     const job = await waitForJob(jobId);
 
-    assert.equal(job.status, 'cancelled');
+    assert.equal(job.status, 'canceled');
     assert.equal(job.results.finishReason, 'cancel');
     assert.deepEqual(triggered, []);
   });
@@ -842,7 +842,7 @@ describe('AI generateJob', function() {
       await jobModule2.requestCancel(jobId);
       const job = await waitForJob(jobId);
 
-      assert.equal(job.status, 'cancelled');
+      assert.equal(job.status, 'canceled');
       assert.equal(job.results.finishReason, 'cancel');
       // The handler honored the signal the poll fired; its work is
       // preserved on the stored partial result
@@ -850,7 +850,7 @@ describe('AI generateJob', function() {
         toolCall: toolCall('c1', 'until_abort'),
         result: { sawAbort: true }
       } ]);
-      // No further model turn after the cancelled batch
+      // No further model turn after the canceled batch
       assert.equal(chatCalls.length, 1);
     });
 
@@ -885,7 +885,7 @@ describe('AI generateJob', function() {
       release();
       const job = await waitForJob(jobId);
 
-      assert.equal(job.status, 'cancelled');
+      assert.equal(job.status, 'canceled');
       assert.equal(job.results.finishReason, 'cancel');
       // The handler ignored the signal; the loop waited it out and
       // its completed work is recorded

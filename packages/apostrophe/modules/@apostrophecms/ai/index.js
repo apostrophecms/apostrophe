@@ -553,20 +553,20 @@ module.exports = {
         let turn = null;
         let pending = null;
         let suspended = null;
-        let cancelled = false;
+        let canceled = false;
         try {
           await continuePending();
-          if (!suspended && !cancelled) {
+          if (!suspended && !canceled) {
             await runLoop();
           }
         } catch (e) {
-          // Only an abort-shaped throw converts to a cancelled run, and
+          // Only an abort-shaped throw converts to a canceled run, and
           // only while this call's signal has fired — a genuine failure
           // racing a cancel still throws
           if (!isAbort(e) || !canonical.signal?.aborted) {
             throw e;
           }
-          cancelled = true;
+          canceled = true;
         }
         context.result = self.assembleResult(context, turn, {
           steps,
@@ -576,7 +576,7 @@ module.exports = {
           object: turn?.object,
           hadTools: tools.size > 0 || Boolean(canonical.pendingCalls),
           ...(suspended && { finishReason: 'input' }),
-          ...(cancelled && { finishReason: 'cancel' })
+          ...(canceled && { finishReason: 'cancel' })
         });
         await self.emit('afterGenerate', req, context);
         return context.result;
@@ -624,7 +624,7 @@ module.exports = {
             // `toolCalls`
             if (canonical.signal?.aborted) {
               pending = calls;
-              cancelled = true;
+              canceled = true;
               break;
             }
             if (canonical.onMessage) {
@@ -658,7 +658,7 @@ module.exports = {
             // The batch was waited out and recorded; wind down before
             // asking the model again
             if (canonical.signal?.aborted) {
-              cancelled = true;
+              canceled = true;
               break;
             }
           }
@@ -693,7 +693,7 @@ module.exports = {
           pending = calls.filter((call, index) => !outcomes[index] ||
             outcomes[index].suspended !== undefined);
           if (canonical.signal?.aborted) {
-            cancelled = true;
+            canceled = true;
             return;
           }
           suspended = outcomes
@@ -742,7 +742,7 @@ module.exports = {
             return;
           }
           if (canonical.signal?.aborted) {
-            cancelled = true;
+            canceled = true;
           }
 
           // The new results into the trailing tool message, rebuilt in
@@ -905,7 +905,7 @@ module.exports = {
        * @typedef {object} AiJobOptions
        * @property {(error: Error|null, result: AiResult|undefined) => Promise<void>}
        *   [onEnd] Called once when the run ends, with the error it failed with
-       *   or the unified result (a cancelled run is a result, finishReason
+       *   or the unified result (a canceled run is a result, finishReason
        *   'cancel'). Its own throw is logged, never recorded on the job.
        * @property {number} [expireAfter] Seconds the job record is kept,
        *   defaulting to the `jobExpireAfter` option; 0 keeps it forever.
@@ -944,7 +944,7 @@ module.exports = {
        *   travels through the job record, the abort signal reaches the
        *   in-flight provider call and every handler, the run winds down per
        *   generate's cancellation semantics with the partial result stored, and
-       *   the job ends 'cancelled'.
+       *   the job ends 'canceled'.
        */
       async generateJob(req, stringOrOptions, options) {
         if ((req.aposAiDepth || 0) > 0) {
@@ -1033,7 +1033,7 @@ module.exports = {
         return {
           jobId,
           cancel: async () => {
-            // The record first, so the status can only end 'cancelled',
+            // The record first, so the status can only end 'canceled',
             // then the local signal — no waiting for the poll
             await jobModule.requestCancel(jobId);
             controller.abort();
@@ -1101,7 +1101,7 @@ module.exports = {
                 }
                 : {
                   status: result.finishReason === 'cancel'
-                    ? 'cancelled'
+                    ? 'canceled'
                     : 'completed',
                   finishReason: result.finishReason
                 });

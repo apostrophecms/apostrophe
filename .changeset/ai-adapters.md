@@ -13,6 +13,6 @@ Added `apos.ai`, a provider-agnostic AI API for text generation with tool callin
 Supporting changes, useful on their own:
 
 - Notifications: a notification sent with `bus: true` is a pure event carrier - it is never rendered, and its `event` is emitted on `apos.bus` in exactly one browser tab, then dismissed. The options object may be passed in place of the message.
-- Jobs: cooperative cancellation (`reporting.isCanceling()`, a `cancel` route and a `cancelled` status), an `expireAfter` option that expires job records from the database, `userId` ownership that restricts the status and cancel routes, a `notifications: false` option for callers with their own progress transport, and the error of a failed job recorded on its document.
+- Jobs: cooperative cancellation (`reporting.isCanceling()`, a `cancel` route and a `canceled` status), an `expireAfter` option that expires job records from the database, `userId` ownership that restricts the status and cancel routes, a `notifications: false` option for callers with their own progress transport, and the error of a failed job recorded on its document.
 - Schema: `apos.schema.extract()` returns the content of a doc or widget as a flat array of text and image items with dot paths, selected by the new `extractable` policy on field types and schema fields.
 - Widgets: widget managers implement `extract()`, defaulting to a walk of their own schema; rich text and image widgets contribute their content directly, and `extractable` is accepted as a widget type option.

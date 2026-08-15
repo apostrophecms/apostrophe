@@ -234,7 +234,7 @@ module.exports = {
       // standing instruction to stop, so an expired (`expireAfter`) or
       // externally deleted record winds down its own orphaned run.
       // `doTheWork` may check it at convenient points and wind down
-      // early; the job then ends with a `cancelled` status. Jobs that
+      // early; the job then ends with a `canceled` status. Jobs that
       // never check it simply run to completion.
       //
       // If `doTheWork` throws, the job ends with a `failed` status and the
@@ -536,8 +536,8 @@ module.exports = {
       // as the `results` property.
       //
       // A successful end after cancellation was requested is recorded
-      // with the `cancelled` status instead of `completed` — a
-      // cooperatively cancelled job winds down and ends normally, with
+      // with the `canceled` status instead of `completed` — a
+      // cooperatively canceled job winds down and ends normally, with
       // any partial results preserved. A failure is always `failed`.
       //
       // If `error` is present it is recorded on the job document:
@@ -557,7 +557,7 @@ module.exports = {
           projection: { cancelRequested: 1 }
         });
         const status = success
-          ? (current && current.cancelRequested ? 'cancelled' : 'completed')
+          ? (current && current.cancelRequested ? 'canceled' : 'completed')
           : 'failed';
         return self.db.updateOne({ _id: job._id }, {
           $set: {
@@ -585,7 +585,7 @@ module.exports = {
       // whichever process that is — the flag travels through the
       // database, so it works across processes. Like SIGTERM, this is a
       // request rather than preemption: the job decides when and whether
-      // to wind down, and its status flips to `cancelled` only once it
+      // to wind down, and its status flips to `canceled` only once it
       // actually ends. Unlike SIGTERM there is no default handler — a
       // job that never checks the flag simply runs to completion.
       // Has no effect on jobs that already ended.

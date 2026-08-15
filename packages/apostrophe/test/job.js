@@ -483,7 +483,7 @@ describe('Job module', function() {
       assert.deepEqual(actual, expected);
     });
 
-    it('end: stamps endedAt and a cancelled status when cancellation was requested', async function() {
+    it('end: stamps endedAt and a canceled status when cancellation was requested', async function() {
       const job = await jobModule.start({});
       await jobModule.requestCancel(job._id);
 
@@ -497,7 +497,7 @@ describe('Job module', function() {
         endedAt: found.endedAt instanceof Date
       };
       const expected = {
-        status: 'cancelled',
+        status: 'canceled',
         ended: true,
         results: { partial: true },
         endedAt: true
@@ -506,7 +506,7 @@ describe('Job module', function() {
       assert.deepEqual(actual, expected);
     });
 
-    it('run: a cooperatively cancelled job ends cancelled with partial results', async function() {
+    it('run: a cooperatively canceled job ends canceled with partial results', async function() {
       const req = apos.task.getReq();
 
       const { jobId } = await jobModule.run(req, async function(_req, reporting) {
@@ -529,7 +529,7 @@ describe('Job module', function() {
         stoppedEarly: job.results.stoppedAt !== null && job.results.stoppedAt < 20
       };
       const expected = {
-        status: 'cancelled',
+        status: 'canceled',
         stoppedEarly: true
       };
 
