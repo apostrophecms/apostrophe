@@ -740,6 +740,7 @@ module.exports = {
 
         if (!hasStyles) {
           return {
+            anchors: self.options.anchors,
             aposStylesWrapper: false,
             aposStylesElements: '',
             aposStylesAttributes: {}
@@ -749,6 +750,7 @@ module.exports = {
         const styles = self.apos.styles.prepareWidgetStyles(widget);
 
         return {
+          anchors: self.options.anchors,
           aposStylesWrapper: self.options.stylesWrapper,
           aposStylesElements: self.apos.styles.getWidgetElements(styles, { scene }),
           aposStylesAttributes: self.apos.styles.getWidgetAttributes(styles, {}, {
