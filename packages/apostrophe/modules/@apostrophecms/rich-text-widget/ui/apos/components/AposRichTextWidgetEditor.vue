@@ -241,7 +241,6 @@ export default {
             {
               name: 'preventOverflow',
               options: {
-                altAxis: true,
                 padding: 8,
                 boundary: this.$el
               }
