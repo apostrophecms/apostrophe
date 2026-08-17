@@ -1,0 +1,21 @@
+{
+  "generateImage": "이미지 생성",
+  "generateTextLabel": "텍스트 생성",
+  "generateTextDescription": "AI로 텍스트 생성",
+  "imagePlaceholderText": "생성할 이미지를 설명하세요.",
+  "textPromptLabel": "텍스트를 생성할 프롬프트를 입력하세요. 예: \"치즈에 관한 100단어 분량의 글, 소제목 포함\"",
+  "variations": "변형",
+  "select": "선택",
+  "delete": "삭제",
+  "generateTextAction": "생성",
+  "rateLimitExceeded": "요청 한도를 초과했습니다. 나중에 다시 시도해 주세요",
+  "utilityOperationLabel": "AI로 이미지 생성",
+  "errorMessage": "오류가 발생했습니다.",
+  "generateVariant": "변형 생성",
+  "variantPromptLabel": "이 이미지를 어떻게 변형할까요?",
+  "variantPromptPlaceholder": "이미지를 수정할 방법을 설명하세요(선택 사항)",
+  "generationFailed": "AI 생성에 실패했습니다. 다시 시도해 주세요.",
+  "invalidRequest": "잘못된 요청입니다. 프롬프트를 확인하고 다시 시도해 주세요.",
+  "contentPolicyViolation": "콘텐츠 정책 위반입니다. 다른 프롬프트를 시도해 주세요.",
+  "serviceUnavailable": "AI 서비스를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요."
+}
