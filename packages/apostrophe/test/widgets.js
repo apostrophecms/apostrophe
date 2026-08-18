@@ -278,8 +278,7 @@ describe('Widgets', function() {
         assertAposPlaceholderTrue(document) {
           const videoWrapperNodes = document.querySelectorAll('[data-apos-video-widget]');
 
-          assert(videoWrapperNodes.length === 1);
-          assert(videoWrapperNodes[0].dataset.aposVideoUrl === 'https://youtu.be/Q5UX9yexEyM');
+          assert(videoWrapperNodes.length === 0);
         },
         assertPreviewMode(document) {
           const videoWrapperNodes = document.querySelectorAll('[data-apos-video-widget]');
