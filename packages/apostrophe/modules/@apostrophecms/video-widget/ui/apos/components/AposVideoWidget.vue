@@ -4,7 +4,10 @@
     class="apos-video-widget"
     @mousedown="focusWidget"
   >
-    <div class="apos-video-widget__empty">
+    <div
+      class="apos-video-widget__empty"
+      data-apos-test="video-widget-empty"
+    >
       <div class="apos-video-widget__empty-inner">
         <AposIndicator
           class="apos-video-widget__icon"
@@ -43,6 +46,7 @@
                 :disabled="submitting"
                 :aria-invalid="error ? 'true' : 'false'"
                 :aria-describedby="error ? errorId : undefined"
+                data-apos-test="video-widget-empty-url"
                 required
               >
             </div>
@@ -82,9 +86,9 @@
       v-if="hasVideo"
       class="apos-video-widget__edit-overlay"
     >
-      <p class="apos-video-widget__edit-overlay-msg">
+      <div class="apos-video-widget__edit-overlay-msg">
         {{ $t('apostrophe:videoCannotPlayInEditMode') }}
-      </p>
+      </div>
     </div>
   </div>
 </template>
@@ -203,6 +207,7 @@ async function submit() {
   display: flex;
   overflow: hidden;
   box-sizing: border-box;
+  container-type: inline-size;
   align-items: center;
   justify-content: center;
   min-height: 350px;
@@ -261,17 +266,40 @@ async function submit() {
 
 .apos-video-widget__field {
   flex: 1 1 auto;
+  min-width: 0;
 }
 
 .apos-video-widget__controls :deep(.apos-button__wrapper) {
   display: flex;
+  flex-shrink: 0;
 }
 
 .apos-video-widget__controls :deep(.apos-button) {
   display: flex;
   box-sizing: border-box;
   align-items: center;
+  justify-content: center;
   height: 100%;
+}
+
+@container (width < 480px) {
+  .apos-video-widget__instructions {
+    max-width: 18em;
+    font-size: var(--a-type-large);
+    line-height: var(--a-line-tall);
+    text-wrap: balance;
+    white-space: normal;
+  }
+
+  .apos-video-widget__controls {
+    flex-direction: column;
+  }
+
+  .apos-video-widget__controls :deep(.apos-button__wrapper),
+  .apos-video-widget__controls :deep(.apos-button) {
+    width: 100%;
+    height: auto;
+  }
 }
 
 .apos-video-widget__error {
