@@ -19,6 +19,7 @@ const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const addFieldTypes = require('./lib/addFieldTypes');
 const newInstance = require('./lib/newInstance.js');
+const { finalize, consultProbe } = require('./lib/extract.js');
 
 // Properties of a patch that are acted upon by the PATCH routes themselves
 // and never reach `convert`. See `patchWidgetIfSuitable`.
@@ -514,6 +515,183 @@ module.exports = {
           }
           fieldType.index(object[field.name], field, texts);
         });
+      },
+
+      // Extract the content of `doc` (or any sub-object matching `schema`,
+      // such as a widget) as a flat array of items, by walking the schema.
+      // Whether a field extracts, and with which tags, is the `extractable`
+      // policy resolved once at schema validation time — the walk never
+      // recomputes it, so only validated schemas (any schema registered
+      // with a doc type or widget type) yield items.
+      //
+      // Each item has:
+      //
+      // - `path`: a dot path to the content in `doc`, compatible with
+      //   `apos.util.get` and `apos.util.set`. Content nested in array
+      //   items and widgets is anchored on the nearest `_id`
+      //   (`@xyz.field`), never on array indexes.
+      // - `schemaPath`: the field-name hierarchy, for labels and debugging.
+      // - `type`: the field type, or `widget:name` for widget content.
+      // - `label`: the field label.
+      // - `tags`: the item's resolved tags (see `extractable`).
+      // - `text`: the text content, on text-bearing items.
+      // - `image`: `{ url }` or `{ data, mediaType }`, on image items.
+      // - `metaOnly`: `true` on structural container markers (arrays,
+      //   areas), which carry no direct content.
+      //
+      // Options:
+      //
+      // - `include`: keep only items carrying at least one of these tags
+      //   (omit to keep everything extracted). Structural `metaOnly`
+      //   markers carry no content to select on and are always kept —
+      //   filter them out yourself if unwanted.
+      // - `exclude`: drop items carrying any of these tags, `metaOnly`
+      //   markers included. Wins over `include`.
+      // - `extend`: an object mapping an item `type` to a function. Each
+      //   matching item is replaced by the function's return value, with
+      //   the original item as the sole argument. Consumer-specific
+      //   transforms belong here, per call, never in the field type
+      //   itself, so one consumer's reshaping can never leak into
+      //   another's call.
+      // - `maxLength`: a budget for the total `text` length. Items are
+      //   kept in walk order until the budget would be exceeded; the first
+      //   item over budget and everything after it are dropped.
+      // - `path`, `schemaPath`, `tags`: prefixes for the emitted paths,
+      //   and container tags to union into everything the sub-walk emits.
+      //   Passed by extractors and widget managers reentering the walk for
+      //   a sub-schema; rarely useful otherwise.
+      // - `probe`: a function consulted at each dispatch point before the
+      //   default extractor runs. It receives a context object — for
+      //   fields `{ kind: 'field', field, value, path, schemaPath, tags }`,
+      //   for widgets in areas `{ kind: 'widget', manager, widget, path,
+      //   schemaPath, tags }` — and returns an array of items to use in
+      //   place of the default extraction (finalized with the same
+      //   defaults; an empty array suppresses the dispatch point), or
+      //   `undefined` to proceed normally. With a probe, every field of a
+      //   validated schema is consulted, including fields whose type does
+      //   not extract or that are opted out — a consumer may own content
+      //   core cannot see — and their items inherit the container's tags.
+      //   Unvalidated schemas are never walked, probe or not. Widgets keep
+      //   their opt-out semantics: a widget opted out at the module or
+      //   area level is skipped without consulting the probe. The probe
+      //   travels with `path`/`schemaPath`/`tags` through container
+      //   extractors and widget managers to every depth.
+      //
+      // Container field types (arrays, objects, areas) implement `extract`
+      // by calling this method again on their sub-schema, without query
+      // options.
+
+      extract(req, schema, doc, options = {}) {
+        const {
+          include = null,
+          exclude = null,
+          extend = null,
+          maxLength = null,
+          path = '',
+          schemaPath = '',
+          tags: inherited = null,
+          probe = null
+        } = options;
+        if (include !== null && !isTagArray(include)) {
+          throw self.apos.error('invalid', '"include" must be an array of tag strings');
+        }
+        if (exclude !== null && !isTagArray(exclude)) {
+          throw self.apos.error('invalid', '"exclude" must be an array of tag strings');
+        }
+        if (inherited !== null && !isTagArray(inherited)) {
+          throw self.apos.error('invalid', '"tags" must be an array of tag strings');
+        }
+        if (extend !== null && (
+          typeof extend !== 'object' ||
+          Array.isArray(extend) ||
+          !Object.values(extend).every(fn => typeof fn === 'function')
+        )) {
+          throw self.apos.error(
+            'invalid',
+            '"extend" must be an object mapping field types to functions'
+          );
+        }
+        if (maxLength !== null && (!Number.isInteger(maxLength) || maxLength <= 0)) {
+          throw self.apos.error('invalid', '"maxLength" must be a positive integer');
+        }
+        if (probe !== null && typeof probe !== 'function') {
+          throw self.apos.error('invalid', '"probe" must be a function');
+        }
+        const items = [];
+        for (const field of schema) {
+          // Only fields of validated schemas carry `_extractable`. The
+          // probe is consulted for all of them, even `false` ones — that
+          // value conflates "the type cannot extract" with "opted out",
+          // and a probe may own content core cannot see
+          const active = Array.isArray(field._extractable);
+          if (!active && !(probe && field._extractable === false)) {
+            continue;
+          }
+          const own = active ? field._extractable : [];
+          const fieldTags = inherited?.length
+            ? _.uniq([ ...inherited, ...own ])
+            : own;
+          const fieldPath = {
+            value: path ? `${path}.${field.name}` : field.name,
+            schema: schemaPath ? `${schemaPath}.${field.name}` : field.name,
+            tags: fieldTags,
+            probe
+          };
+          let found = probe && consultProbe(self, probe, {
+            kind: 'field',
+            field,
+            value: doc?.[field.name],
+            path: fieldPath.value,
+            schemaPath: fieldPath.schema,
+            tags: fieldTags
+          });
+          found ??= active
+            ? self.fieldTypes[field.type]
+              .extract(req, field, doc?.[field.name], fieldPath) ?? []
+            : [];
+          const defaults = {
+            path: fieldPath.value,
+            schemaPath: fieldPath.schema,
+            type: field.type,
+            label: field.label,
+            tags: fieldTags
+          };
+          for (const item of found) {
+            items.push(finalize(item, defaults));
+          }
+        }
+        if (!include && !exclude && !extend && (maxLength === null)) {
+          return items;
+        }
+        const kept = [];
+        let total = 0;
+        for (const item of items) {
+          if (include && !item.metaOnly && !hasAny(item.tags, include)) {
+            continue;
+          }
+          if (exclude && hasAny(item.tags, exclude)) {
+            continue;
+          }
+          const final = (extend && extend[item.type])
+            ? extend[item.type](item)
+            : item;
+          if ((maxLength !== null) && final.text) {
+            total += final.text.length;
+            if (total > maxLength) {
+              break;
+            }
+          }
+          kept.push(final);
+        }
+        return kept;
+
+        function hasAny(itemTags, query) {
+          return itemTags.some(tag => query.includes(tag));
+        }
+        function isTagArray(value) {
+          return Array.isArray(value) &&
+            value.every(tag => typeof tag === 'string' && tag.length);
+        }
       },
 
       async evaluateCondition(
@@ -1403,8 +1581,18 @@ module.exports = {
         if (type.extend) {
           // Allow a field type to extend another field type and merge
           // in some differences.
-          fieldType = _.cloneDeep(self.fieldTypes[type.extend]);
+          const parent = self.fieldTypes[type.extend];
+          fieldType = _.cloneDeep(parent);
           _.merge(fieldType, type);
+          // A subtype's extractable tags union with its parent's;
+          // lodash merges arrays index-wise, which would drop parent tags
+          if (parent && Array.isArray(parent.extractable) &&
+            Array.isArray(type.extractable)) {
+            fieldType.extractable = _.uniq([
+              ...parent.extractable,
+              ...type.extractable
+            ]);
+          }
         }
         // For bc. csv was a bad name for the string converter, but
         // we need to accept it, and even keep the property around
@@ -1642,6 +1830,7 @@ module.exports = {
         if (options.type === 'doc type' && (field.editPermission || field.viewPermission) && parent) {
           warn(`editPermission or viewPermission must be defined on root fields only, provided on "${parent.name}.${field.name}"`);
         }
+        resolveExtractable();
         if (fieldType.validate) {
           fieldType.validate(field, options, warn, fail);
         }
@@ -1665,6 +1854,40 @@ module.exports = {
             ${s}
 
           `;
+        }
+        // Resolves the field's extraction policy to `false` or an array of
+        // tags, cached as `field._extractable` so the extraction walk is a
+        // single read. The type is the gate: a field instance can opt out of
+        // an extractable type or extend its tags, but can never force in a
+        // type that does not extract.
+        function resolveExtractable() {
+          const typeTags = normalizeExtractable(
+            fieldType.extractable ?? !!fieldType.extract,
+            `The "${field.type}" field type's "extractable" property`
+          );
+          if (typeTags !== false && !fieldType.extract) {
+            fail(`The "${field.type}" field type declares "extractable" but has no extract method.`);
+          }
+          const fieldTags = normalizeExtractable(
+            field.extractable ?? true,
+            'The "extractable" property'
+          );
+          field._extractable = (typeTags === false || fieldTags === false)
+            ? false
+            : _.uniq([ ...typeTags, ...fieldTags ]);
+        }
+        function normalizeExtractable(value, label) {
+          if (value === false) {
+            return false;
+          }
+          if (value === true) {
+            return [];
+          }
+          if (Array.isArray(value) &&
+            value.every(tag => typeof tag === 'string' && tag.length)) {
+            return value;
+          }
+          return fail(`${label} must be true, false or an array of tag strings.`);
         }
       },
 

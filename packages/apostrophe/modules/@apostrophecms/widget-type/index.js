@@ -202,6 +202,15 @@ module.exports = {
 
     self.label = self.options.label;
 
+    const extractable = self.options.extractable;
+    const validExtractable = extractable === undefined ||
+      typeof extractable === 'boolean' ||
+      (Array.isArray(extractable) &&
+        extractable.every(tag => typeof tag === 'string' && tag.length));
+    if (!validExtractable) {
+      throw new Error(`${self.__meta.name}: "extractable" must be true, false or an array of tag strings`);
+    }
+
     self.composeSchema();
     self.composeWidgetOperations();
 
@@ -629,6 +638,46 @@ module.exports = {
 
       addSearchTexts(widget, texts) {
         self.apos.schema.indexFields(self.schema, widget, texts);
+      },
+
+      // Extract the widget's content for `apos.schema.extract`, which
+      // documents the item shape and drives this walk. By default the
+      // widget's own schema is walked, which covers any widget built from
+      // ordinary fields and areas. Override to contribute content only
+      // this widget knows about, returning your own items ahead of a
+      // recursive walk of the sub-schema:
+      //
+      // ```js
+      // extract(req, widget, options) {
+      //   return [
+      //     {
+      //       text: widget.special,
+      //       path: `${options.path}.special`,
+      //       tags: [ 'text' ]
+      //     },
+      //     ...self.apos.schema.extract(req, self.schema, widget, options)
+      //   ];
+      // }
+      // ```
+      //
+      // `options` carries the `path`, `schemaPath` and `tags` context of
+      // the walk and must travel to the recursive call unchanged.
+      //
+      // An item for content the sub-schema does not own MUST carry an
+      // explicit `path` naming the property the content lives at, and the
+      // `tags` its consumers select on (`[ 'text' ]` for translatable
+      // text). Without a `path` the item defaults to the path of the whole
+      // widget object, which no consumer can safely write back to; without
+      // its own `tags` the item inherits only the area's tags and
+      // tag-filtered consumers will not see it. Other missing item
+      // properties (`type`, `label`, `schemaPath`) are filled in by the
+      // caller.
+
+      extract(req, widget, options) {
+        if (self.isEmpty(widget)) {
+          return [];
+        }
+        return self.apos.schema.extract(req, self.schema, widget, options);
       },
 
       // Return true if this widget should be considered

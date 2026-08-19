@@ -25,8 +25,9 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
     : {};
 
   before(async function() {
+    // This only links `apostrophe` (a `file:` dependency) into node_modules.
     await util.promisify(exec)(
-      'npm install',
+      'npm install --no-audit --no-fund --prefer-offline',
       { cwd: projectCwd }
     );
   });

@@ -160,6 +160,24 @@ module.exports = {
   },
   methods(self) {
     return {
+      // The image itself leads, when the relationship is loaded on the
+      // widget; the schema walk still covers the caption and any fields a
+      // subclass adds
+      extract(req, widget, options) {
+        const attachment = widget._image?.[0]?.attachment;
+        const items = attachment
+          ? [
+            {
+              image: { url: self.apos.attachment.url(attachment, { size: 'full' }) },
+              tags: [ 'image' ]
+            }
+          ]
+          : [];
+        return items.concat(
+          self.apos.schema.extract(req, self.schema, widget, options)
+        );
+      },
+
       // Clear link hrefs that use dangerous URL schemes (e.g.
       // `javascript:`) and may have been stored before the linkHref
       // schema field was changed to `type: 'url'`. Registered per
