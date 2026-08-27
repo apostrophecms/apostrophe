@@ -294,7 +294,7 @@ You can also determine the login URLs by invoking the `@apostrophecms/passport-b
 
 ### Using login links with headless ApostropheCMS and an Astro Frontend
 
-When using `@apostrophecms/passport-bridge` with an Astro frontend (via [`@apostrophecms/apostrophe-astro`](https://github.com/apostrophecms/apostrophe-astro)), the built-in `loginLinks` component won't work since Astro handles template rendering instead of Nunjucks.
+When using `@apostrophecms/passport-bridge` with an Astro frontend (via [`@apostrophecms/apostrophe-astro`](https://apostrophecms.com/extensions/apostrophe-astro)), the built-in `loginLinks` component won't work since Astro handles template rendering instead of Nunjucks.
 
 **1. Configure Astro Proxy Routes**
 

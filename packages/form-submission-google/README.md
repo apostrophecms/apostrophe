@@ -71,7 +71,7 @@ You can rename these by setting options on the `@apostrophecms/form` module. The
 // modules/@apostrophecms/form/index.js
 module.exports = {
   options: {
-    dateColumnLabel: 'Submission date'
+    dateColumnLabel: 'Submission date',
     timeColumnLabel: 'Submission time'
   }
 };
@@ -103,7 +103,7 @@ The submitted spreadsheet rows will now include the additional column.
 
 ### Issues with column formatting
 
-This module sends data to Google Sheets "as entered," i.e. as if the it were typed by the user in Google Sheets. In most cases this does good things: dates are detected as dates, times as times, numbers as numbers, etc.
+This module sends data to Google Sheets "as entered," i.e. as if it were typed by the user in Google Sheets. In most cases this does good things: dates are detected as dates, times as times, numbers as numbers, etc.
 
 However in certain cases, the results may be surprising. For instance, a phone number with a leading `0` and no spaces or punctuation will lose its leading `0` because this is the standard behavior of Google Sheets when it believes it has detected a number. Google does not store the zero in this situation, it is truly gone.
 

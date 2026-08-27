@@ -81,7 +81,6 @@ await apos.cache.set(namespace, key, value)
 Example:
 
 ```javascript
-const fetch = node
 // modules/api-connect/index.js
 module.exports = {
   apiRoutes(self) {
