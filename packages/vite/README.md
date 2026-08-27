@@ -179,7 +179,7 @@ The `Modules/` alias is available for both public and admin UI builds and allows
 import utils from 'Modules/some-module/lib/utils.js';
 ```
 
-`@/` alias is available for both public and admin UI builds and allows you to import files from the entire project source code. It follows the same path as your orignal source code, but skips the `ui/` part of the path.
+`@/` alias is available for both public and admin UI builds and allows you to import files from the entire project source code. It follows the same path as your original source code, but skips the `ui/` part of the path.
 
 ```javascript
 // Current file: any file in any module inside of the `ui/` folder
@@ -200,7 +200,7 @@ The way we integrate Vite with ApostropheCMS allows now direct imports (includin
 // You can use aliases to import assets or a relative path when in the same module.
 // Actual path: modules/some-module/ui/assets/logo.svg
 import logo from '@/some-module/assets/logo.svg';
-// Logo now cotains the path to the image and will be normallized and correctly
+// Logo now contains the path to the image and will be normalized and correctly
 // injected when building the project for production.
 ```
 You can import Sass as well:
