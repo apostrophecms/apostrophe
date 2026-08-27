@@ -288,7 +288,15 @@ module.exports = {
           // so that frontends like Astro (which don't do it for us) don't bomb
           // attempting to issue the redirect
           url = encodeUrl(url);
-          return res.send({
+          // This response *describes* a redirect, it is not itself one, and
+          // it carries no `Location` header because the external front is not
+          // the party being redirected. Emit it as a 200 so the front end
+          // receives the body and can issue the real redirect to the browser.
+          // Otherwise a 3xx status set earlier in the request (as
+          // @apostrophecms/soft-redirect does) would leak onto this response,
+          // and a front end that reasonably treats 3xx as bodiless would
+          // discard the payload it needs.
+          return res.status(200).send({
             redirect: true,
             url,
             status
