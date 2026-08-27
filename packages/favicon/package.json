@@ -11,9 +11,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/apostrophecms/apostrophe.git",
-    "directory": "packages/favison"
+    "directory": "packages/favicon"
   },
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/favicon#readme",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/apostrophe/issues"
+  },
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "devDependencies": {

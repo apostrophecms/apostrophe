@@ -19,6 +19,9 @@
     "apostrophe"
   ],
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/anchors#readme",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/apostrophe/issues"
+  },
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "devDependencies": {
