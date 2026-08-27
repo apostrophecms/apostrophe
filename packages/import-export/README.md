@@ -318,7 +318,7 @@ module.exports = {
 
 You might want to scope one or multiple formats in another module for several reasons:
 
-- The formats rely on a dependency that is not hosted on NPM (which is the case with [@apostrophecms/import-export-xlsx](https://github.com/apostrophecms/import-export-xlsx))
+- The formats rely on a dependency that is not hosted on NPM (which is the case with [@apostrophecms/import-export-xlsx](https://apostrophecms.com/extensions/import-export-xlsx))
 - You want to fully scope the format in a separate module and repository for an easier maintenance
 - ...
 

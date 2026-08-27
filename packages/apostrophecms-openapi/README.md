@@ -32,7 +32,7 @@ This repository contains the **core ApostropheCMS OpenAPI specification** - the 
 
 To generate a specification that includes **both** core and your custom modules:
 
-1. Install [@apostrophecms/openapi-generator](https://github.com/apostrophecms/openapi-generator) in your Apostrophe project
+1. Install [@apostrophecms/openapi-generator](https://apostrophecms.com/extensions/openapi-generato) in your Apostrophe project
 2. Run the generator from your project directory  
 3. Use the generated specification for SDK creation and documentation specific to your application
 
@@ -152,7 +152,7 @@ The mock server returns realistic example responses, letting frontend developers
 - Demo UIs to stakeholders before implementation
 - Test frontend error handling and edge cases
 
-> **Note:** The [@apostrophecms/openapi-generator](https://github.com/apostrophecms/openapi-generator) generates documentation for *existing* ApostropheCMS projects - it documents what you've already built. For true API-first design, you'd manually extend this core spec before implementation.
+> **Note:** The [@apostrophecms/openapi-generator](https://apostrophecms.com/extensions/openapi-generato) generates documentation for *existing* ApostropheCMS projects - it documents what you've already built. For true API-first design, you'd manually extend this core spec before implementation.
 
 ---
 
