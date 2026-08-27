@@ -366,7 +366,7 @@ export default {
 
 This generates BEM-style classes like `my-form__input`, `my-form__label`, and `my-form__error` on form elements.
 
-For teams who prefer visual design tools, the [Palette extension](https://apostrophecms.com/extensions/palette-extension) allows in-context CSS customization without writing code. [Learn more about Pro features](#-ready-for-more).
+For teams who prefer visual design tools, Apostrophe's built-in [global styles](https://docs.apostrophecms.org/guide/global-styles.html) let editors adjust CSS properties from the admin interface without writing code.
 
 ## Field-Specific Options
 
@@ -548,8 +548,6 @@ The open-source form builder provides powerful form creation capabilities, but e
 - **🌍 Automated Translation** - Automatically translate forms and confirmation messages into multiple languages with AI-powered translation services (DeepL, Google Translate, Azure). Deploy multilingual forms without manual translation work.
 
 - **📄 Document Management** - Version control for forms with complete audit trails. Track changes to form fields, restore previous versions, and maintain compliance with form modification history.
-
-- **🎨 Visual Design Tools** - Use the Palette extension for in-context CSS customization of form styling without writing code. Perfect for teams without dedicated frontend developers.
 
 Create an account on Apostrophe Workspaces and upgrade to [**ApostropheCMS Pro**](https://app.apostrophecms.com/login) or **[contact our team](https://apostrophecms.com/contact-us)** to learn about Pro licensing and access enterprise features that enhance form management, compliance, and team collaboration.
 

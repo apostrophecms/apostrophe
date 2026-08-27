@@ -13,7 +13,7 @@
 </div>
 
 This module allows users to edit the "favicon" (browser tab icon) of the site via the global settings of the site.
-As such, it pairs well with the Apostrophe palette and multisite modules.
+As such, it pairs well with Apostrophe's built-in [global styles](https://docs.apostrophecms.org/guide/global-styles.html) and the multisite module.
 
 ## Compatibility
 This version requires the latest ApostropheCMS. When adding this module to an existing project, run `npm update` to ensure all ApostropheCMS modules are up-to-date.
