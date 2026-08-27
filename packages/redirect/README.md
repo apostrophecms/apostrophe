@@ -153,7 +153,7 @@ Then actual redirects will play out like this:
 
 ### Capturing wildcards
 
-If you are creating an "URL" redirect, and not an "Internal Page" one, you may also "capture" and reuse the rest of the URL by including the `*` . This is useful when the rest of the URL is still correct.
+If you are creating a "URL" redirect, and not an "Internal Page" one, you may also "capture" and reuse the rest of the URL by including the `*` . This is useful when the rest of the URL is still correct.
 
 For instance, if your "Old URL" is:
 

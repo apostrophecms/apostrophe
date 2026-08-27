@@ -43,7 +43,7 @@ require('apostrophe')({
 
 Editors can now schedule publication and un-publication times for documents. Note that un-publishing a document means it is no longer available except in draft form. Since the home page must always be available, the home page cannot be scheduled for un-publishing.
 
-For publiction and un-publication to actually occur, you'll need to run the appropriate command line task on a periodic basis, as described below.
+For publication and un-publication to actually occur, you'll need to run the appropriate command line task on a periodic basis, as described below.
 
 ## Using the command line task
 

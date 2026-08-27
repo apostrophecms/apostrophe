@@ -505,7 +505,7 @@ Nothing! Well, almost.
 * Your project must be using Apostrophe 4.x.
 * You'll need to `npm update` your project to the latest version of `apostrophe`.
 * You'll need to set the `APOS_EXTERNAL_FRONT_KEY` environment variable to a secret
-value of your choosing when running Apostrphe.
+value of your choosing when running Apostrophe.
 * Make sure you set that **same value** when running your Astro project.
 * To avoid developer confusion, we recommend changing any page templates in your
 Apostrophe project to provide a link to your Astro frontend site and
