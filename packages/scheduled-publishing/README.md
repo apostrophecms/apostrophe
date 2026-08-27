@@ -18,7 +18,7 @@
   </p>
 </div>
 
-This module allows to schedule publishing of your pieces (which includes pages) to specific dates.
+This module allows you to schedule publishing of your pieces (which includes pages) to specific dates.
 
 ## Installation
 

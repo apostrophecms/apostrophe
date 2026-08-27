@@ -128,7 +128,6 @@ This will redirect **all** URLs beginning with `/auto/` to your destination, lik
 ```
 /auto/hyundai -> /fr/auto
 /auto/hyundai/ioniq-5 -> /fr/auto
-/auto/hyundai/ioniq-5 -> /fr/auto
 ```
 
 ⚠️ Note that this **discards the rest of the URL**. If this is not what you want, see below for ways to avoid it.
@@ -137,7 +136,7 @@ This will redirect **all** URLs beginning with `/auto/` to your destination, lik
 
 If you have a redirect rule with no `*`, it will always beat a redirect rule with an `*`.
 
-Fro instance, if you have rules like this:
+For instance, if you have rules like this:
 
 ```
 /auto/gm/bolt -> /en/auto/gm/bolt
@@ -172,12 +171,11 @@ Then redirects will occur like this:
 ```
 /auto/hyundai -> /fr/auto/hyundai
 /auto/hyundai/ioniq-5 -> /fr/auto/hyundai/ioniq-5
-/auto/hyundai/ioniq-5 -> /fr/auto/hyundai/ioniq-5
 ```
 
 ### Creating fallbacks with multiple wildcard rules
 
-Note that if you have two redirect rules involving an `*` and one is longer than the other, **the longer match always wins.*
+Note that if you have two redirect rules involving an `*` and one is longer than the other, **the longer match always wins.**
 
 For example, if your redirects are set up like this:
 
@@ -192,7 +190,6 @@ Then redirects will play out like this:
 /auto/mercedes -> /fr/auto/mercedes
 /auto/mercedes/w123 -> /fr/auto/mercedes/w123
 /auto/hyundai -> /en/car/hyundai
-/auto/hyundai/ioniq-5 -> /en/car/hyundai/ioniq-5
 /auto/hyundai/ioniq-5 -> /en/car/hyundai/ioniq-5
 ```
 

@@ -127,12 +127,6 @@ export default {
 
 **Campaign Pages**: Enable marketing campaigns to link directly to specific product features or testimonials.
 
-### Getting Started with Astro + ApostropheCMS
-
-New to using ApostropheCMS with Astro? Check out our starter kits:
-- **[starter-kit-astro-essentials](https://github.com/apostrophecms/starter-kit-astro-essentials)** - Essential features for most projects
-- **[starter-kit-astro-apollo](https://github.com/apostrophecms/starter-kit-astro-apollo)** - Advanced features with Apollo integration
-
 ---
 
 <div>
