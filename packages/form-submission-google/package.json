@@ -14,6 +14,9 @@
     "directory": "packages/form-submission-google"
   },
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/form-submission-google#readme",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/apostrophe/issues"
+  },
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "devDependencies": {

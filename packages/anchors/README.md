@@ -10,7 +10,7 @@
     <a aria-label="Join the community on Discord" href="http://chat.apostrophecms.org">
       <img alt="" src="https://img.shields.io/discord/517772094482677790?color=5865f2&label=Join%20the%20Discord&logo=discord&logoColor=fff&labelColor=000&style=for-the-badge&logoWidth=20" />
     </a>
-    <a aria-label="License" href="https://github.com/apostrophecms/anchors/blob/main/LICENSE.md">
+    <a aria-label="License" href="https://github.com/apostrophecms/apostrophe/blob/main/packages/anchors/LICENSE.md">
       <img alt="" src="https://img.shields.io/static/v1?style=for-the-badge&labelColor=000000&label=License&message=MIT&color=3DA639" />
     </a>
   </p>
@@ -130,6 +130,6 @@ export default {
 ---
 
 <div>
-  <p>Made with ❤️ by the <a href="https://apostrophecms.com">ApostropheCMS</a> team. <strong>Found this useful? <a href="https://github.com/apostrophecms/anchors">Give us a star on GitHub!</a> ⭐</strong>
+  <p>Made with ❤️ by the <a href="https://apostrophecms.com">ApostropheCMS</a> team. <strong>Found this useful? <a href="https://github.com/apostrophecms/apostrophe">Give us a star on GitHub!</a> ⭐</strong>
   </p>
 </div>

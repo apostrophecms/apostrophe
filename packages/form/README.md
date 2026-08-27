@@ -9,7 +9,7 @@
     <a aria-label="Join the community on Discord" href="http://chat.apostrophecms.org">
       <img alt="" src="https://img.shields.io/discord/517772094482677790?color=5865f2&label=Join%20the%20Discord&logo=discord&logoColor=fff&labelColor=000&style=for-the-badge&logoWidth=20">
     </a>
-    <a aria-label="License" href="https://github.com/apostrophecms/form/blob/main/LICENSE.md">
+    <a aria-label="License" href="https://github.com/apostrophecms/apostrophe/blob/main/packages/form/LICENSE.md">
       <img alt="" src="https://img.shields.io/static/v1?style=for-the-badge&labelColor=000000&label=License&message=MIT&color=3DA639">
     </a>
   </p>
@@ -194,7 +194,7 @@ export default {
 
 The rich text widget allows editors to add instructions within forms. Any widget type can be included in this configuration.
 
-> **Need different field types for different forms?** The `formWidgets` option is global and cannot be set per-area or per-page. If you need separate sets of allowed fields (for example, a simple contact form vs. a detailed application form), extend the `@apostrophecms/form` module to create a second form piece-type with its own `formWidgets` configuration. **However**, without additional controls, all editors can use both form types. Use [`@apostrophecms-pro/advanced-permission`](https://github.com/apostrophecms/advanced-permission) to restrict which user groups can create and manage each form type—ensuring junior editors only access basic forms while senior staff can use advanced forms. [Learn more about Pro features](#-ready-for-more).
+> **Need different field types for different forms?** The `formWidgets` option is global and cannot be set per-area or per-page. If you need separate sets of allowed fields (for example, a simple contact form vs. a detailed application form), extend the `@apostrophecms/form` module to create a second form piece-type with its own `formWidgets` configuration. **However**, without additional controls, all editors can use both form types. Use [`@apostrophecms-pro/advanced-permission`](https://apostrophecms.com/extensions/advanced-permission) to restrict which user groups can create and manage each form type—ensuring junior editors only access basic forms while senior staff can use advanced forms. [Learn more about Pro features](#-ready-for-more).
 
 ## Handling Submissions
 
@@ -556,5 +556,5 @@ Create an account on Apostrophe Workspaces and upgrade to [**ApostropheCMS Pro**
 ---
 
 <div>
-  <p>Made with ❤️ by the <a href="https://apostrophecms.com">ApostropheCMS</a> team. <strong>Found this useful? <a href="https://github.com/apostrophecms/form">Give us a star on GitHub!</a> ⭐</strong></p>
+  <p>Made with ❤️ by the <a href="https://apostrophecms.com">ApostropheCMS</a> team. <strong>Found this useful? <a href="https://github.com/apostrophecms/apostrophe">Give us a star on GitHub!</a> ⭐</strong></p>
 </div>
