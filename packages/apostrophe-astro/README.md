@@ -153,7 +153,7 @@ export default defineConfig({
       excludeRequestHeaders: [
         // For single-site setups or hosting on multiple servers, block the host header
         'host'
-      ]
+      ],
       proxyRoutes: [
         // Custom URLs that should be proxied to Apostrophe.
         // Note that all of `/api/v1` is already proxied, so
@@ -654,6 +654,7 @@ links to each page of blog posts:
 import { aposSetQueryParameter as setParameter } from '@apostrophecms/apostrophe-astro/helpers/universal';
 
 const {
+  page,
   pieces,
   currentPage,
   totalPages
@@ -663,7 +664,7 @@ const pages = [];
 for (let i = 1; (i <= totalPages); i++) {
   pages.push({
     number: i,
-    current: page === currentPage,
+    current: i === currentPage,
     url: setParameter(Astro.url, 'page', i)
   });
 }
@@ -682,7 +683,7 @@ for (let i = 1; (i <= totalPages); i++) {
 
   {pages.map(page => (
     <a
-      class={(page === currentPage) ? 'current' : ''} 
+      class={page.current ? 'current' : ''}
       href={page.url}>{page.number}
     </a>
   ))}

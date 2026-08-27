@@ -194,7 +194,7 @@ To import areas as rich text HTML markup, add the `importAsRichText: true` optio
 
 ### Create a file for your format:
 
-Add your format under `lib/formats/<format_name>.js` and export it in l`ib/formats/index.js`.
+Add your format under `lib/formats/<format_name>.js` and export it in `lib/formats/index.js`.
 
 **Simple example** (for a single file without attachment files):
 
@@ -328,7 +328,7 @@ To do so, simply create an apostrophe module that improves `@apostrophecms/impor
 Example with an `import-export-excel` module:
 
 ```js
-const formats: {
+const formats = {
   xls: {
     label: 'XLS',
     extension: '.xls',

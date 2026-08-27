@@ -71,7 +71,7 @@ You can rename these by setting options on the `@apostrophecms/form` module. The
 // modules/@apostrophecms/form/index.js
 module.exports = {
   options: {
-    dateColumnLabel: 'Submission date'
+    dateColumnLabel: 'Submission date',
     timeColumnLabel: 'Submission time'
   }
 };
