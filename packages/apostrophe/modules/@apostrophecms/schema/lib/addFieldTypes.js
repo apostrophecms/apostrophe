@@ -216,6 +216,74 @@ module.exports = (self) => {
     }
   });
 
+  // Rich text, as a schema field rather than as a widget in an area. The
+  // value is HTML markup, edited with the same editor and sanitized with
+  // the same rules as the rich text widget.
+  //
+  // Rich text options such as `toolbar`, `styles` and `insert` are given in
+  // the field's `options` property, exactly as they would be for a rich text
+  // widget configured in an area, and are merged with the `defaultOptions` of
+  // the `@apostrophecms/rich-text-widget` module. That module remains the one
+  // place where the behavior of rich text is configured, so overriding its
+  // options or its methods changes the behavior of both.
+  //
+  // Note that permalinks are stored as placeholders, just as they are in a
+  // rich text widget. Widgets replace them with real URLs when they are
+  // rendered; a schema field has no render-time hook of its own, so call
+  // `apos.modules['@apostrophecms/rich-text-widget'].renderRichText(req, html)`
+  // if you want the same treatment. Inline images display either way.
+  self.addFieldType({
+    name: 'richText',
+    extractable: [ 'text' ],
+    extract(req, field, value) {
+      return richTextManager().isEmptyRichText(value) ? [] : [ { text: value } ];
+    },
+    convert(req, field, data, destination) {
+      const manager = richTextManager();
+      const content = manager.sanitizeRichText(
+        self.apos.launder.string(data[field.name]),
+        field.options || {}
+      );
+      destination[field.name] = content;
+      if (field.required && manager.isEmptyRichText(content)) {
+        throw self.apos.error('required');
+      }
+    },
+    // Same weight and same silent setting as the rich text widget, so that
+    // rich text indexes and summarizes identically either way
+    index(value, field, texts) {
+      const silent = (field.silent === undefined) ? false : field.silent;
+      texts.push({
+        weight: field.weight || 10,
+        text: self.apos.util.htmlToPlaintext(value || ''),
+        silent
+      });
+    },
+    isEmpty(field, value) {
+      return richTextManager().isEmptyRichText(value);
+    },
+    validate(field, options, warn) {
+      for (const name of [ 'toolbar', 'styles', 'insert' ]) {
+        if (field[name]) {
+          warn(stripIndents`
+            Remember to nest "${name}" inside "options" when configuring a richText field.
+
+            Otherwise, "${name}" has no effect.
+          `);
+        }
+      }
+    },
+    def: ''
+  });
+
+  // The rich text widget module owns every aspect of rich text behavior,
+  // including the options and the sanitization rules. It is looked up at
+  // call time so that the `richText` field type can be registered before
+  // that module exists
+  function richTextManager() {
+    return self.apos.modules['@apostrophecms/rich-text-widget'];
+  }
+
   self.addFieldType({
     name: 'string',
     extractable: [ 'text' ],
