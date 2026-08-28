@@ -652,6 +652,16 @@ function sanitizeHtml(html, options, _recursing) {
         // htmlparser2, so their contents are decoded and must be escaped below
         // like any other text (important to prevent XSS via entity-encoded
         // payloads such as <option>&lt;script&gt;...&lt;/script&gt;</option>).
+      } else if (
+        // htmlparser2 treats <iframe> as a raw-text element, so markup inside
+        // (including after an unclosed <iframe>) arrives as a single text node.
+        // When the iframe is discarded, re-sanitize that fallback markup as HTML
+        // instead of escaping it as plain text (issue #5550).
+        tag === 'iframe' &&
+        !tagAllowed(tag) &&
+        options.disallowedTagsMode === 'discard'
+      ) {
+        result += sanitizeHtml(text, options);
       } else if (!addedText) {
         const escaped = escapeHtml(text, false);
         if (options.textFilter) {

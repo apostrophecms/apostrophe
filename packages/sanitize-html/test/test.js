@@ -2079,6 +2079,27 @@ describe('sanitizeHtml', function() {
       ), '!<xmp>&lt;/xmp&gt;&lt;svg/onload=prompt`xs`&gt;</xmp>!'
     );
   });
+  it('should sanitize away disallowed iframe without escaping fallback html', function() {
+    // Regression for #5550: htmlparser2 treats iframe as raw-text, so an
+    // unclosed iframe's following markup arrives as text and must be
+    // re-sanitized rather than escaped when the iframe is discarded.
+    assert.equal(
+      sanitizeHtml('<iframe src="http://nono.ohno"><i>test</i>'),
+      '<i>test</i>'
+    );
+  });
+  it('should re-sanitize closed disallowed iframe fallback html', function() {
+    assert.equal(
+      sanitizeHtml('<iframe src="http://nono.ohno"><i>test</i></iframe>'),
+      '<i>test</i>'
+    );
+  });
+  it('should not allow XSS via disallowed iframe fallback markup', function() {
+    assert.equal(
+      sanitizeHtml('<iframe src="http://evil"><img src=x onerror=alert(1)><b>ok</b>'),
+      '<b>ok</b>'
+    );
+  });
 
   describe('CVE-2026-44990 regression and raw-text edge cases', function() {
     it('should escape raw-text inner content when xmp tag is disallowed and discarded under custom nonTextTags', function() {
