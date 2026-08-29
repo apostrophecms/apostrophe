@@ -4,6 +4,7 @@
 // unexpected throws propagate to the caller (which converts + emits).
 
 import { getKit } from './kits.js';
+import { detectFrontend } from './starter.js';
 import { detectPackageManager, assertSupportedPackageManager } from './pm.js';
 import { StageError, UnsupportedPackageManagerError } from './errors.js';
 import {
@@ -36,8 +37,11 @@ export function makeCreateProject({
     };
 
     // Single terminal point: build the result, emit exactly one event, return.
+    // `frontend` is the resolved layout (null = standalone), known only once a
+    // step has determined it; it rides on the returned result but is added
+    // AFTER the telemetry payload is sliced off, so it never reaches the wire.
     const finish = ({
-      ok, packageManager, failStage, errorCode
+      ok, packageManager, failStage, errorCode, frontend
     }) => {
       const result = {
         ok,
@@ -53,6 +57,9 @@ export function makeCreateProject({
       }
       const { ok: _ok, ...payload } = result;
       telemetry.event(ok ? 'install_success' : 'install_fail', payload);
+      if (frontend !== undefined) {
+        result.frontend = frontend;
+      }
       return result;
     };
 
@@ -72,9 +79,17 @@ export function makeCreateProject({
       throw err;
     }
 
-    // Validation errors (unknown kit, unsafe shortName, …) propagate as
-    // unexpected throws — the caller converts and emits.
-    const kit = getKit(options.kitId);
+    // A `--starter` install escapes the kit registry: the repo is the resolved
+    // starter URL and the frontend is detected from the clone, not declared.
+    // Otherwise resolve the registry kit — validation errors (unknown kit,
+    // unsafe shortName, …) propagate as unexpected throws; the caller converts.
+    const usingStarter = Boolean(options.starter);
+    const kit = usingStarter
+      ? {
+        repo: options.starter.repo,
+        seedData: false
+      }
+      : getKit(options.kitId);
 
     // The task handle is passed to the step fn so long-running steps can
     // report progress (task.progress?.(...)); steps that don't, ignore it.
@@ -98,11 +113,17 @@ export function makeCreateProject({
           cwd: options.cwd
         }));
 
+      // A registry kit declares its frontend; a custom starter's is detected
+      // from the cloned layout (a `backend/` directory means hybrid Astro).
+      const declaredFrontend = usingStarter
+        ? detectFrontend(projectDir)
+        : kit.frontend;
+
       const { frontend, appRoot } = await step('Configuring project', () =>
         scaffold({
           projectDir,
           shortName: options.shortName,
-          frontend: kit.frontend
+          frontend: declaredFrontend
         }));
 
       await step('Installing dependencies', () =>
@@ -154,7 +175,8 @@ export function makeCreateProject({
 
       return finish({
         ok: true,
-        packageManager
+        packageManager,
+        frontend
       });
     } catch (err) {
       if (err instanceof StageError) {

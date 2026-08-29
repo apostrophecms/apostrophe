@@ -8,9 +8,10 @@ import * as render from './render.js';
 import * as prompts from './prompts.js';
 import { defaultDbUri } from './db-uri.js';
 import * as db from '../core/db.js';
-import { link, kitGuide } from './links.js';
+import { link, kitGuide, hasKitGuide } from './links.js';
 import { assertSafeShortName } from '../core/validate.js';
 import { deriveKitId, getKit } from '../core/kits.js';
+import { CUSTOM_KIT_ID } from '../core/starter.js';
 import {
   status as telemetryStatus,
   optIn as telemetryOptIn,
@@ -34,10 +35,14 @@ let totalSteps = 6;
 /**
  * @typedef {object} FlowAnswers
  * @property {string}         shortName
- * @property {BuildType}      build
- * @property {StartingPoint}  startingPoint
- * @property {boolean}        sampleContent
- * @property {string}         kitId
+ * @property {BuildType}      [build]          Absent for a `--starter` install.
+ * @property {StartingPoint}  [startingPoint]  Absent for a `--starter` install.
+ * @property {boolean}        [sampleContent]  Absent for a `--starter` install.
+ * @property {string}         kitId            `'custom'` for a `--starter`
+ *                                             install (see `starter`).
+ * @property {import('../core/starter.js').ResolvedStarter} [starter]  The
+ *   resolved custom starter, present when `--starter` was given. Its presence
+ *   is what makes this a custom install.
  * @property {DbChoice}       dbChoice
  * @property {string}         [dbUri]
  * @property {'keep' | 'drop'} dbReset  Consent to drop a pre-existing
@@ -58,6 +63,9 @@ let totalSteps = 6;
  * @property {Store}             store
  * @property {string}            cliVersion
  * @property {NodeJS.ProcessEnv} [env]
+ * @property {import('../core/starter.js').ResolvedStarter} [starter]  When set
+ *   (from `--starter`), the three kit-selection questions are skipped and this
+ *   starter is used instead.
  */
 
 /**
@@ -91,31 +99,60 @@ export async function runFlow(deps) {
  * @returns {Promise<Omit<FlowAnswers, 'confirmedAt'>>}
  */
 async function collectAnswers(deps, defaults) {
-  totalSteps = willPromptForConsent(deps) ? 6 : 5;
-  const shortName = await askProjectName(defaults?.shortName);
-  const build = await askBuildType(defaults?.build);
-  const startingPoint = await askStartingPoint(defaults?.startingPoint);
-  const sampleContent = startingPoint === 'demo'
-    ? await askSampleContent(defaults?.sampleContent)
-    : false;
-  const kitId = deriveKitId({
-    build,
-    startingPoint,
-    sampleContent
-  });
+  const { starter } = deps;
+  // Ordered list of the primary steps shown on THIS run. A `--starter` install
+  // drops the three kit-selection questions; the telemetry-consent step is
+  // dropped when a preference is already known. The 1-based index into this
+  // list is each step's number, so the "N/total" counter stays contiguous
+  // whatever combination of steps is shown.
+  const order = starter
+    ? [ 'name', 'db', 'admin' ]
+    : [ 'name', 'build', 'start', 'db', 'admin' ];
+  if (willPromptForConsent(deps)) {
+    order.push('consent');
+  }
+  totalSteps = order.length;
+  const stepOf = (key) => order.indexOf(key) + 1;
+
+  const shortName = await askProjectName(stepOf('name'), defaults?.shortName);
+
+  // Kit selection — skipped entirely when a custom starter was supplied.
+  let build;
+  let startingPoint;
+  let sampleContent;
+  let kitId;
+  if (starter) {
+    kitId = CUSTOM_KIT_ID;
+  } else {
+    build = await askBuildType(stepOf('build'), defaults?.build);
+    startingPoint = await askStartingPoint(stepOf('start'), defaults?.startingPoint);
+    sampleContent = startingPoint === 'demo'
+      ? await askSampleContent(stepOf('start'), defaults?.sampleContent)
+      : false;
+    kitId = deriveKitId({
+      build,
+      startingPoint,
+      sampleContent
+    });
+  }
+
+  // A custom starter has no registry entry to read seedData from; the sample-
+  // data step is for the `*-demo-data` kits only.
+  const seedData = starter ? false : getKit(kitId).seedData;
   const {
     dbChoice, dbUri, dbReset, replacesData
   } = await askDatabase(
-    shortName, defaults, getKit(kitId).seedData
+    stepOf('db'), shortName, defaults, seedData
   );
-  const admin = await askAdminAccount(defaults?.admin);
-  const telemetryConsent = await resolveTelemetryConsent(deps);
+  const admin = await askAdminAccount(stepOf('admin'), defaults?.admin);
+  const telemetryConsent = await resolveTelemetryConsent(deps, stepOf('consent'));
   return {
     shortName,
     build,
     startingPoint,
     sampleContent,
     kitId,
+    starter,
     dbChoice,
     dbUri,
     dbReset,
@@ -125,10 +162,13 @@ async function collectAnswers(deps, defaults) {
   };
 }
 
-/** @param {string} [defaultShortName] */
-async function askProjectName(defaultShortName = 'my-project') {
+/**
+ * @param {number} step
+ * @param {string} [defaultShortName]
+ */
+async function askProjectName(step, defaultShortName = 'my-project') {
   return prompts.text({
-    message: render.stepLabel(1, totalSteps, 'Project name'),
+    message: render.stepLabel(step, totalSteps, 'Project name'),
     placeholder: 'my-project',
     defaultValue: defaultShortName,
     // clack runs validate against the *typed* value, then substitutes
@@ -140,12 +180,13 @@ async function askProjectName(defaultShortName = 'my-project') {
 }
 
 /**
+ * @param {number} step
  * @param {BuildType} [initial]
  * @returns {Promise<BuildType>}
  */
-async function askBuildType(initial = 'astro') {
+async function askBuildType(step, initial = 'astro') {
   return prompts.select({
-    message: render.stepLabel(2, totalSteps, 'How would you like to build?'),
+    message: render.stepLabel(step, totalSteps, 'How would you like to build?'),
     initialValue: initial,
     options: [
       {
@@ -163,12 +204,13 @@ async function askBuildType(initial = 'astro') {
 }
 
 /**
+ * @param {number} step
  * @param {StartingPoint} [initial]
  * @returns {Promise<StartingPoint>}
  */
-async function askStartingPoint(initial = 'demo') {
+async function askStartingPoint(step, initial = 'demo') {
   const message =
-    `${render.stepLabel(3, totalSteps, 'Choose a starting point:')}\n` +
+    `${render.stepLabel(step, totalSteps, 'Choose a starting point:')}\n` +
     render.dim(`Preview the Demo site: ${link('demoSite')}`);
   return prompts.select({
     message,
@@ -188,10 +230,13 @@ async function askStartingPoint(initial = 'demo') {
   });
 }
 
-/** @param {boolean} [initial] */
-async function askSampleContent(initial = false) {
+/**
+ * @param {number} step  Parent step number; the prompt renders as `${step}b`.
+ * @param {boolean} [initial]
+ */
+async function askSampleContent(step, initial = false) {
   return prompts.confirm({
-    message: render.stepLabel('3b', totalSteps, 'Pre-fill with sample content?'),
+    message: render.stepLabel(`${step}b`, totalSteps, 'Pre-fill with sample content?'),
     initialValue: initial
   });
 }
@@ -202,6 +247,7 @@ async function askSampleContent(initial = false) {
  * When `defaults` is provided (restart pass) the previous dbChoice and,
  * if the user re-picks the same DB, the previous URI are reused.
  *
+ * @param {number} step
  * @param {string} shortName
  * @param {{ dbChoice?: DbChoice, dbUri?: string }} [defaults]
  * @param {boolean} seedData  True for `*-demo-data` kits; drives the
@@ -211,10 +257,10 @@ async function askSampleContent(initial = false) {
  *   replacesData: boolean
  * }>}
  */
-async function askDatabase(shortName, defaults, seedData) {
+async function askDatabase(step, shortName, defaults, seedData) {
   let initialChoice = defaults?.dbChoice;
   while (true) {
-    const dbChoice = await askDbChoice(initialChoice);
+    const dbChoice = await askDbChoice(step, initialChoice);
     if (dbChoice === 'sqlite') {
       // SQLite lives inside the fresh project dir — no pre-existing DB to
       // confront here.
@@ -228,7 +274,7 @@ async function askDatabase(shortName, defaults, seedData) {
       ? defaults?.dbUri
       : undefined;
     const result = await collectAndVerifyDbUri(
-      dbChoice, shortName, initialUri, seedData
+      dbChoice, shortName, initialUri, seedData, step
     );
     if (result.kind === 'ok') {
       return {
@@ -245,12 +291,13 @@ async function askDatabase(shortName, defaults, seedData) {
 }
 
 /**
+ * @param {number} step
  * @param {DbChoice} [initial]
  * @returns {Promise<DbChoice>}
  */
-async function askDbChoice(initial = 'sqlite') {
+async function askDbChoice(step, initial = 'sqlite') {
   const message =
-    `${render.stepLabel(4, totalSteps, 'Choose a database:')}\n` +
+    `${render.stepLabel(step, totalSteps, 'Choose a database:')}\n` +
     render.dim(`Help choosing a database: ${link('dbGuide')}`);
   const choice = await prompts.select({
     message,
@@ -320,17 +367,20 @@ function describeConnectionFailure(result) {
  *   previously-entered URI across a flow restart so they don't have to
  *   retype it.
  * @param {boolean}                seedData
+ * @param {number}                 step  Parent DB step; this sub-step renders
+ *   as `${step}b`.
  * @returns {Promise<
  *   { kind: 'ok', dbUri: string, dbReset: 'keep' | 'drop', replacesData: boolean }
  *   | { kind: 'switch' }
  * >}
  */
-async function collectAndVerifyDbUri(dbChoice, shortName, initialUri, seedData) {
+async function collectAndVerifyDbUri(dbChoice, shortName, initialUri, seedData, step) {
   let candidate = initialUri ?? defaultDbUri(dbChoice, shortName);
   const hint = dbUriHint(dbChoice);
+  const label = `${step}b`;
   const message = hint
-    ? `${render.stepLabel('4b', totalSteps, 'Connection string:')}\n${render.dim(hint)}`
-    : render.stepLabel('4b', totalSteps, 'Connection string:');
+    ? `${render.stepLabel(label, totalSteps, 'Connection string:')}\n${render.dim(hint)}`
+    : render.stepLabel(label, totalSteps, 'Connection string:');
   while (true) {
     candidate = await prompts.text({
       message,
@@ -449,12 +499,13 @@ async function confirmExistingData(count, seedData) {
  * The password is intentionally NOT carried — re-typed every time, never
  * echoed back to the terminal as a default.
  *
+ * @param {number} step
  * @param {AdminAccount} [defaults]
  * @returns {Promise<AdminAccount>}
  */
-async function askAdminAccount(defaults) {
+async function askAdminAccount(step, defaults) {
   const username = await prompts.text({
-    message: render.stepLabel(5, totalSteps, 'Create your admin account — username or email:'),
+    message: render.stepLabel(step, totalSteps, 'Create your admin account — username or email:'),
     defaultValue: defaults?.username ?? 'admin',
     placeholder: 'admin',
     validate: validateAdminUsername
@@ -508,9 +559,10 @@ function validateAdminPassword(value) {
  * switch reaches the interactive prompt.
  *
  * @param {RunFlowDeps} deps
+ * @param {number} step
  * @returns {Promise<boolean>}
  */
-async function resolveTelemetryConsent(deps) {
+async function resolveTelemetryConsent(deps, step) {
   const current = telemetryStatus(deps.store, deps.env);
   if (current.killSwitchOn) {
     return false;
@@ -518,7 +570,7 @@ async function resolveTelemetryConsent(deps) {
   if (current.storedConsent !== undefined) {
     return current.storedConsent;
   }
-  return askTelemetryConsent(deps);
+  return askTelemetryConsent(deps, step);
 }
 
 /**
@@ -542,14 +594,15 @@ function willPromptForConsent(deps) {
  * stored preference yet).
  *
  * @param {RunFlowDeps} deps
+ * @param {number} step
  * @returns {Promise<boolean>}
  */
 async function askTelemetryConsent({
   store, cliVersion, env
-}) {
+}, step) {
   while (true) {
     const choice = await prompts.select({
-      message: telemetryPromptMessage(),
+      message: telemetryPromptMessage(step),
       initialValue: 'details',
       options: [
         {
@@ -587,10 +640,11 @@ async function askTelemetryConsent({
 
 /** Header line + dimmed two-line body (lead + policy link) for the consent
  *  select. Returned as a single string; clack renders newlines below the
- *  header in the same prompt rail. */
-function telemetryPromptMessage() {
+ *  header in the same prompt rail.
+ *  @param {number} step */
+function telemetryPromptMessage(step) {
   return [
-    render.stepLabel(6, totalSteps, 'Help us improve Apostrophe?'),
+    render.stepLabel(step, totalSteps, 'Help us improve Apostrophe?'),
     render.dim('Anonymous usage data — no content, no personal info.'),
     render.dim(`Policy: ${link('telemetryPolicy')}`)
   ].join('\n');
@@ -628,14 +682,21 @@ function renderTelemetryPreview({
  * @returns {Promise<number | null>}
  */
 async function reviewAndConfirm(answers, deps) {
-  render.summary('Review your choices', [
-    [ 'Project', answers.shortName ],
-    [ 'Type', buildLabel(answers.build) ],
-    [ 'Starter', starterLabel(answers.startingPoint, answers.sampleContent) ],
+  // A custom `--starter` install has no build/kit to summarize — show the
+  // starter it will clone from instead of the Type/Starter kit rows.
+  const rows = [ [ 'Project', answers.shortName ] ];
+  if (answers.starter) {
+    rows.push([ 'Starter', `${answers.starter.source} (custom)` ]);
+  } else {
+    rows.push([ 'Type', buildLabel(answers.build) ]);
+    rows.push([ 'Starter', starterLabel(answers.startingPoint, answers.sampleContent) ]);
+  }
+  rows.push(
     [ 'Database', dbLabel(answers.dbChoice) ],
     [ 'Username', answers.admin.username ],
     [ 'Telemetry', telemetryLabel(answers.telemetryConsent, deps) ]
-  ]);
+  );
+  render.summary('Review your choices', rows);
   if (answers.dbReset === 'drop') {
     render.warn('The existing contents of this database will be dropped before install.');
   } else if (answers.replacesData) {
@@ -702,7 +763,7 @@ function telemetryLabel(consent, deps) {
  */
 export function renderInstallResult(result, answers) {
   if (result.ok) {
-    renderSuccess(answers);
+    renderSuccess(answers, result);
   } else {
     renderFailure(answers, result);
   }
@@ -714,23 +775,40 @@ const DEV_PORT = Object.freeze({
   standalone: 3000
 });
 
-/** @param {FlowAnswers} answers */
-function renderSuccess(answers) {
-  const port = DEV_PORT[answers.build];
-  const body = [
+/**
+ * @param {FlowAnswers} answers
+ * @param {CreateProjectResult} result
+ */
+function renderSuccess(answers, result) {
+  // A registry kit's frontend is known from answers.build; a custom starter's
+  // is only known once the clone is on disk, so it comes back on the result.
+  const frontend = result.frontend;
+  const build = frontend === 'astro'
+    ? 'astro'
+    : frontend === null
+      ? 'standalone'
+      : answers.build;
+  const port = DEV_PORT[build] ?? DEV_PORT.standalone;
+  const lines = [
     'Your project is ready.',
     '',
     `  cd ${answers.shortName}`,
     '  npm run dev',
     '',
     `  Open:           http://localhost:${port}`,
-    `  Login:          http://localhost:${port}/login`,
-    `  Get Oriented:   ${kitGuide(answers.kitId)}`,
+    `  Login:          http://localhost:${port}/login`
+  ];
+  // The per-kit "get oriented" guide exists only for the registry kits; a
+  // custom starter has none, so that line is dropped (Docs/Discord still show).
+  if (hasKitGuide(answers.kitId)) {
+    lines.push(`  Get Oriented:   ${kitGuide(answers.kitId)}`);
+  }
+  lines.push(
     '',
     `  Docs:     ${link('docs')}`,
     `  Discord:  ${link('discord', { stamp: false })}`
-  ].join('\n');
-  render.note('All set', body);
+  );
+  render.note('All set', lines.join('\n'));
   render.outro('Happy building!');
 }
 
