@@ -164,14 +164,14 @@ describe('sanitizeHtml', function() {
   it('should preserve entities as such', function() {
     assert.equal(sanitizeHtml('<a name="&lt;silly&gt;">&lt;Kapow!&gt;</a>'), '<a name="&lt;silly&gt;">&lt;Kapow!&gt;</a>');
   });
-  it('should dump closing tags which do not have any opening tags.', function() {
+  it('should escape incomplete tags', function() {
     assert.equal(sanitizeHtml('<b><div/', {
       allowedTags: [ 'b' ]
-    }), '<b>/</b>');
+    }), '<b>&lt;div/</b>');
 
     assert.equal(sanitizeHtml('<b><b<<div/', {
       allowedTags: [ 'b' ]
-    }), '<b>/</b>');
+    }), '<b>&lt;b&lt;&lt;div/</b>');
   });
   it('should tolerate not closed p tags', function() {
     assert.equal(sanitizeHtml('<div><p>inner text 1<p>inner text 2<p>inner text 3</div>'), '<div><p>inner text 1</p><p>inner text 2</p><p>inner text 3</p></div>');

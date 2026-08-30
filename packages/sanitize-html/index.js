@@ -598,6 +598,11 @@ function sanitizeHtml(html, options, _recursing) {
       frame.openingTagLength = result.length - frame.tagPosition;
     },
     ontext: function(text) {
+      if (html[parser.startIndex] === '<' && text[0] !== '<') {
+        const original = html.substring(parser.startIndex, parser.endIndex + 1);
+        const prefixEnd = original.length - text.length;
+        text = original.substring(0, prefixEnd) + text;
+      }
       if (skipText) {
         return;
       }
