@@ -449,6 +449,114 @@ for page layout.
 Note that additional props can be passed to the `AposArea` component and will be made
 accessible to widget components.
 
+#### Understanding the `AposField` component
+
+In the template above, `{ page.title }` displays the title but cannot be
+edited on the page: to change it the user has to open the editor modal. The
+`AposField` component displays a schema field *and* lets the user edit it
+right where it appears, the way an area is edited in place. It is the Astro
+equivalent of Apostrophe's `{% field %}` tag.
+
+```js
+---
+// src/templates/HomePage.astro
+import AposArea from '@apostrophecms/apostrophe-astro/components/AposArea.astro';
+import AposField from '@apostrophecms/apostrophe-astro/components/AposField.astro';
+const { page } = Astro.props.aposData;
+---
+
+<section>
+  <AposField doc={page} name="title" tag="h1" />
+  <AposArea area={page.main} />
+</section>
+```
+
+For areas, keep using `AposArea`: an area is editable in place already, and
+its own component knows all about widgets.
+
+##### Telling Apostrophe which fields you render
+
+Apostrophe sends your data before your templates run, so it cannot tell which
+fields you display in place. You have to say so, or the field will be
+displayed but not editable. There are two ways, and they do the same thing:
+
+```js
+// backend/modules/article/index.js
+export default {
+  extend: '@apostrophecms/piece-type',
+  options: {
+    // For fields you did not declare here, like the inherited `title`
+    wysiwygFields: [ 'title' ]
+  },
+  fields: {
+    add: {
+      subhead: {
+        type: 'string',
+        label: 'Subhead',
+        // For fields you did declare
+        wysiwyg: true
+      },
+      body: {
+        type: 'richText',
+        label: 'Body',
+        wysiwyg: true
+      }
+    }
+  }
+};
+```
+
+Use the `wysiwygFields` option for fields that come from a base type, such as
+`title`. Adding `title` again just to set `wysiwyg: true` would replace the
+whole inherited definition, `required` and all. A name in `wysiwygFields` that
+is not in the schema is an error at startup, so a typo says so rather than
+leaving a field mysteriously uneditable.
+
+Only field types with an in-place editor can be opted in. Today those are
+`string` and `richText`; setting `wysiwyg: true` on any other type does
+nothing. Fields inside arrays and objects work the same way — put `wysiwyg:
+true` on the subfield.
+
+While developing, `AposField` writes a note to the terminal when it displays a
+field Apostrophe sent no editing information for, naming the field and the
+option to set.
+
+##### Why the opt in
+
+Editing a field in place costs a few hundred bytes of the page's JSON, and a
+real page has dozens of fields no template renders — every SEO field, every
+Open Graph field, every slug, on the page, its ancestors, its children and any
+pieces alongside them. On a demo site, annotating all of them added 70% to the
+response. Opting in keeps the cost to the fields you actually use, and an
+anonymous visitor, who cannot edit anything, is only sent what it takes to
+display them.
+
+Each field is named by its id rather than carrying its own copy of its
+definition, so a page with fifty fields of the same type does not repeat that
+definition fifty times: the schema it already carries is looked up in the
+browser.
+
+##### Props
+
+| Prop | Description |
+| --- | --- |
+| `doc` | The document, widget, array item or object the field belongs to. Required. |
+| `name` | The name of the field in that object's schema. Required. |
+| `tag` | The HTML tag to render. Defaults to what the field type asks for: `div` for rich text, `span` for a single line string, so a string sits on the line the template put it on. |
+| `class` | Added to the classes the field type asks for, never replacing them. |
+| `style`, `attrs` | Passed through to the tag. `attrs` is an object of additional attributes. |
+| `edit` | `false` never offers editing, even to a user who could. |
+
+Any other props are passed to the editor as its options, exactly as the `with`
+clause of the `{% field %}` tag does.
+
+Fields of the *context* document, the one the page is about, are editable.
+Fields of any other document are displayed and not edited, just as areas are:
+edit them on their own page. Documents your templates fetched straight from
+the REST API carry this information only when the request asked for
+`render-areas`; without it their fields are displayed but never editable.
+Fields of `global` are displayed and not edited.
+
 ### Creating Astro widget components
 
 Earlier we created a mapping from Apostrophe widget names to Astro components.

@@ -19,10 +19,25 @@ describe('External Front', function() {
     apos = await t.create({
       root: module,
       modules: {
+        'test-widget': {
+          extend: '@apostrophecms/widget-type',
+          fields: {
+            add: {
+              heading: {
+                type: 'string',
+                label: 'Heading',
+                wysiwyg: true
+              }
+            }
+          }
+        },
         product: {
           extend: '@apostrophecms/piece-type',
           options: {
-            alias: 'product'
+            alias: 'product',
+            // `title` comes from the base doc type, so there is no definition
+            // of it here to put `wysiwyg: true` on
+            wysiwygFields: [ 'title' ]
           },
           fields: {
             add: {
@@ -30,7 +45,8 @@ describe('External Front', function() {
                 type: 'area',
                 options: {
                   widgets: {
-                    '@apostrophecms/rich-text': {}
+                    '@apostrophecms/rich-text': {},
+                    test: {}
                   }
                 }
               },
@@ -39,6 +55,40 @@ describe('External Front', function() {
                 options: {
                   widgets: {
                     '@apostrophecms/rich-text': {}
+                  }
+                }
+              },
+              body: {
+                type: 'richText',
+                label: 'Body',
+                wysiwyg: true
+              },
+              blurb: {
+                type: 'string',
+                label: 'Blurb',
+                wysiwyg: true
+              },
+              // A field type with an on-page editor, but the front end never
+              // renders this one in place, so it is not opted in
+              subtitle: {
+                type: 'string',
+                label: 'Subtitle'
+              },
+              wordCount: {
+                type: 'integer',
+                label: 'Word Count',
+                wysiwyg: true
+              },
+              sections: {
+                type: 'array',
+                label: 'Sections',
+                fields: {
+                  add: {
+                    caption: {
+                      type: 'string',
+                      label: 'Caption',
+                      wysiwyg: true
+                    }
                   }
                 }
               }
@@ -439,6 +489,174 @@ describe('External Front', function() {
     };
     const unsavedArea = await apos.area.addMissingArea(unsaved, 'extra', { throwIfNotFound: true });
     assert.strictEqual(unsavedArea.metaType, 'area');
+  });
+
+  // A doc with something in every kind of field an external front might
+  // render in place
+  function productWithFields() {
+    const doc = productMissingExtra();
+    doc.body = '<p>the body</p>';
+    doc.blurb = 'A blurb';
+    doc.subtitle = 'A subtitle';
+    doc.wordCount = 12;
+    doc.sections = [
+      {
+        metaType: 'arrayItem',
+        scopedArrayName: 'doc.product.sections',
+        _id: 'section1',
+        caption: 'The first caption'
+      }
+    ];
+    return doc;
+  }
+
+  it('annotateDocForExternalFront renders the value of each opted in field', async function() {
+    const doc = productWithFields();
+    const req = apos.task.getAnonReq();
+
+    await apos.template.annotateDocForExternalFront(doc, { req });
+
+    const body = doc._wysiwygFields.body;
+    assert(body, 'the body field is annotated');
+    // Rendered on the server, because only the server can resolve the
+    // permalinks of rich text, and only the server knows what a field type
+    // added by a module makes of its value
+    assert.strictEqual(body.rendered, '<p>the body</p>');
+    assert.strictEqual(body.tag, 'div');
+    assert(body.classes.includes('apos-wysiwyg-field--richText'));
+
+    // A single line string is inline, and escaped, as it is on a page
+    const blurb = doc._wysiwygFields.blurb;
+    assert.strictEqual(blurb.tag, 'span');
+    assert.strictEqual(blurb.rendered, 'A blurb');
+
+    // Nobody is editing, so nothing to edit with: an anonymous visitor is
+    // sent what it takes to display the field and not a byte more
+    for (const field of [ body, blurb ]) {
+      assert.deepStrictEqual(
+        Object.keys(field).sort(),
+        [ 'classes', 'rendered', 'tag' ]
+      );
+    }
+
+    // Opting in a field type that has no on-page editor does nothing
+    assert.strictEqual(doc._wysiwygFields.wordCount, undefined);
+    assert.strictEqual(doc._wysiwygFields.main, undefined);
+  });
+
+  it('annotateDocForExternalFront annotates only the fields that opted in', async function() {
+    const doc = productWithFields();
+    const req = apos.task.getAnonReq();
+
+    await apos.template.annotateDocForExternalFront(doc, { req });
+
+    // A page of a real site has dozens of fields an external front will never
+    // render in place — every SEO and Open Graph field, every slug. Annotating
+    // them all costs more bytes than the page itself, so a field says so
+    assert.strictEqual(doc._wysiwygFields.subtitle, undefined);
+    assert.strictEqual(doc._wysiwygFields.slug, undefined);
+    // And the value is still right there to be displayed either way
+    assert.strictEqual(doc.subtitle, 'A subtitle');
+
+    // A field the module opted in by name is annotated even though nothing
+    // added a definition for it here
+    assert.strictEqual(doc._wysiwygFields.title.rendered, 'Product 1');
+    // ...without disturbing what it inherited
+    const title = apos.product.schema.find(field => field.name === 'title');
+    assert.strictEqual(title.required, true);
+  });
+
+  it('the wysiwygFields option rejects a name that is not in the schema', function() {
+    // A typo here would otherwise be silent: the field simply would not be
+    // editable in place, with nothing to say why
+    assert.throws(
+      () => apos.schema.compose(
+        {
+          addFields: [
+            {
+              name: 'real',
+              type: 'string',
+              label: 'Real'
+            }
+          ]
+        },
+        {
+          __meta: { name: 'nonsense' },
+          options: { wysiwygFields: [ 'noSuchField' ] }
+        }
+      ),
+      {
+        message: 'Module nonsense: the wysiwygFields option names noSuchField, which is not in the schema.'
+      }
+    );
+  });
+
+  it('annotateDocForExternalFront hands the editor what it needs when editing', async function() {
+    const doc = productWithFields();
+    doc._edit = true;
+    doc.sections[0]._edit = true;
+    doc.sections[0]._docId = doc._id;
+    const req = apos.task.getReq({ query: { aposEdit: '1' } });
+
+    await apos.template.annotateDocForExternalFront(doc, { req });
+
+    const body = doc._wysiwygFields.body;
+    assert.strictEqual(body.canEdit, true);
+    // Named, not shipped: the schema travels once, in aposBodyData
+    assert.strictEqual(body.fieldId, 'doc.product.body');
+    assert.strictEqual(body.field, undefined);
+    assert.strictEqual(body.component, 'AposWysiwygInputRichText');
+    assert.strictEqual(body.icon, 'format-text-icon');
+    assert.strictEqual(body.docId, doc._id);
+    assert.strictEqual(body.patchKey, 'body');
+
+    // A field of an array item is patched by its own key, so editing one
+    // caption leaves the rest of the document alone
+    const caption = doc.sections[0]._wysiwygFields.caption;
+    assert.strictEqual(caption.fieldId, 'doc.product.sections.caption');
+    assert.strictEqual(caption.patchKey, '@section1.caption');
+    assert.strictEqual(caption.docId, doc._id);
+    assert.strictEqual(caption.rendered, 'The first caption');
+    assert.strictEqual(caption.canEdit, true);
+  });
+
+  it('annotateDocForExternalFront annotates the fields of a widget in an area', async function() {
+    const doc = productWithFields();
+    doc._edit = true;
+    doc.main.items = [
+      {
+        _id: 'testwidget1',
+        metaType: 'widget',
+        type: 'test',
+        heading: 'In a widget',
+        _edit: true,
+        _docId: doc._id
+      }
+    ];
+    const req = apos.task.getReq({ query: { aposEdit: '1' } });
+
+    await apos.template.annotateDocForExternalFront(doc, { req });
+
+    const heading = doc.main.items[0]._wysiwygFields.heading;
+    assert(heading, 'the widget field is annotated');
+    assert.strictEqual(heading.fieldId, 'widget.test.heading');
+    // A field of a widget is patched by its own key too, so editing it
+    // leaves the rest of the area alone
+    assert.strictEqual(heading.patchKey, '@testwidget1.heading');
+    assert.strictEqual(heading.docId, doc._id);
+    assert.strictEqual(heading.rendered, 'In a widget');
+  });
+
+  it('annotateDocForExternalFront leaves fields alone without a req', async function() {
+    const doc = productWithFields();
+
+    // The rendering of a value is a request-time question: rich text
+    // permalinks are resolved for the visitor asking. No req, no fields
+    await apos.template.annotateDocForExternalFront(doc);
+
+    assert.strictEqual(doc._wysiwygFields, undefined);
+    // Areas are annotated as they always were
+    assert(doc.main.field && doc.main.field.name === 'main');
   });
 
   it('fetch home with external front', async function() {

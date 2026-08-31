@@ -119,6 +119,19 @@ module.exports = {
           });
         }
 
+        // The `wysiwygFields` option of a doc type or widget type names the
+        // fields an external front renders in place, including the ones it
+        // inherited rather than declared, like `title`. Adding a field again
+        // just to set `wysiwyg: true` on it would replace the original
+        // definition, prefix, `required` and all
+        for (const name of (module?.options.wysiwygFields || [])) {
+          const field = _.find(schema, { name });
+          if (!field) {
+            throw new Error(`Module ${module.__meta.name}: the wysiwygFields option names ${name}, which is not in the schema.`);
+          }
+          field.wysiwyg = true;
+        }
+
         // If nothing else will do, just modify the schema with a function
         if (options.alterFields) {
           options.alterFields(schema);
@@ -1624,6 +1637,158 @@ module.exports = {
         return self.fieldTypes[typeName];
       },
 
+      // Implementation of the `{% field %}` custom tag. Renders the named
+      // field of the given doc, widget, array item or object, and makes it
+      // editable in place if the user is editing and the field type has an
+      // on-page editor.
+      //
+      // If the field is an area this is exactly equivalent to `{% area %}`.
+      //
+      // `usage` is an optional function accepting a message and returning an
+      // error that also explains the correct syntax of the tag.
+      async renderFieldTag(req, object, name, _with, {
+        usage = (message) => new Error(message)
+      } = {}) {
+        if ((!object) || ((typeof object) !== 'object')) {
+          throw usage('You must pass an existing doc or widget as the first argument.');
+        }
+        if ((typeof name) !== 'string') {
+          throw usage('The second argument must be a field name.');
+        }
+        if (!name.match(/^\w+$/)) {
+          throw usage('Field names are made up only of letters, underscores and digits.');
+        }
+        const manager = self.apos.util.getManagerOf(object);
+        const field = manager.schema.find(field => field.name === name);
+        if (!field) {
+          throw usage(`The ${object.metaType} of type ${object.type} has no field named ${name}.`);
+        }
+        if (field.type === 'area') {
+          // An area is already editable in place, and its own tag knows
+          // everything there is to know about doing that
+          return self.apos.area.renderAreaTag(req, object, name, _with, { usage });
+        }
+        return self.renderWysiwygField(req, object, field, _with, { usage });
+      },
+
+      // Render one non-area field of `object` in place, per the `{% field %}`
+      // custom tag. See `renderFieldTag`.
+      async renderWysiwygField(req, object, field, _with, {
+        usage = (message) => new Error(message)
+      } = {}) {
+        return self.render(
+          req,
+          'wysiwygField',
+          await self.wysiwygFieldData(req, object, field, _with, { usage })
+        );
+      },
+
+      // Everything there is to say about one non-area field of `object`
+      // rendered in place: the markup a visitor sees, and what the editor
+      // needs to take over from it if the user is editing. Nunjucks passes
+      // this to the `wysiwygField` template, JSX renders it directly, and an
+      // external front such as Astro receives it as JSON. See
+      // `renderWysiwygField` and `renderFieldTag`.
+      //
+      // Note that the field definition itself is named by `fieldId` rather
+      // than sent. Every doc type and widget type already ships its schema to
+      // the browser, so the definition is there to be looked up, and a page
+      // with fifty fields on it would otherwise carry fifty copies of
+      // something it already has.
+      async wysiwygFieldData(req, object, field, _with, {
+        usage = (message) => new Error(message)
+      } = {}) {
+        const fieldType = self.fieldTypes[field.type];
+        if (!fieldType.wysiwyg) {
+          throw usage(`The field ${field.name} is of type ${field.type}, which has no on-page editor.
+
+Only field types with the "wysiwyg" property can be edited in place. You can
+still output the value of this field with a regular template expression.`);
+        }
+        _with = _with || {};
+        const tag = _with.tag || self.wysiwygTagName(field);
+        if (!tag.match(/^[a-zA-Z][a-zA-Z0-9-]*$/)) {
+          throw usage(`"${tag}" is not a valid HTML tag name.`);
+        }
+        const value = object[field.name];
+        const canEdit = !!(
+          object._edit &&
+          !field.readOnly &&
+          (_with.edit !== false) &&
+          req.query.aposEdit
+        );
+        const classes = [
+          'apos-wysiwyg-field',
+          `apos-wysiwyg-field--${field.type}`,
+          ...(fieldType.wysiwygModifiers
+            ? fieldType.wysiwygModifiers(field).map(modifier => `apos-wysiwyg-field--${modifier}`)
+            : []),
+          ...(_with.class ? [ _with.class ] : [])
+        ];
+        return {
+          fieldId: field._id,
+          // Always JSON, so that the editor gets the value the user typed and
+          // not a rendering of it, whatever the field type stores
+          valueJson: JSON.stringify((value === undefined) ? null : value),
+          rendered: await self.renderWysiwygValue(req, field, value),
+          tag,
+          classes: classes.join(' '),
+          canEdit,
+          component: self.wysiwygComponentName(field.type),
+          icon: self.wysiwygIconName(field),
+          docId: object._docId || ((object.metaType === 'doc') ? object._id : null),
+          patchKey: (object.metaType === 'doc')
+            ? field.name
+            : `@${object._id}.${field.name}`,
+          _with
+        };
+      },
+
+      // Render the value of a wysiwyg field as the markup a visitor sees when
+      // not editing. Field types that store markup, like `richText`, take care
+      // of this themselves via a `wysiwygRender` method; for everything else
+      // the value is escaped as text.
+      async renderWysiwygValue(req, field, value) {
+        const fieldType = self.fieldTypes[field.type];
+        if (fieldType.wysiwygRender) {
+          return fieldType.wysiwygRender(req, field, value);
+        }
+        return self.apos.util.escapeHtml((value == null) ? '' : value.toString());
+      },
+
+      // The Vue component that edits the given field type in place. Field
+      // types may specify `wysiwygComponent`, otherwise the name follows
+      // the standard pattern, e.g. `AposWysiwygInputRichText`.
+      wysiwygComponentName(type) {
+        const fieldType = self.fieldTypes[type];
+        return (fieldType && fieldType.wysiwygComponent) ||
+          'AposWysiwygInput' + self.apos.util.capitalizeFirst(type);
+      },
+
+      // The icon that opens the breadcrumb trail of a field edited in place,
+      // as a widget's trail opens with the icon of the widget type. A field
+      // may name its own `wysiwygIcon`, otherwise the field type speaks for
+      // all of its fields. Whichever icon is named must be registered with
+      // the `icons` section of a module, as all icons are.
+      wysiwygIconName(field) {
+        const fieldType = self.fieldTypes[field.type];
+        return field.wysiwygIcon ||
+          (fieldType && fieldType.wysiwygIcon) ||
+          'pencil-icon';
+      },
+
+      // The tag a field is rendered as when the template does not say. A
+      // field type answers with `wysiwygTag(field)`, which may depend on how
+      // the field is configured: a single line string is part of the line the
+      // template put it on, so it is a `span`, while a `textarea: true` string
+      // and rich text are blocks. Anything with nothing to say gets a `div`.
+      // The `tag` of the `with` clause outranks all of this.
+      wysiwygTagName(field) {
+        const fieldType = self.fieldTypes[field.type];
+        return (fieldType && fieldType.wysiwygTag && fieldType.wysiwygTag(field)) ||
+          'div';
+      },
+
       addFieldMetadataComponent(namespace, component) {
         self.fieldMetadataComponents.push({
           name: component,
@@ -2744,6 +2909,12 @@ module.exports = {
         browserOptions.customCellIndicators = self.uiManagerIndicators;
         return browserOptions;
       }
+    };
+  },
+
+  customTags(self) {
+    return {
+      field: require('./lib/custom-tags/field.js')(self)
     };
   }
 };

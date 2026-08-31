@@ -334,10 +334,9 @@ describe('Rich Text Schema Field', function () {
     const richText = apos.modules['@apostrophecms/rich-text-widget'];
     const rendered = await richText.renderRichText(req, content);
 
-    // Note the unquoted href: that is the long standing output of
-    // `linkPermalinks`, which rich text widgets have always shared, so the
-    // field type inherits it rather than diverging from the widget
-    assert.equal(rendered, '<p><a href=/contact>Contact</a></p>');
+    // `linkPermalinks` is shared with rich text widgets, so the field type
+    // resolves permalinks exactly as a widget does
+    assert.equal(rendered, '<p><a href="/contact">Contact</a></p>');
 
     // The stored markup is never modified
     assert(content.includes('apostrophe-permalink-'));

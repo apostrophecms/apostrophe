@@ -35,6 +35,7 @@ describe('Templates: JSX', function() {
         },
         'jsx-mixed-test': {},
         'jsx-area-test': {},
+        'jsx-field-test': {},
         'jsx-async-widget': {},
         'jsx-ctx-widget': {}
       }
@@ -329,6 +330,151 @@ describe('Templates: JSX', function() {
       result,
       /<span class="greet">Hello World \(after delay\)<\/span>/
     );
+  });
+
+  // ---- <Field> ----
+
+  // The piece a Field template is given, as it arrives from the database:
+  // `_edit` and `_docId` have been propagated to the array items
+  function fieldPiece(edit = false) {
+    return {
+      _id: 'jsx-field-piece-1',
+      metaType: 'doc',
+      type: 'jsx-field-test',
+      title: 'Field Host',
+      slug: 'field-host',
+      _edit: edit,
+      body: '<p>the body</p>',
+      name: 'Tom & <script>',
+      wordCount: 12,
+      main: {
+        _id: 'jsx-field-area-1',
+        metaType: 'area',
+        items: [
+          {
+            _id: 'jsx-field-area-widget-1',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: '<p>area body</p>'
+          }
+        ]
+      },
+      sections: [
+        {
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.jsx-field-test.sections',
+          _id: 'jsx-field-section-1',
+          _edit: edit,
+          _docId: 'jsx-field-piece-1',
+          caption: 'The first caption'
+        },
+        {
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.jsx-field-test.sections',
+          _id: 'jsx-field-section-2',
+          _edit: edit,
+          _docId: 'jsx-field-piece-1',
+          caption: 'The second caption'
+        }
+      ]
+    };
+  }
+
+  const editReq = () => apos.task.getReq({ query: { aposEdit: '1' } });
+
+  it('should render a field via the Field helper', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-field-test']
+      .render(req, 'with-field', { piece: fieldPiece() });
+    assert.match(result, /<main>/);
+    assert.match(result, /class="apos-wysiwyg-field apos-wysiwyg-field--richText"/);
+    assert.match(result, /<p>the body<\/p>/);
+    // Nothing to edit with, since nobody is editing
+    assert.doesNotMatch(result, /data-apos-wysiwyg-field-newly-editable/);
+  });
+
+  it('Field should hand the editor the same markup the field tag does', async function() {
+    const result = await apos.modules['jsx-field-test']
+      .render(editReq(), 'with-field', { piece: fieldPiece(true) });
+    assert.match(result, /data-apos-wysiwyg-field-newly-editable/);
+    assert.match(result, /data-component="AposWysiwygInputRichText"/);
+    assert.match(result, /data-patch-key="body"/);
+    assert.match(result, /data-doc-id="jsx-field-piece-1"/);
+    // Named, not shipped: the schema is already in the browser
+    assert.match(result, /data-field-id="doc\.jsx-field-test\.body"/);
+    assert.doesNotMatch(result, /data-field=/);
+  });
+
+  it('Field should escape the value of a string field', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-field-test']
+      .render(req, 'with-field-inline', { piece: fieldPiece() });
+    assert.match(result, /Tom &amp; &lt;script&gt;/);
+    assert.doesNotMatch(result, /<script>/);
+  });
+
+  // A field is content, and content on a line stays on its line. Nothing may
+  // creep in between the text the template typed and the value
+  it('Field should render a single line string inline, with nothing around it', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-field-test']
+      .render(req, 'with-field-inline', { piece: fieldPiece() });
+    assert.match(result, /<p>Name: <span class="apos-wysiwyg-field/);
+    assert.match(result, /<\/span>\.<\/p>/);
+  });
+
+  it('Field should accept a tag, a class and attributes via `with`', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-field-test']
+      .render(req, 'with-field-with', { piece: fieldPiece() });
+    assert.match(result, /<h2 class="apos-wysiwyg-field[^"]*lede"/);
+    assert.match(result, /role="note"/);
+    assert.match(result, /<\/h2>/);
+  });
+
+  it('Field should be exactly Area when the field is an area', async function() {
+    const req = apos.task.getAnonReq();
+    const viaField = await apos.modules['jsx-field-test']
+      .render(req, 'with-field-area', { piece: fieldPiece() });
+    assert.match(viaField, /class="apos-area"/);
+    assert.match(viaField, /<p>area body<\/p>/);
+    assert.doesNotMatch(viaField, /apos-wysiwyg-field/);
+  });
+
+  it('Field should address a field of an array item by its own patch key', async function() {
+    const result = await apos.modules['jsx-field-test']
+      .render(editReq(), 'with-field-array', { piece: fieldPiece(true) });
+    assert.match(result, /data-patch-key="@jsx-field-section-1\.caption"/);
+    assert.match(result, /data-patch-key="@jsx-field-section-2\.caption"/);
+    assert.match(result, /data-field-id="doc\.jsx-field-test\.sections\.caption"/);
+    assert.match(result, /<h2 [^>]*>The first caption<\/h2>/);
+  });
+
+  it('Field helper should reject calls with a missing or invalid name', async function() {
+    const req = apos.task.getAnonReq();
+    let caught;
+    try {
+      await apos.modules['jsx-field-test'].render(req, 'bad-field', { piece: fieldPiece() });
+    } catch (e) {
+      caught = e;
+    }
+    assert(caught, 'expected the render to throw');
+    assert.match(caught.message, /no field named nope/);
+    // The message says how the helper is used, as the field tag's does
+    assert.match(caught.message, /<Field/);
+  });
+
+  it('Field helper should reject a field type with no on-page editor', async function() {
+    const req = apos.task.getAnonReq();
+    let caught;
+    try {
+      await apos.modules['jsx-field-test']
+        .render(req, 'uneditable-field', { piece: fieldPiece() });
+    } catch (e) {
+      caught = e;
+    }
+    assert(caught, 'expected the render to throw');
+    assert.match(caught.message, /no on-page editor/);
   });
 
   // ---- JSX → Nunjucks bridge via Extend ----

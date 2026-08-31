@@ -1,1 +1,94 @@
 $a-canvas-max: 1168px;
+
+// The breadcrumb trail that names what the user is about to edit, and gives
+// them a way back up to whatever contains it. A widget wears one, and so does
+// a field edited in place with the `{% field %}` tag, so that everything the
+// user can touch on the page is labeled in the same way. The class names
+// differ from one to the other; only the look is shared.
+
+// The bar the trail sits in, just above the top left corner of the thing it
+// names. Its container needs `position: relative`
+@mixin apos-breadcrumbs-bar() {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  transform: translateY(-100%);
+  transition: opacity 300ms ease;
+}
+
+// The pill the crumbs sit in
+@mixin apos-breadcrumbs-list() {
+  @include apos-list-reset();
+
+  & {
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    height: 32px;
+    margin: 0 0 8px;
+    padding: 4px 6px;
+    border: 1px solid var(--a-primary-transparent-50);
+    background-color: var(--a-background-primary);
+    border-radius: 8px;
+  }
+}
+
+// One crumb. Apply to the button content inside it as well, so that a crumb
+// looks the same whether or not it can be clicked
+@mixin apos-breadcrumb() {
+  @include type-help;
+
+  & {
+    padding: 2px;
+    white-space: nowrap;
+    color: var(--a-base-1);
+    transition: background-color 300ms var(--a-transition-timing-bounce);
+  }
+}
+
+// The first crumb, which is the icon of the widget type or of the field type
+@mixin apos-breadcrumb-icon() {
+  margin-right: 2px;
+  padding: 3px 2px 2px;
+  color: var(--a-primary);
+  transition: background-color 300ms var(--a-transition-timing-bounce);
+  background-color: var(--a-primary-transparent-10);
+  border-radius: 4px;
+}
+
+// The button a clickable crumb is made of. Include inside a `:deep()`
+// selector, since the button is a component of its own
+@mixin apos-breadcrumb-button() {
+  color: var(--a-primary-dark-10);
+
+  &:hover, &:active, &:focus {
+    .apos-button__content {
+      color: var(--a-primary);
+    }
+  }
+}
+
+// Enough of an outline to make an editable field discoverable without making
+// it look like a form field. Its container needs `position: relative`
+@mixin apos-editable-in-place-outline() {
+  // Drawn over the field rather than under it: the page's own backgrounds are
+  // painted by ancestors of the field, so anything underneath is invisible.
+  // It never gets in the way, being a ring around the text and not on it
+  &::before {
+    position: absolute;
+    content: '';
+    outline: 1px dashed var(--a-primary-transparent-50);
+    inset: -4px -6px;
+    border-radius: var(--a-border-radius);
+    pointer-events: none;
+  }
+}
+
+// The same outline, once the user is actually editing
+@mixin apos-editing-in-place-outline() {
+  &::before {
+    outline: 1px solid var(--a-primary);
+    background-color: var(--a-primary-transparent-05);
+  }
+}

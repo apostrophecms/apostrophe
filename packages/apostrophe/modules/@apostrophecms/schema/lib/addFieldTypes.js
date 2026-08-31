@@ -235,6 +235,15 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'richText',
     extractable: [ 'text' ],
+    // Editable in place with `{% field %}`
+    wysiwyg: true,
+    // Names this field in the breadcrumb trail shown when editing in place
+    wysiwygIcon: 'format-text-icon',
+    // When rendered in place the permalinks are resolved, exactly as they
+    // are for a rich text widget
+    async wysiwygRender(req, field, value) {
+      return richTextManager().renderRichText(req, value || '');
+    },
     extract(req, field, value) {
       return richTextManager().isEmptyRichText(value) ? [] : [ { text: value } ];
     },
@@ -287,6 +296,31 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'string',
     extractable: [ 'text' ],
+    // Editable in place with `{% field %}`
+    wysiwyg: true,
+    // Names this field in the breadcrumb trail shown when editing in place.
+    // The same icon a rich text widget wears: every field that can be edited
+    // in place today is text, and the user is better served by one familiar
+    // icon than by a distinction between kinds of text they did not ask about
+    wysiwygIcon: 'format-text-icon',
+    // One line of text is part of whatever line the template put it on, so it
+    // is rendered inline and edited inline. Many lines of text are a block of
+    // their own. A template that disagrees says so with `with { tag: ... }`
+    wysiwygTag(field) {
+      return field.textarea ? 'div' : 'span';
+    },
+    // A `textarea: true` string grows as you type; anything else is a single
+    // line that wraps. They need different styling, so say which is which
+    wysiwygModifiers(field) {
+      return [ field.textarea ? 'textarea' : 'input' ];
+    },
+    // Escaped, because a string is text and not markup. The line breaks a
+    // `textarea: true` string can contain are honored, so that what is
+    // displayed matches what was typed
+    async wysiwygRender(req, field, value) {
+      const escaped = self.apos.util.escapeHtml((value == null) ? '' : value.toString());
+      return field.textarea ? escaped.replace(/\r?\n/g, '<br />') : escaped;
+    },
     extract(req, field, value) {
       return value ? [ { text: value } ] : [];
     },

@@ -1,6 +1,7 @@
 <template>
   <div
     class="apos-rich-text-editor"
+    :class="{ 'apos-rich-text-editor--inline': inline }"
     @keyup="handleUIKeyup"
   >
     <bubble-menu
@@ -81,7 +82,7 @@
     >
       <editor-content
         :editor="editor"
-        :class="editorOptions.className"
+        :class="inline ? null : editorOptions.className"
       />
     </div>
     <div
@@ -197,6 +198,16 @@ export default {
       default: false
     },
     readOnly: {
+      type: Boolean,
+      default: false
+    },
+    // Set when the editor is mounted in place of the markup the page would
+    // otherwise render, as `{% field %}` does. The editor then takes up no
+    // more room than that markup did, leaving the spacing of the text to
+    // the site's own styles. That means dropping the widget's `className`
+    // too: the page did not render the field's value inside it, so applying
+    // it here would restyle the text the moment editing began
+    inline: {
       type: Boolean,
       default: false
     },
@@ -866,9 +877,16 @@ function traverseNextNode(node) {
   $z-index-button-foreground: 2;
 
   .apos-rich-text-editor {
-    container-type: inline-size;
     min-width: 0;
     max-width: 100%;
+  }
+
+  // Sizes the bubble menu to the editor rather than to the viewport. Skipped
+  // inline, because inline size containment also contains layout, which traps
+  // the block margins the site's own styles put on the text: the editor would
+  // then be taller than the markup it stands in for
+  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) {
+    container-type: inline-size;
   }
 
   .bubble-menu {
@@ -1004,9 +1022,11 @@ function traverseNextNode(node) {
     outline: none;
   }
 
-/* stylelint-disable-next-line selector-class-pattern */
-  .apos-rich-text-editor__editor :deep(.ProseMirror) {
-    padding: 10px 0;
+  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) {
+  /* stylelint-disable-next-line selector-class-pattern */
+    .apos-rich-text-editor__editor :deep(.ProseMirror) {
+      padding: 10px 0;
+    }
   }
 
 /* stylelint-disable-next-line selector-class-pattern, selector-no-qualifying-type */
@@ -1048,6 +1068,13 @@ function traverseNextNode(node) {
   .apos-rich-text-editor__editor.apos-is-visually-empty {
     background-color: var(--a-primary-transparent-10);
     min-height: 50px;
+  }
+
+  // Still big enough to click into and to show the empty label, but the page
+  // is not a modal: it should not sprout a 50px block wherever a field
+  // happens to be empty
+  .apos-rich-text-editor--inline .apos-rich-text-editor__editor.apos-is-visually-empty {
+    min-height: 2em;
   }
 
   .apos-rich-text-editor__editor_after {
@@ -1141,7 +1168,9 @@ function traverseNextNode(node) {
     letter-spacing: 0.25px;
   }
 
-  :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
+  // Inline, the space between blocks is the site's business, not ours
+  /* stylelint-disable-next-line selector-class-pattern */
+  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) :deep(.ProseMirror) {
     > * + * {
       margin-top: 0.75em;
     }

@@ -516,4 +516,99 @@ describe('Rich Text Widget', function () {
       );
     });
   });
+
+  describe('permalinks', function () {
+    let richText;
+
+    beforeEach(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {}
+      });
+      richText = apos.modules['@apostrophecms/rich-text-widget'];
+    });
+
+    // `_relatedDocs` is what the widget carries for the docs its permalinks
+    // point to, and what `linkPermalinks` reads
+    const widget = (...docs) => ({ _relatedDocs: docs });
+    const contact = {
+      aposDocId: 'ctcttcttcttcttcttcttcttc',
+      _url: '/contact',
+      title: 'Contact Us'
+    };
+    const about = {
+      aposDocId: 'abtabtabtabtabtabtabtabt',
+      _url: '/about',
+      title: 'About'
+    };
+    const permalink = (doc, updateTitle) =>
+      `#apostrophe-permalink-${doc.aposDocId}?updateTitle=${updateTitle}`;
+
+    it('should quote the href it substitutes for a permalink', function () {
+      assert.equal(
+        richText.linkPermalinks(
+          widget(contact),
+          `<p><a href="${permalink(contact, 0)}">Read this</a></p>`
+        ),
+        '<p><a href="/contact">Read this</a></p>'
+      );
+    });
+
+    it('should quote the href when it updates the title too', function () {
+      assert.equal(
+        richText.linkPermalinks(
+          widget(contact),
+          `<p><a href="${permalink(contact, 1)}">Stale Title</a></p>`
+        ),
+        '<p><a href="/contact">Contact Us</a></p>'
+      );
+    });
+
+    it('should quote every href when one document has several permalinks', function () {
+      assert.equal(
+        richText.linkPermalinks(
+          widget(contact, about),
+          `<p><a href="${permalink(contact, 0)}">One</a> and ` +
+            `<a href="${permalink(about, 0)}">Two</a> and ` +
+            `<a href="${permalink(contact, 1)}">Three</a></p>`
+        ),
+        '<p><a href="/contact">One</a> and ' +
+          '<a href="/about">Two</a> and ' +
+          '<a href="/contact">Contact Us</a></p>'
+      );
+    });
+
+    it('should not let a url with a space break out of the attribute', function () {
+      // Unquoted, `href=/a b` makes `b` an attribute of its own, which is how
+      // an unquoted substitution stops being merely invalid and starts
+      // changing the markup
+      const spaced = {
+        aposDocId: 'spcspcspcspcspcspcspcspc',
+        _url: '/a b',
+        title: 'Spaced'
+      };
+      assert.equal(
+        richText.linkPermalinks(
+          widget(spaced),
+          `<p><a href="${permalink(spaced, 0)}">Link</a></p>`
+        ),
+        '<p><a href="/a b">Link</a></p>'
+      );
+    });
+
+    it('should leave other attributes of the anchor alone', function () {
+      assert.equal(
+        richText.linkPermalinks(
+          widget(contact),
+          `<p><a href="${permalink(contact, 0)}" target="_blank" rel="noopener">Link</a></p>`
+        ),
+        '<p><a href="/contact" target="_blank" rel="noopener">Link</a></p>'
+      );
+    });
+
+    it('should leave a permalink alone when its document is not related', function () {
+      const content = `<p><a href="${permalink(contact, 0)}">Link</a></p>`;
+      assert.equal(richText.linkPermalinks(widget(about), content), content);
+    });
+  });
 });

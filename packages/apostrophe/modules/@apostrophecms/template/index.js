@@ -1297,7 +1297,10 @@ module.exports = {
       async annotateDataForExternalFront(req, template, data, moduleName) {
         const docs = self.getDocsForExternalFront(req, template, data, moduleName);
         for (const doc of docs) {
-          await self.annotateDocForExternalFront(doc, { scene: req.scene });
+          await self.annotateDocForExternalFront(doc, {
+            scene: req.scene,
+            req
+          });
         }
         data.aposBodyData = await self.getBodyData(req);
         // Already contains module name too
@@ -1349,14 +1352,22 @@ module.exports = {
         ].filter(doc => !!doc);
       },
 
-      async annotateDocForExternalFront(doc, { scene } = {}) {
+      async annotateDocForExternalFront(doc, { scene, req } = {}) {
         const handled = new WeakSet();
+        const wysiwygHandled = new WeakSet();
         const missingAreas = [];
+        const wysiwygFields = [];
         self.apos.doc.walk(doc, (o, k, v) => {
           if (o._edit === true && !handled.has(o)) {
             handled.add(o);
             for (const field of self.missingSchemaAreas(o)) {
               missingAreas.push([ o, field ]);
+            }
+          }
+          if (req && !wysiwygHandled.has(o)) {
+            wysiwygHandled.add(o);
+            for (const field of self.wysiwygSchemaFields(o)) {
+              wysiwygFields.push([ o, field ]);
             }
           }
           if (v && v.metaType === 'area') {
@@ -1391,6 +1402,71 @@ module.exports = {
           area._docId = o._docId ?? (o.metaType === 'doc' ? o._id : null);
           self.annotateAreaForExternalFront(field, area, { scene });
         }
+        // Likewise after the walk, since rendering a value is asynchronous
+        for (const [ o, field ] of wysiwygFields) {
+          await self.annotateWysiwygFieldForExternalFront(req, o, field);
+        }
+      },
+
+      // Annotate one field of `object` that has an on-page editor, so that an
+      // external front such as Astro can render it in place with its own
+      // `AposField` component. See `apos.schema.wysiwygFieldData`, which is
+      // what the `{% field %}` tag renders from.
+      //
+      // The definition of the field is named by `fieldId` rather than sent:
+      // every doc type and widget type already ships its schema to the
+      // browser in `aposBodyData`, so a copy per field on the page would be
+      // the same bytes over again.
+      async annotateWysiwygFieldForExternalFront(req, object, field) {
+        const {
+          rendered, tag, classes, canEdit, fieldId, component, icon, docId, patchKey
+        } = await self.apos.schema.wysiwygFieldData(req, object, field);
+        // The template, not the server, decides how a field is presented, so
+        // the `with` clause of the front end has the last word on the tag and
+        // the classes. `tag` and `classes` here are what the field type asked
+        // for, which is the starting point.
+        //
+        // The value itself is already right here in `object`, in the form the
+        // editor wants it. `rendered` is the part the front end cannot work
+        // out for itself
+        object._wysiwygFields = object._wysiwygFields || {};
+        object._wysiwygFields[field.name] = canEdit
+          ? {
+            rendered,
+            tag,
+            classes,
+            canEdit,
+            component,
+            icon,
+            docId,
+            patchKey,
+            fieldId
+          }
+          // A visitor who cannot edit this field has no use for the editor to
+          // mount, the icon on its button or the key to patch it by, so a
+          // page served to the public carries none of it
+          : {
+            rendered,
+            tag,
+            classes
+          };
+      },
+
+      // The schema fields of `object` an external front may render in place:
+      // those with an on-page editor that asked for one with `wysiwyg: true`.
+      // Returns an empty array for anything without a schema manager.
+      //
+      // `{% field %}` and its JSX equivalent need no such flag, because they
+      // run inside Apostrophe and can work everything out when the template
+      // reaches the field. An external front is sent its data before its
+      // templates run, so it has to say in advance which fields it wants;
+      // otherwise every SEO, Open Graph and slug field of every document on
+      // the page would be annotated, which costs more than the page itself.
+      wysiwygSchemaFields(object) {
+        const schema = self.apos.util.getManagerOf(object, { log: false })?.schema ?? [];
+        return schema.filter(
+          field => field.wysiwyg && self.apos.schema.fieldTypes[field.type]?.wysiwyg
+        );
       },
 
       // Annotate an area for easy rendering by an external front end
