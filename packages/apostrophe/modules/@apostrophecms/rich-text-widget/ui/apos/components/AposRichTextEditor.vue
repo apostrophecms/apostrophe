@@ -4,37 +4,51 @@
     :class="{ 'apos-rich-text-editor--inline': inline }"
     @keyup="handleUIKeyup"
   >
-    <bubble-menu
-      v-if="editor && !readOnly"
-      plugin-key="richTextMenu"
-      class="bubble-menu"
-      :tippy-options="bubbleMenuTippyOptions"
-      :editor="editor"
+    <!--
+      The bubble menu sizes itself to the editor with container query units,
+      so it needs a query container that is exactly as wide as the editor.
+      That container cannot be the editor itself: inline size containment
+      makes an element contribute nothing to its ancestors' intrinsic width,
+      so any site that sizes an ancestor to its content — a card that is a
+      flex item, say — would collapse to nothing. This overlay is out of
+      flow, so it takes the editor's width without ever being asked for one
+    -->
+    <div
+      ref="menus"
+      class="apos-rich-text-editor__menus"
     >
-      <AposContextMenuDialog
-        menu-placement="top"
-        :class-list="contextMenuClasses"
-        :has-tip="false"
+      <bubble-menu
+        v-if="editor && !readOnly"
+        plugin-key="richTextMenu"
+        class="bubble-menu"
+        :tippy-options="bubbleMenuTippyOptions"
+        :editor="editor"
       >
-        <div
-          ref="toolbar"
-          class="apos-rich-text-toolbar__inner"
+        <AposContextMenuDialog
+          menu-placement="top"
+          :class-list="contextMenuClasses"
+          :has-tip="false"
         >
-          <component
-            :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
-            v-for="(item, index) in toolbar"
-            :key="item + '-' + index"
-            :name="item"
-            :tool="tools[item]"
-            :options="editorOptions"
-            :editor="editor"
-            @open-popover="openPopover"
-            @close="closeToolbar"
-            @focusout="onBtnBlur"
-          />
-        </div>
-      </AposContextMenuDialog>
-    </bubble-menu>
+          <div
+            ref="toolbar"
+            class="apos-rich-text-toolbar__inner"
+          >
+            <component
+              :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
+              v-for="(item, index) in toolbar"
+              :key="item + '-' + index"
+              :name="item"
+              :tool="tools[item]"
+              :options="editorOptions"
+              :editor="editor"
+              @open-popover="openPopover"
+              @close="closeToolbar"
+              @focusout="onBtnBlur"
+            />
+          </div>
+        </AposContextMenuDialog>
+      </bubble-menu>
+    </div>
     <floating-menu
       v-if="editor && !readOnly"
       :id="`insert-menu-${editorId}`"
@@ -243,6 +257,10 @@ export default {
     ...mapState(useModalStore, [ 'getAdminDirectionClass' ]),
     bubbleMenuTippyOptions() {
       return {
+        // Keeps the menu inside the query container that gives `100cqw` the
+        // width of the editor. Resolved when tippy mounts, not now, since
+        // the ref does not exist while this is first computed
+        appendTo: () => this.$refs.menus,
         maxWidth: 'none',
         duration: 100,
         zIndex: 999,
@@ -877,19 +895,31 @@ function traverseNextNode(node) {
   $z-index-button-foreground: 2;
 
   .apos-rich-text-editor {
+    position: relative;
     min-width: 0;
     max-width: 100%;
   }
 
-  // Sizes the bubble menu to the editor rather than to the viewport. Skipped
-  // inline, because inline size containment also contains layout, which traps
-  // the block margins the site's own styles put on the text: the editor would
-  // then be taller than the markup it stands in for
-  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) {
+  // The query container the bubble menu is sized against, stretched to the
+  // editor's box. `container-type: inline-size` brings inline size
+  // containment with it, which zeroes the element's contribution to the
+  // intrinsic width of everything above it; out of flow, it has no such
+  // contribution to lose, so the editor keeps its natural width and the site
+  // around it lays out as if this were not here. Nothing is drawn in it, so
+  // it lets clicks through to the text underneath; the menu itself takes
+  // them back
+  .apos-rich-text-editor__menus {
     container-type: inline-size;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
 
   .bubble-menu {
+    // Takes back what the overlay gave up. Set here rather than on the
+    // overlay's children: tippy builds the element in between, so it carries
+    // no scope attribute for a scoped selector to match
+    pointer-events: auto;
     box-sizing: border-box;
     width: fit-content;
     max-width: calc(100cqw - 16px);
