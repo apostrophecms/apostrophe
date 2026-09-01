@@ -620,6 +620,37 @@ describe('External Front', function() {
     assert.strictEqual(caption.canEdit, true);
   });
 
+  it('annotateDocForExternalFront sends the editor only for the document the page is about', async function() {
+    const context = productWithFields();
+    context._edit = true;
+    const other = productWithFields();
+    other._id = 'product2';
+    other._edit = true;
+
+    const req = apos.task.getReq({ query: { aposEdit: '1' } });
+    // Exactly one document is edited on a page. An index page renders fifty
+    // pieces and the user edits none of them there; each is edited on its own
+    // show page, where it is the context in its turn
+    req.data.piece = context;
+
+    await apos.template.annotateDocForExternalFront(context, { req });
+    await apos.template.annotateDocForExternalFront(other, { req });
+
+    assert.strictEqual(context._wysiwygFields.body.canEdit, true);
+    assert.strictEqual(context._wysiwygFields.body.patchKey, 'body');
+
+    // The value is still rendered for display, in the tag and with the classes
+    // the field type asked for, because only the server can resolve the
+    // permalinks of rich text. What the other forty nine pieces carry is that
+    // and nothing else
+    const body = other._wysiwygFields.body;
+    assert.strictEqual(body.rendered, '<p>the body</p>');
+    assert.deepStrictEqual(
+      Object.keys(body).sort(),
+      [ 'classes', 'rendered', 'tag' ]
+    );
+  });
+
   it('annotateDocForExternalFront annotates the fields of a widget in an area', async function() {
     const doc = productWithFields();
     doc._edit = true;

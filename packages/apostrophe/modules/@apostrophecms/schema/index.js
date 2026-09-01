@@ -1683,6 +1683,24 @@ module.exports = {
         );
       },
 
+      // Whether a field of the document with this `_id` can be edited in
+      // place on this request. Exactly one document is edited on a page — the
+      // piece of a show page, otherwise the page itself — and it is the one
+      // the admin bar takes as its context. Everything else a page renders is
+      // there to be displayed: the fifty pieces of an index page, the home
+      // page and the ancestors and children behind the navigation, the global
+      // doc. Their fields are edited on their own pages, so annotating them
+      // here would cost bytes on every page and buy nothing.
+      //
+      // A request that is not rendering a page has no such context to go by,
+      // as when the area editor asks for fresh markup for a single widget.
+      // The only document in play there is the one being edited, so nothing
+      // is ruled out.
+      editableInPlace(req, docId) {
+        const context = req.data?.piece || req.data?.page;
+        return !context || (docId === context._id);
+      },
+
       // Everything there is to say about one non-area field of `object`
       // rendered in place: the markup a visitor sees, and what the editor
       // needs to take over from it if the user is editing. Nunjucks passes
@@ -1711,11 +1729,13 @@ still output the value of this field with a regular template expression.`);
           throw usage(`"${tag}" is not a valid HTML tag name.`);
         }
         const value = object[field.name];
+        const docId = object._docId || ((object.metaType === 'doc') ? object._id : null);
         const canEdit = !!(
           object._edit &&
           !field.readOnly &&
           (_with.edit !== false) &&
-          req.query.aposEdit
+          req.query.aposEdit &&
+          self.editableInPlace(req, docId)
         );
         const classes = [
           'apos-wysiwyg-field',
@@ -1728,15 +1748,19 @@ still output the value of this field with a regular template expression.`);
         return {
           fieldId: field._id,
           // Always JSON, so that the editor gets the value the user typed and
-          // not a rendering of it, whatever the field type stores
-          valueJson: JSON.stringify((value === undefined) ? null : value),
+          // not a rendering of it, whatever the field type stores. Only the
+          // editor reads it, so a field that will not be edited here is spared
+          // carrying a second copy of its own value
+          valueJson: canEdit
+            ? JSON.stringify((value === undefined) ? null : value)
+            : null,
           rendered: await self.renderWysiwygValue(req, field, value),
           tag,
           classes: classes.join(' '),
           canEdit,
           component: self.wysiwygComponentName(field.type),
           icon: self.wysiwygIconName(field),
-          docId: object._docId || ((object.metaType === 'doc') ? object._id : null),
+          docId,
           patchKey: (object.metaType === 'doc')
             ? field.name
             : `@${object._id}.${field.name}`,

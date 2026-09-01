@@ -467,6 +467,65 @@ describe('Field Tag and Wysiwyg Fields', function () {
     assert(!html.includes('data-apos-wysiwyg-field-newly-editable'));
   });
 
+  it('should not output the editor markup for a document the page is not about', async function () {
+    apos = await t.create({
+      root: module,
+      modules: modules()
+    });
+
+    const req = apos.task.getReq({ query: { aposEdit: '1' } });
+    const page = await apos.page.find(req, { slug: '/fields' }).toObject();
+    const other = await apos.page.find(req, { slug: '/' }).toObject();
+    // The document the admin bar takes as the context of the page, and the
+    // only one edited here
+    req.data.page = page;
+
+    const render = (template, data) =>
+      apos.modules['field-page'].renderString(req, template, data);
+
+    // The page itself is edited in place as usual
+    const own = await render('{% field data.page, \'subtitle\' %}', { page });
+    assert(own.includes('data-apos-wysiwyg-field-newly-editable'));
+
+    // The home page appears here to be read, and is edited on its own page.
+    // Sending an editor that would never be mounted, and a second copy of the
+    // value for it to start from, costs bytes on every page and buys nothing
+    assert(other._edit, 'the other page is one this user may edit elsewhere');
+    const foreign = await render('{% field data.other, \'title\' %}', { other });
+    assert(!foreign.includes('data-apos-wysiwyg-field-newly-editable'));
+    assert(!foreign.includes('data-value'));
+    // The value is still displayed, in the tag and with the classes the field
+    // type asked for
+    assert.equal(
+      foreign,
+      '<span class="apos-wysiwyg-field apos-wysiwyg-field--string ' +
+        `apos-wysiwyg-field--input">${other.title}</span>`
+    );
+  });
+
+  it('should rule out no document when the request is not about one', async function () {
+    apos = await t.create({
+      root: module,
+      modules: modules()
+    });
+
+    const req = apos.task.getReq({ query: { aposEdit: '1' } });
+    const page = await apos.page.find(req, { slug: '/fields' }).toObject();
+
+    // The area editor asks the render-widget route for fresh markup for one
+    // widget, and that request is about no page at all. The only document in
+    // play is the one being edited, so a missing context rules out nothing:
+    // tighten this and editing a field in place stops working the moment its
+    // widget is re-rendered, moved or previewed
+    assert.deepEqual(req.data, {});
+    const html = await apos.modules['field-page'].renderString(
+      req,
+      '{% field data.page, \'subtitle\' %}',
+      { page }
+    );
+    assert(html.includes('data-apos-wysiwyg-field-newly-editable'));
+  });
+
   it('should address a field of a widget with an @id patch key', async function () {
     apos = await t.create({
       root: module,
