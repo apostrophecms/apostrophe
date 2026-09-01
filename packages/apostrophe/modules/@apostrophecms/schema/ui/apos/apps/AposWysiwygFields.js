@@ -55,16 +55,26 @@ export default function() {
     // `undefined` rather than null, so that the wrapper's own default applies
     const icon = el.getAttribute('data-icon') || undefined;
 
-    // Whatever happens next, we have had our chance at this element
-    el.removeAttribute('data-apos-wysiwyg-field-newly-editable');
-
     // Just like an area, a field of a document other than the one being
     // edited on this page is displayed but not editable here. Edit it on
-    // its own page, or in a modal
+    // its own page, or in a modal.
+    //
+    // Which document that is can change without this element being
+    // re-rendered: the context bar restores the draft mode it remembers for
+    // the tab after the page has already been rendered in the other mode, so
+    // a pass that lands in between compares against a context id that is
+    // about to change. Leave the element eligible rather than consuming it,
+    // so the next pass can reconsider — an area recomputes `foreign` for the
+    // same reason instead of settling it once and for all
     if (!docId || (docId !== apos.adminBar?.contextId)) {
       el.setAttribute('data-apos-wysiwyg-field-foreign', true);
       return;
     }
+    el.removeAttribute('data-apos-wysiwyg-field-foreign');
+
+    // Nothing below here can start answering differently on its own, so this
+    // element is ours whatever happens next
+    el.removeAttribute('data-apos-wysiwyg-field-newly-editable');
 
     // The schema in the browser is the schema this user is allowed to see,
     // so a field `allowedSchema` held back simply isn't in it. The value the

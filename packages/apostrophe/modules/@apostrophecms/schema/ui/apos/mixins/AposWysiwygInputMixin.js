@@ -118,6 +118,16 @@ export default {
         apos.bus.$emit('context-edited', {
           [this.patchKey]: this.next
         });
+        // The document on the server is not the only thing holding this
+        // value. Every area editor on the page keeps its own copy of the
+        // widget the field belongs to, and that copy is what copying,
+        // cutting, duplicating or opening the widget's editor works from, so
+        // it has to hear about this as well
+        apos.bus.$emit('field-edited', {
+          docId: this.docId,
+          patchKey: this.patchKey,
+          value: this.next
+        });
       }
       // For a parent component that manages the value itself, as
       // `AposInputArea` does for an area editor in a modal

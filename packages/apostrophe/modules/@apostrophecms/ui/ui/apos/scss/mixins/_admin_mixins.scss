@@ -32,6 +32,21 @@ $a-canvas-max: 1168px;
     background-color: var(--a-background-primary);
     border-radius: 8px;
   }
+
+  // The trail is rendered inside the page, so the site's own list styling
+  // reaches it: a rule as ordinary as `.features li::before { content: '✓' }`
+  // puts a checkmark on every crumb. Nothing here wears a marker or a pseudo
+  // element of its own, so refuse them all. Deliberately no margin or padding
+  // reset: `apos-breadcrumb-icon` sets its own, and a selector this specific
+  // would win over it
+  > li {
+    list-style: none;
+
+    &::before,
+    &::after {
+      content: none;
+    }
+  }
 }
 
 // One crumb. Apply to the button content inside it as well, so that a crumb
