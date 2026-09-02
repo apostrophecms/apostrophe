@@ -591,7 +591,8 @@ async function askTelemetryConsent({
 function telemetryPromptMessage() {
   return [
     render.stepLabel(6, totalSteps, 'Help us improve Apostrophe?'),
-    render.dim('Anonymous usage data — no content, no personal info.'),
+    render.dim('Anonymous usage data — your choices, OS, and Node version.'),
+    render.dim('No content, no personal info.'),
     render.dim(`Policy: ${link('telemetryPolicy')}`)
   ].join('\n');
 }

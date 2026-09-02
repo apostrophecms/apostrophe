@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   buildPayload, allowedFields, EVENT_NAMES, DB_CHOICES, PACKAGE_MANAGERS,
-  FAIL_STAGES, ERROR_CODES, SchemaError
+  FAIL_STAGES, ERROR_CODES, SchemaError, readRuntime
 } from '../../src/telemetry/schema.js';
 import { KIT_IDS } from '../../src/core/kits.js';
 
@@ -71,11 +71,13 @@ describe('telemetry/schema — buildPayload (success)', function () {
   it('returns exactly the §7 fields, in order', function () {
     const p = buildPayload('install_success', VALID);
     assert.deepEqual(Object.keys(p), [
-      'event', 'cliVersion', 'kitId', 'dbChoice',
+      'event', 'cliVersion', 'nodeVersion', 'platform', 'kitId', 'dbChoice',
       'packageManager', 'durationMs', 'anonymousId'
     ]);
     assert.equal(p.event, 'install_success');
     assert.equal(p.cliVersion, VALID.cliVersion);
+    assert.equal(p.nodeVersion, process.versions.node);
+    assert.equal(p.platform, process.platform);
     assert.equal(p.anonymousId, VALID.anonymousId);
     assert.equal(p.kitId, VALID.kitId);
     assert.equal(p.dbChoice, VALID.dbChoice);
@@ -209,20 +211,79 @@ describe('telemetry/schema — validators reject bad input', function () {
   });
 });
 
+describe('telemetry/schema — runtime fields', function () {
+  const RUNTIME = Object.freeze({
+    nodeVersion: '24.4.1',
+    platform: /** @type {const} */ ('win32')
+  });
+
+  it('attaches nodeVersion and platform to both events', function () {
+    const s = buildPayload('install_success', VALID, RUNTIME);
+    assert.equal(s.nodeVersion, '24.4.1');
+    assert.equal(s.platform, 'win32');
+    const f = buildPayload('install_fail', {
+      ...VALID,
+      failStage: 'clone',
+      errorCode: 'git_clone_failed'
+    }, RUNTIME);
+    assert.equal(f.nodeVersion, '24.4.1');
+    assert.equal(f.platform, 'win32');
+  });
+
+  it('defaults to the running process', function () {
+    const p = buildPayload('install_success', VALID);
+    assert.equal(p.nodeVersion, process.versions.node);
+    assert.equal(p.platform, process.platform);
+  });
+
+  it('ignores caller-supplied nodeVersion/platform entirely', function () {
+    // These describe the machine, not the user's choices — so they are read
+    // from the process, never from input. Otherwise they would be two
+    // firewall-blessed fields an upstream caller could stuff a path into.
+    const p = buildPayload('install_success', {
+      ...VALID,
+      nodeVersion: '/home/jane/secret-startup',
+      platform: 'ceo@example.com'
+    }, RUNTIME);
+    assert.equal(p.nodeVersion, '24.4.1');
+    assert.equal(p.platform, 'win32');
+  });
+
+  it('readRuntime reports the process as-is', function () {
+    assert.deepEqual(readRuntime(), {
+      nodeVersion: process.versions.node,
+      platform: process.platform
+    });
+    // A platform Node doesn't ship yet reports as itself, not as a bucket —
+    // that value is the whole reason the field exists.
+    assert.deepEqual(
+      readRuntime({
+        platform: 'someFuturePlatform',
+        versions: { node: '99.0.0-pre' }
+      }),
+      {
+        nodeVersion: '99.0.0-pre',
+        platform: 'someFuturePlatform'
+      }
+    );
+  });
+});
+
 describe('telemetry/schema — allowedFields', function () {
-  it('install_success: 7 fields, no failStage/errorCode', function () {
+  it('install_success: 9 fields, no failStage/errorCode', function () {
     const f = [ ...allowedFields('install_success') ];
     assert.deepEqual(f.sort(), [
       'anonymousId', 'cliVersion', 'dbChoice', 'durationMs',
-      'event', 'kitId', 'packageManager'
+      'event', 'kitId', 'nodeVersion', 'packageManager', 'platform'
     ]);
   });
 
-  it('install_fail: 9 fields with failStage + errorCode', function () {
+  it('install_fail: 11 fields with failStage + errorCode', function () {
     const f = [ ...allowedFields('install_fail') ];
     assert.deepEqual(f.sort(), [
       'anonymousId', 'cliVersion', 'dbChoice', 'durationMs',
-      'errorCode', 'event', 'failStage', 'kitId', 'packageManager'
+      'errorCode', 'event', 'failStage', 'kitId', 'nodeVersion',
+      'packageManager', 'platform'
     ]);
   });
 

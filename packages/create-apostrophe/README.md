@@ -81,8 +81,9 @@ cancelled (Ctrl-C).
 ## Telemetry
 
 Telemetry is **opt-in** and anonymous. It exists to tell us which kits and
-databases people actually pick, and where installs break - nothing more. You can
-see the exact payload before sending anything with `telemetry preview`.
+databases people actually pick, which platforms and Node versions they run on,
+and where installs break - nothing more. You can see the exact payload before
+sending anything with `telemetry preview`.
 
 - **Consent** is stored locally and starts off. `telemetry on` flips it on and
   generates a stable anonymous id (UUID v4) the first time; `telemetry off` keeps
@@ -101,6 +102,9 @@ Both events carry:
 
 - **`event`** - `install_success` or `install_fail`.
 - **`cliVersion`** - version of the installer.
+- **`nodeVersion`** - the Node release running the install (e.g. `24.4.1`).
+- **`platform`** - the OS family, from `process.platform` (e.g. `darwin`,
+  `linux`, `win32`).
 - **`kitId`** - the starter kit chosen (e.g. `apostrophe-demo`).
 - **`dbChoice`** - `sqlite`, `mongodb`, or `postgres`.
 - **`packageManager`** - `npm`, `pnpm`, `yarn`, or `unknown` (detected).
