@@ -14,10 +14,13 @@ const PKG = '{ "name": "x" }\n';
 function spies() {
   const events = [];
   const tasks = [];
+  const errors = [];
   const logger = {
     info() {},
     warn() {},
-    error() {},
+    error(msg) {
+      errors.push(msg);
+    },
     task(label) {
       const rec = {
         label,
@@ -45,6 +48,7 @@ function spies() {
   return {
     events,
     tasks,
+    errors,
     logger,
     telemetry
   };
@@ -182,6 +186,45 @@ describe('core/create-project', function () {
     assert.equal(events[0].name, 'install_fail');
     assert.equal(events[0].payload.failStage, null);
     assert.equal(events[0].payload.errorCode, 'unsupported_pm');
+  });
+
+  it('StageError details are logged for the user, never returned or emitted', async function () {
+    // The failure block tells the user to "see the messages above", so the
+    // failing child's output has to actually reach the terminal. It must not
+    // ride along on the result, which finish() spreads into the telemetry
+    // payload wholesale.
+    const {
+      events, errors, logger, telemetry
+    } = spies();
+    const details = 'Error: connect ECONNREFUSED\n  at /home/jane/tomtest2/backend/app.js';
+    const createProject = makeCreateProject({
+      clone: fakeStandaloneClone([]),
+      scaffold: () => ({ appRoot: '/tmp/p/my-site' }),
+      dbConfig: () => {},
+      install: () => {},
+      addAdminUser: async () => {
+        throw new StageError('admin', {
+          code: 'admin_user_failed',
+          details
+        });
+      }
+    });
+
+    const res = await createProject(baseOptions(), {
+      telemetry,
+      logger
+    });
+
+    assert.equal(res.ok, false);
+    assert.equal(res.errorCode, 'admin_user_failed');
+    assert.deepEqual(errors, [ details ]);
+    assert.equal('details' in res, false);
+    assert.equal(events.length, 1);
+    assert.equal('details' in events[0].payload, false);
+    assert.equal(
+      JSON.stringify(events[0].payload).includes('/home/jane'), false,
+      'child output must not reach the telemetry payload'
+    );
   });
 
   it('step StageError → ok:false with that failStage, one install_fail', async function () {

@@ -7,7 +7,7 @@
 
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { run as defaultRun } from '../spawn.js';
+import { run as defaultRun, tail } from '../spawn.js';
 import { StageError } from '../errors.js';
 import { detectPackageManager, assertSupportedPackageManager } from '../pm.js';
 
@@ -99,7 +99,8 @@ export async function install(
       const missing = command !== 'npm' && result.code === CMD_NOT_FOUND;
       throw new StageError(STAGE, {
         code: missing ? 'npm_missing' : 'install_failed',
-        cause: new Error(`npm install exited with code ${result.code}`)
+        cause: new Error(`npm install exited with code ${result.code}`),
+        details: tail([ result.stderr, result.stdout ].filter(Boolean).join('\n'))
       });
     }
   }
