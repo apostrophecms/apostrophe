@@ -2342,6 +2342,43 @@ function _registerFunctions(db) {
 }
 
 // =============================================================================
+// URI parsing
+// =============================================================================
+
+// A sqlite URI is a scheme prefix stuck on a filesystem path, and filesystem
+// paths are not URLs. Handing one to `new URL` reads tidily and is wrong three
+// ways:
+//
+//   - A Windows absolute path gives `sqlite://C:\site\data\db.sqlite`. The URL
+//     parser reads `C` as the host and `\site\data\db.sqlite` as the port,
+//     finds that isn't a number, and throws ERR_INVALID_URL. POSIX only
+//     escapes this because its absolute paths open with `/`, which happens to
+//     land on the valid `sqlite:///...` empty-authority form.
+//   - `url.pathname` is percent-encoded, so a project under `My Project`
+//     yields `My%20Project` — and since we mkdir the dirname, that silently
+//     creates a wrongly named directory and a database nobody can find.
+//   - `url.hostname` is lowercased, so the relative form `sqlite://Data/db`
+//     looks in `data/`.
+//
+// So take everything after the scheme verbatim. That reads all four spellings
+// correctly — `sqlite:///abs/posix`, `sqlite://relative`, `sqlite://C:\abs`,
+// `sqlite://C:/abs` — and leaves `:memory:` intact for the check below, which
+// `new URL` used to pre-empt with ERR_INVALID_URL.
+//
+// `platform` is a parameter so the Windows branch is testable off Windows.
+function uriToPath(uri, platform = process.platform) {
+  const dbPath = String(uri).replace(/^sqlite:\/\//i, '');
+  // Also tolerate the file:// spelling of a drive path,
+  // `sqlite:///C:/site/db.sqlite` — what pathToFileURL emits and the natural
+  // thing to hand-write. The leading slash has to go: Windows resolves
+  // `/C:/site` to `\C:\site`, and `C:` is not a legal directory name. Gated on
+  // Windows so a POSIX path is never second-guessed.
+  return platform === 'win32'
+    ? dbPath.replace(/^\/(?=[a-zA-Z]:[/\\])/, '')
+    : dbPath;
+}
+
+// =============================================================================
 // Module Export
 // =============================================================================
 
@@ -2349,17 +2386,11 @@ module.exports = {
   name: 'sqlite',
   protocols: [ 'sqlite' ],
 
+  // Exported for tests.
+  uriToPath,
+
   async connect(uri, options = {}) {
-    // Parse URI: sqlite:///path/to/file.sqlite or sqlite://path/to/file.db
-    const url = new URL(uri);
-    let dbPath;
-    if (url.hostname) {
-      // sqlite://relative/path/to/file.sqlite
-      dbPath = url.hostname + url.pathname;
-    } else {
-      // sqlite:///absolute/path/to/file.sqlite
-      dbPath = url.pathname;
-    }
+    const dbPath = uriToPath(uri);
 
     // Reject in-memory / empty paths. The adapter does not support
     // throwaway in-memory sqlite databases: an ApostropheCMS site needs
