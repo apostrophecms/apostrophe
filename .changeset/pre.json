@@ -1,5 +1,5 @@
 {
-  "mode": "exit",
+  "mode": "pre",
   "tag": "alpha",
   "initialVersions": {
     "@apostrophecms/ai-helper": "1.0.0-beta.12",
@@ -52,5 +52,8 @@
     "uploadfs": "1.27.0",
     "@apostrophecms/vite": "1.1.2"
   },
-  "changesets": []
+  "changesets": [
+    "sqlite-windows-path",
+    "surface-child-process-errors"
+  ]
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.32.3-alpha.0
+
+### Patch Changes
+
+- Updated dependencies [c416c12]
+  - @apostrophecms/db-connect@1.0.2-alpha.0
+
 ## 4.32.2
 
 ### Patch Changes
