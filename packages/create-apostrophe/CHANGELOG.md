@@ -1,5 +1,12 @@
 # create-apostrophe
 
+## 1.2.0
+
+### Minor Changes
+
+- cc8b80a: - Fix a bug that prevented successful installation of dependencies on Windows when not using WSL.
+  - Include the Node.js version and OS name in telemetry.
+
 ## 1.1.0 (2026-07-10)
 
 ### Fixes
