@@ -266,7 +266,7 @@ module.exports = (self) => ({
           ignoreModules
         });
         indexSassImports = await getImports(source, 'index.scss', {
-          importSuffix: 'Stylesheet',
+          importName: false,
           enumerateImports: true,
           mainModuleBundles: getMainModuleBundleFiles('scss'),
           ignoreModules
@@ -722,7 +722,11 @@ module.exports = (self) => ({
         const name = getComponentName(component, options, i);
         const jsName = JSON.stringify(name);
         const importName = `${name}${options.importSuffix || ''}`;
-        const importCode = `
+        const importCode = options.importName === false
+          ? `
+              import ${importUrl};
+              `
+          : `
               import ${importName} from ${importUrl};
               `;
 

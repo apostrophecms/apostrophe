@@ -38,7 +38,14 @@ module.exports = ({
     target: es5 ? [ 'web', 'es5' ] : 'web',
     mode: process.env.NODE_ENV || 'development',
     optimization: {
-      minimize: process.env.NODE_ENV === 'production'
+      minimize: process.env.NODE_ENV === 'production',
+      // Webpack 5.110+ auto-minifies CSS assets (experiments.css now
+      // defaults to "auto"), which merges adjacent rules that share
+      // identical declarations and silently changes shipped CSS. Keep
+      // CSS minification off; mini-css-extract-plugin output is final.
+      minimizeOptions: {
+        css: false
+      }
     },
     devtool: 'source-map',
     output: {

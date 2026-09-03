@@ -32,9 +32,9 @@
     "stylelint": ">= 16.1.0"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.5",
+    "mocha": "^11.8.0",
     "nyc": "^17.1.0",
     "postcss-scss": "^4.0.9",
     "stylelint-config-standard-scss": "^14.0.0"

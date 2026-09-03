@@ -20,20 +20,20 @@
   "license": "MIT",
   "devDependencies": {
     "apostrophe": "workspace:^",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "form-data": "^4.0.0",
-    "mocha": "^11.7.5",
-    "stylelint": "^16.0.0",
+    "form-data": "^4.0.6",
+    "mocha": "^11.8.0",
+    "stylelint": "^16.26.1",
     "stylelint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
     "bluebird": "^3.7.2",
-    "bson": "^6.0.0",
-    "csv-parse": "^5.5.5",
-    "csv-stringify": "^6.4.6",
-    "dayjs": "^1.9.8",
+    "bson": "^6.10.4",
+    "csv-parse": "^5.6.0",
+    "csv-stringify": "^6.8.3",
+    "dayjs": "^1.11.23",
     "lodash": "^4.18.1",
-    "tar-stream": "^3.1.6"
+    "tar-stream": "^3.2.1"
   }
 }
