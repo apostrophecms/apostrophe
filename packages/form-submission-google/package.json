@@ -20,12 +20,12 @@
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
     "googleapis": "^88.2.0",
-    "klona": "^2.0.4",
+    "klona": "^2.0.6",
     "lodash.has": "^4.5.2"
   }
 }

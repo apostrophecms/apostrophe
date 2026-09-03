@@ -23,13 +23,13 @@
     "url": "https://github.com/apostrophecms/ai-helper/issues"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
-    "@paralleldrive/cuid2": "^3.0.4",
+    "@paralleldrive/cuid2": "^3.3.0",
     "marked": "^4.3.0",
-    "node-fetch": "^2.6.9",
-    "sharp": "^0.35.2"
+    "node-fetch": "^2.7.0",
+    "sharp": "^0.35.4"
   }
 }

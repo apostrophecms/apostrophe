@@ -12,7 +12,7 @@
     "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules && rm -f pnpm-lock.yaml"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.30.0"
+    "@changesets/cli": "^2.31.1"
   },
   "engines": {
     "node": ">=18"
