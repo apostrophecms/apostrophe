@@ -1,5 +1,17 @@
 # create-apostrophe
 
+## 1.2.0 (2026-09-03)
+
+### Fixes
+
+- Fixed a bug that prevented successful installation of dependencies on Windows when not using WSL.
+- Reports the actual error message when installation fails, per claims already made in the CLI.
+
+### Adds
+
+- Include the Node.js version and OS name in telemetry (note that telemetry is anonymous, opt-in and only in play when creating projects, to
+help us debug issues with the CLI).
+
 ## 1.1.0 (2026-07-10)
 
 ### Fixes
