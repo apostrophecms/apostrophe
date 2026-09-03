@@ -158,6 +158,12 @@ export function makeCreateProject({
       });
     } catch (err) {
       if (err instanceof StageError) {
+        // The failing child's own output, logged rather than returned: the
+        // result object is spread wholesale into the telemetry payload, and
+        // this is exactly the unvetted text that must never go near it.
+        if (err.details) {
+          logger.error(err.details);
+        }
         return finish({
           ok: false,
           packageManager,

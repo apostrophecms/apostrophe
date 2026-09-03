@@ -69,6 +69,8 @@ describe('telemetry/createTelemetry — consent gate', function () {
     assert.deepEqual(s.sent[0], {
       event: 'install_success',
       cliVersion: '0.1.0',
+      nodeVersion: process.versions.node,
+      platform: process.platform,
       kitId: PARTIAL.kitId,
       dbChoice: PARTIAL.dbChoice,
       packageManager: PARTIAL.packageManager,

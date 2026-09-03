@@ -29,9 +29,33 @@ Single-database mode. All collections are stored as tables in the `public` schem
 sqlite:///path/to/database.db
 ```
 
-File-based SQLite databases using `better-sqlite3`. In-memory databases
-(`sqlite://:memory:`) are not supported — the adapter assumes a persistent
-store suitable for hosting an ApostropheCMS site.
+File-based SQLite databases using `better-sqlite3`. The parent directory is
+created if it does not exist.
+
+Unlike the others, this is not really a URL: everything after `sqlite://` is a
+**filesystem path, taken exactly as written**. That matters, because
+filesystem paths are not URLs — they are not percent-encoded, they may contain
+characters a URL parser treats as significant, and on Windows they begin with a
+drive letter that a URL parser reads as `host:port`. So do not percent-encode
+the path. A space is a space:
+
+```
+sqlite:///Users/jane/My Project/data/site.db
+```
+
+`%20` here means a literal percent, two, zero — not a space. Both absolute and
+relative paths work, and on Windows both separators do:
+
+```
+sqlite:///var/lib/mysite/data.db          absolute (POSIX)
+sqlite://data/site.db                     relative to the working directory
+sqlite://C:\Users\jane\site\data\site.db  absolute (Windows)
+sqlite://C:/Users/jane/site/data/site.db  absolute (Windows, forward slashes)
+sqlite:///C:/Users/jane/site/data/site.db absolute (Windows, file:// spelling)
+```
+
+In-memory databases (`sqlite://:memory:`) are not supported — the adapter
+assumes a persistent store suitable for hosting an ApostropheCMS site.
 
 ### Multi-Schema PostgreSQL (multipostgres)
 

@@ -4,7 +4,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { install } from '../../src/core/steps/install.js';
+import { install, npmInstallCommand } from '../../src/core/steps/install.js';
 import { StageError, UnsupportedPackageManagerError } from '../../src/core/errors.js';
 
 function fakeRunFactory(calls, { code = 0, error = null } = {}) {
@@ -25,6 +25,39 @@ function fakeRunFactory(calls, { code = 0, error = null } = {}) {
     };
   };
 }
+
+// The Windows branch is asserted here rather than in the install() tests
+// below so it is covered on every platform: CI does not run on Windows, and
+// this is the one piece of the step whose correctness is Windows-specific.
+describe('core/steps/install npmInstallCommand', function () {
+  it('posix: spawns npm directly', function () {
+    assert.deepEqual(npmInstallCommand('linux'), [ 'npm', [ 'install' ] ]);
+    assert.deepEqual(npmInstallCommand('darwin'), [ 'npm', [ 'install' ] ]);
+  });
+
+  it('win32: goes through the command interpreter', function () {
+    // npm on Windows is npm.cmd, a batch file. CreateProcess can't run it and
+    // libuv's PATH search only tries .com/.exe, so a bare spawn('npm') is
+    // ENOENT; naming npm.cmd is EINVAL without a shell (CVE-2024-27980 fix).
+    const [ command, args ] = npmInstallCommand('win32');
+    assert.match(command, /cmd\.exe$/i);
+    assert.deepEqual(args, [ '/d', '/s', '/c', 'npm', 'install' ]);
+  });
+
+  it('win32: honors ComSpec when set', function () {
+    const saved = process.env.ComSpec;
+    process.env.ComSpec = 'C:\\Windows\\System32\\cmd.exe';
+    try {
+      assert.equal(npmInstallCommand('win32')[0], 'C:\\Windows\\System32\\cmd.exe');
+    } finally {
+      if (saved === undefined) {
+        delete process.env.ComSpec;
+      } else {
+        process.env.ComSpec = saved;
+      }
+    }
+  });
+});
 
 describe('core/steps/install', function () {
   let dir;

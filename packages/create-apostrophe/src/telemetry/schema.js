@@ -43,6 +43,28 @@ export const PACKAGE_MANAGERS = Object.freeze([
 ]);
 
 /**
+ * Ambient facts about the machine running the install. Unlike every other
+ * field these are read from the process, never accepted from a caller — see
+ * {@link buildPayload}. Taken as-is: the process is not an untrusted input,
+ * and an allowlist of known platforms would only turn tomorrow's Node
+ * platform into an unhelpful bucket.
+ * @typedef {object} Runtime
+ * @property {string} nodeVersion  `process.versions.node`, e.g. `'24.4.1'`.
+ * @property {string} platform     `process.platform`, e.g. `'darwin'`.
+ */
+
+/**
+ * @param {{ platform?: string, versions?: { node?: string } }} [proc]
+ * @returns {Runtime}
+ */
+export function readRuntime(proc = process) {
+  return {
+    nodeVersion: proc.versions?.node,
+    platform: proc.platform
+  };
+}
+
+/**
  * FailStage enum, in array form so the validator can `.includes(null)`
  * directly against either a string or `null` (preflight).
  * @type {ReadonlyArray<FailStage>}
@@ -86,7 +108,8 @@ function isErrorCode(code) {
 }
 
 /**
- * Shared fields every payload carries, regardless of event. `anonymousId` is
+ * The caller-supplied fields every payload carries, regardless of event —
+ * {@link Runtime} is added by the builder on top of these. `anonymousId` is
  * optional at the schema level: consent.js generates and threads it on opt-in,
  * but the schema only enforces shape and stays decoupled from generation.
  * @typedef {object} BasePayloadInput
@@ -123,13 +146,19 @@ function isErrorCode(code) {
  */
 
 /**
+ * The caller-supplied base plus the ambient {@link Runtime} the builder
+ * attaches itself.
+ * @typedef {BasePayloadInput & Runtime} BasePayload
+ */
+
+/**
  * Outgoing payload for `install_success` — base + `event`.
- * @typedef {BasePayloadInput & { event: 'install_success' }} SuccessPayload
+ * @typedef {BasePayload & { event: 'install_success' }} SuccessPayload
  */
 
 /**
  * Outgoing payload for `install_fail` — base + fail fields + `event`.
- * @typedef {BasePayloadInput & FailPayloadFields & { event: 'install_fail' }} FailPayload
+ * @typedef {BasePayload & FailPayloadFields & { event: 'install_fail' }} FailPayload
  */
 
 /** @typedef {SuccessPayload | FailPayload} TelemetryPayload */
@@ -181,18 +210,21 @@ function requireFiniteNumber(name, value) {
  * @overload
  * @param {'install_success'} event
  * @param {PayloadInput} input
+ * @param {Runtime} [runtime]
  * @returns {SuccessPayload}
  */
 /**
  * @overload
  * @param {'install_fail'} event
  * @param {PayloadInput} input
+ * @param {Runtime} [runtime]
  * @returns {FailPayload}
  */
 /**
  * @overload
  * @param {TelemetryEvent} event
  * @param {PayloadInput} input
+ * @param {Runtime} [runtime]
  * @returns {TelemetryPayload}
  */
 /**
@@ -200,13 +232,21 @@ function requireFiniteNumber(name, value) {
  * only fields from {@link BasePayloadInput} (and, for fail, {@link FailPayloadFields})
  * appear on the result.
  *
+ * `nodeVersion` and `platform` are deliberately NOT read from `input`. They
+ * describe the machine rather than the user's choices, so the builder reads
+ * them off the process itself. That is also what keeps them safe: they are
+ * the only allowlisted fields a key-based filter would wave through, so
+ * sourcing them from the process — rather than validating what a caller
+ * passed — is the whole guarantee.
+ *
  * @param {TelemetryEvent} event
  * @param {PayloadInput} input
+ * @param {Runtime} [runtime] Test seam; defaults to the running process.
  * @returns {TelemetryPayload}
  * @throws {SchemaError} for an invalid enum value, missing required field,
  *   or wrong type.
  */
-export function buildPayload(event, input) {
+export function buildPayload(event, input, runtime = readRuntime()) {
   requireOneOf('event', event, EVENT_NAMES);
   requireString('cliVersion', input.cliVersion);
   requireOneOf('kitId', input.kitId, KIT_IDS);
@@ -217,9 +257,11 @@ export function buildPayload(event, input) {
     requireString('anonymousId', input.anonymousId);
   }
 
-  /** @type {BasePayloadInput} */
+  /** @type {BasePayload} */
   const base = {
     cliVersion: input.cliVersion,
+    nodeVersion: runtime.nodeVersion,
+    platform: runtime.platform,
     kitId: input.kitId,
     dbChoice: input.dbChoice,
     packageManager: input.packageManager,
@@ -263,8 +305,8 @@ export function allowedFields(event) {
 
 /** @type {ReadonlyArray<keyof SuccessPayload>} */
 const SUCCESS_FIELDS = Object.freeze([
-  'event', 'cliVersion', 'anonymousId', 'kitId', 'dbChoice',
-  'packageManager', 'durationMs'
+  'event', 'cliVersion', 'nodeVersion', 'platform', 'anonymousId', 'kitId',
+  'dbChoice', 'packageManager', 'durationMs'
 ]);
 
 /** @type {ReadonlyArray<keyof FailPayload>} */
