@@ -120,6 +120,9 @@ describe('core/steps/admin-user', function () {
       }, { run }),
       (err) => {
         assert.equal(err.errorCode, 'admin_user_failed');
+        // This step is the first to boot the project's Apostrophe, so its
+        // output is the only clue to a startup failure — carry it through.
+        assert.equal(err.details, 'Database connection lost');
         return true;
       }
     );

@@ -6,6 +6,32 @@
 
 import { spawn } from 'node:child_process';
 
+/** Default number of trailing lines {@link tail} keeps. */
+const TAIL_LINES = 30;
+
+/**
+ * Last lines of a child's output, for showing the user why a step failed.
+ * A failing `node app.js` or `npm install` can emit a great deal; the end is
+ * where the actual error is.
+ *
+ * @param {string} [output]  Combined or single stream.
+ * @param {number} [lines]
+ * @returns {string} Trimmed tail, prefixed with an elision marker when cut.
+ *   Empty string when there is nothing to show.
+ */
+export function tail(output, lines = TAIL_LINES) {
+  const trimmed = (output ?? '').trimEnd();
+  if (!trimmed) {
+    return '';
+  }
+  const all = trimmed.split(/\r?\n/);
+  if (all.length <= lines) {
+    return trimmed;
+  }
+  return [ `… (${all.length - lines} earlier lines omitted)`, ...all.slice(-lines) ]
+    .join('\n');
+}
+
 /**
  * @param {string} command            Executable name/path (no shell parsing).
  * @param {string[]} [args]           Args passed verbatim.
