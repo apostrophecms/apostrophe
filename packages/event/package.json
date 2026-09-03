@@ -20,10 +20,10 @@
     "access": "public"
   },
   "dependencies": {
-    "dayjs": "^1.10.7"
+    "dayjs": "^1.11.23"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^"
   }
 }

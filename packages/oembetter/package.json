@@ -27,15 +27,15 @@
     "url": "https://github.com/apostrophecms/oembetter/issues"
   },
   "dependencies": {
-    "async": "^0.9.0",
-    "cheerio": "^1.1.0",
-    "fast-xml-parser": "^5.7.0",
+    "async": "^0.9.2",
+    "cheerio": "^1.2.0",
+    "fast-xml-parser": "^5.11.1",
     "urls": "0.0.4"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.5"
+    "mocha": "^11.8.0"
   },
   "apostropheTestConfig": {
     "requiresMongo": false

@@ -25,16 +25,16 @@
   "license": "MIT",
   "devDependencies": {
     "apostrophe": "workspace:^",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.5"
+    "mocha": "^11.8.0"
   },
   "dependencies": {
-    "@vitejs/plugin-vue": "^5.1.4",
-    "autoprefixer": "^10.4.20",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "autoprefixer": "^10.5.4",
     "fs-extra": "^7.0.1",
     "postcss-load-config": "^6.0.1",
     "postcss-viewport-to-container-toggle": "workspace:^",
-    "vite": "^6.4.2"
+    "vite": "^6.4.3"
   }
 }
