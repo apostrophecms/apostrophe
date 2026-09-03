@@ -52,6 +52,18 @@ const FORBIDDEN_INPUTS = Object.freeze({
   stack: 'Error: boom\n    at /home/jane/secret-startup/...'
 });
 
+/**
+ * `nodeVersion` and `platform` are ON the allowlist, so unlike everything in
+ * FORBIDDEN_INPUTS they cannot be rejected by key name — a caller passing
+ * them would sail through a key-based filter. The schema reads both off the
+ * process instead of the input, so these values must be overwritten, not
+ * merely dropped. This is the one shape of leak the allowlist alone can't stop.
+ */
+const POISONED_RUNTIME = Object.freeze({
+  nodeVersion: '/home/jane/.nvm/versions/node/v24.4.1',
+  platform: 'jane-macbook.internal.example.com'
+});
+
 const VALID_PARTIAL = Object.freeze({
   kitId: 'apostrophe-astro-demo',
   dbChoice: 'sqlite',
@@ -93,7 +105,8 @@ describe('PII firewall — install_success', function () {
   it('a payload poisoned with every excluded field still emits the §7 keys only', async function () {
     const sent = await emitAndCapture('install_success', {
       ...VALID_PARTIAL,
-      ...FORBIDDEN_INPUTS
+      ...FORBIDDEN_INPUTS,
+      ...POISONED_RUNTIME
     });
     assert.equal(sent.length, 1);
     const allowed = new Set(allowedFields('install_success'));
@@ -107,12 +120,17 @@ describe('PII firewall — install_success', function () {
     for (const k of Object.keys(FORBIDDEN_INPUTS)) {
       assert.equal(k in sent[0], false, `${k} leaked`);
     }
+    // The allowlisted runtime fields survive, but carry the process's values
+    // rather than the caller's.
+    assert.equal(sent[0].nodeVersion, process.versions.node);
+    assert.equal(sent[0].platform, process.platform);
   });
 
   it('the JSON serialized wire payload contains none of the forbidden VALUES', async function () {
     const sent = await emitAndCapture('install_success', {
       ...VALID_PARTIAL,
-      ...FORBIDDEN_INPUTS
+      ...FORBIDDEN_INPUTS,
+      ...POISONED_RUNTIME
     });
     const wire = JSON.stringify(sent[0]);
     const checks = [
@@ -136,7 +154,9 @@ describe('PII firewall — install_success', function () {
       'github.com:secret-org',
       'ENOENT: no such file',
       '.npm-cache/locks',
-      'Error: boom'
+      'Error: boom',
+      '.nvm/versions',
+      'jane-macbook.internal'
     ];
     for (const needle of checks) {
       assert.equal(
@@ -152,7 +172,8 @@ describe('PII firewall — install_fail', function () {
     const sent = await emitAndCapture('install_fail', {
       ...VALID_FAIL_PARTIAL,
       errorCode: 'EACCES /home/jane/.npm: permission denied',
-      ...FORBIDDEN_INPUTS
+      ...FORBIDDEN_INPUTS,
+      ...POISONED_RUNTIME
     });
     assert.equal(sent.length, 1);
     const allowed = new Set(allowedFields('install_fail'));
@@ -168,7 +189,8 @@ describe('PII firewall — install_fail', function () {
     const sent = await emitAndCapture('install_fail', {
       ...VALID_FAIL_PARTIAL,
       errorCode: 'EACCES /home/jane/.npm: permission denied',
-      ...FORBIDDEN_INPUTS
+      ...FORBIDDEN_INPUTS,
+      ...POISONED_RUNTIME
     });
     const wire = JSON.stringify(sent[0]);
     assert.equal(wire.includes('/home/jane'), false);

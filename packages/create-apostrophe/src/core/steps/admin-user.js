@@ -10,7 +10,7 @@
 // re-interpreting a username like `--role=guest` as a flag — without it,
 // the task would create a different user with a different role than asked.
 
-import { run as defaultRun } from '../spawn.js';
+import { run as defaultRun, tail } from '../spawn.js';
 import { StageError } from '../errors.js';
 
 /** @typedef {import('../../index.js').AdminAccount} AdminAccount */
@@ -76,14 +76,30 @@ export async function addAdminUser(
       cause: new Error(
         `@apostrophecms/user:change-password exited with code ${cp.code} ` +
         '(recovery from duplicate @apostrophecms/user:add)'
-      )
+      ),
+      details: taskOutput(cp)
     });
   }
 
   throw new StageError(STAGE, {
     code: 'admin_user_failed',
-    cause: new Error(`@apostrophecms/user:add exited with code ${add.code}`)
+    cause: new Error(`@apostrophecms/user:add exited with code ${add.code}`),
+    details: taskOutput(add)
   });
+}
+
+/**
+ * What the task actually printed. This step is the first thing that boots the
+ * project's own Apostrophe — every earlier step only clones, writes files, or
+ * talks to the database adapter directly — so a plain startup failure lands
+ * here as `admin_user_failed`. Without the child's own output there is
+ * nothing to go on but the stage name.
+ *
+ * @param {{ stdout?: string, stderr?: string }} result
+ * @returns {string}
+ */
+function taskOutput({ stdout, stderr }) {
+  return tail([ stderr, stdout ].filter(Boolean).join('\n'));
 }
 
 /**
