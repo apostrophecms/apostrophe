@@ -3,7 +3,7 @@
 
   <h1>@apostrophecms/apostrophe-astro</h1>
   <p>
-    <a aria-label="Apostrophe logo" href="https://v3.docs.apostrophecms.org">
+    <a aria-label="Apostrophe logo" href="https://apostrophecms.com/docs/">
       <img src="https://img.shields.io/badge/MADE%20FOR%20ApostropheCMS-000000.svg?style=for-the-badge&logo=Apostrophe&labelColor=6516dd">
     </a>
     <a aria-label="Join the community on Discord" href="http://chat.apostrophecms.org">
@@ -27,12 +27,22 @@
     - [`includeResponseHeaders`](#includeresponseheaders)
     - [`excludeRequestHeaders`](#excluderequestheaders)
     - [`forwardHeaders` (deprecated)](#forwardheaders-deprecated)
-    - [Mapping Apostrophe templates to Astro components](#mapping-apostrophe-templates-to-astro-components)
-    - [Mapping Apostrophe widgets to Astro components](#mapping-apostrophe-widgets-to-astro-components)
-    - [Creating the `[...slug.astro]` component and fetching Apostrophe data](#creating-the-slugastro-component-and-fetching-apostrophe-data)
-    - [Creating Astro page components](#creating-astro-page-components)
-    - [Creating Astro widget components](#creating-astro-widget-components)
-    - [Accessing image and URLs](#accessing-image-and-urls)
+    - [`proxyRoutes` (optional)](#proxyroutes-optional)
+    - [`aposPrefix` (optional)](#aposprefix-optional)
+    - [`staticBuild` (optional)](#staticbuild-optional)
+  - [Mapping Apostrophe templates to Astro components](#mapping-apostrophe-templates-to-astro-components)
+    - [How Apostrophe template names work](#how-apostrophe-template-names-work)
+    - [Special template names](#special-template-names)
+  - [Mapping Apostrophe widgets to Astro components](#mapping-apostrophe-widgets-to-astro-components)
+  - [Creating the `[...slug.astro]` component and fetching Apostrophe data](#creating-the-slugastro-component-and-fetching-apostrophe-data)
+    - [Understanding `AposLayout`](#understanding-aposlayout)
+    - [Understanding `AposTemplate`](#understanding-apostemplate)
+  - [Creating Astro page components](#creating-astro-page-components)
+    - [Understanding the `AposArea` component](#understanding-the-aposarea-component)
+  - [Creating Astro widget components](#creating-astro-widget-components)
+    - [Placeholders are important in widgets that use them](#placeholders-are-important-in-widgets-that-use-them)
+    - [Remember, relationship properties might not be populated](#remember-relationship-properties-might-not-be-populated)
+  - [Accessing image and URLs](#accessing-image-and-urls)
   - [What to change in your Apostrophe project](#what-to-change-in-your-apostrophe-project)
   - [Starting up your combined project](#starting-up-your-combined-project)
   - [Logging in](#logging-in)
@@ -41,8 +51,11 @@
   - [Reserved routes](#reserved-routes)
   - [What about widget players?](#what-about-widget-players)
   - [`aposSetQueryParameter`: working with query parameters](#apossetqueryparameter-working-with-query-parameters)
+  - [Other helper functions](#other-helper-functions)
   - [What about Vue, React, SvelteJS, etc.?](#what-about-vue-react-sveltejs-etc)
   - [A note on production use](#a-note-on-production-use)
+  - [Static builds](#static-builds)
+  - [Output and logging](#output-and-logging)
   - [Debugging](#debugging)
     - [Widget Render Hook](#widget-render-hook)
   - [Enabling the `render-area` option to ApostropheCMS REST APIs](#enabling-the-render-area-option-to-apostrophecms-rest-apis)
@@ -85,22 +98,23 @@ The best way to keep everything consistent is to build these in `frontend` and `
 To get you started quickly, we recommend one of our official Astro starter kits:
 
 * [apostrophecms/starter-kit-astro-essentials](https://github.com/apostrophecms/starter-kit-astro-essentials) is best for a clean start with as little extra code as possible.
-* [apostrophecms/starter-kit-astro-apollo](https://github.com/apostrophecms/starter-kit-astro-apollo) is a full-fledged project with a blog, a design system and other nice touches.
-* [apostrophecms/starter-kit-astro-apollo-pro](https://github.com/apostrophecms/starter-kit-astro-apollo-pro) is great for those who expect to use our [Pro features](https://apostrophecms.com/pro) right away, but keep in mind you can add those modules to any project later.
+* [apostrophecms/astro-public-demo](https://github.com/apostrophecms/astro-public-demo) is a full-fledged project with a blog, custom widgets, and other nice touches. It can also be loaded with the same data as found in our online [public demo](https://demo.apostrophecms.com/?utm_source=github&utm_medium=readme&utm_campaign=apostrophe-astro)
 
-> 💡 These combined Astro + Apostrophe projects are best launched by forking the repository, not using our CLI. Follow the links to see how to fork these projects and get started on your own.
+> 💡 These combined Astro + Apostrophe projects can be launched by using `npm create apostrophe@latest` and selecting either from the available beginning projects.
 
 You can also adapt your own existing ApostropheCMS project as explained below.
 
 > Note that this module, `@apostrophecms/apostrophe-astro`, is meant to be installed as a dependency of your *Astro project*,
 > not your Apostrophe project.
 
-This module is currently designed for use with Astro's `output: 'server'` setting (SSR mode), so that you can edit your content
-directly on the page. Support for export as a static site is under consideration for the future.
+This module is primarily designed for use with Astro's `output: 'server'` setting (SSR mode), so that you can edit your content
+directly on the page. It also supports `output: 'static'` for publishing a fully static build of your site — see
+[Static builds](#static-builds) below. Content editing always requires a running Apostrophe backend, so a static build
+is a publishing target, not a replacement for the SSR development workflow.
 
 ## Installation
 
-If you did not fork the sample projects above, you will need to install this
+If you are not starting from one of the projects above, you will need to install this
 module into your Astro project. Install this module in your
 **Astro project**, not your ApostropheCMS project:
 
@@ -109,7 +123,10 @@ cd my-astro-project
 npm install @apostrophecms/apostrophe-astro
 ```
 
-*Astro 3.x and 4.x are both supported.*
+*Astro 5.x, 6.x and 7.x are supported (`astro >=5.0.0 <8.0.0`). Node.js 22.19 or newer is required.*
+
+> If you are upgrading from an earlier release of this integration, see [MIGRATION.md](./MIGRATION.md) for
+> the Astro v6/v7 notes, the deprecated `lib/` import paths, and the removal of the private Vite virtual modules.
 
 ## Security
 
@@ -156,20 +173,20 @@ export default defineConfig({
       ],
       proxyRoutes: [
         // Custom URLs that should be proxied to Apostrophe.
-        // Note that all of `/api/v1` is already proxied, so
+        // Note that all of `/api/v1` is already proxied, and literal
+        // content files declared by Apostrophe modules (robots.txt,
+        // sitemap.xml, llms.txt, ...) are routed automatically, so
         // this is usually unnecessary
       ]
     })
-  ],
-  vite: {
-    ssr: {
-      // Do not externalize the @apostrophecms/apostrophe-astro plugin, we need
-      // to be able to use virtual: URLs there
-      noExternal: [ '@apostrophecms/apostrophe-astro' ],
-    }
-  }
+  ]
 });
 ```
+
+> Earlier versions of this document asked you to add a `vite.ssr.noExternal` entry for
+> `@apostrophecms/apostrophe-astro` to your own config. The integration now applies that itself
+> (for both the SSR and prerender Vite environments), so you no longer need it. Leaving an existing
+> entry in place is harmless.
 
 ## Options
 
@@ -220,10 +237,55 @@ By default, all headers are forwarded except those specified in this array.
 
 This option has been replaced by `includeResponseHeaders` which provides clearer naming for its purpose. If both options are provided, `includeResponseHeaders` takes precedence. `forwardHeaders` will be removed in a future version.
 
-### Mapping Apostrophe templates to Astro components
+### `proxyRoutes` (optional)
+
+An array of additional Astro route patterns that should be proxied straight through to Apostrophe rather than
+rendered as Astro pages. All of `/api/v1` is proxied already (see [Reserved routes](#reserved-routes)), and since
+v1.14.0 literal content files declared by your Apostrophe modules — `robots.txt`, `sitemap.xml`, `llms.txt` and
+friends — are routed automatically, so this option is usually unnecessary. It remains available for any other URL
+you want Apostrophe to answer directly.
+
+This option has no effect in a static build, where there is no server to proxy through.
+
+### `aposPrefix` (optional)
+
+A URL path prefix matching the `prefix` option of your Apostrophe backend, for example `'/my-repo'`. When omitted it
+is inferred from Astro's own `base` config, with any trailing slashes removed. This option can be overridden at
+runtime with the `APOS_PREFIX` environment variable, which takes precedence over both the option and `base`.
+
+### `staticBuild` (optional)
+
+Options controlling a static build, used when your Astro config sets `output: 'static'`. They are ignored in SSR mode.
+Every one of them can be overridden by an environment variable, so that a CI or deployment pipeline can change the
+behaviour without editing code — the environment variable always wins.
+
+| Option | Default | Environment variable | Purpose |
+|---|---|---|---|
+| `attachments` | `true` | `APOS_SKIP_ATTACHMENTS` (`1` disables, `0` enables) | Copy attachments into the build output. |
+| `attachmentSizes` | all sizes | `APOS_ATTACHMENT_SIZES` (comma-separated, e.g. `max,full`) | Restrict output to specific image sizes. |
+| `attachmentSkipSizes` | `['original']` | `APOS_ATTACHMENT_SKIP_SIZES` (comma-separated) | Image sizes to exclude. |
+| `attachmentFilter` | `'all'` | `APOS_ATTACHMENT_FILTER` | `'all'` writes both uploadfs attachments and pretty URL files; `'prettyOnly'` skips the uploadfs attachments, which is what you want when those are served by a CDN. Pretty URL files are always written because they are backend-served. No effect when `attachments` is `false`. |
+| `attachmentScope` | `'used'` | `APOS_ATTACHMENT_SCOPE` | `'used'` limits output to attachments referenced by the pages actually built; `'all'` includes every attachment in the database. |
+
+```js
+apostrophe({
+  aposHost: 'http://localhost:3000',
+  widgetsMapping: './src/widgets',
+  templatesMapping: './src/templates',
+  staticBuild: {
+    attachmentFilter: 'prettyOnly',
+    attachmentSizes: [ 'max', 'full' ]
+  }
+})
+```
+
+A static build still talks to Apostrophe at build time: `APOS_HOST` (or `aposHost`) and `APOS_EXTERNAL_FRONT_KEY`
+must both be set, or the attachment and literal-content steps are skipped silently.
+
+## Mapping Apostrophe templates to Astro components
 
 Since the front end of our project is entirely Astro, we'll need to create Astro components corresponding to each
-template that Apostrophe would normally render with Nunjucks.
+template that Apostrophe would normally render with JSX or Nunjucks.
 
 Create your template mapping in `src/templates/index.js` file.
 As shown above, this file path must then be added to your `astro.config.mjs` file,
@@ -248,7 +310,7 @@ const templateComponents = {
 export default templateComponents;
 ```
 
-#### How Apostrophe template names work
+### How Apostrophe template names work
 
 For ordinary page templates, like the home page or a typical "default" page type
 in an Apostrophe project, you can just specify the Apostrophe module name.
@@ -265,7 +327,7 @@ for ordinary page types.
 For the "404 Not Found" page, use `@apostrophecms/page:notFound`, which is
 the standard name for this template in ApostropheCMS.
 
-#### Special template names
+### Special template names
 
 The integration comes with two additional special template names that can be mapped to Astro templates.
 You should not add a module name to these special names:
@@ -276,7 +338,7 @@ You should not add a module name to these special names:
 See below for an example Astro template for the `@apostrophe-cms/home-page` type. But first,
 let's look at widgets.
 
-### Mapping Apostrophe widgets to Astro components
+## Mapping Apostrophe widgets to Astro components
 
 Similar to Astro page components, Astro widget components replace Apostrophe's usual
 widget rendering.
@@ -314,12 +376,12 @@ Note that the Apostrophe widget name (on the left) is the name of your widget mo
 the `-widget` part.
 
 > [!TIP]
-> The `@apostrophecms/layout-widget` needs some extra configuration and addition to areas in your ApostropheCMS project. You can read more in the [documentation](https://docs.apostrophecms.org/guide/core-widgets.html#layout-widget).
+> The `@apostrophecms/layout-widget` needs some extra configuration and addition to areas in your ApostropheCMS project. You can read more in the [documentation](https://apostrophecms.com/docs/guide/core-widgets.html#layout-widget).
 
 The naming of your Astro widget templates is up to you. The above convention is just
 a suggestion.
 
-### Creating the `[...slug.astro]` component and fetching Apostrophe data
+## Creating the `[...slug.astro]` component and fetching Apostrophe data
 
 Since Apostrophe is responsible for managing URLs to content, including creating new content and pages
 on the fly, you will only need one top-level Astro page component: the `[...slug].astro` route.
@@ -331,7 +393,7 @@ Your `[...slug].astro` component should look like this:
 
 ```js
 ---
-import { aposPageFetch } from '@apostrophecms/apostrophe-astro/helpers/server';
+import aposPageFetch from '@apostrophecms/apostrophe-astro/lib/aposPageFetch.js';
 import AposLayout from '@apostrophecms/apostrophe-astro/components/layouts/AposLayout.astro';
 import AposTemplate from '@apostrophecms/apostrophe-astro/components/AposTemplate.astro';
 
@@ -370,7 +432,7 @@ headers and footers, etc.
 Any other data that your custom Apostrophe code attaches to `req.data` is also
 available here.
 
-#### Understanding `AposLayout`
+### Understanding `AposLayout`
 
 This integration comes with a full managed global layout, replacing the `outerLayout.html`
 used in Nunjucks page templates.
@@ -401,13 +463,13 @@ This layout component will automatically manage the switch between support for
 the editing UI if a user is logged in and a simpler "Run Layout" for all other
 page requests.
 
-#### Understanding `AposTemplate`
+### Understanding `AposTemplate`
 
 The role of `AposTemplate` is to automatically find the right Astro component
 to render based on the template mapping you created earlier. It accepts one
 prop, the full `aposData` object.
 
-### Creating Astro page components
+## Creating Astro page components
 
 Next we'll look at how to write Astro page components, such as the
 `src/templates/HomePage.astro` file mentioned above.
@@ -435,7 +497,7 @@ const { main } = page;
 Notice that we receive the `page` object from Apostrophe, which gives us
 access to `page.title`. This is similar to `data.page` in a Nunjucks template.
 
-#### Understanding the `AposArea` component
+### Understanding the `AposArea` component
 
 This component allows Astro to render Apostrophe areas, and provides a
 standard Apostrophe editing experience when doing so. Astro will automatically
@@ -449,7 +511,7 @@ for page layout.
 Note that additional props can be passed to the `AposArea` component and will be made
 accessible to widget components.
 
-### Creating Astro widget components
+## Creating Astro widget components
 
 Earlier we created a mapping from Apostrophe widget names to Astro components.
 Let's take a look at how to implement these.
@@ -476,7 +538,7 @@ const src = placeholder ?
 <img class="img-widget" {src} />
 ```
 
-#### Placeholders are important in widgets that use them
+### Placeholders are important in widgets that use them
 
 Why are we checking for `aposPlaceholder`? Apostrophe's `@apostrophecms/image`
 widget displays a placeholder image until the user clicks the edit pencil to
@@ -485,18 +547,18 @@ this to be the case. So we need to provide our own placeholder rendering.
 
 In this case, a suitably named file must exist in `public/images` in our Astro project.
 
-#### Remember, relationship properties might not be populated
+### Remember, relationship properties might not be populated
 
 It is always possible that the image associated with an image widget has
 been archived. The `?.` syntax is a simple way to avoid a 500 error
 in such a situation. You may wish to add a more sophisticated fallback.
 
-### Accessing image and URLs
+## Accessing image and URLs
 
 Properties like `.attachment._urls['full']` exist on all image pieces,
 while properties like `.attachment._url` exist on non-image attachments
 such as PDFs. For more information, see
-the [attachment field format](https://v3.docs.apostrophecms.org/reference/api/field-formats.html#attachment).
+the [attachment field format](https://apostrophecms.com/docs/reference/api/field-formats.html#attachment).
 
 ## What to change in your Apostrophe project
 
@@ -571,6 +633,12 @@ As this integration proxies certain Apostrophe endpoints, there are some routes 
 * `/uploads/[...slug]` for serving Apostrophe uploaded assets
 * `/api/v1/[...slug]` and `/[locale]/api/v1/[...slug]` for Apostrophe API endpoints
 * `/login` and `/[locale]/login` for the login page
+
+In addition, literal content files declared by your Apostrophe modules — `robots.txt`, `sitemap.xml`, `llms.txt`
+and any others — are recognised at request time by a middleware and sent to the raw proxy instead of the page
+renderer. Since v1.14.0 you no longer need to list these individually in `proxyRoutes`.
+
+These routes exist in SSR mode only. A static build injects none of them.
 
 As all Apostrophe API endpoints are proxied, you can expose new api routes as usual in your Apostrophe modules, and be able to request them through your Astro application.
 Those proxies are forwarding all of the original request headers, such as cookies, so that Apostrophe login works normally.
@@ -702,6 +770,30 @@ While you can get the same result by manipulating `Astro.url` yourself,
 you'll be able to avoid the confusing presence of query parameters
 like `aposMode` by using this convenient feature.
 
+## Other helper functions
+
+`aposSetQueryParameter` is one of a number of helpers this package exports. They are split into two entry points
+according to where they can safely run.
+
+`@apostrophecms/apostrophe-astro/helpers/universal` — pure functions, usable in both server code and browser
+scripts:
+
+* `aposSetQueryParameter`, `buildPageUrl`, `getFilterBaseUrl` — URL and query string construction
+* `slugify` — the same slug rules Apostrophe uses
+* `stylesAttributes`, `stylesElements` — render the styles system's output for a document or widget
+* `getAttachmentUrl`, `getAttachmentSrcset`, `getFocalPoint`, `getWidth`, `getHeight` — attachment and image helpers
+
+`@apostrophecms/apostrophe-astro/helpers/server` — server only, for Astro frontmatter, endpoints and prerendering.
+These depend on the generated integration config and on Node internals, so do not import them from client-side
+scripts:
+
+* `aposFetch` — an authenticated fetch against your Apostrophe backend
+* `getAposHost`, `isStaticBuild` — resolved integration state
+* `getAllStaticPaths`, `getAllUrlMetadata`, `getLocales` — see [Static builds](#static-builds)
+
+Importing these from their old `lib/` paths still works but is deprecated; see [MIGRATION.md](./MIGRATION.md) for
+the mapping.
+
 ## What about Vue, React, SvelteJS, etc.?
 
 While not shown directly in the examples above, **Astro can import components
@@ -723,6 +815,49 @@ deal of difference between these and `npm run dev`, but there is less
 overhead and less information exposed to the public, so we recommend following
 this best practice.
 
+## Static builds
+
+Setting `output: 'static'` in your Astro config switches the integration into static mode. Instead of proxying
+requests to Apostrophe at runtime, it fetches everything at build time and writes a plain directory of files you
+can host anywhere.
+
+In static mode the integration does not inject the proxy routes at all — there is no server to proxy through — so
+`/login` and the admin UI are not available in the published output. Editing continues to happen against your SSR
+development site; the static build is what you publish.
+
+Your `[...slug].astro` supplies the list of pages through Astro's `getStaticPaths`:
+
+```js
+---
+import { getAllStaticPaths } from '@apostrophecms/apostrophe-astro/helpers/server';
+
+export async function getStaticPaths() {
+  return getAllStaticPaths({
+    aposHost: process.env.APOS_HOST,
+    aposExternalFrontKey: process.env.APOS_EXTERNAL_FRONT_KEY
+  });
+}
+---
+```
+
+`getAllStaticPaths` fetches the supported locales from Apostrophe, collects URL metadata for each non-private
+locale, and returns a flat array of `{ params, props }` entries ready for Astro. Two lower-level helpers are
+exported alongside it from the same entry point: `getLocales`, and `getAllUrlMetadata` for a single locale.
+
+If a component needs to behave differently depending on the mode, import `isStaticBuild` from
+`@apostrophecms/apostrophe-astro/helpers/server`.
+
+After Astro finishes writing pages, the integration's `astro:build:done` hook writes two more things into the
+output directory: literal content declared by your Apostrophe modules (`robots.txt`, `sitemap.xml`, `llms.txt`
+and so on) and the attachment files your pages reference. What gets copied is controlled by the
+[`staticBuild`](#staticbuild-optional) option and its environment variables. Both steps need `APOS_HOST` and
+`APOS_EXTERNAL_FRONT_KEY` to be set at build time and are skipped silently if either is missing.
+
+> [!TIP]
+> If your project sets `security.allowedDomains` in `astro.config.mjs`, restrict it to SSR. Astro v6 and v7 read
+> request headers during prerendering, which produces a spurious warning for every page built. See
+> [MIGRATION.md](./MIGRATION.md) for the details.
+
 ## Output and logging
 
 Everything this integration prints is Astro's output, not Apostrophe's: it runs in the Astro process, so it never travels through the Apostrophe log pipeline and is not affected by the `log` option of your Apostrophe project. Warnings and errors are written to the console with a consistent `[apostrophe-astro]` prefix and are colored only when the terminal accepts color, honoring `NO_COLOR`, `FORCE_COLOR` and `--no-color` like Astro itself.
@@ -732,30 +867,17 @@ Everything this integration prints is Astro's output, not Apostrophe's: it runs 
 In most cases, Astro prints helpful error messages directly in the browser
 when in a development environment.
 
-However, if you receive the following error:
+The integration writes its resolved configuration to real files under
+`node_modules/.apostrophe-astro-config/` (`config.js` and `doctypes.js`) during `astro:config:setup`, and
+registers Vite aliases for them. Static builds additionally cache data in `node_modules/.apostrophe-astro-static/`.
 
-```
-Only URLs with a scheme in: file and data are supported by the default ESM
-loader. Received protocol 'virtual:'
-```
+If you see an import of `apostrophe-astro-config/config` or `apostrophe-astro-config/doctypes` fail to resolve,
+those generated files are missing or stale — most often after switching branches or removing `node_modules`
+partially. Reinstall or clear the two directories above and restart the dev server so `astro:config:setup` runs again.
 
-Then you most likely left out this part of the above `astro.config.mjs` file:
-
-```javascript
-export default defineConfig({
-  // ... other settings above here ...
-  vite: {
-    ssr: {
-      // Do not externalize the @apostrophecms/apostrophe-astro plugin, we need
-      // to be able to use virtual: URLs there
-      noExternal: [ '@apostrophecms/apostrophe-astro' ],
-    }
-  }
-});
-```
-
-Without this logic, the `virtual:` URLs used to access configuration information
-will cause the build to fail.
+> Earlier versions of this package used private Vite virtual modules named `virtual:apostrophe-config` and
+> `virtual:apostrophe-doctypes`. They have been removed. If your project imported either of them directly, see
+> [MIGRATION.md](./MIGRATION.md).
 
 ### Widget Render Hook
 
@@ -859,7 +981,7 @@ export default {
 This file extends the default column widget to define which content widgets editors can add inside each column. Avoid nesting layout widgets inside other layouts to prevent excessive DOM complexity and performance issues.
 
 > [!TIP]
-> You can read more about configuring and using the layout-widget in the [documentation](https://docs.apostrophecms.org/guide/core-widgets.html#layout-widget).
+> You can read more about configuring and using the layout-widget in the [documentation](https://apostrophecms.com/docs/guide/core-widgets.html#layout-widget).
 
 ### Frontend updates
 The `@apostrophecms/apostrophe-astro` package contains templates for the layout widget and column, but like the other widgets, they have to be mapped to the corresponding Apostrophe widgets.
