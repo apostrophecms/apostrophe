@@ -250,7 +250,7 @@ module.exports = self => {
 
       if (!duplicatedDocs.length) {
         const logs = Object.values(failedLog);
-        reporting.end(true, logs);
+        await reporting.end(true, logs);
 
         const notifMsg = `aposImportExport:${logs.length ? 'importFailedForSome' : 'importSucceed'}`;
 
@@ -350,6 +350,11 @@ module.exports = self => {
       await jobManager.setTotal(job, total);
 
       return {
+        // Every one of these is a database write, so every caller must await
+        // it. Dropping the promise lets an import resolve while it is still
+        // reporting its own progress, and whoever reads the job next — the
+        // progress display, or the client the import route answered — sees
+        // counters that are short by however many writes are still in flight.
         reporting: {
           success(n) {
             return jobManager.success(job, n);
@@ -454,7 +459,7 @@ module.exports = self => {
             aposLocale,
             detail: req.t('aposImportExport:typeUnknown', { type })
           };
-          reporting.failure();
+          await reporting.failure();
         }
 
         checkedTypes.add(type);
@@ -485,7 +490,7 @@ module.exports = self => {
             aposLocale,
             detail: req.t('aposImportExport:errorCantImportType', { type })
           };
-          reporting.failure();
+          await reporting.failure();
           continue;
         }
 
@@ -595,9 +600,9 @@ module.exports = self => {
               translate
             });
             await self.setImportedAt(doc);
-            reporting.success();
+            await reporting.success();
           } catch (error) {
-            reporting.failure();
+            await reporting.failure();
             failedIds.push(doc.aposDocId);
             failedLog[doc._id] = {
               _id: doc._id,
@@ -628,10 +633,10 @@ module.exports = self => {
           });
           if (inserted) {
             await self.setImportedAt(cloned);
-            reporting.success();
+            await reporting.success();
           }
         } catch (error) {
-          reporting.failure();
+          await reporting.failure();
           failedIds.push(cloned.aposDocId);
           failedLog[cloned._id] = {
             _id: cloned._id,
@@ -850,7 +855,7 @@ module.exports = self => {
             docIds
           });
           importedAttachments.push(attachmentInfo.attachment._id);
-          reporting.success();
+          await reporting.success();
         } catch (err) {
           self.apos.util.error(err);
           // Only register an error if no duplicated docs because
@@ -1135,7 +1140,7 @@ module.exports = self => {
         .find(format => format.label === formatLabel);
 
       if (!format) {
-        jobManager.failure(job);
+        await jobManager.failure(job);
         throw self.apos.error(`invalid format "${formatLabel}"`);
       }
 
@@ -1175,10 +1180,10 @@ module.exports = self => {
 
               try {
                 await self.insertOrUpdateAttachment(req, { attachmentInfo });
-                jobManager.success(job);
+                await jobManager.success(job);
                 importedAttachments.push(id);
               } catch (err) {
-                jobManager.failure(job);
+                await jobManager.failure(job);
                 failedLog[attachmentInfo.attachment._id] = {
                   _id: attachmentInfo.attachment._id,
                   aposDocId: attachmentInfo.attachment._id,
@@ -1213,9 +1218,9 @@ module.exports = self => {
           }
 
           await self.setImportedAt(doc);
-          jobManager.success(job);
+          await jobManager.success(job);
         } catch (err) {
-          jobManager.failure(job);
+          await jobManager.failure(job);
           failedIds.push(doc.aposDocId);
           if (!failedLog[doc._id]) {
             failedLog[doc._id] = {
