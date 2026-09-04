@@ -27,14 +27,14 @@
   },
   "devDependencies": {
     "apostrophe": "workspace:^",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.5",
-    "stylelint": "^16.0.0",
+    "mocha": "^11.8.0",
+    "stylelint": "^16.26.1",
     "stylelint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
-    "qrcode": "^1.5.0",
+    "qrcode": "^1.5.4",
     "thirty-two": "^1.0.2",
     "totp-generator": "0.0.13"
   }
