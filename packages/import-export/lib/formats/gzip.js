@@ -152,11 +152,20 @@ module.exports = {
 };
 
 async function extract(filepath, exportPath) {
-  if (fs.existsSync(exportPath)) {
+  // A directory on its own does not prove the extraction finished: it is
+  // created before any entry is written, so an interrupted run leaves one
+  // behind and every later attempt would treat it as complete. `aposDocs.json`
+  // is written by `output()` for every archive and is the first thing
+  // `input()` reads, so its presence is the marker of a usable extraction.
+  // Reuse still matters: the `overrideLocale` branch of `import()` calls
+  // `input()` a second time on the same archive and depends on it.
+  if (fs.existsSync(path.join(exportPath, 'aposDocs.json'))) {
     return;
   }
 
-  await fsp.mkdir(exportPath);
+  // `recursive` so a partial extraction's leftover directory is reused rather
+  // than throwing EEXIST.
+  await fsp.mkdir(exportPath, { recursive: true });
 
   const readStream = fs.createReadStream(filepath);
   const gunzip = zlib.createGunzip();
@@ -190,8 +199,15 @@ async function extract(filepath, exportPath) {
           .then(next)
           .catch(reject);
       } else {
-        stream.pipe(fs.WriteStream(path.join(exportPath, name)));
-        stream.on('end', next);
+        // Advance on the WRITE finishing, not on the source entry's `end`.
+        // `end` fires once the entry has been read out of the archive, while
+        // the destination may still be flushing, so gating on it let
+        // extraction resolve with files still partly (or not at all) on disk —
+        // an intermittent ENOENT/truncated read for whoever read them next.
+        const writeStream = fs.createWriteStream(path.join(exportPath, name));
+        writeStream.on('error', reject);
+        writeStream.on('finish', next);
+        stream.pipe(writeStream);
       }
     });
     extract.on('finish', resolve);
