@@ -43,6 +43,7 @@
   - [`aposSetQueryParameter`: working with query parameters](#apossetqueryparameter-working-with-query-parameters)
   - [What about Vue, React, SvelteJS, etc.?](#what-about-vue-react-sveltejs-etc)
   - [A note on production use](#a-note-on-production-use)
+  - [Output and logging](#output-and-logging)
   - [Debugging](#debugging)
     - [Widget Render Hook](#widget-render-hook)
   - [Enabling the `render-area` option to ApostropheCMS REST APIs](#enabling-the-render-area-option-to-apostrophecms-rest-apis)
@@ -85,10 +86,10 @@ The best way to keep everything consistent is to build these in `frontend` and `
 To get you started quickly, we recommend one of our official Astro starter kits:
 
 * [apostrophecms/starter-kit-astro-essentials](https://github.com/apostrophecms/starter-kit-astro-essentials) is best for a clean start with as little extra code as possible.
-* [apostrophecms/starter-kit-astro-apollo](https://github.com/apostrophecms/starter-kit-astro-apollo) is a full-fledged project with a blog, a design system and other nice touches.
-* [apostrophecms/starter-kit-astro-apollo-pro](https://github.com/apostrophecms/starter-kit-astro-apollo-pro) is great for those who expect to use our [Pro features](https://apostrophecms.com/pro) right away, but keep in mind you can add those modules to any project later.
+* [apostrophecms/astro-public-demo](https://github.com/apostrophecms/astro-public-demo) is a full-fledged project with a blog, custom widgets, and other nice touches. It can also be loaded with the same data as found in our online [public demo](https://demo.apostrophecms.com/?utm_source=github&utm_medium=readme&utm_campaign=apostrophe-astro)
 
-> 💡 These combined Astro + Apostrophe projects are best launched by forking the repository, not using our CLI. Follow the links to see how to fork these projects and get started on your own.
+
+> 💡 These combined Astro + Apostrophe projects can be launched by using `npm create apostrophe@ latest` and selecting either from the available beginning projects.
 
 You can also adapt your own existing ApostropheCMS project as explained below.
 
