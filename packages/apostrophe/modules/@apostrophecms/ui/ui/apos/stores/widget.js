@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
-import { ref, nextTick } from 'vue';
+import {
+  ref, computed, nextTick
+} from 'vue';
 
 export const useWidgetStore = defineStore('widget', () => {
   const refs = ref({});
@@ -8,6 +10,31 @@ export const useWidgetStore = defineStore('widget', () => {
   const focusedArea = ref(null);
   const hoveredWidget = ref(null);
   const hoveredNonForeignWidget = ref(null);
+  // Fields edited in place, per the `{% field %}` custom tag. They wear the
+  // same breadcrumb trail a widget does, so they take their turn here
+  const focusedField = ref(null);
+  const hoveredField = ref(null);
+
+  // The one thing on the page that wears a breadcrumb trail, since two labels
+  // on screen at once are two things to read and one of them is stale. The
+  // innermost thing the user is working in wins: the field of a widget over
+  // the widget it belongs to, and whatever they are editing over whatever the
+  // mouse is merely passing over, which is how widgets have always behaved
+  const labeled = computed(() => {
+    const order = [
+      [ 'field', focusedField.value ],
+      [ 'widget', focusedWidget.value ],
+      [ 'field', hoveredField.value ],
+      [ 'widget', hoveredWidget.value ]
+    ];
+    const winner = order.find(([ type, id ]) => id);
+    return winner
+      ? {
+        type: winner[0],
+        id: winner[1]
+      }
+      : null;
+  });
 
   function setFocusedArea(id, event) {
     if (event) {
@@ -29,6 +56,34 @@ export const useWidgetStore = defineStore('widget', () => {
   function setHoveredWidget(id, nonForeignId) {
     hoveredWidget.value = id;
     hoveredNonForeignWidget.value = nonForeignId;
+  }
+
+  function setHoveredField(id) {
+    hoveredField.value = id;
+    if (id) {
+      // The field is inside the widget, so it is the innermost thing under
+      // the mouse, and the widget stops behaving as though it were hovered
+      hoveredWidget.value = null;
+      hoveredNonForeignWidget.value = null;
+    }
+  }
+
+  // Fields clear only their own state: by the time a field is told the mouse
+  // has left it, the next field may already have claimed the trail
+  function clearHoveredField(id) {
+    if (hoveredField.value === id) {
+      hoveredField.value = null;
+    }
+  }
+
+  function setFocusedField(id) {
+    focusedField.value = id;
+  }
+
+  function clearFocusedField(id) {
+    if (focusedField.value === id) {
+      focusedField.value = null;
+    }
   }
 
   async function setFocusedWidget(id, areaId, { scrollTo = false } = {}) {
@@ -105,9 +160,16 @@ export const useWidgetStore = defineStore('widget', () => {
     focusedArea,
     hoveredWidget,
     hoveredNonForeignWidget,
+    focusedField,
+    hoveredField,
+    labeled,
     addEmphasizedWidget,
     removeEmphasizedWidget,
     setHoveredWidget,
+    setHoveredField,
+    clearHoveredField,
+    setFocusedField,
+    clearFocusedField,
     setFocusedArea,
     setFocusedWidget,
     scrollToWidget,

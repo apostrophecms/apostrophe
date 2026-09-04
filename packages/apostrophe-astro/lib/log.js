@@ -15,6 +15,21 @@ export function logWarn(...args) {
   console.warn(yellow(prefix), ...args);
 }
 
+const warned = new Set();
+
+// Warn about a situation that can repeat on every item of a page, such as a
+// field of a piece in a list, without printing it twenty times. `key` names
+// the situation, not the occurrence: `apostrophe.article.title`, not the _id
+// of one article. An .astro file has no module scope of its own, which is the
+// other reason this lives here.
+export function logWarnOnce(key, ...args) {
+  if (warned.has(key)) {
+    return;
+  }
+  warned.add(key);
+  logWarn(...args);
+}
+
 export function logError(...args) {
   console.error(red(prefix), ...args);
 }

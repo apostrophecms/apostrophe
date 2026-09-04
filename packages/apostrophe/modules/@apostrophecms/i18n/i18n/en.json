@@ -213,6 +213,7 @@
   "editWidgetType": "Edit {{ label }}",
   "editor": "Editor",
   "email": "Email",
+  "emptyRichText": "Empty Rich Text",
   "emptyRichTextWidget": "Empty Rich Text Widget",
   "enabled": "Enabled",
   "enterPassword": "Enter password",

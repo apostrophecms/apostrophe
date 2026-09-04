@@ -382,6 +382,44 @@ module.exports = {
         }
         return `${found.dotPath}.${name}`;
       },
+      // Implementation of the `{% area %}` custom tag, also used by the
+      // `{% field %}` custom tag when the field in question is an area, so
+      // that the two produce identical markup. `usage` is an optional
+      // function accepting a message and returning an error that also
+      // explains the correct syntax of the tag being rendered.
+      async renderAreaTag(req, doc, name, _with, {
+        usage = (message) => new Error(message)
+      } = {}) {
+        let area;
+        if ((!doc) || ((typeof doc) !== 'object')) {
+          throw usage('You must pass an existing doc or widget as the first argument.');
+        }
+        if ((typeof name) !== 'string') {
+          throw usage('The second argument must be an area name.');
+        }
+        if (!name.match(/^\w+$/)) {
+          throw usage('area names should be made up only of letters, underscores and digits. Otherwise they will not save properly.');
+        }
+        area = doc[name];
+        if (!area) {
+          area = await self.addMissingArea(doc, name, { throwIfNotFound: true });
+        }
+        const manager = self.apos.util.getManagerOf(doc);
+        const field = manager.schema.find(field => field.name === name);
+        if (!field) {
+          throw new Error(`The doc of type ${doc.type} with the slug ${doc.slug} has no field named ${name}.
+In Apostrophe 3.x areas must be part of the schema for each page or piece type.`);
+        }
+        area._fieldId = field._id;
+        area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
+        // For existing areas this is propagated at load time, areas in
+        // array items will always be existing areas
+        area._edit = area._edit || doc._edit;
+
+        self.prepForRender(area, doc, name);
+        const content = await self.renderArea(req, area, _with);
+        return content;
+      },
       prepForRender(area, context, fieldName) {
         const manager = self.apos.util.getManagerOf(context);
         const field = manager.schema.find(field => field.name === fieldName);
@@ -550,7 +588,10 @@ module.exports = {
           if (self.apos.externalFrontKey) {
             await self.apos.template.annotateDocForExternalFront(
               doc,
-              { scene: req.scene }
+              {
+                scene: req.scene,
+                req
+              }
             );
           }
 
