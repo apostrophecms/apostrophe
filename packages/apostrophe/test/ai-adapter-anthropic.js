@@ -8,12 +8,15 @@ describe('AI adapter: anthropic', function() {
   // The adapter module instance, for unit access to the dialect methods
   let adapter;
   let savedLiveKey;
+  let savedWorkspaceId;
 
   before(async function() {
-    // A real key in the environment would override the fixture keys
-    // below (envKey); keep the suite hermetic and restore at the end
+    // A real key or workspace in the environment would override the
+    // fixture values below; keep the suite hermetic and restore at the end
     savedLiveKey = process.env.APOS_ANTHROPIC_KEY;
+    savedWorkspaceId = process.env.APOS_ANTHROPIC_WORKSPACE_ID;
     delete process.env.APOS_ANTHROPIC_KEY;
+    delete process.env.APOS_ANTHROPIC_WORKSPACE_ID;
     apos = await t.create({
       root: module,
       modules: {
@@ -40,7 +43,10 @@ describe('AI adapter: anthropic', function() {
               gateway: {
                 adapter: 'anthropic',
                 apiKey: 'sk-gw',
-                baseUrl: 'https://llm-gateway.example.com/anthropic'
+                baseUrl: 'https://llm-gateway.example.com/anthropic',
+                // The declared workspaceId setting, from config: an
+                // identity-linked multi-workspace key needs one
+                workspaceId: 'wrkspc-gw'
               }
             },
             // Keep retried tests fast; the delay engine has its own suite
@@ -55,6 +61,9 @@ describe('AI adapter: anthropic', function() {
   after(async function() {
     if (savedLiveKey !== undefined) {
       process.env.APOS_ANTHROPIC_KEY = savedLiveKey;
+    }
+    if (savedWorkspaceId !== undefined) {
+      process.env.APOS_ANTHROPIC_WORKSPACE_ID = savedWorkspaceId;
     }
     if (apos) {
       return t.destroy(apos);
@@ -733,6 +742,8 @@ describe('AI adapter: anthropic', function() {
       assert.equal(call.url, 'https://api.anthropic.com/v1/messages');
       assert.equal(call.options.headers['x-api-key'], 'sk-test');
       assert.equal(call.options.headers['anthropic-version'], '2023-06-01');
+      // No workspaceId on this entry, no header
+      assert.equal('anthropic-workspace-id' in call.options.headers, false);
       assert.equal(call.options.timeout, 600000);
       assert.equal(call.options.body.model, 'claude-sonnet-5');
       assert.equal(call.options.body.max_tokens, 64000);
@@ -756,6 +767,7 @@ describe('AI adapter: anthropic', function() {
       const [ call ] = httpCalls;
       assert.equal(call.url, 'https://llm-gateway.example.com/anthropic/v1/messages');
       assert.equal(call.options.headers['x-api-key'], 'sk-gw');
+      assert.equal(call.options.headers['anthropic-workspace-id'], 'wrkspc-gw');
       assert.equal(call.options.body.max_tokens, 64000);
     });
 
@@ -1088,6 +1100,7 @@ describe('AI adapter: anthropic', function() {
     before(async function() {
       process.env.APOS_ANTHROPIC_KEY = 'sk-env';
       process.env.APOS_SECOND_KEY = 'sk-second';
+      process.env.APOS_ANTHROPIC_WORKSPACE_ID = 'wrkspc-env';
       await t.destroy(apos);
       apos = await t.create({
         root: module,
@@ -1105,10 +1118,12 @@ describe('AI adapter: anthropic', function() {
                   envKey: 'APOS_SECOND_KEY'
                 },
                 // An alias without envKey shares the native secret;
-                // the environment overrides even its configured key
+                // the environment overrides even its configured key —
+                // and its configured workspaceId setting
                 shared: {
                   adapter: 'anthropic',
-                  apiKey: 'sk-config'
+                  apiKey: 'sk-config',
+                  workspaceId: 'wrkspc-config'
                 },
                 // A named variable that is unset falls back to config
                 fallback: {
@@ -1126,6 +1141,7 @@ describe('AI adapter: anthropic', function() {
     after(function() {
       delete process.env.APOS_ANTHROPIC_KEY;
       delete process.env.APOS_SECOND_KEY;
+      delete process.env.APOS_ANTHROPIC_WORKSPACE_ID;
     });
 
     it('resolves each entry to the key its envKey names', function() {
@@ -1139,6 +1155,13 @@ describe('AI adapter: anthropic', function() {
         shared: 'sk-env',
         fallback: 'sk-fallback'
       });
+    });
+
+    it('resolves the declared workspaceId setting, the environment winning', function() {
+      // The variable applies to an entry that configured nothing...
+      assert.equal(apos.ai.providers.anthropic.adapter.workspaceId, 'wrkspc-env');
+      // ...and beats one that did
+      assert.equal(apos.ai.providers.shared.adapter.workspaceId, 'wrkspc-env');
     });
   });
 });

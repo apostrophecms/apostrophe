@@ -49,6 +49,22 @@ const IMAGE_OPTIONS = Object.freeze([
   'count', 'aspect', 'quality', 'images', 'provider', 'model', 'signal'
 ]);
 
+// The provider entry keys the engine itself reads. Any other key must
+// be a setting the entry's adapter declares (its `settings` map)
+const ENTRY_KEYS = Object.freeze([
+  'adapter', 'apiKey', 'envKey', 'baseUrl', 'models', 'effort', 'capabilities'
+]);
+
+// Names a declared setting may not use: the entry keys above plus the
+// adapter definition's own fields and the engine-assigned ones — a
+// resolved setting lands on the adapter instance, so a collision would
+// clobber what it collides with
+const RESERVED_SETTING_NAMES = Object.freeze([
+  ...ENTRY_KEYS,
+  'name', 'label', 'settings', 'provider',
+  'validate', 'chat', 'image', 'normalizeError'
+]);
+
 // Doc types no AI action may touch, whatever the user's own permissions:
 // accounts and permission grants, where a model's mistake is a privilege
 // escalation. Not configurable, and deliberately every action, read
@@ -72,5 +88,7 @@ module.exports = {
   PENDING_POLICIES,
   GENERATE_OPTIONS,
   IMAGE_OPTIONS,
+  ENTRY_KEYS,
+  RESERVED_SETTING_NAMES,
   DENIED_TYPES
 };

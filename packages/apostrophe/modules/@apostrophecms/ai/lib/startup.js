@@ -4,7 +4,7 @@
 
 const startCase = require('lodash/startCase');
 const {
-  NAMED_ASPECTS, QUALITIES, TOOL_KINDS
+  NAMED_ASPECTS, QUALITIES, TOOL_KINDS, ENTRY_KEYS, RESERVED_SETTING_NAMES
 } = require('./constants');
 const {
   isObject, parseAspect, oneOf, startupFail: fail
@@ -41,7 +41,8 @@ module.exports = (self) => {
           ...adapter,
           provider: name,
           apiKey: envApiKey || entry.apiKey,
-          baseUrl: entry.baseUrl || adapter.baseUrl
+          baseUrl: entry.baseUrl || adapter.baseUrl,
+          ...self.resolveSettings(name, adapter, entry)
         };
         if (!self.mockMode) {
           await instance.validate();
@@ -93,6 +94,47 @@ module.exports = (self) => {
 
       self.active = Object.keys(self.providers).length > 0 ||
         self.mockMode;
+    },
+    // Resolve the entry keys the entry's adapter declares beyond the
+    // standard set — its `settings` map, { key: { envKey } } — against
+    // the entry and the environment, the variable's value winning over
+    // the entry's like the api key does. The declaration is also the
+    // whitelist: an entry key that is neither standard nor declared
+    // fails the boot, so a typo dies here instead of riding silently
+    // past the provider call. Returns the resolved values; they land on
+    // the adapter instance beside apiKey and baseUrl, which is what the
+    // reserved-name check protects.
+    resolveSettings(providerName, adapter, entry) {
+      const settings = adapter.settings || {};
+      for (const [ key, declared ] of Object.entries(settings)) {
+        if (RESERVED_SETTING_NAMES.includes(key)) {
+          fail(`adapter "${adapter.name}" declares reserved setting "${key}"`);
+        }
+        if (!isObject(declared)) {
+          fail(`adapter "${adapter.name}" setting "${key}" must be an object like { envKey }`);
+        }
+        if (declared.envKey !== undefined && typeof declared.envKey !== 'string') {
+          fail(`adapter "${adapter.name}" setting "${key}": "envKey" must be a string`);
+        }
+      }
+      for (const key of Object.keys(entry)) {
+        if (!ENTRY_KEYS.includes(key) && !Object.hasOwn(settings, key)) {
+          fail(`"providers.${providerName}.${key}" is neither a standard entry key nor a setting of adapter "${adapter.name}"`);
+        }
+      }
+      const resolved = {};
+      for (const [ key, declared ] of Object.entries(settings)) {
+        const value = (declared.envKey && process.env[declared.envKey]) ||
+          entry[key];
+        if (value === undefined) {
+          continue;
+        }
+        if (typeof value !== 'string') {
+          fail(`"providers.${providerName}.${key}" must be a string`);
+        }
+        resolved[key] = value;
+      }
+      return resolved;
     },
     // The routing table: the default provider's rows are the base,
     // the project's "effort.levels" replace it level by level
