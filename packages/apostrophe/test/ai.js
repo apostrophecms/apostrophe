@@ -615,6 +615,49 @@ describe('AI engine', function() {
         (apos) => apos.ai.addAdapter({ name: 'noval' }));
       });
 
+      it('fails on an entry key the adapter does not declare', async function() {
+        await failsToActivate({
+          providers: {
+            fake: {
+              apiKey: 'k',
+              workspaceId: 'wrkspc-1'
+            }
+          }
+        }, /@apostrophecms\/ai: "providers\.fake\.workspaceId" is neither a standard entry key nor a setting of adapter "fake"/);
+      });
+
+      it('fails on a setting declaration using a reserved name', async function() {
+        await failsToActivate({
+          providers: { fake: { apiKey: 'k' } }
+        }, /@apostrophecms\/ai: adapter "fake" declares reserved setting "chat"/,
+        (apos) => apos.ai.addAdapter(fakeAdapter('fake', {
+          settings: { chat: {} }
+        })));
+      });
+
+      it('fails on a malformed setting declaration', async function() {
+        await failsToActivate({
+          providers: { fake: { apiKey: 'k' } }
+        }, /@apostrophecms\/ai: adapter "fake" setting "workspaceId" must be an object like \{ envKey \}/,
+        (apos) => apos.ai.addAdapter(fakeAdapter('fake', {
+          settings: { workspaceId: 'APOS_FAKE_WORKSPACE_ID' }
+        })));
+      });
+
+      it('fails on a non-string setting value', async function() {
+        await failsToActivate({
+          providers: {
+            fake: {
+              apiKey: 'k',
+              workspaceId: 42
+            }
+          }
+        }, /@apostrophecms\/ai: "providers\.fake\.workspaceId" must be a string/,
+        (apos) => apos.ai.addAdapter(fakeAdapter('fake', {
+          settings: { workspaceId: {} }
+        })));
+      });
+
       it('fails on a routing entry referencing an unconfigured provider', async function() {
         await failsToActivate({
           providers: { fake: { apiKey: 'k' } },
@@ -691,6 +734,76 @@ describe('AI engine', function() {
           }
         }, /@apostrophecms\/ai: the default effort level "medium" resolves to no routing entry/);
       });
+    });
+  });
+
+  describe('extending a shipped adapter at project level', function() {
+    let extendedApos;
+    let savedKey;
+    let savedWorkspaceId;
+
+    before(async function() {
+      savedKey = process.env.APOS_ANTHROPIC_KEY;
+      savedWorkspaceId = process.env.APOS_ANTHROPIC_WORKSPACE_ID;
+      delete process.env.APOS_ANTHROPIC_KEY;
+      // A decoy in the declared default variable: if the extension were
+      // applied after the adapter registered its definition, this value
+      // would win and the assertion below would catch it
+      process.env.APOS_ANTHROPIC_WORKSPACE_ID = 'wrkspc-decoy';
+      process.env.MY_CLAUDE_WORKSPACE = 'wrkspc-renamed';
+      extendedApos = await t.create({
+        root: module,
+        modules: {
+          // The documented recipe for renaming a declared setting's
+          // variable: extendMethods composes before init runs, so the
+          // definition init registers already carries the new envKey
+          '@apostrophecms/ai-adapter-anthropic': {
+            extendMethods(self) {
+              return {
+                adapter(_super) {
+                  const definition = _super();
+                  definition.settings.workspaceId.envKey =
+                    'MY_CLAUDE_WORKSPACE';
+                  return definition;
+                }
+              };
+            }
+          },
+          '@apostrophecms/ai': {
+            options: {
+              provider: 'anthropic',
+              providers: {
+                anthropic: {
+                  apiKey: 'sk-test',
+                  workspaceId: 'wrkspc-config'
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+
+    after(async function() {
+      if (savedKey !== undefined) {
+        process.env.APOS_ANTHROPIC_KEY = savedKey;
+      }
+      if (savedWorkspaceId !== undefined) {
+        process.env.APOS_ANTHROPIC_WORKSPACE_ID = savedWorkspaceId;
+      } else {
+        delete process.env.APOS_ANTHROPIC_WORKSPACE_ID;
+      }
+      delete process.env.MY_CLAUDE_WORKSPACE;
+      if (extendedApos) {
+        return t.destroy(extendedApos);
+      }
+    });
+
+    it('resolves the setting from the renamed variable, never the default one', function() {
+      const { adapter } = extendedApos.ai.providers.anthropic;
+      // The renamed variable wins over the configured value; the
+      // decoy in the default variable is never read
+      assert.equal(adapter.workspaceId, 'wrkspc-renamed');
     });
   });
 
