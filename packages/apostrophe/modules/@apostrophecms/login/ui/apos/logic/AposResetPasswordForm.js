@@ -29,7 +29,8 @@ export default {
           name: 'password',
           label: 'apostrophe:newPassword',
           type: 'password',
-          required: true
+          required: true,
+          direction: apos.login.direction
         }
       ]
     };
