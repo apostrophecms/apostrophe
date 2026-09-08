@@ -319,7 +319,7 @@ describe('Docs', function() {
       }),
       (err) => {
         assert.equal(err.code, 11000);
-        assert.deepEqual(err.keyPattern, { _id: 1 });
+        assert.equal(err.keyValue._id, 'same-id:en:published');
         assert.equal(err.aposAddendum, undefined);
         return true;
       }

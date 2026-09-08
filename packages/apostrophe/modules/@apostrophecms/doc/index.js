@@ -893,7 +893,7 @@ module.exports = {
             }
             // fixUniqueError handlers adjust slug-like properties. Nothing
             // can make an _id unique, so retrying repeats the same failure.
-            if (err.keyPattern?._id) {
+            if (self.isIdUniqueError(err)) {
               throw err;
             }
             if (!firstError) {
@@ -1294,6 +1294,15 @@ module.exports = {
         return err.code === 13596 ||
           err.code === 11000 ||
           err.code === 11001;
+      },
+      // True if `err` is a unique index error naming `_id`. Adapters report the
+      // offending key in `keyValue`; MongoDB also supplies `keyPattern`.
+      isIdUniqueError(err) {
+        if (!self.isUniqueError(err)) {
+          return false;
+        }
+        const key = err.keyValue || err.keyPattern;
+        return !!key && Object.hasOwn(key, '_id');
       },
       // Set the manager object corresponding
       // to a given doc type. Typically `manager`
