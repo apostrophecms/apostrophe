@@ -907,7 +907,10 @@ module.exports = self => {
           throw new Error('Inserting document failed');
         }
 
-        if (manager.options.autopublish === true) {
+        if (await self.isAlreadyPublished(doc, {
+          manager,
+          method
+        })) {
           return true;
         }
       }
@@ -1451,6 +1454,25 @@ module.exports = self => {
         ids: [],
         types: new Set()
       });
+    },
+
+    // Whether the draft insert has already published this doc, so the
+    // published doc from the file must be skipped: the type autopublishes,
+    // or a handler published this particular doc during the draft insert.
+    // Only on insert. On update the published doc always exists and the
+    // file's version must still be applied.
+    async isAlreadyPublished(doc, { manager, method }) {
+      if (manager.options.autopublish === true) {
+        return true;
+      }
+      if (method !== 'insert') {
+        return false;
+      }
+      const existing = await self.apos.doc.db.findOne(
+        { _id: doc._id },
+        { projection: { _id: 1 } }
+      );
+      return Boolean(existing);
     },
 
     // Stamp the specific document that was imported.
