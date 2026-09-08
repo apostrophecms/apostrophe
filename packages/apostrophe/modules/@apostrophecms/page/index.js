@@ -1065,7 +1065,7 @@ or @apostrophecms/page-type, or remove the entry from park.`);
           const distinct = await self.apos.doc.db.distinct('type');
           for (const type of distinct) {
             if (!_.includes(managed, type)) {
-              self.apos.util.warnDev(`The aposDocs mongodb collection contains docs with the type ${type || 'undefined or null'}
+              self.apos.util.warnDev(`The aposDocs collection contains docs with the type ${type || 'undefined or null'}
 but there is no module that manages that type. You must implement
 a module of that name that extends @apostrophecms/piece-type or
 @apostrophecms/page-type, or remove these documents from the
