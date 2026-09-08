@@ -100,17 +100,14 @@ To get you started quickly, we recommend one of our official Astro starter kits:
 * [apostrophecms/starter-kit-astro-essentials](https://github.com/apostrophecms/starter-kit-astro-essentials) is best for a clean start with as little extra code as possible.
 * [apostrophecms/astro-public-demo](https://github.com/apostrophecms/astro-public-demo) is a full-fledged project with a blog, custom widgets, and other nice touches. It can also be loaded with the same data as found in our online [public demo](https://demo.apostrophecms.com/?utm_source=github&utm_medium=readme&utm_campaign=apostrophe-astro)
 
-> 💡 These combined Astro + Apostrophe projects can be launched by using `npm create apostrophe@latest` and selecting either from the available beginning projects.
+> 💡 These combined Astro + Apostrophe projects can be launched by using npm create apostrophe@latest and selecting either "Barebones" or "Demo" from the available options.
 
 You can also adapt your own existing ApostropheCMS project as explained below.
 
 > Note that this module, `@apostrophecms/apostrophe-astro`, is meant to be installed as a dependency of your *Astro project*,
 > not your Apostrophe project.
 
-This module is primarily designed for use with Astro's `output: 'server'` setting (SSR mode), so that you can edit your content
-directly on the page. It also supports `output: 'static'` for publishing a fully static build of your site — see
-[Static builds](#static-builds) below. Content editing always requires a running Apostrophe backend, so a static build
-is a publishing target, not a replacement for the SSR development workflow.
+This module is primarily designed for use with Astro's `output: 'server'` setting (SSR mode), so that you can edit your content directly on the page. It also supports `output: 'static'` for publishing a fully static build of your site — see [Static builds](#static-builds) below. Content editing always requires a running Apostrophe backend, so a static build is a publishing target, not a replacement for the SSR development workflow.
 
 ## Installation
 
