@@ -891,6 +891,11 @@ module.exports = {
             if (!self.isUniqueError(err)) {
               throw err;
             }
+            // fixUniqueError handlers adjust slug-like properties. Nothing
+            // can make an _id unique, so retrying repeats the same failure.
+            if (err.keyPattern?._id) {
+              throw err;
+            }
             if (!firstError) {
               firstError = err;
             }
@@ -1287,7 +1292,6 @@ module.exports = {
           return false;
         }
         return err.code === 13596 ||
-          err.code === 13596 ||
           err.code === 11000 ||
           err.code === 11001;
       },

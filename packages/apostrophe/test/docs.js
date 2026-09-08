@@ -70,6 +70,17 @@ describe('Docs', function() {
         },
         'test-page': {
           extend: '@apostrophecms/page-type'
+        },
+        'unique-error-counter': {
+          handlers(self) {
+            return {
+              '@apostrophecms/doc:fixUniqueError': {
+                count() {
+                  self.count = (self.count || 0) + 1;
+                }
+              }
+            };
+          }
         }
       }
     });
@@ -254,6 +265,66 @@ describe('Docs', function() {
       assert(e);
       assert(e.code === 11000);
     }
+  });
+
+  it('should retry a slug collision through fixUniqueError handlers', async function() {
+    const counter = apos.modules['unique-error-counter'];
+    counter.count = 0;
+
+    await insertOne(apos);
+    const doc = await apos.doc.insert(apos.task.getReq(), {
+      slug: 'one',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Harry',
+      lastName: 'Gerber',
+      age: 29,
+      alive: true
+    });
+
+    assert(doc.slug !== 'one');
+    assert(counter.count >= 1);
+  });
+
+  it('should not retry an _id collision', async function() {
+    const counter = apos.modules['unique-error-counter'];
+    counter.count = 0;
+
+    const first = await apos.doc.insert(apos.task.getReq(), {
+      _id: 'same-id:en:published',
+      aposDocId: 'same-id',
+      aposLocale: 'en:published',
+      slug: 'same-id-first',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'First',
+      lastName: 'Person',
+      age: 30,
+      alive: true
+    });
+    assert.equal(first._id, 'same-id:en:published');
+
+    await assert.rejects(
+      apos.doc.insert(apos.task.getReq(), {
+        _id: 'same-id:en:published',
+        aposDocId: 'same-id',
+        aposLocale: 'en:published',
+        slug: 'same-id-second',
+        visibility: 'public',
+        type: 'test-people',
+        firstName: 'Second',
+        lastName: 'Person',
+        age: 31,
+        alive: true
+      }),
+      (err) => {
+        assert.equal(err.code, 11000);
+        assert.deepEqual(err.keyPattern, { _id: 1 });
+        assert.equal(err.aposAddendum, undefined);
+        return true;
+      }
+    );
+    assert.equal(counter.count, 0);
   });
 
   /// ///
