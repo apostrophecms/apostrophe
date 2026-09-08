@@ -695,10 +695,16 @@ module.exports = {
           return `${id}:${locale}:${mode}`;
         }
       },
-      getBrowserData(req) {
-        const adminLocale = req.user?.adminLocale === ''
+      // The locale of the admin UI for this request: the user's choice when
+      // they made one, otherwise `defaultAdminLocale`, otherwise the request
+      // locale.
+      getAdminLocale(req) {
+        return req.user?.adminLocale === ''
           ? req.locale
           : req.user?.adminLocale || self.defaultAdminLocale || req.locale;
+      },
+      getBrowserData(req) {
+        const adminLocale = self.getAdminLocale(req);
         const i18n = {
           [adminLocale]: self.getBrowserBundles(adminLocale)
         };

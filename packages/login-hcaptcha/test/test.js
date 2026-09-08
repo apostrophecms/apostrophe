@@ -114,6 +114,7 @@ describe('@apostrophecms/login-hcaptcha', function () {
       );
 
       assert.equal(context.requirementProps.AposHcaptcha.sitekey, siteConfig.site);
+      assert.equal(context.requirementProps.AposHcaptcha.hl, 'en');
 
       await apos.http.post(
         '/api/v1/@apostrophecms/login/login',
@@ -236,5 +237,60 @@ describe('@apostrophecms/login-hcaptcha', function () {
         'error-codes': [ 'invalid-input-response' ]
       }
     });
+  });
+});
+
+describe('@apostrophecms/login-hcaptcha widget language and login direction', function () {
+  let apos;
+
+  this.timeout(25000);
+
+  after(async function () {
+    await testUtil.destroy(apos);
+  });
+
+  it('should follow the default admin locale and honor hcaptcha.hl', async function () {
+    const config = getAppConfig();
+    config['@apostrophecms/i18n'] = {
+      options: {
+        defaultAdminLocale: 'en',
+        locales: {
+          en: { label: 'English' },
+          he: {
+            label: 'Hebrew',
+            prefix: '/he',
+            direction: 'rtl'
+          }
+        }
+      }
+    };
+    config['@apostrophecms/login'].options.direction = 'ltr';
+    apos = await testUtil.create({
+      shortname: 'loginTest',
+      testModule: true,
+      modules: config
+    });
+
+    // establish session
+    const jar = apos.http.jar();
+    await apos.http.get('/he/', { jar });
+
+    const context = await apos.http.post('/he/api/v1/@apostrophecms/login/context', {
+      body: {},
+      jar
+    });
+    assert.equal(context.requirementProps.AposHcaptcha.hl, 'en');
+
+    apos.login.options.hcaptcha.hl = 'fr';
+    const overridden = await apos.http.post('/he/api/v1/@apostrophecms/login/context', {
+      body: {},
+      jar
+    });
+    assert.equal(overridden.requirementProps.AposHcaptcha.hl, 'fr');
+  });
+
+  it('should render the login page LTR on an RTL locale', async function () {
+    const page = await apos.http.get('/he/login');
+    assert.match(page, /<html lang="he" dir="ltr"/);
   });
 });

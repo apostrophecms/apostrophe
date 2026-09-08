@@ -23,6 +23,14 @@
 // acted upon in time, the user must request a password reset again.
 // The default is `48`.
 //
+// `direction`
+//
+// Forces the text direction of the login page and the pages related to it
+// (password reset, additional login requirements). May be `ltr` or `rtl`.
+// If not set, the login page follows the direction of the current locale.
+// Useful when the editors read a different direction than the site visitors,
+// for instance an English speaking team managing an Arabic site.
+//
 // `bearerTokens`
 //
 // If not explicitly set to `false`, apps may log in via the login route
@@ -77,6 +85,12 @@ module.exports = {
     whoamiFields: []
   },
   async init(self) {
+    if (self.options.direction && ![ 'ltr', 'rtl' ].includes(self.options.direction)) {
+      throw self.apos.error(
+        'invalid',
+        `The "direction" option of "${self.__meta.name}" module must be "ltr", "rtl" or "null".`
+      );
+    }
     self.passport = new Passport();
     self.enableSerializeUsers();
     self.enableDeserializeUsers();
@@ -101,6 +115,13 @@ module.exports = {
           await self.checkForUserAndAlert();
         }
       },
+      '@apostrophecms/page:beforeSend': {
+        setLoginPageDirection(req) {
+          if (req.aposLoginPage && req.data.i18n) {
+            req.data.i18n.direction = self.getDirection(req);
+          }
+        }
+      },
       'apostrophe:destroy': {
         clearIntervals() {
           if (self.cleanupInterval) {
@@ -123,6 +144,7 @@ module.exports = {
             return res.redirect('/');
           }
           req.scene = 'apos';
+          req.aposLoginPage = true;
           try {
             await self.sendPage(req, 'login', {});
           } catch (e) {
@@ -470,6 +492,16 @@ module.exports = {
         return self.options.loginUrl ? self.options.loginUrl : '/login';
       },
 
+      // The text direction of the login page for this request: the `direction`
+      // option when set, otherwise the direction of the request locale.
+      // Pages related to login (rendered with `sendPage` while
+      // `req.aposLoginPage` is true) follow the same rule.
+      getDirection(req) {
+        return self.options.direction ||
+          self.apos.i18n.locales[req.locale]?.direction ||
+          'ltr';
+      },
+
       // The URL a human logs in at, or `null` when there is none to point at:
       // local login can be turned off in favor of another mechanism, and a
       // module that replaces it should override this to say where it moved.
@@ -623,6 +655,7 @@ module.exports = {
           schema: self.getSchema(),
           action: self.action,
           passwordResetEnabled: self.isPasswordResetEnabled(),
+          direction: self.getDirection(req),
           ...(req.user
             ? {
               user: {
@@ -1028,7 +1061,8 @@ module.exports = {
             label: field.label,
             placeholder: self.options.placeholder[field.name],
             type: field.type,
-            required: true
+            required: true,
+            ...(self.options.direction ? { direction: self.options.direction } : {})
           })
           );
       },
