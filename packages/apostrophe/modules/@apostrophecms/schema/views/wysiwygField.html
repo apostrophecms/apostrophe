@@ -1,0 +1,32 @@
+{#
+  Renders one field of a doc, widget, array item or object in place, and
+  hands the editor component everything it needs when the user is editing.
+  See the `{% field %}` custom tag.
+
+  The whitespace control matters: a field can be inline content, so nothing
+  is allowed to creep in between the tags and the value.
+
+  Print an attributes string from an attrs object.
+#}
+{%- macro _writeAttr(attrs) -%}
+  {%- for key, value in attrs -%}
+    {{ " " }}{{ key }}="{{ value }}"
+  {%- endfor -%}
+{%- endmacro -%}
+{%- set _with = data._with -%}
+<{{ data.tag }} class="{{ data.classes }}"
+{%- if data.canEdit %} data-apos-wysiwyg-field-newly-editable
+ data-doc-id="{{ data.docId }}"
+ data-patch-key="{{ data.patchKey }}"
+ data-component="{{ data.component }}"
+ data-icon="{{ data.icon }}"
+ data-field-id="{{ data.fieldId }}"
+ data-value='{{ data.valueJson | jsonAttribute({ single: true }) }}'
+ data-options='{{ _with | jsonAttribute({ single: true }) }}'
+{%- endif -%}
+{%- if _with.style %} style="{{ _with.style }}"{% endif -%}
+{%- if _with.attrs %}{{ _writeAttr(_with.attrs) }}{% endif -%}
+>{{ data.rendered | safe }}</{{ data.tag }}>
+{#- A single line string is rendered inline, so nothing may follow the
+    closing tag either, not even the newline that ends this file: it would
+    print as a space between the value and whatever the template put next -#}

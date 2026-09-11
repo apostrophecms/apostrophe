@@ -317,6 +317,12 @@
  * @property {string} [envKey] The environment variable the key is read from
  *   unless the entry names its own.
  * @property {string} [baseUrl]
+ * @property {Object<string, { envKey?: string }>} [settings] The entry keys
+ *   this adapter reads beyond the standard set, each resolved from the
+ *   variable its `envKey` names or from the entry — the variable wins — and
+ *   assigned onto the instance beside `apiKey`. The declaration doubles as
+ *   the whitelist: a non-standard entry key no setting declares fails
+ *   startup.
  * @property {Object<string, boolean>} capabilities What the service offers:
  *   'text', 'tools', 'structured', 'image'. A call needing one the routed
  *   provider lacks is a clear error, never a silent re-route.

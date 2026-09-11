@@ -58,6 +58,19 @@ module.exports = {
 
 > ⚠️ All configuration of TOTP related options is done on the `@apostrophecms/login` module. The `@apostrophecms/login-totp` module is just an "improvement" to that module, so it has no configuration options of its own.
 
+### Right-to-left websites
+
+On a website whose current locale is right-to-left, the login page, including the TOTP setup and verification screens, is laid out right-to-left as well. If your editors prefer a left-to-right login page, set the `direction` option of the `@apostrophecms/login` module (*not* this module):
+
+```javascript
+// modules/@apostrophecms/login/index.js
+module.exports = {
+  options: {
+    direction: 'ltr'
+  }
+};
+```
+
 ### Resetting TOTP when a user loses their device
 
 If a user loses their device, an admin can edit the appropriate user via the admin bar. Select "Yes" for the "Reset TOTP" field and save the user.

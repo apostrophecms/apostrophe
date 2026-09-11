@@ -246,6 +246,8 @@ module.exports = {
 
       addFailureRoute(spec) {
         self.apos.app.get(self.getFailureUrl(spec), function (req, res) {
+          // Follows the `direction` option of the login module
+          req.aposLoginPage = true;
           // Gets i18n'd in the template
           return self.sendPage(req, 'error', {
             spec,

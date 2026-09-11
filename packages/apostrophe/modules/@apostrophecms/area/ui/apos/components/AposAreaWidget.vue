@@ -375,7 +375,8 @@ export default {
       'focusedWidget',
       'hoveredWidget',
       'hoveredNonForeignWidget',
-      'emphasizedWidgets'
+      'emphasizedWidgets',
+      'labeled'
     ]),
     ...mapState(useBreakpointPreviewStore, { breakpointPreviewMode: 'mode' }),
     adminContentDirectionClass() {
@@ -436,6 +437,14 @@ export default {
     isHovered() {
       return this.hoveredWidget === this.widget._id;
     },
+    // Only one thing on the page wears a breadcrumb trail, and the store says
+    // which. For a widget that is the same as being focused, or hovered while
+    // nothing else is focused, except that a field edited in place can now
+    // take the trail from the widget it belongs to
+    isLabeled() {
+      return this.labeled?.type === 'widget' &&
+        this.labeled.id === this.widget._id;
+    },
     isHighlighted() {
       const $parent = this.getParent();
       return $parent && $parent.dataset.areaWidget === this.focusedWidget;
@@ -466,7 +475,7 @@ export default {
     },
     labelsClasses() {
       return {
-        [this.classes.show]: (this.isHovered && !this.focusedWidget) || this.isFocused,
+        [this.classes.show]: this.isLabeled,
         // Force LTR for breadcrumbs for now so that nested AreaWidgets
         // behave properly.
         'apos-ltr': true
@@ -1202,12 +1211,7 @@ export default {
 }
 
 .apos-area-widget__label {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  transform: translateY(-100%);
-  transition: opacity 300ms ease;
+  @include apos-breadcrumbs-bar;
 }
 
 .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
@@ -1216,31 +1220,12 @@ export default {
 }
 
 .apos-area-widget__breadcrumbs {
-  @include apos-list-reset();
-
-  & {
-    display: flex;
-    box-sizing: border-box;
-    align-items: center;
-    height: 32px;
-    margin: 0 0 8px;
-    padding: 4px 6px;
-    border: 1px solid var(--a-primary-transparent-50);
-    background-color: var(--a-background-primary);
-    border-radius: 8px;
-  }
+  @include apos-breadcrumbs-list;
 }
 
 .apos-area-widget__breadcrumb,
 .apos-area-widget__breadcrumb :deep(.apos-button__content) {
-  @include type-help;
-
-  & {
-    padding: 2px;
-    white-space: nowrap;
-    color: var(--a-base-1);
-    transition: background-color 300ms var(--a-transition-timing-bounce);
-  }
+  @include apos-breadcrumb;
 }
 
 .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
@@ -1250,12 +1235,7 @@ export default {
 }
 
 .apos-area-widget__breadcrumb--widget-icon {
-  margin-right: 2px;
-  padding: 3px 2px 2px;
-  color: var(--a-primary);
-  transition: background-color 300ms var(--a-transition-timing-bounce);
-  background-color: var(--a-primary-transparent-10);
-  border-radius: 4px;
+  @include apos-breadcrumb-icon;
 }
 
 .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb--widget-icon {
@@ -1268,13 +1248,7 @@ export default {
 }
 
 .apos-area-widget__breadcrumb :deep(.apos-button) {
-  color: var(--a-primary-dark-10);
-
-  &:hover, &:active, &:focus {
-    .apos-button__content {
-      color: var(--a-primary);
-    }
-  }
+  @include apos-breadcrumb-button;
 }
 
 .apos-is-visible:not(.apos-is-suppressing-widget-controls),

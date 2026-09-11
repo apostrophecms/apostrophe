@@ -58,6 +58,13 @@ module.exports = {
           label: 'Anthropic (Claude)',
           baseUrl: 'https://api.anthropic.com',
           envKey: 'APOS_ANTHROPIC_KEY',
+          settings: {
+            // The workspace requests act in, riding the
+            // anthropic-workspace-id header. Anthropic requires it when
+            // the key is identity-linked and not scoped to a single
+            // workspace; a scoped key ignores it
+            workspaceId: { envKey: 'APOS_ANTHROPIC_WORKSPACE_ID' }
+          },
           capabilities: {
             text: true,
             tools: true,
@@ -116,7 +123,9 @@ module.exports = {
             const response = await self.apos.http.post(`${this.baseUrl}/v1/messages`, {
               headers: {
                 'x-api-key': this.apiKey,
-                'anthropic-version': self.options.version
+                'anthropic-version': self.options.version,
+                ...(this.workspaceId &&
+                  { 'anthropic-workspace-id': this.workspaceId })
               },
               body: self.buildBody(request),
               timeout: self.options.timeout,

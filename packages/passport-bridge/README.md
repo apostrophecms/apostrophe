@@ -369,6 +369,10 @@ After successful authentication, users will be redirected to your Astro frontend
 
 The `failureRedirect` configuration will send users to your specified error page (e.g., `/login?error=oauth_failed`) where you can display appropriate error messages based on URL parameters.
 
+### Right-to-left websites
+
+The error page shown when a login attempt is rejected follows the text direction of the current locale. Set the `direction` option of the `@apostrophecms/login` module to `ltr` or `rtl` to force a direction for it, as for the login page itself.
+
 ### Configuring your identity provider
 
 #### What is my oauth callback URL?

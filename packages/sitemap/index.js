@@ -319,10 +319,29 @@ module.exports = {
       // incorrect cache behavior (e.g. poisoning the sitemap cache with
       // static-build URLs).
       getReq(locale, { staticBuild = false, externalFront = false } = {}) {
+        // `getAnonReq` builds a synthetic request that is not tied to any
+        // actual HTTP connection, so `req.protocol` always defaults to
+        // `http`. That's fine for locales without a separate host, whose
+        // sitemap URLs are built from the site-wide `baseUrl` (which does
+        // carry the correct scheme), but locales configured with their own
+        // hostname (`separateHost: true`) get their base URL from
+        // `${req.protocol}://${hostname}` in
+        // `@apostrophecms/url:getBaseUrl`, so an incorrect `req.protocol`
+        // there results in `http://` URLs even on an all-HTTPS site — both
+        // in the `<loc>` for that locale and, because `doc._url` is built
+        // from `req.prefix` at request-construction time
+        // (`@apostrophecms/i18n:setPrefixUrls`, called synchronously inside
+        // `getAnonReq`), in every URL fetched via this req. So `protocol`
+        // must be passed in up front rather than set on the req
+        // afterward — setting it later is too late to affect
+        // `req.prefix`. Derive the scheme from the configured site
+        // `baseUrl` so it is consistent across every locale.
+        const protocol = self.baseUrl.split('://')[0] || 'http';
         const req = self.apos.task.getAnonReq({
           locale,
           mode: 'published',
-          staticBuild
+          staticBuild,
+          protocol
         });
         if (externalFront) {
           req.aposExternalFront = true;

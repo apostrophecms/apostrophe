@@ -5,7 +5,7 @@
 Added `apos.ai`, a provider-agnostic AI API for text generation with tool calling, image generation and background jobs. Feature code is written once, against one normalized surface: switching between Anthropic, OpenAI, Google or any OpenAI-compatible service is a configuration change, not a rewrite. It is opt-in - no provider and no key are configured out of the box.
 
 - `@apostrophecms/ai`: the engine - normalized request and result shapes, a tool registry, an agent loop, effort levels, retries, a permission seam and a mock mode for tests.
-- `@apostrophecms/ai-adapter-anthropic`: Anthropic (Claude) support, via the Messages API.
+- `@apostrophecms/ai-adapter-anthropic`: Anthropic (Claude) support, via the Messages API. An entry may set `workspaceId` (or export `APOS_ANTHROPIC_WORKSPACE_ID`) to send the `anthropic-workspace-id` header, required with an identity-linked API key that is not scoped to a single workspace.
 - `@apostrophecms/ai-adapter-openai`: OpenAI support, via the Responses and Images APIs.
 - `@apostrophecms/ai-adapter-openai-compatible`: support for any Chat Completions service (Groq, Mistral, OpenRouter, Ollama, vLLM and friends) with no adapter code of your own.
 - `@apostrophecms/ai-adapter-google`: Google (Gemini) support, text and images through one API.

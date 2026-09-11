@@ -1,81 +1,14 @@
 // Implements {% area docOrWidget, 'areaName', { options... } %}
 
+const parseWith = require('../../../../../lib/custom-tag-with.js');
+
 module.exports = function(self) {
   return {
     // We need a custom parser because of the "with" syntax
-    parse(parser, nodes, lexer) {
-      // get the tag token
-      const token = parser.nextToken();
-
-      const args = new nodes.NodeList(token.lineno, token.colno);
-      let argsCount = 0;
-
-      while (true) {
-        // get the arguments before "with"
-        const object = parser.parseExpression();
-
-        if (argsCount < 2) {
-          args.addChild(object);
-          argsCount++;
-        } else {
-          const argList = args.children;
-          if (
-            argList && argList[1] &&
-            typeof argList[1].value === 'string'
-          ) {
-            throw usage(`Too many arguments were passed to the "${argList[1].value}" area before the "with" keyword.`);
-          } else {
-            throw usage('Too many arguments were passed to an area before the "with" keyword.');
-          }
-        }
-
-        const w = parser.peekToken();
-        if (!(w.type === 'comma')) {
-          break;
-        }
-        parser.nextToken();
-      }
-
-      const w = parser.peekToken();
-      if ((w.type === 'symbol') && (w.value === 'with')) {
-        parser.nextToken();
-        const _with = parser.parseExpression();
-        args.addChild(_with);
-      }
-      parser.advanceAfterBlockEnd(token.value);
-      return { args };
-    },
+    parse: parseWith(usage, 'area'),
     async run(context, doc, name, _with) {
       const req = context.ctx.__req;
-      let area;
-      if ((!doc) || ((typeof doc) !== 'object')) {
-        throw usage('You must pass an existing doc or widget as the first argument.');
-      }
-      if ((typeof name) !== 'string') {
-        throw usage('The second argument must be an area name.');
-      }
-      if (!name.match(/^\w+$/)) {
-        throw usage('area names should be made up only of letters, underscores and digits. Otherwise they will not save properly.');
-      }
-      area = doc[name];
-      if (!area) {
-        area = await self.apos.area.addMissingArea(doc, name, { throwIfNotFound: true });
-      }
-      const manager = self.apos.util.getManagerOf(doc);
-      const field = manager.schema.find(field => field.name === name);
-      if (!field) {
-        throw new Error(`The doc of type ${doc.type} with the slug ${doc.slug} has no field named ${name}.
-In Apostrophe 3.x areas must be part of the schema for each page or piece type.`);
-      }
-      area._fieldId = field._id;
-      area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
-      // For existing areas this is propagated at load time, areas in
-      // array items will always be existing areas
-      area._edit = area._edit || doc._edit;
-
-      self.apos.area.prepForRender(area, doc, name);
-      const content = await self.apos.area.renderArea(req, area, _with);
-      return content;
+      return self.renderAreaTag(req, doc, name, _with, { usage });
     }
   };
 

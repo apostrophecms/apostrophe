@@ -218,6 +218,7 @@ export default {
     }),
     bindEventListeners() {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
+      apos.bus.$on('field-edited', this.fieldEditedHandler);
       apos.bus.$on('command-menu-area-copy-widget', this.handleCopy);
       apos.bus.$on('command-menu-area-cut-widget', this.handleCut);
       apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
@@ -227,6 +228,7 @@ export default {
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
+      apos.bus.$off('field-edited', this.fieldEditedHandler);
       apos.bus.$off('command-menu-area-copy-widget', this.handleCopy);
       apos.bus.$off('command-menu-area-cut-widget', this.handleCut);
       apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
@@ -306,6 +308,42 @@ export default {
       for (const item of this.next) {
         if (this.patchSubobject(item, area)) {
           break;
+        }
+      }
+    },
+    // A field edited in place with the `{% field %}` tag patches the document
+    // on the server and tells no one else, but our copy of the widget it
+    // belongs to is what copying, cutting, duplicating and the widget's own
+    // editor all work from. Left alone it would hand back the value the page
+    // was rendered with, undoing what the user just typed.
+    //
+    // The value is written into the widget rather than the widget being
+    // replaced: a new object would send `AposWidget` off to re-render markup
+    // the user may still have the cursor in, and the browser is already
+    // showing what they typed
+    fieldEditedHandler({
+      docId,
+      patchKey,
+      value
+    }) {
+      if (docId !== this.docId) {
+        return;
+      }
+      // `@id.name` for a field of a widget, or of an array item or object
+      // nested in one. Anything else is a field of the document itself, which
+      // no widget of ours holds
+      const match = patchKey.match(/^@([^.]+)\.(.+)$/);
+      if (!match) {
+        return;
+      }
+      const [ , id, name ] = match;
+      for (const widget of this.next) {
+        const object = (widget._id === id)
+          ? widget
+          : this.findSubobject(widget, id);
+        if (object) {
+          object[name] = value;
+          return;
         }
       }
     },
@@ -690,6 +728,26 @@ export default {
           result = this.patchSubobject(val, subObject);
           if (result) {
             return result;
+          }
+        }
+      }
+    },
+    // Recursively seek the object with this `_id` within `object`, exactly as
+    // `patchSubobject` does, and hand it back rather than replacing it
+    findSubobject(object, id) {
+      for (const [ key, val ] of Object.entries(object)) {
+        if (key.charAt(0) === '_') {
+          // Find the thing itself, not a relationship that also contains
+          // a copy
+          continue;
+        }
+        if (val && typeof val === 'object') {
+          if (val._id === id) {
+            return val;
+          }
+          const found = this.findSubobject(val, id);
+          if (found) {
+            return found;
           }
         }
       }

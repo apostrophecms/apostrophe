@@ -1,0 +1,108 @@
+---
+// Renders one schema field of a doc, widget, array item or object in place,
+// and lets the user edit it right where it appears on the page. The Astro
+// equivalent of Apostrophe's `{% field %}` custom tag:
+//
+//   <AposField doc={page} name="headline" tag="h1" class="article__headline" />
+//
+// The value is rendered by Apostrophe, which is the only side that can
+// resolve the permalinks of rich text or knows what a field type added by a
+// module makes of its value. Everything the editor needs travels with it,
+// except the definition of the field itself: that is named by its id and
+// looked up in the schema the page already carries.
+//
+// Apostrophe only sends that for fields that asked for it, with `wysiwyg:
+// true` on the field or the `wysiwygFields` option of the module. It cannot
+// tell from here which fields this template renders in place, and a page has
+// dozens it never will — every SEO and Open Graph field, every slug.
+//
+// If the field is an area, use `<AposArea>`: an area is editable in place
+// already, and its own component knows all about that.
+
+import { logWarnOnce } from "../lib/log.js";
+
+const {
+  doc,
+  name,
+  tag,
+  class: className,
+  style,
+  attrs,
+  edit,
+  ...props
+} = Astro.props;
+
+const data = doc?._wysiwygFields?.[name];
+const value = doc?.[name];
+
+// What the template asked for, which is what reaches the editor as its
+// `options`, exactly as the `with` clause of the field tag does
+const withClause = {
+  ...(tag ? { tag } : {}),
+  ...(className ? { class: className } : {}),
+  ...(style ? { style } : {}),
+  ...(attrs ? { attrs } : {}),
+  ...(edit === false ? { edit: false } : {}),
+  ...props,
+};
+
+// The field type chose a tag knowing what shape its value is: a single line
+// string is part of the line the template put it on, a block is a block. The
+// template still has the last word
+const Tag = tag ?? data?.tag ?? "span";
+
+const classes = [data?.classes, className].filter(Boolean).join(" ");
+
+// Editing is the backend's decision — it knows the permissions, the read only
+// fields and the document this page is about — but the URL is Astro's, so ask
+// it too, exactly as AposArea does
+const isEdit = Boolean(
+  data?.canEdit && edit !== false && Astro.url.searchParams.get("aposEdit"),
+);
+
+const editAttributes = isEdit
+  ? {
+      "data-apos-wysiwyg-field-newly-editable": "",
+      "data-doc-id": data.docId,
+      "data-patch-key": data.patchKey,
+      "data-component": data.component,
+      "data-icon": data.icon,
+      "data-field-id": data.fieldId,
+      "data-value": JSON.stringify(value === undefined ? null : value),
+      "data-options": JSON.stringify(withClause),
+    }
+  : {};
+
+const attributes = {
+  ...(classes ? { class: classes } : {}),
+  ...(style ? { style } : {}),
+  ...(attrs ?? {}),
+  ...editAttributes,
+};
+
+// A field the backend did not annotate is displayed and not edited. The
+// value is still the value, and the visitor is entitled to read it. But it is
+// also what a missing `wysiwyg: true` looks like, so say so once while
+// developing rather than leaving a field mysteriously uneditable.
+// `import.meta.env.DEV` is replaced with `false` in production, so this is
+// dead code there
+// An array item and an object have no type of their own, so say what they
+// are the schema of
+const owner = doc?.type ?? doc?.scopedArrayName ?? doc?.scopedObjectName;
+
+if ((import.meta as any).env.DEV && !data) {
+  logWarnOnce(
+    `wysiwygField.${owner}.${name}`,
+    `<AposField name="${name}" /> is displaying a value Apostrophe sent no editing information for, so it cannot be edited in place.\n` +
+      `  If it should be, add wysiwyg: true to the ${name} field of ${owner ?? "its type"}, or name it in that module's wysiwygFields option.\n` +
+      `  Documents fetched from the REST API only carry it when the request asks for render-areas.`,
+  );
+}
+
+const rendered = data?.rendered;
+
+// A field can be inline content, so nothing is allowed to creep in between
+// the text the template typed and the value — which is why the markup below
+// is on one line, with no whitespace inside this component at all
+---
+{rendered === undefined ? <Tag {...attributes}>{value == null ? "" : String(value)}</Tag> : <Tag {...attributes} set:html={rendered} />}

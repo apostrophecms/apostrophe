@@ -15,7 +15,10 @@ module.exports = {
           phase: 'beforeSubmit',
           async props(req) {
             return {
-              sitekey: self.options.hcaptcha.site
+              sitekey: self.options.hcaptcha.site,
+              hl: self.options.hcaptcha.hl ||
+                self.apos.i18n.getAdminLocale?.(req) ||
+                req.locale
             };
           },
           async verify(req, data) {

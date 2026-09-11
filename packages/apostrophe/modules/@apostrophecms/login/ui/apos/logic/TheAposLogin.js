@@ -32,6 +32,9 @@ export default {
     },
     homeUrl() {
       return `${apos.prefix}/`;
+    },
+    directionClass() {
+      return apos.login.direction ? `apos-${apos.login.direction}` : null;
     }
   },
   // We need it here and not in the login form because the version used in the
