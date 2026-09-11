@@ -478,7 +478,7 @@ function sanitizeHtml(html, options, _recursing) {
               try {
                 let parsed = parseSrcset(value);
                 parsed.forEach(function(value) {
-                  if (naughtyHref(a, value.url)) {
+                  if (naughtyHref(name, value.url)) {
                     value.evil = true;
                   }
                 });
