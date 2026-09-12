@@ -10,41 +10,112 @@ module.exports = (self) => ({
   // the max POST size, max uploaded file size, etc. of
   // nginx and other proxy servers.
   //
-  // If an `authorize` function is supplied, it will be invoked
-  // with `req` at the start of each request. If it throws
-  // an error, a 403 forbidden error is sent. Use this mechanism
-  // to block unauthorized use and potential denial of service.
+  // The aposBigUpload protocol allocates server-side upload state and
+  // writes files to uploadfs before the route's own handler ever runs, so
+  // by default the middleware refuses any request that does not have
+  // `req.user`. A route that checks permissions itself is still checking
+  // them too late.
+  //
+  // If an `authorize` function is supplied, it replaces that default check
+  // and is invoked with `req` at the start of each request, before the
+  // request body is parsed. If it throws an error, a 403 forbidden error
+  // is sent. Use this mechanism to require more than a login, such as a
+  // particular permission.
+  //
+  // If `authorize` is explicitly `false`, no check is made at all and the
+  // route accepts big uploads from anonymous visitors. Only do this if the
+  // route has its own protection against denial of service. Any other
+  // non-function value is an error, so that a typo cannot silently leave a
+  // route unprotected.
 
   bigUploadMiddleware({ authorize } = {}) {
+    if (
+      (authorize !== undefined) &&
+      (authorize !== false) &&
+      ((typeof authorize) !== 'function')
+    ) {
+      // Only `false` turns the check off, so that a misspelled or undefined
+      // variable cannot quietly open the route to everyone
+      throw new Error('The authorize option to bigUploadMiddleware must be a function, or false to accept big uploads from anonymous visitors.');
+    }
+    const authorizeFn = (authorize === undefined)
+      ? requireUser
+      : authorize;
     return (req, res, next) => {
-      // Chain the multer middleware to handle normal uploads
-      // as chunks (more efficient than base64 etc)
-      const multerFn = multer({ dest: require('os').tmpdir() }).any();
-      return multerFn(req, res, () => {
-        return body(req, res, next);
+      // Express ignores the promise a middleware returns, so nothing in here
+      // may reject: an unhandled rejection reaches the process itself, and
+      // by default takes it down
+      run(req, res, next).catch(e => {
+        self.logError(req, 'bigUploadError', e.message, { stack: e.stack });
+        if (!res.headersSent) {
+          res.status(500).send({
+            name: 'error',
+            message: 'aposBigUpload error'
+          });
+        }
       });
     };
+
+    async function run(req, res, next) {
+      if (!await authorized(req, res)) {
+        return;
+      }
+      // Chain the multer middleware to handle normal uploads
+      // as chunks (more efficient than base64 etc). Never before
+      // authorization: multer writes the body to a temporary file
+      try {
+        await multerAny(req, res);
+      } catch (e) {
+        // A parse that fails partway can still have written temporary
+        // files, and `body` never runs to clean them up
+        await removeTempFiles(req.files);
+        throw e;
+      }
+      return body(req, res, next);
+    }
+
+    function requireUser(req) {
+      if (!req.user) {
+        throw self.apos.error('forbidden');
+      }
+    }
+
+    async function authorized(req, res) {
+      if (!authorizeFn) {
+        return true;
+      }
+      try {
+        await authorizeFn(req);
+      } catch (e) {
+        // No stack: a refused request is not an exception, and anyone at
+        // all can provoke this line as often as they like
+        self.logError(req, 'bigUploadUnauthorized', e.message);
+        res.status(403).send({
+          name: 'forbidden',
+          message: 'Unauthorized aposBigUpload request'
+        });
+        return false;
+      }
+      return true;
+    }
+
+    function multerAny(req, res) {
+      return new Promise((resolve, reject) => {
+        multer({ dest: require('os').tmpdir() }).any()(req, res, (e) => {
+          return e ? reject(e) : resolve();
+        });
+      });
+    }
 
     async function body(req, res, next) {
       const origFiles = req.files;
       try {
-        if (authorize) {
-          try {
-            await authorize(req);
-          } catch (e) {
-            self.logError('bigUploadUnauthorized', e);
-            return res.status(403).send({
-              name: 'forbidden',
-              message: 'Unauthorized aposBigUpload request'
-            });
-          }
-        }
         const params = req.query.aposBigUpload;
         if (!params) {
           return next();
         }
         if (params.type === 'start') {
-          return await self.bigUploadStart(req, req.body.files);
+          return await self.bigUploadStart(req, req.body && req.body.files);
         } else if (params.type === 'chunk') {
           return await self.bigUploadChunk(req, params);
         } else if (params.type === 'end') {
@@ -56,24 +127,34 @@ module.exports = (self) => ({
           });
         }
       } finally {
-        // Clean up multer temporary files
-        for (const file of (origFiles || [])) {
-          try {
-            await unlink(file.path);
-          } catch (e) {
-            // OK if it is already gone
-          }
-        }
+        await removeTempFiles(origFiles);
       }
     };
+
+    async function removeTempFiles(files) {
+      for (const file of (files || [])) {
+        try {
+          await unlink(file.path);
+        } catch (e) {
+          // OK if it is already gone
+        }
+      }
+    }
   },
 
   async bigUploadStart(req, files = {}) {
-    await self.bigUploadCleanup();
     try {
+      await self.bigUploadCleanup();
+      if (((typeof files) !== 'object') || (files === null) || Array.isArray(files)) {
+        throw invalid('files');
+      }
+      const entries = Object.entries(files);
+      if (entries.length > self.options.bigUploadMaxFiles) {
+        throw invalid('too many files');
+      }
       const id = self.apos.util.generateId();
       const formattedFiles = Object.fromEntries(
-        Object.entries(files).map(([ param, info ]) => {
+        entries.map(([ param, info ]) => {
           if ((typeof param) !== 'string') {
             throw invalid('param');
           }
@@ -86,22 +167,29 @@ module.exports = (self) => ({
           if (!info.name.length) {
             throw invalid('name empty');
           }
-          if ((typeof info.size) !== 'number') {
+          if (!Number.isFinite(info.size) || (info.size < 0)) {
             throw invalid('size');
           }
-          if ((typeof info.chunks) !== 'number') {
+          // The chunk count drives a loop over uploadfs for every chunk, both
+          // when assembling the upload and when cleaning it up, so it must be
+          // a sane integer and not merely a number
+          if (!Number.isInteger(info.chunks) || (info.chunks < 1)) {
             throw invalid('chunks');
+          }
+          if (info.chunks > self.options.bigUploadMaxChunks) {
+            throw invalid('too many chunks');
           }
           return [ param, {
             name: info.name,
             size: info.size,
-            type: info.type,
+            type: self.apos.launder.string(info.type),
             chunks: info.chunks
           } ];
         })
       );
       await self.bigUploads.insert({
         _id: id,
+        userId: (req.user && req.user._id) || null,
         files: formattedFiles,
         start: Date.now()
       });
@@ -109,26 +197,18 @@ module.exports = (self) => ({
         id
       });
     } catch (e) {
-      return req.res.status(500).send({
-        name: 'error',
-        message: 'aposBigUpload error'
-      });
+      return self.bigUploadErrorResponse(req, e);
     }
     function invalid(s) {
-      self.apos.util.error(`Invalid bigUpload parameter: ${s}`);
       return self.apos.error('invalid', s);
     }
   },
 
   async bigUploadChunk(req, params) {
     try {
-      const id = self.apos.launder.id(params.id);
+      const bigUpload = await self.bigUploadFor(req, params.id);
       const n = self.apos.launder.integer(params.n);
       const chunk = self.apos.launder.integer(params.chunk);
-      const bigUpload = await self.bigUploads.findOne({ _id: id });
-      if (!bigUpload) {
-        throw self.apos.error('notfound');
-      }
       if ((n < 0) || (n >= Object.keys(bigUpload.files).length)) {
         throw self.apos.error('invalid', 'n out of range');
       }
@@ -136,17 +216,17 @@ module.exports = (self) => ({
       if ((chunk < 0) || (chunk >= info.chunks)) {
         throw self.apos.error('invalid', 'chunk out of range');
       }
-      const file = req.files.find(f => f.fieldname === 'chunk') || req.files[0];
+      const file = (req.files || []).find(f => f.fieldname === 'chunk') ||
+        (req.files || [])[0];
+      if (!file) {
+        throw self.apos.error('invalid', 'no chunk sent');
+      }
       const ufs = self.getBigUploadFs();
-      const ufsPath = `/big-uploads/${id}-${n}-${chunk}`;
+      const ufsPath = `/big-uploads/${bigUpload._id}-${n}-${chunk}`;
       await ufs.copyIn(file.path, ufsPath);
       return req.res.send({});
     } catch (e) {
-      self.logError('bigUploadError', e);
-      return req.res.status(500).send({
-        name: 'error',
-        message: 'aposBigUpload error'
-      });
+      return self.bigUploadErrorResponse(req, e);
     }
   },
 
@@ -154,14 +234,7 @@ module.exports = (self) => ({
     const ufs = self.getBigUploadFs();
     let bigUpload;
     try {
-      bigUpload = await self.bigUploads.findOne({
-        _id: id
-      });
-      if (!bigUpload) {
-        return req.res.status(400).send({
-          name: 'invalid'
-        });
-      }
+      bigUpload = await self.bigUploadFor(req, id);
       let n = 0;
       req.files = {};
       for (const [ param, {
@@ -169,24 +242,27 @@ module.exports = (self) => ({
       } ] of Object.entries(bigUpload.files)) {
         const extname = require('path').extname(name);
         const ext = extname ? extname.substring(1) : 'tmp';
-        const tmp = `${ufs.getTempPath()}/${id}-${n}.${ext}`;
+        const tmp = `${ufs.getTempPath()}/${bigUpload._id}-${n}.${ext}`;
         const out = await open(tmp, 'w');
-        for (let i = 0; (i < chunks); i++) {
-          const ufsPath = `/big-uploads/${id}-${n}-${i}`;
-          const chunkTmp = `${tmp}.${i}`;
-          try {
-            await ufs.copyOut(ufsPath, chunkTmp);
-            const data = await readFile(chunkTmp);
-            await out.writeFile(data);
-          } finally {
+        try {
+          for (let i = 0; (i < chunks); i++) {
+            const ufsPath = `/big-uploads/${bigUpload._id}-${n}-${i}`;
+            const chunkTmp = `${tmp}.${i}`;
             try {
-              await unlink(chunkTmp);
-            } catch (e) {
-              // Probably never got that far
+              await ufs.copyOut(ufsPath, chunkTmp);
+              const data = await readFile(chunkTmp);
+              await out.writeFile(data);
+            } finally {
+              try {
+                await unlink(chunkTmp);
+              } catch (e) {
+                // Probably never got that far
+              }
             }
           }
+        } finally {
+          await out.close();
         }
-        await out.close();
         n++;
         req.files[param] = {
           name,
@@ -196,15 +272,63 @@ module.exports = (self) => ({
       }
       return next();
     } catch (e) {
-      self.logError('bigUploadError', e);
-      return req.res.status(500).send({
-        name: 'error',
-        message: 'aposBigUpload error'
-      });
+      return self.bigUploadErrorResponse(req, e);
     } finally {
-      // Intentionally in background
-      self.bigUploadCleanupOne(bigUpload);
+      if (bigUpload) {
+        // Intentionally in background, but a failure to clean up must not
+        // become an unhandled rejection
+        self.bigUploadCleanupOne(bigUpload).catch(e => {
+          self.logError(req, 'bigUploadCleanupError', e.message, {
+            stack: e.stack
+          });
+        });
+      }
     }
+  },
+
+  // Fetch the aposBigUpload record for the given id on behalf of `req`,
+  // throwing `notfound` unless it exists and belongs to the same user that
+  // started it. The id arrives from the query string, so it must be
+  // laundered to a string: an object would otherwise reach the selector as
+  // a MongoDB query operator and match somebody else's upload.
+
+  async bigUploadFor(req, id) {
+    const _id = self.apos.launder.id(id);
+    if (!_id) {
+      throw self.apos.error('notfound');
+    }
+    const bigUpload = await self.bigUploads.findOne({ _id });
+    if (!bigUpload) {
+      throw self.apos.error('notfound');
+    }
+    const userId = (req.user && req.user._id) || null;
+    if ((bigUpload.userId || null) !== userId) {
+      throw self.apos.error('notfound');
+    }
+    return bigUpload;
+  },
+
+  // Send the response for an error thrown while handling an aposBigUpload
+  // request. Errors from `apos.error` that map to a status code are
+  // reported with that code, so the client can distinguish a rejected
+  // request from a server failure. Anything else is logged server-side and
+  // reported as a bare 500.
+
+  bigUploadErrorResponse(req, e) {
+    const status = e.aposError && self.errors[e.name];
+    if (status) {
+      return req.res.status(status).send({
+        name: e.name,
+        // Always a fixed string naming the parameter at fault, never
+        // anything taken from the request
+        message: e.message
+      });
+    }
+    self.logError(req, 'bigUploadError', e.message, { stack: e.stack });
+    return req.res.status(500).send({
+      name: 'error',
+      message: 'aposBigUpload error'
+    });
   },
 
   async bigUploadCleanup() {
@@ -214,16 +338,30 @@ module.exports = (self) => ({
       }
     }).toArray();
     for (const bigUpload of old) {
-      await self.bigUploadCleanupOne(bigUpload);
+      try {
+        await self.bigUploadCleanupOne(bigUpload);
+      } catch (e) {
+        // One unremovable upload must not block every later upload
+        self.logError('bigUploadCleanupError', e.message, { stack: e.stack });
+      }
     }
   },
 
   async bigUploadCleanupOne(bigUpload) {
+    if (!bigUpload) {
+      return;
+    }
     const ufs = self.getBigUploadFs();
     const id = bigUpload._id;
     let n = 0;
-    for (const { chunks } of Object.values(bigUpload.files)) {
-      for (let i = 0; (i < chunks); i++) {
+    for (const { chunks } of Object.values(bigUpload.files || {})) {
+      // Records written before chunk counts were bounded, or by a future
+      // bug, must not turn cleanup into an endless loop
+      const total = Math.min(
+        Number.isInteger(chunks) ? chunks : 0,
+        self.options.bigUploadMaxChunks
+      );
+      for (let i = 0; (i < total); i++) {
         const ufsPath = `/big-uploads/${id}-${n}-${i}`;
         try {
           await ufs.remove(ufsPath);
