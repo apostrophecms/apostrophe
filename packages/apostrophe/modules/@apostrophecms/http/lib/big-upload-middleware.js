@@ -172,8 +172,13 @@ module.exports = (self) => ({
           }
           // The chunk count drives a loop over uploadfs for every chunk, both
           // when assembling the upload and when cleaning it up, so it must be
-          // a sane integer and not merely a number
-          if (!Number.isInteger(info.chunks) || (info.chunks < 1)) {
+          // a sane integer and not merely a number. A zero-byte file has no
+          // chunks, which is how big-upload-client represents it.
+          if (
+            !Number.isInteger(info.chunks) ||
+            (info.chunks < 0) ||
+            ((info.chunks === 0) && (info.size !== 0))
+          ) {
             throw invalid('chunks');
           }
           if (info.chunks > self.options.bigUploadMaxChunks) {
@@ -354,9 +359,13 @@ module.exports = (self) => ({
     const ufs = self.getBigUploadFs();
     const id = bigUpload._id;
     let n = 0;
-    for (const { chunks } of Object.values(bigUpload.files || {})) {
-      // Records written before chunk counts were bounded, or by a future
-      // bug, must not turn cleanup into an endless loop
+    const files = Object.values(bigUpload.files || {})
+      .slice(0, self.options.bigUploadMaxFiles);
+    for (const { chunks } of files) {
+      // Records written before file and chunk counts were bounded, or by a
+      // future bug, must not turn cleanup into an endless loop. Excess legacy
+      // entries are abandoned when the upload record is deleted below rather
+      // than allowing one cleanup request to perform unbounded work.
       const total = Math.min(
         Number.isInteger(chunks) ? chunks : 0,
         self.options.bigUploadMaxChunks

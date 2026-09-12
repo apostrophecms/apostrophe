@@ -251,7 +251,7 @@ describe('Big Upload', function() {
     assert.strictEqual(await apos.http.bigUploads.countDocuments({}), before);
   });
 
-  it('should refuse a chunk count that is not a positive integer', async function() {
+  it('should refuse an invalid chunk count for a nonempty file', async function() {
     for (const chunks of [ 0, -1, 1.5, Number.MAX_VALUE, 'lots', null ]) {
       const result = await raw({ type: 'start' }, {
         cookieJar: jar,
@@ -271,6 +271,25 @@ describe('Big Upload', function() {
     }
   });
 
+  it('should accept zero chunks for a zero-byte file', async function() {
+    const result = await raw({ type: 'start' }, {
+      cookieJar: jar,
+      body: {
+        files: {
+          file: {
+            name: 'empty.txt',
+            size: 0,
+            type: 'text/plain',
+            chunks: 0
+          }
+        }
+      }
+    });
+    assert.strictEqual(result.status, 200);
+    assert(result.body.id);
+    await apos.http.bigUploads.deleteOne({ _id: result.body.id });
+  });
+
   it('should refuse more files than the limit', async function() {
     const files = {};
     for (let i = 0; (i < apos.http.options.bigUploadMaxFiles + 1); i++) {
@@ -287,6 +306,42 @@ describe('Big Upload', function() {
     });
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.body.name, 'invalid');
+  });
+
+  it('should bound cleanup work for legacy upload records', async function() {
+    const maxFiles = apos.http.options.bigUploadMaxFiles;
+    const maxChunks = apos.http.options.bigUploadMaxChunks;
+    const getBigUploadFs = apos.http.getBigUploadFs;
+    const removed = [];
+    apos.http.options.bigUploadMaxFiles = 2;
+    apos.http.options.bigUploadMaxChunks = 3;
+    apos.http.getBigUploadFs = () => ({
+      async remove(uploadfsPath) {
+        removed.push(uploadfsPath);
+      }
+    });
+    try {
+      await apos.http.bigUploadCleanupOne({
+        _id: 'legacy',
+        files: {
+          one: { chunks: 4 },
+          two: { chunks: 4 },
+          three: { chunks: 4 }
+        }
+      });
+      assert.deepStrictEqual(removed, [
+        '/big-uploads/legacy-0-0',
+        '/big-uploads/legacy-0-1',
+        '/big-uploads/legacy-0-2',
+        '/big-uploads/legacy-1-0',
+        '/big-uploads/legacy-1-1',
+        '/big-uploads/legacy-1-2'
+      ]);
+    } finally {
+      apos.http.options.bigUploadMaxFiles = maxFiles;
+      apos.http.options.bigUploadMaxChunks = maxChunks;
+      apos.http.getBigUploadFs = getBigUploadFs;
+    }
   });
 
   it('should reject an end request for an id that does not exist', async function() {
