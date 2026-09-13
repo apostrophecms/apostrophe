@@ -237,6 +237,7 @@ module.exports = (self) => ({
 
   async bigUploadEnd(req, id, next) {
     const ufs = self.getBigUploadFs();
+    const outputs = [];
     let bigUpload;
     try {
       bigUpload = await self.bigUploadFor(req, id);
@@ -249,6 +250,7 @@ module.exports = (self) => ({
         const ext = extname ? extname.substring(1) : 'tmp';
         const tmp = `${ufs.getTempPath()}/${bigUpload._id}-${n}.${ext}`;
         const out = await open(tmp, 'w');
+        outputs.push(tmp);
         try {
           for (let i = 0; (i < chunks); i++) {
             const ufsPath = `/big-uploads/${bigUpload._id}-${n}-${i}`;
@@ -277,6 +279,22 @@ module.exports = (self) => ({
       }
       return next();
     } catch (e) {
+      // The route only takes ownership after every file is assembled. On
+      // failure, remove both the partial output and any earlier complete ones.
+      for (const tmp of outputs) {
+        try {
+          await unlink(tmp);
+        } catch (cleanupError) {
+          if (cleanupError.code !== 'ENOENT') {
+            self.logError(req, 'bigUploadCleanupError', cleanupError.message, {
+              stack: cleanupError.stack
+            });
+          }
+        }
+      }
+      if (bigUpload) {
+        req.files = {};
+      }
       return self.bigUploadErrorResponse(req, e);
     } finally {
       if (bigUpload) {
