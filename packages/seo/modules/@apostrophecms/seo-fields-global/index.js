@@ -531,10 +531,10 @@ Allow: /
           try {
             const global = await self.apos.doc.find(req, { type: '@apostrophecms/global' }).toObject();
 
-            // Check if llms.txt is disabled
+            // Check if llms.txt is disabled. apiRoutes always send 200 for a
+            // normal return value, so throw to produce a real 404 (Lighthouse N/A).
             if (global.llmsTxtSelection === 'disabled') {
-              req.res.status(404);
-              return 'Not Found';
+              throw self.apos.error('notfound');
             }
 
             // If custom text is provided, use it
@@ -544,56 +544,58 @@ Allow: /
             }
 
             const baseUrl = self.apos.url.getBaseUrl(req);
+            const parts = [ `# ${resolveLlmsSiteName(global, baseUrl)}`, '' ];
 
-            // Build the LLMS.txt content
-            let content = `# ${global.seoSiteName || global.title || 'Website'}\n\n`;
-
-            if (global.seoSiteDescription) {
-              content += `${global.seoSiteDescription}\n\n`;
+            const description = collapseWhitespace(global.seoSiteDescription);
+            if (description) {
+              parts.push(`> ${description}`, '');
             }
 
-            // Add AI training policy based on selection
             if (global.llmsTxtSelection === 'disallow') {
-              content += '## AI Training Policy\n\n';
-              content += 'This site\'s content should NOT be used for:\n';
-              content += '- Training large language models\n';
-              content += '- Building AI datasets\n';
-              content += '- Machine learning training data\n\n';
-              content += 'The content may be used for:\n';
-              content += '- Real-time search and retrieval\n';
-              content += '- Answering user queries with attribution\n';
-              content += '- Providing context with proper citations\n\n';
+              parts.push(
+                'This site\'s content should NOT be used for training large language models, building AI datasets, or as machine learning training data. The content may be used for real-time search and retrieval, answering user queries with attribution, and providing context with proper citations.',
+                ''
+              );
             } else {
-              content += '## AI Training Policy\n\n';
-              content += 'This site allows responsible AI crawling and indexing for:\n';
-              content += '- Search and retrieval purposes\n';
-              content += '- Answering user queries with proper attribution\n';
-              content += '- Building context for AI assistants\n\n';
+              parts.push(
+                'This site allows responsible AI crawling and indexing for search and retrieval, answering user queries with proper attribution, and building context for AI assistants.',
+                ''
+              );
             }
 
-            // Site Information
-            content += '## Site Information\n\n';
-            content += `- URL: ${baseUrl}\n`;
-
-            if (global.seoJsonLdOrganization?.name) {
-              content += `- Organization: ${global.seoJsonLdOrganization.name}\n`;
-              content += `- Type: ${global.seoJsonLdOrganization.type || 'Organization'}\n`;
+            const org = global.seoJsonLdOrganization;
+            if (org?.name) {
+              const orgName = collapseWhitespace(org.name);
+              const orgType = collapseWhitespace(org.type) || 'Organization';
+              parts.push(`**Organization:** ${orgName} (${orgType})`);
+              const telephone = collapseWhitespace(org.contactPoint?.telephone);
+              if (telephone) {
+                parts.push(`**Contact:** ${telephone}`);
+              }
+              parts.push('');
             }
 
-            if (global.seoJsonLdOrganization?.contactPoint?.telephone) {
-              content += `- Contact: ${global.seoJsonLdOrganization.contactPoint.telephone}\n`;
+            const pieceTypes = Object.values(self.apos.modules)
+              .filter(m => m.__meta?.chain?.some(c => c.name === '@apostrophecms/piece-type'))
+              .filter(m => {
+                // Only exclude if explicitly set to false
+                return m.options?.seoFields !== false;
+              })
+              .filter(m => {
+                // Filter out internal/system types
+                // anything with @ or : is typically internal
+                const name = m.__meta.name;
+                return !name.startsWith('@apostrophecms/') &&
+                  !name.startsWith('@apostrophecms-pro/') &&
+                  !name.includes(':'); // Catches apostrophe:, aposPalette:, etc.
+              })
+              .map(m => collapseWhitespace(m.label || m.options?.label || m.__meta.name))
+              .filter(Boolean);
+
+            if (pieceTypes.length > 0) {
+              parts.push(`**Content types:** ${pieceTypes.join(', ')}`, '');
             }
 
-            content += '\n';
-
-            // Reference sitemap if the module exists
-            const hasSitemap = self.apos.modules['@apostrophecms/sitemap'];
-            if (hasSitemap) {
-              content += '## Sitemap\n\n';
-              content += `- XML Sitemap: ${baseUrl}/sitemap.xml\n\n`;
-            }
-
-            // Key Pages - get top-level pages
             try {
               const pages = await self.apos.page.find(req, {
                 level: { $lte: 1 },
@@ -608,16 +610,19 @@ Allow: /
                 .limit(10)
                 .toArray();
 
-              if (pages.length > 0) {
-                content += '## Main Pages\n\n';
-                pages.forEach(page => {
-                  content += `### ${page.title}\n`;
-                  content += `- URL: ${page._url}\n`;
-                  if (page.seoDescription) {
-                    content += `- Description: ${page.seoDescription}\n`;
+              const pageLinks = pages
+                .map(page => {
+                  const title = collapseWhitespace(page.title);
+                  const url = toAbsoluteUrl(page._url, baseUrl);
+                  if (!title || !url) {
+                    return null;
                   }
-                  content += '\n';
-                });
+                  return formatMarkdownLink(title, url, page.seoDescription);
+                })
+                .filter(Boolean);
+
+              if (pageLinks.length > 0) {
+                parts.push('## Main Pages', '', ...pageLinks, '');
               }
             } catch (err) {
               self.logError(req, 'llms-txt-pages-error', 'Error fetching pages for llms.txt', {
@@ -625,74 +630,27 @@ Allow: /
               });
             }
 
-            // Content Types Available
-            content += '## Content Types\n\n';
-            const pieceTypes = Object.values(self.apos.modules)
-              .filter(m => m.__meta?.chain?.some(c => c.name === '@apostrophecms/piece-type'))
-              .filter(m => {
-                // Only exclude if explicitly set to false
-                const seoFieldsOption = m.options?.seoFields;
-                return seoFieldsOption !== false;
-              })
-              .filter(m => {
-                // Filter out internal/system types
-                // anything with @ or : is typically internal
-                const name = m.__meta.name;
-                return !name.startsWith('@apostrophecms/') &&
-                  !name.startsWith('@apostrophecms-pro/') &&
-                  !name.includes(':'); // Catches apostrophe:, aposPalette:, etc.
-              })
-              .map(m => ({
-                name: m.__meta.name,
-                label: m.label || m.options?.label || m.__meta.name
-              }));
-
-            if (pieceTypes.length > 0) {
-              content += 'This site contains the following content types:\n\n';
-              pieceTypes.forEach(type => {
-                content += `- ${type.label}\n`;
-              });
-              content += '\n';
+            const optionalLinks = [];
+            if (self.apos.modules['@apostrophecms/sitemap']) {
+              const sitemapUrl = toAbsoluteUrl('/sitemap.xml', baseUrl);
+              if (sitemapUrl) {
+                optionalLinks.push(formatMarkdownLink('XML Sitemap', sitemapUrl));
+              }
             }
-
-            // Technical Details
-            content += '## Technical Details\n\n';
-            content += '- Platform: ApostropheCMS\n';
-            content += '- SEO Module: @apostrophecms/seo\n';
-            content += `- Robots: ${baseUrl}/robots.txt\n`;
-
-            const schemaTypes = new Set();
-            if (global.seoJsonLdOrganization?.name) {
-              schemaTypes.add('Organization');
+            const robotsUrl = toAbsoluteUrl('/robots.txt', baseUrl);
+            if (robotsUrl) {
+              optionalLinks.push(formatMarkdownLink('Robots', robotsUrl));
             }
-            if (global.seoSiteName) {
-              schemaTypes.add('WebSite');
-            }
-
-            if (schemaTypes.size > 0) {
-              content += `- Structured Data: ${Array.from(schemaTypes).join(', ')}\n`;
-            }
-
-            content += '\n';
-
-            // Footer
-            content += '## For AI/LLM Systems\n\n';
-            content += 'This site uses structured data (JSON-LD) on pages for better context.\n';
-            content += 'Check individual pages for schema.org markup including:\n';
-            content += '- WebPage/CollectionPage schemas\n';
-            content += '- Article, Product, Event, Person schemas\n';
-            content += '- BreadcrumbList navigation context\n';
-            content += '- ItemList for collection pages\n';
-
-            if (global.llmsTxtSelection === 'disallow') {
-              content += '\n## Important\n\n';
-              content += 'Please respect our AI training policy stated above. ';
-              content += 'Use this content for real-time retrieval and user assistance only.\n';
+            if (optionalLinks.length > 0) {
+              parts.push('## Optional', '', ...optionalLinks, '');
             }
 
             req.res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-            return content;
+            return `${parts.join('\n').replace(/\n+$/, '')}\n`;
           } catch (err) {
+            if (err.name === 'notfound') {
+              throw err;
+            }
             self.logError(req, 'llms-txt-error', 'Error generating llms.txt', {
               stack: err.stack
             });
@@ -704,3 +662,57 @@ Allow: /
     };
   }
 };
+
+function collapseWhitespace(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function escapeLlmsLinkText(value) {
+  return collapseWhitespace(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]');
+}
+
+function toAbsoluteUrl(url, baseUrl) {
+  const trimmed = String(url || '').trim();
+  if (!trimmed) {
+    return '';
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  const base = String(baseUrl || '').replace(/\/+$/, '');
+  if (!base) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/')) {
+    return `${base}${trimmed}`;
+  }
+  return `${base}/${trimmed}`;
+}
+
+function resolveLlmsSiteName(globalDoc, baseUrl) {
+  const siteName = collapseWhitespace(globalDoc?.seoSiteName);
+  if (siteName) {
+    return siteName;
+  }
+  try {
+    const hostname = new URL(baseUrl).hostname;
+    if (hostname) {
+      return hostname;
+    }
+  } catch {
+    // Invalid or relative base URL
+  }
+  return 'Website';
+}
+
+function formatMarkdownLink(title, url, description) {
+  let line = `- [${escapeLlmsLinkText(title)}](${url})`;
+  const notes = collapseWhitespace(description);
+  if (notes) {
+    line += `: ${notes}`;
+  }
+  return line;
+}
