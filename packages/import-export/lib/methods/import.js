@@ -724,6 +724,7 @@ module.exports = self => {
         let modified = translate;
         if (translate) {
           modified = await self.translateDocument(req, docToInsert);
+          self.setTranslationSaveFlag(_req, docToInsert);
         }
         if (manager.options.autopublish === true) {
           modified = false;
@@ -788,6 +789,7 @@ module.exports = self => {
 
           if (translate) {
             await self.translateDocument(req, docToUpdate, { update: true });
+            self.setTranslationSaveFlag(_req, docToUpdate);
           }
 
           self.isPage(manager)
@@ -942,6 +944,7 @@ module.exports = self => {
         let modified = translate;
         if (translate) {
           modified = await self.translateDocument(req, docToInsert);
+          self.setTranslationSaveFlag(_req, docToInsert);
         }
         // If the piece is autopublished, the translation will be published
         // and we don't want to set the modified flag.
@@ -981,6 +984,7 @@ module.exports = self => {
         if (translate) {
           docToUpdate.__originalLocale = doc.__originalLocale;
           await self.translateDocument(req, docToUpdate, { update: true });
+          self.setTranslationSaveFlag(_req, docToUpdate);
         }
         if (self.isPage(manager)) {
           await importPage.update({
@@ -1047,6 +1051,17 @@ module.exports = self => {
         existing: update,
         silent: false
       });
+    },
+
+    // A translation provider marks the document it translated with the
+    // virtual `_ai` (see `apos.doc.setSaveFlags`). The document is saved
+    // with a request of its own, so carry the mark over to that request
+    // here. Only `_ai` is read: the imported data never sets save flags
+    setTranslationSaveFlag(req, doc) {
+      if (doc._ai === true) {
+        req.aposAi = true;
+      }
+      delete doc._ai;
     },
 
     canImport(req, docType) {
