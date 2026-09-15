@@ -605,12 +605,18 @@ module.exports = {
           .areas(false)
           .relationships(false);
       },
-      // The default REST API version projection
+      // The default REST API version projection. `updatedAt` and
+      // `restoredFrom` are only present on records that have them
       getRestProjection() {
         return {
           _id: 1,
           createdAt: 1,
+          updatedAt: 1,
+          mode: 1,
           author: 1,
+          authorId: 1,
+          ai: 1,
+          restoredFrom: 1,
           changeCount: 1
         };
       },

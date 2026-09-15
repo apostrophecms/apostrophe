@@ -972,6 +972,290 @@ describe('Document Versions', function () {
     });
   });
 
+  const hour = 60 * 60 * 1000;
+
+  function draftReqAs(apos, name, options = {}) {
+    return getReq(apos, {
+      _id: name,
+      title: name,
+      mode: 'draft',
+      ...options
+    });
+  }
+
+  // The timeline of `doc`, newest first. `raw` keeps `doc` packed, so a
+  // replace in place shows as a changed record
+  function timeline(apos, doc, { raw = false } = {}) {
+    return apos.docVersions.find(
+      getReq(apos),
+      apos.docVersions.getTimelineCriteria(doc),
+      { raw }
+    );
+  }
+
+  async function saveDraft(apos, req, doc, changes = {}) {
+    const draft = await apos.article
+      .find(req, { aposDocId: doc.aposDocId })
+      .toObject();
+    return apos.article.update(req, {
+      ...draft,
+      ...changes
+    });
+  }
+
+  // Move the creation of the newest version back by `ms`, the way the clock
+  // would have after that long
+  async function ageNewestVersion(apos, doc, ms) {
+    const [ newest ] = await timeline(apos, doc, { raw: true });
+    await apos.docVersions.db.updateOne(
+      { _id: newest._id },
+      { $set: { createdAt: new Date(newest.createdAt.getTime() - ms) } }
+    );
+  }
+
+  describe('capture rules', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'default-page': {}
+        }
+      });
+    });
+
+    after(async function() {
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    it('should record the first version of a document', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(({
+          mode, author, authorId, ai, changeCount
+        }) => ({
+          mode,
+          author,
+          authorId,
+          ai,
+          changeCount
+        })),
+        [
+          {
+            mode: 'draft',
+            author: 'alice',
+            authorId: 'alice',
+            ai: false,
+            changeCount: 0
+          }
+        ]
+      );
+    });
+
+    it('should replace the draft version while the same author keeps editing', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+      const [ first ] = await timeline(apos, draft);
+
+      await saveDraft(apos, req, draft, { title: 'Second' });
+      await saveDraft(apos, req, draft, { title: 'Third' });
+
+      const versions = await timeline(apos, draft);
+      assert.equal(versions.length, 1);
+      assert.equal(versions[0]._id, first._id);
+      assert.equal(versions[0].doc.title, 'Third');
+      assert.deepEqual(versions[0].createdAt, first.createdAt);
+      assert(versions[0].updatedAt > first.createdAt);
+    });
+
+    it('should neither record nor update a version for a save without changes', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+      const before = await timeline(apos, draft, { raw: true });
+
+      await saveDraft(apos, req, draft);
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+
+      const explicitReq = draftReqAs(apos, 'alice', { aposExplicitSave: true });
+      await saveDraft(apos, explicitReq, draft);
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+
+      const saved = await apos.article.find(req, { _id: draft._id }).toObject();
+      assert.equal(await apos.docVersions.canHaveVersion(explicitReq, saved), false);
+    });
+
+    it('should start a version on an explicit save', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+
+      await saveDraft(
+        apos,
+        draftReqAs(apos, 'alice', { aposExplicitSave: true }),
+        draft,
+        { title: 'Saved' }
+      );
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'Saved', 'First' ]);
+    });
+
+    it('should record every publish', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+
+      await apos.article.publish(req, draft);
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.doc.title ]),
+        [ [ 'published', 'First' ], [ 'draft', 'First' ] ]
+      );
+    });
+
+    it('should start a draft version after a publish and leave the publish untouched', async function() {
+      const article = await apos.article.insert(getReq(apos, {
+        _id: 'alice',
+        title: 'alice'
+      }), { title: 'First' });
+      const [ published ] = await timeline(apos, article, { raw: true });
+      assert.equal(published.mode, 'published');
+
+      const req = draftReqAs(apos, 'alice');
+      await saveDraft(apos, req, article, { title: 'Second' });
+      await saveDraft(apos, req, article, { title: 'Third' });
+
+      const versions = await timeline(apos, article);
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.doc.title ]),
+        [ [ 'draft', 'Third' ], [ 'published', 'First' ], [ 'draft', 'First' ] ]
+      );
+      const [ , publishedAfter ] = await timeline(apos, article, { raw: true });
+      assert.deepEqual(publishedAfter, published);
+    });
+
+    it('should recompute the change count of a replaced version against the one before it', async function() {
+      const article = await apos.article.insert(getReq(apos, {
+        _id: 'alice',
+        title: 'alice'
+      }), { title: 'First' });
+      const req = draftReqAs(apos, 'alice');
+
+      await saveDraft(apos, req, article, { title: 'Second' });
+      assert.equal((await timeline(apos, article))[0].changeCount, 1);
+
+      await saveDraft(apos, req, article, { int: 5 });
+      assert.equal((await timeline(apos, article))[0].changeCount, 2);
+    });
+
+    it('should start a version when another author saves', async function() {
+      const draft = await apos.article.insert(draftReqAs(apos, 'alice'), { title: 'First' });
+
+      await saveDraft(apos, draftReqAs(apos, 'bob'), draft, { title: 'By Bob' });
+      await saveDraft(apos, draftReqAs(apos, 'alice'), draft, { title: 'By Alice' });
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version.authorId, version.author, version.doc.title ]),
+        [
+          [ 'alice', 'alice', 'By Alice' ],
+          [ 'bob', 'bob', 'By Bob' ],
+          [ 'alice', 'alice', 'First' ]
+        ]
+      );
+    });
+
+    it('should record a system save as another author without an id', async function() {
+      const draft = await apos.article.insert(draftReqAs(apos, 'alice'), { title: 'First' });
+
+      await saveDraft(apos, apos.task.getReq({ mode: 'draft' }), draft, { title: 'By a task' });
+
+      const [ newest, previous ] = await timeline(apos, draft);
+      assert.equal(previous.doc.title, 'First');
+      assert.equal(newest.authorId, null);
+      assert.equal(newest.author, 'System Task');
+      assert.equal(newest.doc.title, 'By a task');
+    });
+
+    it('should start a version when AI involvement changes', async function() {
+      const draft = await apos.article.insert(draftReqAs(apos, 'alice'), { title: 'First' });
+      const aiReq = draftReqAs(apos, 'alice', { aposAi: true });
+
+      await saveDraft(apos, aiReq, draft, { title: 'AI 1' });
+      await saveDraft(apos, aiReq, draft, { title: 'AI 2' });
+      await saveDraft(apos, draftReqAs(apos, 'alice'), draft, { title: 'Human' });
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version.ai, version.doc.title ]),
+        [
+          [ false, 'Human' ],
+          [ true, 'AI 2' ],
+          [ false, 'First' ]
+        ]
+      );
+    });
+
+    it('should start a version once a day has passed since the previous one', async function() {
+      assert.equal(apos.docVersions.options.draftInterval, 24 * hour);
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+
+      await ageNewestVersion(apos, draft, 23 * hour);
+      await saveDraft(apos, req, draft, { title: 'Same day' });
+      await ageNewestVersion(apos, draft, 2 * hour);
+      await saveDraft(apos, req, draft, { title: 'Next day' });
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'Next day', 'Same day' ]);
+    });
+  });
+
+  describe('capture rules with a configured interval', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'default-page': {},
+          '@apostrophecms/document-versions': {
+            options: {
+              draftInterval: hour
+            }
+          }
+        }
+      });
+    });
+
+    after(async function() {
+      await destroy(apos);
+    });
+
+    it('should start a version once the configured interval has passed', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+
+      await ageNewestVersion(apos, draft, 30 * 60 * 1000);
+      await saveDraft(apos, req, draft, { title: 'Within the hour' });
+      await ageNewestVersion(apos, draft, hour);
+      await saveDraft(apos, req, draft, { title: 'After the hour' });
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => version.doc.title),
+        [ 'After the hour', 'Within the hour' ]
+      );
+    });
+  });
+
   describe('REST API', function() {
     let apos;
     let admin;
@@ -1070,9 +1354,9 @@ describe('Document Versions', function () {
       assert(versions[0]._id);
       assert(versions[0].createdAt);
       assert.equal(versions[0].author, admin.title);
-      assert.equal(
-        Object.keys(versions[0]).length,
-        Object.keys(apos.docVersions.getRestProjection()).length
+      assert.deepEqual(
+        Object.keys(versions[0]).sort(),
+        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'mode' ]
       );
     });
 
@@ -1094,9 +1378,9 @@ describe('Document Versions', function () {
       assert(versions[0]._id);
       assert(versions[0].createdAt);
       assert.equal(versions[0].author, editor.title);
-      assert.equal(
-        Object.keys(versions[0]).length,
-        Object.keys(apos.docVersions.getRestProjection()).length
+      assert.deepEqual(
+        Object.keys(versions[0]).sort(),
+        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'mode' ]
       );
     });
 
@@ -1116,9 +1400,9 @@ describe('Document Versions', function () {
       assert.equal(versions.length, 2);
       assert(versions[0]._id);
       assert(versions[0].createdAt);
-      assert.equal(
-        Object.keys(versions[0]).length,
-        Object.keys(apos.docVersions.getRestProjection()).length
+      assert.deepEqual(
+        Object.keys(versions[0]).sort(),
+        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'mode' ]
       );
     });
 
@@ -1252,10 +1536,9 @@ describe('Document Versions', function () {
       assert(version.createdAt);
       assert.equal(version.author, admin.title);
       assert.equal(version.doc.title, article.title);
-      assert.equal(
-        Object.keys(version).length,
-        // projection plus the doc
-        Object.keys(apos.docVersions.getRestProjection()).length + 1
+      assert.deepEqual(
+        Object.keys(version).sort(),
+        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'doc', 'mode' ]
       );
     });
 
@@ -1280,10 +1563,9 @@ describe('Document Versions', function () {
       assert(version.createdAt);
       assert.equal(version.author, editor.title);
       assert.equal(version.doc.title, article.title);
-      assert.equal(
-        Object.keys(version).length,
-        // projection plus the doc
-        Object.keys(apos.docVersions.getRestProjection()).length + 1
+      assert.deepEqual(
+        Object.keys(version).sort(),
+        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'doc', 'mode' ]
       );
     });
 
@@ -1307,10 +1589,9 @@ describe('Document Versions', function () {
       assert(version._id);
       assert(version.createdAt);
       assert.equal(version.doc.title, article.title);
-      assert.equal(
-        Object.keys(version).length,
-        // projection plus the doc
-        Object.keys(apos.docVersions.getRestProjection()).length + 1
+      assert.deepEqual(
+        Object.keys(version).sort(),
+        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'doc', 'mode' ]
       );
     });
 
@@ -1567,9 +1848,12 @@ describe('Document Versions', function () {
         const expected = {
           version: {
             _id: data.version._id,
+            ai: false,
             author: data.version.author,
+            authorId: 1,
             changeCount: 1,
             createdAt: data.version.createdAt,
+            mode: 'published',
             doc: {
               ...{
                 ...articleV3,
@@ -1704,9 +1988,12 @@ describe('Document Versions', function () {
         const expected = {
           version: {
             _id: data.version._id,
+            ai: false,
             author: data.version.author,
+            authorId: 1,
             changeCount: 3,
             createdAt: data.version.createdAt,
+            mode: 'published',
             doc: {
               ...{
                 ...articlePageV2,

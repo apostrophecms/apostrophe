@@ -296,4 +296,75 @@ describe('Document Versions: i18n', function () {
       ]
     );
   });
+
+  describe('locale isolation', function () {
+    const req = () => getReq(apos, {
+      _id: 'user',
+      title: 'User'
+    });
+    const draftReq = (locale = 'en') => getReq(apos, {
+      _id: 'user',
+      title: 'User',
+      mode: 'draft',
+      locale
+    });
+    const findDraft = (locale, doc) => apos.article
+      .find(draftReq(locale), { aposDocId: doc.aposDocId })
+      .toObject();
+    // Records as stored, so a replace in place shows as well
+    const recordsIn = (locale, doc) => apos.docVersions.find(
+      req(),
+      {
+        docId: doc.aposDocId,
+        locale
+      },
+      { raw: true }
+    );
+
+    it('should keep draft saves in the locale they are made in', async function () {
+      const article = await apos.article.insert(req(), { title: 'Article' });
+      await apos.article.localize(draftReq(), await findDraft('en', article), 'fr');
+      const fr = await recordsIn('fr', article);
+      const en = await recordsIn('en', article);
+
+      await apos.article.update(draftReq(), {
+        ...await findDraft('en', article),
+        title: 'Article v2'
+      });
+      await apos.article.update(draftReq(), {
+        ...await findDraft('en', article),
+        title: 'Article v3'
+      });
+
+      assert.deepEqual(await recordsIn('fr', article), fr);
+      const [ newest, ...rest ] = await recordsIn('en', article);
+      assert.deepEqual(rest, en);
+      assert.equal(newest.mode, 'draft');
+      assert.equal((await apos.docVersions.unpack(newest.doc)).title, 'Article v3');
+    });
+
+    it('should record a localization in the target locale only', async function () {
+      const article = await apos.article.insert(req(), { title: 'Article' });
+      const en = await recordsIn('en', article);
+
+      await apos.article.localize(draftReq(), await findDraft('en', article), 'fr');
+
+      assert.deepEqual(await recordsIn('en', article), en);
+      const fr = await apos.docVersions.find(req(), {
+        docId: article.aposDocId,
+        locale: 'fr'
+      });
+      assert.deepEqual(
+        fr.map(version => [ version.mode, version.doc.aposLocale, version.doc.title ]),
+        [ [ 'draft', 'fr:draft', 'Article' ] ]
+      );
+      assert.equal(
+        await apos.docVersions.db.countDocuments({
+          docId: article.aposDocId,
+          locale: { $nin: [ 'en', 'fr' ] }
+        }),
+        0
+      );
+    });
+  });
 });
