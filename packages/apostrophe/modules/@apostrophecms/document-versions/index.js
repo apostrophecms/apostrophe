@@ -42,6 +42,7 @@ module.exports = {
     self.enableBrowserData();
     await self.enableCollection();
     await self.createIndexes();
+    self.addMigrations();
   },
 
   handlers(self) {
@@ -159,6 +160,24 @@ module.exports = {
         `,
         task: self.setChangeCountTask
       },
+      'compress-legacy-versions': {
+        usage: stripIndent`
+          Usage: node app @apostrophecms/document-versions:compress-legacy-versions
+
+          Converts version records still in the uncompressed legacy format. The
+          compress-version-docs migration does this once; run this task when legacy
+          records were written afterwards, for instance by an instance of the site
+          still running older code during a deployment.
+        `,
+        async task() {
+          const converted = await self.compressLegacyVersions();
+          self.logInfo(
+            'compress-legacy-versions-complete',
+            `Converted ${converted} legacy document versions`,
+            { converted }
+          );
+        }
+      },
       'rename-locale': {
         usage: stripIndent`
           Usage: node app @apostrophecms/document-versions:rename-locale --old=de-DE --new=de-de
@@ -211,6 +230,38 @@ module.exports = {
           docId: 1,
           createdAt: -1
         }, {});
+      },
+      addMigrations() {
+        self.apos.migration.add('compress-version-docs', self.compressLegacyVersions);
+      },
+      // Records written before `doc` was packed hold it as a plain object, are
+      // keyed by the document's full `_id` and have no `mode` or `locale`.
+      // A converted record always has `mode`, so a rerun resumes where the
+      // last one stopped. Returns the number of records converted.
+      async compressLegacyVersions() {
+        let converted = 0;
+        await self.apos.migration.each(
+          self.db,
+          { mode: { $exists: false } },
+          5,
+          async version => {
+            const packed = typeof version.doc === 'string';
+            const doc = packed
+              ? await self.unpack(version.doc)
+              : version.doc;
+            await self.db.updateOne({ _id: version._id }, {
+              $set: {
+                ...self.getTimelineCriteria(doc),
+                mode: doc.aposMode || 'published',
+                doc: packed
+                  ? version.doc
+                  : await self.pack(doc)
+              }
+            });
+            converted++;
+          }
+        );
+        return converted;
       },
       // The locale of a document without its mode suffix, `null` when the
       // type is not localized

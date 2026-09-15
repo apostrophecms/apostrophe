@@ -2012,6 +2012,272 @@ describe('Document Versions', function () {
     });
   });
 
+  describe('compressed records', function () {
+    let apos;
+    let admin;
+    let jarAdmin;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          '@apostrophecms/i18n': {
+            options: {
+              locales: {
+                en: {},
+                fr: {
+                  prefix: '/fr'
+                }
+              }
+            }
+          },
+          article: {},
+          'default-page': {}
+        }
+      });
+      admin = await addUser(apos, 'admin');
+      jarAdmin = await login(apos, 'admin');
+    });
+
+    after(async function() {
+      await removeUploads();
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    // Rewrite every stored record in the shape it had before compression:
+    // `doc` a plain object, `docId` the full `_id`, no `mode` or `locale`
+    async function toLegacy() {
+      const records = await apos.docVersions.db.find({}).toArray();
+      for (const {
+        mode, locale, ...record
+      } of records) {
+        const doc = await apos.docVersions.unpack(record.doc);
+        await apos.docVersions.db.replaceOne({ _id: record._id }, {
+          ...record,
+          docId: doc._id,
+          doc
+        });
+      }
+    }
+
+    function rawRecords() {
+      return apos.docVersions.db.find({}).sort({ _id: 1 }).toArray();
+    }
+
+    it('should unpack a packed document with its types intact', async function() {
+      const doc = {
+        _id: 'doc:en:published',
+        title: 'Title',
+        int: 5,
+        float: 1.5,
+        boolean: false,
+        empty: null,
+        updatedAt: new Date('2026-01-02T03:04:05.006Z'),
+        main: {
+          _id: 'area',
+          metaType: 'area',
+          items: [
+            {
+              _id: 'widget',
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              content: '<p>Text</p>'
+            }
+          ]
+        }
+      };
+
+      const packed = await apos.docVersions.pack(doc);
+      assert.equal(typeof packed, 'string');
+
+      const unpacked = await apos.docVersions.unpack(packed);
+      assert.deepEqual(unpacked, doc);
+      assert(unpacked.updatedAt instanceof Date);
+    });
+
+    it('should refuse to unpack a plain document', async function() {
+      await assert.rejects(
+        apos.docVersions.unpack({ title: 'Plain' }),
+        /Version doc is not packed: run the pending migrations/
+      );
+    });
+
+    it('should store `doc` packed and the document identity at top level', async function() {
+      const req = getReq(apos);
+      const article = await apos.article.insert(req, { title: 'Article' });
+      const fr = await apos.article.localize(req, article, 'fr');
+      await apos.article.publish(getReq(apos, { locale: 'fr' }), fr);
+
+      const records = await apos.docVersions.find(
+        apos.task.getReq(),
+        { docId: article.aposDocId },
+        { raw: true }
+      );
+      assert.deepEqual(
+        records.map(record => [ record.docId, record.mode, record.locale ]).sort(),
+        [
+          [ article.aposDocId, 'published', 'en' ],
+          [ article.aposDocId, 'published', 'fr' ]
+        ]
+      );
+      for (const record of records) {
+        assert.equal(typeof record.doc, 'string');
+      }
+    });
+
+    it('should serve a legacy record identically once migrated', async function() {
+      const req = getReq(apos, admin);
+      const article = await apos.article.insert(req, {
+        title: 'Article',
+        int: 1
+      });
+      await apos.article.update(req, {
+        ...article,
+        title: 'Article 2',
+        int: 2
+      });
+      const criteria = apos.docVersions.getTimelineCriteria(article);
+      const expected = await apos.docVersions.find(apos.task.getReq(), criteria);
+      assert.equal(expected.length, 2);
+      const expectedRest = await apos.http.get(`/api/v1/${moduleName}/${expected[0]._id}`, {
+        jar: jarAdmin
+      });
+
+      await toLegacy();
+      await assert.rejects(
+        apos.docVersions.find(apos.task.getReq(), {}),
+        /Version doc is not packed/
+      );
+
+      await apos.docVersions.compressLegacyVersions();
+
+      for (const record of await rawRecords()) {
+        assert.equal(typeof record.doc, 'string');
+        assert(!record.docId.includes(':'));
+      }
+      assert.deepEqual(
+        await apos.docVersions.find(apos.task.getReq(), criteria),
+        expected
+      );
+      assert.deepEqual(
+        await apos.http.get(`/api/v1/${moduleName}/${expected[0]._id}`, {
+          jar: jarAdmin
+        }),
+        expectedRest
+      );
+    });
+
+    it('should convert legacy records only and change nothing on a rerun', async function() {
+      await apos.article.insert(getReq(apos), { title: 'Legacy' });
+      await toLegacy();
+      const [ legacy ] = await rawRecords();
+      await apos.docVersions.db.insertMany(Array.from({ length: 149 }, (_, i) => ({
+        ...legacy,
+        _id: `${legacy._id}-${String(i).padStart(3, '0')}`
+      })));
+      await apos.article.insert(getReq(apos), { title: 'Packed' });
+      const [ packed ] = await apos.docVersions.db
+        .find({ mode: { $exists: true } })
+        .toArray();
+
+      assert.equal(await apos.docVersions.compressLegacyVersions(), 150);
+
+      const converted = await rawRecords();
+      assert.equal(converted.length, 151);
+      assert(converted.every(record => record.mode && typeof record.doc === 'string'));
+      assert.deepEqual(converted.find(record => record._id === packed._id), packed);
+
+      assert.equal(await apos.docVersions.compressLegacyVersions(), 0);
+      assert.deepEqual(await rawRecords(), converted);
+    });
+
+    it('should convert legacy records written after the migration with the task', async function() {
+      await apos.article.insert(getReq(apos), { title: 'Late' });
+      await toLegacy();
+
+      await apos.task.invoke(`${moduleName}:compress-legacy-versions`);
+
+      const [ record ] = await rawRecords();
+      assert.equal(typeof record.doc, 'string');
+      assert.equal(record.mode, 'published');
+    });
+
+    it('should restore a version recorded before the migration and one after', async function() {
+      const req = getReq(apos, admin);
+      const article = await apos.article.insert(req, {
+        title: 'Before',
+        int: 1
+      });
+      await toLegacy();
+      await apos.docVersions.compressLegacyVersions();
+      await apos.article.update(req, {
+        ...article,
+        title: 'After',
+        int: 2
+      });
+      await apos.article.update(req, {
+        ...article,
+        title: 'Current',
+        int: 3
+      });
+      const [ , after, before ] = await apos.docVersions.find(
+        apos.task.getReq(),
+        apos.docVersions.getTimelineCriteria(article)
+      );
+
+      // The same requests the versions modal makes
+      async function restore(version) {
+        const { doc } = await apos.http.get(`/api/v1/${moduleName}/${version._id}`, {
+          jar: jarAdmin
+        });
+        return apos.http.put(`/api/v1/article/${article.aposDocId}:en:draft`, {
+          body: doc,
+          qs: { aposMode: 'draft' },
+          jar: jarAdmin
+        });
+      }
+
+      const restoredBefore = await restore(before);
+      assert.equal(restoredBefore.title, 'Before');
+      assert.equal(restoredBefore.int, 1);
+
+      const restoredAfter = await restore(after);
+      assert.equal(restoredAfter.title, 'After');
+      assert.equal(restoredAfter.int, 2);
+    });
+
+    it('should store a document with a large area in less room than plain', async function() {
+      const paragraph = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do ' +
+        'eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+      const article = await apos.article.insert(getReq(apos), {
+        title: 'Large',
+        main: {
+          _id: 'main',
+          metaType: 'area',
+          items: Array.from({ length: 200 }, (_, i) => ({
+            _id: `widget${i}`,
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: `<p>${i}: ${paragraph}</p>`
+          }))
+        }
+      });
+      const [ record ] = await apos.docVersions.find(
+        apos.task.getReq(),
+        apos.docVersions.getTimelineCriteria(article),
+        { raw: true }
+      );
+      const { EJSON } = apos.modules['@apostrophecms/db'];
+      const doc = await apos.docVersions.unpack(record.doc);
+      const plain = Buffer.byteLength(EJSON.stringify(doc));
+
+      assert(Buffer.byteLength(record.doc) < plain);
+    });
+  });
+
   describe('legacy module', function () {
     const legacyName = '@apostrophecms-pro/document-versions';
     let apos;
