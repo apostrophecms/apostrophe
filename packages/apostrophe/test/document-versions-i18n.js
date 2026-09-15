@@ -367,4 +367,83 @@ describe('Document Versions: i18n', function () {
       );
     });
   });
+
+  describe('AI localization', function () {
+    const editor = () => getReq(apos, {
+      _id: 'alice-id',
+      title: 'Alice',
+      mode: 'draft'
+    });
+    const findDraft = (locale, doc) => apos.article
+      .find(getReq(apos, {
+        mode: 'draft',
+        locale
+      }), { aposDocId: doc.aposDocId })
+      .toObject();
+    const versionsIn = (locale, doc) => apos.docVersions.find(editor(), {
+      docId: doc.aposDocId,
+      locale
+    });
+    const summary = version => [
+      version.mode, version.ai, version.author, version.authorId, version.doc.title
+    ];
+    // A `beforeLocalize` handler marks the localized document as AI
+    // written on demand, the way a translation provider does
+    let markAi = false;
+    beforeEach(function () {
+      markAi = false;
+      apos.article.on('beforeLocalize', 'markAiOnDemand', (req, doc) => {
+        if (markAi) {
+          doc._ai = true;
+        }
+      });
+    });
+
+    it('should record an AI version attributed to the editor when a handler marks the localization', async function () {
+      const article = await apos.article.insert(editor(), { title: 'Article' });
+      const en = await versionsIn('en', article);
+      const req = editor();
+
+      markAi = true;
+      await apos.article.localize(req, await findDraft('en', article), 'fr');
+      markAi = false;
+      await apos.article.localize(req, await findDraft('en', article), 'en-US');
+
+      assert.equal(req.aposAi, undefined);
+      assert.deepEqual(
+        (await versionsIn('fr', article)).map(summary),
+        [ [ 'draft', true, 'Alice', 'alice-id', 'Article' ] ]
+      );
+      assert.deepEqual(
+        (await versionsIn('en-US', article)).map(summary),
+        [ [ 'draft', false, 'Alice', 'alice-id', 'Article' ] ]
+      );
+      assert.deepEqual(await versionsIn('en', article), en);
+      const fr = await findDraft('fr', article);
+      assert.equal(fr._ai, undefined);
+      assert.equal((await versionsIn('fr', article))[0].doc._ai, undefined);
+    });
+
+    it('should start an AI version when the localization updates an existing document', async function () {
+      const article = await apos.article.insert(editor(), { title: 'Article' });
+      await apos.article.localize(editor(), await findDraft('en', article), 'fr');
+      await apos.article.update(editor(), {
+        ...await findDraft('en', article),
+        title: 'Article v2'
+      });
+
+      markAi = true;
+      await apos.article.localize(editor(), await findDraft('en', article), 'fr', {
+        update: true
+      });
+
+      assert.deepEqual(
+        (await versionsIn('fr', article)).map(summary),
+        [
+          [ 'draft', true, 'Alice', 'alice-id', 'Article v2' ],
+          [ 'draft', false, 'Alice', 'alice-id', 'Article' ]
+        ]
+      );
+    });
+  });
 });

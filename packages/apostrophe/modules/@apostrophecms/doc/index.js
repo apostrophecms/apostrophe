@@ -1329,23 +1329,31 @@ module.exports = {
       getManager(type) {
         return self.managers[self.normalizeType(type)];
       },
-      // Moves the virtual `_explicitSave` and `_restoreVersion` properties of
-      // a REST write body to `req.aposExplicitSave` and `req.aposRestoreVersion`.
+      // Moves the virtual `_explicitSave`, `_restoreVersion` and `_ai`
+      // properties of a document about to be saved to `req.aposExplicitSave`,
+      // `req.aposRestoreVersion` and `req.aposAi`. Called on REST write bodies
+      // and on localized documents after `beforeLocalize`.
       // `_explicitSave: true` marks a save the user asked for, not an autosave.
       // `_restoreVersion` is the `_id` of the version being restored.
+      // `_ai: true` marks a save whose content was written by an AI tool.
       setSaveFlags(req, input) {
         if (!input || (typeof input !== 'object')) {
           return;
         }
         const explicitSave = self.apos.launder.boolean(input._explicitSave);
         const restoreVersion = self.apos.launder.id(input._restoreVersion);
+        const ai = self.apos.launder.boolean(input._ai);
         delete input._explicitSave;
         delete input._restoreVersion;
+        delete input._ai;
         if (explicitSave) {
           req.aposExplicitSave = true;
         }
         if (restoreVersion) {
           req.aposRestoreVersion = restoreVersion;
+        }
+        if (ai) {
+          req.aposAi = true;
         }
       },
       // Lock the given doc to a given `tabId`, such
