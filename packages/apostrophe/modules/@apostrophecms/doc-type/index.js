@@ -1878,6 +1878,7 @@ module.exports = {
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
+        browserOptions.versions = self.apos.docVersions.hasVersions(self.options);
         browserOptions.previewDraft = self.isLocalized() &&
           !browserOptions.autopublish &&
           self.options.previewDraft;

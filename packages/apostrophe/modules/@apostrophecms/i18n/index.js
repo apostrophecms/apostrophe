@@ -886,9 +886,14 @@ module.exports = {
         } = await self.apos.doc.changeDocIds(ids.map(doc => [ doc._id, doc._id.replace(`:${oldLocale}`, `:${newLocale}`) ]), {
           keep: (keep === oldLocale) ? 'old' : (keep === newLocale) ? 'new' : false
         }));
+        const versions = await self.apos.docVersions.renameLocale(
+          oldLocale,
+          newLocale,
+          { keep }
+        );
         return {
-          renamed,
-          kept
+          renamed: renamed + versions.renamed,
+          kept: kept + versions.kept
         };
       },
       // Localize a batch of documents.
