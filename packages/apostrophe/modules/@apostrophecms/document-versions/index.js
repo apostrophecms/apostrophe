@@ -1,10 +1,17 @@
 // Records a version of every localized, manually published document each
 // time it is published, and lets editors browse, compare and restore them.
-// Versions live in the `aposDocsVersions` collection.
+// Versions live in the `aposDocsVersions` collection. A record's `doc` is
+// stored packed (see `pack`) and the finders unpack it, so queries never
+// reach into `doc`: everything they need is a top-level field.
 
+const { promisify } = require('node:util');
+const zlib = require('node:zlib');
 const { createId } = require('@paralleldrive/cuid2');
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');
+
+const gzip = promisify(zlib.gzip);
+const gunzip = promisify(zlib.gunzip);
 
 module.exports = {
   options: {
@@ -40,6 +47,9 @@ module.exports = {
   handlers(self) {
     return {
       'apostrophe:modulesRegistered': {
+        checkLegacyModule() {
+          self.checkLegacyModule();
+        },
         async addContextMenu() {
           self.addContextMenu();
         }
@@ -59,26 +69,26 @@ module.exports = {
 
   restApiRoutes(self) {
     return {
+      // `docId` is the live document's `_id`
       async getAll(req) {
-        const docId = self.apos.launder
-          .id(req.query.docId, '')
-          .replace(/:[\w]+$/, ':published');
+        const docId = self.apos.launder.id(req.query.docId, '');
 
         if (!docId) {
           throw self.apos.error('invalid');
         }
-        const permissionCheck = await self.getRestDocQuery(req.clone({ mode: 'draft' }))
-          .and({ _id: docId.replace(':published', ':draft') })
-          .toCount();
+        const doc = await self.getRestDocQuery(req.clone({ mode: 'draft' }))
+          .and({ _id: docId.replace(/:[\w]+$/, ':draft') })
+          .toObject();
 
-        if (!permissionCheck) {
+        if (!doc) {
           throw self.apos.error('notfound');
         }
 
-        const pager = await self.getRestPager(req, docId);
+        const criteria = self.getTimelineCriteria(doc);
+        const pager = await self.getRestPager(req, criteria);
         const versions = await self.find(
           req,
-          { docId },
+          criteria,
           {
             skip: pager.skip,
             limit: pager.perPage,
@@ -202,6 +212,36 @@ module.exports = {
           createdAt: -1
         }, {});
       },
+      // The locale of a document without its mode suffix, `null` when the
+      // type is not localized
+      getLocale(doc) {
+        return doc.aposLocale
+          ? doc.aposLocale.split(':')[0]
+          : null;
+      },
+      // One document's history in one locale. The draft and the published
+      // copy share `aposDocId`, so the pair identifies the timeline whatever
+      // mode each version was saved in
+      getTimelineCriteria(doc) {
+        return {
+          docId: doc.aposDocId,
+          locale: self.getLocale(doc)
+        };
+      },
+      // The package this module replaces recorded versions of its own into
+      // the same collection, in a shape these finders reject. Its deprecation
+      // release carries no methods and may stay installed; any earlier
+      // release must not run next to this module.
+      checkLegacyModule() {
+        const legacy = self.apos.modules['@apostrophecms-pro/document-versions'];
+        if (legacy && typeof legacy.createFor === 'function') {
+          throw new Error(stripIndent`
+            @apostrophecms-pro/document-versions is installed alongside the core
+            @apostrophecms/document-versions module and would record versions of its own.
+            Remove it from the project.
+          `);
+        }
+      },
       // Whether a doc type module records versions, from its options.
       // `versions` wins over `autopublish` and `localized`.
       hasVersions(moduleOptions) {
@@ -250,7 +290,7 @@ module.exports = {
           throw self.apos.error('notfound', `Manager not found for doc type: ${doc.type}`);
         }
 
-        const lastVersion = await self.findOne(req, { docId: doc._id });
+        const lastVersion = await self.findOne(req, self.getTimelineCriteria(doc));
 
         const changeCount = lastVersion
           ? self.apos.schema.getChanges(
@@ -262,7 +302,7 @@ module.exports = {
           : [];
 
         const instance = {
-          ...self.newInstance(doc, req.user),
+          ...await self.newInstance(doc, req.user),
           changeCount: changeCount.length
         };
 
@@ -275,41 +315,83 @@ module.exports = {
         });
         return version;
       },
-      // Remove all versions and attachment references for a given doc
+      // Remove all versions and attachment references of a doc in the
+      // locale it was deleted from; the other locales keep their history
       async removeAllFor(req, doc) {
-        const docId = doc._id.replace(/:[\w]+$/, ':published');
-        const cursor = self.getFindCursor({ docId });
-        while (await cursor.hasNext()) {
-          const version = await cursor.next();
-          await self.db.deleteOne({ _id: version._id });
-          await self.apos.attachment.updateDocReferences({
-            ...version.doc,
-            _id: version._id
-          }, {
-            deleted: true
-          });
-        }
+        await self.removeVersions(req, self.getTimelineCriteria(doc));
+      },
+      // Delete every version matching `criteria` and release its attachment
+      // references. Batched so a long history is never loaded at once.
+      // Returns the number of versions removed.
+      async removeVersions(req, criteria) {
+        let removed = 0;
+        let versions;
+        do {
+          versions = await self.find(req, criteria, { limit: 50 });
+          for (const version of versions) {
+            await self.db.deleteOne({ _id: version._id });
+            await self.apos.attachment.updateDocReferences({
+              ...version.doc,
+              _id: version._id
+            }, {
+              deleted: true
+            });
+            removed++;
+          }
+        } while (versions.length);
+        return removed;
       },
       // Insert new version into the DB
       async insert(req, versionDoc) {
         await self.emit('beforeInsert', req, versionDoc);
         return self.db.insertOne(versionDoc);
       },
-      // Retrieve versions from the DB.
+      // Retrieve versions from the DB, with `doc` unpacked when projected.
       // options.limit can be used for pagination, not set by default.
       // Sort option (options.sort) defaults to (descending) version.createdAt.
       // options.skip can be used for pagination, not set by default.
       // MongoDB projection is provided via `options.project`.
+      // `options.raw` returns the records as stored, for callers that read
+      // top-level fields only.
       async find(req, criteria, options = {}) {
         if (!req || Object.keys(req).length === 0) {
           throw new Error('req argument is required. Usage: find(req, criteria)');
         }
-        const opts = { ...options };
+        const { raw, ...opts } = options;
         if (!opts.sort && opts.sort !== false) {
           opts.sort = self.defaultSort;
         }
-        return self.getFindCursor(criteria, opts)
+        const versions = await self.getFindCursor(criteria, opts)
           .toArray();
+        if (raw) {
+          return versions;
+        }
+        return Promise.all(versions.map(self.unpackVersion));
+      },
+      // A version's `doc` is stored as a base64 string of the gzipped Extended
+      // JSON of the document, so it survives every database backend without a
+      // binary type. Nothing outside the module sees the packed form.
+      async pack(doc) {
+        const { EJSON } = self.apos.modules['@apostrophecms/db'];
+        const buffer = await gzip(EJSON.stringify(doc));
+        return buffer.toString('base64');
+      },
+      // A plain object means a legacy record the migration has not reached;
+      // nothing downstream handles that form, so fail loudly
+      async unpack(packed) {
+        if (typeof packed !== 'string') {
+          throw new Error('Version doc is not packed: run the pending migrations');
+        }
+        const { EJSON } = self.apos.modules['@apostrophecms/db'];
+        const buffer = await gunzip(Buffer.from(packed, 'base64'));
+        return EJSON.parse(buffer.toString('utf8'));
+      },
+      // Unpack `doc` in place when the record carries it
+      async unpackVersion(version) {
+        if (version.doc !== undefined) {
+          version.doc = await self.unpack(version.doc);
+        }
+        return version;
       },
       // Same options as find() but no options.sort
       // and options.project are available
@@ -333,6 +415,7 @@ module.exports = {
         });
         return res[0];
       },
+      // A cursor over the stored records: `doc` stays packed
       getFindCursor(criteria, options = {}) {
         const cursor = self.db.find(criteria);
 
@@ -369,9 +452,9 @@ module.exports = {
         };
       },
       // Find the total versions count and do the pagination related math
-      async getRestPager(req, docId) {
+      async getRestPager(req, criteria) {
         const perPage = self.defaultLimit;
-        const total = await self.count(req, { docId });
+        const total = await self.count(req, criteria);
         const currentPage = self.apos.launder.integer(req.query.page, 1);
         const pages = Math.ceil(total / perPage);
         const skip = perPage * (currentPage - 1);
@@ -384,21 +467,23 @@ module.exports = {
         };
       },
 
-      // Create new version doc instance from a given doc and the current user.
-      // The current user is optional.
-      newInstance(doc, currentUser) {
+      // Create a new version record from a doc and the current user (optional).
+      // `docId`, `mode` and `locale` identify the document at top level;
+      // `doc` is the packed copy of its content.
+      async newInstance(doc, currentUser) {
         const author = currentUser
           ? currentUser.title || currentUser.username
           : 'SYSTEM';
-        const docId = doc._id;
 
         return {
           _id: createId(),
           metaType: 'version',
           createdAt: new Date(),
-          docId,
+          docId: doc.aposDocId,
+          mode: doc.aposMode || 'published',
+          locale: self.getLocale(doc),
           author,
-          doc: self.apos.util.clonePermanent(doc)
+          doc: await self.pack(self.apos.util.clonePermanent(doc))
         };
       },
       addContextMenu() {
@@ -453,6 +538,7 @@ module.exports = {
             project: {
               ...self.getRestProjection(),
               docId: 1,
+              locale: 1,
               doc: 1
             }
           }
@@ -461,8 +547,11 @@ module.exports = {
           throw new ReferenceError('version');
         }
 
+        const draftId = version.locale
+          ? `${version.docId}:${version.locale}:draft`
+          : version.docId;
         const permissionCheck = await self.getRestDocQuery(draftReq)
-          .and({ _id: version.docId.replace(':published', ':draft') })
+          .and({ _id: draftId })
           .toCount();
 
         if (!permissionCheck) {
@@ -480,6 +569,7 @@ module.exports = {
         }
 
         delete version.docId;
+        delete version.locale;
 
         return version;
       },
@@ -550,71 +640,86 @@ module.exports = {
           })
         };
       },
+      // Recompute `changeCount` for every version, one timeline at a time.
+      // Two `distinct` calls rather than a `$group`: every database backend
+      // runs `distinct` natively
       async setChangeCountTask() {
         const req = self.apos.task.getReq();
         const docIds = await self.db.distinct('docId');
 
         for (const docId of docIds) {
-          const versions = await self.db.find({ docId })
-            .sort({ createdAt: -1 })
-            .toArray();
-
-          if (!versions.length) {
-            continue;
-          }
-
-          const updates = [];
-          for (const [ i, version ] of versions.entries()) {
-            const { type } = version.doc;
-            const manager = self.apos.doc.getManager(type);
-            if (!manager) {
-              self.logWarn('set-change-count-no-manager', `No manager found for ${type}`, {
-                docId,
-                docType: type
-              });
-              continue;
-            }
-
-            const nextVersion = versions[i + 1];
-            if (!nextVersion) {
-              continue;
-            }
-
-            const changes = self.apos.schema.getChanges(
-              req,
-              manager.schema,
-              version.doc,
-              nextVersion.doc
-            );
-            updates.push({
-              _id: version._id,
-              changeCount: changes.length
-            });
-          }
-
-          if (!updates.length) {
-            continue;
-          }
-
-          const bulkOperations = updates.map(({ _id, changeCount }) => ({
-            updateOne: {
-              filter: { _id },
-              update: { $set: { changeCount } }
-            }
-          }));
-
-          try {
-            await self.db.bulkWrite(bulkOperations);
-          } catch (err) {
-            self.logError('set-change-count-failed', `Error while updating versions for ${docId}`, {
+          const locales = await self.db.distinct('locale', { docId });
+          for (const locale of locales) {
+            await self.setChangeCountFor(req, {
               docId,
-              stack: err.stack
+              locale
             });
           }
         }
       },
+      // Recompute `changeCount` along one timeline, newest first
+      async setChangeCountFor(req, criteria) {
+        const { docId } = criteria;
+        const versions = await self.find(req, criteria);
+        if (!versions.length) {
+          return;
+        }
+
+        const updates = [];
+        for (const [ i, version ] of versions.entries()) {
+          const { type } = version.doc;
+          const manager = self.apos.doc.getManager(type);
+          if (!manager) {
+            self.logWarn('set-change-count-no-manager', `No manager found for ${type}`, {
+              docId,
+              docType: type
+            });
+            continue;
+          }
+
+          const nextVersion = versions[i + 1];
+          if (!nextVersion) {
+            continue;
+          }
+
+          const changes = self.apos.schema.getChanges(
+            req,
+            manager.schema,
+            version.doc,
+            nextVersion.doc
+          );
+          updates.push({
+            _id: version._id,
+            changeCount: changes.length
+          });
+        }
+
+        if (!updates.length) {
+          return;
+        }
+
+        const bulkOperations = updates.map(({ _id, changeCount }) => ({
+          updateOne: {
+            filter: { _id },
+            update: { $set: { changeCount } }
+          }
+        }));
+
+        try {
+          await self.db.bulkWrite(bulkOperations);
+        } catch (err) {
+          self.logError('set-change-count-failed', `Error while updating versions for ${docId}`, {
+            docId,
+            stack: err.stack
+          });
+        }
+      },
       // Rename a locale in the version records. Same contract as
       // `@apostrophecms/i18n.rename`, which calls this after renaming the docs.
+      // A document's records in both locales share `docId`, so where both
+      // exist `keep` decides: the old locale's records are dropped when the
+      // new locale is kept, the new locale's when the old one is, and the
+      // two histories merge into one timeline when `keep` is unset.
       async renameLocale(oldLocale, newLocale, { keep } = {}) {
         if (!oldLocale) {
           throw new Error('You must specify --old');
@@ -629,141 +734,71 @@ module.exports = {
           throw new Error('--keep must match --old or --new');
         }
 
-        const docIds = await self.db
-          .aggregate([
-            {
-              $match: {
-                docId: new RegExp(`:${self.apos.util.regExpQuote(oldLocale)}:`),
-                'doc.aposLocale': new RegExp(`^${self.apos.util.regExpQuote(oldLocale)}:`)
-              }
-            },
-            {
-              $group: {
-                _id: {
-                  docId: '$docId'
+        const req = self.apos.task.getReq();
+        let kept = 0;
+        if (keep) {
+          const oldDocIds = await self.db.distinct('docId', { locale: oldLocale });
+          const conflicts = await self.db.distinct('docId', {
+            locale: newLocale,
+            docId: { $in: oldDocIds }
+          });
+          if (conflicts.length) {
+            kept = await self.removeVersions(req, {
+              locale: (keep === newLocale) ? oldLocale : newLocale,
+              docId: { $in: conflicts }
+            });
+          }
+        }
+
+        const ids = (await self.db
+          .find({ locale: oldLocale })
+          .project({ _id: 1 })
+          .toArray())
+          .map(version => version._id);
+
+        let renamed = 0;
+        const batchSize = 50;
+        for (let i = 0; i < ids.length; i += batchSize) {
+          const versions = await self.find(
+            req,
+            { _id: { $in: ids.slice(i, i + batchSize) } },
+            { sort: false }
+          );
+          const operations = await Promise.all(versions.map(async version => {
+            const doc = self.renameDocLocale(version.doc, oldLocale, newLocale);
+            return {
+              updateOne: {
+                filter: { _id: version._id },
+                update: {
+                  $set: {
+                    locale: newLocale,
+                    doc: await self.pack(doc)
+                  }
                 }
               }
-            },
-            {
-              $project: {
-                _id: 0,
-                docId: '$_id.docId'
-              }
-            }
-          ])
-          .toArray();
-
-        const { renamed, kept } = await self.changeDocIds(
-          docIds.map(doc => [
-            doc.docId,
-            doc.docId.replace(`:${oldLocale}`, `:${newLocale}`)
-          ]),
-          {
-            keep: (keep === oldLocale)
-              ? 'old'
-              : (keep === newLocale)
-                ? 'new'
-                : false
-          }
-        );
+            };
+          }));
+          const result = await self.db.bulkWrite(operations);
+          renamed += result.modifiedCount;
+        }
 
         return {
           renamed,
           kept
         };
       },
+      // Rewrite the locale inside a version's doc: its `_id`, its
+      // `aposLocale` and the document ids its attachment field records
+      renameDocLocale(doc, oldLocale, newLocale) {
+        const renameId = id => id.replace(`:${oldLocale}:`, `:${newLocale}:`);
+        const prefix = new RegExp(`^${self.apos.util.regExpQuote(oldLocale)}:`);
 
-      // `pairs` is an array of arrays, each containing an old _id
-      // and a new _id that should replace it.
-      //
-      // `aposDocId` is implicitly updated, `path` is updated if a page,
-      // after which attachment references are updated.
-      // This is a slow operation, which is why this method should be called only
-      // by migrations and tasks that remedy an unexpected situation. _id is
-      // meant to be an immutable property, this method is a workaround
-      // for situations like a renamed locale or a replication bug fix.
-      //
-      // If `skipReplace` is set to `true`, the method will exit without updating anything
-      async changeDocIds(pairs, { skipReplace = false } = {}) {
-        if (skipReplace) {
-          // Callers use skipReplace to keep both ids side by side;
-          // versions follow one id only
-          return {
-            renamed: 0,
-            kept: 0
-          };
+        doc._id = renameId(doc._id);
+        doc.aposLocale = doc.aposLocale.replace(prefix, `${newLocale}:`);
+        if (doc.attachment?.docIds) {
+          doc.attachment.docIds = doc.attachment.docIds.map(renameId);
         }
-
-        let renamed = 0;
-
-        for (const pair of pairs) {
-          const [ from, to ] = pair;
-          const existing = await self.db.findOne({ docId: from });
-          if (!existing) {
-            throw self.apos.error('notfound');
-          }
-
-          try {
-            const parts = to.split(':');
-            const $set = {
-              docId: to,
-              'doc._id': to,
-              'doc.aposDocId': parts[0]
-            };
-
-            // Watch out for nonlocalized types, don't set aposLocale for them
-            if (parts.length > 1) {
-              $set['doc.aposLocale'] = parts.slice(1).join(':');
-            }
-
-            const isPage = self.apos.page.isPage(existing.doc);
-            if (isPage) {
-              $set['doc.path'] = existing.doc.path?.replace(existing.doc.aposDocId, parts[0]);
-            }
-
-            const result = await self.db.updateMany(
-              {
-                docId: from
-              },
-              {
-                $set
-              }
-            );
-            renamed += result.modifiedCount;
-          } catch (error) {
-            if (!self.apos.doc.isUniqueError(error)) {
-              // We cannot fix this error
-              throw error;
-            }
-
-            throw self.apos.error('conflict');
-          }
-        }
-
-        await self.changeAttachmentDocIds(pairs);
-
-        return {
-          renamed,
-          kept: 0
-        };
-      },
-      // Point the attachment references stored inside version records at the new ids
-      async changeAttachmentDocIds(pairs) {
-        for (const pair of pairs) {
-          const [ from, to ] = pair;
-
-          await self.db.updateMany(
-            {
-              docId: to,
-              'doc.attachment.docIds': from
-            },
-            {
-              $set: {
-                'doc.attachment.docIds.$': to
-              }
-            }
-          );
-        }
+        return doc;
       }
     };
   }

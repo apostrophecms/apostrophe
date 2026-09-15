@@ -290,9 +290,10 @@ async function seedVersionsFor(apos, docInstance, count) {
     ...docInstance,
     title: docInstance.title + ' 1'
   });
-  const first = await apos.docVersions.findOne(getReq(apos), {
-    docId: doc._id
-  });
+  const first = await apos.docVersions.findOne(
+    getReq(apos),
+    apos.docVersions.getTimelineCriteria(doc)
+  );
 
   const promises = [];
   for (let index = 2; index <= count; index++) {

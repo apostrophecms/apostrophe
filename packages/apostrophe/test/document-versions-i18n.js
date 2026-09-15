@@ -181,8 +181,12 @@ describe('Document Versions: i18n', function () {
     const newLocale = 'en-US';
     const actual = await apos.i18n.rename(oldLocale, newLocale, { keep: newLocale });
     const expected = {
-      renamed: 40, // archive, global, styles, home + inserted docs + 24 versions
-      kept: 9 // global + styles + home
+      // 18 docs (archive, global, styles, home + the inserted docs) and the
+      // 18 versions of the inserted docs
+      renamed: 36,
+      // 9 docs (global, styles, home) and the 4 boot-time versions of global,
+      // styles and home in `en`, dropped because `en-US` already has theirs
+      kept: 13
     };
     assert.deepEqual(actual, expected);
   });
@@ -204,7 +208,9 @@ describe('Document Versions: i18n', function () {
     const newLocale = 'en-US';
     const actual = await apos.docVersions.renameLocale(oldLocale, newLocale, {});
     const expected = {
-      renamed: 22, // see below for details
+      // 18 versions of the inserted docs + 4 boot-time versions of global,
+      // styles and home; without `keep` the two locales' histories merge
+      renamed: 22,
       kept: 0
     };
     assert.deepEqual(actual, expected);
@@ -223,10 +229,11 @@ describe('Document Versions: i18n', function () {
           {
             docId: {
               $in: [
-                article1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-                article2._id.replace(`:${oldLocale}:`, `:${newLocale}:`)
+                article1.aposDocId,
+                article2.aposDocId
               ]
-            }
+            },
+            locale: newLocale
           }
         );
 
@@ -242,7 +249,7 @@ describe('Document Versions: i18n', function () {
       }));
       const expected = [
         {
-          docId: article2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: article2.aposDocId,
           doc: {
             _id: article2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: article2.title.concat(' v2'),
@@ -252,7 +259,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: article1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: article1.aposDocId,
           doc: {
             _id: article1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: article1.title.concat(' v2'),
@@ -262,7 +269,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: article2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: article2.aposDocId,
           doc: {
             _id: article2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: article2.title,
@@ -272,7 +279,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: article1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: article1.aposDocId,
           doc: {
             _id: article1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: article1.title,
@@ -294,10 +301,11 @@ describe('Document Versions: i18n', function () {
           {
             docId: {
               $in: [
-                articlePage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-                articlePage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`)
+                articlePage1.aposDocId,
+                articlePage2.aposDocId
               ]
-            }
+            },
+            locale: newLocale
           }
         );
 
@@ -313,7 +321,7 @@ describe('Document Versions: i18n', function () {
       }));
       const expected = [
         {
-          docId: articlePage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: articlePage2.aposDocId,
           doc: {
             _id: articlePage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: articlePage2.title.concat(' v2'),
@@ -323,7 +331,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: articlePage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: articlePage1.aposDocId,
           doc: {
             _id: articlePage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: articlePage1.title.concat(' v2'),
@@ -333,7 +341,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: articlePage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: articlePage2.aposDocId,
           doc: {
             _id: articlePage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: articlePage2.title,
@@ -343,7 +351,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: articlePage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: articlePage1.aposDocId,
           doc: {
             _id: articlePage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: articlePage1.title,
@@ -365,10 +373,11 @@ describe('Document Versions: i18n', function () {
           {
             docId: {
               $in: [
-                defaultPage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-                defaultPage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`)
+                defaultPage1.aposDocId,
+                defaultPage2.aposDocId
               ]
-            }
+            },
+            locale: newLocale
           }
         );
 
@@ -384,7 +393,7 @@ describe('Document Versions: i18n', function () {
       }));
       const expected = [
         {
-          docId: defaultPage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: defaultPage2.aposDocId,
           doc: {
             _id: defaultPage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: defaultPage2.title.concat(' v2'),
@@ -394,7 +403,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: defaultPage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: defaultPage1.aposDocId,
           doc: {
             _id: defaultPage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: defaultPage1.title.concat(' v2'),
@@ -404,7 +413,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: defaultPage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: defaultPage2.aposDocId,
           doc: {
             _id: defaultPage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: defaultPage2.title,
@@ -414,7 +423,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: defaultPage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: defaultPage1.aposDocId,
           doc: {
             _id: defaultPage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: defaultPage1.title,
@@ -436,10 +445,11 @@ describe('Document Versions: i18n', function () {
           {
             docId: {
               $in: [
-                image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-                image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`)
+                image1.aposDocId,
+                image2.aposDocId
               ]
-            }
+            },
+            locale: newLocale
           }
         );
 
@@ -456,7 +466,7 @@ describe('Document Versions: i18n', function () {
       }));
       const expected = [
         {
-          docId: image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: image2.aposDocId,
           doc: {
             _id: image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: image2.title.concat(' v2'),
@@ -468,7 +478,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: image1.aposDocId,
           doc: {
             _id: image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: image1.title.concat(' v2'),
@@ -480,7 +490,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: image2.aposDocId,
           doc: {
             _id: image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: image2.title,
@@ -492,7 +502,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: image2.aposDocId,
           doc: {
             _id: image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: image2.title,
@@ -504,7 +514,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: image1.aposDocId,
           doc: {
             _id: image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: image1.title,
@@ -516,7 +526,7 @@ describe('Document Versions: i18n', function () {
           }
         },
         {
-          docId: image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
+          docId: image1.aposDocId,
           doc: {
             _id: image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
             title: image1.title,

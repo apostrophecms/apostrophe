@@ -227,7 +227,7 @@ describe('Document Versions', function () {
 
       {
         const versions = await apos.docVersions
-          .find(req, { docId: article1._id });
+          .find(req, apos.docVersions.getTimelineCriteria(article1));
         assert.strictEqual(versions.length, 2);
         const [ first, second ] = versions;
 
@@ -237,7 +237,7 @@ describe('Document Versions', function () {
 
       {
         const versions = await apos.docVersions
-          .find(req, { docId: article2._id });
+          .find(req, apos.docVersions.getTimelineCriteria(article2));
         assert.strictEqual(versions.length, 2);
         const [ first, second ] = versions;
 
@@ -307,7 +307,8 @@ describe('Document Versions', function () {
       assert(updated2);
 
       {
-        const versions = await apos.docVersions.find(req, { docId: page1._id });
+        const versions = await apos.docVersions
+          .find(req, apos.docVersions.getTimelineCriteria(page1));
         assert.strictEqual(versions.length, 2);
         const [ first, second ] = versions;
 
@@ -316,7 +317,8 @@ describe('Document Versions', function () {
       }
 
       {
-        const versions = await apos.docVersions.find(req, { docId: page2._id });
+        const versions = await apos.docVersions
+          .find(req, apos.docVersions.getTimelineCriteria(page2));
         assert.strictEqual(versions.length, 2);
         const [ first, second ] = versions;
 
@@ -386,7 +388,8 @@ describe('Document Versions', function () {
       assert(updated2);
 
       {
-        const versions = await apos.docVersions.find(req, { docId: page1._id });
+        const versions = await apos.docVersions
+          .find(req, apos.docVersions.getTimelineCriteria(page1));
         assert.strictEqual(versions.length, 2);
         const [ first, second ] = versions;
 
@@ -395,7 +398,8 @@ describe('Document Versions', function () {
       }
 
       {
-        const versions = await apos.docVersions.find(req, { docId: page2._id });
+        const versions = await apos.docVersions
+          .find(req, apos.docVersions.getTimelineCriteria(page2));
         assert.strictEqual(versions.length, 2);
         const [ first, second ] = versions;
 
@@ -437,9 +441,9 @@ describe('Document Versions', function () {
       articleModesCount = await apos.doc.db.countDocuments({
         aposDocId: draft.aposDocId
       });
-      const versionCount = await apos.docVersions.db.countDocuments({
-        docId: draft._id.replace(':draft', ':published')
-      });
+      const versionCount = await apos.docVersions.db.countDocuments(
+        apos.docVersions.getTimelineCriteria(draft)
+      );
       assert.strictEqual(articleModesCount, 0);
       assert.strictEqual(versionCount, 0);
     });
@@ -780,7 +784,7 @@ describe('Document Versions', function () {
         .findOne({ _id: attachment1._id });
       const version1 = await apos.docVersions.findOne(
         req,
-        { docId: article._id },
+        apos.docVersions.getTimelineCriteria(article),
         {
           project: { _id: 1 }
         }
@@ -801,7 +805,7 @@ describe('Document Versions', function () {
         .findOne({ _id: attachment1._id });
       const version2 = await apos.docVersions.findOne(
         req,
-        { docId: article._id },
+        apos.docVersions.getTimelineCriteria(article),
         {
           project: { _id: 1 }
         }
@@ -829,7 +833,7 @@ describe('Document Versions', function () {
         .findOne({ _id: attachment2._id });
       const version3 = await apos.docVersions.findOne(
         req,
-        { docId: article._id },
+        apos.docVersions.getTimelineCriteria(article),
         {
           project: { _id: 1 }
         }
@@ -890,9 +894,10 @@ describe('Document Versions', function () {
       // Validate references
       {
         attachment = await apos.attachment.db.findOne({ _id: attachment._id });
-        const versions = await apos.docVersions.find(req, {
-          docId: draft._id.replace(':draft', ':published')
-        });
+        const versions = await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(draft)
+        );
         const [ first, second ] = versions;
         assert.strictEqual(first.doc.title, 'An update');
         assert.strictEqual(second.doc.title, 'An article');
@@ -925,9 +930,9 @@ describe('Document Versions', function () {
       });
       const attachmentCount = await apos.attachment.db
         .countDocuments({ _id: attachment._id });
-      const versionCount = await apos.docVersions.db.countDocuments({
-        docId: draft._id.replace(':draft', ':published')
-      });
+      const versionCount = await apos.docVersions.db.countDocuments(
+        apos.docVersions.getTimelineCriteria(draft)
+      );
       assert.strictEqual(articleModesCount, 0);
       assert.strictEqual(attachmentCount, 0);
       assert.strictEqual(versionCount, 0);
@@ -1196,9 +1201,10 @@ describe('Document Versions', function () {
         title: 'An article'
       });
       assert(article);
-      const versionDb = await apos.docVersions.findOne(getReq(apos), {
-        docId: article._id
-      });
+      const versionDb = await apos.docVersions.findOne(
+        getReq(apos),
+        apos.docVersions.getTimelineCriteria(article)
+      );
       assert(versionDb);
       assert(versionDb._id);
 
@@ -1223,9 +1229,10 @@ describe('Document Versions', function () {
         title: 'An article'
       });
       assert(article);
-      const versionDb = await apos.docVersions.findOne(getReq(apos), {
-        docId: article._id
-      });
+      const versionDb = await apos.docVersions.findOne(
+        getReq(apos),
+        apos.docVersions.getTimelineCriteria(article)
+      );
       assert(versionDb);
       assert(versionDb._id);
 
@@ -1250,9 +1257,10 @@ describe('Document Versions', function () {
         title: 'An article'
       });
       assert(article);
-      const versionDb = await apos.docVersions.findOne(getReq(apos), {
-        docId: article._id
-      });
+      const versionDb = await apos.docVersions.findOne(
+        getReq(apos),
+        apos.docVersions.getTimelineCriteria(article)
+      );
       assert(versionDb);
       assert(versionDb._id);
 
@@ -1312,7 +1320,7 @@ describe('Document Versions', function () {
         });
 
         const versions = await apos.docVersions
-          .find(req, { docId: articleV3._id });
+          .find(req, apos.docVersions.getTimelineCriteria(articleV3));
         const { _id: v1Id } = versions.find(version => version.doc.title === 'My first article v3');
         const { _id: v2Id } = versions.find(version => version.doc.title === 'My first article');
 
@@ -1365,7 +1373,7 @@ describe('Document Versions', function () {
         );
 
         const versions = await apos.docVersions
-          .find(req, { docId: articlePageV2._id });
+          .find(req, apos.docVersions.getTimelineCriteria(articlePageV2));
         const { _id: v1Id } = versions.find(version => version.doc.title === 'Articles');
         const { _id: v2Id } = versions.find(version => version.doc.title === 'My first page');
 
@@ -1414,7 +1422,7 @@ describe('Document Versions', function () {
         });
 
         const versions = await apos.docVersions
-          .find(req, { docId: articleV3._id });
+          .find(req, apos.docVersions.getTimelineCriteria(articleV3));
         const { _id: v1Id } = versions.find(version => version.doc.title === 'My first article v3');
         const { _id: v2Id } = versions.find(version => version.doc.title === 'My first article');
 
@@ -1551,7 +1559,7 @@ describe('Document Versions', function () {
         );
 
         const versions = await apos.docVersions
-          .find(req, { docId: articlePageV2._id });
+          .find(req, apos.docVersions.getTimelineCriteria(articlePageV2));
         const { _id: v1Id } = versions.find(version => version.doc.title === 'Articles');
         const { _id: v2Id } = versions.find(version => version.doc.title === 'My first page');
 
@@ -1879,10 +1887,11 @@ describe('Document Versions', function () {
         title: 'An article v2'
       });
 
-      const versionDb = await apos.docVersions.findOne(getReq(apos), {
-        docId: article._id,
-        'doc.title': 'An article'
-      });
+      const versions = await apos.docVersions.find(
+        getReq(apos),
+        apos.docVersions.getTimelineCriteria(article)
+      );
+      const versionDb = versions.find(version => version.doc.title === 'An article');
       assert(versionDb);
       assert(versionDb._id);
 
@@ -1892,6 +1901,153 @@ describe('Document Versions', function () {
       });
 
       assert.equal(version.doc.newField, 'default value for newField');
+    });
+  });
+
+  describe('set-change-count task', function () {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          '@apostrophecms/i18n': {
+            options: {
+              locales: {
+                en: {},
+                fr: {
+                  prefix: '/fr'
+                }
+              }
+            }
+          },
+          article: {},
+          'default-page': {}
+        }
+      });
+    });
+
+    after(async function() {
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    // One document with three published versions in `en` and two in `fr`.
+    // Returns the counts recorded at publish time, newest first per locale.
+    async function seedTimelines() {
+      const req = getReq(apos);
+      const frReq = getReq(apos, { locale: 'fr' });
+      const article = await apos.article.insert(req, { title: 'A1' });
+      await apos.article.update(req, {
+        ...article,
+        title: 'A2'
+      });
+      await apos.article.update(req, {
+        ...article,
+        title: 'A3',
+        int: 5
+      });
+      const fr = await apos.article.localize(req, article, 'fr');
+      await apos.article.publish(frReq, fr);
+      await apos.article.publish(frReq, {
+        ...fr,
+        title: 'A fr 2'
+      });
+      return {
+        article,
+        counts: await countsFor(article)
+      };
+    }
+
+    async function countsFor(article) {
+      const versions = await apos.docVersions.find(
+        apos.task.getReq(),
+        { docId: article.aposDocId },
+        {
+          project: {
+            locale: 1,
+            changeCount: 1
+          },
+          raw: true
+        }
+      );
+      return {
+        en: versions.filter(v => v.locale === 'en').map(v => v.changeCount),
+        fr: versions.filter(v => v.locale === 'fr').map(v => v.changeCount)
+      };
+    }
+
+    it('should recompute every timeline', async function() {
+      const { article, counts } = await seedTimelines();
+      assert.deepEqual(counts, {
+        en: [ 2, 1, 0 ],
+        fr: [ 1, 0 ]
+      });
+
+      await apos.docVersions.db.updateMany({}, { $set: { changeCount: 99 } });
+      await apos.docVersions.setChangeCountTask();
+
+      // The oldest version of a timeline has no predecessor and is left alone
+      assert.deepEqual(await countsFor(article), {
+        en: [ 2, 1, 99 ],
+        fr: [ 1, 99 ]
+      });
+    });
+
+    it('should recompute one timeline and leave the others alone', async function() {
+      const { article } = await seedTimelines();
+
+      await apos.docVersions.db.updateMany({}, { $set: { changeCount: 99 } });
+      await apos.docVersions.setChangeCountFor(apos.task.getReq(), {
+        docId: article.aposDocId,
+        locale: 'fr'
+      });
+
+      assert.deepEqual(await countsFor(article), {
+        en: [ 99, 99, 99 ],
+        fr: [ 1, 99 ]
+      });
+    });
+  });
+
+  describe('legacy module', function () {
+    const legacyName = '@apostrophecms-pro/document-versions';
+    let apos;
+
+    before(async function() {
+      // A stub with no methods stands in for the deprecation release
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'default-page': {},
+          [legacyName]: {}
+        }
+      });
+    });
+
+    after(async function() {
+      await destroy(apos);
+    });
+
+    it('should start next to the deprecation release, which has no methods', function () {
+      assert(apos.modules[legacyName]);
+      assert(apos.docVersions);
+      assert.doesNotThrow(() => apos.docVersions.checkLegacyModule());
+    });
+
+    it('should reject a module that records its own versions', function () {
+      const legacy = apos.modules[legacyName];
+      legacy.createFor = () => {};
+      try {
+        assert.throws(
+          () => apos.docVersions.checkLegacyModule(),
+          /Remove it from the project/
+        );
+      } finally {
+        delete legacy.createFor;
+      }
     });
   });
 });
