@@ -284,8 +284,10 @@ async function login(apos, role, { username, password } = {}) {
   return t.loginAs(apos, username || role, password || 'password');
 }
 
+// Insert `docInstance` as a draft and record `count - 1` further versions
+// of it, so the timeline holds exactly `count` versions, newest first
 async function seedVersionsFor(apos, docInstance, count) {
-  const req = getReq(apos);
+  const req = getReq(apos, { mode: 'draft' });
   const doc = await apos.doc.getManager(docInstance.type).insert(req, {
     ...docInstance,
     title: docInstance.title + ' 1'
@@ -299,10 +301,10 @@ async function seedVersionsFor(apos, docInstance, count) {
   for (let index = 2; index <= count; index++) {
     // ensure proper sort
     await wait(5);
-    promises.push(apos.docVersions.createFor(req, {
+    promises.push(apos.docVersions.saveFor(req, {
       ...doc,
       title: docInstance.title + ' ' + index
-    }));
+    }, true));
   }
 
   const versions = await Promise.all(promises);

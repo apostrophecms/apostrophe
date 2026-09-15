@@ -182,11 +182,11 @@ describe('Document Versions: i18n', function () {
     const actual = await apos.i18n.rename(oldLocale, newLocale, { keep: newLocale });
     const expected = {
       // 18 docs (archive, global, styles, home + the inserted docs) and the
-      // 18 versions of the inserted docs
-      renamed: 36,
-      // 9 docs (global, styles, home) and the 4 boot-time versions of global,
+      // 26 versions of the inserted docs
+      renamed: 44,
+      // 9 docs (global, styles, home) and the 7 boot-time versions of global,
       // styles and home in `en`, dropped because `en-US` already has theirs
-      kept: 13
+      kept: 16
     };
     assert.deepEqual(actual, expected);
   });
@@ -208,9 +208,9 @@ describe('Document Versions: i18n', function () {
     const newLocale = 'en-US';
     const actual = await apos.docVersions.renameLocale(oldLocale, newLocale, {});
     const expected = {
-      // 18 versions of the inserted docs + 4 boot-time versions of global,
+      // 26 versions of the inserted docs + 7 boot-time versions of global,
       // styles and home; without `keep` the two locales' histories merge
-      renamed: 22,
+      renamed: 33,
       kept: 0
     };
     assert.deepEqual(actual, expected);
@@ -221,239 +221,28 @@ describe('Document Versions: i18n', function () {
       aposLocale: 'en-US:published'
     });
 
-    // check articles
-    {
-      const versions = await apos.docVersions
-        .find(
-          req,
-          {
-            docId: {
-              $in: [
-                article1.aposDocId,
-                article2.aposDocId
-              ]
-            },
-            locale: newLocale
-          }
-        );
-
-      const actual = versions.map(version => ({
-        docId: version.docId,
+    // What the rename leaves of a version of `doc` saved in `mode`
+    function renamedVersion(doc, { title = doc.title, mode = 'published' } = {}) {
+      return {
+        docId: doc.aposDocId,
         doc: {
-          _id: version.doc._id,
-          title: version.doc.title,
-          aposDocId: version.doc.aposDocId,
-          aposLocale: version.doc.aposLocale,
-          path: version.doc.path
+          _id: `${doc.aposDocId}:${newLocale}:${mode}`,
+          title,
+          aposDocId: doc.aposDocId,
+          aposLocale: `${newLocale}:${mode}`,
+          path: doc.path,
+          attachmentDocIds: (doc.attachment?.docIds || [])
+            .map(docId => docId.replace(`:${oldLocale}:`, `:${newLocale}:`))
         }
-      }));
-      const expected = [
-        {
-          docId: article2.aposDocId,
-          doc: {
-            _id: article2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: article2.title.concat(' v2'),
-            aposDocId: article2.aposDocId,
-            aposLocale: article2.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: article2.path
-          }
-        },
-        {
-          docId: article1.aposDocId,
-          doc: {
-            _id: article1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: article1.title.concat(' v2'),
-            aposDocId: article1.aposDocId,
-            aposLocale: article1.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: article1.path
-          }
-        },
-        {
-          docId: article2.aposDocId,
-          doc: {
-            _id: article2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: article2.title,
-            aposDocId: article2.aposDocId,
-            aposLocale: article2.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: article2.path
-          }
-        },
-        {
-          docId: article1.aposDocId,
-          doc: {
-            _id: article1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: article1.title,
-            aposDocId: article1.aposDocId,
-            aposLocale: article1.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: article1.path
-          }
-        }
-      ];
-
-      assert.deepEqual(actual, expected);
+      };
     }
 
-    // check article-pages
-    {
-      const versions = await apos.docVersions
-        .find(
-          req,
-          {
-            docId: {
-              $in: [
-                articlePage1.aposDocId,
-                articlePage2.aposDocId
-              ]
-            },
-            locale: newLocale
-          }
-        );
-
-      const actual = versions.map(version => ({
-        docId: version.docId,
-        doc: {
-          _id: version.doc._id,
-          title: version.doc.title,
-          aposDocId: version.doc.aposDocId,
-          aposLocale: version.doc.aposLocale,
-          path: version.doc.path
-        }
-      }));
-      const expected = [
-        {
-          docId: articlePage2.aposDocId,
-          doc: {
-            _id: articlePage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: articlePage2.title.concat(' v2'),
-            aposDocId: articlePage2.aposDocId,
-            aposLocale: articlePage2.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: articlePage2.path
-          }
-        },
-        {
-          docId: articlePage1.aposDocId,
-          doc: {
-            _id: articlePage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: articlePage1.title.concat(' v2'),
-            aposDocId: articlePage1.aposDocId,
-            aposLocale: articlePage1.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: articlePage1.path
-          }
-        },
-        {
-          docId: articlePage2.aposDocId,
-          doc: {
-            _id: articlePage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: articlePage2.title,
-            aposDocId: articlePage2.aposDocId,
-            aposLocale: articlePage2.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: articlePage2.path
-          }
-        },
-        {
-          docId: articlePage1.aposDocId,
-          doc: {
-            _id: articlePage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: articlePage1.title,
-            aposDocId: articlePage1.aposDocId,
-            aposLocale: articlePage1.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: articlePage1.path
-          }
-        }
-      ];
-
-      assert.deepEqual(actual, expected);
-    }
-
-    // check default-pages
-    {
-      const versions = await apos.docVersions
-        .find(
-          req,
-          {
-            docId: {
-              $in: [
-                defaultPage1.aposDocId,
-                defaultPage2.aposDocId
-              ]
-            },
-            locale: newLocale
-          }
-        );
-
-      const actual = versions.map(version => ({
-        docId: version.docId,
-        doc: {
-          _id: version.doc._id,
-          title: version.doc.title,
-          aposDocId: version.doc.aposDocId,
-          aposLocale: version.doc.aposLocale,
-          path: version.doc.path
-        }
-      }));
-      const expected = [
-        {
-          docId: defaultPage2.aposDocId,
-          doc: {
-            _id: defaultPage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: defaultPage2.title.concat(' v2'),
-            aposDocId: defaultPage2.aposDocId,
-            aposLocale: defaultPage2.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: defaultPage2.path
-          }
-        },
-        {
-          docId: defaultPage1.aposDocId,
-          doc: {
-            _id: defaultPage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: defaultPage1.title.concat(' v2'),
-            aposDocId: defaultPage1.aposDocId,
-            aposLocale: defaultPage1.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: defaultPage1.path
-          }
-        },
-        {
-          docId: defaultPage2.aposDocId,
-          doc: {
-            _id: defaultPage2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: defaultPage2.title,
-            aposDocId: defaultPage2.aposDocId,
-            aposLocale: defaultPage2.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: defaultPage2.path
-          }
-        },
-        {
-          docId: defaultPage1.aposDocId,
-          doc: {
-            _id: defaultPage1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: defaultPage1.title,
-            aposDocId: defaultPage1.aposDocId,
-            aposLocale: defaultPage1.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: defaultPage1.path
-          }
-        }
-      ];
-
-      assert.deepEqual(actual, expected);
-    }
-
-    // check images
-    {
-      const versions = await apos.docVersions
-        .find(
-          req,
-          {
-            docId: {
-              $in: [
-                image1.aposDocId,
-                image2.aposDocId
-              ]
-            },
-            locale: newLocale
-          }
-        );
-
-      const actual = versions.map(version => ({
+    async function renamedVersionsOf(docs) {
+      const versions = await apos.docVersions.find(req, {
+        docId: { $in: docs.map(doc => doc.aposDocId) },
+        locale: newLocale
+      });
+      return versions.map(version => ({
         docId: version.docId,
         doc: {
           _id: version.doc._id,
@@ -464,82 +253,47 @@ describe('Document Versions: i18n', function () {
           attachmentDocIds: version.doc.attachment?.docIds || []
         }
       }));
-      const expected = [
-        {
-          docId: image2.aposDocId,
-          doc: {
-            _id: image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: image2.title.concat(' v2'),
-            aposDocId: image2.aposDocId,
-            aposLocale: image2.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: image2.path,
-            attachmentDocIds: image2.attachment.docIds
-              ?.map(docId => docId.replace(`:${oldLocale}:`, `:${newLocale}:`)) || []
-          }
-        },
-        {
-          docId: image1.aposDocId,
-          doc: {
-            _id: image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: image1.title.concat(' v2'),
-            aposDocId: image1.aposDocId,
-            aposLocale: image1.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: image1.path,
-            attachmentDocIds: image2.attachment.docIds
-              ?.map(docId => docId.replace(`:${oldLocale}:`, `:${newLocale}:`)) || []
-          }
-        },
-        {
-          docId: image2.aposDocId,
-          doc: {
-            _id: image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: image2.title,
-            aposDocId: image2.aposDocId,
-            aposLocale: image2.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: image2.path,
-            attachmentDocIds: image2.attachment.docIds
-              ?.map(docId => docId.replace(`:${oldLocale}:`, `:${newLocale}:`)) || []
-          }
-        },
-        {
-          docId: image2.aposDocId,
-          doc: {
-            _id: image2._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: image2.title,
-            aposDocId: image2.aposDocId,
-            aposLocale: image2.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: image2.path,
-            attachmentDocIds: image2.attachment.docIds
-              ?.map(docId => docId.replace(`:${oldLocale}:`, `:${newLocale}:`)) || []
-          }
-        },
-        {
-          docId: image1.aposDocId,
-          doc: {
-            _id: image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: image1.title,
-            aposDocId: image1.aposDocId,
-            aposLocale: image1.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: image1.path,
-            attachmentDocIds: image2.attachment.docIds
-              ?.map(docId => docId.replace(`:${oldLocale}:`, `:${newLocale}:`)) || []
-          }
-        },
-        {
-          docId: image1.aposDocId,
-          doc: {
-            _id: image1._id.replace(`:${oldLocale}:`, `:${newLocale}:`),
-            title: image1.title,
-            aposDocId: image1.aposDocId,
-            aposLocale: image1.aposLocale.replace(`${oldLocale}:`, `${newLocale}:`),
-            path: image1.path,
-            attachmentDocIds: image2.attachment.docIds
-              ?.map(docId => docId.replace(`:${oldLocale}:`, `:${newLocale}:`)) || []
-          }
-        }
-      ];
-
-      assert.deepEqual(actual, expected);
     }
+
+    // Two documents inserted in published mode then updated, newest first:
+    // each insert records the draft and the published copy
+    function timelineOf(doc1, doc2) {
+      return [
+        renamedVersion(doc2, { title: doc2.title.concat(' v2') }),
+        renamedVersion(doc1, { title: doc1.title.concat(' v2') }),
+        renamedVersion(doc2),
+        renamedVersion(doc2, { mode: 'draft' }),
+        renamedVersion(doc1),
+        renamedVersion(doc1, { mode: 'draft' })
+      ];
+    }
+
+    assert.deepEqual(
+      await renamedVersionsOf([ article1, article2 ]),
+      timelineOf(article1, article2)
+    );
+    assert.deepEqual(
+      await renamedVersionsOf([ articlePage1, articlePage2 ]),
+      timelineOf(articlePage1, articlePage2)
+    );
+    assert.deepEqual(
+      await renamedVersionsOf([ defaultPage1, defaultPage2 ]),
+      timelineOf(defaultPage1, defaultPage2)
+    );
+
+    // Images autopublish, so an insert publishes twice
+    assert.deepEqual(
+      await renamedVersionsOf([ image1, image2 ]),
+      [
+        renamedVersion(image2, { title: image2.title.concat(' v2') }),
+        renamedVersion(image1, { title: image1.title.concat(' v2') }),
+        renamedVersion(image2),
+        renamedVersion(image2),
+        renamedVersion(image2, { mode: 'draft' }),
+        renamedVersion(image1),
+        renamedVersion(image1),
+        renamedVersion(image1, { mode: 'draft' })
+      ]
+    );
   });
 });

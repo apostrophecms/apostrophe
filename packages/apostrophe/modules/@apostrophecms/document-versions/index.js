@@ -1,5 +1,6 @@
-// Records a version of every localized, manually published document each
-// time it is published, and lets editors browse, compare and restore them.
+// Records versions of every localized, manually published document: one on
+// each publish and one per handoff of draft work, and lets editors browse,
+// compare and restore them.
 // Versions live in the `aposDocsVersions` collection. A record's `doc` is
 // stored packed (see `pack`) and the finders unpack it, so queries never
 // reach into `doc`: everything they need is a top-level field.
@@ -21,6 +22,10 @@ module.exports = {
     components: {
       versions: 'AposDocVersions'
     },
+    // Draft saves replace the newest draft version in place until this much
+    // time, in milliseconds, has passed since that version was created. Then
+    // a new version starts. One day by default
+    draftInterval: 24 * 60 * 60 * 1000,
     // Passed to `Intl.DateTimeFormat` when displaying version timestamps
     dateTimeFormatOptions: {
       year: 'numeric',
@@ -56,8 +61,8 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:afterSave': {
-        async createVersion(req, doc, options) {
-          await self.createFor(req, doc);
+        async saveVersion(req, doc) {
+          await self.saveFor(req, doc, await self.canHaveVersion(req, doc));
         }
       },
       '@apostrophecms/doc:afterAllModesDeleted': {
@@ -160,19 +165,19 @@ module.exports = {
         `,
         task: self.setChangeCountTask
       },
-      'compress-legacy-versions': {
+      'convert-legacy-versions': {
         usage: stripIndent`
-          Usage: node app @apostrophecms/document-versions:compress-legacy-versions
+          Usage: node app @apostrophecms/document-versions:convert-legacy-versions
 
-          Converts version records still in the uncompressed legacy format. The
-          compress-version-docs migration does this once; run this task when legacy
+          Converts version records still in the legacy format. The
+          convert-legacy-versions migration does this once; run this task when legacy
           records were written afterwards, for instance by an instance of the site
           still running older code during a deployment.
         `,
         async task() {
-          const converted = await self.compressLegacyVersions();
+          const converted = await self.convertLegacyVersions();
           self.logInfo(
-            'compress-legacy-versions-complete',
+            'convert-legacy-versions-complete',
             `Converted ${converted} legacy document versions`,
             { converted }
           );
@@ -232,13 +237,15 @@ module.exports = {
         }, {});
       },
       addMigrations() {
-        self.apos.migration.add('compress-version-docs', self.compressLegacyVersions);
+        self.apos.migration.add('convert-legacy-versions', self.convertLegacyVersions);
       },
-      // Records written before `doc` was packed hold it as a plain object, are
-      // keyed by the document's full `_id` and have no `mode` or `locale`.
+      // Records written before this module hold `doc` as a plain object, are
+      // keyed by the document's full `_id` and have no `mode`, `locale`,
+      // `authorId` or `ai`. The author is the user the saved document names
+      // in `updatedBy`: the request that saved it recorded the version.
       // A converted record always has `mode`, so a rerun resumes where the
       // last one stopped. Returns the number of records converted.
-      async compressLegacyVersions() {
+      async convertLegacyVersions() {
         let converted = 0;
         await self.apos.migration.each(
           self.db,
@@ -252,7 +259,9 @@ module.exports = {
             await self.db.updateOne({ _id: version._id }, {
               $set: {
                 ...self.getTimelineCriteria(doc),
-                mode: doc.aposMode || 'published',
+                mode: self.getMode(doc),
+                authorId: doc.updatedBy?._id ?? null,
+                ai: false,
                 doc: packed
                   ? version.doc
                   : await self.pack(doc)
@@ -262,6 +271,11 @@ module.exports = {
           }
         );
         return converted;
+      },
+      // The mode a version records: the document's, or `published` for
+      // documents without modes
+      getMode(doc) {
+        return doc.aposMode || 'published';
       },
       // The locale of a document without its mode suffix, `null` when the
       // type is not localized
@@ -314,57 +328,155 @@ module.exports = {
 
         return true;
       },
-      // Checks if a version for a given doc should be created
-      canHaveVersion(doc) {
+      // Whether the module records this document at all: its type has
+      // versions and it is not archived. The type exclusion lives here only
+      isVersioned(doc) {
         const manager = self.apos.doc.getManager(doc.type);
-
-        if (!self.hasVersions(manager.options)) {
+        if (!manager || !self.hasVersions(manager.options)) {
           return false;
         }
-
         // This also handles the auto-insert of
         // the core @apostrophecms/archive-page
-        if (doc.archived) {
+        return !doc.archived;
+      },
+      // Decides what a save does to the document's history. Returns `false`
+      // for nothing, `true` for a new version, or the `_id` of the newest
+      // version, a draft, which the save then replaces in place.
+      //
+      // A publish or a restore always starts a version. A draft save with no
+      // change to any schema field never does. Otherwise a draft starts one
+      // at every handoff: an explicit Save Draft, a first version, a previous
+      // version that was a publication point, a different author, AI
+      // involvement changing, or more than `draftInterval` since the previous
+      // version was created. Between handoffs it replaces the previous draft.
+      async canHaveVersion(req, doc) {
+        if (!self.isVersioned(doc)) {
           return false;
         }
-
-        return (doc.aposMode === null || doc.aposMode === 'published');
+        if (self.getMode(doc) === 'published') {
+          return true;
+        }
+        if (req.aposRestoreVersion) {
+          return true;
+        }
+        const previous = await self.findOne(req, self.getTimelineCriteria(doc));
+        if (!previous) {
+          return true;
+        }
+        if (!self.getChanges(req, doc, previous.doc).length) {
+          return false;
+        }
+        if (req.aposExplicitSave) {
+          return true;
+        }
+        if (previous.mode === 'published') {
+          return true;
+        }
+        if (previous.authorId !== self.getAuthorId(req)) {
+          return true;
+        }
+        if (Boolean(previous.ai) !== Boolean(req.aposAi)) {
+          return true;
+        }
+        const updatedAt = doc.updatedAt || new Date();
+        if (updatedAt - previous.createdAt > self.options.draftInterval) {
+          return true;
+        }
+        return previous._id;
       },
-      // Create new version for a given doc after performing
-      // the necessary checks
-      async createFor(req, doc) {
-        if (!self.canHaveVersion(doc)) {
+      // Records a save as `canHaveVersion` decided: nothing for `false`,
+      // a new version for `true`, otherwise the replacement of the version
+      // whose `_id` the decision is. Returns the version written, if any
+      async saveFor(req, doc, decision) {
+        if (!decision) {
           return;
         }
-        const manager = self.apos.doc.getManager(doc.type);
-        if (!manager) {
-          throw self.apos.error('notfound', `Manager not found for doc type: ${doc.type}`);
+        if (typeof decision === 'string') {
+          return self.replaceVersion(req, doc, decision);
         }
-
-        const lastVersion = await self.findOne(req, self.getTimelineCriteria(doc));
-
-        const changeCount = lastVersion
-          ? self.apos.schema.getChanges(
-            req,
-            manager.schema,
-            self.apos.util.clonePermanent(doc),
-            lastVersion.doc
-          )
-          : [];
-
+        return self.insertVersion(req, doc);
+      },
+      // Insert a new version of `doc` at the head of its timeline
+      async insertVersion(req, doc) {
+        const previous = await self.findOne(req, self.getTimelineCriteria(doc));
         const instance = {
-          ...await self.newInstance(doc, req.user),
-          changeCount: changeCount.length
+          ...await self.newVersion(req, doc),
+          changeCount: previous
+            ? self.getChanges(req, doc, previous.doc).length
+            : 0
         };
-
-        const res = await self.insert(req, instance);
-        const version = await self.findOne(req, { _id: res.insertedId });
+        await self.insert(req, instance);
+        return self.updateReferencesFor(req, instance._id);
+      },
+      // Replace the content of an existing version with `doc`, keeping the
+      // record's identity, author and creation time. The change count is
+      // recomputed against the version before it. Inserts instead when the
+      // version is gone
+      async replaceVersion(req, doc, versionId) {
+        const version = await self.findOne(req, { _id: versionId }, { raw: true });
+        if (!version) {
+          return self.insertVersion(req, doc);
+        }
+        const before = await self.findOne(req, {
+          ...self.getTimelineCriteria(doc),
+          createdAt: { $lt: version.createdAt }
+        });
+        await self.db.updateOne({ _id: version._id }, {
+          $set: {
+            doc: await self.pack(self.apos.util.clonePermanent(doc)),
+            updatedAt: new Date(),
+            changeCount: before
+              ? self.getChanges(req, doc, before.doc).length
+              : 0
+          }
+        });
+        return self.updateReferencesFor(req, version._id);
+      },
+      // Re-read a version just written and register it with the attachment
+      // module as an archived holder of the attachments its content uses
+      async updateReferencesFor(req, versionId) {
+        const version = await self.findOne(req, { _id: versionId });
         await self.apos.attachment.updateDocReferences({
           ...version.doc,
           _id: version._id,
           archived: true
         });
         return version;
+      },
+      // The top-level schema fields of `doc` whose values differ from
+      // `previousDoc`, an unpacked version content, by the schema of `doc`
+      getChanges(req, doc, previousDoc) {
+        const manager = self.apos.doc.getManager(doc.type);
+        return self.apos.schema.getChanges(
+          req,
+          manager.schema,
+          self.apos.util.clonePermanent(doc),
+          previousDoc
+        );
+      },
+      // The `_id` of the user saving, `null` when there is none (system)
+      getAuthorId(req) {
+        return req.user?._id ?? null;
+      },
+      // The `{ _id, createdAt }` of the version a restore returns to,
+      // `null` when the request restores nothing or names no stored version
+      async getRestoredFrom(req) {
+        if (!req.aposRestoreVersion) {
+          return null;
+        }
+        const version = await self.findOne(req, { _id: req.aposRestoreVersion }, {
+          project: {
+            _id: 1,
+            createdAt: 1
+          },
+          raw: true
+        });
+        return version
+          ? {
+            _id: version._id,
+            createdAt: version.createdAt
+          }
+          : null;
       },
       // Remove all versions and attachment references of a doc in the
       // locale it was deleted from; the other locales keep their history
@@ -518,22 +630,30 @@ module.exports = {
         };
       },
 
-      // Create a new version record from a doc and the current user (optional).
-      // `docId`, `mode` and `locale` identify the document at top level;
-      // `doc` is the packed copy of its content.
-      async newInstance(doc, currentUser) {
-        const author = currentUser
-          ? currentUser.title || currentUser.username
-          : 'SYSTEM';
+      // A new version record of `doc` as saved by `req`. `docId`, `mode`
+      // and `locale` identify the document at top level, `author`,
+      // `authorId`, `ai` and `restoredFrom` describe the save; `doc` is the
+      // packed copy of its content.
+      async newVersion(req, doc) {
+        if ((typeof req?.clone !== 'function') || (typeof doc?.type !== 'string')) {
+          throw new Error('newVersion(req, doc) requires a request and a document');
+        }
+        const { user } = req;
+        const restoredFrom = await self.getRestoredFrom(req);
 
         return {
           _id: createId(),
           metaType: 'version',
           createdAt: new Date(),
           docId: doc.aposDocId,
-          mode: doc.aposMode || 'published',
+          mode: self.getMode(doc),
           locale: self.getLocale(doc),
-          author,
+          author: user
+            ? user.title || user.username
+            : 'SYSTEM',
+          authorId: self.getAuthorId(req),
+          ai: Boolean(req.aposAi),
+          ...(restoredFrom && { restoredFrom }),
           doc: await self.pack(self.apos.util.clonePermanent(doc))
         };
       },

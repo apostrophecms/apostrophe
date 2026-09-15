@@ -46,11 +46,13 @@ describe('Document Versions', function () {
       assert.strictEqual(module.__meta.name, moduleName);
 
       const versions = await apos.docVersions.find(getReq(apos), {});
-      assert.strictEqual(versions.length, 4);
-      const home = versions.find(v => v.doc.type === '@apostrophecms/home-page');
-      const global = versions.find(v => v.doc.type === '@apostrophecms/global');
-      assert(home);
-      assert(global);
+      assert.strictEqual(versions.length, 7);
+      const home = versions.filter(v => v.doc.type === '@apostrophecms/home-page');
+      const global = versions.filter(v => v.doc.type === '@apostrophecms/global');
+      // Parked documents are inserted as drafts and published at once, so each
+      // starts with a draft version and a published one
+      assert.deepStrictEqual(home.map(v => v.mode), [ 'published', 'draft' ]);
+      assert.deepStrictEqual(global.map(v => v.mode), [ 'published', 'draft' ]);
     });
 
   });
@@ -77,7 +79,7 @@ describe('Document Versions', function () {
 
     it('should not have versions enabled for doc types with `autopublish: true`', async function() {
       assert.equal(
-        apos.docVersions.canHaveVersion({
+        await apos.docVersions.canHaveVersion(getReq(apos), {
           aposMode: 'published',
           type: 'module-autopublish_true'
         }),
@@ -87,7 +89,7 @@ describe('Document Versions', function () {
 
     it('should not have versions enabled for doc types with `versions: false`', async function() {
       assert.equal(
-        apos.docVersions.canHaveVersion({
+        await apos.docVersions.canHaveVersion(getReq(apos), {
           aposMode: 'published',
           type: 'module-versions_false'
         }),
@@ -97,7 +99,7 @@ describe('Document Versions', function () {
 
     it('should have versions enabled for doc types with `autopublish: true` and `versions: true`', async function() {
       assert.equal(
-        apos.docVersions.canHaveVersion({
+        await apos.docVersions.canHaveVersion(getReq(apos), {
           aposMode: 'published',
           type: 'module-autopublish_true-versions_true'
         }),
@@ -174,12 +176,15 @@ describe('Document Versions', function () {
       });
       assert(article);
 
+      // Inserting in published mode writes the draft first, then publishes
       {
         const versions = await apos.docVersions.find(req, {});
-        const [ first ] = versions;
-        assert(first);
-        assert.strictEqual(versions.length, 1);
-        assert.deepStrictEqual(first.doc, article);
+        assert.strictEqual(versions.length, 2);
+        const [ published, draft ] = versions;
+        assert.deepStrictEqual(published.doc, article);
+        assert.strictEqual(published.mode, 'published');
+        assert.strictEqual(draft.mode, 'draft');
+        assert.strictEqual(draft.doc._id, article._id.replace(':published', ':draft'));
       }
 
       const updated = await apos.article.update(req, {
@@ -189,12 +194,11 @@ describe('Document Versions', function () {
       assert(updated);
       {
         const versions = await apos.docVersions.find(req, {});
-        assert.strictEqual(versions.length, 2);
-        const [ first, second ] = versions;
-        assert(first);
-        assert(second);
+        assert.strictEqual(versions.length, 3);
+        const [ first, second, third ] = versions;
         assert.deepStrictEqual(first.doc, updated);
         assert.deepStrictEqual(second.doc, article);
+        assert.strictEqual(third.mode, 'draft');
       }
     });
 
@@ -228,21 +232,23 @@ describe('Document Versions', function () {
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(article1));
-        assert.strictEqual(versions.length, 2);
-        const [ first, second ] = versions;
+        assert.strictEqual(versions.length, 3);
+        const [ first, second, draft ] = versions;
 
         assert.deepStrictEqual(first.doc, updated1);
         assert.deepStrictEqual(second.doc, article1);
+        assert.strictEqual(draft.mode, 'draft');
       }
 
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(article2));
-        assert.strictEqual(versions.length, 2);
-        const [ first, second ] = versions;
+        assert.strictEqual(versions.length, 3);
+        const [ first, second, draft ] = versions;
 
         assert.deepStrictEqual(first.doc, updated2);
         assert.deepStrictEqual(second.doc, article2);
+        assert.strictEqual(draft.mode, 'draft');
       }
     });
 
@@ -260,8 +266,9 @@ describe('Document Versions', function () {
       assert(page);
 
       let versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 1);
+      assert.strictEqual(versions.length, 2);
       assert.deepStrictEqual(versions[0].doc, page);
+      assert.strictEqual(versions[1].mode, 'draft');
 
       const updated = await apos.doc.update(req, {
         ...page,
@@ -270,11 +277,12 @@ describe('Document Versions', function () {
       assert(updated);
 
       versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 2);
-      const [ first, second ] = versions;
+      assert.strictEqual(versions.length, 3);
+      const [ first, second, draft ] = versions;
 
       assert.deepStrictEqual(first.doc, updated);
       assert.deepStrictEqual(second.doc, page);
+      assert.strictEqual(draft.mode, 'draft');
     });
 
     it('should add version docs per document instance (piece pages)', async function() {
@@ -309,21 +317,23 @@ describe('Document Versions', function () {
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(page1));
-        assert.strictEqual(versions.length, 2);
-        const [ first, second ] = versions;
+        assert.strictEqual(versions.length, 3);
+        const [ first, second, draft ] = versions;
 
         assert.deepStrictEqual(first.doc, updated1);
         assert.deepStrictEqual(second.doc, page1);
+        assert.strictEqual(draft.mode, 'draft');
       }
 
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(page2));
-        assert.strictEqual(versions.length, 2);
-        const [ first, second ] = versions;
+        assert.strictEqual(versions.length, 3);
+        const [ first, second, draft ] = versions;
 
         assert.deepStrictEqual(first.doc, updated2);
         assert.deepStrictEqual(second.doc, page2);
+        assert.strictEqual(draft.mode, 'draft');
       }
     });
 
@@ -341,8 +351,9 @@ describe('Document Versions', function () {
       assert(page);
 
       let versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 1);
+      assert.strictEqual(versions.length, 2);
       assert.deepStrictEqual(versions[0].doc, page);
+      assert.strictEqual(versions[1].mode, 'draft');
 
       const updated = await apos.doc.update(req, {
         ...page,
@@ -351,11 +362,12 @@ describe('Document Versions', function () {
       assert(updated);
 
       versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 2);
-      const [ first, second ] = versions;
+      assert.strictEqual(versions.length, 3);
+      const [ first, second, draft ] = versions;
 
       assert.deepStrictEqual(first.doc, updated);
       assert.deepStrictEqual(second.doc, page);
+      assert.strictEqual(draft.mode, 'draft');
     });
 
     it('should add version docs per document instance (pages)', async function() {
@@ -390,21 +402,23 @@ describe('Document Versions', function () {
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(page1));
-        assert.strictEqual(versions.length, 2);
-        const [ first, second ] = versions;
+        assert.strictEqual(versions.length, 3);
+        const [ first, second, draft ] = versions;
 
         assert.deepStrictEqual(first.doc, updated1);
         assert.deepStrictEqual(second.doc, page1);
+        assert.strictEqual(draft.mode, 'draft');
       }
 
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(page2));
-        assert.strictEqual(versions.length, 2);
-        const [ first, second ] = versions;
+        assert.strictEqual(versions.length, 3);
+        const [ first, second, draft ] = versions;
 
         assert.deepStrictEqual(first.doc, updated2);
         assert.deepStrictEqual(second.doc, page2);
+        assert.strictEqual(draft.mode, 'draft');
       }
     });
 
@@ -419,6 +433,7 @@ describe('Document Versions', function () {
       assert(seed.versions);
       assert.equal(seed.versions.length, count);
 
+      await apos.article.publish(apos.task.getReq({ mode: 'draft' }), seed.doc);
       let articleModesCount = await apos.doc.db.countDocuments({
         aposDocId: seed.doc.aposDocId
       });
@@ -426,8 +441,11 @@ describe('Document Versions', function () {
 
       // ARCHIVE AND REMOVE
       let req = apos.task.getReq({ mode: 'published' });
+      const published = await apos.article.find(req, {
+        _id: seed.doc._id.replace(':draft', ':published')
+      }).toObject();
       await apos.article.update(req, {
-        ...seed.doc,
+        ...published,
         archived: true
       });
       // Delete the draft
@@ -779,10 +797,10 @@ describe('Document Versions', function () {
       });
       assert(article);
 
-      // Reference of attachment1 to version1
+      // Reference of attachment1 to the draft version and version1
       const attachment1After1 = await apos.attachment.db
         .findOne({ _id: attachment1._id });
-      const version1 = await apos.docVersions.findOne(
+      const [ version1, draftVersion ] = await apos.docVersions.find(
         req,
         apos.docVersions.getTimelineCriteria(article),
         {
@@ -790,8 +808,10 @@ describe('Document Versions', function () {
         }
       );
       assert(version1);
-      assert.strictEqual(attachment1After1.archivedDocIds.length, 1);
-      assert.strictEqual(attachment1After1.archivedDocIds[0], version1._id);
+      assert(draftVersion);
+      assert.strictEqual(attachment1After1.archivedDocIds.length, 2);
+      assert(attachment1After1.archivedDocIds.includes(draftVersion._id));
+      assert(attachment1After1.archivedDocIds.includes(version1._id));
 
       // Update to version2, same attachment
       const updated1 = await apos.article.update(req, {
@@ -813,7 +833,8 @@ describe('Document Versions', function () {
       assert(version2);
       assert.notStrictEqual(version2._id, version1._id);
 
-      assert.strictEqual(attachment1After2.archivedDocIds.length, 2);
+      assert.strictEqual(attachment1After2.archivedDocIds.length, 3);
+      assert(attachment1After2.archivedDocIds.includes(draftVersion._id));
       assert(attachment1After2.archivedDocIds.includes(version1._id));
       assert(attachment1After2.archivedDocIds.includes(version2._id));
 
@@ -841,7 +862,8 @@ describe('Document Versions', function () {
       assert(version3);
       assert.notStrictEqual(version3._id, version2._id);
 
-      assert.strictEqual(attachment1After3.archivedDocIds.length, 2);
+      assert.strictEqual(attachment1After3.archivedDocIds.length, 3);
+      assert(attachment1After3.archivedDocIds.includes(draftVersion._id));
       assert(attachment1After3.archivedDocIds.includes(version1._id));
       assert(attachment1After3.archivedDocIds.includes(version2._id));
       assert(!attachment1After3.archivedDocIds.includes(version3._id));
@@ -891,20 +913,31 @@ describe('Document Versions', function () {
       });
       assert.strictEqual(articleModesCount, 3);
 
-      // Validate references
+      // Validate references: each draft save and each publish is a version
       {
         attachment = await apos.attachment.db.findOne({ _id: attachment._id });
         const versions = await apos.docVersions.find(
           req,
           apos.docVersions.getTimelineCriteria(draft)
         );
-        const [ first, second ] = versions;
-        assert.strictEqual(first.doc.title, 'An update');
-        assert.strictEqual(second.doc.title, 'An article');
+        assert.deepStrictEqual(
+          versions.map(version => [ version.mode, version.doc.title ]),
+          [
+            [ 'published', 'An update' ],
+            [ 'draft', 'An update' ],
+            [ 'published', 'An article' ],
+            [ 'draft', 'An article' ]
+          ]
+        );
+        const [ first, second, third, fourth ] = versions;
         assert.strictEqual(first.doc.attachment, null);
-        assert.strictEqual(second.doc.attachment._id, attachment._id);
-        assert.deepStrictEqual(attachment.archivedDocIds.length, 1);
-        assert.deepStrictEqual(attachment.archivedDocIds, [ second._id ]);
+        assert.strictEqual(second.doc.attachment, null);
+        assert.strictEqual(third.doc.attachment._id, attachment._id);
+        assert.strictEqual(fourth.doc.attachment._id, attachment._id);
+        assert.deepStrictEqual(
+          attachment.archivedDocIds.sort(),
+          [ third._id, fourth._id ].sort()
+        );
       }
 
       // ARCHIVE AND REMOVE
@@ -1031,7 +1064,7 @@ describe('Document Versions', function () {
       const { results: versions } = res;
       assert(versions);
 
-      assert.equal(versions.length, 1);
+      assert.equal(versions.length, 2);
       assert(versions[0]._id);
       assert(versions[0].createdAt);
       assert.equal(versions[0].author, admin.title);
@@ -1055,7 +1088,7 @@ describe('Document Versions', function () {
       const { results: versions } = res;
       assert(versions);
 
-      assert.equal(versions.length, 1);
+      assert.equal(versions.length, 2);
       assert(versions[0]._id);
       assert(versions[0].createdAt);
       assert.equal(versions[0].author, editor.title);
@@ -1078,7 +1111,7 @@ describe('Document Versions', function () {
       assert(res);
       const { results: versions } = res;
       assert(versions);
-      assert.equal(versions.length, 1);
+      assert.equal(versions.length, 2);
       assert(versions[0]._id);
       assert(versions[0].createdAt);
       assert.equal(
@@ -1934,8 +1967,9 @@ describe('Document Versions', function () {
       await cleanup(apos);
     });
 
-    // One document with three published versions in `en` and two in `fr`.
-    // Returns the counts recorded at publish time, newest first per locale.
+    // One document with a draft and three published versions in `en`, a
+    // draft and two published versions in `fr`. Returns the counts recorded
+    // at save time, newest first per locale.
     async function seedTimelines() {
       const req = getReq(apos);
       const frReq = getReq(apos, { locale: 'fr' });
@@ -1982,8 +2016,8 @@ describe('Document Versions', function () {
     it('should recompute every timeline', async function() {
       const { article, counts } = await seedTimelines();
       assert.deepEqual(counts, {
-        en: [ 2, 1, 0 ],
-        fr: [ 1, 0 ]
+        en: [ 2, 1, 0, 0 ],
+        fr: [ 1, 0, 0 ]
       });
 
       await apos.docVersions.db.updateMany({}, { $set: { changeCount: 99 } });
@@ -1991,8 +2025,8 @@ describe('Document Versions', function () {
 
       // The oldest version of a timeline has no predecessor and is left alone
       assert.deepEqual(await countsFor(article), {
-        en: [ 2, 1, 99 ],
-        fr: [ 1, 99 ]
+        en: [ 2, 1, 0, 99 ],
+        fr: [ 1, 0, 99 ]
       });
     });
 
@@ -2006,8 +2040,8 @@ describe('Document Versions', function () {
       });
 
       assert.deepEqual(await countsFor(article), {
-        en: [ 99, 99, 99 ],
-        fr: [ 1, 99 ]
+        en: [ 99, 99, 99, 99 ],
+        fr: [ 1, 0, 99 ]
       });
     });
   });
@@ -2048,11 +2082,12 @@ describe('Document Versions', function () {
     });
 
     // Rewrite every stored record in the shape it had before compression:
-    // `doc` a plain object, `docId` the full `_id`, no `mode` or `locale`
+    // `doc` a plain object, `docId` the full `_id`, no `mode`, `locale`,
+    // `authorId` or `ai`
     async function toLegacy() {
       const records = await apos.docVersions.db.find({}).toArray();
       for (const {
-        mode, locale, ...record
+        mode, locale, authorId, ai, ...record
       } of records) {
         const doc = await apos.docVersions.unpack(record.doc);
         await apos.docVersions.db.replaceOne({ _id: record._id }, {
@@ -2119,6 +2154,8 @@ describe('Document Versions', function () {
       assert.deepEqual(
         records.map(record => [ record.docId, record.mode, record.locale ]).sort(),
         [
+          [ article.aposDocId, 'draft', 'en' ],
+          [ article.aposDocId, 'draft', 'fr' ],
           [ article.aposDocId, 'published', 'en' ],
           [ article.aposDocId, 'published', 'fr' ]
         ]
@@ -2141,7 +2178,7 @@ describe('Document Versions', function () {
       });
       const criteria = apos.docVersions.getTimelineCriteria(article);
       const expected = await apos.docVersions.find(apos.task.getReq(), criteria);
-      assert.equal(expected.length, 2);
+      assert.equal(expected.length, 3);
       const expectedRest = await apos.http.get(`/api/v1/${moduleName}/${expected[0]._id}`, {
         jar: jarAdmin
       });
@@ -2152,7 +2189,7 @@ describe('Document Versions', function () {
         /Version doc is not packed/
       );
 
-      await apos.docVersions.compressLegacyVersions();
+      await apos.docVersions.convertLegacyVersions();
 
       for (const record of await rawRecords()) {
         assert.equal(typeof record.doc, 'string');
@@ -2171,38 +2208,58 @@ describe('Document Versions', function () {
     });
 
     it('should convert legacy records only and change nothing on a rerun', async function() {
-      await apos.article.insert(getReq(apos), { title: 'Legacy' });
+      await apos.article.insert(getReq(apos, { mode: 'draft' }), { title: 'Legacy' });
       await toLegacy();
       const [ legacy ] = await rawRecords();
       await apos.docVersions.db.insertMany(Array.from({ length: 149 }, (_, i) => ({
         ...legacy,
         _id: `${legacy._id}-${String(i).padStart(3, '0')}`
       })));
-      await apos.article.insert(getReq(apos), { title: 'Packed' });
+      await apos.article.insert(getReq(apos, { mode: 'draft' }), { title: 'Packed' });
       const [ packed ] = await apos.docVersions.db
         .find({ mode: { $exists: true } })
         .toArray();
 
-      assert.equal(await apos.docVersions.compressLegacyVersions(), 150);
+      assert.equal(await apos.docVersions.convertLegacyVersions(), 150);
 
       const converted = await rawRecords();
       assert.equal(converted.length, 151);
       assert(converted.every(record => record.mode && typeof record.doc === 'string'));
+      assert(converted.every(record => 'authorId' in record && record.ai === false));
       assert.deepEqual(converted.find(record => record._id === packed._id), packed);
 
-      assert.equal(await apos.docVersions.compressLegacyVersions(), 0);
+      assert.equal(await apos.docVersions.convertLegacyVersions(), 0);
       assert.deepEqual(await rawRecords(), converted);
     });
 
     it('should convert legacy records written after the migration with the task', async function() {
-      await apos.article.insert(getReq(apos), { title: 'Late' });
+      await apos.article.insert(getReq(apos, { mode: 'draft' }), { title: 'Late' });
       await toLegacy();
 
-      await apos.task.invoke(`${moduleName}:compress-legacy-versions`);
+      await apos.task.invoke(`${moduleName}:convert-legacy-versions`);
 
       const [ record ] = await rawRecords();
       assert.equal(typeof record.doc, 'string');
-      assert.equal(record.mode, 'published');
+      assert.equal(record.mode, 'draft');
+    });
+
+    it('should take the author of a legacy record from the document it holds', async function() {
+      const byAdmin = await apos.article.insert(getReq(apos, admin), { title: 'By admin' });
+      const bySystem = await apos.article.insert(apos.task.getReq(), { title: 'By system' });
+      await toLegacy();
+
+      await apos.docVersions.convertLegacyVersions();
+
+      const authorIds = async doc => (await apos.docVersions.find(
+        apos.task.getReq(),
+        apos.docVersions.getTimelineCriteria(doc),
+        {
+          project: { authorId: 1 },
+          raw: true
+        }
+      )).map(version => version.authorId);
+      assert.deepEqual(await authorIds(byAdmin), [ admin._id, admin._id ]);
+      assert.deepEqual(await authorIds(bySystem), [ null, null ]);
     });
 
     it('should restore a version recorded before the migration and one after', async function() {
@@ -2212,7 +2269,7 @@ describe('Document Versions', function () {
         int: 1
       });
       await toLegacy();
-      await apos.docVersions.compressLegacyVersions();
+      await apos.docVersions.convertLegacyVersions();
       await apos.article.update(req, {
         ...article,
         title: 'After',
