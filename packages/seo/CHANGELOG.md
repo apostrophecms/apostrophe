@@ -1,11 +1,5 @@
 # Changelog
 
-## UNRELEASED
-
-### Fixes
-
-- Generated `/llms.txt` now follows the [llmstxt.org](https://llmstxt.org/) v2 structure (one H1, optional blockquote, heading-free policy text, then H2 Markdown link lists) so it also passes Lighthouse's Agentic Browsing `llms.txt` audit. The H1 is resolved from `seoSiteName` or the site hostname, never the internal global document title.
-
 ## 1.6.0 (2026-07-10)
 
 ### Adds
