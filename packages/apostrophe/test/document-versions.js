@@ -1203,6 +1203,55 @@ describe('Document Versions', function () {
       );
     });
 
+    it('should start a version at each AI boundary of a request that mixes both', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+
+      await saveDraft(apos, req, draft, { title: 'Manual' });
+      await saveDraft(apos, req.clone({ aposAi: true }), draft, { title: 'AI' });
+      await saveDraft(apos, req, draft, { title: 'Manual again' });
+
+      assert.equal(req.aposAi, undefined);
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version.authorId, version.ai, version.doc.title ]),
+        [
+          [ 'alice', false, 'Manual again' ],
+          [ 'alice', true, 'AI' ],
+          [ 'alice', false, 'Manual' ]
+        ]
+      );
+    });
+
+    it('should attribute an AI version to the user who initiated it', async function() {
+      const req = getReq(apos, {
+        _id: 'alice-id',
+        title: 'Alice',
+        mode: 'draft'
+      });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      const aiReq = req.clone({ aposAi: true });
+
+      const saved = await saveDraft(apos, aiReq, draft, { title: 'AI draft' });
+      await apos.article.publish(aiReq, saved);
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [
+          version.mode,
+          version.author,
+          version.authorId,
+          version.ai,
+          version.doc.title
+        ]),
+        [
+          [ 'published', 'Alice', 'alice-id', true, 'AI draft' ],
+          [ 'draft', 'Alice', 'alice-id', true, 'AI draft' ],
+          [ 'draft', 'Alice', 'alice-id', false, 'First' ]
+        ]
+      );
+    });
+
     it('should start a version once a day has passed since the previous one', async function() {
       assert.equal(apos.docVersions.options.draftInterval, 24 * hour);
       const req = draftReqAs(apos, 'alice');
