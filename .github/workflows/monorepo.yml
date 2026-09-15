@@ -8,6 +8,9 @@ env:
   MONGODB_VERSIONS_JSON: '["7","8"]'
   REDIS_VERSION: "7"
   POSTGRES_VERSION: "16"
+  # automatic-translation ref for the import-export tests with Pro modules,
+  # overridden by the workflow_dispatch input. Empty means the default branch.
+  APOS_AUTOMATIC_TRANSLATION_REF: document-versions
 
 on:
   push:
@@ -25,6 +28,10 @@ on:
         required: false
         type: boolean
         default: false
+      automatic-translation-ref:
+        description: automatic-translation branch, tag or commit for the import-export tests with Pro modules
+        required: false
+        type: string
 
 jobs:
   setup:
@@ -325,6 +332,7 @@ jobs:
           # Yes we want import-export to test with automatic-translation,
           # but only when the deploy key is available (not on fork PRs).
           TEST_WITH_PRO: ${{ env.HAS_PRO_KEY == 'true' && '1' || '' }}
+          APOS_AUTOMATIC_TRANSLATION_REF: ${{ inputs.automatic-translation-ref || env.APOS_AUTOMATIC_TRANSLATION_REF }}
           # Adapter selection: mongodb (default), postgres, or sqlite.
           # ADAPTER is used by db-connect tests, APOS_TEST_DB_PROTOCOL by apostrophe tests.
           ADAPTER: ${{ matrix.adapter }}
