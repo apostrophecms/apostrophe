@@ -76,7 +76,8 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-undo'
           },
-          shortcut: 'Ctrl+Z Meta+Z'
+          shortcut: 'Ctrl+Z Meta+Z',
+          skipInModal: true
         },
         [`${self.__meta.name}:redo`]: {
           type: 'item',
@@ -84,7 +85,8 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-redo'
           },
-          shortcut: 'Ctrl+Shift+Z Meta+Shift+Z'
+          shortcut: 'Ctrl+Shift+Z Meta+Shift+Z',
+          skipInModal: true
         },
         [`${self.__meta.name}:discard-draft`]: {
           type: 'item',
