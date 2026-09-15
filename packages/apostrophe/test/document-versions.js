@@ -994,6 +994,8 @@ describe('Document Versions', function () {
       jarEditor = await login(apos, 'editor');
       await addUser(apos, 'contributor');
       jarContributor = await login(apos, 'contributor');
+      // The first GET sets the CSRF cookie that REST writes need
+      await apos.http.get('/', { jar: jarAdmin });
     });
 
     after(async function() {
@@ -1310,6 +1312,103 @@ describe('Document Versions', function () {
         // projection plus the doc
         Object.keys(apos.docVersions.getRestProjection()).length + 1
       );
+    });
+
+    it('should replace the draft version unless `_explicitSave` is sent - PUT /api/v1/article', async function() {
+      const inserted = await apos.http.post('/api/v1/article', {
+        body: { title: 'First' },
+        qs: { aposMode: 'draft' },
+        jar: jarAdmin
+      });
+      const criteria = apos.docVersions.getTimelineCriteria(inserted);
+      const put = (body) => apos.http.put(`/api/v1/article/${inserted._id}`, {
+        body: {
+          ...inserted,
+          ...body
+        },
+        qs: { aposMode: 'draft' },
+        jar: jarAdmin
+      });
+      const titles = async () => (await apos.docVersions.find(getReq(apos), criteria))
+        .map(version => version.doc.title)
+        .sort();
+
+      await put({ title: 'Autosaved' });
+      assert.deepEqual(await titles(), [ 'Autosaved' ]);
+
+      await put({
+        title: 'Saved',
+        _explicitSave: true
+      });
+      assert.deepEqual(await titles(), [ 'Autosaved', 'Saved' ]);
+    });
+
+    it('should replace the draft version unless `_explicitSave` is sent - PATCH /api/v1/@apostrophecms/page', async function() {
+      const inserted = await apos.http.post('/api/v1/@apostrophecms/page', {
+        body: {
+          title: 'First',
+          type: 'default-page',
+          _targetId: '_home',
+          _position: 'lastChild'
+        },
+        qs: { aposMode: 'draft' },
+        jar: jarAdmin
+      });
+      const criteria = apos.docVersions.getTimelineCriteria(inserted);
+      const patch = (body) => apos.http.patch(`/api/v1/@apostrophecms/page/${inserted._id}`, {
+        body,
+        qs: { aposMode: 'draft' },
+        jar: jarAdmin
+      });
+      const titles = async () => (await apos.docVersions.find(getReq(apos), criteria))
+        .map(version => version.doc.title)
+        .sort();
+
+      await patch({ title: 'Autosaved' });
+      assert.deepEqual(await titles(), [ 'Autosaved' ]);
+
+      await patch({
+        title: 'Saved',
+        _explicitSave: true
+      });
+      assert.deepEqual(await titles(), [ 'Autosaved', 'Saved' ]);
+    });
+
+    it('should record a restore as a new version with its origin - PUT /api/v1/article', async function() {
+      const inserted = await apos.http.post('/api/v1/article', {
+        body: { title: 'Original' },
+        qs: { aposMode: 'draft' },
+        jar: jarAdmin
+      });
+      const criteria = apos.docVersions.getTimelineCriteria(inserted);
+      const put = (body) => apos.http.put(`/api/v1/article/${inserted._id}`, {
+        body: {
+          ...inserted,
+          ...body
+        },
+        qs: { aposMode: 'draft' },
+        jar: jarAdmin
+      });
+      const [ original ] = await apos.docVersions.find(getReq(apos), criteria);
+
+      await put({
+        title: 'Changed',
+        _explicitSave: true
+      });
+      await put({
+        title: 'Original',
+        _restoreVersion: original._id
+      });
+
+      const versions = await apos.docVersions.find(getReq(apos), criteria);
+      assert.equal(versions.length, 3);
+      const restored = versions.filter(version => version.restoredFrom);
+      assert.equal(restored.length, 1);
+      assert.equal(restored[0].doc.title, 'Original');
+      assert.deepEqual(restored[0].restoredFrom, {
+        _id: original._id,
+        createdAt: original.createdAt
+      });
     });
   });
 

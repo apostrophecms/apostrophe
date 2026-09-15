@@ -1329,6 +1329,25 @@ module.exports = {
       getManager(type) {
         return self.managers[self.normalizeType(type)];
       },
+      // Moves the virtual `_explicitSave` and `_restoreVersion` properties of
+      // a REST write body to `req.aposExplicitSave` and `req.aposRestoreVersion`.
+      // `_explicitSave: true` marks a save the user asked for, not an autosave.
+      // `_restoreVersion` is the `_id` of the version being restored.
+      setSaveFlags(req, input) {
+        if (!input || (typeof input !== 'object')) {
+          return;
+        }
+        const explicitSave = self.apos.launder.boolean(input._explicitSave);
+        const restoreVersion = self.apos.launder.id(input._restoreVersion);
+        delete input._explicitSave;
+        delete input._restoreVersion;
+        if (explicitSave) {
+          req.aposExplicitSave = true;
+        }
+        if (restoreVersion) {
+          req.aposRestoreVersion = restoreVersion;
+        }
+      },
       // Lock the given doc to a given `tabId`, such
       // that other calls to `apos.doc.lock` for that doc id will
       // fail unless they have the same `tabId`. If

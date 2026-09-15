@@ -356,6 +356,7 @@ module.exports = {
       ],
       async post(req) {
         await self.publicApiCheckAsync(req);
+        self.apos.doc.setSaveFlags(req, req.body);
         if (req.body._newInstance) {
           const { _newInstance, ...body } = req.body;
           const newInstance = {
@@ -372,6 +373,7 @@ module.exports = {
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
+        self.apos.doc.setSaveFlags(req, req.body);
         return self.convertUpdateAndRefresh(req, req.body, _id);
       },
       async delete(req, _id) {
@@ -388,6 +390,7 @@ module.exports = {
       async patch(req, _id, { fetchRelationships = true } = {}) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
+        self.apos.doc.setSaveFlags(req, req.body);
         return self.convertPatchAndRefresh(req, req.body, _id, { fetchRelationships });
       }
     };
