@@ -10,6 +10,8 @@ const zlib = require('node:zlib');
 const { createId } = require('@paralleldrive/cuid2');
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');
+const diff = require('./lib/diff.js');
+const text = require('./lib/text.js');
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
@@ -676,6 +678,51 @@ module.exports = {
           self.apos.util.clonePermanent(doc),
           previousDoc
         );
+      },
+      // What the diff engine needs from the rest of Apostrophe
+      getDiffContext(req) {
+        return {
+          req,
+          getFieldType: name => self.apos.schema.fieldTypes[name],
+          getWidgetManager: type => self.apos.area.getWidgetManager(type),
+          setMeta: (doc, ...args) => self.apos.doc.setMeta(doc, ...args),
+          htmlToPlaintext: html => self.apos.util.htmlToPlaintext(html)
+        };
+      },
+      // Every change from `older` to `newer`, two stored versions of one
+      // document, as rows at full depth (see `lib/diff.js`)
+      getChangeRows(req, older, newer) {
+        const manager = self.apos.doc.getManager(newer.type);
+        return diff.walk(manager.schema, older, newer, self.getDiffContext(req));
+      },
+      // Sets `oldText` and `newText` on change rows (see `lib/text.js`).
+      // Related document titles are fetched in one query, as `req` sees them;
+      // a document it cannot see has no title
+      async addChangeText(req, rows) {
+        const ctx = self.getDiffContext(req);
+        const ids = text.getRelatedIds(rows, ctx);
+        const titles = {};
+        if (ids.length) {
+          const related = await self.apos.doc.find(req, { aposDocId: { $in: ids } })
+            .project({
+              aposDocId: 1,
+              title: 1
+            })
+            .archived(null)
+            .areas(false)
+            .relationships(false)
+            .toArray();
+          for (const doc of related) {
+            titles[doc.aposDocId] = doc.title;
+          }
+        }
+        return text.addText(rows, ctx, { titles });
+      },
+      // A copy of `newer` marked with its changes since `older`, for
+      // WYSIWYG display (see `lib/diff.js`)
+      getAnnotatedDoc(req, older, newer) {
+        const manager = self.apos.doc.getManager(newer.type);
+        return diff.annotate(manager.schema, older, newer, self.getDiffContext(req));
       },
       // The `_id` of the user saving, `null` when there is none (system)
       getAuthorId(req) {
