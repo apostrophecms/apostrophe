@@ -175,6 +175,38 @@ describe('change-doc-ids', function() {
     await sanityCheck(existingPageId, existingCategoryId);
   });
 
+  it('changeDocIds should keep the paths earlier pairs wrote', async function() {
+    const req = apos.task.getReq({ mode: 'draft' });
+    const parent = await apos.page.insert(req, '_home', 'lastChild', {
+      type: 'default-page',
+      title: 'Lineage Parent',
+      slug: '/lineage-parent'
+    });
+    const child = await apos.page.insert(req, parent._id, 'lastChild', {
+      type: 'default-page',
+      title: 'Lineage Child',
+      slug: '/lineage-parent/child'
+    });
+    const grandchild = await apos.page.insert(req, child._id, 'lastChild', {
+      type: 'default-page',
+      title: 'Lineage Grandchild',
+      slug: '/lineage-parent/child/grandchild'
+    });
+    const homeId = parent.path.split('/')[0];
+    const pairs = [ parent, child ].map(page => [
+      page._id,
+      `${page.aposDocId}-renamed:en:draft`
+    ]);
+
+    await apos.doc.changeDocIds(pairs);
+
+    const moved = await apos.doc.db.findOne({ _id: grandchild._id });
+    assert.equal(
+      moved.path,
+      `${homeId}/${parent.aposDocId}-renamed/${child.aposDocId}-renamed/${grandchild.aposDocId}`
+    );
+  });
+
   it('replaceDocIdReferences should replace path segments, values and keys', function() {
     const doc = {
       path: 'home/old-id/old-idx',
