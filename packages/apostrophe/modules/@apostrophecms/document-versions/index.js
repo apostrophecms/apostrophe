@@ -14,6 +14,11 @@ const { stripIndent } = require('common-tags');
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
 
+// A type that records published versions only keeps this many per document
+// and locale: the current publication and the one before it, which
+// Unpublish returns to
+const PUBLISHED_ONLY_LIMIT = 2;
+
 module.exports = {
   options: {
     alias: 'docVersions',
@@ -48,6 +53,7 @@ module.exports = {
     await self.enableCollection();
     await self.createIndexes();
     self.addMigrations();
+    self.apos.attachment.addDocSource(self.__meta.name, self.eachVersionDoc);
   },
 
   handlers(self) {
@@ -86,7 +92,7 @@ module.exports = {
           .and({ _id: docId.replace(/:[\w]+$/, ':draft') })
           .toObject();
 
-        if (!doc) {
+        if (!doc || self.isExcludedType(doc)) {
           throw self.apos.error('notfound');
         }
 
@@ -328,16 +334,38 @@ module.exports = {
 
         return true;
       },
-      // Whether the module records this document at all: its type has
-      // versions and it is not archived. The type exclusion lives here only
+      // Whether a doc type marked `versions: false` still records its
+      // publication points. A localized type published by hand keeps
+      // Unpublish, which returns to the previous publication; nothing else
+      // is recorded for it and it has no versions UI
+      recordsPublishedOnly(moduleOptions) {
+        const {
+          versions,
+          autopublish,
+          localized
+        } = moduleOptions;
+        return versions === false && autopublish !== true && localized !== false;
+      },
+      // Whether the module keeps this document's full history: its type
+      // has versions and it is not archived. This also handles the
+      // auto-insert of the core @apostrophecms/archive-page
       isVersioned(doc) {
         const manager = self.apos.doc.getManager(doc.type);
-        if (!manager || !self.hasVersions(manager.options)) {
-          return false;
-        }
-        // This also handles the auto-insert of
-        // the core @apostrophecms/archive-page
-        return !doc.archived;
+        return Boolean(manager) && self.hasVersions(manager.options) && !doc.archived;
+      },
+      // Whether the module keeps only this document's publication points
+      isPublishedOnly(doc) {
+        const manager = self.apos.doc.getManager(doc.type);
+        return Boolean(manager) &&
+          self.recordsPublishedOnly(manager.options) &&
+          !doc.archived;
+      },
+      // Whether a document's type has no versions to show: its manager is
+      // known and does not have them. The records of a type whose module
+      // is gone stay readable
+      isExcludedType(doc) {
+        const manager = self.apos.doc.getManager(doc.type);
+        return Boolean(manager) && !self.hasVersions(manager.options);
       },
       // Decides what a save does to the document's history. Returns `false`
       // for nothing, `true` for a new version, or the `_id` of the newest
@@ -349,7 +377,16 @@ module.exports = {
       // version that was a publication point, a different author, AI
       // involvement changing, or more than `draftInterval` since the previous
       // version was created. Between handoffs it replaces the previous draft.
+      //
+      // A request flagged `aposSkipVersion` records nothing: core sets it on
+      // a save that is a side effect of an operation already recorded
       async canHaveVersion(req, doc) {
+        if (req.aposSkipVersion) {
+          return false;
+        }
+        if (self.isPublishedOnly(doc)) {
+          return self.getMode(doc) === 'published';
+        }
         if (!self.isVersioned(doc)) {
           return false;
         }
@@ -394,7 +431,44 @@ module.exports = {
         if (typeof decision === 'string') {
           return self.replaceVersion(req, doc, decision);
         }
-        return self.insertVersion(req, doc);
+        const version = await self.insertVersion(req, doc);
+        if (self.isPublishedOnly(doc)) {
+          await self.trimPublishedOnly(req, doc);
+        }
+        return version;
+      },
+      // Drop the publication points of `doc` beyond the ones Unpublish
+      // needs, for a type that records published versions only
+      async trimPublishedOnly(req, doc) {
+        const surplus = await self.find(req, {
+          ...self.getTimelineCriteria(doc),
+          mode: 'published'
+        }, {
+          skip: PUBLISHED_ONLY_LIMIT,
+          project: { _id: 1 },
+          raw: true
+        });
+        if (surplus.length) {
+          await self.removeVersions(req, {
+            _id: { $in: surplus.map(version => version._id) }
+          });
+        }
+      },
+      // The version Unpublish returns `published` to: the publication point
+      // before the current one, with its `doc` unpacked. `null` when there
+      // is none, or when the current publication is itself an Unpublish,
+      // which can be undone only by publishing again
+      async getPreviousPublication(req, published) {
+        const [ current, previous ] = await self.find(req, {
+          ...self.getTimelineCriteria(published),
+          mode: 'published'
+        }, {
+          limit: PUBLISHED_ONLY_LIMIT
+        });
+        if (!previous || current.restoredFrom) {
+          return null;
+        }
+        return previous;
       },
       // Insert a new version of `doc` at the head of its timeline
       async insertVersion(req, doc) {
@@ -442,6 +516,20 @@ module.exports = {
           archived: true
         });
         return version;
+      },
+      // Hand the content of every version to `work`, one version at a time,
+      // as the archived document the attachment module knows it as (see
+      // `updateReferencesFor`). Registered with the attachment module so a
+      // recount of attachment references includes versions
+      async eachVersionDoc(work) {
+        await self.apos.migration.each(self.db, {}, async version => {
+          const doc = await self.unpack(version.doc);
+          await work({
+            ...doc,
+            _id: version._id,
+            archived: true
+          });
+        });
       },
       // The top-level schema fields of `doc` whose values differ from
       // `previousDoc`, an unpacked version content, by the schema of `doc`
@@ -720,7 +808,7 @@ module.exports = {
             }
           }
         );
-        if (!version) {
+        if (!version || self.isExcludedType(version.doc)) {
           throw new ReferenceError('version');
         }
 

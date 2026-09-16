@@ -1343,23 +1343,21 @@ module.exports = {
       // Used to implement "Undo Publish."
       //
       // Revert the doc `published` to its content as of its most recent
-      // previous publication. If this has already been done or
-      // there is no previous publication, throws an `invalid` exception.
+      // previous publication, the version recorded for it. If this has
+      // already been done or there is no previous publication, throws an
+      // `invalid` exception. The reverted content is recorded as a new
+      // published version that names the one it returned to.
 
       async revertPublishedToPrevious(req, published) {
         if (!self.apos.permission.can(req, 'publish', published)) {
           throw self.apos.error('forbidden');
         }
-        const previousId = published._id.replace(':published', ':previous');
-        const previous = await self.apos.doc.db.findOne({
-          _id: previousId
-        });
-        if (!previous) {
-          // Feature has already been used
+        const version = await self.apos.docVersions
+          .getPreviousPublication(req, published);
+        if (!version) {
           throw self.apos.error('invalid');
         }
-        const $set = await self.getRevertDeduplicationSet(req, previous);
-        Object.assign(previous, $set);
+        const previous = version.doc;
         // We must load relationships as if we had done a regular find
         // because relationships are read/write in A3,
         // but we don't have to call widget loaders
@@ -1370,12 +1368,9 @@ module.exports = {
         self.copyForPublication(req, previous, published);
         published.lastPublishedAt = previous.lastPublishedAt;
         published = await self.update(req.clone({
-          mode: 'published'
+          mode: 'published',
+          aposRestoreVersion: version._id
         }), published);
-        self.apos.doc.db.removeOne({
-          _id: previousId
-        });
-        await self.emit('afterDelete', req, previous, { checkForChildren: false });
         const result = {
           published
         };
