@@ -26,7 +26,14 @@ describe('change-doc-ids', function() {
             add: {
               _categories: {
                 type: 'relationship',
-                withType: 'category'
+                withType: 'category',
+                fields: {
+                  add: {
+                    note: {
+                      type: 'string'
+                    }
+                  }
+                }
               }
             }
           }
@@ -82,7 +89,16 @@ describe('change-doc-ids', function() {
         ...article,
         title: 'Article ' + i,
         slug: 'article-' + i,
-        _categories: [ categories[i % 4], categories[(i + 1) % 4] ]
+        _categories: [
+          {
+            ...categories[i % 4],
+            _fields: { note: 'first' }
+          },
+          {
+            ...categories[(i + 1) % 4],
+            _fields: { note: 'second' }
+          }
+        ]
       }));
     }
   });
@@ -159,6 +175,65 @@ describe('change-doc-ids', function() {
     await sanityCheck(existingPageId, existingCategoryId);
   });
 
+  it('replaceDocIdReferences should replace path segments, values and keys', function() {
+    const doc = {
+      path: 'home/old-id/old-idx',
+      relatedIds: [ 'old-id', 'other-id' ],
+      relatedFields: {
+        'old-id': { note: 'kept' },
+        'other-id': { note: 'other' }
+      },
+      main: {
+        items: [
+          {
+            pagesIds: [ 'old-id' ],
+            pagesFields: {
+              'new-id': { note: 'overwritten' },
+              'old-id': { note: 'nested' }
+            }
+          }
+        ]
+      }
+    };
+
+    assert.equal(apos.doc.replaceDocIdReferences(doc, {
+      oldId: 'old-id',
+      newId: 'new-id'
+    }), true);
+    assert.deepEqual(doc, {
+      path: 'home/new-id/old-idx',
+      relatedIds: [ 'new-id', 'other-id' ],
+      relatedFields: {
+        'new-id': { note: 'kept' },
+        'other-id': { note: 'other' }
+      },
+      main: {
+        items: [
+          {
+            pagesIds: [ 'new-id' ],
+            pagesFields: {
+              'new-id': { note: 'nested' }
+            }
+          }
+        ]
+      }
+    });
+    assert.equal(apos.doc.replaceDocIdReferences(doc, {
+      oldId: 'old-id',
+      newId: 'new-id'
+    }), false);
+
+    const same = {
+      relatedIds: [ 'same-id' ],
+      relatedFields: { 'same-id': { note: 'kept' } }
+    };
+    assert.equal(apos.doc.replaceDocIdReferences(same, {
+      oldId: 'same-id',
+      newId: 'same-id'
+    }), false);
+    assert.deepEqual(same.relatedFields, { 'same-id': { note: 'kept' } });
+  });
+
   async function sanityCheck(newPageId, newCategoryId) {
     const pages = await apos.page.find(apos.task.getReq(), {}).children(true).toArray();
     const test = pages.find(page => page.slug === '/test');
@@ -180,8 +255,10 @@ describe('change-doc-ids', function() {
     assert.strictEqual(articles[0].title, 'Article 0');
     assert(articles[0]._categories);
     assert.strictEqual(articles[0]._categories.length, 2);
-    assert(articles[0]._categories.find(category => category.slug === 'category-0'));
-    assert(articles[0]._categories.find(category => category.slug === 'category-1'));
+    const first = articles[0]._categories.find(category => category.slug === 'category-0');
+    const second = articles[0]._categories.find(category => category.slug === 'category-1');
+    assert.equal(first._fields.note, 'first');
+    assert.equal(second._fields.note, 'second');
     if (newCategoryId) {
       assert.strictEqual(
         articles[0]._categories.some(obj => obj._id === newCategoryId),

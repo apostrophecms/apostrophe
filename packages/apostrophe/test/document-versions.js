@@ -2127,7 +2127,25 @@ describe('Document Versions', function () {
             }
           },
           article: {},
-          'default-page': {}
+          'default-page': {},
+          'article-note': {
+            extend: '@apostrophecms/piece-type',
+            fields: {
+              add: {
+                _articles: {
+                  type: 'relationship',
+                  withType: 'article',
+                  fields: {
+                    add: {
+                      note: {
+                        type: 'string'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       });
     });
@@ -2412,6 +2430,55 @@ describe('Document Versions', function () {
       assert.deepEqual(restored.relatedIds, [ 'renamed-category' ]);
       const renamed = await apos.doc.db.findOne({ _id: 'renamed-category:en:draft' });
       assert.deepEqual(renamed.relatedReverseIds, [ article.aposDocId ]);
+    });
+
+    it('should rename the relationship fields of other documents\' versions to a renamed document', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const notes = apos.modules['article-note'];
+      const article = await apos.article.insert(req, { title: 'Article' });
+      const note = await notes.insert(req, {
+        title: 'Note',
+        _articles: [
+          {
+            ...article,
+            _fields: { note: 'Kept' }
+          }
+        ]
+      });
+      await notes.publish(req, note);
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-article',
+        oldId: article.aposDocId,
+        locale: 'en'
+      });
+
+      const live = await apos.doc.db.findOne({ _id: note._id });
+      assert.deepEqual(live.articlesFields, { 'renamed-article': { note: 'Kept' } });
+      const versions = await timeline(apos, note);
+      assert.deepEqual(
+        versions.map(version => [
+          version.mode,
+          version.doc.articlesIds,
+          version.doc.articlesFields
+        ]),
+        [ 'published', 'draft' ].map(mode => [
+          mode,
+          [ 'renamed-article' ],
+          { 'renamed-article': { note: 'Kept' } }
+        ])
+      );
+
+      // Restored the way the modal does, the relationship keeps its fields
+      const [ , oldest ] = versions;
+      const { doc: content } = await apos.docVersions.getOne(req, oldest._id);
+      assert.deepEqual(content._articles.map(related => related._fields), [ { note: 'Kept' } ]);
+      const draft = await notes.findOneForEditing(req, { aposDocId: note.aposDocId });
+      await notes.convert(req, content, draft);
+      await notes.update(req.clone({ aposRestoreVersion: oldest._id }), draft);
+      const restored = await notes.find(req, { aposDocId: note.aposDocId }).toObject();
+      assert.deepEqual(restored._articles.map(related => related._fields), [ { note: 'Kept' } ]);
+      assert.deepEqual(restored.articlesFields, { 'renamed-article': { note: 'Kept' } });
     });
 
     it('should find the versions of a parked page the duplicate parked pages migration renames', async function() {

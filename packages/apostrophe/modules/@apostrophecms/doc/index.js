@@ -388,10 +388,12 @@ module.exports = {
           }
           const isPage = self.apos.page.isPage(existing);
           if (isPage) {
-            replacement.path = existing.path.replace(
-              existing.aposDocId,
-              replacement.aposDocId
-            );
+            const moved = { path: existing.path };
+            self.replaceDocIdReferences(moved, {
+              oldId: oldAposDocId,
+              newId: replacement.aposDocId
+            });
+            replacement.path = moved.path;
           }
           try {
             if (!skipReplace) {
@@ -439,12 +441,17 @@ module.exports = {
           }
           if (isPage && !skipReplace) {
             for (const page of pages) {
-              if (page.path.includes(oldAposDocId)) {
+              // Updates the snapshot too, so a later pair reads the new path
+              const moved = self.replaceDocIdReferences(page, {
+                oldId: oldAposDocId,
+                newId: replacement.aposDocId
+              });
+              if (moved) {
                 await self.apos.doc.db.updateOne({
                   _id: page._id
                 }, {
                   $set: {
-                    path: page.path.replace(oldAposDocId, replacement.aposDocId)
+                    path: page.path
                   }
                 });
               }
@@ -455,7 +462,10 @@ module.exports = {
               aposDocId: { $in: existing.relatedReverseIds }
             }).toArray();
             for (const doc of relatedDocs) {
-              replaceId(doc, oldAposDocId, replacement.aposDocId);
+              self.replaceDocIdReferences(doc, {
+                oldId: oldAposDocId,
+                newId: replacement.aposDocId
+              });
               await self.apos.doc.db.replaceOne({
                 _id: doc._id
               }, doc);
@@ -471,18 +481,47 @@ module.exports = {
           renamed,
           kept
         };
-        function replaceId(obj, oldId, newId) {
-          if (obj == null) {
+      },
+      // Replace the document id `oldId` (an `aposDocId`) with `newId` wherever
+      // `doc` refers to it: as a segment of its page `path`, as a value at any
+      // depth, and as an object key at any depth, such as the `fields` storage
+      // of a relationship. A key already named `newId` is overwritten. Mutates
+      // `doc` and returns whether anything changed.
+      replaceDocIdReferences(doc, { oldId, newId }) {
+        // A locale rename keeps the id
+        if (oldId === newId) {
+          return false;
+        }
+        let changed = false;
+        if (typeof doc.path === 'string') {
+          const path = doc.path
+            .split('/')
+            .map(segment => (segment === oldId) ? newId : segment)
+            .join('/');
+          if (path !== doc.path) {
+            doc.path = path;
+            changed = true;
+          }
+        }
+        replace(doc);
+        return changed;
+
+        function replace(value) {
+          if (!value || (typeof value !== 'object')) {
             return;
           }
-          if ((typeof obj) !== 'object') {
-            return;
-          }
-          for (const key of Object.keys(obj)) {
-            if (obj[key] === oldId) {
-              obj[key] = newId;
+          for (let key of Object.keys(value)) {
+            if (key === oldId) {
+              value[newId] = value[oldId];
+              delete value[oldId];
+              key = newId;
+              changed = true;
+            }
+            if (value[key] === oldId) {
+              value[key] = newId;
+              changed = true;
             } else {
-              replaceId(obj[key], oldId, newId);
+              replace(value[key]);
             }
           }
         }
