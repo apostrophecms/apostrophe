@@ -1120,6 +1120,109 @@ describe('Document Versions', function () {
       assert.strictEqual(attachmentCount, 0);
       assert.strictEqual(versionCount, 0);
     });
+
+    it('should keep the references of an attachment only versions hold on a recount', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const attachment = await upload('clone.txt', apos);
+      const draft = await apos.article.insert(req, {
+        title: 'With attachment',
+        attachment
+      });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Without attachment',
+        attachment: null
+      }));
+      const holders = (await timeline(apos, draft))
+        .filter(version => version.doc.attachment)
+        .map(version => version._id)
+        .sort();
+      assert.equal(holders.length, 2);
+
+      await apos.attachment.db.updateOne({ _id: attachment._id }, {
+        $set: {
+          docIds: [],
+          archivedDocIds: []
+        }
+      });
+      await apos.attachment.recomputeAllDocReferences();
+
+      const after = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert.deepEqual(after.docIds, []);
+      assert.deepEqual([ ...after.archivedDocIds ].sort(), holders);
+      assert.equal(after.utilized, true);
+    });
+
+    it('should leave the references of an attachment live documents hold unchanged on a recount', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const attachment = await upload('clone.txt', apos);
+      const draft = await apos.article.insert(req, {
+        title: 'With attachment',
+        attachment
+      });
+      await apos.article.publish(req, draft);
+      const before = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert.deepEqual(
+        [ ...before.docIds ].sort(),
+        [ draft._id, draft._id.replace(':draft', ':published') ].sort()
+      );
+      assert.equal(before.archivedDocIds.length, 2);
+
+      await apos.attachment.recomputeAllDocReferences();
+
+      const after = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert.deepEqual([ ...after.docIds ].sort(), [ ...before.docIds ].sort());
+      assert.deepEqual(
+        [ ...after.archivedDocIds ].sort(),
+        [ ...before.archivedDocIds ].sort()
+      );
+    });
+
+    it('should hand the versions to the recount one at a time from a cursor', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const ids = (await apos.docVersions.db.find({}).toArray())
+        .map(version => version._id)
+        .sort();
+      assert.equal(ids.length, 4);
+
+      // The source must walk a cursor, never read the collection at once
+      const { find } = apos.docVersions.db;
+      let cursors = 0;
+      apos.docVersions.db.find = (...args) => {
+        const cursor = find.apply(apos.docVersions.db, args);
+        cursor.toArray = () => {
+          throw new Error('The versions source read the whole collection');
+        };
+        cursors++;
+        return cursor;
+      };
+      const seen = [];
+      let active = 0;
+      let maxActive = 0;
+      try {
+        await apos.attachment.docSources[moduleName](async doc => {
+          active++;
+          maxActive = Math.max(maxActive, active);
+          await new Promise(resolve => setImmediate(resolve));
+          seen.push(doc);
+          active--;
+        });
+      } finally {
+        apos.docVersions.db.find = find;
+      }
+
+      assert.equal(cursors, 1);
+      assert.equal(maxActive, 1);
+      assert.deepEqual(seen.map(doc => doc._id).sort(), ids);
+      assert(seen.every(doc => doc.archived === true && doc.type === 'article'));
+    });
   });
 
   const hour = 60 * 60 * 1000;
@@ -1835,6 +1938,254 @@ describe('Document Versions', function () {
     async function publications(apos, doc) {
       return (await timeline(apos, doc)).filter(version => version.mode === 'published');
     }
+  });
+
+  describe('document id changes', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          '@apostrophecms/i18n': {
+            options: {
+              locales: {
+                en: {},
+                fr: {
+                  prefix: '/fr'
+                }
+              }
+            }
+          },
+          article: {},
+          'default-page': {}
+        }
+      });
+    });
+
+    after(async function() {
+      await removeUploads();
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    it('should move the versions of a renamed piece and restore from them', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const before = await timeline(apos, draft);
+      assert.equal(before.length, 4);
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-article',
+        oldId: draft.aposDocId,
+        locale: 'en'
+      });
+
+      assert.equal(
+        await apos.docVersions.db.countDocuments({ docId: draft.aposDocId }),
+        0
+      );
+      const renamed = await apos.article.find(req, { aposDocId: 'renamed-article' }).toObject();
+      const after = await timeline(apos, renamed);
+      assert.deepEqual(
+        after.map(version => [ version._id, version.mode, version.doc.title ]),
+        before.map(version => [ version._id, version.mode, version.doc.title ])
+      );
+      for (const version of after) {
+        assert.equal(version.doc._id, `renamed-article:en:${version.mode}`);
+        assert.equal(version.doc.aposDocId, 'renamed-article');
+        assert.equal(version.doc.aposLocale, `en:${version.mode}`);
+      }
+
+      // Unpublish returns to the previous publication point
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const published = await apos.article.revertPublishedToPrevious(
+        publishedReq,
+        await apos.article.findOneForEditing(publishedReq, { aposDocId: 'renamed-article' })
+      );
+      assert.equal(published.title, 'First');
+
+      // A draft restore names the version it returns to
+      const [ , , , oldest ] = after;
+      await apos.article.update(req.clone({ aposRestoreVersion: oldest._id }), {
+        ...renamed,
+        title: oldest.doc.title
+      });
+      const [ restored ] = await timeline(apos, renamed);
+      assert.equal(restored.mode, 'draft');
+      assert.equal(restored.doc.title, 'First');
+      assert.equal(restored.restoredFrom._id, oldest._id);
+    });
+
+    it('should rewrite the path of a renamed page in its versions', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Page',
+        slug: '/page'
+      });
+      await apos.page.publish(req, draft);
+      assert(draft.path.endsWith(draft.aposDocId));
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-page',
+        oldId: draft.aposDocId,
+        locale: 'en'
+      });
+
+      const renamed = await apos.page.find(req, { aposDocId: 'renamed-page' }).toObject();
+      assert.equal(renamed.path, draft.path.replace(draft.aposDocId, 'renamed-page'));
+      const versions = await timeline(apos, renamed);
+      assert.deepEqual(versions.map(version => version.mode), [ 'published', 'draft' ]);
+      for (const version of versions) {
+        assert.equal(version.doc._id, `renamed-page:en:${version.mode}`);
+        assert.equal(version.doc.path, renamed.path);
+      }
+    });
+
+    it('should remove the versions of a renamed document and release their attachments when it is deleted', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const attachment = await upload('clone.txt', apos);
+      const draft = await apos.article.insert(req, {
+        title: 'With attachment',
+        attachment
+      });
+      await apos.article.publish(req, draft);
+      await apos.doc.setAposDocId({
+        newId: 'renamed-article',
+        oldId: draft.aposDocId,
+        locale: 'en'
+      });
+      const criteria = {
+        docId: 'renamed-article',
+        locale: 'en'
+      };
+      const versionIds = (await apos.docVersions.db.find(criteria).toArray())
+        .map(version => version._id)
+        .sort();
+      assert.equal(versionIds.length, 2);
+      const held = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert.deepEqual([ ...held.archivedDocIds ].sort(), versionIds);
+
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const published = await apos.article.find(publishedReq, {
+        aposDocId: 'renamed-article'
+      }).toObject();
+      await apos.article.update(publishedReq, {
+        ...published,
+        archived: true
+      });
+      const renamed = await apos.article.find(req, {
+        aposDocId: 'renamed-article'
+      }).archived(null).toObject();
+      await apos.article.delete(req, renamed);
+
+      assert.equal(await apos.doc.db.countDocuments({ aposDocId: 'renamed-article' }), 0);
+      assert.equal(await apos.docVersions.db.countDocuments(criteria), 0);
+      assert.equal(await apos.attachment.db.countDocuments({ _id: attachment._id }), 0);
+    });
+
+    it('should leave the versions alone when the old document is kept', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const kept = await apos.article.insert(req, { title: 'Kept' });
+      const existing = await apos.article.insert(req, { title: 'Existing' });
+
+      await apos.doc.changeDocIds([ [ kept._id, existing._id ] ], { skipReplace: true });
+
+      assert.deepEqual(
+        (await timeline(apos, kept)).map(version => version.doc._id),
+        [ kept._id ]
+      );
+      assert.deepEqual(
+        (await timeline(apos, existing)).map(version => version.doc._id),
+        [ existing._id ]
+      );
+    });
+
+    it('should resolve versions already under the new id as `keep` says', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const from = await apos.article.insert(req, { title: 'From' });
+      const to = await apos.article.insert(req, { title: 'To' });
+
+      await apos.docVersions.changeDocId(from._id, to._id, { keep: 'new' });
+      assert.deepEqual(await titles(from), []);
+      assert.deepEqual(await titles(to), [ 'To' ]);
+
+      const other = await apos.article.insert(req, { title: 'Other' });
+      await apos.docVersions.changeDocId(other._id, to._id, { keep: 'old' });
+      assert.deepEqual(await titles(other), []);
+      assert.deepEqual(await titles(to), [ 'Other' ]);
+
+      async function titles(doc) {
+        return (await timeline(apos, doc)).map(version => version.doc.title);
+      }
+    });
+
+    it('should leave the versions of a locale rename to `renameLocale`', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'Article' });
+      const [ version ] = await timeline(apos, draft, { raw: true });
+
+      assert.equal(
+        await apos.docVersions.changeDocId(draft._id, draft._id.replace(':en:', ':fr:')),
+        0
+      );
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), [ version ]);
+    });
+
+    it('should find the versions of a parked page the duplicate parked pages migration renames', async function() {
+      const req = getReq(apos, {
+        mode: 'draft',
+        locale: 'fr'
+      });
+      const home = await apos.page.find(req, { level: 0 }).toObject();
+      await apos.page.publish(req, await apos.page.update(req, {
+        ...home,
+        title: 'Accueil'
+      }));
+      const before = await timeline(apos, home);
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft' ]);
+
+      // A French home page replicated under an id of its own, with its versions
+      const misreplicated = 'misreplicated-home';
+      for (const mode of [ 'draft', 'published' ]) {
+        const doc = await apos.doc.db.findOne({ _id: `${home.aposDocId}:fr:${mode}` });
+        await apos.doc.db.removeOne({ _id: doc._id });
+        await apos.doc.db.insertOne({
+          ...doc,
+          _id: `${misreplicated}:fr:${mode}`,
+          aposDocId: misreplicated,
+          path: misreplicated
+        });
+      }
+      await apos.docVersions.db.updateMany(
+        apos.docVersions.getTimelineCriteria(home),
+        { $set: { docId: misreplicated } }
+      );
+
+      const migration = apos.migration.migrations
+        .find(({ name }) => name === 'duplicate-parked-pages');
+      await migration.fn();
+
+      assert.equal(await apos.doc.db.countDocuments({ aposDocId: misreplicated }), 0);
+      assert.equal(await apos.docVersions.db.countDocuments({ docId: misreplicated }), 0);
+      const after = await timeline(apos, home);
+      assert.deepEqual(
+        after.map(version => [ version._id, version.doc.title ]),
+        before.map(version => [ version._id, version.doc.title ])
+      );
+      for (const version of after) {
+        assert.equal(version.doc._id, `${home.aposDocId}:fr:${version.mode}`);
+        assert.equal(version.doc.path, home.aposDocId);
+      }
+    });
   });
 
   describe('REST API', function() {

@@ -75,6 +75,17 @@ module.exports = {
         async deleteVersion(req, doc) {
           await self.removeAllFor(req, doc);
         }
+      },
+      '@apostrophecms/doc:afterChangeDocIds': {
+        async followDocIds(pairs, { keep, skipReplace }) {
+          // The old documents stay, and so do their versions
+          if (skipReplace) {
+            return;
+          }
+          for (const [ from, to ] of pairs) {
+            await self.changeDocId(from, to, { keep });
+          }
+        }
       }
     };
   },
@@ -1124,13 +1135,74 @@ module.exports = {
           }
         }
 
+        const renamed = await self.rewriteVersions(
+          req,
+          { locale: oldLocale },
+          version => ({
+            locale: newLocale,
+            doc: self.renameDocLocale(version.doc, oldLocale, newLocale)
+          })
+        );
+
+        return {
+          renamed,
+          kept
+        };
+      },
+      // Move the versions of the document `from` to `to`, two `_id` values
+      // of the same mode, after `@apostrophecms/doc.changeDocIds` renamed
+      // the document. A change of locale alone is left to `renameLocale`.
+      // When `to` already has versions, `keep` decides as it does there.
+      async changeDocId(from, to, { keep } = {}) {
+        const source = parseDocId(from);
+        const target = parseDocId(to);
+        if (source.docId === target.docId) {
+          return 0;
+        }
+        const req = self.apos.task.getReq();
+        if (keep && await self.db.findOne(target)) {
+          if (keep === 'new') {
+            return self.removeVersions(req, source);
+          }
+          await self.removeVersions(req, target);
+        }
+        return self.rewriteVersions(req, source, ({ doc }) => {
+          doc._id = to;
+          doc.aposDocId = target.docId;
+          if (target.locale) {
+            doc.aposLocale = `${target.locale}:${target.mode}`;
+          }
+          if (doc.path) {
+            doc.path = doc.path.replace(source.docId, target.docId);
+          }
+          return {
+            docId: target.docId,
+            locale: target.locale,
+            doc
+          };
+        });
+
+        // The timeline criteria and mode of a document `_id`
+        function parseDocId(_id) {
+          const [ docId, locale = null, mode = 'published' ] = _id.split(':');
+          return {
+            docId,
+            locale,
+            mode
+          };
+        }
+      },
+      // Apply `rewrite(version)` to every version matching `criteria`, in
+      // batches. It receives the version with `doc` unpacked and returns the
+      // fields to set, `doc` unpacked. Returns the number of versions changed.
+      async rewriteVersions(req, criteria, rewrite) {
         const ids = (await self.db
-          .find({ locale: oldLocale })
+          .find(criteria)
           .project({ _id: 1 })
           .toArray())
           .map(version => version._id);
 
-        let renamed = 0;
+        let changed = 0;
         const batchSize = 50;
         for (let i = 0; i < ids.length; i += batchSize) {
           const versions = await self.find(
@@ -1139,13 +1211,13 @@ module.exports = {
             { sort: false }
           );
           const operations = await Promise.all(versions.map(async version => {
-            const doc = self.renameDocLocale(version.doc, oldLocale, newLocale);
+            const { doc, ...fields } = rewrite(version);
             return {
               updateOne: {
                 filter: { _id: version._id },
                 update: {
                   $set: {
-                    locale: newLocale,
+                    ...fields,
                     doc: await self.pack(doc)
                   }
                 }
@@ -1153,13 +1225,9 @@ module.exports = {
             };
           }));
           const result = await self.db.bulkWrite(operations);
-          renamed += result.modifiedCount;
+          changed += result.modifiedCount;
         }
-
-        return {
-          renamed,
-          kept
-        };
+        return changed;
       },
       // Rewrite the locale inside a version's doc: its `_id`, its
       // `aposLocale` and the document ids its attachment field records

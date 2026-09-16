@@ -352,6 +352,9 @@ module.exports = {
       // remove the old document, but will still update the new document. The
       // new _id for each pair will be used for retrieving the "existing"
       // document in this case.
+      //
+      // Emits `afterChangeDocIds` with `pairs` and `{ keep, skipReplace }`
+      // once every document is rewritten.
 
       async changeDocIds(pairs, { keep, skipReplace = false } = {}) {
         let renamed = 0;
@@ -459,6 +462,10 @@ module.exports = {
             }
           }
         }
+        await self.emit('afterChangeDocIds', pairs, {
+          keep,
+          skipReplace
+        });
         await self.apos.attachment.recomputeAllDocReferences();
         return {
           renamed,
