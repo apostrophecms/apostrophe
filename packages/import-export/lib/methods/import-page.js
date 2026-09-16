@@ -124,24 +124,28 @@ const update = async ({
     ...patch
   } = doc;
 
-  const move = doc.parkedId
-    ? {}
-    : {
-      _targetId: await getTargetId({
-        manager,
-        doc,
-        req,
-        duplicatedDocs
-      }),
-      _position: 'lastChild'
-    };
+  // Move first, then patch the fields, so the save that carries the
+  // imported (possibly translated) content is the last one and the
+  // move's own saves of the draft and the published copy do not carry
+  // the AI save flag, and do not touch the imported relationship ids
+  if (!doc.parkedId) {
+    const targetId = await getTargetId({
+      manager,
+      doc,
+      req,
+      duplicatedDocs
+    });
+    await manager.move(
+      req.clone({ aposAi: false }),
+      _id,
+      targetId,
+      'lastChild'
+    );
+  }
 
   return manager.patch(
     req.clone({
-      body: {
-        ...patch,
-        ...move
-      }
+      body: patch
     }),
     _id,
     {

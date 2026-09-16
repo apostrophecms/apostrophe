@@ -1607,6 +1607,140 @@ describe('@apostrophecms/import-export', function() {
 
   });
 
+  describe('#overrideDuplicates - page relationships', function () {
+    before(async function () {
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        testModule: true,
+        modules: {
+          ...getAppConfig(),
+          '@apostrophecms/i18n': {
+            options: {
+              defaultLocale: 'en',
+              locales: {
+                en: { label: 'English' },
+                fr: {
+                  label: 'French',
+                  prefix: '/fr'
+                }
+              }
+            }
+          },
+          '@apostrophecms/import-export': {
+            options: {
+              importExport: {
+                export: {
+                  expiration: 10 * 1000
+                }
+              }
+            }
+          }
+        }
+      });
+
+      tempPath = path.join(apos.rootDir, 'data/temp/uploadfs');
+      attachmentPath = path.join(apos.rootDir, 'public/uploads/attachments');
+      exportsPath = path.join(apos.rootDir, 'public/uploads/exports');
+      importExportManager = apos.modules['@apostrophecms/import-export'];
+
+      await insertAdminUser(apos);
+    });
+
+    // An overridden page keeps the relationship ids it was given, even to
+    // documents that do not exist in the target locale yet: the ids are
+    // the ones the file carries, and the relationship resolves as soon as
+    // the related document exists there
+    it('should keep the relationships of an overridden page to documents missing in the locale', async function () {
+      const req = apos.task.getReq();
+      const frReq = req.clone({ locale: 'fr' });
+      const page1 = await apos.page.find(req, { title: 'page1' }).toObject();
+      const image1 = await apos.image.find(req, { title: 'image1' }).toObject();
+      const imageIdsOf = doc => doc.main.items.map(item => item.imageIds);
+
+      assert.deepEqual(imageIdsOf(page1), [ [ image1.aposDocId ] ]);
+
+      // The export leaves the image out, so nothing brings it to fr
+      req.body = {
+        _ids: [ page1._id ],
+        extension: 'gzip',
+        relatedTypes: [ 'article' ],
+        type: page1.type
+      };
+      const { url } = await importExportManager.export(req, apos.page);
+      const fileName = path.basename(url);
+      const importFilePath = path.join(tempPath, fileName);
+      await fs.copyFile(path.join(exportsPath, fileName), importFilePath);
+
+      req.body = {};
+      req.files = {
+        file: {
+          path: importFilePath,
+          type: importExportManager.formats.gzip.allowedTypes[0]
+        }
+      };
+      const {
+        duplicatedDocs,
+        importedAttachments,
+        exportId,
+        jobId,
+        notificationId,
+        formatLabel
+      } = await importExportManager.import(req);
+
+      // The page and its article exist in fr before the override
+      for (const doc of duplicatedDocs) {
+        const manager = doc.type === 'default-page' ? apos.page : apos.article;
+        const orig = await manager.find(req, { aposDocId: doc.aposDocId }).toObject();
+        const localized = await manager.localize(req, orig, 'fr');
+        await manager.publish(frReq, localized);
+      }
+
+      delete req.files;
+      req.locale = 'fr';
+      req.body = {
+        docIds: duplicatedDocs.map(({ aposDocId }) => aposDocId),
+        duplicatedDocs,
+        importedAttachments,
+        exportId,
+        jobId,
+        notificationId,
+        formatLabel,
+        overrideLocale: true
+      };
+      await importExportManager.overrideDuplicates(req);
+
+      const frPages = await apos.doc.db
+        .find({
+          aposDocId: page1.aposDocId,
+          aposLocale: { $in: [ 'fr:draft', 'fr:published' ] }
+        })
+        .sort({ aposLocale: 1 })
+        .toArray();
+      assert.deepEqual(
+        frPages.map(doc => [ doc.aposLocale, imageIdsOf(doc) ]),
+        [
+          [ 'fr:draft', [ [ image1.aposDocId ] ] ],
+          [ 'fr:published', [ [ image1.aposDocId ] ] ]
+        ]
+      );
+
+      // Not resolvable yet, resolvable once the image exists in fr
+      const findFrPage = () => apos.page
+        .find(frReq, { aposDocId: page1.aposDocId })
+        .toObject();
+      const frPageBefore = await findFrPage();
+      assert.deepEqual(frPageBefore.main.items[0]._image, []);
+
+      await apos.image.localize(req, image1, 'fr');
+      const frPageAfter = await findFrPage();
+      assert.deepEqual(
+        frPageAfter.main.items[0]._image.map(image => [ image.aposDocId, image.title ]),
+        [ [ image1.aposDocId, 'image1' ] ]
+      );
+    });
+  });
+
   if (process.env.TEST_WITH_PRO) {
     describe('#import - translations', function () {
       before(async function () {
@@ -1792,6 +1926,21 @@ describe('@apostrophecms/import-export', function() {
         ];
 
         assert.deepEqual(sortDocs(actual), sortDocs(expected));
+
+        // The translated drafts are recorded as AI versions, the
+        // untranslated published copies are not
+        const article1 = importedDocs.find(doc => doc.title === 'article1-en-fr-translated');
+        const versions = await apos.docVersions.find(req, {
+          docId: article1.aposDocId,
+          locale: 'fr'
+        });
+        assert.deepEqual(
+          versions.map(version => [ version.mode, version.ai, version.doc.title ]).sort(),
+          [
+            [ 'draft', true, 'article1-en-fr-translated' ],
+            [ 'published', false, 'article1' ]
+          ]
+        );
       });
 
       it('should import and translate duplicated docs', async function () {
@@ -1922,6 +2071,24 @@ describe('@apostrophecms/import-export', function() {
         };
 
         assert.deepEqual(actual, expected);
+
+        // The overriding translation starts an AI version on each draft;
+        // the published copies are overridden untranslated
+        for (const title of [ 'article2-en-fr-translated', 'page1-en-fr-translated' ]) {
+          const draft = updatedDocs.find(doc => doc.title === title);
+          const versions = await apos.docVersions.find(req, {
+            docId: draft.aposDocId,
+            locale: 'fr'
+          });
+          const newestDraft = versions.find(version => version.mode === 'draft');
+          assert.deepEqual(
+            [ newestDraft.ai, newestDraft.doc.title ],
+            [ true, title ]
+          );
+          const published = versions.filter(version => version.mode === 'published');
+          assert.ok(published.length > 0);
+          assert.ok(published.every(version => version.ai === false));
+        }
       });
     });
 

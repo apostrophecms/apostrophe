@@ -1108,6 +1108,8 @@ module.exports = {
         if (!self.isLocalized()) {
           throw new Error(`${self.__meta.name} is not a localized type, cannot be localized`);
         }
+        // Saves go through this request; `beforeLocalize` handlers set the
+        // virtual save flags on the document (see `apos.doc.setSaveFlags`)
         const toReq = req.clone({
           locale: toLocale,
           mode: 'draft'
@@ -1156,6 +1158,7 @@ module.exports = {
                 parkedId: draft.parkedId
               };
               await self.emit('beforeLocalize', req, insert, eventOptions);
+              self.apos.doc.setSaveFlags(toReq, insert);
               // Replicating the home page for the first time
               result = await self.apos.doc.insert(toReq, insert);
             } else {
@@ -1229,6 +1232,7 @@ module.exports = {
                 parkedId: draft.parkedId
               };
               await self.emit('beforeLocalize', req, insert, eventOptions);
+              self.apos.doc.setSaveFlags(toReq, insert);
               result = await actionModule.insert(toReq,
                 localizedTargetId,
                 lastPosition,
@@ -1243,6 +1247,7 @@ module.exports = {
               _id: toId
             };
             await self.emit('beforeLocalize', req, insert, eventOptions);
+            self.apos.doc.setSaveFlags(toReq, insert);
             result = await actionModule.insert(toReq, insert);
           }
         } else {
@@ -1258,6 +1263,7 @@ module.exports = {
             metaType: 'doc'
           };
           await self.emit('beforeLocalize', req, update, eventOptions);
+          self.apos.doc.setSaveFlags(toReq, update);
           result = await actionModule.update(toReq, update);
         }
 
@@ -1878,6 +1884,7 @@ module.exports = {
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
+        browserOptions.versions = self.apos.docVersions.hasVersions(self.options);
         browserOptions.previewDraft = self.isLocalized() &&
           !browserOptions.autopublish &&
           self.options.previewDraft;

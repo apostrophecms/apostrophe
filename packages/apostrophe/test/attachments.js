@@ -41,6 +41,12 @@ describe('Attachment', function() {
               disabledFileKey: 'testkey'
             }
           }
+        },
+        // The docIds counts below track documents only, not version records
+        '@apostrophecms/image': {
+          options: {
+            versions: false
+          }
         }
       }
     });

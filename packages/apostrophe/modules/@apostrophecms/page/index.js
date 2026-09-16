@@ -508,6 +508,7 @@ module.exports = {
       // pages.
       async post(req) {
         await self.publicApiCheckAsync(req);
+        self.apos.doc.setSaveFlags(req, req.body);
         let targetId = self.apos.launder.string(req.body._targetId);
         let position = self.apos.launder.string(req.body._position || 'lastChild');
         // Here we have to normalize before calling insert because we
@@ -610,6 +611,7 @@ module.exports = {
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
+        self.apos.doc.setSaveFlags(req, req.body);
 
         return self.withLock(req, async () => {
           const page = await self.findForEditing(req, { _id }).toObject();
@@ -676,6 +678,7 @@ module.exports = {
       async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
+        self.apos.doc.setSaveFlags(req, req.body);
         return self.patch(req, _id);
       }
     };
@@ -1359,6 +1362,7 @@ database.`);
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
         browserOptions.localized = true;
         browserOptions.autopublish = false;
+        browserOptions.versions = self.apos.docVersions.hasVersions(self.options);
         // A list of all valid page types, including parked pages etc. This is
         // not a menu of choices for creating a page manually
         browserOptions.validPageTypes = self.apos.instancesOf('@apostrophecms/page-type').map(module => module.__meta.name);
