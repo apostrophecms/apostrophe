@@ -651,6 +651,34 @@ describe('Document Versions', function () {
       assert.strictEqual(versions[1].restoredFrom, undefined);
     });
 
+    // What the admin bar reads to decide between Unpublish and Undo Publish
+    // is the document's `lastPublishedAt` before the publish, so a document
+    // that carried one must have a publication point to return to
+    it('should have a publication point to return to exactly when the document was published before', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      assert(!draft.lastPublishedAt);
+
+      const first = await apos.article.publish(req, draft);
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const find = () => apos.article.findOneForEditing(publishedReq, {
+        aposDocId: draft.aposDocId
+      });
+      await assert.rejects(
+        apos.article.revertPublishedToPrevious(publishedReq, await find()),
+        { name: 'invalid' }
+      );
+
+      assert(first.lastPublishedAt);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...first,
+        title: 'Second'
+      }));
+      const published = await apos.article
+        .revertPublishedToPrevious(publishedReq, await find());
+      assert.equal(published.title, 'First');
+    });
+
     it('should answer not found on the versions routes', async function() {
       const req = getReq(apos, { mode: 'draft' });
       const draft = await apos.article.insert(req, { title: 'An article' });
@@ -1033,7 +1061,7 @@ describe('Document Versions', function () {
       articleModesCount = await apos.doc.db.countDocuments({
         aposDocId: draft.aposDocId
       });
-      assert.strictEqual(articleModesCount, 3);
+      assert.strictEqual(articleModesCount, 2);
 
       // Validate references: each draft save and each publish is a version
       {
@@ -1484,6 +1512,34 @@ describe('Document Versions', function () {
       assert.strictEqual(draftAfter.modified, true);
     });
 
+    // What the admin bar reads to decide between Unpublish and Undo Publish
+    // is the document's `lastPublishedAt` before the publish, so a document
+    // that carried one must have a publication point to return to
+    it('should have a publication point to return to exactly when the document was published before', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      assert(!draft.lastPublishedAt);
+
+      const first = await apos.article.publish(req, draft);
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const find = () => apos.article.findOneForEditing(publishedReq, {
+        aposDocId: draft.aposDocId
+      });
+      await assert.rejects(
+        apos.article.revertPublishedToPrevious(publishedReq, await find()),
+        { name: 'invalid' }
+      );
+
+      assert(first.lastPublishedAt);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...first,
+        title: 'Second'
+      }));
+      const published = await apos.article
+        .revertPublishedToPrevious(publishedReq, await find());
+      assert.equal(published.title, 'First');
+    });
+
     it('should refuse a second Unpublish until the next publish', async function() {
       const req = getReq(apos, { mode: 'draft' });
       const draft = await apos.article.insert(req, { title: 'First' });
@@ -1571,6 +1627,209 @@ describe('Document Versions', function () {
         { name: 'invalid' }
       );
     });
+
+    // The published records of `doc`, newest first
+    async function publications(apos, doc) {
+      return (await timeline(apos, doc)).filter(version => version.mode === 'published');
+    }
+  });
+
+  describe('legacy previous mode documents', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'default-page': {}
+        }
+      });
+    });
+
+    after(async function() {
+      await removeUploads();
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    it('should seed the publication points a `previous` document and the live content hold', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const previous = await toLegacy(apos, draft);
+
+      await apos.docVersions.seedPublicationPoints();
+      assert.equal(await apos.docVersions.removePreviousModeDocs(), 1);
+
+      const versions = await publications(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'Second', 'First' ]);
+      assert.deepEqual(versions.map(version => version.mode), [ 'published', 'published' ]);
+      // The `previous` document's identity and slug are the published ones
+      assert.equal(versions[1].doc._id, `${draft.aposDocId}:en:published`);
+      assert.equal(versions[1].doc.aposMode, 'published');
+      assert.equal(versions[1].doc.slug, 'first');
+      // The slug the core before this module deduplicated to store it
+      assert.equal(previous.slug, `deduplicate-${draft.aposDocId}-first`);
+      assert(versions[1].createdAt < versions[0].createdAt);
+      assert.equal(await apos.doc.db.countDocuments({ _id: previous._id }), 0);
+    });
+
+    it('should seed the publication points of a page and keep it in the tree', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'First',
+        slug: '/first'
+      });
+      await apos.page.publish(req, draft);
+      await apos.page.publish(req, await apos.page.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const previous = await toLegacy(apos, draft);
+
+      await apos.docVersions.seedPublicationPoints();
+      assert.equal(await apos.docVersions.removePreviousModeDocs(), 1);
+
+      const versions = await publications(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'Second', 'First' ]);
+      // Page types deduplicate their slug with a suffix, not a prefix
+      assert.equal(previous.slug, `/first-deduplicate-${draft.aposDocId}`);
+      assert.equal(versions[1].doc.slug, '/first');
+      assert.equal(versions[1].doc.path, versions[0].doc.path);
+      assert.equal(versions[1].doc.rank, versions[0].doc.rank);
+      assert.equal(await apos.doc.db.countDocuments({ _id: previous._id }), 0);
+
+      // The page the revert writes is still where it was in the tree
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const published = await apos.page.revertPublishedToPrevious(
+        publishedReq,
+        await apos.page.findOneForEditing(publishedReq, { aposDocId: draft.aposDocId })
+      );
+      assert.equal(published.title, 'First');
+      assert.equal(published.path, versions[0].doc.path);
+    });
+
+    it('should seed the live content of a document published once', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      assert.equal(await toLegacy(apos, draft), null);
+
+      await apos.docVersions.seedPublicationPoints();
+
+      const versions = await publications(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'First' ]);
+    });
+
+    it('should let Unpublish return to the content live at the upgrade', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await toLegacy(apos, draft);
+      await apos.docVersions.seedPublicationPoints();
+      await apos.docVersions.removePreviousModeDocs();
+
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const published = await apos.article.revertPublishedToPrevious(
+        publishedReq,
+        await apos.article.findOneForEditing(publishedReq, { aposDocId: draft.aposDocId })
+      );
+      assert.equal(published.title, 'First');
+    });
+
+    it('should leave a timeline that already holds a publication point alone', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const before = await timeline(apos, draft);
+      const previous = await stalePreviousDoc(apos, draft, before[before.length - 1].doc);
+
+      await apos.docVersions.seedPublicationPoints();
+      assert.equal(await apos.docVersions.removePreviousModeDocs(), 1);
+
+      assert.deepEqual(
+        (await timeline(apos, draft)).map(version => version._id),
+        before.map(version => version._id)
+      );
+      assert.equal(await apos.doc.db.countDocuments({ _id: previous._id }), 0);
+    });
+
+    it('should move the attachment references of a `previous` document to the version it becomes', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const attachment = await upload('upload_image.png', apos);
+      const draft = await apos.article.insert(req, {
+        title: 'First',
+        attachment
+      });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second',
+        attachment: null
+      }));
+      const previous = await toLegacy(apos, draft);
+      // What the core before this module left behind: the `previous`
+      // document is a live holder of the attachment
+      await apos.attachment.recomputeAllDocReferences();
+      let stored = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert(stored.docIds.includes(previous._id));
+
+      await apos.docVersions.seedPublicationPoints();
+      await apos.docVersions.removePreviousModeDocs();
+
+      const [ , seeded ] = await publications(apos, draft);
+      stored = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert(!stored.docIds.includes(previous._id));
+      assert(!stored.archivedDocIds.includes(previous._id));
+      assert(stored.archivedDocIds.includes(seeded._id));
+      // Held by versions only, so it stays stored and out of the web
+      assert.equal(stored.archived, true);
+    });
+
+    // The state a project upgrading from the `previous` mode arrives in: the
+    // content live before the newest publish is a document with a
+    // deduplicated slug, and the store holds nothing. Returns that document,
+    // `null` when the timeline has only one publication
+    async function toLegacy(apos, doc) {
+      const [ , previous ] = await publications(apos, doc);
+      await apos.docVersions.db.deleteMany({});
+      return previous
+        ? stalePreviousDoc(apos, doc, previous.doc)
+        : null;
+    }
+
+    // What the old `publish` wrote: the content live until then, with its
+    // conflicting fields deduplicated as that core deduplicated them
+    async function stalePreviousDoc(apos, doc, content) {
+      const req = getReq(apos, { mode: 'published' });
+      const manager = apos.doc.getManager(content.type);
+      const previous = {
+        ...content,
+        ...await manager.getDeduplicationSet(req, content),
+        _id: `${doc.aposDocId}:en:previous`,
+        aposLocale: 'en:previous',
+        aposMode: 'previous'
+      };
+      await apos.doc.db.insertOne(previous);
+      return previous;
+    }
 
     // The published records of `doc`, newest first
     async function publications(apos, doc) {

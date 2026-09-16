@@ -181,12 +181,13 @@ describe('Document Versions: i18n', function () {
     const newLocale = 'en-US';
     const actual = await apos.i18n.rename(oldLocale, newLocale, { keep: newLocale });
     const expected = {
-      // 18 docs (archive, global, styles, home + the inserted docs) and the
-      // 26 versions of the inserted docs
-      renamed: 44,
-      // 9 docs (global, styles, home) and the 7 boot-time versions of global,
-      // styles and home in `en`, dropped because `en-US` already has theirs
-      kept: 16
+      // 16 docs (the inserted ones, draft and published) and the 26 versions
+      // of the inserted docs
+      renamed: 42,
+      // 8 docs (archive, global, styles and home, draft and published) and
+      // the 7 boot-time versions of global, styles and home in `en`, dropped
+      // because `en-US` already has theirs
+      kept: 15
     };
     assert.deepEqual(actual, expected);
   });

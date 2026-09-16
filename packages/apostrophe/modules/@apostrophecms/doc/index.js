@@ -310,18 +310,11 @@ module.exports = {
       },
       '@apostrophecms/doc-type:afterDelete': {
         // Deleting a draft implies deleting the document completely, since
-        // a draft must always exist. Deleting a published doc implies deleting
-        // the "previous" copy, since it only makes sense as a tool to revert
-        // the published doc's content. Note that deleting a draft recursively
-        // deletes both the published and previous docs.
+        // a draft must always exist, so the published copy goes with it.
         async deleteOtherModes(req, doc, options) {
           if (doc.aposLocale && doc.aposLocale.endsWith(':draft')) {
             await cleanup('published');
             await self.emit('afterAllModesDeleted', req, doc, options);
-            return;
-          }
-          if (doc.aposLocale && doc.aposLocale.endsWith(':published')) {
-            return cleanup('previous');
           }
           async function cleanup(mode) {
             const peer = await self.apos.doc.db.findOne({
@@ -1954,7 +1947,7 @@ module.exports = {
           })
           : oldId;
 
-        const modes = [ 'previous', 'draft', 'published' ];
+        const modes = [ 'draft', 'published' ];
         const pairs = modes.map(mode =>
           [
             `${originalId}:${locale}:${mode}`,

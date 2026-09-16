@@ -1419,21 +1419,14 @@ describe('Pages', function() {
       _id: 'some-page:en:published',
       aposLocale: 'en:published'
     };
-    const previousItem = {
-      ...baseItem,
-      _id: 'some-page:en:previous',
-      aposLocale: 'en:previous'
-    };
 
     let draft;
     let published;
-    let previous;
 
     this.beforeEach(async function() {
       await apos.doc.db.insertMany([
         draftItem,
-        publishedItem,
-        previousItem
+        publishedItem
       ]);
 
       draft = await apos.http.post(
@@ -1445,7 +1438,6 @@ describe('Pages', function() {
       );
 
       published = await apos.doc.db.findOne({ _id: 'some-page:en:published' });
-      previous = await apos.doc.db.findOne({ _id: 'some-page:en:previous' });
     });
 
     this.afterEach(async function() {
@@ -1454,9 +1446,8 @@ describe('Pages', function() {
       });
     });
 
-    it('should remove the published and previous versions of a page', function() {
+    it('should remove the published version of a page', function() {
       assert(published === null);
-      assert(previous === null);
     });
 
     it('should update the draft version of a page', function() {

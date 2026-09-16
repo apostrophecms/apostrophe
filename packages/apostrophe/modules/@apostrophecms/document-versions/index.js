@@ -244,6 +244,8 @@ module.exports = {
       },
       addMigrations() {
         self.apos.migration.add('convert-legacy-versions', self.convertLegacyVersions);
+        self.apos.migration.add('seed-publication-points', self.seedPublicationPoints);
+        self.apos.migration.add('remove-previous-mode-docs', self.removePreviousModeDocs);
       },
       // Records written before this module hold `doc` as a plain object, are
       // keyed by the document's full `_id` and have no `mode`, `locale`,
@@ -277,6 +279,113 @@ module.exports = {
           }
         );
         return converted;
+      },
+      // Before this module, the content live before the newest publish was
+      // kept as a document in `previous` mode. A project upgrading from
+      // there has no publication points in the store, so Unpublish would
+      // have nothing to return to until its second publish after the
+      // upgrade. Record what is published now, and what the `previous`
+      // document holds, for every timeline that has no publication point
+      // yet. Returns the number of records written.
+      async seedPublicationPoints() {
+        const req = self.apos.task.getReq({ mode: 'published' });
+        let seeded = 0;
+        await self.apos.migration.each(
+          self.apos.doc.db,
+          { aposMode: 'published' },
+          5,
+          async published => {
+            if (!self.isVersioned(published) && !self.isPublishedOnly(published)) {
+              return;
+            }
+            const existing = await self.db.countDocuments({
+              ...self.getTimelineCriteria(published),
+              mode: 'published'
+            });
+            if (existing) {
+              return;
+            }
+            const stored = await self.apos.doc.db.findOne({
+              _id: published._id.replace(':published', ':previous')
+            });
+            const previous = stored && await asPublishedDoc(stored);
+            const publishedAt = publicationTime(published);
+            if (previous) {
+              await insertPublicationPoint(previous, new Date(Math.min(
+                publicationTime(previous).getTime(),
+                publishedAt.getTime() - 1
+              )));
+              seeded++;
+            }
+            await insertPublicationPoint(published, publishedAt, previous);
+            seeded++;
+          }
+        );
+        return seeded;
+
+        // When a document became what it is now. Publication points seeded
+        // from documents have no record of their own to date them
+        function publicationTime(doc) {
+          const at = new Date(doc.lastPublishedAt || doc.updatedAt || doc.createdAt);
+          return isNaN(at) ? new Date() : at;
+        }
+
+        // A `previous` mode document as the published document it was: its
+        // identity restored, and the slug and other conflicting fields back
+        // to the values they had while it was live
+        async function asPublishedDoc(previous) {
+          const manager = self.apos.doc.getManager(previous.type);
+          const reduplicated = manager
+            ? await manager.getRevertDeduplicationSet(req, previous)
+            : null;
+          return {
+            ...previous,
+            ...reduplicated || {},
+            _id: previous._id.replace(':previous', ':published'),
+            aposLocale: previous.aposLocale.replace(':previous', ':published'),
+            aposMode: 'published'
+          };
+        }
+
+        // Record `doc` as a publication point made at `createdAt`, attributed
+        // to whoever last saved it. Counts its changes against `previousDoc`
+        // when one is given
+        async function insertPublicationPoint(doc, createdAt, previousDoc) {
+          const content = self.apos.util.clonePermanent(doc);
+          const version = {
+            _id: createId(),
+            metaType: 'version',
+            createdAt,
+            docId: doc.aposDocId,
+            mode: 'published',
+            locale: self.getLocale(doc),
+            author: doc.updatedBy?.title || doc.updatedBy?.username || 'SYSTEM',
+            authorId: doc.updatedBy?._id ?? null,
+            ai: false,
+            changeCount: previousDoc
+              ? self.getChanges(req, content, previousDoc).length
+              : 0,
+            doc: await self.pack(content)
+          };
+          await self.insert(req, version);
+          return self.updateReferencesFor(req, version._id);
+        }
+      },
+      // Drop the `previous` mode documents the store now replaces, releasing
+      // the attachment references they hold. Returns the number removed.
+      async removePreviousModeDocs() {
+        let removed = 0;
+        await self.apos.migration.each(
+          self.apos.doc.db,
+          { aposMode: 'previous' },
+          5,
+          async doc => {
+            await self.apos.attachment.updateDocReferences(doc, { deleted: true });
+            await self.apos.doc.db.deleteOne({ _id: doc._id });
+            removed++;
+          }
+        );
+        return removed;
       },
       // The mode a version records: the document's, or `published` for
       // documents without modes

@@ -3188,8 +3188,7 @@ database.`);
           const names = Object.keys(self.apos.i18n.locales);
           const locales = [
             ...names.map(locale => `${locale}:draft`),
-            ...names.map(locale => `${locale}:published`),
-            ...names.map(locale => `${locale}:previous`)
+            ...names.map(locale => `${locale}:published`)
           ];
           let changes = 0;
           const winners = new Map();
@@ -3239,7 +3238,7 @@ database.`);
       },
       async deduplicateRanks2Migration() {
         for (const locale of Object.keys(self.apos.i18n.locales)) {
-          for (const mode of [ 'previous', 'draft', 'published' ]) {
+          for (const mode of [ 'draft', 'published' ]) {
             const pages = await self.apos.doc.db.find({
               slug: /^\//,
               aposLocale: `${locale}:${mode}`
