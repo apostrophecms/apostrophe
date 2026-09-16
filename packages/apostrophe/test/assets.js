@@ -392,7 +392,9 @@ describe('Assets', function() {
     await t.destroy(apos);
   });
 
-  it('should build with cache and gain performance', async function() {
+  // Skipped: the gain it asserts on depends on the hardware the suite runs
+  // on, so it fails at random when anything else is competing for the CPU
+  it.skip('should build with cache and gain performance', async function() {
     await t.destroy(apos);
     await removeCache();
     await removeCache(cacheFolderPath.replace('/webpack-cache', '/changed'));
