@@ -138,9 +138,13 @@ module.exports = {
           results: versions
         };
       },
+      // `annotate=1` marks the version's document with its changes since
+      // the version before it (see `getAnnotatedDoc`)
       async getOne(req, versionId) {
         try {
-          const version = await self.getOne(req, versionId);
+          const version = await self.getOne(req, versionId, {
+            annotate: self.apos.launder.boolean(req.query.annotate)
+          });
 
           return version;
         } catch (error) {
@@ -157,6 +161,18 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
+        // The changes of the versions `ids`, comma separated: consecutive
+        // versions of one document, listed as one (see `getVersionChanges`)
+        changes: async (req) => {
+          const ids = self.apos.launder.string(req.query.ids).split(',');
+          return changesOrRestError(() => self.getVersionChanges(req, ids));
+        },
+        // The changes of a version since the one before it
+        ':versionId/changes': async (req) => {
+          return changesOrRestError(
+            () => self.getVersionChanges(req, [ req.params.versionId ])
+          );
+        },
         'compare/:vid1/:vid2': async (req) => {
           try {
             // Sequential on purpose: Promise.all would miss the _images relationship
@@ -181,6 +197,20 @@ module.exports = {
         }
       }
     };
+
+    async function changesOrRestError(getChanges) {
+      try {
+        return await getChanges();
+      } catch (error) {
+        if (error instanceof TypeError) {
+          throw self.apos.error('invalid');
+        }
+        if (error instanceof ReferenceError) {
+          throw self.apos.error('notfound');
+        }
+        throw error;
+      }
+    }
   },
 
   tasks(self) {
@@ -628,10 +658,7 @@ module.exports = {
         if (!version) {
           return self.insertVersion(req, doc);
         }
-        const before = await self.findOne(req, {
-          ...self.getTimelineCriteria(doc),
-          createdAt: { $lt: version.createdAt }
-        });
+        const before = await self.getPreviousVersion(req, version);
         await self.db.updateOne({ _id: version._id }, {
           $set: {
             doc: await self.pack(self.apos.util.clonePermanent(doc)),
@@ -976,15 +1003,47 @@ module.exports = {
         browserOptions.name = self.__meta.name;
         return browserOptions;
       },
-      async getOne(req, versionId) {
+      // A version for display, its document loaded like a regular find.
+      // `annotate` marks the document with its changes since the version
+      // before it; a first or restored version stays unmarked
+      async getOne(req, versionId, { annotate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
+        const version = await self.getEditableVersion(draftReq, versionId);
+        const manager = self.apos.doc.getManager(version.doc.type);
+
+        if (annotate && manager && !version.restoredFrom) {
+          const previous = await self.getPreviousVersion(draftReq, version);
+          if (previous) {
+            version.doc = self.getAnnotatedDoc(req, previous.doc, version.doc);
+          }
+        }
+
+        // We must load relationships and areas as if we had done a regular find
+        if (manager) {
+          self.apos.migration.addMissingSchemaFieldsFor(version.doc, manager.schema, '', {});
+
+          const query = manager.find(draftReq);
+          await query.finalize();
+          await query.after([ version.doc ]);
+        }
+
+        delete version.docId;
+        delete version.locale;
+
+        return version;
+      },
+      // The version record `versionId` with its stored document, `docId` and
+      // `locale`, when `req` can edit the document. Throws a `TypeError` for
+      // a malformed id, a `ReferenceError` when the version does not exist,
+      // belongs to a type without versions or to a document `req` cannot edit
+      async getEditableVersion(req, versionId) {
         const docVersionId = self.apos.launder.id(versionId);
         if (!docVersionId) {
           throw new TypeError('versionId');
         }
 
         const version = await self.findOne(
-          draftReq,
+          req,
           {
             _id: docVersionId
           },
@@ -1004,28 +1063,94 @@ module.exports = {
         const draftId = version.locale
           ? `${version.docId}:${version.locale}:draft`
           : version.docId;
-        const permissionCheck = await self.getRestDocQuery(draftReq)
+        const permissionCheck = await self.getRestDocQuery(req.clone({ mode: 'draft' }))
           .and({ _id: draftId })
           .toCount();
 
         if (!permissionCheck) {
           throw new ReferenceError('permissionCheck');
         }
+        return version;
+      },
+      // The version before `version` on its timeline, `null` for the first.
+      // `version` is a record with `docId`, `locale` and `createdAt`
+      async getPreviousVersion(req, version) {
+        const previous = await self.findOne(req, {
+          docId: version.docId,
+          locale: version.locale,
+          createdAt: { $lt: version.createdAt }
+        });
+        return previous ?? null;
+      },
+      // The changes of consecutive versions of one document as one list
+      // (see `getConsolidatedRows`), with display text, and their counts
+      // per change type and of those involving AI:
+      // `{ rows, counts: { added, modified, deleted, ai } }`. One id is a
+      // single version against the one before it. A first version counts
+      // no changes of its own and a restored version shows none; a group
+      // cannot hold a restored version. Throws like `getEditableVersion`,
+      // and a `TypeError` when the ids are not consecutive versions of
+      // one document
+      async getVersionChanges(req, versionIds) {
+        const draftReq = req.clone({ mode: 'draft' });
+        const ids = _.uniq(versionIds);
+        if (!ids.length) {
+          throw new TypeError('versionIds');
+        }
+        const members = await Promise.all(
+          ids.map(id => self.getEditableVersion(draftReq, id))
+        );
+        members.sort((a, b) => a.createdAt - b.createdAt);
+        const first = members[0];
+        const last = members.at(-1);
 
-        // We must load relationships and areas as if we had done a regular find
-        const manager = self.apos.doc.getManager(version.doc.type);
-        if (manager) {
-          self.apos.migration.addMissingSchemaFieldsFor(version.doc, manager.schema, '', {});
-
-          const query = manager.find(draftReq);
-          await query.finalize();
-          await query.after([ version.doc ]);
+        if (members.length > 1) {
+          const oneTimeline = members.every(member => (
+            (member.docId === first.docId) && (member.locale === first.locale)
+          ));
+          if (!oneTimeline || members.some(member => member.restoredFrom)) {
+            throw new TypeError('versionIds');
+          }
+          const span = await self.count(draftReq, {
+            docId: first.docId,
+            locale: first.locale,
+            createdAt: {
+              $gte: first.createdAt,
+              $lte: last.createdAt
+            }
+          });
+          if (span !== members.length) {
+            throw new TypeError('versionIds');
+          }
         }
 
-        delete version.docId;
-        delete version.locale;
+        let rows = [];
+        if (self.apos.doc.getManager(last.doc.type) && !last.restoredFrom) {
+          const previous = await self.getPreviousVersion(draftReq, first);
+          const pairs = members
+            .map((member, i) => ({
+              older: i ? members[i - 1].doc : previous?.doc,
+              newer: member.doc,
+              ai: member.ai
+            }))
+            .filter(pair => pair.older);
+          if (pairs.length) {
+            rows = await self.addChangeText(
+              draftReq,
+              self.getConsolidatedRows(req, pairs)
+            );
+          }
+        }
 
-        return version;
+        return {
+          rows,
+          counts: {
+            added: rows.filter(row => row.type === 'added').length,
+            modified: rows.filter(row => row.type === 'modified').length,
+            deleted: rows.filter(row => row.type === 'deleted').length,
+            ai: rows.filter(row => row.ai).length
+          }
+        };
       },
       getCompareSchema(v1, v2) {
         const v1Manager = self.apos.doc.getManager(v1.doc.type) || { schema: [] };

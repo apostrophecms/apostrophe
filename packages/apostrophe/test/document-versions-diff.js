@@ -88,6 +88,85 @@ describe('Document Versions diff engine', function () {
       assert.equal(JSON.parse(JSON.stringify(row)).field, undefined);
     });
 
+    it('should report each change type in the deepest containers as single rows', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const route = deepestRoute(newer);
+      const leaf = route.at(-1).node;
+      leaf.subtitle = 'Deep';
+      leaf.count = 99;
+      leaf.tags = [];
+      // The deepest area loses its rich text widget, the deepest array
+      // gains an item
+      const area = route.at(-2).node.content;
+      const [ richText ] = area.items.splice(1, 1);
+      const array = route.at(-3).node.rows;
+      array.push({
+        ...structuredClone(array[1]),
+        _id: 'deep-item',
+        title: 'Deep item'
+      });
+
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+
+      assert.deepEqual(rows.map(row => ({
+        type: row.type,
+        fieldType: row.fieldType,
+        path: row.path
+      })), [
+        {
+          type: 'added',
+          fieldType: 'string',
+          path: segmentsTo(route, {
+            name: 'subtitle',
+            label: 'Subtitle'
+          })
+        },
+        {
+          type: 'modified',
+          fieldType: 'integer',
+          path: segmentsTo(route, {
+            name: 'count',
+            label: 'Count'
+          })
+        },
+        {
+          type: 'deleted',
+          fieldType: 'checkboxes',
+          path: segmentsTo(route, {
+            name: 'tags',
+            label: 'Tags'
+          })
+        },
+        {
+          type: 'deleted',
+          fieldType: 'widget',
+          path: segmentsTo(route.slice(0, -1), {
+            name: 'content',
+            label: 'Content'
+          }, {
+            name: richText._id,
+            label: 'apostrophe:richText',
+            ordinal: 2,
+            widgetType: '@apostrophecms/rich-text'
+          })
+        },
+        {
+          type: 'added',
+          fieldType: 'arrayItem',
+          path: segmentsTo(route.slice(0, -2), {
+            name: 'rows',
+            label: 'Rows'
+          }, {
+            name: 'deep-item',
+            label: 'Deep item',
+            ordinal: 3
+          })
+        }
+      ]);
+      assert.equal(rows[0].path.length, 16);
+    });
+
     it('should report every changed leaf once, in schema order', function () {
       const older = buildDoc();
       const newer = buildDoc();

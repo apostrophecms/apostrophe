@@ -10,7 +10,8 @@ const {
   upload,
   addUser,
   login,
-  seedVersionsFor
+  seedVersionsFor,
+  wait
 } = require('./utils/document-versions.js');
 const compareSchema = require('./utils/document-versions-compare-schema.js');
 
@@ -2962,6 +2963,293 @@ describe('Document Versions', function () {
       assert.deepEqual(restored[0].restoredFrom, {
         _id: original._id,
         createdAt: original.createdAt
+      });
+    });
+
+    describe('changes', function() {
+      // An article with one version per state, oldest first; a state's
+      // `ai` saves it with AI, `restoredFrom` as a restore of the first.
+      // Returns the article and the version records, oldest first
+      async function recordVersions(states) {
+        const req = getReq(apos, { mode: 'draft' });
+        const [ initial, ...rest ] = states;
+        const article = await apos.article.insert(req, {
+          title: 'An article',
+          ...initial
+        });
+        const [ first ] = await apos.docVersions.find(
+          getReq(apos),
+          apos.docVersions.getTimelineCriteria(article)
+        );
+        const versions = [ first ];
+        for (const {
+          ai, restoredFrom, ...state
+        } of rest) {
+          await wait(5);
+          const versionReq = req.clone({
+            aposAi: ai,
+            aposRestoreVersion: restoredFrom && first._id
+          });
+          versions.push(await apos.docVersions.saveFor(versionReq, {
+            ...article,
+            ...state
+          }, true));
+        }
+        return {
+          article,
+          versions
+        };
+      }
+
+      it('should list the changes of a version since the one before it - GET /:versionId/changes', async function() {
+        const related = await apos.article.insert(getReq(apos, admin), {
+          title: 'Related'
+        });
+        const { versions } = await recordVersions([
+          {
+            int: 1,
+            array: [ {
+              _id: 'item1',
+              label: 'Home',
+              value: 'one'
+            } ]
+          },
+          {
+            title: 'Renamed',
+            int: 1,
+            array: [ {
+              _id: 'item1',
+              label: 'Home',
+              value: 'two'
+            } ],
+            relatedIds: [ related.aposDocId ]
+          }
+        ]);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.deepEqual(
+          changes.rows.map(row => ({
+            path: row.path.map(segment => segment.name),
+            type: row.type,
+            oldText: row.oldText,
+            newText: row.newText,
+            ai: row.ai
+          })),
+          [
+            {
+              path: [ 'title' ],
+              type: 'modified',
+              oldText: 'An article',
+              newText: 'Renamed',
+              ai: false
+            },
+            {
+              path: [ '_related' ],
+              type: 'added',
+              oldText: '',
+              newText: 'Related',
+              ai: false
+            },
+            {
+              path: [ 'array', 'item1', 'value' ],
+              type: 'modified',
+              oldText: 'one',
+              newText: 'two',
+              ai: false
+            }
+          ]
+        );
+        assert.equal(changes.rows[2].path[1].label, 'Home');
+        assert.deepEqual(changes.counts, {
+          added: 1,
+          modified: 2,
+          deleted: 0,
+          ai: 0
+        });
+      });
+
+      it('should flag every change of a version saved with AI - GET /:versionId/changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By AI',
+            int: 3,
+            ai: true
+          }
+        ]);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.deepEqual(changes.rows.map(row => row.ai), [ true, true ]);
+        assert.deepEqual(changes.counts, {
+          added: 1,
+          modified: 1,
+          deleted: 0,
+          ai: 2
+        });
+      });
+
+      it('should list no changes for a first or restored version - GET /:versionId/changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          { title: 'Changed' },
+          { restoredFrom: true }
+        ]);
+        const none = {
+          rows: [],
+          counts: {
+            added: 0,
+            modified: 0,
+            deleted: 0,
+            ai: 0
+          }
+        };
+
+        assert(versions[2].restoredFrom);
+        for (const version of [ versions[0], versions[2] ]) {
+          const changes = await apos.http.get(
+            `/api/v1/${moduleName}/${version._id}/changes`,
+            { jar: jarAdmin }
+          );
+          assert.deepEqual(changes, none);
+        }
+      });
+
+      it('should have not found response if no permissions - GET /:versionId/changes', async function() {
+        const { versions } = await recordVersions([ {}, { title: 'Changed' } ]);
+
+        await assert.rejects(
+          apos.http.get(`/api/v1/${moduleName}/${versions[1]._id}/changes`),
+          { status: 404 }
+        );
+        await assert.rejects(
+          apos.http.get(`/api/v1/${moduleName}/doesNotExist/changes`, { jar: jarAdmin }),
+          { status: 404 }
+        );
+        await assert.rejects(
+          apos.http.get(`/api/v1/${moduleName}/$bad-id/changes`, { jar: jarAdmin }),
+          { status: 400 }
+        );
+      });
+
+      it('should list the changes of a group as one, flagged per path - GET /changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By AI',
+            ai: true
+          },
+          {
+            title: 'By AI',
+            int: 7
+          }
+        ]);
+
+        const changes = await apos.http.get(`/api/v1/${moduleName}/changes`, {
+          qs: { ids: `${versions[2]._id},${versions[1]._id}` },
+          jar: jarAdmin
+        });
+
+        assert.deepEqual(
+          changes.rows.map(row => [ row.path[0].name, row.type, row.newText, row.ai ]),
+          [
+            [ 'title', 'modified', 'By AI', true ],
+            [ 'int', 'added', '7', false ]
+          ]
+        );
+        assert.deepEqual(changes.counts, {
+          added: 1,
+          modified: 1,
+          deleted: 0,
+          ai: 1
+        });
+      });
+
+      it('should count no changes for a first version in a group - GET /changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By AI',
+            ai: true
+          }
+        ]);
+
+        const group = await apos.http.get(`/api/v1/${moduleName}/changes`, {
+          qs: { ids: `${versions[0]._id},${versions[1]._id}` },
+          jar: jarAdmin
+        });
+        const single = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.equal(group.rows.length, 1);
+        assert.deepEqual(group, single);
+      });
+
+      it('should have invalid response unless the ids are consecutive versions of one document - GET /changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          { title: 'Two' },
+          { title: 'Three' },
+          { restoredFrom: true }
+        ]);
+        const other = await recordVersions([ {}, { title: 'Other' } ]);
+        const groups = [
+          '',
+          `${versions[1]._id},$bad-id`,
+          `${versions[0]._id},${versions[2]._id}`,
+          `${versions[2]._id},${versions[3]._id}`,
+          `${versions[2]._id},${other.versions[1]._id}`
+        ];
+
+        for (const ids of groups) {
+          await assert.rejects(
+            apos.http.get(`/api/v1/${moduleName}/changes`, {
+              qs: { ids },
+              jar: jarAdmin
+            }),
+            { status: 400 },
+            `Expected 400 for "${ids}"`
+          );
+        }
+        await assert.rejects(
+          apos.http.get(`/api/v1/${moduleName}/changes`, {
+            qs: { ids: `${versions[1]._id},${versions[2]._id}` }
+          }),
+          { status: 404 }
+        );
+      });
+
+      it('should mark the document with its changes on request - GET /:versionId?annotate=1', async function() {
+        const { versions } = await recordVersions([
+          {},
+          { int: 5 }
+        ]);
+        const url = `/api/v1/${moduleName}/${versions[1]._id}`;
+        const highlight = doc => apos.doc.getMeta(doc, '@apostrophecms/schema', 'int', 'highlight');
+
+        const annotated = await apos.http.get(url, {
+          qs: { annotate: 1 },
+          jar: jarAdmin
+        });
+        const plain = await apos.http.get(url, { jar: jarAdmin });
+        const first = await apos.http.get(`/api/v1/${moduleName}/${versions[0]._id}`, {
+          qs: { annotate: 1 },
+          jar: jarAdmin
+        });
+
+        assert.equal(annotated.doc.int, 5);
+        assert.equal(highlight(annotated.doc), true);
+        assert.equal(highlight(plain.doc), undefined);
+        assert.equal(first.doc.aposMeta, undefined);
       });
     });
   });
