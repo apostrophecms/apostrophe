@@ -1654,6 +1654,40 @@ describe('Document Versions', function () {
       assert.equal(newest.doc.slug, 'renamed');
       assert.equal(newest.changeCount, 1);
     });
+
+    it('should record one version for one move to the last child of the home page', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const home = await apos.page.find(req, { level: 0 }).toObject();
+      const page = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Page',
+        slug: '/page'
+      });
+      await apos.page.publish(req, page);
+      await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Peer',
+        slug: '/peer'
+      });
+      const before = await timeline(apos, page);
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft' ]);
+
+      // The archive stays the last child of the home page, so the move is
+      // redirected before it
+      const { changed } = await apos.page.move(req, page._id, home._id, 'lastChild');
+      assert(changed.every(change => change._id));
+
+      // The draft save changes no schema field and records nothing; the
+      // published replay of the move records one publication point
+      const after = await timeline(apos, page);
+      assert.deepEqual(after.map(version => version.mode), [ 'published', 'published', 'draft' ]);
+      assert.deepEqual(after.slice(1), before);
+      const archive = await apos.page.find(req, { type: '@apostrophecms/archive-page' })
+        .archived(null)
+        .toObject();
+      const moved = await apos.page.find(req, { _id: page._id }).toObject();
+      assert(moved.rank < archive.rank);
+    });
   });
 
   describe('capture rules with a configured interval', function() {
@@ -2274,6 +2308,110 @@ describe('Document Versions', function () {
         0
       );
       assert.deepEqual(await timeline(apos, draft, { raw: true }), [ version ]);
+    });
+
+    it('should rewrite the ancestor id in the versions of a renamed page\'s descendants', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const parent = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Parent',
+        slug: '/parent'
+      });
+      await apos.page.publish(req, parent);
+      const child = await apos.page.insert(req, parent._id, 'lastChild', {
+        type: 'default-page',
+        title: 'Child',
+        slug: '/parent/child'
+      });
+      await apos.page.publish(req, child);
+      const grandchild = await apos.page.insert(req, child._id, 'lastChild', {
+        type: 'default-page',
+        title: 'Grandchild',
+        slug: '/parent/child/grandchild'
+      });
+      const other = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Other',
+        slug: '/other'
+      });
+      const otherBefore = await timeline(apos, other, { raw: true });
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-parent',
+        oldId: parent.aposDocId,
+        locale: 'en'
+      });
+
+      const liveChild = await apos.page
+        .find(req, { aposDocId: child.aposDocId })
+        .toObject();
+      const liveGrandchild = await apos.page
+        .find(req, { aposDocId: grandchild.aposDocId })
+        .toObject();
+      assert(liveChild.path.includes('/renamed-parent/'));
+      const childVersions = await timeline(apos, child);
+      assert.deepEqual(childVersions.map(version => version.mode), [ 'published', 'draft' ]);
+      for (const version of childVersions) {
+        assert.equal(version.doc.path, liveChild.path);
+      }
+      const [ grandchildVersion ] = await timeline(apos, grandchild);
+      assert.equal(grandchildVersion.doc.path, liveGrandchild.path);
+      // A page outside the subtree is untouched, byte for byte
+      assert.deepEqual(await timeline(apos, other, { raw: true }), otherBefore);
+    });
+
+    it('should keep the relationships of other documents\' versions to a renamed document', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const category = await apos.article.insert(req, { title: 'Category' });
+      const article = await apos.article.insert(req, {
+        title: 'Article',
+        _related: [ category ]
+      });
+      await apos.article.publish(req, article);
+      // A save that drops the relationship: the version from before it still
+      // points at the category, while `relatedReverseIds` no longer names
+      // the article
+      await apos.article.update(req, {
+        ...await apos.article.findOneForEditing(req, { aposDocId: article.aposDocId }),
+        _related: []
+      });
+      const unrelated = await apos.article.insert(req, { title: 'Unrelated' });
+      const unrelatedBefore = await timeline(apos, unrelated, { raw: true });
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-category',
+        oldId: category.aposDocId,
+        locale: 'en'
+      });
+
+      const versions = await timeline(apos, article);
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.doc.relatedIds ]),
+        [
+          [ 'draft', [] ],
+          [ 'published', [ 'renamed-category' ] ],
+          [ 'draft', [ 'renamed-category' ] ]
+        ]
+      );
+      assert.deepEqual(await timeline(apos, unrelated, { raw: true }), unrelatedBefore);
+
+      // Restoring the version from before the relationship was dropped keeps
+      // it: the modal PUTs the content `getOne` returns, relationships joined
+      const [ , published ] = versions;
+      const { doc: content } = await apos.docVersions.getOne(req, published._id);
+      assert.deepEqual(content._related.map(related => related.title), [ 'Category' ]);
+      const draft = await apos.article.findOneForEditing(req, {
+        aposDocId: article.aposDocId
+      });
+      await apos.article.convert(req, content, draft);
+      await apos.article.update(req.clone({ aposRestoreVersion: published._id }), draft);
+      const restored = await apos.article
+        .find(req, { aposDocId: article.aposDocId })
+        .toObject();
+      assert.deepEqual(restored._related.map(related => related.title), [ 'Category' ]);
+      assert.deepEqual(restored.relatedIds, [ 'renamed-category' ]);
+      const renamed = await apos.doc.db.findOne({ _id: 'renamed-category:en:draft' });
+      assert.deepEqual(renamed.relatedReverseIds, [ article.aposDocId ]);
     });
 
     it('should find the versions of a parked page the duplicate parked pages migration renames', async function() {

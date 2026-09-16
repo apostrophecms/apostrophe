@@ -82,8 +82,17 @@ module.exports = {
           if (skipReplace) {
             return;
           }
+          const renamed = new Map();
           for (const [ from, to ] of pairs) {
             await self.changeDocId(from, to, { keep });
+            const [ oldId ] = from.split(':');
+            const [ newId ] = to.split(':');
+            if (oldId !== newId) {
+              renamed.set(oldId, newId);
+            }
+          }
+          for (const [ oldId, newId ] of renamed) {
+            await self.replaceDocIdInVersions(oldId, newId);
           }
         }
       }
@@ -1178,9 +1187,7 @@ module.exports = {
           if (target.locale) {
             doc.aposLocale = `${target.locale}:${target.mode}`;
           }
-          if (doc.path) {
-            doc.path = doc.path.replace(source.docId, target.docId);
-          }
+          self.replaceDocIdIn(doc, source.docId, target.docId);
           return {
             docId: target.docId,
             locale: target.locale,
@@ -1198,9 +1205,53 @@ module.exports = {
           };
         }
       },
+      // Rewrite every reference to the document `oldId` (an `aposDocId`) in
+      // the content of every version to `newId`, after
+      // `@apostrophecms/doc.changeDocIds` did the same to the live documents:
+      // the ancestor in a page's `path`, the ids a relationship stores.
+      // Reads the whole store, writes only the versions that hold one
+      async replaceDocIdInVersions(oldId, newId) {
+        const req = self.apos.task.getReq();
+        return self.rewriteVersions(req, {}, ({ doc }) => {
+          return self.replaceDocIdIn(doc, oldId, newId) ? { doc } : null;
+        });
+      },
+      // Replace the document id `oldId` with `newId` wherever `doc` holds it:
+      // as a segment of a page `path` and as any value equal to it, at any
+      // depth. Returns whether anything changed
+      replaceDocIdIn(doc, oldId, newId) {
+        let changed = false;
+        if (typeof doc.path === 'string') {
+          const path = doc.path
+            .split('/')
+            .map(segment => (segment === oldId) ? newId : segment)
+            .join('/');
+          if (path !== doc.path) {
+            doc.path = path;
+            changed = true;
+          }
+        }
+        replaceValue(doc);
+        return changed;
+
+        function replaceValue(value) {
+          if (!value || (typeof value !== 'object')) {
+            return;
+          }
+          for (const key of Object.keys(value)) {
+            if (value[key] === oldId) {
+              value[key] = newId;
+              changed = true;
+            } else {
+              replaceValue(value[key]);
+            }
+          }
+        }
+      },
       // Apply `rewrite(version)` to every version matching `criteria`, in
       // batches. It receives the version with `doc` unpacked and returns the
-      // fields to set, `doc` unpacked. Returns the number of versions changed.
+      // fields to set, `doc` unpacked, or nothing to leave the version as it
+      // is. Returns the number of versions changed.
       async rewriteVersions(req, criteria, rewrite) {
         const ids = (await self.db
           .find(criteria)
@@ -1216,9 +1267,14 @@ module.exports = {
             { _id: { $in: ids.slice(i, i + batchSize) } },
             { sort: false }
           );
-          const operations = await Promise.all(versions.map(async version => {
-            const { doc, ...fields } = rewrite(version);
-            return {
+          const operations = [];
+          for (const version of versions) {
+            const rewritten = rewrite(version);
+            if (!rewritten) {
+              continue;
+            }
+            const { doc, ...fields } = rewritten;
+            operations.push({
               updateOne: {
                 filter: { _id: version._id },
                 update: {
@@ -1228,8 +1284,11 @@ module.exports = {
                   }
                 }
               }
-            };
-          }));
+            });
+          }
+          if (!operations.length) {
+            continue;
+          }
           const result = await self.db.bulkWrite(operations);
           changed += result.modifiedCount;
         }

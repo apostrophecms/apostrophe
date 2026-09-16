@@ -1657,7 +1657,11 @@ database.`);
           }
           const manager = self.apos.doc.getManager(moved.type);
           await manager.emit('beforeMove', req, moved, target, position);
-          determineRankAndNewParent();
+          const redirected = determineRankAndNewParent();
+          if (redirected) {
+            // Moved before the archive instead, that move did the work
+            return redirected;
+          }
           // Simple check to see if we are moving the page beneath itself
           if (parent.path.split('/').includes(moved.aposDocId)) {
             throw self.apos.error('forbidden', 'Cannot move a page under itself');
@@ -1709,7 +1713,7 @@ database.`);
           // Do not report the additional changes to the event - BC.
           // Concatenate all changes to one unique array.
           changed = Object.values(
-            [ movedChange, ...peersChange, changed ]
+            [ movedChange, ...peersChange, ...changed ]
               .reduce((acc, change) => {
                 acc[change._id] = {
                   ...acc[change._id] || {},
@@ -1749,6 +1753,9 @@ database.`);
             }
             return moved;
           }
+          // Sets `parent` and `rank`. Returns the promise of the move it
+          // delegates to when the page is sent to the last child of the home
+          // page, where the archive must stay last
           function determineRankAndNewParent() {
             if (position === 'firstChild') {
               parent = target;

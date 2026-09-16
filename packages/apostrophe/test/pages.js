@@ -427,6 +427,30 @@ describe('Pages', function() {
     assert.strictEqual(page.rank, 1);
   });
 
+  it('is able to move a page to the last child of the home page, before the archive, in one save', async function() {
+    const req = apos.task.getReq();
+    const saves = [];
+    const update = apos.page.update;
+    apos.page.update = async function(req, page, ...rest) {
+      saves.push(page._id);
+      return update.call(this, req, page, ...rest);
+    };
+    let result;
+    try {
+      result = await apos.page.move(req, 'cousin:en:published', home._id, 'lastChild');
+    } finally {
+      apos.page.update = update;
+    }
+    assert.deepStrictEqual(saves, [ 'cousin:en:published' ]);
+    assert(result.changed.every(change => change._id));
+
+    const cousin = await apos.page.find(req, { _id: 'cousin:en:published' }).toObject();
+    const archive = await apos.page.find(req, { slug: '/archive' }).archived(null).toObject();
+    assert.strictEqual(cousin.path, `${homeId.replace(':en:published', '')}/cousin`);
+    assert.strictEqual(cousin.level, 1);
+    assert.strictEqual(cousin.rank, archive.rank - 1);
+  });
+
   it('is not able to move a page under itself', async function() {
     await assert.rejects(
       apos.page.move(apos.task.getReq(), 'cousin:en:published', 'cousin:en:published', 'lastChild'),
