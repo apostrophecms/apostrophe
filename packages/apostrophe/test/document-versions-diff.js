@@ -856,4 +856,319 @@ describe('Document Versions diff engine', function () {
       assert.equal(doc.aposMeta.title[HIGHLIGHT], true);
     });
   });
+
+  describe('consolidate', function () {
+    // A run of versions, each member editing a copy of the previous
+    // document; `ai` marks the members saved with AI
+    function run(...members) {
+      let doc = buildDoc();
+      return members.map(({ ai = false, edit }) => {
+        const older = doc;
+        doc = structuredClone(older);
+        edit(doc);
+        return {
+          older,
+          newer: doc,
+          ai
+        };
+      });
+    }
+    const brief = row => [ row.type, row.fieldType, row.path.at(-1).name, row.ai ];
+    const getRows = doc => doc.section.rows;
+
+    it('should give a single version its rows with its AI flag', function () {
+      const pairs = run({
+        edit: doc => {
+          doc.title = 'Renamed';
+          doc.section.rows[0].count = 5;
+        }
+      });
+      const rows = apos.docVersions.getConsolidatedRows(req, pairs);
+      assert.deepEqual(
+        rows,
+        apos.docVersions.getChangeRows(req, pairs[0].older, pairs[0].newer)
+          .map(row => ({
+            ...row,
+            ai: false
+          }))
+      );
+      assert.equal(rows[0].field.name, 'title');
+      pairs[0].ai = true;
+      assert.deepEqual(
+        apos.docVersions.getConsolidatedRows(req, pairs).map(row => row.ai),
+        [ true, true ]
+      );
+    });
+
+    it('should list a path several members changed once, from its first value to its last', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            doc.title = 'Second';
+            doc.subtitle = 'Sub';
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.title = 'Third';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', true ],
+        [ 'added', 'string', 'subtitle', false ]
+      ]);
+      assert.equal(rows[0].old, 'Title root');
+      assert.equal(rows[0].new, 'Third');
+    });
+
+    it('should call a path modified and then deleted deleted, as it was before the run', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[1].title = 'Edited';
+          }
+        },
+        {
+          edit: doc => {
+            getRows(doc).pop();
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'deleted', 'arrayItem', 'root.section.rows.1', true ]
+      ]);
+      assert.equal(rows[0].old.title, 'Title root.section.rows.1');
+      assert.equal(rows[0].path.at(-1).label, 'Title root.section.rows.1');
+    });
+
+    it('should call a path added and then modified added, with its final value', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            getRows(doc).push({
+              ...structuredClone(getRows(doc)[1]),
+              _id: 'root.section.rows.2',
+              title: 'Third'
+            });
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[2].title = 'Third, edited';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'added', 'arrayItem', 'root.section.rows.2', true ]
+      ]);
+      assert.equal(rows[0].new.title, 'Third, edited');
+      assert.equal(rows[0].path.at(-1).label, 'Third, edited');
+    });
+
+    it('should drop a path added and then deleted', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc).push({
+              ...structuredClone(getRows(doc)[1]),
+              _id: 'root.section.rows.2',
+              title: 'Third'
+            });
+          }
+        },
+        {
+          edit: doc => {
+            getRows(doc).pop();
+          }
+        }
+      ));
+      assert.deepEqual(rows, []);
+    });
+
+    it('should drop a path that ends where it started', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            doc.title = 'Renamed';
+          }
+        },
+        {
+          edit: doc => {
+            doc.title = 'Title root';
+            doc.count = 1;
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'integer', 'count', false ]
+      ]);
+    });
+
+    it('should flag a path an AI member changed, whoever changed it after', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            doc.title = 'Second';
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.subtitle = 'By AI';
+          }
+        },
+        {
+          edit: doc => {
+            doc.subtitle = 'By hand';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', false ],
+        [ 'added', 'string', 'subtitle', true ]
+      ]);
+    });
+
+    it('should flag an item or widget an AI member changed inside', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            getRows(doc).push({
+              ...structuredClone(getRows(doc)[1]),
+              _id: 'root.section.rows.2',
+              title: 'Third'
+            });
+            const area = getRows(doc)[0].content;
+            area.items.push({
+              ...structuredClone(area.items[1]),
+              _id: 'root.section.rows.0.content.3'
+            });
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[2].title = 'Third, by AI';
+            getRows(doc)[1].title = 'Second, by AI';
+            getRows(doc)[0].content.items[3].content = '<p>By AI</p>';
+          }
+        },
+        {
+          edit: doc => {
+            getRows(doc).splice(1, 1);
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'added', 'widget', 'root.section.rows.0.content.3', true ],
+        [ 'deleted', 'arrayItem', 'root.section.rows.1', true ],
+        [ 'added', 'arrayItem', 'root.section.rows.2', true ]
+      ]);
+    });
+
+    it('should flag a path an AI member created by adding its parent', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            doc.section = null;
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.section = {
+              ...buildDoc().section,
+              title: 'Rebuilt'
+            };
+          }
+        },
+        {
+          edit: doc => {
+            doc.count = 1;
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'integer', 'count', false ],
+        [ 'modified', 'string', 'title', true ]
+      ]);
+      assert.deepEqual(rows[1].path.map(segment => segment.name), [ 'section', 'title' ]);
+    });
+
+    it('should keep a widget\'s schema fields apart from the data it stores beside them', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[0].content.items[0].extra = 'x';
+          }
+        },
+        {
+          edit: doc => {
+            getRows(doc)[0].content.items[0].title = 'By hand';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', false ],
+        [ 'modified', 'widget', 'root.section.rows.0.content.0', true ]
+      ]);
+    });
+
+    it('should flag every row when every member used AI', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            doc.title = 'Second';
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.subtitle = 'Sub';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(row => row.ai), [ true, true ]);
+    });
+
+    it('should take labels, ordinals and order from the run\'s ends', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            getRows(doc).shift();
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[0].title = 'Edited';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(row => [ row.type, row.path.at(-1).name, row.ai ]), [
+        [ 'deleted', 'root.section.rows.0', false ],
+        [ 'modified', 'title', true ]
+      ]);
+      assert.deepEqual(rows.map(row => row.path[2]), [
+        {
+          name: 'root.section.rows.0',
+          label: 'Title root.section.rows.0',
+          ordinal: 1
+        },
+        {
+          name: 'root.section.rows.1',
+          label: 'Edited',
+          ordinal: 1
+        }
+      ]);
+    });
+  });
 });

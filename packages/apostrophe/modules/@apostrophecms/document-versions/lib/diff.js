@@ -1,7 +1,8 @@
 // Change detection between two versions of a document: pure functions over
 // a schema and two documents. `walk` lists every changed path at its full
-// depth, `annotate` marks a copy of the newer document for WYSIWYG display.
-// Both take a `ctx` built by the module (`getDiffContext`) so that nothing
+// depth, `annotate` marks a copy of the newer document for WYSIWYG display,
+// `consolidate` lists the changes of a run of consecutive versions as one.
+// All take a `ctx` built by the module (`getDiffContext`) so that nothing
 // here reaches for `apos` directly.
 
 const _ = require('lodash');
@@ -16,6 +17,9 @@ const WIDGET_KEYS = new Set([ '_id', 'type', 'metaType', 'aposPlaceholder', 'apo
 
 const HIGHLIGHT_NAMESPACE = '@apostrophecms/schema';
 const HIGHLIGHT_KEY = 'highlight';
+// The hop below a widget where its rich text markup, or the data it stores
+// outside its schema, sits when paths are compared
+const CONTENT = Symbol('content');
 
 /**
  * What the engine needs from the rest of Apostrophe. The module builds it
@@ -82,6 +86,8 @@ const HIGHLIGHT_KEY = 'highlight';
  *   the text representation; `null` for a rich text or `widget` row. Attached
  *   as a non-enumerable property, so it is invisible to `JSON.stringify`
  *   and to deep equality.
+ * @property {boolean} [ai] Rows of `consolidate` only: whether a version
+ *   saved with AI changed this path, or one above or below it.
  */
 
 /**
@@ -184,9 +190,50 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
   return doc;
 }
 
+/**
+ * The changes of consecutive versions of one document as a single list:
+ * one `walk` from the first member's older document to the last member's
+ * newer one. So each changed path appears once, with the value it started
+ * from and the value it ended with; a path deleted at the end reads as
+ * deleted whatever happened to it before; a path added and deleted within
+ * the run does not appear, and neither does one that ended where it
+ * started. Every row gains `ai`: `true` when a member saved with AI changed
+ * that path, one above it (which created the value) or one below it (which
+ * is part of the final value). One pair is a single version and every row
+ * takes its flag.
+ *
+ * @param {object[]} schema The schema of the documents.
+ * @param {Array<{ older: object, newer: object, ai?: boolean }>} pairs
+ *   The members, oldest first, at least one: each member's document as
+ *   `newer`, the document it changed as `older` (the previous member's
+ *   `newer`, or for the first member the version before the run) and
+ *   whether the member was saved with AI.
+ * @param {DiffContext} ctx
+ * @returns {ChangeRow[]} Empty when the run ends where it started.
+ */
+function consolidate(schema, pairs, ctx) {
+  const rows = walk(schema, pairs[0].older, pairs.at(-1).newer, ctx);
+  const aiPairs = pairs.filter(pair => pair.ai);
+  if (!aiPairs.length || (aiPairs.length === pairs.length)) {
+    for (const row of rows) {
+      row.ai = Boolean(aiPairs.length);
+    }
+    return rows;
+  }
+  const touched = aiPairs
+    .flatMap(pair => walk(schema, pair.older, pair.newer, ctx))
+    .map(keyOf);
+  for (const row of rows) {
+    const key = keyOf(row);
+    row.ai = touched.some(other => isRelated(key, other));
+  }
+  return rows;
+}
+
 module.exports = {
   walk,
-  annotate
+  annotate,
+  consolidate
 };
 
 function walkFields(schema, older, newer, ctx, path, rows) {
@@ -465,6 +512,31 @@ function isEmpty(type, field, value) {
     return true;
   }
   return type?.isEmpty ? Boolean(type.isEmpty(field, value)) : false;
+}
+
+// The names along a row's path, the key two rows compare by. A rich text
+// widget's markup and the data a widget stores outside its schema sit one
+// hop below the widget, apart from its schema fields
+function keyOf(row) {
+  const key = row.path.map(segment => segment.name);
+  if (
+    (row.fieldType === 'richText') ||
+    ((row.fieldType === 'widget') && (row.type === 'modified'))
+  ) {
+    key.push(CONTENT);
+  }
+  return key;
+}
+
+// Whether one key is the other or an ancestor of it
+function isRelated(one, two) {
+  const length = Math.min(one.length, two.length);
+  for (let i = 0; i < length; i++) {
+    if (one[i] !== two[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // The value at `path` in `doc`: a field segment reads a property, an item

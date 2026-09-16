@@ -718,6 +718,13 @@ module.exports = {
         }
         return text.addText(rows, ctx, { titles });
       },
+      // The changes of consecutive versions of one document as one list,
+      // every row flagged `ai` (see `lib/diff.js`). `pairs` are
+      // `{ older, newer, ai }`, oldest first
+      getConsolidatedRows(req, pairs) {
+        const manager = self.apos.doc.getManager(pairs.at(-1).newer.type);
+        return diff.consolidate(manager.schema, pairs, self.getDiffContext(req));
+      },
       // A copy of `newer` marked with its changes since `older`, for
       // WYSIWYG display (see `lib/diff.js`)
       getAnnotatedDoc(req, older, newer) {
