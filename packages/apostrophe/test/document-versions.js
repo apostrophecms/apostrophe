@@ -1520,6 +1520,142 @@ describe('Document Versions', function () {
     });
   });
 
+  describe('archive round trip', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'default-page': {},
+          'module-versions_false': {}
+        }
+      });
+    });
+
+    after(async function() {
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      // The shared cleanup removes the archive page too, and `page.archive`
+      // needs it
+      await apos.doc.db.deleteMany({
+        type: {
+          $not: {
+            $in: [
+              '@apostrophecms/home-page',
+              '@apostrophecms/global',
+              '@apostrophecms/user',
+              '@apostrophecms/archive-page'
+            ]
+          }
+        }
+      });
+      await apos.docVersions.db.deleteMany({});
+    });
+
+    // A piece published twice, so the timeline holds two publication points
+    async function publishTwice(manager, req) {
+      const draft = await manager.insert(req, { title: 'First' });
+      await manager.publish(req, draft);
+      await manager.update(req, {
+        ...await findDraft(manager, req, draft),
+        title: 'Second'
+      });
+      await manager.publish(req, await findDraft(manager, req, draft));
+      return draft;
+    }
+
+    function findDraft(manager, req, doc) {
+      return manager.find(req, { aposDocId: doc.aposDocId }).archived(null).toObject();
+    }
+
+    async function setArchived(manager, req, doc, archived) {
+      return manager.update(req, {
+        ...await findDraft(manager, req, doc),
+        archived
+      });
+    }
+
+    it('should leave the timeline of a piece as it was', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await publishTwice(apos.article, req);
+      const before = await timeline(apos, draft, { raw: true });
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft', 'published', 'draft' ]);
+
+      await setArchived(apos.article, req, draft, true);
+      const archived = await findDraft(apos.article, req, draft);
+      assert(archived.slug.startsWith(`deduplicate-${draft.aposDocId}-`));
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+
+      await setArchived(apos.article, req, draft, false);
+      const restored = await findDraft(apos.article, req, draft);
+      assert.equal(restored.slug, 'first');
+      assert.equal(restored.archived, false);
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+    });
+
+    it('should leave the timeline of a page as it was', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'First',
+        slug: '/first'
+      });
+      await apos.page.publish(req, draft);
+      await apos.page.update(req, {
+        ...await findDraft(apos.page, req, draft),
+        title: 'Second'
+      });
+      await apos.page.publish(req, await findDraft(apos.page, req, draft));
+      const before = await timeline(apos, draft, { raw: true });
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft', 'published', 'draft' ]);
+
+      await apos.page.archive(req, draft._id);
+      const archived = await findDraft(apos.page, req, draft);
+      assert.equal(archived.archived, true);
+      assert(archived.slug.endsWith(`-deduplicate-${draft.aposDocId}`));
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+
+      const home = await apos.page.find(req, { level: 0 }).toObject();
+      await apos.page.move(req, draft._id, home._id, 'lastChild');
+      const restored = await findDraft(apos.page, req, draft);
+      assert.equal(restored.slug, '/first');
+      assert(!restored.archived);
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+    });
+
+    it('should leave the publication points of a `versions: false` type as they were', async function() {
+      const manager = apos.modules['module-versions_false'];
+      const req = draftReqAs(apos, 'alice');
+      const draft = await publishTwice(manager, req);
+      const before = await timeline(apos, draft, { raw: true });
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'published' ]);
+
+      await setArchived(manager, req, draft, true);
+      await setArchived(manager, req, draft, false);
+      const restored = await findDraft(manager, req, draft);
+      assert.equal(restored.slug, 'first');
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+    });
+
+    it('should still record an editorial save that changes the slug', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await publishTwice(apos.article, req);
+
+      await apos.article.update(req, {
+        ...await findDraft(apos.article, req, draft),
+        slug: 'renamed'
+      });
+
+      const [ newest ] = await timeline(apos, draft);
+      assert.equal(newest.mode, 'draft');
+      assert.equal(newest.doc.slug, 'renamed');
+      assert.equal(newest.changeCount, 1);
+    });
+  });
+
   describe('capture rules with a configured interval', function() {
     let apos;
 

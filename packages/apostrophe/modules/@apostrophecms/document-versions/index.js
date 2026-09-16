@@ -499,9 +499,15 @@ module.exports = {
       // version was created. Between handoffs it replaces the previous draft.
       //
       // A request flagged `aposSkipVersion` records nothing: core sets it on
-      // a save that is a side effect of an operation already recorded
+      // a save that is a side effect of an operation already recorded. A
+      // save that takes the document out of the archive records nothing
+      // either: it still carries the deduplicated slug, which core reverts
+      // after this save
       async canHaveVersion(req, doc) {
         if (req.aposSkipVersion) {
+          return false;
+        }
+        if (!doc.archived && doc.aposWasArchived) {
           return false;
         }
         if (self.isPublishedOnly(doc)) {
