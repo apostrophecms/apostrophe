@@ -11,6 +11,7 @@ import { mapActions, mapState } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import { shouldHandleShortcut } from '../lib/should-handle-shortcut.mjs';
 
 export default {
   name: 'TheAposCommandMenu',
@@ -57,6 +58,7 @@ export default {
                       ...command.action,
                       requireWidgetFocus: command.requireWidgetFocus || false,
                       skipOnTextSelection: command.skipOnTextSelection || false,
+                      skipInModal: command.skipInModal || false,
                       trigger: command.trigger || 'keydown'
                     }
                   ]);
@@ -139,6 +141,12 @@ export default {
           // Handled by a native event listener (e.g. paste) when the
           // Clipboard API is available; keydown is the legacy fallback
           if (action.trigger === 'native' && navigator.clipboard) {
+            return;
+          }
+          // In-context undo/redo must not seize Cmd/Ctrl+Z while a modal is open
+          if (!shouldHandleShortcut(action, {
+            modalStackLength: this.stack.length
+          })) {
             return;
           }
           event.preventDefault();
