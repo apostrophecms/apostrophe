@@ -10,7 +10,8 @@ const {
   upload,
   addUser,
   login,
-  seedVersionsFor
+  seedVersionsFor,
+  wait
 } = require('./utils/document-versions.js');
 const compareSchema = require('./utils/document-versions-compare-schema.js');
 
@@ -87,10 +88,17 @@ describe('Document Versions', function () {
       );
     });
 
-    it('should not have versions enabled for doc types with `versions: false`', async function() {
+    it('should record only published saves for doc types with `versions: false`', async function() {
       assert.equal(
         await apos.docVersions.canHaveVersion(getReq(apos), {
           aposMode: 'published',
+          type: 'module-versions_false'
+        }),
+        true
+      );
+      assert.equal(
+        await apos.docVersions.canHaveVersion(getReq(apos), {
+          aposMode: 'draft',
           type: 'module-versions_false'
         }),
         false
@@ -467,8 +475,12 @@ describe('Document Versions', function () {
     });
   });
 
-  describe('disabled', function() {
+  // A type marked `versions: false` keeps its publication points only: the
+  // current one and the one before it, which Unpublish returns to. Nothing
+  // else is recorded for it and it has no versions UI
+  describe('published only', function() {
     let apos;
+    let jarAdmin;
 
     before(async function() {
       apos = await bootstrap({
@@ -484,6 +496,8 @@ describe('Document Versions', function () {
           }
         }
       });
+      await addUser(apos, 'admin');
+      jarAdmin = await login(apos, 'admin');
     });
 
     after(async function() {
@@ -495,73 +509,210 @@ describe('Document Versions', function () {
       await cleanup(apos);
     });
 
-    it('should not add version docs when explicitly disabled (pieces)', async function() {
-      const req = getReq(apos);
+    it('should keep the two newest publication points and no draft (pieces)', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'An article' });
+      assert.deepEqual(await modes(apos, draft), []);
 
-      const article = await apos.article.insert(req, {
-        title: 'An article'
-      });
-      assert(article);
+      await apos.article.publish(req, draft);
+      assert.deepEqual(await modes(apos, draft), [ 'published' ]);
 
-      {
-        const versions = await apos.docVersions.find(req, {});
-        assert.strictEqual(versions.length, 0);
-      }
-
-      const updated = await apos.article.update(req, {
-        ...article,
+      const v2 = await apos.article.update(req, {
+        ...draft,
         title: 'An article v2'
       });
-      assert(updated);
-      {
-        const versions = await apos.docVersions.find(req, {});
-        assert.strictEqual(versions.length, 0);
-      }
+      assert.deepEqual(await modes(apos, draft), [ 'published' ]);
+
+      await apos.article.publish(req, v2);
+      assert.deepEqual(await titles(apos, draft), [ 'An article v2', 'An article' ]);
+
+      const v3 = await apos.article.update(req, {
+        ...v2,
+        title: 'An article v3'
+      });
+      await apos.article.publish(req, v3);
+      assert.deepEqual(await titles(apos, draft), [ 'An article v3', 'An article v2' ]);
+      assert.deepEqual(await modes(apos, draft), [ 'published', 'published' ]);
     });
 
-    it('should not add version docs when explicitly disabled (piece pages)', async function() {
-      const req = getReq(apos);
-
-      const page = await apos.doc.insert(req, {
+    it('should keep the two newest publication points and no draft (piece pages)', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'article-page',
         title: 'An article page',
-        type: 'article-page'
+        slug: '/articles'
       });
-      assert(page);
+      assert.deepEqual(await modes(apos, draft), []);
 
-      let versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 0);
-
-      const updated = await apos.doc.update(req, {
-        ...page,
+      await apos.page.publish(req, draft);
+      const v2 = await apos.page.update(req, {
+        ...draft,
         title: 'An article page v2'
       });
-      assert(updated);
+      await apos.page.publish(req, v2);
+      const v3 = await apos.page.update(req, {
+        ...v2,
+        title: 'An article page v3'
+      });
+      assert.deepEqual(await titles(apos, draft), [ 'An article page v2', 'An article page' ]);
 
-      versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 0);
+      await apos.page.publish(req, v3);
+      assert.deepEqual(await titles(apos, draft), [ 'An article page v3', 'An article page v2' ]);
+      assert.deepEqual(await modes(apos, draft), [ 'published', 'published' ]);
     });
 
-    it('should not add version docs when explicitly disabled (pages)', async function() {
-      const req = getReq(apos);
-
-      const page = await apos.doc.insert(req, {
+    it('should keep the two newest publication points and no draft (pages)', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
         title: 'A page',
-        type: 'default-page'
+        slug: '/a-page'
       });
-      assert(page);
+      assert.deepEqual(await modes(apos, draft), []);
 
-      let versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 0);
-
-      const updated = await apos.doc.update(req, {
-        ...page,
+      await apos.page.publish(req, draft);
+      const v2 = await apos.page.update(req, {
+        ...draft,
         title: 'A page v2'
       });
-      assert(updated);
+      await apos.page.publish(req, v2);
+      const v3 = await apos.page.update(req, {
+        ...v2,
+        title: 'A page v3'
+      });
+      assert.deepEqual(await titles(apos, draft), [ 'A page v2', 'A page' ]);
 
-      versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 0);
+      await apos.page.publish(req, v3);
+      assert.deepEqual(await titles(apos, draft), [ 'A page v3', 'A page v2' ]);
+      assert.deepEqual(await modes(apos, draft), [ 'published', 'published' ]);
     });
+
+    it('should release the attachment references of a dropped publication point', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const attachment = await upload('clone.txt', apos);
+      const draft = await apos.article.insert(req, {
+        title: 'An article',
+        attachment
+      });
+      await apos.article.publish(req, draft);
+      const [ first ] = await timeline(apos, draft, { raw: true });
+      const findAttachment = () => apos.attachment.db.findOne({ _id: attachment._id });
+      {
+        const { archivedDocIds } = await findAttachment();
+        assert.deepEqual(archivedDocIds, [ first._id ]);
+      }
+
+      const v2 = await apos.article.update(req, {
+        ...draft,
+        title: 'An article v2',
+        attachment: null
+      });
+      await apos.article.publish(req, v2);
+      // Among the versions, only the first publication point holds the attachment now
+      {
+        const { archivedDocIds } = await findAttachment();
+        assert.deepEqual(archivedDocIds, [ first._id ]);
+      }
+
+      const v3 = await apos.article.update(req, {
+        ...v2,
+        title: 'An article v3'
+      });
+      await apos.article.publish(req, v3);
+      assert.deepEqual(await titles(apos, draft), [ 'An article v3', 'An article v2' ]);
+      // Dropping that publication point left nothing holding the attachment
+      assert.strictEqual(await findAttachment(), null);
+    });
+
+    it('should keep Unpublish', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'An article' });
+      await apos.article.publish(req, draft);
+      const v2 = await apos.article.update(req, {
+        ...draft,
+        title: 'An article v2'
+      });
+      await apos.article.publish(req, v2);
+      const [ , previous ] = await timeline(apos, draft);
+
+      const publishedReq = getReq(apos, { mode: 'published' });
+      let published = await apos.article.findOneForEditing(publishedReq, {
+        aposDocId: draft.aposDocId
+      });
+      published = await apos.article.revertPublishedToPrevious(publishedReq, published);
+      assert.strictEqual(published.title, 'An article');
+
+      // The restored publication point and the one it replaced, nothing older
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'An article', 'An article v2' ]);
+      assert.deepEqual(versions[0].restoredFrom, {
+        _id: previous._id,
+        createdAt: previous.createdAt
+      });
+      assert.strictEqual(versions[1].restoredFrom, undefined);
+    });
+
+    // What the admin bar reads to decide between Unpublish and Undo Publish
+    // is the document's `lastPublishedAt` before the publish, so a document
+    // that carried one must have a publication point to return to
+    it('should have a publication point to return to exactly when the document was published before', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      assert(!draft.lastPublishedAt);
+
+      const first = await apos.article.publish(req, draft);
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const find = () => apos.article.findOneForEditing(publishedReq, {
+        aposDocId: draft.aposDocId
+      });
+      await assert.rejects(
+        apos.article.revertPublishedToPrevious(publishedReq, await find()),
+        { name: 'invalid' }
+      );
+
+      assert(first.lastPublishedAt);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...first,
+        title: 'Second'
+      }));
+      const published = await apos.article
+        .revertPublishedToPrevious(publishedReq, await find());
+      assert.equal(published.title, 'First');
+    });
+
+    it('should answer not found on the versions routes', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'An article' });
+      await apos.article.publish(req, draft);
+      const [ version ] = await timeline(apos, draft, { raw: true });
+      assert(version);
+
+      await assert.rejects(
+        apos.http.get(`/api/v1/${moduleName}`, {
+          qs: { docId: draft._id },
+          jar: jarAdmin
+        }),
+        { status: 404 }
+      );
+      await assert.rejects(
+        apos.http.get(`/api/v1/${moduleName}/${version._id}`, { jar: jarAdmin }),
+        { status: 404 }
+      );
+    });
+
+    it('should report no versions to the browser', function() {
+      const req = getReq(apos);
+      assert.strictEqual(apos.article.getBrowserData(req).versions, false);
+      assert.strictEqual(apos.modules['default-page'].getBrowserData(req).versions, false);
+    });
+
+    async function modes(apos, doc) {
+      return (await timeline(apos, doc)).map(version => version.mode);
+    }
+
+    async function titles(apos, doc) {
+      return (await timeline(apos, doc)).map(version => version.doc.title);
+    }
   });
 
   describe('not localized', function() {
@@ -911,7 +1062,7 @@ describe('Document Versions', function () {
       articleModesCount = await apos.doc.db.countDocuments({
         aposDocId: draft.aposDocId
       });
-      assert.strictEqual(articleModesCount, 3);
+      assert.strictEqual(articleModesCount, 2);
 
       // Validate references: each draft save and each publish is a version
       {
@@ -969,6 +1120,109 @@ describe('Document Versions', function () {
       assert.strictEqual(articleModesCount, 0);
       assert.strictEqual(attachmentCount, 0);
       assert.strictEqual(versionCount, 0);
+    });
+
+    it('should keep the references of an attachment only versions hold on a recount', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const attachment = await upload('clone.txt', apos);
+      const draft = await apos.article.insert(req, {
+        title: 'With attachment',
+        attachment
+      });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Without attachment',
+        attachment: null
+      }));
+      const holders = (await timeline(apos, draft))
+        .filter(version => version.doc.attachment)
+        .map(version => version._id)
+        .sort();
+      assert.equal(holders.length, 2);
+
+      await apos.attachment.db.updateOne({ _id: attachment._id }, {
+        $set: {
+          docIds: [],
+          archivedDocIds: []
+        }
+      });
+      await apos.attachment.recomputeAllDocReferences();
+
+      const after = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert.deepEqual(after.docIds, []);
+      assert.deepEqual([ ...after.archivedDocIds ].sort(), holders);
+      assert.equal(after.utilized, true);
+    });
+
+    it('should leave the references of an attachment live documents hold unchanged on a recount', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const attachment = await upload('clone.txt', apos);
+      const draft = await apos.article.insert(req, {
+        title: 'With attachment',
+        attachment
+      });
+      await apos.article.publish(req, draft);
+      const before = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert.deepEqual(
+        [ ...before.docIds ].sort(),
+        [ draft._id, draft._id.replace(':draft', ':published') ].sort()
+      );
+      assert.equal(before.archivedDocIds.length, 2);
+
+      await apos.attachment.recomputeAllDocReferences();
+
+      const after = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert.deepEqual([ ...after.docIds ].sort(), [ ...before.docIds ].sort());
+      assert.deepEqual(
+        [ ...after.archivedDocIds ].sort(),
+        [ ...before.archivedDocIds ].sort()
+      );
+    });
+
+    it('should hand the versions to the recount one at a time from a cursor', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const ids = (await apos.docVersions.db.find({}).toArray())
+        .map(version => version._id)
+        .sort();
+      assert.equal(ids.length, 4);
+
+      // The source must walk a cursor, never read the collection at once
+      const { find } = apos.docVersions.db;
+      let cursors = 0;
+      apos.docVersions.db.find = (...args) => {
+        const cursor = find.apply(apos.docVersions.db, args);
+        cursor.toArray = () => {
+          throw new Error('The versions source read the whole collection');
+        };
+        cursors++;
+        return cursor;
+      };
+      const seen = [];
+      let active = 0;
+      let maxActive = 0;
+      try {
+        await apos.attachment.docSources[moduleName](async doc => {
+          active++;
+          maxActive = Math.max(maxActive, active);
+          await new Promise(resolve => setImmediate(resolve));
+          seen.push(doc);
+          active--;
+        });
+      } finally {
+        apos.docVersions.db.find = find;
+      }
+
+      assert.equal(cursors, 1);
+      assert.equal(maxActive, 1);
+      assert.deepEqual(seen.map(doc => doc._id).sort(), ids);
+      assert(seen.every(doc => doc.archived === true && doc.type === 'article'));
     });
   });
 
@@ -1267,6 +1521,176 @@ describe('Document Versions', function () {
     });
   });
 
+  describe('archive round trip', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'default-page': {},
+          'module-versions_false': {}
+        }
+      });
+    });
+
+    after(async function() {
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      // The shared cleanup removes the archive page too, and `page.archive`
+      // needs it
+      await apos.doc.db.deleteMany({
+        type: {
+          $not: {
+            $in: [
+              '@apostrophecms/home-page',
+              '@apostrophecms/global',
+              '@apostrophecms/user',
+              '@apostrophecms/archive-page'
+            ]
+          }
+        }
+      });
+      await apos.docVersions.db.deleteMany({});
+    });
+
+    // A piece published twice, so the timeline holds two publication points
+    async function publishTwice(manager, req) {
+      const draft = await manager.insert(req, { title: 'First' });
+      await manager.publish(req, draft);
+      await manager.update(req, {
+        ...await findDraft(manager, req, draft),
+        title: 'Second'
+      });
+      await manager.publish(req, await findDraft(manager, req, draft));
+      return draft;
+    }
+
+    function findDraft(manager, req, doc) {
+      return manager.find(req, { aposDocId: doc.aposDocId }).archived(null).toObject();
+    }
+
+    async function setArchived(manager, req, doc, archived) {
+      return manager.update(req, {
+        ...await findDraft(manager, req, doc),
+        archived
+      });
+    }
+
+    it('should leave the timeline of a piece as it was', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await publishTwice(apos.article, req);
+      const before = await timeline(apos, draft, { raw: true });
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft', 'published', 'draft' ]);
+
+      await setArchived(apos.article, req, draft, true);
+      const archived = await findDraft(apos.article, req, draft);
+      assert(archived.slug.startsWith(`deduplicate-${draft.aposDocId}-`));
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+
+      await setArchived(apos.article, req, draft, false);
+      const restored = await findDraft(apos.article, req, draft);
+      assert.equal(restored.slug, 'first');
+      assert.equal(restored.archived, false);
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+    });
+
+    it('should leave the timeline of a page as it was', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'First',
+        slug: '/first'
+      });
+      await apos.page.publish(req, draft);
+      await apos.page.update(req, {
+        ...await findDraft(apos.page, req, draft),
+        title: 'Second'
+      });
+      await apos.page.publish(req, await findDraft(apos.page, req, draft));
+      const before = await timeline(apos, draft, { raw: true });
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft', 'published', 'draft' ]);
+
+      await apos.page.archive(req, draft._id);
+      const archived = await findDraft(apos.page, req, draft);
+      assert.equal(archived.archived, true);
+      assert(archived.slug.endsWith(`-deduplicate-${draft.aposDocId}`));
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+
+      const home = await apos.page.find(req, { level: 0 }).toObject();
+      await apos.page.move(req, draft._id, home._id, 'lastChild');
+      const restored = await findDraft(apos.page, req, draft);
+      assert.equal(restored.slug, '/first');
+      assert(!restored.archived);
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+    });
+
+    it('should leave the publication points of a `versions: false` type as they were', async function() {
+      const manager = apos.modules['module-versions_false'];
+      const req = draftReqAs(apos, 'alice');
+      const draft = await publishTwice(manager, req);
+      const before = await timeline(apos, draft, { raw: true });
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'published' ]);
+
+      await setArchived(manager, req, draft, true);
+      await setArchived(manager, req, draft, false);
+      const restored = await findDraft(manager, req, draft);
+      assert.equal(restored.slug, 'first');
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+    });
+
+    it('should still record an editorial save that changes the slug', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await publishTwice(apos.article, req);
+
+      await apos.article.update(req, {
+        ...await findDraft(apos.article, req, draft),
+        slug: 'renamed'
+      });
+
+      const [ newest ] = await timeline(apos, draft);
+      assert.equal(newest.mode, 'draft');
+      assert.equal(newest.doc.slug, 'renamed');
+      assert.equal(newest.changeCount, 1);
+    });
+
+    it('should record one version for one move to the last child of the home page', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const home = await apos.page.find(req, { level: 0 }).toObject();
+      const page = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Page',
+        slug: '/page'
+      });
+      await apos.page.publish(req, page);
+      await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Peer',
+        slug: '/peer'
+      });
+      const before = await timeline(apos, page);
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft' ]);
+
+      // The archive stays the last child of the home page, so the move is
+      // redirected before it
+      const { changed } = await apos.page.move(req, page._id, home._id, 'lastChild');
+      assert(changed.every(change => change._id));
+
+      // The draft save changes no schema field and records nothing; the
+      // published replay of the move records one publication point
+      const after = await timeline(apos, page);
+      assert.deepEqual(after.map(version => version.mode), [ 'published', 'published', 'draft' ]);
+      assert.deepEqual(after.slice(1), before);
+      const archive = await apos.page.find(req, { type: '@apostrophecms/archive-page' })
+        .archived(null)
+        .toObject();
+      const moved = await apos.page.find(req, { _id: page._id }).toObject();
+      assert(moved.rank < archive.rank);
+    });
+  });
+
   describe('capture rules with a configured interval', function() {
     let apos;
 
@@ -1302,6 +1726,807 @@ describe('Document Versions', function () {
         versions.map(version => version.doc.title),
         [ 'After the hour', 'Within the hour' ]
       );
+    });
+  });
+
+  describe('unpublish', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'default-page': {}
+        }
+      });
+    });
+
+    after(async function() {
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    it('should return the published document to its previous publication and record it', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      const second = await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      });
+      await apos.article.publish(req, second);
+      const [ , previous ] = await publications(apos, draft);
+      assert.strictEqual(previous.doc.title, 'First');
+
+      const publishedReq = getReq(apos, { mode: 'published' });
+      let published = await apos.article.findOneForEditing(publishedReq, {
+        aposDocId: draft.aposDocId
+      });
+      published = await apos.article.revertPublishedToPrevious(publishedReq, published);
+      assert.strictEqual(published.title, 'First');
+      assert.deepEqual(published.lastPublishedAt, previous.doc.lastPublishedAt);
+
+      const [ restored, ...rest ] = await publications(apos, draft);
+      assert.strictEqual(restored.mode, 'published');
+      assert.strictEqual(restored.doc.title, 'First');
+      assert.deepEqual(restored.restoredFrom, {
+        _id: previous._id,
+        createdAt: previous.createdAt
+      });
+      assert.deepEqual(rest.map(version => version.doc.title), [ 'Second', 'First' ]);
+
+      // The draft is untouched and shows as modified against the reverted publication
+      const draftAfter = await apos.article
+        .find(req, { aposDocId: draft.aposDocId })
+        .toObject();
+      assert.strictEqual(draftAfter.title, 'Second');
+      assert.strictEqual(draftAfter.modified, true);
+    });
+
+    // What the admin bar reads to decide between Unpublish and Undo Publish
+    // is the document's `lastPublishedAt` before the publish, so a document
+    // that carried one must have a publication point to return to
+    it('should have a publication point to return to exactly when the document was published before', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      assert(!draft.lastPublishedAt);
+
+      const first = await apos.article.publish(req, draft);
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const find = () => apos.article.findOneForEditing(publishedReq, {
+        aposDocId: draft.aposDocId
+      });
+      await assert.rejects(
+        apos.article.revertPublishedToPrevious(publishedReq, await find()),
+        { name: 'invalid' }
+      );
+
+      assert(first.lastPublishedAt);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...first,
+        title: 'Second'
+      }));
+      const published = await apos.article
+        .revertPublishedToPrevious(publishedReq, await find());
+      assert.equal(published.title, 'First');
+    });
+
+    it('should refuse a second Unpublish until the next publish', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      const second = await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      });
+      await apos.article.publish(req, second);
+
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const find = () => apos.article.findOneForEditing(publishedReq, {
+        aposDocId: draft.aposDocId
+      });
+      await apos.article.revertPublishedToPrevious(publishedReq, await find());
+      await assert.rejects(
+        apos.article.revertPublishedToPrevious(publishedReq, await find()),
+        { name: 'invalid' }
+      );
+
+      const third = await apos.article.update(req, {
+        ...second,
+        title: 'Third'
+      });
+      await apos.article.publish(req, third);
+      const [ , restored ] = await publications(apos, draft);
+      assert(restored.restoredFrom);
+
+      const published = await apos.article
+        .revertPublishedToPrevious(publishedReq, await find());
+      assert.strictEqual(published.title, 'First');
+      const [ newest ] = await publications(apos, draft);
+      assert.strictEqual(newest.restoredFrom._id, restored._id);
+    });
+
+    it('should refuse Unpublish when there is no previous publication', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const published = await apos.article.findOneForEditing(publishedReq, {
+        aposDocId: draft.aposDocId
+      });
+      await assert.rejects(
+        apos.article.revertPublishedToPrevious(publishedReq, published),
+        { name: 'invalid' }
+      );
+      assert.strictEqual((await publications(apos, draft)).length, 1);
+    });
+
+    it('should return a published page to its previous publication with one new record', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'First',
+        slug: '/first'
+      });
+      await apos.page.publish(req, draft);
+      const second = await apos.page.update(req, {
+        ...draft,
+        title: 'Second'
+      });
+      await apos.page.publish(req, second);
+      const [ , previous ] = await publications(apos, draft);
+
+      const publishedReq = getReq(apos, { mode: 'published' });
+      let published = await apos.page.findOneForEditing(publishedReq, {
+        aposDocId: draft.aposDocId
+      });
+      published = await apos.page.revertPublishedToPrevious(publishedReq, published);
+      assert.strictEqual(published.title, 'First');
+      assert.strictEqual(published.slug, '/first');
+
+      // The page's place in the tree is replayed after the revert without
+      // recording a publication of its own
+      const versions = await publications(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'First', 'Second', 'First' ]);
+      assert.deepEqual(versions[0].restoredFrom, {
+        _id: previous._id,
+        createdAt: previous.createdAt
+      });
+      await assert.rejects(
+        apos.page.revertPublishedToPrevious(publishedReq, published),
+        { name: 'invalid' }
+      );
+    });
+
+    // The published records of `doc`, newest first
+    async function publications(apos, doc) {
+      return (await timeline(apos, doc)).filter(version => version.mode === 'published');
+    }
+  });
+
+  describe('legacy previous mode documents', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'default-page': {}
+        }
+      });
+    });
+
+    after(async function() {
+      await removeUploads();
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    it('should seed the publication points a `previous` document and the live content hold', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const previous = await toLegacy(apos, draft);
+
+      await apos.docVersions.seedPublicationPoints();
+      assert.equal(await apos.docVersions.removePreviousModeDocs(), 1);
+
+      const versions = await publications(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'Second', 'First' ]);
+      assert.deepEqual(versions.map(version => version.mode), [ 'published', 'published' ]);
+      // The `previous` document's identity and slug are the published ones
+      assert.equal(versions[1].doc._id, `${draft.aposDocId}:en:published`);
+      assert.equal(versions[1].doc.aposMode, 'published');
+      assert.equal(versions[1].doc.slug, 'first');
+      // The slug the core before this module deduplicated to store it
+      assert.equal(previous.slug, `deduplicate-${draft.aposDocId}-first`);
+      assert(versions[1].createdAt < versions[0].createdAt);
+      assert.equal(await apos.doc.db.countDocuments({ _id: previous._id }), 0);
+    });
+
+    it('should seed the publication points of a page and keep it in the tree', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'First',
+        slug: '/first'
+      });
+      await apos.page.publish(req, draft);
+      await apos.page.publish(req, await apos.page.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const previous = await toLegacy(apos, draft);
+
+      await apos.docVersions.seedPublicationPoints();
+      assert.equal(await apos.docVersions.removePreviousModeDocs(), 1);
+
+      const versions = await publications(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'Second', 'First' ]);
+      // Page types deduplicate their slug with a suffix, not a prefix
+      assert.equal(previous.slug, `/first-deduplicate-${draft.aposDocId}`);
+      assert.equal(versions[1].doc.slug, '/first');
+      assert.equal(versions[1].doc.path, versions[0].doc.path);
+      assert.equal(versions[1].doc.rank, versions[0].doc.rank);
+      assert.equal(await apos.doc.db.countDocuments({ _id: previous._id }), 0);
+
+      // The page the revert writes is still where it was in the tree
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const published = await apos.page.revertPublishedToPrevious(
+        publishedReq,
+        await apos.page.findOneForEditing(publishedReq, { aposDocId: draft.aposDocId })
+      );
+      assert.equal(published.title, 'First');
+      assert.equal(published.path, versions[0].doc.path);
+    });
+
+    it('should seed the live content of a document published once', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      assert.equal(await toLegacy(apos, draft), null);
+
+      await apos.docVersions.seedPublicationPoints();
+
+      const versions = await publications(apos, draft);
+      assert.deepEqual(versions.map(version => version.doc.title), [ 'First' ]);
+    });
+
+    it('should let Unpublish return to the content live at the upgrade', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await toLegacy(apos, draft);
+      await apos.docVersions.seedPublicationPoints();
+      await apos.docVersions.removePreviousModeDocs();
+
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const published = await apos.article.revertPublishedToPrevious(
+        publishedReq,
+        await apos.article.findOneForEditing(publishedReq, { aposDocId: draft.aposDocId })
+      );
+      assert.equal(published.title, 'First');
+    });
+
+    it('should leave a timeline that already holds a publication point alone', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const before = await timeline(apos, draft);
+      const previous = await stalePreviousDoc(apos, draft, before[before.length - 1].doc);
+
+      await apos.docVersions.seedPublicationPoints();
+      assert.equal(await apos.docVersions.removePreviousModeDocs(), 1);
+
+      assert.deepEqual(
+        (await timeline(apos, draft)).map(version => version._id),
+        before.map(version => version._id)
+      );
+      assert.equal(await apos.doc.db.countDocuments({ _id: previous._id }), 0);
+    });
+
+    it('should move the attachment references of a `previous` document to the version it becomes', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const attachment = await upload('upload_image.png', apos);
+      const draft = await apos.article.insert(req, {
+        title: 'First',
+        attachment
+      });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second',
+        attachment: null
+      }));
+      const previous = await toLegacy(apos, draft);
+      // What the core before this module left behind: the `previous`
+      // document is a live holder of the attachment
+      await apos.attachment.recomputeAllDocReferences();
+      let stored = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert(stored.docIds.includes(previous._id));
+
+      await apos.docVersions.seedPublicationPoints();
+      await apos.docVersions.removePreviousModeDocs();
+
+      const [ , seeded ] = await publications(apos, draft);
+      stored = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert(!stored.docIds.includes(previous._id));
+      assert(!stored.archivedDocIds.includes(previous._id));
+      assert(stored.archivedDocIds.includes(seeded._id));
+      // Held by versions only, so it stays stored and out of the web
+      assert.equal(stored.archived, true);
+    });
+
+    // The state a project upgrading from the `previous` mode arrives in: the
+    // content live before the newest publish is a document with a
+    // deduplicated slug, and the store holds nothing. Returns that document,
+    // `null` when the timeline has only one publication
+    async function toLegacy(apos, doc) {
+      const [ , previous ] = await publications(apos, doc);
+      await apos.docVersions.db.deleteMany({});
+      return previous
+        ? stalePreviousDoc(apos, doc, previous.doc)
+        : null;
+    }
+
+    // What the old `publish` wrote: the content live until then, with its
+    // conflicting fields deduplicated as that core deduplicated them
+    async function stalePreviousDoc(apos, doc, content) {
+      const req = getReq(apos, { mode: 'published' });
+      const manager = apos.doc.getManager(content.type);
+      const previous = {
+        ...content,
+        ...await manager.getDeduplicationSet(req, content),
+        _id: `${doc.aposDocId}:en:previous`,
+        aposLocale: 'en:previous',
+        aposMode: 'previous'
+      };
+      await apos.doc.db.insertOne(previous);
+      return previous;
+    }
+
+    // The published records of `doc`, newest first
+    async function publications(apos, doc) {
+      return (await timeline(apos, doc)).filter(version => version.mode === 'published');
+    }
+  });
+
+  describe('document id changes', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          '@apostrophecms/i18n': {
+            options: {
+              locales: {
+                en: {},
+                fr: {
+                  prefix: '/fr'
+                }
+              }
+            }
+          },
+          article: {},
+          'default-page': {},
+          'article-note': {
+            extend: '@apostrophecms/piece-type',
+            fields: {
+              add: {
+                _articles: {
+                  type: 'relationship',
+                  withType: 'article',
+                  fields: {
+                    add: {
+                      note: {
+                        type: 'string'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+
+    after(async function() {
+      await removeUploads();
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    it('should move the versions of a renamed piece and restore from them', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const before = await timeline(apos, draft);
+      assert.equal(before.length, 4);
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-article',
+        oldId: draft.aposDocId,
+        locale: 'en'
+      });
+
+      assert.equal(
+        await apos.docVersions.db.countDocuments({ docId: draft.aposDocId }),
+        0
+      );
+      const renamed = await apos.article.find(req, { aposDocId: 'renamed-article' }).toObject();
+      const after = await timeline(apos, renamed);
+      assert.deepEqual(
+        after.map(version => [ version._id, version.mode, version.doc.title ]),
+        before.map(version => [ version._id, version.mode, version.doc.title ])
+      );
+      for (const version of after) {
+        assert.equal(version.doc._id, `renamed-article:en:${version.mode}`);
+        assert.equal(version.doc.aposDocId, 'renamed-article');
+        assert.equal(version.doc.aposLocale, `en:${version.mode}`);
+      }
+
+      // Unpublish returns to the previous publication point
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const published = await apos.article.revertPublishedToPrevious(
+        publishedReq,
+        await apos.article.findOneForEditing(publishedReq, { aposDocId: 'renamed-article' })
+      );
+      assert.equal(published.title, 'First');
+
+      // A draft restore names the version it returns to
+      const [ , , , oldest ] = after;
+      await apos.article.update(req.clone({ aposRestoreVersion: oldest._id }), {
+        ...renamed,
+        title: oldest.doc.title
+      });
+      const [ restored ] = await timeline(apos, renamed);
+      assert.equal(restored.mode, 'draft');
+      assert.equal(restored.doc.title, 'First');
+      assert.equal(restored.restoredFrom._id, oldest._id);
+    });
+
+    it('should rewrite the path of a renamed page in its versions', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Page',
+        slug: '/page'
+      });
+      await apos.page.publish(req, draft);
+      assert(draft.path.endsWith(draft.aposDocId));
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-page',
+        oldId: draft.aposDocId,
+        locale: 'en'
+      });
+
+      const renamed = await apos.page.find(req, { aposDocId: 'renamed-page' }).toObject();
+      assert.equal(renamed.path, draft.path.replace(draft.aposDocId, 'renamed-page'));
+      const versions = await timeline(apos, renamed);
+      assert.deepEqual(versions.map(version => version.mode), [ 'published', 'draft' ]);
+      for (const version of versions) {
+        assert.equal(version.doc._id, `renamed-page:en:${version.mode}`);
+        assert.equal(version.doc.path, renamed.path);
+      }
+    });
+
+    it('should remove the versions of a renamed document and release their attachments when it is deleted', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const attachment = await upload('clone.txt', apos);
+      const draft = await apos.article.insert(req, {
+        title: 'With attachment',
+        attachment
+      });
+      await apos.article.publish(req, draft);
+      await apos.doc.setAposDocId({
+        newId: 'renamed-article',
+        oldId: draft.aposDocId,
+        locale: 'en'
+      });
+      const criteria = {
+        docId: 'renamed-article',
+        locale: 'en'
+      };
+      const versionIds = (await apos.docVersions.db.find(criteria).toArray())
+        .map(version => version._id)
+        .sort();
+      assert.equal(versionIds.length, 2);
+      const held = await apos.attachment.db.findOne({ _id: attachment._id });
+      assert.deepEqual([ ...held.archivedDocIds ].sort(), versionIds);
+
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const published = await apos.article.find(publishedReq, {
+        aposDocId: 'renamed-article'
+      }).toObject();
+      await apos.article.update(publishedReq, {
+        ...published,
+        archived: true
+      });
+      const renamed = await apos.article.find(req, {
+        aposDocId: 'renamed-article'
+      }).archived(null).toObject();
+      await apos.article.delete(req, renamed);
+
+      assert.equal(await apos.doc.db.countDocuments({ aposDocId: 'renamed-article' }), 0);
+      assert.equal(await apos.docVersions.db.countDocuments(criteria), 0);
+      assert.equal(await apos.attachment.db.countDocuments({ _id: attachment._id }), 0);
+    });
+
+    it('should leave the versions alone when the old document is kept', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const kept = await apos.article.insert(req, { title: 'Kept' });
+      const existing = await apos.article.insert(req, { title: 'Existing' });
+
+      await apos.doc.changeDocIds([ [ kept._id, existing._id ] ], { skipReplace: true });
+
+      assert.deepEqual(
+        (await timeline(apos, kept)).map(version => version.doc._id),
+        [ kept._id ]
+      );
+      assert.deepEqual(
+        (await timeline(apos, existing)).map(version => version.doc._id),
+        [ existing._id ]
+      );
+    });
+
+    it('should resolve versions already under the new id as `keep` says', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const from = await apos.article.insert(req, { title: 'From' });
+      const to = await apos.article.insert(req, { title: 'To' });
+
+      await apos.docVersions.changeDocId(from._id, to._id, { keep: 'new' });
+      assert.deepEqual(await titles(from), []);
+      assert.deepEqual(await titles(to), [ 'To' ]);
+
+      const other = await apos.article.insert(req, { title: 'Other' });
+      await apos.docVersions.changeDocId(other._id, to._id, { keep: 'old' });
+      assert.deepEqual(await titles(other), []);
+      assert.deepEqual(await titles(to), [ 'Other' ]);
+
+      async function titles(doc) {
+        return (await timeline(apos, doc)).map(version => version.doc.title);
+      }
+    });
+
+    it('should leave the versions of a locale rename to `renameLocale`', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'Article' });
+      const [ version ] = await timeline(apos, draft, { raw: true });
+
+      assert.equal(
+        await apos.docVersions.changeDocId(draft._id, draft._id.replace(':en:', ':fr:')),
+        0
+      );
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), [ version ]);
+    });
+
+    it('should rewrite the ancestor id in the versions of a renamed page\'s descendants', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const parent = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Parent',
+        slug: '/parent'
+      });
+      await apos.page.publish(req, parent);
+      const child = await apos.page.insert(req, parent._id, 'lastChild', {
+        type: 'default-page',
+        title: 'Child',
+        slug: '/parent/child'
+      });
+      await apos.page.publish(req, child);
+      const grandchild = await apos.page.insert(req, child._id, 'lastChild', {
+        type: 'default-page',
+        title: 'Grandchild',
+        slug: '/parent/child/grandchild'
+      });
+      const other = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Other',
+        slug: '/other'
+      });
+      const otherBefore = await timeline(apos, other, { raw: true });
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-parent',
+        oldId: parent.aposDocId,
+        locale: 'en'
+      });
+
+      const liveChild = await apos.page
+        .find(req, { aposDocId: child.aposDocId })
+        .toObject();
+      const liveGrandchild = await apos.page
+        .find(req, { aposDocId: grandchild.aposDocId })
+        .toObject();
+      assert(liveChild.path.includes('/renamed-parent/'));
+      const childVersions = await timeline(apos, child);
+      assert.deepEqual(childVersions.map(version => version.mode), [ 'published', 'draft' ]);
+      for (const version of childVersions) {
+        assert.equal(version.doc.path, liveChild.path);
+      }
+      const [ grandchildVersion ] = await timeline(apos, grandchild);
+      assert.equal(grandchildVersion.doc.path, liveGrandchild.path);
+      // A page outside the subtree is untouched, byte for byte
+      assert.deepEqual(await timeline(apos, other, { raw: true }), otherBefore);
+    });
+
+    it('should keep the relationships of other documents\' versions to a renamed document', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const category = await apos.article.insert(req, { title: 'Category' });
+      const article = await apos.article.insert(req, {
+        title: 'Article',
+        _related: [ category ]
+      });
+      await apos.article.publish(req, article);
+      // A save that drops the relationship: the version from before it still
+      // points at the category, while `relatedReverseIds` no longer names
+      // the article
+      await apos.article.update(req, {
+        ...await apos.article.findOneForEditing(req, { aposDocId: article.aposDocId }),
+        _related: []
+      });
+      const unrelated = await apos.article.insert(req, { title: 'Unrelated' });
+      const unrelatedBefore = await timeline(apos, unrelated, { raw: true });
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-category',
+        oldId: category.aposDocId,
+        locale: 'en'
+      });
+
+      const versions = await timeline(apos, article);
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.doc.relatedIds ]),
+        [
+          [ 'draft', [] ],
+          [ 'published', [ 'renamed-category' ] ],
+          [ 'draft', [ 'renamed-category' ] ]
+        ]
+      );
+      assert.deepEqual(await timeline(apos, unrelated, { raw: true }), unrelatedBefore);
+
+      // Restoring the version from before the relationship was dropped keeps
+      // it: the modal PUTs the content `getOne` returns, relationships joined
+      const [ , published ] = versions;
+      const { doc: content } = await apos.docVersions.getOne(req, published._id);
+      assert.deepEqual(content._related.map(related => related.title), [ 'Category' ]);
+      const draft = await apos.article.findOneForEditing(req, {
+        aposDocId: article.aposDocId
+      });
+      await apos.article.convert(req, content, draft);
+      await apos.article.update(req.clone({ aposRestoreVersion: published._id }), draft);
+      const restored = await apos.article
+        .find(req, { aposDocId: article.aposDocId })
+        .toObject();
+      assert.deepEqual(restored._related.map(related => related.title), [ 'Category' ]);
+      assert.deepEqual(restored.relatedIds, [ 'renamed-category' ]);
+      const renamed = await apos.doc.db.findOne({ _id: 'renamed-category:en:draft' });
+      assert.deepEqual(renamed.relatedReverseIds, [ article.aposDocId ]);
+    });
+
+    it('should rename the relationship fields of other documents\' versions to a renamed document', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const notes = apos.modules['article-note'];
+      const article = await apos.article.insert(req, { title: 'Article' });
+      const note = await notes.insert(req, {
+        title: 'Note',
+        _articles: [
+          {
+            ...article,
+            _fields: { note: 'Kept' }
+          }
+        ]
+      });
+      await notes.publish(req, note);
+
+      await apos.doc.setAposDocId({
+        newId: 'renamed-article',
+        oldId: article.aposDocId,
+        locale: 'en'
+      });
+
+      const live = await apos.doc.db.findOne({ _id: note._id });
+      assert.deepEqual(live.articlesFields, { 'renamed-article': { note: 'Kept' } });
+      const versions = await timeline(apos, note);
+      assert.deepEqual(
+        versions.map(version => [
+          version.mode,
+          version.doc.articlesIds,
+          version.doc.articlesFields
+        ]),
+        [ 'published', 'draft' ].map(mode => [
+          mode,
+          [ 'renamed-article' ],
+          { 'renamed-article': { note: 'Kept' } }
+        ])
+      );
+
+      // Restored the way the modal does, the relationship keeps its fields
+      const [ , oldest ] = versions;
+      const { doc: content } = await apos.docVersions.getOne(req, oldest._id);
+      assert.deepEqual(content._articles.map(related => related._fields), [ { note: 'Kept' } ]);
+      const draft = await notes.findOneForEditing(req, { aposDocId: note.aposDocId });
+      await notes.convert(req, content, draft);
+      await notes.update(req.clone({ aposRestoreVersion: oldest._id }), draft);
+      const restored = await notes.find(req, { aposDocId: note.aposDocId }).toObject();
+      assert.deepEqual(restored._articles.map(related => related._fields), [ { note: 'Kept' } ]);
+      assert.deepEqual(restored.articlesFields, { 'renamed-article': { note: 'Kept' } });
+    });
+
+    it('should find the versions of a parked page the duplicate parked pages migration renames', async function() {
+      const req = getReq(apos, {
+        mode: 'draft',
+        locale: 'fr'
+      });
+      const home = await apos.page.find(req, { level: 0 }).toObject();
+      await apos.page.publish(req, await apos.page.update(req, {
+        ...home,
+        title: 'Accueil'
+      }));
+      const before = await timeline(apos, home);
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft' ]);
+
+      // A French home page replicated under an id of its own, with its versions
+      const misreplicated = 'misreplicated-home';
+      for (const mode of [ 'draft', 'published' ]) {
+        const doc = await apos.doc.db.findOne({ _id: `${home.aposDocId}:fr:${mode}` });
+        await apos.doc.db.removeOne({ _id: doc._id });
+        await apos.doc.db.insertOne({
+          ...doc,
+          _id: `${misreplicated}:fr:${mode}`,
+          aposDocId: misreplicated,
+          path: misreplicated
+        });
+      }
+      await apos.docVersions.db.updateMany(
+        apos.docVersions.getTimelineCriteria(home),
+        { $set: { docId: misreplicated } }
+      );
+
+      const migration = apos.migration.migrations
+        .find(({ name }) => name === 'duplicate-parked-pages');
+      await migration.fn();
+
+      assert.equal(await apos.doc.db.countDocuments({ aposDocId: misreplicated }), 0);
+      assert.equal(await apos.docVersions.db.countDocuments({ docId: misreplicated }), 0);
+      const after = await timeline(apos, home);
+      assert.deepEqual(
+        after.map(version => [ version._id, version.doc.title ]),
+        before.map(version => [ version._id, version.doc.title ])
+      );
+      for (const version of after) {
+        assert.equal(version.doc._id, `${home.aposDocId}:fr:${version.mode}`);
+        assert.equal(version.doc.path, home.aposDocId);
+      }
     });
   });
 
@@ -1738,6 +2963,293 @@ describe('Document Versions', function () {
       assert.deepEqual(restored[0].restoredFrom, {
         _id: original._id,
         createdAt: original.createdAt
+      });
+    });
+
+    describe('changes', function() {
+      // An article with one version per state, oldest first; a state's
+      // `ai` saves it with AI, `restoredFrom` as a restore of the first.
+      // Returns the article and the version records, oldest first
+      async function recordVersions(states) {
+        const req = getReq(apos, { mode: 'draft' });
+        const [ initial, ...rest ] = states;
+        const article = await apos.article.insert(req, {
+          title: 'An article',
+          ...initial
+        });
+        const [ first ] = await apos.docVersions.find(
+          getReq(apos),
+          apos.docVersions.getTimelineCriteria(article)
+        );
+        const versions = [ first ];
+        for (const {
+          ai, restoredFrom, ...state
+        } of rest) {
+          await wait(5);
+          const versionReq = req.clone({
+            aposAi: ai,
+            aposRestoreVersion: restoredFrom && first._id
+          });
+          versions.push(await apos.docVersions.saveFor(versionReq, {
+            ...article,
+            ...state
+          }, true));
+        }
+        return {
+          article,
+          versions
+        };
+      }
+
+      it('should list the changes of a version since the one before it - GET /:versionId/changes', async function() {
+        const related = await apos.article.insert(getReq(apos, admin), {
+          title: 'Related'
+        });
+        const { versions } = await recordVersions([
+          {
+            int: 1,
+            array: [ {
+              _id: 'item1',
+              label: 'Home',
+              value: 'one'
+            } ]
+          },
+          {
+            title: 'Renamed',
+            int: 1,
+            array: [ {
+              _id: 'item1',
+              label: 'Home',
+              value: 'two'
+            } ],
+            relatedIds: [ related.aposDocId ]
+          }
+        ]);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.deepEqual(
+          changes.rows.map(row => ({
+            path: row.path.map(segment => segment.name),
+            type: row.type,
+            oldText: row.oldText,
+            newText: row.newText,
+            ai: row.ai
+          })),
+          [
+            {
+              path: [ 'title' ],
+              type: 'modified',
+              oldText: 'An article',
+              newText: 'Renamed',
+              ai: false
+            },
+            {
+              path: [ '_related' ],
+              type: 'added',
+              oldText: '',
+              newText: 'Related',
+              ai: false
+            },
+            {
+              path: [ 'array', 'item1', 'value' ],
+              type: 'modified',
+              oldText: 'one',
+              newText: 'two',
+              ai: false
+            }
+          ]
+        );
+        assert.equal(changes.rows[2].path[1].label, 'Home');
+        assert.deepEqual(changes.counts, {
+          added: 1,
+          modified: 2,
+          deleted: 0,
+          ai: 0
+        });
+      });
+
+      it('should flag every change of a version saved with AI - GET /:versionId/changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By AI',
+            int: 3,
+            ai: true
+          }
+        ]);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.deepEqual(changes.rows.map(row => row.ai), [ true, true ]);
+        assert.deepEqual(changes.counts, {
+          added: 1,
+          modified: 1,
+          deleted: 0,
+          ai: 2
+        });
+      });
+
+      it('should list no changes for a first or restored version - GET /:versionId/changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          { title: 'Changed' },
+          { restoredFrom: true }
+        ]);
+        const none = {
+          rows: [],
+          counts: {
+            added: 0,
+            modified: 0,
+            deleted: 0,
+            ai: 0
+          }
+        };
+
+        assert(versions[2].restoredFrom);
+        for (const version of [ versions[0], versions[2] ]) {
+          const changes = await apos.http.get(
+            `/api/v1/${moduleName}/${version._id}/changes`,
+            { jar: jarAdmin }
+          );
+          assert.deepEqual(changes, none);
+        }
+      });
+
+      it('should have not found response if no permissions - GET /:versionId/changes', async function() {
+        const { versions } = await recordVersions([ {}, { title: 'Changed' } ]);
+
+        await assert.rejects(
+          apos.http.get(`/api/v1/${moduleName}/${versions[1]._id}/changes`),
+          { status: 404 }
+        );
+        await assert.rejects(
+          apos.http.get(`/api/v1/${moduleName}/doesNotExist/changes`, { jar: jarAdmin }),
+          { status: 404 }
+        );
+        await assert.rejects(
+          apos.http.get(`/api/v1/${moduleName}/$bad-id/changes`, { jar: jarAdmin }),
+          { status: 400 }
+        );
+      });
+
+      it('should list the changes of a group as one, flagged per path - GET /changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By AI',
+            ai: true
+          },
+          {
+            title: 'By AI',
+            int: 7
+          }
+        ]);
+
+        const changes = await apos.http.get(`/api/v1/${moduleName}/changes`, {
+          qs: { ids: `${versions[2]._id},${versions[1]._id}` },
+          jar: jarAdmin
+        });
+
+        assert.deepEqual(
+          changes.rows.map(row => [ row.path[0].name, row.type, row.newText, row.ai ]),
+          [
+            [ 'title', 'modified', 'By AI', true ],
+            [ 'int', 'added', '7', false ]
+          ]
+        );
+        assert.deepEqual(changes.counts, {
+          added: 1,
+          modified: 1,
+          deleted: 0,
+          ai: 1
+        });
+      });
+
+      it('should count no changes for a first version in a group - GET /changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By AI',
+            ai: true
+          }
+        ]);
+
+        const group = await apos.http.get(`/api/v1/${moduleName}/changes`, {
+          qs: { ids: `${versions[0]._id},${versions[1]._id}` },
+          jar: jarAdmin
+        });
+        const single = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.equal(group.rows.length, 1);
+        assert.deepEqual(group, single);
+      });
+
+      it('should have invalid response unless the ids are consecutive versions of one document - GET /changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          { title: 'Two' },
+          { title: 'Three' },
+          { restoredFrom: true }
+        ]);
+        const other = await recordVersions([ {}, { title: 'Other' } ]);
+        const groups = [
+          '',
+          `${versions[1]._id},$bad-id`,
+          `${versions[0]._id},${versions[2]._id}`,
+          `${versions[2]._id},${versions[3]._id}`,
+          `${versions[2]._id},${other.versions[1]._id}`
+        ];
+
+        for (const ids of groups) {
+          await assert.rejects(
+            apos.http.get(`/api/v1/${moduleName}/changes`, {
+              qs: { ids },
+              jar: jarAdmin
+            }),
+            { status: 400 },
+            `Expected 400 for "${ids}"`
+          );
+        }
+        await assert.rejects(
+          apos.http.get(`/api/v1/${moduleName}/changes`, {
+            qs: { ids: `${versions[1]._id},${versions[2]._id}` }
+          }),
+          { status: 404 }
+        );
+      });
+
+      it('should mark the document with its changes on request - GET /:versionId?annotate=1', async function() {
+        const { versions } = await recordVersions([
+          {},
+          { int: 5 }
+        ]);
+        const url = `/api/v1/${moduleName}/${versions[1]._id}`;
+        const highlight = doc => apos.doc.getMeta(doc, '@apostrophecms/schema', 'int', 'highlight');
+
+        const annotated = await apos.http.get(url, {
+          qs: { annotate: 1 },
+          jar: jarAdmin
+        });
+        const plain = await apos.http.get(url, { jar: jarAdmin });
+        const first = await apos.http.get(`/api/v1/${moduleName}/${versions[0]._id}`, {
+          qs: { annotate: 1 },
+          jar: jarAdmin
+        });
+
+        assert.equal(annotated.doc.int, 5);
+        assert.equal(highlight(annotated.doc), true);
+        assert.equal(highlight(plain.doc), undefined);
+        assert.equal(first.doc.aposMeta, undefined);
       });
     });
   });

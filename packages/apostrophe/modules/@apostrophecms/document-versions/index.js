@@ -10,9 +10,17 @@ const zlib = require('node:zlib');
 const { createId } = require('@paralleldrive/cuid2');
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');
+const diff = require('./lib/diff.js');
+const text = require('./lib/text.js');
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
+
+// A type set to `versions: false` asked for no versions at all, but Unpublish
+// needs the previous publication to return to. So we keep as little as that
+// allows: the current publication and the one before it, per document and
+// locale, and nothing else
+const PUBLISHED_ONLY_LIMIT = 2;
 
 module.exports = {
   options: {
@@ -48,6 +56,7 @@ module.exports = {
     await self.enableCollection();
     await self.createIndexes();
     self.addMigrations();
+    self.apos.attachment.addDocSource(self.__meta.name, self.eachVersionDoc);
   },
 
   handlers(self) {
@@ -69,6 +78,26 @@ module.exports = {
         async deleteVersion(req, doc) {
           await self.removeAllFor(req, doc);
         }
+      },
+      '@apostrophecms/doc:afterChangeDocIds': {
+        async followDocIds(pairs, { keep, skipReplace }) {
+          // The old documents stay, and so do their versions
+          if (skipReplace) {
+            return;
+          }
+          const renamed = new Map();
+          for (const [ from, to ] of pairs) {
+            await self.changeDocId(from, to, { keep });
+            const [ oldId ] = from.split(':');
+            const [ newId ] = to.split(':');
+            if (oldId !== newId) {
+              renamed.set(oldId, newId);
+            }
+          }
+          for (const [ oldId, newId ] of renamed) {
+            await self.replaceDocIdInVersions(oldId, newId);
+          }
+        }
       }
     };
   },
@@ -86,7 +115,7 @@ module.exports = {
           .and({ _id: docId.replace(/:[\w]+$/, ':draft') })
           .toObject();
 
-        if (!doc) {
+        if (!doc || self.isExcludedType(doc)) {
           throw self.apos.error('notfound');
         }
 
@@ -110,9 +139,13 @@ module.exports = {
           results: versions
         };
       },
+      // `annotate=1` marks the version's document with its changes since
+      // the version before it (see `getAnnotatedDoc`)
       async getOne(req, versionId) {
         try {
-          const version = await self.getOne(req, versionId);
+          const version = await self.getOne(req, versionId, {
+            annotate: self.apos.launder.boolean(req.query.annotate)
+          });
 
           return version;
         } catch (error) {
@@ -129,6 +162,18 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
+        // The changes of the versions `ids`, comma separated: consecutive
+        // versions of one document, listed as one (see `getVersionChanges`)
+        changes: async (req) => {
+          const ids = self.apos.launder.string(req.query.ids).split(',');
+          return changesOrRestError(() => self.getVersionChanges(req, ids));
+        },
+        // The changes of a version since the one before it
+        ':versionId/changes': async (req) => {
+          return changesOrRestError(
+            () => self.getVersionChanges(req, [ req.params.versionId ])
+          );
+        },
         'compare/:vid1/:vid2': async (req) => {
           try {
             // Sequential on purpose: Promise.all would miss the _images relationship
@@ -153,6 +198,20 @@ module.exports = {
         }
       }
     };
+
+    async function changesOrRestError(getChanges) {
+      try {
+        return await getChanges();
+      } catch (error) {
+        if (error instanceof TypeError) {
+          throw self.apos.error('invalid');
+        }
+        if (error instanceof ReferenceError) {
+          throw self.apos.error('notfound');
+        }
+        throw error;
+      }
+    }
   },
 
   tasks(self) {
@@ -238,6 +297,8 @@ module.exports = {
       },
       addMigrations() {
         self.apos.migration.add('convert-legacy-versions', self.convertLegacyVersions);
+        self.apos.migration.add('seed-publication-points', self.seedPublicationPoints);
+        self.apos.migration.add('remove-previous-mode-docs', self.removePreviousModeDocs);
       },
       // Records written before this module hold `doc` as a plain object, are
       // keyed by the document's full `_id` and have no `mode`, `locale`,
@@ -271,6 +332,113 @@ module.exports = {
           }
         );
         return converted;
+      },
+      // Before this module, the content live before the newest publish was
+      // kept as a document in `previous` mode. A project upgrading from
+      // there has no publication points in the store, so Unpublish would
+      // have nothing to return to until its second publish after the
+      // upgrade. Record what is published now, and what the `previous`
+      // document holds, for every timeline that has no publication point
+      // yet. Returns the number of records written.
+      async seedPublicationPoints() {
+        const req = self.apos.task.getReq({ mode: 'published' });
+        let seeded = 0;
+        await self.apos.migration.each(
+          self.apos.doc.db,
+          { aposMode: 'published' },
+          5,
+          async published => {
+            if (!self.isVersioned(published) && !self.isPublishedOnly(published)) {
+              return;
+            }
+            const existing = await self.db.countDocuments({
+              ...self.getTimelineCriteria(published),
+              mode: 'published'
+            });
+            if (existing) {
+              return;
+            }
+            const stored = await self.apos.doc.db.findOne({
+              _id: published._id.replace(':published', ':previous')
+            });
+            const previous = stored && await asPublishedDoc(stored);
+            const publishedAt = publicationTime(published);
+            if (previous) {
+              await insertPublicationPoint(previous, new Date(Math.min(
+                publicationTime(previous).getTime(),
+                publishedAt.getTime() - 1
+              )));
+              seeded++;
+            }
+            await insertPublicationPoint(published, publishedAt, previous);
+            seeded++;
+          }
+        );
+        return seeded;
+
+        // When a document became what it is now. Publication points seeded
+        // from documents have no record of their own to date them
+        function publicationTime(doc) {
+          const at = new Date(doc.lastPublishedAt || doc.updatedAt || doc.createdAt);
+          return isNaN(at) ? new Date() : at;
+        }
+
+        // A `previous` mode document as the published document it was: its
+        // identity restored, and the slug and other conflicting fields back
+        // to the values they had while it was live
+        async function asPublishedDoc(previous) {
+          const manager = self.apos.doc.getManager(previous.type);
+          const reduplicated = manager
+            ? await manager.getRevertDeduplicationSet(req, previous)
+            : null;
+          return {
+            ...previous,
+            ...reduplicated || {},
+            _id: previous._id.replace(':previous', ':published'),
+            aposLocale: previous.aposLocale.replace(':previous', ':published'),
+            aposMode: 'published'
+          };
+        }
+
+        // Record `doc` as a publication point made at `createdAt`, attributed
+        // to whoever last saved it. Counts its changes against `previousDoc`
+        // when one is given
+        async function insertPublicationPoint(doc, createdAt, previousDoc) {
+          const content = self.apos.util.clonePermanent(doc);
+          const version = {
+            _id: createId(),
+            metaType: 'version',
+            createdAt,
+            docId: doc.aposDocId,
+            mode: 'published',
+            locale: self.getLocale(doc),
+            author: doc.updatedBy?.title || doc.updatedBy?.username || 'SYSTEM',
+            authorId: doc.updatedBy?._id ?? null,
+            ai: false,
+            changeCount: previousDoc
+              ? self.getChanges(req, content, previousDoc).length
+              : 0,
+            doc: await self.pack(content)
+          };
+          await self.insert(req, version);
+          return self.updateReferencesFor(req, version._id);
+        }
+      },
+      // Drop the `previous` mode documents the store now replaces, releasing
+      // the attachment references they hold. Returns the number removed.
+      async removePreviousModeDocs() {
+        let removed = 0;
+        await self.apos.migration.each(
+          self.apos.doc.db,
+          { aposMode: 'previous' },
+          5,
+          async doc => {
+            await self.apos.attachment.updateDocReferences(doc, { deleted: true });
+            await self.apos.doc.db.deleteOne({ _id: doc._id });
+            removed++;
+          }
+        );
+        return removed;
       },
       // The mode a version records: the document's, or `published` for
       // documents without modes
@@ -328,16 +496,38 @@ module.exports = {
 
         return true;
       },
-      // Whether the module records this document at all: its type has
-      // versions and it is not archived. The type exclusion lives here only
+      // Whether a doc type marked `versions: false` still records its
+      // publication points. A localized type published by hand keeps
+      // Unpublish, which returns to the previous publication; nothing else
+      // is recorded for it and it has no versions UI
+      recordsPublishedOnly(moduleOptions) {
+        const {
+          versions,
+          autopublish,
+          localized
+        } = moduleOptions;
+        return versions === false && autopublish !== true && localized !== false;
+      },
+      // Whether the module keeps this document's full history: its type
+      // has versions and it is not archived. This also handles the
+      // auto-insert of the core @apostrophecms/archive-page
       isVersioned(doc) {
         const manager = self.apos.doc.getManager(doc.type);
-        if (!manager || !self.hasVersions(manager.options)) {
-          return false;
-        }
-        // This also handles the auto-insert of
-        // the core @apostrophecms/archive-page
-        return !doc.archived;
+        return Boolean(manager) && self.hasVersions(manager.options) && !doc.archived;
+      },
+      // Whether the module keeps only this document's publication points
+      isPublishedOnly(doc) {
+        const manager = self.apos.doc.getManager(doc.type);
+        return Boolean(manager) &&
+          self.recordsPublishedOnly(manager.options) &&
+          !doc.archived;
+      },
+      // Whether a document's type has no versions to show: its manager is
+      // known and does not have them. The records of a type whose module
+      // is gone stay readable
+      isExcludedType(doc) {
+        const manager = self.apos.doc.getManager(doc.type);
+        return Boolean(manager) && !self.hasVersions(manager.options);
       },
       // Decides what a save does to the document's history. Returns `false`
       // for nothing, `true` for a new version, or the `_id` of the newest
@@ -349,7 +539,22 @@ module.exports = {
       // version that was a publication point, a different author, AI
       // involvement changing, or more than `draftInterval` since the previous
       // version was created. Between handoffs it replaces the previous draft.
+      //
+      // A request flagged `aposSkipVersion` records nothing: core sets it on
+      // a save that is a side effect of an operation already recorded. A
+      // save that takes the document out of the archive records nothing
+      // either: it still carries the deduplicated slug, which core reverts
+      // after this save
       async canHaveVersion(req, doc) {
+        if (req.aposSkipVersion) {
+          return false;
+        }
+        if (!doc.archived && doc.aposWasArchived) {
+          return false;
+        }
+        if (self.isPublishedOnly(doc)) {
+          return self.getMode(doc) === 'published';
+        }
         if (!self.isVersioned(doc)) {
           return false;
         }
@@ -394,7 +599,44 @@ module.exports = {
         if (typeof decision === 'string') {
           return self.replaceVersion(req, doc, decision);
         }
-        return self.insertVersion(req, doc);
+        const version = await self.insertVersion(req, doc);
+        if (self.isPublishedOnly(doc)) {
+          await self.trimPublishedOnly(req, doc);
+        }
+        return version;
+      },
+      // Drop the publication points of `doc` beyond the ones Unpublish
+      // needs, for a type that records published versions only
+      async trimPublishedOnly(req, doc) {
+        const surplus = await self.find(req, {
+          ...self.getTimelineCriteria(doc),
+          mode: 'published'
+        }, {
+          skip: PUBLISHED_ONLY_LIMIT,
+          project: { _id: 1 },
+          raw: true
+        });
+        if (surplus.length) {
+          await self.removeVersions(req, {
+            _id: { $in: surplus.map(version => version._id) }
+          });
+        }
+      },
+      // The version Unpublish returns `published` to: the publication point
+      // before the current one, with its `doc` unpacked. `null` when there
+      // is none, or when the current publication is itself an Unpublish,
+      // which can be undone only by publishing again
+      async getPreviousPublication(req, published) {
+        const [ current, previous ] = await self.find(req, {
+          ...self.getTimelineCriteria(published),
+          mode: 'published'
+        }, {
+          limit: PUBLISHED_ONLY_LIMIT
+        });
+        if (!previous || current.restoredFrom) {
+          return null;
+        }
+        return previous;
       },
       // Insert a new version of `doc` at the head of its timeline
       async insertVersion(req, doc) {
@@ -417,10 +659,7 @@ module.exports = {
         if (!version) {
           return self.insertVersion(req, doc);
         }
-        const before = await self.findOne(req, {
-          ...self.getTimelineCriteria(doc),
-          createdAt: { $lt: version.createdAt }
-        });
+        const before = await self.getPreviousVersion(req, version);
         await self.db.updateOne({ _id: version._id }, {
           $set: {
             doc: await self.pack(self.apos.util.clonePermanent(doc)),
@@ -443,6 +682,20 @@ module.exports = {
         });
         return version;
       },
+      // Hand the content of every version to `work`, one version at a time,
+      // as the archived document the attachment module knows it as (see
+      // `updateReferencesFor`). Registered with the attachment module so a
+      // recount of attachment references includes versions
+      async eachVersionDoc(work) {
+        await self.apos.migration.each(self.db, {}, async version => {
+          const doc = await self.unpack(version.doc);
+          await work({
+            ...doc,
+            _id: version._id,
+            archived: true
+          });
+        });
+      },
       // The top-level schema fields of `doc` whose values differ from
       // `previousDoc`, an unpacked version content, by the schema of `doc`
       getChanges(req, doc, previousDoc) {
@@ -453,6 +706,58 @@ module.exports = {
           self.apos.util.clonePermanent(doc),
           previousDoc
         );
+      },
+      // What the diff engine needs from the rest of Apostrophe
+      getDiffContext(req) {
+        return {
+          req,
+          getFieldType: name => self.apos.schema.fieldTypes[name],
+          getWidgetManager: type => self.apos.area.getWidgetManager(type),
+          setMeta: (doc, ...args) => self.apos.doc.setMeta(doc, ...args),
+          htmlToPlaintext: html => self.apos.util.htmlToPlaintext(html)
+        };
+      },
+      // Every change from `older` to `newer`, two stored versions of one
+      // document, as rows at full depth (see `lib/diff.js`)
+      getChangeRows(req, older, newer) {
+        const manager = self.apos.doc.getManager(newer.type);
+        return diff.walk(manager.schema, older, newer, self.getDiffContext(req));
+      },
+      // Sets `oldText` and `newText` on change rows (see `lib/text.js`).
+      // Related document titles are fetched in one query, as `req` sees them;
+      // a document it cannot see has no title
+      async addChangeText(req, rows) {
+        const ctx = self.getDiffContext(req);
+        const ids = text.getRelatedIds(rows, ctx);
+        const titles = {};
+        if (ids.length) {
+          const related = await self.apos.doc.find(req, { aposDocId: { $in: ids } })
+            .project({
+              aposDocId: 1,
+              title: 1
+            })
+            .archived(null)
+            .areas(false)
+            .relationships(false)
+            .toArray();
+          for (const doc of related) {
+            titles[doc.aposDocId] = doc.title;
+          }
+        }
+        return text.addText(rows, ctx, { titles });
+      },
+      // The changes of consecutive versions of one document as one list,
+      // every row flagged `ai` (see `lib/diff.js`). `pairs` are
+      // `{ older, newer, ai }`, oldest first
+      getConsolidatedRows(req, pairs) {
+        const manager = self.apos.doc.getManager(pairs.at(-1).newer.type);
+        return diff.consolidate(manager.schema, pairs, self.getDiffContext(req));
+      },
+      // A copy of `newer` marked with its changes since `older`, for
+      // WYSIWYG display (see `lib/diff.js`)
+      getAnnotatedDoc(req, older, newer) {
+        const manager = self.apos.doc.getManager(newer.type);
+        return diff.annotate(manager.schema, older, newer, self.getDiffContext(req));
       },
       // The `_id` of the user saving, `null` when there is none (system)
       getAuthorId(req) {
@@ -699,44 +1004,22 @@ module.exports = {
         browserOptions.name = self.__meta.name;
         return browserOptions;
       },
-      async getOne(req, versionId) {
+      // A version for display, its document loaded like a regular find.
+      // `annotate` marks the document with its changes since the version
+      // before it; a first or restored version stays unmarked
+      async getOne(req, versionId, { annotate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
-        const docVersionId = self.apos.launder.id(versionId);
-        if (!docVersionId) {
-          throw new TypeError('versionId');
-        }
+        const version = await self.getEditableVersion(draftReq, versionId);
+        const manager = self.apos.doc.getManager(version.doc.type);
 
-        const version = await self.findOne(
-          draftReq,
-          {
-            _id: docVersionId
-          },
-          {
-            project: {
-              ...self.getRestProjection(),
-              docId: 1,
-              locale: 1,
-              doc: 1
-            }
+        if (annotate && manager && !version.restoredFrom) {
+          const previous = await self.getPreviousVersion(draftReq, version);
+          if (previous) {
+            version.doc = self.getAnnotatedDoc(req, previous.doc, version.doc);
           }
-        );
-        if (!version) {
-          throw new ReferenceError('version');
-        }
-
-        const draftId = version.locale
-          ? `${version.docId}:${version.locale}:draft`
-          : version.docId;
-        const permissionCheck = await self.getRestDocQuery(draftReq)
-          .and({ _id: draftId })
-          .toCount();
-
-        if (!permissionCheck) {
-          throw new ReferenceError('permissionCheck');
         }
 
         // We must load relationships and areas as if we had done a regular find
-        const manager = self.apos.doc.getManager(version.doc.type);
         if (manager) {
           self.apos.migration.addMissingSchemaFieldsFor(version.doc, manager.schema, '', {});
 
@@ -749,6 +1032,126 @@ module.exports = {
         delete version.locale;
 
         return version;
+      },
+      // The version record `versionId` with its stored document, `docId` and
+      // `locale`, when `req` can edit the document. Throws a `TypeError` for
+      // a malformed id, a `ReferenceError` when the version does not exist,
+      // belongs to a type without versions or to a document `req` cannot edit
+      async getEditableVersion(req, versionId) {
+        const docVersionId = self.apos.launder.id(versionId);
+        if (!docVersionId) {
+          throw new TypeError('versionId');
+        }
+
+        const version = await self.findOne(
+          req,
+          {
+            _id: docVersionId
+          },
+          {
+            project: {
+              ...self.getRestProjection(),
+              docId: 1,
+              locale: 1,
+              doc: 1
+            }
+          }
+        );
+        if (!version || self.isExcludedType(version.doc)) {
+          throw new ReferenceError('version');
+        }
+
+        const draftId = version.locale
+          ? `${version.docId}:${version.locale}:draft`
+          : version.docId;
+        const permissionCheck = await self.getRestDocQuery(req.clone({ mode: 'draft' }))
+          .and({ _id: draftId })
+          .toCount();
+
+        if (!permissionCheck) {
+          throw new ReferenceError('permissionCheck');
+        }
+        return version;
+      },
+      // The version before `version` on its timeline, `null` for the first.
+      // `version` is a record with `docId`, `locale` and `createdAt`
+      async getPreviousVersion(req, version) {
+        const previous = await self.findOne(req, {
+          docId: version.docId,
+          locale: version.locale,
+          createdAt: { $lt: version.createdAt }
+        });
+        return previous ?? null;
+      },
+      // The changes of consecutive versions of one document as one list
+      // (see `getConsolidatedRows`), with display text, and their counts
+      // per change type and of those involving AI:
+      // `{ rows, counts: { added, modified, deleted, ai } }`. One id is a
+      // single version against the one before it. A first version counts
+      // no changes of its own and a restored version shows none; a group
+      // cannot hold a restored version. Throws like `getEditableVersion`,
+      // and a `TypeError` when the ids are not consecutive versions of
+      // one document
+      async getVersionChanges(req, versionIds) {
+        const draftReq = req.clone({ mode: 'draft' });
+        const ids = _.uniq(versionIds);
+        if (!ids.length) {
+          throw new TypeError('versionIds');
+        }
+        const members = await Promise.all(
+          ids.map(id => self.getEditableVersion(draftReq, id))
+        );
+        members.sort((a, b) => a.createdAt - b.createdAt);
+        const first = members[0];
+        const last = members.at(-1);
+
+        if (members.length > 1) {
+          const oneTimeline = members.every(member => (
+            (member.docId === first.docId) && (member.locale === first.locale)
+          ));
+          if (!oneTimeline || members.some(member => member.restoredFrom)) {
+            throw new TypeError('versionIds');
+          }
+          const span = await self.count(draftReq, {
+            docId: first.docId,
+            locale: first.locale,
+            createdAt: {
+              $gte: first.createdAt,
+              $lte: last.createdAt
+            }
+          });
+          if (span !== members.length) {
+            throw new TypeError('versionIds');
+          }
+        }
+
+        let rows = [];
+        if (self.apos.doc.getManager(last.doc.type) && !last.restoredFrom) {
+          const previous = await self.getPreviousVersion(draftReq, first);
+          const pairs = members
+            .map((member, i) => ({
+              older: i ? members[i - 1].doc : previous?.doc,
+              newer: member.doc,
+              ai: member.ai
+            }))
+            .filter(pair => pair.older);
+          if (pairs.length) {
+            rows = await self.addChangeText(
+              draftReq,
+              self.getConsolidatedRows(req, pairs)
+            );
+          }
+        }
+
+        return {
+          rows,
+          counts: {
+            added: rows.filter(row => row.type === 'added').length,
+            modified: rows.filter(row => row.type === 'modified').length,
+            deleted: rows.filter(row => row.type === 'deleted').length,
+            ai: rows.filter(row => row.ai).length
+          }
+        };
       },
       getCompareSchema(v1, v2) {
         const v1Manager = self.apos.doc.getManager(v1.doc.type) || { schema: [] };
@@ -927,13 +1330,92 @@ module.exports = {
           }
         }
 
+        const renamed = await self.rewriteVersions(
+          req,
+          { locale: oldLocale },
+          version => ({
+            locale: newLocale,
+            doc: self.renameDocLocale(version.doc, oldLocale, newLocale)
+          })
+        );
+
+        return {
+          renamed,
+          kept
+        };
+      },
+      // Move the versions of the document `from` to `to`, two `_id` values
+      // of the same mode, after `@apostrophecms/doc.changeDocIds` renamed
+      // the document. A change of locale alone is left to `renameLocale`.
+      // When `to` already has versions, `keep` decides as it does there.
+      async changeDocId(from, to, { keep } = {}) {
+        const source = parseDocId(from);
+        const target = parseDocId(to);
+        if (source.docId === target.docId) {
+          return 0;
+        }
+        const req = self.apos.task.getReq();
+        if (keep && await self.db.findOne(target)) {
+          if (keep === 'new') {
+            return self.removeVersions(req, source);
+          }
+          await self.removeVersions(req, target);
+        }
+        return self.rewriteVersions(req, source, ({ doc }) => {
+          doc._id = to;
+          doc.aposDocId = target.docId;
+          if (target.locale) {
+            doc.aposLocale = `${target.locale}:${target.mode}`;
+          }
+          self.apos.doc.replaceDocIdReferences(doc, {
+            oldId: source.docId,
+            newId: target.docId
+          });
+          return {
+            docId: target.docId,
+            locale: target.locale,
+            doc
+          };
+        });
+
+        // The timeline criteria and mode of a document `_id`
+        function parseDocId(_id) {
+          const [ docId, locale = null, mode = 'published' ] = _id.split(':');
+          return {
+            docId,
+            locale,
+            mode
+          };
+        }
+      },
+      // Rewrite every reference to the document `oldId` (an `aposDocId`) in
+      // the content of every version to `newId`, after
+      // `@apostrophecms/doc.changeDocIds` did the same to the live documents:
+      // the ancestor in a page's `path`, the ids a relationship stores, and
+      // the keys of its `fields` storage.
+      // Reads the whole store, writes only the versions that hold one
+      async replaceDocIdInVersions(oldId, newId) {
+        const req = self.apos.task.getReq();
+        return self.rewriteVersions(req, {}, ({ doc }) => {
+          const changed = self.apos.doc.replaceDocIdReferences(doc, {
+            oldId,
+            newId
+          });
+          return changed ? { doc } : null;
+        });
+      },
+      // Apply `rewrite(version)` to every version matching `criteria`, in
+      // batches. It receives the version with `doc` unpacked and returns the
+      // fields to set, `doc` unpacked, or nothing to leave the version as it
+      // is. Returns the number of versions changed.
+      async rewriteVersions(req, criteria, rewrite) {
         const ids = (await self.db
-          .find({ locale: oldLocale })
+          .find(criteria)
           .project({ _id: 1 })
           .toArray())
           .map(version => version._id);
 
-        let renamed = 0;
+        let changed = 0;
         const batchSize = 50;
         for (let i = 0; i < ids.length; i += batchSize) {
           const versions = await self.find(
@@ -941,28 +1423,32 @@ module.exports = {
             { _id: { $in: ids.slice(i, i + batchSize) } },
             { sort: false }
           );
-          const operations = await Promise.all(versions.map(async version => {
-            const doc = self.renameDocLocale(version.doc, oldLocale, newLocale);
-            return {
+          const operations = [];
+          for (const version of versions) {
+            const rewritten = rewrite(version);
+            if (!rewritten) {
+              continue;
+            }
+            const { doc, ...fields } = rewritten;
+            operations.push({
               updateOne: {
                 filter: { _id: version._id },
                 update: {
                   $set: {
-                    locale: newLocale,
+                    ...fields,
                     doc: await self.pack(doc)
                   }
                 }
               }
-            };
-          }));
+            });
+          }
+          if (!operations.length) {
+            continue;
+          }
           const result = await self.db.bulkWrite(operations);
-          renamed += result.modifiedCount;
+          changed += result.modifiedCount;
         }
-
-        return {
-          renamed,
-          kept
-        };
+        return changed;
       },
       // Rewrite the locale inside a version's doc: its `_id`, its
       // `aposLocale` and the document ids its attachment field records

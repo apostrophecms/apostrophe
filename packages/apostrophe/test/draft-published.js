@@ -209,15 +209,6 @@ describe('Draft / Published', function() {
     }), testDraftProduct);
   });
 
-  it('"previous published" should be deduplicated at this point, and previous have the right props', async function() {
-    const previous = await apos.doc.db.findOne({
-      _id: testDraftProduct._id.replace(':draft', ':previous')
-    });
-    assert(previous);
-    assert(previous.aposMode === 'previous');
-    assert.strictEqual(previous.slug, `deduplicate-${previous.aposDocId}-test-product`);
-  });
-
   it('original product shows as modified if we make a third change to it', async function() {
     testDraftProduct.title = 'Title 4';
     testDraftProduct = await apos.product.update(apos.task.getReq({
@@ -567,22 +558,14 @@ describe('Draft / Published', function() {
         aposLocale: 'en:published',
         aposMode: 'published'
       };
-      const previousItem = {
-        ...baseItem,
-        _id: 'some-page:en:previous',
-        aposLocale: 'en:previous',
-        aposMode: 'previous'
-      };
 
       let draft;
       let published;
-      let previous;
 
       this.beforeEach(async function() {
         await apos.doc.db.insertMany([
           draftItem,
-          publishedItem,
-          previousItem
+          publishedItem
         ]);
 
         const res = await apos.doc.db.findOne({ _id: 'some-page:en:published' });
@@ -591,7 +574,6 @@ describe('Draft / Published', function() {
         draft = await apos.page.unpublish(req, res);
 
         published = await apos.doc.db.findOne({ _id: 'some-page:en:published' });
-        previous = await apos.doc.db.findOne({ _id: 'some-page:en:previous' });
       });
 
       this.afterEach(async function() {
@@ -600,9 +582,8 @@ describe('Draft / Published', function() {
         });
       });
 
-      it('should remove the published and previous versions of a page', function() {
+      it('should remove the published version of a page', function() {
         assert(published === null);
-        assert(previous === null);
       });
 
       it('should update the draft version of a page', function() {
@@ -670,21 +651,14 @@ describe('Draft / Published', function() {
         _id: 'some-product:en:published',
         aposLocale: 'en:published'
       };
-      const previousItem = {
-        ...baseItem,
-        _id: 'some-product:en:previous',
-        aposLocale: 'en:previous'
-      };
 
       let draft;
       let published;
-      let previous;
 
       this.beforeEach(async function() {
         await apos.doc.db.insertMany([
           draftItem,
-          publishedItem,
-          previousItem
+          publishedItem
         ]);
 
         const res = await apos.doc.db.findOne({ _id: 'some-product:en:published' });
@@ -693,7 +667,6 @@ describe('Draft / Published', function() {
         draft = await apos.product.unpublish(req, res);
 
         published = await apos.doc.db.findOne({ _id: 'some-product:en:published' });
-        previous = await apos.doc.db.findOne({ _id: 'some-product:en:previous' });
       });
 
       this.afterEach(async function() {
@@ -702,9 +675,8 @@ describe('Draft / Published', function() {
         });
       });
 
-      it('should remove the published and previous versions of a piece', function() {
+      it('should remove the published version of a piece', function() {
         assert(published === null);
-        assert(previous === null);
       });
 
       it('should update the draft version of a piece', function() {

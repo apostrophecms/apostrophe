@@ -1,0 +1,1253 @@
+const assert = require('assert').strict;
+const {
+  t,
+  bootstrap: bootstrapWith,
+  getReq,
+  destroy
+} = require('./utils/document-versions.js');
+const {
+  modules,
+  buildDoc,
+  deepestRoute
+} = require('./utils/document-versions-diff.js');
+
+const HIGHLIGHT = '@apostrophecms/schema:highlight';
+
+describe('Document Versions diff engine', function () {
+  this.timeout(t.timeout);
+
+  let apos;
+  let req;
+
+  before(async function() {
+    apos = await bootstrapWith({
+      root: module,
+      modules: {
+        article: {},
+        'default-page': {},
+        ...modules
+      }
+    });
+    req = getReq(apos);
+  });
+
+  after(async function() {
+    await destroy(apos);
+  });
+
+  // The breadcrumb segments of the fixture's deepest route, plus `tail`
+  function segmentsTo(route, ...tail) {
+    return [ ...route.flatMap(hop => hop.segments), ...tail ];
+  }
+
+  describe('rows', function () {
+    it('should have a fixture nested 16 segments deep with 150+ fields', function () {
+      const route = deepestRoute(buildDoc());
+      assert.equal(segmentsTo(route, { name: 'title' }).length, 16);
+      let count = 0;
+      const walk = schema => {
+        for (const field of schema) {
+          count++;
+          if (field.schema) {
+            walk(field.schema);
+          }
+          const widgets = field.options?.widgets || {};
+          for (const type of Object.keys(widgets)) {
+            walk(apos.area.getWidgetManager(type).schema);
+          }
+        }
+      };
+      walk(apos.nested.schema);
+      assert.ok(count >= 150, `${count} fields`);
+    });
+
+    it('should return no rows for identical documents', function () {
+      assert.deepEqual(apos.docVersions.getChangeRows(req, buildDoc(), buildDoc()), []);
+    });
+
+    it('should report a modified leaf at full depth as one row', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const route = deepestRoute(newer);
+      const leaf = route.at(-1).node;
+      leaf.count = 99;
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(rows.length, 1);
+      const [ row ] = rows;
+      assert.deepEqual(row, {
+        path: segmentsTo(route, {
+          name: 'count',
+          label: 'Count'
+        }),
+        type: 'modified',
+        fieldType: 'integer',
+        old: 9,
+        new: 99
+      });
+      assert.equal(row.field.name, 'count');
+      assert.equal(JSON.parse(JSON.stringify(row)).field, undefined);
+    });
+
+    it('should report each change type in the deepest containers as single rows', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const route = deepestRoute(newer);
+      const leaf = route.at(-1).node;
+      leaf.subtitle = 'Deep';
+      leaf.count = 99;
+      leaf.tags = [];
+      // The deepest area loses its rich text widget, the deepest array
+      // gains an item
+      const area = route.at(-2).node.content;
+      const [ richText ] = area.items.splice(1, 1);
+      const array = route.at(-3).node.rows;
+      array.push({
+        ...structuredClone(array[1]),
+        _id: 'deep-item',
+        title: 'Deep item'
+      });
+
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+
+      assert.deepEqual(rows.map(row => ({
+        type: row.type,
+        fieldType: row.fieldType,
+        path: row.path
+      })), [
+        {
+          type: 'added',
+          fieldType: 'string',
+          path: segmentsTo(route, {
+            name: 'subtitle',
+            label: 'Subtitle'
+          })
+        },
+        {
+          type: 'modified',
+          fieldType: 'integer',
+          path: segmentsTo(route, {
+            name: 'count',
+            label: 'Count'
+          })
+        },
+        {
+          type: 'deleted',
+          fieldType: 'checkboxes',
+          path: segmentsTo(route, {
+            name: 'tags',
+            label: 'Tags'
+          })
+        },
+        {
+          type: 'deleted',
+          fieldType: 'widget',
+          path: segmentsTo(route.slice(0, -1), {
+            name: 'content',
+            label: 'Content'
+          }, {
+            name: richText._id,
+            label: 'apostrophe:richText',
+            ordinal: 2,
+            widgetType: '@apostrophecms/rich-text'
+          })
+        },
+        {
+          type: 'added',
+          fieldType: 'arrayItem',
+          path: segmentsTo(route.slice(0, -2), {
+            name: 'rows',
+            label: 'Rows'
+          }, {
+            name: 'deep-item',
+            label: 'Deep item',
+            ordinal: 3
+          })
+        }
+      ]);
+      assert.equal(rows[0].path.length, 16);
+    });
+
+    it('should report every changed leaf once, in schema order', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.title = 'Renamed';
+      newer.section.flag = true;
+      newer.section.rows[1].content.items[0].tint = '#00ff00';
+      newer.section.rows[1].mail = 'other@example.com';
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [
+        row.type,
+        row.path.map(segment => segment.name).join('.')
+      ]), [
+        [ 'modified', 'title' ],
+        [ 'modified', 'section.flag' ],
+        [ 'modified', 'section.rows.root.section.rows.1.mail' ],
+        [ 'modified', 'section.rows.root.section.rows.1.content.root.section.rows.1.content.0.tint' ]
+      ]);
+    });
+
+    it('should call a value appearing in an empty field added and one going deleted', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.subtitle = 'Now set';
+      newer.section.link = '';
+      newer.section.tags = [];
+      newer.section.file = {
+        _id: 'attachment2',
+        name: 'brief',
+        extension: 'docx'
+      };
+      older.section.body = '<p></p>';
+      newer.section.body = '<p>Text</p>';
+      older.section.flag = true;
+      newer.section.flag = false;
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [
+        row.type,
+        row.fieldType,
+        row.path.at(-1).name
+      ]), [
+        [ 'added', 'string', 'subtitle' ],
+        [ 'modified', 'boolean', 'flag' ],
+        [ 'deleted', 'checkboxes', 'tags' ],
+        [ 'deleted', 'url', 'link' ],
+        [ 'added', 'richText', 'body' ],
+        [ 'added', 'attachment', 'file' ]
+      ]);
+    });
+
+    it('should compare with the field type\'s own isEqual when it has one', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.shout = 'HELLO';
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
+      newer.shout = 'Goodbye';
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].fieldType, 'shout');
+      assert.equal(apos.schema.fieldTypes.shout.extend, 'string');
+    });
+
+    it('should fold null and undefined together', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      older.section.file = undefined;
+      newer.section.file = null;
+      delete older.section.rows[0].link;
+      newer.section.rows[0].link = null;
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
+    });
+
+    it('should report a relationship by its ids, in order', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.topicsIds = [ 'topic2', 'topic1' ];
+      newer.topicsFields = {
+        topic1: {
+          relevance: 1
+        },
+        topic2: {
+          relevance: 5
+        }
+      };
+      newer.section.topicsIds = [];
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [ row.type, row.fieldType, row.old, row.new ]), [
+        [ 'modified', 'relationship', [ 'topic1' ], [ 'topic2', 'topic1' ] ],
+        [ 'deleted', 'relationship', [ 'topic1' ], [] ]
+      ]);
+      assert.equal(rows[0].field.idsStorage, 'topicsIds');
+    });
+
+    it('should report a change in relationship fields only as modified', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.topicsFields.topic1.relevance = 2;
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].type, 'modified');
+      assert.deepEqual(rows[0].old, rows[0].new);
+    });
+
+    it('should report a replaced array item as a deleted and an added row and nothing below', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const [ first, second ] = newer.section.rows;
+      const third = {
+        ...structuredClone(second),
+        _id: 'root.section.rows.2',
+        title: 'Third'
+      };
+      newer.section.rows = [ first, third ];
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [
+        row.type,
+        row.fieldType,
+        row.path.at(-1)
+      ]), [
+        [
+          'deleted',
+          'arrayItem',
+          {
+            name: 'root.section.rows.1',
+            label: 'Title root.section.rows.1',
+            ordinal: 2
+          }
+        ],
+        [
+          'added',
+          'arrayItem',
+          {
+            name: 'root.section.rows.2',
+            label: 'Third',
+            ordinal: 2
+          }
+        ]
+      ]);
+      assert.equal(rows[0].new, undefined);
+      assert.equal(rows[0].old._id, 'root.section.rows.1');
+      assert.equal(rows[1].old, undefined);
+      assert.equal(rows[1].new.title, 'Third');
+    });
+
+    it('should list a deleted item after the item that preceded it', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const area = newer.section.rows[0].content;
+      const [ nested, richText, opaque ] = area.items;
+      // The rich text widget goes, the others are edited
+      area.items = [ nested, opaque ];
+      nested.title = 'Edited';
+      opaque.payload.n = 2;
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [
+        row.type,
+        row.fieldType,
+        row.path.at(-1).name
+      ]), [
+        [ 'modified', 'string', 'title' ],
+        [ 'deleted', 'widget', richText._id ],
+        [ 'modified', 'widget', opaque._id ]
+      ]);
+    });
+
+    it('should report an added or deleted widget as one row with its type label', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const area = newer.section.rows[0].content;
+      const added = {
+        ...structuredClone(area.items[0]),
+        _id: 'root.section.rows.0.content.3',
+        title: 'Another'
+      };
+      area.items = [ added, area.items[1], area.items[2] ];
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [ row.type, row.fieldType, row.path.at(-1) ]), [
+        [
+          'deleted',
+          'widget',
+          {
+            name: 'root.section.rows.0.content.0',
+            label: 'Nested 2',
+            ordinal: 1,
+            widgetType: 'nested-2'
+          }
+        ],
+        [
+          'added',
+          'widget',
+          {
+            name: 'root.section.rows.0.content.3',
+            label: 'Nested 2',
+            ordinal: 1,
+            widgetType: 'nested-2'
+          }
+        ]
+      ]);
+      assert.equal(rows[0].old._id, 'root.section.rows.0.content.0');
+      assert.equal(rows[1].new.title, 'Another');
+    });
+
+    it('should report a rich text widget\'s content as a richText row at the widget', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const widget = newer.section.rows[0].content.items[1];
+      widget.content = '<p>Rich, edited</p>';
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(rows.length, 1);
+      assert.deepEqual(rows[0], {
+        path: [
+          {
+            name: 'section',
+            label: 'Section'
+          },
+          {
+            name: 'rows',
+            label: 'Rows'
+          },
+          {
+            name: 'root.section.rows.0',
+            label: 'Title root.section.rows.0',
+            ordinal: 1
+          },
+          {
+            name: 'content',
+            label: 'Content'
+          },
+          {
+            name: widget._id,
+            label: 'apostrophe:richText',
+            ordinal: 2,
+            widgetType: '@apostrophecms/rich-text'
+          }
+        ],
+        type: 'modified',
+        fieldType: 'richText',
+        old: '<p>Rich root.section.rows.0</p>',
+        new: '<p>Rich, edited</p>'
+      });
+    });
+
+    it('should follow a rich text widget\'s derived id lists without a second row', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const olderWidget = older.section.rows[0].content.items[1];
+      const widget = newer.section.rows[0].content.items[1];
+      olderWidget.permalinkIds = [];
+      olderWidget.imageIds = [];
+      widget.content = '<p>Rich <a href="#apostrophe-permalink-page1?updateTitle=1">link</a></p>';
+      widget.permalinkIds = [ 'page1' ];
+      widget.imageIds = [];
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].fieldType, 'richText');
+      widget.content = olderWidget.content;
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
+    });
+
+    it('should report data a widget stores outside its schema as one widget row', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const widget = newer.section.rows[0].content.items[2];
+      widget.payload = {
+        n: 1,
+        extra: true
+      };
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].type, 'modified');
+      assert.equal(rows[0].fieldType, 'widget');
+      assert.equal(rows[0].path.at(-1).label, 'Opaque');
+      assert.equal(rows[0].old.payload.extra, undefined);
+      assert.equal(rows[0].new.payload.extra, true);
+    });
+
+    it('should ignore widget bookkeeping and joined data', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const widget = newer.section.rows[0].content.items[0];
+      widget._edit = true;
+      widget._docId = 'nested1:en:draft';
+      widget.aposPlaceholder = false;
+      widget._topics = [ { _id: 'topic1' } ];
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
+    });
+
+    it('should compare a widget of an unknown type as a whole', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const olderWidget = older.section.rows[0].content.items[2];
+      const widget = newer.section.rows[0].content.items[2];
+      olderWidget.type = 'gone';
+      widget.type = 'gone';
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
+      widget.payload.n = 3;
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].fieldType, 'widget');
+      assert.equal(rows[0].path.at(-1).label, 'gone');
+    });
+
+    it('should report an object that appears or goes as one row', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      delete older.section.rows[1].content.items[0].section;
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].type, 'added');
+      assert.equal(rows[0].fieldType, 'object');
+      assert.equal(rows[0].old, undefined);
+      assert.equal(rows[0].new.title, 'Title root.section.rows.1.content.0.section');
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, newer, older).map(row => row.type),
+        [ 'deleted' ]
+      );
+    });
+
+    it('should match array items without an _id by position', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      for (const doc of [ older, newer ]) {
+        doc.section.rows.forEach(item => delete item._id);
+      }
+      newer.section.rows[1].title = 'Second, edited';
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(rows.length, 1);
+      assert.deepEqual(rows[0].path.slice(1, 3), [
+        {
+          name: 'rows',
+          label: 'Rows'
+        },
+        {
+          name: undefined,
+          label: 'Second, edited',
+          ordinal: 2
+        }
+      ]);
+    });
+
+    it('should not mutate its inputs', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.section.rows.pop();
+      newer.section.rows[0].content.items[0].title = 'Edited';
+      const olderBefore = structuredClone(older);
+      const newerBefore = structuredClone(newer);
+      apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(older, olderBefore);
+      assert.deepEqual(newer, newerBefore);
+    });
+  });
+
+  describe('text', function () {
+    const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
+
+    // `[ last path segment name, oldText, newText ]` of every row
+    async function texts(older, newer) {
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      await apos.docVersions.addChangeText(req, rows);
+      return rows.map(row => [ row.path.at(-1).name, row.oldText, row.newText ]);
+    }
+
+    it('should read scalar values, and a type extending string, as their value', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const leaf = deepestRoute(newer).at(-1).node;
+      Object.assign(leaf, {
+        subtitle: 'Sub',
+        shout: 'Bye',
+        count: 12,
+        ratio: 1.25,
+        flag: true,
+        choice: 'two',
+        tags: [ 'one', 'two' ],
+        when: '2026-02-02',
+        at: '11:30:00',
+        link: 'https://example.org/',
+        mail: 'other@example.com',
+        tint: '#00ff00'
+      });
+      assert.deepEqual(await texts(older, newer), [
+        [ 'subtitle', '', 'Sub' ],
+        [ 'shout', 'Hello', 'Bye' ],
+        [ 'count', '9', '12' ],
+        [ 'ratio', '0.5', '1.25' ],
+        [ 'flag', 'false', 'true' ],
+        [ 'choice', 'one', 'two' ],
+        [ 'tags', 'one', 'one, two' ],
+        [ 'when', '2026-01-01', '2026-02-02' ],
+        [ 'at', '10:00:00', '11:30:00' ],
+        [ 'link', 'https://example.com/', 'https://example.org/' ],
+        [ 'mail', 'someone@example.com', 'other@example.com' ],
+        [ 'tint', '#ff0000', '#00ff00' ]
+      ]);
+    });
+
+    it('should read rich text as plaintext with one line break per block run', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.body = '<h2>Head</h2>\n<p>One &amp; <strong>two</strong></p><ul><li><p>a</p></li><li>b</li></ul>';
+      newer.section.rows[0].content.items[1].content = '<p>Rich<br />edited</p><p></p>';
+      assert.deepEqual(await texts(older, newer), [
+        [ 'body', 'Body root', 'Head\nOne & two\na\nb' ],
+        [ 'root.section.rows.0.content.1', 'Rich root.section.rows.0', 'Rich\nedited' ]
+      ]);
+    });
+
+    it('should read an attachment as its name and extension', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.file = {
+        _id: 'attachment2',
+        name: 'brief',
+        extension: 'docx'
+      };
+      newer.section.file = older.file;
+      assert.deepEqual(await texts(older, newer), [
+        [ 'file', 'report.pdf', 'brief.docx' ],
+        [ 'file', '', 'report.pdf' ]
+      ]);
+    });
+
+    it('should read a relationship as related titles in id order, in one query', async function () {
+      const alpha = await apos.modules.topic.insert(req, { title: 'Alpha' });
+      const beta = await apos.modules.topic.insert(req, { title: 'Beta' });
+      const older = buildDoc();
+      const newer = buildDoc();
+      older.topicsIds = [ alpha.aposDocId ];
+      newer.topicsIds = [ beta.aposDocId, 'missing', alpha.aposDocId ];
+      older.section.topicsIds = [ beta.aposDocId ];
+      newer.section.topicsIds = [];
+      const find = apos.doc.find;
+      let queries = 0;
+      apos.doc.find = (...args) => {
+        queries++;
+        return find(...args);
+      };
+      try {
+        assert.deepEqual(await texts(older, newer), [
+          [ '_topics', 'Alpha', 'Beta, Alpha' ],
+          [ '_topics', 'Beta', '' ]
+        ]);
+      } finally {
+        apos.doc.find = find;
+      }
+      assert.equal(queries, 1);
+    });
+
+    it('should read a value with no safe string form as empty', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      delete older.section.rows[1].content.items[0].section;
+      assert.deepEqual(await texts(older, newer), [
+        [ 'section', '', '' ]
+      ]);
+      const ctx = apos.docVersions.getDiffContext(req);
+      assert.equal(text.toText({ type: 'password' }, 'secret', ctx), '');
+      assert.equal(text.toText({ type: 'oembed' }, { url: 'https://example.com/' }, ctx), '');
+      assert.equal(text.toText({ type: 'box' }, { top: 1 }, ctx), '');
+      assert.equal(text.toText({ type: 'string' }, { not: 'a string' }, ctx), '');
+      assert.equal(text.toText({ type: 'integer' }, null, ctx), '');
+    });
+
+    it('should read an added or deleted array item as its title', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.section.rows.pop();
+      assert.deepEqual(await texts(older, newer), [
+        [ 'root.section.rows.1', 'Title root.section.rows.1', '' ]
+      ]);
+    });
+
+    it('should label an array item by its ordinal when its title is empty', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      older.section.rows[1].title = '';
+      newer.section.rows[1].title = '';
+      newer.section.rows[1].count = 5;
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows[0].path[2], {
+        name: 'root.section.rows.1',
+        label: '#2',
+        ordinal: 2
+      });
+    });
+
+    it('should read an added widget as its title, its rich text, or nothing', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const area = newer.section.rows[0].content;
+      area.items.push(
+        {
+          _id: 'card1',
+          metaType: 'widget',
+          type: 'card',
+          kind: 'two',
+          note: 'Hi'
+        },
+        {
+          _id: 'rich1',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: '<p>New <em>words</em></p>'
+        },
+        {
+          _id: 'opaque1',
+          metaType: 'widget',
+          type: 'opaque',
+          payload: {}
+        }
+      );
+      assert.deepEqual(await texts(older, newer), [
+        [ 'card1', '', 'Two' ],
+        [ 'rich1', '', 'New words' ],
+        [ 'opaque1', '', '' ]
+      ]);
+    });
+
+    it('should give a widget with a titleField option a title in its path', async function () {
+      const card = {
+        _id: 'card1',
+        metaType: 'widget',
+        type: 'card',
+        kind: 'one',
+        note: 'Hi'
+      };
+      const older = buildDoc();
+      older.section.rows[0].content.items.push(card);
+      const newer = buildDoc();
+      newer.section.rows[0].content.items.push({
+        ...card,
+        note: 'Hello'
+      });
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => row.path.slice(-2)), [
+        [
+          {
+            name: 'card1',
+            label: 'Card',
+            title: 'One',
+            ordinal: 4,
+            widgetType: 'card'
+          },
+          {
+            name: 'note',
+            label: 'Note'
+          }
+        ]
+      ]);
+      newer.section.rows[0].content.items[3].kind = null;
+      const untitled = apos.docVersions.getChangeRows(req, older, newer);
+      assert.equal(untitled.length, 2);
+      assert.ok(untitled.every(row => !('title' in row.path.at(-2))));
+    });
+
+    it('should read a titleField through object fields', function () {
+      const ctx = apos.docVersions.getDiffContext(req);
+      const field = {
+        type: 'array',
+        titleField: 'meta.name',
+        schema: [
+          {
+            type: 'object',
+            name: 'meta',
+            schema: [
+              {
+                type: 'string',
+                name: 'name'
+              }
+            ]
+          }
+        ]
+      };
+      assert.equal(text.getItemText(field, { meta: { name: 'Deep' } }, ctx), 'Deep');
+      assert.equal(text.getItemText(field, { meta: {} }, ctx), '');
+      assert.equal(text.getItemText({ schema: [] }, { title: 'Stray' }, ctx), '');
+    });
+
+    it('should leave rows without text serializable as before, plus the text', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.title = 'Renamed';
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      await apos.docVersions.addChangeText(req, rows);
+      assert.deepEqual(Object.keys(JSON.parse(JSON.stringify(rows[0]))), [
+        'path',
+        'type',
+        'fieldType',
+        'old',
+        'new',
+        'oldText',
+        'newText'
+      ]);
+    });
+  });
+
+  describe('annotate', function () {
+    // Every widget in `doc` carrying any marker, as `[ _id, marker ]`
+    function markers(doc) {
+      const found = [];
+      const visit = node => {
+        if (Array.isArray(node)) {
+          node.forEach(visit);
+          return;
+        }
+        if (!node || (typeof node !== 'object')) {
+          return;
+        }
+        if (node.metaType === 'widget') {
+          for (const marker of [ '_inserted', '_deleted', '_modified', '_olderVersion' ]) {
+            if (node[marker] !== undefined) {
+              found.push([ node._id, marker ]);
+            }
+          }
+        }
+        for (const [ key, value ] of Object.entries(node)) {
+          if (key !== '_olderVersion') {
+            visit(value);
+          }
+        }
+      };
+      visit(doc);
+      return found;
+    }
+
+    it('should return an unmarked copy when nothing changed', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(doc, newer);
+      assert.notEqual(doc, newer);
+      assert.deepEqual(markers(doc), []);
+    });
+
+    it('should highlight a top-level field changed outside any widget', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.title = 'Renamed';
+      newer.section.rows[1].mail = 'other@example.com';
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.equal(doc.aposMeta.title[HIGHLIGHT], true);
+      assert.equal(doc.aposMeta.section[HIGHLIGHT], true);
+      assert.equal(doc.aposMeta.slug, undefined);
+      assert.deepEqual(markers(doc), []);
+      assert.equal(newer.aposMeta, undefined);
+    });
+
+    it('should mark only the deepest changed widget', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const route = deepestRoute(newer);
+      route.at(-1).node.count = 99;
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      const deepestWidget = route.filter(hop => hop.segments.at(-1).widgetType).at(-1);
+      assert.deepEqual(markers(doc), [
+        [ deepestWidget.node._id, '_modified' ]
+      ]);
+      assert.equal(doc.aposMeta, undefined);
+    });
+
+    it('should mark a parent widget too when it has changes of its own', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const outer = newer.section.rows[0].content.items[0];
+      const inner = outer.section.rows[0].content.items[0];
+      outer.title = 'Outer, edited';
+      inner.title = 'Inner, edited';
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), [
+        [ outer._id, '_modified' ],
+        [ inner._id, '_olderVersion' ]
+      ]);
+    });
+
+    it('should hand a widget type that opts in its older version', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const innerWidget = doc => doc.section.rows[0].content.items[0]
+        .section.rows[0].content.items[0];
+      const widget = innerWidget(newer);
+      widget.title = 'Edited';
+      widget.section.rows[1].count = 42;
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), [
+        [ widget._id, '_olderVersion' ]
+      ]);
+      const olderWidget = innerWidget(older);
+      const annotated = innerWidget(doc);
+      assert.deepEqual(annotated._olderVersion, olderWidget);
+      assert.notEqual(annotated._olderVersion, olderWidget);
+      assert.equal(annotated._modified, undefined);
+      assert.equal(annotated.title, 'Edited');
+    });
+
+    it('should flag an added widget and nothing inside it', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const area = newer.section.rows[0].content;
+      const added = {
+        ...structuredClone(area.items[0]),
+        _id: 'root.section.rows.0.content.3',
+        title: 'Another'
+      };
+      area.items.push(added);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), [
+        [ added._id, '_inserted' ]
+      ]);
+    });
+
+    it('should put a deleted widget back in place, flagged', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const area = newer.section.rows[0].content;
+      const [ nested, richText, opaque ] = area.items;
+      area.items = [ nested, opaque ];
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      const items = doc.section.rows[0].content.items;
+      assert.deepEqual(
+        items.map(item => item._id),
+        [ nested._id, richText._id, opaque._id ]
+      );
+      assert.deepEqual(markers(doc), [
+        [ richText._id, '_deleted' ]
+      ]);
+      assert.equal(items[1].content, richText.content);
+      assert.equal(newer.section.rows[0].content.items.length, 2);
+    });
+
+    it('should put a deleted widget back at the end when its neighbours went too', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const olderItems = older.section.rows[0].content.items;
+      newer.section.rows[0].content.items = [];
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(
+        doc.section.rows[0].content.items.map(item => item._id),
+        olderItems.map(item => item._id)
+      );
+      assert.deepEqual(markers(doc), olderItems.map(item => [ item._id, '_deleted' ]));
+    });
+
+    it('should flag a deleted nested widget inside an unmarked parent', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const outer = newer.section.rows[0].content.items[0];
+      const innerArea = outer.section.rows[1].content;
+      const [ , gone ] = innerArea.items;
+      innerArea.items.splice(1, 1);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), [
+        [ gone._id, '_deleted' ]
+      ]);
+      assert.equal(doc.aposMeta, undefined);
+    });
+
+    it('should reuse rows already computed', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.title = 'Renamed';
+      const schema = apos.nested.schema;
+      const ctx = apos.docVersions.getDiffContext(req);
+      const diff = require('../modules/@apostrophecms/document-versions/lib/diff.js');
+      const rows = diff.walk(schema, older, newer, ctx);
+      const doc = diff.annotate(schema, older, newer, ctx, { rows });
+      assert.equal(doc.aposMeta.title[HIGHLIGHT], true);
+    });
+  });
+
+  describe('consolidate', function () {
+    // A run of versions, each member editing a copy of the previous
+    // document; `ai` marks the members saved with AI
+    function run(...members) {
+      let doc = buildDoc();
+      return members.map(({ ai = false, edit }) => {
+        const older = doc;
+        doc = structuredClone(older);
+        edit(doc);
+        return {
+          older,
+          newer: doc,
+          ai
+        };
+      });
+    }
+    const brief = row => [ row.type, row.fieldType, row.path.at(-1).name, row.ai ];
+    const getRows = doc => doc.section.rows;
+
+    it('should give a single version its rows with its AI flag', function () {
+      const pairs = run({
+        edit: doc => {
+          doc.title = 'Renamed';
+          doc.section.rows[0].count = 5;
+        }
+      });
+      const rows = apos.docVersions.getConsolidatedRows(req, pairs);
+      assert.deepEqual(
+        rows,
+        apos.docVersions.getChangeRows(req, pairs[0].older, pairs[0].newer)
+          .map(row => ({
+            ...row,
+            ai: false
+          }))
+      );
+      assert.equal(rows[0].field.name, 'title');
+      pairs[0].ai = true;
+      assert.deepEqual(
+        apos.docVersions.getConsolidatedRows(req, pairs).map(row => row.ai),
+        [ true, true ]
+      );
+    });
+
+    it('should list a path several members changed once, from its first value to its last', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            doc.title = 'Second';
+            doc.subtitle = 'Sub';
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.title = 'Third';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', true ],
+        [ 'added', 'string', 'subtitle', false ]
+      ]);
+      assert.equal(rows[0].old, 'Title root');
+      assert.equal(rows[0].new, 'Third');
+    });
+
+    it('should call a path modified and then deleted deleted, as it was before the run', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[1].title = 'Edited';
+          }
+        },
+        {
+          edit: doc => {
+            getRows(doc).pop();
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'deleted', 'arrayItem', 'root.section.rows.1', true ]
+      ]);
+      assert.equal(rows[0].old.title, 'Title root.section.rows.1');
+      assert.equal(rows[0].path.at(-1).label, 'Title root.section.rows.1');
+    });
+
+    it('should call a path added and then modified added, with its final value', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            getRows(doc).push({
+              ...structuredClone(getRows(doc)[1]),
+              _id: 'root.section.rows.2',
+              title: 'Third'
+            });
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[2].title = 'Third, edited';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'added', 'arrayItem', 'root.section.rows.2', true ]
+      ]);
+      assert.equal(rows[0].new.title, 'Third, edited');
+      assert.equal(rows[0].path.at(-1).label, 'Third, edited');
+    });
+
+    it('should drop a path added and then deleted', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc).push({
+              ...structuredClone(getRows(doc)[1]),
+              _id: 'root.section.rows.2',
+              title: 'Third'
+            });
+          }
+        },
+        {
+          edit: doc => {
+            getRows(doc).pop();
+          }
+        }
+      ));
+      assert.deepEqual(rows, []);
+    });
+
+    it('should drop a path that ends where it started', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            doc.title = 'Renamed';
+          }
+        },
+        {
+          edit: doc => {
+            doc.title = 'Title root';
+            doc.count = 1;
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'integer', 'count', false ]
+      ]);
+    });
+
+    it('should flag a path an AI member changed, whoever changed it after', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            doc.title = 'Second';
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.subtitle = 'By AI';
+          }
+        },
+        {
+          edit: doc => {
+            doc.subtitle = 'By hand';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', false ],
+        [ 'added', 'string', 'subtitle', true ]
+      ]);
+    });
+
+    it('should flag an item or widget an AI member changed inside', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            getRows(doc).push({
+              ...structuredClone(getRows(doc)[1]),
+              _id: 'root.section.rows.2',
+              title: 'Third'
+            });
+            const area = getRows(doc)[0].content;
+            area.items.push({
+              ...structuredClone(area.items[1]),
+              _id: 'root.section.rows.0.content.3'
+            });
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[2].title = 'Third, by AI';
+            getRows(doc)[1].title = 'Second, by AI';
+            getRows(doc)[0].content.items[3].content = '<p>By AI</p>';
+          }
+        },
+        {
+          edit: doc => {
+            getRows(doc).splice(1, 1);
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'added', 'widget', 'root.section.rows.0.content.3', true ],
+        [ 'deleted', 'arrayItem', 'root.section.rows.1', true ],
+        [ 'added', 'arrayItem', 'root.section.rows.2', true ]
+      ]);
+    });
+
+    it('should flag a path an AI member created by adding its parent', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            doc.section = null;
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.section = {
+              ...buildDoc().section,
+              title: 'Rebuilt'
+            };
+          }
+        },
+        {
+          edit: doc => {
+            doc.count = 1;
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'integer', 'count', false ],
+        [ 'modified', 'string', 'title', true ]
+      ]);
+      assert.deepEqual(rows[1].path.map(segment => segment.name), [ 'section', 'title' ]);
+    });
+
+    it('should keep a widget\'s schema fields apart from the data it stores beside them', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[0].content.items[0].extra = 'x';
+          }
+        },
+        {
+          edit: doc => {
+            getRows(doc)[0].content.items[0].title = 'By hand';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', false ],
+        [ 'modified', 'widget', 'root.section.rows.0.content.0', true ]
+      ]);
+    });
+
+    it('should flag every row when every member used AI', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          ai: true,
+          edit: doc => {
+            doc.title = 'Second';
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.subtitle = 'Sub';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(row => row.ai), [ true, true ]);
+    });
+
+    it('should take labels, ordinals and order from the run\'s ends', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, run(
+        {
+          edit: doc => {
+            getRows(doc).shift();
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            getRows(doc)[0].title = 'Edited';
+          }
+        }
+      ));
+      assert.deepEqual(rows.map(row => [ row.type, row.path.at(-1).name, row.ai ]), [
+        [ 'deleted', 'root.section.rows.0', false ],
+        [ 'modified', 'title', true ]
+      ]);
+      assert.deepEqual(rows.map(row => row.path[2]), [
+        {
+          name: 'root.section.rows.0',
+          label: 'Title root.section.rows.0',
+          ordinal: 1
+        },
+        {
+          name: 'root.section.rows.1',
+          label: 'Edited',
+          ordinal: 1
+        }
+      ]);
+    });
+  });
+});

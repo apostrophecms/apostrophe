@@ -254,8 +254,11 @@ module.exports = {
       },
       afterRevertPublishedToPrevious: {
         async replayMoveAfterRevert(req, result) {
+          // The revert has recorded this publication point already; the
+          // replay only puts the page back in its place in the tree
           const publishedReq = req.clone({
-            mode: 'published'
+            mode: 'published',
+            aposSkipVersion: true
           });
           if (result.published.level === 0) {
             // The home page cannot move, so there is no
