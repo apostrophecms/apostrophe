@@ -9,7 +9,7 @@
     <ul
       class="apos-doc-version-changes-filter"
       :aria-label="$t('apostrophe:versionFilterChanges')"
-      data-apos-test="doc-version-changes-filter"
+      data-apos-test="doc-version-changes-filter-options"
     >
       <li
         v-for="option in options"
