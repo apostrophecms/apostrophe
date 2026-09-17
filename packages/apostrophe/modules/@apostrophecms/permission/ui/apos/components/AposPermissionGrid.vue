@@ -1,5 +1,13 @@
 <template>
   <div class="apos-input__role__permission-grid">
+    <div class="apos-input__role__permission-grid__notice">
+      <AposIndicator
+        icon="information-icon"
+        :icon-size="14"
+        icon-color="var(--a-base-4)"
+      />
+      <span>{{ $t('apostrophe:permissionsApplyToAllLocales') }}</span>
+    </div>
     <div
       v-for="permissionSet in permissionSets"
       :key="permissionSet.name"
@@ -92,20 +100,11 @@ export default {
   watch: {
     apiParams: {
       async handler(newValue, oldValue) {
-        // The way we pass the props to this component as an object every
-        // means that everything gets flagged as a change every time the
-        // component is included in a render.
-        //
-        // So we need to compare the actual data, and this is a simple way
-        // to do that deeply for both regular and advanced permission.
         if (JSON.stringify(newValue) === JSON.stringify(oldValue)) {
           return;
         }
         this.permissionSets = await this.getPermissionSets();
       },
-      // Still in place in case we stop passing a new object
-      // every time, in which case this wouldn't fire
-      // without it. -Tom
       deep: true
     }
   },
@@ -156,6 +155,20 @@ export default {
       margin-top: $spacing-triple;
       grid-template-columns: repeat(auto-fit, minmax(50%, 1fr));
     }
+  }
+
+  .apos-input__role__permission-grid__notice {
+    display: flex;
+    align-items: center;
+    gap: $spacing-half;
+    grid-column: 1 / -1;
+    margin-bottom: $spacing-base;
+    padding: $spacing-half $spacing-base;
+    background-color: var(--a-base-10);
+    border-left: 3px solid var(--a-base-4);
+    border-radius: 3px;
+    color: var(--a-base-2);
+    font-size: var(--a-type-small);
   }
 
   .apos-input__role__permission-grid__row {
