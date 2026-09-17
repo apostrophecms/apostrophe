@@ -62,16 +62,32 @@
     </template>
     <template #rightRail>
       <AposModalRail type="right">
-        <AposDocVersionsPanel>
+        <AposDocVersionsPanel :view="view">
           <template #list>
             <AposDocVersionsList
               :current-version="currentVersion"
               :versions="versions"
               @select="selectVersion"
-            />
+            >
+              <template #actions="{ version }">
+                <AposButton
+                  type="quiet"
+                  label="apostrophe:versionViewChanges"
+                  :attrs="{ 'data-apos-test': 'doc-version-action-changes' }"
+                  @click="viewChanges(version)"
+                />
+              </template>
+            </AposDocVersionsList>
             <div
               ref="scrollSentinel"
               class="apos-doc-version-sentinel"
+            />
+          </template>
+          <template #changes>
+            <AposDocVersionsChanges
+              :version="currentVersion"
+              :rows="changeRows"
+              @back="backToList"
             />
           </template>
         </AposDocVersionsPanel>
@@ -94,6 +110,7 @@ import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfi
 import { useAdvisoryLock } from 'Modules/@apostrophecms/ui/composables/useAdvisoryLock.js';
 import { useDocVersionsList } from '../composables/useDocVersionsList.js';
 import { useDocVersionView } from '../composables/useDocVersionView.js';
+import { useDocVersionChanges } from '../composables/useDocVersionChanges.js';
 
 const props = defineProps({
   // The versions module
@@ -305,6 +322,36 @@ watch(currentVersionId, async (versionId) => {
   }
 });
 
+// --- Change list ---
+
+// The right panel shows the version list or one version's changes
+const view = ref('list');
+
+const {
+  rows: changeRows,
+  load: loadChanges,
+  clear: clearChanges
+} = useDocVersionChanges({ action: versionsAction });
+
+async function viewChanges(version) {
+  try {
+    if (await loadChanges(version._id)) {
+      view.value = 'changes';
+    }
+  } catch (e) {
+    await apos.notify('apostrophe:versionFailChangesLoadMessage', {
+      type: 'danger',
+      icon: 'alert-circle-icon',
+      dismiss: true
+    });
+  }
+}
+
+function backToList() {
+  view.value = 'list';
+  clearChanges();
+}
+
 // --- Lock ---
 
 // Held for the modal's lifetime; the restore action reuses it
@@ -342,6 +389,10 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+:deep(.apos-modal__rail--right) {
+  border-left: 1px solid var(--a-base-8);
+}
+
 :deep(.apos-modal__main--with-rails) {
   grid-template-columns: 15% 1fr minmax(250px, 22%);
 
