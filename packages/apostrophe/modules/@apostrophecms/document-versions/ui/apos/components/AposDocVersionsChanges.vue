@@ -43,7 +43,10 @@
         :shown="shownRows.length"
       />
     </div>
-    <div class="apos-doc-version-changes__list">
+    <div
+      ref="list"
+      class="apos-doc-version-changes__list"
+    >
       <p
         v-if="!rows.length"
         class="apos-doc-version-changes__empty"
@@ -61,33 +64,16 @@
       <section
         v-for="group in groups"
         :key="group.key"
+        :ref="el => setGroupEl(group.key, el)"
         class="apos-doc-version-changes__group"
         data-apos-test="doc-version-change-group"
       >
         <h3 class="apos-doc-version-changes__group-header">
-          <span class="apos-doc-version-changes__group-title">
-            <template
-              v-for="(segment, index) in group.path"
-              :key="index"
-            >
-              <chevron-right-icon
-                v-if="index"
-                :size="12"
-                class="apos-doc-version-changes__crumb-icon"
-                aria-hidden="true"
-              />
-              <span
-                v-if="index"
-                class="apos-sr-only"
-              >, </span>
-              <span
-                class="apos-doc-version-changes__crumb"
-                :class="{
-                  'apos-doc-version-changes__crumb--last': index === group.path.length - 1
-                }"
-              >{{ segmentText(segment) }}</span>
-            </template>
-          </span>
+          <AposDocVersionChangePath
+            class="apos-doc-version-changes__group-title"
+            :segments="group.path"
+            bold-last
+          />
           <AposDocVersionChangeType :type="group.type" />
         </h3>
         <ul class="apos-doc-version-changes__rows">
@@ -99,27 +85,11 @@
             :data-apos-change-type="entry.row.type"
           >
             <div class="apos-doc-version-changes__row-main">
-              <span
+              <AposDocVersionChangePath
                 class="apos-doc-version-changes__row-label"
+                :segments="entry.segments"
                 data-apos-test="doc-version-change-path"
-              >
-                <template
-                  v-for="(segment, index) in entry.segments"
-                  :key="index"
-                >
-                  <chevron-right-icon
-                    v-if="index"
-                    :size="12"
-                    class="apos-doc-version-changes__crumb-icon"
-                    aria-hidden="true"
-                  />
-                  <span
-                    v-if="index"
-                    class="apos-sr-only"
-                  >, </span>
-                  <span class="apos-doc-version-changes__crumb">{{ segmentText(segment) }}</span>
-                </template>
-              </span>
+              />
               <span class="apos-doc-version-changes__row-aside">
                 <span
                   v-if="entry.row.ai"
@@ -209,6 +179,66 @@
         </ul>
       </section>
     </div>
+    <nav
+      v-if="groups.length"
+      class="apos-doc-version-changes__nav"
+      :aria-label="$t('apostrophe:versionNavLabel')"
+      data-apos-test="doc-version-changes-nav"
+    >
+      <div
+        class="apos-doc-version-changes__nav-status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <AposDocVersionChangePath
+          v-if="position >= 0"
+          class="apos-doc-version-changes__nav-label"
+          :segments="groups[position].path"
+          bold-last
+          data-apos-test="doc-version-changes-nav-label"
+        />
+        <span
+          v-else
+          class="apos-doc-version-changes__nav-label"
+          data-apos-test="doc-version-changes-nav-label"
+        >{{ $t('apostrophe:versionNavLabel') }}</span>
+        <span
+          class="apos-doc-version-changes__nav-position"
+          data-apos-test="doc-version-changes-nav-position"
+        >
+          {{ $t('apostrophe:versionNavPosition', {
+            current: position + 1,
+            total: groups.length
+          }) }}
+        </span>
+      </div>
+      <div class="apos-doc-version-changes__nav-buttons">
+        <AposButton
+          ref="previousButton"
+          type="outline"
+          icon="chevron-left-icon"
+          icon-only
+          label="apostrophe:versionNavPrevious"
+          tooltip="apostrophe:versionNavPrevious"
+          :modifiers="[ 'small' ]"
+          :disabled="position <= 0"
+          :attrs="{ 'data-apos-test': 'doc-version-changes-nav-previous' }"
+          @click="step(-1)"
+        />
+        <AposButton
+          ref="nextButton"
+          type="outline"
+          icon="chevron-right-icon"
+          icon-only
+          label="apostrophe:versionNavNext"
+          tooltip="apostrophe:versionNavNext"
+          :modifiers="[ 'small' ]"
+          :disabled="position === groups.length - 1"
+          :attrs="{ 'data-apos-test': 'doc-version-changes-nav-next' }"
+          @click="step(1)"
+        />
+      </div>
+    </nav>
   </section>
 </template>
 
@@ -216,9 +246,10 @@
 // One version's changes, grouped under the top-level field they belong
 // to, or under the widget when that field is an area. A row's breadcrumb
 // runs from below its group down to the changed value. The group header
-// alone states the change type.
+// alone states the change type. The navigator at the bottom steps through
+// the groups the filter shows.
 import {
-  computed, inject, reactive, ref, useId, watch
+  computed, inject, nextTick, reactive, ref, useId, watch
 } from 'vue';
 
 const props = defineProps({
@@ -239,12 +270,15 @@ const props = defineProps({
   }
 });
 
-defineEmits([ 'back' ]);
+// `navigate` carries the group a step selected, or `null` when the
+// selection is gone
+const emit = defineEmits([ 'back', 'navigate' ]);
 
 const $t = inject('i18n');
 const baseId = useId();
 
 const backButton = ref(null);
+const list = ref(null);
 
 // The expanded row's two sides, newer first. A side shows the words both
 // sides share and its own changed words.
@@ -271,12 +305,16 @@ const panes = [
 const expanded = reactive(new Set());
 // The checked filter options
 const filter = ref([]);
+// The navigator's index into the groups, -1 until a step selects one
+const position = ref(-1);
 
 watch(() => props.rows, () => {
   expanded.clear();
   filter.value = Object.entries(props.counts || {})
     .filter(([ , count ]) => count)
     .map(([ name ]) => name);
+  position.value = -1;
+  emit('navigate', null);
 }, { immediate: true });
 
 function toggle(key) {
@@ -285,11 +323,6 @@ function toggle(key) {
   } else {
     expanded.add(key);
   }
-}
-
-function segmentText(segment) {
-  const label = $t(segment.label);
-  return segment.title ? `${label} · ${segment.title}` : label;
 }
 
 function matches(row) {
@@ -348,6 +381,60 @@ const groups = computed(() => {
   return list;
 });
 
+// --- Navigator ---
+
+const groupEls = new Map();
+
+function setGroupEl(key, el) {
+  if (el) {
+    groupEls.set(key, el);
+  } else {
+    groupEls.delete(key);
+  }
+}
+
+const previousButton = ref(null);
+const nextButton = ref(null);
+
+// The filter changes the groups: the current group keeps its place while
+// it shows, otherwise the selection is gone
+watch(groups, (current, previous) => {
+  if (position.value < 0) {
+    return;
+  }
+  const key = previous?.[position.value]?.key;
+  const index = key ? current.findIndex(group => group.key === key) : -1;
+  if (index !== -1) {
+    position.value = index;
+    return;
+  }
+  position.value = -1;
+  emit('navigate', null);
+});
+
+async function step(delta) {
+  const group = groups.value[position.value + delta];
+  if (!group) {
+    return;
+  }
+  position.value += delta;
+  const section = groupEls.get(group.key);
+  if (section && list.value) {
+    list.value.scrollTop += section.getBoundingClientRect().top -
+      list.value.getBoundingClientRect().top;
+  }
+  emit('navigate', group);
+  // The button disabled at the end drops focus: hand it to the other one
+  const atEnd = delta > 0
+    ? position.value === groups.value.length - 1
+    : position.value <= 0;
+  if (atEnd) {
+    await nextTick();
+    const other = delta > 0 ? previousButton : nextButton;
+    other.value?.$el.querySelector('button')?.focus();
+  }
+}
+
 function focus() {
   backButton.value?.focus({ preventScroll: true });
 }
@@ -395,10 +482,9 @@ $pad-x: $spacing-base + $spacing-half;
     }
   }
 
-  // The icon components offset their svg below the baseline; these sit
-  // in flex rows and center instead
-  &__back-icon,
-  &__crumb-icon {
+  // The icon component offsets its svg below the baseline; it sits in a
+  // flex row and centers instead
+  &__back-icon {
     display: flex;
 
     :deep(.material-design-icon__svg) {
@@ -480,25 +566,7 @@ $pad-x: $spacing-base + $spacing-half;
   }
 
   &__group-title {
-    display: flex;
     flex: 1 1 auto;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  &__crumb {
-    overflow-wrap: anywhere;
-
-    &--last {
-      font-weight: var(--a-weight-bold);
-    }
-  }
-
-  &__crumb-icon {
-    flex-shrink: 0;
-    color: var(--a-base-1);
   }
 
   &__rows {
@@ -527,12 +595,7 @@ $pad-x: $spacing-base + $spacing-half;
     @include type-base;
 
     & {
-      display: inline-flex;
       flex: 1 1 auto;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 2px;
-      min-width: 0;
     }
   }
 
@@ -666,6 +729,39 @@ $pad-x: $spacing-base + $spacing-half;
       color: var(--a-base-2);
       font-size: var(--a-type-smaller);
     }
+  }
+
+  &__nav {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-base;
+    padding: $spacing-base $pad-x;
+    border-top: 1px solid var(--a-base-8);
+    background-color: var(--a-base-10);
+  }
+
+  &__nav-status {
+    @include type-base;
+
+    & {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+  }
+
+  &__nav-position {
+    color: var(--a-base-2);
+    font-size: var(--a-type-smaller);
+  }
+
+  &__nav-buttons {
+    display: flex;
+    flex-shrink: 0;
+    gap: $spacing-half;
   }
 }
 </style>

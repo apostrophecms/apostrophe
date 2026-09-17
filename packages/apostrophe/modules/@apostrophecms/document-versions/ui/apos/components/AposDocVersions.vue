@@ -32,6 +32,7 @@
         <template #bodyMain>
           <div
             v-if="versions.length"
+            ref="body"
             class="apos-doc-editor__body apos-doc-version-editor__body"
           >
             <AposSchema
@@ -89,6 +90,7 @@
               :rows="changeRows"
               :counts="changeCounts"
               @back="backToList"
+              @navigate="navigateTo"
             />
           </template>
         </AposDocVersionsPanel>
@@ -112,6 +114,7 @@ import { useAdvisoryLock } from 'Modules/@apostrophecms/ui/composables/useAdviso
 import { useDocVersionsList } from '../composables/useDocVersionsList.js';
 import { useDocVersionView } from '../composables/useDocVersionView.js';
 import { useDocVersionChanges } from '../composables/useDocVersionChanges.js';
+import { useDocVersionTarget } from '../composables/useDocVersionTarget.js';
 
 const props = defineProps({
   // The versions module
@@ -359,8 +362,42 @@ async function viewChanges(version) {
 // The list pane never unmounts, so its selection and scroll are as left
 async function backToList() {
   view.value = 'list';
+  clearTarget();
   await nextTick();
   viewChangesButton.value?.focus();
+}
+
+// --- Change navigator ---
+
+const body = ref(null);
+
+const {
+  show: showTarget,
+  clear: clearTarget
+} = useDocVersionTarget({ attribute: 'data-apos-doc-version-target' });
+
+// Selects the tab holding the group's top-level field, then highlights
+// the field, or the widget when the group is one (a deleted widget is
+// gone from this version, so its area stands in)
+async function navigateTo(group) {
+  clearTarget();
+  if (!group) {
+    return;
+  }
+  const [ field, widget ] = group.path;
+  const tab = versionTabs.value.find(tab => tab.fields.includes(field.name));
+  if (!tab?.isVisible || !body.value) {
+    return;
+  }
+  currentTab.value = tab.name;
+  await nextTick();
+  const fieldEl = body.value.querySelector(
+    `:scope > .apos-schema > [data-apos-field="${CSS.escape(field.name)}"]`
+  );
+  const widgetEl = widget && body.value.querySelector(
+    `[data-apos-widget-id="${CSS.escape(widget.name)}"]`
+  );
+  showTarget(widgetEl || fieldEl);
 }
 
 // --- Lock ---
@@ -428,6 +465,15 @@ onBeforeUnmount(() => {
   &__empty {
     display: flex;
     justify-content: center;
+  }
+
+  // The field or widget the change navigator points at
+  :deep([data-apos-doc-version-target]) {
+    border-radius: 2px;
+    outline: 2px solid var(--a-primary);
+    outline-offset: 4px;
+    background-color: var(--a-primary-transparent-05);
+    box-shadow: 0 0 0 4px var(--a-primary-transparent-05);
   }
 
   &__body {
