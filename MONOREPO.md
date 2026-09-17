@@ -138,6 +138,39 @@ node scripts/scan-translations.mjs --only=placeholder-mismatch,malformed-interpo
 node scripts/scan-translations.mjs --package=seo --locale=fr
 ```
 
+The report is long, so write it to a file rather than scrolling it:
+
+```bash
+node scripts/scan-translations.mjs --out=translations.txt
+node scripts/scan-translations.mjs --json --out=translations.json
+```
+
+### Clearing a backlog of missing keys
+
+Do not work down the report by hand. `--stubs` turns it into a work order:
+
+```bash
+node scripts/scan-translations.mjs --only=missing-key --stubs=./stubs
+```
+
+That writes one JSON file per locale under `./stubs`, mirroring the path each
+belongs to, containing only that locale's missing keys with their English text:
+
+```json
+{
+  "importDraftsOnly": "Import all documents as drafts",
+  "mode": "Mode"
+}
+```
+
+Send those files to whoever does the translating, then merge each returned file
+over its counterpart under `packages/`. Because the stub holds exactly the keys
+that were absent, merging it in cannot overwrite an existing translation, and
+re-running the scan should report nothing for that locale.
+
+Scope the work with `--package` and `--locale` to produce one reviewable batch
+at a time rather than a single enormous drop.
+
 Run `node scripts/scan-translations.mjs --help` for all rules and options.
 
 ## Configuring tests for CI

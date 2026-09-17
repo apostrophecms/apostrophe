@@ -82,6 +82,8 @@ const SEVERITY_ORDER = {
  * @property {string[]} locales - Locale codes to limit to.
  * @property {boolean} includeTests - Include `test/` fixture bundles.
  * @property {boolean} json - Emit machine-readable output.
+ * @property {string|null} out - Write the report here instead of stdout.
+ * @property {string|null} stubs - Write per-locale missing-key stubs here.
  */
 
 /**
@@ -95,7 +97,9 @@ function parseArgs(argv) {
     packages: [],
     locales: [],
     includeTests: false,
-    json: false
+    json: false,
+    out: null,
+    stubs: null
   };
   const list = value => (value ?? '').split(',').map(entry => entry.trim()).filter(Boolean);
   for (const arg of argv) {
@@ -136,6 +140,18 @@ function parseArgs(argv) {
       case 'json':
         options.json = true;
         break;
+      case 'out':
+        if (!value) {
+          fail('--out expects a file path, e.g. --out=translations.txt');
+        }
+        options.out = value;
+        break;
+      case 'stubs':
+        if (!value) {
+          fail('--stubs expects a directory path, e.g. --stubs=./translation-stubs');
+        }
+        options.stubs = value;
+        break;
       default:
         fail(`Unknown argument "${arg}". Try --help.`);
     }
@@ -157,6 +173,12 @@ Options:
   --locale=CODE[,..]   Limit to these locales, e.g. fr,es.
   --include-tests      Also scan bundles under a package's test/ directory.
   --json               Emit findings as JSON.
+  --out=PATH           Write the report to PATH instead of stdout. Respects
+                       --json, so --json --out=x.json gives a JSON file.
+  --stubs=DIR          Write one JSON file per locale under DIR containing that
+                       locale's missing keys with their English text, mirroring
+                       the path each belongs to. Fill in the values and merge
+                       them back over packages/ to clear the backlog.
   --help               Show this message.
 
 Rules:
@@ -310,6 +332,18 @@ function malformations(value) {
 }
 
 /**
+ * Prefers a relative path, but falls back to the absolute one rather than
+ * printing a chain of `../..` for a target outside the working directory.
+ *
+ * @param {string} target
+ * @returns {string}
+ */
+function friendly(target) {
+  const relative = path.relative(process.cwd(), target);
+  return relative.startsWith('..') ? target : relative;
+}
+
+/**
  * @param {string} value
  * @returns {string}
  */
@@ -409,7 +443,7 @@ async function scanBundle(bundle, options) {
     }
     const relative = path.relative(repoRoot, file);
     const target = await read(file);
-    const add = (rule, key, message) => {
+    const add = (rule, key, message, extra = {}) => {
       if (!options.rules.has(rule)) {
         return;
       }
@@ -420,7 +454,8 @@ async function scanBundle(bundle, options) {
         line: lineOf(target.source, key),
         locale,
         key,
-        message
+        message,
+        ...extra
       });
     };
 
@@ -456,7 +491,7 @@ async function scanBundle(bundle, options) {
           continue;
         }
         if (!PLURAL_SUFFIX.test(key)) {
-          add('missing-key', key, `missing from ${locale}.json`);
+          add('missing-key', key, `missing from ${locale}.json`, { source: baseValue });
           continue;
         }
         // Only an inconsistent plural shape when the singular did land; if the
@@ -464,7 +499,7 @@ async function scanBundle(bundle, options) {
         if (target.data.has(stem)) {
           add('plural-shape', key, `"${stem}" is translated but its plural form is not`);
         } else {
-          add('missing-key', key, `missing from ${locale}.json`);
+          add('missing-key', key, `missing from ${locale}.json`, { source: baseValue });
         }
         continue;
       }
@@ -530,18 +565,59 @@ function report(findings, bundles, counts) {
     warn: ' warn',
     info: ' info'
   };
+  const lines = [];
   let currentFile = null;
   for (const finding of findings) {
     if (finding.file !== currentFile) {
       currentFile = finding.file;
-      console.log('');
+      lines.push('');
     }
-    console.log(`${icons[finding.severity]}  ${finding.file}:${finding.line}  ${finding.rule}  ${finding.key}`.trimEnd());
-    console.log(`       ${finding.message}`);
+    lines.push(`${icons[finding.severity]}  ${finding.file}:${finding.line}  ${finding.rule}  ${finding.key}`.trimEnd());
+    lines.push(`       ${finding.message}`);
   }
   const locales = new Set(bundles.flatMap(bundle => [ ...bundle.files.keys() ]));
-  console.log(`\nScanned ${bundles.length} bundle(s) across ${locales.size} locale(s).`);
-  console.log(`${counts.error} error, ${counts.warn} warn, ${counts.info} info.`);
+  lines.push(`\nScanned ${bundles.length} bundle(s) across ${locales.size} locale(s).`);
+  lines.push(`${counts.error} error, ${counts.warn} warn, ${counts.info} info.`);
+  return lines.join('\n');
+}
+
+/**
+ * Writes one file per locale containing just that locale's missing keys, keyed
+ * to their English text and mirroring the repo path they belong to. The result
+ * is a translatable work order rather than a list of complaints: fill in the
+ * values, then merge each file over its counterpart under packages/.
+ *
+ * @param {Finding[]} findings
+ * @param {string} dir
+ * @returns {Promise<string[]>} Repo-relative paths written.
+ */
+async function writeStubs(findings, dir) {
+  /** @type {Map<string, Record<string, string>>} */
+  const byFile = new Map();
+  for (const finding of findings) {
+    if (finding.rule !== 'missing-key' || typeof finding.source !== 'string') {
+      continue;
+    }
+    if (!byFile.has(finding.file)) {
+      byFile.set(finding.file, {});
+    }
+    byFile.get(finding.file)[finding.key] = finding.source;
+  }
+  const written = [];
+  for (const [ file, keys ] of [ ...byFile ].sort()) {
+    const target = path.resolve(dir, file);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    const sorted = Object.fromEntries(
+      Object.keys(keys).sort().map(key => [ key, keys[key] ])
+    );
+    await fs.writeFile(target, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8');
+    written.push({
+      path: target,
+      file,
+      count: Object.keys(sorted).length
+    });
+  }
+  return written;
 }
 
 async function main() {
@@ -584,14 +660,35 @@ async function main() {
     counts[finding.severity]++;
   }
 
-  if (options.json) {
-    console.log(JSON.stringify({
+  const output = options.json
+    ? JSON.stringify({
       bundles: bundles.length,
       counts,
       findings
-    }, null, 2));
+    }, null, 2)
+    : report(findings, bundles, counts);
+
+  if (options.out) {
+    const target = path.resolve(process.cwd(), options.out);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, `${output}\n`, 'utf8');
+    console.log(`Wrote ${findings.length} finding(s) to ${friendly(target)}`);
   } else {
-    report(findings, bundles, counts);
+    console.log(output);
+  }
+
+  if (options.stubs) {
+    const stubsRoot = path.resolve(process.cwd(), options.stubs);
+    const written = await writeStubs(findings, stubsRoot);
+    if (!written.length) {
+      console.log('No missing keys to stub out.');
+    } else {
+      const total = written.reduce((sum, entry) => sum + entry.count, 0);
+      console.log(`\nWrote ${total} missing key(s) across ${written.length} stub file(s) under ${options.stubs}:`);
+      for (const entry of written) {
+        console.log(`  ${entry.count.toString().padStart(4)}  ${entry.file}`);
+      }
+    }
   }
 
   if (options.errorOn === 'never') {
