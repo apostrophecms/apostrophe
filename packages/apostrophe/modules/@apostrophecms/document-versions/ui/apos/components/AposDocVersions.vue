@@ -18,7 +18,7 @@
       />
     </template>
     <template #leftRail>
-      <AposModalRail>
+      <AposModalRail collapsible>
         <AposModalTabs
           v-if="versionTabs.length"
           :current="currentTab"
@@ -347,6 +347,14 @@ onBeforeUnmount(() => {
 
   @include media-up(lap) {
     grid-template-columns: 220px 1fr 320px;
+  }
+
+  &:has(> .apos-modal__rail--collapsed) {
+    grid-template-columns: $modal-rail-collapsed-w 1fr minmax(250px, 22%);
+
+    @include media-up(lap) {
+      grid-template-columns: $modal-rail-collapsed-w 1fr 320px;
+    }
   }
 }
 
