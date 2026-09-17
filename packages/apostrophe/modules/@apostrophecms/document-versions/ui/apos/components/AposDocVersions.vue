@@ -51,11 +51,9 @@
           </div>
           <div
             v-else-if="loaded"
-            class="apos-doc-version-editor__body"
+            class="apos-doc-version-editor__empty"
           >
-            <p class="apos-doc-version-editor__empty-title">
-              {{ $t('apostrophe:versionsNotFound') }}
-            </p>
+            <AposEmptyState :empty-state="emptyState" />
           </div>
         </template>
       </AposModalBody>
@@ -138,6 +136,7 @@ const modal = ref({
 });
 
 const scrollSentinel = ref(null);
+const emptyState = { message: 'apostrophe:versionsNotFound' };
 
 // --- Document and schema ---
 
@@ -426,16 +425,9 @@ onBeforeUnmount(() => {
 }
 
 .apos-doc-version-editor {
-  &__empty-title {
+  &__empty {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: var(--a-text-primary);
-    font-family: var(--a-family-default);
-    font-weight: var(--a-weight-base);
-    letter-spacing: var(--a-letter-base);
-    font-size: var(--a-type-large);
-    line-height: var(--a-line-tall);
+    justify-content: center;
   }
 
   &__body {
