@@ -109,6 +109,11 @@ const toggleLabel = computed(() => {
       cursor: pointer;
     }
 
+    // The icon's inline SVG would otherwise leave a baseline gap below it
+    :deep(.material-design-icon__svg) {
+      display: block;
+    }
+
     &:hover,
     &:focus-visible {
       color: var(--a-text-primary);
