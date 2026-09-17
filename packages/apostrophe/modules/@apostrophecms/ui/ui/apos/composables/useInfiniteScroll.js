@@ -28,6 +28,7 @@ import { onBeforeUnmount, unref } from 'vue';
 export function useInfiniteScroll(sentinel, onLoadMore, options = {}) {
   const { rootMargin = '100px', root = null } = options;
   let observer = null;
+  let resizeObserver = null;
 
   function handleIntersect(entries) {
     if (entries[0]?.isIntersecting) {
@@ -60,12 +61,22 @@ export function useInfiniteScroll(sentinel, onLoadMore, options = {}) {
       threshold: 0
     });
     observer.observe(el);
+    // A container shown after `start()`, such as modal content still hidden
+    // while the modal opens, may never report the sentinel it now shows
+    if (rootEl) {
+      resizeObserver = new ResizeObserver(recheck);
+      resizeObserver.observe(rootEl);
+    }
   }
 
   function stop() {
     if (observer) {
       observer.disconnect();
       observer = null;
+    }
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
     }
   }
 
