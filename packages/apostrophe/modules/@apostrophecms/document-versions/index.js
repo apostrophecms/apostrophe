@@ -508,12 +508,16 @@ module.exports = {
       // for nothing, `true` for a new version, or the `_id` of the newest
       // version, a draft, which the save then replaces in place.
       //
-      // A publish or a restore always starts a version. A draft save with no
-      // change to any schema field never does. Otherwise a draft starts one
-      // at every handoff: an explicit Save Draft, a first version, a previous
-      // version that was a publication point, a different author, AI
-      // involvement changing, or more than `draftInterval` since the previous
-      // version was created. Between handoffs it replaces the previous draft.
+      // A restore always starts a version. So does a publish, unless the
+      // newest version is a draft of the same content by the same author
+      // with the same AI involvement: a publish saves the draft first, so
+      // that draft becomes the publication point instead. A draft save with
+      // no change to any schema field never starts one. Otherwise a draft
+      // starts one at every handoff: an explicit Save Draft, a first version,
+      // a previous version that was a publication point, a different author,
+      // AI involvement changing, or more than `draftInterval` since the
+      // previous version was created. Between handoffs it replaces the
+      // previous draft.
       //
       // A request flagged `aposSkipVersion` records nothing: core sets it on
       // a save that is a side effect of an operation already recorded. A
@@ -533,13 +537,19 @@ module.exports = {
         if (!self.isVersioned(doc)) {
           return false;
         }
-        if (self.getMode(doc) === 'published') {
-          return true;
-        }
         if (req.aposRestoreVersion) {
           return true;
         }
         const previous = await self.findOne(req, self.getTimelineCriteria(doc));
+        if (self.getMode(doc) === 'published') {
+          const promotable = previous &&
+            previous.mode === 'draft' &&
+            !previous.restoredFrom &&
+            previous.authorId === self.getAuthorId(req) &&
+            Boolean(previous.ai) === Boolean(req.aposAi) &&
+            !self.getChanges(req, doc, previous.doc).length;
+          return promotable ? previous._id : true;
+        }
         if (!previous) {
           return true;
         }
@@ -626,23 +636,28 @@ module.exports = {
         return self.updateReferencesFor(req, instance._id);
       },
       // Replace the content of an existing version with `doc`, keeping the
-      // record's identity, author and creation time. The change count is
-      // recomputed against the version before it. Inserts instead when the
-      // version is gone
+      // record's identity and author. The mode follows `doc`; a draft
+      // promoted to a publication point takes the publish time as its
+      // creation time. The change count is recomputed against the version
+      // before it. Inserts instead when the version is gone
       async replaceVersion(req, doc, versionId) {
         const version = await self.findOne(req, { _id: versionId }, { raw: true });
         if (!version) {
           return self.insertVersion(req, doc);
         }
         const before = await self.getPreviousVersion(req, version);
+        const mode = self.getMode(doc);
+        const promoted = mode !== version.mode;
         await self.db.updateOne({ _id: version._id }, {
           $set: {
             doc: await self.pack(self.apos.util.clonePermanent(doc)),
-            updatedAt: new Date(),
+            mode,
+            ...(promoted ? { createdAt: new Date() } : { updatedAt: new Date() }),
             changeCount: before
               ? self.getChanges(req, doc, before.doc).length
               : 0
-          }
+          },
+          ...(promoted && { $unset: { updatedAt: 1 } })
         });
         return self.updateReferencesFor(req, version._id);
       },

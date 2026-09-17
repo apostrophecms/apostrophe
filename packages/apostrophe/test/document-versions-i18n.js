@@ -181,13 +181,13 @@ describe('Document Versions: i18n', function () {
     const newLocale = 'en-US';
     const actual = await apos.i18n.rename(oldLocale, newLocale, { keep: newLocale });
     const expected = {
-      // 16 docs (the inserted ones, draft and published) and the 26 versions
+      // 16 docs (the inserted ones, draft and published) and the 18 versions
       // of the inserted docs
-      renamed: 42,
+      renamed: 34,
       // 8 docs (archive, global, styles and home, draft and published) and
-      // the 7 boot-time versions of global, styles and home in `en`, dropped
+      // the 4 boot-time versions of global, styles and home in `en`, dropped
       // because `en-US` already has theirs
-      kept: 15
+      kept: 12
     };
     assert.deepEqual(actual, expected);
   });
@@ -209,9 +209,9 @@ describe('Document Versions: i18n', function () {
     const newLocale = 'en-US';
     const actual = await apos.docVersions.renameLocale(oldLocale, newLocale, {});
     const expected = {
-      // 26 versions of the inserted docs + 7 boot-time versions of global,
+      // 18 versions of the inserted docs + 4 boot-time versions of global,
       // styles and home; without `keep` the two locales' histories merge
-      renamed: 33,
+      renamed: 22,
       kept: 0
     };
     assert.deepEqual(actual, expected);
@@ -257,15 +257,13 @@ describe('Document Versions: i18n', function () {
     }
 
     // Two documents inserted in published mode then updated, newest first:
-    // each insert records the draft and the published copy
+    // the publish of each insert takes over its draft version
     function timelineOf(doc1, doc2) {
       return [
         renamedVersion(doc2, { title: doc2.title.concat(' v2') }),
         renamedVersion(doc1, { title: doc1.title.concat(' v2') }),
         renamedVersion(doc2),
-        renamedVersion(doc2, { mode: 'draft' }),
-        renamedVersion(doc1),
-        renamedVersion(doc1, { mode: 'draft' })
+        renamedVersion(doc1)
       ];
     }
 
@@ -290,10 +288,8 @@ describe('Document Versions: i18n', function () {
         renamedVersion(image1, { title: image1.title.concat(' v2') }),
         renamedVersion(image2),
         renamedVersion(image2),
-        renamedVersion(image2, { mode: 'draft' }),
         renamedVersion(image1),
-        renamedVersion(image1),
-        renamedVersion(image1, { mode: 'draft' })
+        renamedVersion(image1)
       ]
     );
   });
