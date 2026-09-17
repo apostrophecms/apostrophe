@@ -16,9 +16,10 @@ const text = require('./lib/text.js');
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
 
-// A type that records published versions only keeps this many per document
-// and locale: the current publication and the one before it, which
-// Unpublish returns to
+// A type set to `versions: false` asked for no versions at all, but Unpublish
+// needs the previous publication to return to. So we keep as little as that
+// allows: the current publication and the one before it, per document and
+// locale, and nothing else
 const PUBLISHED_ONLY_LIMIT = 2;
 
 module.exports = {
