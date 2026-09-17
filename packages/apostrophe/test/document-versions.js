@@ -3136,6 +3136,16 @@ describe('Document Versions', function () {
           ]
         );
         assert.equal(changes.rows[2].path[1].label, 'Home');
+        assert.deepEqual(changes.rows[0].diff, [
+          {
+            text: 'An article',
+            change: 'removed'
+          },
+          {
+            text: 'Renamed',
+            change: 'added'
+          }
+        ]);
         assert.deepEqual(changes.counts, {
           added: 1,
           modified: 2,

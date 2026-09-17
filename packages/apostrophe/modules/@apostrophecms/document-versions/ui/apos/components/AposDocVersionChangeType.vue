@@ -29,13 +29,15 @@ const labels = {
 <style lang="scss" scoped>
 .apos-doc-version-change-type {
   display: inline-block;
+  box-sizing: border-box;
   padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, currentcolor 50%, transparent);
   border-radius: var(--a-border-radius);
   font-family: var(--a-family-default);
   font-size: var(--a-type-tiny);
   font-weight: var(--a-weight-bold);
   letter-spacing: 0.2px;
-  line-height: 1;
+  line-height: 1.5;
   text-transform: uppercase;
   white-space: nowrap;
 

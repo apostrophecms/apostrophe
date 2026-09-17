@@ -5,6 +5,7 @@
     data-apos-test="doc-version-changes"
   >
     <button
+      ref="backButton"
       type="button"
       class="apos-doc-version-changes__back"
       data-apos-test="doc-version-changes-back"
@@ -35,6 +36,12 @@
           · {{ $t('apostrophe:versionEdits', { count: rows.length }) }}
         </span>
       </h2>
+      <AposDocVersionChangesFilter
+        v-if="rows.length"
+        v-model="filter"
+        :counts="counts"
+        :shown="shownRows.length"
+      />
     </div>
     <div class="apos-doc-version-changes__list">
       <p
@@ -43,6 +50,13 @@
         data-apos-test="doc-version-changes-empty"
       >
         {{ $t('apostrophe:versionNoChanges') }}
+      </p>
+      <p
+        v-else-if="!shownRows.length"
+        class="apos-doc-version-changes__empty"
+        data-apos-test="doc-version-changes-no-match"
+      >
+        {{ $t('apostrophe:versionNoChangesMatch') }}
       </p>
       <section
         v-for="group in groups"
@@ -133,30 +147,63 @@
               class="apos-doc-version-changes__diff"
               data-apos-test="doc-version-change-diff"
             >
-              <div
-                class="apos-doc-version-changes__pane apos-doc-version-changes__pane--new"
+              <p
+                v-if="!entry.changed"
+                class="apos-doc-version-changes__unchanged"
+                data-apos-test="doc-version-change-modified"
               >
-                <span
-                  class="apos-doc-version-changes__kicker apos-doc-version-changes__kicker--new"
+                {{ $t('apostrophe:versionChangeModified') }}
+              </p>
+              <template v-else>
+                <div
+                  v-for="pane in panes"
+                  :key="pane.side"
+                  class="apos-doc-version-changes__pane"
+                  :class="`apos-doc-version-changes__pane--${pane.side}`"
+                  :data-apos-test="`doc-version-change-${pane.side}`"
                 >
-                  {{ $t('apostrophe:versionThisVersion') }}
-                </span>
-                <p class="apos-doc-version-changes__value">
-                  {{ entry.row.newText }}
-                </p>
-              </div>
-              <div
-                class="apos-doc-version-changes__pane apos-doc-version-changes__pane--old"
-              >
-                <span
-                  class="apos-doc-version-changes__kicker apos-doc-version-changes__kicker--old"
-                >
-                  {{ $t('apostrophe:versionPreviousVersion') }}
-                </span>
-                <p class="apos-doc-version-changes__value">
-                  {{ entry.row.oldText }}
-                </p>
-              </div>
+                  <span
+                    class="apos-doc-version-changes__kicker"
+                    :class="`apos-doc-version-changes__kicker--${pane.side}`"
+                  >
+                    {{ $t(pane.label) }}
+                  </span>
+                  <div class="apos-doc-version-changes__value-line">
+                    <component
+                      :is="pane.icon"
+                      :size="14"
+                      class="apos-doc-version-changes__value-icon"
+                      :title="$t(pane.markLabel)"
+                    />
+                    <p class="apos-doc-version-changes__value">
+                      <template v-if="entry.text[pane.side]">
+                        <template
+                          v-for="(part, index) in entry.row.diff"
+                          :key="index"
+                        >
+                          <span v-if="part.change === 'same'">{{ part.text }}</span>
+                          <component
+                            :is="pane.tag"
+                            v-else-if="part.change === pane.change"
+                            class="apos-doc-version-changes__mark"
+                            :class="`apos-doc-version-changes__mark--${pane.side}`"
+                          >
+                            <span class="apos-sr-only">{{ `${$t(pane.markLabel)} ` }}</span>{{ part.text }}
+                          </component>
+                        </template>
+                      </template>
+                      <template v-else>
+                        <span
+                          class="apos-doc-version-changes__none"
+                          :class="`apos-doc-version-changes__none--${pane.side}`"
+                          aria-hidden="true"
+                        >—</span>
+                        <span class="apos-sr-only">{{ $t('apostrophe:versionEmptyValue') }}</span>
+                      </template>
+                    </p>
+                  </div>
+                </div>
+              </template>
             </div>
           </li>
         </ul>
@@ -171,7 +218,7 @@
 // runs from below its group down to the changed value. The group header
 // alone states the change type.
 import {
-  computed, inject, reactive, useId, watch
+  computed, inject, reactive, ref, useId, watch
 } from 'vue';
 
 const props = defineProps({
@@ -184,6 +231,11 @@ const props = defineProps({
   rows: {
     type: Array,
     required: true
+  },
+  // The counts of the `changes` route
+  counts: {
+    type: Object,
+    default: null
   }
 });
 
@@ -192,12 +244,40 @@ defineEmits([ 'back' ]);
 const $t = inject('i18n');
 const baseId = useId();
 
+const backButton = ref(null);
+
+// The expanded row's two sides, newer first. A side shows the words both
+// sides share and its own changed words.
+const panes = [
+  {
+    side: 'new',
+    change: 'added',
+    tag: 'ins',
+    label: 'apostrophe:versionThisVersion',
+    icon: 'plus-circle-icon',
+    markLabel: 'apostrophe:versionAddedText'
+  },
+  {
+    side: 'old',
+    change: 'removed',
+    tag: 'del',
+    label: 'apostrophe:versionPreviousVersion',
+    icon: 'minus-circle-icon',
+    markLabel: 'apostrophe:versionRemovedText'
+  }
+];
+
 // The keys of the rows showing their values
 const expanded = reactive(new Set());
+// The checked filter options
+const filter = ref([]);
 
 watch(() => props.rows, () => {
   expanded.clear();
-});
+  filter.value = Object.entries(props.counts || {})
+    .filter(([ , count ]) => count)
+    .map(([ name ]) => name);
+}, { immediate: true });
 
 function toggle(key) {
   if (expanded.has(key)) {
@@ -212,6 +292,12 @@ function segmentText(segment) {
   return segment.title ? `${label} · ${segment.title}` : label;
 }
 
+function matches(row) {
+  return filter.value.includes(row.type) || (row.ai && filter.value.includes('ai'));
+}
+
+const shownRows = computed(() => props.rows.filter(matches));
+
 // A row's group is its top-level field, plus the widget right below it
 // when the field is an area
 function getGroupPath(row) {
@@ -223,6 +309,9 @@ const groups = computed(() => {
   const list = [];
   const byKey = new Map();
   props.rows.forEach((row, index) => {
+    if (!matches(row)) {
+      return;
+    }
     const path = getGroupPath(row);
     const key = path.map(segment => segment.name).join('.');
     let group = byKey.get(key);
@@ -243,14 +332,27 @@ const groups = computed(() => {
       group.type = row.type;
       segments.push(path.at(-1));
     }
+    const diff = row.diff || [];
     group.entries.push({
       key: String(index),
       row,
-      segments
+      segments,
+      // Whether the text shows the change at all
+      changed: diff.some(part => part.change !== 'same'),
+      text: {
+        new: Boolean(row.newText),
+        old: Boolean(row.oldText)
+      }
     });
   });
   return list;
 });
+
+function focus() {
+  backButton.value?.focus({ preventScroll: true });
+}
+
+defineExpose({ focus });
 </script>
 
 <style lang="scss" scoped>
@@ -494,14 +596,75 @@ $pad-x: $spacing-base + $spacing-half;
     }
   }
 
+  &__value-line {
+    display: flex;
+    align-items: center;
+    gap: $spacing-half;
+  }
+
+  &__value-icon {
+    display: flex;
+    flex-shrink: 0;
+
+    :deep(.material-design-icon__svg) {
+      bottom: 0;
+    }
+
+    .apos-doc-version-changes__pane--new & {
+      color: var(--a-success-dark);
+    }
+
+    .apos-doc-version-changes__pane--old & {
+      color: var(--a-danger-button-hover);
+    }
+  }
+
   &__value {
     @include type-base;
 
     & {
+      flex: 1 1 auto;
+      min-width: 0;
       margin: 0;
       font-size: var(--a-type-smaller);
       line-height: var(--a-line-tall);
       overflow-wrap: anywhere;
+    }
+  }
+
+  &__mark {
+    text-decoration-thickness: 1px;
+
+    &--new {
+      color: var(--a-success-dark);
+      text-decoration-line: underline;
+    }
+
+    &--old {
+      color: var(--a-danger-button-hover);
+      text-decoration-line: line-through;
+    }
+  }
+
+  // The side with no value, in its side's colour without a line
+  &__none {
+    &--new {
+      color: var(--a-success-dark);
+    }
+
+    &--old {
+      color: var(--a-danger-button-hover);
+    }
+  }
+
+  &__unchanged {
+    @include type-base;
+
+    & {
+      margin: 0;
+      padding: $spacing-half $spacing-base;
+      color: var(--a-base-2);
+      font-size: var(--a-type-smaller);
     }
   }
 }

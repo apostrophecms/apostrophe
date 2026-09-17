@@ -4,6 +4,7 @@
 // in as a map.
 
 const _ = require('lodash');
+const { diffWords } = require('diff');
 
 // Core field types whose stored value reads as text as it is, reached
 // through `extend` as well
@@ -141,6 +142,25 @@ function addText(rows, ctx, { titles = {} } = {}) {
 }
 
 /**
+ * Sets `diff` on each row: its `oldText` and `newText` compared word by
+ * word, as `{ text, change }` parts in reading order, `change` being `same`,
+ * `added` or `removed`. A row whose texts do not differ has no `added` or
+ * `removed` part. Run after `addText`.
+ *
+ * @param {import('./diff.js').ChangeRow[]} rows Rows with text, modified.
+ * @returns {import('./diff.js').ChangeRow[]} The same rows.
+ */
+function addWordDiff(rows) {
+  for (const row of rows) {
+    row.diff = diffWords(row.oldText, row.newText).map(part => ({
+      text: part.value,
+      change: part.added ? 'added' : part.removed ? 'removed' : 'same'
+    }));
+  }
+  return rows;
+}
+
+/**
  * The title of a widget for display: its type's `titleField` option, or
  * for a rich text type its plaintext. `''` when it has neither.
  *
@@ -181,7 +201,8 @@ module.exports = {
   getItemText,
   getWidgetText,
   getRelatedIds,
-  addText
+  addText,
+  addWordDiff
 };
 
 function rowText(row, value, ctx, titles) {

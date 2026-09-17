@@ -40,7 +40,10 @@ module.exports = {
     dateTimeFormatOptions: null
   },
   icons: {
-    'creation-icon': 'Creation'
+    'creation-icon': 'Creation',
+    'filter-variant-icon': 'FilterVariant',
+    'minus-circle-icon': 'MinusCircle',
+    'plus-circle-icon': 'PlusCircle'
   },
   async init(self) {
     self.defaultLimit = 10;
@@ -1072,7 +1075,8 @@ module.exports = {
         return previous ?? null;
       },
       // The changes of consecutive versions of one document as one list
-      // (see `getConsolidatedRows`), with display text, and their counts
+      // (see `getConsolidatedRows`), with display text and its word diff
+      // (see `lib/text.js`), and their counts
       // per change type and of those involving AI:
       // `{ rows, counts: { added, modified, deleted, ai } }`. One id is a
       // single version against the one before it. A first version counts
@@ -1124,10 +1128,10 @@ module.exports = {
             }))
             .filter(pair => pair.older);
           if (pairs.length) {
-            rows = await self.addChangeText(
+            rows = text.addWordDiff(await self.addChangeText(
               draftReq,
               self.getConsolidatedRows(req, pairs)
-            );
+            ));
           }
         }
 

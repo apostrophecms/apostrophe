@@ -16,7 +16,7 @@ export function useDocVersionChanges({ action }) {
   let requestId = 0;
 
   // Resolves `true` when the state now holds the changes of `id`, `false`
-  // when a later call or `clear()` superseded this one. Request errors are
+  // when a later call superseded this one. Request errors are
   // thrown, unless the call was superseded meanwhile.
   async function load(id) {
     const request = ++requestId;
@@ -38,18 +38,10 @@ export function useDocVersionChanges({ action }) {
     return true;
   }
 
-  function clear() {
-    requestId++;
-    rows.value = [];
-    counts.value = null;
-    versionId.value = null;
-  }
-
   return {
     rows,
     counts,
     versionId,
-    load,
-    clear
+    load
   };
 }

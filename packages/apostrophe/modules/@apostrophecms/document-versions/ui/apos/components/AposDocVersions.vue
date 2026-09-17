@@ -71,6 +71,7 @@
             >
               <template #actions="{ version }">
                 <AposButton
+                  ref="viewChangesButton"
                   type="quiet"
                   label="apostrophe:versionViewChanges"
                   :attrs="{ 'data-apos-test': 'doc-version-action-changes' }"
@@ -85,8 +86,10 @@
           </template>
           <template #changes>
             <AposDocVersionsChanges
+              ref="changesPane"
               :version="currentVersion"
               :rows="changeRows"
+              :counts="changeCounts"
               @back="backToList"
             />
           </template>
@@ -329,14 +332,21 @@ const view = ref('list');
 
 const {
   rows: changeRows,
-  load: loadChanges,
-  clear: clearChanges
+  counts: changeCounts,
+  load: loadChanges
 } = useDocVersionChanges({ action: versionsAction });
 
+const viewChangesButton = ref(null);
+const changesPane = ref(null);
+
+// The pane leaving is inert, so focus follows the swap: to Back on the
+// way in, to View Changes on the way out
 async function viewChanges(version) {
   try {
     if (await loadChanges(version._id)) {
       view.value = 'changes';
+      await nextTick();
+      changesPane.value?.focus();
     }
   } catch (e) {
     await apos.notify('apostrophe:versionFailChangesLoadMessage', {
@@ -347,9 +357,11 @@ async function viewChanges(version) {
   }
 }
 
-function backToList() {
+// The list pane never unmounts, so its selection and scroll are as left
+async function backToList() {
   view.value = 'list';
-  clearChanges();
+  await nextTick();
+  viewChangesButton.value?.focus();
 }
 
 // --- Lock ---
