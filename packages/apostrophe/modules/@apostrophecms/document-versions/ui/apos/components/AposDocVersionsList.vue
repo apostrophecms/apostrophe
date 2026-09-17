@@ -1,15 +1,11 @@
 <template>
-  <ul
-    class="apos-doc-version-list"
-  >
+  <ul class="apos-doc-version-list">
     <li
       v-for="version in versions"
       :key="version._id"
       class="apos-doc-version-list__row"
       data-apos-test="doc-version-item"
-      :class="{ 'apos-doc-version-list__row--active' : hasActiveClass(version) }"
-      @mouseover="activate(version)"
-      @mouseleave="deactivate"
+      :class="{ 'apos-doc-version-list__row--active': version._id === selectedId }"
     >
       <button
         class="apos-doc-version-list__item"
@@ -33,65 +29,38 @@
   </ul>
 </template>
 
-<script>
+<script setup>
+import { computed, inject } from 'vue';
 import locale from '../utils/locale.js';
 
+const props = defineProps({
+  currentVersion: {
+    type: Object,
+    default: null
+  },
+  versions: {
+    type: Array,
+    required: true
+  }
+});
+
+defineEmits([ 'select' ]);
+
+const $t = inject('i18n');
 const dateTimeFormat = locale.getDateTimeFormat();
 
-export default {
-  name: 'AposDocVersionsList',
-  props: {
-    currentVersion: {
-      type: Object,
-      default: null
-    },
-    versions: {
-      type: Array,
-      required: true
-    }
-  },
-  emits: [ 'select' ],
-  data() {
-    return {
-      activeId: null
-    };
-  },
-  computed: {
-    selectedVersion() {
-      return this.currentVersion || {};
-    },
-    selectedId() {
-      return this.selectedVersion._id;
-    }
-  },
-  methods: {
-    activate(version) {
-      this.activeId = version._id;
-    },
-    deactivate() {
-      this.activeId = null;
-    },
-    isSelected(version) {
-      return this.selectedId === version._id;
-    },
-    isActive(version) {
-      return this.activeId === version._id;
-    },
-    hasActiveClass(version) {
-      return this.isActive(version) || this.isSelected(version);
-    },
-    toHumanDate(date) {
-      return dateTimeFormat.format(new Date(date));
-    },
-    displayChangeCount(changeCount) {
-      if (!changeCount) {
-        return null;
-      }
+const selectedId = computed(() => props.currentVersion?._id || null);
 
-      return this.$t('apostrophe:publishedEdit', { count: changeCount });
-    }
+function toHumanDate(date) {
+  return dateTimeFormat.format(new Date(date));
+}
+
+function displayChangeCount(changeCount) {
+  if (!changeCount) {
+    return null;
   }
-};
+  return $t('apostrophe:publishedEdit', { count: changeCount });
+}
 </script>
 
 <style lang="scss" scoped>
@@ -103,8 +72,6 @@ export default {
     display: block;
     box-sizing: border-box;
     width: 100%;
-    // No matching color, the default (base-10) is #f4f4f4
-    // background-color: #f3f3f3;
     color: var(--a-text-primary);
     font-family: var(--a-family-default);
     font-size: var(--a-type-base);
@@ -153,8 +120,6 @@ export default {
 
     &:hover,
     &--active {
-      // No matching color, using the default background (white)
-      // background-color: #fcfcfc;
       background-color: var(--a-background-primary);
     }
   }

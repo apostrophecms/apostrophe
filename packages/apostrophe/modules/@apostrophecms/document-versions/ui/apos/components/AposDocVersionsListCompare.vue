@@ -1,6 +1,6 @@
 <template>
   <AposContextMenu
-    v-if="versions?.length"
+    v-if="versions.length"
     :button="{
       label: toHumanDate(currentVersion?.createdAt),
       icon: 'chevron-down-icon',
@@ -8,21 +8,21 @@
     }"
     :unpadded="true"
     menu-placement="bottom-end"
-    @open="openCompareMenu"
-    @close="closeCompareMenu"
+    @open="onOpen"
+    @close="stopScroll"
   >
     <template #prebutton>
       {{ $t('apostrophe:compare') }}
     </template>
     <dl
-      ref="compareVersionMenu"
+      ref="menu"
       class="apos-doc-version__compare-version-menu"
       role="menu"
       aria-label="menu"
     >
       <dt
         v-for="version in versions"
-        :key="version.createdAt"
+        :key="version._id"
         class="apos-doc-version__compare-version-menu__item"
       >
         <button
@@ -35,90 +35,58 @@
         </button>
       </dt>
       <div
-        ref="docVersionsSentinelCompare"
+        ref="sentinel"
         class="apos-doc-version-sentinel--compare"
       />
     </dl>
   </AposContextMenu>
 </template>
 
-<script>
-import observer from '../utils/observer.js';
+<script setup>
+import {
+  nextTick, ref, watch
+} from 'vue';
+import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfiniteScroll.js';
 import locale from '../utils/locale.js';
 
-const dateTimeFormat = locale.getDateTimeFormat();
-
-export default {
-  name: 'AposDocVersionsListCompare',
-  props: {
-    currentVersion: {
-      type: Object,
-      default: () => ({})
-    },
-    versions: {
-      type: Array,
-      required: true
-    },
-    pager: {
-      type: Object,
-      default: () => ({})
-    }
+const props = defineProps({
+  currentVersion: {
+    type: Object,
+    default: null
   },
-  emits: [ 'select', 'load-more' ],
-  data() {
-    return {
-      observer: null
-    };
-  },
-  watch: {
-    pager: {
-      async handler(newVal, oldVal) {
-        if (
-          !this.observer || (
-            newVal.currentPage === oldVal.currentPage &&
-            newVal.pages === oldVal.pages
-          )
-        ) {
-          return;
-        }
-
-        this.observer.updatePager(this.pager);
-      }
-    }
-  },
-  unmounted() {
-    if (this.observer) {
-      this.observer.disconnect();
-    }
-  },
-  methods: {
-    openCompareMenu() {
-      if (!this.observer) {
-        this.observer = observer({
-          callback: this.loadMore,
-          root: this.$refs.compareVersionMenu,
-          rootMargin: '0px 0px 150px 0px',
-          target: this.$refs.docVersionsSentinelCompare,
-          pager: this.pager
-        });
-      }
-
-      this.observer.observe();
-    },
-    closeCompareMenu() {
-      this.observer.unobserve();
-    },
-    loadMore([ target ]) {
-      if (!target.isIntersecting) {
-        return;
-      }
-      this.$emit('load-more', [ target ]);
-    },
-    toHumanDate(date) {
-      return dateTimeFormat.format(new Date(date));
-    }
+  versions: {
+    type: Array,
+    required: true
   }
-};
+});
+
+const emit = defineEmits([ 'select', 'load-more' ]);
+
+const dateTimeFormat = locale.getDateTimeFormat();
+const menu = ref(null);
+const sentinel = ref(null);
+
+const {
+  start: startScroll,
+  stop: stopScroll,
+  recheck
+} = useInfiniteScroll(sentinel, () => emit('load-more'), {
+  rootMargin: '0px 0px 150px 0px',
+  root: menu
+});
+
+async function onOpen() {
+  await nextTick();
+  startScroll();
+}
+
+watch(() => props.versions, () => {
+  nextTick(recheck);
+});
+
+function toHumanDate(date) {
+  return date ? dateTimeFormat.format(new Date(date)) : '';
+}
 </script>
 
 <style lang="scss" scoped>

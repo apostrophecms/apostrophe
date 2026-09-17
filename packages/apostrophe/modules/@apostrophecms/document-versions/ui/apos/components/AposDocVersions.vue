@@ -4,7 +4,7 @@
     :class="classes"
     data-apos-test="doc-version-modal"
     :modal="modal"
-    :modal-title="modalTitle"
+    :modal-title="{ key: 'apostrophe:versionPluralLabel' }"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="close"
@@ -37,28 +37,25 @@
         >
           <dt
             v-for="item in operations"
-            :key="item.label"
+            :key="item.action"
             class="apos-doc-version__view-options-menu__item"
             :class="{
-              'apos-doc-version__view-options-menu__item--disabled':
-                item.if && $data[item.if + 'Disabled']
+              'apos-doc-version__view-options-menu__item--disabled': item.disabled
             }"
           >
             <button
               class="apos-doc-version__view-options-menu__item__button"
               data-apos-test="doc-version-view-options-select"
-              :value="item.label"
-              :disabled="item.if && $data[item.if + 'Disabled']"
-              @click="toggleAction(item.action)"
+              :value="$t(item.label)"
+              :disabled="item.disabled"
+              @click="toggleOperation(item.action)"
             >
-              <p
-                class="apos-doc-version__view-options-menu__item__label"
-              >
+              <p class="apos-doc-version__view-options-menu__item__label">
                 {{ $t(item.label) }}
               </p>
               <AposToggle
                 class="apos-doc-version__view-options-menu__item__toggle"
-                :model-value="$data[item.action + 'Disabled']"
+                :model-value="!item.enabled"
                 :disable-focus="true"
               />
             </button>
@@ -81,7 +78,6 @@
       >
         <AposModalTabs
           v-if="versionTabs.length"
-          :key="tabKey"
           :current="currentTab"
           :tabs="versionTabs"
           @select-tab="switchPane"
@@ -101,11 +97,10 @@
             <div class="separator" />
             <div class="apos-doc-version-editor__compare-header">
               <AposDocVersionsListCompare
-                :current-version="currentVersionCompare"
+                :current-version="compareVersion"
                 :versions="versionsCompare"
-                :pager="pager"
-                @select="onVersionCompareSelect"
-                @load-more="loadMore"
+                @select="selectCompareVersion"
+                @load-more="loadMoreVersions"
               />
             </div>
           </div>
@@ -118,21 +113,19 @@
               v-for="tab in versionTabs"
               v-show="tab.name === currentTab"
               :key="tab.name"
-              :ref="tab.name"
               :schema="groups[tab.name]?.schema || []"
               :current-fields="groups[tab.name]?.fields || []"
               :utility-rail="false"
               :conditional-fields="conditionalFields"
               :doc-id="docId"
               :model-value="docFields"
-              :server-errors="serverErrors"
               :generation="generation"
               :meta="docMeta"
               @update:model-value="evaluateConditions()"
             />
           </div>
           <div
-            v-else-if="initialized"
+            v-else-if="loaded"
             class="apos-doc-version-editor__body"
           >
             <p class="apos-doc-version-editor__empty-title">
@@ -143,17 +136,14 @@
       </AposModalBody>
     </template>
     <template #rightRail>
-      <AposModalRail
-        ref="docVersionsRail"
-        type="right"
-      >
+      <AposModalRail type="right">
         <AposDocVersionsList
           :current-version="currentVersion"
           :versions="versions"
-          @select="onVersionSelect"
+          @select="selectVersion"
         />
         <div
-          ref="docVersionsSentinel"
+          ref="scrollSentinel"
           class="apos-doc-version-sentinel"
         />
       </AposModalRail>
@@ -161,540 +151,419 @@
   </AposModal>
 </template>
 
-<script>
-import { mapState } from 'pinia';
-import { createId } from '@paralleldrive/cuid2';
+<script setup>
+import {
+  computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch
+} from 'vue';
 import { klona } from 'klona';
-
-import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
-import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
-import AposAdvisoryLockMixin
-  from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import observer from '../utils/observer.js';
+import {
+  evaluateExternalConditions as evaluateSchemaExternalConditions,
+  getConditionalFields,
+  getConditionTypesObject
+} from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
+import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfiniteScroll.js';
+import { useAdvisoryLock } from 'Modules/@apostrophecms/ui/composables/useAdvisoryLock.js';
+import { useDocVersionsList } from '../composables/useDocVersionsList.js';
+import { useDocVersionView } from '../composables/useDocVersionView.js';
 import locale from '../utils/locale.js';
 
+const props = defineProps({
+  // The versions module
+  moduleName: {
+    type: String,
+    required: true
+  },
+  doc: {
+    type: Object,
+    required: true
+  }
+});
+
+const emit = defineEmits([ 'modal-result', 'safe-close' ]);
+
+const $t = inject('i18n');
+const modalStore = useModalStore();
 const dateTimeFormat = locale.getDateTimeFormat();
 
-export default {
-  name: 'AposDocVersions',
-  mixins: [ AposModalTabsMixin, AposEditorMixin, AposAdvisoryLockMixin ],
-  props: {
-    moduleName: {
-      type: String,
-      required: true
-    },
-    doc: {
-      type: Object,
-      required: true
+const modal = ref({
+  active: false,
+  type: 'overlay',
+  showModal: false
+});
+
+const scrollSentinel = ref(null);
+
+// --- Document and schema ---
+
+const docId = props.doc._id;
+const versionsAction = apos.modules[props.moduleName].action;
+
+const {
+  version,
+  docFields,
+  compareSchema,
+  displayComparison,
+  generation,
+  show,
+  fetchVersion
+} = useDocVersionView({ action: versionsAction });
+
+const docType = computed(() => docFields.value.data?.type || props.doc.type);
+const moduleOptions = computed(() => apos.modules[docType.value] || {});
+const docAction = computed(() => `${moduleOptions.value.action}/${docId}`);
+const docMeta = computed(() => docFields.value.data?.aposMeta || {});
+
+const schema = computed(() => {
+  const fields = (moduleOptions.value.schema || [])
+    .filter(field => apos.schema.components.fields[field.type])
+    .filter(field => field.name !== 'archived');
+  return klona(fields).map(field => ({
+    ...field,
+    readOnly: true
+  }));
+});
+const currentSchema = computed(() => compareSchema.value || schema.value);
+
+// --- Conditional fields ---
+
+const externalConditionsResults = ref(getConditionTypesObject());
+const conditionalFields = ref(getConditionTypesObject());
+
+async function evaluateExternalConditions() {
+  externalConditionsResults.value = await evaluateSchemaExternalConditions(
+    schema.value,
+    docId,
+    $t
+  );
+}
+
+function evaluateConditions() {
+  conditionalFields.value = getConditionalFields(
+    schema.value,
+    docFields.value.data,
+    externalConditionsResults.value
+  );
+}
+
+// --- Tabs ---
+
+// Off when only the differences of a comparison are shown
+const displayTabs = ref(true);
+const currentTab = ref(null);
+
+function isParked(fieldName) {
+  return (props.doc.parked || []).includes(fieldName);
+}
+
+const groups = computed(() => {
+  const groupSet = {};
+  for (const field of currentSchema.value) {
+    if (isParked(field.name)) {
+      continue;
     }
-  },
-  emits: [ 'modal-result', 'safe-close' ],
-  data() {
-    return {
-      tabKey: createId(),
-      restoreOnly: true,
-      // required by the editor mixin
-      utilityFields: [],
-      fieldErrors: {},
-      modal: {
-        active: false,
-        type: 'overlay',
-        showModal: false
-      },
-      displayComparison: false,
-      displayTabs: true,
-      compareSchema: null,
-      currentVersion: null,
-      currentVersionCompare: null,
-      versions: [],
-      versionsMeta: {},
-      saveMenu: null,
-      initialized: false,
-      generation: 0,
-      observer: null,
-      compareDisabled: true,
-      onlyShowDifferencesDisabled: true,
-      operations: [
-        {
-          label: this.$t('apostrophe:compareVersions'),
-          action: 'compare'
-        },
-        {
-          label: this.$t('apostrophe:onlyShowDifferences'),
-          action: 'onlyShowDifferences',
-          if: 'compare'
-        }
-      ]
+    const group = displayTabs.value
+      ? field.group
+      : {
+        name: 'basics',
+        label: 'apostrophe:basics'
+      };
+    if (!group) {
+      continue;
+    }
+    groupSet[group.name] = groupSet[group.name] || {
+      label: group.label,
+      fields: [],
+      schema: []
     };
+    groupSet[group.name].fields.push(field.name);
+    groupSet[group.name].schema.push(field);
+  }
+  return groupSet;
+});
+
+function isTabVisible(fields) {
+  return fields.some(field => conditionalFields.value.if[field] !== false);
+}
+
+const versionTabs = computed(() => {
+  const tabs = Object.entries(groups.value)
+    .filter(([ name ]) => name !== 'utility')
+    .map(([ name, group ]) => ({
+      name,
+      label: group.label,
+      fields: group.fields,
+      isVisible: isTabVisible(group.fields)
+    }));
+  const fields = groups.value.utility?.fields || [];
+  tabs.push({
+    name: 'utility',
+    label: 'apostrophe:utility',
+    fields,
+    isVisible: isTabVisible(fields)
+  });
+  return tabs;
+});
+
+watch(versionTabs, (tabs) => {
+  const current = tabs.find(tab => tab.name === currentTab.value);
+  if (current?.isVisible) {
+    return;
+  }
+  const first = tabs.find(tab => tab.isVisible) || tabs[0];
+  currentTab.value = first?.name || null;
+}, { immediate: true });
+
+function switchPane(name) {
+  currentTab.value = name;
+}
+
+// --- Version list ---
+
+const {
+  versions,
+  loaded,
+  load: loadVersions,
+  loadMore,
+  cancel: cancelVersions
+} = useDocVersionsList({
+  action: versionsAction,
+  docId
+});
+
+const {
+  start: startScroll,
+  stop: stopScroll,
+  recheck
+} = useInfiniteScroll(scrollSentinel, loadMoreVersions, {
+  // About four rows ahead of the end
+  rootMargin: '0px 0px 150px 0px',
+  root: '.apos-modal__rail--right'
+});
+
+async function loadMoreVersions() {
+  try {
+    await loadMore();
+  } catch (e) {
+    await notifyListError(e);
+  }
+}
+
+// The sentinel may still be in view after an append: ask the observer again
+watch(versions, () => {
+  nextTick(recheck);
+});
+
+async function notifyListError(e) {
+  const message = e.status === 404
+    ? 'apostrophe:versionFailDocPermsMessage'
+    : 'apostrophe:versionFailDocLoadMessage';
+  await apos.notify(message, {
+    type: 'warning',
+    icon: 'alert-circle-icon',
+    dismiss: true
+  });
+}
+
+// --- Selection and comparison ---
+
+const currentVersion = ref(null);
+const compareVersion = ref(null);
+const compareEnabled = ref(false);
+const onlyDifferences = ref(false);
+
+const currentVersionId = computed(() => currentVersion.value?._id || null);
+const compareVersionId = computed(() => compareVersion.value?._id || null);
+const versionsCompare = computed(() => {
+  return versions.value.filter(item => item._id !== currentVersionId.value);
+});
+
+const operations = computed(() => [
+  {
+    label: 'apostrophe:compareVersions',
+    action: 'compare',
+    enabled: compareEnabled.value,
+    disabled: false
   },
-  computed: {
-    ...mapState(useModalStore, [ 'stack' ]),
-    docId() {
-      return this.doc._id;
-    },
-    docType() {
-      return this.docFields?.data?.type || this.doc.type;
-    },
-    docVersionId() {
-      return `${this.currentVersionId}:${this.currentVersionCompareId}`;
-    },
-    currentSchema() {
-      return this.compareSchema || this.schema;
-    },
-    currentVersionId() {
-      if (!this.currentVersion) {
-        return null;
-      }
-      return this.currentVersion._id;
-    },
-    currentVersionCompareId() {
-      if (!this.currentVersionCompare) {
-        return null;
-      }
-      return this.currentVersionCompare._id;
-    },
-    versionType() {
-      return this.moduleName;
-    },
-    versionsCompare() {
-      return this.versions.filter(version => version._id !== this.currentVersionId);
-    },
-    getVersionAllPath() {
-      return this.versionModuleAction;
-    },
-    getOnePath() {
-      return `${this.moduleAction}/${this.docId}`;
-    },
-    versionModuleOptions() {
-      return window.apos.modules[this.versionType] || {};
-    },
-    versionModuleAction() {
-      return this.versionModuleOptions.action;
-    },
-    moduleOptions() {
-      return window.apos.modules[this.docType] || {};
-    },
-    moduleAction() {
-      return (window.apos.modules[this.docType] || {}).action;
-    },
-    groups() {
-      const groupSet = {};
+  {
+    label: 'apostrophe:onlyShowDifferences',
+    action: 'onlyShowDifferences',
+    enabled: onlyDifferences.value,
+    disabled: !compareEnabled.value
+  }
+]);
 
-      this.currentSchema.forEach((field) => {
-        if (!this.filterOutParkedFields([ field.name ]).length) {
-          return;
-        }
-
-        if (!this.displayTabs) {
-          groupSet.basics = groupSet.basics || {
-            label: 'apostrophe:basics',
-            fields: [],
-            schema: []
-          };
-          groupSet.basics.fields.push(field.name);
-          groupSet.basics.schema.push(field);
-
-          return;
-        }
-
-        if (field.group && !groupSet[field.group.name]) {
-          groupSet[field.group.name] = {
-            label: field.group.label,
-            fields: [ field.name ],
-            schema: [ field ]
-          };
-        } else if (field.group) {
-          groupSet[field.group.name].fields.push(field.name);
-          groupSet[field.group.name].schema.push(field);
-        }
-      });
-
-      return groupSet;
-    },
-    versionTabs() {
-      // AposRelationshipEditor does not implement
-      // AposEditorMixin with the function conditionalFields
-      const fields = this.groups.utility?.fields || [];
-      const utility = {
-        name: 'utility',
-        label: 'apostrophe:utility',
-        fields,
-        isVisible: fields.some(field => this.conditionalFields.if[field] !== false)
-      };
-
-      return this.tabs.concat(utility);
-    },
-    modalTitle() {
-      return {
-        key: 'apostrophe:versionPluralLabel'
-      };
-    },
-    meta() {
-      return this.versionsMeta || {};
-    },
-    classes() {
-      const classes = [];
-      if (this.displayComparison) {
-        classes.push('apos-doc-version-editor--compare');
-      }
-
-      if (!this.displayTabs) {
-        classes.push('apos-doc-version-editor--highlights-only');
-      }
-
-      return classes;
-    },
-    pager() {
-      return {
-        currentPage: this.meta.currentPage,
-        pages: this.meta.pages
-      };
+function toggleOperation(action) {
+  if (action === 'compare') {
+    compareEnabled.value = !compareEnabled.value;
+    if (!compareEnabled.value) {
+      onlyDifferences.value = false;
     }
-  },
-  watch: {
-    docVersionId: {
-      async handler(newVal, oldVal) {
-        if (newVal === oldVal) {
-          return;
-        }
+    return;
+  }
+  onlyDifferences.value = !onlyDifferences.value;
+}
 
-        try {
-          const {
-            version,
-            document
-          } = this.compareDisabled === false
-            ? await this.loadVersionCompare(
-              this.currentVersionId,
-              this.currentVersionCompareId
-            )
-            : await this.loadVersion(this.currentVersionId);
+watch(compareEnabled, (enabled) => {
+  compareVersion.value = enabled
+    ? (versionsCompare.value[0] || null)
+    : null;
+});
 
-          this.version = version;
-          this.docFields = {
-            data: {
-              ...document
-            }
-          };
+watch(onlyDifferences, (enabled) => {
+  displayTabs.value = !enabled;
+});
 
-          this.generation++;
-        } catch (error) {
-          await apos.notify('apostrophe:versionFailVersionLoadMessage', {
-            type: 'danger',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-        }
-      }
-    },
-    compareDisabled: {
-      async handler(newVal, oldVal) {
-        if (newVal === oldVal) {
-          return;
-        }
+function selectVersion(item) {
+  if (currentVersionId.value !== item._id) {
+    currentVersion.value = item;
+  }
+}
 
-        if (newVal === true) {
-          this.currentVersionCompare = null;
-          this.compareSchema = null;
+function selectCompareVersion(item) {
+  if (compareVersionId.value !== item._id) {
+    compareVersion.value = item;
+  }
+}
 
-          return;
-        }
-
-        this.currentVersionCompare = this.versionsCompare[0];
-      }
-    },
-    onlyShowDifferencesDisabled: {
-      async handler(newVal, oldVal) {
-        if (newVal === oldVal) {
-          return;
-        }
-
-        this.displayTabs = !this.displayTabs;
-      }
-    },
-    pager: {
-      handler(newVal, oldVal) {
-        if (
-          !this.observer ||
-          (
-            newVal.currentPage === oldVal.currentPage &&
-            newVal.pages === oldVal.pages
-          )
-        ) {
-          return;
-        }
-
-        this.observer.updatePager(newVal);
-      }
+watch([ currentVersionId, compareVersionId ], async ([ versionId, compareId ]) => {
+  if (!versionId) {
+    return;
+  }
+  try {
+    const shown = await show(versionId, compareEnabled.value ? compareId : null);
+    if (shown) {
+      evaluateConditions();
     }
-  },
-  async mounted() {
-    this.modal.active = true;
-    await this.evaluateExternalConditions();
-    this.loadVersions()
-      .then(() => {
-        this.evaluateConditions();
-        this.initialized = true;
-      });
-  },
-  unmounted() {
-    if (this.observer) {
-      this.observer.disconnect();
-    }
-  },
-  methods: {
-    loadMore([ target ]) {
-      if (!target.isIntersecting) {
-        return;
-      }
-      this.observer.unobserve();
-      this.loadVersions(this.versionsMeta.currentPage + 1, false)
-        .then(() => this.observer.observe());
-    },
-    async loadVersions(page, initial = true) {
-      let response;
-      try {
-        if (!(await this.lock(this.getOnePath, this.docId))) {
-          this.lockNotAvailable();
-          return;
-        }
-        response = await apos.http.get(this.getVersionAllPath, {
-          busy: initial,
-          qs: {
-            docId: this.doc._id,
-            page
-          }
-        });
-      } catch (error) {
-        const message = error.status === 404
-          ? 'apostrophe:versionFailDocPermsMessage'
-          : 'apostrophe:versionFailDocLoadMessage';
-        await apos.notify(message, {
-          type: 'warning',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-        if (initial) {
-          this.close();
-        }
-      } finally {
-        this.setVersionsResponse(response);
-        if (!this.currentVersion && this.versions.length > 0) {
-          this.onVersionSelect(this.versions[0]);
-        }
-        if (initial) {
-          await this.$nextTick();
-          // Safety check
-          if (this.$refs.docVersionsRail) {
-            this.observer = observer({
-              callback: this.loadMore,
-              root: this.$refs.docVersionsRail.$el,
-              // Intersect ~4-5 rows earlier
-              rootMargin: '0px 0px 150px 0px',
-              target: this.$refs.docVersionsSentinel
-            });
-            this.observer.observe();
-            // Explicitly check if we need to fill the rail.
-            // If the content is too short to scroll, the observer might not
-            // fire reliably in some environments depending on paint timing.
-            const rail = this.$refs.docVersionsRail.$el;
-            if (rail.scrollHeight <= rail.clientHeight) {
-              this.loadMore([ {
-                isIntersecting: true
-              } ]);
-            }
-          }
-        }
-      }
-    },
-    async loadVersion(versionId) {
-      try {
-        const version = await apos.http.get(
-          `${this.getVersionAllPath}/${versionId}`,
-          {
-            busy: true
-          }
-        );
+  } catch (e) {
+    await apos.notify('apostrophe:versionFailVersionLoadMessage', {
+      type: 'danger',
+      icon: 'alert-circle-icon',
+      dismiss: true
+    });
+  }
+});
 
-        this.displayComparison = false;
+const classes = computed(() => ({
+  'apos-doc-version-editor--compare': displayComparison.value,
+  'apos-doc-version-editor--highlights-only': !displayTabs.value
+}));
 
-        return {
-          version,
-          document: version.doc
-        };
-      } catch (error) {
-        await apos.notify('apostrophe:versionFailVersionLoadMessage', {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-      }
-    },
-    async loadVersionCompare(versionId1, versionId2) {
-      try {
-        const {
-          schema,
-          version,
-          document
-        } = await apos.http.get(
-          `${this.versionModuleAction}/compare/${versionId1}/${versionId2}`,
-          {
-            busy: true
-          }
-        );
-        this.compareSchema = schema
-          .filter(field => field.name !== 'archived')
-          .map(field => ({
-            ...field,
-            readOnly: true
-          }));
-        this.displayComparison = true;
+// --- Lock and restore ---
 
-        return {
-          version,
-          document
-        };
-      } catch (error) {
-        await apos.notify('apostrophe:versionFailVersionLoadMessage', {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-      }
-    },
-    async restoreVersion(version) {
-      // XXX do we need confirmation dialog? This operation should be considered
-      // dangerous as it replaces any unpublished changes.
-      let doc;
-      let updated;
-      if (!version.doc) {
-        if (this.version._id === version._id) {
-          doc = this.version.doc;
-        }
-        if (!doc) {
-          const { version: reloadVersion } = await this.loadVersion(version._id);
-          doc = reloadVersion.doc;
-        }
-      } else {
-        doc = version.doc;
-      }
-      if (!doc) {
-        await apos.notify('apostrophe:versionFailVersionRestoreMessage', {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-        return;
-      }
+const {
+  lock,
+  addLockToRequest,
+  isLockedError,
+  showLockedError
+} = useAdvisoryLock({ onLockLost: close });
 
-      try {
-        doc = klona(doc);
-        this.addLockToRequest(doc);
-        updated = await apos.http.put(this.getOnePath, {
-          body: doc,
-          busy: true,
-          draft: true
-        });
-
-        apos.notify('apostrophe:versionRestored', {
-          type: 'success',
-          icon: 'archive-arrow-up-icon',
-          dismiss: true
-        });
-
-        if (this.refreshRedirect(this.doc, updated)) {
-          return;
-        }
-        apos.bus.$emit('content-changed', {
-          doc: updated,
-          action: 'restoreVersion'
-        });
-        this.$emit('modal-result', updated);
-        this.close();
-      } catch (e) {
-        if (this.isLockedError(e)) {
-          await this.showLockedError(e);
-          return;
-        }
-        await apos.notify('apostrophe:versionFailVersionRestoreMessage', {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true
-        });
-      }
-    },
-    refreshRedirect(oldDoc, newDoc) {
-      const isInContextEdit = this.stack.length === 1;
-      if (isInContextEdit && oldDoc.slug !== newDoc.slug) {
-        const current = new URL(window.location.href);
-        if (!newDoc._url.match(current.pathname)) {
-          window.location = newDoc._url;
-          return true;
-        }
-      }
-      return false;
-    },
-    setVersionsResponse(response) {
-      if (!response || !response.results) {
-        return;
-      }
-      const { results, ...meta } = response;
-      if (results.length > 0) {
-        this.versions.push(...results);
-      }
-      this.versionsMeta = { ...meta };
-    },
-    // Implementing a method expected by the advisory lock mixin
-    lockNotAvailable() {
-      this.close();
-    },
-    getAposSchema(field) {
-      if (field.group.name === 'utility') {
-        return this.$refs.utilitySchema;
-      } else {
-        return this.$refs[field.group.name][0];
-      }
-    },
-    filterOutParkedFields(fields) {
-      return fields.filter((fieldName) => {
-        return !(this.doc.parked || []).includes(
-          fieldName
-        );
-      });
-    },
-    onVersionSelect(version) {
-      if (this.currentVersionId === version._id) {
-        return;
-      }
-      this.currentVersion = version;
-    },
-    onVersionCompareSelect(version) {
-      if (this.currentVersionCompareId === version._id) {
-        return;
-      }
-      this.currentVersionCompare = version;
-    },
-    onVersionRestore(version) {
-      this.restoreVersion(version);
-    },
-    close() {
-      this.modal.showModal = false;
-    },
-    toggleAction(action) {
-      this[action + 'Disabled'] = !this[action + 'Disabled'];
-      if (this[action + 'Disabled']) {
-        this.operations
-          .filter(operation => operation.if === action)
-          .forEach((operation) => {
-            this[operation.action + 'Disabled'] = true;
-          });
-      }
-    },
-    toHumanDate(date) {
-      return dateTimeFormat.format(new Date(date));
+async function restoreVersion(item) {
+  let doc = item.doc;
+  if (!doc && version.value?._id === item._id) {
+    doc = version.value.doc;
+  }
+  if (!doc) {
+    try {
+      doc = (await fetchVersion(item._id)).doc;
+    } catch (e) {
+      doc = null;
     }
   }
-};
+  if (!doc) {
+    await notifyRestoreError();
+    return;
+  }
+
+  try {
+    doc = klona(doc);
+    addLockToRequest(doc);
+    const updated = await apos.http.put(docAction.value, {
+      body: doc,
+      busy: true,
+      draft: true
+    });
+
+    apos.notify('apostrophe:versionRestored', {
+      type: 'success',
+      icon: 'archive-arrow-up-icon',
+      dismiss: true
+    });
+
+    if (refreshRedirect(props.doc, updated)) {
+      return;
+    }
+    apos.bus.$emit('content-changed', {
+      doc: updated,
+      action: 'restoreVersion'
+    });
+    emit('modal-result', updated);
+    close();
+  } catch (e) {
+    if (isLockedError(e)) {
+      await showLockedError(e);
+      return;
+    }
+    await notifyRestoreError();
+  }
+}
+
+function notifyRestoreError() {
+  return apos.notify('apostrophe:versionFailVersionRestoreMessage', {
+    type: 'danger',
+    icon: 'alert-circle-icon',
+    dismiss: true
+  });
+}
+
+// In-context editing: a restored slug moves the page under our feet
+function refreshRedirect(oldDoc, newDoc) {
+  const isInContextEdit = modalStore.stack.length === 1;
+  if (isInContextEdit && oldDoc.slug !== newDoc.slug) {
+    const current = new URL(window.location.href);
+    if (!newDoc._url.match(current.pathname)) {
+      window.location = newDoc._url;
+      return true;
+    }
+  }
+  return false;
+}
+
+// --- Lifecycle ---
+
+function close() {
+  modal.value.showModal = false;
+}
+
+function toHumanDate(date) {
+  return dateTimeFormat.format(new Date(date));
+}
+
+onMounted(async () => {
+  modal.value.active = true;
+  try {
+    if (!(await lock(docAction.value))) {
+      close();
+      return;
+    }
+    await evaluateExternalConditions();
+    await loadVersions();
+  } catch (e) {
+    await notifyListError(e);
+    close();
+    return;
+  }
+  if (versions.value.length) {
+    selectVersion(versions.value[0]);
+  }
+  await nextTick();
+  startScroll();
+});
+
+onBeforeUnmount(() => {
+  cancelVersions();
+  stopScroll();
+});
 </script>
 
 <style lang="scss" scoped>
