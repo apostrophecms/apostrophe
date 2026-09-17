@@ -465,8 +465,6 @@
   "publishBeforeUsingTooltip": "Publique esse conteúdo antes de usá-lo em um relacionamento",
   "publishType": "Publicar {{ type }}",
   "published": "Publicado",
-  "publishedEdit": "publicado {{ count }} edição",
-  "publishedEdit_plural": "publicado {{ count }} edições",
   "publishingBatchConfirmation": "Tem certeza de que deseja publicar {{ count }} {{ type }}?",
   "publishingBatchConfirmationButton": "Sim, publicar conteúdo.",
   "rawCssAndJs": "CSS e JS puros.",

@@ -34,15 +34,13 @@ module.exports = {
     // time, in milliseconds, has passed since that version was created. Then
     // a new version starts. One day by default
     draftInterval: 24 * 60 * 60 * 1000,
-    // Passed to `Intl.DateTimeFormat` when displaying version timestamps
-    dateTimeFormatOptions: {
-      year: 'numeric',
-      month: 'long',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }
+    // `Intl.DateTimeFormat` options for version timestamps. Unset, the list
+    // shows a compact date and time, with the year only when it is not the
+    // current one
+    dateTimeFormatOptions: null
+  },
+  icons: {
+    'creation-icon': 'Creation'
   },
   async init(self) {
     self.defaultLimit = 10;

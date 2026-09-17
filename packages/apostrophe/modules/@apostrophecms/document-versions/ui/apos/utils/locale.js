@@ -1,35 +1,56 @@
+// The admin UI language, through its `intlMapping` when the locale of the
+// same name has one
 const getLocale = () => {
-  const i18n = window.apos.i18n || {};
-  const { locale = 'en' } = i18n;
+  const {
+    adminLocale,
+    locale = 'en',
+    locales
+  } = window.apos.i18n || {};
+  const current = adminLocale || locale;
 
-  return i18n.locales?.[locale]?.intlMapping || locale;
+  return locales?.[current]?.intlMapping || current;
 };
 
 const getDateTimeFormatOptions = () => {
   const moduleOptions = window.apos.modules['@apostrophecms/document-versions'] || {};
-  const {
-    dateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'long',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }
-  } = moduleOptions;
 
-  return dateTimeFormatOptions;
+  return moduleOptions.dateTimeFormatOptions || null;
 };
 
-const getDateTimeFormat = (
+// Returns a function formatting a version timestamp: the project's
+// `dateTimeFormatOptions` when set, otherwise the day and the time joined
+// by a middle dot, with the year when it is not the current one
+const getDateFormatter = (
   locale = getLocale(),
   dateTimeFormatOptions = getDateTimeFormatOptions()
 ) => {
-  return new Intl.DateTimeFormat(locale, dateTimeFormatOptions);
+  if (dateTimeFormatOptions) {
+    const format = new Intl.DateTimeFormat(locale, dateTimeFormatOptions);
+    return date => format.format(new Date(date));
+  }
+  const dayFormat = new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric'
+  });
+  const dayWithYearFormat = new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+  const timeFormat = new Intl.DateTimeFormat(locale, {
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+
+  return (value) => {
+    const date = new Date(value);
+    const sameYear = date.getFullYear() === new Date().getFullYear();
+    const day = (sameYear ? dayFormat : dayWithYearFormat).format(date);
+    return `${day} · ${timeFormat.format(date)}`;
+  };
 };
 
 export default {
   getLocale,
-  getDateTimeFormatOptions,
-  getDateTimeFormat
+  getDateFormatter
 };

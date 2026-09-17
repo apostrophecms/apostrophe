@@ -465,8 +465,6 @@
   "publishBeforeUsingTooltip": "Pred použitím v kontexte zverejnite tento obsah",
   "publishType": "Publikovať {{ type }}",
   "published": "Publikovaný",
-  "publishedEdit": "publikovaný {{ count }} edit",
-  "publishedEdit_plural": "publikované {{ count }} edity",
   "publishingBatchConfirmation": "Ste si istý, že chcete publikovať {{ count }} {{ type }}?",
   "publishingBatchConfirmationButton": "Áno, publikovať obsah.",
   "rawCssAndJs": "Zdrojový CSS a JS",
