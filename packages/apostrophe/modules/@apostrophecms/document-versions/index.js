@@ -1,6 +1,6 @@
 // Records versions of every localized, manually published document: one on
-// each publish and one per handoff of draft work, and lets editors browse,
-// compare and restore them.
+// each publish and one per handoff of draft work, and lets editors browse
+// and restore them.
 // Versions live in the `aposDocsVersions` collection. A record's `doc` is
 // stored packed (see `pack`) and the finders unpack it, so queries never
 // reach into `doc`: everything they need is a top-level field.
@@ -43,9 +43,6 @@ module.exports = {
       minute: '2-digit',
       second: '2-digit'
     }
-  },
-  icons: {
-    'view-split-vertical-icon': 'ViewSplitVertical'
   },
   async init(self) {
     self.defaultLimit = 10;
@@ -173,28 +170,6 @@ module.exports = {
           return changesOrRestError(
             () => self.getVersionChanges(req, [ req.params.versionId ])
           );
-        },
-        'compare/:vid1/:vid2': async (req) => {
-          try {
-            // Sequential on purpose: Promise.all would miss the _images relationship
-            const v1 = await self.getOne(req, self.apos.launder.id(req.params.vid1));
-            const v2 = await self.getOne(req, self.apos.launder.id(req.params.vid2));
-
-            const schema = self.getCompareSchema(v1, v2);
-            const { version, document } = self.getCompareData(v1, v2, schema);
-
-            return {
-              schema,
-              version,
-              document
-            };
-          } catch (error) {
-            const errorName = error.name === 'ReferenceError'
-              ? 'notfound'
-              : 'invalid';
-
-            throw self.apos.error(errorName);
-          }
         }
       }
     };
@@ -1151,73 +1126,6 @@ module.exports = {
             deleted: rows.filter(row => row.type === 'deleted').length,
             ai: rows.filter(row => row.ai).length
           }
-        };
-      },
-      getCompareSchema(v1, v2) {
-        const v1Manager = self.apos.doc.getManager(v1.doc.type) || { schema: [] };
-        const v2Manager = self.apos.doc.getManager(v2.doc.type) || { schema: [] };
-        const fields = v1Manager.schema.map(field => field.name);
-
-        const schema = v2Manager.schema
-          .reduce(
-            (acc, current) => fields.includes(current.name) === false
-              ? acc.concat(current)
-              : acc,
-            v1Manager.schema
-          )
-          .map(self.removeIfFrom);
-
-        return schema;
-      },
-      getCompareData(v1, v2, schema = []) {
-        const version = { ...v1 };
-        const document = { ...v1.doc };
-
-        const req = self.apos.task.getReq();
-
-        schema.forEach(field => {
-          self.apos.doc.setMeta(
-            document,
-            '@apostrophecms/schema',
-            field.name,
-            'compare',
-            v2.doc[field.name]
-          );
-          self.apos.doc.setMeta(
-            document,
-            '@apostrophecms/schema',
-            field.name,
-            'highlight',
-            !self.apos.schema.isEqual(req, [ field ], document, v2.doc)
-          );
-        });
-
-        return {
-          version,
-          document
-        };
-      },
-      removeIfFrom({ if: _, ...field }) {
-        const add = field.fields?.add
-          ? Object.fromEntries(
-            Object.entries(field.fields.add)
-              .map(([ key, value ]) => [ key, self.removeIfFrom(value) ])
-          )
-          : {};
-        const schema = field.schema
-          ? field.schema.map(self.removeIfFrom)
-          : [];
-
-        return {
-          ...field,
-          ...(field.fields?.add && {
-            fields: {
-              add
-            }
-          }),
-          ...(field.schema && {
-            schema
-          })
         };
       },
       // Recompute `changeCount` for every version, one timeline at a time.
