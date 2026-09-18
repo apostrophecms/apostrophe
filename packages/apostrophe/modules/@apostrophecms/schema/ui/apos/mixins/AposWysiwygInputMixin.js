@@ -75,6 +75,22 @@ export default {
     this.flush();
   },
   methods: {
+    // Put the cursor in this field, because the user asked to edit it, e.g.
+    // by clicking the last crumb of its trail. Only the editor knows what its
+    // own markup looks like, so `AposWysiwygField` asks rather than guessing.
+    //
+    // The default handles an ordinary form control or a rich text editing
+    // area, whether it is this component's own root element or nested inside
+    // it. An editor that is none of those things overrides this method
+    focus() {
+      const el = this.$el;
+      if (el?.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+      const selector = 'textarea, input, select, [contenteditable="true"]';
+      const focusable = el.matches(selector) ? el : el.querySelector(selector);
+      focusable?.focus();
+    },
     // Accept a new value and save it right away. For editors that debounce
     // on their own, such as rich text
     update(value) {
