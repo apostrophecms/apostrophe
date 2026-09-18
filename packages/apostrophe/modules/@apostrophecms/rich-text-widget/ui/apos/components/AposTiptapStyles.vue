@@ -37,6 +37,8 @@
 
 <script>
 
+import findActiveStyleIndex from 'Modules/@apostrophecms/rich-text-widget/lib/findActiveStyleIndex.js';
+
 export default {
   name: 'AposTiptapStyles',
   props: {
@@ -118,11 +120,7 @@ export default {
           if (activeEls[0].name === 'defaultNode') {
             return 1;
           } else {
-            const match = nodes.findIndex(node =>
-              node.class === activeEls[0].class &&
-              node.type === activeEls[0].name &&
-              node.level === activeEls[0].level
-            );
+            const match = findActiveStyleIndex(nodes, activeEls[0]);
             return match + 1;
           }
         }
