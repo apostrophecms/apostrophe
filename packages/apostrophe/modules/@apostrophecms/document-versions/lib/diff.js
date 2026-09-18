@@ -12,6 +12,8 @@ const diffRichText = require('./rich-text-diff.js');
 
 // Field types with their own walk, reached through `extend` as well
 const STRUCTURAL = new Set([ 'area', 'array', 'object', 'relationship' ]);
+// Leaf field types `annotate` marks, reached through `extend` as well
+const MARKED = new Set([ 'richText' ]);
 // Field types that store nothing
 const VALUELESS = new Set([ 'group', 'relationshipReverse' ]);
 // Widget keys that are bookkeeping, not content
@@ -233,6 +235,9 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
       continue;
     }
     if (widgetAt === -1) {
+      if (row.field && (getKind(row.field, ctx) === 'richText')) {
+        markRichTextField(doc, row, ctx);
+      }
       ctx.setMeta(doc, HIGHLIGHT_NAMESPACE, row.path[0].name, HIGHLIGHT_KEY, true);
       if (row.ai) {
         ctx.setMeta(doc, AI_NAMESPACE, row.path[0].name, AI_KEY, true);
@@ -346,12 +351,13 @@ function walkFields(schema, older, newer, ctx, path, rows) {
 }
 
 // The walk a field takes: one of the structural types, `valueless`, or
-// `leaf`. A type extending a structural type walks like it
+// `leaf`, except that a `richText` field is `richText`. A type extending
+// one of those is taken for it
 function getKind(field, ctx) {
   const seen = new Set();
   let name = field.type;
   while (name && !seen.has(name)) {
-    if (STRUCTURAL.has(name)) {
+    if (STRUCTURAL.has(name) || MARKED.has(name)) {
       return name;
     }
     if (VALUELESS.has(name)) {
@@ -550,15 +556,32 @@ function markRichText(widget, row, ctx) {
   if (widget.content !== row.new) {
     return;
   }
-  const content = diffRichText(row.old, row.new, {
+  const content = getMarkedRichText(row, ctx);
+  if (content != null) {
+    widget.content = content;
+  }
+}
+
+// The same for a `richText` field outside any widget
+function markRichTextField(doc, row, ctx) {
+  const parent = resolve(doc, row.path.slice(0, -1));
+  const name = row.path.at(-1).name;
+  if (!parent || ((parent[name] ?? null) !== (row.new ?? null))) {
+    return;
+  }
+  const content = getMarkedRichText(row, ctx);
+  if (content != null) {
+    parent[name] = content;
+  }
+}
+
+function getMarkedRichText(row, ctx) {
+  return diffRichText(row.old || '', row.new || '', {
     labels: {
       removed: ctx.t?.('apostrophe:versionRemovedText'),
       added: ctx.t?.('apostrophe:versionAddedText')
     }
   });
-  if (content != null) {
-    widget.content = content;
-  }
 }
 
 // The order of an array's or area's items, one `modified` row at the

@@ -617,7 +617,6 @@ onBeforeUnmount(() => {
   &__field-change {
     display: flex;
     justify-content: flex-end;
-    max-width: $input-max-width;
     margin-bottom: $spacing-half;
   }
 
@@ -636,6 +635,22 @@ onBeforeUnmount(() => {
       border-radius: var(--a-border-radius);
       outline: 2px solid var(--a-primary);
       outline-offset: 2px;
+    }
+  }
+
+  // A modified field, framed as a modified widget is
+  :deep([data-apos-field]:has(> .apos-doc-version-editor__field-change)) {
+    box-sizing: border-box;
+    margin-bottom: $spacing-quadruple;
+    padding: $spacing-half;
+    border: 2px dashed var(--a-warning);
+    border-radius: var(--a-border-radius-large);
+    background-color: color-mix(in srgb, var(--a-warning) 6%, transparent);
+
+    > .apos-field__wrapper > .apos-field {
+      margin-bottom: 0;
+      padding: 0;
+      background: none;
     }
   }
 

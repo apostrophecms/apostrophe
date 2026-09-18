@@ -1416,6 +1416,71 @@ describe('Document Versions diff engine', function () {
           '<span class="apos-sr-only">Added </span> three</ins></p>'
         );
       });
+
+      it('should mark the text of a top-level richText field', function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        newer.body = '<p>Body changed</p>';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.equal(
+          doc.body,
+          '<p>Body ' +
+          '<del data-apos-version-change="removed">' +
+          '<span class="apos-sr-only">Removed </span>root</del>' +
+          '<ins data-apos-version-change="added">' +
+          '<span class="apos-sr-only">Added </span>changed</ins></p>'
+        );
+        assert.equal(doc.aposMeta.body[HIGHLIGHT], true);
+        assert.equal(newer.body, '<p>Body changed</p>');
+      });
+
+      it('should mark the text of richText fields in objects and array items', function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        newer.section.body = '<p>Body root.section and more</p>';
+        newer.section.rows[0].body = '';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.equal(
+          doc.section.body,
+          '<p>Body root.section<ins data-apos-version-change="added">' +
+          '<span class="apos-sr-only">Added </span> and more</ins></p>'
+        );
+        assert.equal(
+          doc.section.rows[0].body,
+          '<p><del data-apos-version-change="removed">' +
+          '<span class="apos-sr-only">Removed </span>Body root.section.rows.0</del></p>'
+        );
+        assert.equal(doc.aposMeta.section[HIGHLIGHT], true);
+        assert.deepEqual(markers(doc), []);
+      });
+
+      it('should leave a richText field alone when no text changed', function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p><a href="/one">Link</a></p>';
+        newer.body = '<p><a href="/two">Link</a></p>';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.equal(doc.body, '<p><a href="/two">Link</a></p>');
+        assert.equal(doc.aposMeta.body[HIGHLIGHT], true);
+      });
+
+      it('should leave richText fields of widgets alone', function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        const plain = newer.section.rows[0].content.items[0];
+        const opted = plain.section.rows[0].content.items[0];
+        plain.body = '<p>Plain changed</p>';
+        opted.body = '<p>Opted in changed</p>';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const plainDoc = doc.section.rows[0].content.items[0];
+        const optedDoc = plainDoc.section.rows[0].content.items[0];
+        assert.deepEqual(markers(doc).sort(), [
+          [ opted._id, '_olderVersion' ],
+          [ plain._id, '_modified' ]
+        ].sort());
+        assert.equal(plainDoc.body, '<p>Plain changed</p>');
+        assert.equal(optedDoc.body, '<p>Opted in changed</p>');
+      });
     });
 
     it('should reuse rows already computed', function () {
