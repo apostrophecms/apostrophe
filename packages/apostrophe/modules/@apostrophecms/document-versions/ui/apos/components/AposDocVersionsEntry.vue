@@ -32,25 +32,15 @@
         </span>
         <span
           v-if="restoredFrom"
+          v-apos-tooltip="restoredFrom"
           class="apos-doc-version-entry__restored"
           data-apos-test="doc-version-restored"
+          :tabindex="layout === 'detail' ? '0' : null"
+          @focus="toggleTooltip"
+          @blur="toggleTooltip"
         >
           {{ $t('apostrophe:versionRestoredBadge') }}
-          <AposIndicator
-            icon="help-circle-icon"
-            class="apos-doc-version-entry__restored-info"
-            data-apos-test="doc-version-restored-info"
-            :tooltip="restoredFrom"
-            :title="restoredFrom"
-            :icon-size="12"
-            :decorative="layout === 'list'"
-            @focus="toggleTooltip"
-            @blur="toggleTooltip"
-          />
-          <span
-            v-if="layout === 'list'"
-            class="apos-sr-only"
-          >{{ restoredFrom }}</span>
+          <span class="apos-sr-only">{{ restoredFrom }}</span>
         </span>
       </span>
       <time
@@ -210,23 +200,18 @@ $avatars-width: $avatar-size * 2 - $avatar-overlap;
     align-items: center;
   }
 
+  // The badge carries the tooltip itself, the underline says so
   &__restored {
     @include type-help;
 
     & {
-      display: inline-flex;
-      gap: $spacing-half;
-      align-items: center;
       color: var(--a-base-2);
       font-weight: var(--a-weight-bold);
       letter-spacing: 0.4px;
+      text-decoration: underline dotted;
+      text-underline-offset: 2px;
+      cursor: help;
     }
-  }
-
-  // Centered on the line box, the icon rides high next to capitals, which
-  // sit below the box's middle
-  &__restored-info {
-    transform: translateY(0.5px);
   }
 
   &__status {
