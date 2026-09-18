@@ -239,12 +239,37 @@ function changeOf(part) {
 
 // The parts of an order row: whole items, in the order a reader of both
 // sides meets them, an item that moved being `removed` where it was and
-// `added` where it is. No part holds the commas of the text
+// `added` where it is. No part holds the commas of the text. The items
+// that moved are the row's `movedItems` when it names them, otherwise the
+// fewest that explain the new order
 function orderDiff(row, ctx) {
-  return diffArrays(row.old, row.new).flatMap(part => part.value.map(id => ({
+  const part = (id, change) => ({
     text: itemText(row.items[id], ctx),
-    change: changeOf(part)
-  })));
+    change
+  });
+  if (!row.movedItems) {
+    return diffArrays(row.old, row.new)
+      .flatMap(found => found.value.map(id => part(id, changeOf(found))));
+  }
+  const moved = new Set(row.movedItems);
+  const parts = [];
+  let at = 0;
+  for (const id of row.new) {
+    if (moved.has(id)) {
+      parts.push(part(id, 'added'));
+      continue;
+    }
+    // The items that stayed stand in one order on both sides
+    for (; row.old[at] !== id; at++) {
+      parts.push(part(row.old[at], 'removed'));
+    }
+    parts.push(part(id, 'same'));
+    at++;
+  }
+  return [
+    ...parts,
+    ...row.old.slice(at).map(id => part(id, 'removed'))
+  ];
 }
 
 // An item of an order row: `#2 Rich Text · Its title`

@@ -131,11 +131,14 @@ module.exports = {
         });
       },
       // `annotate=1` marks the version's document with its changes since
-      // the version before it (see `getAnnotatedDoc`)
+      // the version before it (see `getAnnotatedDoc`); with `consolidate=1`
+      // as well, since the version before the consolidated version it is
+      // the newest of
       async getOne(req, versionId) {
         try {
           const version = await self.getOne(req, versionId, {
-            annotate: self.apos.launder.boolean(req.query.annotate)
+            annotate: self.apos.launder.boolean(req.query.annotate),
+            consolidate: self.apos.launder.boolean(req.query.consolidate)
           });
 
           return version;
@@ -756,10 +759,18 @@ module.exports = {
         return diff.consolidate(manager.schema, pairs, self.getDiffContext(req));
       },
       // A copy of `newer` marked with its changes since `older`, for
-      // WYSIWYG display (see `lib/diff.js`)
-      getAnnotatedDoc(req, older, newer) {
+      // WYSIWYG display (see `lib/diff.js`). `rows`, when given, are the
+      // changes between the two already listed; rows flagged `ai` (see
+      // `getConsolidatedRows`) mark their changes as involving AI
+      getAnnotatedDoc(req, older, newer, { rows } = {}) {
         const manager = self.apos.doc.getManager(newer.type);
-        return diff.annotate(manager.schema, older, newer, self.getDiffContext(req));
+        return diff.annotate(
+          manager.schema,
+          older,
+          newer,
+          self.getDiffContext(req),
+          { rows }
+        );
       },
       // The `_id` of the user saving, `null` when there is none (system)
       getAuthorId(req) {
@@ -1104,16 +1115,26 @@ module.exports = {
       },
       // A version for display, its document loaded like a regular find.
       // `annotate` marks the document with its changes since the version
-      // before it; a first or restored version stays unmarked
-      async getOne(req, versionId, { annotate = false } = {}) {
+      // before it; a first or restored version stays unmarked. With
+      // `consolidate`, `versionId` being the newest version of a
+      // consolidated version (see `lib/consolidation.js`), the changes are
+      // those of all its versions, as `getVersionChanges` lists them, and
+      // like them say where AI was involved
+      async getOne(req, versionId, { annotate = false, consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
         const version = await self.getEditableVersion(draftReq, versionId);
         const manager = self.apos.doc.getManager(version.doc.type);
 
         if (annotate && manager && !version.restoredFrom) {
-          const previous = await self.getPreviousVersion(draftReq, version);
-          if (previous) {
-            version.doc = self.getAnnotatedDoc(req, previous.doc, version.doc);
+          const { pairs } = await self.getVersionPairs(
+            draftReq,
+            version,
+            { consolidate }
+          );
+          if (pairs.length) {
+            version.doc = self.getAnnotatedDoc(req, pairs[0].older, version.doc, {
+              rows: self.getConsolidatedRows(req, pairs)
+            });
           }
         }
 
@@ -1181,6 +1202,39 @@ module.exports = {
         });
         return previous ?? null;
       },
+      // The versions `last` stands for, oldest first, as `members`: those of
+      // the consolidated version it is the newest of with `consolidate`
+      // (see `lib/consolidation.js`), otherwise itself. `pairs` are their
+      // changes as `getConsolidatedRows` takes them; a first version has
+      // no pair. `last` is a record of `getEditableVersion`
+      async getVersionPairs(req, last, { consolidate = false } = {}) {
+        let members = [ last ];
+        if (consolidate) {
+          const sequence = await self.getSequenceFrom(req, {
+            docId: last.docId,
+            locale: last.locale
+          }, last);
+          if (consolidation.consolidates(sequence)) {
+            members = await self.find(
+              req,
+              { _id: { $in: sequence.map(version => version._id) } },
+              { sort: { createdAt: 1 } }
+            );
+          }
+        }
+        const previous = await self.getPreviousVersion(req, members[0]);
+        const pairs = members
+          .map((member, i) => ({
+            older: i ? members[i - 1].doc : previous?.doc,
+            newer: member.doc,
+            ai: member.ai
+          }))
+          .filter(pair => pair.older);
+        return {
+          members,
+          pairs
+        };
+      },
       // The changes of a version since the one before it, with display text
       // and its word diff (see `lib/text.js`), their counts per change type
       // and of those involving AI, and the versions they cover, newest
@@ -1194,39 +1248,22 @@ module.exports = {
       async getVersionChanges(req, versionId, { consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
         const last = await self.getEditableVersion(draftReq, versionId);
-        let members = [ last ];
-
-        if (consolidate) {
-          const sequence = await self.getSequenceFrom(draftReq, {
-            docId: last.docId,
-            locale: last.locale
-          }, last);
-          if (consolidation.consolidates(sequence)) {
-            members = await self.find(
-              draftReq,
-              { _id: { $in: sequence.map(version => version._id) } },
-              { sort: { createdAt: 1 } }
-            );
-          }
-        }
-        const first = members[0];
+        const { members, pairs } = await self.getVersionPairs(
+          draftReq,
+          last,
+          { consolidate }
+        );
 
         let rows = [];
-        if (self.apos.doc.getManager(last.doc.type) && !last.restoredFrom) {
-          const previous = await self.getPreviousVersion(draftReq, first);
-          const pairs = members
-            .map((member, i) => ({
-              older: i ? members[i - 1].doc : previous?.doc,
-              newer: member.doc,
-              ai: member.ai
-            }))
-            .filter(pair => pair.older);
-          if (pairs.length) {
-            rows = text.addWordDiff(await self.addChangeText(
-              draftReq,
-              self.getConsolidatedRows(req, pairs)
-            ), self.getDiffContext(draftReq));
-          }
+        if (
+          pairs.length &&
+          self.apos.doc.getManager(last.doc.type) &&
+          !last.restoredFrom
+        ) {
+          rows = text.addWordDiff(await self.addChangeText(
+            draftReq,
+            self.getConsolidatedRows(req, pairs)
+          ), self.getDiffContext(draftReq));
         }
 
         return {

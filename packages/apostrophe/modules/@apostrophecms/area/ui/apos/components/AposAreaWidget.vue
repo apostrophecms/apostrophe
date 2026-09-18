@@ -8,12 +8,41 @@
     :data-apos-test="`widget:${widget.type}`"
     :data-apos-widget-foreign="foreign ? 1 : 0"
     :data-apos-widget-id="widget._id"
+    :data-apos-widget-change="versionChanges[0]"
+    :role="versionChanges.length ? 'group' : undefined"
+    :aria-label="versionChangeLabel"
     tabindex="0"
   >
+    <div
+      v-if="versionChanges.length"
+      class="apos-area-widget__change"
+      data-apos-test="widget-change"
+    >
+      <span class="apos-area-widget__change-label">
+        {{ $t(widgetLabel) }}
+      </span>
+      <button
+        v-apos-tooltip="'apostrophe:versionSeeChanges'"
+        type="button"
+        class="apos-area-widget__change-types"
+        data-apos-test="widget-change-action"
+        :aria-label="$t('apostrophe:versionSeeChanges')"
+        @click.stop="showVersionChange"
+      >
+        <AposDocVersionAiBadge v-if="versionChange.ai" />
+        <AposDocVersionChangeType
+          v-for="type in versionChanges"
+          :key="type"
+          :type="type"
+          icon
+        />
+      </button>
+    </div>
     <div
       ref="wrapper"
       class="apos-area-widget-inner"
       :class="containerClasses"
+      :aria-disabled="versionChanges[0] === 'deleted' ? 'true' : undefined"
       tabindex="0"
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
@@ -223,6 +252,7 @@ import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useBreakpointPreviewStore } from 'Modules/@apostrophecms/ui/stores/breakpointPreview.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
+import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 
 export default {
   name: 'AposAreaWidget',
@@ -400,6 +430,40 @@ export default {
       const natural = this.contextMenuOptions.menu
         .filter(item => item.name === this.widget.type)[0]?.icon || 'shape-icon';
       return this.foreign ? 'earth-icon' : natural;
+    },
+    // What a document version did to this widget, set only inside the
+    // versions modal
+    versionChange() {
+      const graphKey = unref(this.aposGraphKey);
+      const found = graphKey && this.getVersionChange(graphKey, this.widget._id);
+      return found || {
+        changes: [],
+        ai: false
+      };
+    },
+    // `added`, `modified` or `deleted`, then `moved`. The first one styles
+    // the frame
+    versionChanges() {
+      return this.versionChange.changes;
+    },
+    versionChangeLabel() {
+      if (!this.versionChanges.length) {
+        return undefined;
+      }
+      const labels = {
+        added: 'apostrophe:versionChangeAdded',
+        modified: 'apostrophe:versionChangeModified',
+        deleted: 'apostrophe:versionChangeDeleted',
+        moved: 'apostrophe:versionChangeMoved'
+      };
+      const changes = [
+        ...(this.versionChange.ai ? [ 'apostrophe:versionChangeAi' ] : []),
+        ...this.versionChanges.map(type => labels[type])
+      ];
+      return this.$t('apostrophe:versionWidgetChange', {
+        widget: this.$t(this.widgetLabel),
+        changes: changes.map(key => this.$t(key)).join(', ')
+      });
     },
     widgetLabel() {
       const moduleName = `${this.widget.type}-widget`;
@@ -595,10 +659,18 @@ export default {
     },
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
     ...mapActions(useModalStore, [ 'getAdminContentDirectionClass' ]),
+    ...mapActions(useDocVersionMarkersStore, { getVersionChange: 'get' }),
     ...mapActions(useWidgetGraphStore, {
       storeRegisterWidget: 'registerWidget',
       storeUnregisterWidget: 'unregisterWidget'
     }),
+    // The versions modal shows the changes behind this widget's marker
+    showVersionChange() {
+      apos.bus.$emit('doc-version-marker', {
+        graphKey: unref(this.aposGraphKey),
+        widgetId: this.widget._id
+      });
+    },
     registerInGraph() {
       if (this.foreign) {
         return;
@@ -941,6 +1013,73 @@ export default {
 
 .apos-area-widget-wrapper {
   position: relative;
+}
+
+// A widget a document version added, modified or deleted
+.apos-area-widget-wrapper[data-apos-widget-change] {
+  box-sizing: border-box;
+  margin: $spacing-base 0;
+  padding: $spacing-half;
+  border: 2px dashed var(--a-widget-change);
+  border-radius: var(--a-border-radius-large);
+  background-color: color-mix(in srgb, var(--a-widget-change) 6%, transparent);
+}
+
+.apos-area-widget-wrapper[data-apos-widget-change='added'] {
+  --a-widget-change: var(--a-success);
+}
+
+.apos-area-widget-wrapper[data-apos-widget-change='modified'] {
+  --a-widget-change: var(--a-warning);
+}
+
+.apos-area-widget-wrapper[data-apos-widget-change='moved'] {
+  --a-widget-change: var(--a-brand-blue);
+}
+
+.apos-area-widget-wrapper[data-apos-widget-change='deleted'] {
+  --a-widget-change: var(--a-danger);
+
+  // Shown where it was, not part of this version
+  > .apos-area-widget-inner {
+    opacity: 0.55;
+    filter: grayscale(1);
+  }
+}
+
+.apos-area-widget__change {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-base;
+  padding: 0 $spacing-half $spacing-half;
+}
+
+.apos-area-widget__change-types {
+  display: flex;
+  gap: $spacing-half;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  // The versions modal blocks the pointer over its body
+  pointer-events: auto;
+
+  &:focus-visible {
+    border-radius: var(--a-border-radius);
+    outline: 2px solid var(--a-primary);
+    outline-offset: 2px;
+  }
+}
+
+.apos-area-widget__change-label {
+  @include type-small;
+
+  & {
+    color: var(--a-text-primary);
+    font-weight: var(--a-weight-bold);
+  }
 }
 
 .apos-area-widget-inner {

@@ -6,6 +6,7 @@
 // here reaches for `apos` directly.
 
 const _ = require('lodash');
+const { diffArrays } = require('diff');
 const text = require('./text.js');
 
 // Field types with their own walk, reached through `extend` as well
@@ -17,6 +18,8 @@ const WIDGET_KEYS = new Set([ '_id', 'type', 'metaType', 'aposPlaceholder', 'apo
 
 const HIGHLIGHT_NAMESPACE = '@apostrophecms/schema';
 const HIGHLIGHT_KEY = 'highlight';
+const AI_NAMESPACE = '@apostrophecms/document-versions';
+const AI_KEY = 'ai';
 // The hop below a widget where its rich text markup, or the data it stores
 // outside its schema, sits when paths are compared
 const CONTENT = Symbol('content');
@@ -98,6 +101,12 @@ const ORDER = Symbol('order');
  *   Order rows only, for the text representation: by `_id`, each item's
  *   position in the newer document, its widget type's `label` and its
  *   title. Non-enumerable, like `field`.
+ * @property {string[]} [movedItems] Order rows of `consolidate` flagged
+ *   `ai` in a run that mixes versions saved with and without AI, when the
+ *   moves of its versions explain the new order: the `_id`s of the items
+ *   they moved. Non-enumerable, like `aiItems`, which comes with it: those
+ *   a version saved with AI moved.
+ * @property {Set<string>} [aiItems]
  * @property {boolean} [ai] Rows of `consolidate` only: whether a version
  *   saved with AI changed this path, or one above or below it; for an
  *   order row, whether one changed that order.
@@ -147,15 +156,27 @@ function walk(schema, older, newer, ctx) {
  *   returned document;
  * - `_olderVersion: <the older widget>` on a widget with changes of its own
  *   whose type sets the `renderVersions` module option;
- * - `_modified: true` on such a widget whose type does not.
+ * - `_modified: true` on such a widget whose type does not;
+ * - `_moved: true` on a widget that changed places among the widgets of
+ *   its area both documents have, beside any marker above. Of the widgets
+ *   of an area whose order changed, only the fewest that account for the
+ *   new order are marked: one widget dragged to the top is one `_moved`,
+ *   not one for every widget it passed.
+ *
+ * Rows flagged `ai` (those of `consolidate`) say so on what they mark:
+ * `_changedWithAi: true` beside `_inserted`, `_deleted`, `_modified` or
+ * `_olderVersion`, when any row behind that marker is flagged;
+ * `_movedWithAi: true` beside `_moved`, when the order row is and, in a
+ * run of versions whose own moves explain the new order, a version saved
+ * with AI moved that widget; the
+ * `@apostrophecms/document-versions:ai` meta beside a field's highlight.
  *
  * A widget whose only changes sit in widgets nested inside it gets no
  * marker; the nested widgets carry them. A change outside any widget
- * (a top-level scalar, a change inside a top-level object or array) sets
- * the `@apostrophecms/schema:highlight` meta of its top-level field, at
- * `aposMeta.<field>`, which the read-only schema view renders as
- * highlighted. A change of order marks nothing. Neither document is
- * modified.
+ * (a top-level scalar, a change inside a top-level object or array, the
+ * order of an array's items) sets the `@apostrophecms/schema:highlight`
+ * meta of its top-level field, at `aposMeta.<field>`, which the read-only
+ * schema view renders as highlighted. Neither document is modified.
  *
  * @param {object[]} schema The schema of both documents.
  * @param {object} older The older document as stored.
@@ -163,13 +184,23 @@ function walk(schema, older, newer, ctx) {
  * @param {DiffContext} ctx
  * @param {object} [options]
  * @param {ChangeRow[]} [options.rows] The rows of a `walk` of the same
- *   documents already done, to avoid walking them again.
+ *   documents already done, to avoid walking them again, or those of a
+ *   `consolidate` ending in them, for the AI markers.
  * @returns {object} The annotated copy of `newer`.
  */
 function annotate(schema, older, newer, ctx, { rows } = {}) {
   const doc = _.cloneDeep(newer);
   for (const row of rows || walk(schema, older, newer, ctx)) {
-    if (isOrder(row)) {
+    if (row.fieldType === 'area') {
+      for (const id of row.movedItems || getMovedIds(row)) {
+        const widget = resolve(doc, [ ...row.path, { name: id } ]);
+        if (widget) {
+          widget._moved = true;
+          if (row.aiItems ? row.aiItems.has(id) : row.ai) {
+            widget._movedWithAi = true;
+          }
+        }
+      }
       continue;
     }
     const widgetAt = _.findLastIndex(row.path, segment => segment.widgetType);
@@ -179,7 +210,8 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
         const at = Math.min(row.path.at(-1).ordinal - 1, area.items.length);
         area.items.splice(at, 0, {
           ..._.cloneDeep(row.old),
-          _deleted: true
+          _deleted: true,
+          ...(row.ai && { _changedWithAi: true })
         });
       }
       continue;
@@ -188,16 +220,28 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
       const widget = resolve(doc, row.path);
       if (widget) {
         widget._inserted = true;
+        if (row.ai) {
+          widget._changedWithAi = true;
+        }
       }
       continue;
     }
     if (widgetAt === -1) {
       ctx.setMeta(doc, HIGHLIGHT_NAMESPACE, row.path[0].name, HIGHLIGHT_KEY, true);
+      if (row.ai) {
+        ctx.setMeta(doc, AI_NAMESPACE, row.path[0].name, AI_KEY, true);
+      }
       continue;
     }
     const widgetPath = row.path.slice(0, widgetAt + 1);
     const widget = resolve(doc, widgetPath);
-    if (!widget || widget._modified || widget._olderVersion) {
+    if (!widget) {
+      continue;
+    }
+    if (row.ai) {
+      widget._changedWithAi = true;
+    }
+    if (widget._modified || widget._olderVersion) {
       continue;
     }
     const manager = ctx.getWidgetManager(widget.type);
@@ -242,12 +286,19 @@ function consolidate(schema, pairs, ctx) {
     }
     return rows;
   }
-  const touched = aiPairs
-    .flatMap(pair => walk(schema, pair.older, pair.newer, ctx))
-    .map(keyOf);
+  const walkOf = pair => walk(schema, pair.older, pair.newer, ctx);
+  const aiRows = aiPairs.flatMap(walkOf);
+  const touched = aiRows.map(keyOf);
   for (const row of rows) {
     const key = keyOf(row);
     row.ai = touched.some(other => isRelated(key, other));
+  }
+  const orders = rows.filter(row => row.ai && isOrder(row));
+  if (orders.length) {
+    const otherRows = pairs.filter(pair => !pair.ai).flatMap(walkOf);
+    for (const row of orders) {
+      explainOrder(row, aiRows, otherRows);
+    }
   }
   return rows;
 }
@@ -554,6 +605,54 @@ function row(path, type, fieldType, oldValue, newValue, field) {
     enumerable: false
   });
   return result;
+}
+
+// The items of an order row that changed places: the fewest whose move
+// accounts for the newer order
+function getMovedIds(row) {
+  return diffArrays(row.old, row.new)
+    .filter(part => part.added)
+    .flatMap(part => part.value);
+}
+
+// Which items moved has more than one true answer (a reversal of three is
+// any two of them), so between a run's ends the fewest-moves answer may
+// name items no version touched. The versions' own moves are the better
+// answer when they hold: taken out of both lists, the rest stands in one
+// order. Sets `movedItems` and `aiItems` on `row` then; otherwise `row`
+// stays as it is and every moved item takes the row's AI flag
+function explainOrder(row, aiRows, otherRows) {
+  const key = keyOf(row);
+  const movedIn = rows => rows
+    .filter(other => isOrder(other) && _.isEqual(keyOf(other), key))
+    .flatMap(getMovedIds)
+    .filter(id => row.new.includes(id));
+  const byAi = new Set(movedIn(aiRows));
+  const holds = moved => _.isEqual(
+    row.old.filter(id => !moved.has(id)),
+    row.new.filter(id => !moved.has(id))
+  );
+  const moved = new Set([ ...movedIn(otherRows), ...byAi ]);
+  if (!holds(moved)) {
+    return;
+  }
+  // An item moved and moved back explains nothing
+  for (const id of [ ...moved ]) {
+    moved.delete(id);
+    if (!holds(moved)) {
+      moved.add(id);
+    }
+  }
+  Object.defineProperties(row, {
+    movedItems: {
+      value: row.new.filter(id => moved.has(id)),
+      enumerable: false
+    },
+    aiItems: {
+      value: new Set([ ...moved ].filter(id => byAi.has(id))),
+      enumerable: false
+    }
+  });
 }
 
 // Whether a row is the order of an array's or area's items

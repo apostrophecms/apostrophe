@@ -3778,6 +3778,61 @@ describe('Document Versions', function () {
         assert.equal(highlight(plain.doc), undefined);
         assert.equal(first.doc.aposMeta, undefined);
       });
+
+      it('should mark a consolidated version with the changes of all its versions - GET /:versionId?annotate=1&consolidate=1', async function() {
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By another',
+            author: 'anotherUserId'
+          },
+          {
+            title: 'By another',
+            int: 5,
+            ai: true
+          },
+          {
+            title: 'By hand',
+            int: 5
+          }
+        ]);
+        const url = `/api/v1/${moduleName}/${versions[3]._id}`;
+        const highlights = doc => [ 'title', 'int' ].filter(
+          name => apos.doc.getMeta(doc, '@apostrophecms/schema', name, 'highlight')
+        );
+
+        const single = await apos.http.get(url, {
+          qs: { annotate: 1 },
+          jar: jarAdmin
+        });
+        const consolidated = await apos.http.get(url, {
+          qs: {
+            annotate: 1,
+            consolidate: 1
+          },
+          jar: jarAdmin
+        });
+        // Not the newest of a consolidated version: marked as without the flag
+        const alone = await apos.http.get(`/api/v1/${moduleName}/${versions[1]._id}`, {
+          qs: {
+            annotate: 1,
+            consolidate: 1
+          },
+          jar: jarAdmin
+        });
+
+        const withAi = doc => [ 'title', 'int' ].filter(
+          name => apos.doc.getMeta(doc, moduleName, name, 'ai')
+        );
+
+        assert.deepEqual(highlights(single.doc), [ 'title' ]);
+        assert.deepEqual(highlights(consolidated.doc), [ 'title', 'int' ]);
+        assert.deepEqual(highlights(alone.doc), [ 'title' ]);
+        // Per field in a consolidated version, the version's own otherwise
+        assert.deepEqual(withAi(consolidated.doc), [ 'int' ]);
+        assert.deepEqual(withAi(single.doc), []);
+        assert.deepEqual(withAi(alone.doc), []);
+      });
     });
   });
 

@@ -13,10 +13,9 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
  *   The document's REST URL
  * @param {object} options.originalDoc
  *   The document as it was when the modal opened
- * @param {import('vue').Ref<object|null>} options.version
- *   The version shown in the modal, whose `doc` is reused when it is the
- *   one restored
  * @param {(versionId: string) => Promise<object>} options.fetchVersion
+ *   Loads a version as stored. The document the modal shows is marked
+ *   with its changes and is never the one restored
  * @param {object} options.lock
  *   The modal's advisory lock: `addLockToRequest`, `isLockedError` and
  *   `showLockedError`
@@ -26,7 +25,6 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 export function useDocVersionRestore({
   docAction,
   originalDoc,
-  version,
   fetchVersion,
   lock,
   onRestored
@@ -77,9 +75,6 @@ export function useDocVersionRestore({
   async function getDoc(item) {
     if (item.doc) {
       return item.doc;
-    }
-    if (version.value?._id === item._id) {
-      return version.value.doc;
     }
     try {
       return (await fetchVersion(item._id)).doc;

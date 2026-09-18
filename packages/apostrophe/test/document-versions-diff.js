@@ -990,7 +990,15 @@ describe('Document Versions diff engine', function () {
           return;
         }
         if (node.metaType === 'widget') {
-          for (const marker of [ '_inserted', '_deleted', '_modified', '_olderVersion' ]) {
+          for (const marker of [
+            '_inserted',
+            '_deleted',
+            '_modified',
+            '_olderVersion',
+            '_moved',
+            '_changedWithAi',
+            '_movedWithAi'
+          ]) {
             if (node[marker] !== undefined) {
               found.push([ node._id, marker ]);
             }
@@ -1137,15 +1145,154 @@ describe('Document Versions diff engine', function () {
       assert.equal(doc.aposMeta, undefined);
     });
 
-    it('should mark nothing for a change of order', function () {
+    it('should mark the widget that changed places, not the widgets it passed', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const { items } = newer.section.rows[0].content;
+      const last = items.pop();
+      items.unshift(last);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), [
+        [ last._id, '_moved' ]
+      ]);
+      assert.equal(doc.aposMeta, undefined);
+    });
+
+    it('should mark a widget that moved and changed with both markers', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const { items } = newer.section.rows[0].content;
+      const last = items.pop();
+      last.extra = 'Changed';
+      items.unshift(last);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), [
+        [ last._id, '_modified' ],
+        [ last._id, '_moved' ]
+      ]);
+    });
+
+    it('should highlight the field of an array whose items changed places', function () {
       const older = buildDoc();
       const newer = buildDoc();
       newer.section.rows.reverse();
-      newer.section.rows[0].content.items.reverse();
-      assert.equal(apos.docVersions.getChangeRows(req, older, newer).length, 2);
       const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
       assert.deepEqual(markers(doc), []);
-      assert.deepEqual(doc, newer);
+      assert.equal(doc.aposMeta.section[HIGHLIGHT], true);
+    });
+
+    it('should say where AI was involved, from rows flagged for it', function () {
+      // A fourth widget, so that two moves are not a reversal
+      const build = () => {
+        const doc = buildDoc();
+        doc.section.rows[0].content.items.push({
+          _id: 'fourth',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: '<p>Fourth</p>'
+        });
+        return doc;
+      };
+      const older = build();
+      const middle = build();
+      const newer = build();
+      // AI edits the third widget and moves it to the top, and renames
+      const edit = doc => {
+        const { items } = doc.section.rows[0].content;
+        const [ third ] = items.splice(2, 1);
+        third.extra = 'By AI';
+        items.unshift(third);
+        doc.title = 'By AI';
+        return third;
+      };
+      edit(middle);
+      const byAi = edit(newer);
+      // A human edits the fourth widget, moves the first one (now second)
+      // to the end, and edits the subtitle
+      const { items } = newer.section.rows[0].content;
+      items[3].content = '<p>By hand</p>';
+      const [ byHand ] = items.splice(1, 1);
+      items.push(byHand);
+      newer.subtitle = 'By hand';
+      const rows = apos.docVersions.getConsolidatedRows(req, [
+        {
+          older,
+          newer: middle,
+          ai: true
+        },
+        {
+          older: middle,
+          newer
+        }
+      ]);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+      assert.deepEqual(markers(doc).sort(), [
+        [ 'fourth', '_modified' ],
+        [ byAi._id, '_changedWithAi' ],
+        [ byAi._id, '_modified' ],
+        [ byAi._id, '_moved' ],
+        [ byAi._id, '_movedWithAi' ],
+        [ byHand._id, '_moved' ]
+      ].sort());
+      assert.deepEqual(doc.aposMeta.title, {
+        [HIGHLIGHT]: true,
+        '@apostrophecms/document-versions:ai': true
+      });
+      assert.deepEqual(doc.aposMeta.subtitle, { [HIGHLIGHT]: true });
+    });
+
+    it('should name the widgets the versions moved where fewer moves would name others', async function () {
+      const older = buildDoc();
+      const middle = buildDoc();
+      const newer = buildDoc();
+      // AI moves the last widget to the top, a human the first to the end:
+      // a reversal, which any two of the three would explain
+      for (const doc of [ middle, newer ]) {
+        const { items } = doc.section.rows[0].content;
+        items.unshift(items.pop());
+      }
+      const { items } = newer.section.rows[0].content;
+      const [ byAi ] = items;
+      const [ byHand ] = items.splice(1, 1);
+      items.push(byHand);
+      const rows = apos.docVersions.getConsolidatedRows(req, [
+        {
+          older,
+          newer: middle,
+          ai: true
+        },
+        {
+          older: middle,
+          newer
+        }
+      ]);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+      assert.deepEqual(markers(doc).sort(), [
+        [ byAi._id, '_moved' ],
+        [ byAi._id, '_movedWithAi' ],
+        [ byHand._id, '_moved' ]
+      ].sort());
+
+      // The panes of the order row mark the same two
+      await apos.docVersions.addChangeText(req, rows);
+      const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
+      const [ row ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
+      const {
+        diff, oldText, newText
+      } = row;
+      const side = change => diff
+        .filter(part => [ 'same', change ].includes(part.change))
+        .map(part => part.text)
+        .join(', ');
+      assert.equal(side('removed'), oldText);
+      assert.equal(side('added'), newText);
+      assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
+        [ 'added', '#1 Opaque' ],
+        [ 'removed', '#3 Nested 2' ],
+        [ 'same', '#2 Rich Text' ],
+        [ 'added', '#3 Nested 2' ],
+        [ 'removed', '#1 Opaque' ]
+      ]);
     });
 
     it('should reuse rows already computed', function () {
