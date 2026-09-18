@@ -214,6 +214,8 @@ provide('aposGraphKey', graphKey);
 const widgetGraphStore = useWidgetGraphStore();
 const markersStore = useDocVersionMarkersStore();
 
+// Known from the start, so that what renders in the modal renders for it
+markersStore.set(graphKey, {});
 watch(widgetChanges, changes => {
   markersStore.set(graphKey, changes);
 });

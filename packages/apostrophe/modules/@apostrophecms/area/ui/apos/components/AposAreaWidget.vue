@@ -188,7 +188,7 @@
           :class="adminContentDirectionClass"
           :options="widgetOptions"
           :type="widget.type"
-          :model-value="widget"
+          :model-value="renderedWidget"
           :meta="meta"
           :doc-id="docId"
           :focused="isFocused"
@@ -206,8 +206,8 @@
           :type="widget.type"
           :area-field-id="fieldId"
           :following-values="followingValuesWithParent"
-          :model-value="widget"
-          :value="widget"
+          :model-value="renderedWidget"
+          :value="renderedWidget"
           :meta="meta"
           :foreign="foreign"
           :doc-id="docId"
@@ -440,6 +440,17 @@ export default {
         changes: [],
         ai: false
       };
+    },
+    // The widget as it renders: in the versions modal, with what its
+    // marker says it needs, which a nested widget's sanitized data lacks
+    renderedWidget() {
+      const { data } = this.versionChange;
+      return data
+        ? {
+          ...this.widget,
+          ...data
+        }
+        : this.widget;
     },
     // `added`, `modified` or `deleted`, then `moved`. The first one styles
     // the frame

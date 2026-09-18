@@ -3,7 +3,9 @@ const {
   t,
   bootstrap: bootstrapWith,
   getReq,
-  destroy
+  destroy,
+  addUser,
+  login
 } = require('./utils/document-versions.js');
 const {
   modules,
@@ -30,6 +32,27 @@ describe('Document Versions diff engine', function () {
         },
         'plain-text-widget': {
           extend: '@apostrophecms/rich-text-widget',
+          options: {
+            renderVersions: false
+          }
+        },
+        // Its template shows its title and the older version's
+        'version-note-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            renderVersions: true
+          },
+          fields: {
+            add: {
+              title: {
+                type: 'string',
+                label: 'Title'
+              }
+            }
+          }
+        },
+        'plain-note-widget': {
+          extend: 'version-note-widget',
           options: {
             renderVersions: false
           }
@@ -1760,6 +1783,71 @@ describe('Document Versions diff engine', function () {
           ordinal: 1
         }
       ]);
+    });
+  });
+
+  describe('render-widget', function () {
+    let jar;
+    let areaFieldId;
+
+    before(async function () {
+      await addUser(apos, 'admin');
+      jar = await login(apos, 'admin');
+      // The CSRF cookie
+      await apos.http.get('/', { jar });
+      const findArea = schema => {
+        for (const field of schema) {
+          if (field.type === 'area') {
+            return field;
+          }
+          const found = field.schema && findArea(field.schema);
+          if (found) {
+            return found;
+          }
+        }
+        return null;
+      };
+      areaFieldId = findArea(apos.nested.schema)._id;
+    });
+
+    // The markup of a widget of `type` with `data`, and with `olderData` as
+    // its older version when given
+    function render(type, data, olderData) {
+      const widget = {
+        _id: 'widget',
+        metaType: 'widget',
+        type,
+        ...data
+      };
+      if (olderData) {
+        widget._olderVersion = {
+          ...widget,
+          ...olderData
+        };
+      }
+      return apos.http.post('/api/v1/@apostrophecms/area/render-widget', {
+        jar,
+        body: {
+          widget,
+          areaFieldId,
+          type
+        }
+      });
+    }
+
+    it('should hand a type that opts in its older version', async function () {
+      const html = await render('version-note', { title: 'New' }, { title: 'Old' });
+      assert.ok(html.includes('<p class="note">New|Old</p>'), html);
+    });
+
+    it('should hand no older version to a type that opts out', async function () {
+      const html = await render('plain-note', { title: 'New' }, { title: 'Old' });
+      assert.ok(html.includes('<p class="note">New|</p>'), html);
+    });
+
+    it('should hand no older version when the request has none', async function () {
+      const html = await render('version-note', { title: 'New' });
+      assert.ok(html.includes('<p class="note">New|</p>'), html);
     });
   });
 });
