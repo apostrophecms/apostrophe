@@ -482,6 +482,13 @@ module.exports = {
           self.recordsPublishedOnly(manager.options) &&
           !doc.archived;
       },
+      // Whether `doc` is the draft of a type that publishes automatically.
+      // Every save of such a draft is republished at once, and that
+      // publication is the version
+      isAutopublishedDraft(doc) {
+        const manager = self.apos.doc.getManager(doc.type);
+        return Boolean(manager?.options.autopublish) && self.getMode(doc) === 'draft';
+      },
       // Whether a document's type has no versions to show: its manager is
       // known and does not have them. The records of a type whose module
       // is gone stay readable
@@ -505,10 +512,11 @@ module.exports = {
       // handoffs it replaces the previous draft.
       //
       // A request flagged `aposSkipVersion` records nothing: core sets it on
-      // a save that is a side effect of an operation already recorded. A
-      // save that takes the document out of the archive records nothing
-      // either: it still carries the deduplicated slug, which core reverts
-      // after this save
+      // a save that is a side effect of an operation already recorded. The
+      // draft of a type that publishes automatically records nothing, its
+      // republication does. A save that takes the document out of the
+      // archive records nothing either: it still carries the deduplicated
+      // slug, which core reverts after this save
       async canHaveVersion(req, doc) {
         if (req.aposSkipVersion) {
           return false;
@@ -520,6 +528,9 @@ module.exports = {
           return self.getMode(doc) === 'published';
         }
         if (!self.isVersioned(doc)) {
+          return false;
+        }
+        if (self.isAutopublishedDraft(doc)) {
           return false;
         }
         if (req.aposRestoreVersion) {

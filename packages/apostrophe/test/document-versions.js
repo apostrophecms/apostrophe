@@ -46,14 +46,17 @@ describe('Document Versions', function () {
       assert.strictEqual(module.__meta.name, moduleName);
 
       const versions = await apos.docVersions.find(getReq(apos), {});
-      assert.strictEqual(versions.length, 4);
+      assert.strictEqual(versions.length, 3);
       const home = versions.filter(v => v.doc.type === '@apostrophecms/home-page');
       const global = versions.filter(v => v.doc.type === '@apostrophecms/global');
+      const styles = versions.filter(v => v.doc.type === '@apostrophecms/styles');
       // Parked documents are inserted as drafts and published at once, and
       // the publish takes over the draft version, so each starts with one
       // publication point
       assert.deepStrictEqual(home.map(v => v.mode), [ 'published' ]);
       assert.deepStrictEqual(global.map(v => v.mode), [ 'published' ]);
+      // Styles publish automatically and are inserted as published
+      assert.deepStrictEqual(styles.map(v => v.mode), [ 'published' ]);
     });
 
   });
@@ -147,6 +150,87 @@ describe('Document Versions', function () {
 
         assert(found);
       }
+    });
+
+    for (const mode of [ 'published', 'draft' ]) {
+      it(`should record one publication per ${mode} mode save of an \`autopublish: true\` type`, async function() {
+        const manager = apos.modules['module-autopublish_true-versions_true'];
+        const req = getReq(apos, { mode });
+
+        const piece = await manager.insert(req, { title: `${mode} insert` });
+        const inserted = await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(piece)
+        );
+        assert.deepEqual(
+          inserted.map(version => [ version.mode, version.doc.title ]),
+          [ [ 'published', `${mode} insert` ] ]
+        );
+
+        await manager.update(req, {
+          ...piece,
+          title: `${mode} update`
+        });
+        const updated = await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(piece)
+        );
+        assert.deepEqual(
+          updated.map(({
+            mode, doc, changeCount
+          }) => [ mode, doc.title, changeCount ]),
+          [
+            [ 'published', `${mode} update`, 1 ],
+            [ 'published', `${mode} insert`, 0 ]
+          ]
+        );
+      });
+    }
+
+    it('should record one publication for an image inserted in published mode', async function() {
+      const req = getReq(apos, { mode: 'published' });
+      const image = await apos.image.insert(req, { title: 'an image' });
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(image)
+      );
+      assert.deepEqual(versions.map(version => version.mode), [ 'published' ]);
+    });
+
+    it('should record one restored publication when an `autopublish: true` type is restored', async function() {
+      const manager = apos.modules['module-autopublish_true-versions_true'];
+      const req = getReq(apos, { mode: 'draft' });
+      const piece = await manager.insert(req, { title: 'first' });
+      const second = await manager.update(req, {
+        ...piece,
+        title: 'second'
+      });
+      const [ , first ] = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(piece)
+      );
+
+      await manager.update(getReq(apos, {
+        mode: 'draft',
+        aposRestoreVersion: first._id
+      }), {
+        ...second,
+        title: 'first'
+      });
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(piece)
+      );
+      assert.deepEqual(
+        versions.map(({
+          mode, doc, restoredFrom
+        }) => [ mode, doc.title, restoredFrom?._id ]),
+        [
+          [ 'published', 'first', first._id ],
+          [ 'published', 'second', undefined ],
+          [ 'published', 'first', undefined ]
+        ]
+      );
     });
   });
 
