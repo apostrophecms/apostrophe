@@ -376,7 +376,7 @@ module.exports = {
             authorId: doc.updatedBy?._id ?? null,
             ai: false,
             changeCount: previousDoc
-              ? self.getChanges(req, content, previousDoc).length
+              ? self.getChangeCount(req, content, previousDoc)
               : 0,
             doc: await self.pack(content)
           };
@@ -499,10 +499,10 @@ module.exports = {
       // that draft becomes the publication point instead. A draft save with
       // no change to any schema field never starts one. Otherwise a draft
       // starts one at every handoff: an explicit Save Draft, a first version,
-      // a previous version that was a publication point, a different author,
-      // AI involvement changing, or more than `draftInterval` since the
-      // previous version was created. Between handoffs it replaces the
-      // previous draft.
+      // a previous version that was a publication point or a restore, a
+      // different author, AI involvement changing, or more than
+      // `draftInterval` since the previous version was created. Between
+      // handoffs it replaces the previous draft.
       //
       // A request flagged `aposSkipVersion` records nothing: core sets it on
       // a save that is a side effect of an operation already recorded. A
@@ -544,7 +544,7 @@ module.exports = {
         if (req.aposExplicitSave) {
           return true;
         }
-        if (previous.mode === 'published') {
+        if (previous.mode === 'published' || previous.restoredFrom) {
           return true;
         }
         if (previous.authorId !== self.getAuthorId(req)) {
@@ -608,13 +608,16 @@ module.exports = {
         }
         return previous;
       },
-      // Insert a new version of `doc` at the head of its timeline
+      // Insert a new version of `doc` at the head of its timeline. A
+      // restore is a baseline and counts no changes
       async insertVersion(req, doc) {
-        const previous = await self.findOne(req, self.getTimelineCriteria(doc));
+        const version = await self.newVersion(req, doc);
+        const previous = !version.restoredFrom &&
+          await self.findOne(req, self.getTimelineCriteria(doc));
         const instance = {
-          ...await self.newVersion(req, doc),
+          ...version,
           changeCount: previous
-            ? self.getChanges(req, doc, previous.doc).length
+            ? self.getChangeCount(req, doc, previous.doc)
             : 0
         };
         await self.insert(req, instance);
@@ -639,7 +642,7 @@ module.exports = {
             mode,
             ...(promoted ? { createdAt: new Date() } : { updatedAt: new Date() }),
             changeCount: before
-              ? self.getChanges(req, doc, before.doc).length
+              ? self.getChangeCount(req, doc, before.doc)
               : 0
           },
           ...(promoted && { $unset: { updatedAt: 1 } })
@@ -681,6 +684,16 @@ module.exports = {
           self.apos.util.clonePermanent(doc),
           previousDoc
         );
+      },
+      // The number of changes from `previousDoc`, an unpacked version
+      // content, to `doc`: the rows its change list shows. Stored as a
+      // version's `changeCount`
+      getChangeCount(req, doc, previousDoc) {
+        return self.getChangeRows(
+          req,
+          previousDoc,
+          self.apos.util.clonePermanent(doc)
+        ).length;
       },
       // What the diff engine needs from the rest of Apostrophe
       getDiffContext(req) {
@@ -968,8 +981,9 @@ module.exports = {
           };
         }
 
-        // The top-level fields a consolidated version changed. One that
-        // opens the timeline counts from its oldest version
+        // The changes a consolidated version lists (see `consolidate` in
+        // `lib/diff.js`). One that opens the timeline counts from its oldest
+        // version
         async function countChanges(item, oldest) {
           const [ newest, previous ] = await Promise.all([
             self.findOne(req, { _id: item._id }),
@@ -979,7 +993,7 @@ module.exports = {
             return 0;
           }
           const base = previous ?? await self.findOne(req, { _id: oldest._id });
-          return self.getChanges(req, newest.doc, base.doc).length;
+          return self.getChangeCount(req, newest.doc, base.doc);
         }
       },
       // The sequence of `version` from it down, newest first, as projected
@@ -1249,20 +1263,21 @@ module.exports = {
             continue;
           }
 
+          if (version.restoredFrom) {
+            updates.push({
+              _id: version._id,
+              changeCount: 0
+            });
+            continue;
+          }
           const nextVersion = versions[i + 1];
           if (!nextVersion) {
             continue;
           }
 
-          const changes = self.apos.schema.getChanges(
-            req,
-            manager.schema,
-            version.doc,
-            nextVersion.doc
-          );
           updates.push({
             _id: version._id,
-            changeCount: changes.length
+            changeCount: self.getChangeCount(req, version.doc, nextVersion.doc)
           });
         }
 

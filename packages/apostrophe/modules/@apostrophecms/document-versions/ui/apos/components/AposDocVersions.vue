@@ -64,6 +64,7 @@
         <AposDocVersionsPanel :view="view">
           <template #list>
             <AposDocVersionsList
+              ref="versionList"
               :current-version="currentVersion"
               :versions="versions"
               @select="selectVersion"
@@ -75,6 +76,12 @@
                   label="apostrophe:versionViewChanges"
                   :attrs="{ 'data-apos-test': 'doc-version-action-changes' }"
                   @click="viewChanges(version)"
+                />
+                <AposButton
+                  type="quiet"
+                  label="apostrophe:versionRestore"
+                  :attrs="{ 'data-apos-test': 'doc-version-action-restore' }"
+                  @click="restoreVersion(version)"
                 />
               </template>
             </AposDocVersionsList>
@@ -115,6 +122,7 @@ import { useDocVersionsList } from '../composables/useDocVersionsList.js';
 import { useDocVersionView } from '../composables/useDocVersionView.js';
 import { useDocVersionChanges } from '../composables/useDocVersionChanges.js';
 import { useDocVersionTarget } from '../composables/useDocVersionTarget.js';
+import { useDocVersionRestore } from '../composables/useDocVersionRestore.js';
 
 const props = defineProps({
   // The versions module
@@ -147,9 +155,11 @@ const docId = props.doc._id;
 const versionsAction = apos.modules[props.moduleName].action;
 
 const {
+  version: shownVersion,
   docFields,
   generation,
-  show
+  show,
+  fetchVersion
 } = useDocVersionView({ action: versionsAction });
 
 const docType = computed(() => docFields.value.data?.type || props.doc.type);
@@ -345,7 +355,8 @@ const changesPane = ref(null);
 // way in, to View Changes on the way out
 async function viewChanges(version) {
   try {
-    if (await loadChanges(version._id)) {
+    const consolidate = Boolean(version.versionIds);
+    if (await loadChanges(version._id, { consolidate })) {
       view.value = 'changes';
       await nextTick();
       changesPane.value?.focus();
@@ -403,7 +414,62 @@ async function navigateTo(group) {
 // --- Lock ---
 
 // Held for the modal's lifetime; the restore action reuses it
-const { lock } = useAdvisoryLock({ onLockLost: close });
+const {
+  lock,
+  addLockToRequest,
+  isLockedError,
+  showLockedError
+} = useAdvisoryLock({ onLockLost: close });
+
+// --- Restore ---
+
+const versionList = ref(null);
+
+const { restore } = useDocVersionRestore({
+  docAction,
+  originalDoc: props.doc,
+  version: shownVersion,
+  fetchVersion,
+  lock: {
+    addLockToRequest,
+    isLockedError,
+    showLockedError
+  },
+  onRestored: showRestored
+});
+
+// A consolidated version restores its newest version, the one it shows
+async function restoreVersion(version) {
+  const confirmed = await apos.confirm({
+    heading: 'apostrophe:versionRestore',
+    description: 'apostrophe:versionRestoreConfirm',
+    affirmativeLabel: 'apostrophe:versionRestore'
+  }, {
+    interpolate: {
+      type: $t(moduleOptions.value.label)
+    }
+  });
+  if (confirmed) {
+    await restore(version);
+  }
+}
+
+// The restore is the newest version now: select it, and move focus there
+// since the Restore button left with the old selection
+async function showRestored() {
+  try {
+    await loadVersions();
+  } catch (e) {
+    await notifyListError(e);
+    return;
+  }
+  const [ newest ] = versions.value;
+  if (newest) {
+    selectVersion(newest);
+    await nextTick();
+    versionList.value?.focus(newest._id);
+  }
+}
 
 // --- Lifecycle ---
 

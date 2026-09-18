@@ -22,12 +22,36 @@
       />
     </span>
     <span class="apos-doc-version-entry__copy">
-      <span
-        class="apos-doc-version-entry__status"
-        :class="`apos-doc-version-entry__status--${version.mode}`"
-        data-apos-test="doc-version-status"
-      >
-        {{ $t(`apostrophe:${version.mode}`) }}
+      <span class="apos-doc-version-entry__state">
+        <span
+          class="apos-doc-version-entry__status"
+          :class="`apos-doc-version-entry__status--${version.mode}`"
+          data-apos-test="doc-version-status"
+        >
+          {{ $t(`apostrophe:${version.mode}`) }}
+        </span>
+        <span
+          v-if="restoredFrom"
+          class="apos-doc-version-entry__restored"
+          data-apos-test="doc-version-restored"
+        >
+          {{ $t('apostrophe:versionRestoredBadge') }}
+          <AposIndicator
+            icon="help-circle-icon"
+            class="apos-doc-version-entry__restored-info"
+            data-apos-test="doc-version-restored-info"
+            :tooltip="restoredFrom"
+            :title="restoredFrom"
+            :icon-size="12"
+            :decorative="layout === 'list'"
+            @focus="toggleTooltip"
+            @blur="toggleTooltip"
+          />
+          <span
+            v-if="layout === 'list'"
+            class="apos-sr-only"
+          >{{ restoredFrom }}</span>
+        </span>
       </span>
       <time
         class="apos-doc-version-entry__time"
@@ -59,7 +83,9 @@
 
 <script setup>
 // One version as the list shows it: who saved it, when, and how many
-// edits. The changes panel repeats it above the change list.
+// edits, and for a restore the version it returned to. The changes panel
+// repeats it above the change list. The list renders it inside a button,
+// so only the `detail` layout has anything focusable.
 import { computed, inject } from 'vue';
 import locale from '../utils/locale.js';
 
@@ -82,6 +108,19 @@ const formatDate = locale.getDateFormatter();
 // Keeps the author in its own element whatever its place in the
 // translated phrase
 const authorMarker = '\u0000';
+
+const restoredFrom = computed(() => {
+  const { restoredFrom } = props.version;
+  return restoredFrom
+    ? $t('apostrophe:versionRestoredFrom', { date: formatDate(restoredFrom.createdAt) })
+    : null;
+});
+
+// The tooltip directive answers the pointer only
+function toggleTooltip(event) {
+  const type = event.type === 'focus' ? 'mouseenter' : 'mouseleave';
+  event.target.dispatchEvent(new Event(type));
+}
 
 const meta = computed(() => {
   const { version } = props;
@@ -163,6 +202,31 @@ $avatars-width: $avatar-size * 2 - $avatar-overlap;
 
   &--detail &__copy {
     flex: 1 1 auto;
+  }
+
+  &__state {
+    display: flex;
+    gap: $spacing-base;
+    align-items: center;
+  }
+
+  &__restored {
+    @include type-help;
+
+    & {
+      display: inline-flex;
+      gap: $spacing-half;
+      align-items: center;
+      color: var(--a-base-2);
+      font-weight: var(--a-weight-bold);
+      letter-spacing: 0.4px;
+    }
+  }
+
+  // Centered on the line box, the icon rides high next to capitals, which
+  // sit below the box's middle
+  &__restored-info {
+    transform: translateY(0.5px);
   }
 
   &__status {

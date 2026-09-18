@@ -52,7 +52,9 @@
         class="apos-doc-version-changes__empty"
         data-apos-test="doc-version-changes-empty"
       >
-        {{ $t('apostrophe:versionNoChanges') }}
+        {{ $t(version?.restoredFrom
+          ? 'apostrophe:versionRestoredBaseline'
+          : 'apostrophe:versionNoChanges') }}
       </p>
       <p
         v-else-if="!shownRows.length"

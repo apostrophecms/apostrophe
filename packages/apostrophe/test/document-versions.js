@@ -1205,6 +1205,19 @@ describe('Document Versions', function () {
 
   const hour = 60 * 60 * 1000;
 
+  // An area of rich text widgets, one per paragraph
+  function richTextArea(...paragraphs) {
+    return {
+      metaType: 'area',
+      items: paragraphs.map((text, i) => ({
+        _id: `widget${i}`,
+        metaType: 'widget',
+        type: '@apostrophecms/rich-text',
+        content: `<p>${text}</p>`
+      }))
+    };
+  }
+
   function draftReqAs(apos, name, options = {}) {
     return getReq(apos, {
       _id: name,
@@ -1444,6 +1457,56 @@ describe('Document Versions', function () {
           [ 'draft', 'First', true ],
           [ 'draft', 'Second', false ],
           [ 'published', 'First', false ]
+        ]
+      );
+    });
+
+    it('should count the changes a change list shows, not the fields', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, {
+        title: 'First',
+        main: richTextArea('One', 'Two')
+      });
+      const [ first ] = await timeline(apos, draft);
+      const main = first.doc.main;
+      await saveDraft(apos, req.clone({ aposExplicitSave: true }), draft, {
+        title: 'Second',
+        main: {
+          ...main,
+          items: main.items.map(item => ({
+            ...item,
+            content: `<p>${item.content} again</p>`
+          }))
+        }
+      });
+
+      const [ newest ] = await timeline(apos, draft);
+      const { rows } = await apos.docVersions.getVersionChanges(getReq(apos), newest._id);
+      assert.equal(rows.length, 3);
+      assert.equal(newest.changeCount, 3);
+    });
+
+    it('should count no changes on a restore and keep it apart from the next save', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await saveDraft(apos, req, draft, { title: 'Second' });
+      const [ , first ] = await timeline(apos, draft);
+      await saveDraft(apos, req.clone({ aposRestoreVersion: first._id }), draft, { title: 'First' });
+      await saveDraft(apos, req, draft, { title: 'Third' });
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [
+          version.doc.title,
+          version.changeCount,
+          Boolean(version.restoredFrom)
+        ]),
+        [
+          [ 'Third', 1, false ],
+          [ 'First', 0, true ],
+          [ 'Second', 1, false ],
+          [ 'First', 0, false ]
         ]
       );
     });
@@ -3101,6 +3164,40 @@ describe('Document Versions', function () {
         assert.equal(item.changeCount, 2);
       });
 
+      it('should count the changes a consolidated version lists - GET /?consolidate=1', async function() {
+        const main = richTextArea('One', 'Two');
+        const edit = (index, content) => ({
+          main: {
+            ...main,
+            items: main.items.map((item, i) => (i <= index
+              ? {
+                ...item,
+                content
+              }
+              : item))
+          }
+        });
+        const { article } = await recordVersions([
+          { main },
+          edit(0, '<p>One edited</p>'),
+          {
+            ...edit(1, '<p>Both edited</p>'),
+            ai: true
+          }
+        ]);
+
+        const { results: [ item ] } = await getList(article, { consolidate: 1 });
+        const { rows } = await apos.docVersions.getVersionChanges(
+          getReq(apos),
+          item._id,
+          { consolidate: true }
+        );
+        // The first version joins them and is the base: both widgets changed
+        assert.equal(item.versionIds.length, 3);
+        assert.equal(rows.length, 2);
+        assert.equal(item.changeCount, 2);
+      });
+
       it('should count the changes of a consolidated version since the version before it - GET /?consolidate=1', async function() {
         const { article, versions } = await recordVersions([
           {},
@@ -3692,6 +3789,27 @@ describe('Document Versions', function () {
         en: [ 99, 99, 99 ],
         fr: [ 1, 99 ]
       });
+    });
+
+    it('should count no changes on a restore', async function() {
+      const { article } = await seedTimelines();
+      const req = getReq(apos, { mode: 'draft' });
+      const [ , , oldest ] = await apos.docVersions.find(req, {
+        docId: article.aposDocId,
+        locale: 'en'
+      });
+      const draft = await apos.article.findOneForEditing(req, {
+        aposDocId: article.aposDocId
+      });
+      await apos.article.update(req.clone({ aposRestoreVersion: oldest._id }), {
+        ...draft,
+        title: 'A1'
+      });
+
+      await apos.docVersions.db.updateMany({}, { $set: { changeCount: 99 } });
+      await apos.docVersions.setChangeCountTask();
+
+      assert.deepEqual((await countsFor(article)).en, [ 0, 2, 1, 99 ]);
     });
   });
 

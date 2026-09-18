@@ -3,7 +3,8 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 /**
  * Restores a version over the live draft of the document open in the
- * versions modal. `restore(item)` resolves with the updated document, or
+ * versions modal. The save names the version, so its record is a restore.
+ * `restore(item)` resolves with the updated document, or
  * `null` when nothing was restored and the user has been told why: the
  * version could not be loaded, the save was refused, or the lock was lost.
  *
@@ -39,7 +40,10 @@ export function useDocVersionRestore({
       return null;
     }
     try {
-      const body = klona(doc);
+      const body = {
+        ...klona(doc),
+        _restoreVersion: item._id
+      };
       lock.addLockToRequest(body);
       const updated = await apos.http.put(docAction.value, {
         body,
