@@ -1327,7 +1327,9 @@ module.exports = {
         await query.after([ previous ]);
 
         self.copyForPublication(req, previous, published);
-        published.lastPublishedAt = previous.lastPublishedAt;
+        // A document inserted as published was recorded before it was given
+        // its publication time; the version's own time stands in for it
+        published.lastPublishedAt = previous.lastPublishedAt || version.createdAt;
         published = await self.update(req.clone({
           mode: 'published',
           aposRestoreVersion: version._id

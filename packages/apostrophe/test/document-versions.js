@@ -1969,6 +1969,31 @@ describe('Document Versions', function () {
       await cleanup(apos);
     });
 
+    it('should keep the publication time of a document inserted as published', async function() {
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const inserted = await apos.article.insert(publishedReq, { title: 'First' });
+      const [ first ] = await publications(apos, inserted);
+      assert.equal(first.doc.lastPublishedAt, undefined);
+
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.findOneForEditing(req, {
+        aposDocId: inserted.aposDocId
+      });
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+
+      const published = await apos.article.revertPublishedToPrevious(
+        publishedReq,
+        await apos.article.findOneForEditing(publishedReq, {
+          aposDocId: inserted.aposDocId
+        })
+      );
+      assert.strictEqual(published.title, 'First');
+      assert.deepEqual(published.lastPublishedAt, first.createdAt);
+    });
+
     it('should return the published document to its previous publication and record it', async function() {
       const req = getReq(apos, { mode: 'draft' });
       const draft = await apos.article.insert(req, { title: 'First' });
