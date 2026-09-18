@@ -331,6 +331,78 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
+    it('should report reordered items as one modified row at their array or area', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.section.rows.reverse();
+      const area = newer.section.rows[1].content;
+      const [ nested, richText, opaque ] = area.items;
+      area.items = [ opaque, nested, richText ];
+      nested.title = 'Edited';
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [
+        row.type,
+        row.fieldType,
+        row.path.map(segment => segment.label).join(' > ')
+      ]), [
+        [ 'modified', 'array', 'Section > Rows' ],
+        [ 'modified', 'area', 'Section > Rows > Title root.section.rows.0 > Content' ],
+        [ 'modified', 'string', 'Section > Rows > Title root.section.rows.0 > Content > Nested 2 > Title' ]
+      ]);
+      assert.deepEqual(
+        [ rows[0].old, rows[0].new ],
+        [
+          [ 'root.section.rows.0', 'root.section.rows.1' ],
+          [ 'root.section.rows.1', 'root.section.rows.0' ]
+        ]
+      );
+      assert.deepEqual(
+        [ rows[1].old, rows[1].new ],
+        [
+          [ nested._id, richText._id, opaque._id ],
+          [ opaque._id, nested._id, richText._id ]
+        ]
+      );
+      assert.equal(rows[0].field.name, 'rows');
+      assert.equal(rows[1].field.name, 'content');
+      assert.deepEqual(Object.keys(rows[0]), [ 'path', 'type', 'fieldType', 'old', 'new' ]);
+      assert.equal(apos.docVersions.getChangeCount(req, newer, older), 3);
+    });
+
+    it('should not call an item added or deleted in the middle a reorder', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const area = newer.section.rows[0].content;
+      const [ nested, richText, opaque ] = area.items;
+      const added = {
+        ...structuredClone(richText),
+        _id: 'root.section.rows.0.content.3'
+      };
+      area.items = [ nested, added, opaque ];
+      newer.section.rows.splice(1, 0, {
+        ...structuredClone(newer.section.rows[1]),
+        _id: 'root.section.rows.2'
+      });
+      const brief = row => [ row.type, row.fieldType, row.path.at(-1).name ];
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer).map(brief), [
+        [ 'deleted', 'widget', richText._id ],
+        [ 'added', 'widget', added._id ],
+        [ 'added', 'arrayItem', 'root.section.rows.2' ]
+      ]);
+
+      // The same, and the items both sides have change places
+      area.items = [ opaque, added, nested ];
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'area', 'content' ],
+        [ 'added', 'widget', added._id ],
+        [ 'deleted', 'widget', richText._id ],
+        [ 'added', 'arrayItem', 'root.section.rows.2' ]
+      ]);
+      assert.deepEqual(rows[0].old, [ nested._id, opaque._id ]);
+      assert.deepEqual(rows[0].new, [ opaque._id, nested._id ]);
+    });
+
     it('should report an added or deleted widget as one row with its type label', function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -506,6 +578,19 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
+    it('should never call items without an _id reordered', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      for (const item of [ ...older.section.rows, ...newer.section.rows ]) {
+        delete item._id;
+        delete item.content;
+      }
+      newer.section.rows.reverse();
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.ok(rows.length);
+      assert.ok(rows.every(row => row.fieldType !== 'array'));
+    });
+
     it('should not mutate its inputs', function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -651,6 +736,67 @@ describe('Document Versions diff engine', function () {
         label: '#2',
         ordinal: 2
       });
+    });
+
+    it('should read a change of order as the items in order, numbered as in the newer document', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      older.section.rows[1].title = '';
+      newer.section.rows[1].title = '';
+      newer.section.rows.reverse();
+      const area = newer.section.rows[1].content;
+      const [ nested, richText, opaque ] = area.items;
+      const twin = {
+        ...structuredClone(richText),
+        _id: 'root.section.rows.0.content.3'
+      };
+      older.section.rows[0].content.items.push(structuredClone(twin));
+      area.items = [ twin, opaque, richText, nested ];
+      assert.deepEqual(await texts(older, newer), [
+        [
+          'rows',
+          '#2 Title root.section.rows.0, #1',
+          '#1, #2 Title root.section.rows.0'
+        ],
+        [
+          'content',
+          '#4 Nested 2, #3 Rich Text, #2 Opaque, #1 Rich Text',
+          '#1 Rich Text, #2 Opaque, #3 Rich Text, #4 Nested 2'
+        ]
+      ]);
+    });
+
+    it('should give a widget of a change of order its title', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const cards = [ 'one', 'two' ].map(kind => ({
+        _id: `card-${kind}`,
+        metaType: 'widget',
+        type: 'card',
+        kind
+      }));
+      older.section.rows[0].content.items.push(...structuredClone(cards));
+      newer.section.rows[0].content.items.push(...structuredClone(cards).reverse());
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      await apos.docVersions.addChangeText(req, rows);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].newText, '#1 Nested 2, #2 Rich Text, #3 Opaque, #4 Card · Two, #5 Card · One');
+      // An item that moved is marked whole, where it was and where it is
+      const [ { diff } ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
+      const side = change => diff
+        .filter(part => [ 'same', change ].includes(part.change))
+        .map(part => part.text)
+        .join(', ');
+      assert.equal(side('removed'), rows[0].oldText);
+      assert.equal(side('added'), rows[0].newText);
+      assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
+        [ 'same', '#1 Nested 2' ],
+        [ 'same', '#2 Rich Text' ],
+        [ 'same', '#3 Opaque' ],
+        [ 'removed', '#5 Card · One' ],
+        [ 'same', '#4 Card · Two' ],
+        [ 'added', '#5 Card · One' ]
+      ]);
     });
 
     it('should read an added widget as its title, its rich text, or nothing', async function () {
@@ -991,6 +1137,17 @@ describe('Document Versions diff engine', function () {
       assert.equal(doc.aposMeta, undefined);
     });
 
+    it('should mark nothing for a change of order', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.section.rows.reverse();
+      newer.section.rows[0].content.items.reverse();
+      assert.equal(apos.docVersions.getChangeRows(req, older, newer).length, 2);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), []);
+      assert.deepEqual(doc, newer);
+    });
+
     it('should reuse rows already computed', function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -1246,6 +1403,46 @@ describe('Document Versions diff engine', function () {
         [ 'modified', 'string', 'title', true ]
       ]);
       assert.deepEqual(rows[1].path.map(segment => segment.name), [ 'section', 'title' ]);
+    });
+
+    it('should keep the order of items apart from the items', function () {
+      const reorder = doc => {
+        getRows(doc).reverse();
+      };
+      const edit = doc => {
+        getRows(doc).find(item => item._id.endsWith('.0')).title = 'Edited';
+      };
+      const expected = (order, item) => [
+        [ 'modified', 'array', 'rows', order ],
+        [ 'modified', 'string', 'title', item ]
+      ];
+      assert.deepEqual(
+        apos.docVersions.getConsolidatedRows(req, run({
+          ai: true,
+          edit: reorder
+        }, { edit })).map(brief),
+        expected(true, false)
+      );
+      assert.deepEqual(
+        apos.docVersions.getConsolidatedRows(req, run({ edit: reorder }, {
+          ai: true,
+          edit
+        })).map(brief),
+        expected(false, true)
+      );
+    });
+
+    it('should drop an order that ends where it started', function () {
+      const reorder = doc => {
+        getRows(doc).reverse();
+      };
+      assert.deepEqual(apos.docVersions.getConsolidatedRows(req, run(
+        { edit: reorder },
+        {
+          ai: true,
+          edit: reorder
+        }
+      )), []);
     });
 
     it('should keep a widget\'s schema fields apart from the data it stores beside them', function () {

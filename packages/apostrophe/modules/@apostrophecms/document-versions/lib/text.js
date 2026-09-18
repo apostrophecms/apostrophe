@@ -4,7 +4,7 @@
 // in as a map.
 
 const _ = require('lodash');
-const { diffWords } = require('diff');
+const { diffWords, diffArrays } = require('diff');
 
 // Core field types whose stored value reads as text as it is, reached
 // through `extend` as well
@@ -124,7 +124,10 @@ function getRelatedIds(rows, ctx) {
  * A rich text row reads as plaintext; an array item as its title (its
  * array's `titleField`, else its `title` field); a widget as its title (the
  * widget type's `titleField` option) or, for rich text, its plaintext;
- * any other row as its field's text (`toText`).
+ * the order of an array or area as its items in that order, each `#n`,
+ * its position in the newer document, which tells items that read alike
+ * apart, then its widget type and its title; any other row as its field's
+ * text (`toText`).
  *
  * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
  * @param {import('./diff.js').DiffContext} ctx
@@ -145,17 +148,23 @@ function addText(rows, ctx, { titles = {} } = {}) {
  * Sets `diff` on each row: its `oldText` and `newText` compared word by
  * word, as `{ text, change }` parts in reading order, `change` being `same`,
  * `added` or `removed`. A row whose texts do not differ has no `added` or
- * `removed` part. Run after `addText`.
+ * `removed` part. The order of an array or area compares item by item:
+ * each part is a whole item, without the commas of the text, so an item
+ * that moved is marked whole and the ones it passed are not. Run after
+ * `addText`.
  *
  * @param {import('./diff.js').ChangeRow[]} rows Rows with text, modified.
+ * @param {import('./diff.js').DiffContext} ctx
  * @returns {import('./diff.js').ChangeRow[]} The same rows.
  */
-function addWordDiff(rows) {
+function addWordDiff(rows, ctx) {
   for (const row of rows) {
-    row.diff = diffWords(row.oldText, row.newText).map(part => ({
-      text: part.value,
-      change: part.added ? 'added' : part.removed ? 'removed' : 'same'
-    }));
+    row.diff = row.items
+      ? orderDiff(row, ctx)
+      : diffWords(row.oldText, row.newText).map(part => ({
+        text: part.value,
+        change: changeOf(part)
+      }));
   }
   return rows;
 }
@@ -218,7 +227,33 @@ function rowText(row, value, ctx, titles) {
   if (row.fieldType === 'widget') {
     return getWidgetText(value, ctx);
   }
+  if (row.items) {
+    return value.map(id => itemText(row.items[id], ctx)).join(', ');
+  }
   return row.field ? toText(row.field, value, ctx, { titles }) : '';
+}
+
+function changeOf(part) {
+  return part.added ? 'added' : part.removed ? 'removed' : 'same';
+}
+
+// The parts of an order row: whole items, in the order a reader of both
+// sides meets them, an item that moved being `removed` where it was and
+// `added` where it is. No part holds the commas of the text
+function orderDiff(row, ctx) {
+  return diffArrays(row.old, row.new).flatMap(part => part.value.map(id => ({
+    text: itemText(row.items[id], ctx),
+    change: changeOf(part)
+  })));
+}
+
+// An item of an order row: `#2 Rich Text · Its title`
+function itemText({
+  ordinal, label, title
+}, ctx) {
+  const type = label && (ctx.t ? ctx.t(label) : label);
+  const name = [ type, title ].filter(Boolean).join(' · ');
+  return name ? `#${ordinal} ${name}` : `#${ordinal}`;
 }
 
 // `scalar`, one of the special types, or `null` when the value has no text.

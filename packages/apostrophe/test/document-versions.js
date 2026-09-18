@@ -3510,6 +3510,65 @@ describe('Document Versions', function () {
         });
       });
 
+      it('should list a change of order alone as one change - GET /:versionId/changes', async function() {
+        const items = [ 'one', 'two', 'three' ].map(value => ({
+          _id: `item-${value}`,
+          label: value === 'two' ? '' : `Label ${value}`,
+          value
+        }));
+        const { versions } = await recordVersions([
+          { array: items },
+          { array: [ items[2], items[0], items[1] ] }
+        ]);
+        assert.equal(versions[1].changeCount, 1);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.equal(changes.rows.length, 1);
+        const [ row ] = changes.rows;
+        assert.deepEqual(Object.keys(row).sort(), [
+          'ai',
+          'diff',
+          'fieldType',
+          'new',
+          'newText',
+          'old',
+          'oldText',
+          'path',
+          'type'
+        ]);
+        assert.deepEqual(
+          {
+            ...row,
+            diff: undefined
+          },
+          {
+            path: [ {
+              name: 'array',
+              label: 'Contact information'
+            } ],
+            type: 'modified',
+            fieldType: 'array',
+            old: [ 'item-one', 'item-two', 'item-three' ],
+            new: [ 'item-three', 'item-one', 'item-two' ],
+            oldText: '#2 Label one, #3, #1 Label three',
+            newText: '#1 Label three, #2 Label one, #3',
+            ai: false,
+            diff: undefined
+          }
+        );
+        assert.ok(row.diff.some(part => part.change !== 'same'));
+        assert.deepEqual(changes.counts, {
+          added: 0,
+          modified: 1,
+          deleted: 0,
+          ai: 0
+        });
+      });
+
       it('should flag every change of a version saved with AI - GET /:versionId/changes', async function() {
         const { versions } = await recordVersions([
           {},

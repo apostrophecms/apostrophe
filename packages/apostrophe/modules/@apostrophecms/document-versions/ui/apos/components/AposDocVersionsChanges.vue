@@ -147,16 +147,20 @@
                       class="apos-doc-version-changes__value-icon"
                       :title="$t(pane.markLabel)"
                     />
-                    <p class="apos-doc-version-changes__value">
+                    <p
+                      class="apos-doc-version-changes__value"
+                      :class="entry.order && `apos-doc-version-changes__value--${pane.side}`"
+                    >
                       <template v-if="entry.text[pane.side]">
                         <template
-                          v-for="(part, index) in entry.row.diff"
+                          v-for="(part, index) in entry.parts[pane.side]"
                           :key="index"
                         >
+                          <span v-if="entry.order && index">, </span>
                           <span v-if="part.change === 'same'">{{ part.text }}</span>
                           <component
                             :is="pane.tag"
-                            v-else-if="part.change === pane.change"
+                            v-else
                             class="apos-doc-version-changes__mark"
                             :class="`apos-doc-version-changes__mark--${pane.side}`"
                           >
@@ -361,6 +365,11 @@ const groups = computed(() => {
       list.push(group);
     }
     const segments = row.path.slice(path.length);
+    // The order of an array's or area's items reads as the last crumb
+    const order = [ 'array', 'area' ].includes(row.fieldType);
+    if (order) {
+      segments.push({ label: 'apostrophe:versionOrderChanged' });
+    }
     // The row is the group's own field or widget: it was added or deleted
     // whole, and its label stands in for the empty breadcrumb
     if (!segments.length) {
@@ -372,6 +381,13 @@ const groups = computed(() => {
       key: String(index),
       row,
       segments,
+      // Its parts are whole items, shown as a list in the side's colour
+      order,
+      // What each side shows: the parts both share and its own
+      parts: Object.fromEntries(panes.map(pane => [
+        pane.side,
+        diff.filter(part => [ 'same', pane.change ].includes(part.change))
+      ])),
       // Whether the text shows the change at all
       changed: diff.some(part => part.change !== 'same'),
       text: {
@@ -694,6 +710,14 @@ $pad-x: $spacing-base + $spacing-half;
       font-size: var(--a-type-smaller);
       line-height: var(--a-line-tall);
       overflow-wrap: anywhere;
+    }
+
+    &--new {
+      color: var(--a-success-dark);
+    }
+
+    &--old {
+      color: var(--a-danger-button-hover);
     }
   }
 

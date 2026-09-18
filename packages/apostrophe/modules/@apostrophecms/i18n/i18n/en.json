@@ -802,6 +802,7 @@
   "versionNavPrevious": "Previous",
   "versionNoChanges": "No changes recorded for this version.",
   "versionNoChangesMatch": "No changes match these filters.",
+  "versionOrderChanged": "Order changed",
   "versionPluralLabel": "Document Versions",
   "versionPreviousVersion": "Previous Version",
   "versionRemovedText": "Removed",

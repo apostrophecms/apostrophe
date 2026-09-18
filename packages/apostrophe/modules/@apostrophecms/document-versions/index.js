@@ -713,7 +713,10 @@ module.exports = {
           getFieldType: name => self.apos.schema.fieldTypes[name],
           getWidgetManager: type => self.apos.area.getWidgetManager(type),
           setMeta: (doc, ...args) => self.apos.doc.setMeta(doc, ...args),
-          htmlToPlaintext: html => self.apos.util.htmlToPlaintext(html)
+          htmlToPlaintext: html => self.apos.util.htmlToPlaintext(html),
+          t: key => self.apos.i18n.i18next.t(key, {
+            lng: self.apos.i18n.getAdminLocale(req)
+          })
         };
       },
       // Every change from `older` to `newer`, two stored versions of one
@@ -1222,7 +1225,7 @@ module.exports = {
             rows = text.addWordDiff(await self.addChangeText(
               draftReq,
               self.getConsolidatedRows(req, pairs)
-            ));
+            ), self.getDiffContext(draftReq));
           }
         }
 
