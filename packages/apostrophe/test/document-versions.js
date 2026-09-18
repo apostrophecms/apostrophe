@@ -2767,7 +2767,7 @@ describe('Document Versions', function () {
       });
       assert(versions);
       assert.equal(seed.versions.length, count);
-      assert.equal(versions.total, count);
+      assert.equal(versions.next, null);
       assert.equal(versions.results.length, count);
       const [ third, second, first ] = versions.results;
       assert.equal(seed.versions[0].doc.title, 'An article 3');
@@ -2794,10 +2794,8 @@ describe('Document Versions', function () {
       });
       assert(versions);
       assert.equal(seed.versions.length, count);
-      assert.equal(versions.total, count);
-      assert.equal(versions.currentPage, 1);
-      assert.equal(versions.perPage, limit);
       assert.equal(versions.results.length, limit);
+      assert.equal(versions.next, versions.results.at(-1).createdAt);
     });
 
     it('should support pagination - GET /', async function() {
@@ -2807,23 +2805,43 @@ describe('Document Versions', function () {
         ...apos.article.newInstance(),
         title: 'An article'
       }, count);
-      assert(seed.doc);
-      assert(seed.versions);
+      const first = await apos.http.get(`/api/v1/${moduleName}`, {
+        qs: { docId: seed.doc._id },
+        jar: jarAdmin
+      });
 
       const versions = await apos.http.get(`/api/v1/${moduleName}`, {
         qs: {
           docId: seed.doc._id,
-          page: 2
+          before: first.next
         },
         jar: jarAdmin
       });
-      assert(versions);
-      assert.equal(seed.versions.length, count);
-      assert.equal(versions.total, count);
-      assert.equal(versions.pages, 2);
-      assert.equal(versions.currentPage, 2);
-      assert.equal(versions.perPage, limit);
+
       assert.equal(versions.results.length, 1);
+      assert.equal(versions.next, null);
+      assert.equal(
+        first.results.some(({ _id }) => _id === versions.results[0]._id),
+        false
+      );
+    });
+
+    it('should have invalid response if the cursor is bad - GET /', async function() {
+      const seed = await seedVersionsFor(apos, {
+        ...apos.article.newInstance(),
+        title: 'An article'
+      }, 1);
+
+      await assert.rejects(
+        apos.http.get(`/api/v1/${moduleName}`, {
+          qs: {
+            docId: seed.doc._id,
+            before: 'yesterday'
+          },
+          jar: jarAdmin
+        }),
+        { status: 400 }
+      );
     });
 
     it('should have invalid response if id is bad - GET /:versionId', async function() {
@@ -3038,41 +3056,173 @@ describe('Document Versions', function () {
       });
     });
 
-    describe('changes', function() {
-      // An article with one version per state, oldest first; a state's
-      // `ai` saves it with AI, `restoredFrom` as a restore of the first.
-      // Returns the article and the version records, oldest first
-      async function recordVersions(states) {
-        const req = getReq(apos, { mode: 'draft' });
-        const [ initial, ...rest ] = states;
-        const article = await apos.article.insert(req, {
-          title: 'An article',
-          ...initial
+    describe('consolidated list', function() {
+      function getList(article, qs = {}) {
+        return apos.http.get(`/api/v1/${moduleName}`, {
+          qs: {
+            docId: article._id,
+            ...qs
+          },
+          jar: jarAdmin
         });
-        const [ first ] = await apos.docVersions.find(
-          getReq(apos),
-          apos.docVersions.getTimelineCriteria(article)
-        );
-        const versions = [ first ];
-        for (const {
-          ai, restoredFrom, ...state
-        } of rest) {
-          await wait(5);
-          const versionReq = req.clone({
-            aposAi: ai,
-            aposRestoreVersion: restoredFrom && first._id
-          });
-          versions.push(await apos.docVersions.saveFor(versionReq, {
-            ...article,
-            ...state
-          }, true));
-        }
-        return {
-          article,
-          versions
-        };
       }
 
+      it('should list versions that consolidate as one with its own change count - GET /?consolidate=1', async function() {
+        const { article, versions } = await recordVersions([
+          {},
+          {
+            title: 'Two',
+            ai: true
+          },
+          { title: 'Three' },
+          {
+            title: 'Three',
+            int: 7,
+            ai: true
+          }
+        ]);
+
+        const records = await getList(article);
+        const consolidated = await getList(article, { consolidate: 1 });
+
+        assert.deepEqual(
+          records.results.map(({ _id, versionIds }) => [ _id, versionIds ]),
+          versions.map(({ _id }) => [ _id, undefined ]).reverse()
+        );
+        assert.equal(consolidated.results.length, 1);
+        assert.equal(consolidated.next, null);
+        const [ item ] = consolidated.results;
+        assert.deepEqual(item.versionIds, versions.map(({ _id }) => _id).reverse());
+        assert.equal(item._id, versions[3]._id);
+        assert.equal(item.createdAt, records.results[0].createdAt);
+        assert.equal(item.ai, true);
+        assert.equal(item.mode, 'draft');
+        // `title` and `int`: the title changed twice and counts once
+        assert.equal(item.changeCount, 2);
+      });
+
+      it('should count the changes of a consolidated version since the version before it - GET /?consolidate=1', async function() {
+        const { article, versions } = await recordVersions([
+          {},
+          {
+            title: 'By another',
+            author: 'anotherUserId'
+          },
+          {
+            title: 'Three',
+            ai: true
+          },
+          { title: 'By another' }
+        ]);
+
+        const { results } = await getList(article, { consolidate: 1 });
+
+        assert.deepEqual(
+          results.map(({ _id, versionIds }) => versionIds || _id),
+          [ [ versions[3]._id, versions[2]._id ], versions[1]._id, versions[0]._id ]
+        );
+        // The consolidated version ends where it started
+        assert.equal(results[0].changeCount, 0);
+        assert.equal(results[1].changeCount, 1);
+      });
+
+      it('should complete a consolidated version the end of a page would split - GET /?consolidate=1', async function() {
+        const limit = apos.docVersions.defaultLimit;
+        const { article, versions } = await recordVersions([
+          {},
+          { title: 'Oldest' },
+          {
+            title: 'Two',
+            ai: true
+          },
+          { title: 'Three' },
+          ...Array.from({ length: limit - 1 }, (item, i) => ({
+            title: `By another ${i}`,
+            author: 'anotherUserId'
+          }))
+        ]);
+        const { sequenceBatchLimit } = apos.docVersions;
+        apos.docVersions.sequenceBatchLimit = 2;
+
+        try {
+          const first = await getList(article, { consolidate: 1 });
+
+          assert.equal(first.results.length, limit);
+          assert.deepEqual(
+            first.results.at(-1).versionIds,
+            [ versions[3]._id, versions[2]._id, versions[1]._id, versions[0]._id ]
+          );
+          assert.equal(first.next, null);
+        } finally {
+          apos.docVersions.sequenceBatchLimit = sequenceBatchLimit;
+        }
+      });
+
+      it('should page versions that do not consolidate like any list - GET /?consolidate=1', async function() {
+        const limit = apos.docVersions.defaultLimit;
+        const { article, versions } = await recordVersions([
+          {},
+          ...Array.from({ length: limit + 1 }, (item, i) => ({ title: `Title ${i}` }))
+        ]);
+
+        const first = await getList(article, { consolidate: 1 });
+        const second = await getList(article, {
+          consolidate: 1,
+          before: first.next
+        });
+
+        assert.equal(first.results.length, limit);
+        assert.deepEqual(
+          [ ...first.results, ...second.results ].map(({ _id }) => _id),
+          versions.map(({ _id }) => _id).reverse()
+        );
+        assert.equal(second.next, null);
+      });
+    });
+
+    // An article with one version per state, oldest first; a state's
+    // `ai` saves it with AI, `restoredFrom` as a restore of the first,
+    // `author` as that user, `published` in published mode.
+    // Returns the article and the version records, oldest first
+    async function recordVersions(states) {
+      const req = getReq(apos, { mode: 'draft' });
+      const [ initial, ...rest ] = states;
+      const article = await apos.article.insert(req, {
+        title: 'An article',
+        ...initial
+      });
+      const [ first ] = await apos.docVersions.find(
+        getReq(apos),
+        apos.docVersions.getTimelineCriteria(article)
+      );
+      const versions = [ first ];
+      for (const {
+        ai, restoredFrom, author, published, ...state
+      } of rest) {
+        await wait(5);
+        const versionReq = req.clone({
+          aposAi: ai,
+          aposRestoreVersion: restoredFrom && first._id
+        });
+        if (author) {
+          versionReq.user = {
+            ...req.user,
+            _id: author
+          };
+        }
+        versions.push(await apos.docVersions.saveFor(versionReq, {
+          ...article,
+          ...state,
+          ...(published && { aposMode: 'published' })
+        }, true));
+      }
+      return {
+        article,
+        versions
+      };
+    }
+
+    describe('changes', function() {
       it('should list the changes of a version since the one before it - GET /:versionId/changes', async function() {
         const related = await apos.article.insert(getReq(apos, admin), {
           title: 'Related'
@@ -3200,7 +3350,10 @@ describe('Document Versions', function () {
             `/api/v1/${moduleName}/${version._id}/changes`,
             { jar: jarAdmin }
           );
-          assert.deepEqual(changes, none);
+          assert.deepEqual(changes, {
+            ...none,
+            versionIds: [ version._id ]
+          });
         }
       });
 
@@ -3221,7 +3374,7 @@ describe('Document Versions', function () {
         );
       });
 
-      it('should list the changes of a group as one, flagged per path - GET /changes', async function() {
+      it('should list the changes of a consolidated version as one, flagged per path - GET /:versionId/changes?consolidate=1', async function() {
         const { versions } = await recordVersions([
           {},
           {
@@ -3234,10 +3387,13 @@ describe('Document Versions', function () {
           }
         ]);
 
-        const changes = await apos.http.get(`/api/v1/${moduleName}/changes`, {
-          qs: { ids: `${versions[2]._id},${versions[1]._id}` },
-          jar: jarAdmin
-        });
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[2]._id}/changes`,
+          {
+            qs: { consolidate: 1 },
+            jar: jarAdmin
+          }
+        );
 
         assert.deepEqual(
           changes.rows.map(row => [ row.path[0].name, row.type, row.newText, row.ai ]),
@@ -3252,59 +3408,83 @@ describe('Document Versions', function () {
           deleted: 0,
           ai: 1
         });
+        assert.deepEqual(
+          changes.versionIds,
+          [ versions[2]._id, versions[1]._id, versions[0]._id ]
+        );
       });
 
-      it('should count no changes for a first version in a group - GET /changes', async function() {
+      it('should read a consolidated version longer than one query - GET /:versionId/changes?consolidate=1', async function() {
         const { versions } = await recordVersions([
           {},
           {
-            title: 'By AI',
+            title: 'Two',
             ai: true
-          }
+          },
+          { title: 'Three' },
+          {
+            title: 'Four',
+            ai: true
+          },
+          { title: 'Five' }
         ]);
+        const { sequenceBatchLimit } = apos.docVersions;
+        apos.docVersions.sequenceBatchLimit = 2;
 
-        const group = await apos.http.get(`/api/v1/${moduleName}/changes`, {
-          qs: { ids: `${versions[0]._id},${versions[1]._id}` },
-          jar: jarAdmin
-        });
-        const single = await apos.http.get(
-          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
-          { jar: jarAdmin }
-        );
+        try {
+          const changes = await apos.http.get(
+            `/api/v1/${moduleName}/${versions[4]._id}/changes`,
+            {
+              qs: { consolidate: 1 },
+              jar: jarAdmin
+            }
+          );
 
-        assert.equal(group.rows.length, 1);
-        assert.deepEqual(group, single);
+          assert.deepEqual(
+            changes.versionIds,
+            versions.map(({ _id }) => _id).reverse()
+          );
+          assert.deepEqual(
+            changes.rows.map(row => [ row.oldText, row.newText ]),
+            [ [ 'An article', 'Five' ] ]
+          );
+        } finally {
+          apos.docVersions.sequenceBatchLimit = sequenceBatchLimit;
+        }
       });
 
-      it('should have invalid response unless the ids are consecutive versions of one document - GET /changes', async function() {
+      it('should answer as without the flag for a version that does not consolidate - GET /:versionId/changes?consolidate=1', async function() {
         const { versions } = await recordVersions([
           {},
-          { title: 'Two' },
+          {
+            title: 'By another',
+            ai: true,
+            author: 'anotherUserId'
+          },
           { title: 'Three' },
+          { title: 'Four' },
           { restoredFrom: true }
         ]);
-        const other = await recordVersions([ {}, { title: 'Other' } ]);
-        const groups = [
-          '',
-          `${versions[1]._id},$bad-id`,
-          `${versions[0]._id},${versions[2]._id}`,
-          `${versions[2]._id},${versions[3]._id}`,
-          `${versions[2]._id},${other.versions[1]._id}`
-        ];
 
-        for (const ids of groups) {
-          await assert.rejects(
-            apos.http.get(`/api/v1/${moduleName}/changes`, {
-              qs: { ids },
-              jar: jarAdmin
-            }),
-            { status: 400 },
-            `Expected 400 for "${ids}"`
+        for (const version of versions) {
+          const single = await apos.http.get(
+            `/api/v1/${moduleName}/${version._id}/changes`,
+            { jar: jarAdmin }
           );
+          const consolidated = await apos.http.get(
+            `/api/v1/${moduleName}/${version._id}/changes`,
+            {
+              qs: { consolidate: 1 },
+              jar: jarAdmin
+            }
+          );
+
+          assert.deepEqual(single.versionIds, [ version._id ]);
+          assert.deepEqual(consolidated, single);
         }
         await assert.rejects(
-          apos.http.get(`/api/v1/${moduleName}/changes`, {
-            qs: { ids: `${versions[1]._id},${versions[2]._id}` }
+          apos.http.get(`/api/v1/${moduleName}/${versions[1]._id}/changes`, {
+            qs: { consolidate: 1 }
           }),
           { status: 404 }
         );

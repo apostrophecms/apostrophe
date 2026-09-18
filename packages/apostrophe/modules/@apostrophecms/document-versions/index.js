@@ -12,6 +12,7 @@ const _ = require('lodash');
 const { stripIndent } = require('common-tags');
 const diff = require('./lib/diff.js');
 const text = require('./lib/text.js');
+const consolidation = require('./lib/consolidation.js');
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
@@ -47,6 +48,8 @@ module.exports = {
   },
   async init(self) {
     self.defaultLimit = 10;
+    // Versions per query when reading a sequence (see `getSequenceFrom`)
+    self.sequenceBatchLimit = 100;
     self.defaultSort = { createdAt: -1 };
 
     self.addEditorModal();
@@ -102,11 +105,16 @@ module.exports = {
 
   restApiRoutes(self) {
     return {
-      // `docId` is the live document's `_id`
+      // `docId` is the live document's `_id`. Newest first, `defaultLimit` at
+      // a time: `next`, when not `null`, is the `before` of the next request.
+      // `consolidate=1` lists entries rather than records (see
+      // `getTimelinePage`)
       async getAll(req) {
         const docId = self.apos.launder.id(req.query.docId, '');
+        const before = self.apos.launder.string(req.query.before);
+        const beforeDate = before ? new Date(before) : null;
 
-        if (!docId) {
+        if (!docId || (beforeDate && isNaN(beforeDate))) {
           throw self.apos.error('invalid');
         }
         const doc = await self.getRestDocQuery(req.clone({ mode: 'draft' }))
@@ -117,25 +125,10 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
-        const criteria = self.getTimelineCriteria(doc);
-        const pager = await self.getRestPager(req, criteria);
-        const versions = await self.find(
-          req,
-          criteria,
-          {
-            skip: pager.skip,
-            limit: pager.perPage,
-            project: self.getRestProjection()
-          }
-        );
-
-        return {
-          pages: pager.pages,
-          currentPage: pager.currentPage,
-          perPage: pager.perPage,
-          total: pager.total,
-          results: versions
-        };
+        return self.getTimelinePage(req, self.getTimelineCriteria(doc), {
+          before: beforeDate,
+          consolidate: self.apos.launder.boolean(req.query.consolidate)
+        });
       },
       // `annotate=1` marks the version's document with its changes since
       // the version before it (see `getAnnotatedDoc`)
@@ -160,34 +153,25 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
-        // The changes of the versions `ids`, comma separated: consecutive
-        // versions of one document, listed as one (see `getVersionChanges`)
-        changes: async (req) => {
-          const ids = self.apos.launder.string(req.query.ids).split(',');
-          return changesOrRestError(() => self.getVersionChanges(req, ids));
-        },
-        // The changes of a version since the one before it
+        // The changes of a version since the one before it. `consolidate=1`
+        // lists the changes of the consolidated version it is the newest of
         ':versionId/changes': async (req) => {
-          return changesOrRestError(
-            () => self.getVersionChanges(req, [ req.params.versionId ])
-          );
+          try {
+            return await self.getVersionChanges(req, req.params.versionId, {
+              consolidate: self.apos.launder.boolean(req.query.consolidate)
+            });
+          } catch (error) {
+            if (error instanceof TypeError) {
+              throw self.apos.error('invalid');
+            }
+            if (error instanceof ReferenceError) {
+              throw self.apos.error('notfound');
+            }
+            throw error;
+          }
         }
       }
     };
-
-    async function changesOrRestError(getChanges) {
-      try {
-        return await getChanges();
-      } catch (error) {
-        if (error instanceof TypeError) {
-          throw self.apos.error('invalid');
-        }
-        if (error instanceof ReferenceError) {
-          throw self.apos.error('notfound');
-        }
-        throw error;
-      }
-    }
   },
 
   tasks(self) {
@@ -916,20 +900,115 @@ module.exports = {
           changeCount: 1
         };
       },
-      // Find the total versions count and do the pagination related math
-      async getRestPager(req, criteria) {
-        const perPage = self.defaultLimit;
-        const total = await self.count(req, criteria);
-        const currentPage = self.apos.launder.integer(req.query.page, 1);
-        const pages = Math.ceil(total / perPage);
-        const skip = perPage * (currentPage - 1);
+      // One page of the timeline `criteria` names, newest first, from the
+      // versions older than the date `before` or from the top:
+      // `{ results, next }`, `next` being the `before` of the following page
+      // and `null` on the last one. With `consolidate` the results are list
+      // items (see `lib/consolidation.js`): versions that consolidate come
+      // as one consolidated version, whose `changeCount` compares its newest
+      // version with the one before its oldest. A consolidated version the
+      // page end would split is completed, so a page holds up to
+      // `defaultLimit` items and never part of a consolidated version
+      async getTimelinePage(req, criteria, { before, consolidate } = {}) {
+        const limit = self.defaultLimit;
+        const project = self.getRestProjection();
+        const found = await self.find(
+          req,
+          {
+            ...criteria,
+            ...(before && { createdAt: { $lt: before } })
+          },
+          {
+            limit: limit + 1,
+            project
+          }
+        );
+        const records = found.slice(0, limit);
+        let more = found.length > limit;
+
+        if (
+          consolidate && more &&
+          consolidation.inSameSequence(records.at(-1), found[limit])
+        ) {
+          const [ , ...rest ] = await self.getSequenceFrom(
+            req,
+            criteria,
+            records.at(-1)
+          );
+          const sequence = [
+            ...consolidation.getSequences(records).at(-1),
+            ...rest
+          ];
+          if (consolidation.consolidates(sequence)) {
+            records.push(...rest);
+            more = Boolean(await self.count(req, olderThan(records.at(-1))));
+          }
+        }
+
+        const oldestOf = new Map(
+          consolidation.getSequences(records)
+            .map(sequence => [ sequence[0]._id, sequence.at(-1) ])
+        );
+        const results = consolidate
+          ? consolidation.consolidate(records)
+          : records;
+        for (const item of results.filter(item => item.versionIds)) {
+          item.changeCount = await countChanges(item, oldestOf.get(item._id));
+        }
+
         return {
-          currentPage,
-          pages,
-          perPage,
-          total,
-          skip
+          results,
+          next: more ? records.at(-1).createdAt : null
         };
+
+        function olderThan(record) {
+          return {
+            ...criteria,
+            createdAt: { $lt: record.createdAt }
+          };
+        }
+
+        // The top-level fields a consolidated version changed. One that
+        // opens the timeline counts from its oldest version
+        async function countChanges(item, oldest) {
+          const [ newest, previous ] = await Promise.all([
+            self.findOne(req, { _id: item._id }),
+            self.findOne(req, olderThan(oldest))
+          ]);
+          if (!self.apos.doc.getManager(newest.doc.type)) {
+            return 0;
+          }
+          const base = previous ?? await self.findOne(req, { _id: oldest._id });
+          return self.getChanges(req, newest.doc, base.doc).length;
+        }
+      },
+      // The sequence of `version` from it down, newest first, as projected
+      // records (see `lib/consolidation.js`); `criteria` names its timeline
+      async getSequenceFrom(req, criteria, version) {
+        const sequence = [ version ];
+        const limit = self.sequenceBatchLimit;
+        for (;;) {
+          const older = await self.find(
+            req,
+            {
+              ...criteria,
+              createdAt: { $lt: sequence.at(-1).createdAt }
+            },
+            {
+              limit,
+              project: self.getRestProjection()
+            }
+          );
+          for (const record of older) {
+            if (!consolidation.inSameSequence(sequence.at(-1), record)) {
+              return sequence;
+            }
+            sequence.push(record);
+          }
+          if (older.length < limit) {
+            return sequence;
+          }
+        }
       },
 
       // A new version record of `doc` as saved by `req`. `docId`, `mode`
@@ -1074,48 +1153,35 @@ module.exports = {
         });
         return previous ?? null;
       },
-      // The changes of consecutive versions of one document as one list
-      // (see `getConsolidatedRows`), with display text and its word diff
-      // (see `lib/text.js`), and their counts
-      // per change type and of those involving AI:
-      // `{ rows, counts: { added, modified, deleted, ai } }`. One id is a
-      // single version against the one before it. A first version counts
-      // no changes of its own and a restored version shows none; a group
-      // cannot hold a restored version. Throws like `getEditableVersion`,
-      // and a `TypeError` when the ids are not consecutive versions of
-      // one document
-      async getVersionChanges(req, versionIds) {
+      // The changes of a version since the one before it, with display text
+      // and its word diff (see `lib/text.js`), their counts per change type
+      // and of those involving AI, and the versions they cover, newest
+      // first:
+      // `{ rows, counts: { added, modified, deleted, ai }, versionIds }`.
+      // With `consolidate`, `versionId` being the newest version of a
+      // consolidated version (see `lib/consolidation.js`), the changes of
+      // all its versions are listed as one (see `getConsolidatedRows`). A
+      // first version counts no changes of its own and a restored version
+      // shows none. Throws like `getEditableVersion`
+      async getVersionChanges(req, versionId, { consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
-        const ids = _.uniq(versionIds);
-        if (!ids.length) {
-          throw new TypeError('versionIds');
-        }
-        const members = await Promise.all(
-          ids.map(id => self.getEditableVersion(draftReq, id))
-        );
-        members.sort((a, b) => a.createdAt - b.createdAt);
-        const first = members[0];
-        const last = members.at(-1);
+        const last = await self.getEditableVersion(draftReq, versionId);
+        let members = [ last ];
 
-        if (members.length > 1) {
-          const oneTimeline = members.every(member => (
-            (member.docId === first.docId) && (member.locale === first.locale)
-          ));
-          if (!oneTimeline || members.some(member => member.restoredFrom)) {
-            throw new TypeError('versionIds');
-          }
-          const span = await self.count(draftReq, {
-            docId: first.docId,
-            locale: first.locale,
-            createdAt: {
-              $gte: first.createdAt,
-              $lte: last.createdAt
-            }
-          });
-          if (span !== members.length) {
-            throw new TypeError('versionIds');
+        if (consolidate) {
+          const sequence = await self.getSequenceFrom(draftReq, {
+            docId: last.docId,
+            locale: last.locale
+          }, last);
+          if (consolidation.consolidates(sequence)) {
+            members = await self.find(
+              draftReq,
+              { _id: { $in: sequence.map(version => version._id) } },
+              { sort: { createdAt: 1 } }
+            );
           }
         }
+        const first = members[0];
 
         let rows = [];
         if (self.apos.doc.getManager(last.doc.type) && !last.restoredFrom) {
@@ -1142,7 +1208,8 @@ module.exports = {
             modified: rows.filter(row => row.type === 'modified').length,
             deleted: rows.filter(row => row.type === 'deleted').length,
             ai: rows.filter(row => row.ai).length
-          }
+          },
+          versionIds: members.map(member => member._id).reverse()
         };
       },
       // Recompute `changeCount` for every version, one timeline at a time.

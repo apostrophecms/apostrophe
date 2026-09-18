@@ -30,8 +30,11 @@ export function useInfiniteScroll(sentinel, onLoadMore, options = {}) {
   let observer = null;
   let resizeObserver = null;
 
+  // One sentinel, yet a batch may hold several entries for it: after a
+  // `recheck()` Firefox delivers the dropped registration's last state
+  // together with the new one. The newest entry is the current state
   function handleIntersect(entries) {
-    if (entries[0]?.isIntersecting) {
+    if (entries.at(-1)?.isIntersecting) {
       onLoadMore();
     }
   }
