@@ -482,6 +482,9 @@ async function reveal({
     filter.value = Object.entries(props.counts || {})
       .filter(([ , count ]) => count)
       .map(([ name ]) => name);
+    // The navigator follows the new groups first, or it would read the
+    // position set below against the old ones
+    await nextTick();
   }
   const entries = groups.value
     .flatMap(group => group.entries.map(entry => ({
