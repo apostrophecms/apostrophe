@@ -1,6 +1,6 @@
 // Records versions of every localized, manually published document: one on
-// each publish and one per handoff of draft work, and lets editors browse,
-// compare and restore them.
+// each publish and one per handoff of draft work, and lets editors browse
+// and restore them.
 // Versions live in the `aposDocsVersions` collection. A record's `doc` is
 // stored packed (see `pack`) and the finders unpack it, so queries never
 // reach into `doc`: everything they need is a top-level field.
@@ -34,18 +34,16 @@ module.exports = {
     // time, in milliseconds, has passed since that version was created. Then
     // a new version starts. One day by default
     draftInterval: 24 * 60 * 60 * 1000,
-    // Passed to `Intl.DateTimeFormat` when displaying version timestamps
-    dateTimeFormatOptions: {
-      year: 'numeric',
-      month: 'long',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }
+    // `Intl.DateTimeFormat` options for version timestamps. Unset, the list
+    // shows a compact date and time, with the year only when it is not the
+    // current one
+    dateTimeFormatOptions: null
   },
   icons: {
-    'view-split-vertical-icon': 'ViewSplitVertical'
+    'creation-icon': 'Creation',
+    'filter-variant-icon': 'FilterVariant',
+    'minus-circle-icon': 'MinusCircle',
+    'plus-circle-icon': 'PlusCircle'
   },
   async init(self) {
     self.defaultLimit = 10;
@@ -173,28 +171,6 @@ module.exports = {
           return changesOrRestError(
             () => self.getVersionChanges(req, [ req.params.versionId ])
           );
-        },
-        'compare/:vid1/:vid2': async (req) => {
-          try {
-            // Sequential on purpose: Promise.all would miss the _images relationship
-            const v1 = await self.getOne(req, self.apos.launder.id(req.params.vid1));
-            const v2 = await self.getOne(req, self.apos.launder.id(req.params.vid2));
-
-            const schema = self.getCompareSchema(v1, v2);
-            const { version, document } = self.getCompareData(v1, v2, schema);
-
-            return {
-              schema,
-              version,
-              document
-            };
-          } catch (error) {
-            const errorName = error.name === 'ReferenceError'
-              ? 'notfound'
-              : 'invalid';
-
-            throw self.apos.error(errorName);
-          }
         }
       }
     };
@@ -533,12 +509,16 @@ module.exports = {
       // for nothing, `true` for a new version, or the `_id` of the newest
       // version, a draft, which the save then replaces in place.
       //
-      // A publish or a restore always starts a version. A draft save with no
-      // change to any schema field never does. Otherwise a draft starts one
-      // at every handoff: an explicit Save Draft, a first version, a previous
-      // version that was a publication point, a different author, AI
-      // involvement changing, or more than `draftInterval` since the previous
-      // version was created. Between handoffs it replaces the previous draft.
+      // A restore always starts a version. So does a publish, unless the
+      // newest version is a draft of the same content by the same author
+      // with the same AI involvement: a publish saves the draft first, so
+      // that draft becomes the publication point instead. A draft save with
+      // no change to any schema field never starts one. Otherwise a draft
+      // starts one at every handoff: an explicit Save Draft, a first version,
+      // a previous version that was a publication point, a different author,
+      // AI involvement changing, or more than `draftInterval` since the
+      // previous version was created. Between handoffs it replaces the
+      // previous draft.
       //
       // A request flagged `aposSkipVersion` records nothing: core sets it on
       // a save that is a side effect of an operation already recorded. A
@@ -558,13 +538,19 @@ module.exports = {
         if (!self.isVersioned(doc)) {
           return false;
         }
-        if (self.getMode(doc) === 'published') {
-          return true;
-        }
         if (req.aposRestoreVersion) {
           return true;
         }
         const previous = await self.findOne(req, self.getTimelineCriteria(doc));
+        if (self.getMode(doc) === 'published') {
+          const promotable = previous &&
+            previous.mode === 'draft' &&
+            !previous.restoredFrom &&
+            previous.authorId === self.getAuthorId(req) &&
+            Boolean(previous.ai) === Boolean(req.aposAi) &&
+            !self.getChanges(req, doc, previous.doc).length;
+          return promotable ? previous._id : true;
+        }
         if (!previous) {
           return true;
         }
@@ -651,23 +637,28 @@ module.exports = {
         return self.updateReferencesFor(req, instance._id);
       },
       // Replace the content of an existing version with `doc`, keeping the
-      // record's identity, author and creation time. The change count is
-      // recomputed against the version before it. Inserts instead when the
-      // version is gone
+      // record's identity and author. The mode follows `doc`; a draft
+      // promoted to a publication point takes the publish time as its
+      // creation time. The change count is recomputed against the version
+      // before it. Inserts instead when the version is gone
       async replaceVersion(req, doc, versionId) {
         const version = await self.findOne(req, { _id: versionId }, { raw: true });
         if (!version) {
           return self.insertVersion(req, doc);
         }
         const before = await self.getPreviousVersion(req, version);
+        const mode = self.getMode(doc);
+        const promoted = mode !== version.mode;
         await self.db.updateOne({ _id: version._id }, {
           $set: {
             doc: await self.pack(self.apos.util.clonePermanent(doc)),
-            updatedAt: new Date(),
+            mode,
+            ...(promoted ? { createdAt: new Date() } : { updatedAt: new Date() }),
             changeCount: before
               ? self.getChanges(req, doc, before.doc).length
               : 0
-          }
+          },
+          ...(promoted && { $unset: { updatedAt: 1 } })
         });
         return self.updateReferencesFor(req, version._id);
       },
@@ -1084,7 +1075,8 @@ module.exports = {
         return previous ?? null;
       },
       // The changes of consecutive versions of one document as one list
-      // (see `getConsolidatedRows`), with display text, and their counts
+      // (see `getConsolidatedRows`), with display text and its word diff
+      // (see `lib/text.js`), and their counts
       // per change type and of those involving AI:
       // `{ rows, counts: { added, modified, deleted, ai } }`. One id is a
       // single version against the one before it. A first version counts
@@ -1136,10 +1128,10 @@ module.exports = {
             }))
             .filter(pair => pair.older);
           if (pairs.length) {
-            rows = await self.addChangeText(
+            rows = text.addWordDiff(await self.addChangeText(
               draftReq,
               self.getConsolidatedRows(req, pairs)
-            );
+            ));
           }
         }
 
@@ -1151,73 +1143,6 @@ module.exports = {
             deleted: rows.filter(row => row.type === 'deleted').length,
             ai: rows.filter(row => row.ai).length
           }
-        };
-      },
-      getCompareSchema(v1, v2) {
-        const v1Manager = self.apos.doc.getManager(v1.doc.type) || { schema: [] };
-        const v2Manager = self.apos.doc.getManager(v2.doc.type) || { schema: [] };
-        const fields = v1Manager.schema.map(field => field.name);
-
-        const schema = v2Manager.schema
-          .reduce(
-            (acc, current) => fields.includes(current.name) === false
-              ? acc.concat(current)
-              : acc,
-            v1Manager.schema
-          )
-          .map(self.removeIfFrom);
-
-        return schema;
-      },
-      getCompareData(v1, v2, schema = []) {
-        const version = { ...v1 };
-        const document = { ...v1.doc };
-
-        const req = self.apos.task.getReq();
-
-        schema.forEach(field => {
-          self.apos.doc.setMeta(
-            document,
-            '@apostrophecms/schema',
-            field.name,
-            'compare',
-            v2.doc[field.name]
-          );
-          self.apos.doc.setMeta(
-            document,
-            '@apostrophecms/schema',
-            field.name,
-            'highlight',
-            !self.apos.schema.isEqual(req, [ field ], document, v2.doc)
-          );
-        });
-
-        return {
-          version,
-          document
-        };
-      },
-      removeIfFrom({ if: _, ...field }) {
-        const add = field.fields?.add
-          ? Object.fromEntries(
-            Object.entries(field.fields.add)
-              .map(([ key, value ]) => [ key, self.removeIfFrom(value) ])
-          )
-          : {};
-        const schema = field.schema
-          ? field.schema.map(self.removeIfFrom)
-          : [];
-
-        return {
-          ...field,
-          ...(field.fields?.add && {
-            fields: {
-              add
-            }
-          }),
-          ...(field.schema && {
-            schema
-          })
         };
       },
       // Recompute `changeCount` for every version, one timeline at a time.

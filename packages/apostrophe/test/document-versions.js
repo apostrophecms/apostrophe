@@ -13,7 +13,6 @@ const {
   seedVersionsFor,
   wait
 } = require('./utils/document-versions.js');
-const compareSchema = require('./utils/document-versions-compare-schema.js');
 
 const bootstrap = (config) => bootstrapWith({
   root: module,
@@ -47,13 +46,14 @@ describe('Document Versions', function () {
       assert.strictEqual(module.__meta.name, moduleName);
 
       const versions = await apos.docVersions.find(getReq(apos), {});
-      assert.strictEqual(versions.length, 7);
+      assert.strictEqual(versions.length, 4);
       const home = versions.filter(v => v.doc.type === '@apostrophecms/home-page');
       const global = versions.filter(v => v.doc.type === '@apostrophecms/global');
-      // Parked documents are inserted as drafts and published at once, so each
-      // starts with a draft version and a published one
-      assert.deepStrictEqual(home.map(v => v.mode), [ 'published', 'draft' ]);
-      assert.deepStrictEqual(global.map(v => v.mode), [ 'published', 'draft' ]);
+      // Parked documents are inserted as drafts and published at once, and
+      // the publish takes over the draft version, so each starts with one
+      // publication point
+      assert.deepStrictEqual(home.map(v => v.mode), [ 'published' ]);
+      assert.deepStrictEqual(global.map(v => v.mode), [ 'published' ]);
     });
 
   });
@@ -184,15 +184,14 @@ describe('Document Versions', function () {
       });
       assert(article);
 
-      // Inserting in published mode writes the draft first, then publishes
+      // Inserting in published mode writes the draft first, then publishes;
+      // the publish takes over the draft version
       {
         const versions = await apos.docVersions.find(req, {});
-        assert.strictEqual(versions.length, 2);
-        const [ published, draft ] = versions;
+        assert.strictEqual(versions.length, 1);
+        const [ published ] = versions;
         assert.deepStrictEqual(published.doc, article);
         assert.strictEqual(published.mode, 'published');
-        assert.strictEqual(draft.mode, 'draft');
-        assert.strictEqual(draft.doc._id, article._id.replace(':published', ':draft'));
       }
 
       const updated = await apos.article.update(req, {
@@ -202,11 +201,10 @@ describe('Document Versions', function () {
       assert(updated);
       {
         const versions = await apos.docVersions.find(req, {});
-        assert.strictEqual(versions.length, 3);
-        const [ first, second, third ] = versions;
+        assert.strictEqual(versions.length, 2);
+        const [ first, second ] = versions;
         assert.deepStrictEqual(first.doc, updated);
         assert.deepStrictEqual(second.doc, article);
-        assert.strictEqual(third.mode, 'draft');
       }
     });
 
@@ -240,23 +238,21 @@ describe('Document Versions', function () {
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(article1));
-        assert.strictEqual(versions.length, 3);
-        const [ first, second, draft ] = versions;
+        assert.strictEqual(versions.length, 2);
+        const [ first, second ] = versions;
 
         assert.deepStrictEqual(first.doc, updated1);
         assert.deepStrictEqual(second.doc, article1);
-        assert.strictEqual(draft.mode, 'draft');
       }
 
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(article2));
-        assert.strictEqual(versions.length, 3);
-        const [ first, second, draft ] = versions;
+        assert.strictEqual(versions.length, 2);
+        const [ first, second ] = versions;
 
         assert.deepStrictEqual(first.doc, updated2);
         assert.deepStrictEqual(second.doc, article2);
-        assert.strictEqual(draft.mode, 'draft');
       }
     });
 
@@ -274,9 +270,8 @@ describe('Document Versions', function () {
       assert(page);
 
       let versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 2);
+      assert.strictEqual(versions.length, 1);
       assert.deepStrictEqual(versions[0].doc, page);
-      assert.strictEqual(versions[1].mode, 'draft');
 
       const updated = await apos.doc.update(req, {
         ...page,
@@ -285,12 +280,11 @@ describe('Document Versions', function () {
       assert(updated);
 
       versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 3);
-      const [ first, second, draft ] = versions;
+      assert.strictEqual(versions.length, 2);
+      const [ first, second ] = versions;
 
       assert.deepStrictEqual(first.doc, updated);
       assert.deepStrictEqual(second.doc, page);
-      assert.strictEqual(draft.mode, 'draft');
     });
 
     it('should add version docs per document instance (piece pages)', async function() {
@@ -325,23 +319,21 @@ describe('Document Versions', function () {
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(page1));
-        assert.strictEqual(versions.length, 3);
-        const [ first, second, draft ] = versions;
+        assert.strictEqual(versions.length, 2);
+        const [ first, second ] = versions;
 
         assert.deepStrictEqual(first.doc, updated1);
         assert.deepStrictEqual(second.doc, page1);
-        assert.strictEqual(draft.mode, 'draft');
       }
 
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(page2));
-        assert.strictEqual(versions.length, 3);
-        const [ first, second, draft ] = versions;
+        assert.strictEqual(versions.length, 2);
+        const [ first, second ] = versions;
 
         assert.deepStrictEqual(first.doc, updated2);
         assert.deepStrictEqual(second.doc, page2);
-        assert.strictEqual(draft.mode, 'draft');
       }
     });
 
@@ -359,9 +351,8 @@ describe('Document Versions', function () {
       assert(page);
 
       let versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 2);
+      assert.strictEqual(versions.length, 1);
       assert.deepStrictEqual(versions[0].doc, page);
-      assert.strictEqual(versions[1].mode, 'draft');
 
       const updated = await apos.doc.update(req, {
         ...page,
@@ -370,12 +361,11 @@ describe('Document Versions', function () {
       assert(updated);
 
       versions = await apos.docVersions.find(req, {});
-      assert.strictEqual(versions.length, 3);
-      const [ first, second, draft ] = versions;
+      assert.strictEqual(versions.length, 2);
+      const [ first, second ] = versions;
 
       assert.deepStrictEqual(first.doc, updated);
       assert.deepStrictEqual(second.doc, page);
-      assert.strictEqual(draft.mode, 'draft');
     });
 
     it('should add version docs per document instance (pages)', async function() {
@@ -410,23 +400,21 @@ describe('Document Versions', function () {
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(page1));
-        assert.strictEqual(versions.length, 3);
-        const [ first, second, draft ] = versions;
+        assert.strictEqual(versions.length, 2);
+        const [ first, second ] = versions;
 
         assert.deepStrictEqual(first.doc, updated1);
         assert.deepStrictEqual(second.doc, page1);
-        assert.strictEqual(draft.mode, 'draft');
       }
 
       {
         const versions = await apos.docVersions
           .find(req, apos.docVersions.getTimelineCriteria(page2));
-        assert.strictEqual(versions.length, 3);
-        const [ first, second, draft ] = versions;
+        assert.strictEqual(versions.length, 2);
+        const [ first, second ] = versions;
 
         assert.deepStrictEqual(first.doc, updated2);
         assert.deepStrictEqual(second.doc, page2);
-        assert.strictEqual(draft.mode, 'draft');
       }
     });
 
@@ -948,10 +936,10 @@ describe('Document Versions', function () {
       });
       assert(article);
 
-      // Reference of attachment1 to the draft version and version1
+      // Reference of attachment1 to version1
       const attachment1After1 = await apos.attachment.db
         .findOne({ _id: attachment1._id });
-      const [ version1, draftVersion ] = await apos.docVersions.find(
+      const [ version1 ] = await apos.docVersions.find(
         req,
         apos.docVersions.getTimelineCriteria(article),
         {
@@ -959,10 +947,7 @@ describe('Document Versions', function () {
         }
       );
       assert(version1);
-      assert(draftVersion);
-      assert.strictEqual(attachment1After1.archivedDocIds.length, 2);
-      assert(attachment1After1.archivedDocIds.includes(draftVersion._id));
-      assert(attachment1After1.archivedDocIds.includes(version1._id));
+      assert.deepStrictEqual(attachment1After1.archivedDocIds, [ version1._id ]);
 
       // Update to version2, same attachment
       const updated1 = await apos.article.update(req, {
@@ -984,8 +969,7 @@ describe('Document Versions', function () {
       assert(version2);
       assert.notStrictEqual(version2._id, version1._id);
 
-      assert.strictEqual(attachment1After2.archivedDocIds.length, 3);
-      assert(attachment1After2.archivedDocIds.includes(draftVersion._id));
+      assert.strictEqual(attachment1After2.archivedDocIds.length, 2);
       assert(attachment1After2.archivedDocIds.includes(version1._id));
       assert(attachment1After2.archivedDocIds.includes(version2._id));
 
@@ -1013,8 +997,7 @@ describe('Document Versions', function () {
       assert(version3);
       assert.notStrictEqual(version3._id, version2._id);
 
-      assert.strictEqual(attachment1After3.archivedDocIds.length, 3);
-      assert(attachment1After3.archivedDocIds.includes(draftVersion._id));
+      assert.strictEqual(attachment1After3.archivedDocIds.length, 2);
       assert(attachment1After3.archivedDocIds.includes(version1._id));
       assert(attachment1After3.archivedDocIds.includes(version2._id));
       assert(!attachment1After3.archivedDocIds.includes(version3._id));
@@ -1064,7 +1047,8 @@ describe('Document Versions', function () {
       });
       assert.strictEqual(articleModesCount, 2);
 
-      // Validate references: each draft save and each publish is a version
+      // Validate references: each publish takes over the draft version
+      // saved before it
       {
         attachment = await apos.attachment.db.findOne({ _id: attachment._id });
         const versions = await apos.docVersions.find(
@@ -1075,20 +1059,13 @@ describe('Document Versions', function () {
           versions.map(version => [ version.mode, version.doc.title ]),
           [
             [ 'published', 'An update' ],
-            [ 'draft', 'An update' ],
-            [ 'published', 'An article' ],
-            [ 'draft', 'An article' ]
+            [ 'published', 'An article' ]
           ]
         );
-        const [ first, second, third, fourth ] = versions;
+        const [ first, second ] = versions;
         assert.strictEqual(first.doc.attachment, null);
-        assert.strictEqual(second.doc.attachment, null);
-        assert.strictEqual(third.doc.attachment._id, attachment._id);
-        assert.strictEqual(fourth.doc.attachment._id, attachment._id);
-        assert.deepStrictEqual(
-          attachment.archivedDocIds.sort(),
-          [ third._id, fourth._id ].sort()
-        );
+        assert.strictEqual(second.doc.attachment._id, attachment._id);
+        assert.deepStrictEqual(attachment.archivedDocIds, [ second._id ]);
       }
 
       // ARCHIVE AND REMOVE
@@ -1139,7 +1116,7 @@ describe('Document Versions', function () {
         .filter(version => version.doc.attachment)
         .map(version => version._id)
         .sort();
-      assert.equal(holders.length, 2);
+      assert.equal(holders.length, 1);
 
       await apos.attachment.db.updateOne({ _id: attachment._id }, {
         $set: {
@@ -1168,7 +1145,7 @@ describe('Document Versions', function () {
         [ ...before.docIds ].sort(),
         [ draft._id, draft._id.replace(':draft', ':published') ].sort()
       );
-      assert.equal(before.archivedDocIds.length, 2);
+      assert.equal(before.archivedDocIds.length, 1);
 
       await apos.attachment.recomputeAllDocReferences();
 
@@ -1191,7 +1168,7 @@ describe('Document Versions', function () {
       const ids = (await apos.docVersions.db.find({}).toArray())
         .map(version => version._id)
         .sort();
-      assert.equal(ids.length, 4);
+      assert.equal(ids.length, 2);
 
       // The source must walk a cursor, never read the collection at once
       const { find } = apos.docVersions.db;
@@ -1361,16 +1338,113 @@ describe('Document Versions', function () {
       assert.deepEqual(versions.map(version => version.doc.title), [ 'Saved', 'First' ]);
     });
 
-    it('should record every publish', async function() {
+    it('should turn the draft version into the publication point on publish', async function() {
       const req = draftReqAs(apos, 'alice');
       const draft = await apos.article.insert(req, { title: 'First' });
+      const saved = await saveDraft(apos, req, draft, { title: 'Second' });
+      const [ before ] = await timeline(apos, draft);
+      assert.equal(before.mode, 'draft');
+      assert.equal(before.changeCount, 0);
 
+      await wait(2);
+      await apos.article.publish(req, saved);
+
+      const versions = await timeline(apos, draft);
+      assert.equal(versions.length, 1);
+      const [ published ] = versions;
+      assert.equal(published._id, before._id);
+      assert.equal(published.mode, 'published');
+      assert.equal(published.doc._id, `${draft.aposDocId}:en:published`);
+      assert.equal(published.doc.aposMode, 'published');
+      assert.equal(published.doc.title, 'Second');
+      assert.equal(published.authorId, 'alice');
+      assert.equal(published.changeCount, 0);
+      assert(published.createdAt > before.createdAt);
+      assert.equal(published.updatedAt, undefined);
+    });
+
+    it('should keep the change count of a promoted draft against the version before it', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
       await apos.article.publish(req, draft);
+      await saveDraft(apos, req, draft, { title: 'Second' });
+      await saveDraft(apos, req, draft, { int: 5 });
+      await apos.article.publish(req, await saveDraft(apos, req, draft));
 
       const versions = await timeline(apos, draft);
       assert.deepEqual(
-        versions.map(version => [ version.mode, version.doc.title ]),
-        [ [ 'published', 'First' ], [ 'draft', 'First' ] ]
+        versions.map(version => [ version.mode, version.doc.title, version.changeCount ]),
+        [ [ 'published', 'Second', 2 ], [ 'published', 'First', 0 ] ]
+      );
+    });
+
+    it('should record a publish of another author\'s draft as its own version', async function() {
+      const draft = await apos.article.insert(draftReqAs(apos, 'bob'), { title: 'By Bob' });
+
+      await apos.article.publish(draftReqAs(apos, 'alice'), draft);
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.authorId, version.changeCount ]),
+        [ [ 'published', 'alice', 0 ], [ 'draft', 'bob', 0 ] ]
+      );
+    });
+
+    it('should record a publish of an AI draft as its own version', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+      const saved = await saveDraft(apos, req.clone({ aposAi: true }), draft, { title: 'By AI' });
+
+      await apos.article.publish(req, saved);
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.ai, version.doc.title ]),
+        [ [ 'published', false, 'By AI' ], [ 'draft', true, 'By AI' ], [ 'draft', false, 'First' ] ]
+      );
+    });
+
+    it('should record a publish as its own version when the draft version is behind the draft', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+      const saved = await saveDraft(apos, req.clone({ aposSkipVersion: true }), draft, {
+        title: 'Unrecorded'
+      });
+
+      await apos.article.publish(req, saved);
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.doc.title, version.changeCount ]),
+        [ [ 'published', 'Unrecorded', 1 ], [ 'draft', 'First', 0 ] ]
+      );
+    });
+
+    it('should record a publish of a restored draft as its own version', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await saveDraft(apos, req, draft, { title: 'Second' });
+      const [ , first ] = await timeline(apos, draft);
+      await saveDraft(apos, req.clone({ aposRestoreVersion: first._id }), draft, { title: 'First' });
+      const [ restored ] = await timeline(apos, draft);
+      assert.equal(restored.restoredFrom._id, first._id);
+
+      await apos.article.publish(req, await saveDraft(apos, req, draft));
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [
+          version.mode,
+          version.doc.title,
+          Boolean(version.restoredFrom)
+        ]),
+        [
+          [ 'published', 'First', false ],
+          [ 'draft', 'First', true ],
+          [ 'draft', 'Second', false ],
+          [ 'published', 'First', false ]
+        ]
       );
     });
 
@@ -1389,7 +1463,7 @@ describe('Document Versions', function () {
       const versions = await timeline(apos, article);
       assert.deepEqual(
         versions.map(version => [ version.mode, version.doc.title ]),
-        [ [ 'draft', 'Third' ], [ 'published', 'First' ], [ 'draft', 'First' ] ]
+        [ [ 'draft', 'Third' ], [ 'published', 'First' ] ]
       );
       const [ , publishedAfter ] = await timeline(apos, article, { raw: true });
       assert.deepEqual(publishedAfter, published);
@@ -1500,7 +1574,6 @@ describe('Document Versions', function () {
         ]),
         [
           [ 'published', 'Alice', 'alice-id', true, 'AI draft' ],
-          [ 'draft', 'Alice', 'alice-id', true, 'AI draft' ],
           [ 'draft', 'Alice', 'alice-id', false, 'First' ]
         ]
       );
@@ -1583,7 +1656,7 @@ describe('Document Versions', function () {
       const req = draftReqAs(apos, 'alice');
       const draft = await publishTwice(apos.article, req);
       const before = await timeline(apos, draft, { raw: true });
-      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft', 'published', 'draft' ]);
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'published' ]);
 
       await setArchived(apos.article, req, draft, true);
       const archived = await findDraft(apos.article, req, draft);
@@ -1611,7 +1684,7 @@ describe('Document Versions', function () {
       });
       await apos.page.publish(req, await findDraft(apos.page, req, draft));
       const before = await timeline(apos, draft, { raw: true });
-      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft', 'published', 'draft' ]);
+      assert.deepEqual(before.map(version => version.mode), [ 'published', 'published' ]);
 
       await apos.page.archive(req, draft._id);
       const archived = await findDraft(apos.page, req, draft);
@@ -1671,7 +1744,7 @@ describe('Document Versions', function () {
         slug: '/peer'
       });
       const before = await timeline(apos, page);
-      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft' ]);
+      assert.deepEqual(before.map(version => version.mode), [ 'published' ]);
 
       // The archive stays the last child of the home page, so the move is
       // redirected before it
@@ -1681,7 +1754,7 @@ describe('Document Versions', function () {
       // The draft save changes no schema field and records nothing; the
       // published replay of the move records one publication point
       const after = await timeline(apos, page);
-      assert.deepEqual(after.map(version => version.mode), [ 'published', 'published', 'draft' ]);
+      assert.deepEqual(after.map(version => version.mode), [ 'published', 'published' ]);
       assert.deepEqual(after.slice(1), before);
       const archive = await apos.page.find(req, { type: '@apostrophecms/archive-page' })
         .archived(null)
@@ -2169,7 +2242,7 @@ describe('Document Versions', function () {
         title: 'Second'
       }));
       const before = await timeline(apos, draft);
-      assert.equal(before.length, 4);
+      assert.equal(before.length, 2);
 
       await apos.doc.setAposDocId({
         newId: 'renamed-article',
@@ -2202,7 +2275,7 @@ describe('Document Versions', function () {
       assert.equal(published.title, 'First');
 
       // A draft restore names the version it returns to
-      const [ , , , oldest ] = after;
+      const [ , oldest ] = after;
       await apos.article.update(req.clone({ aposRestoreVersion: oldest._id }), {
         ...renamed,
         title: oldest.doc.title
@@ -2232,7 +2305,7 @@ describe('Document Versions', function () {
       const renamed = await apos.page.find(req, { aposDocId: 'renamed-page' }).toObject();
       assert.equal(renamed.path, draft.path.replace(draft.aposDocId, 'renamed-page'));
       const versions = await timeline(apos, renamed);
-      assert.deepEqual(versions.map(version => version.mode), [ 'published', 'draft' ]);
+      assert.deepEqual(versions.map(version => version.mode), [ 'published' ]);
       for (const version of versions) {
         assert.equal(version.doc._id, `renamed-page:en:${version.mode}`);
         assert.equal(version.doc.path, renamed.path);
@@ -2259,7 +2332,7 @@ describe('Document Versions', function () {
       const versionIds = (await apos.docVersions.db.find(criteria).toArray())
         .map(version => version._id)
         .sort();
-      assert.equal(versionIds.length, 2);
+      assert.equal(versionIds.length, 1);
       const held = await apos.attachment.db.findOne({ _id: attachment._id });
       assert.deepEqual([ ...held.archivedDocIds ].sort(), versionIds);
 
@@ -2369,7 +2442,7 @@ describe('Document Versions', function () {
         .toObject();
       assert(liveChild.path.includes('/renamed-parent/'));
       const childVersions = await timeline(apos, child);
-      assert.deepEqual(childVersions.map(version => version.mode), [ 'published', 'draft' ]);
+      assert.deepEqual(childVersions.map(version => version.mode), [ 'published' ]);
       for (const version of childVersions) {
         assert.equal(version.doc.path, liveChild.path);
       }
@@ -2408,8 +2481,7 @@ describe('Document Versions', function () {
         versions.map(version => [ version.mode, version.doc.relatedIds ]),
         [
           [ 'draft', [] ],
-          [ 'published', [ 'renamed-category' ] ],
-          [ 'draft', [ 'renamed-category' ] ]
+          [ 'published', [ 'renamed-category' ] ]
         ]
       );
       assert.deepEqual(await timeline(apos, unrelated, { raw: true }), unrelatedBefore);
@@ -2463,15 +2535,15 @@ describe('Document Versions', function () {
           version.doc.articlesIds,
           version.doc.articlesFields
         ]),
-        [ 'published', 'draft' ].map(mode => [
-          mode,
+        [ [
+          'published',
           [ 'renamed-article' ],
           { 'renamed-article': { note: 'Kept' } }
-        ])
+        ] ]
       );
 
       // Restored the way the modal does, the relationship keeps its fields
-      const [ , oldest ] = versions;
+      const [ oldest ] = versions;
       const { doc: content } = await apos.docVersions.getOne(req, oldest._id);
       assert.deepEqual(content._articles.map(related => related._fields), [ { note: 'Kept' } ]);
       const draft = await notes.findOneForEditing(req, { aposDocId: note.aposDocId });
@@ -2493,7 +2565,7 @@ describe('Document Versions', function () {
         title: 'Accueil'
       }));
       const before = await timeline(apos, home);
-      assert.deepEqual(before.map(version => version.mode), [ 'published', 'draft' ]);
+      assert.deepEqual(before.map(version => version.mode), [ 'published' ]);
 
       // A French home page replicated under an id of its own, with its versions
       const misreplicated = 'misreplicated-home';
@@ -2624,7 +2696,7 @@ describe('Document Versions', function () {
       const { results: versions } = res;
       assert(versions);
 
-      assert.equal(versions.length, 2);
+      assert.equal(versions.length, 1);
       assert(versions[0]._id);
       assert(versions[0].createdAt);
       assert.equal(versions[0].author, admin.title);
@@ -2648,7 +2720,7 @@ describe('Document Versions', function () {
       const { results: versions } = res;
       assert(versions);
 
-      assert.equal(versions.length, 2);
+      assert.equal(versions.length, 1);
       assert(versions[0]._id);
       assert(versions[0].createdAt);
       assert.equal(versions[0].author, editor.title);
@@ -2671,7 +2743,7 @@ describe('Document Versions', function () {
       assert(res);
       const { results: versions } = res;
       assert(versions);
-      assert.equal(versions.length, 2);
+      assert.equal(versions.length, 1);
       assert(versions[0]._id);
       assert(versions[0].createdAt);
       assert.deepEqual(
@@ -3064,6 +3136,16 @@ describe('Document Versions', function () {
           ]
         );
         assert.equal(changes.rows[2].path[1].label, 'Home');
+        assert.deepEqual(changes.rows[0].diff, [
+          {
+            text: 'An article',
+            change: 'removed'
+          },
+          {
+            text: 'Renamed',
+            change: 'added'
+          }
+        ]);
         assert.deepEqual(changes.counts, {
           added: 1,
           modified: 2,
@@ -3254,565 +3336,6 @@ describe('Document Versions', function () {
     });
   });
 
-  describe('methods', function () {
-    let apos;
-
-    before(async function() {
-      apos = await bootstrap({
-        modules: {
-          article: {},
-          'article-page': {},
-          'default-page': {}
-        }
-      });
-    });
-
-    after(async function() {
-      await removeUploads();
-      await destroy(apos);
-    });
-
-    beforeEach(async function() {
-      await cleanup(apos);
-    });
-
-    describe('getCompareSchema', function () {
-      it('should merge both versions schema for pieces', async function() {
-        const req = getReq(apos, {
-          _id: 1,
-          username: 'user'
-        });
-
-        const articleV1 = await apos.article.insert(req, { title: 'My first article' });
-        const articleV2 = await apos.article.update(req, {
-          ...articleV1,
-          title: 'My first article v2'
-        });
-        const articleV3 = await apos.article.update(req, {
-          ...articleV2,
-          title: 'My first article v3'
-        });
-
-        const versions = await apos.docVersions
-          .find(req, apos.docVersions.getTimelineCriteria(articleV3));
-        const { _id: v1Id } = versions.find(version => version.doc.title === 'My first article v3');
-        const { _id: v2Id } = versions.find(version => version.doc.title === 'My first article');
-
-        const v1 = await apos.docVersions.getOne(req, v1Id);
-        const v2 = await apos.docVersions.getOne(req, v2Id);
-        const schema = await apos.docVersions.getCompareSchema(v1, v2);
-
-        const actual = schema;
-        const expected = compareSchema.article
-          .map((field, index) => {
-            return {
-              ...field,
-              _id: schema[index]._id,
-              aposPath: schema[index].aposPath,
-              ...(field.schema && {
-                schema: field.schema.map((subField, subIndex) => {
-                  return {
-                    ...subField,
-                    _id: schema[index].schema[subIndex]._id,
-                    aposPath: schema[index].schema[subIndex].aposPath
-                  };
-                })
-              })
-            };
-          });
-
-        assert.deepEqual(actual, expected);
-      });
-
-      it('should merge both versions schema for pages', async function() {
-        const req = getReq(apos, {
-          _id: 1,
-          username: 'user'
-        });
-
-        const defaultPageV1 = await apos.doc.insert(
-          req,
-          {
-            title: 'My first page',
-            type: 'default-page'
-          }
-        );
-        const articlePageV2 = await apos.doc.update(
-          req,
-          {
-            ...defaultPageV1,
-            title: 'Articles',
-            type: 'article-page'
-          }
-        );
-
-        const versions = await apos.docVersions
-          .find(req, apos.docVersions.getTimelineCriteria(articlePageV2));
-        const { _id: v1Id } = versions.find(version => version.doc.title === 'Articles');
-        const { _id: v2Id } = versions.find(version => version.doc.title === 'My first page');
-
-        const v1 = await apos.docVersions.getOne(req, v1Id);
-        const v2 = await apos.docVersions.getOne(req, v2Id);
-        const schema = await apos.docVersions.getCompareSchema(v1, v2);
-
-        const actual = schema;
-        const expected = compareSchema.articlePage
-          .map((field, index) => {
-            return {
-              ...field,
-              _id: schema[index]._id,
-              aposPath: schema[index].aposPath,
-              ...(field.schema && {
-                schema: field.schema.map((subField, subIndex) => {
-                  return {
-                    ...subField,
-                    _id: schema[index].schema[subIndex]._id,
-                    aposPath: schema[index].schema[subIndex].aposPath
-                  };
-                })
-              })
-            };
-          });
-
-        assert.deepEqual(actual, expected);
-      });
-    });
-
-    describe('getCompareData', function () {
-      it('should add aposMeta with diff on first document for pieces', async function() {
-        const req = getReq(apos, {
-          _id: 1,
-          username: 'user'
-        });
-
-        const articleV1 = await apos.article.insert(req, { title: 'My first article' });
-        const articleV2 = await apos.article.update(req, {
-          ...articleV1,
-          title: 'My first article v2'
-        });
-        const articleV3 = await apos.article.update(req, {
-          ...articleV2,
-          title: 'My first article v3'
-        });
-
-        const versions = await apos.docVersions
-          .find(req, apos.docVersions.getTimelineCriteria(articleV3));
-        const { _id: v1Id } = versions.find(version => version.doc.title === 'My first article v3');
-        const { _id: v2Id } = versions.find(version => version.doc.title === 'My first article');
-
-        const v1 = await apos.docVersions.getOne(req, v1Id);
-        const v2 = await apos.docVersions.getOne(req, v2Id);
-        const schema = await apos.docVersions.getCompareSchema(v1, v2);
-        const data = apos.docVersions.getCompareData(v1, v2, schema);
-
-        const actual = data;
-        const expected = {
-          version: {
-            _id: data.version._id,
-            ai: false,
-            author: data.version.author,
-            authorId: 1,
-            changeCount: 1,
-            createdAt: data.version.createdAt,
-            mode: 'published',
-            doc: {
-              ...{
-                ...articleV3,
-                array: [],
-                object: {
-                  key1: '',
-                  key2: ''
-                }
-              },
-              _create: true,
-              _delete: true,
-              _edit: true,
-              _publish: true,
-              _related: []
-            }
-          },
-          document: {
-            ...{
-              ...articleV3,
-              array: [],
-              object: {
-                key1: '',
-                key2: ''
-              }
-            },
-            _create: true,
-            _delete: true,
-            _edit: true,
-            _publish: true,
-            _related: [],
-            aposMeta: {
-              _related: {
-                '@apostrophecms/schema:compare': [],
-                '@apostrophecms/schema:highlight': false
-              },
-              archived: {
-                '@apostrophecms/schema:compare': false,
-                '@apostrophecms/schema:highlight': false
-              },
-              array: {
-                '@apostrophecms/schema:compare': [],
-                '@apostrophecms/schema:highlight': false
-              },
-              attachment: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              boolean: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              date: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              float: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              int: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              main: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              object: {
-                '@apostrophecms/schema:compare': {
-                  key1: '',
-                  key2: ''
-                },
-                '@apostrophecms/schema:highlight': false
-              },
-              slug: {
-                '@apostrophecms/schema:compare': 'my-first-article',
-                '@apostrophecms/schema:highlight': false
-              },
-              time: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              title: {
-                '@apostrophecms/schema:compare': 'My first article',
-                '@apostrophecms/schema:highlight': true
-              },
-              visibility: {
-                '@apostrophecms/schema:compare': 'public',
-                '@apostrophecms/schema:highlight': false
-              }
-            }
-          }
-        };
-
-        assert.deepEqual(actual, expected);
-      });
-
-      it('should add aposMeta with diff on first document for pages', async function() {
-        const req = getReq(apos, {
-          _id: 1,
-          username: 'user'
-        });
-
-        const defaultPageV1 = await apos.doc.insert(
-          req,
-          {
-            title: 'My first page',
-            type: 'default-page'
-          }
-        );
-        const articlePageV2 = await apos.doc.update(
-          req,
-          {
-            ...defaultPageV1,
-            title: 'Articles',
-            slug: '/articles',
-            type: 'article-page'
-          }
-        );
-
-        const versions = await apos.docVersions
-          .find(req, apos.docVersions.getTimelineCriteria(articlePageV2));
-        const { _id: v1Id } = versions.find(version => version.doc.title === 'Articles');
-        const { _id: v2Id } = versions.find(version => version.doc.title === 'My first page');
-
-        const v1 = await apos.docVersions.getOne(req, v1Id);
-        const v2 = await apos.docVersions.getOne(req, v2Id);
-        const schema = await apos.docVersions.getCompareSchema(v1, v2);
-        const data = apos.docVersions.getCompareData(v1, v2, schema);
-
-        const actual = data;
-        const expected = {
-          version: {
-            _id: data.version._id,
-            ai: false,
-            author: data.version.author,
-            authorId: 1,
-            changeCount: 3,
-            createdAt: data.version.createdAt,
-            mode: 'published',
-            doc: {
-              ...{
-                ...articlePageV2,
-                array: [],
-                object: {
-                  key1: '',
-                  key2: ''
-                },
-                orphan: false
-              },
-              _create: true,
-              _delete: true,
-              _edit: true,
-              _publish: true,
-              _related: [],
-              _url: '/articles'
-            }
-          },
-          document: {
-            ...{
-              ...articlePageV2,
-              array: [],
-              object: {
-                key1: '',
-                key2: ''
-              },
-              orphan: false
-            },
-            _create: true,
-            _delete: true,
-            _edit: true,
-            _publish: true,
-            _related: [],
-            _url: '/articles',
-            aposMeta: {
-              _related: {
-                '@apostrophecms/schema:compare': [],
-                '@apostrophecms/schema:highlight': false
-              },
-              array: {
-                '@apostrophecms/schema:compare': [],
-                '@apostrophecms/schema:highlight': false
-              },
-              attachment: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              boolean: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              date: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              float: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              int: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              main: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              object: {
-                '@apostrophecms/schema:compare': {
-                  key1: '',
-                  key2: ''
-                },
-                '@apostrophecms/schema:highlight': false
-              },
-              orphan: {
-                '@apostrophecms/schema:compare': false,
-                '@apostrophecms/schema:highlight': false
-              },
-              slug: {
-                '@apostrophecms/schema:compare': '/my-first-page',
-                '@apostrophecms/schema:highlight': true
-              },
-              time: {
-                '@apostrophecms/schema:compare': undefined,
-                '@apostrophecms/schema:highlight': false
-              },
-              title: {
-                '@apostrophecms/schema:compare': 'My first page',
-                '@apostrophecms/schema:highlight': true
-              },
-              type: {
-                '@apostrophecms/schema:compare': 'default-page',
-                '@apostrophecms/schema:highlight': true
-              },
-              visibility: {
-                '@apostrophecms/schema:compare': 'public',
-                '@apostrophecms/schema:highlight': false
-              }
-            }
-          }
-        };
-
-        assert.deepEqual(actual, expected);
-      });
-    });
-
-    describe('removeIfFrom', function () {
-      it('should remove if property from fields', function () {
-        const schema = {
-          fields: {
-            add: {
-              seenMovie: {
-                label: 'Have you seen this movie?',
-                type: 'boolean'
-              },
-              rating: {
-                label: 'Rate the movie from 1-5',
-                type: 'integer',
-                min: 1,
-                max: 5,
-                if: {
-                  seenMovie: true
-                }
-              },
-              selectSponsors: {
-                label: 'Select a project sponsor',
-                type: 'select',
-                choices: 'sponsorNames',
-                if: {
-                  'isSponsored()': true
-                }
-              },
-              grantName: {
-                label: 'Select a grant',
-                type: 'select',
-                choices: 'grantNames',
-                if: {
-                  'grant:multipleFundingSources()': 'multiple'
-                }
-              },
-              address: {
-                label: 'Address',
-                type: 'object',
-                fields: {
-                  add: {
-                    street: {
-                      type: 'string',
-                      label: 'Street'
-                    },
-                    city: {
-                      type: 'string',
-                      label: 'City',
-                      if: {
-                        'complexCondition()': 'true'
-                      }
-                    },
-                    state: {
-                      type: 'string',
-                      label: 'State'
-                    }
-                  }
-                }
-              },
-              contactInfo: {
-                label: 'Contact information',
-                type: 'array',
-                titleField: 'city',
-                fields: {
-                  add: {
-                    city: {
-                      type: 'string',
-                      label: 'City'
-                    },
-                    email: {
-                      type: 'email',
-                      label: 'Email address',
-                      if: {
-                        'complexCondition()': 'true'
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        };
-
-        const actual = Object.fromEntries(Object.entries(schema.fields.add)
-          .map(([ name, field ]) => [
-            name,
-            apos.docVersions.removeIfFrom(field)
-          ])
-        );
-        const expected = {
-          seenMovie: {
-            label: 'Have you seen this movie?',
-            type: 'boolean'
-          },
-          rating: {
-            label: 'Rate the movie from 1-5',
-            type: 'integer',
-            min: 1,
-            max: 5
-          },
-          selectSponsors: {
-            label: 'Select a project sponsor',
-            type: 'select',
-            choices: 'sponsorNames'
-          },
-          grantName: {
-            label: 'Select a grant',
-            type: 'select',
-            choices: 'grantNames'
-          },
-          address: {
-            label: 'Address',
-            type: 'object',
-            fields: {
-              add: {
-                street: {
-                  type: 'string',
-                  label: 'Street'
-                },
-                city: {
-                  type: 'string',
-                  label: 'City'
-                },
-                state: {
-                  type: 'string',
-                  label: 'State'
-                }
-              }
-            }
-          },
-          contactInfo: {
-            label: 'Contact information',
-            type: 'array',
-            titleField: 'city',
-            fields: {
-              add: {
-                city: {
-                  type: 'string',
-                  label: 'City'
-                },
-                email: {
-                  type: 'email',
-                  label: 'Email address'
-                }
-              }
-            }
-          }
-        };
-
-        assert.deepEqual(actual, expected);
-      });
-    });
-  });
-
   describe('schema', function () {
     let apos;
     let admin;
@@ -3914,9 +3437,8 @@ describe('Document Versions', function () {
       await cleanup(apos);
     });
 
-    // One document with a draft and three published versions in `en`, a
-    // draft and two published versions in `fr`. Returns the counts recorded
-    // at save time, newest first per locale.
+    // One document with three published versions in `en` and two in `fr`.
+    // Returns the counts recorded at save time, newest first per locale.
     async function seedTimelines() {
       const req = getReq(apos);
       const frReq = getReq(apos, { locale: 'fr' });
@@ -3963,8 +3485,8 @@ describe('Document Versions', function () {
     it('should recompute every timeline', async function() {
       const { article, counts } = await seedTimelines();
       assert.deepEqual(counts, {
-        en: [ 2, 1, 0, 0 ],
-        fr: [ 1, 0, 0 ]
+        en: [ 2, 1, 0 ],
+        fr: [ 1, 0 ]
       });
 
       await apos.docVersions.db.updateMany({}, { $set: { changeCount: 99 } });
@@ -3972,8 +3494,8 @@ describe('Document Versions', function () {
 
       // The oldest version of a timeline has no predecessor and is left alone
       assert.deepEqual(await countsFor(article), {
-        en: [ 2, 1, 0, 99 ],
-        fr: [ 1, 0, 99 ]
+        en: [ 2, 1, 99 ],
+        fr: [ 1, 99 ]
       });
     });
 
@@ -3987,8 +3509,8 @@ describe('Document Versions', function () {
       });
 
       assert.deepEqual(await countsFor(article), {
-        en: [ 99, 99, 99, 99 ],
-        fr: [ 1, 0, 99 ]
+        en: [ 99, 99, 99 ],
+        fr: [ 1, 99 ]
       });
     });
   });
@@ -4101,8 +3623,6 @@ describe('Document Versions', function () {
       assert.deepEqual(
         records.map(record => [ record.docId, record.mode, record.locale ]).sort(),
         [
-          [ article.aposDocId, 'draft', 'en' ],
-          [ article.aposDocId, 'draft', 'fr' ],
           [ article.aposDocId, 'published', 'en' ],
           [ article.aposDocId, 'published', 'fr' ]
         ]
@@ -4125,7 +3645,7 @@ describe('Document Versions', function () {
       });
       const criteria = apos.docVersions.getTimelineCriteria(article);
       const expected = await apos.docVersions.find(apos.task.getReq(), criteria);
-      assert.equal(expected.length, 3);
+      assert.equal(expected.length, 2);
       const expectedRest = await apos.http.get(`/api/v1/${moduleName}/${expected[0]._id}`, {
         jar: jarAdmin
       });
@@ -4205,8 +3725,8 @@ describe('Document Versions', function () {
           raw: true
         }
       )).map(version => version.authorId);
-      assert.deepEqual(await authorIds(byAdmin), [ admin._id, admin._id ]);
-      assert.deepEqual(await authorIds(bySystem), [ null, null ]);
+      assert.deepEqual(await authorIds(byAdmin), [ admin._id ]);
+      assert.deepEqual(await authorIds(bySystem), [ null ]);
     });
 
     it('should restore a version recorded before the migration and one after', async function() {

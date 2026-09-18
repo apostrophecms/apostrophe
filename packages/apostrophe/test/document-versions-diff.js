@@ -745,6 +745,74 @@ describe('Document Versions diff engine', function () {
       assert.equal(text.getItemText({ schema: [] }, { title: 'Stray' }, ctx), '');
     });
 
+    it('should compare the text of each row word by word', function () {
+      const rows = text.addWordDiff([
+        {
+          oldText: 'The quick brown fox',
+          newText: 'The slow brown fox jumps'
+        },
+        {
+          oldText: '',
+          newText: 'Added'
+        },
+        {
+          oldText: 'Gone',
+          newText: ''
+        },
+        {
+          oldText: '',
+          newText: ''
+        },
+        {
+          oldText: 'Same',
+          newText: 'Same'
+        }
+      ]);
+      assert.deepEqual(rows.map(row => row.diff), [
+        [
+          {
+            text: 'The ',
+            change: 'same'
+          },
+          {
+            text: 'quick',
+            change: 'removed'
+          },
+          {
+            text: 'slow',
+            change: 'added'
+          },
+          {
+            text: ' brown fox ',
+            change: 'same'
+          },
+          {
+            text: 'jumps',
+            change: 'added'
+          }
+        ],
+        [
+          {
+            text: 'Added',
+            change: 'added'
+          }
+        ],
+        [
+          {
+            text: 'Gone',
+            change: 'removed'
+          }
+        ],
+        [],
+        [
+          {
+            text: 'Same',
+            change: 'same'
+          }
+        ]
+      ]);
+    });
+
     it('should leave rows without text serializable as before, plus the text', async function () {
       const older = buildDoc();
       const newer = buildDoc();
