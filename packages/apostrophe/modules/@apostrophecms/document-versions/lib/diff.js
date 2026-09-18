@@ -8,6 +8,7 @@
 const _ = require('lodash');
 const { diffArrays } = require('diff');
 const text = require('./text.js');
+const diffRichText = require('./rich-text-diff.js');
 
 // Field types with their own walk, reached through `extend` as well
 const STRUCTURAL = new Set([ 'area', 'array', 'object', 'relationship' ]);
@@ -155,7 +156,12 @@ function walk(schema, older, newer, ctx) {
  *   older widget), so it can render in place; it exists only in the
  *   returned document;
  * - `_olderVersion: <the older widget>` on a widget with changes of its own
- *   whose type sets the `renderVersions` module option;
+ *   whose type sets the `renderVersions` module option. When that type is
+ *   a rich text one and its markup changed, the copy's `content` is that
+ *   markup with the text that changed marked in it (see
+ *   `lib/rich-text-diff.js`), so that any template shows it; `content`
+ *   stays as it is when no text changed or the change cannot be shown,
+ *   and the widget reads as modified;
  * - `_modified: true` on such a widget whose type does not;
  * - `_moved: true` on a widget that changed places among the widgets of
  *   its area both documents have, beside any marker above. Of the widgets
@@ -241,10 +247,13 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
     if (row.ai) {
       widget._changedWithAi = true;
     }
+    const manager = ctx.getWidgetManager(widget.type);
+    if ((row.fieldType === 'richText') && manager?.options.renderVersions) {
+      markRichText(widget, row, ctx);
+    }
     if (widget._modified || widget._olderVersion) {
       continue;
     }
-    const manager = ctx.getWidgetManager(widget.type);
     if (manager?.options.renderVersions) {
       widget._olderVersion = _.cloneDeep(resolve(older, widgetPath));
     } else {
@@ -532,6 +541,23 @@ function walkWidget(manager, older, newer, ctx, path, rows) {
   const newRest = _.pickBy(newer, (value, key) => isContent(key));
   if (!_.isEqual(oldRest, newRest)) {
     rows.push(row(path, 'modified', 'widget', older, newer, null));
+  }
+}
+
+// The markup of a rich text widget of the annotated document, with the
+// text its row says changed marked in it
+function markRichText(widget, row, ctx) {
+  if (widget.content !== row.new) {
+    return;
+  }
+  const content = diffRichText(row.old, row.new, {
+    labels: {
+      removed: ctx.t?.('apostrophe:versionRemovedText'),
+      added: ctx.t?.('apostrophe:versionAddedText')
+    }
+  });
+  if (content != null) {
+    widget.content = content;
   }
 }
 

@@ -25,6 +25,15 @@ describe('Document Versions diff engine', function () {
       modules: {
         article: {},
         'default-page': {},
+        'quote-widget': {
+          extend: '@apostrophecms/rich-text-widget'
+        },
+        'plain-text-widget': {
+          extend: '@apostrophecms/rich-text-widget',
+          options: {
+            renderVersions: false
+          }
+        },
         ...modules
       }
     });
@@ -1227,7 +1236,7 @@ describe('Document Versions diff engine', function () {
       ]);
       const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
       assert.deepEqual(markers(doc).sort(), [
-        [ 'fourth', '_modified' ],
+        [ 'fourth', '_olderVersion' ],
         [ byAi._id, '_changedWithAi' ],
         [ byAi._id, '_modified' ],
         [ byAi._id, '_moved' ],
@@ -1293,6 +1302,97 @@ describe('Document Versions diff engine', function () {
         [ 'added', '#3 Nested 2' ],
         [ 'removed', '#1 Opaque' ]
       ]);
+    });
+
+    describe('rich text', function () {
+      // The fixture with a rich text widget of `type` holding `content`
+      function buildWith(type, content) {
+        const doc = buildDoc();
+        doc.section.rows[0].content.items.push({
+          _id: 'text',
+          metaType: 'widget',
+          type,
+          content
+        });
+        return doc;
+      }
+
+      it('should mark the text that changed inside the content', function () {
+        const older = buildWith('@apostrophecms/rich-text', '<p>The quick brown fox</p>');
+        const newer = buildWith('@apostrophecms/rich-text', '<p>The quick red fox</p>');
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc), [ [ 'text', '_olderVersion' ] ]);
+        assert.equal(
+          widget.content,
+          '<p>The quick ' +
+          '<del data-apos-version-change="removed">' +
+          '<span class="apos-sr-only">Removed </span>brown</del>' +
+          '<ins data-apos-version-change="added">' +
+          '<span class="apos-sr-only">Added </span>red</ins>' +
+          ' fox</p>'
+        );
+        assert.equal(widget._olderVersion.content, '<p>The quick brown fox</p>');
+        assert.equal(
+          newer.section.rows[0].content.items.at(-1).content,
+          '<p>The quick red fox</p>'
+        );
+      });
+
+      it('should mark the text of a type extending rich text', function () {
+        const older = buildWith('quote', '<p>Old</p>');
+        const newer = buildWith('quote', '<p>New</p>');
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc), [ [ 'text', '_olderVersion' ] ]);
+        assert.match(widget.content, /<del [^>]+>.*Old<\/del><ins [^>]+>.*New<\/ins>/);
+      });
+
+      it('should leave the content alone when no text changed', function () {
+        const older = buildWith('@apostrophecms/rich-text', '<p><a href="/one">Link</a></p>');
+        const newer = buildWith('@apostrophecms/rich-text', '<p><a href="/two">Link</a></p>');
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc), [ [ 'text', '_olderVersion' ] ]);
+        assert.equal(widget.content, '<p><a href="/two">Link</a></p>');
+      });
+
+      it('should leave the content of a type that opts out alone', function () {
+        const older = buildWith('plain-text', '<p>Old</p>');
+        const newer = buildWith('plain-text', '<p>New</p>');
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc), [ [ 'text', '_modified' ] ]);
+        assert.equal(widget.content, '<p>New</p>');
+      });
+
+      it('should mark the text between the ends of consecutive versions', function () {
+        const older = buildWith('@apostrophecms/rich-text', '<p>One</p>');
+        const middle = buildWith('@apostrophecms/rich-text', '<p>One two</p>');
+        const newer = buildWith('@apostrophecms/rich-text', '<p>One three</p>');
+        const rows = apos.docVersions.getConsolidatedRows(req, [
+          {
+            older,
+            newer: middle,
+            ai: true
+          },
+          {
+            older: middle,
+            newer
+          }
+        ]);
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc).sort(), [
+          [ 'text', '_changedWithAi' ],
+          [ 'text', '_olderVersion' ]
+        ]);
+        assert.equal(
+          widget.content,
+          '<p>One<ins data-apos-version-change="added">' +
+          '<span class="apos-sr-only">Added </span> three</ins></p>'
+        );
+      });
     });
 
     it('should reuse rows already computed', function () {
