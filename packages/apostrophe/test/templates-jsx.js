@@ -432,6 +432,13 @@ describe('Templates: JSX', function() {
     assert.match(result, /<\/h2>/);
   });
 
+  it('Field should accept className as an alternative to class via `with`', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-field-test']
+      .render(req, 'with-field-classname', { piece: fieldPiece() });
+    assert.match(result, /<h2 class="apos-wysiwyg-field[^"]*lede"/);
+  });
+
   it('Field should be exactly Area when the field is an area', async function() {
     const req = apos.task.getAnonReq();
     const viaField = await apos.modules['jsx-field-test']
