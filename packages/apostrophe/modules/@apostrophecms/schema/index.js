@@ -1737,13 +1737,15 @@ still output the value of this field with a regular template expression.`);
           req.query.aposEdit &&
           self.editableInPlace(req, docId)
         );
+        // `className` is an alternative to `class`, for those used to JSX
+        const className = _with.class || _with.className;
         const classes = [
           'apos-wysiwyg-field',
           `apos-wysiwyg-field--${field.type}`,
           ...(fieldType.wysiwygModifiers
             ? fieldType.wysiwygModifiers(field).map(modifier => `apos-wysiwyg-field--${modifier}`)
             : []),
-          ...(_with.class ? [ _with.class ] : [])
+          ...(className ? [ className ] : [])
         ];
         return {
           fieldId: field._id,
