@@ -21,7 +21,7 @@
   "confEmailFieldHelp": "Geben Sie den \"Namen\" des Feldes ein, in dem die Personen ihre E-Mail-Adresse eingeben können. Für die besten Ergebnisse stellen Sie sicher, dass dieses Feld nur E-Mail-Adressen akzeptiert.",
   "defaultThankYou": "Danke",
   "disabledInEditMode": "Wechseln Sie in den Vorschau- oder veröffentlichten Modus, um das Formular zu testen.",
-  "divider": "Divider",
+  "divider": "Trennlinie",
   "emailField": "Primäre interne E-Mail-Adresse",
   "emailFieldHelp": "Sie können eine aus der vorherigen Liste eingeben. Dies ist die Adresse, die als \"Von\"-Adresse für alle generierten E-Mail-Nachrichten verwendet wird.",
   "emails": "E-Mail-Adresse(n) für Ergebnisse",

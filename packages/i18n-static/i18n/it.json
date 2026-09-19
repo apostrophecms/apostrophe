@@ -1,7 +1,7 @@
 {
   "label": "Frase i18n Statica",
   "pluralLabel": "Frasi i18n Statiche",
-  "locale": "Locale",
+  "locale": "Lingua",
   "key": "Chiave",
   "namespace": "Namespace",
   "valueSingular": "Singolare",
