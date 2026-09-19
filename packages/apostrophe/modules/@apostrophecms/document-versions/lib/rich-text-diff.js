@@ -316,10 +316,10 @@ function getOps(older, newer) {
   return joined;
 }
 
-// Where a removal starts is open to choice when the tokens before it repeat
-// its last ones: a paragraph out of three reads as its text, its closing
-// tag and the next opening tag as well as the paragraph itself. Moves the
-// removal back, over equal tokens, to where it is whole elements
+// A removal can sit anywhere along the tokens that repeat around it: dropping
+// the middle of `<p>A</p><p>B</p><p>C</p>` can come out as `B</p><p>` as well
+// as `<p>B</p>`. Moves the removal back over those equal tokens until it
+// covers whole elements
 function settle(region, before, after) {
   if (!before?.same || !after?.same || isWhole(region.removed)) {
     return;
