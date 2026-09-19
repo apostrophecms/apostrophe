@@ -4,25 +4,44 @@
     :class="`apos-doc-version-change-type--${type}`"
     data-apos-test="doc-version-change-type"
   >
+    <AposIndicator
+      v-if="icon"
+      class="apos-doc-version-change-type__icon"
+      :icon="icons[type]"
+      :icon-size="10"
+    />
     {{ $t(labels[type]) }}
   </span>
 </template>
 
 <script setup>
-// Whether a change added, modified or deleted something, as a word, so
-// the colour is never the only cue
+// Whether a change added, modified, deleted or moved something, as a
+// word, so the colour is never the only cue
 defineProps({
   type: {
     type: String,
     required: true,
-    validator: value => [ 'added', 'modified', 'deleted' ].includes(value)
+    validator: value => [ 'added', 'modified', 'deleted', 'moved' ].includes(value)
+  },
+  // An icon before the word, for a marker on the content itself
+  icon: {
+    type: Boolean,
+    default: false
   }
 });
+
+const icons = {
+  added: 'plus-icon',
+  modified: 'pencil-icon',
+  deleted: 'minus-icon',
+  moved: 'cursor-move-icon'
+};
 
 const labels = {
   added: 'apostrophe:versionChangeAdded',
   modified: 'apostrophe:versionChangeModified',
-  deleted: 'apostrophe:versionChangeDeleted'
+  deleted: 'apostrophe:versionChangeDeleted',
+  moved: 'apostrophe:versionChangeMoved'
 };
 </script>
 
@@ -41,6 +60,11 @@ const labels = {
   text-transform: uppercase;
   white-space: nowrap;
 
+  &__icon {
+    margin-right: 2px;
+    vertical-align: -1px;
+  }
+
   &--added {
     background-color: var(--a-success-fade);
     color: var(--a-success-dark);
@@ -54,6 +78,11 @@ const labels = {
   &--deleted {
     background-color: var(--a-danger-fade);
     color: var(--a-danger-button-hover);
+  }
+
+  &--moved {
+    background-color: color-mix(in srgb, var(--a-brand-blue) 12%, transparent);
+    color: color-mix(in srgb, var(--a-brand-blue) 65%, #000);
   }
 }
 </style>

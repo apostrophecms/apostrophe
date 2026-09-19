@@ -52,7 +52,9 @@
         class="apos-doc-version-changes__empty"
         data-apos-test="doc-version-changes-empty"
       >
-        {{ $t('apostrophe:versionNoChanges') }}
+        {{ $t(version?.restoredFrom
+          ? 'apostrophe:versionRestoredBaseline'
+          : 'apostrophe:versionNoChanges') }}
       </p>
       <p
         v-else-if="!shownRows.length"
@@ -145,16 +147,20 @@
                       class="apos-doc-version-changes__value-icon"
                       :title="$t(pane.markLabel)"
                     />
-                    <p class="apos-doc-version-changes__value">
+                    <p
+                      class="apos-doc-version-changes__value"
+                      :class="entry.order && `apos-doc-version-changes__value--${pane.side}`"
+                    >
                       <template v-if="entry.text[pane.side]">
                         <template
-                          v-for="(part, index) in entry.row.diff"
+                          v-for="(part, index) in entry.parts[pane.side]"
                           :key="index"
                         >
+                          <span v-if="entry.order && index">, </span>
                           <span v-if="part.change === 'same'">{{ part.text }}</span>
                           <component
                             :is="pane.tag"
-                            v-else-if="part.change === pane.change"
+                            v-else
                             class="apos-doc-version-changes__mark"
                             :class="`apos-doc-version-changes__mark--${pane.side}`"
                           >
@@ -359,6 +365,11 @@ const groups = computed(() => {
       list.push(group);
     }
     const segments = row.path.slice(path.length);
+    // The order of an array's or area's items reads as the last crumb
+    const order = [ 'array', 'area' ].includes(row.fieldType);
+    if (order) {
+      segments.push({ label: 'apostrophe:versionOrderChanged' });
+    }
     // The row is the group's own field or widget: it was added or deleted
     // whole, and its label stands in for the empty breadcrumb
     if (!segments.length) {
@@ -370,6 +381,13 @@ const groups = computed(() => {
       key: String(index),
       row,
       segments,
+      // Its parts are whole items, shown as a list in the side's colour
+      order,
+      // What each side shows: the parts both share and its own
+      parts: Object.fromEntries(panes.map(pane => [
+        pane.side,
+        diff.filter(part => [ 'same', pane.change ].includes(part.change))
+      ])),
       // Whether the text shows the change at all
       changed: diff.some(part => part.change !== 'same'),
       text: {
@@ -439,7 +457,68 @@ function focus() {
   backButton.value?.focus({ preventScroll: true });
 }
 
-defineExpose({ focus });
+// Shows the changes behind a marker of the body: those of the widget
+// `widgetId` (and, when it `moved`, the order of its area), or those of the
+// top-level field `field` outside any widget. Their rows expand alone,
+// their group becomes the navigator's, and focus goes to the row's toggle.
+// Resolves `false` when the list has no such row
+async function reveal({
+  field, widgetId, moved = false
+}) {
+  const isTarget = row => {
+    const widget = row.path.findLast(segment => segment.widgetType);
+    if (!widgetId) {
+      return !widget && (row.path[0].name === field);
+    }
+    return (widget?.name === widgetId && row.fieldType !== 'area') ||
+      (moved && row.fieldType === 'area' && row.new.includes(widgetId));
+  };
+  const targets = props.rows.filter(isTarget);
+  if (!targets.length) {
+    return false;
+  }
+  // A filter hiding any of them is lifted
+  if (!targets.every(matches)) {
+    filter.value = Object.entries(props.counts || {})
+      .filter(([ , count ]) => count)
+      .map(([ name ]) => name);
+    // The navigator follows the new groups first, or it would read the
+    // position set below against the old ones
+    await nextTick();
+  }
+  const entries = groups.value
+    .flatMap(group => group.entries.map(entry => ({
+      group,
+      entry
+    })))
+    .filter(({ entry }) => targets.includes(entry.row));
+  expanded.clear();
+  for (const { entry } of entries) {
+    expanded.add(entry.key);
+  }
+  // The widget's own group rather than its area's order
+  const { group, entry } = entries.find(({ entry }) => !entry.order) || entries[0];
+  position.value = groups.value.indexOf(group);
+  emit('navigate', group);
+  await nextTick();
+  const toggle = list.value?.querySelector(
+    `[aria-controls="${CSS.escape(`${baseId}-${entry.key}`)}"]`
+  );
+  // The list alone scrolls: `scrollIntoView` would also push the sliding
+  // panel around it sideways
+  if (toggle && list.value) {
+    const box = list.value.getBoundingClientRect();
+    list.value.scrollTop += toggle.getBoundingClientRect().top -
+      box.top - (box.height / 2);
+    toggle.focus({ preventScroll: true });
+  }
+  return true;
+}
+
+defineExpose({
+  focus,
+  reveal
+});
 </script>
 
 <style lang="scss" scoped>
@@ -692,6 +771,14 @@ $pad-x: $spacing-base + $spacing-half;
       font-size: var(--a-type-smaller);
       line-height: var(--a-line-tall);
       overflow-wrap: anywhere;
+    }
+
+    &--new {
+      color: var(--a-success-dark);
+    }
+
+    &--old {
+      color: var(--a-danger-button-hover);
     }
   }
 

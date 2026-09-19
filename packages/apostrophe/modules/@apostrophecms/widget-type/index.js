@@ -72,6 +72,21 @@
 // If true, the image widget is automatically previewed live following changes
 // in the editor modal. Should not be combined with `contextual`.
 //
+// ### `renderVersions`
+//
+// If true, a widget of this type shown in a document version that changed
+// it receives the widget as it was in the version before, as
+// `data.widget._olderVersion`, so its template can show what changed. An
+// unchanged widget does not receive it. A type that leaves this option
+// unset is marked as modified as a whole. `@apostrophecms/rich-text-widget`
+// sets it: the text that changed is marked inside its `content`.
+//
+// ### `titleField`
+//
+// The name of a schema field of this widget type, dot notation allowed,
+// whose value labels a widget of this type in a document version's list
+// of changes, as the `titleField` of an array field labels its items.
+//
 // ## Fields
 //
 // You will need to configure the schema fields for your widget using

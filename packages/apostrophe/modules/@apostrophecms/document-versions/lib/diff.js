@@ -6,10 +6,14 @@
 // here reaches for `apos` directly.
 
 const _ = require('lodash');
+const { diffArrays } = require('diff');
 const text = require('./text.js');
+const diffRichText = require('./rich-text-diff.js');
 
 // Field types with their own walk, reached through `extend` as well
 const STRUCTURAL = new Set([ 'area', 'array', 'object', 'relationship' ]);
+// Leaf field types `annotate` marks, reached through `extend` as well
+const MARKED = new Set([ 'richText' ]);
 // Field types that store nothing
 const VALUELESS = new Set([ 'group', 'relationshipReverse' ]);
 // Widget keys that are bookkeeping, not content
@@ -17,9 +21,13 @@ const WIDGET_KEYS = new Set([ '_id', 'type', 'metaType', 'aposPlaceholder', 'apo
 
 const HIGHLIGHT_NAMESPACE = '@apostrophecms/schema';
 const HIGHLIGHT_KEY = 'highlight';
+const AI_NAMESPACE = '@apostrophecms/document-versions';
+const AI_KEY = 'ai';
 // The hop below a widget where its rich text markup, or the data it stores
 // outside its schema, sits when paths are compared
 const CONTENT = Symbol('content');
+// The hop below an array or area where the order of its items sits
+const ORDER = Symbol('order');
 
 /**
  * What the engine needs from the rest of Apostrophe. The module builds it
@@ -39,6 +47,9 @@ const CONTENT = Symbol('content');
  *   `apos.doc.setMeta`, used by `annotate` to highlight top-level fields.
  * @property {(html: string) => string} htmlToPlaintext
  *   `apos.util.htmlToPlaintext`, for the text of rich text.
+ * @property {(key: string) => string} [t] A label in the language of the
+ *   admin UI, for text that names a widget type. Labels stay as they are
+ *   when omitted.
  */
 
 /**
@@ -75,27 +86,44 @@ const CONTENT = Symbol('content');
  * @property {string} fieldType The schema type of the changed value
  *   (`string`, `integer`, `relationship`, `object`, ...), or `arrayItem`,
  *   `widget` or `richText` when the row is a whole array item, a whole
- *   widget, or the `content` of a rich text widget.
+ *   widget, or the `content` of a rich text widget; `array` or `area` when
+ *   the row is the order of the items of one, at the path of the array or
+ *   area itself.
  * @property {any} old The value in the older document as stored, `undefined`
  *   when the item was added. A relationship's is its array of ids, a rich
  *   text widget's its `content` string, an item's or widget's the whole
- *   item or widget object.
+ *   item or widget object, an order row's the `_id`s of the items both
+ *   documents have, in the older order.
  * @property {any} new The same for the newer document, `undefined` when the
  *   item was deleted.
  * @property {object|null} field The schema field of the changed value, for
  *   the text representation; `null` for a rich text or `widget` row. Attached
  *   as a non-enumerable property, so it is invisible to `JSON.stringify`
  *   and to deep equality.
+ * @property {Object<string, { ordinal: number, label?: string, title?: string }>} [items]
+ *   Order rows only, for the text representation: by `_id`, each item's
+ *   position in the newer document, its widget type's `label` and its
+ *   title. Non-enumerable, like `field`.
+ * @property {string[]} [movedItems] Order rows of `consolidate` flagged
+ *   `ai` in a run that mixes versions saved with and without AI, when the
+ *   moves of its versions explain the new order: the `_id`s of the items
+ *   they moved. Non-enumerable, like `aiItems`, which comes with it: those
+ *   a version saved with AI moved.
+ * @property {Set<string>} [aiItems]
  * @property {boolean} [ai] Rows of `consolidate` only: whether a version
- *   saved with AI changed this path, or one above or below it.
+ *   saved with AI changed this path, or one above or below it; for an
+ *   order row, whether one changed that order.
  */
 
 /**
  * Every change from `older` to `newer` as rows at their full depth, in
  * schema order, depth first. Array items and widgets match by `_id`, and
  * one present on one side only is a single row with nothing listed below
- * it, as is an object that appears or goes. Objects recurse, relationships
- * compare their stored ids and relationship fields, other leaves compare
+ * it, as is an object that appears or goes. An array or area whose items
+ * changed places is one `modified` row of its own, ahead of the rows of its
+ * items: only the relative order of the items both documents have counts,
+ * so an item added or deleted in the middle moves nothing. Objects recurse,
+ * relationships compare their stored ids and relationship fields, other leaves compare
  * with the field type's own `isEqual` when it defines one, otherwise deeply
  * with `null` and `undefined` folded together. A matched widget walks its
  * type's schema, then, for a rich text type (one with `getRichText`), its
@@ -130,15 +158,33 @@ function walk(schema, older, newer, ctx) {
  *   older widget), so it can render in place; it exists only in the
  *   returned document;
  * - `_olderVersion: <the older widget>` on a widget with changes of its own
- *   whose type sets the `renderVersions` module option;
- * - `_modified: true` on such a widget whose type does not.
+ *   whose type sets the `renderVersions` module option. When that type is
+ *   a rich text one and its markup changed, the copy's `content` is that
+ *   markup with the text that changed marked in it (see
+ *   `lib/rich-text-diff.js`), so that any template shows it; `content`
+ *   stays as it is when no text changed or the change cannot be shown,
+ *   and the widget reads as modified;
+ * - `_modified: true` on such a widget whose type does not;
+ * - `_moved: true` on a widget that changed places among the widgets of
+ *   its area both documents have, beside any marker above. Of the widgets
+ *   of an area whose order changed, only the fewest that account for the
+ *   new order are marked: one widget dragged to the top is one `_moved`,
+ *   not one for every widget it passed.
+ *
+ * Rows flagged `ai` (those of `consolidate`) say so on what they mark:
+ * `_changedWithAi: true` beside `_inserted`, `_deleted`, `_modified` or
+ * `_olderVersion`, when any row behind that marker is flagged;
+ * `_movedWithAi: true` beside `_moved`, when the order row is and, in a
+ * run of versions whose own moves explain the new order, a version saved
+ * with AI moved that widget; the
+ * `@apostrophecms/document-versions:ai` meta beside a field's highlight.
  *
  * A widget whose only changes sit in widgets nested inside it gets no
  * marker; the nested widgets carry them. A change outside any widget
- * (a top-level scalar, a change inside a top-level object or array) sets
- * the `@apostrophecms/schema:highlight` meta of its top-level field, at
- * `aposMeta.<field>`, which the read-only schema view renders as
- * highlighted. Neither document is modified.
+ * (a top-level scalar, a change inside a top-level object or array, the
+ * order of an array's items) sets the `@apostrophecms/schema:highlight`
+ * meta of its top-level field, at `aposMeta.<field>`, which the read-only
+ * schema view renders as highlighted. Neither document is modified.
  *
  * @param {object[]} schema The schema of both documents.
  * @param {object} older The older document as stored.
@@ -146,12 +192,25 @@ function walk(schema, older, newer, ctx) {
  * @param {DiffContext} ctx
  * @param {object} [options]
  * @param {ChangeRow[]} [options.rows] The rows of a `walk` of the same
- *   documents already done, to avoid walking them again.
+ *   documents already done, to avoid walking them again, or those of a
+ *   `consolidate` ending in them, for the AI markers.
  * @returns {object} The annotated copy of `newer`.
  */
 function annotate(schema, older, newer, ctx, { rows } = {}) {
   const doc = _.cloneDeep(newer);
   for (const row of rows || walk(schema, older, newer, ctx)) {
+    if (row.fieldType === 'area') {
+      for (const id of row.movedItems || getMovedIds(row)) {
+        const widget = resolve(doc, [ ...row.path, { name: id } ]);
+        if (widget) {
+          widget._moved = true;
+          if (row.aiItems ? row.aiItems.has(id) : row.ai) {
+            widget._movedWithAi = true;
+          }
+        }
+      }
+      continue;
+    }
     const widgetAt = _.findLastIndex(row.path, segment => segment.widgetType);
     if (row.fieldType === 'widget' && row.type === 'deleted') {
       const area = resolve(doc, row.path.slice(0, -1));
@@ -159,7 +218,8 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
         const at = Math.min(row.path.at(-1).ordinal - 1, area.items.length);
         area.items.splice(at, 0, {
           ..._.cloneDeep(row.old),
-          _deleted: true
+          _deleted: true,
+          ...(row.ai && { _changedWithAi: true })
         });
       }
       continue;
@@ -168,19 +228,37 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
       const widget = resolve(doc, row.path);
       if (widget) {
         widget._inserted = true;
+        if (row.ai) {
+          widget._changedWithAi = true;
+        }
       }
       continue;
     }
     if (widgetAt === -1) {
+      if (row.field && (getKind(row.field, ctx) === 'richText')) {
+        markRichTextField(doc, row, ctx);
+      }
       ctx.setMeta(doc, HIGHLIGHT_NAMESPACE, row.path[0].name, HIGHLIGHT_KEY, true);
+      if (row.ai) {
+        ctx.setMeta(doc, AI_NAMESPACE, row.path[0].name, AI_KEY, true);
+      }
       continue;
     }
     const widgetPath = row.path.slice(0, widgetAt + 1);
     const widget = resolve(doc, widgetPath);
-    if (!widget || widget._modified || widget._olderVersion) {
+    if (!widget) {
       continue;
     }
+    if (row.ai) {
+      widget._changedWithAi = true;
+    }
     const manager = ctx.getWidgetManager(widget.type);
+    if ((row.fieldType === 'richText') && manager?.options.renderVersions) {
+      markRichText(widget, row, ctx);
+    }
+    if (widget._modified || widget._olderVersion) {
+      continue;
+    }
     if (manager?.options.renderVersions) {
       widget._olderVersion = _.cloneDeep(resolve(older, widgetPath));
     } else {
@@ -199,8 +277,10 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
  * the run does not appear, and neither does one that ended where it
  * started. Every row gains `ai`: `true` when a member saved with AI changed
  * that path, one above it (which created the value) or one below it (which
- * is part of the final value). One pair is a single version and every row
- * takes its flag.
+ * is part of the final value). The order of an array or area stands apart
+ * from its items: its row is flagged when a member saved with AI changed
+ * that order, and flags no other row. One pair is a single version and
+ * every row takes its flag.
  *
  * @param {object[]} schema The schema of the documents.
  * @param {Array<{ older: object, newer: object, ai?: boolean }>} pairs
@@ -220,12 +300,19 @@ function consolidate(schema, pairs, ctx) {
     }
     return rows;
   }
-  const touched = aiPairs
-    .flatMap(pair => walk(schema, pair.older, pair.newer, ctx))
-    .map(keyOf);
+  const walkOf = pair => walk(schema, pair.older, pair.newer, ctx);
+  const aiRows = aiPairs.flatMap(walkOf);
+  const touched = aiRows.map(keyOf);
   for (const row of rows) {
     const key = keyOf(row);
     row.ai = touched.some(other => isRelated(key, other));
+  }
+  const orders = rows.filter(row => row.ai && isOrder(row));
+  if (orders.length) {
+    const otherRows = pairs.filter(pair => !pair.ai).flatMap(walkOf);
+    for (const row of orders) {
+      explainOrder(row, aiRows, otherRows);
+    }
   }
   return rows;
 }
@@ -264,12 +351,13 @@ function walkFields(schema, older, newer, ctx, path, rows) {
 }
 
 // The walk a field takes: one of the structural types, `valueless`, or
-// `leaf`. A type extending a structural type walks like it
+// `leaf`, except that a `richText` field is `richText`. A type extending
+// one of those is taken for it
 function getKind(field, ctx) {
   const seen = new Set();
   let name = field.type;
   while (name && !seen.has(name)) {
-    if (STRUCTURAL.has(name)) {
+    if (STRUCTURAL.has(name) || MARKED.has(name)) {
       return name;
     }
     if (VALUELESS.has(name)) {
@@ -349,7 +437,12 @@ function walkObject(field, older, newer, ctx, path, rows) {
 // Items match by `_id`; an item on one side only is one row, a matched
 // pair walks the array's schema
 function walkArray(field, older, newer, ctx, path, rows) {
-  for (const entry of mergeItems(older || [], newer || [])) {
+  const entries = mergeItems(older || [], newer || []);
+  walkOrder('array', field, entries, path, rows, (item, ordinal) => ({
+    ordinal,
+    title: text.getItemText(field, item, ctx)
+  }));
+  for (const entry of entries) {
     const {
       older: oldItem,
       newer: newItem,
@@ -375,7 +468,16 @@ function walkArray(field, older, newer, ctx, path, rows) {
 // Widgets match by `_id`, like array items; a matched pair walks the
 // widget type's schema, then its content outside the schema
 function walkArea(field, older, newer, ctx, path, rows) {
-  for (const entry of mergeItems(older?.items || [], newer?.items || [])) {
+  const entries = mergeItems(older?.items || [], newer?.items || []);
+  walkOrder('area', field, entries, path, rows, (widget, ordinal) => {
+    const manager = ctx.getWidgetManager(widget.type);
+    return {
+      ordinal,
+      label: manager?.label || widget.type,
+      title: manager?.options.titleField && text.getWidgetText(widget, ctx)
+    };
+  });
+  for (const entry of entries) {
     const {
       older: oldWidget,
       newer: newWidget,
@@ -448,10 +550,67 @@ function walkWidget(manager, older, newer, ctx, path, rows) {
   }
 }
 
+// The markup of a rich text widget of the annotated document, with the
+// text its row says changed marked in it
+function markRichText(widget, row, ctx) {
+  if (widget.content !== row.new) {
+    return;
+  }
+  const content = getMarkedRichText(row, ctx);
+  if (content != null) {
+    widget.content = content;
+  }
+}
+
+// The same for a `richText` field outside any widget
+function markRichTextField(doc, row, ctx) {
+  const parent = resolve(doc, row.path.slice(0, -1));
+  const name = row.path.at(-1).name;
+  if (!parent || ((parent[name] ?? null) !== (row.new ?? null))) {
+    return;
+  }
+  const content = getMarkedRichText(row, ctx);
+  if (content != null) {
+    parent[name] = content;
+  }
+}
+
+function getMarkedRichText(row, ctx) {
+  return diffRichText(row.old || '', row.new || '', {
+    labels: {
+      removed: ctx.t?.('apostrophe:versionRemovedText'),
+      added: ctx.t?.('apostrophe:versionAddedText')
+    }
+  });
+}
+
+// The order of an array's or area's items, one `modified` row at the
+// container itself when the items both sides have stand in a different
+// relative order. Items without an `_id` match by position and never move.
+// `describe(item, ordinal)` is what the text of the row says of an item
+function walkOrder(kind, field, entries, path, rows, describe) {
+  const matched = entries.filter(entry => entry.older?._id && entry.newer);
+  const newIds = matched.map(entry => entry.newer._id);
+  const oldIds = _.sortBy(matched, 'olderOrdinal').map(entry => entry.older._id);
+  if (_.isEqual(oldIds, newIds)) {
+    return;
+  }
+  const result = row(path, 'modified', kind, oldIds, newIds, field);
+  Object.defineProperty(result, 'items', {
+    value: Object.fromEntries(matched.map(entry => [
+      entry.newer._id,
+      describe(entry.newer, entry.ordinal)
+    ])),
+    enumerable: false
+  });
+  rows.push(result);
+}
+
 // The two item lists as one sequence of `{ older, newer, ordinal }`, in the
 // newer order, each deleted item placed after the item that preceded it in
 // the older list. `ordinal` is the item's 1-based position in the list it
-// is taken from. Items without an `_id` match by position
+// is taken from, `olderOrdinal` the one in the older list when it is there.
+// Items without an `_id` match by position
 function mergeItems(olderItems, newerItems) {
   const keyOf = (item, index) => item?._id ?? `#${index}`;
   const merged = newerItems.map((item, index) => ({
@@ -469,11 +628,13 @@ function mergeItems(olderItems, newerItems) {
         key,
         older: item,
         newer: undefined,
-        ordinal: index + 1
+        ordinal: index + 1,
+        olderOrdinal: index + 1
       });
       insertAt++;
     } else {
       merged[found].older = item;
+      merged[found].olderOrdinal = index + 1;
       insertAt = found + 1;
     }
   });
@@ -493,6 +654,59 @@ function row(path, type, fieldType, oldValue, newValue, field) {
     enumerable: false
   });
   return result;
+}
+
+// The items of an order row that changed places: the fewest whose move
+// accounts for the newer order
+function getMovedIds(row) {
+  return diffArrays(row.old, row.new)
+    .filter(part => part.added)
+    .flatMap(part => part.value);
+}
+
+// Which items moved has more than one true answer (a reversal of three is
+// any two of them), so between a run's ends the fewest-moves answer may
+// name items no version touched. The versions' own moves are the better
+// answer when they hold: taken out of both lists, the rest stands in one
+// order. Sets `movedItems` and `aiItems` on `row` then; otherwise `row`
+// stays as it is and every moved item takes the row's AI flag
+function explainOrder(row, aiRows, otherRows) {
+  const key = keyOf(row);
+  const movedIn = rows => rows
+    .filter(other => isOrder(other) && _.isEqual(keyOf(other), key))
+    .flatMap(getMovedIds)
+    .filter(id => row.new.includes(id));
+  const byAi = new Set(movedIn(aiRows));
+  const holds = moved => _.isEqual(
+    row.old.filter(id => !moved.has(id)),
+    row.new.filter(id => !moved.has(id))
+  );
+  const moved = new Set([ ...movedIn(otherRows), ...byAi ]);
+  if (!holds(moved)) {
+    return;
+  }
+  // An item moved and moved back explains nothing
+  for (const id of [ ...moved ]) {
+    moved.delete(id);
+    if (!holds(moved)) {
+      moved.add(id);
+    }
+  }
+  Object.defineProperties(row, {
+    movedItems: {
+      value: row.new.filter(id => moved.has(id)),
+      enumerable: false
+    },
+    aiItems: {
+      value: new Set([ ...moved ].filter(id => byAi.has(id))),
+      enumerable: false
+    }
+  });
+}
+
+// Whether a row is the order of an array's or area's items
+function isOrder(row) {
+  return (row.fieldType === 'array') || (row.fieldType === 'area');
 }
 
 function changeType(oldEmpty, newEmpty) {
@@ -516,10 +730,13 @@ function isEmpty(type, field, value) {
 
 // The names along a row's path, the key two rows compare by. A rich text
 // widget's markup and the data a widget stores outside its schema sit one
-// hop below the widget, apart from its schema fields
+// hop below the widget, apart from its schema fields, and so does the
+// order of an array or area, apart from its items
 function keyOf(row) {
   const key = row.path.map(segment => segment.name);
-  if (
+  if (isOrder(row)) {
+    key.push(ORDER);
+  } else if (
     (row.fieldType === 'richText') ||
     ((row.fieldType === 'widget') && (row.type === 'modified'))
   ) {
@@ -528,8 +745,12 @@ function keyOf(row) {
   return key;
 }
 
-// Whether one key is the other or an ancestor of it
+// Whether one key is the other or an ancestor of it. An order relates to
+// the same order only, whatever happened above it
 function isRelated(one, two) {
+  if ((one.at(-1) === ORDER) || (two.at(-1) === ORDER)) {
+    return _.isEqual(one, two);
+  }
   const length = Math.min(one.length, two.length);
   for (let i = 0; i < length; i++) {
     if (one[i] !== two[i]) {

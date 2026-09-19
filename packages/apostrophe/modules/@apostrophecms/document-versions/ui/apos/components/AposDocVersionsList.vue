@@ -1,5 +1,8 @@
 <template>
-  <ul class="apos-doc-version-list">
+  <ul
+    ref="list"
+    class="apos-doc-version-list"
+  >
     <li
       v-for="version in versions"
       :key="version._id"
@@ -31,7 +34,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
   currentVersion: {
@@ -46,7 +49,16 @@ const props = defineProps({
 
 defineEmits([ 'select' ]);
 
+const list = ref(null);
 const selectedId = computed(() => props.currentVersion?._id || null);
+
+function focus(versionId) {
+  list.value
+    ?.querySelector(`button[value="${CSS.escape(versionId)}"]`)
+    ?.focus();
+}
+
+defineExpose({ focus });
 </script>
 
 <style lang="scss" scoped>

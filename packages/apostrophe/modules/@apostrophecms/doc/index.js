@@ -277,7 +277,11 @@ module.exports = {
             aposLocale: draftLocale,
             lastPublishedAt
           };
-          await manager.insertDraftOf(req, doc, draft, options);
+          // The draft copy, and its republication when the type publishes
+          // automatically, are side effects of this insert, which records
+          // its own version
+          const draftReq = req.clone({ aposSkipVersion: true });
+          await manager.insertDraftOf(draftReq, doc, draft, options);
           // Published doc must know it is published, otherwise various bugs
           // ensue
           return self.apos.doc.db.updateOne({

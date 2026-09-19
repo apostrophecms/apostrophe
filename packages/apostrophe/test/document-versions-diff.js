@@ -3,7 +3,9 @@ const {
   t,
   bootstrap: bootstrapWith,
   getReq,
-  destroy
+  destroy,
+  addUser,
+  login
 } = require('./utils/document-versions.js');
 const {
   modules,
@@ -25,6 +27,36 @@ describe('Document Versions diff engine', function () {
       modules: {
         article: {},
         'default-page': {},
+        'quote-widget': {
+          extend: '@apostrophecms/rich-text-widget'
+        },
+        'plain-text-widget': {
+          extend: '@apostrophecms/rich-text-widget',
+          options: {
+            renderVersions: false
+          }
+        },
+        // Its template shows its title and the older version's
+        'version-note-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            renderVersions: true
+          },
+          fields: {
+            add: {
+              title: {
+                type: 'string',
+                label: 'Title'
+              }
+            }
+          }
+        },
+        'plain-note-widget': {
+          extend: 'version-note-widget',
+          options: {
+            renderVersions: false
+          }
+        },
         ...modules
       }
     });
@@ -331,6 +363,78 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
+    it('should report reordered items as one modified row at their array or area', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.section.rows.reverse();
+      const area = newer.section.rows[1].content;
+      const [ nested, richText, opaque ] = area.items;
+      area.items = [ opaque, nested, richText ];
+      nested.title = 'Edited';
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [
+        row.type,
+        row.fieldType,
+        row.path.map(segment => segment.label).join(' > ')
+      ]), [
+        [ 'modified', 'array', 'Section > Rows' ],
+        [ 'modified', 'area', 'Section > Rows > Title root.section.rows.0 > Content' ],
+        [ 'modified', 'string', 'Section > Rows > Title root.section.rows.0 > Content > Nested 2 > Title' ]
+      ]);
+      assert.deepEqual(
+        [ rows[0].old, rows[0].new ],
+        [
+          [ 'root.section.rows.0', 'root.section.rows.1' ],
+          [ 'root.section.rows.1', 'root.section.rows.0' ]
+        ]
+      );
+      assert.deepEqual(
+        [ rows[1].old, rows[1].new ],
+        [
+          [ nested._id, richText._id, opaque._id ],
+          [ opaque._id, nested._id, richText._id ]
+        ]
+      );
+      assert.equal(rows[0].field.name, 'rows');
+      assert.equal(rows[1].field.name, 'content');
+      assert.deepEqual(Object.keys(rows[0]), [ 'path', 'type', 'fieldType', 'old', 'new' ]);
+      assert.equal(apos.docVersions.getChangeCount(req, newer, older), 3);
+    });
+
+    it('should not call an item added or deleted in the middle a reorder', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const area = newer.section.rows[0].content;
+      const [ nested, richText, opaque ] = area.items;
+      const added = {
+        ...structuredClone(richText),
+        _id: 'root.section.rows.0.content.3'
+      };
+      area.items = [ nested, added, opaque ];
+      newer.section.rows.splice(1, 0, {
+        ...structuredClone(newer.section.rows[1]),
+        _id: 'root.section.rows.2'
+      });
+      const brief = row => [ row.type, row.fieldType, row.path.at(-1).name ];
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer).map(brief), [
+        [ 'deleted', 'widget', richText._id ],
+        [ 'added', 'widget', added._id ],
+        [ 'added', 'arrayItem', 'root.section.rows.2' ]
+      ]);
+
+      // The same, and the items both sides have change places
+      area.items = [ opaque, added, nested ];
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'area', 'content' ],
+        [ 'added', 'widget', added._id ],
+        [ 'deleted', 'widget', richText._id ],
+        [ 'added', 'arrayItem', 'root.section.rows.2' ]
+      ]);
+      assert.deepEqual(rows[0].old, [ nested._id, opaque._id ]);
+      assert.deepEqual(rows[0].new, [ opaque._id, nested._id ]);
+    });
+
     it('should report an added or deleted widget as one row with its type label', function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -506,6 +610,19 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
+    it('should never call items without an _id reordered', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      for (const item of [ ...older.section.rows, ...newer.section.rows ]) {
+        delete item._id;
+        delete item.content;
+      }
+      newer.section.rows.reverse();
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.ok(rows.length);
+      assert.ok(rows.every(row => row.fieldType !== 'array'));
+    });
+
     it('should not mutate its inputs', function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -651,6 +768,67 @@ describe('Document Versions diff engine', function () {
         label: '#2',
         ordinal: 2
       });
+    });
+
+    it('should read a change of order as the items in order, numbered as in the newer document', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      older.section.rows[1].title = '';
+      newer.section.rows[1].title = '';
+      newer.section.rows.reverse();
+      const area = newer.section.rows[1].content;
+      const [ nested, richText, opaque ] = area.items;
+      const twin = {
+        ...structuredClone(richText),
+        _id: 'root.section.rows.0.content.3'
+      };
+      older.section.rows[0].content.items.push(structuredClone(twin));
+      area.items = [ twin, opaque, richText, nested ];
+      assert.deepEqual(await texts(older, newer), [
+        [
+          'rows',
+          '#2 Title root.section.rows.0, #1',
+          '#1, #2 Title root.section.rows.0'
+        ],
+        [
+          'content',
+          '#4 Nested 2, #3 Rich Text, #2 Opaque, #1 Rich Text',
+          '#1 Rich Text, #2 Opaque, #3 Rich Text, #4 Nested 2'
+        ]
+      ]);
+    });
+
+    it('should give a widget of a change of order its title', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const cards = [ 'one', 'two' ].map(kind => ({
+        _id: `card-${kind}`,
+        metaType: 'widget',
+        type: 'card',
+        kind
+      }));
+      older.section.rows[0].content.items.push(...structuredClone(cards));
+      newer.section.rows[0].content.items.push(...structuredClone(cards).reverse());
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      await apos.docVersions.addChangeText(req, rows);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].newText, '#1 Nested 2, #2 Rich Text, #3 Opaque, #4 Card · Two, #5 Card · One');
+      // An item that moved is marked whole, where it was and where it is
+      const [ { diff } ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
+      const side = change => diff
+        .filter(part => [ 'same', change ].includes(part.change))
+        .map(part => part.text)
+        .join(', ');
+      assert.equal(side('removed'), rows[0].oldText);
+      assert.equal(side('added'), rows[0].newText);
+      assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
+        [ 'same', '#1 Nested 2' ],
+        [ 'same', '#2 Rich Text' ],
+        [ 'same', '#3 Opaque' ],
+        [ 'removed', '#5 Card · One' ],
+        [ 'same', '#4 Card · Two' ],
+        [ 'added', '#5 Card · One' ]
+      ]);
     });
 
     it('should read an added widget as its title, its rich text, or nothing', async function () {
@@ -844,7 +1022,15 @@ describe('Document Versions diff engine', function () {
           return;
         }
         if (node.metaType === 'widget') {
-          for (const marker of [ '_inserted', '_deleted', '_modified', '_olderVersion' ]) {
+          for (const marker of [
+            '_inserted',
+            '_deleted',
+            '_modified',
+            '_olderVersion',
+            '_moved',
+            '_changedWithAi',
+            '_movedWithAi'
+          ]) {
             if (node[marker] !== undefined) {
               found.push([ node._id, marker ]);
             }
@@ -989,6 +1175,312 @@ describe('Document Versions diff engine', function () {
         [ gone._id, '_deleted' ]
       ]);
       assert.equal(doc.aposMeta, undefined);
+    });
+
+    it('should mark the widget that changed places, not the widgets it passed', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const { items } = newer.section.rows[0].content;
+      const last = items.pop();
+      items.unshift(last);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), [
+        [ last._id, '_moved' ]
+      ]);
+      assert.equal(doc.aposMeta, undefined);
+    });
+
+    it('should mark a widget that moved and changed with both markers', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const { items } = newer.section.rows[0].content;
+      const last = items.pop();
+      last.extra = 'Changed';
+      items.unshift(last);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), [
+        [ last._id, '_modified' ],
+        [ last._id, '_moved' ]
+      ]);
+    });
+
+    it('should highlight the field of an array whose items changed places', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.section.rows.reverse();
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.deepEqual(markers(doc), []);
+      assert.equal(doc.aposMeta.section[HIGHLIGHT], true);
+    });
+
+    it('should say where AI was involved, from rows flagged for it', function () {
+      // A fourth widget, so that two moves are not a reversal
+      const build = () => {
+        const doc = buildDoc();
+        doc.section.rows[0].content.items.push({
+          _id: 'fourth',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: '<p>Fourth</p>'
+        });
+        return doc;
+      };
+      const older = build();
+      const middle = build();
+      const newer = build();
+      // AI edits the third widget and moves it to the top, and renames
+      const edit = doc => {
+        const { items } = doc.section.rows[0].content;
+        const [ third ] = items.splice(2, 1);
+        third.extra = 'By AI';
+        items.unshift(third);
+        doc.title = 'By AI';
+        return third;
+      };
+      edit(middle);
+      const byAi = edit(newer);
+      // A human edits the fourth widget, moves the first one (now second)
+      // to the end, and edits the subtitle
+      const { items } = newer.section.rows[0].content;
+      items[3].content = '<p>By hand</p>';
+      const [ byHand ] = items.splice(1, 1);
+      items.push(byHand);
+      newer.subtitle = 'By hand';
+      const rows = apos.docVersions.getConsolidatedRows(req, [
+        {
+          older,
+          newer: middle,
+          ai: true
+        },
+        {
+          older: middle,
+          newer
+        }
+      ]);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+      assert.deepEqual(markers(doc).sort(), [
+        [ 'fourth', '_olderVersion' ],
+        [ byAi._id, '_changedWithAi' ],
+        [ byAi._id, '_modified' ],
+        [ byAi._id, '_moved' ],
+        [ byAi._id, '_movedWithAi' ],
+        [ byHand._id, '_moved' ]
+      ].sort());
+      assert.deepEqual(doc.aposMeta.title, {
+        [HIGHLIGHT]: true,
+        '@apostrophecms/document-versions:ai': true
+      });
+      assert.deepEqual(doc.aposMeta.subtitle, { [HIGHLIGHT]: true });
+    });
+
+    it('should name the widgets the versions moved where fewer moves would name others', async function () {
+      const older = buildDoc();
+      const middle = buildDoc();
+      const newer = buildDoc();
+      // AI moves the last widget to the top, a human the first to the end:
+      // a reversal, which any two of the three would explain
+      for (const doc of [ middle, newer ]) {
+        const { items } = doc.section.rows[0].content;
+        items.unshift(items.pop());
+      }
+      const { items } = newer.section.rows[0].content;
+      const [ byAi ] = items;
+      const [ byHand ] = items.splice(1, 1);
+      items.push(byHand);
+      const rows = apos.docVersions.getConsolidatedRows(req, [
+        {
+          older,
+          newer: middle,
+          ai: true
+        },
+        {
+          older: middle,
+          newer
+        }
+      ]);
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+      assert.deepEqual(markers(doc).sort(), [
+        [ byAi._id, '_moved' ],
+        [ byAi._id, '_movedWithAi' ],
+        [ byHand._id, '_moved' ]
+      ].sort());
+
+      // The panes of the order row mark the same two
+      await apos.docVersions.addChangeText(req, rows);
+      const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
+      const [ row ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
+      const {
+        diff, oldText, newText
+      } = row;
+      const side = change => diff
+        .filter(part => [ 'same', change ].includes(part.change))
+        .map(part => part.text)
+        .join(', ');
+      assert.equal(side('removed'), oldText);
+      assert.equal(side('added'), newText);
+      assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
+        [ 'added', '#1 Opaque' ],
+        [ 'removed', '#3 Nested 2' ],
+        [ 'same', '#2 Rich Text' ],
+        [ 'added', '#3 Nested 2' ],
+        [ 'removed', '#1 Opaque' ]
+      ]);
+    });
+
+    describe('rich text', function () {
+      // The fixture with a rich text widget of `type` holding `content`
+      function buildWith(type, content) {
+        const doc = buildDoc();
+        doc.section.rows[0].content.items.push({
+          _id: 'text',
+          metaType: 'widget',
+          type,
+          content
+        });
+        return doc;
+      }
+
+      it('should mark the text that changed inside the content', function () {
+        const older = buildWith('@apostrophecms/rich-text', '<p>The quick brown fox</p>');
+        const newer = buildWith('@apostrophecms/rich-text', '<p>The quick red fox</p>');
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc), [ [ 'text', '_olderVersion' ] ]);
+        assert.equal(
+          widget.content,
+          '<p>The quick ' +
+          '<del data-apos-version-change="removed">' +
+          '<span class="apos-sr-only">Removed </span>brown</del>' +
+          '<ins data-apos-version-change="added">' +
+          '<span class="apos-sr-only">Added </span>red</ins>' +
+          ' fox</p>'
+        );
+        assert.equal(widget._olderVersion.content, '<p>The quick brown fox</p>');
+        assert.equal(
+          newer.section.rows[0].content.items.at(-1).content,
+          '<p>The quick red fox</p>'
+        );
+      });
+
+      it('should mark the text of a type extending rich text', function () {
+        const older = buildWith('quote', '<p>Old</p>');
+        const newer = buildWith('quote', '<p>New</p>');
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc), [ [ 'text', '_olderVersion' ] ]);
+        assert.match(widget.content, /<del [^>]+>.*Old<\/del><ins [^>]+>.*New<\/ins>/);
+      });
+
+      it('should leave the content alone when no text changed', function () {
+        const older = buildWith('@apostrophecms/rich-text', '<p><a href="/one">Link</a></p>');
+        const newer = buildWith('@apostrophecms/rich-text', '<p><a href="/two">Link</a></p>');
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc), [ [ 'text', '_olderVersion' ] ]);
+        assert.equal(widget.content, '<p><a href="/two">Link</a></p>');
+      });
+
+      it('should leave the content of a type that opts out alone', function () {
+        const older = buildWith('plain-text', '<p>Old</p>');
+        const newer = buildWith('plain-text', '<p>New</p>');
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc), [ [ 'text', '_modified' ] ]);
+        assert.equal(widget.content, '<p>New</p>');
+      });
+
+      it('should mark the text between the ends of consecutive versions', function () {
+        const older = buildWith('@apostrophecms/rich-text', '<p>One</p>');
+        const middle = buildWith('@apostrophecms/rich-text', '<p>One two</p>');
+        const newer = buildWith('@apostrophecms/rich-text', '<p>One three</p>');
+        const rows = apos.docVersions.getConsolidatedRows(req, [
+          {
+            older,
+            newer: middle,
+            ai: true
+          },
+          {
+            older: middle,
+            newer
+          }
+        ]);
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+        const widget = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(markers(doc).sort(), [
+          [ 'text', '_changedWithAi' ],
+          [ 'text', '_olderVersion' ]
+        ]);
+        assert.equal(
+          widget.content,
+          '<p>One<ins data-apos-version-change="added">' +
+          '<span class="apos-sr-only">Added </span> three</ins></p>'
+        );
+      });
+
+      it('should mark the text of a top-level richText field', function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        newer.body = '<p>Body changed</p>';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.equal(
+          doc.body,
+          '<p>Body ' +
+          '<del data-apos-version-change="removed">' +
+          '<span class="apos-sr-only">Removed </span>root</del>' +
+          '<ins data-apos-version-change="added">' +
+          '<span class="apos-sr-only">Added </span>changed</ins></p>'
+        );
+        assert.equal(doc.aposMeta.body[HIGHLIGHT], true);
+        assert.equal(newer.body, '<p>Body changed</p>');
+      });
+
+      it('should mark the text of richText fields in objects and array items', function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        newer.section.body = '<p>Body root.section and more</p>';
+        newer.section.rows[0].body = '';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.equal(
+          doc.section.body,
+          '<p>Body root.section<ins data-apos-version-change="added">' +
+          '<span class="apos-sr-only">Added </span> and more</ins></p>'
+        );
+        assert.equal(
+          doc.section.rows[0].body,
+          '<p><del data-apos-version-change="removed">' +
+          '<span class="apos-sr-only">Removed </span>Body root.section.rows.0</del></p>'
+        );
+        assert.equal(doc.aposMeta.section[HIGHLIGHT], true);
+        assert.deepEqual(markers(doc), []);
+      });
+
+      it('should leave a richText field alone when no text changed', function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p><a href="/one">Link</a></p>';
+        newer.body = '<p><a href="/two">Link</a></p>';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.equal(doc.body, '<p><a href="/two">Link</a></p>');
+        assert.equal(doc.aposMeta.body[HIGHLIGHT], true);
+      });
+
+      it('should leave richText fields of widgets alone', function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        const plain = newer.section.rows[0].content.items[0];
+        const opted = plain.section.rows[0].content.items[0];
+        plain.body = '<p>Plain changed</p>';
+        opted.body = '<p>Opted in changed</p>';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const plainDoc = doc.section.rows[0].content.items[0];
+        const optedDoc = plainDoc.section.rows[0].content.items[0];
+        assert.deepEqual(markers(doc).sort(), [
+          [ opted._id, '_olderVersion' ],
+          [ plain._id, '_modified' ]
+        ].sort());
+        assert.equal(plainDoc.body, '<p>Plain changed</p>');
+        assert.equal(optedDoc.body, '<p>Opted in changed</p>');
+      });
     });
 
     it('should reuse rows already computed', function () {
@@ -1248,6 +1740,46 @@ describe('Document Versions diff engine', function () {
       assert.deepEqual(rows[1].path.map(segment => segment.name), [ 'section', 'title' ]);
     });
 
+    it('should keep the order of items apart from the items', function () {
+      const reorder = doc => {
+        getRows(doc).reverse();
+      };
+      const edit = doc => {
+        getRows(doc).find(item => item._id.endsWith('.0')).title = 'Edited';
+      };
+      const expected = (order, item) => [
+        [ 'modified', 'array', 'rows', order ],
+        [ 'modified', 'string', 'title', item ]
+      ];
+      assert.deepEqual(
+        apos.docVersions.getConsolidatedRows(req, run({
+          ai: true,
+          edit: reorder
+        }, { edit })).map(brief),
+        expected(true, false)
+      );
+      assert.deepEqual(
+        apos.docVersions.getConsolidatedRows(req, run({ edit: reorder }, {
+          ai: true,
+          edit
+        })).map(brief),
+        expected(false, true)
+      );
+    });
+
+    it('should drop an order that ends where it started', function () {
+      const reorder = doc => {
+        getRows(doc).reverse();
+      };
+      assert.deepEqual(apos.docVersions.getConsolidatedRows(req, run(
+        { edit: reorder },
+        {
+          ai: true,
+          edit: reorder
+        }
+      )), []);
+    });
+
     it('should keep a widget\'s schema fields apart from the data it stores beside them', function () {
       const rows = apos.docVersions.getConsolidatedRows(req, run(
         {
@@ -1316,6 +1848,71 @@ describe('Document Versions diff engine', function () {
           ordinal: 1
         }
       ]);
+    });
+  });
+
+  describe('render-widget', function () {
+    let jar;
+    let areaFieldId;
+
+    before(async function () {
+      await addUser(apos, 'admin');
+      jar = await login(apos, 'admin');
+      // The CSRF cookie
+      await apos.http.get('/', { jar });
+      const findArea = schema => {
+        for (const field of schema) {
+          if (field.type === 'area') {
+            return field;
+          }
+          const found = field.schema && findArea(field.schema);
+          if (found) {
+            return found;
+          }
+        }
+        return null;
+      };
+      areaFieldId = findArea(apos.nested.schema)._id;
+    });
+
+    // The markup of a widget of `type` with `data`, and with `olderData` as
+    // its older version when given
+    function render(type, data, olderData) {
+      const widget = {
+        _id: 'widget',
+        metaType: 'widget',
+        type,
+        ...data
+      };
+      if (olderData) {
+        widget._olderVersion = {
+          ...widget,
+          ...olderData
+        };
+      }
+      return apos.http.post('/api/v1/@apostrophecms/area/render-widget', {
+        jar,
+        body: {
+          widget,
+          areaFieldId,
+          type
+        }
+      });
+    }
+
+    it('should hand a type that opts in its older version', async function () {
+      const html = await render('version-note', { title: 'New' }, { title: 'Old' });
+      assert.ok(html.includes('<p class="note">New|Old</p>'), html);
+    });
+
+    it('should hand no older version to a type that opts out', async function () {
+      const html = await render('plain-note', { title: 'New' }, { title: 'Old' });
+      assert.ok(html.includes('<p class="note">New|</p>'), html);
+    });
+
+    it('should hand no older version when the request has none', async function () {
+      const html = await render('version-note', { title: 'New' });
+      assert.ok(html.includes('<p class="note">New|</p>'), html);
     });
   });
 });

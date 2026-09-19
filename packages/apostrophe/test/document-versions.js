@@ -46,14 +46,17 @@ describe('Document Versions', function () {
       assert.strictEqual(module.__meta.name, moduleName);
 
       const versions = await apos.docVersions.find(getReq(apos), {});
-      assert.strictEqual(versions.length, 4);
+      assert.strictEqual(versions.length, 3);
       const home = versions.filter(v => v.doc.type === '@apostrophecms/home-page');
       const global = versions.filter(v => v.doc.type === '@apostrophecms/global');
+      const styles = versions.filter(v => v.doc.type === '@apostrophecms/styles');
       // Parked documents are inserted as drafts and published at once, and
       // the publish takes over the draft version, so each starts with one
       // publication point
       assert.deepStrictEqual(home.map(v => v.mode), [ 'published' ]);
       assert.deepStrictEqual(global.map(v => v.mode), [ 'published' ]);
+      // Styles publish automatically and are inserted as published
+      assert.deepStrictEqual(styles.map(v => v.mode), [ 'published' ]);
     });
 
   });
@@ -147,6 +150,87 @@ describe('Document Versions', function () {
 
         assert(found);
       }
+    });
+
+    for (const mode of [ 'published', 'draft' ]) {
+      it(`should record one publication per ${mode} mode save of an \`autopublish: true\` type`, async function() {
+        const manager = apos.modules['module-autopublish_true-versions_true'];
+        const req = getReq(apos, { mode });
+
+        const piece = await manager.insert(req, { title: `${mode} insert` });
+        const inserted = await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(piece)
+        );
+        assert.deepEqual(
+          inserted.map(version => [ version.mode, version.doc.title ]),
+          [ [ 'published', `${mode} insert` ] ]
+        );
+
+        await manager.update(req, {
+          ...piece,
+          title: `${mode} update`
+        });
+        const updated = await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(piece)
+        );
+        assert.deepEqual(
+          updated.map(({
+            mode, doc, changeCount
+          }) => [ mode, doc.title, changeCount ]),
+          [
+            [ 'published', `${mode} update`, 1 ],
+            [ 'published', `${mode} insert`, 0 ]
+          ]
+        );
+      });
+    }
+
+    it('should record one publication for an image inserted in published mode', async function() {
+      const req = getReq(apos, { mode: 'published' });
+      const image = await apos.image.insert(req, { title: 'an image' });
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(image)
+      );
+      assert.deepEqual(versions.map(version => version.mode), [ 'published' ]);
+    });
+
+    it('should record one restored publication when an `autopublish: true` type is restored', async function() {
+      const manager = apos.modules['module-autopublish_true-versions_true'];
+      const req = getReq(apos, { mode: 'draft' });
+      const piece = await manager.insert(req, { title: 'first' });
+      const second = await manager.update(req, {
+        ...piece,
+        title: 'second'
+      });
+      const [ , first ] = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(piece)
+      );
+
+      await manager.update(getReq(apos, {
+        mode: 'draft',
+        aposRestoreVersion: first._id
+      }), {
+        ...second,
+        title: 'first'
+      });
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(piece)
+      );
+      assert.deepEqual(
+        versions.map(({
+          mode, doc, restoredFrom
+        }) => [ mode, doc.title, restoredFrom?._id ]),
+        [
+          [ 'published', 'first', first._id ],
+          [ 'published', 'second', undefined ],
+          [ 'published', 'first', undefined ]
+        ]
+      );
     });
   });
 
@@ -1205,6 +1289,19 @@ describe('Document Versions', function () {
 
   const hour = 60 * 60 * 1000;
 
+  // An area of rich text widgets, one per paragraph
+  function richTextArea(...paragraphs) {
+    return {
+      metaType: 'area',
+      items: paragraphs.map((text, i) => ({
+        _id: `widget${i}`,
+        metaType: 'widget',
+        type: '@apostrophecms/rich-text',
+        content: `<p>${text}</p>`
+      }))
+    };
+  }
+
   function draftReqAs(apos, name, options = {}) {
     return getReq(apos, {
       _id: name,
@@ -1444,6 +1541,56 @@ describe('Document Versions', function () {
           [ 'draft', 'First', true ],
           [ 'draft', 'Second', false ],
           [ 'published', 'First', false ]
+        ]
+      );
+    });
+
+    it('should count the changes a change list shows, not the fields', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, {
+        title: 'First',
+        main: richTextArea('One', 'Two')
+      });
+      const [ first ] = await timeline(apos, draft);
+      const main = first.doc.main;
+      await saveDraft(apos, req.clone({ aposExplicitSave: true }), draft, {
+        title: 'Second',
+        main: {
+          ...main,
+          items: main.items.map(item => ({
+            ...item,
+            content: `<p>${item.content} again</p>`
+          }))
+        }
+      });
+
+      const [ newest ] = await timeline(apos, draft);
+      const { rows } = await apos.docVersions.getVersionChanges(getReq(apos), newest._id);
+      assert.equal(rows.length, 3);
+      assert.equal(newest.changeCount, 3);
+    });
+
+    it('should count no changes on a restore and keep it apart from the next save', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await saveDraft(apos, req, draft, { title: 'Second' });
+      const [ , first ] = await timeline(apos, draft);
+      await saveDraft(apos, req.clone({ aposRestoreVersion: first._id }), draft, { title: 'First' });
+      await saveDraft(apos, req, draft, { title: 'Third' });
+
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [
+          version.doc.title,
+          version.changeCount,
+          Boolean(version.restoredFrom)
+        ]),
+        [
+          [ 'Third', 1, false ],
+          [ 'First', 0, true ],
+          [ 'Second', 1, false ],
+          [ 'First', 0, false ]
         ]
       );
     });
@@ -1820,6 +1967,31 @@ describe('Document Versions', function () {
 
     beforeEach(async function() {
       await cleanup(apos);
+    });
+
+    it('should keep the publication time of a document inserted as published', async function() {
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const inserted = await apos.article.insert(publishedReq, { title: 'First' });
+      const [ first ] = await publications(apos, inserted);
+      assert.equal(first.doc.lastPublishedAt, undefined);
+
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.findOneForEditing(req, {
+        aposDocId: inserted.aposDocId
+      });
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+
+      const published = await apos.article.revertPublishedToPrevious(
+        publishedReq,
+        await apos.article.findOneForEditing(publishedReq, {
+          aposDocId: inserted.aposDocId
+        })
+      );
+      assert.strictEqual(published.title, 'First');
+      assert.deepEqual(published.lastPublishedAt, first.createdAt);
     });
 
     it('should return the published document to its previous publication and record it', async function() {
@@ -2767,7 +2939,7 @@ describe('Document Versions', function () {
       });
       assert(versions);
       assert.equal(seed.versions.length, count);
-      assert.equal(versions.total, count);
+      assert.equal(versions.next, null);
       assert.equal(versions.results.length, count);
       const [ third, second, first ] = versions.results;
       assert.equal(seed.versions[0].doc.title, 'An article 3');
@@ -2794,10 +2966,8 @@ describe('Document Versions', function () {
       });
       assert(versions);
       assert.equal(seed.versions.length, count);
-      assert.equal(versions.total, count);
-      assert.equal(versions.currentPage, 1);
-      assert.equal(versions.perPage, limit);
       assert.equal(versions.results.length, limit);
+      assert.equal(versions.next, versions.results.at(-1).createdAt);
     });
 
     it('should support pagination - GET /', async function() {
@@ -2807,23 +2977,43 @@ describe('Document Versions', function () {
         ...apos.article.newInstance(),
         title: 'An article'
       }, count);
-      assert(seed.doc);
-      assert(seed.versions);
+      const first = await apos.http.get(`/api/v1/${moduleName}`, {
+        qs: { docId: seed.doc._id },
+        jar: jarAdmin
+      });
 
       const versions = await apos.http.get(`/api/v1/${moduleName}`, {
         qs: {
           docId: seed.doc._id,
-          page: 2
+          before: first.next
         },
         jar: jarAdmin
       });
-      assert(versions);
-      assert.equal(seed.versions.length, count);
-      assert.equal(versions.total, count);
-      assert.equal(versions.pages, 2);
-      assert.equal(versions.currentPage, 2);
-      assert.equal(versions.perPage, limit);
+
       assert.equal(versions.results.length, 1);
+      assert.equal(versions.next, null);
+      assert.equal(
+        first.results.some(({ _id }) => _id === versions.results[0]._id),
+        false
+      );
+    });
+
+    it('should have invalid response if the cursor is bad - GET /', async function() {
+      const seed = await seedVersionsFor(apos, {
+        ...apos.article.newInstance(),
+        title: 'An article'
+      }, 1);
+
+      await assert.rejects(
+        apos.http.get(`/api/v1/${moduleName}`, {
+          qs: {
+            docId: seed.doc._id,
+            before: 'yesterday'
+          },
+          jar: jarAdmin
+        }),
+        { status: 400 }
+      );
     });
 
     it('should have invalid response if id is bad - GET /:versionId', async function() {
@@ -3038,41 +3228,207 @@ describe('Document Versions', function () {
       });
     });
 
-    describe('changes', function() {
-      // An article with one version per state, oldest first; a state's
-      // `ai` saves it with AI, `restoredFrom` as a restore of the first.
-      // Returns the article and the version records, oldest first
-      async function recordVersions(states) {
-        const req = getReq(apos, { mode: 'draft' });
-        const [ initial, ...rest ] = states;
-        const article = await apos.article.insert(req, {
-          title: 'An article',
-          ...initial
+    describe('consolidated list', function() {
+      function getList(article, qs = {}) {
+        return apos.http.get(`/api/v1/${moduleName}`, {
+          qs: {
+            docId: article._id,
+            ...qs
+          },
+          jar: jarAdmin
         });
-        const [ first ] = await apos.docVersions.find(
-          getReq(apos),
-          apos.docVersions.getTimelineCriteria(article)
-        );
-        const versions = [ first ];
-        for (const {
-          ai, restoredFrom, ...state
-        } of rest) {
-          await wait(5);
-          const versionReq = req.clone({
-            aposAi: ai,
-            aposRestoreVersion: restoredFrom && first._id
-          });
-          versions.push(await apos.docVersions.saveFor(versionReq, {
-            ...article,
-            ...state
-          }, true));
-        }
-        return {
-          article,
-          versions
-        };
       }
 
+      it('should list versions that consolidate as one with its own change count - GET /?consolidate=1', async function() {
+        const { article, versions } = await recordVersions([
+          {},
+          {
+            title: 'Two',
+            ai: true
+          },
+          { title: 'Three' },
+          {
+            title: 'Three',
+            int: 7,
+            ai: true
+          }
+        ]);
+
+        const records = await getList(article);
+        const consolidated = await getList(article, { consolidate: 1 });
+
+        assert.deepEqual(
+          records.results.map(({ _id, versionIds }) => [ _id, versionIds ]),
+          versions.map(({ _id }) => [ _id, undefined ]).reverse()
+        );
+        assert.equal(consolidated.results.length, 1);
+        assert.equal(consolidated.next, null);
+        const [ item ] = consolidated.results;
+        assert.deepEqual(item.versionIds, versions.map(({ _id }) => _id).reverse());
+        assert.equal(item._id, versions[3]._id);
+        assert.equal(item.createdAt, records.results[0].createdAt);
+        assert.equal(item.ai, true);
+        assert.equal(item.mode, 'draft');
+        // `title` and `int`: the title changed twice and counts once
+        assert.equal(item.changeCount, 2);
+      });
+
+      it('should count the changes a consolidated version lists - GET /?consolidate=1', async function() {
+        const main = richTextArea('One', 'Two');
+        const edit = (index, content) => ({
+          main: {
+            ...main,
+            items: main.items.map((item, i) => (i <= index
+              ? {
+                ...item,
+                content
+              }
+              : item))
+          }
+        });
+        const { article } = await recordVersions([
+          { main },
+          edit(0, '<p>One edited</p>'),
+          {
+            ...edit(1, '<p>Both edited</p>'),
+            ai: true
+          }
+        ]);
+
+        const { results: [ item ] } = await getList(article, { consolidate: 1 });
+        const { rows } = await apos.docVersions.getVersionChanges(
+          getReq(apos),
+          item._id,
+          { consolidate: true }
+        );
+        // The first version joins them and is the base: both widgets changed
+        assert.equal(item.versionIds.length, 3);
+        assert.equal(rows.length, 2);
+        assert.equal(item.changeCount, 2);
+      });
+
+      it('should count the changes of a consolidated version since the version before it - GET /?consolidate=1', async function() {
+        const { article, versions } = await recordVersions([
+          {},
+          {
+            title: 'By another',
+            author: 'anotherUserId'
+          },
+          {
+            title: 'Three',
+            ai: true
+          },
+          { title: 'By another' }
+        ]);
+
+        const { results } = await getList(article, { consolidate: 1 });
+
+        assert.deepEqual(
+          results.map(({ _id, versionIds }) => versionIds || _id),
+          [ [ versions[3]._id, versions[2]._id ], versions[1]._id, versions[0]._id ]
+        );
+        // The consolidated version ends where it started
+        assert.equal(results[0].changeCount, 0);
+        assert.equal(results[1].changeCount, 1);
+      });
+
+      it('should complete a consolidated version the end of a page would split - GET /?consolidate=1', async function() {
+        const limit = apos.docVersions.defaultLimit;
+        const { article, versions } = await recordVersions([
+          {},
+          { title: 'Oldest' },
+          {
+            title: 'Two',
+            ai: true
+          },
+          { title: 'Three' },
+          ...Array.from({ length: limit - 1 }, (item, i) => ({
+            title: `By another ${i}`,
+            author: 'anotherUserId'
+          }))
+        ]);
+        const { sequenceBatchLimit } = apos.docVersions;
+        apos.docVersions.sequenceBatchLimit = 2;
+
+        try {
+          const first = await getList(article, { consolidate: 1 });
+
+          assert.equal(first.results.length, limit);
+          assert.deepEqual(
+            first.results.at(-1).versionIds,
+            [ versions[3]._id, versions[2]._id, versions[1]._id, versions[0]._id ]
+          );
+          assert.equal(first.next, null);
+        } finally {
+          apos.docVersions.sequenceBatchLimit = sequenceBatchLimit;
+        }
+      });
+
+      it('should page versions that do not consolidate like any list - GET /?consolidate=1', async function() {
+        const limit = apos.docVersions.defaultLimit;
+        const { article, versions } = await recordVersions([
+          {},
+          ...Array.from({ length: limit + 1 }, (item, i) => ({ title: `Title ${i}` }))
+        ]);
+
+        const first = await getList(article, { consolidate: 1 });
+        const second = await getList(article, {
+          consolidate: 1,
+          before: first.next
+        });
+
+        assert.equal(first.results.length, limit);
+        assert.deepEqual(
+          [ ...first.results, ...second.results ].map(({ _id }) => _id),
+          versions.map(({ _id }) => _id).reverse()
+        );
+        assert.equal(second.next, null);
+      });
+    });
+
+    // An article with one version per state, oldest first; a state's
+    // `ai` saves it with AI, `restoredFrom` as a restore of the first,
+    // `author` as that user, `published` in published mode.
+    // Returns the article and the version records, oldest first
+    async function recordVersions(states) {
+      const req = getReq(apos, { mode: 'draft' });
+      const [ initial, ...rest ] = states;
+      const article = await apos.article.insert(req, {
+        title: 'An article',
+        ...initial
+      });
+      const [ first ] = await apos.docVersions.find(
+        getReq(apos),
+        apos.docVersions.getTimelineCriteria(article)
+      );
+      const versions = [ first ];
+      for (const {
+        ai, restoredFrom, author, published, ...state
+      } of rest) {
+        await wait(5);
+        const versionReq = req.clone({
+          aposAi: ai,
+          aposRestoreVersion: restoredFrom && first._id
+        });
+        if (author) {
+          versionReq.user = {
+            ...req.user,
+            _id: author
+          };
+        }
+        versions.push(await apos.docVersions.saveFor(versionReq, {
+          ...article,
+          ...state,
+          ...(published && { aposMode: 'published' })
+        }, true));
+      }
+      return {
+        article,
+        versions
+      };
+    }
+
+    describe('changes', function() {
       it('should list the changes of a version since the one before it - GET /:versionId/changes', async function() {
         const related = await apos.article.insert(getReq(apos, admin), {
           title: 'Related'
@@ -3154,6 +3510,65 @@ describe('Document Versions', function () {
         });
       });
 
+      it('should list a change of order alone as one change - GET /:versionId/changes', async function() {
+        const items = [ 'one', 'two', 'three' ].map(value => ({
+          _id: `item-${value}`,
+          label: value === 'two' ? '' : `Label ${value}`,
+          value
+        }));
+        const { versions } = await recordVersions([
+          { array: items },
+          { array: [ items[2], items[0], items[1] ] }
+        ]);
+        assert.equal(versions[1].changeCount, 1);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.equal(changes.rows.length, 1);
+        const [ row ] = changes.rows;
+        assert.deepEqual(Object.keys(row).sort(), [
+          'ai',
+          'diff',
+          'fieldType',
+          'new',
+          'newText',
+          'old',
+          'oldText',
+          'path',
+          'type'
+        ]);
+        assert.deepEqual(
+          {
+            ...row,
+            diff: undefined
+          },
+          {
+            path: [ {
+              name: 'array',
+              label: 'Contact information'
+            } ],
+            type: 'modified',
+            fieldType: 'array',
+            old: [ 'item-one', 'item-two', 'item-three' ],
+            new: [ 'item-three', 'item-one', 'item-two' ],
+            oldText: '#2 Label one, #3, #1 Label three',
+            newText: '#1 Label three, #2 Label one, #3',
+            ai: false,
+            diff: undefined
+          }
+        );
+        assert.ok(row.diff.some(part => part.change !== 'same'));
+        assert.deepEqual(changes.counts, {
+          added: 0,
+          modified: 1,
+          deleted: 0,
+          ai: 0
+        });
+      });
+
       it('should flag every change of a version saved with AI - GET /:versionId/changes', async function() {
         const { versions } = await recordVersions([
           {},
@@ -3200,7 +3615,10 @@ describe('Document Versions', function () {
             `/api/v1/${moduleName}/${version._id}/changes`,
             { jar: jarAdmin }
           );
-          assert.deepEqual(changes, none);
+          assert.deepEqual(changes, {
+            ...none,
+            versionIds: [ version._id ]
+          });
         }
       });
 
@@ -3221,7 +3639,7 @@ describe('Document Versions', function () {
         );
       });
 
-      it('should list the changes of a group as one, flagged per path - GET /changes', async function() {
+      it('should list the changes of a consolidated version as one, flagged per path - GET /:versionId/changes?consolidate=1', async function() {
         const { versions } = await recordVersions([
           {},
           {
@@ -3234,10 +3652,13 @@ describe('Document Versions', function () {
           }
         ]);
 
-        const changes = await apos.http.get(`/api/v1/${moduleName}/changes`, {
-          qs: { ids: `${versions[2]._id},${versions[1]._id}` },
-          jar: jarAdmin
-        });
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[2]._id}/changes`,
+          {
+            qs: { consolidate: 1 },
+            jar: jarAdmin
+          }
+        );
 
         assert.deepEqual(
           changes.rows.map(row => [ row.path[0].name, row.type, row.newText, row.ai ]),
@@ -3252,59 +3673,83 @@ describe('Document Versions', function () {
           deleted: 0,
           ai: 1
         });
+        assert.deepEqual(
+          changes.versionIds,
+          [ versions[2]._id, versions[1]._id, versions[0]._id ]
+        );
       });
 
-      it('should count no changes for a first version in a group - GET /changes', async function() {
+      it('should read a consolidated version longer than one query - GET /:versionId/changes?consolidate=1', async function() {
         const { versions } = await recordVersions([
           {},
           {
-            title: 'By AI',
+            title: 'Two',
             ai: true
-          }
+          },
+          { title: 'Three' },
+          {
+            title: 'Four',
+            ai: true
+          },
+          { title: 'Five' }
         ]);
+        const { sequenceBatchLimit } = apos.docVersions;
+        apos.docVersions.sequenceBatchLimit = 2;
 
-        const group = await apos.http.get(`/api/v1/${moduleName}/changes`, {
-          qs: { ids: `${versions[0]._id},${versions[1]._id}` },
-          jar: jarAdmin
-        });
-        const single = await apos.http.get(
-          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
-          { jar: jarAdmin }
-        );
+        try {
+          const changes = await apos.http.get(
+            `/api/v1/${moduleName}/${versions[4]._id}/changes`,
+            {
+              qs: { consolidate: 1 },
+              jar: jarAdmin
+            }
+          );
 
-        assert.equal(group.rows.length, 1);
-        assert.deepEqual(group, single);
+          assert.deepEqual(
+            changes.versionIds,
+            versions.map(({ _id }) => _id).reverse()
+          );
+          assert.deepEqual(
+            changes.rows.map(row => [ row.oldText, row.newText ]),
+            [ [ 'An article', 'Five' ] ]
+          );
+        } finally {
+          apos.docVersions.sequenceBatchLimit = sequenceBatchLimit;
+        }
       });
 
-      it('should have invalid response unless the ids are consecutive versions of one document - GET /changes', async function() {
+      it('should answer as without the flag for a version that does not consolidate - GET /:versionId/changes?consolidate=1', async function() {
         const { versions } = await recordVersions([
           {},
-          { title: 'Two' },
+          {
+            title: 'By another',
+            ai: true,
+            author: 'anotherUserId'
+          },
           { title: 'Three' },
+          { title: 'Four' },
           { restoredFrom: true }
         ]);
-        const other = await recordVersions([ {}, { title: 'Other' } ]);
-        const groups = [
-          '',
-          `${versions[1]._id},$bad-id`,
-          `${versions[0]._id},${versions[2]._id}`,
-          `${versions[2]._id},${versions[3]._id}`,
-          `${versions[2]._id},${other.versions[1]._id}`
-        ];
 
-        for (const ids of groups) {
-          await assert.rejects(
-            apos.http.get(`/api/v1/${moduleName}/changes`, {
-              qs: { ids },
-              jar: jarAdmin
-            }),
-            { status: 400 },
-            `Expected 400 for "${ids}"`
+        for (const version of versions) {
+          const single = await apos.http.get(
+            `/api/v1/${moduleName}/${version._id}/changes`,
+            { jar: jarAdmin }
           );
+          const consolidated = await apos.http.get(
+            `/api/v1/${moduleName}/${version._id}/changes`,
+            {
+              qs: { consolidate: 1 },
+              jar: jarAdmin
+            }
+          );
+
+          assert.deepEqual(single.versionIds, [ version._id ]);
+          assert.deepEqual(consolidated, single);
         }
         await assert.rejects(
-          apos.http.get(`/api/v1/${moduleName}/changes`, {
-            qs: { ids: `${versions[1]._id},${versions[2]._id}` }
+          apos.http.get(`/api/v1/${moduleName}/${versions[1]._id}/changes`, {
+            qs: { consolidate: 1 }
           }),
           { status: 404 }
         );
@@ -3332,6 +3777,61 @@ describe('Document Versions', function () {
         assert.equal(highlight(annotated.doc), true);
         assert.equal(highlight(plain.doc), undefined);
         assert.equal(first.doc.aposMeta, undefined);
+      });
+
+      it('should mark a consolidated version with the changes of all its versions - GET /:versionId?annotate=1&consolidate=1', async function() {
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By another',
+            author: 'anotherUserId'
+          },
+          {
+            title: 'By another',
+            int: 5,
+            ai: true
+          },
+          {
+            title: 'By hand',
+            int: 5
+          }
+        ]);
+        const url = `/api/v1/${moduleName}/${versions[3]._id}`;
+        const highlights = doc => [ 'title', 'int' ].filter(
+          name => apos.doc.getMeta(doc, '@apostrophecms/schema', name, 'highlight')
+        );
+
+        const single = await apos.http.get(url, {
+          qs: { annotate: 1 },
+          jar: jarAdmin
+        });
+        const consolidated = await apos.http.get(url, {
+          qs: {
+            annotate: 1,
+            consolidate: 1
+          },
+          jar: jarAdmin
+        });
+        // Not the newest of a consolidated version: marked as without the flag
+        const alone = await apos.http.get(`/api/v1/${moduleName}/${versions[1]._id}`, {
+          qs: {
+            annotate: 1,
+            consolidate: 1
+          },
+          jar: jarAdmin
+        });
+
+        const withAi = doc => [ 'title', 'int' ].filter(
+          name => apos.doc.getMeta(doc, moduleName, name, 'ai')
+        );
+
+        assert.deepEqual(highlights(single.doc), [ 'title' ]);
+        assert.deepEqual(highlights(consolidated.doc), [ 'title', 'int' ]);
+        assert.deepEqual(highlights(alone.doc), [ 'title' ]);
+        // Per field in a consolidated version, the version's own otherwise
+        assert.deepEqual(withAi(consolidated.doc), [ 'int' ]);
+        assert.deepEqual(withAi(single.doc), []);
+        assert.deepEqual(withAi(alone.doc), []);
       });
     });
   });
@@ -3512,6 +4012,27 @@ describe('Document Versions', function () {
         en: [ 99, 99, 99 ],
         fr: [ 1, 99 ]
       });
+    });
+
+    it('should count no changes on a restore', async function() {
+      const { article } = await seedTimelines();
+      const req = getReq(apos, { mode: 'draft' });
+      const [ , , oldest ] = await apos.docVersions.find(req, {
+        docId: article.aposDocId,
+        locale: 'en'
+      });
+      const draft = await apos.article.findOneForEditing(req, {
+        aposDocId: article.aposDocId
+      });
+      await apos.article.update(req.clone({ aposRestoreVersion: oldest._id }), {
+        ...draft,
+        title: 'A1'
+      });
+
+      await apos.docVersions.db.updateMany({}, { $set: { changeCount: 99 } });
+      await apos.docVersions.setChangeCountTask();
+
+      assert.deepEqual((await countsFor(article)).en, [ 0, 2, 1, 99 ]);
     });
   });
 

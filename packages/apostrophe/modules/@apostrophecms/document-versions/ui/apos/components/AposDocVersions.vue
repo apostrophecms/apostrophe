@@ -4,6 +4,7 @@
     data-apos-test="doc-version-modal"
     :modal="modal"
     :modal-title="{ key: 'apostrophe:versionPluralLabel' }"
+    :graph-key="graphKey"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="close"
@@ -48,7 +49,30 @@
               :generation="generation"
               :meta="docMeta"
               @update:model-value="evaluateConditions()"
-            />
+            >
+              <template #beforeField="{ field }">
+                <div
+                  v-if="isFieldModified(field)"
+                  class="apos-doc-version-editor__field-change"
+                  data-apos-test="doc-version-field-change"
+                >
+                  <button
+                    v-apos-tooltip="'apostrophe:versionSeeChanges'"
+                    type="button"
+                    class="apos-doc-version-editor__field-change-action"
+                    data-apos-test="doc-version-field-change-action"
+                    :aria-label="$t('apostrophe:versionSeeChanges')"
+                    @click="revealChange({ field: field.name })"
+                  >
+                    <AposDocVersionAiBadge v-if="isFieldAi(field)" />
+                    <AposDocVersionChangeType
+                      type="modified"
+                      icon
+                    />
+                  </button>
+                </div>
+              </template>
+            </AposSchema>
           </div>
           <div
             v-else-if="loaded"
@@ -64,6 +88,7 @@
         <AposDocVersionsPanel :view="view">
           <template #list>
             <AposDocVersionsList
+              ref="versionList"
               :current-version="currentVersion"
               :versions="versions"
               @select="selectVersion"
@@ -75,6 +100,12 @@
                   label="apostrophe:versionViewChanges"
                   :attrs="{ 'data-apos-test': 'doc-version-action-changes' }"
                   @click="viewChanges(version)"
+                />
+                <AposButton
+                  type="quiet"
+                  label="apostrophe:versionRestore"
+                  :attrs="{ 'data-apos-test': 'doc-version-action-restore' }"
+                  @click="restoreVersion(version)"
                 />
               </template>
             </AposDocVersionsList>
@@ -101,7 +132,7 @@
 
 <script setup>
 import {
-  computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch
+  computed, inject, nextTick, onBeforeUnmount, onMounted, provide, ref, watch
 } from 'vue';
 import { klona } from 'klona';
 import {
@@ -111,10 +142,13 @@ import {
 } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfiniteScroll.js';
 import { useAdvisoryLock } from 'Modules/@apostrophecms/ui/composables/useAdvisoryLock.js';
+import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
+import { useDocVersionMarkersStore } from '../stores/docVersionMarkers.js';
 import { useDocVersionsList } from '../composables/useDocVersionsList.js';
 import { useDocVersionView } from '../composables/useDocVersionView.js';
 import { useDocVersionChanges } from '../composables/useDocVersionChanges.js';
 import { useDocVersionTarget } from '../composables/useDocVersionTarget.js';
+import { useDocVersionRestore } from '../composables/useDocVersionRestore.js';
 
 const props = defineProps({
   // The versions module
@@ -148,8 +182,10 @@ const versionsAction = apos.modules[props.moduleName].action;
 
 const {
   docFields,
+  widgetChanges,
   generation,
-  show
+  show,
+  fetchVersion
 } = useDocVersionView({ action: versionsAction });
 
 const docType = computed(() => docFields.value.data?.type || props.doc.type);
@@ -166,6 +202,32 @@ const schema = computed(() => {
     readOnly: true
   }));
 });
+
+// --- Change markers ---
+
+// The modal's own widget graph: its widgets share their ids with those of
+// the page under it. Nested areas, apps of their own, find the key on the
+// modal element
+const graphKey = `document-versions:${docId}`;
+provide('aposGraphKey', graphKey);
+
+const widgetGraphStore = useWidgetGraphStore();
+const markersStore = useDocVersionMarkersStore();
+
+// Known from the start, so that what renders in the modal renders for it
+markersStore.set(graphKey, {});
+watch(widgetChanges, changes => {
+  markersStore.set(graphKey, changes);
+});
+
+// A change outside any widget marks its top-level field
+function isFieldModified(field) {
+  return Boolean(docMeta.value[field.name]?.['@apostrophecms/schema:highlight']);
+}
+
+function isFieldAi(field) {
+  return Boolean(docMeta.value[field.name]?.['@apostrophecms/document-versions:ai']);
+}
 
 // --- Conditional fields ---
 
@@ -315,7 +377,8 @@ watch(currentVersionId, async (versionId) => {
     return;
   }
   try {
-    if (await show(versionId)) {
+    const consolidate = Boolean(currentVersion.value.versionIds);
+    if (await show(versionId, { consolidate })) {
       evaluateConditions();
     }
   } catch (e) {
@@ -345,7 +408,8 @@ const changesPane = ref(null);
 // way in, to View Changes on the way out
 async function viewChanges(version) {
   try {
-    if (await loadChanges(version._id)) {
+    const consolidate = Boolean(version.versionIds);
+    if (await loadChanges(version._id, { consolidate })) {
       view.value = 'changes';
       await nextTick();
       changesPane.value?.focus();
@@ -365,6 +429,30 @@ async function backToList() {
   clearTarget();
   await nextTick();
   viewChangesButton.value?.focus();
+}
+
+// --- From a marker to its changes ---
+
+// A marker of the body opens the change list when it is not open, then
+// shows the changes behind it
+async function revealChange(target) {
+  if (view.value !== 'changes') {
+    await viewChanges(currentVersion.value);
+  }
+  if (view.value === 'changes') {
+    await nextTick();
+    await changesPane.value?.reveal(target);
+  }
+}
+
+// Widgets of nested areas render in apps of their own, hence the bus
+function onWidgetMarker({ graphKey: key, widgetId }) {
+  if (key === graphKey) {
+    revealChange({
+      widgetId,
+      moved: Boolean(widgetChanges.value[widgetId]?.changes.includes('moved'))
+    });
+  }
 }
 
 // --- Change navigator ---
@@ -403,7 +491,61 @@ async function navigateTo(group) {
 // --- Lock ---
 
 // Held for the modal's lifetime; the restore action reuses it
-const { lock } = useAdvisoryLock({ onLockLost: close });
+const {
+  lock,
+  addLockToRequest,
+  isLockedError,
+  showLockedError
+} = useAdvisoryLock({ onLockLost: close });
+
+// --- Restore ---
+
+const versionList = ref(null);
+
+const { restore } = useDocVersionRestore({
+  docAction,
+  originalDoc: props.doc,
+  fetchVersion,
+  lock: {
+    addLockToRequest,
+    isLockedError,
+    showLockedError
+  },
+  onRestored: showRestored
+});
+
+// A consolidated version restores its newest version, the one it shows
+async function restoreVersion(version) {
+  const confirmed = await apos.confirm({
+    heading: 'apostrophe:versionRestore',
+    description: 'apostrophe:versionRestoreConfirm',
+    affirmativeLabel: 'apostrophe:versionRestore'
+  }, {
+    interpolate: {
+      type: $t(moduleOptions.value.label)
+    }
+  });
+  if (confirmed) {
+    await restore(version);
+  }
+}
+
+// The restore is the newest version now: select it, and move focus there
+// since the Restore button left with the old selection
+async function showRestored() {
+  try {
+    await loadVersions();
+  } catch (e) {
+    await notifyListError(e);
+    return;
+  }
+  const [ newest ] = versions.value;
+  if (newest) {
+    selectVersion(newest);
+    await nextTick();
+    versionList.value?.focus(newest._id);
+  }
+}
 
 // --- Lifecycle ---
 
@@ -413,6 +555,7 @@ function close() {
 
 onMounted(async () => {
   modal.value.active = true;
+  apos.bus.$on('doc-version-marker', onWidgetMarker);
   try {
     if (!(await lock(docAction.value))) {
       close();
@@ -431,8 +574,11 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  apos.bus.$off('doc-version-marker', onWidgetMarker);
   cancelVersions();
   stopScroll();
+  markersStore.clear(graphKey);
+  widgetGraphStore.destroyGraph(graphKey);
 });
 </script>
 
@@ -465,6 +611,47 @@ onBeforeUnmount(() => {
   &__empty {
     display: flex;
     justify-content: center;
+  }
+
+  // On the right, where a widget's frame has it
+  &__field-change {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: $spacing-half;
+  }
+
+  &__field-change-action {
+    display: flex;
+    gap: $spacing-half;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    // The body blocks the pointer
+    pointer-events: auto;
+
+    &:focus-visible {
+      border-radius: var(--a-border-radius);
+      outline: 2px solid var(--a-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  // A modified field, framed as a modified widget is
+  :deep([data-apos-field]:has(> .apos-doc-version-editor__field-change)) {
+    box-sizing: border-box;
+    margin-bottom: $spacing-quadruple;
+    padding: $spacing-half;
+    border: 2px dashed var(--a-warning);
+    border-radius: var(--a-border-radius-large);
+    background-color: color-mix(in srgb, var(--a-warning) 6%, transparent);
+
+    > .apos-field__wrapper > .apos-field {
+      margin-bottom: 0;
+      padding: 0;
+      background: none;
+    }
   }
 
   // The field or widget the change navigator points at

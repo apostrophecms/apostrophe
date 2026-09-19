@@ -12,6 +12,7 @@ const _ = require('lodash');
 const { stripIndent } = require('common-tags');
 const diff = require('./lib/diff.js');
 const text = require('./lib/text.js');
+const consolidation = require('./lib/consolidation.js');
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
@@ -47,6 +48,8 @@ module.exports = {
   },
   async init(self) {
     self.defaultLimit = 10;
+    // Versions per query when reading a sequence (see `getSequenceFrom`)
+    self.sequenceBatchLimit = 100;
     self.defaultSort = { createdAt: -1 };
 
     self.addEditorModal();
@@ -102,11 +105,16 @@ module.exports = {
 
   restApiRoutes(self) {
     return {
-      // `docId` is the live document's `_id`
+      // `docId` is the live document's `_id`. Newest first, `defaultLimit` at
+      // a time: `next`, when not `null`, is the `before` of the next request.
+      // `consolidate=1` lists entries rather than records (see
+      // `getTimelinePage`)
       async getAll(req) {
         const docId = self.apos.launder.id(req.query.docId, '');
+        const before = self.apos.launder.string(req.query.before);
+        const beforeDate = before ? new Date(before) : null;
 
-        if (!docId) {
+        if (!docId || (beforeDate && isNaN(beforeDate))) {
           throw self.apos.error('invalid');
         }
         const doc = await self.getRestDocQuery(req.clone({ mode: 'draft' }))
@@ -117,32 +125,20 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
-        const criteria = self.getTimelineCriteria(doc);
-        const pager = await self.getRestPager(req, criteria);
-        const versions = await self.find(
-          req,
-          criteria,
-          {
-            skip: pager.skip,
-            limit: pager.perPage,
-            project: self.getRestProjection()
-          }
-        );
-
-        return {
-          pages: pager.pages,
-          currentPage: pager.currentPage,
-          perPage: pager.perPage,
-          total: pager.total,
-          results: versions
-        };
+        return self.getTimelinePage(req, self.getTimelineCriteria(doc), {
+          before: beforeDate,
+          consolidate: self.apos.launder.boolean(req.query.consolidate)
+        });
       },
       // `annotate=1` marks the version's document with its changes since
-      // the version before it (see `getAnnotatedDoc`)
+      // the version before it (see `getAnnotatedDoc`); with `consolidate=1`
+      // as well, since the version before the consolidated version it is
+      // the newest of
       async getOne(req, versionId) {
         try {
           const version = await self.getOne(req, versionId, {
-            annotate: self.apos.launder.boolean(req.query.annotate)
+            annotate: self.apos.launder.boolean(req.query.annotate),
+            consolidate: self.apos.launder.boolean(req.query.consolidate)
           });
 
           return version;
@@ -160,34 +156,25 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
-        // The changes of the versions `ids`, comma separated: consecutive
-        // versions of one document, listed as one (see `getVersionChanges`)
-        changes: async (req) => {
-          const ids = self.apos.launder.string(req.query.ids).split(',');
-          return changesOrRestError(() => self.getVersionChanges(req, ids));
-        },
-        // The changes of a version since the one before it
+        // The changes of a version since the one before it. `consolidate=1`
+        // lists the changes of the consolidated version it is the newest of
         ':versionId/changes': async (req) => {
-          return changesOrRestError(
-            () => self.getVersionChanges(req, [ req.params.versionId ])
-          );
+          try {
+            return await self.getVersionChanges(req, req.params.versionId, {
+              consolidate: self.apos.launder.boolean(req.query.consolidate)
+            });
+          } catch (error) {
+            if (error instanceof TypeError) {
+              throw self.apos.error('invalid');
+            }
+            if (error instanceof ReferenceError) {
+              throw self.apos.error('notfound');
+            }
+            throw error;
+          }
         }
       }
     };
-
-    async function changesOrRestError(getChanges) {
-      try {
-        return await getChanges();
-      } catch (error) {
-        if (error instanceof TypeError) {
-          throw self.apos.error('invalid');
-        }
-        if (error instanceof ReferenceError) {
-          throw self.apos.error('notfound');
-        }
-        throw error;
-      }
-    }
   },
 
   tasks(self) {
@@ -392,7 +379,7 @@ module.exports = {
             authorId: doc.updatedBy?._id ?? null,
             ai: false,
             changeCount: previousDoc
-              ? self.getChanges(req, content, previousDoc).length
+              ? self.getChangeCount(req, content, previousDoc)
               : 0,
             doc: await self.pack(content)
           };
@@ -498,6 +485,13 @@ module.exports = {
           self.recordsPublishedOnly(manager.options) &&
           !doc.archived;
       },
+      // Whether `doc` is the draft of a type that publishes automatically.
+      // Every save of such a draft is republished at once, and that
+      // publication is the version
+      isAutopublishedDraft(doc) {
+        const manager = self.apos.doc.getManager(doc.type);
+        return Boolean(manager?.options.autopublish) && self.getMode(doc) === 'draft';
+      },
       // Whether a document's type has no versions to show: its manager is
       // known and does not have them. The records of a type whose module
       // is gone stay readable
@@ -515,16 +509,17 @@ module.exports = {
       // that draft becomes the publication point instead. A draft save with
       // no change to any schema field never starts one. Otherwise a draft
       // starts one at every handoff: an explicit Save Draft, a first version,
-      // a previous version that was a publication point, a different author,
-      // AI involvement changing, or more than `draftInterval` since the
-      // previous version was created. Between handoffs it replaces the
-      // previous draft.
+      // a previous version that was a publication point or a restore, a
+      // different author, AI involvement changing, or more than
+      // `draftInterval` since the previous version was created. Between
+      // handoffs it replaces the previous draft.
       //
       // A request flagged `aposSkipVersion` records nothing: core sets it on
-      // a save that is a side effect of an operation already recorded. A
-      // save that takes the document out of the archive records nothing
-      // either: it still carries the deduplicated slug, which core reverts
-      // after this save
+      // a save that is a side effect of an operation already recorded. The
+      // draft of a type that publishes automatically records nothing, its
+      // republication does. A save that takes the document out of the
+      // archive records nothing either: it still carries the deduplicated
+      // slug, which core reverts after this save
       async canHaveVersion(req, doc) {
         if (req.aposSkipVersion) {
           return false;
@@ -536,6 +531,9 @@ module.exports = {
           return self.getMode(doc) === 'published';
         }
         if (!self.isVersioned(doc)) {
+          return false;
+        }
+        if (self.isAutopublishedDraft(doc)) {
           return false;
         }
         if (req.aposRestoreVersion) {
@@ -560,7 +558,7 @@ module.exports = {
         if (req.aposExplicitSave) {
           return true;
         }
-        if (previous.mode === 'published') {
+        if (previous.mode === 'published' || previous.restoredFrom) {
           return true;
         }
         if (previous.authorId !== self.getAuthorId(req)) {
@@ -624,13 +622,16 @@ module.exports = {
         }
         return previous;
       },
-      // Insert a new version of `doc` at the head of its timeline
+      // Insert a new version of `doc` at the head of its timeline. A
+      // restore is a baseline and counts no changes
       async insertVersion(req, doc) {
-        const previous = await self.findOne(req, self.getTimelineCriteria(doc));
+        const version = await self.newVersion(req, doc);
+        const previous = !version.restoredFrom &&
+          await self.findOne(req, self.getTimelineCriteria(doc));
         const instance = {
-          ...await self.newVersion(req, doc),
+          ...version,
           changeCount: previous
-            ? self.getChanges(req, doc, previous.doc).length
+            ? self.getChangeCount(req, doc, previous.doc)
             : 0
         };
         await self.insert(req, instance);
@@ -655,7 +656,7 @@ module.exports = {
             mode,
             ...(promoted ? { createdAt: new Date() } : { updatedAt: new Date() }),
             changeCount: before
-              ? self.getChanges(req, doc, before.doc).length
+              ? self.getChangeCount(req, doc, before.doc)
               : 0
           },
           ...(promoted && { $unset: { updatedAt: 1 } })
@@ -698,6 +699,16 @@ module.exports = {
           previousDoc
         );
       },
+      // The number of changes from `previousDoc`, an unpacked version
+      // content, to `doc`: the rows its change list shows. Stored as a
+      // version's `changeCount`
+      getChangeCount(req, doc, previousDoc) {
+        return self.getChangeRows(
+          req,
+          previousDoc,
+          self.apos.util.clonePermanent(doc)
+        ).length;
+      },
       // What the diff engine needs from the rest of Apostrophe
       getDiffContext(req) {
         return {
@@ -705,7 +716,10 @@ module.exports = {
           getFieldType: name => self.apos.schema.fieldTypes[name],
           getWidgetManager: type => self.apos.area.getWidgetManager(type),
           setMeta: (doc, ...args) => self.apos.doc.setMeta(doc, ...args),
-          htmlToPlaintext: html => self.apos.util.htmlToPlaintext(html)
+          htmlToPlaintext: html => self.apos.util.htmlToPlaintext(html),
+          t: key => self.apos.i18n.i18next.t(key, {
+            lng: self.apos.i18n.getAdminLocale(req)
+          })
         };
       },
       // Every change from `older` to `newer`, two stored versions of one
@@ -745,10 +759,18 @@ module.exports = {
         return diff.consolidate(manager.schema, pairs, self.getDiffContext(req));
       },
       // A copy of `newer` marked with its changes since `older`, for
-      // WYSIWYG display (see `lib/diff.js`)
-      getAnnotatedDoc(req, older, newer) {
+      // WYSIWYG display (see `lib/diff.js`). `rows`, when given, are the
+      // changes between the two already listed; rows flagged `ai` (see
+      // `getConsolidatedRows`) mark their changes as involving AI
+      getAnnotatedDoc(req, older, newer, { rows } = {}) {
         const manager = self.apos.doc.getManager(newer.type);
-        return diff.annotate(manager.schema, older, newer, self.getDiffContext(req));
+        return diff.annotate(
+          manager.schema,
+          older,
+          newer,
+          self.getDiffContext(req),
+          { rows }
+        );
       },
       // The `_id` of the user saving, `null` when there is none (system)
       getAuthorId(req) {
@@ -916,20 +938,116 @@ module.exports = {
           changeCount: 1
         };
       },
-      // Find the total versions count and do the pagination related math
-      async getRestPager(req, criteria) {
-        const perPage = self.defaultLimit;
-        const total = await self.count(req, criteria);
-        const currentPage = self.apos.launder.integer(req.query.page, 1);
-        const pages = Math.ceil(total / perPage);
-        const skip = perPage * (currentPage - 1);
+      // One page of the timeline `criteria` names, newest first, from the
+      // versions older than the date `before` or from the top:
+      // `{ results, next }`, `next` being the `before` of the following page
+      // and `null` on the last one. With `consolidate` the results are list
+      // items (see `lib/consolidation.js`): versions that consolidate come
+      // as one consolidated version, whose `changeCount` compares its newest
+      // version with the one before its oldest. A consolidated version the
+      // page end would split is completed, so a page holds up to
+      // `defaultLimit` items and never part of a consolidated version
+      async getTimelinePage(req, criteria, { before, consolidate } = {}) {
+        const limit = self.defaultLimit;
+        const project = self.getRestProjection();
+        const found = await self.find(
+          req,
+          {
+            ...criteria,
+            ...(before && { createdAt: { $lt: before } })
+          },
+          {
+            limit: limit + 1,
+            project
+          }
+        );
+        const records = found.slice(0, limit);
+        let more = found.length > limit;
+
+        if (
+          consolidate && more &&
+          consolidation.inSameSequence(records.at(-1), found[limit])
+        ) {
+          const [ , ...rest ] = await self.getSequenceFrom(
+            req,
+            criteria,
+            records.at(-1)
+          );
+          const sequence = [
+            ...consolidation.getSequences(records).at(-1),
+            ...rest
+          ];
+          if (consolidation.consolidates(sequence)) {
+            records.push(...rest);
+            more = Boolean(await self.count(req, olderThan(records.at(-1))));
+          }
+        }
+
+        const oldestOf = new Map(
+          consolidation.getSequences(records)
+            .map(sequence => [ sequence[0]._id, sequence.at(-1) ])
+        );
+        const results = consolidate
+          ? consolidation.consolidate(records)
+          : records;
+        for (const item of results.filter(item => item.versionIds)) {
+          item.changeCount = await countChanges(item, oldestOf.get(item._id));
+        }
+
         return {
-          currentPage,
-          pages,
-          perPage,
-          total,
-          skip
+          results,
+          next: more ? records.at(-1).createdAt : null
         };
+
+        function olderThan(record) {
+          return {
+            ...criteria,
+            createdAt: { $lt: record.createdAt }
+          };
+        }
+
+        // The changes a consolidated version lists (see `consolidate` in
+        // `lib/diff.js`). One that opens the timeline counts from its oldest
+        // version
+        async function countChanges(item, oldest) {
+          const [ newest, previous ] = await Promise.all([
+            self.findOne(req, { _id: item._id }),
+            self.findOne(req, olderThan(oldest))
+          ]);
+          if (!self.apos.doc.getManager(newest.doc.type)) {
+            return 0;
+          }
+          const base = previous ?? await self.findOne(req, { _id: oldest._id });
+          return self.getChangeCount(req, newest.doc, base.doc);
+        }
+      },
+      // The sequence of `version` from it down, newest first, as projected
+      // records (see `lib/consolidation.js`); `criteria` names its timeline
+      async getSequenceFrom(req, criteria, version) {
+        const sequence = [ version ];
+        const limit = self.sequenceBatchLimit;
+        for (;;) {
+          const older = await self.find(
+            req,
+            {
+              ...criteria,
+              createdAt: { $lt: sequence.at(-1).createdAt }
+            },
+            {
+              limit,
+              project: self.getRestProjection()
+            }
+          );
+          for (const record of older) {
+            if (!consolidation.inSameSequence(sequence.at(-1), record)) {
+              return sequence;
+            }
+            sequence.push(record);
+          }
+          if (older.length < limit) {
+            return sequence;
+          }
+        }
       },
 
       // A new version record of `doc` as saved by `req`. `docId`, `mode`
@@ -997,16 +1115,26 @@ module.exports = {
       },
       // A version for display, its document loaded like a regular find.
       // `annotate` marks the document with its changes since the version
-      // before it; a first or restored version stays unmarked
-      async getOne(req, versionId, { annotate = false } = {}) {
+      // before it; a first or restored version stays unmarked. With
+      // `consolidate`, `versionId` being the newest version of a
+      // consolidated version (see `lib/consolidation.js`), the changes are
+      // those of all its versions, as `getVersionChanges` lists them, and
+      // like them say where AI was involved
+      async getOne(req, versionId, { annotate = false, consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
         const version = await self.getEditableVersion(draftReq, versionId);
         const manager = self.apos.doc.getManager(version.doc.type);
 
         if (annotate && manager && !version.restoredFrom) {
-          const previous = await self.getPreviousVersion(draftReq, version);
-          if (previous) {
-            version.doc = self.getAnnotatedDoc(req, previous.doc, version.doc);
+          const { pairs } = await self.getVersionPairs(
+            draftReq,
+            version,
+            { consolidate }
+          );
+          if (pairs.length) {
+            version.doc = self.getAnnotatedDoc(req, pairs[0].older, version.doc, {
+              rows: self.getConsolidatedRows(req, pairs)
+            });
           }
         }
 
@@ -1074,65 +1202,68 @@ module.exports = {
         });
         return previous ?? null;
       },
-      // The changes of consecutive versions of one document as one list
-      // (see `getConsolidatedRows`), with display text and its word diff
-      // (see `lib/text.js`), and their counts
-      // per change type and of those involving AI:
-      // `{ rows, counts: { added, modified, deleted, ai } }`. One id is a
-      // single version against the one before it. A first version counts
-      // no changes of its own and a restored version shows none; a group
-      // cannot hold a restored version. Throws like `getEditableVersion`,
-      // and a `TypeError` when the ids are not consecutive versions of
-      // one document
-      async getVersionChanges(req, versionIds) {
+      // The versions `last` stands for, oldest first, as `members`: those of
+      // the consolidated version it is the newest of with `consolidate`
+      // (see `lib/consolidation.js`), otherwise itself. `pairs` are their
+      // changes as `getConsolidatedRows` takes them; a first version has
+      // no pair. `last` is a record of `getEditableVersion`
+      async getVersionPairs(req, last, { consolidate = false } = {}) {
+        let members = [ last ];
+        if (consolidate) {
+          const sequence = await self.getSequenceFrom(req, {
+            docId: last.docId,
+            locale: last.locale
+          }, last);
+          if (consolidation.consolidates(sequence)) {
+            members = await self.find(
+              req,
+              { _id: { $in: sequence.map(version => version._id) } },
+              { sort: { createdAt: 1 } }
+            );
+          }
+        }
+        const previous = await self.getPreviousVersion(req, members[0]);
+        const pairs = members
+          .map((member, i) => ({
+            older: i ? members[i - 1].doc : previous?.doc,
+            newer: member.doc,
+            ai: member.ai
+          }))
+          .filter(pair => pair.older);
+        return {
+          members,
+          pairs
+        };
+      },
+      // The changes of a version since the one before it, with display text
+      // and its word diff (see `lib/text.js`), their counts per change type
+      // and of those involving AI, and the versions they cover, newest
+      // first:
+      // `{ rows, counts: { added, modified, deleted, ai }, versionIds }`.
+      // With `consolidate`, `versionId` being the newest version of a
+      // consolidated version (see `lib/consolidation.js`), the changes of
+      // all its versions are listed as one (see `getConsolidatedRows`). A
+      // first version counts no changes of its own and a restored version
+      // shows none. Throws like `getEditableVersion`
+      async getVersionChanges(req, versionId, { consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
-        const ids = _.uniq(versionIds);
-        if (!ids.length) {
-          throw new TypeError('versionIds');
-        }
-        const members = await Promise.all(
-          ids.map(id => self.getEditableVersion(draftReq, id))
+        const last = await self.getEditableVersion(draftReq, versionId);
+        const { members, pairs } = await self.getVersionPairs(
+          draftReq,
+          last,
+          { consolidate }
         );
-        members.sort((a, b) => a.createdAt - b.createdAt);
-        const first = members[0];
-        const last = members.at(-1);
-
-        if (members.length > 1) {
-          const oneTimeline = members.every(member => (
-            (member.docId === first.docId) && (member.locale === first.locale)
-          ));
-          if (!oneTimeline || members.some(member => member.restoredFrom)) {
-            throw new TypeError('versionIds');
-          }
-          const span = await self.count(draftReq, {
-            docId: first.docId,
-            locale: first.locale,
-            createdAt: {
-              $gte: first.createdAt,
-              $lte: last.createdAt
-            }
-          });
-          if (span !== members.length) {
-            throw new TypeError('versionIds');
-          }
-        }
 
         let rows = [];
-        if (self.apos.doc.getManager(last.doc.type) && !last.restoredFrom) {
-          const previous = await self.getPreviousVersion(draftReq, first);
-          const pairs = members
-            .map((member, i) => ({
-              older: i ? members[i - 1].doc : previous?.doc,
-              newer: member.doc,
-              ai: member.ai
-            }))
-            .filter(pair => pair.older);
-          if (pairs.length) {
-            rows = text.addWordDiff(await self.addChangeText(
-              draftReq,
-              self.getConsolidatedRows(req, pairs)
-            ));
-          }
+        if (
+          pairs.length &&
+          self.apos.doc.getManager(last.doc.type) &&
+          !last.restoredFrom
+        ) {
+          rows = text.addWordDiff(await self.addChangeText(
+            draftReq,
+            self.getConsolidatedRows(req, pairs)
+          ), self.getDiffContext(draftReq));
         }
 
         return {
@@ -1142,7 +1273,8 @@ module.exports = {
             modified: rows.filter(row => row.type === 'modified').length,
             deleted: rows.filter(row => row.type === 'deleted').length,
             ai: rows.filter(row => row.ai).length
-          }
+          },
+          versionIds: members.map(member => member._id).reverse()
         };
       },
       // Recompute `changeCount` for every version, one timeline at a time.
@@ -1182,20 +1314,21 @@ module.exports = {
             continue;
           }
 
+          if (version.restoredFrom) {
+            updates.push({
+              _id: version._id,
+              changeCount: 0
+            });
+            continue;
+          }
           const nextVersion = versions[i + 1];
           if (!nextVersion) {
             continue;
           }
 
-          const changes = self.apos.schema.getChanges(
-            req,
-            manager.schema,
-            version.doc,
-            nextVersion.doc
-          );
           updates.push({
             _id: version._id,
-            changeCount: changes.length
+            changeCount: self.getChangeCount(req, version.doc, nextVersion.doc)
           });
         }
 

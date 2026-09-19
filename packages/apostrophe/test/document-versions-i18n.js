@@ -181,13 +181,13 @@ describe('Document Versions: i18n', function () {
     const newLocale = 'en-US';
     const actual = await apos.i18n.rename(oldLocale, newLocale, { keep: newLocale });
     const expected = {
-      // 16 docs (the inserted ones, draft and published) and the 18 versions
+      // 16 docs (the inserted ones, draft and published) and the 16 versions
       // of the inserted docs
-      renamed: 34,
+      renamed: 32,
       // 8 docs (archive, global, styles and home, draft and published) and
-      // the 4 boot-time versions of global, styles and home in `en`, dropped
+      // the 3 boot-time versions of global, styles and home in `en`, dropped
       // because `en-US` already has theirs
-      kept: 12
+      kept: 11
     };
     assert.deepEqual(actual, expected);
   });
@@ -209,9 +209,9 @@ describe('Document Versions: i18n', function () {
     const newLocale = 'en-US';
     const actual = await apos.docVersions.renameLocale(oldLocale, newLocale, {});
     const expected = {
-      // 18 versions of the inserted docs + 4 boot-time versions of global,
+      // 16 versions of the inserted docs + 3 boot-time versions of global,
       // styles and home; without `keep` the two locales' histories merge
-      renamed: 22,
+      renamed: 19,
       kept: 0
     };
     assert.deepEqual(actual, expected);
@@ -280,15 +280,13 @@ describe('Document Versions: i18n', function () {
       timelineOf(defaultPage1, defaultPage2)
     );
 
-    // Images autopublish, so an insert publishes twice
+    // Images autopublish: one publication per save
     assert.deepEqual(
       await renamedVersionsOf([ image1, image2 ]),
       [
         renamedVersion(image2, { title: image2.title.concat(' v2') }),
         renamedVersion(image1, { title: image1.title.concat(' v2') }),
         renamedVersion(image2),
-        renamedVersion(image2),
-        renamedVersion(image1),
         renamedVersion(image1)
       ]
     );
