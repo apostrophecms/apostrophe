@@ -242,10 +242,11 @@ async function evaluateExternalConditions() {
   );
 }
 
-function evaluateConditions() {
+// With no version to show, the tabs follow the live document
+function evaluateConditions(data = docFields.value.data) {
   conditionalFields.value = getConditionalFields(
     schema.value,
-    docFields.value.data,
+    data,
     externalConditionsResults.value
   );
 }
@@ -570,6 +571,8 @@ onMounted(async () => {
   }
   if (versions.value.length) {
     selectVersion(versions.value[0]);
+  } else {
+    evaluateConditions(props.doc);
   }
 });
 

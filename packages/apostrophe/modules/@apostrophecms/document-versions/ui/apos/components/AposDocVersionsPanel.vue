@@ -37,8 +37,10 @@ defineProps({
 </script>
 
 <style lang="scss" scoped>
+// `clip`, not `hidden`: focus moving inside the track would scroll it
+// sideways otherwise
 .apos-doc-versions-panel {
-  overflow: hidden;
+  overflow: clip;
   height: 100%;
 
   &__track {

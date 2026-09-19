@@ -392,6 +392,7 @@
 import {
   computed, inject, nextTick, reactive, ref, useId, watch
 } from 'vue';
+import scroll from '../utils/scroll.js';
 
 const props = defineProps({
   // The version whose changes these are, as the list holds it
@@ -656,8 +657,10 @@ async function step(delta) {
   select(position.value + delta);
   const section = groupEls.get(group.key);
   if (section && list.value) {
-    list.value.scrollTop += section.getBoundingClientRect().top -
-      list.value.getBoundingClientRect().top;
+    list.value.scrollBy({
+      top: section.getBoundingClientRect().top - list.value.getBoundingClientRect().top,
+      behavior: scroll.getScrollBehavior()
+    });
   }
   // The button disabled at the end drops focus: hand it to the other one
   const atEnd = delta > 0
@@ -731,8 +734,10 @@ async function reveal({
   // panel around it sideways
   if (toggle && list.value) {
     const box = list.value.getBoundingClientRect();
-    list.value.scrollTop += toggle.getBoundingClientRect().top -
-      box.top - (box.height / 2);
+    list.value.scrollBy({
+      top: toggle.getBoundingClientRect().top - box.top - (box.height / 2),
+      behavior: scroll.getScrollBehavior()
+    });
     toggle.focus({ preventScroll: true });
   }
   return true;
