@@ -237,6 +237,7 @@ $avatars-width: $avatar-size * 2 - $avatar-overlap;
 
     & {
       color: var(--a-base-2);
+      overflow-wrap: anywhere;
     }
   }
 
