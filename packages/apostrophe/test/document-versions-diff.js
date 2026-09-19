@@ -10,6 +10,7 @@ const {
 const {
   modules,
   buildDoc,
+  buildProject,
   deepestRoute
 } = require('./utils/document-versions-diff.js');
 
@@ -113,6 +114,7 @@ describe('Document Versions diff engine', function () {
         }),
         type: 'modified',
         fieldType: 'integer',
+        kind: 'leaf',
         old: 9,
         new: 99
       });
@@ -397,7 +399,10 @@ describe('Document Versions diff engine', function () {
       );
       assert.equal(rows[0].field.name, 'rows');
       assert.equal(rows[1].field.name, 'content');
-      assert.deepEqual(Object.keys(rows[0]), [ 'path', 'type', 'fieldType', 'old', 'new' ]);
+      assert.deepEqual(
+        Object.keys(rows[0]),
+        [ 'path', 'type', 'fieldType', 'kind', 'old', 'new' ]
+      );
       assert.equal(apos.docVersions.getChangeCount(req, newer, older), 3);
     });
 
@@ -507,6 +512,7 @@ describe('Document Versions diff engine', function () {
         ],
         type: 'modified',
         fieldType: 'richText',
+        kind: 'richText',
         old: '<p>Rich root.section.rows.0</p>',
         new: '<p>Rich, edited</p>'
       });
@@ -636,6 +642,154 @@ describe('Document Versions diff engine', function () {
     });
   });
 
+  // Field types of a project's own, each extending a core type: a row keeps
+  // the declared type and says what it is in `kind`
+  describe('project field types', function () {
+    const brief = row => [
+      row.type,
+      row.fieldType,
+      row.kind,
+      row.path.map(segment => segment.label).join(' > ')
+    ];
+
+    it('should walk each as the core type it extends', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.tagline = 'Built to change';
+      newer.rating = 3;
+      newer.prose = '<p>The quick red fox</p>';
+      newer.panel.tagline = 'Inside';
+      newer.steps.reverse();
+      newer.steps[0].tagline = 'Step 3';
+      newer.steps.push({
+        _id: 'step-four',
+        metaType: 'arrayItem',
+        tagline: 'Step four'
+      });
+      newer.zone.items.reverse();
+      newer.zone.items[0].note = 'Another note';
+      newer.ownersIds = [ 'topic2' ];
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer).map(brief), [
+        [ 'modified', 'tagline', 'leaf', 'Tagline' ],
+        [ 'added', 'rating', 'leaf', 'Rating' ],
+        [ 'modified', 'prose', 'richText', 'Prose' ],
+        [ 'modified', 'tagline', 'leaf', 'Panel > Panel tagline' ],
+        [ 'modified', 'steps', 'array', 'Steps' ],
+        [ 'modified', 'tagline', 'leaf', 'Steps > Step 3 > Step tagline' ],
+        [ 'added', 'arrayItem', 'arrayItem', 'Steps > Step four' ],
+        [ 'modified', 'zone', 'area', 'Zone' ],
+        [ 'modified', 'string', 'leaf', 'Zone > Card > Note' ],
+        [ 'modified', 'owners', 'relationship', 'Owners' ]
+      ]);
+    });
+
+    it('should report an object of such a type that appears or goes as one row', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      delete older.panel;
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'added', 'panel', 'object', 'Panel' ] ]
+      );
+    });
+
+    it('should call a value empty as the type itself does', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      older.rating = 4;
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'deleted', 'rating', 'leaf', 'Rating' ] ]
+      );
+    });
+
+    it('should read each as the core type it extends', async function () {
+      const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
+      const one = await apos.modules.topic.insert(req, { title: 'Topic one' });
+      const two = await apos.modules.topic.insert(req, { title: 'Topic two' });
+      const older = buildProject();
+      const newer = buildProject();
+      older.ownersIds = [ one.aposDocId ];
+      newer.tagline = 'Built to change';
+      newer.rating = 3;
+      newer.prose = '<p>The <strong>quick</strong> red fox</p>';
+      newer.steps.reverse();
+      newer.zone.items.reverse();
+      newer.ownersIds = [ two.aposDocId ];
+      const rows = text.addFormat(
+        apos.docVersions.getChangeRows(req, older, newer),
+        apos.docVersions.getDiffContext(req)
+      );
+      await apos.docVersions.addChangeText(req, rows);
+      assert.deepEqual(rows.map(row => [ row.fieldType, row.oldText, row.newText ]), [
+        [ 'tagline', 'Built to last', 'Built to change' ],
+        [ 'rating', '0', '3' ],
+        [ 'prose', 'The quick brown fox', 'The quick red fox' ],
+        [
+          'steps',
+          '#3 Step one, #2 Step two, #1 Step three',
+          '#1 Step three, #2 Step two, #3 Step one'
+        ],
+        [
+          'zone',
+          '#2 Rich Text, #1 Card · One',
+          '#1 Card · One, #2 Rich Text'
+        ],
+        [ 'owners', 'Topic one', 'Topic two' ]
+      ]);
+      assert.deepEqual(
+        rows[2].formatChanges.map(line => [ line.change, line.text ]),
+        [ [ 'marksAdded', 'quick' ] ]
+      );
+    });
+
+    it('should mark the annotated document as for the core types', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.prose = '<p>The quick red fox</p>';
+      newer.steps.reverse();
+      newer.zone.items.reverse();
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.match(doc.prose, /<del [^>]+>.*brown<\/del><ins [^>]+>.*red<\/ins>/);
+      assert.deepEqual(
+        doc.zone.items.map(widget => [ widget._id, Boolean(widget._moved) ]),
+        [ [ 'zone-card', false ], [ 'zone-text', true ] ]
+      );
+      assert.deepEqual(
+        [ 'prose', 'steps', 'zone' ].map(name => Boolean(doc.aposMeta?.[name]?.[HIGHLIGHT])),
+        [ true, true, false ]
+      );
+    });
+
+    it('should keep their order apart from their items across versions', function () {
+      const first = buildProject();
+      const second = buildProject();
+      second.steps.reverse();
+      second.zone.items.reverse();
+      const third = structuredClone(second);
+      third.steps[0].tagline = 'Step 3';
+      third.zone.items[0].note = 'Another note';
+      const rows = apos.docVersions.getConsolidatedRows(req, [
+        {
+          older: first,
+          newer: second,
+          ai: true
+        },
+        {
+          older: second,
+          newer: third,
+          ai: false
+        }
+      ]);
+      assert.deepEqual(rows.map(row => [ row.fieldType, row.kind, row.ai ]), [
+        [ 'steps', 'array', true ],
+        [ 'tagline', 'leaf', false ],
+        [ 'zone', 'area', true ],
+        [ 'string', 'leaf', false ]
+      ]);
+    });
+  });
+
   describe('text', function () {
     const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
 
@@ -670,8 +824,8 @@ describe('Document Versions diff engine', function () {
         [ 'count', '9', '12' ],
         [ 'ratio', '0.5', '1.25' ],
         [ 'flag', 'false', 'true' ],
-        [ 'choice', 'one', 'two' ],
-        [ 'tags', 'one', 'one, two' ],
+        [ 'choice', 'One', 'Two' ],
+        [ 'tags', 'One', 'One, Two' ],
         [ 'when', '2026-01-01', '2026-02-02' ],
         [ 'at', '10:00:00', '11:30:00' ],
         [ 'link', 'https://example.com/', 'https://example.org/' ],
@@ -742,9 +896,158 @@ describe('Document Versions diff engine', function () {
       const ctx = apos.docVersions.getDiffContext(req);
       assert.equal(text.toText({ type: 'password' }, 'secret', ctx), '');
       assert.equal(text.toText({ type: 'oembed' }, { url: 'https://example.com/' }, ctx), '');
-      assert.equal(text.toText({ type: 'box' }, { top: 1 }, ctx), '');
       assert.equal(text.toText({ type: 'string' }, { not: 'a string' }, ctx), '');
       assert.equal(text.toText({ type: 'integer' }, null, ctx), '');
+    });
+
+    it('should read a choice as its label, a number with its unit, a box by its sides', function () {
+      const ctx = apos.docVersions.getDiffContext(req);
+      const alignment = {
+        type: 'select',
+        choices: [
+          {
+            label: 'apostrophe:styleCenter',
+            value: 'apos-center'
+          }
+        ]
+      };
+      assert.equal(text.toText(alignment, 'apos-center', ctx), 'Center');
+      assert.equal(text.toText(alignment, 'gone', ctx), 'gone');
+      // Choices a method provides are not known here
+      assert.equal(text.toText({
+        type: 'select',
+        choices: 'getChoices'
+      }, 'stored', ctx), 'stored');
+      const width = {
+        type: 'range',
+        unit: '%'
+      };
+      assert.equal(text.toText(width, 50, ctx), '50%');
+      assert.equal(text.toText({ type: 'range' }, 50, ctx), '50');
+      const padding = {
+        type: 'box',
+        unit: 'px'
+      };
+      assert.equal(text.toText(padding, {
+        top: 10,
+        right: null,
+        bottom: 0,
+        left: 20
+      }, ctx), 'Top 10px, Bottom 0px, Left 20px');
+      assert.equal(text.toText(padding, {
+        top: null,
+        right: null,
+        bottom: null,
+        left: null
+      }, ctx), '');
+      assert.equal(text.toText({ type: 'box' }, { top: 1 }, {
+        ...ctx,
+        t: undefined
+      }), 'top 1');
+    });
+
+    it('should read the style presets of a widget, each under its own label', async function () {
+      const build = styles => {
+        const doc = buildDoc();
+        doc.section.rows[0].content.items.push({
+          _id: 'styled',
+          metaType: 'widget',
+          type: 'styled',
+          ...styles
+        });
+        return doc;
+      };
+      const border = {
+        _id: 'border',
+        metaType: 'object',
+        active: false,
+        width: {
+          top: 1,
+          right: 1,
+          bottom: 1,
+          left: 1
+        },
+        radius: 0,
+        color: 'black',
+        style: 'solid'
+      };
+      const rows = apos.docVersions.getChangeRows(req, build({
+        width: 100,
+        alignment: null,
+        padding: {
+          top: null,
+          right: null,
+          bottom: null,
+          left: null
+        },
+        border
+      }), build({
+        width: 50,
+        alignment: 'apos-center',
+        padding: {
+          top: 10,
+          right: null,
+          bottom: 10,
+          left: null
+        },
+        border: {
+          ...border,
+          active: true,
+          width: {
+            ...border.width,
+            top: 4
+          },
+          radius: 8,
+          style: 'dashed'
+        }
+      }));
+      await apos.docVersions.addChangeText(req, rows);
+      assert.deepEqual(rows.map(row => [
+        row.type,
+        row.path.slice(-2).map(segment => segment.label).join(' > '),
+        row.oldText,
+        row.newText
+      ]), [
+        [ 'modified', 'Styled > apostrophe:styleWidth', '100%', '50%' ],
+        [ 'added', 'Styled > apostrophe:styleAlignment', '', 'Center' ],
+        [ 'modified', 'Styled > apostrophe:stylePadding', '', 'Top 10px, Bottom 10px' ],
+        [ 'modified', 'apostrophe:styleBorder > apostrophe:styleBorder', 'false', 'true' ],
+        [
+          'modified',
+          'apostrophe:styleBorder > apostrophe:styleBorderWidth',
+          'Top 1px, Right 1px, Bottom 1px, Left 1px',
+          'Top 4px, Right 1px, Bottom 1px, Left 1px'
+        ],
+        [ 'modified', 'apostrophe:styleBorder > apostrophe:styleRadius', '0px', '8px' ],
+        [ 'modified', 'apostrophe:styleBorder > apostrophe:styleStyle', 'Solid', 'Dashed' ]
+      ]);
+    });
+
+    it('should read the presets of the global styles document the same way', async function () {
+      const older = await apos.doc.find(req, { type: '@apostrophecms/styles' }).toObject();
+      const newer = structuredClone(older);
+      newer.bodyPadding = {
+        top: 8,
+        right: 16,
+        bottom: 8,
+        left: 16
+      };
+      newer.bodyBorder = {
+        ...older.bodyBorder,
+        active: true,
+        style: 'dotted'
+      };
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      await apos.docVersions.addChangeText(req, rows);
+      assert.deepEqual(rows.map(row => [
+        row.path.map(segment => segment.label).join(' > '),
+        row.oldText,
+        row.newText
+      ]), [
+        [ 'Body padding', '', 'Top 8px, Right 16px, Bottom 8px, Left 16px' ],
+        [ 'apostrophe:styleBorder > apostrophe:styleBorder', 'false', 'true' ],
+        [ 'apostrophe:styleBorder > apostrophe:styleStyle', 'Solid', 'Dotted' ]
+      ]);
     });
 
     it('should read an added or deleted array item as its title', async function () {
@@ -1001,6 +1304,7 @@ describe('Document Versions diff engine', function () {
         'path',
         'type',
         'fieldType',
+        'kind',
         'old',
         'new',
         'oldText',

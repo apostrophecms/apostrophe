@@ -207,6 +207,38 @@ const modules = {
       }
     }
   },
+  // The global styles document takes the same presets at its top level
+  '@apostrophecms/styles': {
+    styles: {
+      add: {
+        bodyPadding: {
+          preset: 'padding',
+          label: 'Body padding',
+          selector: 'body'
+        },
+        bodyBorder: {
+          preset: 'border',
+          selector: 'body'
+        }
+      }
+    }
+  },
+  // Styled with presets of every kind: a number with a unit, a choice,
+  // a box and an object of several fields
+  'styled-widget': {
+    extend: '@apostrophecms/widget-type',
+    options: {
+      label: 'Styled'
+    },
+    styles: {
+      add: {
+        width: 'width',
+        alignment: 'alignment',
+        padding: 'padding',
+        border: 'border'
+      }
+    }
+  },
   // Stores its data outside any schema
   'opaque-widget': {
     extend: '@apostrophecms/widget-type',
@@ -215,6 +247,98 @@ const modules = {
     }
   },
   ...widgetModules(),
+  // A project's own field types, one for each kind of core type the diff
+  // engine treats in its own way, and a document type made of them. Core
+  // composes `fields` for the `array` and `object` types alone, so the
+  // types extending them bring their `schema` as it is
+  'project-field': {
+    init(self) {
+      self.apos.schema.addFieldType({
+        name: 'tagline',
+        extend: 'string'
+      });
+      // Zero reads as no rating at all
+      self.apos.schema.addFieldType({
+        name: 'rating',
+        extend: 'integer',
+        isEmpty(field, value) {
+          return !value;
+        }
+      });
+      for (const [ name, extend ] of [
+        [ 'prose', 'richText' ],
+        [ 'panel', 'object' ],
+        [ 'steps', 'array' ],
+        [ 'zone', 'area' ],
+        [ 'owners', 'relationship' ]
+      ]) {
+        self.apos.schema.addFieldType({
+          name,
+          extend
+        });
+      }
+    }
+  },
+  project: {
+    extend: '@apostrophecms/piece-type',
+    options: {
+      label: 'Project'
+    },
+    fields: {
+      add: {
+        tagline: {
+          type: 'tagline',
+          label: 'Tagline'
+        },
+        rating: {
+          type: 'rating',
+          label: 'Rating'
+        },
+        prose: {
+          type: 'prose',
+          label: 'Prose'
+        },
+        panel: {
+          type: 'panel',
+          label: 'Panel',
+          schema: [
+            {
+              name: 'tagline',
+              type: 'tagline',
+              label: 'Panel tagline'
+            }
+          ]
+        },
+        steps: {
+          type: 'steps',
+          label: 'Steps',
+          titleField: 'tagline',
+          schema: [
+            {
+              name: 'tagline',
+              type: 'tagline',
+              label: 'Step tagline'
+            }
+          ]
+        },
+        zone: {
+          type: 'zone',
+          label: 'Zone',
+          options: {
+            widgets: {
+              '@apostrophecms/rich-text': {},
+              card: {}
+            }
+          }
+        },
+        _owners: {
+          type: 'owners',
+          label: 'Owners',
+          withType: 'topic'
+        }
+      }
+    }
+  },
   nested: {
     extend: '@apostrophecms/piece-type',
     options: {
@@ -378,9 +502,52 @@ function deepestRoute(doc) {
   return route;
 }
 
+// A document of the `project` type, the same on every call
+function buildProject() {
+  return {
+    _id: 'project1:en:draft',
+    type: 'project',
+    title: 'Project',
+    tagline: 'Built to last',
+    rating: 0,
+    prose: '<p>The quick brown fox</p>',
+    panel: {
+      _id: 'panel1',
+      metaType: 'object',
+      tagline: 'Inside the panel'
+    },
+    steps: [ 'one', 'two', 'three' ].map(name => ({
+      _id: `step-${name}`,
+      metaType: 'arrayItem',
+      tagline: `Step ${name}`
+    })),
+    zone: {
+      _id: 'zone1',
+      metaType: 'area',
+      items: [
+        {
+          _id: 'zone-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: '<p>Zone text</p>'
+        },
+        {
+          _id: 'zone-card',
+          metaType: 'widget',
+          type: 'card',
+          kind: 'one',
+          note: 'A note'
+        }
+      ]
+    },
+    ownersIds: [ 'topic1' ]
+  };
+}
+
 module.exports = {
   DEPTH,
   modules,
   buildDoc,
+  buildProject,
   deepestRoute
 };

@@ -114,12 +114,19 @@ const ORDER = Symbol('order');
  *   older value was empty (`null`, `undefined`, `''`, `[]` or empty by the
  *   field type's `isEmpty`), `deleted` when the newer one is, `modified`
  *   otherwise.
- * @property {string} fieldType The schema type of the changed value
- *   (`string`, `integer`, `relationship`, `object`, ...), or `arrayItem`,
- *   `widget` or `richText` when the row is a whole array item, a whole
- *   widget, or the `content` of a rich text widget; `array` or `area` when
- *   the row is the order of the items of one, at the path of the array or
- *   area itself.
+ * @property {string} fieldType The schema type of the changed value as
+ *   the schema declares it, a project's own type included (`string`,
+ *   `integer`, `relationship`, `object`, ...), or `arrayItem`, `widget` or
+ *   `richText` when the row is a whole array item, a whole widget, or the
+ *   `content` of a rich text widget. The row of the order of an array's or
+ *   area's items has the type of that array or area.
+ * @property {'leaf'|'richText'|'object'|'relationship'|'array'|'area'|
+ *   'arrayItem'|'widget'} kind
+ *   What the row is, whatever its type is called: the core type `fieldType`
+ *   is or extends when that is `richText`, `object` or `relationship`, and
+ *   `leaf` for any other field; `array` or `area` for the order of the
+ *   items of one, at the path of the array or area itself; `arrayItem`,
+ *   `widget` and `richText` as `fieldType` has them. The one to test.
  * @property {any} old The value in the older document as stored, `undefined`
  *   when the item was added. A relationship's is its array of ids, a rich
  *   text widget's its `content` string, an item's or widget's the whole
@@ -235,7 +242,7 @@ function walk(schema, older, newer, ctx) {
 function annotate(schema, older, newer, ctx, { rows } = {}) {
   const doc = _.cloneDeep(newer);
   for (const row of rows || walk(schema, older, newer, ctx)) {
-    if (row.fieldType === 'area') {
+    if (row.kind === 'area') {
       for (const id of row.movedItems || getMovedIds(row)) {
         const widget = resolve(doc, [ ...row.path, { name: id } ]);
         if (widget) {
@@ -248,7 +255,7 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
       continue;
     }
     const widgetAt = _.findLastIndex(row.path, segment => segment.widgetType);
-    if (row.fieldType === 'widget' && row.type === 'deleted') {
+    if (row.kind === 'widget' && row.type === 'deleted') {
       const area = resolve(doc, row.path.slice(0, -1));
       if (area?.items) {
         const at = Math.min(row.path.at(-1).ordinal - 1, area.items.length);
@@ -260,7 +267,7 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
       }
       continue;
     }
-    if (row.fieldType === 'widget' && row.type === 'added') {
+    if (row.kind === 'widget' && row.type === 'added') {
       const widget = resolve(doc, row.path);
       if (widget) {
         widget._inserted = true;
@@ -271,7 +278,7 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
       continue;
     }
     if (widgetAt === -1) {
-      if (row.field && (getKind(row.field, ctx) === 'richText')) {
+      if (row.kind === 'richText') {
         markRichTextField(doc, row, ctx);
       }
       ctx.setMeta(doc, HIGHLIGHT_NAMESPACE, row.path[0].name, HIGHLIGHT_KEY, true);
@@ -289,7 +296,7 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
       widget._changedWithAi = true;
     }
     const manager = ctx.getWidgetManager(widget.type);
-    if ((row.fieldType === 'richText') && manager?.options.renderVersions) {
+    if ((row.kind === 'richText') && manager?.options.renderVersions) {
       markRichText(widget, row, ctx);
     }
     if (widget._modified || widget._olderVersion) {
@@ -381,7 +388,7 @@ function walkFields(schema, older, newer, ctx, path, rows) {
     } else if (kind === 'relationship') {
       walkRelationship(field, older, newer, fieldPath, rows);
     } else {
-      walkLeaf(field, older, newer, ctx, fieldPath, rows);
+      walkLeaf(field, kind, older, newer, ctx, fieldPath, rows);
     }
   }
 }
@@ -408,7 +415,7 @@ function getKind(field, ctx) {
 // Scalars compare with the field type's own `isEqual` when it has one,
 // otherwise deeply, with `null` and `undefined` folded together, as the
 // schema module compares documents
-function walkLeaf(field, older, newer, ctx, path, rows) {
+function walkLeaf(field, kind, older, newer, ctx, path, rows) {
   const type = ctx.getFieldType(field.type);
   const oldValue = older[field.name];
   const newValue = newer[field.name];
@@ -427,6 +434,7 @@ function walkLeaf(field, older, newer, ctx, path, rows) {
     path,
     changeType(oldEmpty, newEmpty),
     field.type,
+    kind,
     oldValue,
     newValue,
     field
@@ -445,6 +453,7 @@ function walkRelationship(field, older, newer, path, rows) {
     path,
     changeType(!oldIds.length, !newIds.length),
     field.type,
+    'relationship',
     oldIds,
     newIds,
     field
@@ -461,6 +470,7 @@ function walkObject(field, older, newer, ctx, path, rows) {
       path,
       changeType(older == null, newer == null),
       field.type,
+      'object',
       older,
       newer,
       field
@@ -494,7 +504,15 @@ function walkArray(field, older, newer, ctx, path, rows) {
       }
     ];
     if (!oldItem || !newItem) {
-      rows.push(row(itemPath, changeType(!oldItem, !newItem), 'arrayItem', oldItem, newItem, field));
+      rows.push(row(
+        itemPath,
+        changeType(!oldItem, !newItem),
+        'arrayItem',
+        'arrayItem',
+        oldItem,
+        newItem,
+        field
+      ));
     } else {
       walkFields(field.schema, oldItem, newItem, ctx, itemPath, rows);
     }
@@ -537,6 +555,7 @@ function walkArea(field, older, newer, ctx, path, rows) {
         widgetPath,
         changeType(!oldWidget, !newWidget),
         'widget',
+        'widget',
         oldWidget,
         newWidget,
         field
@@ -544,7 +563,7 @@ function walkArea(field, older, newer, ctx, path, rows) {
     } else if (!manager) {
       if (!_.isEqual(oldWidget, newWidget)) {
         rows.push(
-          row(widgetPath, 'modified', 'widget', oldWidget, newWidget, field)
+          row(widgetPath, 'modified', 'widget', 'widget', oldWidget, newWidget, field)
         );
       }
     } else {
@@ -564,7 +583,7 @@ function walkWidget(manager, older, newer, ctx, path, rows) {
     const oldText = manager.getRichText(older) || '';
     const newText = manager.getRichText(newer) || '';
     if (oldText !== newText) {
-      rows.push(row(path, 'modified', 'richText', oldText, newText, null));
+      rows.push(row(path, 'modified', 'richText', 'richText', oldText, newText, null));
     }
     return;
   }
@@ -582,7 +601,7 @@ function walkWidget(manager, older, newer, ctx, path, rows) {
   const oldRest = _.pickBy(older, (value, key) => isContent(key));
   const newRest = _.pickBy(newer, (value, key) => isContent(key));
   if (!_.isEqual(oldRest, newRest)) {
-    rows.push(row(path, 'modified', 'widget', older, newer, null));
+    rows.push(row(path, 'modified', 'widget', 'widget', older, newer, null));
   }
 }
 
@@ -631,7 +650,7 @@ function walkOrder(kind, field, entries, path, rows, describe) {
   if (_.isEqual(oldIds, newIds)) {
     return;
   }
-  const result = row(path, 'modified', kind, oldIds, newIds, field);
+  const result = row(path, 'modified', field.type, kind, oldIds, newIds, field);
   Object.defineProperty(result, 'items', {
     value: Object.fromEntries(matched.map(entry => [
       entry.newer._id,
@@ -677,11 +696,12 @@ function mergeItems(olderItems, newerItems) {
   return merged;
 }
 
-function row(path, type, fieldType, oldValue, newValue, field) {
+function row(path, type, fieldType, kind, oldValue, newValue, field) {
   const result = {
     path,
     type,
     fieldType,
+    kind,
     old: oldValue,
     new: newValue
   };
@@ -742,7 +762,7 @@ function explainOrder(row, aiRows, otherRows) {
 
 // Whether a row is the order of an array's or area's items
 function isOrder(row) {
-  return (row.fieldType === 'array') || (row.fieldType === 'area');
+  return (row.kind === 'array') || (row.kind === 'area');
 }
 
 function changeType(oldEmpty, newEmpty) {
@@ -773,8 +793,8 @@ function keyOf(row) {
   if (isOrder(row)) {
     key.push(ORDER);
   } else if (
-    (row.fieldType === 'richText') ||
-    ((row.fieldType === 'widget') && (row.type === 'modified'))
+    (row.kind === 'richText') ||
+    ((row.kind === 'widget') && (row.type === 'modified'))
   ) {
     key.push(CONTENT);
   }

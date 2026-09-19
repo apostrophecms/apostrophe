@@ -25,7 +25,14 @@ const SCALAR = new Set([
   'color'
 ]);
 // Field types with a representation of their own
-const SPECIAL = new Set([ 'richText', 'attachment', 'relationship' ]);
+const SPECIAL = new Set([ 'richText', 'attachment', 'relationship', 'box' ]);
+// The sides of a box, as its input names them
+const BOX_SIDES = {
+  top: 'apostrophe:boxFieldTop',
+  right: 'apostrophe:boxFieldRight',
+  bottom: 'apostrophe:boxFieldBottom',
+  left: 'apostrophe:boxFieldLeft'
+};
 // The most of the affected text a formatting line quotes
 const QUOTE_LENGTH = 80;
 // What the rich text editor calls the blocks, marks and alignments it
@@ -86,9 +93,12 @@ function toPlaintext(html, ctx) {
 
 /**
  * The text of one stored field value: scalars (and types extending them)
- * as their value, rich text as plaintext, an attachment as its name and
- * extension, a relationship as the titles of the related documents in id
- * order. Anything else, and a value with no safe string form, is `''`.
+ * as their value, a choice as its label when the field lists its choices,
+ * a number with the field's `unit` when it has one, rich text as plaintext,
+ * an attachment as its name and extension, a relationship as the titles of
+ * the related documents in id order, a box as the sides that are set
+ * (`Top 10px, Left 20px`). Anything else, and a value with no safe string
+ * form, is `''`.
  *
  * @param {object} field The schema field.
  * @param {any} value The stored value; for a relationship, its ids.
@@ -114,8 +124,18 @@ function toText(field, value, ctx, { titles = {} } = {}) {
       ? value.map(id => titles[id]).filter(Boolean).join(', ')
       : '';
   }
+  if (kind === 'box') {
+    return Object.entries(BOX_SIDES)
+      .filter(([ side ]) => typeof value[side] === 'number')
+      .map(([ side, label ]) => {
+        return `${ctx.t ? ctx.t(label) : side} ${withUnit(field, value[side])}`;
+      })
+      .join(', ');
+  }
   if (kind === 'scalar') {
-    return scalarText(value);
+    return Array.isArray(field.choices)
+      ? scalarText(getChoiceLabels(field, value, ctx.t))
+      : scalarText(withUnit(field, value));
   }
   return '';
 }
@@ -139,9 +159,7 @@ function getTitle(schema, titleField, item, ctx) {
   }
   const value = _.get(item, titleField);
   if (Array.isArray(field.choices)) {
-    const labelOf = choice => field.choices
-      .find(option => option.value === choice)?.label ?? choice;
-    return scalarText(Array.isArray(value) ? value.map(labelOf) : labelOf(value));
+    return scalarText(getChoiceLabels(field, value));
   }
   return getKind(field, ctx) === 'relationship' ? '' : toText(field, value, ctx);
 }
@@ -158,9 +176,7 @@ function getTitle(schema, titleField, item, ctx) {
  */
 function addFormat(rows, ctx) {
   for (const row of rows) {
-    const isRichText = (row.fieldType === 'richText') ||
-      (row.field && (getKind(row.field, ctx) === 'richText'));
-    if (!isRichText || !row.old || !row.new) {
+    if ((row.kind !== 'richText') || !row.old || !row.new) {
       continue;
     }
     const format = getFormatChanges(row.old, row.new);
@@ -184,7 +200,7 @@ function addFormat(rows, ctx) {
 function getRelatedIds(rows, ctx) {
   const ids = new Set();
   for (const row of rows) {
-    if (row.field && (getKind(row.field, ctx) === 'relationship')) {
+    if (row.kind === 'relationship') {
       [ ...(row.old || []), ...(row.new || []) ].forEach(id => ids.add(id));
     }
     for (const record of (row.format || [])) {
@@ -313,13 +329,13 @@ function rowText(row, value, ctx, titles) {
   if (value == null) {
     return '';
   }
-  if (row.fieldType === 'richText') {
+  if (row.kind === 'richText') {
     return toPlaintext(value, ctx);
   }
-  if (row.fieldType === 'arrayItem') {
+  if (row.kind === 'arrayItem') {
     return getItemText(row.field, value, ctx);
   }
-  if (row.fieldType === 'widget') {
+  if (row.kind === 'widget') {
     return getWidgetText(value, ctx);
   }
   if (row.items) {
@@ -572,6 +588,23 @@ function getKind(field, ctx) {
     name = ctx.getFieldType(name)?.extend;
   }
   return null;
+}
+
+// The labels of the stored choice or choices of a field that lists them,
+// in the language of `t` when given; a value that is no choice stays
+function getChoiceLabels(field, value, t) {
+  const labelOf = choice => {
+    const label = field.choices.find(option => option.value === choice)?.label;
+    return (label == null) ? choice : (t ? t(label) : label);
+  };
+  return Array.isArray(value) ? value.map(labelOf) : labelOf(value);
+}
+
+// A number with the unit its field gives it: `50%`
+function withUnit(field, value) {
+  return ((typeof value === 'number') && (typeof field.unit === 'string'))
+    ? `${value}${field.unit}`
+    : value;
 }
 
 function scalarText(value) {

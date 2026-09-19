@@ -110,6 +110,7 @@
                   data-apos-test="doc-version-change-ai"
                 >AI</span>
                 <AposButton
+                  v-if="entry.detail"
                   type="quiet"
                   :label="expanded.has(entry.key)
                     ? 'apostrophe:versionCollapseChanges'
@@ -121,21 +122,18 @@
                   }"
                   @click="toggle(entry.key)"
                 />
+                <AposDocVersionChangeType
+                  v-else-if="!entry.own"
+                  :type="entry.row.type"
+                />
               </span>
             </div>
             <div
-              v-if="expanded.has(entry.key)"
+              v-if="entry.detail && expanded.has(entry.key)"
               :id="`${baseId}-${entry.key}`"
               class="apos-doc-version-changes__diff"
               data-apos-test="doc-version-change-diff"
             >
-              <p
-                v-if="!entry.changed && !entry.format.length"
-                class="apos-doc-version-changes__unchanged"
-                data-apos-test="doc-version-change-modified"
-              >
-                {{ $t('apostrophe:versionChangeModified') }}
-              </p>
               <template v-if="entry.changed">
                 <div
                   v-for="pane in panes"
@@ -550,18 +548,21 @@ const groups = computed(() => {
     }
     const segments = row.path.slice(path.length);
     // The order of an array's or area's items reads as the last crumb
-    const order = [ 'array', 'area' ].includes(row.fieldType);
+    const order = [ 'array', 'area' ].includes(row.kind);
     if (order) {
       segments.push({ label: 'apostrophe:versionOrderChanged' });
     }
     // The row is the group's own field or widget: it was added or deleted
     // whole, and its label stands in for the empty breadcrumb
-    if (!segments.length) {
+    const own = !segments.length;
+    if (own) {
       group.type = row.type;
       segments.push(path.at(-1));
     }
     const diff = row.diff || [];
     const short = order ? diff : elide(diff);
+    const changed = diff.some(part => part.change !== 'same');
+    const format = row.formatChanges || [];
     const bySide = parts => Object.fromEntries(panes.map(pane => [
       pane.side,
       parts.filter(part => [ 'same', 'elided', pane.change ].includes(part.change))
@@ -577,10 +578,15 @@ const groups = computed(() => {
       parts: bySide(diff),
       short: bySide(short),
       elided: short.length !== diff.length,
+      own,
       // Whether the text shows the change at all
-      changed: diff.some(part => part.change !== 'same'),
+      changed,
       // What changed in a rich text besides its words, a block each
-      format: row.formatChanges || [],
+      format,
+      // Whether there is anything to expand: a row of which only the change
+      // is known has no toggle, and its change type when its group's header
+      // does not say it
+      detail: changed || format.length > 0,
       text: {
         new: Boolean(row.newText),
         old: Boolean(row.oldText)
@@ -666,8 +672,8 @@ async function reveal({
     if (!widgetId) {
       return !widget && (row.path[0].name === field);
     }
-    return (widget?.name === widgetId && row.fieldType !== 'area') ||
-      (moved && row.fieldType === 'area' && row.new.includes(widgetId));
+    return (widget?.name === widgetId && row.kind !== 'area') ||
+      (moved && row.kind === 'area' && row.new.includes(widgetId));
   };
   const targets = props.rows.filter(isTarget);
   if (!targets.length) {
@@ -691,16 +697,20 @@ async function reveal({
   expanded.clear();
   full.clear();
   clamped.clear();
-  for (const { entry } of entries) {
+  const detailed = entries.filter(({ entry }) => entry.detail);
+  for (const { entry } of detailed) {
     expanded.add(entry.key);
   }
-  measure(entries.map(({ entry }) => entry.key));
+  measure(detailed.map(({ entry }) => entry.key));
   // The widget's own group rather than its area's order
   const { group, entry } = entries.find(({ entry }) => !entry.order) || entries[0];
   select(groups.value.indexOf(group));
   await nextTick();
+  // A row with nothing to expand has no toggle: its group's header then
   const toggle = list.value?.querySelector(
     `[aria-controls="${CSS.escape(`${baseId}-${entry.key}`)}"]`
+  ) || groupEls.get(group.key)?.querySelector(
+    '[data-apos-test="doc-version-change-group-select"]'
   );
   // The list alone scrolls: `scrollIntoView` would also push the sliding
   // panel around it sideways
@@ -1051,17 +1061,6 @@ $pad-x: $spacing-base + $spacing-half;
 
     &--old {
       color: var(--a-danger-button-hover);
-    }
-  }
-
-  &__unchanged {
-    @include type-base;
-
-    & {
-      margin: 0;
-      padding: $spacing-half $spacing-base;
-      color: var(--a-base-2);
-      font-size: var(--a-type-smaller);
     }
   }
 
