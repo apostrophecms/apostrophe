@@ -3542,16 +3542,24 @@ describe('Document Versions', function () {
               newText: 'Read the guide today.',
               marked: [ 'now', 'today' ],
               formatChanges: [ {
-                text: 'Link changed on "the guide": from /one to /two',
-                change: 'link'
+                change: 'link',
+                type: 'modified',
+                label: 'Link',
+                text: 'the guide',
+                old: { text: '/one' },
+                new: { text: '/two' }
               } ]
             },
             {
               newText: 'Our mission',
               marked: [],
               formatChanges: [ {
-                text: 'From Paragraph (P) to Heading 2 (H2): "Our mission"',
-                change: 'block'
+                change: 'block',
+                type: 'modified',
+                label: 'Block style',
+                text: 'Our mission',
+                old: { text: 'Paragraph (P)' },
+                new: { text: 'Heading 2 (H2)' }
               } ]
             }
           ]

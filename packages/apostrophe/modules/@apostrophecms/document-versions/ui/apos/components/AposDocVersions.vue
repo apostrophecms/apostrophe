@@ -640,6 +640,7 @@ onBeforeUnmount(() => {
 
   // A modified field, framed as a modified widget is
   :deep([data-apos-field]:has(> .apos-doc-version-editor__field-change)) {
+    display: flow-root;
     box-sizing: border-box;
     margin-bottom: $spacing-quadruple;
     padding: $spacing-half;

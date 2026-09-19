@@ -1026,8 +1026,10 @@ export default {
   position: relative;
 }
 
-// A widget a document version added, modified or deleted
+// A widget a document version added, modified or deleted. The frame holds
+// its floats, such as a floated image of a rich text
 .apos-area-widget-wrapper[data-apos-widget-change] {
+  display: flow-root;
   box-sizing: border-box;
   margin: $spacing-base 0;
   padding: $spacing-half;

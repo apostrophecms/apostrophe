@@ -26,7 +26,7 @@ const SCALAR = new Set([
 ]);
 // Field types with a representation of their own
 const SPECIAL = new Set([ 'richText', 'attachment', 'relationship' ]);
-// The most of the affected text a formatting sentence quotes
+// The most of the affected text a formatting line quotes
 const QUOTE_LENGTH = 80;
 // What the rich text editor calls the blocks, marks and alignments it
 // offers. A configured style goes by its own label
@@ -61,17 +61,25 @@ const ALIGN_LABELS = {
   right: 'apostrophe:richTextAlignRight',
   justify: 'apostrophe:richTextAlignJustify'
 };
+// What changes of an image, other than the image itself
+const IMAGE_LABELS = {
+  alt: 'apostrophe:versionFormatImageAlt',
+  style: 'apostrophe:versionFormatImageStyle',
+  href: 'apostrophe:versionFormatImageLink'
+};
 
 /**
  * Plaintext of rich text markup: tags stripped, entities decoded, every
- * block boundary a line break, runs of them one line break.
+ * block boundary a line break, runs of them one line break. A figure, its
+ * caption and a rule are boundaries too, which `htmlToPlaintext` does not
+ * know as blocks.
  *
  * @param {string} html
  * @param {import('./diff.js').DiffContext} ctx
  * @returns {string}
  */
 function toPlaintext(html, ctx) {
-  return ctx.htmlToPlaintext(html || '')
+  return ctx.htmlToPlaintext((html || '').replace(/<(figure|figcaption|hr)\b/gi, '<br><$1'))
     .replace(/\s*\n\s*/g, '\n')
     .trim();
 }
@@ -197,13 +205,13 @@ function getRelatedIds(rows, ctx) {
  * text (`toText`).
  *
  * A row with `format` records (see `addFormat`) also gets `formatChanges`,
- * a `{ text, change }` line for each: `text` a sentence in the language of
- * the admin UI, quoting the words affected and the old and new value where
- * there is one, `change` the record's `kind`. Blocks and marks go by the
- * rich text editor's own labels, an image by its title. A line that names
- * an image with a URL also has `parts`, the same sentence cut around the
- * names, `{ text }` or `{ text, href }` each, so the name can be shown as a
- * link to the image.
+ * `FormatLine`s in the language of the admin UI: what changed, the words
+ * affected, and the old and new value where there is one. A record is one
+ * line; a link or an image is one for each attribute that changed; the
+ * rules are one and the line breaks are one, last, with how many came and
+ * went. Blocks
+ * and marks go by the rich text editor's own labels, an image by its
+ * title, with its URL when there is one in `urls`.
  *
  * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
  * @param {import('./diff.js').DiffContext} ctx
@@ -218,10 +226,13 @@ function addText(rows, ctx, { titles = {}, urls = {} } = {}) {
     row.oldText = rowText(row, row.old, ctx, titles);
     row.newText = rowText(row, row.new, ctx, titles);
     if (row.format && ctx.t) {
-      row.formatChanges = row.format.map(record => formatLine(record, ctx, {
-        titles,
-        urls
-      }));
+      row.formatChanges = [
+        ...row.format.flatMap(record => formatLines(record, ctx, {
+          titles,
+          urls
+        })),
+        ...countLines(row.format, ctx)
+      ];
     }
   }
   return rows;
@@ -317,152 +328,152 @@ function rowText(row, value, ctx, titles) {
   return row.field ? toText(row.field, value, ctx, { titles }) : '';
 }
 
-// One formatting change of rich text as a line of `formatChanges`. The
-// `parts` come from the same sentence said with a placeholder for every
-// image name, so they follow the word order of any language
-function formatLine(record, ctx, { titles, urls }) {
-  const nameOf = (id, alt) => quote(titles[id] || alt) || ctx.t('apostrophe:image');
-  const line = {
-    text: formatText(record, ctx, nameOf),
-    change: record.kind
-  };
-  const names = [];
-  const marked = formatText(record, ctx, (id, alt) => {
-    names.push({
-      text: nameOf(id, alt),
-      ...(urls[id] && { href: urls[id] })
-    });
-    return `\uE000${names.length - 1}\uE000`;
-  });
-  if (names.some(name => name.href)) {
-    line.parts = marked.split(/\uE000(\d+)\uE000/)
-      .map((text, at) => (at % 2) ? names[text] : { text })
-      .filter(part => part.text);
-  }
-  return line;
-}
-
-// The sentence of one formatting change. `nameOf(id, alt)` names an image
-function formatText(record, ctx, nameOf) {
+// One formatting change of rich text as lines of `formatChanges`: a line
+// for most, one for each attribute that changed for a link or an image
+function formatLines(record, ctx, { titles, urls }) {
   const {
     kind, old, new: now
   } = record;
   const text = quote(record.text);
-  const marks = list => list.map(mark => markLabel(mark, ctx)).join(', ');
+  const value = text => (text ? { text } : undefined);
+  const image = (id, alt) => ({
+    text: quote(titles[id] || alt) || ctx.t('apostrophe:image'),
+    ...(urls[id] && { href: urls[id] })
+  });
+  // Without `type`, the sides that have a value say it
+  const line = (label, {
+    type, text: words = text, old: from, new: to, ...rest
+  } = {}) => ({
+    change: kind,
+    type: type || ((from && to) ? 'modified' : (to ? 'added' : 'deleted')),
+    label: ctx.t(label),
+    ...(words && { text: words }),
+    ...rest,
+    ...(from && { old: from }),
+    ...(to && { new: to })
+  });
+  const marks = list => value(list.map(mark => markLabel(mark, ctx)).join(', '));
+
   switch (kind) {
-    case 'link':
-      if (old.href !== now.href) {
-        return ctx.t('apostrophe:versionFormatLink', {
-          text,
-          old: old.href,
-          new: now.href
-        });
-      }
-      if ((old.target === '_blank') !== (now.target === '_blank')) {
-        return (now.target === '_blank')
-          ? ctx.t('apostrophe:versionFormatLinkNewTab', { text })
-          : ctx.t('apostrophe:versionFormatLinkSameTab', { text });
-      }
-      return ctx.t('apostrophe:versionFormatLinkSettings', { text });
+    case 'link': {
+      const tab = link => value(ctx.t((link.target === '_blank')
+        ? 'apostrophe:versionFormatLinkNewTab'
+        : 'apostrophe:versionFormatLinkSameTab'
+      ));
+      const lines = [
+        (old.href !== now.href) && line('apostrophe:richTextLink', {
+          old: value(old.href),
+          new: value(now.href)
+        }),
+        ((old.target === '_blank') !== (now.target === '_blank')) &&
+          line('apostrophe:versionFormatLinkTarget', {
+            old: tab(old),
+            new: tab(now)
+          })
+      ].filter(Boolean);
+      return lines.length
+        ? lines
+        : [ line('apostrophe:versionFormatLinkSettings', { type: 'modified' }) ];
+    }
     case 'linkAdded':
-      return ctx.t('apostrophe:versionFormatLinkAdded', {
-        text,
-        new: now
-      });
     case 'linkRemoved':
-      return ctx.t('apostrophe:versionFormatLinkRemoved', {
-        text,
-        old
-      });
+      return [ line('apostrophe:richTextLink', {
+        old: value(old),
+        new: value(now)
+      }) ];
     case 'marksAdded':
-      return ctx.t('apostrophe:versionFormatMarksAdded', {
-        text,
-        marks: marks(now)
-      });
+      return [ line('apostrophe:versionFormatting', { new: marks(now) }) ];
     case 'marksRemoved':
-      return ctx.t('apostrophe:versionFormatMarksRemoved', {
-        text,
-        marks: marks(old)
-      });
+      return [ line('apostrophe:versionFormatting', { old: marks(old) }) ];
     case 'mark':
-      return (old.value && now.value)
-        ? ctx.t('apostrophe:versionFormatMarkValue', {
-          text,
-          mark: markLabel({ name: now.name }, ctx),
-          old: old.value,
-          new: now.value
-        })
-        : changed(markLabel(old, ctx), markLabel(now, ctx));
+      return [ line(MARK_LABELS[now.name] || now.name, {
+        old: value(old.value || markLabel(old, ctx)),
+        new: value(now.value || markLabel(now, ctx))
+      }) ];
     case 'anchor':
-      if (old && now) {
-        return ctx.t('apostrophe:versionFormatAnchor', {
-          text,
-          old,
-          new: now
-        });
-      }
-      return now
-        ? ctx.t('apostrophe:versionFormatAnchorAdded', {
-          text,
-          new: now
-        })
-        : ctx.t('apostrophe:versionFormatAnchorRemoved', {
-          text,
-          old
-        });
+      return [ line('apostrophe:richTextAnchor', {
+        old: value(old),
+        new: value(now)
+      }) ];
     case 'block':
     case 'style':
-      return changed(blockLabel(old, ctx), blockLabel(now, ctx));
+      return [ line('apostrophe:versionFormatBlock', {
+        old: value(blockLabel(old, ctx)),
+        new: value(blockLabel(now, ctx))
+      }) ];
     case 'align':
-      return changed(alignLabel(old, ctx), alignLabel(now, ctx));
+      return [ line('apostrophe:versionFormatAlign', {
+        old: value(alignLabel(old, ctx)),
+        new: value(alignLabel(now, ctx))
+      }) ];
     case 'merged':
-      return ctx.t('apostrophe:versionFormatMerged', { text });
+      return [ line('apostrophe:versionFormatMerged', { type: 'modified' }) ];
     case 'split':
-      return ctx.t('apostrophe:versionFormatSplit', { text });
+      return [ line('apostrophe:versionFormatSplit', { type: 'modified' }) ];
     case 'imageAdded':
-      return ctx.t('apostrophe:versionFormatImageAdded', {
-        text: nameOf(record.id, record.text)
-      });
+      return [ line('apostrophe:image', {
+        text: null,
+        new: image(record.id, record.text)
+      }) ];
     case 'imageRemoved':
-      return ctx.t('apostrophe:versionFormatImageRemoved', {
-        text: nameOf(record.id, record.text)
-      });
+      return [ line('apostrophe:image', {
+        text: null,
+        old: image(record.id, record.text)
+      }) ];
     case 'imageReplaced':
-      return ctx.t('apostrophe:versionFormatImageReplaced', {
-        old: nameOf(old.id, old.alt),
-        new: nameOf(now.id, now.alt)
-      });
+      return [ line('apostrophe:image', {
+        text: null,
+        old: image(old.id, old.alt),
+        new: image(now.id, now.alt)
+      }) ];
     case 'image':
-      return _.isEqual(_.union(Object.keys(old), Object.keys(now)), [ 'alt' ])
-        ? ctx.t('apostrophe:versionFormatImageAlt', {
-          old: quote(old.alt),
-          new: quote(now.alt)
-        })
-        : ctx.t('apostrophe:versionFormatImage', {
-          text: nameOf(record.id, record.text)
-        });
+      // The line is about the image its `text` names
+      return Object.keys(IMAGE_LABELS)
+        .filter(key => old[key] !== now[key])
+        .map(key => line(IMAGE_LABELS[key], {
+          ...image(record.id, record.text),
+          old: value(quote(old[key])),
+          new: value(quote(now[key]))
+        }));
     case 'ruleAdded':
-      return ctx.t('apostrophe:versionFormatRuleAdded');
     case 'ruleRemoved':
-      return ctx.t('apostrophe:versionFormatRuleRemoved');
     case 'breakAdded':
-      return ctx.t('apostrophe:versionFormatBreakAdded');
     case 'breakRemoved':
-      return ctx.t('apostrophe:versionFormatBreakRemoved');
+      // Counted, see `countLines`
+      return [];
     default:
-      return ctx.t('apostrophe:versionFormatTable');
-  }
-
-  function changed(from, to) {
-    return ctx.t('apostrophe:versionFormatChanged', {
-      text,
-      old: from,
-      new: to
-    });
+      return [ line('apostrophe:versionFormatTable', { type: 'modified' }) ];
   }
 }
 
-// The affected words as a sentence quotes them: on one line, cut short
+// The rules and the line breaks that came and went as a line each, by
+// their count: where each stood says little
+function countLines(records, ctx) {
+  const count = kind => records.filter(record => record.kind === kind).length;
+  return [
+    [ 'rule', 'apostrophe:versionFormatRules' ],
+    [ 'break', 'apostrophe:versionFormatBreaks' ]
+  ].flatMap(([ atom, label ]) => {
+    const added = count(`${atom}Added`);
+    const removed = count(`${atom}Removed`);
+    if (!added && !removed) {
+      return [];
+    }
+    return [ {
+      change: `${atom}s`,
+      type: (added && removed) ? 'modified' : (added ? 'added' : 'deleted'),
+      label: ctx.t(label),
+      ...(removed && {
+        old: { text: ctx.t('apostrophe:versionFormatCountRemoved', { count: removed }) }
+      }),
+      ...(added && {
+        new: { text: ctx.t('apostrophe:versionFormatCountAdded', { count: added }) }
+      })
+    } ];
+  });
+}
+
+// The affected words as a line quotes them: on one line, cut short
 function quote(text) {
   const line = (text || '').replace(/\s+/g, ' ').trim();
   return (line.length > QUOTE_LENGTH)

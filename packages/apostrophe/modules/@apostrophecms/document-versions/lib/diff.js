@@ -77,13 +77,30 @@ const ORDER = Symbol('order');
  */
 
 /**
- * One formatting change of rich text, in words.
+ * One side of a formatting change, as shown.
+ *
+ * @typedef {object} FormatValue
+ * @property {string} text The value in the language of the admin UI; the
+ *   title of an image.
+ * @property {string} [href] Images only: the URL of the image, when it can
+ *   be opened.
+ */
+
+/**
+ * One formatting change of rich text, for display.
  *
  * @typedef {object} FormatLine
- * @property {string} text The sentence.
- * @property {string} change The `kind` of the record it says.
- * @property {{ text: string, href?: string }[]} [parts] The sentence cut
- *   around the names of the images it links, when it links any.
+ * @property {string} change The `kind` of the record it shows.
+ * @property {'added'|'modified'|'deleted'} type
+ * @property {string} label What changed: "Link", "Alignment", "Image".
+ * @property {string} [text] The words affected, on one line, cut short; the
+ *   title of the image when it is an image's alt text, style or link.
+ * @property {string} [href] With such a title: the URL of the image, when
+ *   it can be opened.
+ * @property {FormatValue} [old] The older value. With `new`, one of them
+ *   missing when `type` is `added` or `deleted`; both missing when the
+ *   change has no values to compare (a table's layout, merged paragraphs).
+ * @property {FormatValue} [new]
  */
 
 /**
@@ -127,7 +144,7 @@ const ORDER = Symbol('order');
  * @property {import('./rich-text-format.js').FormatChange[]} [format]
  *   Modified rich text rows, once `addFormat` of `lib/text.js` ran and found
  *   some: the formatting that changed. Non-enumerable, like `field`.
- * @property {FormatLine[]} [formatChanges] The same as sentences in the
+ * @property {FormatLine[]} [formatChanges] The same for display, in the
  *   language of the admin UI, set by `addText`.
  * @property {boolean} [ai] Rows of `consolidate` only: whether a version
  *   saved with AI changed this path, or one above or below it; for an
