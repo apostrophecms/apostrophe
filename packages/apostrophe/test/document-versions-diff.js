@@ -1007,6 +1007,361 @@ describe('Document Versions diff engine', function () {
         'newText'
       ]);
     });
+
+    describe('format changes', function () {
+      const src = id => `/api/v1/@apostrophecms/image/${id}/src`;
+
+      it('should say every kind of formatting change in words', async function () {
+        const cases = [
+          [
+            '<p>Read <a href="/one">the guide</a></p>',
+            '<p>Read <a href="/two">the guide</a></p>',
+            'link',
+            'Link changed on "the guide": from /one to /two'
+          ],
+          [
+            '<p>Read <a href="/one">the guide</a></p>',
+            '<p>Read <a href="/one" target="_blank">the guide</a></p>',
+            'link',
+            'Link on "the guide" now opens in a new tab'
+          ],
+          [
+            '<p>Read <a href="/one" target="_blank">the guide</a></p>',
+            '<p>Read <a href="/one">the guide</a></p>',
+            'link',
+            'Link on "the guide" no longer opens in a new tab'
+          ],
+          [
+            '<p>Read <a href="/one">the guide</a></p>',
+            '<p>Read <a href="/one" title="Guide">the guide</a></p>',
+            'link',
+            'Link settings changed on "the guide"'
+          ],
+          [
+            '<p>Read the guide</p>',
+            '<p>Read <a href="/one">the guide</a></p>',
+            'linkAdded',
+            'Link added on "the guide": /one'
+          ],
+          [
+            '<p>Read <a href="/one">the guide</a></p>',
+            '<p>Read the guide</p>',
+            'linkRemoved',
+            'Link removed from "the guide": /one'
+          ],
+          [
+            '<p>Read the guide</p>',
+            '<p>Read <strong><em>the guide</em></strong></p>',
+            'marksAdded',
+            'Bold, Italic added: "the guide"'
+          ],
+          [
+            '<p>Read <sup>the guide</sup></p>',
+            '<p>Read the guide</p>',
+            'marksRemoved',
+            'Superscript removed: "the guide"'
+          ],
+          [
+            '<p>Read <span style="color: #ff0000">the guide</span></p>',
+            '<p>Read <span style="color: #0000ff">the guide</span></p>',
+            'mark',
+            'Color changed on "the guide": from #ff0000 to #0000ff'
+          ],
+          [
+            '<p>Read <span class="small">the guide</span></p>',
+            '<p>Read <span class="large">the guide</span></p>',
+            'mark',
+            'From Inline Style (small) to Inline Style (large): "the guide"'
+          ],
+          [
+            '<p><span id="top">Title</span></p>',
+            '<p><span id="start">Title</span></p>',
+            'anchor',
+            'Anchor changed on "Title": from top to start'
+          ],
+          [
+            '<p>Title</p>',
+            '<p><span id="top">Title</span></p>',
+            'anchor',
+            'Anchor added on "Title": top'
+          ],
+          [
+            '<p><span id="top">Title</span></p>',
+            '<p>Title</p>',
+            'anchor',
+            'Anchor removed from "Title": top'
+          ],
+          [
+            '<p>Our mission</p>',
+            '<h2>Our mission</h2>',
+            'block',
+            'From Paragraph (P) to Heading 2 (H2): "Our mission"'
+          ],
+          [
+            '<ul><li><p>One</p></li><li><p>Two</p></li></ul>',
+            '<ol><li><p>One</p></li><li><p>Two</p></li></ol>',
+            'block',
+            'From Bulleted List to Ordered List: "One Two"'
+          ],
+          [
+            '<p>Our mission</p>',
+            '<p class="lead">Our mission</p>',
+            'style',
+            'From Paragraph (P) to Paragraph (P) (lead): "Our mission"'
+          ],
+          [
+            '<p>Our mission</p>',
+            '<p style="text-align: center">Our mission</p>',
+            'align',
+            'From Default Alignment to Align Center: "Our mission"'
+          ],
+          [
+            '<p>One.</p><p>Two.</p>',
+            '<p>One. Two.</p>',
+            'merged',
+            'Paragraphs merged at "Two."'
+          ],
+          [
+            '<p>One. Two.</p>',
+            '<p>One.</p><p>Two.</p>',
+            'split',
+            'Paragraph split at "Two."'
+          ],
+          [
+            `<p>One</p><figure><img src="${src('gone')}" alt="A fox"></figure>`,
+            '<p>One</p>',
+            'imageRemoved',
+            'Image removed: "A fox"'
+          ],
+          [
+            `<p>One</p><figure><img src="${src('gone')}" alt="A fox"></figure>`,
+            `<p>One</p><figure><img src="${src('gone')}" alt="A red fox"></figure>`,
+            'image',
+            'Image alt text changed from "A fox" to "A red fox"'
+          ],
+          [
+            `<p>One</p><figure class="left"><img src="${src('gone')}" alt="A fox"></figure>`,
+            `<p>One</p><figure class="right"><img src="${src('gone')}" alt="A red fox"></figure>`,
+            'image',
+            'Image settings changed: "A red fox"'
+          ],
+          [
+            '<p>One</p><p>Two</p>',
+            '<p>One</p><hr><p>Two</p>',
+            'ruleAdded',
+            'Horizontal rule added'
+          ],
+          [
+            '<p>One</p><hr><p>Two</p>',
+            '<p>One</p><p>Two</p>',
+            'ruleRemoved',
+            'Horizontal rule removed'
+          ],
+          [
+            '<p>One two</p>',
+            '<p>One<br>two</p>',
+            'breakAdded',
+            'Line break added'
+          ],
+          [
+            '<p>One<br>two</p>',
+            '<p>One two</p>',
+            'breakRemoved',
+            'Line break removed'
+          ],
+          [
+            '<table><tbody><tr><td><p>A</p></td></tr></tbody></table>',
+            '<table><tbody><tr><td><p>A</p></td></tr>' +
+            '<tr><td><p></p></td></tr></tbody></table>',
+            'table',
+            'Table layout changed'
+          ]
+        ];
+        for (const [ before, after, change, sentence ] of cases) {
+          const older = buildDoc();
+          const newer = buildDoc();
+          older.body = before;
+          newer.body = after;
+          const ctx = apos.docVersions.getDiffContext(req);
+          const rows = text.addFormat(
+            apos.docVersions.getChangeRows(req, older, newer),
+            ctx
+          );
+          await apos.docVersions.addChangeText(req, rows);
+          assert.deepEqual(rows[0].formatChanges, [ {
+            text: sentence,
+            change
+          } ]);
+        }
+      });
+
+      it('should name an image by its title, fetched with the related titles', async function () {
+        const image = await apos.image.insert(req, { title: 'Fox picture' });
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p>One</p>';
+        newer.body = `<p>One</p><figure><img src="${src(image.aposDocId)}" alt="A fox"></figure>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        assert.deepEqual(text.getRelatedIds(rows, ctx), [ image.aposDocId ]);
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges, [ {
+          text: 'Image added: "Fox picture"',
+          change: 'imageAdded',
+          parts: [
+            { text: 'Image added: "' },
+            {
+              text: 'Fox picture',
+              href: src(image.aposDocId)
+            },
+            { text: '"' }
+          ]
+        } ]);
+      });
+
+      it('should say a replaced image as one change, by both titles', async function () {
+        const fox = await apos.image.insert(req, { title: 'Fox picture' });
+        const hen = await apos.image.insert(req, { title: 'Hen picture' });
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = `<p>One</p><figure><img src="${src(fox.aposDocId)}" alt=""></figure>`;
+        newer.body = `<p>One</p><figure><img src="${src(hen.aposDocId)}" alt=""></figure>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges, [ {
+          text: 'Image changed from "Fox picture" to "Hen picture"',
+          change: 'imageReplaced',
+          parts: [
+            { text: 'Image changed from "' },
+            {
+              text: 'Fox picture',
+              href: src(fox.aposDocId)
+            },
+            { text: '" to "' },
+            {
+              text: 'Hen picture',
+              href: src(hen.aposDocId)
+            },
+            { text: '"' }
+          ]
+        } ]);
+      });
+
+      it('should link no image that is archived or gone', async function () {
+        const kept = await apos.image.insert(req, { title: 'Kept picture' });
+        const archived = await apos.image.insert(req, {
+          title: 'Archived picture',
+          archived: true
+        });
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = `<p>One</p><figure><img src="${src(archived.aposDocId)}" alt=""></figure>`;
+        newer.body = `<p>One</p><figure><img src="${src(kept.aposDocId)}" alt=""></figure>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges[0].parts, [
+          { text: 'Image changed from "' },
+          { text: 'Archived picture' },
+          { text: '" to "' },
+          {
+            text: 'Kept picture',
+            href: src(kept.aposDocId)
+          },
+          { text: '"' }
+        ]);
+
+        older.body = `<p>One</p><figure><img src="${src('gone')}" alt="A fox"></figure>`;
+        newer.body = '<p>One</p>';
+        const gone = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, gone);
+        assert.deepEqual(gone[0].formatChanges, [ {
+          text: 'Image removed: "A fox"',
+          change: 'imageRemoved'
+        } ]);
+      });
+
+      it('should list the changes of a rich text widget in reading order', async function () {
+        const build = content => {
+          const doc = buildDoc();
+          doc.section.rows[0].content.items.push({
+            _id: 'text',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content
+          });
+          return doc;
+        };
+        const older = build(
+          '<p>Our mission</p><p>Read <a href="/one">the guide</a> now.</p>'
+        );
+        const newer = build(
+          '<h2>Our mission</h2><p>Read <a href="/two">the guide</a> today.</p>'
+        );
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.equal(rows.length, 1);
+        assert.equal(rows[0].newText, 'Our mission\nRead the guide today.');
+        assert.deepEqual(rows[0].formatChanges.map(line => line.text), [
+          'From Paragraph (P) to Heading 2 (H2): "Our mission"',
+          'Link changed on "the guide": from /one to /two'
+        ]);
+        assert.equal(Object.keys(rows[0]).includes('format'), false);
+      });
+
+      it('should quote the words affected on one line, cut short', async function () {
+        const words = Array.from({ length: 40 }, (value, at) => `word${at}`).join(' ');
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = `<p>${words}</p>`;
+        newer.body = `<h3>${words}</h3>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.equal(
+          rows[0].formatChanges[0].text,
+          `From Paragraph (P) to Heading 3 (H3): "${words.slice(0, 80).trimEnd()}…"`
+        );
+      });
+
+      it('should set nothing when only words changed, and nothing unless asked', async function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        newer.body = '<p>Body <strong>changed</strong></p>';
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.equal('formatChanges' in rows[0], false);
+
+        newer.body = '<h2>Body root</h2>';
+        const plain = apos.docVersions.getChangeRows(req, older, newer);
+        await apos.docVersions.addChangeText(req, plain);
+        assert.equal('formatChanges' in plain[0], false);
+      });
+    });
   });
 
   describe('annotate', function () {

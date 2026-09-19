@@ -47,9 +47,13 @@ const ORDER = Symbol('order');
  *   `apos.doc.setMeta`, used by `annotate` to highlight top-level fields.
  * @property {(html: string) => string} htmlToPlaintext
  *   `apos.util.htmlToPlaintext`, for the text of rich text.
- * @property {(key: string) => string} [t] A label in the language of the
- *   admin UI, for text that names a widget type. Labels stay as they are
- *   when omitted.
+ * @property {(key: string, options?: object) => string} [t] A label or a
+ *   phrase in the language of the admin UI, `options` being its
+ *   interpolation values. Labels stay as they are when omitted, and rich
+ *   text rows get no `formatChanges`.
+ * @property {() => object[]} [getRichTextStyles] The `styles` rich text is
+ *   configured with by default, `{ tag, class, label }` each, for the names
+ *   of blocks and inline styles.
  */
 
 /**
@@ -70,6 +74,16 @@ const ORDER = Symbol('order');
  *   position in the list the item is taken from, the newer document's
  *   unless the item was deleted.
  * @property {string} [widgetType] Widgets only: the widget `type`.
+ */
+
+/**
+ * One formatting change of rich text, in words.
+ *
+ * @typedef {object} FormatLine
+ * @property {string} text The sentence.
+ * @property {string} change The `kind` of the record it says.
+ * @property {{ text: string, href?: string }[]} [parts] The sentence cut
+ *   around the names of the images it links, when it links any.
  */
 
 /**
@@ -110,6 +124,11 @@ const ORDER = Symbol('order');
  *   they moved. Non-enumerable, like `aiItems`, which comes with it: those
  *   a version saved with AI moved.
  * @property {Set<string>} [aiItems]
+ * @property {import('./rich-text-format.js').FormatChange[]} [format]
+ *   Modified rich text rows, once `addFormat` of `lib/text.js` ran and found
+ *   some: the formatting that changed. Non-enumerable, like `field`.
+ * @property {FormatLine[]} [formatChanges] The same as sentences in the
+ *   language of the admin UI, set by `addText`.
  * @property {boolean} [ai] Rows of `consolidate` only: whether a version
  *   saved with AI changed this path, or one above or below it; for an
  *   order row, whether one changed that order.

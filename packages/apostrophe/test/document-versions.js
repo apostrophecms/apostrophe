@@ -3510,6 +3510,55 @@ describe('Document Versions', function () {
         });
       });
 
+      it('should say what changed in the formatting of rich text - GET /:versionId/changes', async function() {
+        const main = richTextArea('One', 'Two');
+        const edit = (...contents) => ({
+          main: {
+            ...main,
+            items: main.items.map((item, i) => ({
+              ...item,
+              content: contents[i]
+            }))
+          }
+        });
+        const { versions } = await recordVersions([
+          edit('<p>Read <a href="/one">the guide</a> now.</p>', '<p>Our mission</p>'),
+          edit('<p>Read <a href="/two">the guide</a> today.</p>', '<h2>Our mission</h2>')
+        ]);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.deepEqual(
+          changes.rows.map(row => ({
+            newText: row.newText,
+            marked: row.diff.filter(part => part.change !== 'same').map(part => part.text),
+            formatChanges: row.formatChanges
+          })),
+          [
+            {
+              newText: 'Read the guide today.',
+              marked: [ 'now', 'today' ],
+              formatChanges: [ {
+                text: 'Link changed on "the guide": from /one to /two',
+                change: 'link'
+              } ]
+            },
+            {
+              newText: 'Our mission',
+              marked: [],
+              formatChanges: [ {
+                text: 'From Paragraph (P) to Heading 2 (H2): "Our mission"',
+                change: 'block'
+              } ]
+            }
+          ]
+        );
+        assert.equal('format' in changes.rows[0], false);
+      });
+
       it('should list a change of order alone as one change - GET /:versionId/changes', async function() {
         const items = [ 'one', 'two', 'three' ].map(value => ({
           _id: `item-${value}`,

@@ -717,9 +717,12 @@ module.exports = {
           getWidgetManager: type => self.apos.area.getWidgetManager(type),
           setMeta: (doc, ...args) => self.apos.doc.setMeta(doc, ...args),
           htmlToPlaintext: html => self.apos.util.htmlToPlaintext(html),
-          t: key => self.apos.i18n.i18next.t(key, {
+          t: (key, options = {}) => self.apos.i18n.i18next.t(key, {
+            ...options,
             lng: self.apos.i18n.getAdminLocale(req)
-          })
+          }),
+          getRichTextStyles: () => self.apos.modules['@apostrophecms/rich-text-widget']
+            .options.defaultOptions.styles || []
         };
       },
       // Every change from `older` to `newer`, two stored versions of one
@@ -728,18 +731,23 @@ module.exports = {
         const manager = self.apos.doc.getManager(newer.type);
         return diff.walk(manager.schema, older, newer, self.getDiffContext(req));
       },
-      // Sets `oldText` and `newText` on change rows (see `lib/text.js`).
-      // Related document titles are fetched in one query, as `req` sees them;
-      // a document it cannot see has no title
+      // Sets `oldText` and `newText` on change rows, and `formatChanges` on
+      // those `addFormat` ran on (see `lib/text.js`). Related document
+      // titles are fetched in one query, as `req` sees them; a document it
+      // cannot see has no title. An image that is not archived also has a
+      // URL, that of its file, for the image lines of `formatChanges`
       async addChangeText(req, rows) {
         const ctx = self.getDiffContext(req);
         const ids = text.getRelatedIds(rows, ctx);
         const titles = {};
+        const urls = {};
         if (ids.length) {
           const related = await self.apos.doc.find(req, { aposDocId: { $in: ids } })
             .project({
               aposDocId: 1,
-              title: 1
+              title: 1,
+              type: 1,
+              archived: 1
             })
             .archived(null)
             .areas(false)
@@ -747,9 +755,15 @@ module.exports = {
             .toArray();
           for (const doc of related) {
             titles[doc.aposDocId] = doc.title;
+            if ((doc.type === self.apos.image.__meta.name) && !doc.archived) {
+              urls[doc.aposDocId] = `${self.apos.image.action}/${doc.aposDocId}/src`;
+            }
           }
         }
-        return text.addText(rows, ctx, { titles });
+        return text.addText(rows, ctx, {
+          titles,
+          urls
+        });
       },
       // The changes of consecutive versions of one document as one list,
       // every row flagged `ai` (see `lib/diff.js`). `pairs` are
@@ -1235,8 +1249,9 @@ module.exports = {
           pairs
         };
       },
-      // The changes of a version since the one before it, with display text
-      // and its word diff (see `lib/text.js`), their counts per change type
+      // The changes of a version since the one before it, with display text,
+      // its word diff and, for rich text, the formatting that changed in
+      // words (see `lib/text.js`), their counts per change type
       // and of those involving AI, and the versions they cover, newest
       // first:
       // `{ rows, counts: { added, modified, deleted, ai }, versionIds }`.
@@ -1260,10 +1275,11 @@ module.exports = {
           self.apos.doc.getManager(last.doc.type) &&
           !last.restoredFrom
         ) {
+          const ctx = self.getDiffContext(draftReq);
           rows = text.addWordDiff(await self.addChangeText(
             draftReq,
-            self.getConsolidatedRows(req, pairs)
-          ), self.getDiffContext(draftReq));
+            text.addFormat(self.getConsolidatedRows(req, pairs), ctx)
+          ), ctx);
         }
 
         return {

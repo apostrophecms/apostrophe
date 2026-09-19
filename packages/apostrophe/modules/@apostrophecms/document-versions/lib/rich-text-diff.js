@@ -187,6 +187,10 @@ module.exports = function diffRichText(older, newer, { labels = {} } = {}) {
   }
 };
 
+// Shared with `rich-text-format.js`, which reads the same markup
+module.exports.INLINE = INLINE;
+module.exports.MAX_EDIT_LENGTH = MAX_EDIT_LENGTH;
+
 function hidden(label) {
   return label
     ? `<span class="${HIDDEN_CLASS}">${escapeText(label)} </span>`

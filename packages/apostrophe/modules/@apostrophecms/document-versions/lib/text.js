@@ -5,6 +5,7 @@
 
 const _ = require('lodash');
 const { diffWords, diffArrays } = require('diff');
+const getFormatChanges = require('./rich-text-format.js');
 
 // Core field types whose stored value reads as text as it is, reached
 // through `extend` as well
@@ -25,6 +26,41 @@ const SCALAR = new Set([
 ]);
 // Field types with a representation of their own
 const SPECIAL = new Set([ 'richText', 'attachment', 'relationship' ]);
+// The most of the affected text a formatting sentence quotes
+const QUOTE_LENGTH = 80;
+// What the rich text editor calls the blocks, marks and alignments it
+// offers. A configured style goes by its own label
+const BLOCK_LABELS = {
+  p: 'apostrophe:richTextParagraph',
+  h1: 'apostrophe:richTextH1',
+  h2: 'apostrophe:richTextH2',
+  h3: 'apostrophe:richTextH3',
+  h4: 'apostrophe:richTextH4',
+  h5: 'apostrophe:richTextH5',
+  h6: 'apostrophe:richTextH6',
+  blockquote: 'apostrophe:richTextBlockquote',
+  pre: 'apostrophe:richTextCodeBlock',
+  ul: 'apostrophe:richTextBulletedList',
+  ol: 'apostrophe:richTextOrderedList'
+};
+const MARK_LABELS = {
+  bold: 'apostrophe:richTextBold',
+  italic: 'apostrophe:richTextItalic',
+  strike: 'apostrophe:richTextStrikethrough',
+  underline: 'apostrophe:richTextUnderline',
+  highlight: 'apostrophe:richTextHighlight',
+  color: 'apostrophe:richTextColor',
+  subscript: 'apostrophe:subscript',
+  superscript: 'apostrophe:superscript',
+  code: 'apostrophe:versionFormatCode',
+  style: 'apostrophe:versionFormatInlineStyle'
+};
+const ALIGN_LABELS = {
+  left: 'apostrophe:richTextAlignLeft',
+  center: 'apostrophe:richTextAlignCenter',
+  right: 'apostrophe:richTextAlignRight',
+  justify: 'apostrophe:richTextAlignJustify'
+};
 
 /**
  * Plaintext of rich text markup: tags stripped, entities decoded, every
@@ -103,6 +139,34 @@ function getTitle(schema, titleField, item, ctx) {
 }
 
 /**
+ * Sets `format` on each modified rich text row whose formatting changed:
+ * the records of `lib/rich-text-format.js` from its `old` to its `new`, for
+ * `addText` to put in words. Run before `getRelatedIds`, which the images
+ * among them need.
+ *
+ * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
+ * @param {import('./diff.js').DiffContext} ctx
+ * @returns {import('./diff.js').ChangeRow[]} The same rows.
+ */
+function addFormat(rows, ctx) {
+  for (const row of rows) {
+    const isRichText = (row.fieldType === 'richText') ||
+      (row.field && (getKind(row.field, ctx) === 'richText'));
+    if (!isRichText || !row.old || !row.new) {
+      continue;
+    }
+    const format = getFormatChanges(row.old, row.new);
+    if (format.length) {
+      Object.defineProperty(row, 'format', {
+        value: format,
+        enumerable: false
+      });
+    }
+  }
+  return rows;
+}
+
+/**
  * The ids of every related document the rows' text needs a title for.
  *
  * @param {import('./diff.js').ChangeRow[]} rows
@@ -114,6 +178,9 @@ function getRelatedIds(rows, ctx) {
   for (const row of rows) {
     if (row.field && (getKind(row.field, ctx) === 'relationship')) {
       [ ...(row.old || []), ...(row.new || []) ].forEach(id => ids.add(id));
+    }
+    for (const record of (row.format || [])) {
+      [ record.id, record.old?.id ].filter(Boolean).forEach(id => ids.add(id));
     }
   }
   return [ ...ids ];
@@ -129,17 +196,33 @@ function getRelatedIds(rows, ctx) {
  * apart, then its widget type and its title; any other row as its field's
  * text (`toText`).
  *
+ * A row with `format` records (see `addFormat`) also gets `formatChanges`,
+ * a `{ text, change }` line for each: `text` a sentence in the language of
+ * the admin UI, quoting the words affected and the old and new value where
+ * there is one, `change` the record's `kind`. Blocks and marks go by the
+ * rich text editor's own labels, an image by its title. A line that names
+ * an image with a URL also has `parts`, the same sentence cut around the
+ * names, `{ text }` or `{ text, href }` each, so the name can be shown as a
+ * link to the image.
+ *
  * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
  * @param {import('./diff.js').DiffContext} ctx
  * @param {object} [options]
  * @param {Object<string, string>} [options.titles] Related document titles
  *   by id, for relationship rows (see `getRelatedIds`).
+ * @param {Object<string, string>} [options.urls] Image URLs by id.
  * @returns {import('./diff.js').ChangeRow[]} The same rows.
  */
-function addText(rows, ctx, { titles = {} } = {}) {
+function addText(rows, ctx, { titles = {}, urls = {} } = {}) {
   for (const row of rows) {
     row.oldText = rowText(row, row.old, ctx, titles);
     row.newText = rowText(row, row.new, ctx, titles);
+    if (row.format && ctx.t) {
+      row.formatChanges = row.format.map(record => formatLine(record, ctx, {
+        titles,
+        urls
+      }));
+    }
   }
   return rows;
 }
@@ -209,6 +292,7 @@ module.exports = {
   toText,
   getItemText,
   getWidgetText,
+  addFormat,
   getRelatedIds,
   addText,
   addWordDiff
@@ -231,6 +315,186 @@ function rowText(row, value, ctx, titles) {
     return value.map(id => itemText(row.items[id], ctx)).join(', ');
   }
   return row.field ? toText(row.field, value, ctx, { titles }) : '';
+}
+
+// One formatting change of rich text as a line of `formatChanges`. The
+// `parts` come from the same sentence said with a placeholder for every
+// image name, so they follow the word order of any language
+function formatLine(record, ctx, { titles, urls }) {
+  const nameOf = (id, alt) => quote(titles[id] || alt) || ctx.t('apostrophe:image');
+  const line = {
+    text: formatText(record, ctx, nameOf),
+    change: record.kind
+  };
+  const names = [];
+  const marked = formatText(record, ctx, (id, alt) => {
+    names.push({
+      text: nameOf(id, alt),
+      ...(urls[id] && { href: urls[id] })
+    });
+    return `\uE000${names.length - 1}\uE000`;
+  });
+  if (names.some(name => name.href)) {
+    line.parts = marked.split(/\uE000(\d+)\uE000/)
+      .map((text, at) => (at % 2) ? names[text] : { text })
+      .filter(part => part.text);
+  }
+  return line;
+}
+
+// The sentence of one formatting change. `nameOf(id, alt)` names an image
+function formatText(record, ctx, nameOf) {
+  const {
+    kind, old, new: now
+  } = record;
+  const text = quote(record.text);
+  const marks = list => list.map(mark => markLabel(mark, ctx)).join(', ');
+  switch (kind) {
+    case 'link':
+      if (old.href !== now.href) {
+        return ctx.t('apostrophe:versionFormatLink', {
+          text,
+          old: old.href,
+          new: now.href
+        });
+      }
+      if ((old.target === '_blank') !== (now.target === '_blank')) {
+        return (now.target === '_blank')
+          ? ctx.t('apostrophe:versionFormatLinkNewTab', { text })
+          : ctx.t('apostrophe:versionFormatLinkSameTab', { text });
+      }
+      return ctx.t('apostrophe:versionFormatLinkSettings', { text });
+    case 'linkAdded':
+      return ctx.t('apostrophe:versionFormatLinkAdded', {
+        text,
+        new: now
+      });
+    case 'linkRemoved':
+      return ctx.t('apostrophe:versionFormatLinkRemoved', {
+        text,
+        old
+      });
+    case 'marksAdded':
+      return ctx.t('apostrophe:versionFormatMarksAdded', {
+        text,
+        marks: marks(now)
+      });
+    case 'marksRemoved':
+      return ctx.t('apostrophe:versionFormatMarksRemoved', {
+        text,
+        marks: marks(old)
+      });
+    case 'mark':
+      return (old.value && now.value)
+        ? ctx.t('apostrophe:versionFormatMarkValue', {
+          text,
+          mark: markLabel({ name: now.name }, ctx),
+          old: old.value,
+          new: now.value
+        })
+        : changed(markLabel(old, ctx), markLabel(now, ctx));
+    case 'anchor':
+      if (old && now) {
+        return ctx.t('apostrophe:versionFormatAnchor', {
+          text,
+          old,
+          new: now
+        });
+      }
+      return now
+        ? ctx.t('apostrophe:versionFormatAnchorAdded', {
+          text,
+          new: now
+        })
+        : ctx.t('apostrophe:versionFormatAnchorRemoved', {
+          text,
+          old
+        });
+    case 'block':
+    case 'style':
+      return changed(blockLabel(old, ctx), blockLabel(now, ctx));
+    case 'align':
+      return changed(alignLabel(old, ctx), alignLabel(now, ctx));
+    case 'merged':
+      return ctx.t('apostrophe:versionFormatMerged', { text });
+    case 'split':
+      return ctx.t('apostrophe:versionFormatSplit', { text });
+    case 'imageAdded':
+      return ctx.t('apostrophe:versionFormatImageAdded', {
+        text: nameOf(record.id, record.text)
+      });
+    case 'imageRemoved':
+      return ctx.t('apostrophe:versionFormatImageRemoved', {
+        text: nameOf(record.id, record.text)
+      });
+    case 'imageReplaced':
+      return ctx.t('apostrophe:versionFormatImageReplaced', {
+        old: nameOf(old.id, old.alt),
+        new: nameOf(now.id, now.alt)
+      });
+    case 'image':
+      return _.isEqual(_.union(Object.keys(old), Object.keys(now)), [ 'alt' ])
+        ? ctx.t('apostrophe:versionFormatImageAlt', {
+          old: quote(old.alt),
+          new: quote(now.alt)
+        })
+        : ctx.t('apostrophe:versionFormatImage', {
+          text: nameOf(record.id, record.text)
+        });
+    case 'ruleAdded':
+      return ctx.t('apostrophe:versionFormatRuleAdded');
+    case 'ruleRemoved':
+      return ctx.t('apostrophe:versionFormatRuleRemoved');
+    case 'breakAdded':
+      return ctx.t('apostrophe:versionFormatBreakAdded');
+    case 'breakRemoved':
+      return ctx.t('apostrophe:versionFormatBreakRemoved');
+    default:
+      return ctx.t('apostrophe:versionFormatTable');
+  }
+
+  function changed(from, to) {
+    return ctx.t('apostrophe:versionFormatChanged', {
+      text,
+      old: from,
+      new: to
+    });
+  }
+}
+
+// The affected words as a sentence quotes them: on one line, cut short
+function quote(text) {
+  const line = (text || '').replace(/\s+/g, ' ').trim();
+  return (line.length > QUOTE_LENGTH)
+    ? `${line.slice(0, QUOTE_LENGTH).trimEnd()}…`
+    : line;
+}
+
+// The label of the configured style with that tag and class, if any
+function styleLabel({ tag, class: className }, ctx) {
+  const found = (ctx.getRichTextStyles?.() || []).find(style => {
+    return (style.tag === tag) && ((style.class || '') === (className || ''));
+  });
+  return found?.label && ctx.t(found.label);
+}
+
+function blockLabel(block, ctx) {
+  if (!block) {
+    return '';
+  }
+  const label = ctx.t(BLOCK_LABELS[block.tag] || block.tag.toUpperCase());
+  return styleLabel(block, ctx) ||
+    (block.class ? `${label} (${block.class})` : label);
+}
+
+function markLabel(mark, ctx) {
+  const label = ctx.t(MARK_LABELS[mark.name] || mark.name);
+  return (mark.class && styleLabel(mark, ctx)) ||
+    (mark.class ? `${label} (${mark.class})` : label);
+}
+
+function alignLabel(align, ctx) {
+  return ctx.t(ALIGN_LABELS[align] || 'apostrophe:versionFormatAlignDefault');
 }
 
 function changeOf(part) {
