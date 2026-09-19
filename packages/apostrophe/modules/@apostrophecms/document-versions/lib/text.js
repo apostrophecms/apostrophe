@@ -25,7 +25,7 @@ const SCALAR = new Set([
   'color'
 ]);
 // Field types with a representation of their own
-const SPECIAL = new Set([ 'richText', 'attachment', 'relationship', 'box' ]);
+const SPECIAL = new Set([ 'richText', 'attachment', 'relationship', 'box', 'oembed' ]);
 // The sides of a box, as its input names them
 const BOX_SIDES = {
   top: 'apostrophe:boxFieldTop',
@@ -33,6 +33,9 @@ const BOX_SIDES = {
   bottom: 'apostrophe:boxFieldBottom',
   left: 'apostrophe:boxFieldLeft'
 };
+// An internal link as rich text stores it, until the page loads and the
+// placeholder becomes the document's URL
+const PERMALINK = /^#apostrophe-permalink-([^?]+)/;
 // The most of the affected text a formatting line quotes
 const QUOTE_LENGTH = 80;
 // What the rich text editor calls the blocks, marks and alignments it
@@ -97,8 +100,8 @@ function toPlaintext(html, ctx) {
  * a number with the field's `unit` when it has one, rich text as plaintext,
  * an attachment as its name and extension, a relationship as the titles of
  * the related documents in id order, a box as the sides that are set
- * (`Top 10px, Left 20px`). Anything else, and a value with no safe string
- * form, is `''`.
+ * (`Top 10px, Left 20px`), an embed as its URL. Anything else, and a value
+ * with no safe string form, is `''`.
  *
  * @param {object} field The schema field.
  * @param {any} value The stored value; for a relationship, its ids.
@@ -123,6 +126,9 @@ function toText(field, value, ctx, { titles = {} } = {}) {
     return Array.isArray(value)
       ? value.map(id => titles[id]).filter(Boolean).join(', ')
       : '';
+  }
+  if (kind === 'oembed') {
+    return scalarText(value.url);
   }
   if (kind === 'box') {
     return Object.entries(BOX_SIDES)
@@ -205,6 +211,7 @@ function getRelatedIds(rows, ctx) {
     }
     for (const record of (row.format || [])) {
       [ record.id, record.old?.id ].filter(Boolean).forEach(id => ids.add(id));
+      getLinks(record).map(getPermalinkId).filter(Boolean).forEach(id => ids.add(id));
     }
   }
   return [ ...ids ];
@@ -235,9 +242,13 @@ function getRelatedIds(rows, ctx) {
  * @param {Object<string, string>} [options.titles] Related document titles
  *   by id, for relationship rows (see `getRelatedIds`).
  * @param {Object<string, string>} [options.urls] Image URLs by id.
+ * @param {Object<string, string>} [options.links] Document URLs by id,
+ *   for internal links.
  * @returns {import('./diff.js').ChangeRow[]} The same rows.
  */
-function addText(rows, ctx, { titles = {}, urls = {} } = {}) {
+function addText(rows, ctx, {
+  titles = {}, urls = {}, links = {}
+} = {}) {
   for (const row of rows) {
     row.oldText = rowText(row, row.old, ctx, titles);
     row.newText = rowText(row, row.new, ctx, titles);
@@ -245,7 +256,8 @@ function addText(rows, ctx, { titles = {}, urls = {} } = {}) {
       row.formatChanges = [
         ...row.format.flatMap(record => formatLines(record, ctx, {
           titles,
-          urls
+          urls,
+          links
         })),
         ...countLines(row.format, ctx)
       ];
@@ -346,12 +358,25 @@ function rowText(row, value, ctx, titles) {
 
 // One formatting change of rich text as lines of `formatChanges`: a line
 // for most, one for each attribute that changed for a link or an image
-function formatLines(record, ctx, { titles, urls }) {
+function formatLines(record, ctx, {
+  titles, urls, links
+}) {
   const {
     kind, old, new: now
   } = record;
   const text = quote(record.text);
   const value = text => (text ? { text } : undefined);
+  // An internal link reads as the document it links to
+  const link = href => {
+    const id = getPermalinkId(href);
+    if (!id) {
+      return value(href);
+    }
+    return {
+      text: quote(titles[id]) || ctx.t('apostrophe:versionFormatInternalLink'),
+      ...(links[id] && { url: links[id] })
+    };
+  };
   const image = (id, alt) => ({
     text: quote(titles[id] || alt) || ctx.t('apostrophe:image'),
     ...(urls[id] && { href: urls[id] })
@@ -378,8 +403,8 @@ function formatLines(record, ctx, { titles, urls }) {
       ));
       const lines = [
         (old.href !== now.href) && line('apostrophe:richTextLink', {
-          old: value(old.href),
-          new: value(now.href)
+          old: link(old.href),
+          new: link(now.href)
         }),
         ((old.target === '_blank') !== (now.target === '_blank')) &&
           line('apostrophe:versionFormatLinkTarget', {
@@ -394,8 +419,8 @@ function formatLines(record, ctx, { titles, urls }) {
     case 'linkAdded':
     case 'linkRemoved':
       return [ line('apostrophe:richTextLink', {
-        old: value(old),
-        new: value(now)
+        old: link(old),
+        new: link(now)
       }) ];
     case 'marksAdded':
       return [ line('apostrophe:versionFormatting', { new: marks(now) }) ];
@@ -448,8 +473,8 @@ function formatLines(record, ctx, { titles, urls }) {
         .filter(key => old[key] !== now[key])
         .map(key => line(IMAGE_LABELS[key], {
           ...image(record.id, record.text),
-          old: value(quote(old[key])),
-          new: value(quote(now[key]))
+          old: (key === 'href') ? link(old.href) : value(quote(old[key])),
+          new: (key === 'href') ? link(now.href) : value(quote(now[key]))
         }));
     case 'ruleAdded':
     case 'ruleRemoved':
@@ -495,6 +520,22 @@ function quote(text) {
   return (line.length > QUOTE_LENGTH)
     ? `${line.slice(0, QUOTE_LENGTH).trimEnd()}…`
     : line;
+}
+
+// The `href`s a formatting record holds
+function getLinks(record) {
+  if ((record.kind === 'linkAdded') || (record.kind === 'linkRemoved')) {
+    return [ record.old, record.new ];
+  }
+  if ((record.kind === 'link') || (record.kind === 'image')) {
+    return [ record.old?.href, record.new?.href ];
+  }
+  return [];
+}
+
+// The `aposDocId` an internal link points to, `null` for any other `href`
+function getPermalinkId(href) {
+  return (typeof href === 'string') ? (href.match(PERMALINK)?.[1] || null) : null;
 }
 
 // The label of the configured style with that tag and class, if any

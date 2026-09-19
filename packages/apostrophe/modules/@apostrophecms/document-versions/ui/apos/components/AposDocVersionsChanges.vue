@@ -286,6 +286,21 @@
                               {{ line[pane.side].text }}
                               <span class="apos-sr-only">{{ $t('apostrophe:versionOpensNewTab') }}</span>
                             </a>
+                            <template v-else-if="line[pane.side].url">
+                              <a
+                                :href="line[pane.side].url"
+                                target="_blank"
+                                rel="noopener"
+                                class="apos-doc-version-changes__format-link"
+                                data-apos-test="doc-version-change-format-page"
+                              >
+                                {{ line[pane.side].text }}
+                                <span class="apos-sr-only">{{ $t('apostrophe:versionOpensNewTab') }}</span>
+                              </a>
+                              <span class="apos-doc-version-changes__format-url">
+                                {{ line[pane.side].url }}
+                              </span>
+                            </template>
                             <template v-else>
                               {{ line[pane.side].text }}
                             </template>
@@ -1103,6 +1118,14 @@ $pad-x: $spacing-base + $spacing-half;
       outline: 2px solid var(--a-primary);
       outline-offset: 1px;
     }
+  }
+
+  // The URL of an internal link, under the title of its document
+  &__format-url {
+    display: block;
+    color: var(--a-base-2);
+    font-size: var(--a-type-smaller);
+    overflow-wrap: anywhere;
   }
 
   // A value of a formatting block: no kicker, the icon says the side

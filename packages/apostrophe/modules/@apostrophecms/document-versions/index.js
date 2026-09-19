@@ -735,19 +735,23 @@ module.exports = {
       // those `addFormat` ran on (see `lib/text.js`). Related document
       // titles are fetched in one query, as `req` sees them; a document it
       // cannot see has no title. An image that is not archived also has a
-      // URL, that of its file, for the image lines of `formatChanges`
+      // URL, that of its file, for the image lines of `formatChanges`, and
+      // any other document that is not archived its page URL, for the
+      // internal links there
       async addChangeText(req, rows) {
         const ctx = self.getDiffContext(req);
         const ids = text.getRelatedIds(rows, ctx);
         const titles = {};
         const urls = {};
+        const links = {};
         if (ids.length) {
           const related = await self.apos.doc.find(req, { aposDocId: { $in: ids } })
             .project({
               aposDocId: 1,
               title: 1,
               type: 1,
-              archived: 1
+              archived: 1,
+              _url: 1
             })
             .archived(null)
             .areas(false)
@@ -758,11 +762,15 @@ module.exports = {
             if ((doc.type === self.apos.image.__meta.name) && !doc.archived) {
               urls[doc.aposDocId] = `${self.apos.image.action}/${doc.aposDocId}/src`;
             }
+            if (doc._url && !doc.archived) {
+              links[doc.aposDocId] = doc._url;
+            }
           }
         }
         return text.addText(rows, ctx, {
           titles,
-          urls
+          urls,
+          links
         });
       },
       // The changes of consecutive versions of one document as one list,

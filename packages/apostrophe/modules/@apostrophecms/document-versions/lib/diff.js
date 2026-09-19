@@ -84,6 +84,8 @@ const ORDER = Symbol('order');
  *   title of an image.
  * @property {string} [href] Images only: the URL of the image, when it can
  *   be opened.
+ * @property {string} [url] Internal links only: the URL of the document
+ *   linked to, whose title is `text`, when it can be opened.
  */
 
 /**

@@ -895,13 +895,20 @@ describe('Document Versions diff engine', function () {
       ]);
       const ctx = apos.docVersions.getDiffContext(req);
       assert.equal(text.toText({ type: 'password' }, 'secret', ctx), '');
-      assert.equal(text.toText({ type: 'oembed' }, { url: 'https://example.com/' }, ctx), '');
       assert.equal(text.toText({ type: 'string' }, { not: 'a string' }, ctx), '');
       assert.equal(text.toText({ type: 'integer' }, null, ctx), '');
     });
 
-    it('should read a choice as its label, a number with its unit, a box by its sides', function () {
+    it('should read a choice as its label, a number with its unit, a box by its sides, an embed as its URL', function () {
       const ctx = apos.docVersions.getDiffContext(req);
+      assert.equal(text.toText({ type: 'oembed' }, {
+        url: 'https://vimeo.com/1',
+        title: 'A video'
+      }, ctx), 'https://vimeo.com/1');
+      assert.equal(text.toText({ type: 'oembed' }, {
+        url: null,
+        title: ''
+      }, ctx), '');
       const alignment = {
         type: 'select',
         choices: [
@@ -1769,6 +1776,69 @@ describe('Document Versions diff engine', function () {
           type: 'deleted',
           label: 'Image',
           old: { text: 'A fox' }
+        } ]);
+      });
+
+      it('should read an internal link as the document it links to', async function () {
+        const home = await apos.page.find(req, { slug: '/' }).toObject();
+        const permalink = id => `#apostrophe-permalink-${id}?updateTitle=1`;
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p>Read <a href="https://example.com/guide">the guide</a> now.</p>' +
+          `<figure><a href="/fox"><img src="${src('fox')}" alt="A fox"></a></figure>`;
+        newer.body = `<p>Read <a href="${permalink(home.aposDocId)}">the guide</a> now.</p>` +
+          `<figure><a href="#apostrophe-permalink-${home.aposDocId}">` +
+          `<img src="${src('fox')}" alt="A fox"></a></figure>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        assert.deepEqual(text.getRelatedIds(rows, ctx), [ home.aposDocId, 'fox' ]);
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges, [
+          {
+            change: 'link',
+            type: 'modified',
+            label: 'Link',
+            text: 'the guide',
+            old: { text: 'https://example.com/guide' },
+            new: {
+              text: 'Home',
+              url: home._url
+            }
+          },
+          {
+            change: 'image',
+            type: 'modified',
+            label: 'Image link',
+            text: 'A fox',
+            old: { text: '/fox' },
+            new: {
+              text: 'Home',
+              url: home._url
+            }
+          }
+        ]);
+      });
+
+      it('should read an internal link to a document it cannot find neutrally', async function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p>Read the guide now.</p>';
+        newer.body = '<p>Read <a href="#apostrophe-permalink-gone?updateTitle=0">the guide</a> now.</p>';
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges, [ {
+          change: 'linkAdded',
+          type: 'added',
+          label: 'Link',
+          text: 'the guide',
+          new: { text: 'Internal link' }
         } ]);
       });
 
