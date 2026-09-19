@@ -262,6 +262,7 @@ module.exports = {
         self.apos.migration.add('convert-legacy-versions', self.convertLegacyVersions);
         self.apos.migration.add('seed-publication-points', self.seedPublicationPoints);
         self.apos.migration.add('remove-previous-mode-docs', self.removePreviousModeDocs);
+        self.apos.migration.add('set-legacy-change-counts', self.setChangeCountTask);
       },
       // Records written before this module hold `doc` as a plain object, are
       // keyed by the document's full `_id` and have no `mode`, `locale`,
@@ -1303,7 +1304,8 @@ module.exports = {
       },
       // Recompute `changeCount` for every version, one timeline at a time.
       // Two `distinct` calls rather than a `$group`: every database backend
-      // runs `distinct` natively
+      // runs `distinct` natively. Also a migration: a legacy record counted
+      // the top-level fields that differ, not the rows of its change list
       async setChangeCountTask() {
         const req = self.apos.task.getReq();
         const docIds = await self.db.distinct('docId');
@@ -1318,62 +1320,78 @@ module.exports = {
           }
         }
       },
-      // Recompute `changeCount` along one timeline, newest first
+      // Recompute `changeCount` along one timeline, oldest first, a batch of
+      // versions in memory at a time. The oldest version has nothing to
+      // count against and keeps its count; a restore counts none
       async setChangeCountFor(req, criteria) {
         const { docId } = criteria;
-        const versions = await self.find(req, criteria);
-        if (!versions.length) {
-          return;
+        const limit = 10;
+        let previous = null;
+
+        for (;;) {
+          const versions = await self.find(
+            req,
+            {
+              ...criteria,
+              ...(previous && { createdAt: { $gt: previous.createdAt } })
+            },
+            {
+              sort: { createdAt: 1 },
+              limit
+            }
+          );
+          const updates = [];
+          for (const version of versions) {
+            const changeCount = countFor(version, previous);
+            if ((changeCount !== null) && (changeCount !== version.changeCount)) {
+              updates.push({
+                _id: version._id,
+                changeCount
+              });
+            }
+            previous = version;
+          }
+          await write(updates);
+          if (versions.length < limit) {
+            return;
+          }
         }
 
-        const updates = [];
-        for (const [ i, version ] of versions.entries()) {
+        // `null` when the count stays as it is
+        function countFor(version, before) {
           const { type } = version.doc;
-          const manager = self.apos.doc.getManager(type);
-          if (!manager) {
+          if (!self.apos.doc.getManager(type)) {
             self.logWarn('set-change-count-no-manager', `No manager found for ${type}`, {
               docId,
               docType: type
             });
-            continue;
+            return null;
           }
-
           if (version.restoredFrom) {
-            updates.push({
-              _id: version._id,
-              changeCount: 0
+            return 0;
+          }
+          return before
+            ? self.getChangeCount(req, version.doc, before.doc)
+            : null;
+        }
+
+        async function write(updates) {
+          if (!updates.length) {
+            return;
+          }
+          try {
+            await self.db.bulkWrite(updates.map(({ _id, changeCount }) => ({
+              updateOne: {
+                filter: { _id },
+                update: { $set: { changeCount } }
+              }
+            })));
+          } catch (err) {
+            self.logError('set-change-count-failed', `Error while updating versions for ${docId}`, {
+              docId,
+              stack: err.stack
             });
-            continue;
           }
-          const nextVersion = versions[i + 1];
-          if (!nextVersion) {
-            continue;
-          }
-
-          updates.push({
-            _id: version._id,
-            changeCount: self.getChangeCount(req, version.doc, nextVersion.doc)
-          });
-        }
-
-        if (!updates.length) {
-          return;
-        }
-
-        const bulkOperations = updates.map(({ _id, changeCount }) => ({
-          updateOne: {
-            filter: { _id },
-            update: { $set: { changeCount } }
-          }
-        }));
-
-        try {
-          await self.db.bulkWrite(bulkOperations);
-        } catch (err) {
-          self.logError('set-change-count-failed', `Error while updating versions for ${docId}`, {
-            docId,
-            stack: err.stack
-          });
         }
       },
       // Rename a locale in the version records. Same contract as

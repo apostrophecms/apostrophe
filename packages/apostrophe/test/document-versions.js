@@ -4093,6 +4093,58 @@ describe('Document Versions', function () {
 
       assert.deepEqual((await countsFor(article)).en, [ 0, 2, 1, 99 ]);
     });
+
+    it('should recompute a timeline longer than one batch', async function() {
+      const req = getReq(apos);
+      const article = await apos.article.insert(req, { title: 'B0' });
+      for (let i = 1; i <= 24; i++) {
+        await apos.article.update(req, {
+          ...article,
+          title: `B${i}`,
+          ...((i % 2) && { int: i })
+        });
+      }
+      const counts = (await countsFor(article)).en;
+      assert.equal(counts.length, 25);
+
+      await apos.docVersions.db.updateMany({}, { $set: { changeCount: 99 } });
+      await apos.docVersions.setChangeCountFor(apos.task.getReq(), {
+        docId: article.aposDocId,
+        locale: 'en'
+      });
+
+      assert.deepEqual((await countsFor(article)).en, [ ...counts.slice(0, -1), 99 ]);
+    });
+
+    it('should count the rows of legacy records as a migration', async function() {
+      const req = getReq(apos);
+      const article = await apos.article.insert(req, {
+        title: 'Legacy counts',
+        main: richTextArea('One', 'Two')
+      });
+      await apos.article.update(req, {
+        ...article,
+        main: richTextArea('One changed', 'Two changed')
+      });
+      const [ newest, oldest ] = await apos.docVersions.find(
+        apos.task.getReq(),
+        apos.docVersions.getTimelineCriteria(article)
+      );
+      // What a legacy record holds: the top-level fields that differ
+      const legacyCount = apos.docVersions
+        .getChanges(req, newest.doc, oldest.doc).length;
+      assert.equal(legacyCount, 1);
+      await apos.docVersions.db.updateOne(
+        { _id: newest._id },
+        { $set: { changeCount: legacyCount } }
+      );
+
+      const migration = apos.migration.migrations
+        .find(({ name }) => name === 'set-legacy-change-counts');
+      await migration.fn();
+
+      assert.deepEqual((await countsFor(article)).en, [ 2, 0 ]);
+    });
   });
 
   describe('compressed records', function () {
