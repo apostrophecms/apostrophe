@@ -815,6 +815,21 @@ describe('Document Versions', function () {
       await cleanup(apos);
     });
 
+    it('should exclude a type that is not localized and asks for nothing', async function() {
+      const doc = {
+        type: 'article',
+        title: 'An article'
+      };
+
+      assert.equal(apos.docVersions.hasVersions(apos.article.options), false);
+      assert.equal(apos.docVersions.recordsPublishedOnly(apos.article.options), false);
+      assert.equal(apos.docVersions.isVersioned(doc), false);
+      assert.equal(apos.docVersions.isPublishedOnly(doc), false);
+      assert.equal(apos.docVersions.isExcludedType(doc), true);
+      // The flag the versions context menu entry reads
+      assert.equal(apos.article.getBrowserData(getReq(apos)).versions, false);
+    });
+
     it('should not add version docs when not localized (pieces)', async function() {
       const req = getReq(apos);
 
@@ -881,6 +896,256 @@ describe('Document Versions', function () {
 
       versions = await apos.docVersions.find(req, {});
       assert.strictEqual(versions.length, 0);
+    });
+  });
+
+  // A type that is not localized records versions when it asks for them with
+  // `versions: true`. It has one mode and no locale, so every save is a
+  // publication point of a timeline of its own: each save is recorded, a save
+  // that changes nothing included, and a restore behaves as it does for a
+  // localized type. Two consequences come with that and are accepted as they
+  // are, because the editor interface never reaches them: a save without a
+  // change is recorded, which the interface does not offer, and deleting such
+  // a document leaves its versions behind, since only a draft can be deleted
+  // from the interface. Code that deletes one removes its versions itself
+  describe('not localized with `versions: true`', function() {
+    let apos;
+    let admin;
+    let jarAdmin;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'article-page': {},
+          'default-page': {},
+          'module-localized_false-versions_true': {}
+        }
+      });
+      admin = await addUser(apos, 'admin');
+      jarAdmin = await login(apos, 'admin');
+    });
+
+    after(async function() {
+      await removeUploads();
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    it('should have versions enabled and keep the full history', async function() {
+      const doc = {
+        type: 'module-localized_false-versions_true',
+        title: 'Settings'
+      };
+
+      // A type that is not localized is never autopublished: core forces the
+      // option off, so `versions` decides on its own
+      assert.equal(apos.setting.options.autopublish, false);
+      assert.equal(apos.docVersions.hasVersions(apos.setting.options), true);
+      assert.equal(apos.docVersions.recordsPublishedOnly(apos.setting.options), false);
+      assert.equal(apos.docVersions.isVersioned(doc), true);
+      assert.equal(apos.docVersions.isPublishedOnly(doc), false);
+      assert.equal(apos.docVersions.isExcludedType(doc), false);
+    });
+
+    it('should record one version per save, with no locale of its own', async function() {
+      const req = getReq(apos);
+      const setting = await apos.setting.insert(req, { title: 'Settings' });
+
+      {
+        const versions = await apos.docVersions.find(req, {});
+        assert.equal(versions.length, 1);
+        const [ first ] = versions;
+        assert.deepEqual(first.doc, setting);
+        assert.equal(first.docId, setting.aposDocId);
+        assert.equal(first.locale, null);
+        assert.equal(first.mode, 'published');
+        assert.equal(first.changeCount, 0);
+      }
+
+      const updated = await apos.setting.update(req, {
+        ...setting,
+        title: 'Settings v2',
+        int: 3
+      });
+
+      {
+        const versions = await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(setting)
+        );
+        assert.equal(versions.length, 2);
+        assert.deepEqual(
+          versions.map(({
+            mode, locale, doc, changeCount
+          }) => [ mode, locale, doc.title, changeCount ]),
+          [
+            [ 'published', null, 'Settings v2', 2 ],
+            [ 'published', null, 'Settings', 0 ]
+          ]
+        );
+        assert.deepEqual(versions[0].doc, updated);
+      }
+    });
+
+    it('should record a version for a save that changes nothing', async function() {
+      const req = getReq(apos);
+      const setting = await apos.setting.insert(req, { title: 'Settings' });
+      const changed = await apos.setting.update(req, {
+        ...setting,
+        title: 'Settings v2'
+      });
+      await apos.setting.update(req, changed);
+
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(setting)
+      );
+      assert.equal(versions.length, 3);
+      assert.deepEqual(versions.map(version => version.changeCount), [ 0, 1, 0 ]);
+      const [ last, previous ] = versions;
+      assert.deepEqual(apos.docVersions.getChanges(req, last.doc, previous.doc), []);
+      assert.deepEqual(apos.docVersions.getChangeRows(req, previous.doc, last.doc), []);
+    });
+
+    it('should list the changes of a version since the one before it', async function() {
+      const req = getReq(apos);
+      const setting = await apos.setting.insert(req, { title: 'Settings' });
+      await apos.setting.update(req, {
+        ...setting,
+        title: 'Settings v2'
+      });
+      const [ current ] = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(setting)
+      );
+
+      const { rows, counts } = await apos.docVersions
+        .getVersionChanges(req, current._id);
+      assert.deepEqual(counts, {
+        added: 0,
+        modified: 1,
+        deleted: 0,
+        ai: 0
+      });
+      assert.deepEqual(
+        rows.map(row => ({
+          path: row.path.map(segment => segment.name),
+          type: row.type,
+          kind: row.kind,
+          oldText: row.oldText,
+          newText: row.newText
+        })),
+        [
+          {
+            path: [ 'title' ],
+            type: 'modified',
+            kind: 'leaf',
+            oldText: 'Settings',
+            newText: 'Settings v2'
+          }
+        ]
+      );
+    });
+
+    it('should restore a version and record the restore', async function() {
+      const req = getReq(apos);
+      const setting = await apos.setting.insert(req, { title: 'Settings' });
+      const changed = await apos.setting.update(req, {
+        ...setting,
+        title: 'Settings v2'
+      });
+      const [ , first ] = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(setting)
+      );
+
+      const restored = await apos.setting.update(
+        getReq(apos, { aposRestoreVersion: first._id }),
+        {
+          ...changed,
+          title: first.doc.title
+        }
+      );
+      assert.equal(restored.title, 'Settings');
+
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(setting)
+      );
+      assert.deepEqual(
+        versions.map(({
+          doc, changeCount, restoredFrom
+        }) => [ doc.title, changeCount, restoredFrom?._id ]),
+        [
+          [ 'Settings', 0, first._id ],
+          [ 'Settings v2', 1, undefined ],
+          [ 'Settings', 0, undefined ]
+        ]
+      );
+    });
+
+    it('should serve the timeline of a non-localized document to the browser', async function() {
+      const req = getReq(apos, admin);
+      const setting = await apos.setting.insert(req, { title: 'Settings' });
+      await apos.setting.update(req, {
+        ...setting,
+        title: 'Settings v2'
+      });
+
+      const { results: versions } = await apos.http.get(`/api/v1/${moduleName}`, {
+        qs: { docId: setting._id },
+        jar: jarAdmin
+      });
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.author, version.changeCount ]),
+        [
+          [ 'published', admin.title, 1 ],
+          [ 'published', admin.title, 0 ]
+        ]
+      );
+    });
+
+    it('should keep the versions of a document deleted programmatically', async function() {
+      const req = getReq(apos);
+      const setting = await apos.setting.insert(req, { title: 'Settings' });
+      await apos.setting.update(req, {
+        ...setting,
+        title: 'Settings v2'
+      });
+
+      await apos.setting.delete(req, setting);
+      assert.equal(
+        await apos.doc.db.countDocuments({ aposDocId: setting.aposDocId }),
+        0
+      );
+
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(setting)
+      );
+      assert.equal(versions.length, 2);
+    });
+
+    it('should remove the versions of a deleted document with `removeAllFor`', async function() {
+      const req = getReq(apos);
+      const setting = await apos.setting.insert(req, { title: 'Settings' });
+      await apos.setting.update(req, {
+        ...setting,
+        title: 'Settings v2'
+      });
+
+      await apos.setting.delete(req, setting);
+      await apos.docVersions.removeAllFor(req, setting);
+
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(setting)
+      );
+      assert.equal(versions.length, 0);
     });
   });
 
