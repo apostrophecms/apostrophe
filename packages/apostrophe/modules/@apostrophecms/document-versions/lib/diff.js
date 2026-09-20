@@ -9,6 +9,7 @@ const _ = require('lodash');
 const { diffArrays } = require('diff');
 const text = require('./text.js');
 const diffRichText = require('./rich-text-diff.js');
+const findBaseType = require('./field-kind.js');
 
 // Field types with their own walk, reached through `extend` as well
 const STRUCTURAL = new Set([ 'area', 'array', 'object', 'relationship' ]);
@@ -16,6 +17,7 @@ const STRUCTURAL = new Set([ 'area', 'array', 'object', 'relationship' ]);
 const MARKED = new Set([ 'richText' ]);
 // Field types that store nothing
 const VALUELESS = new Set([ 'group', 'relationshipReverse' ]);
+const KNOWN = new Set([ ...STRUCTURAL, ...MARKED, ...VALUELESS ]);
 // Widget keys that are bookkeeping, not content
 const WIDGET_KEYS = new Set([ '_id', 'type', 'metaType', 'aposPlaceholder', 'aposMeta' ]);
 
@@ -116,19 +118,17 @@ const ORDER = Symbol('order');
  *   older value was empty (`null`, `undefined`, `''`, `[]` or empty by the
  *   field type's `isEmpty`), `deleted` when the newer one is, `modified`
  *   otherwise.
- * @property {string} fieldType The schema type of the changed value as
- *   the schema declares it, a project's own type included (`string`,
- *   `integer`, `relationship`, `object`, ...), or `arrayItem`, `widget` or
- *   `richText` when the row is a whole array item, a whole widget, or the
- *   `content` of a rich text widget. The row of the order of an array's or
- *   area's items has the type of that array or area.
+ * @property {string} fieldType The type of the changed value as the schema
+ *   names it, a project's own type included (`string`, `relationship`,
+ *   `tagline`, ...). `arrayItem` or `widget` for a whole item or widget,
+ *   `richText` for the `content` of a rich text widget. An order row has
+ *   the type of its array or area.
  * @property {'leaf'|'richText'|'object'|'relationship'|'array'|'area'|
  *   'arrayItem'|'widget'} kind
- *   What the row is, whatever its type is called: the core type `fieldType`
- *   is or extends when that is `richText`, `object` or `relationship`, and
- *   `leaf` for any other field; `array` or `area` for the order of the
- *   items of one, at the path of the array or area itself; `arrayItem`,
- *   `widget` and `richText` as `fieldType` has them. The one to test.
+ *   What the row is, whatever its type is called, and the one to test.
+ *   `richText`, `object` or `relationship` for a field whose type is or
+ *   extends one of them, `leaf` for any other field; `array` or `area` for
+ *   an order row; `arrayItem` and `widget` as `fieldType` has them.
  * @property {any} old The value in the older document as stored, `undefined`
  *   when the item was added. A relationship's is its array of ids, a rich
  *   text widget's its `content` string, an item's or widget's the whole
@@ -144,12 +144,11 @@ const ORDER = Symbol('order');
  *   Order rows only, for the text representation: by `_id`, each item's
  *   position in the newer document, its widget type's `label` and its
  *   title. Non-enumerable, like `field`.
- * @property {string[]} [movedItems] Order rows of `consolidate` flagged
- *   `ai` in a run that mixes versions saved with and without AI, when the
- *   moves of its versions explain the new order: the `_id`s of the items
- *   they moved. Non-enumerable, like `aiItems`, which comes with it: those
+ * @property {string[]} [movedItems] Order rows of `consolidate` only, when
+ *   the moves of its versions explain the new order (see `explainOrder`):
+ *   the `_id`s of the items they moved. Non-enumerable, like `field`.
+ * @property {Set<string>} [aiItems] Comes with `movedItems`: those of them
  *   a version saved with AI moved.
- * @property {Set<string>} [aiItems]
  * @property {import('./rich-text-format.js').FormatChange[]} [format]
  *   Modified rich text rows, once `addFormat` of `lib/text.js` ran and found
  *   some: the formatting that changed. Non-enumerable, like `field`.
@@ -162,21 +161,24 @@ const ORDER = Symbol('order');
 
 /**
  * Every change from `older` to `newer` as rows at their full depth, in
- * schema order, depth first. Array items and widgets match by `_id`, and
- * one present on one side only is a single row with nothing listed below
- * it, as is an object that appears or goes. An array or area whose items
- * changed places is one `modified` row of its own, ahead of the rows of its
- * items: only the relative order of the items both documents have counts,
- * so an item added or deleted in the middle moves nothing. Objects recurse,
- * relationships compare their stored ids and relationship fields, other leaves compare
- * with the field type's own `isEqual` when it defines one, otherwise deeply
- * with `null` and `undefined` folded together. A matched widget walks its
- * type's schema, then, for a rich text type (one with `getRichText`), its
- * markup as a `richText` row and nothing else, since the id lists such a
- * widget also stores derive from the markup; for any other type, data it
- * stores outside its schema is one `widget` row. A widget whose type has no
- * module is compared whole. `group` and
- * `relationshipReverse` fields are skipped. Neither document is modified.
+ * schema order, depth first. Neither document is modified.
+ *
+ * - Array items and widgets match by `_id`. One that exists on one side
+ *   only is a single row, with nothing listed below it; so is an object
+ *   that appears or goes.
+ * - An array or area whose items changed places is one `modified` row of
+ *   its own, ahead of the rows of its items. Only the relative order of the
+ *   items both documents have counts, so an added or deleted item moves
+ *   nothing.
+ * - Objects recurse. Relationships compare their stored ids and fields.
+ *   Any other value compares with its field type's `isEqual` when it has
+ *   one, otherwise deeply, `null` and `undefined` being the same.
+ * - A matched widget walks its type's schema. A rich text widget (a type
+ *   with `getRichText`) then compares its markup as one `richText` row and
+ *   nothing else, since the id lists it stores derive from the markup. Any
+ *   other widget compares the data it stores outside its schema as one
+ *   `widget` row. A widget whose type has no module is compared whole.
+ * - `group` and `relationshipReverse` fields store nothing and are skipped.
  *
  * @param {object[]} schema The schema of both documents
  *   (`apos.doc.getManager(type).schema`, or a widget or array schema when
@@ -194,42 +196,37 @@ function walk(schema, older, newer, ctx) {
 }
 
 /**
- * A deep copy of `newer` marked with its changes since `older`, for WYSIWYG
- * display, deepest first. The markers, on widgets only:
+ * A deep copy of `newer` marked with its changes since `older`, for display
+ * in place. Neither document is modified.
  *
- * - `_inserted: true` on a widget `older` does not have;
- * - `_deleted: true` on a widget `newer` does not have, which is put back
- *   into the newer area's `items` at its older position (a clone of the
- *   older widget), so it can render in place; it exists only in the
- *   returned document;
- * - `_olderVersion: <the older widget>` on a widget with changes of its own
- *   whose type sets the `renderVersions` module option. When that type is
- *   a rich text one and its markup changed, the copy's `content` is that
- *   markup with the text that changed marked in it (see
- *   `lib/rich-text-diff.js`), so that any template shows it; `content`
- *   stays as it is when no text changed or the change cannot be shown,
- *   and the widget reads as modified;
- * - `_modified: true` on such a widget whose type does not;
- * - `_moved: true` on a widget that changed places among the widgets of
- *   its area both documents have, beside any marker above. Of the widgets
- *   of an area whose order changed, only the fewest that account for the
- *   new order are marked: one widget dragged to the top is one `_moved`,
- *   not one for every widget it passed.
+ * Widgets carry the markers:
  *
- * Rows flagged `ai` (those of `consolidate`) say so on what they mark:
- * `_changedWithAi: true` beside `_inserted`, `_deleted`, `_modified` or
- * `_olderVersion`, when any row behind that marker is flagged;
- * `_movedWithAi: true` beside `_moved`, when the order row is and, in a
- * run of versions whose own moves explain the new order, a version saved
- * with AI moved that widget; the
+ * - `_inserted: true` on a widget `older` does not have.
+ * - `_deleted: true` on a widget `newer` does not have. A clone of it is
+ *   put back into the area at its older position, so it can render in
+ *   place; it exists in the returned document only.
+ * - `_olderVersion: <the older widget>` on a changed widget whose type sets
+ *   the `renderVersions` option, so its template can compare the two. For
+ *   a rich text type the copy's `content` also becomes its markup with the
+ *   changed text marked (see `lib/rich-text-diff.js`), unless no text
+ *   changed or the change cannot be shown that way.
+ * - `_modified: true` on a changed widget of any other type.
+ * - `_moved: true` on a widget that changed places in its area, beside any
+ *   marker above. Only the fewest widgets that explain the new order are
+ *   marked: one widget dragged to the top is one `_moved`, not one for
+ *   every widget it passed.
+ *
+ * A widget whose only changes are in widgets nested inside it gets no
+ * marker; the nested widgets carry them.
+ *
+ * A change outside any widget sets the `@apostrophecms/schema:highlight`
+ * meta of its top-level field (`aposMeta.<field>`), which the read-only
+ * schema view shows as highlighted.
+ *
+ * Rows flagged `ai` (see `consolidate`) add `_changedWithAi: true` beside
+ * `_inserted`, `_deleted`, `_modified` or `_olderVersion`,
+ * `_movedWithAi: true` beside `_moved`, and the
  * `@apostrophecms/document-versions:ai` meta beside a field's highlight.
- *
- * A widget whose only changes sit in widgets nested inside it gets no
- * marker; the nested widgets carry them. A change outside any widget
- * (a top-level scalar, a change inside a top-level object or array, the
- * order of an array's items) sets the `@apostrophecms/schema:highlight`
- * meta of its top-level field, at `aposMeta.<field>`, which the read-only
- * schema view renders as highlighted. Neither document is modified.
  *
  * @param {object[]} schema The schema of both documents.
  * @param {object} older The older document as stored.
@@ -315,17 +312,16 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
 
 /**
  * The changes of consecutive versions of one document as a single list:
- * one `walk` from the first member's older document to the last member's
- * newer one. So each changed path appears once, with the value it started
- * from and the value it ended with; a path deleted at the end reads as
- * deleted whatever happened to it before; a path added and deleted within
- * the run does not appear, and neither does one that ended where it
- * started. Every row gains `ai`: `true` when a member saved with AI changed
- * that path, one above it (which created the value) or one below it (which
- * is part of the final value). The order of an array or area stands apart
- * from its items: its row is flagged when a member saved with AI changed
- * that order, and flags no other row. One pair is a single version and
- * every row takes its flag.
+ * one `walk` from the document before the first version to the last
+ * version. Each changed path appears once, from the value it started with
+ * to the value it ended with. A path that ended where it started, or was
+ * added and deleted along the way, does not appear.
+ *
+ * Every row gains `ai`: whether a version saved with AI changed that path,
+ * one above it or one below it. The order of an array or area is apart
+ * from its items: its row is flagged when a version saved with AI changed
+ * the order, and that flags no other row. With one pair, every row takes
+ * that pair's flag.
  *
  * @param {object[]} schema The schema of the documents.
  * @param {Array<{ older: object, newer: object, ai?: boolean }>} pairs
@@ -399,19 +395,11 @@ function walkFields(schema, older, newer, ctx, path, rows) {
 // `leaf`, except that a `richText` field is `richText`. A type extending
 // one of those is taken for it
 function getKind(field, ctx) {
-  const seen = new Set();
-  let name = field.type;
-  while (name && !seen.has(name)) {
-    if (STRUCTURAL.has(name) || MARKED.has(name)) {
-      return name;
-    }
-    if (VALUELESS.has(name)) {
-      return 'valueless';
-    }
-    seen.add(name);
-    name = ctx.getFieldType(name)?.extend;
+  const name = findBaseType(field, ctx, KNOWN);
+  if (!name) {
+    return 'leaf';
   }
-  return 'leaf';
+  return VALUELESS.has(name) ? 'valueless' : name;
 }
 
 // Scalars compare with the field type's own `isEqual` when it has one,
@@ -722,12 +710,13 @@ function getMovedIds(row) {
     .flatMap(part => part.value);
 }
 
-// Which items moved has more than one true answer (a reversal of three is
-// any two of them), so between a run's ends the fewest-moves answer may
-// name items no version touched. The versions' own moves are the better
-// answer when they hold: taken out of both lists, the rest stands in one
-// order. Sets `movedItems` and `aiItems` on `row` then; otherwise `row`
-// stays as it is and every moved item takes the row's AI flag
+// Names the items a consolidated order row moved, and which of them AI
+// moved. "Which items moved" has more than one right answer, and the
+// fewest moves between the two ends may name items no version touched. So
+// the moves of the versions themselves are preferred when they explain
+// the new order: without the moved items, both lists are in the same
+// order. Sets `movedItems` and `aiItems` then; otherwise leaves `row` as
+// it is, and every moved item takes the row's AI flag
 function explainOrder(row, aiRows, otherRows) {
   const key = keyOf(row);
   const movedIn = rows => rows

@@ -788,6 +788,67 @@ describe('Document Versions diff engine', function () {
         [ 'string', 'leaf', false ]
       ]);
     });
+
+    it('should skip the fields that store nothing, through `extend` as well', function () {
+      const diff = require('../modules/@apostrophecms/document-versions/lib/diff.js');
+      const types = {
+        heading: { extend: 'group' }
+      };
+      const ctx = {
+        ...apos.docVersions.getDiffContext(req),
+        getFieldType: name => types[name]
+      };
+      const schema = [
+        {
+          name: 'basics',
+          type: 'group'
+        },
+        {
+          name: 'extras',
+          type: 'heading'
+        },
+        {
+          name: '_pages',
+          type: 'relationshipReverse'
+        },
+        {
+          name: 'title',
+          type: 'string'
+        }
+      ];
+      const rows = diff.walk(schema, {
+        basics: 1,
+        extras: 1,
+        _pages: 1,
+        title: 'One'
+      }, {
+        basics: 2,
+        extras: 2,
+        _pages: 2,
+        title: 'Two'
+      }, ctx);
+      assert.deepEqual(rows.map(brief), [ [ 'modified', 'string', 'leaf', 'title' ] ]);
+    });
+
+    it('should take a type whose `extend` chain loops for a plain value', function () {
+      const diff = require('../modules/@apostrophecms/document-versions/lib/diff.js');
+      const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
+      const types = {
+        chicken: { extend: 'egg' },
+        egg: { extend: 'chicken' }
+      };
+      const ctx = {
+        ...apos.docVersions.getDiffContext(req),
+        getFieldType: name => types[name]
+      };
+      const field = {
+        name: 'which',
+        type: 'chicken'
+      };
+      const rows = diff.walk([ field ], { which: 'first' }, { which: 'second' }, ctx);
+      assert.deepEqual(rows.map(brief), [ [ 'modified', 'chicken', 'leaf', 'which' ] ]);
+      assert.equal(text.toText(field, 'first', ctx), '');
+    });
   });
 
   describe('text', function () {

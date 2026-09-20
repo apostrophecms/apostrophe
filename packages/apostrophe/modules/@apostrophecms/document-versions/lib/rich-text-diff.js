@@ -1,8 +1,9 @@
 // The text that changed between two versions of rich text markup, marked
 // inside the newer markup. A pure function, like `diff.js`.
 
-const cheerio = require('cheerio');
-const { diffArrays, wordsWithSpaceDiff } = require('diff');
+const {
+  INLINE, parse, getWords, compareTokens
+} = require('./rich-text-tokens.js');
 
 const ATTRIBUTE = 'data-apos-version-change';
 const HIDDEN_CLASS = 'apos-sr-only';
@@ -10,39 +11,28 @@ const VOID = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
   'source', 'track', 'wbr'
 ]);
-// Elements that flow with the text around them. A boundary of any other
-// element separates words
-const INLINE = new Set([
-  'a', 'abbr', 'b', 'bdi', 'bdo', 'cite', 'code', 'data', 'dfn', 'em', 'i',
-  'kbd', 'mark', 'q', 's', 'samp', 'small', 'span', 'strong', 'sub', 'sup',
-  'time', 'u', 'var'
-]);
 // Elements that may not hold text or a `del` of their own
 const NO_TEXT = new Set([
   'table', 'thead', 'tbody', 'tfoot', 'tr', 'colgroup', 'ul', 'ol', 'dl'
 ]);
-// The most tokens the two sides may differ by. Past it the comparison costs
-// more than a request can take and the marks more than a reader can
-const MAX_EDIT_LENGTH = 2000;
 
 /**
- * The newer markup with the text that changed marked in it: text `older`
- * had and `newer` does not in a `del`, where it was, and text only `newer`
- * has in an `ins`, word by word. Each mark carries
- * `data-apos-version-change` (`removed` or `added`) and opens with a
- * visually hidden `span` (class `apos-sr-only`) saying so, for screen
+ * The newer markup with the changed text marked in it, word by word:
+ * removed text in a `del` where it was, added text in an `ins`. Each mark
+ * carries `data-apos-version-change` (`removed` or `added`) and opens with
+ * a visually hidden `span` (class `apos-sr-only`) saying so for screen
  * readers, as the marks of the change list do.
  *
- * The elements are those of `newer`, untouched. An element of `older` comes
- * back only when it went with all of its text and the element it stood in
- * is still there; otherwise its text stands alone in its `del`. Images and
- * other elements without text are never marked.
+ * The elements are those of `newer`, untouched. A removed element comes
+ * back only when it went with all of its text and its parent is still
+ * there; otherwise its text stands alone in its `del`. Images and other
+ * elements without text are never marked.
  *
- * `null` when no text changed, so that the markup differs by attributes,
- * marks or structure only; when removed text has no place to go (the
- * rows or cells of a table that was rebuilt, the items of a list that
- * became something else); and when the text was rewritten at length, about
- * a thousand words. The caller marks the whole widget as modified.
+ * `null`, for the caller to mark the whole widget as modified, when:
+ * - no text changed (attributes, marks or structure only);
+ * - removed text has no place to go: a rebuilt table, a list that became
+ *   something else;
+ * - the text was rewritten at length, about a thousand words.
  *
  * @param {string} older Markup of the older version.
  * @param {string} newer Markup of the newer version.
@@ -187,10 +177,6 @@ module.exports = function diffRichText(older, newer, { labels = {} } = {}) {
   }
 };
 
-// Shared with `rich-text-format.js`, which reads the same markup
-module.exports.INLINE = INLINE;
-module.exports.MAX_EDIT_LENGTH = MAX_EDIT_LENGTH;
-
 function hidden(label) {
   return label
     ? `<span class="${HIDDEN_CLASS}">${escapeText(label)} </span>`
@@ -201,7 +187,7 @@ function hidden(label) {
 // elements, `text` tokens for every word, run of white space and
 // punctuation mark. Two tokens are the same when their `key` is
 function tokenize(html) {
-  const $ = cheerio.load(html || '', null, false);
+  const $ = parse(html);
   const tokens = [];
   visit($.root()[0].children);
   return tokens;
@@ -209,12 +195,11 @@ function tokenize(html) {
   function visit(nodes) {
     for (const node of nodes) {
       if (node.type === 'text') {
-        for (const text of wordsWithSpaceDiff.tokenize(node.data)) {
+        for (const word of getWords(node.data)) {
           tokens.push({
             kind: 'text',
-            key: `"${text}`,
-            text,
-            html: escapeText(text)
+            ...word,
+            html: escapeText(word.text)
           });
         }
         continue;
@@ -256,12 +241,9 @@ function tokenize(html) {
 // pairs of equal tokens, or `{ removed, added }`, what stands between two
 // such runs on either side. White space alone between two changes joins
 // them, so that a rewritten phrase is one mark, not one for every word.
-// `undefined` past `MAX_EDIT_LENGTH`
+// `undefined` when `compareTokens` gives up
 function getOps(older, newer) {
-  const parts = diffArrays(older, newer, {
-    comparator: (one, two) => one.key === two.key,
-    maxEditLength: MAX_EDIT_LENGTH
-  });
+  const parts = compareTokens(older, newer);
   if (!parts) {
     return;
   }

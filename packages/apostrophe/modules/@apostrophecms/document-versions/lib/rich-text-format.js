@@ -2,9 +2,10 @@
 // what the word marks of `rich-text-diff.js` cannot say. A pure function,
 // like `diff.js`.
 
-const cheerio = require('cheerio');
-const { diffArrays, wordsWithSpaceDiff } = require('diff');
-const { INLINE, MAX_EDIT_LENGTH } = require('./rich-text-diff.js');
+const { diffArrays } = require('diff');
+const {
+  INLINE, parse, getWords, compareTokens
+} = require('./rich-text-tokens.js');
 
 const ATOMS = {
   img: 'image',
@@ -96,15 +97,15 @@ const MARKS = {
  * boundaries too. Images, rules and line breaks are compared as they
  * come and go.
  *
- * Silent where the word marks already speak: words that were added or
- * removed are never compared, so a new bold word or a new paragraph is no
- * record, nor is a line break that came or went with words around it, nor
- * a table that came or went with its words. White space is never a record.
- * Every difference in the rows, cells and columns of tables is a single
- * `table` record.
+ * Added and removed words are left to the word marks and never compared.
+ * So there is no record for a new bold word or a new paragraph, for a line
+ * break that came or went with the words around it, or for a table that
+ * came or went with its words. White space is never a record. Every
+ * difference in the rows, cells and columns of tables is a single `table`
+ * record.
  *
- * `[]` when nothing of the kind changed, and when the text was rewritten
- * at length, as `rich-text-diff.js` gives up.
+ * `[]` when no formatting changed, and when the text was rewritten at
+ * length, where `rich-text-diff.js` gives up too.
  *
  * @param {string} older Markup of the older version.
  * @param {string} newer Markup of the newer version.
@@ -113,10 +114,7 @@ const MARKS = {
 module.exports = function getFormatChanges(older, newer) {
   const before = flatten(older);
   const after = flatten(newer);
-  const parts = diffArrays(before.tokens, after.tokens, {
-    comparator: (one, two) => one.key === two.key,
-    maxEditLength: MAX_EDIT_LENGTH
-  });
+  const parts = compareTokens(before.tokens, after.tokens);
   if (!parts) {
     return [];
   }
@@ -431,7 +429,7 @@ function tablesChanged(older, newer) {
 // image, rule and line break; and its `tables`, each as the `skeleton` of
 // its rows, cells and columns. Two tokens are the same when their `key` is
 function flatten(html) {
-  const $ = cheerio.load(html || '', null, false);
+  const $ = parse(html);
   const tokens = [];
   const tables = [];
   visit($.root()[0].children, {
@@ -447,10 +445,9 @@ function flatten(html) {
   function visit(nodes, context) {
     for (const node of nodes) {
       if (node.type === 'text') {
-        for (const text of wordsWithSpaceDiff.tokenize(node.data)) {
+        for (const word of getWords(node.data)) {
           tokens.push({
-            key: `"${text}`,
-            text,
+            ...word,
             ...context
           });
         }
