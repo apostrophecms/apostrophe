@@ -277,8 +277,12 @@ const groups = computed(() => {
   return groupSet;
 });
 
-function isTabVisible(fields) {
-  return fields.some(field => conditionalFields.value.if[field] !== false);
+// A tab is worth showing only when one of its fields renders: a hidden
+// field or one whose condition is unmet leaves the pane empty
+function isTabVisible(schema) {
+  return schema.some(
+    field => !field.hidden && conditionalFields.value.if[field.name] !== false
+  );
 }
 
 const versionTabs = computed(() => {
@@ -288,14 +292,14 @@ const versionTabs = computed(() => {
       name,
       label: group.label,
       fields: group.fields,
-      isVisible: isTabVisible(group.fields)
+      isVisible: isTabVisible(group.schema)
     }));
-  const fields = groups.value.utility?.fields || [];
+  const utility = groups.value.utility;
   tabs.push({
     name: 'utility',
     label: 'apostrophe:utility',
-    fields,
-    isVisible: isTabVisible(fields)
+    fields: utility?.fields || [],
+    isVisible: isTabVisible(utility?.schema || [])
   });
   return tabs;
 });
