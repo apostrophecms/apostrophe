@@ -103,12 +103,11 @@
                 data-apos-test="doc-version-change-path"
               />
               <span class="apos-doc-version-changes__row-aside">
-                <span
+                <AposDocVersionAiBadge
                   v-if="entry.row.ai"
                   v-apos-tooltip="'apostrophe:versionAiChangeTooltip'"
-                  class="apos-doc-version-changes__ai"
                   data-apos-test="doc-version-change-ai"
-                >AI</span>
+                />
                 <AposButton
                   v-if="entry.detail"
                   type="quiet"
@@ -134,187 +133,15 @@
               class="apos-doc-version-changes__diff"
               data-apos-test="doc-version-change-diff"
             >
-              <template v-if="entry.changed">
-                <div
-                  v-for="pane in panes"
-                  :key="pane.side"
-                  class="apos-doc-version-changes__pane"
-                  :class="`apos-doc-version-changes__pane--${pane.side}`"
-                  :data-apos-test="`doc-version-change-${pane.side}`"
-                >
-                  <span
-                    class="apos-doc-version-changes__kicker"
-                    :class="`apos-doc-version-changes__kicker--${pane.side}`"
-                  >
-                    {{ $t(pane.label) }}
-                  </span>
-                  <div class="apos-doc-version-changes__value-line">
-                    <component
-                      :is="pane.icon"
-                      :size="14"
-                      class="apos-doc-version-changes__value-icon"
-                      :title="$t(pane.markLabel)"
-                    />
-                    <p
-                      class="apos-doc-version-changes__value"
-                      :class="{
-                        [`apos-doc-version-changes__value--${pane.side}`]: entry.order,
-                        'apos-doc-version-changes__value--text': !entry.order,
-                        'apos-doc-version-changes__value--clamped': !full.has(entry.key)
-                      }"
-                    >
-                      <template v-if="entry.text[pane.side]">
-                        <template
-                          v-for="(part, index) in getParts(entry, pane.side)"
-                          :key="index"
-                        >
-                          <span v-if="entry.order && index">, </span>
-                          <span v-if="part.change === 'same'">{{ part.text }}</span>
-                          <template v-else-if="part.change === 'elided'">
-                            <span
-                              class="apos-doc-version-changes__elided"
-                              aria-hidden="true"
-                            > … </span>
-                            <span class="apos-sr-only">{{ ` ${$t('apostrophe:versionUnchangedOmitted')} ` }}</span>
-                          </template>
-                          <component
-                            :is="pane.tag"
-                            v-else
-                            class="apos-doc-version-changes__mark"
-                            :class="`apos-doc-version-changes__mark--${pane.side}`"
-                          >
-                            <span class="apos-sr-only">{{ `${$t(pane.markLabel)} ` }}</span>{{ part.text }}
-                          </component>
-                        </template>
-                      </template>
-                      <template v-else>
-                        <span
-                          class="apos-doc-version-changes__none"
-                          :class="`apos-doc-version-changes__none--${pane.side}`"
-                          aria-hidden="true"
-                        >—</span>
-                        <span class="apos-sr-only">{{ $t('apostrophe:versionEmptyValue') }}</span>
-                      </template>
-                    </p>
-                  </div>
-                </div>
-                <div
-                  v-if="entry.elided || clamped.has(entry.key) || full.has(entry.key)"
-                  class="apos-doc-version-changes__more"
-                >
-                  <AposButton
-                    type="quiet"
-                    :label="full.has(entry.key)
-                      ? 'apostrophe:versionShowLessText'
-                      : 'apostrophe:versionShowFullText'"
-                    :attrs="{
-                      'aria-pressed': full.has(entry.key),
-                      'data-apos-test': 'doc-version-change-full'
-                    }"
-                    @click="toggleFull(entry.key)"
-                  />
-                </div>
-              </template>
-              <ul
+              <AposDocVersionChangeText
+                v-if="entry.changed"
+                :key="revealed"
+                :entry="entry"
+              />
+              <AposDocVersionChangeFormat
                 v-if="entry.format.length"
-                class="apos-doc-version-changes__format"
-                :aria-label="$t('apostrophe:versionFormatting')"
-                data-apos-test="doc-version-change-format"
-              >
-                <li
-                  v-for="(line, index) in entry.format"
-                  :key="index"
-                  class="apos-doc-version-changes__format-line"
-                  data-apos-test="doc-version-change-format-line"
-                  :data-apos-format-change="line.change"
-                >
-                  <div class="apos-doc-version-changes__format-header">
-                    <span
-                      class="apos-doc-version-changes__format-label"
-                      data-apos-test="doc-version-change-format-label"
-                    >
-                      <strong>{{ line.label }}</strong>
-                      <template v-if="line.text">
-                        {{ ' ' }}
-                        <a
-                          v-if="line.href"
-                          :href="line.href"
-                          target="_blank"
-                          rel="noopener"
-                          class="apos-doc-version-changes__format-link"
-                        >
-                          <q>{{ line.text }}</q>
-                          <span class="apos-sr-only">{{ $t('apostrophe:versionOpensNewTab') }}</span>
-                        </a>
-                        <q v-else>{{ line.text }}</q>
-                      </template>
-                    </span>
-                    <AposDocVersionChangeType :type="line.type" />
-                  </div>
-                  <template v-if="line.old || line.new">
-                    <div
-                      v-for="pane in panes"
-                      :key="pane.side"
-                      class="apos-doc-version-changes__pane apos-doc-version-changes__pane--compact"
-                      :class="`apos-doc-version-changes__pane--${pane.side}`"
-                      :data-apos-test="`doc-version-change-format-${pane.side}`"
-                    >
-                      <div class="apos-doc-version-changes__value-line">
-                        <component
-                          :is="pane.icon"
-                          :size="14"
-                          class="apos-doc-version-changes__value-icon"
-                          :title="$t(pane.label)"
-                        />
-                        <p
-                          class="apos-doc-version-changes__value"
-                          :class="`apos-doc-version-changes__value--${pane.side}`"
-                        >
-                          <template v-if="line[pane.side]">
-                            <a
-                              v-if="line[pane.side].href"
-                              :href="line[pane.side].href"
-                              target="_blank"
-                              rel="noopener"
-                              class="apos-doc-version-changes__format-image"
-                              data-apos-test="doc-version-change-format-image"
-                            >
-                              <img
-                                :src="`${line[pane.side].href}?size=one-sixth`"
-                                alt=""
-                              >
-                              {{ line[pane.side].text }}
-                              <span class="apos-sr-only">{{ $t('apostrophe:versionOpensNewTab') }}</span>
-                            </a>
-                            <template v-else-if="line[pane.side].url">
-                              <a
-                                :href="line[pane.side].url"
-                                target="_blank"
-                                rel="noopener"
-                                class="apos-doc-version-changes__format-link"
-                                data-apos-test="doc-version-change-format-page"
-                              >
-                                {{ line[pane.side].text }}
-                                <span class="apos-sr-only">{{ $t('apostrophe:versionOpensNewTab') }}</span>
-                              </a>
-                              <span class="apos-doc-version-changes__format-url">
-                                {{ line[pane.side].url }}
-                              </span>
-                            </template>
-                            <template v-else>
-                              {{ line[pane.side].text }}
-                            </template>
-                          </template>
-                          <template v-else>
-                            <span aria-hidden="true">—</span>
-                            <span class="apos-sr-only">{{ $t('apostrophe:versionEmptyValue') }}</span>
-                          </template>
-                        </p>
-                      </div>
-                    </div>
-                  </template>
-                </li>
-              </ul>
+                :lines="entry.format"
+              />
             </div>
           </li>
         </ul>
@@ -393,6 +220,8 @@ import {
   computed, inject, nextTick, reactive, ref, useId, watch
 } from 'vue';
 import scroll from '../utils/scroll.js';
+import changeGroups from '../lib/change-groups.js';
+import { useDocVersionNavigator } from '../composables/useDocVersionNavigator.js';
 
 const props = defineProps({
   // The version whose changes these are, as the list holds it
@@ -422,256 +251,52 @@ const baseId = useId();
 const backButton = ref(null);
 const list = ref(null);
 
-// The expanded row's two sides, newer first. A side shows the words both
-// sides share and its own changed words.
-const panes = [
-  {
-    side: 'new',
-    change: 'added',
-    tag: 'ins',
-    label: 'apostrophe:versionThisVersion',
-    icon: 'plus-circle-icon',
-    markLabel: 'apostrophe:versionAddedText'
-  },
-  {
-    side: 'old',
-    change: 'removed',
-    tag: 'del',
-    label: 'apostrophe:versionPreviousVersion',
-    icon: 'minus-circle-icon',
-    markLabel: 'apostrophe:versionRemovedText'
-  }
-];
-
-// An unchanged run of text longer than this shows only the words next to
-// a change, this many characters of them
-const ELIDE_OVER = 120;
-const ELIDE_CONTEXT = 40;
-
 // The keys of the rows showing their values
 const expanded = reactive(new Set());
-// Of those, the rows showing their text in full, and the rows whose text
-// is cut short by its height
-const full = reactive(new Set());
-const clamped = reactive(new Set());
+// Bumped by a reveal: its rows show their text as when first expanded
+const revealed = ref(0);
 // The checked filter options
 const filter = ref([]);
-// The navigator's index into the groups, -1 until a step selects one
-const position = ref(-1);
-
-watch(() => props.rows, () => {
-  expanded.clear();
-  full.clear();
-  clamped.clear();
-  filter.value = Object.entries(props.counts || {})
-    .filter(([ , count ]) => count)
-    .map(([ name ]) => name);
-  position.value = -1;
-  emit('navigate', null);
-}, { immediate: true });
 
 function toggle(key) {
   if (expanded.has(key)) {
     expanded.delete(key);
-    full.delete(key);
-    clamped.delete(key);
   } else {
     expanded.add(key);
-    measure([ key ]);
   }
-}
-
-function getParts(entry, side) {
-  return (full.has(entry.key) ? entry.parts : entry.short)[side];
-}
-
-function toggleFull(key) {
-  if (full.has(key)) {
-    full.delete(key);
-  } else {
-    full.add(key);
-  }
-}
-
-// Which of these expanded rows have text cut short by its height
-async function measure(keys) {
-  await nextTick();
-  for (const key of keys) {
-    const values = list.value?.querySelectorAll(
-      `#${CSS.escape(`${baseId}-${key}`)} .apos-doc-version-changes__value--clamped`
-    ) || [];
-    if ([ ...values ].some(el => el.scrollHeight > el.clientHeight + 1)) {
-      clamped.add(key);
-    }
-  }
-}
-
-// The parts with every long unchanged run cut down to the words next to a
-// change. Both sides share those runs, so they are cut alike
-function elide(parts) {
-  return parts.flatMap((part, index) => {
-    if (part.change !== 'same' || part.text.length <= ELIDE_OVER) {
-      return [ part ];
-    }
-    const head = part.text.slice(0, ELIDE_CONTEXT).replace(/\S*$/, '');
-    const tail = part.text.slice(-ELIDE_CONTEXT).replace(/^\S*/, '');
-    return [
-      index > 0 && {
-        ...part,
-        text: head.trimEnd()
-      },
-      { change: 'elided' },
-      index < parts.length - 1 && {
-        ...part,
-        text: tail.trimStart()
-      }
-    ].filter(Boolean);
-  });
 }
 
 function matches(row) {
-  return filter.value.includes(row.type) || (row.ai && filter.value.includes('ai'));
+  return changeGroups.matchesFilter(row, filter.value);
 }
 
 const shownRows = computed(() => props.rows.filter(matches));
 
-// A row's group is its top-level field, plus the widget right below it
-// when the field is an area
-function getGroupPath(row) {
-  const depth = row.path[1]?.widgetType ? 2 : 1;
-  return row.path.slice(0, depth);
-}
-
-const groups = computed(() => {
-  const list = [];
-  const byKey = new Map();
-  props.rows.forEach((row, index) => {
-    if (!matches(row)) {
-      return;
-    }
-    const path = getGroupPath(row);
-    const key = path.map(segment => segment.name).join('.');
-    let group = byKey.get(key);
-    if (!group) {
-      group = {
-        key,
-        path,
-        type: 'modified',
-        entries: []
-      };
-      byKey.set(key, group);
-      list.push(group);
-    }
-    const segments = row.path.slice(path.length);
-    // The order of an array's or area's items reads as the last crumb
-    const order = [ 'array', 'area' ].includes(row.kind);
-    if (order) {
-      segments.push({ label: 'apostrophe:versionOrderChanged' });
-    }
-    // The row is the group's own field or widget: it was added or deleted
-    // whole, and its label stands in for the empty breadcrumb
-    const own = !segments.length;
-    if (own) {
-      group.type = row.type;
-      segments.push(path.at(-1));
-    }
-    const diff = row.diff || [];
-    const short = order ? diff : elide(diff);
-    const changed = diff.some(part => part.change !== 'same');
-    const format = row.formatChanges || [];
-    const bySide = parts => Object.fromEntries(panes.map(pane => [
-      pane.side,
-      parts.filter(part => [ 'same', 'elided', pane.change ].includes(part.change))
-    ]));
-    group.entries.push({
-      key: String(index),
-      row,
-      segments,
-      // Its parts are whole items, shown as a list in the side's colour
-      order,
-      // What each side shows: the parts both share and its own, in full
-      // and with the long unchanged runs cut down
-      parts: bySide(diff),
-      short: bySide(short),
-      elided: short.length !== diff.length,
-      own,
-      // Whether the text shows the change at all
-      changed,
-      // What changed in a rich text besides its words, a block each
-      format,
-      // Whether there is anything to expand: a row of which only the change
-      // is known has no toggle, and its change type when its group's header
-      // does not say it
-      detail: changed || format.length > 0,
-      text: {
-        new: Boolean(row.newText),
-        old: Boolean(row.oldText)
-      }
-    });
-  });
-  return list;
-});
+const groups = computed(() => changeGroups.getChangeGroups(props.rows, filter.value));
 
 // --- Navigator ---
 
-const groupEls = new Map();
-
-function setGroupEl(key, el) {
-  if (el) {
-    groupEls.set(key, el);
-  } else {
-    groupEls.delete(key);
-  }
-}
-
-const previousButton = ref(null);
-const nextButton = ref(null);
-
-// The filter changes the groups: the current group keeps its place while
-// it shows, otherwise the selection is gone
-watch(groups, (current, previous) => {
-  if (position.value < 0) {
-    return;
-  }
-  const key = previous?.[position.value]?.key;
-  const index = key ? current.findIndex(group => group.key === key) : -1;
-  if (index !== -1) {
-    position.value = index;
-    return;
-  }
-  position.value = -1;
-  emit('navigate', null);
+const {
+  position,
+  previousButton,
+  nextButton,
+  setGroupEl,
+  getGroupEl,
+  reset: resetNavigator,
+  select,
+  step,
+  scrollToGroup
+} = useDocVersionNavigator({
+  groups,
+  list,
+  onNavigate: group => emit('navigate', group)
 });
 
-// Makes a group the navigator's, as a click on its header does
-function select(index) {
-  position.value = index;
-  emit('navigate', groups.value[index]);
-}
-
-async function step(delta) {
-  const group = groups.value[position.value + delta];
-  if (!group) {
-    return;
-  }
-  select(position.value + delta);
-  const section = groupEls.get(group.key);
-  if (section && list.value) {
-    list.value.scrollBy({
-      top: section.getBoundingClientRect().top - list.value.getBoundingClientRect().top,
-      behavior: scroll.getScrollBehavior()
-    });
-  }
-  // The button disabled at the end drops focus: hand it to the other one
-  const atEnd = delta > 0
-    ? position.value === groups.value.length - 1
-    : position.value <= 0;
-  if (atEnd) {
-    await nextTick();
-    const other = delta > 0 ? previousButton : nextButton;
-    other.value?.$el.querySelector('button')?.focus();
-  }
-}
+watch(() => props.rows, () => {
+  expanded.clear();
+  filter.value = changeGroups.getDefaultFilter(props.counts);
+  resetNavigator();
+}, { immediate: true });
 
 function focus() {
   backButton.value?.focus({ preventScroll: true });
@@ -682,26 +307,14 @@ function focus() {
 // top-level field `field` outside any widget. Their rows expand alone,
 // their group becomes the navigator's, and focus goes to the row's toggle.
 // Resolves `false` when the list has no such row
-async function reveal({
-  field, widgetId, moved = false
-}) {
-  const isTarget = row => {
-    const widget = row.path.findLast(segment => segment.widgetType);
-    if (!widgetId) {
-      return !widget && (row.path[0].name === field);
-    }
-    return (widget?.name === widgetId && row.kind !== 'area') ||
-      (moved && row.kind === 'area' && row.new.includes(widgetId));
-  };
-  const targets = props.rows.filter(isTarget);
+async function reveal(target) {
+  const targets = props.rows.filter(row => changeGroups.isMarkerTarget(row, target));
   if (!targets.length) {
     return false;
   }
   // A filter hiding any of them is lifted
   if (!targets.every(matches)) {
-    filter.value = Object.entries(props.counts || {})
-      .filter(([ , count ]) => count)
-      .map(([ name ]) => name);
+    filter.value = changeGroups.getDefaultFilter(props.counts);
     // The navigator follows the new groups first, or it would read the
     // position set below against the old ones
     await nextTick();
@@ -713,13 +326,10 @@ async function reveal({
     })))
     .filter(({ entry }) => targets.includes(entry.row));
   expanded.clear();
-  full.clear();
-  clamped.clear();
-  const detailed = entries.filter(({ entry }) => entry.detail);
-  for (const { entry } of detailed) {
+  revealed.value++;
+  for (const { entry } of entries.filter(({ entry }) => entry.detail)) {
     expanded.add(entry.key);
   }
-  measure(detailed.map(({ entry }) => entry.key));
   // The widget's own group rather than its area's order
   const { group, entry } = entries.find(({ entry }) => !entry.order) || entries[0];
   select(groups.value.indexOf(group));
@@ -727,17 +337,25 @@ async function reveal({
   // A row with nothing to expand has no toggle: its group's header then
   const toggle = list.value?.querySelector(
     `[aria-controls="${CSS.escape(`${baseId}-${entry.key}`)}"]`
-  ) || groupEls.get(group.key)?.querySelector(
+  ) || getGroupEl(group.key)?.querySelector(
     '[data-apos-test="doc-version-change-group-select"]'
   );
   // The list alone scrolls: `scrollIntoView` would also push the sliding
   // panel around it sideways
   if (toggle && list.value) {
+    // The group's header at the top, as a navigator step leaves it. A row
+    // too far down its group to show that way is centred instead
+    const section = getGroupEl(group.key);
     const box = list.value.getBoundingClientRect();
-    list.value.scrollBy({
-      top: toggle.getBoundingClientRect().top - box.top - (box.height / 2),
-      behavior: scroll.getScrollBehavior()
-    });
+    const rect = toggle.getBoundingClientRect();
+    if (section && (rect.bottom - section.getBoundingClientRect().top <= box.height)) {
+      scrollToGroup(group);
+    } else {
+      list.value.scrollBy({
+        top: rect.top - box.top - (box.height / 2),
+        behavior: scroll.getScrollBehavior()
+      });
+    }
     toggle.focus({ preventScroll: true });
   }
   return true;
@@ -940,19 +558,6 @@ $pad-x: $spacing-base + $spacing-half;
     margin-left: auto;
   }
 
-  &__ai {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: var(--a-border-radius);
-    background-color: var(--a-primary-light-80);
-    color: var(--a-primary-dark-15);
-    font-family: var(--a-family-default);
-    font-size: var(--a-type-tiny);
-    font-weight: var(--a-weight-bold);
-    letter-spacing: 0.2px;
-    line-height: 1;
-  }
-
   &__diff {
     overflow: hidden;
     margin-top: $spacing-base;
@@ -960,220 +565,8 @@ $pad-x: $spacing-base + $spacing-half;
     border-radius: var(--a-border-radius);
   }
 
-  &__pane {
-    padding: $spacing-half $spacing-base $spacing-base;
-
-    &--new {
-      border-bottom: 1px solid var(--a-base-8);
-      background-color: var(--a-success-fade);
-    }
-
-    &--old {
-      background-color: var(--a-danger-fade);
-    }
-  }
-
-  &__kicker {
-    display: block;
-    margin-bottom: $spacing-half;
-    font-family: var(--a-family-default);
-    font-size: var(--a-type-tiny);
-    font-weight: var(--a-weight-bold);
-    letter-spacing: 0.2px;
-    text-transform: uppercase;
-
-    &--new {
-      color: var(--a-success-dark);
-    }
-
-    &--old {
-      color: var(--a-danger-button-hover);
-    }
-  }
-
-  &__value-line {
-    display: flex;
-    align-items: center;
-    gap: $spacing-half;
-  }
-
-  &__value-icon {
-    display: flex;
-    flex-shrink: 0;
-
-    :deep(.material-design-icon__svg) {
-      bottom: 0;
-    }
-
-    .apos-doc-version-changes__pane--new & {
-      color: var(--a-success-dark);
-    }
-
-    .apos-doc-version-changes__pane--old & {
-      color: var(--a-danger-button-hover);
-    }
-  }
-
-  &__value {
-    @include type-base;
-
-    & {
-      flex: 1 1 auto;
-      min-width: 0;
-      margin: 0;
-      font-size: var(--a-type-smaller);
-      line-height: var(--a-line-tall);
-      overflow-wrap: anywhere;
-    }
-
-    &--new {
-      color: var(--a-success-dark);
-    }
-
-    &--old {
-      color: var(--a-danger-button-hover);
-    }
-
-    // Plaintext of rich text has a line for every block
-    &--text {
-      white-space: pre-line;
-    }
-
-    &--clamped {
-      display: -webkit-box;
-      overflow: hidden;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 8;
-      line-clamp: 8;
-    }
-  }
-
-  &__elided {
-    color: var(--a-base-2);
-  }
-
-  &__more {
-    display: flex;
-    justify-content: flex-end;
-    padding: $spacing-half $spacing-base;
+  &__pane + &__format {
     border-top: 1px solid var(--a-base-8);
-  }
-
-  &__mark {
-    text-decoration-thickness: 1px;
-
-    &--new {
-      color: var(--a-success-dark);
-      text-decoration-line: underline;
-    }
-
-    &--old {
-      color: var(--a-danger-button-hover);
-      text-decoration-line: line-through;
-    }
-  }
-
-  // The side with no value, in its side's colour without a line
-  &__none {
-    &--new {
-      color: var(--a-success-dark);
-    }
-
-    &--old {
-      color: var(--a-danger-button-hover);
-    }
-  }
-
-  &__format {
-    @include apos-list-reset();
-  }
-
-  &__pane + &__format,
-  &__format-line + &__format-line {
-    border-top: 1px solid var(--a-base-8);
-  }
-
-  &__format-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $spacing-base;
-    padding: $spacing-half $spacing-base;
-  }
-
-  &__format-label {
-    @include type-base;
-
-    & {
-      min-width: 0;
-      font-size: var(--a-type-smaller);
-      line-height: var(--a-line-tall);
-      overflow-wrap: anywhere;
-    }
-
-    strong {
-      font-weight: var(--a-weight-bold);
-    }
-  }
-
-  &__format-link {
-    color: inherit;
-
-    &:focus-visible {
-      outline: 2px solid var(--a-primary);
-      outline-offset: 1px;
-    }
-  }
-
-  // The URL of an internal link, under the title of its document
-  &__format-url {
-    display: block;
-    color: var(--a-base-2);
-    font-size: var(--a-type-smaller);
-    overflow-wrap: anywhere;
-  }
-
-  // A value of a formatting block: no kicker, the icon says the side
-  &__pane--compact {
-    padding: $spacing-half $spacing-base;
-    border-top: 1px solid var(--a-base-8);
-    border-bottom: 0;
-
-    .apos-doc-version-changes__value-line {
-      align-items: flex-start;
-    }
-
-    .apos-doc-version-changes__value-icon {
-      // Centred on the first line of the value
-      margin-top: 3px;
-    }
-  }
-
-  // An image that can be opened: its thumbnail above its title
-  &__format-image {
-    display: block;
-    width: fit-content;
-    color: inherit;
-
-    &:focus-visible {
-      outline: 2px solid var(--a-primary);
-      outline-offset: 1px;
-    }
-
-    img {
-      display: block;
-      max-width: 120px;
-      height: 64px;
-      margin-bottom: $spacing-half;
-      border: 1px solid var(--a-base-8);
-      border-radius: var(--a-border-radius);
-      background-color: var(--a-base-9);
-      object-fit: contain;
-    }
-
-    &:hover img {
-      border-color: var(--a-base-5);
-    }
   }
 
   &__nav {

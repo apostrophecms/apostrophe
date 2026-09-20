@@ -10,13 +10,15 @@
       :icon="icons[type]"
       :icon-size="10"
     />
-    {{ $t(labels[type]) }}
+    {{ $t(changeTypes.labels[type]) }}
   </span>
 </template>
 
 <script setup>
 // Whether a change added, modified, deleted or moved something, as a
 // word, so the colour is never the only cue
+import changeTypes from '../lib/change-types.js';
+
 defineProps({
   type: {
     type: String,
@@ -35,13 +37,6 @@ const icons = {
   modified: 'pencil-icon',
   deleted: 'minus-icon',
   moved: 'cursor-move-icon'
-};
-
-const labels = {
-  added: 'apostrophe:versionChangeAdded',
-  modified: 'apostrophe:versionChangeModified',
-  deleted: 'apostrophe:versionChangeDeleted',
-  moved: 'apostrophe:versionChangeMoved'
 };
 </script>
 

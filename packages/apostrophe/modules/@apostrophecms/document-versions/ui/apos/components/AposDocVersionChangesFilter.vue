@@ -51,6 +51,7 @@
 // Which kinds of change a version's change list shows: a change shows when
 // any checked option matches it. An option nothing matches is disabled.
 import { computed, inject } from 'vue';
+import changeTypes from '../lib/change-types.js';
 
 const props = defineProps({
   // The checked options: `ai`, `added`, `modified`, `deleted`
@@ -74,16 +75,9 @@ const emit = defineEmits([ 'update:modelValue' ]);
 
 const $t = inject('i18n');
 
-const labels = {
-  ai: 'apostrophe:versionChangeAi',
-  added: 'apostrophe:versionChangeAdded',
-  modified: 'apostrophe:versionChangeModified',
-  deleted: 'apostrophe:versionChangeDeleted'
-};
-
-const options = computed(() => Object.entries(labels).map(([ value, label ]) => ({
+const options = computed(() => [ 'ai', 'added', 'modified', 'deleted' ].map(value => ({
   value,
-  label,
+  label: changeTypes.labels[value],
   count: props.counts[value] || 0
 })));
 

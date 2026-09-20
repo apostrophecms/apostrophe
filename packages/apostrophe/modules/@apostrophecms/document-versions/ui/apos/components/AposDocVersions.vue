@@ -56,20 +56,13 @@
                   class="apos-doc-version-editor__field-change"
                   data-apos-test="doc-version-field-change"
                 >
-                  <button
-                    v-apos-tooltip="'apostrophe:versionSeeChanges'"
-                    type="button"
+                  <AposDocVersionMarkerAction
                     class="apos-doc-version-editor__field-change-action"
                     data-apos-test="doc-version-field-change-action"
-                    :aria-label="$t('apostrophe:versionSeeChanges')"
+                    :types="[ 'modified' ]"
+                    :ai="isFieldAi(field)"
                     @click="revealChange({ field: field.name })"
-                  >
-                    <AposDocVersionAiBadge v-if="isFieldAi(field)" />
-                    <AposDocVersionChangeType
-                      type="modified"
-                      icon
-                    />
-                  </button>
+                  />
                 </div>
               </template>
             </AposSchema>
@@ -132,20 +125,14 @@
 
 <script setup>
 import {
-  computed, inject, nextTick, onBeforeUnmount, onMounted, provide, ref, watch
+  computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch
 } from 'vue';
-import { klona } from 'klona';
-import {
-  evaluateExternalConditions as evaluateSchemaExternalConditions,
-  getConditionalFields,
-  getConditionTypesObject
-} from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfiniteScroll.js';
 import { useAdvisoryLock } from 'Modules/@apostrophecms/ui/composables/useAdvisoryLock.js';
-import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
-import { useDocVersionMarkersStore } from '../stores/docVersionMarkers.js';
 import { useDocVersionsList } from '../composables/useDocVersionsList.js';
 import { useDocVersionView } from '../composables/useDocVersionView.js';
+import { useDocVersionTabs } from '../composables/useDocVersionTabs.js';
+import { useDocVersionMarkers } from '../composables/useDocVersionMarkers.js';
 import { useDocVersionChanges } from '../composables/useDocVersionChanges.js';
 import { useDocVersionTarget } from '../composables/useDocVersionTarget.js';
 import { useDocVersionRestore } from '../composables/useDocVersionRestore.js';
@@ -175,7 +162,7 @@ const modal = ref({
 const scrollSentinel = ref(null);
 const emptyState = { message: 'apostrophe:versionsNotFound' };
 
-// --- Document and schema ---
+// --- Document ---
 
 const docId = props.doc._id;
 const versionsAction = apos.modules[props.moduleName].action;
@@ -193,129 +180,34 @@ const moduleOptions = computed(() => apos.modules[docType.value] || {});
 const docAction = computed(() => `${moduleOptions.value.action}/${docId}`);
 const docMeta = computed(() => docFields.value.data?.aposMeta || {});
 
-const schema = computed(() => {
-  const fields = (moduleOptions.value.schema || [])
-    .filter(field => apos.schema.components.fields[field.type])
-    .filter(field => field.name !== 'archived');
-  return klona(fields).map(field => ({
-    ...field,
-    readOnly: true
-  }));
+// --- Schema, conditions and tabs ---
+
+const {
+  groups,
+  versionTabs,
+  currentTab,
+  switchPane,
+  conditionalFields,
+  evaluateExternalConditions,
+  evaluateConditions
+} = useDocVersionTabs({
+  moduleOptions,
+  doc: props.doc,
+  docFields
 });
 
 // --- Change markers ---
 
-// The modal's own widget graph: its widgets share their ids with those of
-// the page under it. Nested areas, apps of their own, find the key on the
-// modal element
-const graphKey = `document-versions:${docId}`;
-provide('aposGraphKey', graphKey);
-
-const widgetGraphStore = useWidgetGraphStore();
-const markersStore = useDocVersionMarkersStore();
-
-// Known from the start, so that what renders in the modal renders for it
-markersStore.set(graphKey, {});
-watch(widgetChanges, changes => {
-  markersStore.set(graphKey, changes);
+const {
+  graphKey,
+  isFieldModified,
+  isFieldAi
+} = useDocVersionMarkers({
+  docId,
+  widgetChanges,
+  docMeta,
+  onReveal: revealChange
 });
-
-// A change outside any widget marks its top-level field
-function isFieldModified(field) {
-  return Boolean(docMeta.value[field.name]?.['@apostrophecms/schema:highlight']);
-}
-
-function isFieldAi(field) {
-  return Boolean(docMeta.value[field.name]?.['@apostrophecms/document-versions:ai']);
-}
-
-// --- Conditional fields ---
-
-const externalConditionsResults = ref(getConditionTypesObject());
-const conditionalFields = ref(getConditionTypesObject());
-
-async function evaluateExternalConditions() {
-  externalConditionsResults.value = await evaluateSchemaExternalConditions(
-    schema.value,
-    docId,
-    $t
-  );
-}
-
-// With no version to show, the tabs follow the live document
-function evaluateConditions(data = docFields.value.data) {
-  conditionalFields.value = getConditionalFields(
-    schema.value,
-    data,
-    externalConditionsResults.value
-  );
-}
-
-// --- Tabs ---
-
-const currentTab = ref(null);
-
-function isParked(fieldName) {
-  return (props.doc.parked || []).includes(fieldName);
-}
-
-const groups = computed(() => {
-  const groupSet = {};
-  for (const field of schema.value) {
-    if (isParked(field.name) || !field.group) {
-      continue;
-    }
-    const { group } = field;
-    groupSet[group.name] = groupSet[group.name] || {
-      label: group.label,
-      fields: [],
-      schema: []
-    };
-    groupSet[group.name].fields.push(field.name);
-    groupSet[group.name].schema.push(field);
-  }
-  return groupSet;
-});
-
-// A tab is worth showing only when one of its fields renders: a hidden
-// field or one whose condition is unmet leaves the pane empty
-function isTabVisible(schema) {
-  return schema.some(
-    field => !field.hidden && conditionalFields.value.if[field.name] !== false
-  );
-}
-
-const versionTabs = computed(() => {
-  const tabs = Object.entries(groups.value)
-    .filter(([ name ]) => name !== 'utility')
-    .map(([ name, group ]) => ({
-      name,
-      label: group.label,
-      fields: group.fields,
-      isVisible: isTabVisible(group.schema)
-    }));
-  const utility = groups.value.utility;
-  tabs.push({
-    name: 'utility',
-    label: 'apostrophe:utility',
-    fields: utility?.fields || [],
-    isVisible: isTabVisible(utility?.schema || [])
-  });
-  return tabs;
-});
-
-watch(versionTabs, (tabs) => {
-  const current = tabs.find(tab => tab.name === currentTab.value);
-  if (current?.isVisible) {
-    return;
-  }
-  const first = tabs.find(tab => tab.isVisible) || tabs[0];
-  currentTab.value = first?.name || null;
-}, { immediate: true });
-
-function switchPane(name) {
-  currentTab.value = name;
-}
 
 // --- Version list ---
 
@@ -366,6 +258,14 @@ async function notifyListError(e) {
   });
 }
 
+function notifyError(message) {
+  return apos.notify(message, {
+    type: 'danger',
+    icon: 'alert-circle-icon',
+    dismiss: true
+  });
+}
+
 // --- Selection ---
 
 const currentVersion = ref(null);
@@ -387,11 +287,7 @@ watch(currentVersionId, async (versionId) => {
       evaluateConditions();
     }
   } catch (e) {
-    await apos.notify('apostrophe:versionFailVersionLoadMessage', {
-      type: 'danger',
-      icon: 'alert-circle-icon',
-      dismiss: true
-    });
+    await notifyError('apostrophe:versionFailVersionLoadMessage');
   }
 });
 
@@ -420,11 +316,7 @@ async function viewChanges(version) {
       changesPane.value?.focus();
     }
   } catch (e) {
-    await apos.notify('apostrophe:versionFailChangesLoadMessage', {
-      type: 'danger',
-      icon: 'alert-circle-icon',
-      dismiss: true
-    });
+    await notifyError('apostrophe:versionFailChangesLoadMessage');
   }
 }
 
@@ -447,16 +339,6 @@ async function revealChange(target) {
   if (view.value === 'changes') {
     await nextTick();
     await changesPane.value?.reveal(target);
-  }
-}
-
-// Widgets of nested areas render in apps of their own, hence the bus
-function onWidgetMarker({ graphKey: key, widgetId }) {
-  if (key === graphKey) {
-    revealChange({
-      widgetId,
-      moved: Boolean(widgetChanges.value[widgetId]?.changes.includes('moved'))
-    });
   }
 }
 
@@ -560,7 +442,6 @@ function close() {
 
 onMounted(async () => {
   modal.value.active = true;
-  apos.bus.$on('doc-version-marker', onWidgetMarker);
   try {
     if (!(await lock(docAction.value))) {
       close();
@@ -581,11 +462,8 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  apos.bus.$off('doc-version-marker', onWidgetMarker);
   cancelVersions();
   stopScroll();
-  markersStore.clear(graphKey);
-  widgetGraphStore.destroyGraph(graphKey);
 });
 </script>
 
@@ -625,24 +503,6 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: flex-end;
     margin-bottom: $spacing-half;
-  }
-
-  &__field-change-action {
-    display: flex;
-    gap: $spacing-half;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    cursor: pointer;
-    // The body blocks the pointer
-    pointer-events: auto;
-
-    &:focus-visible {
-      border-radius: var(--a-border-radius);
-      outline: 2px solid var(--a-primary);
-      outline-offset: 2px;
-    }
   }
 
   // A modified field, framed as a modified widget is
