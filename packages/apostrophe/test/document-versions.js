@@ -63,6 +63,7 @@ describe('Document Versions', function () {
 
   describe('`autopublish` and `versions` options', function() {
     let apos;
+    let jarAdmin;
 
     before(async function() {
       apos = await bootstrap({
@@ -75,9 +76,12 @@ describe('Document Versions', function () {
           'module-versions_false': {}
         }
       });
+      await addUser(apos, 'admin');
+      jarAdmin = await login(apos, 'admin');
     });
 
     after(async function() {
+      await removeUploads();
       await destroy(apos);
     });
 
@@ -186,6 +190,175 @@ describe('Document Versions', function () {
         );
       });
     }
+
+    for (const mode of [ 'published', 'draft' ]) {
+      it(`should record nothing for a ${mode} mode save of an \`autopublish: true\` type that changes nothing`, async function() {
+        const manager = apos.modules['module-autopublish_true-versions_true'];
+        const req = getReq(apos, { mode });
+        const piece = await manager.insert(req, { title: `${mode} as is` });
+        const before = await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(piece),
+          { raw: true }
+        );
+        assert.equal(before.length, 1);
+
+        const saved = await manager.update(req, piece);
+        await manager.update(req, saved);
+
+        assert.deepEqual(
+          await apos.docVersions.find(
+            req,
+            apos.docVersions.getTimelineCriteria(piece),
+            { raw: true }
+          ),
+          before
+        );
+      });
+    }
+
+    it('should record nothing for a `PUT` of an `autopublish: true` type that changes nothing', async function() {
+      const manager = apos.modules['module-autopublish_true-versions_true'];
+      const req = getReq(apos, { mode: 'draft' });
+      const piece = await manager.insert(req, { title: 'put as is' });
+      const url = `/api/v1/module-autopublish_true-versions_true/${piece._id}`;
+
+      const fetched = await apos.http.get(url, { jar: jarAdmin });
+      await apos.http.put(url, {
+        body: fetched,
+        jar: jarAdmin
+      });
+      {
+        const versions = await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(piece)
+        );
+        assert.deepEqual(versions.map(version => version.doc.title), [ 'put as is' ]);
+      }
+
+      await apos.http.put(url, {
+        body: {
+          ...fetched,
+          title: 'put changed'
+        },
+        jar: jarAdmin
+      });
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(piece)
+      );
+      assert.deepEqual(
+        versions.map(version => [ version.doc.title, version.changeCount ]),
+        [
+          [ 'put changed', 1 ],
+          [ 'put as is', 0 ]
+        ]
+      );
+    });
+
+    it('should record nothing for the styles document saved as is', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const styles = await apos.styles.find(req).toObject();
+      const before = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(styles),
+        { raw: true }
+      );
+      assert.equal(before.length, 1);
+
+      const saved = await apos.styles.update(req, styles);
+      await apos.styles.update(req, saved);
+
+      assert.deepEqual(
+        await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(styles),
+          { raw: true }
+        ),
+        before
+      );
+    });
+
+    it('should still record a restore that changes nothing', async function() {
+      const manager = apos.modules['module-autopublish_true-versions_true'];
+      const req = getReq(apos, { mode: 'draft' });
+      const piece = await manager.insert(req, { title: 'restored as is' });
+      const [ first ] = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(piece)
+      );
+
+      await manager.update(getReq(apos, {
+        mode: 'draft',
+        aposRestoreVersion: first._id
+      }), piece);
+
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(piece)
+      );
+      assert.deepEqual(
+        versions.map(version => version.restoredFrom?._id),
+        [ first._id, undefined ]
+      );
+    });
+
+    it('should record nothing for an image saved as is', async function() {
+      const attachment = await upload('upload_image.png', apos);
+      const url = '/api/v1/@apostrophecms/image';
+      const qs = { aposMode: 'draft' };
+      await apos.http.get(url, { jar: jarAdmin });
+      const image = await apos.http.post(url, {
+        body: {
+          title: 'an image as is',
+          attachment
+        },
+        qs,
+        jar: jarAdmin
+      });
+      const timeline = () => apos.docVersions.find(
+        getReq(apos),
+        apos.docVersions.getTimelineCriteria(image)
+      );
+      assert.equal((await timeline()).length, 1);
+
+      // Each save hands back the attachment with the references it has
+      // gained since, the versions among them
+      for (let i = 0; i < 2; i++) {
+        const fetched = await apos.http.get(`${url}/${image._id}`, {
+          qs,
+          jar: jarAdmin
+        });
+        await apos.http.put(`${url}/${image._id}`, {
+          body: fetched,
+          qs,
+          jar: jarAdmin
+        });
+      }
+      assert.equal((await timeline()).length, 1);
+
+      const replacement = await upload('upload_image.png', apos);
+      const fetched = await apos.http.get(`${url}/${image._id}`, {
+        qs,
+        jar: jarAdmin
+      });
+      await apos.http.put(`${url}/${image._id}`, {
+        body: {
+          ...fetched,
+          attachment: replacement
+        },
+        qs,
+        jar: jarAdmin
+      });
+      const versions = await timeline();
+      assert.deepEqual(versions.map(version => version.changeCount), [ 1, 0 ]);
+      assert.deepEqual(
+        apos.docVersions
+          .getChangeRows(getReq(apos), versions[1].doc, versions[0].doc)
+          .map(row => [ row.path.map(segment => segment.name), row.type ]),
+        [ [ [ 'attachment' ], 'modified' ] ]
+      );
+    });
 
     it('should record one publication for an image inserted in published mode', async function() {
       const req = getReq(apos, { mode: 'published' });
@@ -900,14 +1073,13 @@ describe('Document Versions', function () {
   });
 
   // A type that is not localized records versions when it asks for them with
-  // `versions: true`. It has one mode and no locale, so every save is a
-  // publication point of a timeline of its own: each save is recorded, a save
-  // that changes nothing included, and a restore behaves as it does for a
-  // localized type. Two consequences come with that and are accepted as they
-  // are, because the editor interface never reaches them: a save without a
-  // change is recorded, which the interface does not offer, and deleting such
-  // a document leaves its versions behind, since only a draft can be deleted
-  // from the interface. Code that deletes one removes its versions itself
+  // `versions: true`. It has one mode and no locale, so every save that
+  // changes something is a publication point of a timeline of its own, and a
+  // restore behaves as it does for a localized type. One consequence comes
+  // with that and is accepted as it is, because the editor interface never
+  // reaches it: deleting such a document leaves its versions behind, since
+  // only a draft can be deleted from the interface. Code that deletes one
+  // removes its versions itself
   describe('not localized with `versions: true`', function() {
     let apos;
     let admin;
@@ -951,7 +1123,7 @@ describe('Document Versions', function () {
       assert.equal(apos.docVersions.isExcludedType(doc), false);
     });
 
-    it('should record one version per save, with no locale of its own', async function() {
+    it('should record one version per changed save, with no locale of its own', async function() {
       const req = getReq(apos);
       const setting = await apos.setting.insert(req, { title: 'Settings' });
 
@@ -991,24 +1163,30 @@ describe('Document Versions', function () {
       }
     });
 
-    it('should record a version for a save that changes nothing', async function() {
+    it('should record nothing for a save that changes nothing', async function() {
       const req = getReq(apos);
       const setting = await apos.setting.insert(req, { title: 'Settings' });
       const changed = await apos.setting.update(req, {
         ...setting,
         title: 'Settings v2'
       });
+      const before = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(setting),
+        { raw: true }
+      );
+      assert.deepEqual(before.map(version => version.changeCount), [ 1, 0 ]);
+
       await apos.setting.update(req, changed);
 
-      const versions = await apos.docVersions.find(
-        req,
-        apos.docVersions.getTimelineCriteria(setting)
+      assert.deepEqual(
+        await apos.docVersions.find(
+          req,
+          apos.docVersions.getTimelineCriteria(setting),
+          { raw: true }
+        ),
+        before
       );
-      assert.equal(versions.length, 3);
-      assert.deepEqual(versions.map(version => version.changeCount), [ 0, 1, 0 ]);
-      const [ last, previous ] = versions;
-      assert.deepEqual(apos.docVersions.getChanges(req, last.doc, previous.doc), []);
-      assert.deepEqual(apos.docVersions.getChangeRows(req, previous.doc, last.doc), []);
     });
 
     it('should list the changes of a version since the one before it', async function() {
@@ -1810,6 +1988,56 @@ describe('Document Versions', function () {
       );
     });
 
+    it('should record the publish of a draft that returned to the published content', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const explicit = req.clone({ aposExplicitSave: true });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await saveDraft(apos, explicit, draft, { title: 'Second' });
+      await saveDraft(apos, explicit, draft, { title: 'First' });
+      const [ returned ] = await timeline(apos, draft);
+
+      await apos.article.publish(req, await saveDraft(apos, req, draft));
+
+      // The publish is a handoff: the next draft save starts a version of
+      // its own and counts its changes against what is live
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version._id, version.mode, version.doc.title ]),
+        [
+          [ returned._id, 'published', 'First' ],
+          [ versions[1]._id, 'draft', 'Second' ],
+          [ versions[2]._id, 'published', 'First' ]
+        ]
+      );
+      await saveDraft(apos, req, draft, { title: 'Third' });
+      const [ next ] = await timeline(apos, draft);
+      assert.notEqual(next._id, returned._id);
+      assert.deepEqual([ next.mode, next.changeCount ], [ 'draft', 1 ]);
+    });
+
+    it('should record nothing for a publish of the content already published', async function() {
+      const req = draftReqAs(apos, 'alice');
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      const before = await timeline(apos, draft, { raw: true });
+      assert.deepEqual(before.map(version => version.mode), [ 'published' ]);
+
+      // Whoever publishes it again: nothing changed, nothing to attribute
+      await apos.article.publish(draftReqAs(apos, 'bob'), await saveDraft(apos, req, draft));
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), before);
+
+      // A draft version on top does not make it a change either
+      await saveDraft(apos, req, draft, { title: 'Second' });
+      const withDraft = await timeline(apos, draft, { raw: true });
+      assert.deepEqual(withDraft.map(version => version.mode), [ 'draft', 'published' ]);
+      const published = await apos.article
+        .find(req.clone({ mode: 'published' }), { aposDocId: draft.aposDocId })
+        .toObject();
+      await apos.article.update(req.clone({ mode: 'published' }), published);
+      assert.deepEqual(await timeline(apos, draft, { raw: true }), withDraft);
+    });
+
     it('should count the changes a change list shows, not the fields', async function() {
       const req = draftReqAs(apos, 'alice');
       const draft = await apos.article.insert(req, {
@@ -2141,7 +2369,7 @@ describe('Document Versions', function () {
       assert.equal(newest.changeCount, 1);
     });
 
-    it('should record one version for one move to the last child of the home page', async function() {
+    it('should record nothing for a move that keeps the slug', async function() {
       const req = getReq(apos, { mode: 'draft' });
       const home = await apos.page.find(req, { level: 0 }).toObject();
       const page = await apos.page.insert(req, '_home', 'lastChild', {
@@ -2163,16 +2391,72 @@ describe('Document Versions', function () {
       const { changed } = await apos.page.move(req, page._id, home._id, 'lastChild');
       assert(changed.every(change => change._id));
 
-      // The draft save changes no schema field and records nothing; the
-      // published replay of the move records one publication point
-      const after = await timeline(apos, page);
-      assert.deepEqual(after.map(version => version.mode), [ 'published', 'published' ]);
-      assert.deepEqual(after.slice(1), before);
+      // Neither the draft save nor its published replay changes a schema
+      // field
+      assert.deepEqual(await timeline(apos, page), before);
       const archive = await apos.page.find(req, { type: '@apostrophecms/archive-page' })
         .archived(null)
         .toObject();
       const moved = await apos.page.find(req, { _id: page._id }).toObject();
       assert(moved.rank < archive.rank);
+    });
+
+    it('should record nothing for a move of a page with draft edits not yet published', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const home = await apos.page.find(req, { level: 0 }).toObject();
+      const page = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Page',
+        slug: '/page'
+      });
+      await apos.page.publish(req, page);
+      await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Peer',
+        slug: '/peer'
+      });
+      await apos.page.update(req, {
+        ...await apos.page.find(req, { _id: page._id }).toObject(),
+        title: 'Page edited'
+      });
+      const before = await timeline(apos, page);
+      assert.deepEqual(
+        before.map(version => [ version.mode, version.doc.title ]),
+        [ [ 'draft', 'Page edited' ], [ 'published', 'Page' ] ]
+      );
+
+      await apos.page.move(req, page._id, home._id, 'lastChild');
+
+      assert.deepEqual(await timeline(apos, page), before);
+    });
+
+    it('should record one publication for a move that changes the slug', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const page = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Page',
+        slug: '/page'
+      });
+      await apos.page.publish(req, page);
+      const parent = await apos.page.insert(req, '_home', 'lastChild', {
+        type: 'default-page',
+        title: 'Parent',
+        slug: '/parent'
+      });
+      await apos.page.publish(req, parent);
+
+      await apos.page.move(req, page._id, parent._id, 'lastChild');
+
+      const versions = await timeline(apos, page);
+      assert.deepEqual(
+        versions.map(({
+          mode, doc, changeCount
+        }) => [ mode, doc.slug, changeCount ]),
+        [
+          [ 'published', '/parent/page', 1 ],
+          [ 'published', '/page', 0 ]
+        ]
+      );
     });
   });
 
@@ -3394,6 +3678,58 @@ describe('Document Versions', function () {
         Object.keys(version).sort(),
         [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'doc', 'mode' ]
       );
+    });
+
+    it('should leave a draft with an attachment unmodified when it is saved as is - PUT /api/v1/article', async function() {
+      const attachment = await upload('clone.txt', apos);
+      const url = '/api/v1/article';
+      const qs = { aposMode: 'draft' };
+      const get = _id => apos.http.get(`${url}/${_id}`, {
+        qs,
+        jar: jarAdmin
+      });
+      const put = body => apos.http.put(`${url}/${body._id}`, {
+        body,
+        qs,
+        jar: jarAdmin
+      });
+      const inserted = await apos.http.post(url, {
+        body: {
+          title: 'an article with a file',
+          attachment
+        },
+        qs,
+        jar: jarAdmin
+      });
+      // One trip through the form first, which normalizes the `time` field
+      await put(await get(inserted._id));
+      await apos.http.post(`${url}/${inserted._id}/publish`, {
+        body: {},
+        qs,
+        jar: jarAdmin
+      });
+      const timeline = () => apos.docVersions.find(
+        getReq(apos),
+        apos.docVersions.getTimelineCriteria(inserted),
+        { raw: true }
+      );
+      const before = await timeline();
+      const published = await get(inserted._id);
+      assert.equal(published.modified, false);
+
+      const saved = await put(published);
+      const again = await put(await get(inserted._id));
+
+      // The draft holds the attachment with the references it has gained
+      // since the published copy was written
+      const live = await apos.doc.db.findOne({
+        _id: inserted._id.replace(':draft', ':published')
+      });
+      assert.equal(again.attachment._id, live.attachment._id);
+      assert.notDeepEqual(again.attachment.docIds, live.attachment.docIds);
+      assert.equal(saved.modified, false);
+      assert.equal(again.modified, false);
+      assert.deepEqual(await timeline(), before);
     });
 
     it('should replace the draft version unless `_explicitSave` is sent - PUT /api/v1/article', async function() {

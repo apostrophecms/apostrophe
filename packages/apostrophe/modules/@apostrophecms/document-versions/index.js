@@ -501,26 +501,45 @@ module.exports = {
         return Boolean(manager) && !self.hasVersions(manager.options);
       },
       // Decides what a save does to the document's history. Returns `false`
-      // for nothing, `true` for a new version, or the `_id` of the newest
-      // version, a draft, which the save then replaces in place.
+      // to record nothing, `true` to record a new version, or the `_id` of
+      // the newest version, a draft, for the save to replace in place.
       //
-      // A restore always starts a version. So does a publish, unless the
-      // newest version is a draft of the same content by the same author
-      // with the same AI involvement: a publish saves the draft first, so
-      // that draft becomes the publication point instead. A draft save with
-      // no change to any schema field never starts one. Otherwise a draft
-      // starts one at every handoff: an explicit Save Draft, a first version,
-      // a previous version that was a publication point or a restore, a
-      // different author, AI involvement changing, or more than
-      // `draftInterval` since the previous version was created. Between
-      // handoffs it replaces the previous draft.
+      // Records nothing, tested first:
+      // - a request flagged `aposSkipVersion`: core sets it on a save that
+      //   is a side effect of an operation already recorded
+      // - a save that takes the document out of the archive: it still
+      //   carries the deduplicated slug, which core reverts afterwards
+      // - a type without versions, or an archived document. A type that
+      //   keeps publication points only records every published save and
+      //   nothing else, with no further test
+      // - the draft of a type that publishes automatically: its
+      //   republication is the version
       //
-      // A request flagged `aposSkipVersion` records nothing: core sets it on
-      // a save that is a side effect of an operation already recorded. The
-      // draft of a type that publishes automatically records nothing, its
-      // republication does. A save that takes the document out of the
-      // archive records nothing either: it still carries the deduplicated
-      // slug, which core reverts after this save
+      // A restore always records a new version.
+      //
+      // A published save, by the newest version:
+      // - a publication point: records nothing when no schema field
+      //   changed since it (an autopublish type saved as is, a page moved
+      //   without a change to its slug), a new version otherwise
+      // - a draft of the same content: this is its publish, which saves the
+      //   draft first. Replaces that draft, which becomes the publication
+      //   point, when it is by the same author with the same AI involvement
+      //   and not a restore; records a new version otherwise. Also when the
+      //   content equals the last publication: the publish is a handoff
+      // - a draft of other content: its edits stay unpublished and the save
+      //   did not come from it (the move of a page with draft edits).
+      //   Records nothing when no schema field changed since the newest
+      //   publication point, a new version otherwise
+      //
+      // A draft save:
+      // - records a new version when the document has none
+      // - records nothing when no schema field changed since the newest
+      //   version
+      // - records a new version at a handoff: an explicit Save Draft, a
+      //   newest version that is a publication point or a restore, a
+      //   different author, AI involvement changing, more than
+      //   `draftInterval` since the newest version was created
+      // - replaces the newest version otherwise
       async canHaveVersion(req, doc) {
         if (req.aposSkipVersion) {
           return false;
@@ -542,13 +561,30 @@ module.exports = {
         }
         const previous = await self.findOne(req, self.getTimelineCriteria(doc));
         if (self.getMode(doc) === 'published') {
-          const promotable = previous &&
-            previous.mode === 'draft' &&
-            !previous.restoredFrom &&
-            previous.authorId === self.getAuthorId(req) &&
-            Boolean(previous.ai) === Boolean(req.aposAi) &&
-            !self.getChanges(req, doc, previous.doc).length;
-          return promotable ? previous._id : true;
+          if (!previous) {
+            return true;
+          }
+          const unchanged = !self.getChanges(req, doc, previous.doc).length;
+          if (previous.mode === 'published') {
+            // The content already published, saved again
+            return !unchanged;
+          }
+          if (unchanged) {
+            // The publish of the draft on top, which was saved first: that
+            // draft is the publication point when it can be
+            const promotable = !previous.restoredFrom &&
+              previous.authorId === self.getAuthorId(req) &&
+              Boolean(previous.ai) === Boolean(req.aposAi);
+            return promotable ? previous._id : true;
+          }
+          // Not a publish of the draft on top, whose edits stay unpublished:
+          // compare with the publication point under the drafts
+          const publication = await self.findOne(req, {
+            ...self.getTimelineCriteria(doc),
+            mode: 'published'
+          });
+          return !publication ||
+            Boolean(self.getChanges(req, doc, publication.doc).length);
         }
         if (!previous) {
           return true;
