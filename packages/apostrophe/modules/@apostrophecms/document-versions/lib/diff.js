@@ -56,6 +56,9 @@ const ORDER = Symbol('order');
  * @property {() => object[]} [getRichTextStyles] The `styles` rich text is
  *   configured with by default, `{ tag, class, label }` each, for the names
  *   of blocks and inline styles.
+ * @property {(err: Error, path: PathSegment[]) => void} [onError] Told of
+ *   every failure the engine recovered from, with the path of the field or
+ *   row it happened at. The module logs them.
  */
 
 /**
@@ -179,6 +182,13 @@ const ORDER = Symbol('order');
  *   other widget compares the data it stores outside its schema as one
  *   `widget` row. A widget whose type has no module is compared whole.
  * - `group` and `relationshipReverse` fields store nothing and are skipped.
+ *
+ * Never throws over what the documents hold. A value that is not of its
+ * field's kind (one stored under an earlier schema, or by a type extending
+ * `array`, `area` or `object` with a shape of its own) compares whole, as
+ * one `leaf` row. So does a field whose walk fails, in project code such as
+ * a type's `isEqual` included; `ctx.onError` is told, and the rest of the
+ * document keeps its full depth.
  *
  * @param {object[]} schema The schema of both documents
  *   (`apos.doc.getManager(type).schema`, or a widget or array schema when
@@ -377,16 +387,31 @@ function walkFields(schema, older, newer, ctx, path, rows) {
         label: field.label || field.name
       }
     ];
-    if (kind === 'area') {
-      walkArea(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
-    } else if (kind === 'array') {
-      walkArray(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
-    } else if (kind === 'object') {
-      walkObject(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
-    } else if (kind === 'relationship') {
-      walkRelationship(field, older, newer, fieldPath, rows);
-    } else {
-      walkLeaf(field, kind, older, newer, ctx, fieldPath, rows);
+    // Whole when the value is not of its kind, or when its walk fails: a
+    // change is never lost to a failure
+    let whole = !canWalk(kind, older[field.name], newer[field.name]);
+    const mark = rows.length;
+    if (!whole) {
+      try {
+        if (kind === 'area') {
+          walkArea(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
+        } else if (kind === 'array') {
+          walkArray(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
+        } else if (kind === 'object') {
+          walkObject(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
+        } else if (kind === 'relationship') {
+          walkRelationship(field, older, newer, fieldPath, rows);
+        } else {
+          walkLeaf(field, kind, older, newer, ctx, fieldPath, rows);
+        }
+      } catch (err) {
+        rows.length = mark;
+        ctx.onError?.(err, fieldPath);
+        whole = true;
+      }
+    }
+    if (whole) {
+      walkWhole(field, older, newer, fieldPath, rows);
     }
   }
 }
@@ -400,6 +425,35 @@ function getKind(field, ctx) {
     return 'leaf';
   }
   return VALUELESS.has(name) ? 'valueless' : name;
+}
+
+// Whether both values are of the kind their field walks as. One stored
+// under an earlier schema may not be, nor that of a type extending a
+// structural type, free to store a shape of its own
+function canWalk(kind, older, newer) {
+  return [ older, newer ].every(value => {
+    if (value == null) {
+      return true;
+    }
+    if (kind === 'array') {
+      return Array.isArray(value);
+    }
+    if (kind === 'area') {
+      return isPlainValue(value) &&
+        ((value.items === undefined) || Array.isArray(value.items));
+    }
+    if (kind === 'object') {
+      return isPlainValue(value);
+    }
+    if (kind === 'richText') {
+      return typeof value === 'string';
+    }
+    return true;
+  });
+
+  function isPlainValue(value) {
+    return !!value && (typeof value === 'object') && !Array.isArray(value);
+  }
 }
 
 // Scalars compare with the field type's own `isEqual` when it has one,
@@ -431,9 +485,29 @@ function walkLeaf(field, kind, older, newer, ctx, path, rows) {
   ));
 }
 
+// A value compared whole and deeply, as one `leaf` row. Nothing is asked
+// of its type, whose `isEqual` and `isEmpty` do not know the shape stored
+function walkWhole(field, older, newer, path, rows) {
+  const oldValue = older[field.name];
+  const newValue = newer[field.name];
+  if (_.isEqual(oldValue, newValue) || ((oldValue == null) && (newValue == null))) {
+    return;
+  }
+  rows.push(row(
+    path,
+    changeType(isEmpty(null, field, oldValue), isEmpty(null, field, newValue)),
+    field.type,
+    'leaf',
+    oldValue,
+    newValue,
+    field
+  ));
+}
+
 function walkRelationship(field, older, newer, path, rows) {
-  const oldIds = older[field.idsStorage] || [];
-  const newIds = newer[field.idsStorage] || [];
+  const idsOf = doc => Array.isArray(doc[field.idsStorage]) ? doc[field.idsStorage] : [];
+  const oldIds = idsOf(older);
+  const newIds = idsOf(newer);
   const oldFields = (field.fieldsStorage && older[field.fieldsStorage]) || {};
   const newFields = (field.fieldsStorage && newer[field.fieldsStorage]) || {};
   if (_.isEqual(oldIds, newIds) && _.isEqual(oldFields, newFields)) {
@@ -566,16 +640,18 @@ function walkArea(field, older, newer, ctx, path, rows) {
 // as a `richText` row at the widget's path; the rest of a rich text widget
 // (the id lists sanitize derives from its markup) follows the content and
 // is not compared. Any other data another widget type stores outside its
-// schema is one `widget` row
+// schema is one `widget` row, and so is rich text that is no string
 function walkWidget(manager, older, newer, ctx, path, rows) {
   walkFields(manager.schema, older, newer, ctx, path, rows);
   if (manager.getRichText) {
     const oldText = manager.getRichText(older) || '';
     const newText = manager.getRichText(newer) || '';
-    if (oldText !== newText) {
-      rows.push(row(path, 'modified', 'richText', 'richText', oldText, newText, null));
+    if ((typeof oldText === 'string') && (typeof newText === 'string')) {
+      if (oldText !== newText) {
+        rows.push(row(path, 'modified', 'richText', 'richText', oldText, newText, null));
+      }
+      return;
     }
-    return;
   }
   const ignored = new Set(WIDGET_KEYS);
   for (const field of manager.schema) {
@@ -620,13 +696,19 @@ function markRichTextField(doc, row, ctx) {
   }
 }
 
+// `null` when the change cannot be shown that way, a failure included
 function getMarkedRichText(row, ctx) {
-  return diffRichText(row.old || '', row.new || '', {
-    labels: {
-      removed: ctx.t?.('apostrophe:versionRemovedText'),
-      added: ctx.t?.('apostrophe:versionAddedText')
-    }
-  });
+  try {
+    return diffRichText(row.old || '', row.new || '', {
+      labels: {
+        removed: ctx.t?.('apostrophe:versionRemovedText'),
+        added: ctx.t?.('apostrophe:versionAddedText')
+      }
+    });
+  } catch (err) {
+    ctx.onError?.(err, row.path);
+    return null;
+  }
 }
 
 // The order of an array's or area's items, one `modified` row at the
@@ -655,7 +737,8 @@ function walkOrder(kind, field, entries, path, rows, describe) {
 // newer order, each deleted item placed after the item that preceded it in
 // the older list. `ordinal` is the item's 1-based position in the list it
 // is taken from, `olderOrdinal` the one in the older list when it is there.
-// Items without an `_id` match by position
+// Items without an `_id` match by position; a position holding no item on
+// either side (`null`) is left out
 function mergeItems(olderItems, newerItems) {
   const keyOf = (item, index) => item?._id ?? `#${index}`;
   const merged = newerItems.map((item, index) => ({
@@ -683,7 +766,7 @@ function mergeItems(olderItems, newerItems) {
       insertAt = found + 1;
     }
   });
-  return merged;
+  return merged.filter(entry => entry.older || entry.newer);
 }
 
 function row(path, type, fieldType, kind, oldValue, newValue, field) {
@@ -816,9 +899,9 @@ function resolve(doc, path) {
       return undefined;
     }
     if (Array.isArray(node)) {
-      node = node.find(item => item._id === segment.name);
+      node = node.find(item => item?._id === segment.name);
     } else if (node.metaType === 'area') {
-      node = (node.items || []).find(item => item._id === segment.name);
+      node = (node.items || []).find(item => item?._id === segment.name);
     } else {
       node = node[segment.name];
     }

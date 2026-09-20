@@ -1077,7 +1077,7 @@ module.exports = {
       async getChangeList(req, pairs) {
         let rows = [];
         if (pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type)) {
-          const ctx = self.getDiffContext(req);
+          const ctx = self.getDiffContext(req, pairs.at(-1).newer);
           rows = text.addWordDiff(await self.addChangeText(
             req,
             text.addFormat(self.getConsolidatedRows(req, pairs), ctx)
@@ -1097,14 +1097,15 @@ module.exports = {
       // document, as rows at full depth (see `lib/diff.js`)
       getChangeRows(req, older, newer) {
         const manager = self.apos.doc.getManager(newer.type);
-        return diff.walk(manager.schema, older, newer, self.getDiffContext(req));
+        return diff.walk(manager.schema, older, newer, self.getDiffContext(req, newer));
       },
       // The changes of consecutive versions of one document as one list,
       // every row flagged `ai` (see `lib/diff.js`). `pairs` are
       // `{ older, newer, ai }`, oldest first
       getConsolidatedRows(req, pairs) {
-        const manager = self.apos.doc.getManager(pairs.at(-1).newer.type);
-        return diff.consolidate(manager.schema, pairs, self.getDiffContext(req));
+        const { newer } = pairs.at(-1);
+        const manager = self.apos.doc.getManager(newer.type);
+        return diff.consolidate(manager.schema, pairs, self.getDiffContext(req, newer));
       },
       // Sets the display text of change rows (see `addText` in `lib/text.js`).
       // Fetches what the text needs in one query, as `req` sees it: the titles
@@ -1154,7 +1155,7 @@ module.exports = {
           manager.schema,
           older,
           newer,
-          self.getDiffContext(req),
+          self.getDiffContext(req, newer),
           { rows }
         );
       },
@@ -1168,10 +1169,22 @@ module.exports = {
           self.apos.util.clonePermanent(doc)
         ).length;
       },
-      // What the diff engine needs from the rest of Apostrophe
-      getDiffContext(req) {
+      // What the diff engine needs from the rest of Apostrophe. `doc`, the
+      // document compared, names it in the log when the engine recovers from
+      // a failure: the change is still listed, in less detail
+      getDiffContext(req, doc) {
         return {
           req,
+          onError: (err, path) => self.logWarn(
+            'change-detail-failed',
+            'A change could not be read in full detail',
+            {
+              docId: doc?._id,
+              docType: doc?.type,
+              path: path.map(segment => segment.name).join('.'),
+              stack: err.stack
+            }
+          ),
           getFieldType: name => self.apos.schema.fieldTypes[name],
           getWidgetManager: type => self.apos.area.getWidgetManager(type),
           setMeta: (doc, ...args) => self.apos.doc.setMeta(doc, ...args),

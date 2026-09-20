@@ -138,8 +138,10 @@ export default function() {
       }
     }
 
+    // The newest entry: a scroll right after `observe` arrives in the same
+    // callback as the first report, which still says the area is out of view
     function observed(entries) {
-      const intersects = entries[0].isIntersecting;
+      const intersects = entries.at(-1).isIntersecting;
       if (!intersects) {
         return;
       }

@@ -277,6 +277,74 @@ const modules = {
           extend
         });
       }
+      // Extends `array` and stores its rows beside the schema it composed
+      // for them, so its value is no array
+      self.apos.schema.addFieldType({
+        name: 'sheet',
+        extend: 'array',
+        validate(field) {
+          field.schema = [];
+        },
+        async convert(req, field, data, destination) {
+          field.schema = (data[field.name]?.schema) || [];
+          await self.apos.schema.getFieldType('array').convert(
+            req,
+            field,
+            { [field.name]: data[field.name]?.rows || [] },
+            destination
+          );
+          destination[field.name] = {
+            rows: destination[field.name],
+            schema: field.schema
+          };
+        }
+      });
+      // Types whose own comparison fails
+      self.apos.schema.addFieldType({
+        name: 'brittle',
+        extend: 'string',
+        isEqual() {
+          throw new Error('brittle isEqual');
+        }
+      });
+      self.apos.schema.addFieldType({
+        name: 'hollow',
+        extend: 'string',
+        isEmpty() {
+          throw new Error('hollow isEmpty');
+        }
+      });
+    }
+  },
+  // Never saved: core itself compares the fields of a document it updates
+  fragile: {
+    extend: '@apostrophecms/piece-type',
+    options: {
+      label: 'Fragile'
+    },
+    fields: {
+      add: {
+        brittle: {
+          type: 'brittle',
+          label: 'Brittle'
+        },
+        panel: {
+          type: 'object',
+          label: 'Panel',
+          fields: {
+            add: {
+              brittle: {
+                type: 'brittle',
+                label: 'Panel brittle'
+              },
+              note: {
+                type: 'string',
+                label: 'Panel note'
+              }
+            }
+          }
+        }
+      }
     }
   },
   project: {
@@ -335,6 +403,14 @@ const modules = {
           type: 'owners',
           label: 'Owners',
           withType: 'topic'
+        },
+        sheet: {
+          type: 'sheet',
+          label: 'Sheet'
+        },
+        hollow: {
+          type: 'hollow',
+          label: 'Hollow'
         }
       }
     }
@@ -540,7 +616,35 @@ function buildProject() {
         }
       ]
     },
-    ownersIds: [ 'topic1' ]
+    ownersIds: [ 'topic1' ],
+    sheet: {
+      rows: [ {
+        _id: 'sheet-row',
+        metaType: 'arrayItem',
+        make: 'Ford'
+      } ],
+      schema: [ {
+        name: 'make',
+        label: 'Make',
+        type: 'string'
+      } ]
+    }
+  };
+}
+
+// A document of the `fragile` type, the same on every call
+function buildFragile() {
+  return {
+    _id: 'fragile1:en:draft',
+    type: 'fragile',
+    title: 'Fragile',
+    brittle: 'One',
+    panel: {
+      _id: 'fragile-panel',
+      metaType: 'object',
+      brittle: 'One',
+      note: 'One'
+    }
   };
 }
 
@@ -549,5 +653,6 @@ module.exports = {
   modules,
   buildDoc,
   buildProject,
+  buildFragile,
   deepestRoute
 };

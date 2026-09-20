@@ -11,6 +11,7 @@ const {
   modules,
   buildDoc,
   buildProject,
+  buildFragile,
   deepestRoute
 } = require('./utils/document-versions-diff.js');
 
@@ -693,6 +694,51 @@ describe('Document Versions diff engine', function () {
       );
     });
 
+    it('should compare a value the core type cannot open as one value', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.sheet.rows[0].make = 'Chevy';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'modified', 'sheet', 'leaf', 'Sheet' ] ]
+      );
+    });
+
+    it('should see no change in such a value that stayed as it was', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.tagline = 'Built to change';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'modified', 'tagline', 'leaf', 'Tagline' ] ]
+      );
+    });
+
+    it('should record the versions of a document holding such a value', async function () {
+      const draftReq = apos.task.getReq({ mode: 'draft' });
+      const inserted = await apos.modules.project.insert(draftReq, {
+        ...apos.modules.project.newInstance(),
+        title: 'Sheet project',
+        sheet: {
+          rows: [ {
+            _id: 'row1',
+            metaType: 'arrayItem',
+            make: 'Ford'
+          } ],
+          schema: [ {
+            name: 'make',
+            label: 'Make',
+            type: 'string'
+          } ]
+        }
+      });
+      await apos.modules.project.publish(draftReq, inserted);
+      const versions = await apos.docVersions.find(req, {
+        docId: inserted.aposDocId
+      });
+      assert.deepEqual(versions.map(version => version.mode), [ 'published' ]);
+    });
+
     it('should call a value empty as the type itself does', function () {
       const older = buildProject();
       const newer = buildProject();
@@ -848,6 +894,339 @@ describe('Document Versions diff engine', function () {
       const rows = diff.walk([ field ], { which: 'first' }, { which: 'second' }, ctx);
       assert.deepEqual(rows.map(brief), [ [ 'modified', 'chicken', 'leaf', 'which' ] ]);
       assert.equal(text.toText(field, 'first', ctx), '');
+    });
+  });
+
+  // Stored content is not always what the schema says: a version recorded
+  // under an earlier schema, an import, a type with a shape or a fault of
+  // its own. None of it may fail a walk, since a save runs one
+  describe('values the schema does not describe', function () {
+    const brief = row => [
+      row.type,
+      row.fieldType,
+      row.kind,
+      row.path.map(segment => segment.label).join(' > ')
+    ];
+    let logWarn;
+    let warned;
+
+    beforeEach(function () {
+      warned = [];
+      logWarn = apos.docVersions.logWarn;
+      apos.docVersions.logWarn = (name, message, data) => {
+        warned.push([ name, data.path ]);
+      };
+    });
+
+    afterEach(function () {
+      apos.docVersions.logWarn = logWarn;
+    });
+
+    const cases = [
+      {
+        name: 'an array that was a string',
+        older: doc => {
+          doc.steps = 'Three steps';
+        },
+        rows: [ [ 'modified', 'steps', 'leaf', 'Steps' ] ]
+      },
+      {
+        name: 'an array that becomes a number',
+        newer: doc => {
+          doc.steps = 3;
+        },
+        rows: [ [ 'modified', 'steps', 'leaf', 'Steps' ] ]
+      },
+      {
+        name: 'an object that was a string',
+        older: doc => {
+          doc.panel = 'A panel';
+        },
+        rows: [ [ 'modified', 'panel', 'leaf', 'Panel' ] ]
+      },
+      {
+        name: 'an object that was an array',
+        older: doc => {
+          doc.panel = [ 'A panel' ];
+        },
+        rows: [ [ 'modified', 'panel', 'leaf', 'Panel' ] ]
+      },
+      {
+        name: 'an area that was a string',
+        older: doc => {
+          doc.zone = '<p>Zone text</p>';
+        },
+        rows: [ [ 'modified', 'zone', 'leaf', 'Zone' ] ]
+      },
+      {
+        name: 'an area that was an array',
+        older: doc => {
+          doc.zone = doc.zone.items;
+        },
+        rows: [ [ 'modified', 'zone', 'leaf', 'Zone' ] ]
+      },
+      {
+        name: 'an area whose items are no array',
+        older: doc => {
+          doc.zone.items = { 0: doc.zone.items[0] };
+        },
+        rows: [ [ 'modified', 'zone', 'leaf', 'Zone' ] ]
+      },
+      {
+        name: 'rich text that was a number',
+        older: doc => {
+          doc.prose = 5;
+        },
+        rows: [ [ 'modified', 'prose', 'leaf', 'Prose' ] ]
+      },
+      {
+        name: 'rich text that becomes an object',
+        newer: doc => {
+          doc.prose = { html: '<p>The quick brown fox</p>' };
+        },
+        rows: [ [ 'modified', 'prose', 'leaf', 'Prose' ] ]
+      },
+      {
+        name: 'a string that was an object',
+        older: doc => {
+          doc.tagline = { text: 'Built to last' };
+        },
+        rows: [ [ 'added', 'tagline', 'leaf', 'Tagline' ] ]
+      },
+      {
+        name: 'relationship ids that were a string',
+        older: doc => {
+          doc.ownersIds = 'topic1';
+        },
+        rows: [ [ 'added', 'owners', 'relationship', 'Owners' ] ]
+      },
+      {
+        name: 'relationship ids that were an object',
+        older: doc => {
+          doc.ownersIds = { topic1: true };
+        },
+        rows: [ [ 'added', 'owners', 'relationship', 'Owners' ] ]
+      },
+      {
+        name: 'an array position holding no item on both sides',
+        older: doc => {
+          doc.steps.push(null);
+        },
+        newer: doc => {
+          doc.steps.push(null);
+          doc.steps[0].tagline = 'Step zero';
+        },
+        rows: [ [ 'modified', 'tagline', 'leaf', 'Steps > Step zero > Step tagline' ] ]
+      },
+      {
+        name: 'an array item that becomes null',
+        newer: doc => {
+          doc.steps[1] = null;
+        },
+        rows: [ [ 'deleted', 'arrayItem', 'arrayItem', 'Steps > Step two' ] ]
+      },
+      {
+        name: 'array items that are no objects',
+        older: doc => {
+          doc.steps = [ 'one', 'two' ];
+        },
+        newer: doc => {
+          doc.steps = [ 'one', 'two' ];
+        },
+        rows: []
+      },
+      {
+        name: 'an area position holding no widget on both sides',
+        older: doc => {
+          doc.zone.items.unshift(null);
+        },
+        newer: doc => {
+          doc.zone.items.unshift(null);
+          doc.zone.items[2].note = 'Another note';
+        },
+        rows: [ [ 'modified', 'string', 'leaf', 'Zone > Card > Note' ] ]
+      },
+      {
+        name: 'a widget that becomes null',
+        newer: doc => {
+          doc.zone.items[1] = null;
+        },
+        rows: [ [ 'deleted', 'widget', 'widget', 'Zone > Card' ] ]
+      },
+      {
+        name: 'a widget that is no object',
+        newer: doc => {
+          doc.zone.items.push('A widget');
+        },
+        rows: [ [ 'added', 'widget', 'widget', 'Zone > ' ] ]
+      },
+      {
+        name: 'a widget without a type',
+        newer: doc => {
+          delete doc.zone.items[1].type;
+        },
+        rows: [ [ 'modified', 'widget', 'widget', 'Zone > ' ] ]
+      },
+      {
+        name: 'rich text widget content that becomes a number',
+        newer: doc => {
+          doc.zone.items[0].content = 5;
+        },
+        rows: [ [ 'modified', 'widget', 'widget', 'Zone > apostrophe:richText' ] ]
+      },
+      {
+        name: 'rich text widget content that is an object',
+        older: doc => {
+          doc.zone.items[0].content = { html: '<p>Zone text</p>' };
+        },
+        newer: doc => {
+          doc.zone.items[0].content = { html: '<p>Zone words</p>' };
+        },
+        rows: [ [ 'modified', 'widget', 'widget', 'Zone > apostrophe:richText' ] ]
+      },
+      {
+        name: 'a value that holds itself',
+        newer: doc => {
+          doc.panel.panel = doc.panel;
+        },
+        rows: []
+      }
+    ];
+
+    for (const {
+      name, older: changeOlder, newer: changeNewer, rows: expected
+    } of cases) {
+      it(`should compare ${name}`, async function () {
+        const older = buildProject();
+        const newer = buildProject();
+        changeOlder?.(older);
+        changeNewer?.(newer);
+        const rows = apos.docVersions.getChangeRows(req, older, newer);
+        assert.deepEqual(rows.map(brief), expected);
+        const list = await apos.docVersions.getChangeList(req, [ {
+          older,
+          newer
+        } ]);
+        assert.equal(list.rows.length, expected.length);
+        const annotated = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.equal(annotated._id, newer._id);
+        assert.deepEqual(warned, []);
+      });
+    }
+
+    it('should call a value it compares whole added or deleted by what is there', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.sheet = null;
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'deleted', 'sheet', 'leaf', 'Sheet' ] ]
+      );
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, newer, older).map(brief),
+        [ [ 'added', 'sheet', 'leaf', 'Sheet' ] ]
+      );
+    });
+
+    it('should compare whole a field whose type fails to compare it', function () {
+      const older = buildFragile();
+      const newer = buildFragile();
+      newer.brittle = 'Two';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'modified', 'brittle', 'leaf', 'Brittle' ] ]
+      );
+    });
+
+    it('should compare whole a field whose type fails to call it empty', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      older.hollow = 'One';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'deleted', 'hollow', 'leaf', 'Hollow' ] ]
+      );
+    });
+
+    it('should keep the full depth of the fields around a failure', function () {
+      const older = buildFragile();
+      const newer = buildFragile();
+      newer.panel.brittle = 'Two';
+      newer.panel.note = 'Two';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [
+          [ 'modified', 'brittle', 'leaf', 'Panel > Panel brittle' ],
+          [ 'modified', 'string', 'leaf', 'Panel > Panel note' ]
+        ]
+      );
+    });
+
+    it('should report every failure it recovered from', function () {
+      const older = buildFragile();
+      const newer = buildFragile();
+      apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(warned, [
+        [ 'change-detail-failed', 'brittle' ],
+        [ 'change-detail-failed', 'panel.brittle' ]
+      ]);
+    });
+
+    it('should list and mark the changes of such a document', async function () {
+      const older = buildFragile();
+      const newer = buildFragile();
+      newer.brittle = 'Two';
+      const { rows } = await apos.docVersions.getChangeList(req, [ {
+        older,
+        newer
+      } ]);
+      assert.deepEqual(rows.map(row => [ row.oldText, row.newText ]), [ [ 'One', 'Two' ] ]);
+      const annotated = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.equal(annotated.aposMeta.brittle[HIGHLIGHT], true);
+    });
+
+    it('should list a change it cannot put in words', async function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.zone.items[1].kind = 'two';
+      const { t } = apos.i18n.i18next;
+      apos.i18n.i18next.t = () => {
+        throw new Error('no words');
+      };
+      let rows;
+      try {
+        ({ rows } = await apos.docVersions.getChangeList(req, [ {
+          older,
+          newer
+        } ]));
+      } finally {
+        apos.i18n.i18next.t = t;
+      }
+      assert.deepEqual(rows.map(brief), [ [ 'modified', 'select', 'leaf', 'Zone > Card > Kind' ] ]);
+      assert.deepEqual(rows.map(row => [ row.oldText, row.newText, row.diff ]), [ [ '', '', [] ] ]);
+      assert.deepEqual(warned, [ [ 'change-detail-failed', 'zone.zone-card.kind' ] ]);
+    });
+
+    it('should record the versions of a document whose type fails', async function () {
+      const draftReq = apos.task.getReq({ mode: 'draft' });
+      const inserted = await apos.modules.project.insert(draftReq, {
+        ...apos.modules.project.newInstance(),
+        title: 'Hollow project',
+        hollow: 'One'
+      });
+      await apos.modules.project.publish(draftReq, inserted);
+      const updated = await apos.modules.project.update(draftReq, {
+        ...inserted,
+        hollow: 'Two'
+      });
+      await apos.modules.project.publish(draftReq, updated);
+      const versions = await apos.docVersions.find(req, {
+        docId: inserted.aposDocId
+      });
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.changeCount ]),
+        [ [ 'published', 1 ], [ 'published', 0 ] ]
+      );
     });
   });
 

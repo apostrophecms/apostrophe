@@ -42,14 +42,17 @@ const BOX_SIDES = {
  * Plaintext of rich text markup: tags stripped, entities decoded, every
  * block boundary a line break, runs of them one line break. A figure, its
  * caption and a rule are boundaries too, which `htmlToPlaintext` does not
- * know as blocks.
+ * know as blocks. `''` for anything but a string.
  *
  * @param {string} html
  * @param {import('./diff.js').DiffContext} ctx
  * @returns {string}
  */
 function toPlaintext(html, ctx) {
-  return ctx.htmlToPlaintext((html || '').replace(/<(figure|figcaption|hr)\b/gi, '<br><$1'))
+  if (typeof html !== 'string') {
+    return '';
+  }
+  return ctx.htmlToPlaintext(html.replace(/<(figure|figcaption|hr)\b/gi, '<br><$1'))
     .replace(/\s*\n\s*/g, '\n')
     .trim();
 }
@@ -134,7 +137,7 @@ function getTitle(schema, titleField, item, ctx) {
  * Sets `format` on each modified rich text row whose formatting changed:
  * the records of `lib/rich-text-format.js` from its `old` to its `new`, for
  * `addText` to put in words. Run before `getRelatedIds`, which the images
- * among them need.
+ * among them need. A row whose markup cannot be read gets none.
  *
  * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
  * @param {import('./diff.js').DiffContext} ctx
@@ -145,12 +148,16 @@ function addFormat(rows, ctx) {
     if ((row.kind !== 'richText') || !row.old || !row.new) {
       continue;
     }
-    const format = getFormatChanges(row.old, row.new);
-    if (format.length) {
-      Object.defineProperty(row, 'format', {
-        value: format,
-        enumerable: false
-      });
+    try {
+      const format = getFormatChanges(row.old, row.new);
+      if (format.length) {
+        Object.defineProperty(row, 'format', {
+          value: format,
+          enumerable: false
+        });
+      }
+    } catch (err) {
+      ctx.onError?.(err, row.path);
     }
   }
   return rows;
@@ -198,6 +205,8 @@ function getRelatedIds(rows, ctx) {
  * their count. Blocks and marks go by the rich text editor's own labels,
  * an image by its title.
  *
+ * A row that cannot be put in words stays, with empty text.
+ *
  * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
  * @param {import('./diff.js').DiffContext} ctx
  * @param {object} [options]
@@ -212,17 +221,24 @@ function addText(rows, ctx, {
   titles = {}, urls = {}, links = {}
 } = {}) {
   for (const row of rows) {
-    row.oldText = rowText(row, row.old, ctx, titles);
-    row.newText = rowText(row, row.new, ctx, titles);
-    if (row.format && ctx.t) {
-      row.formatChanges = [
-        ...row.format.flatMap(record => formatLines(record, ctx, {
-          titles,
-          urls,
-          links
-        })),
-        ...countLines(row.format, ctx)
-      ];
+    try {
+      row.oldText = rowText(row, row.old, ctx, titles);
+      row.newText = rowText(row, row.new, ctx, titles);
+      if (row.format && ctx.t) {
+        row.formatChanges = [
+          ...row.format.flatMap(record => formatLines(record, ctx, {
+            titles,
+            urls,
+            links
+          })),
+          ...countLines(row.format, ctx)
+        ];
+      }
+    } catch (err) {
+      ctx.onError?.(err, row.path);
+      row.oldText = '';
+      row.newText = '';
+      delete row.formatChanges;
     }
   }
   return rows;
@@ -235,7 +251,7 @@ function addText(rows, ctx, {
  * `removed` part. The order of an array or area compares item by item:
  * each part is a whole item, without the commas of the text, so an item
  * that moved is marked whole and the ones it passed are not. Run after
- * `addText`.
+ * `addText`. A row that cannot be compared has no parts.
  *
  * @param {import('./diff.js').ChangeRow[]} rows Rows with text, modified.
  * @param {import('./diff.js').DiffContext} ctx
@@ -243,12 +259,17 @@ function addText(rows, ctx, {
  */
 function addWordDiff(rows, ctx) {
   for (const row of rows) {
-    row.diff = row.items
-      ? orderDiff(row, ctx)
-      : diffWords(row.oldText, row.newText).map(part => ({
-        text: part.value,
-        change: changeOf(part)
-      }));
+    try {
+      row.diff = row.items
+        ? orderDiff(row, ctx)
+        : diffWords(row.oldText, row.newText).map(part => ({
+          text: part.value,
+          change: changeOf(part)
+        }));
+    } catch (err) {
+      ctx.onError?.(err, row.path);
+      row.diff = [];
+    }
   }
   return rows;
 }
