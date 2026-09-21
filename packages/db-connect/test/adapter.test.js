@@ -2555,6 +2555,95 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     });
   });
 
+  describe('Numeric Sort', function() {
+    const ranks = [ 9, 10, 99, 100, 2, -1, 1.5, -20, 0 ];
+    const ascending = [ -20, -1, 0, 1.5, 2, 9, 10, 99, 100 ];
+
+    beforeEach(async function() {
+      await db.collection('test').insertMany(ranks.map((rank, i) => ({
+        _id: `r${i}`,
+        rank,
+        level: i % 2,
+        nested: { rank }
+      })));
+    });
+
+    it('should sort numbers numerically, ascending', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({ rank: 1 })
+        .toArray();
+      expect(docs.map(doc => doc.rank)).to.deep.equal(ascending);
+    });
+
+    it('should sort numbers numerically, descending', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({ rank: -1 })
+        .toArray();
+      expect(docs.map(doc => doc.rank)).to.deep.equal([ ...ascending ].reverse());
+    });
+
+    it('should sort a nested number numerically', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({ 'nested.rank': 1 })
+        .toArray();
+      expect(docs.map(doc => doc.nested.rank)).to.deep.equal(ascending);
+    });
+
+    it('should sort numerically after another sort field', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({
+          level: 1,
+          rank: -1
+        })
+        .toArray();
+      expect(docs.map(doc => [ doc.level, doc.rank ])).to.deep.equal([
+        [ 0, 99 ],
+        [ 0, 9 ],
+        [ 0, 2 ],
+        [ 0, 1.5 ],
+        [ 0, 0 ],
+        [ 1, 100 ],
+        [ 1, 10 ],
+        [ 1, -1 ],
+        [ 1, -20 ]
+      ]);
+    });
+
+    it('should sort numbers before strings in a mixed field', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'm1',
+          rank: '5'
+        },
+        {
+          _id: 'm2',
+          rank: 'apple'
+        },
+        {
+          _id: 'm3',
+          rank: '10'
+        }
+      ]);
+      const mixed = [ ...ascending, '10', '5', 'apple' ];
+
+      const up = await db.collection('test')
+        .find({})
+        .sort({ rank: 1 })
+        .toArray();
+      expect(up.map(doc => doc.rank)).to.deep.equal(mixed);
+
+      const down = await db.collection('test')
+        .find({})
+        .sort({ rank: -1 })
+        .toArray();
+      expect(down.map(doc => doc.rank)).to.deep.equal([ ...mixed ].reverse());
+    });
+  });
+
   // ============================================
   // SECTION 12: Database Switching
   // ============================================

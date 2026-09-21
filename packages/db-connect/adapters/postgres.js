@@ -928,8 +928,16 @@ function buildOrderBy(sort, options = {}) {
       if (field === '_id') {
         clauses.push(`_id ${direction === -1 ? 'DESC' : 'ASC'}`);
       } else {
-        const jsonPath = buildJsonTextPath(field);
-        clauses.push(`${jsonPath} ${direction === -1 ? 'DESC' : 'ASC'}`);
+        // Numbers compare numerically, everything else as text: text alone
+        // puts 10 before 2. Non-numbers are NULL in the first clause, so they
+        // follow the numbers ascending and precede them descending, as in MongoDB.
+        const order = direction === -1 ? 'DESC' : 'ASC';
+        const jsonPath = buildJsonPath(field);
+        const jsonTextPath = buildJsonTextPath(field);
+        clauses.push(
+          `CASE WHEN jsonb_typeof(${jsonPath}) = 'number' THEN (${jsonTextPath})::numeric END ${order}`
+        );
+        clauses.push(`${jsonTextPath} ${order}`);
       }
     }
   }
