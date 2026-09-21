@@ -1075,38 +1075,62 @@ class PostgresCursor {
     if (this._exhausted) {
       return null;
     }
-    if (!this._cursorClient) {
-      await this._collection._ensureTable();
-      this._cursorClient = await this._collection._pool.connect();
-      this._cursorName = `cur_${generateId()}`;
+    // Any failure below releases the pooled client before rethrowing, so a
+    // cursor abandoned by an error never keeps a connection checked out.
+    try {
+      if (!this._cursorClient) {
+        await this._collection._ensureTable();
+        this._cursorClient = await this._collection._pool.connect();
+        this._cursorName = `cur_${generateId()}`;
 
-      const { sql, params } = this._buildFindSql();
+        const { sql, params } = this._buildFindSql();
+
+        const escapedCursorName = escapeIdentifier(this._cursorName);
+        await this._cursorClient.query('BEGIN');
+        await this._cursorClient.query(
+          `DECLARE "${escapedCursorName}" CURSOR FOR ${sql}`,
+          params
+        );
+      }
 
       const escapedCursorName = escapeIdentifier(this._cursorName);
-      await this._cursorClient.query('BEGIN');
-      await this._cursorClient.query(
-        `DECLARE "${escapedCursorName}" CURSOR FOR ${sql}`,
-        params
+      const result = await this._cursorClient.query(
+        `FETCH NEXT FROM "${escapedCursorName}"`
       );
+
+      if (result.rows.length === 0) {
+        await this._release();
+        return null;
+      }
+
+      const row = result.rows[0];
+      const doc = deserializeDocument(row.data, row._id);
+      const meta = row._score != null ? { textScore: parseFloat(row._score) } : {};
+      return this._projection ? applyProjection(doc, this._projection, meta) : doc;
+    } catch (e) {
+      await this._release();
+      throw e;
     }
+  }
 
-    const escapedCursorName = escapeIdentifier(this._cursorName);
-    const result = await this._cursorClient.query(
-      `FETCH NEXT FROM "${escapedCursorName}"`
-    );
-
-    if (result.rows.length === 0) {
-      this._exhausted = true;
-      await this._cursorClient.query('COMMIT');
-      this._cursorClient.release();
-      this._cursorClient = null;
-      return null;
+  // Ends the cursor's transaction and returns its client to the pool. The
+  // transaction only ever reads, so ROLLBACK is correct whether it is healthy
+  // or already aborted by a failed statement. Safe to call without a client.
+  async _release() {
+    const client = this._cursorClient;
+    this._cursorClient = null;
+    this._exhausted = true;
+    if (!client) {
+      return;
     }
-
-    const row = result.rows[0];
-    const doc = deserializeDocument(row.data, row._id);
-    const meta = row._score != null ? { textScore: parseFloat(row._score) } : {};
-    return this._projection ? applyProjection(doc, this._projection, meta) : doc;
+    try {
+      await client.query('ROLLBACK');
+    } catch (e) {
+      // The connection is gone; let the pool discard it rather than reuse it
+      client.release(e);
+      return;
+    }
+    client.release();
   }
 
   async hasNext() {
@@ -1121,14 +1145,8 @@ class PostgresCursor {
   }
 
   async close() {
-    if (this._cursorClient) {
-      const escapedCursorName = escapeIdentifier(this._cursorName);
-      await this._cursorClient.query(`CLOSE "${escapedCursorName}"`);
-      await this._cursorClient.query('COMMIT');
-      this._cursorClient.release();
-      this._cursorClient = null;
-      this._exhausted = true;
-    }
+    this._peeked = undefined;
+    await this._release();
   }
 
   addCursorFlag() {
@@ -1150,6 +1168,14 @@ class PostgresCursor {
         return {
           done: false,
           value: doc
+        };
+      },
+      // Called by `for await` on break, return or a throwing body
+      async return() {
+        await this.cursor.close();
+        return {
+          done: true,
+          value: undefined
         };
       }
     };

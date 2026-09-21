@@ -412,6 +412,161 @@ describe(`Database Adapter (${ADAPTER})`, function() {
     }
   });
 
+  describe('cursor abandonment', function() {
+    // A cursor left behind by `break`, by a throwing loop body or by a query
+    // error must not keep a connection checked out. Only postgres has one to
+    // lose (a pooled client inside an open transaction); the other adapters
+    // run the same cases so the parity is asserted rather than assumed.
+    const POOL_MAX = 2;
+    const isPostgres = ADAPTER === 'postgres' || ADAPTER === 'multipostgres';
+    let abandonClient;
+    let abandonDb;
+    let pool;
+
+    function withTimeout(promise, ms) {
+      let timer;
+      const timeout = new Promise((resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`did not complete within ${ms}ms`)), ms);
+        timer.unref();
+      });
+      return Promise.race([ promise, timeout ]).finally(() => clearTimeout(timer));
+    }
+
+    function checkedOut() {
+      return pool.totalCount - pool.idleCount;
+    }
+
+    before(async function() {
+      if (isPostgres) {
+        // A pool small enough that a single leaked cursor is visible
+        const postgres = require('../adapters/postgres');
+        const user = process.env.PGUSER || process.env.USER;
+        const password = process.env.PGPASSWORD || '';
+        const auth = password ? `${user}:${password}@` : `${user}@`;
+        abandonClient = await postgres.connect(
+          `postgres://${auth}localhost:5432/dbtest_adapter`,
+          { max: POOL_MAX }
+        );
+        abandonDb = abandonClient.db();
+        pool = abandonDb._pool;
+      } else {
+        abandonDb = db;
+      }
+    });
+
+    after(async function() {
+      try {
+        await abandonDb.collection('abandon').drop();
+      } catch (e) {
+        // ignore
+      }
+      if (abandonClient) {
+        await abandonClient.close();
+      }
+    });
+
+    beforeEach(async function() {
+      try {
+        await abandonDb.collection('abandon').drop();
+      } catch (e) {
+        // ignore
+      }
+      await abandonDb.collection('abandon').insertMany([
+        {
+          _id: 'a1',
+          title: 'Alpha'
+        },
+        {
+          _id: 'a2',
+          title: 'Beta'
+        },
+        {
+          _id: 'a3',
+          title: 'Gamma'
+        }
+      ]);
+    });
+
+    async function expectQueriesStillWork() {
+      const col = abandonDb.collection('abandon');
+      const doc = await withTimeout(col.findOne({ _id: 'a1' }), 3000);
+      expect(doc).to.exist;
+      expect(doc.title).to.equal('Alpha');
+      if (isPostgres) {
+        expect(checkedOut()).to.equal(0);
+        expect(pool.waitingCount).to.equal(0);
+      }
+    }
+
+    it('should release the connection when for await exits through break', async function() {
+      const col = abandonDb.collection('abandon');
+      for (let i = 0; i <= POOL_MAX; i++) {
+        const seen = [];
+        for await (const doc of col.find({}).sort({ _id: 1 })) {
+          seen.push(doc._id);
+          if (doc._id === 'a2') {
+            break;
+          }
+        }
+        expect(seen).to.deep.equal([ 'a1', 'a2' ]);
+      }
+      await expectQueriesStillWork();
+    });
+
+    it('should release the connection when the for await body throws', async function() {
+      const col = abandonDb.collection('abandon');
+      for (let i = 0; i <= POOL_MAX; i++) {
+        let caught;
+        try {
+          for await (const doc of col.find({}).sort({ _id: 1 })) {
+            if (doc._id === 'a2') {
+              throw new Error(`consumer failed on ${doc._id}`);
+            }
+          }
+        } catch (e) {
+          caught = e;
+        }
+        expect(caught.message).to.equal('consumer failed on a2');
+      }
+      await expectQueriesStillWork();
+    });
+
+    it('should leave a closed cursor exhausted after hasNext() peeked', async function() {
+      // mongodb's driver rejects next() on a closed cursor; the SQL adapters
+      // report exhaustion, and the peeked document must not resurface
+      if (!isPostgres && ADAPTER !== 'sqlite') {
+        this.skip();
+      }
+      const cursor = abandonDb.collection('abandon').find({}).sort({ _id: 1 });
+      expect(await cursor.hasNext()).to.be.true;
+      await cursor.close();
+      expect(await cursor.hasNext()).to.be.false;
+      expect(await cursor.next()).to.be.null;
+      await expectQueriesStillWork();
+    });
+
+    it('should release the connection when the query fails inside next()', async function() {
+      // sqlite tolerates an invalid regular expression, so there is no
+      // failing query to abandon there
+      if (!isPostgres) {
+        this.skip();
+      }
+      const col = abandonDb.collection('abandon');
+      for (let i = 0; i <= POOL_MAX; i++) {
+        const cursor = col.find({ title: { $regex: '(' } });
+        let caught;
+        try {
+          await cursor.next();
+        } catch (e) {
+          caught = e;
+        }
+        expect(caught.message).to.match(/regular expression/);
+        expect(await cursor.next()).to.be.null;
+      }
+      await expectQueriesStillWork();
+    });
+  });
+
   describe('updateOne', function() {
     beforeEach(async function() {
       await db.collection('test').insertMany([
