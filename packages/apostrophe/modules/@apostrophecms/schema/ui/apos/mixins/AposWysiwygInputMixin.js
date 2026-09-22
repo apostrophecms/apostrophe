@@ -21,7 +21,9 @@ export const wysiwygProps = {
     type: null,
     default: null
   },
-  // The document the field belongs to, if any
+  // The document to patch as the field is edited. Null in a modal, which
+  // saves its own copy of the value rather than patching anything: see
+  // `AposWysiwygFields`
   docId: {
     type: String,
     default: null
@@ -134,17 +136,18 @@ export default {
         apos.bus.$emit('context-edited', {
           [this.patchKey]: this.next
         });
-        // The document on the server is not the only thing holding this
-        // value. Every area editor on the page keeps its own copy of the
-        // widget the field belongs to, and that copy is what copying,
-        // cutting, duplicating or opening the widget's editor works from, so
-        // it has to hear about this as well
-        apos.bus.$emit('field-edited', {
-          docId: this.docId,
-          patchKey: this.patchKey,
-          value: this.next
-        });
       }
+      // The document on the server is not the only thing holding this value,
+      // and in a modal it is not holding it at all. Every area editor keeps
+      // its own copy of the widget the field belongs to, and that copy is
+      // what copying, cutting, duplicating and opening the widget's editor
+      // work from — and, in a modal, what is saved when the user says so. It
+      // has to hear about this either way
+      apos.bus.$emit('field-edited', {
+        docId: this.docId,
+        patchKey: this.patchKey,
+        value: this.next
+      });
       // For a parent component that manages the value itself, as
       // `AposInputArea` does for an area editor in a modal
       this.$emit('update:modelValue', this.next);
