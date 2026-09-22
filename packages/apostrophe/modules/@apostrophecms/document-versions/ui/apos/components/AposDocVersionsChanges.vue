@@ -99,6 +99,7 @@
               <AposDocVersionChangePath
                 class="apos-doc-version-changes__row-label"
                 :segments="entry.segments"
+                compact
                 data-apos-test="doc-version-change-path"
               />
               <span class="apos-doc-version-changes__row-aside">
@@ -559,7 +560,6 @@ $pad-x: $spacing-base + $spacing-half;
 
   &__row-main {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: $spacing-half $spacing-base;
   }
@@ -568,13 +568,14 @@ $pad-x: $spacing-base + $spacing-half;
     @include type-base;
 
     & {
-      flex: 1 1 auto;
+      flex: 1 1 0;
+      min-width: 0;
     }
   }
 
   &__row-aside {
     display: flex;
-    flex-wrap: wrap;
+    flex-shrink: 0;
     align-items: center;
     justify-content: flex-end;
     gap: $spacing-half;
