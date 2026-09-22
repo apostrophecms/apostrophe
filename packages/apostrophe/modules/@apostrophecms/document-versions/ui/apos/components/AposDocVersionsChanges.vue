@@ -28,12 +28,13 @@
     </div>
     <div class="apos-doc-version-changes__bar">
       <h2 class="apos-doc-version-changes__title">
-        {{ $t('apostrophe:versionChanges') }}
+        <span>{{ $t('apostrophe:versionChanges') }}</span>
         <span
           class="apos-doc-version-changes__count"
           data-apos-test="doc-version-changes-count"
         >
-          · {{ $t('apostrophe:versionEdits', { count: rows.length }) }}
+          <span class="apos-doc-version-changes__dot">·</span>
+          {{ $t('apostrophe:versionEdits', { count: rows.length }) }}
         </span>
       </h2>
       <AposDocVersionChangesFilter
@@ -73,7 +74,6 @@
       >
         <h3 class="apos-doc-version-changes__group-header">
           <button
-            v-apos-tooltip="'apostrophe:versionNavShow'"
             type="button"
             class="apos-doc-version-changes__group-title"
             :aria-current="position === groupIndex ? 'true' : undefined"
@@ -82,7 +82,6 @@
           >
             <AposDocVersionChangePath
               :segments="group.path"
-              bold-last
             />
             <span class="apos-sr-only">{{ `, ${$t('apostrophe:versionNavShow')}` }}</span>
           </button>
@@ -162,7 +161,6 @@
           v-if="position >= 0"
           class="apos-doc-version-changes__nav-label"
           :segments="groups[position].path"
-          bold-last
           data-apos-test="doc-version-changes-nav-label"
         />
         <span
@@ -378,6 +376,7 @@ $pad-x: $spacing-base + $spacing-half;
 
   &__back {
     @include apos-button-reset();
+    @include type-base;
 
     & {
       display: flex;
@@ -386,13 +385,9 @@ $pad-x: $spacing-base + $spacing-half;
       align-items: center;
       gap: $spacing-half;
       width: 100%;
-      padding: $spacing-base $pad-x;
+      padding: $spacing-base $pad-x $spacing-base ($spacing-base + $spacing-one-quarter);
       border-bottom: 1px solid var(--a-base-8);
       background-color: var(--a-base-10);
-      color: var(--a-text-primary);
-      font-family: var(--a-family-default);
-      font-size: var(--a-type-large);
-      font-weight: var(--a-weight-bold);
       text-align: left;
       cursor: pointer;
     }
@@ -442,14 +437,23 @@ $pad-x: $spacing-base + $spacing-half;
       align-items: center;
       gap: $spacing-half;
       margin: 0;
-      font-weight: var(--a-weight-bold);
+      line-height: 1;
     }
   }
 
   &__count {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-half;
     color: var(--a-base-2);
     font-size: var(--a-type-smaller);
     font-weight: var(--a-weight-base);
+    line-height: 1;
+  }
+
+  &__dot {
+    font-size: var(--a-type-large);
+    line-height: 1;
   }
 
   &__list {
@@ -481,6 +485,7 @@ $pad-x: $spacing-base + $spacing-half;
       position: sticky;
       top: 0;
       display: flex;
+      overflow: hidden;
       align-items: center;
       gap: $spacing-base;
       margin: 0;
@@ -488,11 +493,29 @@ $pad-x: $spacing-base + $spacing-half;
       border-bottom: 1px solid var(--a-base-7);
       background-color: var(--a-base-9);
     }
+
+    // Same bar as the current group; off-canvas until hover
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 3px;
+      background-color: var(--a-primary);
+      transform: translateX(-100%);
+      transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    &:hover::before,
+    &:focus-within::before {
+      transform: translateX(-1px);
+    }
   }
 
   // The group the navigator is at
-  &__group--current &__group-header {
-    box-shadow: inset 3px 0 0 var(--a-primary);
+  &__group--current &__group-header::before {
+    transform: translateX(0);
   }
 
   &__group-title {

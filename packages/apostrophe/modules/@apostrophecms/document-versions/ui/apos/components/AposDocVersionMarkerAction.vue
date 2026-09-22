@@ -10,7 +10,6 @@
       v-for="type in types"
       :key="type"
       :type="type"
-      icon
     />
   </button>
 </template>

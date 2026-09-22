@@ -16,9 +16,6 @@
       >, </span>
       <span
         class="apos-doc-version-change-path__crumb"
-        :class="{
-          'apos-doc-version-change-path__crumb--last': boldLast && index === segments.length - 1
-        }"
       >{{ segmentText(segment) }}</span>
     </template>
   </span>
@@ -33,10 +30,6 @@ defineProps({
   segments: {
     type: Array,
     required: true
-  },
-  boldLast: {
-    type: Boolean,
-    default: false
   }
 });
 
@@ -58,10 +51,6 @@ function segmentText(segment) {
 
   &__crumb {
     overflow-wrap: anywhere;
-
-    &--last {
-      font-weight: var(--a-weight-bold);
-    }
   }
 
   // The icon component offsets its svg below the baseline; it sits in a
