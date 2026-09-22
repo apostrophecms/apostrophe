@@ -36,36 +36,45 @@
             ref="body"
             class="apos-doc-editor__body apos-doc-version-editor__body"
           >
-            <AposSchema
-              v-for="tab in versionTabs"
-              v-show="tab.name === currentTab"
-              :key="tab.name"
-              :schema="groups[tab.name]?.schema || []"
-              :current-fields="groups[tab.name]?.fields || []"
-              :utility-rail="false"
-              :conditional-fields="conditionalFields"
-              :doc-id="docId"
-              :model-value="docFields"
-              :generation="generation"
-              :meta="docMeta"
-              @update:model-value="evaluateConditions()"
+            <template v-if="!unsupported">
+              <AposSchema
+                v-for="tab in versionTabs"
+                v-show="tab.name === currentTab"
+                :key="tab.name"
+                :schema="groups[tab.name]?.schema || []"
+                :current-fields="groups[tab.name]?.fields || []"
+                :utility-rail="false"
+                :conditional-fields="conditionalFields"
+                :doc-id="docId"
+                :model-value="docFields"
+                :generation="generation"
+                :meta="docMeta"
+                @update:model-value="evaluateConditions()"
+              >
+                <template #beforeField="{ field }">
+                  <div
+                    v-if="isFieldModified(field)"
+                    class="apos-doc-version-editor__field-change"
+                    data-apos-test="doc-version-field-change"
+                  >
+                    <AposDocVersionMarkerAction
+                      class="apos-doc-version-editor__field-change-action"
+                      data-apos-test="doc-version-field-change-action"
+                      :types="[ 'modified' ]"
+                      :ai="isFieldAi(field)"
+                      @click="revealChange({ field: field.name })"
+                    />
+                  </div>
+                </template>
+              </AposSchema>
+            </template>
+            <div
+              v-else
+              class="apos-doc-version-editor__empty"
+              data-apos-test="doc-version-unsupported"
             >
-              <template #beforeField="{ field }">
-                <div
-                  v-if="isFieldModified(field)"
-                  class="apos-doc-version-editor__field-change"
-                  data-apos-test="doc-version-field-change"
-                >
-                  <AposDocVersionMarkerAction
-                    class="apos-doc-version-editor__field-change-action"
-                    data-apos-test="doc-version-field-change-action"
-                    :types="[ 'modified' ]"
-                    :ai="isFieldAi(field)"
-                    @click="revealChange({ field: field.name })"
-                  />
-                </div>
-              </template>
-            </AposSchema>
+              <AposEmptyState :empty-state="unsupportedState" />
+            </div>
           </div>
           <div
             v-else-if="loaded"
@@ -87,19 +96,21 @@
               @select="selectVersion"
             >
               <template #actions="{ version }">
-                <AposButton
-                  ref="viewChangesButton"
-                  type="quiet"
-                  label="apostrophe:versionViewChanges"
-                  :attrs="{ 'data-apos-test': 'doc-version-action-changes' }"
-                  @click="viewChanges(version)"
-                />
-                <AposButton
-                  type="quiet"
-                  label="apostrophe:versionRestore"
-                  :attrs="{ 'data-apos-test': 'doc-version-action-restore' }"
-                  @click="restoreVersion(version)"
-                />
+                <template v-if="!unsupported">
+                  <AposButton
+                    ref="viewChangesButton"
+                    type="quiet"
+                    label="apostrophe:versionViewChanges"
+                    :attrs="{ 'data-apos-test': 'doc-version-action-changes' }"
+                    @click="viewChanges(version)"
+                  />
+                  <AposButton
+                    type="quiet"
+                    label="apostrophe:versionRestore"
+                    :attrs="{ 'data-apos-test': 'doc-version-action-restore' }"
+                    @click="restoreVersion(version)"
+                  />
+                </template>
               </template>
             </AposDocVersionsList>
             <div
@@ -161,6 +172,7 @@ const modal = ref({
 
 const scrollSentinel = ref(null);
 const emptyState = { message: 'apostrophe:versionsNotFound' };
+const unsupportedState = { message: 'apostrophe:versionUnsupported' };
 
 // --- Document ---
 
@@ -176,8 +188,12 @@ const {
 } = useDocVersionView({ action: versionsAction });
 
 const docType = computed(() => docFields.value.data?.type || props.doc.type);
+// The module of the version shown, for its schema. A version saved as a type
+// the site no longer has is neither shown nor restorable
 const moduleOptions = computed(() => apos.modules[docType.value] || {});
-const docAction = computed(() => `${moduleOptions.value.action}/${docId}`);
+const unsupported = computed(() => !apos.modules[docType.value]);
+// The lock and a restore address the live document, whatever the version's type
+const docAction = computed(() => `${apos.modules[props.doc.type].action}/${docId}`);
 const docMeta = computed(() => docFields.value.data?.aposMeta || {});
 
 // --- Schema, conditions and tabs ---
@@ -192,6 +208,7 @@ const {
   evaluateConditions
 } = useDocVersionTabs({
   moduleOptions,
+  unsupported,
   doc: props.doc,
   docFields
 });
