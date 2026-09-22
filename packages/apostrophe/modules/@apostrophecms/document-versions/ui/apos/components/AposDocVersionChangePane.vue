@@ -6,16 +6,27 @@
       `apos-doc-version-changes__pane--${side}`
     ]"
   >
-    <span
+    <div
       v-if="kicker"
-      class="apos-doc-version-changes__kicker"
-      :class="`apos-doc-version-changes__kicker--${side}`"
+      class="apos-doc-version-changes__heading"
     >
-      {{ $t(kicker) }}
-    </span>
+      <component
+        :is="icon"
+        :size="14"
+        class="apos-doc-version-changes__value-icon"
+        :title="$t(iconTitle)"
+      />
+      <span
+        class="apos-doc-version-changes__kicker"
+        :class="`apos-doc-version-changes__kicker--${side}`"
+      >
+        {{ $t(kicker) }}
+      </span>
+    </div>
     <div class="apos-doc-version-changes__value-line">
       <component
         :is="icon"
+        v-if="!kicker"
         :size="14"
         class="apos-doc-version-changes__value-icon"
         :title="$t(iconTitle)"
@@ -80,9 +91,14 @@ defineProps({
     }
   }
 
-  &__kicker {
-    display: block;
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: $spacing-half;
     margin-bottom: $spacing-half;
+  }
+
+  &__kicker {
     font-family: var(--a-family-default);
     font-size: var(--a-type-tiny);
     font-weight: var(--a-weight-bold);
