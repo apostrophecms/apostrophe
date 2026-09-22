@@ -222,10 +222,11 @@ describe('AI adapter: google', function() {
       }
     });
 
-    it('translates tool definitions to functionDeclarations', function() {
+    it('translates tool definitions to functionDeclarations, as JSON Schema', function() {
       const input = {
         type: 'object',
-        properties: { title: { type: 'string' } }
+        properties: { title: { type: 'string' } },
+        additionalProperties: false
       };
       const body = adapter.buildBody(request({
         tools: [ {
@@ -238,7 +239,7 @@ describe('AI adapter: google', function() {
         functionDeclarations: [ {
           name: 'find_pages',
           description: 'Find pages',
-          parameters: input
+          parametersJsonSchema: input
         } ]
       } ]);
     });
@@ -382,14 +383,16 @@ describe('AI adapter: google', function() {
       const schema = {
         type: 'object',
         properties: { title: { type: 'string' } },
-        required: [ 'title' ]
+        required: [ 'title' ],
+        additionalProperties: false
       };
       const body = adapter.buildBody(request({ schema }));
       const [ tool ] = body.tools;
       assert.equal(tool.functionDeclarations.length, 1);
       assert.equal(tool.functionDeclarations[0].name, '_final_answer');
       assert.equal(typeof tool.functionDeclarations[0].description, 'string');
-      assert.deepEqual(tool.functionDeclarations[0].parameters, schema);
+      assert.deepEqual(tool.functionDeclarations[0].parametersJsonSchema, schema);
+      assert.equal('parameters' in tool.functionDeclarations[0], false);
       assert.deepEqual(body.toolConfig, {
         functionCallingConfig: {
           mode: 'ANY',
