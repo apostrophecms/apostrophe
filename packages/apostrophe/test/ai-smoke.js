@@ -14,10 +14,10 @@ const assert = require('assert/strict');
 // caching case, which is two calls with a prompt above the cache minimum.
 //
 // `cacheShares` names the usage fields a service reports about its
-// prompt cache on the cold call and on the warm one. A service that only
-// caches when it feels like it (Gemini's implicit cache) gets
-// `cacheHitOptional`: a warm call reporting no share skips rather than
-// fails, after recording what came back.
+// prompt cache on the cold call and on the warm one. Only Anthropic
+// documents its cache as deterministic; the others describe a hit as
+// likely, not promised, and get `cacheHitOptional`: a call reporting no
+// share skips rather than fails, after recording what came back.
 //
 // A full run with every key set costs a few cents, dominated by the four
 // image calls; the text, tool and structured cases are fractions of a
@@ -46,7 +46,8 @@ const PROVIDERS = [
     cacheShares: {
       cold: 'cacheWriteTokens',
       warm: 'cacheReadTokens'
-    }
+    },
+    cacheHitOptional: true
   },
   {
     name: 'google',
@@ -69,7 +70,8 @@ const PROVIDERS = [
     cacheShares: {
       cold: 'cacheWriteTokens',
       warm: 'cacheReadTokens'
-    }
+    },
+    cacheHitOptional: true
   }
 ];
 
@@ -274,11 +276,15 @@ describe('AI live smoke', function() {
         // The same prompt is the same size cold or cached
         assert(Math.abs(cold.usage.inputTokens - warm.usage.inputTokens) <= 5);
         const { cold: written, warm: read } = provider.cacheShares;
+        // A miss reports the share as 0 or not at all, depending on the
+        // service; either way there is nothing to check
+        const missed = (written && !(cold.usage[written] > 0)) ||
+          !(warm.usage[read] > 0);
+        if (missed && provider.cacheHitOptional) {
+          this.skip();
+        }
         if (written) {
           assert(cold.usage[written] > 0);
-        }
-        if (warm.usage[read] === undefined && provider.cacheHitOptional) {
-          this.skip();
         }
         assert(warm.usage[read] > 0);
         // The total covers the cached share
