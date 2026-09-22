@@ -561,7 +561,7 @@ $pad-x: $spacing-base + $spacing-half;
 
   &__row-main {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: $spacing-half $spacing-base;
   }
 
@@ -577,7 +577,7 @@ $pad-x: $spacing-base + $spacing-half;
   &__row-aside {
     display: flex;
     flex-shrink: 0;
-    align-items: center;
+    align-items: baseline;
     justify-content: flex-end;
     gap: $spacing-half;
     margin-left: auto;
