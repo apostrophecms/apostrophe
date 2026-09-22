@@ -1095,8 +1095,10 @@ function traverseNextNode(node) {
   }
 
   // The marks of a document version: removed text struck through in red,
-  // added text underlined in green
+  // added text underlined in green. Long words wrap as in the editor
   .apos-rich-text-editor__version {
+    overflow-wrap: break-word;
+
     :deep([data-apos-version-change]) {
       padding: 0 2px;
       border-radius: var(--a-border-radius);

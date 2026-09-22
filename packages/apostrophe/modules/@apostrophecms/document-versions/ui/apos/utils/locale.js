@@ -51,6 +51,5 @@ const getDateFormatter = (
 };
 
 export default {
-  getLocale,
   getDateFormatter
 };

@@ -5,6 +5,11 @@
 
 const _ = require('lodash');
 const { diffWords, diffArrays } = require('diff');
+const getFormatChanges = require('./rich-text-format.js');
+const findBaseType = require('./field-kind.js');
+const {
+  formatLines, countLines, getLinks, getPermalinkId
+} = require('./format-text.js');
 
 // Core field types whose stored value reads as text as it is, reached
 // through `extend` as well
@@ -24,27 +29,42 @@ const SCALAR = new Set([
   'color'
 ]);
 // Field types with a representation of their own
-const SPECIAL = new Set([ 'richText', 'attachment', 'relationship' ]);
-
+const SPECIAL = new Set([ 'richText', 'attachment', 'relationship', 'box', 'oembed' ]);
+const KNOWN = new Set([ ...SCALAR, ...SPECIAL ]);
+// The sides of a box, as its input names them
+const BOX_SIDES = {
+  top: 'apostrophe:boxFieldTop',
+  right: 'apostrophe:boxFieldRight',
+  bottom: 'apostrophe:boxFieldBottom',
+  left: 'apostrophe:boxFieldLeft'
+};
 /**
  * Plaintext of rich text markup: tags stripped, entities decoded, every
- * block boundary a line break, runs of them one line break.
+ * block boundary a line break, runs of them one line break. A figure, its
+ * caption and a rule are boundaries too, which `htmlToPlaintext` does not
+ * know as blocks. `''` for anything but a string.
  *
  * @param {string} html
  * @param {import('./diff.js').DiffContext} ctx
  * @returns {string}
  */
 function toPlaintext(html, ctx) {
-  return ctx.htmlToPlaintext(html || '')
+  if (typeof html !== 'string') {
+    return '';
+  }
+  return ctx.htmlToPlaintext(html.replace(/<(figure|figcaption|hr)\b/gi, '<br><$1'))
     .replace(/\s*\n\s*/g, '\n')
     .trim();
 }
 
 /**
  * The text of one stored field value: scalars (and types extending them)
- * as their value, rich text as plaintext, an attachment as its name and
- * extension, a relationship as the titles of the related documents in id
- * order. Anything else, and a value with no safe string form, is `''`.
+ * as their value, a choice as its label when the field lists its choices,
+ * a number with the field's `unit` when it has one, rich text as plaintext,
+ * an attachment as its name and extension, a relationship as the titles of
+ * the related documents in id order, a box as the sides that are set
+ * (`Top 10px, Left 20px`), an embed as its URL. Anything else, and a value
+ * with no safe string form, is `''`.
  *
  * @param {object} field The schema field.
  * @param {any} value The stored value; for a relationship, its ids.
@@ -70,8 +90,21 @@ function toText(field, value, ctx, { titles = {} } = {}) {
       ? value.map(id => titles[id]).filter(Boolean).join(', ')
       : '';
   }
+  if (kind === 'oembed') {
+    return scalarText(value.url);
+  }
+  if (kind === 'box') {
+    return Object.entries(BOX_SIDES)
+      .filter(([ side ]) => typeof value[side] === 'number')
+      .map(([ side, label ]) => {
+        return `${ctx.t ? ctx.t(label) : side} ${withUnit(field, value[side])}`;
+      })
+      .join(', ');
+  }
   if (kind === 'scalar') {
-    return scalarText(value);
+    return Array.isArray(field.choices)
+      ? scalarText(getChoiceLabels(field, value, ctx.t))
+      : scalarText(withUnit(field, value));
   }
   return '';
 }
@@ -95,11 +128,39 @@ function getTitle(schema, titleField, item, ctx) {
   }
   const value = _.get(item, titleField);
   if (Array.isArray(field.choices)) {
-    const labelOf = choice => field.choices
-      .find(option => option.value === choice)?.label ?? choice;
-    return scalarText(Array.isArray(value) ? value.map(labelOf) : labelOf(value));
+    return scalarText(getChoiceLabels(field, value));
   }
   return getKind(field, ctx) === 'relationship' ? '' : toText(field, value, ctx);
+}
+
+/**
+ * Sets `format` on each modified rich text row whose formatting changed:
+ * the records of `lib/rich-text-format.js` from its `old` to its `new`, for
+ * `addText` to put in words. Run before `getRelatedIds`, which the images
+ * among them need. A row whose markup cannot be read gets none.
+ *
+ * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
+ * @param {import('./diff.js').DiffContext} ctx
+ * @returns {import('./diff.js').ChangeRow[]} The same rows.
+ */
+function addFormat(rows, ctx) {
+  for (const row of rows) {
+    if ((row.kind !== 'richText') || !row.old || !row.new) {
+      continue;
+    }
+    try {
+      const format = getFormatChanges(row.old, row.new);
+      if (format.length) {
+        Object.defineProperty(row, 'format', {
+          value: format,
+          enumerable: false
+        });
+      }
+    } catch (err) {
+      ctx.onError?.(err, row.path);
+    }
+  }
+  return rows;
 }
 
 /**
@@ -112,8 +173,12 @@ function getTitle(schema, titleField, item, ctx) {
 function getRelatedIds(rows, ctx) {
   const ids = new Set();
   for (const row of rows) {
-    if (row.field && (getKind(row.field, ctx) === 'relationship')) {
+    if (row.kind === 'relationship') {
       [ ...(row.old || []), ...(row.new || []) ].forEach(id => ids.add(id));
+    }
+    for (const record of (row.format || [])) {
+      [ record.id, record.old?.id ].filter(Boolean).forEach(id => ids.add(id));
+      getLinks(record).map(getPermalinkId).filter(Boolean).forEach(id => ids.add(id));
     }
   }
   return [ ...ids ];
@@ -121,25 +186,60 @@ function getRelatedIds(rows, ctx) {
 
 /**
  * Sets `oldText` and `newText` on each row: the text of `old` and `new`.
- * A rich text row reads as plaintext; an array item as its title (its
- * array's `titleField`, else its `title` field); a widget as its title (the
- * widget type's `titleField` option) or, for rich text, its plaintext;
- * the order of an array or area as its items in that order, each `#n`,
- * its position in the newer document, which tells items that read alike
- * apart, then its widget type and its title; any other row as its field's
- * text (`toText`).
+ *
+ * - A rich text row reads as plaintext.
+ * - An array item reads as its title: its array's `titleField`, else its
+ *   `title` field.
+ * - A widget reads as its title (the `titleField` option of its type), a
+ *   rich text widget as its plaintext.
+ * - An order row reads as its items in that order, each as `#n`, its widget
+ *   type and its title. `n` is the item's position in the newer document,
+ *   which tells items that read alike apart.
+ * - Any other row reads as its field's text (`toText`).
+ *
+ * A row with `format` records (see `addFormat`) also gets `formatChanges`:
+ * `FormatLine`s in the language of the admin UI, saying what changed, the
+ * words affected, and the old and new value where there is one. Most
+ * records are one line; a link or an image is one line for each attribute
+ * that changed; the rules and the line breaks are one line each, last, by
+ * their count. Blocks and marks go by the rich text editor's own labels,
+ * an image by its title.
+ *
+ * A row that cannot be put in words stays, with empty text.
  *
  * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
  * @param {import('./diff.js').DiffContext} ctx
  * @param {object} [options]
  * @param {Object<string, string>} [options.titles] Related document titles
  *   by id, for relationship rows (see `getRelatedIds`).
+ * @param {Object<string, string>} [options.urls] Image URLs by id.
+ * @param {Object<string, string>} [options.links] Document URLs by id,
+ *   for internal links.
  * @returns {import('./diff.js').ChangeRow[]} The same rows.
  */
-function addText(rows, ctx, { titles = {} } = {}) {
+function addText(rows, ctx, {
+  titles = {}, urls = {}, links = {}
+} = {}) {
   for (const row of rows) {
-    row.oldText = rowText(row, row.old, ctx, titles);
-    row.newText = rowText(row, row.new, ctx, titles);
+    try {
+      row.oldText = rowText(row, row.old, ctx, titles);
+      row.newText = rowText(row, row.new, ctx, titles);
+      if (row.format && ctx.t) {
+        row.formatChanges = [
+          ...row.format.flatMap(record => formatLines(record, ctx, {
+            titles,
+            urls,
+            links
+          })),
+          ...countLines(row.format, ctx)
+        ];
+      }
+    } catch (err) {
+      ctx.onError?.(err, row.path);
+      row.oldText = '';
+      row.newText = '';
+      delete row.formatChanges;
+    }
   }
   return rows;
 }
@@ -151,7 +251,7 @@ function addText(rows, ctx, { titles = {} } = {}) {
  * `removed` part. The order of an array or area compares item by item:
  * each part is a whole item, without the commas of the text, so an item
  * that moved is marked whole and the ones it passed are not. Run after
- * `addText`.
+ * `addText`. A row that cannot be compared has no parts.
  *
  * @param {import('./diff.js').ChangeRow[]} rows Rows with text, modified.
  * @param {import('./diff.js').DiffContext} ctx
@@ -159,12 +259,17 @@ function addText(rows, ctx, { titles = {} } = {}) {
  */
 function addWordDiff(rows, ctx) {
   for (const row of rows) {
-    row.diff = row.items
-      ? orderDiff(row, ctx)
-      : diffWords(row.oldText, row.newText).map(part => ({
-        text: part.value,
-        change: changeOf(part)
-      }));
+    try {
+      row.diff = row.items
+        ? orderDiff(row, ctx)
+        : diffWords(row.oldText, row.newText).map(part => ({
+          text: part.value,
+          change: changeOf(part)
+        }));
+    } catch (err) {
+      ctx.onError?.(err, row.path);
+      row.diff = [];
+    }
   }
   return rows;
 }
@@ -205,10 +310,10 @@ function getItemText(field, item, ctx) {
 }
 
 module.exports = {
-  toPlaintext,
   toText,
   getItemText,
   getWidgetText,
+  addFormat,
   getRelatedIds,
   addText,
   addWordDiff
@@ -218,13 +323,13 @@ function rowText(row, value, ctx, titles) {
   if (value == null) {
     return '';
   }
-  if (row.fieldType === 'richText') {
+  if (row.kind === 'richText') {
     return toPlaintext(value, ctx);
   }
-  if (row.fieldType === 'arrayItem') {
+  if (row.kind === 'arrayItem') {
     return getItemText(row.field, value, ctx);
   }
-  if (row.fieldType === 'widget') {
+  if (row.kind === 'widget') {
     return getWidgetText(value, ctx);
   }
   if (row.items) {
@@ -284,19 +389,25 @@ function itemText({
 // `scalar`, one of the special types, or `null` when the value has no text.
 // A type extending a known type reads like it
 function getKind(field, ctx) {
-  const seen = new Set();
-  let name = field.type;
-  while (name && !seen.has(name)) {
-    if (SCALAR.has(name)) {
-      return 'scalar';
-    }
-    if (SPECIAL.has(name)) {
-      return name;
-    }
-    seen.add(name);
-    name = ctx.getFieldType(name)?.extend;
-  }
-  return null;
+  const name = findBaseType(field, ctx, KNOWN);
+  return SCALAR.has(name) ? 'scalar' : name;
+}
+
+// The labels of the stored choice or choices of a field that lists them,
+// in the language of `t` when given; a value that is no choice stays
+function getChoiceLabels(field, value, t) {
+  const labelOf = choice => {
+    const label = field.choices.find(option => option.value === choice)?.label;
+    return (label == null) ? choice : (t ? t(label) : label);
+  };
+  return Array.isArray(value) ? value.map(labelOf) : labelOf(value);
+}
+
+// A number with the unit its field gives it: `50%`
+function withUnit(field, value) {
+  return ((typeof value === 'number') && (typeof field.unit === 'string'))
+    ? `${value}${field.unit}`
+    : value;
 }
 
 function scalarText(value) {

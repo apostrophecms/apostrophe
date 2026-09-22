@@ -21,22 +21,13 @@
       <span class="apos-area-widget__change-label">
         {{ $t(widgetLabel) }}
       </span>
-      <button
-        v-apos-tooltip="'apostrophe:versionSeeChanges'"
-        type="button"
+      <AposDocVersionMarkerAction
         class="apos-area-widget__change-types"
         data-apos-test="widget-change-action"
-        :aria-label="$t('apostrophe:versionSeeChanges')"
+        :types="versionChanges"
+        :ai="versionChange.ai"
         @click.stop="showVersionChange"
-      >
-        <AposDocVersionAiBadge v-if="versionChange.ai" />
-        <AposDocVersionChangeType
-          v-for="type in versionChanges"
-          :key="type"
-          :type="type"
-          icon
-        />
-      </button>
+      />
     </div>
     <div
       ref="wrapper"
@@ -253,6 +244,7 @@ import { useBreakpointPreviewStore } from 'Modules/@apostrophecms/ui/stores/brea
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
+import changeTypes from 'Modules/@apostrophecms/document-versions/lib/change-types.js';
 
 export default {
   name: 'AposAreaWidget',
@@ -461,16 +453,10 @@ export default {
       if (!this.versionChanges.length) {
         return undefined;
       }
-      const labels = {
-        added: 'apostrophe:versionChangeAdded',
-        modified: 'apostrophe:versionChangeModified',
-        deleted: 'apostrophe:versionChangeDeleted',
-        moved: 'apostrophe:versionChangeMoved'
-      };
       const changes = [
-        ...(this.versionChange.ai ? [ 'apostrophe:versionChangeAi' ] : []),
-        ...this.versionChanges.map(type => labels[type])
-      ];
+        ...(this.versionChange.ai ? [ 'ai' ] : []),
+        ...this.versionChanges
+      ].map(type => changeTypes.labels[type]);
       return this.$t('apostrophe:versionWidgetChange', {
         widget: this.$t(this.widgetLabel),
         changes: changes.map(key => this.$t(key)).join(', ')
@@ -1026,8 +1012,10 @@ export default {
   position: relative;
 }
 
-// A widget a document version added, modified or deleted
+// A widget a document version added, modified or deleted. The frame holds
+// its floats, such as a floated image of a rich text
 .apos-area-widget-wrapper[data-apos-widget-change] {
+  display: flow-root;
   box-sizing: border-box;
   margin: $spacing-base 0;
   padding: $spacing-half;
@@ -1064,24 +1052,6 @@ export default {
   justify-content: space-between;
   gap: $spacing-base;
   padding: 0 $spacing-half $spacing-half;
-}
-
-.apos-area-widget__change-types {
-  display: flex;
-  gap: $spacing-half;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  // The versions modal blocks the pointer over its body
-  pointer-events: auto;
-
-  &:focus-visible {
-    border-radius: var(--a-border-radius);
-    outline: 2px solid var(--a-primary);
-    outline-offset: 2px;
-  }
 }
 
 .apos-area-widget__change-label {

@@ -10,6 +10,8 @@ const {
 const {
   modules,
   buildDoc,
+  buildProject,
+  buildFragile,
   deepestRoute
 } = require('./utils/document-versions-diff.js');
 
@@ -113,6 +115,7 @@ describe('Document Versions diff engine', function () {
         }),
         type: 'modified',
         fieldType: 'integer',
+        kind: 'leaf',
         old: 9,
         new: 99
       });
@@ -397,7 +400,10 @@ describe('Document Versions diff engine', function () {
       );
       assert.equal(rows[0].field.name, 'rows');
       assert.equal(rows[1].field.name, 'content');
-      assert.deepEqual(Object.keys(rows[0]), [ 'path', 'type', 'fieldType', 'old', 'new' ]);
+      assert.deepEqual(
+        Object.keys(rows[0]),
+        [ 'path', 'type', 'fieldType', 'kind', 'old', 'new' ]
+      );
       assert.equal(apos.docVersions.getChangeCount(req, newer, older), 3);
     });
 
@@ -507,6 +513,7 @@ describe('Document Versions diff engine', function () {
         ],
         type: 'modified',
         fieldType: 'richText',
+        kind: 'richText',
         old: '<p>Rich root.section.rows.0</p>',
         new: '<p>Rich, edited</p>'
       });
@@ -636,6 +643,593 @@ describe('Document Versions diff engine', function () {
     });
   });
 
+  // Field types of a project's own, each extending a core type: a row keeps
+  // the declared type and says what it is in `kind`
+  describe('project field types', function () {
+    const brief = row => [
+      row.type,
+      row.fieldType,
+      row.kind,
+      row.path.map(segment => segment.label).join(' > ')
+    ];
+
+    it('should walk each as the core type it extends', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.tagline = 'Built to change';
+      newer.rating = 3;
+      newer.prose = '<p>The quick red fox</p>';
+      newer.panel.tagline = 'Inside';
+      newer.steps.reverse();
+      newer.steps[0].tagline = 'Step 3';
+      newer.steps.push({
+        _id: 'step-four',
+        metaType: 'arrayItem',
+        tagline: 'Step four'
+      });
+      newer.zone.items.reverse();
+      newer.zone.items[0].note = 'Another note';
+      newer.ownersIds = [ 'topic2' ];
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer).map(brief), [
+        [ 'modified', 'tagline', 'leaf', 'Tagline' ],
+        [ 'added', 'rating', 'leaf', 'Rating' ],
+        [ 'modified', 'prose', 'richText', 'Prose' ],
+        [ 'modified', 'tagline', 'leaf', 'Panel > Panel tagline' ],
+        [ 'modified', 'steps', 'array', 'Steps' ],
+        [ 'modified', 'tagline', 'leaf', 'Steps > Step 3 > Step tagline' ],
+        [ 'added', 'arrayItem', 'arrayItem', 'Steps > Step four' ],
+        [ 'modified', 'zone', 'area', 'Zone' ],
+        [ 'modified', 'string', 'leaf', 'Zone > Card > Note' ],
+        [ 'modified', 'owners', 'relationship', 'Owners' ]
+      ]);
+    });
+
+    it('should report an object of such a type that appears or goes as one row', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      delete older.panel;
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'added', 'panel', 'object', 'Panel' ] ]
+      );
+    });
+
+    it('should compare a value the core type cannot open as one value', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.sheet.rows[0].make = 'Chevy';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'modified', 'sheet', 'leaf', 'Sheet' ] ]
+      );
+    });
+
+    it('should see no change in such a value that stayed as it was', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.tagline = 'Built to change';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'modified', 'tagline', 'leaf', 'Tagline' ] ]
+      );
+    });
+
+    it('should record the versions of a document holding such a value', async function () {
+      const draftReq = apos.task.getReq({ mode: 'draft' });
+      const inserted = await apos.modules.project.insert(draftReq, {
+        ...apos.modules.project.newInstance(),
+        title: 'Sheet project',
+        sheet: {
+          rows: [ {
+            _id: 'row1',
+            metaType: 'arrayItem',
+            make: 'Ford'
+          } ],
+          schema: [ {
+            name: 'make',
+            label: 'Make',
+            type: 'string'
+          } ]
+        }
+      });
+      await apos.modules.project.publish(draftReq, inserted);
+      const versions = await apos.docVersions.find(req, {
+        docId: inserted.aposDocId
+      });
+      assert.deepEqual(versions.map(version => version.mode), [ 'published' ]);
+    });
+
+    it('should call a value empty as the type itself does', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      older.rating = 4;
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'deleted', 'rating', 'leaf', 'Rating' ] ]
+      );
+    });
+
+    it('should read each as the core type it extends', async function () {
+      const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
+      const one = await apos.modules.topic.insert(req, { title: 'Topic one' });
+      const two = await apos.modules.topic.insert(req, { title: 'Topic two' });
+      const older = buildProject();
+      const newer = buildProject();
+      older.ownersIds = [ one.aposDocId ];
+      newer.tagline = 'Built to change';
+      newer.rating = 3;
+      newer.prose = '<p>The <strong>quick</strong> red fox</p>';
+      newer.steps.reverse();
+      newer.zone.items.reverse();
+      newer.ownersIds = [ two.aposDocId ];
+      const rows = text.addFormat(
+        apos.docVersions.getChangeRows(req, older, newer),
+        apos.docVersions.getDiffContext(req)
+      );
+      await apos.docVersions.addChangeText(req, rows);
+      assert.deepEqual(rows.map(row => [ row.fieldType, row.oldText, row.newText ]), [
+        [ 'tagline', 'Built to last', 'Built to change' ],
+        [ 'rating', '0', '3' ],
+        [ 'prose', 'The quick brown fox', 'The quick red fox' ],
+        [
+          'steps',
+          '#3 Step one, #2 Step two, #1 Step three',
+          '#1 Step three, #2 Step two, #3 Step one'
+        ],
+        [
+          'zone',
+          '#2 Rich Text, #1 Card · One',
+          '#1 Card · One, #2 Rich Text'
+        ],
+        [ 'owners', 'Topic one', 'Topic two' ]
+      ]);
+      assert.deepEqual(
+        rows[2].formatChanges.map(line => [ line.change, line.text ]),
+        [ [ 'marksAdded', 'quick' ] ]
+      );
+    });
+
+    it('should mark the annotated document as for the core types', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.prose = '<p>The quick red fox</p>';
+      newer.steps.reverse();
+      newer.zone.items.reverse();
+      const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.match(doc.prose, /<del [^>]+>.*brown<\/del><ins [^>]+>.*red<\/ins>/);
+      assert.deepEqual(
+        doc.zone.items.map(widget => [ widget._id, Boolean(widget._moved) ]),
+        [ [ 'zone-card', false ], [ 'zone-text', true ] ]
+      );
+      assert.deepEqual(
+        [ 'prose', 'steps', 'zone' ].map(name => Boolean(doc.aposMeta?.[name]?.[HIGHLIGHT])),
+        [ true, true, false ]
+      );
+    });
+
+    it('should keep their order apart from their items across versions', function () {
+      const first = buildProject();
+      const second = buildProject();
+      second.steps.reverse();
+      second.zone.items.reverse();
+      const third = structuredClone(second);
+      third.steps[0].tagline = 'Step 3';
+      third.zone.items[0].note = 'Another note';
+      const rows = apos.docVersions.getConsolidatedRows(req, [
+        {
+          older: first,
+          newer: second,
+          ai: true
+        },
+        {
+          older: second,
+          newer: third,
+          ai: false
+        }
+      ]);
+      assert.deepEqual(rows.map(row => [ row.fieldType, row.kind, row.ai ]), [
+        [ 'steps', 'array', true ],
+        [ 'tagline', 'leaf', false ],
+        [ 'zone', 'area', true ],
+        [ 'string', 'leaf', false ]
+      ]);
+    });
+
+    it('should skip the fields that store nothing, through `extend` as well', function () {
+      const diff = require('../modules/@apostrophecms/document-versions/lib/diff.js');
+      const types = {
+        heading: { extend: 'group' }
+      };
+      const ctx = {
+        ...apos.docVersions.getDiffContext(req),
+        getFieldType: name => types[name]
+      };
+      const schema = [
+        {
+          name: 'basics',
+          type: 'group'
+        },
+        {
+          name: 'extras',
+          type: 'heading'
+        },
+        {
+          name: '_pages',
+          type: 'relationshipReverse'
+        },
+        {
+          name: 'title',
+          type: 'string'
+        }
+      ];
+      const rows = diff.walk(schema, {
+        basics: 1,
+        extras: 1,
+        _pages: 1,
+        title: 'One'
+      }, {
+        basics: 2,
+        extras: 2,
+        _pages: 2,
+        title: 'Two'
+      }, ctx);
+      assert.deepEqual(rows.map(brief), [ [ 'modified', 'string', 'leaf', 'title' ] ]);
+    });
+
+    it('should take a type whose `extend` chain loops for a plain value', function () {
+      const diff = require('../modules/@apostrophecms/document-versions/lib/diff.js');
+      const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
+      const types = {
+        chicken: { extend: 'egg' },
+        egg: { extend: 'chicken' }
+      };
+      const ctx = {
+        ...apos.docVersions.getDiffContext(req),
+        getFieldType: name => types[name]
+      };
+      const field = {
+        name: 'which',
+        type: 'chicken'
+      };
+      const rows = diff.walk([ field ], { which: 'first' }, { which: 'second' }, ctx);
+      assert.deepEqual(rows.map(brief), [ [ 'modified', 'chicken', 'leaf', 'which' ] ]);
+      assert.equal(text.toText(field, 'first', ctx), '');
+    });
+  });
+
+  // Stored content is not always what the schema says: a version recorded
+  // under an earlier schema, an import, a type with a shape or a fault of
+  // its own. None of it may fail a walk, since a save runs one
+  describe('values the schema does not describe', function () {
+    const brief = row => [
+      row.type,
+      row.fieldType,
+      row.kind,
+      row.path.map(segment => segment.label).join(' > ')
+    ];
+    let logWarn;
+    let warned;
+
+    beforeEach(function () {
+      warned = [];
+      logWarn = apos.docVersions.logWarn;
+      apos.docVersions.logWarn = (name, message, data) => {
+        warned.push([ name, data.path ]);
+      };
+    });
+
+    afterEach(function () {
+      apos.docVersions.logWarn = logWarn;
+    });
+
+    const cases = [
+      {
+        name: 'an array that was a string',
+        older: doc => {
+          doc.steps = 'Three steps';
+        },
+        rows: [ [ 'modified', 'steps', 'leaf', 'Steps' ] ]
+      },
+      {
+        name: 'an array that becomes a number',
+        newer: doc => {
+          doc.steps = 3;
+        },
+        rows: [ [ 'modified', 'steps', 'leaf', 'Steps' ] ]
+      },
+      {
+        name: 'an object that was a string',
+        older: doc => {
+          doc.panel = 'A panel';
+        },
+        rows: [ [ 'modified', 'panel', 'leaf', 'Panel' ] ]
+      },
+      {
+        name: 'an object that was an array',
+        older: doc => {
+          doc.panel = [ 'A panel' ];
+        },
+        rows: [ [ 'modified', 'panel', 'leaf', 'Panel' ] ]
+      },
+      {
+        name: 'an area that was a string',
+        older: doc => {
+          doc.zone = '<p>Zone text</p>';
+        },
+        rows: [ [ 'modified', 'zone', 'leaf', 'Zone' ] ]
+      },
+      {
+        name: 'an area that was an array',
+        older: doc => {
+          doc.zone = doc.zone.items;
+        },
+        rows: [ [ 'modified', 'zone', 'leaf', 'Zone' ] ]
+      },
+      {
+        name: 'an area whose items are no array',
+        older: doc => {
+          doc.zone.items = { 0: doc.zone.items[0] };
+        },
+        rows: [ [ 'modified', 'zone', 'leaf', 'Zone' ] ]
+      },
+      {
+        name: 'rich text that was a number',
+        older: doc => {
+          doc.prose = 5;
+        },
+        rows: [ [ 'modified', 'prose', 'leaf', 'Prose' ] ]
+      },
+      {
+        name: 'rich text that becomes an object',
+        newer: doc => {
+          doc.prose = { html: '<p>The quick brown fox</p>' };
+        },
+        rows: [ [ 'modified', 'prose', 'leaf', 'Prose' ] ]
+      },
+      {
+        name: 'a string that was an object',
+        older: doc => {
+          doc.tagline = { text: 'Built to last' };
+        },
+        rows: [ [ 'added', 'tagline', 'leaf', 'Tagline' ] ]
+      },
+      {
+        name: 'relationship ids that were a string',
+        older: doc => {
+          doc.ownersIds = 'topic1';
+        },
+        rows: [ [ 'added', 'owners', 'relationship', 'Owners' ] ]
+      },
+      {
+        name: 'relationship ids that were an object',
+        older: doc => {
+          doc.ownersIds = { topic1: true };
+        },
+        rows: [ [ 'added', 'owners', 'relationship', 'Owners' ] ]
+      },
+      {
+        name: 'an array position holding no item on both sides',
+        older: doc => {
+          doc.steps.push(null);
+        },
+        newer: doc => {
+          doc.steps.push(null);
+          doc.steps[0].tagline = 'Step zero';
+        },
+        rows: [ [ 'modified', 'tagline', 'leaf', 'Steps > Step zero > Step tagline' ] ]
+      },
+      {
+        name: 'an array item that becomes null',
+        newer: doc => {
+          doc.steps[1] = null;
+        },
+        rows: [ [ 'deleted', 'arrayItem', 'arrayItem', 'Steps > Step two' ] ]
+      },
+      {
+        name: 'array items that are no objects',
+        older: doc => {
+          doc.steps = [ 'one', 'two' ];
+        },
+        newer: doc => {
+          doc.steps = [ 'one', 'two' ];
+        },
+        rows: []
+      },
+      {
+        name: 'an area position holding no widget on both sides',
+        older: doc => {
+          doc.zone.items.unshift(null);
+        },
+        newer: doc => {
+          doc.zone.items.unshift(null);
+          doc.zone.items[2].note = 'Another note';
+        },
+        rows: [ [ 'modified', 'string', 'leaf', 'Zone > Card > Note' ] ]
+      },
+      {
+        name: 'a widget that becomes null',
+        newer: doc => {
+          doc.zone.items[1] = null;
+        },
+        rows: [ [ 'deleted', 'widget', 'widget', 'Zone > Card' ] ]
+      },
+      {
+        name: 'a widget that is no object',
+        newer: doc => {
+          doc.zone.items.push('A widget');
+        },
+        rows: [ [ 'added', 'widget', 'widget', 'Zone > ' ] ]
+      },
+      {
+        name: 'a widget without a type',
+        newer: doc => {
+          delete doc.zone.items[1].type;
+        },
+        rows: [ [ 'modified', 'widget', 'widget', 'Zone > ' ] ]
+      },
+      {
+        name: 'rich text widget content that becomes a number',
+        newer: doc => {
+          doc.zone.items[0].content = 5;
+        },
+        rows: [ [ 'modified', 'widget', 'widget', 'Zone > apostrophe:richText' ] ]
+      },
+      {
+        name: 'rich text widget content that is an object',
+        older: doc => {
+          doc.zone.items[0].content = { html: '<p>Zone text</p>' };
+        },
+        newer: doc => {
+          doc.zone.items[0].content = { html: '<p>Zone words</p>' };
+        },
+        rows: [ [ 'modified', 'widget', 'widget', 'Zone > apostrophe:richText' ] ]
+      },
+      {
+        name: 'a value that holds itself',
+        newer: doc => {
+          doc.panel.panel = doc.panel;
+        },
+        rows: []
+      }
+    ];
+
+    for (const {
+      name, older: changeOlder, newer: changeNewer, rows: expected
+    } of cases) {
+      it(`should compare ${name}`, async function () {
+        const older = buildProject();
+        const newer = buildProject();
+        changeOlder?.(older);
+        changeNewer?.(newer);
+        const rows = apos.docVersions.getChangeRows(req, older, newer);
+        assert.deepEqual(rows.map(brief), expected);
+        const list = await apos.docVersions.getChangeList(req, [ {
+          older,
+          newer
+        } ]);
+        assert.equal(list.rows.length, expected.length);
+        const annotated = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.equal(annotated._id, newer._id);
+        assert.deepEqual(warned, []);
+      });
+    }
+
+    it('should call a value it compares whole added or deleted by what is there', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.sheet = null;
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'deleted', 'sheet', 'leaf', 'Sheet' ] ]
+      );
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, newer, older).map(brief),
+        [ [ 'added', 'sheet', 'leaf', 'Sheet' ] ]
+      );
+    });
+
+    it('should compare whole a field whose type fails to compare it', function () {
+      const older = buildFragile();
+      const newer = buildFragile();
+      newer.brittle = 'Two';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'modified', 'brittle', 'leaf', 'Brittle' ] ]
+      );
+    });
+
+    it('should compare whole a field whose type fails to call it empty', function () {
+      const older = buildProject();
+      const newer = buildProject();
+      older.hollow = 'One';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [ [ 'deleted', 'hollow', 'leaf', 'Hollow' ] ]
+      );
+    });
+
+    it('should keep the full depth of the fields around a failure', function () {
+      const older = buildFragile();
+      const newer = buildFragile();
+      newer.panel.brittle = 'Two';
+      newer.panel.note = 'Two';
+      assert.deepEqual(
+        apos.docVersions.getChangeRows(req, older, newer).map(brief),
+        [
+          [ 'modified', 'brittle', 'leaf', 'Panel > Panel brittle' ],
+          [ 'modified', 'string', 'leaf', 'Panel > Panel note' ]
+        ]
+      );
+    });
+
+    it('should report every failure it recovered from', function () {
+      const older = buildFragile();
+      const newer = buildFragile();
+      apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(warned, [
+        [ 'change-detail-failed', 'brittle' ],
+        [ 'change-detail-failed', 'panel.brittle' ]
+      ]);
+    });
+
+    it('should list and mark the changes of such a document', async function () {
+      const older = buildFragile();
+      const newer = buildFragile();
+      newer.brittle = 'Two';
+      const { rows } = await apos.docVersions.getChangeList(req, [ {
+        older,
+        newer
+      } ]);
+      assert.deepEqual(rows.map(row => [ row.oldText, row.newText ]), [ [ 'One', 'Two' ] ]);
+      const annotated = apos.docVersions.getAnnotatedDoc(req, older, newer);
+      assert.equal(annotated.aposMeta.brittle[HIGHLIGHT], true);
+    });
+
+    it('should list a change it cannot put in words', async function () {
+      const older = buildProject();
+      const newer = buildProject();
+      newer.zone.items[1].kind = 'two';
+      const { t } = apos.i18n.i18next;
+      apos.i18n.i18next.t = () => {
+        throw new Error('no words');
+      };
+      let rows;
+      try {
+        ({ rows } = await apos.docVersions.getChangeList(req, [ {
+          older,
+          newer
+        } ]));
+      } finally {
+        apos.i18n.i18next.t = t;
+      }
+      assert.deepEqual(rows.map(brief), [ [ 'modified', 'select', 'leaf', 'Zone > Card > Kind' ] ]);
+      assert.deepEqual(rows.map(row => [ row.oldText, row.newText, row.diff ]), [ [ '', '', [] ] ]);
+      assert.deepEqual(warned, [ [ 'change-detail-failed', 'zone.zone-card.kind' ] ]);
+    });
+
+    it('should record the versions of a document whose type fails', async function () {
+      const draftReq = apos.task.getReq({ mode: 'draft' });
+      const inserted = await apos.modules.project.insert(draftReq, {
+        ...apos.modules.project.newInstance(),
+        title: 'Hollow project',
+        hollow: 'One'
+      });
+      await apos.modules.project.publish(draftReq, inserted);
+      const updated = await apos.modules.project.update(draftReq, {
+        ...inserted,
+        hollow: 'Two'
+      });
+      await apos.modules.project.publish(draftReq, updated);
+      const versions = await apos.docVersions.find(req, {
+        docId: inserted.aposDocId
+      });
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.changeCount ]),
+        [ [ 'published', 1 ], [ 'published', 0 ] ]
+      );
+    });
+  });
+
   describe('text', function () {
     const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
 
@@ -670,8 +1264,8 @@ describe('Document Versions diff engine', function () {
         [ 'count', '9', '12' ],
         [ 'ratio', '0.5', '1.25' ],
         [ 'flag', 'false', 'true' ],
-        [ 'choice', 'one', 'two' ],
-        [ 'tags', 'one', 'one, two' ],
+        [ 'choice', 'One', 'Two' ],
+        [ 'tags', 'One', 'One, Two' ],
         [ 'when', '2026-01-01', '2026-02-02' ],
         [ 'at', '10:00:00', '11:30:00' ],
         [ 'link', 'https://example.com/', 'https://example.org/' ],
@@ -741,10 +1335,166 @@ describe('Document Versions diff engine', function () {
       ]);
       const ctx = apos.docVersions.getDiffContext(req);
       assert.equal(text.toText({ type: 'password' }, 'secret', ctx), '');
-      assert.equal(text.toText({ type: 'oembed' }, { url: 'https://example.com/' }, ctx), '');
-      assert.equal(text.toText({ type: 'box' }, { top: 1 }, ctx), '');
       assert.equal(text.toText({ type: 'string' }, { not: 'a string' }, ctx), '');
       assert.equal(text.toText({ type: 'integer' }, null, ctx), '');
+    });
+
+    it('should read a choice as its label, a number with its unit, a box by its sides, an embed as its URL', function () {
+      const ctx = apos.docVersions.getDiffContext(req);
+      assert.equal(text.toText({ type: 'oembed' }, {
+        url: 'https://vimeo.com/1',
+        title: 'A video'
+      }, ctx), 'https://vimeo.com/1');
+      assert.equal(text.toText({ type: 'oembed' }, {
+        url: null,
+        title: ''
+      }, ctx), '');
+      const alignment = {
+        type: 'select',
+        choices: [
+          {
+            label: 'apostrophe:styleCenter',
+            value: 'apos-center'
+          }
+        ]
+      };
+      assert.equal(text.toText(alignment, 'apos-center', ctx), 'Center');
+      assert.equal(text.toText(alignment, 'gone', ctx), 'gone');
+      // Choices a method provides are not known here
+      assert.equal(text.toText({
+        type: 'select',
+        choices: 'getChoices'
+      }, 'stored', ctx), 'stored');
+      const width = {
+        type: 'range',
+        unit: '%'
+      };
+      assert.equal(text.toText(width, 50, ctx), '50%');
+      assert.equal(text.toText({ type: 'range' }, 50, ctx), '50');
+      const padding = {
+        type: 'box',
+        unit: 'px'
+      };
+      assert.equal(text.toText(padding, {
+        top: 10,
+        right: null,
+        bottom: 0,
+        left: 20
+      }, ctx), 'Top 10px, Bottom 0px, Left 20px');
+      assert.equal(text.toText(padding, {
+        top: null,
+        right: null,
+        bottom: null,
+        left: null
+      }, ctx), '');
+      assert.equal(text.toText({ type: 'box' }, { top: 1 }, {
+        ...ctx,
+        t: undefined
+      }), 'top 1');
+    });
+
+    it('should read the style presets of a widget, each under its own label', async function () {
+      const build = styles => {
+        const doc = buildDoc();
+        doc.section.rows[0].content.items.push({
+          _id: 'styled',
+          metaType: 'widget',
+          type: 'styled',
+          ...styles
+        });
+        return doc;
+      };
+      const border = {
+        _id: 'border',
+        metaType: 'object',
+        active: false,
+        width: {
+          top: 1,
+          right: 1,
+          bottom: 1,
+          left: 1
+        },
+        radius: 0,
+        color: 'black',
+        style: 'solid'
+      };
+      const rows = apos.docVersions.getChangeRows(req, build({
+        width: 100,
+        alignment: null,
+        padding: {
+          top: null,
+          right: null,
+          bottom: null,
+          left: null
+        },
+        border
+      }), build({
+        width: 50,
+        alignment: 'apos-center',
+        padding: {
+          top: 10,
+          right: null,
+          bottom: 10,
+          left: null
+        },
+        border: {
+          ...border,
+          active: true,
+          width: {
+            ...border.width,
+            top: 4
+          },
+          radius: 8,
+          style: 'dashed'
+        }
+      }));
+      await apos.docVersions.addChangeText(req, rows);
+      assert.deepEqual(rows.map(row => [
+        row.type,
+        row.path.slice(-2).map(segment => segment.label).join(' > '),
+        row.oldText,
+        row.newText
+      ]), [
+        [ 'modified', 'Styled > apostrophe:styleWidth', '100%', '50%' ],
+        [ 'added', 'Styled > apostrophe:styleAlignment', '', 'Center' ],
+        [ 'modified', 'Styled > apostrophe:stylePadding', '', 'Top 10px, Bottom 10px' ],
+        [ 'modified', 'apostrophe:styleBorder > apostrophe:styleBorder', 'false', 'true' ],
+        [
+          'modified',
+          'apostrophe:styleBorder > apostrophe:styleBorderWidth',
+          'Top 1px, Right 1px, Bottom 1px, Left 1px',
+          'Top 4px, Right 1px, Bottom 1px, Left 1px'
+        ],
+        [ 'modified', 'apostrophe:styleBorder > apostrophe:styleRadius', '0px', '8px' ],
+        [ 'modified', 'apostrophe:styleBorder > apostrophe:styleStyle', 'Solid', 'Dashed' ]
+      ]);
+    });
+
+    it('should read the presets of the global styles document the same way', async function () {
+      const older = await apos.doc.find(req, { type: '@apostrophecms/styles' }).toObject();
+      const newer = structuredClone(older);
+      newer.bodyPadding = {
+        top: 8,
+        right: 16,
+        bottom: 8,
+        left: 16
+      };
+      newer.bodyBorder = {
+        ...older.bodyBorder,
+        active: true,
+        style: 'dotted'
+      };
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      await apos.docVersions.addChangeText(req, rows);
+      assert.deepEqual(rows.map(row => [
+        row.path.map(segment => segment.label).join(' > '),
+        row.oldText,
+        row.newText
+      ]), [
+        [ 'Body padding', '', 'Top 8px, Right 16px, Bottom 8px, Left 16px' ],
+        [ 'apostrophe:styleBorder > apostrophe:styleBorder', 'false', 'true' ],
+        [ 'apostrophe:styleBorder > apostrophe:styleStyle', 'Solid', 'Dotted' ]
+      ]);
     });
 
     it('should read an added or deleted array item as its title', async function () {
@@ -1001,11 +1751,618 @@ describe('Document Versions diff engine', function () {
         'path',
         'type',
         'fieldType',
+        'kind',
         'old',
         'new',
         'oldText',
         'newText'
       ]);
+    });
+
+    describe('format changes', function () {
+      const src = id => `/api/v1/@apostrophecms/image/${id}/src`;
+
+      it('should show every kind of formatting change as a line of values', async function () {
+        const value = text => ({ text });
+        const cases = [
+          [
+            '<p>Read <a href="/one">the guide</a></p>',
+            '<p>Read <a href="/two">the guide</a></p>',
+            [ {
+              change: 'link',
+              type: 'modified',
+              label: 'Link',
+              text: 'the guide',
+              old: value('/one'),
+              new: value('/two')
+            } ]
+          ],
+          [
+            '<p>Read <a href="/one">the guide</a></p>',
+            '<p>Read <a href="/one" target="_blank">the guide</a></p>',
+            [ {
+              change: 'link',
+              type: 'modified',
+              label: 'Link target',
+              text: 'the guide',
+              old: value('Same tab'),
+              new: value('New tab')
+            } ]
+          ],
+          [
+            '<p>Read <a href="/one" target="_blank">the guide</a></p>',
+            '<p>Read <a href="/two">the guide</a></p>',
+            [
+              {
+                change: 'link',
+                type: 'modified',
+                label: 'Link',
+                text: 'the guide',
+                old: value('/one'),
+                new: value('/two')
+              },
+              {
+                change: 'link',
+                type: 'modified',
+                label: 'Link target',
+                text: 'the guide',
+                old: value('New tab'),
+                new: value('Same tab')
+              }
+            ]
+          ],
+          [
+            '<p>Read <a href="/one">the guide</a></p>',
+            '<p>Read <a href="/one" title="Guide">the guide</a></p>',
+            [ {
+              change: 'link',
+              type: 'modified',
+              label: 'Link settings',
+              text: 'the guide'
+            } ]
+          ],
+          [
+            '<p>Read the guide</p>',
+            '<p>Read <a href="/one">the guide</a></p>',
+            [ {
+              change: 'linkAdded',
+              type: 'added',
+              label: 'Link',
+              text: 'the guide',
+              new: value('/one')
+            } ]
+          ],
+          [
+            '<p>Read <a href="/one">the guide</a></p>',
+            '<p>Read the guide</p>',
+            [ {
+              change: 'linkRemoved',
+              type: 'deleted',
+              label: 'Link',
+              text: 'the guide',
+              old: value('/one')
+            } ]
+          ],
+          [
+            '<p>Read the guide</p>',
+            '<p>Read <strong><em>the guide</em></strong></p>',
+            [ {
+              change: 'marksAdded',
+              type: 'added',
+              label: 'Formatting',
+              text: 'the guide',
+              new: value('Bold, Italic')
+            } ]
+          ],
+          [
+            '<p>Read <sup>the guide</sup></p>',
+            '<p>Read the guide</p>',
+            [ {
+              change: 'marksRemoved',
+              type: 'deleted',
+              label: 'Formatting',
+              text: 'the guide',
+              old: value('Superscript')
+            } ]
+          ],
+          [
+            '<p>Read <span style="color: #ff0000">the guide</span></p>',
+            '<p>Read <span style="color: #0000ff">the guide</span></p>',
+            [ {
+              change: 'mark',
+              type: 'modified',
+              label: 'Color',
+              text: 'the guide',
+              old: value('#ff0000'),
+              new: value('#0000ff')
+            } ]
+          ],
+          [
+            '<p>Read <span class="small">the guide</span></p>',
+            '<p>Read <span class="large">the guide</span></p>',
+            [ {
+              change: 'mark',
+              type: 'modified',
+              label: 'Inline Style',
+              text: 'the guide',
+              old: value('Inline Style (small)'),
+              new: value('Inline Style (large)')
+            } ]
+          ],
+          [
+            '<p><span id="top">Title</span></p>',
+            '<p><span id="start">Title</span></p>',
+            [ {
+              change: 'anchor',
+              type: 'modified',
+              label: 'Anchor',
+              text: 'Title',
+              old: value('top'),
+              new: value('start')
+            } ]
+          ],
+          [
+            '<p>Title</p>',
+            '<p><span id="top">Title</span></p>',
+            [ {
+              change: 'anchor',
+              type: 'added',
+              label: 'Anchor',
+              text: 'Title',
+              new: value('top')
+            } ]
+          ],
+          [
+            '<p><span id="top">Title</span></p>',
+            '<p>Title</p>',
+            [ {
+              change: 'anchor',
+              type: 'deleted',
+              label: 'Anchor',
+              text: 'Title',
+              old: value('top')
+            } ]
+          ],
+          [
+            '<p>Our mission</p>',
+            '<h2>Our mission</h2>',
+            [ {
+              change: 'block',
+              type: 'modified',
+              label: 'Block style',
+              text: 'Our mission',
+              old: value('Paragraph (P)'),
+              new: value('Heading 2 (H2)')
+            } ]
+          ],
+          [
+            '<ul><li><p>One</p></li><li><p>Two</p></li></ul>',
+            '<ol><li><p>One</p></li><li><p>Two</p></li></ol>',
+            [ {
+              change: 'block',
+              type: 'modified',
+              label: 'Block style',
+              text: 'One Two',
+              old: value('Bulleted List'),
+              new: value('Ordered List')
+            } ]
+          ],
+          [
+            '<p>Our mission</p>',
+            '<p class="lead">Our mission</p>',
+            [ {
+              change: 'style',
+              type: 'modified',
+              label: 'Block style',
+              text: 'Our mission',
+              old: value('Paragraph (P)'),
+              new: value('Paragraph (P) (lead)')
+            } ]
+          ],
+          [
+            '<p>Our mission</p>',
+            '<p style="text-align: center">Our mission</p>',
+            [ {
+              change: 'align',
+              type: 'modified',
+              label: 'Alignment',
+              text: 'Our mission',
+              old: value('Default'),
+              new: value('Align Center')
+            } ]
+          ],
+          [
+            '<p>One.</p><p>Two.</p>',
+            '<p>One. Two.</p>',
+            [ {
+              change: 'merged',
+              type: 'modified',
+              label: 'Paragraphs merged',
+              text: 'Two.'
+            } ]
+          ],
+          [
+            '<p>One. Two.</p>',
+            '<p>One.</p><p>Two.</p>',
+            [ {
+              change: 'split',
+              type: 'modified',
+              label: 'Paragraph split',
+              text: 'Two.'
+            } ]
+          ],
+          [
+            `<p>One</p><figure><img src="${src('gone')}" alt="A fox"></figure>`,
+            '<p>One</p>',
+            [ {
+              change: 'imageRemoved',
+              type: 'deleted',
+              label: 'Image',
+              old: value('A fox')
+            } ]
+          ],
+          [
+            `<p>One</p><figure><img src="${src('gone')}" alt="A fox"></figure>`,
+            `<p>One</p><figure><img src="${src('gone')}" alt="A red fox"></figure>`,
+            [ {
+              change: 'image',
+              type: 'modified',
+              label: 'Image alt text',
+              text: 'A red fox',
+              old: value('A fox'),
+              new: value('A red fox')
+            } ]
+          ],
+          [
+            `<p>One</p><figure class="left"><img src="${src('gone')}" alt=""></figure>`,
+            `<p>One</p><figure class="right"><img src="${src('gone')}" alt="A red fox"></figure>`,
+            [
+              {
+                change: 'image',
+                type: 'added',
+                label: 'Image alt text',
+                text: 'A red fox',
+                new: value('A red fox')
+              },
+              {
+                change: 'image',
+                type: 'modified',
+                label: 'Image style',
+                text: 'A red fox',
+                old: value('left'),
+                new: value('right')
+              }
+            ]
+          ],
+          [
+            '<p>One</p><p>Two</p>',
+            '<p>One</p><hr><p>Two</p>',
+            [ {
+              change: 'rules',
+              type: 'added',
+              label: 'Horizontal rules',
+              new: value('1 added')
+            } ]
+          ],
+          [
+            '<p>One</p><hr><p>Two</p><p>Three<br>four</p>',
+            '<p>One</p><p>Two</p><hr><p>Three four</p><hr>',
+            [
+              {
+                change: 'rules',
+                type: 'modified',
+                label: 'Horizontal rules',
+                old: value('1 removed'),
+                new: value('2 added')
+              },
+              {
+                change: 'breaks',
+                type: 'deleted',
+                label: 'Line breaks',
+                old: value('1 removed')
+              }
+            ]
+          ],
+          [
+            '<p>One two</p>',
+            '<p>One<br>two</p>',
+            [ {
+              change: 'breaks',
+              type: 'added',
+              label: 'Line breaks',
+              new: value('1 added')
+            } ]
+          ],
+          [
+            '<p>One<br>two</p>',
+            '<p>One two</p>',
+            [ {
+              change: 'breaks',
+              type: 'deleted',
+              label: 'Line breaks',
+              old: value('1 removed')
+            } ]
+          ],
+          [
+            '<p>One<br>two</p><p>Three four five</p><h2>Six</h2>',
+            '<p>One two</p><p>Three<br>four<br>five</p><h3>Six</h3>',
+            [
+              {
+                change: 'block',
+                type: 'modified',
+                label: 'Block style',
+                text: 'Six',
+                old: value('Heading 2 (H2)'),
+                new: value('Heading 3 (H3)')
+              },
+              {
+                change: 'breaks',
+                type: 'modified',
+                label: 'Line breaks',
+                old: value('1 removed'),
+                new: value('2 added')
+              }
+            ]
+          ],
+          [
+            '<table><tbody><tr><td><p>A</p></td></tr></tbody></table>',
+            '<table><tbody><tr><td><p>A</p></td></tr>' +
+            '<tr><td><p></p></td></tr></tbody></table>',
+            [ {
+              change: 'table',
+              type: 'modified',
+              label: 'Table layout'
+            } ]
+          ]
+        ];
+        for (const [ before, after, lines ] of cases) {
+          const older = buildDoc();
+          const newer = buildDoc();
+          older.body = before;
+          newer.body = after;
+          const ctx = apos.docVersions.getDiffContext(req);
+          const rows = text.addFormat(
+            apos.docVersions.getChangeRows(req, older, newer),
+            ctx
+          );
+          await apos.docVersions.addChangeText(req, rows);
+          assert.deepEqual(rows[0].formatChanges, lines);
+        }
+      });
+
+      it('should name an image by its title, fetched with the related titles', async function () {
+        const image = await apos.image.insert(req, { title: 'Fox picture' });
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p>One</p>';
+        newer.body = `<p>One</p><figure><img src="${src(image.aposDocId)}" alt="A fox"></figure>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        assert.deepEqual(text.getRelatedIds(rows, ctx), [ image.aposDocId ]);
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges, [ {
+          change: 'imageAdded',
+          type: 'added',
+          label: 'Image',
+          new: {
+            text: 'Fox picture',
+            href: src(image.aposDocId)
+          }
+        } ]);
+      });
+
+      it('should show a replaced image as one change, by both titles', async function () {
+        const fox = await apos.image.insert(req, { title: 'Fox picture' });
+        const hen = await apos.image.insert(req, { title: 'Hen picture' });
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = `<p>One</p><figure><img src="${src(fox.aposDocId)}" alt=""></figure>`;
+        newer.body = `<p>One</p><figure><img src="${src(hen.aposDocId)}" alt=""></figure>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges, [ {
+          change: 'imageReplaced',
+          type: 'modified',
+          label: 'Image',
+          old: {
+            text: 'Fox picture',
+            href: src(fox.aposDocId)
+          },
+          new: {
+            text: 'Hen picture',
+            href: src(hen.aposDocId)
+          }
+        } ]);
+      });
+
+      it('should link no image that is archived or gone', async function () {
+        const kept = await apos.image.insert(req, { title: 'Kept picture' });
+        const archived = await apos.image.insert(req, {
+          title: 'Archived picture',
+          archived: true
+        });
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = `<p>One</p><figure><img src="${src(archived.aposDocId)}" alt=""></figure>`;
+        newer.body = `<p>One</p><figure><img src="${src(kept.aposDocId)}" alt=""></figure>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges[0].old, { text: 'Archived picture' });
+        assert.deepEqual(rows[0].formatChanges[0].new, {
+          text: 'Kept picture',
+          href: src(kept.aposDocId)
+        });
+
+        older.body = `<p>One</p><figure><img src="${src('gone')}" alt="A fox"></figure>`;
+        newer.body = '<p>One</p>';
+        const gone = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, gone);
+        assert.deepEqual(gone[0].formatChanges, [ {
+          change: 'imageRemoved',
+          type: 'deleted',
+          label: 'Image',
+          old: { text: 'A fox' }
+        } ]);
+      });
+
+      it('should read an internal link as the document it links to', async function () {
+        const home = await apos.page.find(req, { slug: '/' }).toObject();
+        const permalink = id => `#apostrophe-permalink-${id}?updateTitle=1`;
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p>Read <a href="https://example.com/guide">the guide</a> now.</p>' +
+          `<figure><a href="/fox"><img src="${src('fox')}" alt="A fox"></a></figure>`;
+        newer.body = `<p>Read <a href="${permalink(home.aposDocId)}">the guide</a> now.</p>` +
+          `<figure><a href="#apostrophe-permalink-${home.aposDocId}">` +
+          `<img src="${src('fox')}" alt="A fox"></a></figure>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        assert.deepEqual(text.getRelatedIds(rows, ctx), [ home.aposDocId, 'fox' ]);
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges, [
+          {
+            change: 'link',
+            type: 'modified',
+            label: 'Link',
+            text: 'the guide',
+            old: { text: 'https://example.com/guide' },
+            new: {
+              text: 'Home',
+              url: home._url
+            }
+          },
+          {
+            change: 'image',
+            type: 'modified',
+            label: 'Image link',
+            text: 'A fox',
+            old: { text: '/fox' },
+            new: {
+              text: 'Home',
+              url: home._url
+            }
+          }
+        ]);
+      });
+
+      it('should read an internal link to a document it cannot find neutrally', async function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p>Read the guide now.</p>';
+        newer.body = '<p>Read <a href="#apostrophe-permalink-gone?updateTitle=0">the guide</a> now.</p>';
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.deepEqual(rows[0].formatChanges, [ {
+          change: 'linkAdded',
+          type: 'added',
+          label: 'Link',
+          text: 'the guide',
+          new: { text: 'Internal link' }
+        } ]);
+      });
+
+      it('should list the changes of a rich text widget in reading order', async function () {
+        const build = content => {
+          const doc = buildDoc();
+          doc.section.rows[0].content.items.push({
+            _id: 'text',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content
+          });
+          return doc;
+        };
+        const older = build(
+          '<p>Our mission</p><p>Read <a href="/one">the guide</a> now.</p>'
+        );
+        const newer = build(
+          '<h2>Our mission</h2><p>Read <a href="/two">the guide</a> today.</p>'
+        );
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.equal(rows.length, 1);
+        assert.equal(rows[0].newText, 'Our mission\nRead the guide today.');
+        assert.deepEqual(
+          rows[0].formatChanges.map(line => [ line.label, line.text, line.new.text ]),
+          [
+            [ 'Block style', 'Our mission', 'Heading 2 (H2)' ],
+            [ 'Link', 'the guide', '/two' ]
+          ]
+        );
+        assert.equal(Object.keys(rows[0]).includes('format'), false);
+      });
+
+      it('should read a figure, its caption and a rule as lines of their own', async function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p>One.</p>';
+        newer.body = '<p>One.</p><figure><img src="/fox.png" alt="A fox">' +
+          '<figcaption>The fox.</figcaption></figure><p>Two.</p><hr><p>Three.</p>';
+        const rows = apos.docVersions.getChangeRows(req, older, newer);
+        await apos.docVersions.addChangeText(req, rows);
+        assert.equal(rows[0].newText, 'One.\nThe fox.\nTwo.\nThree.');
+      });
+
+      it('should quote the words affected on one line, cut short', async function () {
+        const words = Array.from({ length: 40 }, (value, at) => `word${at}`).join(' ');
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = `<p>${words}</p>`;
+        newer.body = `<h3>${words}</h3>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.equal(
+          rows[0].formatChanges[0].text,
+          `${words.slice(0, 80).trimEnd()}…`
+        );
+      });
+
+      it('should set nothing when only words changed, and nothing unless asked', async function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        newer.body = '<p>Body <strong>changed</strong></p>';
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addFormat(
+          apos.docVersions.getChangeRows(req, older, newer),
+          ctx
+        );
+        await apos.docVersions.addChangeText(req, rows);
+        assert.equal('formatChanges' in rows[0], false);
+
+        newer.body = '<h2>Body root</h2>';
+        const plain = apos.docVersions.getChangeRows(req, older, newer);
+        await apos.docVersions.addChangeText(req, plain);
+        assert.equal('formatChanges' in plain[0], false);
+      });
     });
   });
 

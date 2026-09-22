@@ -292,6 +292,36 @@ describe('Document Versions: i18n', function () {
     );
   });
 
+  it('should rename the locale in the document ids a version\'s attachment holds', async function () {
+    const req = getReq(apos);
+    const draft = await apos.article.insert(req.clone({ mode: 'draft' }), { title: 'With a file' });
+    const [ version ] = await apos.docVersions.find(
+      req,
+      apos.docVersions.getTimelineCriteria(draft)
+    );
+    await apos.docVersions.db.updateOne({ _id: version._id }, {
+      $set: {
+        doc: await apos.docVersions.pack({
+          ...version.doc,
+          attachment: {
+            _id: 'file1',
+            docIds: [ `${draft.aposDocId}:en:draft`, `${draft.aposDocId}:en:published`, 'other:fr:draft' ]
+          }
+        })
+      }
+    });
+
+    await apos.docVersions.renameLocale('en', 'en-US', {});
+
+    const renamed = await apos.docVersions.findOne(req, { _id: version._id });
+    assert.equal(renamed.locale, 'en-US');
+    assert.deepEqual(renamed.doc.attachment.docIds, [
+      `${draft.aposDocId}:en-US:draft`,
+      `${draft.aposDocId}:en-US:published`,
+      'other:fr:draft'
+    ]);
+  });
+
   describe('locale isolation', function () {
     const req = () => getReq(apos, {
       _id: 'user',

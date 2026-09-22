@@ -1021,6 +1021,14 @@ class SqliteCursor {
           done: false,
           value: doc
         };
+      },
+      // Called by `for await` on break, return or a throwing body
+      async return() {
+        await this.cursor.close();
+        return {
+          done: true,
+          value: undefined
+        };
       }
     };
   }

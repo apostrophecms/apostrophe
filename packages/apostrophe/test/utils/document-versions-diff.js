@@ -207,6 +207,38 @@ const modules = {
       }
     }
   },
+  // The global styles document takes the same presets at its top level
+  '@apostrophecms/styles': {
+    styles: {
+      add: {
+        bodyPadding: {
+          preset: 'padding',
+          label: 'Body padding',
+          selector: 'body'
+        },
+        bodyBorder: {
+          preset: 'border',
+          selector: 'body'
+        }
+      }
+    }
+  },
+  // Styled with presets of every kind: a number with a unit, a choice,
+  // a box and an object of several fields
+  'styled-widget': {
+    extend: '@apostrophecms/widget-type',
+    options: {
+      label: 'Styled'
+    },
+    styles: {
+      add: {
+        width: 'width',
+        alignment: 'alignment',
+        padding: 'padding',
+        border: 'border'
+      }
+    }
+  },
   // Stores its data outside any schema
   'opaque-widget': {
     extend: '@apostrophecms/widget-type',
@@ -215,6 +247,174 @@ const modules = {
     }
   },
   ...widgetModules(),
+  // A project's own field types, one for each kind of core type the diff
+  // engine treats in its own way, and a document type made of them. Core
+  // composes `fields` for the `array` and `object` types alone, so the
+  // types extending them bring their `schema` as it is
+  'project-field': {
+    init(self) {
+      self.apos.schema.addFieldType({
+        name: 'tagline',
+        extend: 'string'
+      });
+      // Zero reads as no rating at all
+      self.apos.schema.addFieldType({
+        name: 'rating',
+        extend: 'integer',
+        isEmpty(field, value) {
+          return !value;
+        }
+      });
+      for (const [ name, extend ] of [
+        [ 'prose', 'richText' ],
+        [ 'panel', 'object' ],
+        [ 'steps', 'array' ],
+        [ 'zone', 'area' ],
+        [ 'owners', 'relationship' ]
+      ]) {
+        self.apos.schema.addFieldType({
+          name,
+          extend
+        });
+      }
+      // Extends `array` and stores its rows beside the schema it composed
+      // for them, so its value is no array
+      self.apos.schema.addFieldType({
+        name: 'sheet',
+        extend: 'array',
+        validate(field) {
+          field.schema = [];
+        },
+        async convert(req, field, data, destination) {
+          field.schema = (data[field.name]?.schema) || [];
+          await self.apos.schema.getFieldType('array').convert(
+            req,
+            field,
+            { [field.name]: data[field.name]?.rows || [] },
+            destination
+          );
+          destination[field.name] = {
+            rows: destination[field.name],
+            schema: field.schema
+          };
+        }
+      });
+      // Types whose own comparison fails
+      self.apos.schema.addFieldType({
+        name: 'brittle',
+        extend: 'string',
+        isEqual() {
+          throw new Error('brittle isEqual');
+        }
+      });
+      self.apos.schema.addFieldType({
+        name: 'hollow',
+        extend: 'string',
+        isEmpty() {
+          throw new Error('hollow isEmpty');
+        }
+      });
+    }
+  },
+  // Never saved: core itself compares the fields of a document it updates
+  fragile: {
+    extend: '@apostrophecms/piece-type',
+    options: {
+      label: 'Fragile'
+    },
+    fields: {
+      add: {
+        brittle: {
+          type: 'brittle',
+          label: 'Brittle'
+        },
+        panel: {
+          type: 'object',
+          label: 'Panel',
+          fields: {
+            add: {
+              brittle: {
+                type: 'brittle',
+                label: 'Panel brittle'
+              },
+              note: {
+                type: 'string',
+                label: 'Panel note'
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  project: {
+    extend: '@apostrophecms/piece-type',
+    options: {
+      label: 'Project'
+    },
+    fields: {
+      add: {
+        tagline: {
+          type: 'tagline',
+          label: 'Tagline'
+        },
+        rating: {
+          type: 'rating',
+          label: 'Rating'
+        },
+        prose: {
+          type: 'prose',
+          label: 'Prose'
+        },
+        panel: {
+          type: 'panel',
+          label: 'Panel',
+          schema: [
+            {
+              name: 'tagline',
+              type: 'tagline',
+              label: 'Panel tagline'
+            }
+          ]
+        },
+        steps: {
+          type: 'steps',
+          label: 'Steps',
+          titleField: 'tagline',
+          schema: [
+            {
+              name: 'tagline',
+              type: 'tagline',
+              label: 'Step tagline'
+            }
+          ]
+        },
+        zone: {
+          type: 'zone',
+          label: 'Zone',
+          options: {
+            widgets: {
+              '@apostrophecms/rich-text': {},
+              card: {}
+            }
+          }
+        },
+        _owners: {
+          type: 'owners',
+          label: 'Owners',
+          withType: 'topic'
+        },
+        sheet: {
+          type: 'sheet',
+          label: 'Sheet'
+        },
+        hollow: {
+          type: 'hollow',
+          label: 'Hollow'
+        }
+      }
+    }
+  },
   nested: {
     extend: '@apostrophecms/piece-type',
     options: {
@@ -378,9 +578,81 @@ function deepestRoute(doc) {
   return route;
 }
 
+// A document of the `project` type, the same on every call
+function buildProject() {
+  return {
+    _id: 'project1:en:draft',
+    type: 'project',
+    title: 'Project',
+    tagline: 'Built to last',
+    rating: 0,
+    prose: '<p>The quick brown fox</p>',
+    panel: {
+      _id: 'panel1',
+      metaType: 'object',
+      tagline: 'Inside the panel'
+    },
+    steps: [ 'one', 'two', 'three' ].map(name => ({
+      _id: `step-${name}`,
+      metaType: 'arrayItem',
+      tagline: `Step ${name}`
+    })),
+    zone: {
+      _id: 'zone1',
+      metaType: 'area',
+      items: [
+        {
+          _id: 'zone-text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: '<p>Zone text</p>'
+        },
+        {
+          _id: 'zone-card',
+          metaType: 'widget',
+          type: 'card',
+          kind: 'one',
+          note: 'A note'
+        }
+      ]
+    },
+    ownersIds: [ 'topic1' ],
+    sheet: {
+      rows: [ {
+        _id: 'sheet-row',
+        metaType: 'arrayItem',
+        make: 'Ford'
+      } ],
+      schema: [ {
+        name: 'make',
+        label: 'Make',
+        type: 'string'
+      } ]
+    }
+  };
+}
+
+// A document of the `fragile` type, the same on every call
+function buildFragile() {
+  return {
+    _id: 'fragile1:en:draft',
+    type: 'fragile',
+    title: 'Fragile',
+    brittle: 'One',
+    panel: {
+      _id: 'fragile-panel',
+      metaType: 'object',
+      brittle: 'One',
+      note: 'One'
+    }
+  };
+}
+
 module.exports = {
   DEPTH,
   modules,
   buildDoc,
+  buildProject,
+  buildFragile,
   deepestRoute
 };

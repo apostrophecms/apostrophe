@@ -159,6 +159,29 @@ const fixtures = {
     options: {
       versions: false
     }
+  },
+  'module-localized_false-versions_true': {
+    extend: '@apostrophecms/piece-type',
+    options: {
+      label: 'Setting',
+      pluralLabel: 'Settings',
+      alias: 'setting',
+      localized: false,
+      versions: true
+    },
+    fields: {
+      add: {
+        main: fields.main,
+        int: fields.int,
+        array: fields.array
+      },
+      group: {
+        basics: {
+          label: 'Basics',
+          fields: [ 'main', 'int', 'array' ]
+        }
+      }
+    }
   }
 };
 

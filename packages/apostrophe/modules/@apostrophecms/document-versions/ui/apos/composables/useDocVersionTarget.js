@@ -1,4 +1,5 @@
 import { onBeforeUnmount } from 'vue';
+import scroll from '../utils/scroll.js';
 
 /**
  * The element in the modal body the change navigator points at: a field
@@ -36,8 +37,31 @@ export function useDocVersionTarget({ attribute }) {
       el.setAttribute('tabindex', '-1');
     }
     el.setAttribute(attribute, '');
-    el.scrollIntoView({ block: 'center' });
+    // Its own scroller alone, centred on it: a smooth `scrollIntoView`
+    // is cancelled by the change list's own smooth scroll in some browsers
+    const scroller = getScroller(el);
+    if (scroller) {
+      const box = scroller.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      scroller.scrollBy({
+        top: rect.top - box.top - ((box.height - rect.height) / 2),
+        behavior: scroll.getScrollBehavior()
+      });
+    }
     return true;
+  }
+
+  function getScroller(el) {
+    for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+      const { overflowY } = getComputedStyle(parent);
+      if (
+        [ 'auto', 'scroll' ].includes(overflowY) &&
+        parent.scrollHeight > parent.clientHeight
+      ) {
+        return parent;
+      }
+    }
+    return null;
   }
 
   onBeforeUnmount(clear);

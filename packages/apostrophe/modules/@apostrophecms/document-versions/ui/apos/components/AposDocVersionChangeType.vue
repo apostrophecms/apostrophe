@@ -10,13 +10,15 @@
       :icon="icons[type]"
       :icon-size="10"
     />
-    {{ $t(labels[type]) }}
+    {{ $t(changeTypes.labels[type]) }}
   </span>
 </template>
 
 <script setup>
 // Whether a change added, modified, deleted or moved something, as a
 // word, so the colour is never the only cue
+import changeTypes from '../lib/change-types.js';
+
 defineProps({
   type: {
     type: String,
@@ -35,13 +37,6 @@ const icons = {
   modified: 'pencil-icon',
   deleted: 'minus-icon',
   moved: 'cursor-move-icon'
-};
-
-const labels = {
-  added: 'apostrophe:versionChangeAdded',
-  modified: 'apostrophe:versionChangeModified',
-  deleted: 'apostrophe:versionChangeDeleted',
-  moved: 'apostrophe:versionChangeMoved'
 };
 </script>
 
@@ -65,23 +60,25 @@ const labels = {
     vertical-align: -1px;
   }
 
+  // Opaque tints, so the contrast of the text does not depend on the
+  // header, frame or highlight the badge sits on (a11y contrast)
   &--added {
-    background-color: var(--a-success-fade);
+    background-color: color-mix(in srgb, var(--a-success) 19%, var(--a-background-primary));
     color: var(--a-success-dark);
   }
 
   &--modified {
-    background-color: var(--a-warning-fade);
+    background-color: color-mix(in srgb, var(--a-warning) 19%, var(--a-background-primary));
     color: var(--a-warning-dark);
   }
 
   &--deleted {
-    background-color: var(--a-danger-fade);
+    background-color: color-mix(in srgb, var(--a-danger) 19%, var(--a-background-primary));
     color: var(--a-danger-button-hover);
   }
 
   &--moved {
-    background-color: color-mix(in srgb, var(--a-brand-blue) 12%, transparent);
+    background-color: color-mix(in srgb, var(--a-brand-blue) 12%, var(--a-background-primary));
     color: color-mix(in srgb, var(--a-brand-blue) 65%, #000);
   }
 }

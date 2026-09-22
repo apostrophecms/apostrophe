@@ -111,8 +111,10 @@ export default function() {
       observer.observe(el);
     }
 
+    // The newest entry: a scroll right after `observe` arrives in the same
+    // callback as the first report, which still says the field is out of view
     function observed(entries) {
-      if (!entries[0].isIntersecting) {
+      if (!entries.at(-1).isIntersecting) {
         return;
       }
       if (!created) {

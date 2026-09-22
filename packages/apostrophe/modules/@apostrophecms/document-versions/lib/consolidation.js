@@ -1,12 +1,10 @@
-// Consolidated versions: consecutive versions one author saved with and
-// without AI display as one list item. Pure functions over version records,
-// newest first, reading `authorId`, `mode`, `ai` and `restoredFrom` only.
-// Nothing here changes a record; the stored versions stay as they are.
+// Consolidated versions: consecutive draft versions that one author saved
+// with and without AI display as one list item. Pure functions over version
+// records, newest first; the stored versions are never changed.
 //
 // A sequence is a stretch of consecutive draft versions by one author, none
-// of them a restore. A sequence consolidates when it holds at least one
-// version saved with AI and one saved without; the versions of any other
-// sequence display alone.
+// of them a restore. It consolidates when it holds at least one version
+// saved with AI and one saved without. Any other version displays alone.
 
 module.exports = {
   inSameSequence,

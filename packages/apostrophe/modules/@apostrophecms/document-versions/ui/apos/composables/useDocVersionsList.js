@@ -17,10 +17,7 @@ export function useDocVersionsList({ action, docId }) {
   const versions = ref([]);
   // The `before` of the next page, `null` when there is none
   const next = ref(null);
-  const isLoading = ref(false);
   const loaded = ref(false);
-  const loadMorePending = ref(0);
-  const isLoadingMore = computed(() => loadMorePending.value > 0);
   const hasMore = computed(() => next.value !== null);
 
   // Bumped by every `load()` so a stale append is dropped
@@ -50,7 +47,6 @@ export function useDocVersionsList({ action, docId }) {
     generation++;
     const gen = generation;
     queue.clear();
-    isLoading.value = true;
     try {
       const response = await fetchPage(null);
       if (gen !== generation) {
@@ -59,7 +55,6 @@ export function useDocVersionsList({ action, docId }) {
       applyPage(response, false);
     } finally {
       if (gen === generation) {
-        isLoading.value = false;
         loaded.value = true;
       }
     }
@@ -73,7 +68,6 @@ export function useDocVersionsList({ action, docId }) {
       return;
     }
     const gen = generation;
-    loadMorePending.value++;
     try {
       await queue.add(async () => {
         if (gen !== generation || !hasMore.value) {
@@ -89,8 +83,6 @@ export function useDocVersionsList({ action, docId }) {
       if (e.message !== 'queue:cleared') {
         throw e;
       }
-    } finally {
-      loadMorePending.value--;
     }
   }
 
@@ -101,9 +93,6 @@ export function useDocVersionsList({ action, docId }) {
 
   return {
     versions,
-    hasMore,
-    isLoading,
-    isLoadingMore,
     loaded,
     load,
     loadMore,

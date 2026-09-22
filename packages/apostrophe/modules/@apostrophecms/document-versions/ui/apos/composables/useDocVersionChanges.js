@@ -12,7 +12,6 @@ import { ref } from 'vue';
 export function useDocVersionChanges({ action }) {
   const rows = ref([]);
   const counts = ref(null);
-  const versionId = ref(null);
 
   let requestId = 0;
 
@@ -39,14 +38,12 @@ export function useDocVersionChanges({ action }) {
     }
     rows.value = response.rows;
     counts.value = response.counts;
-    versionId.value = id;
     return true;
   }
 
   return {
     rows,
     counts,
-    versionId,
     load
   };
 }

@@ -264,9 +264,25 @@ module.exports = {
         self.apos.schema.addFieldType({
           name: self.name,
           convert: self.convert,
+          isEqual: self.isEqual,
           index: self.index,
           register: self.register
         });
+      },
+      // Whether the attachment fields of two documents hold the same file
+      // with the same crop. The rest of the value is a copy of the attachment
+      // record taken at save time, references from documents included, and
+      // it changes without the field being edited
+      isEqual(req, field, one, two) {
+        const [ first, second ] = [ one, two ].map(object => {
+          const value = object[field.name];
+          return (value && typeof value === 'object') ? value : null;
+        });
+        if (!first || !second) {
+          return first === second;
+        }
+        return first._id === second._id &&
+          _.isEqual(first.crop ?? null, second.crop ?? null);
       },
       async convert(req, field, data, object) {
         let info = data[field.name];
