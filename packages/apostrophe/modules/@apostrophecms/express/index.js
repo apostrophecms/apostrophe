@@ -147,6 +147,7 @@
 // proxy like nginx is being used to serve it over `https:`.
 
 const fs = require('fs');
+const http = require('http');
 const _ = require('lodash');
 const minimatch = require('minimatch');
 const enableDestroy = require('server-destroy');
@@ -200,6 +201,7 @@ module.exports = {
           if (isTask) {
             return;
           }
+          self.addRequestErrorHandler();
           await self.listen();
           // Emit the @apostrophecms/express:afterListen event
           await self.emit('afterListen');
@@ -715,6 +717,67 @@ module.exports = {
           }
         }
         return next();
+      },
+
+      // The last middleware: Express hands it whatever a middleware or route
+      // passed to `next(err)`, which its own fallback would otherwise print
+      // as a raw stack. Registered right before `listen()`, because error
+      // middleware only sees errors from what was registered before it, and
+      // the page catch-all route is added on `apostrophe:ready`.
+      addRequestErrorHandler() {
+        self.apos.app.use((err, req, res, next) => {
+          return self.requestErrorHandler(err, req, res, next);
+        });
+      },
+
+      // Log the error as a `request-error` event and answer the request.
+      // A client that went away while its body was being read is `debug`,
+      // any other client error `warn`, everything else `error` with the
+      // stack. `req` is not handed to the logger: the body parsers run before
+      // the i18n middleware sets `req.t`, so the request fields travel in
+      // the data instead.
+      requestErrorHandler(err, req, res, next) {
+        const status = [ err.status, err.statusCode ].find((code) => {
+          return Number.isInteger(code) && code >= 400 && code < 600;
+        }) || 500;
+        const data = {
+          ...(err.type && { type: err.type }),
+          status,
+          url: req.originalUrl,
+          method: req.method,
+          ip: self.apos.structuredLog.getIp(req)
+        };
+        if ([ 'stream.not.readable', 'request.aborted' ].includes(err.type)) {
+          self.logDebug('request-error', err.message, data);
+        } else if (status < 500) {
+          self.logWarn('request-error', err.message, data);
+        } else {
+          self.logError('request-error', err.message, {
+            ...data,
+            stack: err.stack
+          });
+        }
+        if (res.headersSent) {
+          req.socket?.destroy();
+          return;
+        }
+        res.status(status);
+        // A message the error marks as safe for the client, as body-parser
+        // does for its own.
+        const message = err.expose ? err.message : undefined;
+        // JSON for every client but a browser navigating: the API, the
+        // external front (which forwards the browser's own Accept header),
+        // and any request whose Accept header does not put HTML first.
+        const wantsJson = req.path.startsWith('/api/v1/') ||
+          req.aposExternalFront ||
+          (req.accepts([ 'json', 'html' ]) !== 'html');
+        if (wantsJson) {
+          return res.send({
+            name: 'error',
+            ...(message && { message })
+          });
+        }
+        return res.type('text/plain').send(message || http.STATUS_CODES[status]);
       },
 
       async listen() {
