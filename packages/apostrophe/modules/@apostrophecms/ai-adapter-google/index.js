@@ -241,7 +241,7 @@ module.exports = {
             ? [ {
               name: FINAL_ANSWER,
               description: FINAL_ANSWER_DESCRIPTION,
-              parameters: schema
+              parametersJsonSchema: schema
             } ]
             : [])
         ];
@@ -274,13 +274,14 @@ module.exports = {
         };
 
         // The model-facing tool definition; the JSON Schema travels
-        // verbatim as the OpenAPI-subset parameters (the service polices
-        // any keyword it does not accept)
+        // verbatim as `parametersJsonSchema`, the declaration's JSON
+        // Schema field — its `parameters` sibling is an OpenAPI subset
+        // that rejects keywords such as `additionalProperties`
         function toFunctionDeclaration(tool) {
           return {
             name: tool.name,
             description: tool.description,
-            parameters: tool.input
+            parametersJsonSchema: tool.input
           };
         }
         function toPart(part) {
