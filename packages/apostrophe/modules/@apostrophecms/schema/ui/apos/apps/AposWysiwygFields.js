@@ -49,7 +49,13 @@ export default function() {
     const field = getFieldById(fieldId);
     const value = JSON.parse(el.getAttribute('data-value'));
     const options = JSON.parse(el.getAttribute('data-options') || '{}') || {};
-    const docId = el.getAttribute('data-doc-id');
+    // Empty when the markup came from the area editor on behalf of a modal.
+    // The field has a document like any other — the one the modal is editing
+    // — but the request that rendered it was not rendering a page, so there
+    // was no context to name, and nothing here is ours to patch: the modal
+    // saves. Normalized because an empty attribute and a missing one are two
+    // ways of saying the same thing
+    const docId = el.getAttribute('data-doc-id') || null;
     const patchKey = el.getAttribute('data-patch-key');
     const componentName = el.getAttribute('data-component');
     // `undefined` rather than null, so that the wrapper's own default applies
@@ -59,6 +65,11 @@ export default function() {
     // edited on this page is displayed but not editable here. Edit it on
     // its own page, or in a modal.
     //
+    // Markup that names no document is the modal case above, and is edited
+    // here: the document in play is the one the modal is editing, and the
+    // modal is what saves it. An area rendered in a modal is editable for
+    // exactly the same reason.
+    //
     // Which document that is can change without this element being
     // re-rendered: the context bar restores the draft mode it remembers for
     // the tab after the page has already been rendered in the other mode, so
@@ -66,7 +77,7 @@ export default function() {
     // about to change. Leave the element eligible rather than consuming it,
     // so the next pass can reconsider — an area recomputes `foreign` for the
     // same reason instead of settling it once and for all
-    if (!docId || (docId !== apos.adminBar?.contextId)) {
+    if (docId && (docId !== apos.adminBar?.contextId)) {
       el.setAttribute('data-apos-wysiwyg-field-foreign', true);
       return;
     }
