@@ -30,7 +30,7 @@ defineProps({
   border: 1px solid color-mix(in srgb, currentcolor 50%, transparent);
   border-radius: var(--a-border-radius);
   font-family: var(--a-family-default);
-  font-size: var(--a-type-tiny);
+  font-size: calc(var(--a-type-tiny) - 1px);
   font-weight: var(--a-weight-bold);
   letter-spacing: 0.2px;
   line-height: 1.5;
