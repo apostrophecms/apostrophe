@@ -92,7 +92,7 @@ export const useWidgetStore = defineStore('widget', () => {
 
     if (id && scrollTo) {
       await nextTick();
-      await scrollToWidget(id, { awaitNextTick: true });
+      await scrollToWidget(id);
     }
   }
 
@@ -101,25 +101,76 @@ export const useWidgetStore = defineStore('widget', () => {
     if (!$el) {
       return;
     }
-
-    const headerHeight = window.apos.adminBar.height;
-    const bufferSpace = 40;
-    const rect = $el.getBoundingClientRect();
-    const visibleTop = headerHeight + bufferSpace;
-    const visibleBottom = window.innerHeight - bufferSpace;
-    const isInView = rect.top >= visibleTop && rect.bottom <= visibleBottom;
-
-    if (!isInView) {
-      const scrollPos = rect.top - headerHeight - bufferSpace;
-      window.scrollBy({
-        top: scrollPos,
-        behavior: 'smooth'
-      });
+    if (!isElementInView($el)) {
+      scrollToElement($el);
     }
-
     $el.focus({
       preventScroll: true
     });
+  }
+
+  // True if enough of `$el` is on screen for the user to see it: its top is
+  // not hidden, and at least the first 120 pixels of it, or all of it if it
+  // is smaller than that, are showing. Not "all of it": an element taller
+  // than the screen could never pass that test
+  function isElementInView($el) {
+    const { top, bottom } = visibleBounds($el);
+    const rect = $el.getBoundingClientRect();
+    const visible = Math.min(rect.bottom, bottom) - Math.max(rect.top, top);
+    return (rect.top >= top) && (visible >= Math.min(rect.height, 120));
+  }
+
+  // Scroll `$el` to the top of whatever scrolls it, below the admin bar if
+  // that is the window. Nested scrollers are taken care of by the browser
+  function scrollToElement($el, { behavior = 'smooth' } = {}) {
+    const bufferSpace = 40;
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const previous = $el.style.scrollMarginTop;
+    $el.style.scrollMarginTop = `${scrollableAncestor($el) ? bufferSpace : visibleBounds($el).top + bufferSpace}px`;
+    $el.scrollIntoView({
+      block: 'start',
+      behavior: reduceMotion ? 'auto' : behavior
+    });
+    $el.style.scrollMarginTop = previous;
+  }
+
+  // Draw the eye to something that just changed, e.g. on undo
+  function flashElement($el) {
+    const className = 'apos-change-target';
+    $el.classList.remove(className);
+    // Reading layout restarts the animation if it is already running
+    $el.getBoundingClientRect();
+    $el.classList.add(className);
+    setTimeout(() => $el.classList.remove(className), 1500);
+  }
+
+  // The nearest ancestor of `$el` that scrolls, or null if that is the
+  // window. Breakpoint preview mode scrolls the page inside a container
+  function scrollableAncestor($el) {
+    let el = $el.parentElement;
+    while (el && (el !== document.body) && (el !== document.documentElement)) {
+      const { overflowY } = window.getComputedStyle(el);
+      if (/auto|scroll/.test(overflowY) && (el.scrollHeight > el.clientHeight)) {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function visibleBounds($el) {
+    const scroller = scrollableAncestor($el);
+    if (scroller) {
+      const { top, bottom } = scroller.getBoundingClientRect();
+      return {
+        top,
+        bottom
+      };
+    }
+    return {
+      top: window.apos.adminBar?.height || 0,
+      bottom: window.innerHeight
+    };
   }
 
   function toId(id, namespace) {
@@ -173,6 +224,9 @@ export const useWidgetStore = defineStore('widget', () => {
     setFocusedArea,
     setFocusedWidget,
     scrollToWidget,
+    isElementInView,
+    scrollToElement,
+    flashElement,
     toId,
     get,
     set,

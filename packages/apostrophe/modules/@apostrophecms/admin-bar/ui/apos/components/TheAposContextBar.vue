@@ -50,11 +50,31 @@
 
 <script>
 import { mapState } from 'pinia';
+import { markRaw } from 'vue';
 import { klona } from 'klona';
 import { createId } from 'apostrophe/lib/beneath.js';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import { isAutosaving } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
+import { replay, html } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
+import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
+
+// Undo history deeper than this is forgotten, oldest first
+const maxHistory = 500;
+
+// The key of a patch that does nothing but set one value, as opposed to one
+// that operates on a list, such as `$push`
+function singleValueKey(patch) {
+  const keys = Object.keys(patch);
+  return ((keys.length === 1) && !keys[0].startsWith('$')) ? keys[0] : null;
+}
+
+// The keys of an entry for the undo history, as opposed to a bare patch,
+// which is what `context-edited` was given before undo could be done
+// without replaying every edit since the page was loaded
+const entryKeys = [ 'patch', 'inverse', 'target' ];
 
 export default {
   name: 'TheAposContextBar',
@@ -71,8 +91,20 @@ export default {
       history.replaceState(null, '', apos.http.addQueryToUrl(location.href, newQuery));
     }
     return {
+      // The undo history: one entry per action, see `onContextEdited` and
+      // `onContextHistoryRecord`
       patchesSinceLoaded: [],
       undone: [],
+      // Forward patches of entries forgotten from the bottom of the history,
+      // still needed to replay it from `original` (see
+      // `refreshAfterHistoryChange`)
+      committedPatches: [],
+      // The entry the next edit may still be merged into, if it is part of
+      // the same burst of typing
+      mergeableEntryId: null,
+      nextEntryId: 1,
+      historyBusy: false,
+      savePromise: null,
       patchesSinceSave: [],
       editMode: false,
       draftMode,
@@ -182,6 +214,7 @@ export default {
     apos.bus.$on('pop-context', this.onPopContext);
     apos.bus.$on('context-editing', this.onContextEditing);
     apos.bus.$on('context-edited', this.onContextEdited);
+    apos.bus.$on('context-history-record', this.onContextHistoryRecord);
     apos.bus.$on('content-changed', this.onContentChanged);
 
     window.addEventListener('beforeunload', this.onBeforeUnload);
@@ -277,11 +310,14 @@ export default {
         doc: this.context,
         original: this.original,
         patchesSinceLoaded: this.patchesSinceLoaded,
-        undone: this.undone
+        undone: this.undone,
+        committedPatches: this.committedPatches
       });
       this.original = klona(doc);
       this.patchesSinceLoaded = [];
       this.undone = [];
+      this.committedPatches = [];
+      this.mergeableEntryId = null;
       await this.setContext({
         doc,
         mode: 'draft',
@@ -296,6 +332,8 @@ export default {
       this.original = layer.original;
       this.patchesSinceLoaded = layer.patchesSinceLoaded;
       this.undone = layer.undone;
+      this.committedPatches = layer.committedPatches;
+      this.mergeableEntryId = null;
       await this.setContext({
         doc: layer.doc
       });
@@ -501,14 +539,136 @@ export default {
       }
       this.rememberLastBaseContext();
     },
-    onContextEdited(patch) {
-      patch = klona(patch);
-      this.patchesSinceLoaded.push(patch);
-      this.patchesSinceSave.push(patch);
-      this.undone = [];
-      if (!this.saving) {
-        this.save();
+    // An edit to the context document. Accepts `{ patch, inverse, target }`:
+    // the patch to save, the patch that takes it back, and a description of
+    // what was edited, so that undoing it can show the user where. See
+    // `showTarget` for the properties of `target`.
+    //
+    // A bare patch is accepted too, as it was before. Such an edit can
+    // still be undone, but only the old way: by replaying every edit since
+    // the page was loaded and rendering the page again.
+    onContextEdited(payload) {
+      const isEntry = !!payload?.patch &&
+        (typeof payload.patch === 'object') &&
+        Object.keys(payload).every(key => entryKeys.includes(key));
+      const patch = klona(isEntry ? payload.patch : payload);
+      if (isAutosaving()) {
+        // Saving typing its editor already recorded as history, step by step
+        // (`onContextHistoryRecord`). Nothing to add to the history, and
+        // nothing about to be redone was overwritten
+        this.queuePatch(patch);
+        return;
       }
+      const entry = {
+        id: this.nextEntryId++,
+        patch,
+        inverse: (isEntry && payload.inverse) ? klona(payload.inverse) : null,
+        target: (isEntry && payload.target) ? { ...payload.target } : null
+      };
+      const top = this.patchesSinceLoaded.at(-1);
+      if (
+        this.editing &&
+        entry.inverse &&
+        (entry.target?.kind === 'field') &&
+        top &&
+        (top.id === this.mergeableEntryId) &&
+        (top.target?.docId === entry.target.docId) &&
+        (top.target?.patchKey === entry.target.patchKey)
+      ) {
+        // The user is still typing in the same field, and saving what they
+        // have so far. Undo takes back the whole burst, so keep the inverse
+        // from before it started
+        top.patch = entry.patch;
+      } else {
+        this.pushEntry(entry);
+        this.mergeableEntryId = (entry.target?.kind === 'field') ? entry.id : null;
+      }
+      this.undone = [];
+      this.queuePatch(patch);
+    },
+    // What a rich text editor on the page did, as ProseMirror steps. The
+    // editor saves the result by itself, see `isAutosaving`. Records that
+    // continue the same typing are merged into one entry, as tiptap's own
+    // history would group them
+    onContextHistoryRecord(record) {
+      const top = this.patchesSinceLoaded.at(-1);
+      if (
+        !record.newGroup &&
+        top?.richText &&
+        (top.id === this.mergeableEntryId) &&
+        (top.richText.instanceKey === record.instanceKey)
+      ) {
+        const richText = top.richText;
+        richText.steps.push(...record.steps);
+        richText.inverses.push(...record.inverses);
+        richText.docAfter = record.docAfter;
+        richText.selectionAfter = record.selectionAfter;
+      } else {
+        const entry = {
+          id: this.nextEntryId++,
+          // Documents and steps are immutable, and would only be slowed
+          // down by reactivity
+          richText: markRaw({
+            ...record,
+            steps: [ ...record.steps ],
+            inverses: [ ...record.inverses ]
+          }),
+          target: {
+            kind: 'richText',
+            patchKey: record.target,
+            widgetId: record.target?.match(/^@([^.]+)\./)?.[1]
+          }
+        };
+        this.pushEntry(entry);
+        this.mergeableEntryId = entry.id;
+      }
+      this.undone = [];
+    },
+    pushEntry(entry) {
+      this.patchesSinceLoaded.push(entry);
+      if (this.patchesSinceLoaded.length > maxHistory) {
+        const forgotten = this.patchesSinceLoaded.shift();
+        const patch = this.forwardPatch(forgotten);
+        if (patch) {
+          this.commitPatch(patch);
+        }
+      }
+    },
+    // Remember what an edge too old to be undone did, so that the document
+    // can still be rebuilt from `original` if an edit that has no inverse
+    // has to be undone the old way
+    commitPatch(patch) {
+      const key = singleValueKey(patch);
+      if (key) {
+        // Setting a value outright makes every earlier setting of the same
+        // value beside the point. Without this the list would grow by one
+        // for every burst of typing in a long session
+        this.committedPatches = this.committedPatches
+          .filter(existing => singleValueKey(existing) !== key);
+      }
+      this.committedPatches.push(patch);
+    },
+    // The patch that makes the edit in `entry`
+    forwardPatch(entry) {
+      if (entry.richText) {
+        return entry.richText.target
+          ? { [entry.richText.target]: html(entry.richText, 'redo') }
+          : null;
+      }
+      return entry.patch;
+    },
+    queuePatch(patch) {
+      this.patchesSinceSave.push(patch);
+      if (!this.saving) {
+        this.savePromise = this.save();
+      }
+    },
+    // Resolves once everything queued so far has been saved
+    async flushSaves() {
+      if (this.patchesSinceSave.length && !this.saving) {
+        this.savePromise = this.save();
+      }
+      await this.savePromise;
     },
     async onContentChanged(e) {
       if (this.hasChooserModal) {
@@ -695,45 +855,170 @@ export default {
       }
     },
     async undo() {
-      if (this.canUndo) {
+      if (!this.canUndo || this.historyBusy) {
+        return;
+      }
+      const entry = this.patchesSinceLoaded.at(-1);
+      if (!this.isReversible(entry)) {
         this.undone.push(this.patchesSinceLoaded.pop());
-        await this.refreshAfterHistoryChange('apostrophe:undoFailed');
+        return this.refreshAfterHistoryChange('apostrophe:undoFailed');
+      }
+      if (await this.applyHistoryChange(entry, 'undo', 'apostrophe:undoFailed')) {
+        this.undone.push(this.patchesSinceLoaded.pop());
       }
     },
     async redo() {
-      if (this.canRedo) {
+      if (!this.canRedo || this.historyBusy) {
+        return;
+      }
+      const entry = this.undone.at(-1);
+      if (!this.isReversible(entry)) {
         this.patchesSinceLoaded.push(this.undone.pop());
-        await this.refreshAfterHistoryChange('apostrophe:redoFailed');
+        return this.refreshAfterHistoryChange('apostrophe:redoFailed');
+      }
+      if (await this.applyHistoryChange(entry, 'redo', 'apostrophe:redoFailed')) {
+        this.patchesSinceLoaded.push(this.undone.pop());
       }
     },
-    async refreshAfterHistoryChange(errorMessageKey) {
-      this.saving = true;
+    isReversible(entry) {
+      return !!(entry.richText || entry.inverse);
+    },
+    // Undo or redo `entry` in place: change what is on the page, and save
+    // the change just like any other edit. Nothing else on the page is
+    // rendered again. Resolves to true if the change was made
+    async applyHistoryChange(entry, direction, errorMessageKey) {
+      this.historyBusy = true;
+      // Whatever is typed next starts an entry of its own
+      this.mergeableEntryId = null;
       try {
-        const updated = await apos.http.patch(`${this.action}/${this.context._id}`, {
+        let patch;
+        if (entry.richText) {
+          const richText = entry.richText;
+          const editor = editorRegistry.find(richText.instanceKey, richText.target);
+          if (editor) {
+            // The editor shows the change and saves it, as it does typing.
+            // ProseMirror scrolls to the change itself
+            replay(editor.editor, richText, direction);
+            editor.flush();
+            editor.editor.view.focus();
+            return true;
+          }
+          // The editor is gone, so patch its value like any other
+          if (!richText.target) {
+            throw new Error('A rich text editor recorded history without a historyTarget, and is no longer on the page');
+          }
+          patch = {
+            [richText.target]: html(richText, direction)
+          };
+        } else {
+          patch = klona((direction === 'undo') ? entry.inverse : entry.patch);
+        }
+        const shown = this.applyToPage(patch);
+        this.queuePatch(patch);
+        if (shown) {
+          await this.$nextTick();
+          this.showTarget(entry.target);
+        } else {
+          // Nothing on the page claimed it, so render the whole document
+          // again, as undo always used to
+          await this.flushSaves();
+          await this.showWholeDocument();
+        }
+        return true;
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(e);
+        apos.notify(errorMessageKey, { type: 'error' });
+        return false;
+      } finally {
+        this.historyBusy = false;
+      }
+    },
+    // Ask whatever on the page holds the content `patch` touches, such as an
+    // area editor or a field edited in place, to show the change. Returns
+    // true if something did
+    applyToPage(patch) {
+      let claimed = false;
+      apos.bus.$emit('context-history-apply', {
+        patch,
+        claim() {
+          claimed = true;
+        }
+      });
+      return claimed;
+    },
+    // Scroll to what an undo or redo just changed, if it is not on screen,
+    // and point it out. `target` may have `patchKey`, the field edited in
+    // place; `widgetId`, the widget edited; and `anchorId`, a neighboring
+    // widget to fall back on when the widget itself is no longer there
+    showTarget(target) {
+      if (!target) {
+        return;
+      }
+      const selectors = [];
+      if (target.patchKey) {
+        selectors.push(`[data-apos-wysiwyg-field-editable][data-patch-key="${CSS.escape(target.patchKey)}"]`);
+      }
+      for (const id of [ target.widgetId, target.anchorId ]) {
+        if (id) {
+          selectors.push(`[data-apos-widget-id="${CSS.escape(id)}"]`);
+        }
+      }
+      const widgetStore = useWidgetStore();
+      for (const selector of selectors) {
+        const el = document.querySelector(selector);
+        if (el) {
+          if (!widgetStore.isElementInView(el)) {
+            widgetStore.scrollToElement(el);
+          }
+          widgetStore.flashElement(el);
+          return;
+        }
+      }
+    },
+    async showWholeDocument() {
+      if (!this.contextStack.length) {
+        await this.refresh({
+          scrollcheck: true
+        });
+      } else {
+        apos.bus.$emit('content-changed', {
+          doc: this.context,
+          action: 'history'
+        });
+      }
+    },
+    // The way undo worked before edits came with their inverses, still
+    // needed for an edit without one: replay every edit since the page was
+    // loaded, then render the page again
+    async refreshAfterHistoryChange(errorMessageKey) {
+      this.historyBusy = true;
+      this.mergeableEntryId = null;
+      try {
+        // An autosave arriving after the replay would undo the undo
+        await this.flushSaves();
+        this.saving = true;
+        this.context = await apos.http.patch(`${this.action}/${this.context._id}`, {
           body: {
             _patches: [
               this.original,
+              ...this.committedPatches,
               ...this.patchesSinceLoaded
+                .map(entry => this.forwardPatch(entry))
+                .filter(Boolean)
             ]
           },
           busy: true
         });
-        if (!this.contextStack.length) {
-          await this.refresh({
-            scrollcheck: true
-          });
-        } else {
-          apos.bus.$emit('content-changed', {
-            doc: updated,
-            action: 'history'
-          });
-        }
+        this.saving = false;
+        await this.showWholeDocument();
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error(e);
         apos.notify(errorMessageKey, { type: 'error' });
       } finally {
         this.saving = false;
+        this.historyBusy = false;
       }
     },
     // returns true if the browser is about to navigate away
