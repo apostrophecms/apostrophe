@@ -316,10 +316,7 @@ module.exports = {
         const turn = {
           content,
           finishReason,
-          usage: {
-            inputTokens: response.usage?.prompt_tokens,
-            outputTokens: response.usage?.completion_tokens
-          },
+          usage: normalizeUsage(response.usage || {}),
           model: response.model
         };
         if (request.schema && finishReason === 'stop') {
@@ -330,6 +327,25 @@ module.exports = {
           }
         }
         return turn;
+
+        // `prompt_tokens` already counts the whole prompt; the cache
+        // shares are a breakdown of it that not every host reports
+        function normalizeUsage({
+          prompt_tokens: input,
+          completion_tokens: output,
+          prompt_tokens_details: details = {}
+        }) {
+          const {
+            cached_tokens: read,
+            cache_write_tokens: written
+          } = details;
+          return {
+            inputTokens: input,
+            outputTokens: output,
+            ...(Number.isFinite(read) && { cacheReadTokens: read }),
+            ...(Number.isFinite(written) && { cacheWriteTokens: written })
+          };
+        }
       },
       // Map any error the transport produced to a normalized apos
       // error, the only shape the engine reacts to: the engine's shared
