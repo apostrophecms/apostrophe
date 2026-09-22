@@ -17,13 +17,15 @@ import {
  * @param {object} options
  * @param {import('vue').Ref<object>} options.moduleOptions
  *   The browser options of the document's type
+ * @param {import('vue').Ref<boolean>} options.unsupported
+ *   Whether the version shown is of a type without a module: no tabs then
  * @param {object} options.doc
  *   The document the modal opened for
  * @param {import('vue').Ref<{ data: object }>} options.docFields
  *   The version shown
  */
 export function useDocVersionTabs({
-  moduleOptions, doc, docFields
+  moduleOptions, unsupported, doc, docFields
 }) {
   const $t = inject('i18n');
   const docId = doc._id;
@@ -91,6 +93,9 @@ export function useDocVersionTabs({
   }
 
   const versionTabs = computed(() => {
+    if (unsupported.value) {
+      return [];
+    }
     const tabs = Object.entries(groups.value)
       .filter(([ name ]) => name !== 'utility')
       .map(([ name, group ]) => ({
