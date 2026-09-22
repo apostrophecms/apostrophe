@@ -541,14 +541,18 @@ module.exports = {
       },
       // The response's usageMetadata → normalized token counts;
       // thinking tokens are billed as output, so they add into
-      // outputTokens
+      // outputTokens. promptTokenCount already counts the cached
+      // share, reported beside it only on a cache hit; the service
+      // reports no cache writes
       normalizeUsage(response) {
         const usage = response.usageMetadata;
+        const read = usage?.cachedContentTokenCount;
         return {
           inputTokens: usage?.promptTokenCount,
           outputTokens: usage?.candidatesTokenCount === undefined
             ? undefined
-            : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0)
+            : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0),
+          ...(Number.isFinite(read) && { cacheReadTokens: read })
         };
       },
       // Map any error the transport produced to a normalized apos

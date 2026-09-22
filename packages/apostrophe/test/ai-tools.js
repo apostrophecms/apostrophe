@@ -901,6 +901,38 @@ describe('AI tools', function() {
       ]);
     });
 
+    it('sums a cache share over the turns that reported it', async function() {
+      const req = apos.task.getReq();
+      const withShares = (turn, shares) => () => {
+        const base = turn();
+        return {
+          ...base,
+          usage: {
+            ...base.usage,
+            ...shares
+          }
+        };
+      };
+      chatScript = [
+        withShares(toolTurn(toolCall('c1', 'echo', { value: 'a' })), {
+          cacheWriteTokens: 8
+        }),
+        withShares(toolTurn(toolCall('c2', 'echo', { value: 'b' })), {
+          cacheReadTokens: 8,
+          cacheWriteTokens: 1
+        }),
+        // A turn without the shares neither zeroes nor blocks them
+        textTurn('all done')
+      ];
+      const result = await apos.ai.generate(req, 'find it', { tools: [ 'echo' ] });
+      assert.deepEqual(result.usage, {
+        inputTokens: 40,
+        outputTokens: 13,
+        cacheReadTokens: 8,
+        cacheWriteTokens: 9
+      });
+    });
+
     it('onMessage reports each intermediate assistant turn, never the final answer', async function() {
       const req = apos.task.getReq();
       const messages = [];
@@ -1739,6 +1771,21 @@ describe('AI tools', function() {
       }), (e) => {
         assert.equal(e.name, 'aiRetry');
         assert.match(e.message, /toolCall parts must carry/);
+        return true;
+      });
+      assert.throws(() => apos.ai.validateTurn({
+        content: [ {
+          type: 'text',
+          text: 'x'
+        } ],
+        finishReason: 'stop',
+        usage: {
+          ...usage,
+          cacheReadTokens: 'many'
+        }
+      }), (e) => {
+        assert.equal(e.name, 'aiRetry');
+        assert.match(e.message, /"usage.cacheReadTokens" must be a number when present/);
         return true;
       });
     });

@@ -10,7 +10,14 @@ const assert = require('assert/strict');
 //
 // These are integration tests of our code, not model evaluations: every
 // assertion is on shape, never on what the model said. One apos.ai call
-// per test, effort 'low', no caching, prompts of a few words.
+// per test, effort 'low', no caching, prompts of a few words — except the
+// caching case, which is two calls with a prompt above the cache minimum.
+//
+// `cacheShares` names the usage fields a service reports about its
+// prompt cache on the cold call and on the warm one. A service that only
+// caches when it feels like it (Gemini's implicit cache) gets
+// `cacheHitOptional`: a warm call reporting no share skips rather than
+// fails, after recording what came back.
 //
 // A full run with every key set costs a few cents, dominated by the four
 // image calls; the text, tool and structured cases are fractions of a
@@ -23,7 +30,11 @@ const PROVIDERS = [
   {
     name: 'anthropic',
     envKey: 'APOS_ANTHROPIC_KEY',
-    maxTokens: 200
+    maxTokens: 200,
+    cacheShares: {
+      cold: 'cacheWriteTokens',
+      warm: 'cacheReadTokens'
+    }
   },
   {
     // Reasoning-capable routes need headroom for the reasoning tokens
@@ -31,13 +42,21 @@ const PROVIDERS = [
     name: 'openai',
     envKey: 'APOS_OPENAI_KEY',
     imageModel: 'gpt-image-2',
-    maxTokens: 2000
+    maxTokens: 2000,
+    cacheShares: {
+      cold: 'cacheWriteTokens',
+      warm: 'cacheReadTokens'
+    }
   },
   {
     name: 'google',
     envKey: 'APOS_GEMINI_KEY',
     imageModel: 'gemini-3.1-flash-image',
-    maxTokens: 2000
+    maxTokens: 2000,
+    // No write report; the implicit cache is best effort, from a
+    // 4,096-token prefix on the Flash models
+    cacheShares: { warm: 'cacheReadTokens' },
+    cacheHitOptional: true
   },
   {
     // The dialect against api.openai.com itself, the adapter's default
@@ -46,7 +65,11 @@ const PROVIDERS = [
     name: 'openai-compatible',
     envKey: 'APOS_OPENAI_KEY',
     skipTools: true,
-    maxTokens: 2000
+    maxTokens: 2000,
+    cacheShares: {
+      cold: 'cacheWriteTokens',
+      warm: 'cacheReadTokens'
+    }
   }
 ];
 
@@ -232,6 +255,36 @@ describe('AI live smoke', function() {
         assert.equal(typeof result.object.age, 'number');
       });
 
+      it('counts the cached share of the prompt in the input total', async function() {
+        if (!capabilities.caching || !provider.cacheShares) {
+          this.skip();
+        }
+        const req = apos.task.getReq();
+        // Above every service's cache minimum, and stamped so a rerun
+        // inside the cache lifetime still starts cold
+        const options = {
+          effort: 'low',
+          system: `Reference material, edition ${Date.now()}.\n${filler(40000)}`,
+          maxTokens: provider.maxTokens
+        };
+        const cold = await apos.ai.generate(req, 'reply with the single word OK', options);
+        const warm = await apos.ai.generate(req, 'reply with the single word OK', options);
+        record(apos, req, cold, { call: 'cold' });
+        record(apos, req, warm, { call: 'warm' });
+        // The same prompt is the same size cold or cached
+        assert(Math.abs(cold.usage.inputTokens - warm.usage.inputTokens) <= 5);
+        const { cold: written, warm: read } = provider.cacheShares;
+        if (written) {
+          assert(cold.usage[written] > 0);
+        }
+        if (warm.usage[read] === undefined && provider.cacheHitOptional) {
+          this.skip();
+        }
+        assert(warm.usage[read] > 0);
+        // The total covers the cached share
+        assert(warm.usage.inputTokens >= warm.usage[read]);
+      });
+
       it('generates an image', async function() {
         if (!provider.imageModel) {
           this.skip();
@@ -338,3 +391,13 @@ describe('AI live smoke', function() {
     });
   });
 });
+
+// Non-repeating prose of about `chars` characters: repetitive text
+// tokenizes densely, so numbered sentences keep the count honest
+function filler(chars) {
+  const sentences = [];
+  for (let i = 0; sentences.join(' ').length < chars; i++) {
+    sentences.push(`Item ${i}: the editor relates widget ${i * 7} to page ${i * 11} through template ${i % 13}.`);
+  }
+  return sentences.join(' ');
+}

@@ -460,6 +460,27 @@ describe('AI adapter: google', function() {
       });
     });
 
+    it('carries the cached share of the prompt, reported only on a cache hit', function() {
+      const turn = adapter.parseResponse(fixture({
+        usageMetadata: {
+          promptTokenCount: 12,
+          cachedContentTokenCount: 5,
+          candidatesTokenCount: 7,
+          totalTokenCount: 19
+        }
+      }));
+      assert.deepEqual(turn.usage, {
+        inputTokens: 12,
+        outputTokens: 7,
+        cacheReadTokens: 5
+      });
+      // The default fixture has no cached content, so no share
+      assert.deepEqual(adapter.parseResponse(fixture()).usage, {
+        inputTokens: 12,
+        outputTokens: 7
+      });
+    });
+
     it('translates function calls, forcing the toolCalls finish reason, and drops thought parts', function() {
       const turn = adapter.parseResponse(fixture({
         candidates: [ candidate({

@@ -111,8 +111,13 @@ describe('AI adapter: openai', function() {
     status: 'completed',
     model: 'gpt-5.6-terra-2026-06-26',
     output: [ messageItem('a haiku') ],
+    // input_tokens is the whole prompt; the details break it down
     usage: {
       input_tokens: 12,
+      input_tokens_details: {
+        cached_tokens: 6,
+        cache_write_tokens: 4
+      },
       output_tokens: 7
     },
     ...extras
@@ -397,15 +402,30 @@ describe('AI adapter: openai', function() {
   });
 
   describe('response parsing', function() {
-    it('parses a text turn', function() {
+    it('parses a text turn, carrying the cache shares of the input total', function() {
       assert.deepEqual(adapter.parseResponse(fixture()), {
         content: [ text('a haiku') ],
         finishReason: 'stop',
         usage: {
           inputTokens: 12,
-          outputTokens: 7
+          outputTokens: 7,
+          cacheReadTokens: 6,
+          cacheWriteTokens: 4
         },
         model: 'gpt-5.6-terra-2026-06-26'
+      });
+    });
+
+    it('reports no cache shares when the service sent none', function() {
+      const turn = adapter.parseResponse(fixture({
+        usage: {
+          input_tokens: 12,
+          output_tokens: 7
+        }
+      }));
+      assert.deepEqual(turn.usage, {
+        inputTokens: 12,
+        outputTokens: 7
       });
     });
 
@@ -648,7 +668,9 @@ describe('AI adapter: openai', function() {
       assert.equal(result.model, 'gpt-5.6-terra-2026-06-26');
       assert.deepEqual(result.usage, {
         inputTokens: 12,
-        outputTokens: 7
+        outputTokens: 7,
+        cacheReadTokens: 6,
+        cacheWriteTokens: 4
       });
 
       const [ call ] = httpCalls;
