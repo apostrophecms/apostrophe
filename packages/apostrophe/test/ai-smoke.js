@@ -41,9 +41,11 @@ const PROVIDERS = [
   },
   {
     // The dialect against api.openai.com itself, the adapter's default
-    // baseUrl
+    // baseUrl. The service rejects tools beside reasoning there; the
+    // openai adapter covers tools for OpenAI proper.
     name: 'openai-compatible',
     envKey: 'APOS_OPENAI_KEY',
+    skipTools: true,
     maxTokens: 2000
   }
 ];
@@ -180,7 +182,7 @@ describe('AI live smoke', function() {
       });
 
       it('runs a tool through the loop', async function() {
-        if (!capabilities.tools) {
+        if (!capabilities.tools || provider.skipTools) {
           this.skip();
         }
         const req = apos.task.getReq();
