@@ -378,7 +378,10 @@ describe('Express', function() {
     function abort(url) {
       return new Promise((resolve) => {
         const { hostname, port } = new URL(base);
-        const socket = net.connect(Number(port), hostname, () => {
+        // The address the server bound: `localhost` resolves to `::1` on
+        // some hosts and to `127.0.0.1` on others.
+        const { address } = apos.modules['@apostrophecms/express'].server.address();
+        const socket = net.connect(Number(port), address, () => {
           socket.write(
             `POST ${url} HTTP/1.1\r\n` +
             `Host: ${hostname}:${port}\r\n` +
