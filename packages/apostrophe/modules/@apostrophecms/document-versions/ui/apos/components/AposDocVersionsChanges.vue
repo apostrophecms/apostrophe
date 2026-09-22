@@ -110,6 +110,7 @@
                 />
                 <AposButton
                   v-if="entry.detail"
+                  class="apos-doc-version-changes__row-toggle"
                   type="quiet"
                   :label="expanded.has(entry.key)
                     ? 'apostrophe:versionCollapseChanges'
@@ -580,6 +581,16 @@ $pad-x: $spacing-base + $spacing-half;
     justify-content: flex-end;
     gap: $spacing-half;
     margin-left: auto;
+  }
+
+  &__row-toggle :deep(.apos-button) {
+    font-size: var(--a-type-smaller);
+    transform: none;
+
+    &:hover:not([disabled]),
+    &:focus:not([disabled]) {
+      transform: none;
+    }
   }
 
   &__diff {
