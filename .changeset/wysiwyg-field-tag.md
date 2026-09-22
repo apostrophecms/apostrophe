@@ -24,7 +24,7 @@ Coming near a field outlines it and raises the same breadcrumb trail a widget ha
 
 Exactly one trail is ever on screen. A field takes the trail from the widget it belongs to, since its own trail already names that widget, and the field being edited keeps the trail while the mouse passes over anything else, which is how widgets have always behaved among themselves.
 
-The `with` clause accepts `tag`, which overrides the tag the field type chose, plus `class`, `style`, `attrs`, and `edit: false` to render a field that is never editable in place. When the field is an area, `with` means what it means for `{% area %}`.
+The `with` clause accepts `tag`, which overrides the tag the field type chose, plus `class` (or `className`, for those used to JSX; either way the result is a `class` attribute), `style`, `attrs`, and `edit: false` to render a field that is never editable in place. When the field is an area, `with` means what it means for `{% area %}`.
 
 Field types opt in with a `wysiwyg` property, and can customize the rest:
 
