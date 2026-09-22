@@ -1325,63 +1325,6 @@ module.exports = {
           if (!relationship.name.match(/^_/)) {
             throw Error('Relationships should always be given names beginning with an underscore (_). Otherwise we would waste space in your database storing the results statically. There would also be a conflict with the array field withRelationships syntax. Relationship name is: ' + relationship._dotPath);
           }
-          if (Array.isArray(relationship.withType)) {
-            // Polymorphic join
-            for (const type of relationship.withType) {
-              const manager = self.apos.doc.getManager(type);
-              if (!manager) {
-                throw Error('I cannot find the instance type ' + type);
-              }
-              const find = manager.find;
-
-              const relationships = withRelationshipsNext[relationship._dotPath] || false;
-              const options = {
-                find,
-                builders: { relationships }
-              };
-              const subname = relationship.name + ':' + type;
-              const _relationship = _.assign({}, relationship, {
-                name: subname,
-                withType: type
-              });
-
-              // Allow options to the get() method to be
-              // specified in the relationship configuration
-              if (_relationship.builders) {
-                _.extend(options.builders, _relationship.builders);
-              }
-              if (_relationship.buildersByType && _relationship.buildersByType[type]) {
-                _.extend(options.builders, _relationship.buildersByType[type]);
-              }
-              await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
-                // Allow options to the getter to be specified in the schema,
-                return self.fieldTypes[_relationship.type]
-                  .relate(req, _relationship, _objects, options);
-              });
-              _.each(_objects, function (object) {
-                if (object[subname]) {
-                  if (Array.isArray(object[subname])) {
-                    object[relationship.name] = (object[relationship.name] || [])
-                      .concat(object[subname]);
-                  } else {
-                    object[relationship.name] = object[subname];
-                  }
-                }
-              });
-            }
-            if (relationship.idsStorage) {
-              _.each(_objects, function (object) {
-                if (object[relationship.name]) {
-                  const locale = `${req.locale}:${req.mode}`;
-                  object[relationship.name] = self.apos.util.orderById(
-                    object[relationship.idsStorage].map(id => `${id}:${locale}`),
-                    object[relationship.name]
-                  );
-                }
-              });
-            }
-          }
-
           const manager = self.apos.doc.getManager(relationship.withType);
           if (!manager) {
             throw Error('I cannot find the instance type ' + relationship.withType);
