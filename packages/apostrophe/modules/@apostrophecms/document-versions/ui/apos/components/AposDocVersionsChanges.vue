@@ -98,6 +98,9 @@
             <div class="apos-doc-version-changes__row-main">
               <AposDocVersionChangePath
                 class="apos-doc-version-changes__row-label"
+                :class="{
+                  'apos-doc-version-changes__row-label--meta': entry.order
+                }"
                 :segments="entry.segments"
                 compact
                 data-apos-test="doc-version-change-path"
@@ -571,7 +574,13 @@ $pad-x: $spacing-base + $spacing-half;
     & {
       flex: 1 1 0;
       min-width: 0;
+      line-height: var(--a-line-tall);
     }
+  }
+
+  &__row-label--meta :deep(.apos-doc-version-change-path__crumb--leaf) {
+    color: var(--a-base-2);
+    font-style: italic;
   }
 
   &__row-aside {

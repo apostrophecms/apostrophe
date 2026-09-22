@@ -103,6 +103,7 @@ defineProps({
     font-size: var(--a-type-tiny);
     font-weight: var(--a-weight-bold);
     letter-spacing: 0.2px;
+    line-height: 1.55;
     text-transform: uppercase;
 
     &--new {
@@ -178,12 +179,8 @@ defineProps({
     border-bottom: 0;
 
     .apos-doc-version-changes__value-line {
+      // Keep the icon with the first line of a wrapped value
       align-items: flex-start;
-    }
-
-    .apos-doc-version-changes__value-icon {
-      // Centred on the first line of the value
-      margin-top: 3px;
     }
   }
 }
