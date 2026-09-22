@@ -491,7 +491,7 @@ $pad-x: $spacing-base + $spacing-half;
       align-items: center;
       gap: $spacing-base;
       margin: 0;
-      padding: $spacing-base $pad-x;
+      padding: $spacing-three-quarters $pad-x;
       border-bottom: 1px solid var(--a-base-7);
       background-color: var(--a-base-9);
     }
