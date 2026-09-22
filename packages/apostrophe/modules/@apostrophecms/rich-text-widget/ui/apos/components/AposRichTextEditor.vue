@@ -1059,17 +1059,33 @@ function traverseNextNode(node) {
     }
   }
 
-/* stylelint-disable-next-line selector-class-pattern, selector-no-qualifying-type */
+  // The hint that an empty editor is waiting to be typed in. It is Apostrophe's
+  // own UI, but it hangs off a paragraph of the document being edited, so
+  // everything the site styles that paragraph with reaches it: in a widget or a
+  // field edited in place there is no modal in between, and the page's own type
+  // is what a pseudo element inherits. Every inherited property that would
+  // change how the hint reads is therefore stated outright rather than left to
+  // whatever the site has to say about `p`
+  /* stylelint-disable-next-line selector-class-pattern, selector-no-qualifying-type */
   .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) {
     display: block;
     margin: 5px 0 10px;
     padding-top: 5px;
     border-top: 1px solid var(--a-primary-transparent-50);
     color: var(--a-primary-transparent-50);
+    font-family: var(--a-family-default);
     font-size: var(--a-type-smaller);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-style: normal;
+    font-variant: normal;
     font-weight: 600;
+    line-height: var(--a-line-tall);
+    text-align: start;
+    text-indent: 0;
+    text-transform: uppercase;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    word-spacing: normal;
+    white-space: normal;
     content: attr(data-placeholder);
     pointer-events: none;
   }
@@ -1107,6 +1123,8 @@ function traverseNextNode(node) {
     min-height: 2em;
   }
 
+  // The label of an editor with nothing in it, which sits in the page next to
+  // the hint above and has the same reason to spell out what it inherits
   .apos-rich-text-editor__editor_after {
     @include type-small;
 
@@ -1121,9 +1139,14 @@ function traverseNextNode(node) {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
+      font-style: normal;
+      font-variant: normal;
       font-weight: 700;
+      text-indent: 0;
       text-transform: uppercase;
+      text-decoration: none;
       letter-spacing: 1px;
+      word-spacing: normal;
       text-align: center;
     }
 
