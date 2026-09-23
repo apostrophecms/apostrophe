@@ -1,10 +1,12 @@
 import { ref } from 'vue';
 
 /**
- * The change list of one version, or of a consolidated version: the rows
- * and counts the `changes` route returns. Only the most recent `load()`
- * call may update the state, so a slow response for a version the user has
- * already left is dropped.
+ * The change list of one version, or of a consolidated version: the rows,
+ * counts and `compared` the `changes` route returns. `compared` is whether
+ * there was a version before it to compare with, which tells an empty list
+ * apart from a baseline. Only the most recent `load()` call may update the
+ * state, so a slow response for a version the user has already left is
+ * dropped.
  *
  * @param {{ action: string }} options
  *   `action` is the versions module's REST base URL
@@ -12,6 +14,7 @@ import { ref } from 'vue';
 export function useDocVersionChanges({ action }) {
   const rows = ref([]);
   const counts = ref(null);
+  const compared = ref(false);
 
   let requestId = 0;
 
@@ -38,12 +41,14 @@ export function useDocVersionChanges({ action }) {
     }
     rows.value = response.rows;
     counts.value = response.counts;
+    compared.value = Boolean(response.compared);
     return true;
   }
 
   return {
     rows,
     counts,
+    compared,
     load
   };
 }

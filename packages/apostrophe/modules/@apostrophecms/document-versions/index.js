@@ -1045,9 +1045,11 @@ module.exports = {
         };
       },
       // The change list of a version (see `getChangeList`) and the versions it
-      // covers, newest first: `{ rows, counts, versionIds }`. With `consolidate`
-      // it is that of the consolidated version `versionId` is the newest of. A
-      // first or restored version lists nothing. Throws like `getEditableVersion`
+      // covers, newest first: `{ rows, counts, versionIds, compared }`. With
+      // `consolidate` it is that of the consolidated version `versionId` is the
+      // newest of. A first or restored version lists nothing and is not
+      // `compared`; a version with nothing left to show against the one before
+      // it lists nothing and is. Throws like `getEditableVersion`
       async getVersionChanges(req, versionId, { consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
         const last = await self.getEditableVersion(draftReq, versionId);
@@ -1056,15 +1058,14 @@ module.exports = {
           last,
           { consolidate }
         );
+        const compared = last.restoredFrom ? [] : pairs;
 
-        const changeList = await self.getChangeList(
-          draftReq,
-          last.restoredFrom ? [] : pairs
-        );
+        const changeList = await self.getChangeList(draftReq, compared);
 
         return {
           ...changeList,
-          versionIds: members.map(member => member._id).reverse()
+          versionIds: members.map(member => member._id).reverse(),
+          compared: Boolean(compared.length)
         };
       },
       // The change list between contents of one document, as the modal shows
