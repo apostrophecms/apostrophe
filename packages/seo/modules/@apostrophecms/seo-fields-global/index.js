@@ -88,6 +88,7 @@ module.exports = {
       robotsCustomText: {
         label: 'aposSeo:robotsCustomText',
         type: 'string',
+        extractable: false,
         textarea: true,
         required: true,
         if: {
@@ -198,7 +199,8 @@ module.exports = {
                 add: {
                   telephone: {
                     label: 'aposSeo:telephone',
-                    type: 'string'
+                    type: 'string',
+                    extractable: false
                   },
                   type: {
                     label: 'aposSeo:contactType',
@@ -311,6 +313,7 @@ module.exports = {
       seoSearchQueryParam: {
         label: 'aposSeo:searchQueryParam',
         type: 'string',
+        extractable: false,
         def: 'q',
         help: 'aposSeo:searchQueryParamHelp' // "The query parameter your site uses for search (e.g., 'q', 'search', 'query')"
       }

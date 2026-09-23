@@ -55,6 +55,7 @@ module.exports = {
         seoPaywallSelector: {
           label: 'aposSeo:paywallSelector',
           type: 'string',
+          extractable: false,
           help: 'aposSeo:paywallSelectorHelp',
           def: '.paywall',
           if: {
@@ -100,6 +101,7 @@ module.exports = {
               currency: {
                 label: 'aposSeo:currency',
                 type: 'string',
+                extractable: false,
                 def: 'USD'
               },
               availability: {
@@ -127,16 +129,19 @@ module.exports = {
               },
               brand: {
                 label: 'aposSeo:brand',
-                type: 'string'
+                type: 'string',
+                extractable: false
               },
               sku: {
                 label: 'aposSeo:sku',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:skuHelp'
               },
               gtin: {
                 label: 'aposSeo:gtin',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:gtinHelp'
               },
               condition: {
@@ -238,6 +243,7 @@ module.exports = {
               name: {
                 label: 'aposSeo:personName',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:personNameHelp',
                 required: true
               },
@@ -252,7 +258,8 @@ module.exports = {
               },
               organization: {
                 label: 'aposSeo:organization',
-                type: 'string'
+                type: 'string',
+                extractable: false
               }
             }
           }
@@ -279,7 +286,8 @@ module.exports = {
               },
               telephone: {
                 label: 'aposSeo:businessPhone',
-                type: 'string'
+                type: 'string',
+                extractable: false
               },
               address: {
                 label: 'aposSeo:businessAddress',
@@ -288,7 +296,8 @@ module.exports = {
                   add: {
                     street: {
                       label: 'aposSeo:streetAddress',
-                      type: 'string'
+                      type: 'string',
+                      extractable: false
                     },
                     city: {
                       label: 'aposSeo:city',
@@ -296,11 +305,13 @@ module.exports = {
                     },
                     state: {
                       label: 'aposSeo:state',
-                      type: 'string'
+                      type: 'string',
+                      extractable: false
                     },
                     zip: {
                       label: 'aposSeo:postalCode',
-                      type: 'string'
+                      type: 'string',
+                      extractable: false
                     },
                     country: {
                       label: 'aposSeo:country',
@@ -318,6 +329,7 @@ module.exports = {
                     hours: {
                       label: 'aposSeo:hours',
                       type: 'string',
+                      extractable: false,
                       help: 'aposSeo:hoursHelp'
                     }
                   }
@@ -461,7 +473,8 @@ module.exports = {
                         add: {
                           street: {
                             label: 'aposSeo:streetAddress',
-                            type: 'string'
+                            type: 'string',
+                            extractable: false
                           },
                           city: {
                             label: 'aposSeo:city',
@@ -469,11 +482,13 @@ module.exports = {
                           },
                           state: {
                             label: 'aposSeo:state',
-                            type: 'string'
+                            type: 'string',
+                            extractable: false
                           },
                           zip: {
                             label: 'aposSeo:postalCode',
-                            type: 'string'
+                            type: 'string',
+                            extractable: false
                           },
                           country: {
                             label: 'aposSeo:country',
@@ -509,6 +524,7 @@ module.exports = {
                     currency: {
                       label: 'aposSeo:currency',
                       type: 'string',
+                      extractable: false,
                       def: 'USD'
                     },
                     unitText: {
@@ -691,6 +707,7 @@ module.exports = {
               questionAuthor: {
                 label: 'aposSeo:qaQuestionAuthor',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:qaQuestionAuthorHelp'
               },
               questionDate: {
@@ -718,7 +735,8 @@ module.exports = {
                     },
                     author: {
                       label: 'aposSeo:qaAnswerAuthor',
-                      type: 'string'
+                      type: 'string',
+                      extractable: false
                     },
                     dateCreated: {
                       label: 'aposSeo:qaAnswerDate',
@@ -747,7 +765,8 @@ module.exports = {
                     },
                     author: {
                       label: 'aposSeo:qaAnswerAuthor',
-                      type: 'string'
+                      type: 'string',
+                      extractable: false
                     },
                     dateCreated: {
                       label: 'aposSeo:qaAnswerDate',
@@ -792,6 +811,7 @@ module.exports = {
               duration: {
                 label: 'aposSeo:videoDuration',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:videoDurationHelp'
               },
               _thumbnail: {
@@ -899,6 +919,7 @@ module.exports = {
               totalTime: {
                 label: 'aposSeo:totalTime',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:totalTimeHelp'
               },
               supply: {
@@ -1027,6 +1048,7 @@ module.exports = {
               author: {
                 label: 'aposSeo:reviewAuthor',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:reviewAuthorHelp'
               },
               datePublished: {
@@ -1059,21 +1081,25 @@ module.exports = {
               },
               author: {
                 label: 'aposSeo:recipeAuthor',
-                type: 'string'
+                type: 'string',
+                extractable: false
               },
               prepTime: {
                 label: 'aposSeo:prepTime',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:prepTimeHelp'
               },
               cookTime: {
                 label: 'aposSeo:cookTime',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:cookTimeHelp'
               },
               totalTime: {
                 label: 'aposSeo:totalTime',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:totalTimeHelp'
               },
               recipeYield: {
@@ -1208,6 +1234,7 @@ module.exports = {
               courseCode: {
                 label: 'aposSeo:courseCode',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:courseCodeHelp'
               },
               educationalLevel: {
@@ -1236,6 +1263,7 @@ module.exports = {
               currency: {
                 label: 'aposSeo:currency',
                 type: 'string',
+                extractable: false,
                 def: 'USD'
               },
               availability: {
@@ -1314,6 +1342,7 @@ module.exports = {
                 label: 'aposSeo:currency',
                 type: 'string',
                 def: 'USD',
+                extractable: false,
                 help: 'aposSeo:currencyHelp'
               },
               availability: {
@@ -1368,6 +1397,7 @@ module.exports = {
               seller: {
                 label: 'aposSeo:seller',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:sellerHelp'
               },
               itemCondition: {
@@ -1456,6 +1486,7 @@ module.exports = {
                 label: 'aposSeo:currency',
                 type: 'string',
                 def: 'USD',
+                extractable: false,
                 help: 'aposSeo:currencyHelp'
               },
               offerCount: {
@@ -1490,6 +1521,7 @@ module.exports = {
               seller: {
                 label: 'aposSeo:seller',
                 type: 'string',
+                extractable: false,
                 help: 'aposSeo:sellerHelp'
               },
               offers: {
@@ -1512,6 +1544,7 @@ module.exports = {
                     priceCurrency: {
                       label: 'aposSeo:currency',
                       type: 'string',
+                      extractable: false,
                       def: 'USD'
                     },
                     availability: {
