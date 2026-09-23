@@ -13,15 +13,11 @@ const sides = {
   old: 'removed'
 };
 
-// The filter options a version has changes for, all checked
-function getDefaultFilter(counts) {
-  return Object.entries(counts || {})
-    .filter(([ , count ]) => count)
-    .map(([ name ]) => name);
-}
-
+// A row matches when any checked option does; no option checked shows all
 function matchesFilter(row, filter) {
-  return filter.includes(row.type) || (row.ai && filter.includes('ai'));
+  return !filter.length ||
+    filter.includes(row.type) ||
+    (row.ai && filter.includes('ai'));
 }
 
 // Whether a row is among the changes behind a marker of the body: those
@@ -144,7 +140,6 @@ function getChangeGroups(rows, filter) {
 }
 
 export default {
-  getDefaultFilter,
   matchesFilter,
   isMarkerTarget,
   getChangeGroups
