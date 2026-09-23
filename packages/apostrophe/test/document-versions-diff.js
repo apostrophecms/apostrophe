@@ -304,6 +304,23 @@ describe('Document Versions diff engine', function () {
       assert.deepEqual(rows[0].old, rows[0].new);
     });
 
+    it('should treat relationship fields holding no values as empty', function () {
+      // Saving from the editor converts `{}` to a `null` for every field
+      const older = buildDoc();
+      const newer = buildDoc();
+      older.topicsFields = { topic1: {} };
+      newer.topicsFields = { topic1: { relevance: null } };
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
+      delete older.topicsFields;
+      newer.topicsFields = { topic1: { relevance: undefined } };
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
+      newer.topicsFields = { topic1: { relevance: 3 } };
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [ row.type, row.fieldType ]), [
+        [ 'modified', 'relationship' ]
+      ]);
+    });
+
     it('should report a replaced array item as a deleted and an added row and nothing below', function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -1324,6 +1341,55 @@ describe('Document Versions diff engine', function () {
         apos.doc.find = find;
       }
       assert.equal(queries, 1);
+    });
+
+    it('should show the images of a relationship whose ids changed', async function () {
+      const diff = require('../modules/@apostrophecms/document-versions/lib/diff.js');
+      const src = id => `/api/v1/@apostrophecms/image/${id}/src`;
+      const fox = await apos.image.insert(req, { title: 'Fox picture' });
+      const hen = await apos.image.insert(req, { title: 'Hen picture' });
+      const topic = await apos.modules.topic.insert(req, { title: 'Alpha' });
+      const { schema } = apos.area.getWidgetManager('@apostrophecms/image');
+      const ctx = apos.docVersions.getDiffContext(req);
+      const rowsOf = async (oldIds, newIds, fields = {}) => {
+        const rows = diff.walk(schema, { imageIds: oldIds }, {
+          imageIds: newIds,
+          imageFields: fields
+        }, ctx);
+        await apos.docVersions.addChangeText(req, rows);
+        return rows;
+      };
+
+      const [ replaced ] = await rowsOf([ fox.aposDocId ], [ hen.aposDocId ]);
+      assert.deepEqual(replaced.images, {
+        old: [ {
+          text: 'Fox picture',
+          href: src(fox.aposDocId),
+          change: 'removed'
+        } ],
+        new: [ {
+          text: 'Hen picture',
+          href: src(hen.aposDocId),
+          change: 'added'
+        } ]
+      });
+
+      const [ added ] = await rowsOf([ fox.aposDocId ], [ fox.aposDocId, hen.aposDocId ]);
+      assert.deepEqual(added.images.old.map(image => image.change), [ 'same' ]);
+      assert.deepEqual(added.images.new.map(image => image.change), [ 'same', 'added' ]);
+
+      // No images on a side that is empty or holds a document that is none
+      const [ first ] = await rowsOf([], [ fox.aposDocId ]);
+      assert.deepEqual(Object.keys(first.images), [ 'new' ]);
+      const [ mixed ] = await rowsOf([ fox.aposDocId ], [ topic.aposDocId, 'gone' ]);
+      assert.deepEqual(Object.keys(mixed.images), [ 'old' ]);
+
+      // Nor when only the relationship fields changed
+      const [ cropped ] = await rowsOf([ fox.aposDocId ], [ fox.aposDocId ], {
+        [fox.aposDocId]: { top: 10 }
+      });
+      assert.equal(cropped.kind, 'relationship');
+      assert.equal(cropped.images, undefined);
     });
 
     it('should read a value with no safe string form as empty', async function () {

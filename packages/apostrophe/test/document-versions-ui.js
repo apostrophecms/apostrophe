@@ -39,20 +39,6 @@ describe('Document Versions UI', function () {
       };
     }
 
-    it('should check every option a version has changes for', async function () {
-      const lib = await getLib();
-      assert.deepEqual(
-        lib.getDefaultFilter({
-          ai: 0,
-          added: 2,
-          modified: 1,
-          deleted: 0
-        }),
-        [ 'added', 'modified' ]
-      );
-      assert.deepEqual(lib.getDefaultFilter(null), []);
-    });
-
     it('should match a row by its change type or its AI involvement', async function () {
       const lib = await getLib();
       const plain = row([ title ]);
@@ -60,7 +46,13 @@ describe('Document Versions UI', function () {
       assert.equal(lib.matchesFilter(plain, [ 'modified' ]), true);
       assert.equal(lib.matchesFilter(plain, [ 'added', 'ai' ]), false);
       assert.equal(lib.matchesFilter(withAi, [ 'ai' ]), true);
-      assert.equal(lib.matchesFilter(withAi, []), false);
+    });
+
+    it('should match every row while no option is checked', async function () {
+      const lib = await getLib();
+      assert.equal(lib.matchesFilter(row([ title ]), []), true);
+      assert.equal(lib.matchesFilter(row([ title ], { type: 'deleted' }), []), true);
+      assert.equal(lib.matchesFilter(row([ title ], { ai: true }), []), true);
     });
 
     it('should group rows under their top-level field, or the widget of an area', async function () {
@@ -101,7 +93,7 @@ describe('Document Versions UI', function () {
       const groups = lib.getChangeGroups(rows, [ 'modified', 'ai' ]);
       assert.deepEqual(groups.map(group => group.key), [ 'main.w1' ]);
       assert.deepEqual(groups[0].entries.map(entry => entry.key), [ '1', '2' ]);
-      assert.deepEqual(lib.getChangeGroups(rows, []), []);
+      assert.equal(lib.getChangeGroups(rows, []).length, 2);
     });
 
     it('should give a group the change type of its own row', async function () {

@@ -49,7 +49,8 @@
 
 <script setup>
 // Which kinds of change a version's change list shows: a change shows when
-// any checked option matches it. An option nothing matches is disabled.
+// any checked option matches it, and every change shows while none is
+// checked. An option nothing matches is disabled.
 import { computed, inject } from 'vue';
 import changeTypes from '../lib/change-types.js';
 

@@ -13,15 +13,11 @@ const sides = {
   old: 'removed'
 };
 
-// The filter options a version has changes for, all checked
-function getDefaultFilter(counts) {
-  return Object.entries(counts || {})
-    .filter(([ , count ]) => count)
-    .map(([ name ]) => name);
-}
-
+// A row matches when any checked option does; no option checked shows all
 function matchesFilter(row, filter) {
-  return filter.includes(row.type) || (row.ai && filter.includes('ai'));
+  return !filter.length ||
+    filter.includes(row.type) ||
+    (row.ai && filter.includes('ai'));
 }
 
 // Whether a row is among the changes behind a marker of the body: those
@@ -73,7 +69,8 @@ function getChangeGroups(rows, filter) {
     }
     const diff = row.diff || [];
     const short = order ? diff : elide(diff);
-    const changed = diff.some(part => part.change !== 'same');
+    // Two images may share a title
+    const changed = diff.some(part => part.change !== 'same') || Boolean(row.images);
     const format = row.formatChanges || [];
     const bySide = parts => Object.fromEntries(
       Object.entries(sides).map(([ side, change ]) => [
@@ -97,6 +94,8 @@ function getChangeGroups(rows, filter) {
       changed,
       // What changed in a rich text besides its words, a block each
       format,
+      // The related images of each side, shown in place of their titles
+      images: row.images || {},
       // Whether there is anything to expand: a row of which only the change
       // is known has no toggle, and its change type when its group's header
       // does not say it
@@ -141,7 +140,6 @@ function getChangeGroups(rows, filter) {
 }
 
 export default {
-  getDefaultFilter,
   matchesFilter,
   isMarkerTarget,
   getChangeGroups

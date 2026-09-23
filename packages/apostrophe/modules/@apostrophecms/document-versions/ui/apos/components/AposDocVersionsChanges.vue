@@ -261,7 +261,7 @@ const list = ref(null);
 const expanded = reactive(new Set());
 // Bumped by a reveal: its rows show their text as when first expanded
 const revealed = ref(0);
-// The checked filter options
+// The checked filter options, none at first
 const filter = ref([]);
 
 function toggle(key) {
@@ -312,7 +312,7 @@ const {
 
 watch(() => props.rows, () => {
   expanded.clear();
-  filter.value = changeGroups.getDefaultFilter(props.counts);
+  filter.value = [];
   resetNavigator();
 }, { immediate: true });
 
@@ -332,7 +332,7 @@ async function reveal(target) {
   }
   // A filter hiding any of them is lifted
   if (!targets.every(matches)) {
-    filter.value = changeGroups.getDefaultFilter(props.counts);
+    filter.value = [];
     // The navigator follows the new groups first, or it would read the
     // position set below against the old ones
     await nextTick();
