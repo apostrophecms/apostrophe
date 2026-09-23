@@ -9,12 +9,41 @@
     :kicker="pane.label"
     :value-class="{
       [`apos-doc-version-changes__value--${pane.side}`]: entry.order,
-      'apos-doc-version-changes__value--text': !entry.order,
-      'apos-doc-version-changes__value--clamped': !full
+      'apos-doc-version-changes__value--text': !entry.order && !entry.images[pane.side],
+      'apos-doc-version-changes__value--clamped': !full && !entry.images[pane.side]
     }"
     :data-apos-test="`doc-version-change-${pane.side}`"
   >
-    <template v-if="entry.text[pane.side]">
+    <template v-if="entry.images[pane.side]">
+      <a
+        v-for="(image, index) in entry.images[pane.side]"
+        :key="index"
+        :href="image.href"
+        target="_blank"
+        rel="noopener"
+        class="apos-doc-version-changes__image"
+        data-apos-test="doc-version-change-image"
+        :data-apos-image-change="image.change"
+      >
+        <img
+          :src="`${image.href}?size=one-sixth`"
+          alt=""
+        >
+        <component
+          :is="pane.tag"
+          v-if="image.change !== 'same'"
+          class="apos-doc-version-changes__mark"
+          :class="`apos-doc-version-changes__mark--${pane.side}`"
+        >
+          <span class="apos-sr-only">{{ `${$t(pane.markLabel)} ` }}</span>{{ image.text }}
+        </component>
+        <template v-else>
+          {{ image.text }}
+        </template>
+        <span class="apos-sr-only">{{ $t('apostrophe:versionOpensNewTab') }}</span>
+      </a>
+    </template>
+    <template v-else-if="entry.text[pane.side]">
       <template
         v-for="(part, index) in parts[pane.side]"
         :key="index"
@@ -133,6 +162,37 @@ onMounted(async () => {
     &--old {
       color: var(--a-danger-button-hover);
       text-decoration-line: line-through;
+    }
+  }
+
+  // A related image that can be opened: its thumbnail above its title
+  &__image {
+    display: block;
+    width: fit-content;
+    color: inherit;
+
+    & + & {
+      margin-top: $spacing-base;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--a-primary);
+      outline-offset: 1px;
+    }
+
+    img {
+      display: block;
+      max-width: 120px;
+      height: 64px;
+      margin-bottom: $spacing-half;
+      border: 1px solid var(--a-base-8);
+      border-radius: var(--a-border-radius);
+      background-color: var(--a-base-9);
+      object-fit: contain;
+    }
+
+    &:hover img {
+      border-color: var(--a-base-5);
     }
   }
 

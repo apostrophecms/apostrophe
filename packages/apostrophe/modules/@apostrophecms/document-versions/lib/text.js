@@ -205,6 +205,11 @@ function getRelatedIds(rows, ctx) {
  * their count. Blocks and marks go by the rich text editor's own labels,
  * an image by its title.
  *
+ * A relationship row whose ids changed also gets `images`: for each side
+ * whose related documents are all images, `{ text, href, change }` for
+ * each in id order, `change` being `same`, or `added` or `removed` for an
+ * image on that side only.
+ *
  * A row that cannot be put in words stays, with empty text.
  *
  * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
@@ -212,7 +217,8 @@ function getRelatedIds(rows, ctx) {
  * @param {object} [options]
  * @param {Object<string, string>} [options.titles] Related document titles
  *   by id, for relationship rows (see `getRelatedIds`).
- * @param {Object<string, string>} [options.urls] Image URLs by id.
+ * @param {Object<string, string>} [options.urls] Image URLs by id, for
+ *   formatting changes and relationship rows.
  * @param {Object<string, string>} [options.links] Document URLs by id,
  *   for internal links.
  * @returns {import('./diff.js').ChangeRow[]} The same rows.
@@ -224,6 +230,9 @@ function addText(rows, ctx, {
     try {
       row.oldText = rowText(row, row.old, ctx, titles);
       row.newText = rowText(row, row.new, ctx, titles);
+      if (row.kind === 'relationship') {
+        addImages(row, titles, urls);
+      }
       if (row.format && ctx.t) {
         row.formatChanges = [
           ...row.format.flatMap(record => formatLines(record, ctx, {
@@ -238,6 +247,7 @@ function addText(rows, ctx, {
       ctx.onError?.(err, row.path);
       row.oldText = '';
       row.newText = '';
+      delete row.images;
       delete row.formatChanges;
     }
   }
@@ -318,6 +328,34 @@ module.exports = {
   addText,
   addWordDiff
 };
+
+// The images of each side of a relationship row, when its ids changed. A
+// side with no ids, or with a document that is no image or cannot be
+// opened, has none
+function addImages(row, titles, urls) {
+  const oldIds = row.old || [];
+  const newIds = row.new || [];
+  if (_.isEqual(oldIds, newIds)) {
+    return;
+  }
+  const imagesOf = (ids, others, change) => {
+    if (!ids.length || !ids.every(id => urls[id])) {
+      return undefined;
+    }
+    return ids.map(id => ({
+      text: titles[id] || '',
+      href: urls[id],
+      change: others.includes(id) ? 'same' : change
+    }));
+  };
+  const images = _.omitBy({
+    old: imagesOf(oldIds, newIds, 'removed'),
+    new: imagesOf(newIds, oldIds, 'added')
+  }, _.isUndefined);
+  if (!_.isEmpty(images)) {
+    row.images = images;
+  }
+}
 
 function rowText(row, value, ctx, titles) {
   if (value == null) {

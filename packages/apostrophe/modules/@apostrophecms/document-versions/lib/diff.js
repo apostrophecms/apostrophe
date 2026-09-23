@@ -157,6 +157,9 @@ const ORDER = Symbol('order');
  *   some: the formatting that changed. Non-enumerable, like `field`.
  * @property {FormatLine[]} [formatChanges] The same for display, in the
  *   language of the admin UI, set by `addText`.
+ * @property {{ old?: object[], new?: object[] }} [images] Relationship rows
+ *   whose ids changed, set by `addText`: the related images of each side,
+ *   `{ text, href, change }` each.
  * @property {boolean} [ai] Rows of `consolidate` only: whether a version
  *   saved with AI changed this path, or one above or below it; for an
  *   order row, whether one changed that order.
@@ -504,13 +507,20 @@ function walkWhole(field, older, newer, path, rows) {
   ));
 }
 
+// Relationship fields with no values are no fields: saving from the editor
+// stores a `null` for each where picking the document stored `{}`
 function walkRelationship(field, older, newer, path, rows) {
   const idsOf = doc => Array.isArray(doc[field.idsStorage]) ? doc[field.idsStorage] : [];
+  const fieldsOf = doc => {
+    const byId = (field.fieldsStorage && doc[field.fieldsStorage]) || {};
+    return _.omitBy(
+      _.mapValues(byId, values => _.omitBy(values, value => value == null)),
+      _.isEmpty
+    );
+  };
   const oldIds = idsOf(older);
   const newIds = idsOf(newer);
-  const oldFields = (field.fieldsStorage && older[field.fieldsStorage]) || {};
-  const newFields = (field.fieldsStorage && newer[field.fieldsStorage]) || {};
-  if (_.isEqual(oldIds, newIds) && _.isEqual(oldFields, newFields)) {
+  if (_.isEqual(oldIds, newIds) && _.isEqual(fieldsOf(older), fieldsOf(newer))) {
     return;
   }
   rows.push(row(

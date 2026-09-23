@@ -73,7 +73,8 @@ function getChangeGroups(rows, filter) {
     }
     const diff = row.diff || [];
     const short = order ? diff : elide(diff);
-    const changed = diff.some(part => part.change !== 'same');
+    // Two images may share a title
+    const changed = diff.some(part => part.change !== 'same') || Boolean(row.images);
     const format = row.formatChanges || [];
     const bySide = parts => Object.fromEntries(
       Object.entries(sides).map(([ side, change ]) => [
@@ -97,6 +98,8 @@ function getChangeGroups(rows, filter) {
       changed,
       // What changed in a rich text besides its words, a block each
       format,
+      // The related images of each side, shown in place of their titles
+      images: row.images || {},
       // Whether there is anything to expand: a row of which only the change
       // is known has no toggle, and its change type when its group's header
       // does not say it
