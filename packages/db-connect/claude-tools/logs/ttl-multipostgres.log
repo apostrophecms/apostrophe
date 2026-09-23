@@ -1,0 +1,22 @@
+
+
+  Database Adapter (multipostgres)
+    TTL Indexes
+      ✔ indexes() reports expireAfterSeconds
+      ✔ rejects compound and _id TTL indexes
+      ✔ removes documents once the date plus expireAfterSeconds has passed
+      ✔ expireAfterSeconds: 0 expires documents at the date itself
+      ✔ supports nested fields
+      ✔ stops expiring documents once the TTL index is dropped
+      ✔ does not recreate a dropped collection
+      ✔ the expiration query uses the index (44ms)
+      background timer
+        ✔ defaults to a 60 second interval, like MongoDB
+        ✔ does not start a timer until a TTL index exists
+        ✔ removes expired documents on a timer and stops the timer on close (56ms)
+        ✔ takes no action once shutdown has begun
+        ✔ close() waits for a pass in progress (106ms)
+
+
+  13 passing (352ms)
+
