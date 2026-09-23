@@ -1,9 +1,0 @@
-
-
-  Database Adapter (mongodb)
-    TTL Indexes
-      ✔ indexes() reports expireAfterSeconds (162ms)
-
-
-  1 passing (283ms)
-
