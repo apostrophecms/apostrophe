@@ -1051,16 +1051,25 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: $spacing-base;
-  padding: 0 $spacing-half $spacing-half;
+  padding: 0 0 $spacing-half;
 }
 
 .apos-area-widget__change-label {
-  @include type-small;
-
-  & {
-    color: var(--a-text-primary);
-    font-weight: var(--a-weight-bold);
-  }
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, currentcolor 50%, transparent);
+  border-radius: var(--a-border-radius);
+  background-color:
+    color-mix(in srgb, var(--a-base-2) 12%, var(--a-background-primary));
+  color: var(--a-base-2);
+  font-family: var(--a-family-default);
+  font-size: calc(var(--a-type-tiny) - 1px);
+  font-weight: var(--a-weight-bold);
+  letter-spacing: 0.2px;
+  line-height: 1.5;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .apos-area-widget-inner {

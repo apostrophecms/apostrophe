@@ -489,19 +489,11 @@ onBeforeUnmount(() => {
   border-left: 1px solid var(--a-base-8);
 }
 
-:deep(.apos-modal__main--with-rails) {
-  grid-template-columns: 15% 1fr minmax(250px, 22%);
-
-  @include media-up(lap) {
-    grid-template-columns: 220px 1fr 320px;
-  }
+:deep(.apos-modal__main.apos-modal__main--with-rails) {
+  grid-template-columns: 15% 1fr max(320px, 15%);
 
   &:has(> .apos-modal__rail--collapsed) {
-    grid-template-columns: $modal-rail-collapsed-w 1fr minmax(250px, 22%);
-
-    @include media-up(lap) {
-      grid-template-columns: $modal-rail-collapsed-w 1fr 320px;
-    }
+    grid-template-columns: $modal-rail-collapsed-w 1fr max(320px, 15%);
   }
 }
 

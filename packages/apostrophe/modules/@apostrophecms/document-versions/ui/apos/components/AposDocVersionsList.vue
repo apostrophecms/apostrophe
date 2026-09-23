@@ -106,6 +106,10 @@ $item-gap: $spacing-base + $spacing-half;
     }
   }
 
+  &__row--active &__item {
+    padding-bottom: $spacing-half;
+  }
+
   &__actions {
     display: flex;
     flex-wrap: wrap;

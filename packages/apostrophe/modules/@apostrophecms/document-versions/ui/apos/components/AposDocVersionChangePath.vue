@@ -1,8 +1,12 @@
 <template>
-  <span class="apos-doc-version-change-path">
+  <span
+    class="apos-doc-version-change-path"
+    :class="{ 'apos-doc-version-change-path--compact': compact }"
+    :title="compact ? fullPath : undefined"
+  >
     <template
-      v-for="(segment, index) in segments"
-      :key="index"
+      v-for="(item, index) in visibleSegments"
+      :key="item.key"
     >
       <chevron-right-icon
         v-if="index"
@@ -11,36 +15,71 @@
         aria-hidden="true"
       />
       <span
-        v-if="index"
+        v-if="index && !isCollapsed"
         class="apos-sr-only"
       >, </span>
       <span
+        v-if="item.ellipsis"
+        class="apos-doc-version-change-path__ellipsis"
+        aria-hidden="true"
+      >…</span>
+      <span
+        v-else
         class="apos-doc-version-change-path__crumb"
         :class="{
-          'apos-doc-version-change-path__crumb--last': boldLast && index === segments.length - 1
+          'apos-doc-version-change-path__crumb--leaf':
+            index === visibleSegments.length - 1
         }"
-      >{{ segmentText(segment) }}</span>
+        :aria-hidden="isCollapsed ? 'true' : undefined"
+      >{{ segmentText(item.segment) }}</span>
     </template>
+    <span
+      v-if="isCollapsed"
+      class="apos-sr-only"
+    >{{ fullPath }}</span>
   </span>
 </template>
 
 <script setup>
 // A breadcrumb of change path segments, read as a comma list
-import { inject } from 'vue';
+import { computed, inject } from 'vue';
 
-defineProps({
+const props = defineProps({
   // Path segments of the `changes` route
   segments: {
     type: Array,
     required: true
   },
-  boldLast: {
+  // Keep the root and leaf visible when a row has a deep path
+  compact: {
     type: Boolean,
     default: false
   }
 });
 
 const $t = inject('i18n');
+
+const isCollapsed = computed(() => props.compact && props.segments.length > 3);
+const fullPath = computed(() => props.segments.map(segmentText).join(', '));
+const visibleSegments = computed(() => {
+  const segments = props.segments.map((segment, index) => ({
+    key: index,
+    segment
+  }));
+
+  if (!isCollapsed.value) {
+    return segments;
+  }
+
+  return [
+    segments[0],
+    {
+      key: 'ellipsis',
+      ellipsis: true
+    },
+    segments[segments.length - 1]
+  ];
+});
 
 function segmentText(segment) {
   const label = $t(segment.label);
@@ -58,10 +97,28 @@ function segmentText(segment) {
 
   &__crumb {
     overflow-wrap: anywhere;
+  }
 
-    &--last {
-      font-weight: var(--a-weight-bold);
-    }
+  &--compact {
+    overflow: hidden;
+    flex-wrap: nowrap;
+    width: 100%;
+    white-space: nowrap;
+  }
+
+  &--compact &__crumb {
+    overflow: hidden;
+    flex: 0 1 auto;
+    min-width: 0;
+    text-overflow: ellipsis;
+  }
+
+  &--compact &__crumb--leaf {
+    flex: 1 1 auto;
+  }
+
+  &__ellipsis {
+    flex-shrink: 0;
   }
 
   // The icon component offsets its svg below the baseline; it sits in a

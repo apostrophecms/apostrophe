@@ -16,7 +16,9 @@
           class="apos-doc-version-changes__format-label"
           data-apos-test="doc-version-change-format-label"
         >
-          <strong>{{ line.label }}</strong>
+          <span class="apos-doc-version-changes__format-meta">
+            {{ line.label }}
+          </span>
           <template v-if="line.text">
             {{ ' ' }}
             <a
@@ -120,6 +122,10 @@ defineProps({
     justify-content: space-between;
     gap: $spacing-base;
     padding: $spacing-half $spacing-base;
+
+    :deep(.apos-doc-version-change-type) {
+      display: none;
+    }
   }
 
   &__format-label {
@@ -131,10 +137,11 @@ defineProps({
       line-height: var(--a-line-tall);
       overflow-wrap: anywhere;
     }
+  }
 
-    strong {
-      font-weight: var(--a-weight-bold);
-    }
+  &__format-meta {
+    color: var(--a-base-2);
+    font-style: italic;
   }
 
   &__format-link {

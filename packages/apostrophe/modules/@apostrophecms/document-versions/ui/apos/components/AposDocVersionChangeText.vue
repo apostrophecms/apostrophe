@@ -52,6 +52,7 @@
     class="apos-doc-version-changes__more"
   >
     <AposButton
+      class="apos-doc-version-changes__more-toggle"
       type="quiet"
       :label="full
         ? 'apostrophe:versionShowLessText'
@@ -107,8 +108,18 @@ onMounted(async () => {
   &__more {
     display: flex;
     justify-content: flex-end;
-    padding: $spacing-half $spacing-base;
+    padding: $spacing-one-quarter $spacing-base;
     border-top: 1px solid var(--a-base-8);
+  }
+
+  &__more-toggle :deep(.apos-button) {
+    font-size: var(--a-type-smaller);
+    transform: none;
+
+    &:hover:not([disabled]),
+    &:focus:not([disabled]) {
+      transform: none;
+    }
   }
 
   &__mark {
