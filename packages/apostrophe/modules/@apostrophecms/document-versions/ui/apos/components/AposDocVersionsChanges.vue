@@ -52,9 +52,7 @@
         class="apos-doc-version-changes__empty"
         data-apos-test="doc-version-changes-empty"
       >
-        {{ $t(version?.restoredFrom
-          ? 'apostrophe:versionRestoredBaseline'
-          : 'apostrophe:versionNoChanges') }}
+        {{ $t(emptyMessage) }}
       </p>
       <p
         v-else-if="!shownRows.length"
@@ -238,6 +236,11 @@ const props = defineProps({
   counts: {
     type: Object,
     default: null
+  },
+  // Whether there was a version before this one to compare with
+  compared: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -269,6 +272,18 @@ function toggle(key) {
 function matches(row) {
   return changeGroups.matchesFilter(row, filter.value);
 }
+
+// What an empty list says: a restore and a first version are baselines,
+// while a version compared with the one before it and left with nothing
+// ended where that one did
+const emptyMessage = computed(() => {
+  if (props.version?.restoredFrom) {
+    return 'apostrophe:versionRestoredBaseline';
+  }
+  return props.compared
+    ? 'apostrophe:versionUnchanged'
+    : 'apostrophe:versionNoChanges';
+});
 
 const shownRows = computed(() => props.rows.filter(matches));
 

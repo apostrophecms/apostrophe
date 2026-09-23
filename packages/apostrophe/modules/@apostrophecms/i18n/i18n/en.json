@@ -840,6 +840,7 @@
   "versionShowFullText": "Show full text",
   "versionShowLessText": "Show less",
   "versionThisVersion": "This Version",
+  "versionUnchanged": "This version matches the one before it.",
   "versionUnchangedOmitted": "Unchanged text omitted",
   "versionUnsupported": "This version was saved as a document type this site no longer has. It cannot be shown or restored.",
   "versionViewChanges": "View Changes",
