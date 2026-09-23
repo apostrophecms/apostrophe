@@ -13,6 +13,7 @@ const {
   prefixUpperBound,
   validateInteger
 } = require('../lib/shared');
+const { TtlReaper, ttlIndexOptions } = require('../lib/ttl');
 const { AggregationCursor } = require('../lib/aggregation-cursor');
 
 // =============================================================================
@@ -1905,6 +1906,7 @@ class PostgresCollection {
    * );
    */
   async createIndex(keys, options = {}) {
+    options = ttlIndexOptions(keys, options);
     await this._ensureTable();
 
     const keyEntries = Object.entries(keys);
@@ -1986,6 +1988,10 @@ class PostgresCollection {
       options,
       mongoName
     });
+
+    if (options.expireAfterSeconds != null) {
+      this._db._client._ttlReaper.start();
+    }
 
     const qualifiedName = this._qualifiedName();
     const escapedIndexName = escapeIdentifier(indexName);
@@ -2113,7 +2119,10 @@ class PostgresCollection {
           key: storedIndex.keys,
           unique: storedIndex.options.unique || false,
           ...(storedIndex.options.sparse ? { sparse: true } : {}),
-          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {})
+          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {}),
+          ...(storedIndex.options.expireAfterSeconds != null
+            ? { expireAfterSeconds: storedIndex.options.expireAfterSeconds }
+            : {})
         });
       } else {
         indexes.push({
@@ -2349,6 +2358,7 @@ class PostgresClient {
     this._defaultSchema = options._defaultSchema || null;
     this._realDb = options._realDb || null;
     this._databases = new Map();
+    this._ttlReaper = new TtlReaper(this);
   }
 
   db(name) {
@@ -2386,6 +2396,7 @@ class PostgresClient {
   async close() {
     if (!this._poolEnded) {
       this._poolEnded = true;
+      await this._ttlReaper.stop();
       await this._pool.end();
     }
   }
