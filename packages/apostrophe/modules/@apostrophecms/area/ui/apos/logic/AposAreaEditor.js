@@ -314,11 +314,15 @@ export default {
         }
       }
     },
-    // A field edited in place with the `{% field %}` tag patches the document
-    // on the server and tells no one else, but our copy of the widget it
-    // belongs to is what copying, cutting, duplicating and the widget's own
-    // editor all work from. Left alone it would hand back the value the page
-    // was rendered with, undoing what the user just typed.
+    // A field edited in place with the `{% field %}` tag does not touch our
+    // copy of the widget it belongs to, and that copy is what copying,
+    // cutting, duplicating and the widget's own editor all work from. Left
+    // alone it would hand back the value the page was rendered with, undoing
+    // what the user just typed.
+    //
+    // In a modal it carries more than that. Nothing is patched on the server
+    // until the user saves, so this copy is the only place the new value is
+    // kept, and it is the one the modal saves from.
     //
     // The value is written into the widget rather than the widget being
     // replaced: a new object would send `AposWidget` off to re-render markup
@@ -329,6 +333,9 @@ export default {
       patchKey,
       value
     }) {
+      // Null on both sides in a modal, where neither the field's markup nor
+      // this editor was given a document: the one being edited is the
+      // modal's, and nothing is patched until the user saves
       if (docId !== this.docId) {
         return;
       }

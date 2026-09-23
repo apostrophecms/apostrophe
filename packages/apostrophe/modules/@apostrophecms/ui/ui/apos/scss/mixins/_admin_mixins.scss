@@ -89,12 +89,16 @@ $a-canvas-max: 1168px;
 @mixin apos-editable-in-place-outline() {
   // Drawn over the field rather than under it: the page's own backgrounds are
   // painted by ancestors of the field, so anything underneath is invisible.
-  // It never gets in the way, being a ring around the text and not on it
+  //
+  // On the field's own box, which is where a widget's outline is drawn on the
+  // widget: a field and a widget are the same offer to the user, and one of
+  // them standing further off its content than the other only looks like two
+  // different things
   &::before {
     position: absolute;
     content: '';
     outline: 1px dashed var(--a-primary-transparent-50);
-    inset: -4px -6px;
+    inset: 0;
     border-radius: var(--a-border-radius);
     pointer-events: none;
   }
