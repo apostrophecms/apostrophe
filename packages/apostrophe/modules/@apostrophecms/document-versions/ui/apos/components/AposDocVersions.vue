@@ -124,6 +124,7 @@
               :version="currentVersion"
               :rows="changeRows"
               :counts="changeCounts"
+              :compared="changeCompared"
               @back="backToList"
               @navigate="navigateTo"
             />
@@ -316,6 +317,7 @@ const view = ref('list');
 const {
   rows: changeRows,
   counts: changeCounts,
+  compared: changeCompared,
   load: loadChanges
 } = useDocVersionChanges({ action: versionsAction });
 

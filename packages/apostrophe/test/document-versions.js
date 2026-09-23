@@ -4306,9 +4306,63 @@ describe('Document Versions', function () {
           );
           assert.deepEqual(changes, {
             ...none,
-            versionIds: [ version._id ]
+            versionIds: [ version._id ],
+            compared: false
           });
         }
+      });
+
+      it('should say a version was compared and has nothing left when a later save undid its changes - GET /:versionId/changes', async function() {
+        const req = getReq(apos, { mode: 'draft' });
+        const article = await apos.article.insert(req, {
+          title: 'An article',
+          int: 1
+        });
+        // An explicit save records a version of its own
+        const changed = await apos.article.update(
+          req.clone({ aposExplicitSave: true }),
+          {
+            ...article,
+            int: 2
+          }
+        );
+        const [ recorded ] = await apos.docVersions.find(
+          getReq(apos),
+          apos.docVersions.getTimelineCriteria(article)
+        );
+        await wait(5);
+        // The next save is within `draftInterval`, so it replaces that
+        // version, and it takes the document back to where the version
+        // before it left off
+        await apos.article.update(req, {
+          ...changed,
+          int: 1
+        });
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${recorded._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.deepEqual(changes, {
+          rows: [],
+          counts: {
+            added: 0,
+            modified: 0,
+            deleted: 0,
+            ai: 0
+          },
+          versionIds: [ recorded._id ],
+          compared: true
+        });
+
+        const [ newest ] = await apos.docVersions.find(
+          getReq(apos),
+          apos.docVersions.getTimelineCriteria(article)
+        );
+        // The save is still recorded, at the version it replaced
+        assert.equal(newest._id, recorded._id);
+        assert.equal(newest.changeCount, 0);
       });
 
       it('should have not found response if no permissions - GET /:versionId/changes', async function() {
