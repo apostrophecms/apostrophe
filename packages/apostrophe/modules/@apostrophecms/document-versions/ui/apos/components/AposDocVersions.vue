@@ -105,6 +105,7 @@
                     @click="viewChanges(version)"
                   />
                   <AposButton
+                    v-if="!version.live"
                     type="quiet"
                     label="apostrophe:versionRestore"
                     :attrs="{ 'data-apos-test': 'doc-version-action-restore' }"

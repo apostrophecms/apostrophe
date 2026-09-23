@@ -3452,7 +3452,7 @@ describe('Document Versions', function () {
       assert.equal(versions[0].author, admin.title);
       assert.deepEqual(
         Object.keys(versions[0]).sort(),
-        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'mode' ]
+        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'live', 'mode' ]
       );
     });
 
@@ -3476,7 +3476,7 @@ describe('Document Versions', function () {
       assert.equal(versions[0].author, editor.title);
       assert.deepEqual(
         Object.keys(versions[0]).sort(),
-        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'mode' ]
+        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'live', 'mode' ]
       );
     });
 
@@ -3498,7 +3498,7 @@ describe('Document Versions', function () {
       assert(versions[0].createdAt);
       assert.deepEqual(
         Object.keys(versions[0]).sort(),
-        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'mode' ]
+        [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'live', 'mode' ]
       );
     });
 
@@ -3573,6 +3573,90 @@ describe('Document Versions', function () {
       assert.equal(
         first.results.some(({ _id }) => _id === versions.results[0]._id),
         false
+      );
+    });
+
+    it('should mark the newest version live when it is the draft - GET /', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const publishedReq = getReq(apos, { mode: 'published' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+
+      const published = await apos.http.get(`/api/v1/${moduleName}`, {
+        qs: {
+          docId: draft._id,
+          consolidate: 1
+        },
+        jar: jarAdmin
+      });
+      assert.deepEqual(
+        published.results.map(item => [ item.mode, item.live ]),
+        [ [ 'published', true ] ]
+      );
+
+      await apos.article.publish(req, await saveDraft(apos, req, draft, { title: 'Second' }));
+      const republished = await apos.http.get(`/api/v1/${moduleName}`, {
+        qs: {
+          docId: draft._id,
+          consolidate: 1
+        },
+        jar: jarAdmin
+      });
+      assert.deepEqual(
+        republished.results.map(item => [ item.mode, item.live ]),
+        [ [ 'published', true ], [ 'published', undefined ] ]
+      );
+
+      // Undo Publish records the previous publication and leaves the draft
+      // with the changes it took back
+      await apos.article.revertPublishedToPrevious(
+        publishedReq,
+        await apos.article.findOneForEditing(publishedReq, {
+          aposDocId: draft.aposDocId
+        })
+      );
+      const reverted = await apos.http.get(`/api/v1/${moduleName}`, {
+        qs: {
+          docId: draft._id,
+          consolidate: 1
+        },
+        jar: jarAdmin
+      });
+      assert.deepEqual(
+        reverted.results.map(item => [
+          item.mode,
+          Boolean(item.restoredFrom),
+          item.live
+        ]),
+        [
+          [ 'published', true, undefined ],
+          [ 'published', false, undefined ],
+          [ 'published', false, undefined ]
+        ]
+      );
+
+      // A consolidated version shows its newest version, the draft
+      await saveDraft(apos, req.clone({ aposAi: true }), draft, { title: 'By AI' });
+      await saveDraft(apos, req, draft, { title: 'By hand' });
+      const consolidated = await apos.http.get(`/api/v1/${moduleName}`, {
+        qs: {
+          docId: draft._id,
+          consolidate: 1
+        },
+        jar: jarAdmin
+      });
+      assert.deepEqual(
+        consolidated.results.map(item => [
+          item.mode,
+          item.versionIds?.length,
+          item.live
+        ]),
+        [
+          [ 'draft', 2, true ],
+          [ 'published', undefined, undefined ],
+          [ 'published', undefined, undefined ],
+          [ 'published', undefined, undefined ]
+        ]
       );
     });
 

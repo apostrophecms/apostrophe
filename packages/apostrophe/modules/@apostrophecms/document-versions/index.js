@@ -122,7 +122,9 @@ module.exports = {
     return {
       // The versions of the document `docId` (its `_id`), newest first, a page at
       // a time. `next` is the `before` of the following page, `null` on the last.
-      // `consolidate=1` lists consolidated versions (see `getTimelinePage`)
+      // `consolidate=1` lists consolidated versions (see `getTimelinePage`).
+      // The newest item is `live` when it is the draft, so a restore of it
+      // would change nothing
       async getAll(req) {
         const docId = self.apos.launder.id(req.query.docId, '');
         const before = self.apos.launder.string(req.query.before);
@@ -139,10 +141,17 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
-        return self.getTimelinePage(req, self.getTimelineCriteria(doc), {
+        const page = await self.getTimelinePage(req, self.getTimelineCriteria(doc), {
           before: beforeDate,
           consolidate: self.apos.launder.boolean(req.query.consolidate)
         });
+        // A newest draft version is the draft; a newest publication is the
+        // draft unless the draft has unpublished changes
+        const [ newest ] = page.results;
+        if (!beforeDate && newest && (newest.mode === 'draft' || !doc.modified)) {
+          newest.live = true;
+        }
+        return page;
       },
       // One version with its document. `annotate=1` marks the document with the
       // changes of the version; `consolidate=1` with those of the consolidated
