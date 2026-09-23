@@ -18,6 +18,7 @@ const {
   prefixUpperBound,
   validateInteger
 } = require('../lib/shared');
+const { TtlReaper, ttlIndexOptions } = require('../lib/ttl');
 const { AggregationCursor } = require('../lib/aggregation-cursor');
 
 // =============================================================================
@@ -1859,6 +1860,7 @@ class SqliteCollection {
   }
 
   async createIndex(keys, options = {}) {
+    options = ttlIndexOptions(keys, options);
     this._ensureTable();
 
     const keyEntries = Object.entries(keys);
@@ -1886,6 +1888,10 @@ class SqliteCollection {
       options,
       mongoName
     });
+
+    if (options.expireAfterSeconds != null) {
+      this._db._client._ttlReaper.start();
+    }
 
     const tableName = this._quotedTableName();
     const escapedIndexName = escapeIdentifier(indexName);
@@ -2028,7 +2034,10 @@ class SqliteCollection {
           key: storedIndex.keys,
           unique: storedIndex.options.unique || false,
           ...(storedIndex.options.sparse ? { sparse: true } : {}),
-          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {})
+          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {}),
+          ...(storedIndex.options.expireAfterSeconds != null
+            ? { expireAfterSeconds: storedIndex.options.expireAfterSeconds }
+            : {})
         });
       } else {
         indexes.push({
@@ -2047,7 +2056,10 @@ class SqliteCollection {
           key: storedIndex.keys,
           unique: storedIndex.options.unique || false,
           ...(storedIndex.options.sparse ? { sparse: true } : {}),
-          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {})
+          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {}),
+          ...(storedIndex.options.expireAfterSeconds != null
+            ? { expireAfterSeconds: storedIndex.options.expireAfterSeconds }
+            : {})
         });
       }
     }
@@ -2271,6 +2283,7 @@ class SqliteClient {
     this._ext = path.extname(dbPath) || '.sqlite';
     this._databases = new Map();
     this._siblingDbs = new Map();
+    this._ttlReaper = new TtlReaper(this);
   }
 
   db(name) {
@@ -2305,6 +2318,7 @@ class SqliteClient {
   async close() {
     if (!this._closed) {
       this._closed = true;
+      await this._ttlReaper.stop();
       this._sqlite.close();
       for (const [ , db ] of this._siblingDbs) {
         db.close();
