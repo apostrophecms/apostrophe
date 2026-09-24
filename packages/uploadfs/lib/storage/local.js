@@ -7,7 +7,9 @@
 // and it encourages you to write code that will still work
 // when you switch to the s3 backend
 
-const dirname = require('path').dirname;
+const {
+  dirname, join, resolve, sep
+} = require('path');
 const fs = require('fs');
 const copyFile = require('../copyFile.js');
 const async = require('async');
@@ -18,6 +20,31 @@ module.exports = function() {
   let uploadsUrl;
   let removeCandidates = [];
   let timeout;
+
+  // Returns the absolute filesystem path for `path`, which must be
+  // strictly inside uploadsPath, otherwise throws. This does not depend on
+  // any validation having been done by the caller
+  function getFilePath(path) {
+    const base = resolve(uploadsPath);
+    const full = resolve(join(base, path));
+    if (!full.startsWith(base.endsWith(sep) ? base : base + sep)) {
+      throw utils.invalidPathError(path);
+    }
+    return full;
+  }
+
+  // Invokes `fn` with the absolute filesystem paths corresponding to
+  // the given uploadfs paths, or delivers an error to `callback` if they
+  // are not acceptable
+  function withFilePaths(paths, callback, fn) {
+    let filePaths;
+    try {
+      filePaths = paths.map(getFilePath);
+    } catch (e) {
+      return callback(e);
+    }
+    return fn(...filePaths);
+  }
 
   const self = {
     init: function(options, callback) {
@@ -55,7 +82,12 @@ module.exports = function() {
         // from being removed
         // after a child
         return async.eachSeries(list, function(path, callback) {
-          const uploadPath = uploadsPath + path;
+          let uploadPath;
+          try {
+            uploadPath = getFilePath(path);
+          } catch (e) {
+            return callback(null);
+          }
           fs.rmdir(uploadPath, function(e) {
             // We're not fussy about the outcome, if it still has files in it we're
             // actually depending on this to fail
@@ -93,39 +125,49 @@ module.exports = function() {
     },
 
     copyIn: function(localPath, path, options, callback) {
-      const uploadPath = uploadsPath + path;
-      return copyFile(localPath, uploadPath, callback);
+      return withFilePaths([ path ], callback, uploadPath => {
+        return copyFile(localPath, uploadPath, callback);
+      });
     },
 
     copyOut: function(path, localPath, options, callback) {
-      const downloadPath = uploadsPath + path;
-      return copyFile(downloadPath, localPath, callback);
+      return withFilePaths([ path ], callback, downloadPath => {
+        return copyFile(downloadPath, localPath, callback);
+      });
     },
 
     streamOut: function(path, options) {
-      return fs.createReadStream(uploadsPath + path);
+      let filePath;
+      try {
+        filePath = getFilePath(path);
+      } catch (e) {
+        return utils.errorStream(e);
+      }
+      return fs.createReadStream(filePath);
     },
 
     remove: function(path, callback) {
-      const uploadPath = uploadsPath + path;
-      fs.unlink(uploadPath, callback);
-      if (dirname(path).length > 1) {
-        removeCandidates.push(dirname(path));
-      }
+      return withFilePaths([ path ], callback, uploadPath => {
+        fs.unlink(uploadPath, callback);
+        if (dirname(path).length > 1) {
+          removeCandidates.push(dirname(path));
+        }
+      });
     },
 
     enable: function(path, callback) {
       if (self.options.disabledFileKey) {
-        return fs.rename(
-          uploadsPath + utils.getDisabledPath(path, self.options.disabledFileKey),
-          uploadsPath + path,
-          callback
-        );
+        return withFilePaths([
+          utils.getDisabledPath(path, self.options.disabledFileKey),
+          path
+        ], callback, (from, to) => fs.rename(from, to, callback));
       } else {
         // World readable, owner writable. Reasonable since
         // web accessible files are world readable in that
         // sense regardless
-        return fs.chmod(uploadsPath + path, self.getEnablePermissions(), callback);
+        return withFilePaths([ path ], callback, filePath => {
+          return fs.chmod(filePath, self.getEnablePermissions(), callback);
+        });
       }
     },
 
@@ -135,15 +177,16 @@ module.exports = function() {
 
     disable: function(path, callback) {
       if (self.options.disabledFileKey) {
-        return fs.rename(
-          uploadsPath + path,
-          uploadsPath + utils.getDisabledPath(path, self.options.disabledFileKey),
-          callback
-        );
+        return withFilePaths([
+          path,
+          utils.getDisabledPath(path, self.options.disabledFileKey)
+        ], callback, (from, to) => fs.rename(from, to, callback));
       } else {
         // No access. Note this means you must explicitly
         // enable to get read access back, even with copyFileOut
-        return fs.chmod(uploadsPath + path, self.getDisablePermissions(), callback);
+        return withFilePaths([ path ], callback, filePath => {
+          return fs.chmod(filePath, self.getDisablePermissions(), callback);
+        });
       }
     },
 
