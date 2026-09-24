@@ -35,6 +35,25 @@ describe('Context history', function() {
     ];
     const ids = result => result.items.map(item => item._id);
 
+    it('never modifies Object.prototype via a dot path', async function() {
+      const applyPatch = await getApplyPatch();
+      try {
+        for (const path of [
+          '__proto__.polluted',
+          'constructor.prototype.polluted',
+          'nested.__proto__.polluted'
+        ]) {
+          applyPatch(areaId, items(), { [`@a.${path}`]: 'yes' });
+          applyPatch(areaId, [ { _id: 'w', area: { items: items() } } ], {
+            [`@a.${path}`]: 'yes'
+          }, { deep: true });
+        }
+        assert.equal({}.polluted, undefined);
+      } finally {
+        delete Object.prototype.polluted;
+      }
+    });
+
     it('ignores a patch aimed at another area or widget', async function() {
       const applyPatch = await getApplyPatch();
       assert.equal(applyPatch(areaId, items(), { $pullAllById: { '@other.items': [ 'a' ] } }), null);
