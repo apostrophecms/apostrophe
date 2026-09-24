@@ -4106,8 +4106,8 @@ describe('Document Versions', function () {
     // Returns the article and the version records, oldest first
     async function recordVersions(states) {
       const req = getReq(apos, { mode: 'draft' });
-      const [ initial, ...rest ] = states;
-      const article = await apos.article.insert(req, {
+      const [ { ai: initialAi, ...initial }, ...rest ] = states;
+      const article = await apos.article.insert(req.clone({ aposAi: initialAi }), {
         title: 'An article',
         ...initial
       });
@@ -4224,7 +4224,7 @@ describe('Document Versions', function () {
         });
       });
 
-      it('should say what changed in the formatting of rich text - GET /:versionId/changes', async function() {
+      it('should say what changed in the formatting of rich text, or show it in the words - GET /:versionId/changes', async function() {
         const main = richTextArea('One', 'Two');
         const edit = (...contents) => ({
           main: {
@@ -4266,15 +4266,8 @@ describe('Document Versions', function () {
             },
             {
               newText: 'Our mission',
-              marked: [],
-              formatChanges: [ {
-                change: 'block',
-                type: 'modified',
-                label: 'Block style',
-                text: 'Our mission',
-                old: { text: 'Paragraph (P)' },
-                new: { text: 'Heading 2 (H2)' }
-              } ]
+              marked: [ 'Our mission', 'Our mission' ],
+              formatChanges: undefined
             }
           ]
         );
@@ -4357,7 +4350,7 @@ describe('Document Versions', function () {
           { jar: jarAdmin }
         );
 
-        assert.deepEqual(changes.rows.map(row => row.ai), [ true, true ]);
+        assert.deepEqual(changes.rows.map(row => row.ai), [ 'changed', 'changed' ]);
         assert.deepEqual(changes.counts, {
           added: 1,
           modified: 1,
@@ -4585,7 +4578,7 @@ describe('Document Versions', function () {
           rows.map(row => [ row.path[0].name, row.oldText, row.newText, row.ai ]),
           [
             [ 'title', 'First', 'Second', false ],
-            [ 'int', '', '5', true ]
+            [ 'int', '', '5', 'changed' ]
           ]
         );
         assert.equal(counts.ai, 1);
@@ -4640,7 +4633,7 @@ describe('Document Versions', function () {
         assert.deepEqual(
           changes.rows.map(row => [ row.path[0].name, row.type, row.newText, row.ai ]),
           [
-            [ 'title', 'modified', 'By AI', true ],
+            [ 'title', 'modified', 'By AI', 'changed' ],
             [ 'int', 'added', '7', false ]
           ]
         );
@@ -4653,6 +4646,148 @@ describe('Document Versions', function () {
         assert.deepEqual(
           changes.versionIds,
           [ versions[2]._id, versions[1]._id, versions[0]._id ]
+        );
+      });
+
+      it('should call assisted the changes to what a first version saved with AI holds - GET /:versionId/changes?consolidate=1', async function() {
+        // A localization translated with AI, then edited by hand
+        const { versions } = await recordVersions([
+          {
+            title: 'Translated',
+            ai: true
+          },
+          {
+            title: 'Translated, edited',
+            int: 7
+          }
+        ]);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          {
+            qs: { consolidate: 1 },
+            jar: jarAdmin
+          }
+        );
+
+        assert.deepEqual(
+          changes.versionIds,
+          [ versions[1]._id, versions[0]._id ]
+        );
+        assert.deepEqual(
+          changes.rows.map(row => [ row.path[0].name, row.type, row.ai ]),
+          [
+            [ 'title', 'modified', 'assisted' ],
+            [ 'int', 'added', false ]
+          ]
+        );
+        assert.equal(changes.counts.ai, 1);
+
+        const annotated = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}`,
+          {
+            qs: {
+              annotate: 1,
+              consolidate: 1
+            },
+            jar: jarAdmin
+          }
+        );
+        assert.equal(
+          annotated.doc.aposMeta.title['@apostrophecms/document-versions:ai'],
+          'assisted'
+        );
+        assert.equal(annotated.doc.aposMeta.int['@apostrophecms/document-versions:ai'], undefined);
+      });
+
+      it('should call assisted the changes to what the version before changed with AI - GET /:versionId/changes', async function() {
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By AI',
+            ai: true,
+            author: 'anotherUserId'
+          },
+          {
+            title: 'By hand',
+            int: 7
+          },
+          {
+            title: 'By hand again',
+            int: 7,
+            author: 'anotherUserId'
+          }
+        ]);
+        const getRows = async version => (await apos.http.get(
+          `/api/v1/${moduleName}/${version._id}/changes`,
+          {
+            qs: { consolidate: 1 },
+            jar: jarAdmin
+          }
+        )).rows.map(row => [ row.path[0].name, row.ai ]);
+
+        assert.deepEqual(await getRows(versions[2]), [
+          [ 'title', 'assisted' ],
+          [ 'int', false ]
+        ]);
+        // One version back only
+        assert.deepEqual(await getRows(versions[3]), [
+          [ 'title', false ]
+        ]);
+      });
+
+      it('should read the version before as the list shows it, consolidated - GET /:versionId/changes', async function() {
+        // Another author's AI and hand versions consolidate into one list
+        // item; the single version after it reads that whole item
+        const { versions } = await recordVersions([
+          {},
+          {
+            title: 'By AI',
+            ai: true,
+            author: 'anotherUserId'
+          },
+          {
+            title: 'By AI',
+            int: 7,
+            author: 'anotherUserId'
+          },
+          {
+            title: 'By hand',
+            int: 7
+          }
+        ]);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[3]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.deepEqual(
+          changes.rows.map(row => [ row.path[0].name, row.ai ]),
+          [ [ 'title', 'assisted' ] ]
+        );
+      });
+
+      it('should call assisted the changes to what a first version before them saved with AI holds - GET /:versionId/changes', async function() {
+        const { versions } = await recordVersions([
+          {
+            title: 'Translated',
+            ai: true
+          },
+          {
+            title: 'Edited by another',
+            author: 'anotherUserId'
+          }
+        ]);
+
+        const changes = await apos.http.get(
+          `/api/v1/${moduleName}/${versions[1]._id}/changes`,
+          { jar: jarAdmin }
+        );
+
+        assert.deepEqual(
+          changes.rows.map(row => [ row.path[0].name, row.ai ]),
+          [ [ 'title', 'assisted' ] ]
         );
       });
 

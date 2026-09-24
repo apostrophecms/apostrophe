@@ -106,8 +106,13 @@
               <span class="apos-doc-version-changes__row-aside">
                 <AposDocVersionAiBadge
                   v-if="entry.row.ai"
-                  v-apos-tooltip="'apostrophe:versionAiChangeTooltip'"
-                  data-apos-test="doc-version-change-ai"
+                  v-apos-tooltip="entry.row.ai === 'assisted'
+                    ? 'apostrophe:versionAiAssistedChangeTooltip'
+                    : 'apostrophe:versionAiChangeTooltip'"
+                  :ai="entry.row.ai"
+                  :data-apos-test="entry.row.ai === 'assisted'
+                    ? 'doc-version-change-ai-assisted'
+                    : 'doc-version-change-ai'"
                 />
                 <AposButton
                   v-if="entry.detail"
@@ -135,9 +140,14 @@
               class="apos-doc-version-changes__diff"
               data-apos-test="doc-version-change-diff"
             >
+              <AposDocVersionChangeBlock
+                v-if="entry.changed && entry.layout === 'block'"
+                :key="`block-${revealed}`"
+                :entry="entry"
+              />
               <AposDocVersionChangeText
-                v-if="entry.changed"
-                :key="revealed"
+                v-else-if="entry.changed"
+                :key="`sides-${revealed}`"
                 :entry="entry"
               />
               <AposDocVersionChangeFormat
@@ -322,7 +332,8 @@ function focus() {
 
 // Shows the changes behind a marker of the body: those of the widget
 // `widgetId` (and, when it `moved`, the order of its area), or those of the
-// top-level field `field` outside any widget. Their rows expand alone,
+// top-level field `field` outside any widget, `marked` as `isMarkerTarget`
+// takes it. Their rows expand alone,
 // their group becomes the navigator's, and focus goes to the row's toggle.
 // Resolves `false` when the list has no such row
 async function reveal(target) {
@@ -624,7 +635,8 @@ $pad-x: $spacing-base + $spacing-half;
     border-radius: var(--a-border-radius);
   }
 
-  &__pane + &__format {
+  &__pane + &__format,
+  &__block + &__format {
     border-top: 1px solid var(--a-base-8);
   }
 

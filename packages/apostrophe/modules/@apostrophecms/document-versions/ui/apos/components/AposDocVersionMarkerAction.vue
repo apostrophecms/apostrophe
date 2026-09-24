@@ -5,7 +5,10 @@
     class="apos-doc-version-marker-action"
     :aria-label="$t('apostrophe:versionSeeChanges')"
   >
-    <AposDocVersionAiBadge v-if="ai" />
+    <AposDocVersionAiBadge
+      v-if="ai"
+      :ai="ai"
+    />
     <AposDocVersionChangeType
       v-for="type in types"
       :key="type"
@@ -23,9 +26,10 @@ defineProps({
     type: Array,
     required: true
   },
-  // Whether AI was involved
+  // AI's part in the changes, `changed` or `assisted` (see the AI badge);
+  // `false` when AI had none
   ai: {
-    type: Boolean,
+    type: [ String, Boolean ],
     default: false
   }
 });

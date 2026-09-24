@@ -4,31 +4,13 @@
 
 const { diffArrays } = require('diff');
 const {
-  INLINE, parse, getWords, compareTokens
+  INLINE, TABLE, MARKS, parse, getWords, compareTokens, isWrapper
 } = require('./rich-text-tokens.js');
 
 const ATOMS = {
   img: 'image',
   hr: 'rule',
   br: 'break'
-};
-const TABLE = new Set([
-  'table', 'colgroup', 'col', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th'
-]);
-// Elements that hold blocks and say nothing of the kind of block a word
-// stands in
-const WRAPPERS = new Set([ ...TABLE, 'li', 'figure', 'figcaption' ]);
-const MARKS = {
-  strong: 'bold',
-  b: 'bold',
-  em: 'italic',
-  i: 'italic',
-  s: 'strike',
-  u: 'underline',
-  code: 'code',
-  sub: 'subscript',
-  sup: 'superscript',
-  mark: 'highlight'
 };
 
 /**
@@ -557,11 +539,6 @@ function getBlock(node) {
     class: node.attribs.class,
     align: node.attribs.style?.match(/(?:^|;)\s*text-align:\s*([a-z-]+)/)?.[1]
   };
-}
-
-function isWrapper(node) {
-  return WRAPPERS.has(node.name) ||
-    ((node.name === 'div') && /\btableWrapper\b/.test(node.attribs.class || ''));
 }
 
 function getSkeleton(node) {

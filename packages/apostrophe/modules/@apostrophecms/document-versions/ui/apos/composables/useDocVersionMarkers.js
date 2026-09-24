@@ -43,8 +43,10 @@ export function useDocVersionMarkers({
     return Boolean(docMeta.value[field.name]?.['@apostrophecms/schema:highlight']);
   }
 
-  function isFieldAi(field) {
-    return Boolean(docMeta.value[field.name]?.['@apostrophecms/document-versions:ai']);
+  // AI's part in the changes of a top-level field, `changed` or
+  // `assisted`; `false` when AI had none
+  function getFieldAi(field) {
+    return docMeta.value[field.name]?.['@apostrophecms/document-versions:ai'] || false;
   }
 
   function onWidgetMarker({ graphKey: key, widgetId }) {
@@ -69,6 +71,6 @@ export function useDocVersionMarkers({
   return {
     graphKey,
     isFieldModified,
-    isFieldAi
+    getFieldAi
   };
 }

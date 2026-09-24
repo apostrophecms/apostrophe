@@ -59,6 +59,10 @@ describe('Document Versions diff engine', function () {
             renderVersions: false
           }
         },
+        // Inherits `versionsRenderDeleted: false`
+        'loose-column-widget': {
+          extend: '@apostrophecms/layout-column-widget'
+        },
         ...modules
       }
     });
@@ -775,7 +779,7 @@ describe('Document Versions diff engine', function () {
       older.ownersIds = [ one.aposDocId ];
       newer.tagline = 'Built to change';
       newer.rating = 3;
-      newer.prose = '<p>The <strong>quick</strong> red fox</p>';
+      newer.prose = '<p>The <u>quick</u> red fox</p>';
       newer.steps.reverse();
       newer.zone.items.reverse();
       newer.ownersIds = [ two.aposDocId ];
@@ -845,9 +849,9 @@ describe('Document Versions diff engine', function () {
         }
       ]);
       assert.deepEqual(rows.map(row => [ row.fieldType, row.kind, row.ai ]), [
-        [ 'steps', 'array', true ],
+        [ 'steps', 'array', 'changed' ],
         [ 'tagline', 'leaf', false ],
-        [ 'zone', 'area', true ],
+        [ 'zone', 'area', 'changed' ],
         [ 'string', 'leaf', false ]
       ]);
     });
@@ -1614,6 +1618,45 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
+    it('should say the position an item that moved had', function () {
+      const orderRow = (older, newer) => {
+        const result = {
+          old: [ ...older ],
+          new: [ ...newer ]
+        };
+        Object.defineProperty(result, 'items', {
+          value: Object.fromEntries(newer.map((id, index) => [ id, {
+            ordinal: index + 1,
+            olderOrdinal: older.indexOf(id) + 1,
+            title: id.toUpperCase()
+          } ])),
+          enumerable: false
+        });
+        return result;
+      };
+      const [ fromMiddle, twoMoves ] = text.addWordDiff([
+        orderRow([ 'a', 'b', 'c', 'd', 'e' ], [ 'a', 'b', 'd', 'e', 'c' ]),
+        orderRow([ 'a', 'b', 'c', 'd', 'e' ], [ 'e', 'a', 'c', 'b', 'd' ])
+      ], apos.docVersions.getDiffContext(req));
+      assert.deepEqual(fromMiddle.diff.map(part => [ part.change, part.text ]), [
+        [ 'same', '#1 A' ],
+        [ 'same', '#2 B' ],
+        [ 'removed', '#5 C (was #3)' ],
+        [ 'same', '#3 D' ],
+        [ 'same', '#4 E' ],
+        [ 'added', '#5 C' ]
+      ]);
+      assert.deepEqual(twoMoves.diff.map(part => [ part.change, part.text ]), [
+        [ 'added', '#1 E' ],
+        [ 'same', '#2 A' ],
+        [ 'removed', '#4 B (was #2)' ],
+        [ 'same', '#3 C' ],
+        [ 'added', '#4 B' ],
+        [ 'same', '#5 D' ],
+        [ 'removed', '#1 E (was #5)' ]
+      ]);
+    });
+
     it('should give a widget of a change of order its title', async function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -1629,19 +1672,19 @@ describe('Document Versions diff engine', function () {
       await apos.docVersions.addChangeText(req, rows);
       assert.equal(rows.length, 1);
       assert.equal(rows[0].newText, '#1 Nested 2, #2 Rich Text, #3 Opaque, #4 Card · Two, #5 Card · One');
-      // An item that moved is marked whole, where it was and where it is
+      // An item that moved is marked whole, where it was, with the position it
+      // had, and where it is
       const [ { diff } ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
       const side = change => diff
         .filter(part => [ 'same', change ].includes(part.change))
         .map(part => part.text)
         .join(', ');
-      assert.equal(side('removed'), rows[0].oldText);
       assert.equal(side('added'), rows[0].newText);
       assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
         [ 'same', '#1 Nested 2' ],
         [ 'same', '#2 Rich Text' ],
         [ 'same', '#3 Opaque' ],
-        [ 'removed', '#5 Card · One' ],
+        [ 'removed', '#5 Card · One (was #4)' ],
         [ 'same', '#4 Card · Two' ],
         [ 'added', '#5 Card · One' ]
       ]);
@@ -1910,17 +1953,6 @@ describe('Document Versions diff engine', function () {
             } ]
           ],
           [
-            '<p>Read the guide</p>',
-            '<p>Read <strong><em>the guide</em></strong></p>',
-            [ {
-              change: 'marksAdded',
-              type: 'added',
-              label: 'Formatting',
-              text: 'the guide',
-              new: value('Bold, Italic')
-            } ]
-          ],
-          [
             '<p>Read <sup>the guide</sup></p>',
             '<p>Read the guide</p>',
             [ {
@@ -1991,42 +2023,6 @@ describe('Document Versions diff engine', function () {
           ],
           [
             '<p>Our mission</p>',
-            '<h2>Our mission</h2>',
-            [ {
-              change: 'block',
-              type: 'modified',
-              label: 'Block style',
-              text: 'Our mission',
-              old: value('Paragraph (P)'),
-              new: value('Heading 2 (H2)')
-            } ]
-          ],
-          [
-            '<ul><li><p>One</p></li><li><p>Two</p></li></ul>',
-            '<ol><li><p>One</p></li><li><p>Two</p></li></ol>',
-            [ {
-              change: 'block',
-              type: 'modified',
-              label: 'Block style',
-              text: 'One Two',
-              old: value('Bulleted List'),
-              new: value('Ordered List')
-            } ]
-          ],
-          [
-            '<p>Our mission</p>',
-            '<p class="lead">Our mission</p>',
-            [ {
-              change: 'style',
-              type: 'modified',
-              label: 'Block style',
-              text: 'Our mission',
-              old: value('Paragraph (P)'),
-              new: value('Paragraph (P) (lead)')
-            } ]
-          ],
-          [
-            '<p>Our mission</p>',
             '<p style="text-align: center">Our mission</p>',
             [ {
               change: 'align',
@@ -2035,26 +2031,6 @@ describe('Document Versions diff engine', function () {
               text: 'Our mission',
               old: value('Default'),
               new: value('Align Center')
-            } ]
-          ],
-          [
-            '<p>One.</p><p>Two.</p>',
-            '<p>One. Two.</p>',
-            [ {
-              change: 'merged',
-              type: 'modified',
-              label: 'Paragraphs merged',
-              text: 'Two.'
-            } ]
-          ],
-          [
-            '<p>One. Two.</p>',
-            '<p>One.</p><p>Two.</p>',
-            [ {
-              change: 'split',
-              type: 'modified',
-              label: 'Paragraph split',
-              text: 'Two.'
             } ]
           ],
           [
@@ -2154,14 +2130,6 @@ describe('Document Versions diff engine', function () {
             '<p>One two</p><p>Three<br>four<br>five</p><h3>Six</h3>',
             [
               {
-                change: 'block',
-                type: 'modified',
-                label: 'Block style',
-                text: 'Six',
-                old: value('Heading 2 (H2)'),
-                new: value('Heading 3 (H3)')
-              },
-              {
                 change: 'breaks',
                 type: 'modified',
                 label: 'Line breaks',
@@ -2194,6 +2162,139 @@ describe('Document Versions diff engine', function () {
           await apos.docVersions.addChangeText(req, rows);
           assert.deepEqual(rows[0].formatChanges, lines);
         }
+      });
+
+      it('should put in words the formatting the words show, for when they cannot', function () {
+        const getFormatChanges = require('../modules/@apostrophecms/document-versions/lib/rich-text-format.js');
+        const { formatLines } = require('../modules/@apostrophecms/document-versions/lib/format-text.js');
+        const value = text => ({ text });
+        const cases = [
+          [
+            '<p>Read the guide</p>',
+            '<p>Read <strong><em>the guide</em></strong></p>',
+            [ {
+              change: 'marksAdded',
+              type: 'added',
+              label: 'Formatting',
+              text: 'the guide',
+              new: value('Bold, Italic')
+            } ]
+          ],
+          [
+            '<p>Our mission</p>',
+            '<h2>Our mission</h2>',
+            [ {
+              change: 'block',
+              type: 'modified',
+              label: 'Block style',
+              text: 'Our mission',
+              old: value('Paragraph (P)'),
+              new: value('Heading 2 (H2)')
+            } ]
+          ],
+          [
+            '<ul><li><p>One</p></li><li><p>Two</p></li></ul>',
+            '<ol><li><p>One</p></li><li><p>Two</p></li></ol>',
+            [ {
+              change: 'block',
+              type: 'modified',
+              label: 'Block style',
+              text: 'One Two',
+              old: value('Bulleted List'),
+              new: value('Ordered List')
+            } ]
+          ],
+          [
+            '<p>Our mission</p>',
+            '<p class="lead">Our mission</p>',
+            [ {
+              change: 'style',
+              type: 'modified',
+              label: 'Block style',
+              text: 'Our mission',
+              old: value('Paragraph (P)'),
+              new: value('Paragraph (P) (lead)')
+            } ]
+          ],
+          [
+            '<p>One.</p><p>Two.</p>',
+            '<p>One. Two.</p>',
+            [ {
+              change: 'merged',
+              type: 'modified',
+              label: 'Paragraphs merged',
+              text: 'Two.'
+            } ]
+          ],
+          [
+            '<p>One. Two.</p>',
+            '<p>One.</p><p>Two.</p>',
+            [ {
+              change: 'split',
+              type: 'modified',
+              label: 'Paragraph split',
+              text: 'Two.'
+            } ]
+          ]
+        ];
+        const ctx = apos.docVersions.getDiffContext(req);
+        for (const [ before, after, lines ] of cases) {
+          assert.deepEqual(
+            getFormatChanges(before, after).flatMap(record => formatLines(record, ctx, {
+              titles: {},
+              urls: {},
+              links: {}
+            })),
+            lines
+          );
+        }
+      });
+
+      it('should leave out the formatting the words show', async function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p>Read the guide.</p><p>Our mission. Our vision.</p>';
+        newer.body = '<p>Read <strong><u>the guide</u></strong>.</p>' +
+          '<h2>Our mission.</h2><p class="lead">Our vision.</p>';
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addWordDiff(await apos.docVersions.addChangeText(
+          req,
+          text.addFormat(apos.docVersions.getChangeRows(req, older, newer), ctx)
+        ), ctx);
+        assert.deepEqual(
+          rows[0].formatChanges.map(line => [ line.change, line.text, line.new.text ]),
+          [ [ 'marksAdded', 'the guide', 'Underline' ] ]
+        );
+        assert.deepEqual(
+          rows[0].diff
+            .filter(part => part.change !== 'same')
+            .map(part => [ part.change, part.text, part.marks ]),
+          [
+            [ 'removed', 'the guide', undefined ],
+            [ 'added', 'the guide', [ 'bold' ] ],
+            [ 'removed', 'Our mission. Our vision.', undefined ],
+            [ 'added', 'Our mission.', undefined ],
+            [ 'added', 'Our vision.', undefined ]
+          ]
+        );
+      });
+
+      it('should keep every formatting line when the words cannot show it', async function () {
+        const words = Array.from({ length: 1200 }, (value, at) => `word${at}`).join(' ');
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = `<p>${words}</p>`;
+        newer.body = `<p><strong>${words}</strong></p>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addWordDiff(await apos.docVersions.addChangeText(
+          req,
+          text.addFormat(apos.docVersions.getChangeRows(req, older, newer), ctx)
+        ), ctx);
+        assert.deepEqual(
+          rows[0].formatChanges.map(line => [ line.change, line.new.text ]),
+          [ [ 'marksAdded', 'Bold' ] ]
+        );
+        assert(rows[0].diff.every(part => part.change === 'same'));
       });
 
       it('should name an image by its title, fetched with the related titles', async function () {
@@ -2375,10 +2476,7 @@ describe('Document Versions diff engine', function () {
         assert.equal(rows[0].newText, 'Our mission\nRead the guide today.');
         assert.deepEqual(
           rows[0].formatChanges.map(line => [ line.label, line.text, line.new.text ]),
-          [
-            [ 'Block style', 'Our mission', 'Heading 2 (H2)' ],
-            [ 'Link', 'the guide', '/two' ]
-          ]
+          [ [ 'Link', 'the guide', '/two' ] ]
         );
         assert.equal(Object.keys(rows[0]).includes('format'), false);
       });
@@ -2399,7 +2497,7 @@ describe('Document Versions diff engine', function () {
         const older = buildDoc();
         const newer = buildDoc();
         older.body = `<p>${words}</p>`;
-        newer.body = `<h3>${words}</h3>`;
+        newer.body = `<p style="text-align: center">${words}</p>`;
         const ctx = apos.docVersions.getDiffContext(req);
         const rows = text.addFormat(
           apos.docVersions.getChangeRows(req, older, newer),
@@ -2600,6 +2698,107 @@ describe('Document Versions diff engine', function () {
       assert.equal(doc.aposMeta, undefined);
     });
 
+    describe('a type that is not put back when deleted', function () {
+      // A column as `@apostrophecms/layout-widget` stores it
+      function column(id, colstart, type = '@apostrophecms/layout-column') {
+        return {
+          _id: id,
+          metaType: 'widget',
+          type,
+          colstart,
+          colspan: 4,
+          rowstart: 1,
+          rowspan: 1,
+          order: 0,
+          content: {
+            _id: `${id}-content`,
+            metaType: 'area',
+            items: [
+              {
+                _id: `${id}-text`,
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                content: `<p>${id}</p>`
+              }
+            ]
+          }
+        };
+      }
+
+      // The nested document with a layout of two columns after its widgets
+      function withLayout() {
+        const doc = buildDoc();
+        doc.section.rows[0].content.items.push({
+          _id: 'layout',
+          metaType: 'widget',
+          type: '@apostrophecms/layout',
+          columns: {
+            _id: 'layout-columns',
+            metaType: 'area',
+            items: [ column('first', 1), column('second', 5) ]
+          }
+        });
+        return doc;
+      }
+
+      // The second column moves left into the space of the first, deleted
+      function deleteFirst(doc) {
+        const layout = doc.section.rows[0].content.items.at(-1);
+        layout.columns.items.shift();
+        layout.columns.items[0].colstart = 1;
+        return layout;
+      }
+
+      it('should mark the widget holding it, not put it back', function () {
+        const older = withLayout();
+        const newer = withLayout();
+        deleteFirst(newer);
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const layout = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(layout.columns.items.map(item => item._id), [ 'second' ]);
+        assert.deepEqual(markers(doc), [
+          [ 'layout', '_modified' ],
+          [ 'second', '_modified' ]
+        ]);
+        assert.equal(doc.aposMeta, undefined);
+      });
+
+      it('should give the widget holding it its AI part', function () {
+        const older = withLayout();
+        const newer = withLayout();
+        deleteFirst(newer);
+        const rows = apos.docVersions.getChangeRows(req, older, newer);
+        for (const row of rows) {
+          row.ai = (row.type === 'deleted') ? 'changed' : false;
+        }
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+        assert.deepEqual(markers(doc), [
+          [ 'layout', '_modified' ],
+          [ 'layout', '_changedWithAi' ],
+          [ 'second', '_modified' ]
+        ]);
+        assert.equal(doc.section.rows[0].content.items.at(-1)._changedWithAi, 'changed');
+      });
+
+      it('should highlight the top-level field of an area holding it, through `extend`', function () {
+        const older = buildProject();
+        const newer = buildProject();
+        older.zone.items.push(column('loose', 1, 'loose-column'));
+        const rows = apos.docVersions.getChangeRows(req, older, newer);
+        assert.deepEqual(rows.map(row => [ row.type, row.path.at(-1).name ]), [
+          [ 'deleted', 'loose' ]
+        ]);
+        rows[0].ai = 'assisted';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+        assert.deepEqual(doc.zone.items.map(item => item._id), [ 'zone-text', 'zone-card' ]);
+        assert.deepEqual(markers(doc), []);
+        assert.deepEqual(doc.aposMeta.zone, {
+          [HIGHLIGHT]: true,
+          '@apostrophecms/document-versions:ai': 'assisted'
+        });
+      });
+    });
+
     it('should mark the widget that changed places, not the widgets it passed', function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -2691,9 +2890,26 @@ describe('Document Versions diff engine', function () {
       ].sort());
       assert.deepEqual(doc.aposMeta.title, {
         [HIGHLIGHT]: true,
-        '@apostrophecms/document-versions:ai': true
+        '@apostrophecms/document-versions:ai': 'changed'
       });
       assert.deepEqual(doc.aposMeta.subtitle, { [HIGHLIGHT]: true });
+    });
+
+    it('should mark a widget with the stronger AI part of its rows', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const [ widget ] = newer.section.rows[0].content.items;
+      widget.title = 'Edited';
+      widget.extra = 'x';
+      for (const parts of [ [ 'assisted', 'changed' ], [ 'changed', 'assisted' ] ]) {
+        const rows = apos.docVersions.getChangeRows(req, older, newer);
+        assert.equal(rows.length, 2);
+        rows.forEach((row, i) => {
+          row.ai = parts[i];
+        });
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+        assert.equal(doc.section.rows[0].content.items[0]._changedWithAi, 'changed');
+      }
     });
 
     it('should name the widgets the versions moved where fewer moves would name others', async function () {
@@ -2727,26 +2943,28 @@ describe('Document Versions diff engine', function () {
         [ byAi._id, '_movedWithAi' ],
         [ byHand._id, '_moved' ]
       ].sort());
+      // A person changed the order last, AI moved its widget alone
+      assert.equal(rows[0].ai, 'assisted');
+      const { items: marked } = doc.section.rows[0].content;
+      assert.equal(marked.find(item => item._id === byAi._id)._movedWithAi, 'changed');
 
-      // The panes of the order row mark the same two
+      // The order row marks the same two, each where it was before the
+      // versions with the position it had then
       await apos.docVersions.addChangeText(req, rows);
       const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
       const [ row ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
-      const {
-        diff, oldText, newText
-      } = row;
+      const { diff, newText } = row;
       const side = change => diff
         .filter(part => [ 'same', change ].includes(part.change))
         .map(part => part.text)
         .join(', ');
-      assert.equal(side('removed'), oldText);
       assert.equal(side('added'), newText);
       assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
         [ 'added', '#1 Opaque' ],
-        [ 'removed', '#3 Nested 2' ],
+        [ 'removed', '#3 Nested 2 (was #1)' ],
         [ 'same', '#2 Rich Text' ],
         [ 'added', '#3 Nested 2' ],
-        [ 'removed', '#1 Opaque' ]
+        [ 'removed', '#1 Opaque (was #3)' ]
       ]);
     });
 
@@ -2833,6 +3051,7 @@ describe('Document Versions diff engine', function () {
           [ 'text', '_changedWithAi' ],
           [ 'text', '_olderVersion' ]
         ]);
+        assert.equal(widget._changedWithAi, 'assisted');
         assert.equal(
           widget.content,
           '<p>One<ins data-apos-version-change="added">' +
@@ -2920,11 +3139,11 @@ describe('Document Versions diff engine', function () {
   });
 
   describe('consolidate', function () {
-    // A run of versions, each member editing a copy of the previous
-    // document; `ai` marks the members saved with AI
-    function run(...members) {
+    // The pairs of consecutive versions, each editing a copy of the previous
+    // document; `ai` marks the versions saved with AI
+    function pairsOf(...versions) {
       let doc = buildDoc();
-      return members.map(({ ai = false, edit }) => {
+      return versions.map(({ ai = false, edit }) => {
         const older = doc;
         doc = structuredClone(older);
         edit(doc);
@@ -2939,7 +3158,7 @@ describe('Document Versions diff engine', function () {
     const getRows = doc => doc.section.rows;
 
     it('should give a single version its rows with its AI flag', function () {
-      const pairs = run({
+      const pairs = pairsOf({
         edit: doc => {
           doc.title = 'Renamed';
           doc.section.rows[0].count = 5;
@@ -2958,12 +3177,12 @@ describe('Document Versions diff engine', function () {
       pairs[0].ai = true;
       assert.deepEqual(
         apos.docVersions.getConsolidatedRows(req, pairs).map(row => row.ai),
-        [ true, true ]
+        [ 'changed', 'changed' ]
       );
     });
 
-    it('should list a path several members changed once, from its first value to its last', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should list a path several versions changed once, from its first value to its last', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             doc.title = 'Second';
@@ -2978,15 +3197,15 @@ describe('Document Versions diff engine', function () {
         }
       ));
       assert.deepEqual(rows.map(brief), [
-        [ 'modified', 'string', 'title', true ],
+        [ 'modified', 'string', 'title', 'changed' ],
         [ 'added', 'string', 'subtitle', false ]
       ]);
       assert.equal(rows[0].old, 'Title root');
       assert.equal(rows[0].new, 'Third');
     });
 
-    it('should call a path modified and then deleted deleted, as it was before the run', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should call a path modified and then deleted deleted, as it was before the versions', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3000,14 +3219,14 @@ describe('Document Versions diff engine', function () {
         }
       ));
       assert.deepEqual(rows.map(brief), [
-        [ 'deleted', 'arrayItem', 'root.section.rows.1', true ]
+        [ 'deleted', 'arrayItem', 'root.section.rows.1', 'assisted' ]
       ]);
       assert.equal(rows[0].old.title, 'Title root.section.rows.1');
       assert.equal(rows[0].path.at(-1).label, 'Title root.section.rows.1');
     });
 
     it('should call a path added and then modified added, with its final value', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             getRows(doc).push({
@@ -3025,14 +3244,14 @@ describe('Document Versions diff engine', function () {
         }
       ));
       assert.deepEqual(rows.map(brief), [
-        [ 'added', 'arrayItem', 'root.section.rows.2', true ]
+        [ 'added', 'arrayItem', 'root.section.rows.2', 'changed' ]
       ]);
       assert.equal(rows[0].new.title, 'Third, edited');
       assert.equal(rows[0].path.at(-1).label, 'Third, edited');
     });
 
     it('should drop a path added and then deleted', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3053,7 +3272,7 @@ describe('Document Versions diff engine', function () {
     });
 
     it('should drop a path that ends where it started', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3072,8 +3291,8 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
-    it('should flag a path an AI member changed, whoever changed it after', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should call a path AI changed and a version without AI changed after it assisted', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             doc.title = 'Second';
@@ -3093,12 +3312,12 @@ describe('Document Versions diff engine', function () {
       ));
       assert.deepEqual(rows.map(brief), [
         [ 'modified', 'string', 'title', false ],
-        [ 'added', 'string', 'subtitle', true ]
+        [ 'added', 'string', 'subtitle', 'assisted' ]
       ]);
     });
 
-    it('should flag an item or widget an AI member changed inside', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should flag an item or widget an AI version changed inside', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             getRows(doc).push({
@@ -3128,14 +3347,14 @@ describe('Document Versions diff engine', function () {
         }
       ));
       assert.deepEqual(rows.map(brief), [
-        [ 'added', 'widget', 'root.section.rows.0.content.3', true ],
-        [ 'deleted', 'arrayItem', 'root.section.rows.1', true ],
-        [ 'added', 'arrayItem', 'root.section.rows.2', true ]
+        [ 'added', 'widget', 'root.section.rows.0.content.3', 'changed' ],
+        [ 'deleted', 'arrayItem', 'root.section.rows.1', 'assisted' ],
+        [ 'added', 'arrayItem', 'root.section.rows.2', 'changed' ]
       ]);
     });
 
-    it('should flag a path an AI member created by adding its parent', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should flag a path an AI version created by adding its parent', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             doc.section = null;
@@ -3158,7 +3377,7 @@ describe('Document Versions diff engine', function () {
       ));
       assert.deepEqual(rows.map(brief), [
         [ 'modified', 'integer', 'count', false ],
-        [ 'modified', 'string', 'title', true ]
+        [ 'modified', 'string', 'title', 'changed' ]
       ]);
       assert.deepEqual(rows[1].path.map(segment => segment.name), [ 'section', 'title' ]);
     });
@@ -3175,18 +3394,18 @@ describe('Document Versions diff engine', function () {
         [ 'modified', 'string', 'title', item ]
       ];
       assert.deepEqual(
-        apos.docVersions.getConsolidatedRows(req, run({
+        apos.docVersions.getConsolidatedRows(req, pairsOf({
           ai: true,
           edit: reorder
         }, { edit })).map(brief),
-        expected(true, false)
+        expected('changed', false)
       );
       assert.deepEqual(
-        apos.docVersions.getConsolidatedRows(req, run({ edit: reorder }, {
+        apos.docVersions.getConsolidatedRows(req, pairsOf({ edit: reorder }, {
           ai: true,
           edit
         })).map(brief),
-        expected(false, true)
+        expected(false, 'changed')
       );
     });
 
@@ -3194,7 +3413,7 @@ describe('Document Versions diff engine', function () {
       const reorder = doc => {
         getRows(doc).reverse();
       };
-      assert.deepEqual(apos.docVersions.getConsolidatedRows(req, run(
+      assert.deepEqual(apos.docVersions.getConsolidatedRows(req, pairsOf(
         { edit: reorder },
         {
           ai: true,
@@ -3204,7 +3423,7 @@ describe('Document Versions diff engine', function () {
     });
 
     it('should keep a widget\'s schema fields apart from the data it stores beside them', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3219,12 +3438,12 @@ describe('Document Versions diff engine', function () {
       ));
       assert.deepEqual(rows.map(brief), [
         [ 'modified', 'string', 'title', false ],
-        [ 'modified', 'widget', 'root.section.rows.0.content.0', true ]
+        [ 'modified', 'widget', 'root.section.rows.0.content.0', 'changed' ]
       ]);
     });
 
-    it('should flag every row when every member used AI', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should flag every row when every version used AI', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3238,11 +3457,11 @@ describe('Document Versions diff engine', function () {
           }
         }
       ));
-      assert.deepEqual(rows.map(row => row.ai), [ true, true ]);
+      assert.deepEqual(rows.map(row => row.ai), [ 'changed', 'changed' ]);
     });
 
-    it('should take labels, ordinals and order from the run\'s ends', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should take labels, ordinals and order from the first and last versions', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             getRows(doc).shift();
@@ -3257,7 +3476,7 @@ describe('Document Versions diff engine', function () {
       ));
       assert.deepEqual(rows.map(row => [ row.type, row.path.at(-1).name, row.ai ]), [
         [ 'deleted', 'root.section.rows.0', false ],
-        [ 'modified', 'title', true ]
+        [ 'modified', 'title', 'changed' ]
       ]);
       assert.deepEqual(rows.map(row => row.path[2]), [
         {
@@ -3271,6 +3490,85 @@ describe('Document Versions diff engine', function () {
           ordinal: 1
         }
       ]);
+    });
+
+    it('should call a path assisted when AI changed it before the versions', function () {
+      const aiDoc = buildDoc();
+      aiDoc.title = 'By AI';
+      const before = apos.docVersions.getChangeRows(req, buildDoc(), aiDoc);
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf({
+        edit: doc => {
+          doc.title = 'By hand';
+          doc.subtitle = 'By hand';
+        }
+      }), { before });
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', 'assisted' ],
+        [ 'added', 'string', 'subtitle', false ]
+      ]);
+    });
+
+    it('should relate the rows AI changed before the versions by path', function () {
+      // A document AI wrote whole: every path it holds
+      const blank = apos.doc.getManager('nested').newInstance();
+      const before = apos.docVersions.getChangeRows(req, blank, buildDoc());
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf({
+        edit: doc => {
+          getRows(doc)[0].title = 'By hand';
+          getRows(doc).push({
+            ...structuredClone(getRows(doc)[1]),
+            _id: 'root.section.rows.2',
+            title: 'Third'
+          });
+        }
+      }), { before });
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', 'assisted' ],
+        [ 'added', 'arrayItem', 'root.section.rows.2', false ]
+      ]);
+    });
+
+    it('should keep AI\'s last change of a path apart from the rows before the versions', function () {
+      const aiDoc = buildDoc();
+      aiDoc.title = 'By AI';
+      const before = apos.docVersions.getChangeRows(req, buildDoc(), aiDoc);
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
+        {
+          edit: doc => {
+            doc.title = 'By hand';
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.title = 'By AI again';
+          }
+        }
+      ), { before });
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', 'changed' ]
+      ]);
+    });
+
+    it('should give each moved item AI\'s part in its own moves', function () {
+      const toTop = doc => {
+        const { items } = getRows(doc)[0].content;
+        items.unshift(items.pop());
+        return items[0]._id;
+      };
+      // AI moved the last widget to the top before the versions, a person
+      // does it again in them
+      const aiDoc = buildDoc();
+      const moved = toTop(aiDoc);
+      const before = apos.docVersions.getChangeRows(req, buildDoc(), aiDoc);
+      const [ row ] = apos.docVersions.getConsolidatedRows(
+        req,
+        pairsOf({ edit: toTop }),
+        { before }
+      );
+      assert.equal(row.kind, 'area');
+      assert.equal(row.ai, 'assisted');
+      assert.deepEqual([ ...row.aiItems ], [ [ moved, 'assisted' ] ]);
     });
   });
 

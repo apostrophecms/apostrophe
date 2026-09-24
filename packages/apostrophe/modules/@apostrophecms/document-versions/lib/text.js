@@ -6,6 +6,8 @@
 const _ = require('lodash');
 const { diffWords, diffArrays } = require('diff');
 const getFormatChanges = require('./rich-text-format.js');
+const { getTextParts } = require('./rich-text-diff.js');
+const { FOLDED_MARKS } = require('./rich-text-tokens.js');
 const findBaseType = require('./field-kind.js');
 const {
   formatLines, countLines, getLinks, getPermalinkId
@@ -38,6 +40,8 @@ const BOX_SIDES = {
   bottom: 'apostrophe:boxFieldBottom',
   left: 'apostrophe:boxFieldLeft'
 };
+// The formatting changes the text parts of rich text show in the words
+const FOLDED = new Set([ 'split', 'merged', 'block', 'style' ]);
 /**
  * Plaintext of rich text markup: tags stripped, entities decoded, every
  * block boundary a line break, runs of them one line break. A figure, its
@@ -139,6 +143,11 @@ function getTitle(schema, titleField, item, ctx) {
  * `addText` to put in words. Run before `getRelatedIds`, which the images
  * among them need. A row whose markup cannot be read gets none.
  *
+ * A row whose change can be listed as text parts (`getTextParts` of
+ * `lib/rich-text-diff.js`) gets them as `textParts`, for `addWordDiff`, and
+ * its `format` leaves out what they show: splits, merges, blocks and their
+ * styles, bold and italic.
+ *
  * @param {import('./diff.js').ChangeRow[]} rows Rows from `walk`, modified.
  * @param {import('./diff.js').DiffContext} ctx
  * @returns {import('./diff.js').ChangeRow[]} The same rows.
@@ -149,7 +158,15 @@ function addFormat(rows, ctx) {
       continue;
     }
     try {
-      const format = getFormatChanges(row.old, row.new);
+      const parts = getTextParts(row.old, row.new);
+      const format = getFormatChanges(row.old, row.new)
+        .flatMap(record => (parts ? unfold(record) : [ record ]));
+      if (parts) {
+        Object.defineProperty(row, 'textParts', {
+          value: parts,
+          enumerable: false
+        });
+      }
       if (format.length) {
         Object.defineProperty(row, 'format', {
           value: format,
@@ -161,6 +178,27 @@ function addFormat(rows, ctx) {
     }
   }
   return rows;
+
+  // What a record says that the text parts do not show
+  function unfold(record) {
+    if (FOLDED.has(record.kind)) {
+      return [];
+    }
+    const side = {
+      marksAdded: 'new',
+      marksRemoved: 'old'
+    }[record.kind];
+    if (!side) {
+      return [ record ];
+    }
+    const marks = record[side].filter(mark => !FOLDED_MARKS.has(mark.name));
+    return marks.length
+      ? [ {
+        ...record,
+        [side]: marks
+      } ]
+      : [];
+  }
 }
 
 /**
@@ -260,8 +298,12 @@ function addText(rows, ctx, {
  * `added` or `removed`. A row whose texts do not differ has no `added` or
  * `removed` part. The order of an array or area compares item by item:
  * each part is a whole item, without the commas of the text, so an item
- * that moved is marked whole and the ones it passed are not. Run after
+ * that moved is marked whole and the ones it passed are not, and where it
+ * was also says the position it had (`#1 Card (was #3)`). Run after
  * `addText`. A row that cannot be compared has no parts.
+ *
+ * A rich text row with `textParts` (see `addFormat`) has those instead,
+ * the words in their bold and italic (`marks`).
  *
  * @param {import('./diff.js').ChangeRow[]} rows Rows with text, modified.
  * @param {import('./diff.js').DiffContext} ctx
@@ -270,12 +312,16 @@ function addText(rows, ctx, {
 function addWordDiff(rows, ctx) {
   for (const row of rows) {
     try {
-      row.diff = row.items
-        ? orderDiff(row, ctx)
-        : diffWords(row.oldText, row.newText).map(part => ({
+      if (row.items) {
+        row.diff = orderDiff(row, ctx);
+      } else if (row.textParts) {
+        row.diff = row.textParts;
+      } else {
+        row.diff = diffWords(row.oldText, row.newText).map(part => ({
           text: part.value,
           change: changeOf(part)
         }));
+      }
     } catch (err) {
       ctx.onError?.(err, row.path);
       row.diff = [];
@@ -382,14 +428,21 @@ function changeOf(part) {
 
 // The parts of an order row: whole items, in the order a reader of both
 // sides meets them, an item that moved being `removed` where it was and
-// `added` where it is. No part holds the commas of the text. The items
-// that moved are the row's `movedItems` when it names them, otherwise the
-// fewest that explain the new order
+// `added` where it is. Where it was, it also says the position it had
+// there. No part holds the commas of the text. The items that moved are the
+// row's `movedItems` when it names them, otherwise the fewest that explain
+// the new order
 function orderDiff(row, ctx) {
-  const part = (id, change) => ({
-    text: itemText(row.items[id], ctx),
-    change
-  });
+  const part = (id, change) => {
+    const item = row.items[id];
+    const was = (change === 'removed') && (item.olderOrdinal !== item.ordinal);
+    return {
+      text: was
+        ? `${itemText(item, ctx)} ${wasText(item.olderOrdinal, ctx)}`
+        : itemText(item, ctx),
+      change
+    };
+  };
   if (!row.movedItems) {
     return diffArrays(row.old, row.new)
       .flatMap(found => found.value.map(id => part(id, changeOf(found))));
@@ -422,6 +475,11 @@ function itemText({
   const type = label && (ctx.t ? ctx.t(label) : label);
   const name = [ type, title ].filter(Boolean).join(' · ');
   return name ? `#${ordinal} ${name}` : `#${ordinal}`;
+}
+
+// The position an item that moved had: `(was #3)`
+function wasText(ordinal, ctx) {
+  return ctx.t ? ctx.t('apostrophe:versionOrderWas', { ordinal }) : `(#${ordinal})`;
 }
 
 // `scalar`, one of the special types, or `null` when the value has no text.

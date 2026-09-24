@@ -81,6 +81,15 @@
 // unset is marked as modified as a whole. `@apostrophecms/rich-text-widget`
 // sets it: the text that changed is marked inside its `content`.
 //
+// ### `versionsRenderDeleted`
+//
+// Defaults to true: a widget of this type deleted in a document version is
+// shown in place in that version, marked as deleted. Set it to `false` for
+// a type whose widgets place themselves in their parent's layout, where a
+// deleted one shown in place would overlap the others. The widget holding
+// it is then marked as modified instead, or, when there is none, its
+// top-level field. `@apostrophecms/layout-column-widget` sets it to `false`.
+//
 // ### `titleField`
 //
 // The name of a schema field of this widget type, dot notation allowed,

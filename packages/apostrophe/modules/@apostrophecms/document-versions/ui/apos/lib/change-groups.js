@@ -22,11 +22,16 @@ function matchesFilter(row, filter) {
 
 // Whether a row is among the changes behind a marker of the body: those
 // of the widget `widgetId` (and, when it `moved`, the order of its area),
-// or those of the top-level field `field` outside any widget
+// or those of the top-level field `field` outside any widget. With
+// `marked`, the markers of the body by widget `_id`, a deleted widget the
+// body does not show counts as a change of the widget or field holding it
 function isMarkerTarget(row, {
-  field, widgetId, moved = false
+  field, widgetId, moved = false, marked
 }) {
-  const widget = row.path.findLast(segment => segment.widgetType);
+  const widgets = row.path.filter(segment => segment.widgetType);
+  const hidden = marked && (row.kind === 'widget') && (row.type === 'deleted') &&
+    !marked[widgets.at(-1).name];
+  const widget = widgets.at(hidden ? -2 : -1);
   if (!widgetId) {
     return !widget && (row.path[0].name === field);
   }
@@ -68,7 +73,7 @@ function getChangeGroups(rows, filter) {
       segments.push(path.at(-1));
     }
     const diff = row.diff || [];
-    const short = order ? diff : elide(diff);
+    const short = order ? elideItems(diff) : elide(diff);
     // Two images may share a title
     const changed = diff.some(part => part.change !== 'same') || Boolean(row.images);
     const format = row.formatChanges || [];
@@ -82,8 +87,16 @@ function getChangeGroups(rows, filter) {
       key: String(index),
       row,
       segments,
-      // Its parts are whole items, shown as a list in the side's colour
+      // Its parts are whole items, one to a line
       order,
+      // How the change shows: `block`, both sides in one stream of parts,
+      // for rich text and the order of items; `sides`, each side apart
+      layout: (order || row.kind === 'richText') ? 'block' : 'sides',
+      // What the block shows, in full and with the long unchanged runs cut
+      // down: of text, the words away from a change; of an order, the items
+      // away from a move
+      inline: diff,
+      inlineShort: short,
       // What each side shows: the parts both share and its own, in full
       // and with the long unchanged runs cut down
       parts: bySide(diff),
@@ -116,26 +129,89 @@ function getChangeGroups(rows, filter) {
   }
 
   // The parts with every long unchanged run cut down to the words next to a
-  // change. Both sides share those runs, so they are cut alike
+  // change. Both sides share those runs, so they are cut alike. A run can be
+  // several parts, words in bold or italic among them
   function elide(parts) {
-    return parts.flatMap((part, index) => {
-      if (part.change !== 'same' || part.text.length <= ELIDE_OVER) {
-        return [ part ];
+    const runs = [];
+    for (const part of parts) {
+      const run = runs.at(-1);
+      if (run && (part.change === 'same') && (run[0].change === 'same')) {
+        run.push(part);
+      } else {
+        runs.push([ part ]);
       }
-      const head = part.text.slice(0, ELIDE_CONTEXT).replace(/\S*$/, '');
-      const tail = part.text.slice(-ELIDE_CONTEXT).replace(/^\S*/, '');
+    }
+    return runs.flatMap((run, index) => {
+      const length = run.reduce((total, part) => total + part.text.length, 0);
+      if ((run[0].change !== 'same') || (length <= ELIDE_OVER)) {
+        return run;
+      }
       return [
-        index > 0 && {
-          ...part,
-          text: head.trimEnd()
-        },
+        ...((index > 0) ? head(run) : []),
         { change: 'elided' },
-        index < parts.length - 1 && {
-          ...part,
-          text: tail.trimStart()
-        }
-      ].filter(Boolean);
+        ...((index < runs.length - 1) ? tail(run) : [])
+      ];
     });
+
+    // The first words of a run, not cut inside a word
+    function head(run) {
+      const kept = [];
+      let left = ELIDE_CONTEXT;
+      for (const part of run) {
+        if (left <= 0) {
+          break;
+        }
+        const text = part.text.slice(0, left);
+        left -= part.text.length;
+        kept.push({
+          ...part,
+          text: (left < 0) ? text.replace(/\S*$/, '') : text
+        });
+      }
+      kept.at(-1).text = kept.at(-1).text.trimEnd();
+      return kept.filter(part => part.text);
+    }
+
+    // The last words of a run, the same way
+    function tail(run) {
+      const kept = [];
+      let left = ELIDE_CONTEXT;
+      for (const part of [ ...run ].reverse()) {
+        if (left <= 0) {
+          break;
+        }
+        const text = part.text.slice(-left);
+        left -= part.text.length;
+        kept.unshift({
+          ...part,
+          text: (left < 0) ? text.replace(/^\S*/, '') : text
+        });
+      }
+      kept[0].text = kept[0].text.trimStart();
+      return kept.filter(part => part.text);
+    }
+  }
+
+  // The items of an order with every run of unchanged ones cut down to one
+  // `elided` part, but for the items next to a moved one, which show where
+  // it went and where it was. A single item is shown rather than cut
+  function elideItems(parts) {
+    const moved = index => parts[index] && (parts[index].change !== 'same');
+    const kept = parts.map((part, index) => {
+      return moved(index) || moved(index - 1) || moved(index + 1);
+    });
+    const list = [];
+    let run = [];
+    parts.forEach((part, index) => {
+      if (!kept[index]) {
+        run.push(part);
+        return;
+      }
+      list.push(...((run.length > 1) ? [ { change: 'elided' } ] : run), part);
+      run = [];
+    });
+    list.push(...((run.length > 1) ? [ { change: 'elided' } ] : run));
+    return list;
   }
 }
 

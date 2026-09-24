@@ -1,14 +1,14 @@
 // Change detection between two versions of a document: pure functions over
 // a schema and two documents. `walk` lists every changed path at its full
 // depth, `annotate` marks a copy of the newer document for WYSIWYG display,
-// `consolidate` lists the changes of a run of consecutive versions as one.
+// `consolidate` lists the changes of consecutive versions as one.
 // All take a `ctx` built by the module (`getDiffContext`) so that nothing
 // here reaches for `apos` directly.
 
 const _ = require('lodash');
 const { diffArrays } = require('diff');
 const text = require('./text.js');
-const diffRichText = require('./rich-text-diff.js');
+const { diffRichText } = require('./rich-text-diff.js');
 const findBaseType = require('./field-kind.js');
 
 // Field types with their own walk, reached through `extend` as well
@@ -43,7 +43,8 @@ const ORDER = Symbol('order');
  *   for `extend`, `isEqual` and `isEmpty`.
  * @property {(type: string) => object|undefined} getWidgetManager The
  *   widget module for a widget `type` (`apos.area.getWidgetManager`), read
- *   for `schema`, `label`, `options.renderVersions` and `getRichText`.
+ *   for `schema`, `label`, `options.renderVersions`,
+ *   `options.versionsRenderDeleted` and `getRichText`.
  *   `undefined` for a type without a module.
  * @property {(doc: object, namespace: string, ...pathKeyValue: any[]) => void} setMeta
  *   `apos.doc.setMeta`, used by `annotate` to highlight top-level fields.
@@ -143,15 +144,21 @@ const ORDER = Symbol('order');
  *   the text representation; `null` for a rich text or `widget` row. Attached
  *   as a non-enumerable property, so it is invisible to `JSON.stringify`
  *   and to deep equality.
- * @property {Object<string, { ordinal: number, label?: string, title?: string }>} [items]
+ * @property {Object<string, {
+ *   ordinal: number,
+ *   olderOrdinal: number,
+ *   label?: string,
+ *   title?: string
+ * }>} [items]
  *   Order rows only, for the text representation: by `_id`, each item's
- *   position in the newer document, its widget type's `label` and its
- *   title. Non-enumerable, like `field`.
+ *   position in the newer document and in the older one, its widget type's
+ *   `label` and its title. Non-enumerable, like `field`.
  * @property {string[]} [movedItems] Order rows of `consolidate` only, when
  *   the moves of its versions explain the new order (see `explainOrder`):
  *   the `_id`s of the items they moved. Non-enumerable, like `field`.
- * @property {Set<string>} [aiItems] Comes with `movedItems`: those of them
- *   a version saved with AI moved.
+ * @property {Map<string, 'changed'|'assisted'>} [aiItems] Comes with
+ *   `movedItems`: AI's part in moving each of them that AI moved, as `ai`
+ *   reads for a row, by `_id`.
  * @property {import('./rich-text-format.js').FormatChange[]} [format]
  *   Modified rich text rows, once `addFormat` of `lib/text.js` ran and found
  *   some: the formatting that changed. Non-enumerable, like `field`.
@@ -160,9 +167,11 @@ const ORDER = Symbol('order');
  * @property {{ old?: object[], new?: object[] }} [images] Relationship rows
  *   whose ids changed, set by `addText`: the related images of each side,
  *   `{ text, href, change }` each.
- * @property {boolean} [ai] Rows of `consolidate` only: whether a version
- *   saved with AI changed this path, or one above or below it; for an
- *   order row, whether one changed that order.
+ * @property {false|'changed'|'assisted'} [ai] Rows of `consolidate` only:
+ *   AI's part in the change. `changed` when the last version to change this
+ *   path, one above it or one below it was saved with AI; `assisted` when it
+ *   was saved without, after AI changed the path; `false` when AI never did.
+ *   For an order row, the same of the versions that changed that order.
  */
 
 /**
@@ -217,7 +226,10 @@ function walk(schema, older, newer, ctx) {
  * - `_inserted: true` on a widget `older` does not have.
  * - `_deleted: true` on a widget `newer` does not have. A clone of it is
  *   put back into the area at its older position, so it can render in
- *   place; it exists in the returned document only.
+ *   place; it exists in the returned document only. A widget whose type
+ *   sets the `versionsRenderDeleted` option to `false` is not put back:
+ *   the widget holding it is marked as changed instead, or, in a top-level
+ *   area, the field is highlighted.
  * - `_olderVersion: <the older widget>` on a changed widget whose type sets
  *   the `renderVersions` option, so its template can compare the two. For
  *   a rich text type the copy's `content` also becomes its markup with the
@@ -236,10 +248,11 @@ function walk(schema, older, newer, ctx) {
  * meta of its top-level field (`aposMeta.<field>`), which the read-only
  * schema view shows as highlighted.
  *
- * Rows flagged `ai` (see `consolidate`) add `_changedWithAi: true` beside
- * `_inserted`, `_deleted`, `_modified` or `_olderVersion`,
- * `_movedWithAi: true` beside `_moved`, and the
- * `@apostrophecms/document-versions:ai` meta beside a field's highlight.
+ * Rows with an `ai` part (see `consolidate`) add `_changedWithAi` beside
+ * `_inserted`, `_deleted`, `_modified` or `_olderVersion`, `_movedWithAi`
+ * beside `_moved`, and the `@apostrophecms/document-versions:ai` meta
+ * beside a field's highlight, each set to that part. Where several rows
+ * meet, `changed` wins over `assisted`.
  *
  * @param {object[]} schema The schema of both documents.
  * @param {object} older The older document as stored.
@@ -259,33 +272,34 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
         const widget = resolve(doc, [ ...row.path, { name: id } ]);
         if (widget) {
           widget._moved = true;
-          if (row.aiItems ? row.aiItems.has(id) : row.ai) {
-            widget._movedWithAi = true;
-          }
+          setAi(widget, '_movedWithAi', row.aiItems ? row.aiItems.get(id) : row.ai);
         }
       }
       continue;
     }
-    const widgetAt = _.findLastIndex(row.path, segment => segment.widgetType);
+    let widgetAt = _.findLastIndex(row.path, segment => segment.widgetType);
     if (row.kind === 'widget' && row.type === 'deleted') {
-      const area = resolve(doc, row.path.slice(0, -1));
-      if (area?.items) {
-        const at = Math.min(row.path.at(-1).ordinal - 1, area.items.length);
-        area.items.splice(at, 0, {
-          ..._.cloneDeep(row.old),
-          _deleted: true,
-          ...(row.ai && { _changedWithAi: true })
-        });
+      const manager = ctx.getWidgetManager(row.path.at(-1).widgetType);
+      if (manager?.options.versionsRenderDeleted !== false) {
+        const area = resolve(doc, row.path.slice(0, -1));
+        if (area?.items) {
+          const at = Math.min(row.path.at(-1).ordinal - 1, area.items.length);
+          area.items.splice(at, 0, {
+            ..._.cloneDeep(row.old),
+            _deleted: true,
+            ...(row.ai && { _changedWithAi: row.ai })
+          });
+        }
+        continue;
       }
-      continue;
+      // Marked on the widget holding it, or on its top-level field
+      widgetAt = _.findLastIndex(row.path.slice(0, -1), segment => segment.widgetType);
     }
     if (row.kind === 'widget' && row.type === 'added') {
       const widget = resolve(doc, row.path);
       if (widget) {
         widget._inserted = true;
-        if (row.ai) {
-          widget._changedWithAi = true;
-        }
+        setAi(widget, '_changedWithAi', row.ai);
       }
       continue;
     }
@@ -294,8 +308,10 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
         markRichTextField(doc, row, ctx);
       }
       ctx.setMeta(doc, HIGHLIGHT_NAMESPACE, row.path[0].name, HIGHLIGHT_KEY, true);
-      if (row.ai) {
-        ctx.setMeta(doc, AI_NAMESPACE, row.path[0].name, AI_KEY, true);
+      const marked = doc.aposMeta?.[row.path[0].name]?.[`${AI_NAMESPACE}:${AI_KEY}`];
+      const ai = getStrongerAi(marked, row.ai);
+      if (ai) {
+        ctx.setMeta(doc, AI_NAMESPACE, row.path[0].name, AI_KEY, ai);
       }
       continue;
     }
@@ -304,9 +320,7 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
     if (!widget) {
       continue;
     }
-    if (row.ai) {
-      widget._changedWithAi = true;
-    }
+    setAi(widget, '_changedWithAi', row.ai);
     const manager = ctx.getWidgetManager(widget.type);
     if ((row.kind === 'richText') && manager?.options.renderVersions) {
       markRichText(widget, row, ctx);
@@ -321,6 +335,13 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
     }
   }
   return doc;
+
+  function setAi(widget, key, ai) {
+    const stronger = getStrongerAi(widget[key], ai);
+    if (stronger) {
+      widget[key] = stronger;
+    }
+  }
 }
 
 /**
@@ -330,42 +351,56 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
  * to the value it ended with. A path that ended where it started, or was
  * added and deleted along the way, does not appear.
  *
- * Every row gains `ai`: whether a version saved with AI changed that path,
- * one above it or one below it. The order of an array or area is apart
- * from its items: its row is flagged when a version saved with AI changed
- * the order, and that flags no other row. With one pair, every row takes
- * that pair's flag.
+ * Every row gains `ai`, AI's part in it: `changed` when the last version
+ * that changed that path, one above it or one below it was saved with AI;
+ * `assisted` when that version was saved without AI but an earlier one, or
+ * a row of `before`, changed a related path with AI; `false` otherwise. The
+ * order of an array or area is apart from its items: its row is related to
+ * the versions that changed the order, and to no other row. With one pair
+ * and no `before`, every row takes that pair's flag.
  *
  * @param {object[]} schema The schema of the documents.
  * @param {Array<{ older: object, newer: object, ai?: boolean }>} pairs
- *   The members, oldest first, at least one: each member's document as
- *   `newer`, the document it changed as `older` (the previous member's
- *   `newer`, or for the first member the version before the run) and
- *   whether the member was saved with AI.
+ *   The versions, oldest first, at least one: each version's document as
+ *   `newer`, the document it changed as `older` (the previous version's
+ *   `newer`, or for the first one the version before them) and whether the
+ *   version was saved with AI.
  * @param {DiffContext} ctx
- * @returns {ChangeRow[]} Empty when the run ends where it started.
+ * @param {object} [options]
+ * @param {ChangeRow[]} [options.before] Rows AI changed before the versions,
+ *   which make a later change without AI `assisted`.
+ * @returns {ChangeRow[]} Empty when the versions end where they started.
  */
-function consolidate(schema, pairs, ctx) {
+function consolidate(schema, pairs, ctx, { before = [] } = {}) {
   const rows = walk(schema, pairs[0].older, pairs.at(-1).newer, ctx);
-  const aiPairs = pairs.filter(pair => pair.ai);
-  if (!aiPairs.length || (aiPairs.length === pairs.length)) {
+  const withAi = pairs.filter(pair => pair.ai).length;
+  if ((withAi === pairs.length) || (!withAi && !before.length)) {
     for (const row of rows) {
-      row.ai = Boolean(aiPairs.length);
+      row.ai = withAi ? 'changed' : false;
     }
     return rows;
   }
-  const walkOf = pair => walk(schema, pair.older, pair.newer, ctx);
-  const aiRows = aiPairs.flatMap(walkOf);
-  const touched = aiRows.map(keyOf);
+  // Every version's own rows, oldest first
+  const edits = pairs.map(pair => {
+    const editRows = (pairs.length === 1)
+      ? rows
+      : walk(schema, pair.older, pair.newer, ctx);
+    return {
+      ai: Boolean(pair.ai),
+      rows: editRows,
+      keys: editRows.map(keyOf)
+    };
+  });
+  const earlier = before.map(keyOf);
   for (const row of rows) {
     const key = keyOf(row);
-    row.ai = touched.some(other => isRelated(key, other));
+    const related = keys => keys.some(other => isRelated(key, other));
+    const touching = edits.filter(edit => related(edit.keys));
+    row.ai = getAi(touching, related(earlier));
   }
-  const orders = rows.filter(row => row.ai && isOrder(row));
-  if (orders.length) {
-    const otherRows = pairs.filter(pair => !pair.ai).flatMap(walkOf);
-    for (const row of orders) {
-      explainOrder(row, aiRows, otherRows);
+  for (const row of rows) {
+    if (row.ai && isOrder(row)) {
+      explainOrder(row, edits, before);
     }
   }
   return rows;
@@ -736,7 +771,10 @@ function walkOrder(kind, field, entries, path, rows, describe) {
   Object.defineProperty(result, 'items', {
     value: Object.fromEntries(matched.map(entry => [
       entry.newer._id,
-      describe(entry.newer, entry.ordinal)
+      {
+        ...describe(entry.newer, entry.ordinal),
+        olderOrdinal: entry.olderOrdinal
+      }
     ])),
     enumerable: false
   });
@@ -803,25 +841,29 @@ function getMovedIds(row) {
     .flatMap(part => part.value);
 }
 
-// Names the items a consolidated order row moved, and which of them AI
-// moved. "Which items moved" has more than one right answer, and the
-// fewest moves between the two ends may name items no version touched. So
-// the moves of the versions themselves are preferred when they explain
-// the new order: without the moved items, both lists are in the same
-// order. Sets `movedItems` and `aiItems` then; otherwise leaves `row` as
-// it is, and every moved item takes the row's AI flag
-function explainOrder(row, aiRows, otherRows) {
+// Names the items a consolidated order row moved, and AI's part in moving
+// each. "Which items moved" has more than one right answer, and the fewest
+// moves between the two ends may name items no version touched. So the
+// moves of the versions themselves are preferred when they explain the new
+// order: without the moved items, both lists are in the same order. Sets
+// `movedItems` and `aiItems` then; otherwise leaves `row` as it is, and
+// every moved item takes the row's `ai`. `edits` are the versions' own
+// rows, oldest first, `before` the rows AI changed before them
+function explainOrder(row, edits, before) {
   const key = keyOf(row);
-  const movedIn = rows => rows
+  const movedIn = rows => new Set(rows
     .filter(other => isOrder(other) && _.isEqual(keyOf(other), key))
     .flatMap(getMovedIds)
-    .filter(id => row.new.includes(id));
-  const byAi = new Set(movedIn(aiRows));
+    .filter(id => row.new.includes(id)));
+  const moves = edits.map(edit => ({
+    ai: edit.ai,
+    ids: movedIn(edit.rows)
+  }));
   const holds = moved => _.isEqual(
     row.old.filter(id => !moved.has(id)),
     row.new.filter(id => !moved.has(id))
   );
-  const moved = new Set([ ...movedIn(otherRows), ...byAi ]);
+  const moved = new Set(moves.flatMap(move => [ ...move.ids ]));
   if (!holds(moved)) {
     return;
   }
@@ -832,16 +874,45 @@ function explainOrder(row, aiRows, otherRows) {
       moved.add(id);
     }
   }
+  const movedBefore = movedIn(before);
+  const aiItems = new Map();
+  for (const id of moved) {
+    const ai = getAi(moves.filter(move => move.ids.has(id)), movedBefore.has(id));
+    if (ai) {
+      aiItems.set(id, ai);
+    }
+  }
   Object.defineProperties(row, {
     movedItems: {
       value: row.new.filter(id => moved.has(id)),
       enumerable: false
     },
     aiItems: {
-      value: new Set([ ...moved ].filter(id => byAi.has(id))),
+      value: aiItems,
       enumerable: false
     }
   });
+}
+
+// AI's part in a change, from the versions that made it, oldest first, and
+// whether AI changed it before them (see `consolidate`)
+function getAi(touching, aiBefore) {
+  const last = touching.at(-1);
+  if (!last) {
+    return false;
+  }
+  if (last.ai) {
+    return 'changed';
+  }
+  return (aiBefore || touching.some(edit => edit.ai)) ? 'assisted' : false;
+}
+
+// The stronger of two AI parts: `changed` over `assisted` over none
+function getStrongerAi(one, two) {
+  if ((one === 'changed') || (two === 'changed')) {
+    return 'changed';
+  }
+  return one || two || false;
 }
 
 // Whether a row is the order of an array's or area's items

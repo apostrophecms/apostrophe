@@ -42,6 +42,13 @@ export default function() {
   }
 
   function createFieldApp(el) {
+    // A read only preview, such as a past version of the document, shows
+    // the value and nothing more
+    if (el.closest('[data-apos-read-only]')) {
+      el.removeAttribute('data-apos-wysiwyg-field-newly-editable');
+      return;
+    }
+
     // The definition is not in the markup: the page already carries the
     // schema of every doc type and widget type on it, so the field is named
     // by its id and looked up there

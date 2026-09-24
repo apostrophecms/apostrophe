@@ -35,6 +35,7 @@
             v-if="versions.length"
             ref="body"
             class="apos-doc-editor__body apos-doc-version-editor__body"
+            data-apos-read-only
           >
             <template v-if="!unsupported">
               <AposSchema
@@ -61,7 +62,7 @@
                       class="apos-doc-version-editor__field-change-action"
                       data-apos-test="doc-version-field-change-action"
                       :types="[ 'modified' ]"
-                      :ai="isFieldAi(field)"
+                      :ai="getFieldAi(field)"
                       @click="revealChange({ field: field.name })"
                     />
                   </div>
@@ -220,7 +221,7 @@ const {
 const {
   graphKey,
   isFieldModified,
-  isFieldAi
+  getFieldAi
 } = useDocVersionMarkers({
   docId,
   widgetChanges,
@@ -358,7 +359,10 @@ async function revealChange(target) {
   }
   if (view.value === 'changes') {
     await nextTick();
-    await changesPane.value?.reveal(target);
+    await changesPane.value?.reveal({
+      ...target,
+      marked: widgetChanges.value
+    });
   }
 }
 
