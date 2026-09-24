@@ -845,9 +845,9 @@ describe('Document Versions diff engine', function () {
         }
       ]);
       assert.deepEqual(rows.map(row => [ row.fieldType, row.kind, row.ai ]), [
-        [ 'steps', 'array', true ],
+        [ 'steps', 'array', 'changed' ],
         [ 'tagline', 'leaf', false ],
-        [ 'zone', 'area', true ],
+        [ 'zone', 'area', 'changed' ],
         [ 'string', 'leaf', false ]
       ]);
     });
@@ -2691,9 +2691,26 @@ describe('Document Versions diff engine', function () {
       ].sort());
       assert.deepEqual(doc.aposMeta.title, {
         [HIGHLIGHT]: true,
-        '@apostrophecms/document-versions:ai': true
+        '@apostrophecms/document-versions:ai': 'changed'
       });
       assert.deepEqual(doc.aposMeta.subtitle, { [HIGHLIGHT]: true });
+    });
+
+    it('should mark a widget with the stronger AI part of its rows', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const [ widget ] = newer.section.rows[0].content.items;
+      widget.title = 'Edited';
+      widget.extra = 'x';
+      for (const parts of [ [ 'assisted', 'changed' ], [ 'changed', 'assisted' ] ]) {
+        const rows = apos.docVersions.getChangeRows(req, older, newer);
+        assert.equal(rows.length, 2);
+        rows.forEach((row, i) => {
+          row.ai = parts[i];
+        });
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+        assert.equal(doc.section.rows[0].content.items[0]._changedWithAi, 'changed');
+      }
     });
 
     it('should name the widgets the versions moved where fewer moves would name others', async function () {
@@ -2727,6 +2744,10 @@ describe('Document Versions diff engine', function () {
         [ byAi._id, '_movedWithAi' ],
         [ byHand._id, '_moved' ]
       ].sort());
+      // A person changed the order last, AI moved its widget alone
+      assert.equal(rows[0].ai, 'assisted');
+      const { items: marked } = doc.section.rows[0].content;
+      assert.equal(marked.find(item => item._id === byAi._id)._movedWithAi, 'changed');
 
       // The panes of the order row mark the same two
       await apos.docVersions.addChangeText(req, rows);
@@ -2833,6 +2854,7 @@ describe('Document Versions diff engine', function () {
           [ 'text', '_changedWithAi' ],
           [ 'text', '_olderVersion' ]
         ]);
+        assert.equal(widget._changedWithAi, 'assisted');
         assert.equal(
           widget.content,
           '<p>One<ins data-apos-version-change="added">' +
@@ -2920,11 +2942,11 @@ describe('Document Versions diff engine', function () {
   });
 
   describe('consolidate', function () {
-    // A run of versions, each member editing a copy of the previous
-    // document; `ai` marks the members saved with AI
-    function run(...members) {
+    // The pairs of consecutive versions, each editing a copy of the previous
+    // document; `ai` marks the versions saved with AI
+    function pairsOf(...versions) {
       let doc = buildDoc();
-      return members.map(({ ai = false, edit }) => {
+      return versions.map(({ ai = false, edit }) => {
         const older = doc;
         doc = structuredClone(older);
         edit(doc);
@@ -2939,7 +2961,7 @@ describe('Document Versions diff engine', function () {
     const getRows = doc => doc.section.rows;
 
     it('should give a single version its rows with its AI flag', function () {
-      const pairs = run({
+      const pairs = pairsOf({
         edit: doc => {
           doc.title = 'Renamed';
           doc.section.rows[0].count = 5;
@@ -2958,12 +2980,12 @@ describe('Document Versions diff engine', function () {
       pairs[0].ai = true;
       assert.deepEqual(
         apos.docVersions.getConsolidatedRows(req, pairs).map(row => row.ai),
-        [ true, true ]
+        [ 'changed', 'changed' ]
       );
     });
 
-    it('should list a path several members changed once, from its first value to its last', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should list a path several versions changed once, from its first value to its last', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             doc.title = 'Second';
@@ -2978,15 +3000,15 @@ describe('Document Versions diff engine', function () {
         }
       ));
       assert.deepEqual(rows.map(brief), [
-        [ 'modified', 'string', 'title', true ],
+        [ 'modified', 'string', 'title', 'changed' ],
         [ 'added', 'string', 'subtitle', false ]
       ]);
       assert.equal(rows[0].old, 'Title root');
       assert.equal(rows[0].new, 'Third');
     });
 
-    it('should call a path modified and then deleted deleted, as it was before the run', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should call a path modified and then deleted deleted, as it was before the versions', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3000,14 +3022,14 @@ describe('Document Versions diff engine', function () {
         }
       ));
       assert.deepEqual(rows.map(brief), [
-        [ 'deleted', 'arrayItem', 'root.section.rows.1', true ]
+        [ 'deleted', 'arrayItem', 'root.section.rows.1', 'assisted' ]
       ]);
       assert.equal(rows[0].old.title, 'Title root.section.rows.1');
       assert.equal(rows[0].path.at(-1).label, 'Title root.section.rows.1');
     });
 
     it('should call a path added and then modified added, with its final value', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             getRows(doc).push({
@@ -3025,14 +3047,14 @@ describe('Document Versions diff engine', function () {
         }
       ));
       assert.deepEqual(rows.map(brief), [
-        [ 'added', 'arrayItem', 'root.section.rows.2', true ]
+        [ 'added', 'arrayItem', 'root.section.rows.2', 'changed' ]
       ]);
       assert.equal(rows[0].new.title, 'Third, edited');
       assert.equal(rows[0].path.at(-1).label, 'Third, edited');
     });
 
     it('should drop a path added and then deleted', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3053,7 +3075,7 @@ describe('Document Versions diff engine', function () {
     });
 
     it('should drop a path that ends where it started', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3072,8 +3094,8 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
-    it('should flag a path an AI member changed, whoever changed it after', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should call a path AI changed and a version without AI changed after it assisted', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             doc.title = 'Second';
@@ -3093,12 +3115,12 @@ describe('Document Versions diff engine', function () {
       ));
       assert.deepEqual(rows.map(brief), [
         [ 'modified', 'string', 'title', false ],
-        [ 'added', 'string', 'subtitle', true ]
+        [ 'added', 'string', 'subtitle', 'assisted' ]
       ]);
     });
 
-    it('should flag an item or widget an AI member changed inside', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should flag an item or widget an AI version changed inside', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             getRows(doc).push({
@@ -3128,14 +3150,14 @@ describe('Document Versions diff engine', function () {
         }
       ));
       assert.deepEqual(rows.map(brief), [
-        [ 'added', 'widget', 'root.section.rows.0.content.3', true ],
-        [ 'deleted', 'arrayItem', 'root.section.rows.1', true ],
-        [ 'added', 'arrayItem', 'root.section.rows.2', true ]
+        [ 'added', 'widget', 'root.section.rows.0.content.3', 'changed' ],
+        [ 'deleted', 'arrayItem', 'root.section.rows.1', 'assisted' ],
+        [ 'added', 'arrayItem', 'root.section.rows.2', 'changed' ]
       ]);
     });
 
-    it('should flag a path an AI member created by adding its parent', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should flag a path an AI version created by adding its parent', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             doc.section = null;
@@ -3158,7 +3180,7 @@ describe('Document Versions diff engine', function () {
       ));
       assert.deepEqual(rows.map(brief), [
         [ 'modified', 'integer', 'count', false ],
-        [ 'modified', 'string', 'title', true ]
+        [ 'modified', 'string', 'title', 'changed' ]
       ]);
       assert.deepEqual(rows[1].path.map(segment => segment.name), [ 'section', 'title' ]);
     });
@@ -3175,18 +3197,18 @@ describe('Document Versions diff engine', function () {
         [ 'modified', 'string', 'title', item ]
       ];
       assert.deepEqual(
-        apos.docVersions.getConsolidatedRows(req, run({
+        apos.docVersions.getConsolidatedRows(req, pairsOf({
           ai: true,
           edit: reorder
         }, { edit })).map(brief),
-        expected(true, false)
+        expected('changed', false)
       );
       assert.deepEqual(
-        apos.docVersions.getConsolidatedRows(req, run({ edit: reorder }, {
+        apos.docVersions.getConsolidatedRows(req, pairsOf({ edit: reorder }, {
           ai: true,
           edit
         })).map(brief),
-        expected(false, true)
+        expected(false, 'changed')
       );
     });
 
@@ -3194,7 +3216,7 @@ describe('Document Versions diff engine', function () {
       const reorder = doc => {
         getRows(doc).reverse();
       };
-      assert.deepEqual(apos.docVersions.getConsolidatedRows(req, run(
+      assert.deepEqual(apos.docVersions.getConsolidatedRows(req, pairsOf(
         { edit: reorder },
         {
           ai: true,
@@ -3204,7 +3226,7 @@ describe('Document Versions diff engine', function () {
     });
 
     it('should keep a widget\'s schema fields apart from the data it stores beside them', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3219,12 +3241,12 @@ describe('Document Versions diff engine', function () {
       ));
       assert.deepEqual(rows.map(brief), [
         [ 'modified', 'string', 'title', false ],
-        [ 'modified', 'widget', 'root.section.rows.0.content.0', true ]
+        [ 'modified', 'widget', 'root.section.rows.0.content.0', 'changed' ]
       ]);
     });
 
-    it('should flag every row when every member used AI', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should flag every row when every version used AI', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           ai: true,
           edit: doc => {
@@ -3238,11 +3260,11 @@ describe('Document Versions diff engine', function () {
           }
         }
       ));
-      assert.deepEqual(rows.map(row => row.ai), [ true, true ]);
+      assert.deepEqual(rows.map(row => row.ai), [ 'changed', 'changed' ]);
     });
 
-    it('should take labels, ordinals and order from the run\'s ends', function () {
-      const rows = apos.docVersions.getConsolidatedRows(req, run(
+    it('should take labels, ordinals and order from the first and last versions', function () {
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
         {
           edit: doc => {
             getRows(doc).shift();
@@ -3257,7 +3279,7 @@ describe('Document Versions diff engine', function () {
       ));
       assert.deepEqual(rows.map(row => [ row.type, row.path.at(-1).name, row.ai ]), [
         [ 'deleted', 'root.section.rows.0', false ],
-        [ 'modified', 'title', true ]
+        [ 'modified', 'title', 'changed' ]
       ]);
       assert.deepEqual(rows.map(row => row.path[2]), [
         {
@@ -3271,6 +3293,85 @@ describe('Document Versions diff engine', function () {
           ordinal: 1
         }
       ]);
+    });
+
+    it('should call a path assisted when AI changed it before the versions', function () {
+      const aiDoc = buildDoc();
+      aiDoc.title = 'By AI';
+      const before = apos.docVersions.getChangeRows(req, buildDoc(), aiDoc);
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf({
+        edit: doc => {
+          doc.title = 'By hand';
+          doc.subtitle = 'By hand';
+        }
+      }), { before });
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', 'assisted' ],
+        [ 'added', 'string', 'subtitle', false ]
+      ]);
+    });
+
+    it('should relate the rows AI changed before the versions by path', function () {
+      // A document AI wrote whole: every path it holds
+      const blank = apos.doc.getManager('nested').newInstance();
+      const before = apos.docVersions.getChangeRows(req, blank, buildDoc());
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf({
+        edit: doc => {
+          getRows(doc)[0].title = 'By hand';
+          getRows(doc).push({
+            ...structuredClone(getRows(doc)[1]),
+            _id: 'root.section.rows.2',
+            title: 'Third'
+          });
+        }
+      }), { before });
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', 'assisted' ],
+        [ 'added', 'arrayItem', 'root.section.rows.2', false ]
+      ]);
+    });
+
+    it('should keep AI\'s last change of a path apart from the rows before the versions', function () {
+      const aiDoc = buildDoc();
+      aiDoc.title = 'By AI';
+      const before = apos.docVersions.getChangeRows(req, buildDoc(), aiDoc);
+      const rows = apos.docVersions.getConsolidatedRows(req, pairsOf(
+        {
+          edit: doc => {
+            doc.title = 'By hand';
+          }
+        },
+        {
+          ai: true,
+          edit: doc => {
+            doc.title = 'By AI again';
+          }
+        }
+      ), { before });
+      assert.deepEqual(rows.map(brief), [
+        [ 'modified', 'string', 'title', 'changed' ]
+      ]);
+    });
+
+    it('should give each moved item AI\'s part in its own moves', function () {
+      const toTop = doc => {
+        const { items } = getRows(doc)[0].content;
+        items.unshift(items.pop());
+        return items[0]._id;
+      };
+      // AI moved the last widget to the top before the versions, a person
+      // does it again in them
+      const aiDoc = buildDoc();
+      const moved = toTop(aiDoc);
+      const before = apos.docVersions.getChangeRows(req, buildDoc(), aiDoc);
+      const [ row ] = apos.docVersions.getConsolidatedRows(
+        req,
+        pairsOf({ edit: toTop }),
+        { before }
+      );
+      assert.equal(row.kind, 'area');
+      assert.equal(row.ai, 'assisted');
+      assert.deepEqual([ ...row.aiItems ], [ [ moved, 'assisted' ] ]);
     });
   });
 

@@ -106,8 +106,13 @@
               <span class="apos-doc-version-changes__row-aside">
                 <AposDocVersionAiBadge
                   v-if="entry.row.ai"
-                  v-apos-tooltip="'apostrophe:versionAiChangeTooltip'"
-                  data-apos-test="doc-version-change-ai"
+                  v-apos-tooltip="entry.row.ai === 'assisted'
+                    ? 'apostrophe:versionAiAssistedChangeTooltip'
+                    : 'apostrophe:versionAiChangeTooltip'"
+                  :ai="entry.row.ai"
+                  :data-apos-test="entry.row.ai === 'assisted'
+                    ? 'doc-version-change-ai-assisted'
+                    : 'doc-version-change-ai'"
                 />
                 <AposButton
                   v-if="entry.detail"

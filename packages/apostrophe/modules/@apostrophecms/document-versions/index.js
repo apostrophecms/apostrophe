@@ -930,14 +930,16 @@ module.exports = {
         const manager = self.apos.doc.getManager(version.doc.type);
 
         if (annotate && manager && !version.restoredFrom) {
-          const { pairs } = await self.getVersionPairs(
+          const item = await self.getVersionPairs(
             draftReq,
             version,
             { consolidate }
           );
+          const { pairs } = item;
           if (pairs.length) {
+            const before = await self.getAiRowsBefore(draftReq, item);
             version.doc = self.getAnnotatedDoc(req, pairs[0].older, version.doc, {
-              rows: self.getConsolidatedRows(req, pairs)
+              rows: self.getConsolidatedRows(req, pairs, { before })
             });
           }
         }
@@ -1020,38 +1022,72 @@ module.exports = {
         }
         return previous;
       },
-      // `{ members, pairs }` for the version record `last`. `members` are the
-      // versions it stands for, oldest first: itself, or with `consolidate` all
-      // those of its consolidated version. `pairs` are the `{ older, newer, ai }`
-      // of each member, as `getConsolidatedRows` takes them; a first version
-      // has none
+      // `{ versions, pairs, previous }` for the version record `last`.
+      // `versions` are the versions it stands for, oldest first: itself, or
+      // with `consolidate` all those of its consolidated version. `pairs` are
+      // the `{ older, newer, ai }` of each of them, as `getConsolidatedRows`
+      // takes them; a first version has none. `previous` is the version
+      // before them, `null` when they start the timeline
       async getVersionPairs(req, last, { consolidate = false } = {}) {
-        let members = [ last ];
+        let versions = [ last ];
         if (consolidate) {
           const sequence = await self.getSequenceFrom(req, {
             docId: last.docId,
             locale: last.locale
           }, last);
           if (consolidation.consolidates(sequence)) {
-            members = await self.find(
+            versions = await self.find(
               req,
               { _id: { $in: sequence.map(version => version._id) } },
               { sort: { createdAt: 1 } }
             );
           }
         }
-        const previous = await self.getPreviousVersion(req, members[0]);
-        const pairs = members
-          .map((member, i) => ({
-            older: i ? members[i - 1].doc : previous?.doc,
-            newer: member.doc,
-            ai: member.ai
+        const previous = await self.getPreviousVersion(req, versions[0]);
+        const pairs = versions
+          .map((version, i) => ({
+            older: i ? versions[i - 1].doc : previous?.doc,
+            newer: version.doc,
+            ai: version.ai
           }))
           .filter(pair => pair.older);
         return {
-          members,
-          pairs
+          versions,
+          pairs,
+          previous
         };
+      },
+      // The rows AI changed before the versions of `item`, as `getVersionPairs`
+      // returns it, for `getConsolidatedRows`: those of the list item before
+      // it that AI had a part in, that item's own list item before it left
+      // out. The list item before is read as the list shows it, consolidated,
+      // whether `item` is a consolidated version or not. A first version
+      // saved with AI changed every path it holds, and its change list is
+      // empty: those paths are its rows
+      async getAiRowsBefore(req, { versions, previous }) {
+        if (!previous) {
+          return getCreatedRows(versions[0]);
+        }
+        const item = await self.getVersionPairs(req, previous, { consolidate: true });
+        if (!item.versions.some(version => version.ai)) {
+          return [];
+        }
+        const created = item.previous ? [] : getCreatedRows(item.versions[0]);
+        if (!item.pairs.length || !self.apos.doc.getManager(previous.doc.type)) {
+          return created;
+        }
+        return self.getConsolidatedRows(req, item.pairs, { before: created })
+          .filter(row => row.ai);
+
+        // Every path of `version` when it was saved with AI: its changes
+        // from a new document of its type
+        function getCreatedRows(version) {
+          const manager = self.apos.doc.getManager(version.doc.type);
+          if (!version.ai || !manager) {
+            return [];
+          }
+          return self.getChangeRows(req, manager.newInstance(), version.doc);
+        }
       },
       // The change list of a version (see `getChangeList`) and the versions it
       // covers, newest first: `{ rows, counts, versionIds, compared }`. With
@@ -1062,18 +1098,18 @@ module.exports = {
       async getVersionChanges(req, versionId, { consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
         const last = await self.getEditableVersion(draftReq, versionId);
-        const { members, pairs } = await self.getVersionPairs(
-          draftReq,
-          last,
-          { consolidate }
-        );
+        const item = await self.getVersionPairs(draftReq, last, { consolidate });
+        const { versions, pairs } = item;
         const compared = last.restoredFrom ? [] : pairs;
+        const before = compared.length
+          ? await self.getAiRowsBefore(draftReq, item)
+          : [];
 
-        const changeList = await self.getChangeList(draftReq, compared);
+        const changeList = await self.getChangeList(draftReq, compared, { before });
 
         return {
           ...changeList,
-          versionIds: members.map(member => member._id).reverse(),
+          versionIds: versions.map(version => version._id).reverse(),
           compared: Boolean(compared.length)
         };
       },
@@ -1081,16 +1117,17 @@ module.exports = {
       // it: `{ rows, counts: { added, modified, deleted, ai } }`. `pairs` are
       // `{ older, newer, ai }`, oldest first; one pair compares two contents,
       // several read as one list (see `getConsolidatedRows`). Rows carry their
-      // text, word diff and formatting changes (see `lib/text.js`). Checks no
-      // permission on the contents; related documents read as `req` sees them.
-      // Empty for no pairs and for a type whose module is gone
-      async getChangeList(req, pairs) {
+      // text, word diff and formatting changes (see `lib/text.js`). `before`
+      // are the rows AI changed before the pairs (see `getAiRowsBefore`).
+      // Checks no permission on the contents; related documents read as `req`
+      // sees them. Empty for no pairs and for a type whose module is gone
+      async getChangeList(req, pairs, { before } = {}) {
         let rows = [];
         if (pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type)) {
           const ctx = self.getDiffContext(req, pairs.at(-1).newer);
           rows = text.addWordDiff(await self.addChangeText(
             req,
-            text.addFormat(self.getConsolidatedRows(req, pairs), ctx)
+            text.addFormat(self.getConsolidatedRows(req, pairs, { before }), ctx)
           ), ctx);
         }
         return {
@@ -1110,12 +1147,18 @@ module.exports = {
         return diff.walk(manager.schema, older, newer, self.getDiffContext(req, newer));
       },
       // The changes of consecutive versions of one document as one list,
-      // every row flagged `ai` (see `lib/diff.js`). `pairs` are
-      // `{ older, newer, ai }`, oldest first
-      getConsolidatedRows(req, pairs) {
+      // every row with AI's part in it (see `consolidate` in `lib/diff.js`).
+      // `pairs` are `{ older, newer, ai }`, oldest first; `before` the rows
+      // AI changed before them
+      getConsolidatedRows(req, pairs, { before } = {}) {
         const { newer } = pairs.at(-1);
         const manager = self.apos.doc.getManager(newer.type);
-        return diff.consolidate(manager.schema, pairs, self.getDiffContext(req, newer));
+        return diff.consolidate(
+          manager.schema,
+          pairs,
+          self.getDiffContext(req, newer),
+          { before }
+        );
       },
       // Sets the display text of change rows (see `addText` in `lib/text.js`).
       // Fetches what the text needs in one query, as `req` sees it: the titles

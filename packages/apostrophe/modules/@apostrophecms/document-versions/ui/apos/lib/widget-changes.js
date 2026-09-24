@@ -1,7 +1,8 @@
 // The markers of the annotated document, collected by widget `_id`:
 // `changes` lists `added`, `modified` or `deleted`, then `moved` when the
-// widget changed places in its area; `ai` is whether AI was involved in
-// any of them; `data` is what the rendering of a widget with an older
+// widget changed places in its area; `ai` is AI's part in them, `changed`
+// or `assisted` (`changed` when it is either one's), `false` when AI had
+// none; `data` is what the rendering of a widget with an older
 // version needs (see the markers store): `content` is taken from any such
 // widget, rich text or not, which is harmless since it is the widget's own
 // value, marked only for rich text. Nested widgets are rendered by the
@@ -29,7 +30,9 @@ function getWidgetChanges(doc) {
       if (found.length) {
         changes[node._id] = {
           changes: found,
-          ai: Boolean(node._changedWithAi || node._movedWithAi),
+          ai: [ node._changedWithAi, node._movedWithAi ].includes('changed')
+            ? 'changed'
+            : (node._changedWithAi || node._movedWithAi || false),
           ...(node._olderVersion && {
             data: {
               _olderVersion: node._olderVersion,

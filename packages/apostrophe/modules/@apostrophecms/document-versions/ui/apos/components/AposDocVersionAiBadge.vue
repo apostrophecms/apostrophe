@@ -1,14 +1,25 @@
 <template>
   <span
     class="apos-doc-version-ai-badge"
+    :class="{ 'apos-doc-version-ai-badge--assisted': ai === 'assisted' }"
     data-apos-test="doc-version-ai-badge"
   >
-    {{ $t('apostrophe:versionChangeAi') }}
+    {{ $t(ai === 'assisted'
+      ? 'apostrophe:versionChangeAiAssisted'
+      : 'apostrophe:versionChangeAi') }}
   </span>
 </template>
 
 <script setup>
-// Says AI was involved in the change it stands before
+// Says AI had a part in the change it stands before
+defineProps({
+  // AI's part: `changed` when AI made the change, `assisted` when a person
+  // made it after AI worked on it
+  ai: {
+    type: String,
+    default: 'changed'
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -26,5 +37,11 @@
   letter-spacing: 0.2px;
   line-height: 1.5;
   white-space: nowrap;
+}
+
+// Outlined: the background of the admin UI, opaque, since the badge also
+// sits over the page in the preview
+.apos-doc-version-ai-badge--assisted {
+  background-color: var(--a-background-primary);
 }
 </style>

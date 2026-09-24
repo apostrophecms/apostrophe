@@ -454,7 +454,9 @@ export default {
         return undefined;
       }
       const changes = [
-        ...(this.versionChange.ai ? [ 'ai' ] : []),
+        ...(this.versionChange.ai
+          ? [ this.versionChange.ai === 'assisted' ? 'aiAssisted' : 'ai' ]
+          : []),
         ...this.versionChanges
       ].map(type => changeTypes.labels[type]);
       return this.$t('apostrophe:versionWidgetChange', {

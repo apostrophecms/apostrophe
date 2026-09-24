@@ -62,7 +62,7 @@
                       class="apos-doc-version-editor__field-change-action"
                       data-apos-test="doc-version-field-change-action"
                       :types="[ 'modified' ]"
-                      :ai="isFieldAi(field)"
+                      :ai="getFieldAi(field)"
                       @click="revealChange({ field: field.name })"
                     />
                   </div>
@@ -221,7 +221,7 @@ const {
 const {
   graphKey,
   isFieldModified,
-  isFieldAi
+  getFieldAi
 } = useDocVersionMarkers({
   docId,
   widgetChanges,

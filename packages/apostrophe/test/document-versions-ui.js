@@ -42,17 +42,19 @@ describe('Document Versions UI', function () {
     it('should match a row by its change type or its AI involvement', async function () {
       const lib = await getLib();
       const plain = row([ title ]);
-      const withAi = row([ title ], { ai: true });
+      const withAi = row([ title ], { ai: 'changed' });
+      const assisted = row([ title ], { ai: 'assisted' });
       assert.equal(lib.matchesFilter(plain, [ 'modified' ]), true);
       assert.equal(lib.matchesFilter(plain, [ 'added', 'ai' ]), false);
       assert.equal(lib.matchesFilter(withAi, [ 'ai' ]), true);
+      assert.equal(lib.matchesFilter(assisted, [ 'ai' ]), true);
     });
 
     it('should match every row while no option is checked', async function () {
       const lib = await getLib();
       assert.equal(lib.matchesFilter(row([ title ]), []), true);
       assert.equal(lib.matchesFilter(row([ title ], { type: 'deleted' }), []), true);
-      assert.equal(lib.matchesFilter(row([ title ], { ai: true }), []), true);
+      assert.equal(lib.matchesFilter(row([ title ], { ai: 'changed' }), []), true);
     });
 
     it('should group rows under their top-level field, or the widget of an area', async function () {
@@ -87,7 +89,7 @@ describe('Document Versions UI', function () {
         row([ main, widget, content ]),
         row([ main, widget, content ], {
           type: 'deleted',
-          ai: true
+          ai: 'changed'
         })
       ];
       const groups = lib.getChangeGroups(rows, [ 'modified', 'ai' ]);
@@ -448,19 +450,28 @@ describe('Document Versions UI', function () {
           items: [
             widget('changed', {
               _modified: true,
-              _changedWithAi: true
+              _changedWithAi: 'changed'
             }),
             widget('moved', {
               _moved: true,
-              _movedWithAi: true
+              _movedWithAi: 'assisted'
             }),
+            widget('both', {
+              _modified: true,
+              _changedWithAi: 'assisted',
+              _moved: true,
+              _movedWithAi: 'changed'
+            }),
+            widget('plain', { _modified: true }),
             // Not a marker on its own
-            widget('none', { _changedWithAi: true })
+            widget('none', { _changedWithAi: 'changed' })
           ]
         }
       });
-      assert.equal(changes.changed.ai, true);
-      assert.equal(changes.moved.ai, true);
+      assert.equal(changes.changed.ai, 'changed');
+      assert.equal(changes.moved.ai, 'assisted');
+      assert.equal(changes.both.ai, 'changed');
+      assert.equal(changes.plain.ai, false);
       assert.equal(changes.none, undefined);
     });
 
