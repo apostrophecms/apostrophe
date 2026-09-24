@@ -3,6 +3,10 @@ const _ = require('lodash');
 const util = require('util');
 const extendQueries = require('./lib/extendQueries');
 
+// Dot path segments that could reach Object.prototype, see the
+// `project` query builder
+const unsafeProjectionSegments = new Set([ '__proto__', 'constructor', 'prototype' ]);
+
 module.exports = {
   options: {
     localized: true,
@@ -2002,6 +2006,11 @@ module.exports = {
             }
 
             const projection = Object.entries(p).reduce((acc, [ key, val ]) => {
+              // Field names come from the query string. Never pass on
+              // a path that could reach Object.prototype (CWE-1321)
+              if (key.split('.').some(segment => unsafeProjectionSegments.has(segment))) {
+                return acc;
+              }
               return {
                 ...acc,
                 [key]: self.apos.launder.boolean(val)
