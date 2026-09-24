@@ -22,6 +22,21 @@ module.exports = {
   },
   methods(self) {
     return {
+      // Returns `url` with a single-use token that moves the session to the
+      // hostname of `url`. Apostrophe versions providing
+      // `apos.i18n.getCrossDomainSessionUrl` bind the token to that hostname
+      // and expire it quickly, so it is preferred when available.
+      async getCrossDomainSessionUrl(req, url) {
+        if (self.apos.i18n.getCrossDomainSessionUrl) {
+          return self.apos.i18n.getCrossDomainSessionUrl(req, url, req.session);
+        }
+        const crossDomainSessionToken = self.apos.util.generateId();
+        await self.apos.cache.set('@apostrophecms/i18n:cross-domain-sessions', crossDomainSessionToken, req.session, 60 * 60);
+        return self.apos.url.build(url, {
+          aposCrossDomainSessionToken: crossDomainSessionToken
+        });
+      },
+
       async enablePassportStrategies() {
         self.refresh = new AuthTokenRefresh();
         self.specs = {};
@@ -554,8 +569,6 @@ module.exports = {
             oldAposDocId
           } = req.session.passportLocale;
           delete req.session.passportLocale;
-          const crossDomainSessionToken = self.apos.util.generateId();
-          await self.apos.cache.set('@apostrophecms/i18n:cross-domain-sessions', crossDomainSessionToken, req.session, 60 * 60);
           let doc = await self.apos.doc.find(req, {
             aposDocId: oldAposDocId
           }).locale(`${oldLocale}:draft`).relationships(false).areas(false).toObject();
@@ -579,8 +592,7 @@ module.exports = {
           }
 
           let url = self.apos.url.build(route, {
-            aposLocale: req.oldLocale,
-            aposCrossDomainSessionToken: crossDomainSessionToken
+            aposLocale: req.oldLocale
           });
 
           if (i18n.locales[newLocale] && i18n.locales[newLocale].hostname) {
@@ -590,7 +602,7 @@ module.exports = {
             url = self.apos.page.getBaseUrl(req) + url;
             req.locale = oldLocale;
           }
-          req.session.passportRedirect = url;
+          req.session.passportRedirect = await self.getCrossDomainSessionUrl(req, url);
         }
       },
       'apostrophe:modulesRegistered': {
