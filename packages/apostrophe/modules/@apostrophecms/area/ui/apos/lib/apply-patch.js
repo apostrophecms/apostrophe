@@ -159,9 +159,13 @@ function replaceNested(object, id, path, value) {
 
 function setPath(object, path, value) {
   const keys = path.split('.');
+  // Never reach Object.prototype or other built-ins
+  if (keys.some(key => [ '__proto__', 'constructor', 'prototype' ].includes(key))) {
+    return object;
+  }
   let target = object;
   for (const key of keys.slice(0, -1)) {
-    if (!target[key] || (typeof target[key] !== 'object')) {
+    if (!Object.hasOwn(target, key) || !target[key] || (typeof target[key] !== 'object')) {
       target[key] = {};
     }
     target = target[key];

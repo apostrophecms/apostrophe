@@ -44,7 +44,10 @@ describe('Context history', function() {
           'nested.__proto__.polluted'
         ]) {
           applyPatch(areaId, items(), { [`@a.${path}`]: 'yes' });
-          applyPatch(areaId, [ { _id: 'w', area: { items: items() } } ], {
+          applyPatch(areaId, [ {
+            _id: 'w',
+            area: { items: items() }
+          } ], {
             [`@a.${path}`]: 'yes'
           }, { deep: true });
         }
