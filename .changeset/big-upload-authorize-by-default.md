@@ -1,5 +1,6 @@
 ---
 "apostrophe": patch
+"@apostrophecms/import-export": patch
 ---
 
 Security: `apos.http.bigUploadMiddleware()` now requires a logged-in user by default, and the `aposBigUpload` protocol it implements has been hardened (CWE-400, CWE-306, CWE-770, GHSA-86wm-68pq-5jwq).
@@ -11,5 +12,11 @@ The middleware accepted an optional `authorize` callback, but a route that did n
 - A failed `end` request no longer crashes the process. A request naming an upload id that does not exist sent its response and then passed `null` to the background cleanup routine, producing an unhandled rejection, which by default terminates Node. As a backstop, the middleware no longer returns a promise to Express, which ignores it; anything that rejects on the way to the route is now logged and answered with a 500.
 - The upload id sent to `chunk` and `end` is now laundered to a string. As an object it reached the MongoDB selector as a query operator, so `aposBigUpload[id][$ne]=` selected an arbitrary upload in progress rather than the caller's own (CWE-943). Uploads additionally record the user that started them and are only readable by that same user.
 - `start`, `chunk` and `end` now report a rejected request with its own status code (400 or 404) instead of a blanket 500, a 500 carries the underlying error and stack to the log rather than an empty event, and a refused request is logged without a stack.
+
+In `@apostrophecms/import-export`, the `importExportImport` routes of `@apostrophecms/import-export-page` and `@apostrophecms/import-export-piece-type` now authorize the chunked upload before it is processed (CWE-400, CWE-306, GHSA-86wm-68pq-5jwq).
+
+Both routes passed no `authorize` callback to `apos.http.bigUploadMiddleware()`, so an unauthenticated request could complete the `aposBigUpload` `start`, `chunk` and `end` steps — creating upload state, storing chunk data and assembling a temporary file — before `import()` reached its own `req.user` check and rejected the import. Each route now makes that same check up front, and unauthenticated requests are refused before any upload state exists.
+
+The middleware in `apostrophe` itself now requires a logged-in user by default and bounds the client-declared chunk count, so this module is protected even without the explicit callback; the callback keeps the routes safe when installed alongside an older `apostrophe`.
 
 Thanks to [Kai Zhi](https://github.com/kaizhi888) and [bp0lr](https://github.com/bp0lr) for responsibly reporting the vulnerability.
