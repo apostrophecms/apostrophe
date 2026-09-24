@@ -775,7 +775,7 @@ describe('Document Versions diff engine', function () {
       older.ownersIds = [ one.aposDocId ];
       newer.tagline = 'Built to change';
       newer.rating = 3;
-      newer.prose = '<p>The <strong>quick</strong> red fox</p>';
+      newer.prose = '<p>The <u>quick</u> red fox</p>';
       newer.steps.reverse();
       newer.zone.items.reverse();
       newer.ownersIds = [ two.aposDocId ];
@@ -1614,6 +1614,45 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
+    it('should say the position an item that moved had', function () {
+      const orderRow = (older, newer) => {
+        const result = {
+          old: [ ...older ],
+          new: [ ...newer ]
+        };
+        Object.defineProperty(result, 'items', {
+          value: Object.fromEntries(newer.map((id, index) => [ id, {
+            ordinal: index + 1,
+            olderOrdinal: older.indexOf(id) + 1,
+            title: id.toUpperCase()
+          } ])),
+          enumerable: false
+        });
+        return result;
+      };
+      const [ fromMiddle, twoMoves ] = text.addWordDiff([
+        orderRow([ 'a', 'b', 'c', 'd', 'e' ], [ 'a', 'b', 'd', 'e', 'c' ]),
+        orderRow([ 'a', 'b', 'c', 'd', 'e' ], [ 'e', 'a', 'c', 'b', 'd' ])
+      ], apos.docVersions.getDiffContext(req));
+      assert.deepEqual(fromMiddle.diff.map(part => [ part.change, part.text ]), [
+        [ 'same', '#1 A' ],
+        [ 'same', '#2 B' ],
+        [ 'removed', '#5 C (was #3)' ],
+        [ 'same', '#3 D' ],
+        [ 'same', '#4 E' ],
+        [ 'added', '#5 C' ]
+      ]);
+      assert.deepEqual(twoMoves.diff.map(part => [ part.change, part.text ]), [
+        [ 'added', '#1 E' ],
+        [ 'same', '#2 A' ],
+        [ 'removed', '#4 B (was #2)' ],
+        [ 'same', '#3 C' ],
+        [ 'added', '#4 B' ],
+        [ 'same', '#5 D' ],
+        [ 'removed', '#1 E (was #5)' ]
+      ]);
+    });
+
     it('should give a widget of a change of order its title', async function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -1629,19 +1668,19 @@ describe('Document Versions diff engine', function () {
       await apos.docVersions.addChangeText(req, rows);
       assert.equal(rows.length, 1);
       assert.equal(rows[0].newText, '#1 Nested 2, #2 Rich Text, #3 Opaque, #4 Card · Two, #5 Card · One');
-      // An item that moved is marked whole, where it was and where it is
+      // An item that moved is marked whole, where it was, with the position it
+      // had, and where it is
       const [ { diff } ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
       const side = change => diff
         .filter(part => [ 'same', change ].includes(part.change))
         .map(part => part.text)
         .join(', ');
-      assert.equal(side('removed'), rows[0].oldText);
       assert.equal(side('added'), rows[0].newText);
       assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
         [ 'same', '#1 Nested 2' ],
         [ 'same', '#2 Rich Text' ],
         [ 'same', '#3 Opaque' ],
-        [ 'removed', '#5 Card · One' ],
+        [ 'removed', '#5 Card · One (was #4)' ],
         [ 'same', '#4 Card · Two' ],
         [ 'added', '#5 Card · One' ]
       ]);
@@ -1910,17 +1949,6 @@ describe('Document Versions diff engine', function () {
             } ]
           ],
           [
-            '<p>Read the guide</p>',
-            '<p>Read <strong><em>the guide</em></strong></p>',
-            [ {
-              change: 'marksAdded',
-              type: 'added',
-              label: 'Formatting',
-              text: 'the guide',
-              new: value('Bold, Italic')
-            } ]
-          ],
-          [
             '<p>Read <sup>the guide</sup></p>',
             '<p>Read the guide</p>',
             [ {
@@ -1991,42 +2019,6 @@ describe('Document Versions diff engine', function () {
           ],
           [
             '<p>Our mission</p>',
-            '<h2>Our mission</h2>',
-            [ {
-              change: 'block',
-              type: 'modified',
-              label: 'Block style',
-              text: 'Our mission',
-              old: value('Paragraph (P)'),
-              new: value('Heading 2 (H2)')
-            } ]
-          ],
-          [
-            '<ul><li><p>One</p></li><li><p>Two</p></li></ul>',
-            '<ol><li><p>One</p></li><li><p>Two</p></li></ol>',
-            [ {
-              change: 'block',
-              type: 'modified',
-              label: 'Block style',
-              text: 'One Two',
-              old: value('Bulleted List'),
-              new: value('Ordered List')
-            } ]
-          ],
-          [
-            '<p>Our mission</p>',
-            '<p class="lead">Our mission</p>',
-            [ {
-              change: 'style',
-              type: 'modified',
-              label: 'Block style',
-              text: 'Our mission',
-              old: value('Paragraph (P)'),
-              new: value('Paragraph (P) (lead)')
-            } ]
-          ],
-          [
-            '<p>Our mission</p>',
             '<p style="text-align: center">Our mission</p>',
             [ {
               change: 'align',
@@ -2035,26 +2027,6 @@ describe('Document Versions diff engine', function () {
               text: 'Our mission',
               old: value('Default'),
               new: value('Align Center')
-            } ]
-          ],
-          [
-            '<p>One.</p><p>Two.</p>',
-            '<p>One. Two.</p>',
-            [ {
-              change: 'merged',
-              type: 'modified',
-              label: 'Paragraphs merged',
-              text: 'Two.'
-            } ]
-          ],
-          [
-            '<p>One. Two.</p>',
-            '<p>One.</p><p>Two.</p>',
-            [ {
-              change: 'split',
-              type: 'modified',
-              label: 'Paragraph split',
-              text: 'Two.'
             } ]
           ],
           [
@@ -2154,14 +2126,6 @@ describe('Document Versions diff engine', function () {
             '<p>One two</p><p>Three<br>four<br>five</p><h3>Six</h3>',
             [
               {
-                change: 'block',
-                type: 'modified',
-                label: 'Block style',
-                text: 'Six',
-                old: value('Heading 2 (H2)'),
-                new: value('Heading 3 (H3)')
-              },
-              {
                 change: 'breaks',
                 type: 'modified',
                 label: 'Line breaks',
@@ -2194,6 +2158,139 @@ describe('Document Versions diff engine', function () {
           await apos.docVersions.addChangeText(req, rows);
           assert.deepEqual(rows[0].formatChanges, lines);
         }
+      });
+
+      it('should put in words the formatting the words show, for when they cannot', function () {
+        const getFormatChanges = require('../modules/@apostrophecms/document-versions/lib/rich-text-format.js');
+        const { formatLines } = require('../modules/@apostrophecms/document-versions/lib/format-text.js');
+        const value = text => ({ text });
+        const cases = [
+          [
+            '<p>Read the guide</p>',
+            '<p>Read <strong><em>the guide</em></strong></p>',
+            [ {
+              change: 'marksAdded',
+              type: 'added',
+              label: 'Formatting',
+              text: 'the guide',
+              new: value('Bold, Italic')
+            } ]
+          ],
+          [
+            '<p>Our mission</p>',
+            '<h2>Our mission</h2>',
+            [ {
+              change: 'block',
+              type: 'modified',
+              label: 'Block style',
+              text: 'Our mission',
+              old: value('Paragraph (P)'),
+              new: value('Heading 2 (H2)')
+            } ]
+          ],
+          [
+            '<ul><li><p>One</p></li><li><p>Two</p></li></ul>',
+            '<ol><li><p>One</p></li><li><p>Two</p></li></ol>',
+            [ {
+              change: 'block',
+              type: 'modified',
+              label: 'Block style',
+              text: 'One Two',
+              old: value('Bulleted List'),
+              new: value('Ordered List')
+            } ]
+          ],
+          [
+            '<p>Our mission</p>',
+            '<p class="lead">Our mission</p>',
+            [ {
+              change: 'style',
+              type: 'modified',
+              label: 'Block style',
+              text: 'Our mission',
+              old: value('Paragraph (P)'),
+              new: value('Paragraph (P) (lead)')
+            } ]
+          ],
+          [
+            '<p>One.</p><p>Two.</p>',
+            '<p>One. Two.</p>',
+            [ {
+              change: 'merged',
+              type: 'modified',
+              label: 'Paragraphs merged',
+              text: 'Two.'
+            } ]
+          ],
+          [
+            '<p>One. Two.</p>',
+            '<p>One.</p><p>Two.</p>',
+            [ {
+              change: 'split',
+              type: 'modified',
+              label: 'Paragraph split',
+              text: 'Two.'
+            } ]
+          ]
+        ];
+        const ctx = apos.docVersions.getDiffContext(req);
+        for (const [ before, after, lines ] of cases) {
+          assert.deepEqual(
+            getFormatChanges(before, after).flatMap(record => formatLines(record, ctx, {
+              titles: {},
+              urls: {},
+              links: {}
+            })),
+            lines
+          );
+        }
+      });
+
+      it('should leave out the formatting the words show', async function () {
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = '<p>Read the guide.</p><p>Our mission. Our vision.</p>';
+        newer.body = '<p>Read <strong><u>the guide</u></strong>.</p>' +
+          '<h2>Our mission.</h2><p class="lead">Our vision.</p>';
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addWordDiff(await apos.docVersions.addChangeText(
+          req,
+          text.addFormat(apos.docVersions.getChangeRows(req, older, newer), ctx)
+        ), ctx);
+        assert.deepEqual(
+          rows[0].formatChanges.map(line => [ line.change, line.text, line.new.text ]),
+          [ [ 'marksAdded', 'the guide', 'Underline' ] ]
+        );
+        assert.deepEqual(
+          rows[0].diff
+            .filter(part => part.change !== 'same')
+            .map(part => [ part.change, part.text, part.marks ]),
+          [
+            [ 'removed', 'the guide', undefined ],
+            [ 'added', 'the guide', [ 'bold' ] ],
+            [ 'removed', 'Our mission. Our vision.', undefined ],
+            [ 'added', 'Our mission.', undefined ],
+            [ 'added', 'Our vision.', undefined ]
+          ]
+        );
+      });
+
+      it('should keep every formatting line when the words cannot show it', async function () {
+        const words = Array.from({ length: 1200 }, (value, at) => `word${at}`).join(' ');
+        const older = buildDoc();
+        const newer = buildDoc();
+        older.body = `<p>${words}</p>`;
+        newer.body = `<p><strong>${words}</strong></p>`;
+        const ctx = apos.docVersions.getDiffContext(req);
+        const rows = text.addWordDiff(await apos.docVersions.addChangeText(
+          req,
+          text.addFormat(apos.docVersions.getChangeRows(req, older, newer), ctx)
+        ), ctx);
+        assert.deepEqual(
+          rows[0].formatChanges.map(line => [ line.change, line.new.text ]),
+          [ [ 'marksAdded', 'Bold' ] ]
+        );
+        assert(rows[0].diff.every(part => part.change === 'same'));
       });
 
       it('should name an image by its title, fetched with the related titles', async function () {
@@ -2375,10 +2472,7 @@ describe('Document Versions diff engine', function () {
         assert.equal(rows[0].newText, 'Our mission\nRead the guide today.');
         assert.deepEqual(
           rows[0].formatChanges.map(line => [ line.label, line.text, line.new.text ]),
-          [
-            [ 'Block style', 'Our mission', 'Heading 2 (H2)' ],
-            [ 'Link', 'the guide', '/two' ]
-          ]
+          [ [ 'Link', 'the guide', '/two' ] ]
         );
         assert.equal(Object.keys(rows[0]).includes('format'), false);
       });
@@ -2399,7 +2493,7 @@ describe('Document Versions diff engine', function () {
         const older = buildDoc();
         const newer = buildDoc();
         older.body = `<p>${words}</p>`;
-        newer.body = `<h3>${words}</h3>`;
+        newer.body = `<p style="text-align: center">${words}</p>`;
         const ctx = apos.docVersions.getDiffContext(req);
         const rows = text.addFormat(
           apos.docVersions.getChangeRows(req, older, newer),
@@ -2749,25 +2843,23 @@ describe('Document Versions diff engine', function () {
       const { items: marked } = doc.section.rows[0].content;
       assert.equal(marked.find(item => item._id === byAi._id)._movedWithAi, 'changed');
 
-      // The panes of the order row mark the same two
+      // The order row marks the same two, each where it was before the
+      // versions with the position it had then
       await apos.docVersions.addChangeText(req, rows);
       const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
       const [ row ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
-      const {
-        diff, oldText, newText
-      } = row;
+      const { diff, newText } = row;
       const side = change => diff
         .filter(part => [ 'same', change ].includes(part.change))
         .map(part => part.text)
         .join(', ');
-      assert.equal(side('removed'), oldText);
       assert.equal(side('added'), newText);
       assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
         [ 'added', '#1 Opaque' ],
-        [ 'removed', '#3 Nested 2' ],
+        [ 'removed', '#3 Nested 2 (was #1)' ],
         [ 'same', '#2 Rich Text' ],
         [ 'added', '#3 Nested 2' ],
-        [ 'removed', '#1 Opaque' ]
+        [ 'removed', '#1 Opaque (was #3)' ]
       ]);
     });
 

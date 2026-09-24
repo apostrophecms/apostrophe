@@ -54,13 +54,19 @@
           <span class="apos-sr-only">{{ ` ${$t('apostrophe:versionUnchangedOmitted')} ` }}</span>
         </template>
         <component
-          :is="marks[part.change].tag"
-          v-else-if="marks[part.change]"
-          :data-apos-version-change="part.change"
+          :is="marks[part.change]?.tag || 'span'"
+          v-else
+          :data-apos-version-change="marks[part.change] ? part.change : null"
         >
-          <span class="apos-sr-only">{{ `${$t(marks[part.change].label)} ` }}</span>{{ part.text }}
+          <span
+            v-if="marks[part.change]"
+            class="apos-sr-only"
+          >{{ `${$t(marks[part.change].label)} ` }}</span>
+          <strong v-if="hasMark(part, 'bold') && hasMark(part, 'italic')"><em>{{ part.text }}</em></strong>
+          <strong v-else-if="hasMark(part, 'bold')">{{ part.text }}</strong>
+          <em v-else-if="hasMark(part, 'italic')">{{ part.text }}</em>
+          <span v-else>{{ part.text }}</span>
         </component>
-        <span v-else>{{ part.text }}</span>
       </template>
     </p>
   </div>
@@ -72,10 +78,11 @@
 
 <script setup>
 // A change as one block rather than two sides: the words of a rich text in
-// reading order, removed ones struck through where they were and added ones
-// where they are, or the items of an array or area one to a line, the ones
-// that moved removed where they were and added where they are. Cut short, as
-// the sides are, until the full text is asked for
+// reading order and in their bold and italic, removed ones struck through
+// where they were and added ones where they are; or the items of an array
+// or area one to a line, the ones that moved removed where they were and
+// added where they are. Cut short, as the sides are, until the full text is
+// asked for
 import {
   computed, nextTick, onMounted, ref
 } from 'vue';
@@ -105,6 +112,10 @@ const full = ref(false);
 const clamped = ref(false);
 
 const parts = computed(() => (full.value ? props.entry.inline : props.entry.inlineShort));
+
+function hasMark(part, mark) {
+  return Boolean(part.marks?.includes(mark));
+}
 
 onMounted(async () => {
   await nextTick();

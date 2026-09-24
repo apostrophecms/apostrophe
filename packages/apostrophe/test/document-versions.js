@@ -4224,7 +4224,7 @@ describe('Document Versions', function () {
         });
       });
 
-      it('should say what changed in the formatting of rich text - GET /:versionId/changes', async function() {
+      it('should say what changed in the formatting of rich text, or show it in the words - GET /:versionId/changes', async function() {
         const main = richTextArea('One', 'Two');
         const edit = (...contents) => ({
           main: {
@@ -4266,15 +4266,8 @@ describe('Document Versions', function () {
             },
             {
               newText: 'Our mission',
-              marked: [],
-              formatChanges: [ {
-                change: 'block',
-                type: 'modified',
-                label: 'Block style',
-                text: 'Our mission',
-                old: { text: 'Paragraph (P)' },
-                new: { text: 'Heading 2 (H2)' }
-              } ]
+              marked: [ 'Our mission', 'Our mission' ],
+              formatChanges: undefined
             }
           ]
         );

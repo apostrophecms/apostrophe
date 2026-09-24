@@ -12,15 +12,40 @@ const INLINE = new Set([
   'kbd', 'mark', 'q', 's', 'samp', 'small', 'span', 'strong', 'sub', 'sup',
   'time', 'u', 'var'
 ]);
+const TABLE = new Set([
+  'table', 'colgroup', 'col', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th'
+]);
+// Elements that hold blocks and say nothing of the kind of block a word
+// stands in
+const WRAPPERS = new Set([ ...TABLE, 'li', 'figure', 'figcaption' ]);
+const MARKS = {
+  strong: 'bold',
+  b: 'bold',
+  em: 'italic',
+  i: 'italic',
+  s: 'strike',
+  u: 'underline',
+  code: 'code',
+  sub: 'subscript',
+  sup: 'superscript',
+  mark: 'highlight'
+};
+// The marks the words of a diff are drawn in, so that a change to them shows
+// as the words struck through and added again
+const FOLDED_MARKS = new Set([ 'bold', 'italic' ]);
 // The most tokens the two sides may differ by. Past it the comparison costs
 // more than a request can take and the marks more than a reader can
 const MAX_EDIT_LENGTH = 2000;
 
 module.exports = {
   INLINE,
+  TABLE,
+  MARKS,
+  FOLDED_MARKS,
   parse,
   getWords,
-  compareTokens
+  compareTokens,
+  isWrapper
 };
 
 // The markup as a cheerio fragment
@@ -44,4 +69,10 @@ function compareTokens(older, newer) {
     comparator: (one, two) => one.key === two.key,
     maxEditLength: MAX_EDIT_LENGTH
   });
+}
+
+// Whether the element holds blocks rather than being one (see `WRAPPERS`)
+function isWrapper(node) {
+  return WRAPPERS.has(node.name) ||
+    ((node.name === 'div') && /\btableWrapper\b/.test(node.attribs.class || ''));
 }

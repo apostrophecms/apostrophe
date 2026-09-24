@@ -259,6 +259,46 @@ describe('Document Versions UI', function () {
       assert.equal(entry.elided, false);
     });
 
+    it('should cut a run of several parts as one, keeping their marks', async function () {
+      const lib = await getLib();
+      const words = Array.from({ length: 60 }, (_, i) => `word${i}`).join(' ');
+      const diff = [
+        {
+          change: 'added',
+          text: 'first'
+        },
+        {
+          change: 'same',
+          text: ' word0 word1 word2 '
+        },
+        {
+          change: 'same',
+          text: 'bold',
+          marks: [ 'bold' ]
+        },
+        {
+          change: 'same',
+          text: ` ${words}`
+        }
+      ];
+      const [ { entries: [ entry ] } ] = lib.getChangeGroups([
+        row([ title ], {
+          kind: 'richText',
+          diff
+        })
+      ], all);
+      assert.deepEqual(entry.inlineShort, [
+        diff[0],
+        diff[1],
+        diff[2],
+        {
+          change: 'same',
+          text: ' word0 word1'
+        },
+        { change: 'elided' }
+      ]);
+    });
+
     it('should show rich text and order as one block, anything else as two sides', async function () {
       const lib = await getLib();
       const words = Array.from({ length: 60 }, (_, i) => `word${i}`).join(' ');

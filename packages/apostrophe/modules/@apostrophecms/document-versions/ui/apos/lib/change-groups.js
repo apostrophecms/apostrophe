@@ -124,26 +124,67 @@ function getChangeGroups(rows, filter) {
   }
 
   // The parts with every long unchanged run cut down to the words next to a
-  // change. Both sides share those runs, so they are cut alike
+  // change. Both sides share those runs, so they are cut alike. A run can be
+  // several parts, words in bold or italic among them
   function elide(parts) {
-    return parts.flatMap((part, index) => {
-      if (part.change !== 'same' || part.text.length <= ELIDE_OVER) {
-        return [ part ];
+    const runs = [];
+    for (const part of parts) {
+      const run = runs.at(-1);
+      if (run && (part.change === 'same') && (run[0].change === 'same')) {
+        run.push(part);
+      } else {
+        runs.push([ part ]);
       }
-      const head = part.text.slice(0, ELIDE_CONTEXT).replace(/\S*$/, '');
-      const tail = part.text.slice(-ELIDE_CONTEXT).replace(/^\S*/, '');
+    }
+    return runs.flatMap((run, index) => {
+      const length = run.reduce((total, part) => total + part.text.length, 0);
+      if ((run[0].change !== 'same') || (length <= ELIDE_OVER)) {
+        return run;
+      }
       return [
-        index > 0 && {
-          ...part,
-          text: head.trimEnd()
-        },
+        ...((index > 0) ? head(run) : []),
         { change: 'elided' },
-        index < parts.length - 1 && {
-          ...part,
-          text: tail.trimStart()
-        }
-      ].filter(Boolean);
+        ...((index < runs.length - 1) ? tail(run) : [])
+      ];
     });
+
+    // The first words of a run, not cut inside a word
+    function head(run) {
+      const kept = [];
+      let left = ELIDE_CONTEXT;
+      for (const part of run) {
+        if (left <= 0) {
+          break;
+        }
+        const text = part.text.slice(0, left);
+        left -= part.text.length;
+        kept.push({
+          ...part,
+          text: (left < 0) ? text.replace(/\S*$/, '') : text
+        });
+      }
+      kept.at(-1).text = kept.at(-1).text.trimEnd();
+      return kept.filter(part => part.text);
+    }
+
+    // The last words of a run, the same way
+    function tail(run) {
+      const kept = [];
+      let left = ELIDE_CONTEXT;
+      for (const part of [ ...run ].reverse()) {
+        if (left <= 0) {
+          break;
+        }
+        const text = part.text.slice(-left);
+        left -= part.text.length;
+        kept.unshift({
+          ...part,
+          text: (left < 0) ? text.replace(/^\S*/, '') : text
+        });
+      }
+      kept[0].text = kept[0].text.trimStart();
+      return kept.filter(part => part.text);
+    }
   }
 
   // The items of an order with every run of unchanged ones cut down to one

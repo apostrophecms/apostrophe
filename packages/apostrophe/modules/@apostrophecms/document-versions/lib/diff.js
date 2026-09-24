@@ -8,7 +8,7 @@
 const _ = require('lodash');
 const { diffArrays } = require('diff');
 const text = require('./text.js');
-const diffRichText = require('./rich-text-diff.js');
+const { diffRichText } = require('./rich-text-diff.js');
 const findBaseType = require('./field-kind.js');
 
 // Field types with their own walk, reached through `extend` as well
@@ -143,10 +143,15 @@ const ORDER = Symbol('order');
  *   the text representation; `null` for a rich text or `widget` row. Attached
  *   as a non-enumerable property, so it is invisible to `JSON.stringify`
  *   and to deep equality.
- * @property {Object<string, { ordinal: number, label?: string, title?: string }>} [items]
+ * @property {Object<string, {
+ *   ordinal: number,
+ *   olderOrdinal: number,
+ *   label?: string,
+ *   title?: string
+ * }>} [items]
  *   Order rows only, for the text representation: by `_id`, each item's
- *   position in the newer document, its widget type's `label` and its
- *   title. Non-enumerable, like `field`.
+ *   position in the newer document and in the older one, its widget type's
+ *   `label` and its title. Non-enumerable, like `field`.
  * @property {string[]} [movedItems] Order rows of `consolidate` only, when
  *   the moves of its versions explain the new order (see `explainOrder`):
  *   the `_id`s of the items they moved. Non-enumerable, like `field`.
@@ -757,7 +762,10 @@ function walkOrder(kind, field, entries, path, rows, describe) {
   Object.defineProperty(result, 'items', {
     value: Object.fromEntries(matched.map(entry => [
       entry.newer._id,
-      describe(entry.newer, entry.ordinal)
+      {
+        ...describe(entry.newer, entry.ordinal),
+        olderOrdinal: entry.olderOrdinal
+      }
     ])),
     enumerable: false
   });

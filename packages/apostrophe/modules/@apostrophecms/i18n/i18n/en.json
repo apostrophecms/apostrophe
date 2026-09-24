@@ -829,6 +829,7 @@
   "versionNoChangesMatch": "No changes match these filters.",
   "versionOpensNewTab": "Opens in a new tab",
   "versionOrderChanged": "Order changed",
+  "versionOrderWas": "(was #{{ ordinal }})",
   "versionPluralLabel": "Document Versions",
   "versionPreviousVersion": "Previous Version",
   "versionRemovedText": "Removed",
