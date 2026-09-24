@@ -17,8 +17,9 @@ const ranks = {
   admin: 3
 };
 
-// Anonymous visitors, and users without a recognized role, rank below
-// guests, so that options like `viewRole: 'guest'` also apply to them
+// The rank of `role`. The general public, and any user without a
+// recognized role, rank below every role, so that a type's `viewRole`,
+// `editRole` or `publishRole` restricts them too
 function rankOf(role) {
   return Object.hasOwn(ranks, role) ? ranks[role] : -1;
 }
