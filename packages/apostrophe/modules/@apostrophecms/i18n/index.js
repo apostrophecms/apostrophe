@@ -512,11 +512,23 @@ module.exports = {
           if (!self.isValidLocale(locale)) {
             throw self.apos.error('invalid');
           }
+          if (![ 'draft', 'published' ].includes(mode)) {
+            throw self.apos.error('invalid');
+          }
+          if ((mode === 'draft') && !self.apos.permission.can(req, 'view-draft')) {
+            throw self.apos.error('forbidden');
+          }
+          // Only report documents the user is allowed to view
           const found = await self.apos.doc.db.find({
-            aposLocale: `${locale}:${mode}`,
-            aposDocId: {
-              $in: ids.map(self.apos.doc.toAposDocId)
-            }
+            $and: [
+              {
+                aposLocale: `${locale}:${mode}`,
+                aposDocId: {
+                  $in: ids.map(self.apos.doc.toAposDocId)
+                }
+              },
+              self.apos.permission.criteria(req, 'view')
+            ]
           }).project({
             _id: 1,
             aposDocId: 1
