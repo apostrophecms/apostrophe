@@ -2643,4 +2643,63 @@ describe('sanitizeHtml', function() {
       );
     });
   });
+
+  describe('GHSA-374f-7chj-9948: namespace-prefixed SVG SMIL animation elements', function() {
+    // In an XML serialization (XHTML, standalone SVG) `svg:animate` is the same
+    // element as `animate`, so the prefix must not hide an animation element
+    // that retargets a URL attribute.
+    const permissive = {
+      allowedTags: false,
+      allowedAttributes: false,
+      allowedSchemes: [ 'http', 'https' ],
+      allowVulnerableTags: true
+    };
+    const tags = [ 'animate', 'animateColor', 'animateMotion', 'animateTransform', 'set' ];
+    const prefixes = [ 'svg:', 'SVG:', 'xlink:', 'a:b:' ];
+
+    it('should drop every prefixed animation element retargeting href', function() {
+      tags.forEach(function(tag) {
+        prefixes.forEach(function(prefix) {
+          const name = prefix + tag;
+          const out = sanitizeHtml(
+            '<svg><a href="#safe"><' + name + ' attributeName="href" values="#safe;javascript:alert(document.domain)" to="javascript:alert(1)" dur=".01s" fill="freeze"/><text>Click</text></a></svg>',
+            permissive
+          );
+          assert.ok(!/javascript:/i.test(out), name + ' must not survive: ' + out);
+        });
+      });
+    });
+
+    it('should drop a prefixed animation retargeting xlink:href', function() {
+      const out = sanitizeHtml(
+        '<svg><a xlink:href="#safe"><svg:set attributeName="xlink:href" to="javascript:alert(1)"/><text>x</text></a></svg>',
+        permissive
+      );
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should drop a prefixed animation that is explicitly allowed by name', function() {
+      const out = sanitizeHtml(
+        '<svg><a href="#safe"><svg:animate attributeName="href" values="javascript:alert(1)"></svg:animate><text>x</text></a></svg>',
+        {
+          allowedTags: [ 'svg', 'a', 'text', 'svg:animate' ],
+          allowedAttributes: {
+            a: [ 'href' ],
+            'svg:animate': [ 'attributename', 'values' ]
+          }
+        }
+      );
+      assert.strictEqual(out, '<svg><a href="#safe"><text>x</text></a></svg>');
+    });
+
+    it('should keep a prefixed animation targeting a harmless attribute', function() {
+      assert.strictEqual(
+        sanitizeHtml(
+          '<svg><rect><svg:animate attributeName="fill" values="red;blue"></svg:animate></rect></svg>',
+          permissive
+        ),
+        '<svg><rect><svg:animate attributename="fill" values="red;blue"></svg:animate></rect></svg>'
+      );
+    });
+  });
 });
