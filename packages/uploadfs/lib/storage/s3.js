@@ -15,6 +15,7 @@ const { NodeHttpHandler } = require('@smithy/node-http-handler');
 const { extname } = require('path');
 const { PassThrough } = require('stream');
 const utils = require('../utils');
+const disabledFileKey = require('./disabledFileKey.js');
 
 module.exports = function () {
   let contentTypes;
@@ -197,7 +198,6 @@ module.exports = function () {
       const inputStream = self.streamOut(path, options);
       inputStream.pipe(outputStream);
       inputStream.on('error', function (err) {
-        // Watch out for any oddities in stream implementation
         if (finished) {
           return;
         }
@@ -205,7 +205,6 @@ module.exports = function () {
         return callback(err);
       });
       outputStream.on('error', function (err) {
-        // Watch out for any oddities in stream implementation
         if (finished) {
           return;
         }
@@ -213,7 +212,6 @@ module.exports = function () {
         return callback(err);
       });
       outputStream.on('finish', function () {
-        // Watch out for any oddities in stream implementation
         if (finished) {
           return;
         }
@@ -233,38 +231,25 @@ module.exports = function () {
         .catch(err => callback(err));
     },
 
-    enable: function (path, callback) {
-      const disabledKey = utils.getDisabledPath(path, self.options.disabledFileKey);
-      const key = utils.removeLeadingSlash(self.options, path);
-
+    rename: function(from, to, callback) {
       const copyCommand = new CopyObjectCommand({
         Bucket: bucket,
-        CopySource: bucket + '/' + utils.removeLeadingSlash(self.options, disabledKey),
-        Key: key
+        CopySource: bucket + '/' + utils.removeLeadingSlash(self.options, from),
+        Key: utils.removeLeadingSlash(self.options, to)
       });
-
       client.send(copyCommand)
         .then(() => {
-          self.remove(disabledKey, callback);
+          self.remove(from, callback);
         })
         .catch(err => callback(err));
     },
 
+    enable: function (path, callback) {
+      return disabledFileKey.enable(self, path, callback);
+    },
+
     disable: function (path, callback) {
-      const key = utils.removeLeadingSlash(self.options, path);
-      const disabledKey = utils.getDisabledPath(path, self.options.disabledFileKey);
-
-      const copyCommand = new CopyObjectCommand({
-        Bucket: bucket,
-        CopySource: bucket + '/' + key,
-        Key: utils.removeLeadingSlash(self.options, disabledKey)
-      });
-
-      client.send(copyCommand)
-        .then(() => {
-          self.remove(path, callback);
-        })
-        .catch(err => callback(err));
+      return disabledFileKey.disable(self, path, callback);
     },
 
     getUrl: function (path) {
@@ -279,7 +264,6 @@ module.exports = function () {
     },
 
     destroy: function (callback) {
-      // No file descriptors or timeouts held
       return callback(null);
     }
   };
