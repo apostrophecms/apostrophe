@@ -465,8 +465,10 @@ module.exports = {
             .getRestQuery(req)
             .and(criteria)
             .toObject();
-          const result = found && (self.apos.doc.getManager(found.type) || self)
-            .removeForbiddenFields(req, found);
+          const manager = found && self.apos.doc.getManager(found.type);
+          const result = manager
+            ? manager.removeForbiddenFields(req, found)
+            : found;
 
           if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
