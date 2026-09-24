@@ -95,6 +95,7 @@
   "cannotChangeSlugPrefix": "não pode mudar o prefixo do slug",
   "cannotMoveArchive": "Você não pode mover o arquivo",
   "caption": "Legenda",
+  "changeNotSaved": "Não foi possível salvar essa alteração. Recarregue a página para continuar editando.",
   "changed": "Modificado",
   "changesAwaitingApproval": "Alterações neste documento aguardam aprovação de um administrador ou editor.",
   "changesDiscarded": "Modificações descartadas",

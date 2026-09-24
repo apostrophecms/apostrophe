@@ -95,6 +95,7 @@
   "cannotChangeSlugPrefix": "Der Slug-Präfix kann nicht geändert werden.",
   "cannotMoveArchive": "Das Archiv kann nicht verschoben werden.",
   "caption": "Überschrift",
+  "changeNotSaved": "Diese Änderung konnte nicht gespeichert werden. Lade die Seite neu, um weiterzuarbeiten.",
   "changed": "Geändert",
   "changesAwaitingApproval": "Änderungen warten auf Freigabe durch einen Administrator oder Editor.",
   "changesDiscarded": "Änderungen verworfen",
