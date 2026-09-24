@@ -13,6 +13,7 @@ const {
   prefixUpperBound,
   validateInteger
 } = require('../lib/shared');
+const { TtlReaper, ttlIndexOptions } = require('../lib/ttl');
 const { AggregationCursor } = require('../lib/aggregation-cursor');
 
 // =============================================================================
@@ -1939,6 +1940,7 @@ class PostgresCollection {
    * );
    */
   async createIndex(keys, options = {}) {
+    options = ttlIndexOptions(keys, options);
     await this._ensureTable();
 
     const keyEntries = Object.entries(keys);
@@ -2014,12 +2016,32 @@ class PostgresCollection {
     // Generate MongoDB-compatible index name for indexInformation() compatibility
     const mongoName = options.name || keyEntries.map(([ k, v ]) => `${k}_${v}`).join('_');
 
+    // Before TTL support, expireAfterSeconds was ignored, leaving a plain
+    // text index under the same name. CREATE INDEX IF NOT EXISTS would keep
+    // it, and the expiration query can't use it, so replace it once
+    if (options.expireAfterSeconds != null) {
+      const existing = await this._pool.query(
+        'SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = $2',
+        [ this._schema || 'public', indexName ]
+      );
+      if (existing.rows[0] && !existing.rows[0].indexdef.includes('$date')) {
+        const schemaPrefix = this._schema ? `"${escapeIdentifier(this._schema)}".` : '';
+        await this._pool.query(
+          `DROP INDEX IF EXISTS ${schemaPrefix}"${escapeIdentifier(indexName)}"`
+        );
+      }
+    }
+
     // Store index metadata
     this._indexes.set(indexName, {
       keys,
       options,
       mongoName
     });
+
+    if (options.expireAfterSeconds != null) {
+      this._db._client._ttlReaper.start();
+    }
 
     const qualifiedName = this._qualifiedName();
     const escapedIndexName = escapeIdentifier(indexName);
@@ -2147,7 +2169,10 @@ class PostgresCollection {
           key: storedIndex.keys,
           unique: storedIndex.options.unique || false,
           ...(storedIndex.options.sparse ? { sparse: true } : {}),
-          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {})
+          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {}),
+          ...(storedIndex.options.expireAfterSeconds != null
+            ? { expireAfterSeconds: storedIndex.options.expireAfterSeconds }
+            : {})
         });
       } else {
         indexes.push({
@@ -2383,6 +2408,7 @@ class PostgresClient {
     this._defaultSchema = options._defaultSchema || null;
     this._realDb = options._realDb || null;
     this._databases = new Map();
+    this._ttlReaper = new TtlReaper(this);
   }
 
   db(name) {
@@ -2420,6 +2446,7 @@ class PostgresClient {
   async close() {
     if (!this._poolEnded) {
       this._poolEnded = true;
+      await this._ttlReaper.stop();
       await this._pool.end();
     }
   }

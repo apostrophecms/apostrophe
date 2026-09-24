@@ -1,4 +1,4 @@
-/* global describe, it, before, after, beforeEach */
+/* global describe, it, before, after, beforeEach, afterEach */
 /* eslint-disable no-unused-expressions */
 const { expect } = require('chai');
 
@@ -2304,6 +2304,303 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         await coll.deleteMany({});
       });
     }
+  });
+
+  // ============================================
+  // SECTION 6b: TTL Indexes (expireAfterSeconds)
+  // ============================================
+
+  describe('TTL Indexes', function() {
+    const past = seconds => new Date(Date.now() - seconds * 1000);
+    const future = seconds => new Date(Date.now() + seconds * 1000);
+
+    it('indexes() reports expireAfterSeconds', async function() {
+      const coll = db.collection('test');
+      await coll.insertOne({ _id: 'ttl0' });
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      const indexes = await coll.indexes();
+      const ttlIndex = indexes.find(i => i.key && i.key.expires === 1);
+      expect(ttlIndex).to.exist;
+      expect(ttlIndex.expireAfterSeconds).to.equal(0);
+    });
+
+    if (ADAPTER === 'mongodb') {
+      return;
+    }
+
+    it('rejects compound and _id TTL indexes', async function() {
+      const coll = db.collection('test');
+      let error;
+      try {
+        await coll.createIndex({
+          a: 1,
+          b: 1
+        }, { expireAfterSeconds: 10 });
+      } catch (e) {
+        error = e;
+      }
+      expect(error).to.exist;
+      error = null;
+      try {
+        await coll.createIndex({ _id: 1 }, { expireAfterSeconds: 10 });
+      } catch (e) {
+        error = e;
+      }
+      expect(error).to.exist;
+    });
+
+    it('removes documents once the date plus expireAfterSeconds has passed', async function() {
+      const coll = db.collection('test');
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 60 });
+      await coll.insertMany([
+        // Expired: date + 60 seconds is in the past
+        {
+          _id: 'old',
+          expires: past(120)
+        },
+        // Not expired: date is in the past, but date + 60 seconds is not
+        {
+          _id: 'recent',
+          expires: past(30)
+        },
+        {
+          _id: 'future',
+          expires: future(30)
+        },
+        // Never expire: no date, or not a date
+        { _id: 'missing' },
+        {
+          _id: 'string',
+          expires: 'not a date'
+        },
+        {
+          _id: 'null',
+          expires: null
+        }
+      ]);
+      await client._ttlReaper.run();
+      const ids = (await coll.find({}).toArray()).map(doc => doc._id).sort();
+      expect(ids).to.deep.equal([ 'future', 'missing', 'null', 'recent', 'string' ]);
+    });
+
+    it('expireAfterSeconds: 0 expires documents at the date itself', async function() {
+      const coll = db.collection('test');
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      await coll.insertMany([
+        {
+          _id: 'past',
+          expires: past(1)
+        },
+        {
+          _id: 'future',
+          expires: future(60)
+        }
+      ]);
+      await client._ttlReaper.run();
+      const ids = (await coll.find({}).toArray()).map(doc => doc._id);
+      expect(ids).to.deep.equal([ 'future' ]);
+    });
+
+    it('supports nested fields', async function() {
+      const coll = db.collection('test');
+      await coll.createIndex({ 'meta.expires': 1 }, { expireAfterSeconds: 0 });
+      await coll.insertMany([
+        {
+          _id: 'past',
+          meta: { expires: past(1) }
+        },
+        {
+          _id: 'future',
+          meta: { expires: future(60) }
+        }
+      ]);
+      await client._ttlReaper.run();
+      const ids = (await coll.find({}).toArray()).map(doc => doc._id);
+      expect(ids).to.deep.equal([ 'future' ]);
+    });
+
+    it('stops expiring documents once the TTL index is dropped', async function() {
+      const coll = db.collection('test');
+      const name = await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      await coll.dropIndex(name);
+      await coll.insertOne({
+        _id: 'past',
+        expires: past(60)
+      });
+      await client._ttlReaper.run();
+      expect(await coll.findOne({ _id: 'past' })).to.exist;
+    });
+
+    it('does not recreate a dropped collection', async function() {
+      const coll = db.collection('ttldropped');
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      await coll.drop();
+      await client._ttlReaper.run();
+      const names = (await db.listCollections().toArray()).map(c => c.name);
+      expect(names).to.not.include('ttldropped');
+    });
+
+    it('replaces a plain index created before TTL support', async function() {
+      const coll = db.collection('test');
+      // What createIndex({ expires: 1 }, { expireAfterSeconds: 0 }) used
+      // to build, since expireAfterSeconds was ignored
+      const name = await coll.createIndex({ expires: 1 });
+      const definition = async () => {
+        if (ADAPTER === 'sqlite') {
+          return db._sqlite.prepare(
+            'SELECT sql FROM sqlite_master WHERE type = \'index\' AND name = ?'
+          ).get(name).sql;
+        }
+        const result = await db._pool.query(
+          'SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = $2',
+          [ db._schema || 'public', name ]
+        );
+        return result.rows[0].indexdef;
+      };
+      expect(await definition()).to.not.include('$date');
+      const ttlName = await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      expect(ttlName).to.equal(name);
+      const replaced = await definition();
+      expect(replaced).to.include('$date');
+      // Creating it again at the next startup leaves it alone
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      expect(await definition()).to.equal(replaced);
+      const ttlIndexes = (await coll.indexes()).filter(i => i.key && i.key.expires);
+      expect(ttlIndexes.length).to.equal(1);
+      expect(ttlIndexes[0].expireAfterSeconds).to.equal(0);
+    });
+
+    it('the expiration query uses the index', async function() {
+      const coll = db.collection('test');
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      const docs = [];
+      for (let i = 0; i < 200; i++) {
+        docs.push({
+          _id: `doc${i}`,
+          expires: future(i + 1)
+        });
+      }
+      await coll.insertMany(docs);
+      // Same criteria the reaper passes to deleteMany. Turn the SELECT into
+      // the DELETE deleteMany actually runs, since an ORDER BY can change
+      // the plan
+      const explained = await coll.find({ expires: { $lte: new Date() } }).explain();
+      const params = explained.params;
+      const sql = explained.sql
+        .replace(/^SELECT .*? FROM /, 'DELETE FROM ')
+        .replace(/ ORDER BY .*$/, '');
+      expect(sql).to.match(/^DELETE FROM \S+ WHERE /);
+      if (ADAPTER === 'sqlite') {
+        const planRows = db._sqlite.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params);
+        const planText = planRows.map(r => r.detail || '').join('\n');
+        expect(planText).to.match(/SEARCH.*USING INDEX/);
+      } else {
+        const pgClient = await db._pool.connect();
+        try {
+          await pgClient.query('BEGIN');
+          await pgClient.query(`ANALYZE ${coll._qualifiedName()}`);
+          await pgClient.query('SET LOCAL enable_seqscan = off');
+          const explain = await pgClient.query(`EXPLAIN ${sql}`, params);
+          const planText = explain.rows.map(r => r['QUERY PLAN']).join('\n');
+          expect(planText).to.match(/Index (Only )?Scan|Bitmap Index Scan/);
+          await pgClient.query('ROLLBACK');
+        } finally {
+          pgClient.release();
+        }
+      }
+    });
+
+    describe('background timer', function() {
+      const adapter = (ADAPTER === 'sqlite' || ADAPTER === 'postgres' || ADAPTER === 'multipostgres') &&
+        require(ADAPTER === 'sqlite' ? '../adapters/sqlite' : '../adapters/postgres');
+      let uri;
+      let ttlClient;
+      let ttlDb;
+
+      beforeEach(async function() {
+        // A dedicated client so we control when its timer starts and stops
+        if (ADAPTER === 'sqlite') {
+          const dbPath = require('path').join(require('os').tmpdir(), 'dbtest-ttl.db');
+          uri = `sqlite://${dbPath}`;
+        } else {
+          const user = process.env.PGUSER || process.env.USER;
+          const password = process.env.PGPASSWORD || '';
+          const auth = password ? `${user}:${password}@` : `${user}@`;
+          uri = (ADAPTER === 'multipostgres')
+            ? `multipostgres://${auth}localhost:5432/dbtest_adapter-testschema`
+            : `postgres://${auth}localhost:5432/dbtest_adapter`;
+        }
+        ttlClient = await adapter.connect(uri);
+        ttlDb = ttlClient.db();
+        await ttlDb.collection('ttltimer').drop();
+      });
+
+      afterEach(async function() {
+        await ttlClient.close();
+        const cleanupClient = await adapter.connect(uri);
+        await cleanupClient.db().collection('ttltimer').drop();
+        await cleanupClient.close();
+      });
+
+      it('defaults to a 60 second interval, like MongoDB', function() {
+        expect(ttlClient._ttlReaper.interval).to.equal(60 * 1000);
+      });
+
+      it('does not start a timer until a TTL index exists', async function() {
+        await ttlDb.collection('ttltimer').createIndex({ expires: 1 });
+        expect(ttlClient._ttlReaper._timer).to.equal(null);
+      });
+
+      it('removes expired documents on a timer and stops the timer on close', async function() {
+        ttlClient._ttlReaper.interval = 50;
+        const coll = ttlDb.collection('ttltimer');
+        await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        expect(ttlClient._ttlReaper._timer).to.not.equal(null);
+        await coll.insertOne({
+          _id: 'past',
+          expires: past(1)
+        });
+        const deadline = Date.now() + 5000;
+        while (await coll.findOne({ _id: 'past' })) {
+          expect(Date.now()).to.be.below(deadline);
+          await new Promise(resolve => setTimeout(resolve, 25));
+        }
+        await ttlClient.close();
+        expect(ttlClient._ttlReaper._timer).to.equal(null);
+      });
+
+      it('takes no action once shutdown has begun', async function() {
+        const coll = ttlDb.collection('ttltimer');
+        await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        let deletes = 0;
+        const deleteMany = coll.deleteMany;
+        coll.deleteMany = function(...args) {
+          deletes++;
+          return deleteMany.apply(this, args);
+        };
+        await ttlClient.close();
+        // As if the timer fired during or after shutdown
+        await ttlClient._ttlReaper.run();
+        expect(deletes).to.equal(0);
+      });
+
+      it('close() waits for a pass in progress', async function() {
+        const coll = ttlDb.collection('ttltimer');
+        await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        let finished = false;
+        const deleteMany = coll.deleteMany;
+        coll.deleteMany = async function(...args) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          const result = await deleteMany.apply(this, args);
+          finished = true;
+          return result;
+        };
+        const pass = ttlClient._ttlReaper.run();
+        await ttlClient.close();
+        expect(finished).to.equal(true);
+        await pass;
+      });
+    });
   });
 
   // ============================================

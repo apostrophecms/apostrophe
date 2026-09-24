@@ -54,7 +54,7 @@ export default function() {
     // by its id and looked up there
     const fieldId = el.getAttribute('data-field-id');
     const field = getFieldById(fieldId);
-    const value = JSON.parse(el.getAttribute('data-value'));
+    let value = JSON.parse(el.getAttribute('data-value'));
     const options = JSON.parse(el.getAttribute('data-options') || '{}') || {};
     // Empty when the markup came from the area editor on behalf of a modal.
     // The field has a document like any other — the one the modal is editing
@@ -127,6 +127,27 @@ export default function() {
         rootMargin: '600px'
       });
       observer.observe(el);
+      apos.bus.$on('context-history-apply', applyWhilePending);
+    }
+
+    // Undo and redo leave the rest of the page as it is, rather than
+    // rendering it again, so a field still waiting for its editor would
+    // otherwise come up with the value the page was loaded with
+    function applyWhilePending(event) {
+      if (!document.body.contains(el)) {
+        apos.bus.$off('context-history-apply', applyWhilePending);
+        return;
+      }
+      if (!Object.hasOwn(event.patch, patchKey)) {
+        return;
+      }
+      value = event.patch[patchKey];
+      apos.bus.$emit('field-edited', {
+        docId,
+        patchKey,
+        value
+      });
+      event.claim();
     }
 
     // The newest entry: a scroll right after `observe` arrives in the same
@@ -142,6 +163,7 @@ export default function() {
     }
 
     function mountApp() {
+      apos.bus.$off('context-history-apply', applyWhilePending);
       // A field the page rendered inline, e.g. `with { tag: 'span' }`, has to
       // be edited inline: a block box here would drop the value onto a line
       // of its own, taking everything after it along. Asked now rather than
