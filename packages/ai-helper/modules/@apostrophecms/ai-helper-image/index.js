@@ -40,7 +40,7 @@ module.exports = {
   methods(self) {
     return {
       scheduleCleanup() {
-        setInterval(self.cleanup, 1000 * 60 * 60);
+        self.cleanupInterval = setInterval(self.cleanup, 1000 * 60 * 60);
       },
 
       async cleanup() {
@@ -61,11 +61,26 @@ module.exports = {
         return path.join(dir, `${image._id}.png`);
       },
 
+      // Copy the image to a temporary file and resolve to its path.
+      // Images received as base64 are read back from uploadfs directly.
+      // Never fetch them from `aiHelperImageUrl`, which may be derived
+      // from the request's Host header (CWE-918)
       async aiHelperFetchImage(req, image) {
-        const response = await fetch(self.aiHelperImageUrl(req, image));
-        const buffer = Buffer.from(await response.arrayBuffer());
-
         const temp = await self.getTempImagePath(image);
+        if (!image.url) {
+          await new Promise((resolve, reject) => {
+            self.uploadfs.copyOut(`/ai-helper-images/${image._id}.png`, temp, err =>
+              err ? reject(err) : resolve()
+            );
+          });
+          return temp;
+        }
+        // URL supplied by the AI provider
+        const response = await fetch(image.url);
+        if (!response.ok) {
+          throw self.apos.error('error', `Unable to fetch AI helper image (status ${response.status})`);
+        }
+        const buffer = Buffer.from(await response.arrayBuffer());
         await fsp.writeFile(temp, buffer);
         return temp;
       },
@@ -88,6 +103,8 @@ module.exports = {
         }
       },
 
+      // For display in the browser. Server-side code should use
+      // aiHelperFetchImage to access the image
       aiHelperImageUrl(req, image) {
         return image.url || (new URL(self.uploadfs.getUrl() + `/ai-helper-images/${image._id}.png`, req.baseUrl)).toString();
       },
@@ -139,10 +156,21 @@ module.exports = {
     };
   },
 
+  handlers(self) {
+    return {
+      'apostrophe:destroy': {
+        clearCleanupInterval() {
+          clearInterval(self.cleanupInterval);
+        }
+      }
+    };
+  },
+
   apiRoutes(self) {
     return {
       get: {
         async 'ai-helper'(req) {
+          self.apos.modules['@apostrophecms/ai-helper'].checkPermissions(req);
           const images = await self.aiHelperImages.find({
             userId: req.user._id,
             createdAt: {
@@ -163,6 +191,7 @@ module.exports = {
 
       delete: {
         async 'ai-helper/:_id'(req) {
+          self.apos.modules['@apostrophecms/ai-helper'].checkPermissions(req);
           await self.aiHelperRemoveImage(req.params._id, {
             userId: req.user._id
           });
@@ -217,7 +246,10 @@ module.exports = {
 
             if (variantOf) {
               // Generate variations
-              const existing = await self.aiHelperImages.findOne({ _id: variantOf });
+              const existing = await self.aiHelperImages.findOne({
+                _id: variantOf,
+                userId: req.user._id
+              });
               if (!existing) {
                 throw self.apos.error('notfound');
               }
@@ -226,7 +258,7 @@ module.exports = {
                * Pass the image record to the provider so it can prepare it as needed.
                *
                * The provider is responsible for:
-               * - Fetching the image (using self.aiHelperImageUrl(req, existing))
+               * - Fetching the image (using self.aiHelperFetchImage(req, existing))
                * - Converting to required format
                * (e.g., OpenAI needs RGBA PNG, others may differ)
                * - Resizing if needed (e.g., Ollama might want 512x512)
@@ -313,13 +345,18 @@ module.exports = {
 
       patch: {
         async 'ai-helper/:_id'(req) {
-          const _id = req.params._id;
+          self.apos.modules['@apostrophecms/ai-helper'].checkPermissions(req);
+          const _id = self.apos.launder.id(req.params._id);
 
           if (!req.body.accepted) {
             throw self.apos.error('invalid');
           }
 
-          const helperImage = await self.aiHelperImages.findOne({ _id });
+          // Users may only accept images they generated themselves
+          const helperImage = await self.aiHelperImages.findOne({
+            _id,
+            userId: req.user._id
+          });
           if (!helperImage) {
             throw self.apos.error('notfound');
           }
