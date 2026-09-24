@@ -241,6 +241,19 @@ describe('Pages REST - view permissions (GHSA-2j32-q6rx-h844)', function() {
     assert.ok(!results.includes(adminOnlyPage.aposDocId));
   });
 
+  it('anonymous: cannot view a page type with viewRole: admin on the site', async function() {
+    await assert.rejects(
+      apos.http.get('/admin-only-page', {}),
+      { status: 404 }
+    );
+    const req = apos.task.getAnonReq();
+    assert.equal(apos.permission.can(req, 'view', 'admin-only-page'), false);
+    assert.equal(apos.permission.can(req, 'view', 'test-page'), true);
+    assert.ok(
+      !await apos.page.find(req, { aposDocId: adminOnlyPage.aposDocId }).toObject()
+    );
+  });
+
   // Guests (logged in, no API access of their own)
 
   it('guest with publicApiProjection: can GET a loginRequired page but not a viewRole: admin page', async function() {
