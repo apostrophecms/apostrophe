@@ -839,12 +839,14 @@ function sanitizeHtml(html, options, _recursing) {
   // animation on the strength of its target instead. Animations of attributes
   // that are not URL sinks, such as `fill` or `opacity`, are unaffected.
   function animatesUrlAttribute(name, attribs) {
-    if (svgAnimationTags.indexOf(name.toLowerCase()) === -1) {
+    // In an XML serialization a prefixed name such as `svg:animate` is the same
+    // element as `animate`, so match on the local name (GHSA-374f-7chj-9948).
+    if (svgAnimationTags.indexOf(localPart(name)) === -1) {
       return false;
     }
     const schemeCheckedAttributes = options.allowedSchemesAppliedToAttributes || [];
     return Object.keys(attribs || {}).some(function(attributeName) {
-      if (attributeName.toLowerCase() !== 'attributename') {
+      if (localPart(attributeName) !== 'attributename') {
         return false;
       }
       const target = (attribs[attributeName] || '').trim().toLowerCase();
@@ -855,6 +857,12 @@ function sanitizeHtml(html, options, _recursing) {
         schemeCheckedAttributes.indexOf(target) !== -1 ||
         schemeCheckedAttributes.indexOf(localName) !== -1;
     });
+  }
+
+  // Lowercased name with any namespace prefix removed.
+  function localPart(name) {
+    const lower = name.toLowerCase();
+    return lower.slice(lower.lastIndexOf(':') + 1);
   }
 
   function parseUrl(value) {
