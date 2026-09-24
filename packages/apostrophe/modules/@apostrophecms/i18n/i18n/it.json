@@ -95,6 +95,7 @@
   "cannotChangeSlugPrefix": "impossibile cambiare il prefisso dello slug",
   "cannotMoveArchive": "Non puoi spostare l'Archivio",
   "caption": "Didascalia",
+  "changeNotSaved": "Non è stato possibile salvare questa modifica. Ricarica la pagina per continuare a modificare.",
   "changed": "Cambiato",
   "changesAwaitingApproval": "Le modifiche a questo documento sono in attesa di approvazione da parte di un amministratore o di un editore.",
   "changesDiscarded": "Modifiche scartate",

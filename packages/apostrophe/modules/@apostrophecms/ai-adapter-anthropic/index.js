@@ -341,10 +341,7 @@ module.exports = {
         if (response.stop_reason === 'refusal') {
           throw self.apos.error('aiRefusal', 'the model refused this request');
         }
-        const usage = {
-          inputTokens: response.usage?.input_tokens,
-          outputTokens: response.usage?.output_tokens
-        };
+        const usage = normalizeUsage(response.usage || {});
         const content = (response.content || [])
           .map(fromBlock)
           .filter(Boolean);
@@ -399,6 +396,24 @@ module.exports = {
             };
           }
           return null;
+        }
+
+        // `input_tokens` is only the uncached share of the prompt: the
+        // shares written to and read from the cache ride beside it
+        function normalizeUsage({
+          input_tokens: input,
+          output_tokens: output,
+          cache_read_input_tokens: read,
+          cache_creation_input_tokens: written
+        }) {
+          return {
+            inputTokens: input === undefined
+              ? undefined
+              : input + (read || 0) + (written || 0),
+            outputTokens: output,
+            ...(Number.isFinite(read) && { cacheReadTokens: read }),
+            ...(Number.isFinite(written) && { cacheWriteTokens: written })
+          };
         }
       },
       // Map any error the transport produced to a normalized apos

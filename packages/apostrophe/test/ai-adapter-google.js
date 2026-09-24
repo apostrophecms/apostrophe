@@ -222,10 +222,11 @@ describe('AI adapter: google', function() {
       }
     });
 
-    it('translates tool definitions to functionDeclarations', function() {
+    it('translates tool definitions to functionDeclarations, as JSON Schema', function() {
       const input = {
         type: 'object',
-        properties: { title: { type: 'string' } }
+        properties: { title: { type: 'string' } },
+        additionalProperties: false
       };
       const body = adapter.buildBody(request({
         tools: [ {
@@ -238,7 +239,7 @@ describe('AI adapter: google', function() {
         functionDeclarations: [ {
           name: 'find_pages',
           description: 'Find pages',
-          parameters: input
+          parametersJsonSchema: input
         } ]
       } ]);
     });
@@ -382,14 +383,16 @@ describe('AI adapter: google', function() {
       const schema = {
         type: 'object',
         properties: { title: { type: 'string' } },
-        required: [ 'title' ]
+        required: [ 'title' ],
+        additionalProperties: false
       };
       const body = adapter.buildBody(request({ schema }));
       const [ tool ] = body.tools;
       assert.equal(tool.functionDeclarations.length, 1);
       assert.equal(tool.functionDeclarations[0].name, '_final_answer');
       assert.equal(typeof tool.functionDeclarations[0].description, 'string');
-      assert.deepEqual(tool.functionDeclarations[0].parameters, schema);
+      assert.deepEqual(tool.functionDeclarations[0].parametersJsonSchema, schema);
+      assert.equal('parameters' in tool.functionDeclarations[0], false);
       assert.deepEqual(body.toolConfig, {
         functionCallingConfig: {
           mode: 'ANY',
@@ -454,6 +457,27 @@ describe('AI adapter: google', function() {
       assert.deepEqual(turn.usage, {
         inputTokens: 12,
         outputTokens: 12
+      });
+    });
+
+    it('carries the cached share of the prompt, reported only on a cache hit', function() {
+      const turn = adapter.parseResponse(fixture({
+        usageMetadata: {
+          promptTokenCount: 12,
+          cachedContentTokenCount: 5,
+          candidatesTokenCount: 7,
+          totalTokenCount: 19
+        }
+      }));
+      assert.deepEqual(turn.usage, {
+        inputTokens: 12,
+        outputTokens: 7,
+        cacheReadTokens: 5
+      });
+      // The default fixture has no cached content, so no share
+      assert.deepEqual(adapter.parseResponse(fixture()).usage, {
+        inputTokens: 12,
+        outputTokens: 7
       });
     });
 

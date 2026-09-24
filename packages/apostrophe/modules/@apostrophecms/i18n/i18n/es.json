@@ -95,6 +95,7 @@
   "cannotChangeSlugPrefix": "No se puede cambiar el prefijo del slug",
   "cannotMoveArchive": "No puede mover el Archivo de Documentos",
   "caption": "Subtítulo",
+  "changeNotSaved": "No se pudo guardar ese cambio. Recargue la página para seguir editando.",
   "changed": "Modificado",
   "changesAwaitingApproval": "Cambios a este documento estan esperando ser aprobados por un administrador o editor.",
   "changesDiscarded": "Cambios descartados",

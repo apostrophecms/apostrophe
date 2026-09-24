@@ -6,6 +6,8 @@
     :options="field.options"
     :doc-id="docId"
     :read-only="readOnly"
+    history="context"
+    :history-target="patchKey"
     empty-label="apostrophe:emptyRichText"
     data-apos-test="wysiwygRichText"
     @update:model-value="update"
@@ -19,7 +21,9 @@
 // three honor the same options and behave the same way.
 //
 // `AposRichTextEditor` debounces its own updates and emits `context-editing`
-// while the user types, so `update` saves each value it is handed.
+// while the user types, so `update` saves each value it is handed. It also
+// records the typing for the context bar's undo history itself, so those
+// saves are not undo steps of their own.
 //
 // `inline` asks the editor for none of the padding and spacing it wears in a
 // widget or a modal, so that it takes up exactly the room the markup it

@@ -329,6 +329,27 @@ describe('Field Tag and Wysiwyg Fields', function () {
     assert(html.includes('</span>'));
   });
 
+  it('should accept className as an alternative to class', async function () {
+    apos = await t.create({
+      root: module,
+      modules: modules()
+    });
+
+    const req = apos.task.getReq();
+    const page = await apos.page.find(req, { slug: '/fields' }).toObject();
+
+    page.subtitle = 'Subtitle here';
+    await apos.page.update(req, page);
+
+    const { html } = await render(
+      '{% field data.page, \'subtitle\' with { className: \'lede\' } %}'
+    );
+
+    assert(html.includes(
+      'class="apos-wysiwyg-field apos-wysiwyg-field--string apos-wysiwyg-field--input lede"'
+    ));
+  });
+
   it('should refuse an unsafe tag name', async function () {
     apos = await t.create({
       root: module,

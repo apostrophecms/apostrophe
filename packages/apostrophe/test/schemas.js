@@ -3224,6 +3224,44 @@ describe('Schemas', function() {
     });
   });
 
+  it('should reject a relationship with more than one withType', function() {
+    const schema = [
+      {
+        name: '_related',
+        type: 'relationship',
+        withType: [ 'article', 'topic' ]
+      }
+    ];
+
+    assert.throws(() => {
+      apos.schema.validate(schema, {
+        type: 'doc type',
+        subtype: 'test'
+      });
+    }, {
+      message: /relationship field "_related".*Relationships with more than one type are not supported/s
+    });
+  });
+
+  it('should reject a reverse relationship with more than one withType', function() {
+    const schema = [
+      {
+        name: '_relatedBy',
+        type: 'relationshipReverse',
+        withType: [ 'article', 'topic' ]
+      }
+    ];
+
+    assert.throws(() => {
+      apos.schema.validate(schema, {
+        type: 'doc type',
+        subtype: 'test'
+      });
+    }, {
+      message: /relationshipReverse field "_relatedBy".*Relationships with more than one type are not supported/s
+    });
+  });
+
   describe('field.readOnly with default value', function() {
     const givenSchema = [
       {

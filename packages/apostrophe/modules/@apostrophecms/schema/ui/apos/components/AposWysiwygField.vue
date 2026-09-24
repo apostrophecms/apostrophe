@@ -241,13 +241,9 @@ export default {
       if (e) {
         e.stopPropagation();
       }
-      const el = this.$refs.editor?.$el;
-      const focusable = el && el.querySelector(
-        'textarea, input, [contenteditable="true"]'
-      );
-      if (focusable) {
-        focusable.focus();
-      }
+      // A text box, a select, a rich text editing area: only the editor knows
+      // which, so ask it. `AposWysiwygInputMixin` answers for the usual cases
+      this.$refs.editor?.focus?.();
     },
 
     // The widgets we are inside of, outermost first. There is no component to

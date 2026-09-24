@@ -95,6 +95,7 @@
   "cannotChangeSlugPrefix": "nemôže zmeniť predvoľbu -",
   "cannotMoveArchive": "Archív nemôžete presúvať",
   "caption": "Popis",
+  "changeNotSaved": "Túto zmenu sa nepodarilo uložiť. Obnovte stránku a pokračujte v úpravách.",
   "changed": "Zmenené",
   "changesAwaitingApproval": "Zmeny v tomto dokumente čakajú na schválenie správcom alebo redaktorom.",
   "changesDiscarded": "Zmeny boli zahodené",

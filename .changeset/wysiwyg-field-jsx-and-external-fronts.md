@@ -9,11 +9,13 @@ JSX templates get a `Field` helper alongside `Area`, which is the `{% field %}` 
 ```jsx
 export default function ({ page }, { Field, Area }) {
   return <article>
-    <Field doc={page} name='headline' with={{ tag: 'h1', class: 'article__headline' }} />
+    <Field doc={page} name='headline' with={{ tag: 'h1', className: 'article__headline' }} />
     <Area area={page.main} />
   </article>;
 }
 ```
+
+`with` accepts either `className` or `class`, whichever you are used to. Either way the result is a `class` attribute.
 
 External fronts are sent what it takes to display a field and edit it, under `_wysiwygFields` on the document, widget, array item or object the field belongs to. `@apostrophecms/apostrophe-astro` renders that with its own `AposField` component.
 
