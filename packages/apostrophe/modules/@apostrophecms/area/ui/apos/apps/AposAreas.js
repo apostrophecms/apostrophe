@@ -3,6 +3,7 @@ import createApp, { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { nextTick } from 'vue';
 import { createId } from 'apostrophe/lib/beneath.js';
+import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
 
 export default function() {
   const mountedApps = new Map();
@@ -135,7 +136,40 @@ export default function() {
           rootMargin: '600px'
         });
         observer.observe(el);
+        apos.bus.$on('context-history-apply', applyWhilePending);
       }
+    }
+
+    // Undo and redo leave the rest of the page as it is, rather than
+    // rendering it again, so an area still waiting to be mounted would
+    // otherwise come up showing the page as it was when it loaded
+    function applyWhilePending(event) {
+      if (!document.body.contains(el)) {
+        apos.bus.$off('context-history-apply', applyWhilePending);
+        return;
+      }
+      if (_docId !== apos.adminBar?.contextId) {
+        return;
+      }
+      const result = applyPatch(data._id, data.items, event.patch, {
+        deep: true
+      });
+      if (!result) {
+        return;
+      }
+      data.items = result.items;
+      for (const id of result.changed) {
+        delete renderings[id];
+      }
+      for (const widget of (result.removed || [])) {
+        event.removed.push(widget);
+      }
+      // An area editor holding the widget we are nested in keeps a copy
+      apos.bus.$emit('area-updated', {
+        _id: data._id,
+        items: data.items
+      });
+      event.claim();
     }
 
     function observed(entries) {
@@ -152,6 +186,7 @@ export default function() {
     }
 
     function mountApp() {
+      apos.bus.$off('context-history-apply', applyWhilePending);
       const app = createApp(component, {
         options,
         id: data._id,

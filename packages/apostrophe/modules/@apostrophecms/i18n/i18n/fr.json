@@ -95,6 +95,7 @@
   "cannotChangeSlugPrefix": "Impossible de changer le préfixe du slug",
   "cannotMoveArchive": "Vous ne pouvez pas déplacer l'Archive",
   "caption": "Légende",
+  "changeNotSaved": "Cette modification n'a pas pu être enregistrée. Rechargez la page pour continuer à éditer.",
   "changed": "Changé",
   "changesAwaitingApproval": "Les modifications effectuées à ce document attendent l'approbation d'un administrateur ou d'un éditeur.",
   "changesDiscarded": "Modifications non prises en compte",

@@ -50,6 +50,9 @@ export default {
   data() {
     return {
       next: this.modelValue,
+      // What the server has, as far as we know. It is what undoing our next
+      // save puts back
+      lastSaved: this.modelValue,
       pending: null
     };
   },
@@ -73,8 +76,12 @@ export default {
       }
     }
   },
+  mounted() {
+    apos.bus.$on('context-history-apply', this.contextHistoryApplyHandler);
+  },
   beforeUnmount() {
     this.flush();
+    apos.bus.$off('context-history-apply', this.contextHistoryApplyHandler);
   },
   methods: {
     // Put the cursor in this field, because the user asked to edit it, e.g.
@@ -134,7 +141,28 @@ export default {
       }
       if (this.onPage) {
         apos.bus.$emit('context-edited', {
-          [this.patchKey]: this.next
+          patch: {
+            [this.patchKey]: this.next
+          },
+          inverse: {
+            [this.patchKey]: this.lastSaved
+          },
+          target: {
+            kind: 'field',
+            docId: this.docId,
+            patchKey: this.patchKey
+          }
+        });
+        this.lastSaved = this.next;
+        // The document on the server is not the only thing holding this
+        // value. Every area editor on the page keeps its own copy of the
+        // widget the field belongs to, and that copy is what copying,
+        // cutting, duplicating or opening the widget's editor works from, so
+        // it has to hear about this as well
+        apos.bus.$emit('field-edited', {
+          docId: this.docId,
+          patchKey: this.patchKey,
+          value: this.next
         });
       }
       // The document on the server is not the only thing holding this value,
@@ -152,6 +180,28 @@ export default {
       // `AposInputArea` does for an area editor in a modal
       this.$emit('update:modelValue', this.next);
       this.$emit('changed', this.next);
+    },
+    // The context bar is undoing or redoing an edit. If it is one of ours,
+    // show the value it put back. The server hears about it from the context
+    // bar, but the area editors holding a copy of our widget hear it from us,
+    // just as they do when the user types
+    contextHistoryApplyHandler(event) {
+      if (!this.onPage || !Object.hasOwn(event.patch, this.patchKey)) {
+        return;
+      }
+      if (this.pending) {
+        clearTimeout(this.pending);
+        this.pending = null;
+      }
+      const value = event.patch[this.patchKey];
+      this.next = value;
+      this.lastSaved = value;
+      apos.bus.$emit('field-edited', {
+        docId: this.docId,
+        patchKey: this.patchKey,
+        value
+      });
+      event.claim();
     }
   }
 };
