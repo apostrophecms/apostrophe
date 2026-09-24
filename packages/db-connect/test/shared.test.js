@@ -1,10 +1,16 @@
-/* global describe, it */
+/* global describe, it, beforeEach, afterEach */
 
 const { expect } = require('chai');
 const {
   extractAnchoredLiteralPrefix,
-  prefixUpperBound
+  prefixUpperBound,
+  getNestedField,
+  setNestedField,
+  unsetNestedField,
+  applyProjection,
+  applyUpdate
 } = require('../lib/shared');
+const prototypeGuard = require('./prototype-guard');
 
 describe('shared: extractAnchoredLiteralPrefix', function() {
   it('extracts a plain anchored literal', function() {
@@ -117,5 +123,169 @@ describe('shared: prefixUpperBound', function() {
 
   it('returns null when the last character is the max BMP code point', function() {
     expect(prefixUpperBound('foo\uFFFF')).to.equal(null);
+  });
+});
+
+describe('shared: field paths cannot reach built-in prototypes', function() {
+  const marker = '__dbConnectPrototypeMarker';
+  let snap;
+
+  beforeEach(function() {
+    // A harmless, configurable property we can watch being deleted
+    // without breaking the process
+    // eslint-disable-next-line no-extend-native
+    Object.defineProperty(Object.prototype, marker, {
+      value: 'marker',
+      configurable: true,
+      writable: true,
+      enumerable: false
+    });
+    snap = prototypeGuard.snapshot();
+  });
+
+  // Always put the built-ins back, even if the test failed, so that a
+  // vulnerable implementation cannot wreck the rest of the test run
+  afterEach(function() {
+    prototypeGuard.restore(snap);
+    delete Object.prototype[marker];
+  });
+
+  function expectBuiltinsUnchanged() {
+    expect(prototypeGuard.changes(snap), 'built-in objects were modified').to.deep.equal([]);
+  }
+
+  it('exclusion projection does not delete Object.prototype.hasOwnProperty', function() {
+    const result = applyProjection({
+      _id: 'd1',
+      title: 't'
+    }, { 'constructor.prototype.hasOwnProperty': 0 });
+    expect(Object.prototype.hasOwnProperty).to.be.a('function');
+    expect(result).to.deep.equal({
+      _id: 'd1',
+      title: 't'
+    });
+    expectBuiltinsUnchanged();
+  });
+
+  it('exclusion projection does not delete Object.prototype members', function() {
+    applyProjection({ _id: 'd1' }, { [`constructor.prototype.${marker}`]: 0 });
+    expect(({})[marker]).to.equal('marker');
+    applyProjection({ _id: 'd1' }, { [`__proto__.${marker}`]: 0 });
+    expect(({})[marker]).to.equal('marker');
+    expectBuiltinsUnchanged();
+  });
+
+  it('exclusion projection does not delete static methods of Object', function() {
+    applyProjection({ _id: 'd1' }, { 'constructor.keys': 0 });
+    expect(Object.keys).to.be.a('function');
+    expectBuiltinsUnchanged();
+  });
+
+  it('exclusion projection does not delete Array.prototype members', function() {
+    applyProjection({
+      _id: 'd1',
+      list: [ 1 ]
+    }, { 'list.constructor.prototype.map': 0 });
+    expect([].map).to.be.a('function');
+    expectBuiltinsUnchanged();
+  });
+
+  it('inclusion projection does not copy built-ins into the result', function() {
+    const result = applyProjection({
+      _id: 'd1',
+      title: 't'
+    }, {
+      title: 1,
+      'constructor.name': 1,
+      'constructor.prototype': 1
+    });
+    expect(result).to.deep.equal({
+      _id: 'd1',
+      title: 't'
+    });
+    expect(Object.getOwnPropertyNames(result)).to.not.include('constructor');
+    expectBuiltinsUnchanged();
+  });
+
+  it('getNestedField does not resolve unsafe path segments', function() {
+    expect(getNestedField({}, 'constructor')).to.equal(undefined);
+    expect(getNestedField({}, 'constructor.prototype')).to.equal(undefined);
+    expect(getNestedField({}, '__proto__')).to.equal(undefined);
+    expect(getNestedField({ a: [] }, 'a.constructor.prototype')).to.equal(undefined);
+    expectBuiltinsUnchanged();
+  });
+
+  it('setNestedField does not write to built-ins', function() {
+    setNestedField({}, 'constructor.prototype.polluted', 'yes');
+    setNestedField({}, 'constructor.polluted', 'yes');
+    setNestedField({ a: [] }, 'a.constructor.prototype.polluted', 'yes');
+    setNestedField({}, 'x.__proto__.polluted', 'yes');
+    expect(({}).polluted).to.equal(undefined);
+    expect([].polluted).to.equal(undefined);
+    expect(Object.polluted).to.equal(undefined);
+    expectBuiltinsUnchanged();
+  });
+
+  it('unsetNestedField does not delete from built-ins', function() {
+    unsetNestedField({}, `constructor.prototype.${marker}`);
+    unsetNestedField({}, `__proto__.${marker}`);
+    unsetNestedField({}, 'constructor.keys');
+    expect(({})[marker]).to.equal('marker');
+    expect(Object.keys).to.be.a('function');
+    expectBuiltinsUnchanged();
+  });
+
+  it('update operators do not modify built-ins', function() {
+    const doc = {
+      _id: 'd1',
+      list: [ 1 ]
+    };
+    applyUpdate(doc, { $set: { 'constructor.prototype.polluted': 'yes' } });
+    applyUpdate(doc, { $set: { 'list.constructor.prototype.polluted': 'yes' } });
+    applyUpdate(doc, { $unset: { [`constructor.prototype.${marker}`]: '' } });
+    applyUpdate(doc, [ { $unset: [ `constructor.prototype.${marker}` ] } ]);
+    applyUpdate(doc, { $inc: { 'constructor.prototype.counter': 1 } });
+    applyUpdate(doc, { $push: { 'constructor.prototype.pushed': 1 } });
+    applyUpdate(doc, { $addToSet: { 'constructor.prototype.added': 1 } });
+    applyUpdate(doc, { $pull: { 'constructor.prototype.pulled': 1 } });
+    applyUpdate(doc, { $currentDate: { 'constructor.prototype.date': true } });
+    applyUpdate(doc, { $rename: { title: 'constructor.prototype.renamed' } });
+    const renamed = applyUpdate(doc, { $rename: { [`constructor.prototype.${marker}`]: 'stolen' } });
+    expect(renamed.stolen).to.equal(undefined);
+    expect(({})[marker]).to.equal('marker');
+    for (const name of [ 'polluted', 'counter', 'pushed', 'added', 'pulled', 'date', 'renamed' ]) {
+      expect(({})[name]).to.equal(undefined);
+      expect([][name]).to.equal(undefined);
+    }
+    expectBuiltinsUnchanged();
+  });
+
+  it('ordinary nested paths still work', function() {
+    const makeDoc = () => ({
+      _id: 'd1',
+      a: {
+        b: 1,
+        c: 2
+      }
+    });
+    expect(getNestedField(makeDoc(), 'a.b')).to.equal(1);
+    const updated = applyUpdate(makeDoc(), {
+      $set: { 'x.y': 3 },
+      $unset: { 'a.c': '' },
+      $inc: { 'a.b': 1 }
+    });
+    expect(updated).to.deep.equal({
+      _id: 'd1',
+      a: { b: 2 },
+      x: { y: 3 }
+    });
+    expect(applyProjection(makeDoc(), { 'a.c': 0 })).to.deep.equal({
+      _id: 'd1',
+      a: { b: 1 }
+    });
+    expect(applyProjection(makeDoc(), { 'a.b': 1 })).to.deep.equal({
+      _id: 'd1',
+      a: { b: 1 }
+    });
   });
 });
