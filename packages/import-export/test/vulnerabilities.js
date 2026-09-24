@@ -244,8 +244,7 @@ describe('vulnerability regression checks', function() {
           type: 'directory'
         }
       ],
-      // An absolute name must land inside the extraction directory, never
-      // at the absolute location itself.
+      // An absolute name must never be written at the absolute location.
       [ { name: absoluteTarget }, 'PWNED' ]
     ]);
 
