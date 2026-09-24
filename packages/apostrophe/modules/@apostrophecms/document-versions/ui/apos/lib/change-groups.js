@@ -22,11 +22,16 @@ function matchesFilter(row, filter) {
 
 // Whether a row is among the changes behind a marker of the body: those
 // of the widget `widgetId` (and, when it `moved`, the order of its area),
-// or those of the top-level field `field` outside any widget
+// or those of the top-level field `field` outside any widget. With
+// `marked`, the markers of the body by widget `_id`, a deleted widget the
+// body does not show counts as a change of the widget or field holding it
 function isMarkerTarget(row, {
-  field, widgetId, moved = false
+  field, widgetId, moved = false, marked
 }) {
-  const widget = row.path.findLast(segment => segment.widgetType);
+  const widgets = row.path.filter(segment => segment.widgetType);
+  const hidden = marked && (row.kind === 'widget') && (row.type === 'deleted') &&
+    !marked[widgets.at(-1).name];
+  const widget = widgets.at(hidden ? -2 : -1);
   if (!widgetId) {
     return !widget && (row.path[0].name === field);
   }

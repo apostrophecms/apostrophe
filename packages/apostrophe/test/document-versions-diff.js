@@ -59,6 +59,10 @@ describe('Document Versions diff engine', function () {
             renderVersions: false
           }
         },
+        // Inherits `versionsRenderDeleted: false`
+        'loose-column-widget': {
+          extend: '@apostrophecms/layout-column-widget'
+        },
         ...modules
       }
     });
@@ -2692,6 +2696,107 @@ describe('Document Versions diff engine', function () {
         [ gone._id, '_deleted' ]
       ]);
       assert.equal(doc.aposMeta, undefined);
+    });
+
+    describe('a type that is not put back when deleted', function () {
+      // A column as `@apostrophecms/layout-widget` stores it
+      function column(id, colstart, type = '@apostrophecms/layout-column') {
+        return {
+          _id: id,
+          metaType: 'widget',
+          type,
+          colstart,
+          colspan: 4,
+          rowstart: 1,
+          rowspan: 1,
+          order: 0,
+          content: {
+            _id: `${id}-content`,
+            metaType: 'area',
+            items: [
+              {
+                _id: `${id}-text`,
+                metaType: 'widget',
+                type: '@apostrophecms/rich-text',
+                content: `<p>${id}</p>`
+              }
+            ]
+          }
+        };
+      }
+
+      // The nested document with a layout of two columns after its widgets
+      function withLayout() {
+        const doc = buildDoc();
+        doc.section.rows[0].content.items.push({
+          _id: 'layout',
+          metaType: 'widget',
+          type: '@apostrophecms/layout',
+          columns: {
+            _id: 'layout-columns',
+            metaType: 'area',
+            items: [ column('first', 1), column('second', 5) ]
+          }
+        });
+        return doc;
+      }
+
+      // The second column moves left into the space of the first, deleted
+      function deleteFirst(doc) {
+        const layout = doc.section.rows[0].content.items.at(-1);
+        layout.columns.items.shift();
+        layout.columns.items[0].colstart = 1;
+        return layout;
+      }
+
+      it('should mark the widget holding it, not put it back', function () {
+        const older = withLayout();
+        const newer = withLayout();
+        deleteFirst(newer);
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        const layout = doc.section.rows[0].content.items.at(-1);
+        assert.deepEqual(layout.columns.items.map(item => item._id), [ 'second' ]);
+        assert.deepEqual(markers(doc), [
+          [ 'layout', '_modified' ],
+          [ 'second', '_modified' ]
+        ]);
+        assert.equal(doc.aposMeta, undefined);
+      });
+
+      it('should give the widget holding it its AI part', function () {
+        const older = withLayout();
+        const newer = withLayout();
+        deleteFirst(newer);
+        const rows = apos.docVersions.getChangeRows(req, older, newer);
+        for (const row of rows) {
+          row.ai = (row.type === 'deleted') ? 'changed' : false;
+        }
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+        assert.deepEqual(markers(doc), [
+          [ 'layout', '_modified' ],
+          [ 'layout', '_changedWithAi' ],
+          [ 'second', '_modified' ]
+        ]);
+        assert.equal(doc.section.rows[0].content.items.at(-1)._changedWithAi, 'changed');
+      });
+
+      it('should highlight the top-level field of an area holding it, through `extend`', function () {
+        const older = buildProject();
+        const newer = buildProject();
+        older.zone.items.push(column('loose', 1, 'loose-column'));
+        const rows = apos.docVersions.getChangeRows(req, older, newer);
+        assert.deepEqual(rows.map(row => [ row.type, row.path.at(-1).name ]), [
+          [ 'deleted', 'loose' ]
+        ]);
+        rows[0].ai = 'assisted';
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer, { rows });
+        assert.deepEqual(doc.zone.items.map(item => item._id), [ 'zone-text', 'zone-card' ]);
+        assert.deepEqual(markers(doc), []);
+        assert.deepEqual(doc.aposMeta.zone, {
+          [HIGHLIGHT]: true,
+          '@apostrophecms/document-versions:ai': 'assisted'
+        });
+      });
     });
 
     it('should mark the widget that changed places, not the widgets it passed', function () {

@@ -359,7 +359,10 @@ async function revealChange(target) {
   }
   if (view.value === 'changes') {
     await nextTick();
-    await changesPane.value?.reveal(target);
+    await changesPane.value?.reveal({
+      ...target,
+      marked: widgetChanges.value
+    });
   }
 }
 

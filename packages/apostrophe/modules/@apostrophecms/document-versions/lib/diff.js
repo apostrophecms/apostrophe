@@ -43,7 +43,8 @@ const ORDER = Symbol('order');
  *   for `extend`, `isEqual` and `isEmpty`.
  * @property {(type: string) => object|undefined} getWidgetManager The
  *   widget module for a widget `type` (`apos.area.getWidgetManager`), read
- *   for `schema`, `label`, `options.renderVersions` and `getRichText`.
+ *   for `schema`, `label`, `options.renderVersions`,
+ *   `options.versionsRenderDeleted` and `getRichText`.
  *   `undefined` for a type without a module.
  * @property {(doc: object, namespace: string, ...pathKeyValue: any[]) => void} setMeta
  *   `apos.doc.setMeta`, used by `annotate` to highlight top-level fields.
@@ -225,7 +226,10 @@ function walk(schema, older, newer, ctx) {
  * - `_inserted: true` on a widget `older` does not have.
  * - `_deleted: true` on a widget `newer` does not have. A clone of it is
  *   put back into the area at its older position, so it can render in
- *   place; it exists in the returned document only.
+ *   place; it exists in the returned document only. A widget whose type
+ *   sets the `versionsRenderDeleted` option to `false` is not put back:
+ *   the widget holding it is marked as changed instead, or, in a top-level
+ *   area, the field is highlighted.
  * - `_olderVersion: <the older widget>` on a changed widget whose type sets
  *   the `renderVersions` option, so its template can compare the two. For
  *   a rich text type the copy's `content` also becomes its markup with the
@@ -273,18 +277,23 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
       }
       continue;
     }
-    const widgetAt = _.findLastIndex(row.path, segment => segment.widgetType);
+    let widgetAt = _.findLastIndex(row.path, segment => segment.widgetType);
     if (row.kind === 'widget' && row.type === 'deleted') {
-      const area = resolve(doc, row.path.slice(0, -1));
-      if (area?.items) {
-        const at = Math.min(row.path.at(-1).ordinal - 1, area.items.length);
-        area.items.splice(at, 0, {
-          ..._.cloneDeep(row.old),
-          _deleted: true,
-          ...(row.ai && { _changedWithAi: row.ai })
-        });
+      const manager = ctx.getWidgetManager(row.path.at(-1).widgetType);
+      if (manager?.options.versionsRenderDeleted !== false) {
+        const area = resolve(doc, row.path.slice(0, -1));
+        if (area?.items) {
+          const at = Math.min(row.path.at(-1).ordinal - 1, area.items.length);
+          area.items.splice(at, 0, {
+            ..._.cloneDeep(row.old),
+            _deleted: true,
+            ...(row.ai && { _changedWithAi: row.ai })
+          });
+        }
+        continue;
       }
-      continue;
+      // Marked on the widget holding it, or on its top-level field
+      widgetAt = _.findLastIndex(row.path.slice(0, -1), segment => segment.widgetType);
     }
     if (row.kind === 'widget' && row.type === 'added') {
       const widget = resolve(doc, row.path);

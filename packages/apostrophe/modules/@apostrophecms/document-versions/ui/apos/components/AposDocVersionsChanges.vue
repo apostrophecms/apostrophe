@@ -332,7 +332,8 @@ function focus() {
 
 // Shows the changes behind a marker of the body: those of the widget
 // `widgetId` (and, when it `moved`, the order of its area), or those of the
-// top-level field `field` outside any widget. Their rows expand alone,
+// top-level field `field` outside any widget, `marked` as `isMarkerTarget`
+// takes it. Their rows expand alone,
 // their group becomes the navigator's, and focus goes to the row's toggle.
 // Resolves `false` when the list has no such row
 async function reveal(target) {

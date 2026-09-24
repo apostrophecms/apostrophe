@@ -11,7 +11,10 @@ module.exports = {
       tablet: 900
     },
     // Whether to show help text for the breakpoint visibility fields
-    showBreakpointsHelp: true
+    showBreakpointsHelp: true,
+    // A deleted column shown in a document version would overlap the
+    // columns left in the grid, so its layout is marked instead
+    versionsRenderDeleted: false
   },
   widgetOperations(self, options) {
     return {

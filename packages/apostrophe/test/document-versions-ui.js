@@ -454,6 +454,16 @@ describe('Document Versions UI', function () {
       nestedContent: {
         path: [ main, columns, left, nested, content ],
         kind: 'leaf'
+      },
+      nestedDeleted: {
+        path: [ main, columns, left, nested ],
+        kind: 'widget',
+        type: 'deleted'
+      },
+      deleted: {
+        path: [ main, columns ],
+        kind: 'widget',
+        type: 'deleted'
       }
     };
     it('should take the rows of a top-level field outside any widget', async function () {
@@ -494,6 +504,52 @@ describe('Document Versions UI', function () {
       assert.equal(lib.isMarkerTarget(rows.nestedOrder, nested), true);
       assert.equal(lib.isMarkerTarget(rows.nestedContent, nested), true);
       assert.equal(lib.isMarkerTarget(rows.order, nested), false);
+    });
+
+    it('should give a deleted widget the body does not show to the widget or field holding it', async function () {
+      const lib = await getLib();
+      const shown = {
+        nested: {
+          changes: [ 'deleted' ]
+        }
+      };
+      // Shown, or no markers given: its own
+      for (const marked of [ shown, undefined ]) {
+        assert.equal(lib.isMarkerTarget(rows.nestedDeleted, {
+          widgetId: 'nested',
+          marked
+        }), true);
+        assert.equal(lib.isMarkerTarget(rows.nestedDeleted, {
+          widgetId: 'columns',
+          marked
+        }), false);
+      }
+      // Not shown: the widget holding it, or the top-level field
+      assert.equal(lib.isMarkerTarget(rows.nestedDeleted, {
+        widgetId: 'columns',
+        marked: {}
+      }), true);
+      assert.equal(lib.isMarkerTarget(rows.nestedDeleted, {
+        widgetId: 'nested',
+        marked: {}
+      }), false);
+      assert.equal(lib.isMarkerTarget(rows.deleted, {
+        field: 'main',
+        marked: {}
+      }), true);
+      assert.equal(lib.isMarkerTarget(rows.deleted, {
+        field: 'main',
+        marked: {
+          columns: {
+            changes: [ 'deleted' ]
+          }
+        }
+      }), false);
+      // Other rows of the widget holding it are unaffected
+      assert.equal(lib.isMarkerTarget(rows.nestedContent, {
+        widgetId: 'columns',
+        marked: {}
+      }), false);
     });
   });
 
