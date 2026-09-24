@@ -168,7 +168,7 @@ import { klona } from 'klona';
 import { createId } from 'apostrophe/lib/beneath.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import removeSlash from 'Modules/@apostrophecms/rich-text-widget/lib/remove-slash.js';
-import { autosave } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
+import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import createContextHistory, { setContent } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
 import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
 
@@ -709,7 +709,7 @@ export default {
       if (this.contextHistory) {
         // What was typed is already on the undo stack, step by step (see
         // `onHistoryRecord`). This only saves it
-        autosave(() => this.$emit('update:modelValue', html));
+        withoutHistory(() => this.$emit('update:modelValue', html));
       } else {
         this.$emit('update:modelValue', html);
       }

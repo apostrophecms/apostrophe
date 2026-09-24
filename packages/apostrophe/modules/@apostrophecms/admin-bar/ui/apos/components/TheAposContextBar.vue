@@ -57,7 +57,7 @@ import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin'
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
-import { isAutosaving } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
+import { isWithoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { replay, html } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
 import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
 
@@ -421,6 +421,18 @@ export default {
             await this.showLockedError(e);
             return this.lockNotAvailable();
           }
+          if ((e.status >= 400) && (e.status < 500)) {
+            // The server refused this change and will refuse it again, so
+            // retrying would spin forever with nothing to show for it. Say
+            // so, and let whatever else is waiting through
+            // eslint-disable-next-line no-console
+            console.error(e);
+            apos.notify('apostrophe:changeNotSaved', {
+              type: 'error',
+              icon: 'alert-circle-icon'
+            });
+            continue;
+          }
           this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
           // Wait 5 seconds between attempts if errors occur
           await new Promise((resolve, reject) => {
@@ -552,10 +564,12 @@ export default {
         (typeof payload.patch === 'object') &&
         Object.keys(payload).every(key => entryKeys.includes(key));
       const patch = klona(isEntry ? payload.patch : payload);
-      if (isAutosaving()) {
-        // Saving typing its editor already recorded as history, step by step
-        // (`onContextHistoryRecord`). Nothing to add to the history, and
-        // nothing about to be redone was overwritten
+      if (isWithoutHistory()) {
+        // A change to save that is not an action of the user's to undo:
+        // typing its editor already recorded step by step
+        // (`onContextHistoryRecord`), or content an editor provisioned for
+        // itself. Nothing to add to the history, and nothing about to be
+        // redone was overwritten
         this.queuePatch(patch);
         return;
       }
@@ -587,7 +601,7 @@ export default {
       this.queuePatch(patch);
     },
     // What a rich text editor on the page did, as ProseMirror steps. The
-    // editor saves the result by itself, see `isAutosaving`. Records that
+    // editor saves the result by itself, see `isWithoutHistory`. Records that
     // continue the same typing are merged into one entry, as tiptap's own
     // history would group them
     onContextHistoryRecord(record) {
@@ -913,7 +927,16 @@ export default {
         } else {
           patch = klona((direction === 'undo') ? entry.inverse : entry.patch);
         }
-        const shown = this.applyToPage(patch);
+        const removed = [];
+        const shown = this.applyToPage(patch, removed);
+        // Putting this edit back means putting back what was just taken off
+        // the page, which is not always what the edit itself added: a widget
+        // can have gained content since, as a layout does when it fills
+        // itself with columns
+        this.refreshRestore(
+          (direction === 'undo') ? entry.patch : entry.inverse,
+          removed
+        );
         this.queuePatch(patch);
         if (shown) {
           await this.$nextTick();
@@ -937,15 +960,31 @@ export default {
     // Ask whatever on the page holds the content `patch` touches, such as an
     // area editor or a field edited in place, to show the change. Returns
     // true if something did
-    applyToPage(patch) {
+    applyToPage(patch, removed = []) {
       let claimed = false;
       apos.bus.$emit('context-history-apply', {
         patch,
+        removed,
         claim() {
           claimed = true;
         }
       });
       return claimed;
+    },
+    // Bring the patch that puts these widgets back up to date with what they
+    // held when they were taken away
+    refreshRestore(patch, removed) {
+      if (!removed.length || !patch?.$push) {
+        return;
+      }
+      const push = Object.values(patch.$push)[0];
+      if (!push?.$each?.length) {
+        return;
+      }
+      push.$each = push.$each.map(widget => {
+        const captured = removed.find(item => item._id === widget._id);
+        return captured ? klona(captured) : widget;
+      });
     },
     // Scroll to what an undo or redo just changed, if it is not on screen,
     // and point it out. `target` may have `patchKey`, the field edited in

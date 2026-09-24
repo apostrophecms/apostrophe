@@ -74,6 +74,12 @@ export default function createContextHistory({ onRecord }) {
         'Mod-z': undo,
         'Shift-Mod-z': redo,
         'Mod-y': redo,
+        // The last two are tiptap's, kept exactly as its `History`
+        // extension has them so that turning that extension off here takes
+        // nothing away. A keymap matches the character the key reports, and
+        // on the Russian layout the key where Z sits reports `я`, so
+        // `Mod-z` never matches there. Other Cyrillic layouts put `я`
+        // elsewhere and are not covered, by tiptap or by us
         'Mod-я': undo,
         'Shift-Mod-я': redo
       };

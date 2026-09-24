@@ -161,6 +161,9 @@ export default function() {
       for (const id of result.changed) {
         delete renderings[id];
       }
+      for (const widget of (result.removed || [])) {
+        event.removed.push(widget);
+      }
       // An area editor holding the widget we are nested in keeps a copy
       apos.bus.$emit('area-updated', {
         _id: data._id,

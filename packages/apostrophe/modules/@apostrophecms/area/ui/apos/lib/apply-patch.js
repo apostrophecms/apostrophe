@@ -13,8 +13,9 @@
 // none either.
 //
 // Returns `null` if the patch has nothing to do with this area, otherwise
-// `{ items, changed }`: a new array, leaving `items` alone, and the ids of the
-// widgets in it that are new or were replaced.
+// `{ items, changed, removed }`: a new array, leaving `items` alone, the ids
+// of the widgets in it that are new or were replaced, and the widgets the
+// patch took out.
 
 import { klona } from 'klona';
 
@@ -28,7 +29,11 @@ export default function applyPatch(areaId, items, patch, { deep = false } = {}) 
     const ids = Array.isArray(value) ? value : [ value ];
     return {
       items: items.filter(item => !ids.includes(item._id)),
-      changed: []
+      changed: [],
+      // What was taken out, as it was at the time. Putting an edit back
+      // means putting this back, not what the widget looked like when it
+      // was first added
+      removed: items.filter(item => ids.includes(item._id))
     };
   }
   if (patch.$move?.[itemsKey]) {

@@ -8,6 +8,7 @@ import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
+import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { klona } from 'klona';
 
 export default {
@@ -376,6 +377,13 @@ export default {
       for (const id of result.changed) {
         this.edited[id] = true;
       }
+      // What the change took off the page, so that undoing it again can put
+      // back what was really there. A widget can have gained content since
+      // it was added: a layout fills itself with columns, and they in turn
+      // hold whatever was put in them
+      for (const widget of (result.removed || [])) {
+        event.removed.push(klona(widget));
+      }
       this.next = result.items;
       event.claim();
     },
@@ -645,12 +653,16 @@ export default {
       }
     },
     async update(updated, { autosave = true, reverting = false } = {}) {
-      // Before anything below can change it, in case `updated` is the very
-      // object we already hold
+      // Before anything below can change it. A caller that changed the
+      // widget in place rather than handing us a new one has already lost
+      // the state we would need to put back, so no inverse is recorded and
+      // the edit is undone the old way, by replaying the history
       const prior = this.next.find(widget => widget._id === updated._id);
-      const inverse = prior && {
-        [`@${updated._id}`]: klona(prior)
-      };
+      const inverse = (prior && (prior !== updated))
+        ? {
+          [`@${updated._id}`]: klona(prior)
+        }
+        : null;
       if (!reverting) {
         updated.aposPlaceholder = false;
       }
@@ -796,6 +808,67 @@ export default {
         this.edit({ index });
       }
       this.setFocusedWidget(widget._id, this.areaId, { scrollTo: true });
+    },
+    // Insert several widgets as one edit, so that undo takes them all back
+    // together rather than one at a time.
+    //
+    // `history: false` saves them without recording an action to undo, for
+    // content an editor provisions for itself rather than content the user
+    // asked for: `AposAreaLayoutEditor` fills a new layout with columns that
+    // way, so that undo takes back the layout the user added, columns and
+    // all, and redo brings it back whole
+    async insertMany({
+      index, widgets, autosave = true, history = true
+    } = {}) {
+      if (!widgets?.length) {
+        return;
+      }
+      for (const widget of widgets) {
+        if (!widget._id) {
+          widget._id = createId();
+        }
+        if (!widget.metaType) {
+          widget.metaType = 'widget';
+        }
+      }
+      if (autosave && (this.docId === window.apos.adminBar.contextId)) {
+        const push = {
+          $each: widgets
+        };
+        if (index < this.next.length) {
+          push.$before = this.next[index]._id;
+        }
+        const report = () => this.contextEdited(
+          {
+            $push: {
+              [`@${this.id}.items`]: push
+            }
+          },
+          {
+            $pullAllById: {
+              [`@${this.id}.items`]: widgets.map(widget => widget._id)
+            }
+          },
+          {
+            widgetId: widgets[0]._id,
+            anchorId: this.next[index]?._id || this.next[index - 1]?._id
+          }
+        );
+        if (history) {
+          report();
+        } else {
+          withoutHistory(report);
+        }
+      }
+      this.next = [
+        ...this.next.slice(0, index),
+        ...widgets,
+        ...this.next.slice(index)
+      ];
+      // Unlike `insert`, no editor is opened: these are widgets the editor
+      // provisioned rather than widgets the user picked
+      const last = widgets[widgets.length - 1];
+      this.setFocusedWidget(last._id, this.areaId, { scrollTo: true });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
