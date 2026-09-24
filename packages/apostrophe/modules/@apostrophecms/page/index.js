@@ -334,8 +334,8 @@ module.exports = {
               throw self.apos.error('forbidden');
             }
 
+            // Only suggest pages the user is allowed to view
             const query = self.getRestQuery(req)
-              .permission(false)
               .limit(10)
               .relationships(false)
               .areas(false);
@@ -381,8 +381,10 @@ module.exports = {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
+            // The tree includes pages the user can view but not necessarily
+            // edit. Pages the user cannot view (visibility, viewRole) are
+            // left out, along with their descendants
             const page = await self.getRestQuery(req)
-              .permission(false)
               .and({ level: 0 })
               .children({
                 depth: 1000,
@@ -390,7 +392,6 @@ module.exports = {
                 orphan: null,
                 relationships: false,
                 areas: false,
-                permission: false,
                 withPublished: self.apos.launder.boolean(req.query.withPublished),
                 project: self.getAllProjection()
               }).toObject();
@@ -457,14 +458,15 @@ module.exports = {
         ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
-          // Edit access to draft is sufficient to fetch either
           await self.publicApiCheckAsync(req);
           const criteria = self.getIdCriteria(_id);
-          const result = await self
+          // Normal view permissions apply (visibility, viewRole)
+          const found = await self
             .getRestQuery(req)
-            .permission(false)
             .and(criteria)
             .toObject();
+          const result = found && (self.apos.doc.getManager(found.type) || self)
+            .removeForbiddenFields(req, found);
 
           if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
