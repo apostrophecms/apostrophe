@@ -132,6 +132,8 @@ module.exports = {
     // The list is empty by default, which disables image fetching during
     // rich text HTML import. Add hostnames here to opt in.
     imageImportAllowedHostnames: [],
+    // Maximum size in bytes of a CSV file uploaded to create a table
+    csvTableMaxSize: 10 * 1024 * 1024,
     tableOptions: {
       resizable: true,
       handleWidth: 10,
