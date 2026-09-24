@@ -1,5 +1,5 @@
 // Test helper: snapshot the built-in prototypes (and the Object and
-// Function constructors) and restore them afterwards, so a test that
+// Function constructors, and their methods) and restore them afterwards, so a test that
 // demonstrates prototype pollution cannot break the rest of the test run
 // even when the code under test is vulnerable.
 
@@ -10,13 +10,26 @@ const defineProperty = Object.defineProperty;
 const ownKeys = Reflect.ownKeys;
 const hasOwn = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
 
-const targets = [
+const baseTargets = [
   Object.prototype,
   Array.prototype,
   Function.prototype,
   Object,
   Function
 ];
+
+// Also watch the built-in methods themselves, e.g. a path like
+// `hasOwnProperty.call` could otherwise replace `call` on a shared method
+const targets = [ ...baseTargets ];
+for (const target of baseTargets) {
+  const descriptors = getDescriptors(target);
+  for (const key of ownKeys(descriptors)) {
+    const value = descriptors[key].value;
+    if ((typeof value === 'function') && !targets.includes(value)) {
+      targets.push(value);
+    }
+  }
+}
 
 function snapshot() {
   const snap = [];

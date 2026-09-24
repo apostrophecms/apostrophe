@@ -235,6 +235,27 @@ describe('shared: field paths cannot reach built-in prototypes', function() {
     expectBuiltinsUnchanged();
   });
 
+  it('paths cannot reach built-ins through inherited properties', function() {
+    const doc = {
+      _id: 'd1',
+      list: [ 1 ]
+    };
+    expect(getNestedField(doc, 'toString')).to.equal(undefined);
+    expect(getNestedField(doc, 'hasOwnProperty.call')).to.equal(undefined);
+    setNestedField({}, 'hasOwnProperty.call', 'polluted');
+    setNestedField({}, 'toString.polluted', 'yes');
+    setNestedField({ list: [] }, 'list.map.polluted', 'yes');
+    unsetNestedField({}, 'toString.name');
+    applyUpdate(doc, { $set: { 'valueOf.polluted': 'yes' } });
+    applyProjection(doc, { 'hasOwnProperty.name': 0 });
+    expect(Object.prototype.hasOwnProperty.call).to.equal(Function.prototype.call);
+    expect(Object.prototype.toString.name).to.equal('toString');
+    expect(Object.prototype.toString.polluted).to.equal(undefined);
+    expect(Object.prototype.valueOf.polluted).to.equal(undefined);
+    expect([].map.polluted).to.equal(undefined);
+    expectBuiltinsUnchanged();
+  });
+
   it('update operators do not modify built-ins', function() {
     const doc = {
       _id: 'd1',
