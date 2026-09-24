@@ -167,7 +167,6 @@ describe('Big Upload', function() {
   });
 
   it('should refuse an anonymous start, leaving no upload behind', async function() {
-    const before = await apos.http.bigUploads.countDocuments({});
     const result = await raw({ type: 'start' }, {
       body: {
         files: {
@@ -182,7 +181,11 @@ describe('Big Upload', function() {
     });
     assert.strictEqual(result.status, 403);
     assert.strictEqual(result.body.name, 'forbidden');
-    assert.strictEqual(await apos.http.bigUploads.countDocuments({}), before);
+    // Look for this upload specifically: starting an upload also cleans up
+    // expired ones in the background, so the total count is not stable
+    assert.strictEqual(await apos.http.bigUploads.countDocuments({
+      'files.file.name': 'evil.tar.gz'
+    }), 0);
   });
 
   it('should refuse an anonymous chunk', async function() {
@@ -232,7 +235,6 @@ describe('Big Upload', function() {
   });
 
   it('should refuse a chunk count over the limit', async function() {
-    const before = await apos.http.bigUploads.countDocuments({});
     const result = await raw({ type: 'start' }, {
       cookieJar: jar,
       body: {
@@ -248,7 +250,9 @@ describe('Big Upload', function() {
     });
     assert.strictEqual(result.status, 400);
     assert.strictEqual(result.body.name, 'invalid');
-    assert.strictEqual(await apos.http.bigUploads.countDocuments({}), before);
+    assert.strictEqual(await apos.http.bigUploads.countDocuments({
+      'files.file.name': 'big.tar.gz'
+    }), 0);
   });
 
   it('should refuse an invalid chunk count for a nonempty file', async function() {
