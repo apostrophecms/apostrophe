@@ -412,6 +412,14 @@ function sanitizeHtml(html, options, _recursing) {
               }
             }
 
+            // `<meta http-equiv="refresh" content="0;url=...">` navigates to a
+            // URL embedded in `content`, so scheme check that URL too
+            // (GHSA-cv27-6wvh-8x7j). Other meta `content` values are left alone.
+            if (name === 'meta' && a.toLowerCase() === 'content' && isRefresh(attribs) && naughtyRefresh(value)) {
+              delete frame.attribs[a];
+              return;
+            }
+
             if (name === 'script' && a === 'src') {
 
               let allowed = true;
@@ -822,6 +830,86 @@ function sanitizeHtml(html, options, _recursing) {
       allowedSchemes,
       allowProtocolRelative: options.allowProtocolRelative
     });
+  }
+
+  function isRefresh(attribs) {
+    return Object.keys(attribs).some(function(a) {
+      return a.toLowerCase() === 'http-equiv' &&
+        String(attribs[a]).trim().toLowerCase() === 'refresh';
+    });
+  }
+
+  // True if the `content` of a `<meta http-equiv="refresh">` must be dropped:
+  // its destination URL fails the scheme policy, or it cannot be parsed as a
+  // refresh at all (a browser would ignore it then, so nothing is lost).
+  // Extracts the URL the way the HTML standard's "shared declarative refresh
+  // steps" do, so that spelling, separator, quoting and case variations of
+  // `url=`, or no `url=` at all, all yield the URL a browser would navigate to.
+  function naughtyRefresh(content) {
+    const input = String(content);
+    const isWhitespace = function(c) {
+      return c === ' ' || c === '\t' || c === '\n' || c === '\f' || c === '\r';
+    };
+    let position = 0;
+    const skipWhitespace = function() {
+      while (position < input.length && isWhitespace(input[position])) {
+        position++;
+      }
+    };
+    const lowerAt = function(i) {
+      return (input[i] || '').toLowerCase();
+    };
+    skipWhitespace();
+    const timeStart = position;
+    while (position < input.length && /[0-9.]/.test(input[position])) {
+      position++;
+    }
+    if (position === timeStart) {
+      return true;
+    }
+    if (position < input.length) {
+      const c = input[position];
+      if (c !== ';' && c !== ',' && !isWhitespace(c)) {
+        return true;
+      }
+      skipWhitespace();
+      if (input[position] === ';' || input[position] === ',') {
+        position++;
+      }
+      skipWhitespace();
+    }
+    if (position >= input.length) {
+      // No URL: refreshes the current document
+      return false;
+    }
+    let url = input.slice(position);
+    let quoted = true;
+    if (lowerAt(position) === 'u') {
+      quoted = false;
+      if (lowerAt(position + 1) === 'r' && lowerAt(position + 2) === 'l') {
+        position += 3;
+        skipWhitespace();
+        if (input[position] === '=') {
+          position++;
+          skipWhitespace();
+          quoted = true;
+        }
+      }
+    }
+    if (quoted) {
+      const quote = input[position];
+      if (quote === '"' || quote === '\'') {
+        position++;
+      }
+      url = input.slice(position);
+      if (quote === '"' || quote === '\'') {
+        const end = url.indexOf(quote);
+        if (end !== -1) {
+          url = url.slice(0, end);
+        }
+      }
+    }
+    return naughtyHref('meta', url);
   }
 
   // True if this is an SVG SMIL animation element that animates a URL-bearing

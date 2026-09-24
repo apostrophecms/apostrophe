@@ -2702,4 +2702,96 @@ describe('sanitizeHtml', function() {
       );
     });
   });
+
+  describe('GHSA-cv27-6wvh-8x7j: meta http-equiv="refresh" destination scheme check', function() {
+    const metaOptions = function(extra) {
+      return Object.assign({
+        allowedTags: [ 'meta' ],
+        allowedAttributes: { meta: [ 'http-equiv', 'content', 'name' ] }
+      }, extra || {});
+    };
+
+    it('should drop a refresh content attribute pointing to javascript:', function() {
+      assert.strictEqual(
+        sanitizeHtml('<meta http-equiv="refresh" content="0;url=javascript:alert(1)">', metaOptions()),
+        '<meta http-equiv="refresh" />'
+      );
+    });
+
+    it('should drop a refresh content attribute pointing to data:', function() {
+      assert.strictEqual(
+        sanitizeHtml('<meta http-equiv="refresh" content="0;url=data:text/html,aaa">', metaOptions()),
+        '<meta http-equiv="refresh" />'
+      );
+    });
+
+    it('should drop refresh destinations regardless of url= spelling, separators, quoting or case', function() {
+      [
+        '0;URL=javascript:alert(1)',
+        '0; url = javascript:alert(1)',
+        '0,url=javascript:alert(1)',
+        '0 url=javascript:alert(1)',
+        '  1.5 ;  Url=JavaScript:alert(1)',
+        '.5;url=javascript:alert(1)',
+        '0;url="javascript:alert(1)"',
+        '0;url=\'javascript:alert(1)\'',
+        '0;javascript:alert(1)',
+        '0;"javascript:alert(1)"',
+        '0;url=java&#x09;script:alert(1)',
+        '0;url=&#x20;javascript:alert(1)',
+        '0;url=vbscript:msgbox(1)'
+      ].forEach(function(content) {
+        const html = '<meta http-equiv="refresh" content="' + content.replace(/"/g, '&quot;') + '">';
+        assert.strictEqual(sanitizeHtml(html, metaOptions()), '<meta http-equiv="refresh" />', html);
+      });
+    });
+
+    it('should match http-equiv case-insensitively and in any attribute order', function() {
+      assert.strictEqual(
+        sanitizeHtml('<meta content="0;url=javascript:alert(1)" HTTP-EQUIV="Refresh">', metaOptions()),
+        '<meta http-equiv="Refresh" />'
+      );
+    });
+
+    it('should drop refresh content that cannot be parsed as a refresh', function() {
+      assert.strictEqual(
+        sanitizeHtml('<meta http-equiv="refresh" content="javascript:alert(1)">', metaOptions()),
+        '<meta http-equiv="refresh" />'
+      );
+    });
+
+    it('should honor allowedSchemesByTag for meta', function() {
+      const options = metaOptions({ allowedSchemesByTag: { meta: [ 'https' ] } });
+      assert.strictEqual(
+        sanitizeHtml('<meta http-equiv="refresh" content="0;url=http://example.com/">', options),
+        '<meta http-equiv="refresh" />'
+      );
+      assert.strictEqual(
+        sanitizeHtml('<meta http-equiv="refresh" content="0;url=https://example.com/">', options),
+        '<meta http-equiv="refresh" content="0;url=https://example.com/" />'
+      );
+    });
+
+    it('should keep refresh content with an allowed or relative destination, or none', function() {
+      [
+        '0;url=https://example.com/',
+        '0; URL=\'https://example.com/\'',
+        '0;url=/relative/path',
+        '5'
+      ].forEach(function(content) {
+        const html = '<meta http-equiv="refresh" content="' + content + '">';
+        assert.strictEqual(
+          sanitizeHtml(html, metaOptions()),
+          '<meta http-equiv="refresh" content="' + content + '" />'
+        );
+      });
+    });
+
+    it('should leave content alone on meta elements that are not refreshes', function() {
+      assert.strictEqual(
+        sanitizeHtml('<meta name="description" content="0;url=javascript:alert(1)">', metaOptions()),
+        '<meta name="description" content="0;url=javascript:alert(1)" />'
+      );
+    });
+  });
 });
