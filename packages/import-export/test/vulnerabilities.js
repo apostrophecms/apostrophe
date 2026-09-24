@@ -337,6 +337,66 @@ describe('vulnerability regression checks', function() {
       await apos.http.bigUploads.deleteMany({});
     });
   });
+
+  // GHSA-97wv-p4xx-c7mg: the tar entry guard used to be a substring test for
+  // '../', which misses names such as './..' and '..' that still resolve
+  // outside of (or onto) the extraction directory. Such entries must be
+  // skipped like any other traversal attempt, without failing the extraction
+  // or touching anything outside the extraction directory.
+  it('skips tar entries escaping the extraction directory without a "../"', async function() {
+    const base = await fsp.mkdtemp(path.join(os.tmpdir(), 'apos-extract-escape-'));
+    const archivePath = path.join(base, 'evil-export.gz');
+    const exportPath = archivePath.replace(/\.gz$/, '');
+    const absoluteTarget = path.join(base, 'abs-pwned.txt');
+
+    await makeEntriesArchive(archivePath, [
+      [ { name: './..' }, 'PWNED' ],
+      [ { name: '..' }, 'PWNED' ],
+      [ { name: 'attachments/./../..' }, 'PWNED' ],
+      [
+        {
+          name: '..',
+          type: 'directory'
+        }
+      ],
+      [
+        {
+          name: './',
+          type: 'directory'
+        }
+      ],
+      // An absolute name must never be written at the absolute location.
+      [ { name: absoluteTarget }, 'PWNED' ]
+    ]);
+
+    const result = await gzipFormat.input(archivePath);
+    assert.deepStrictEqual(result.docs, []);
+    assert(!fs.existsSync(absoluteTarget));
+    const outside = (await fsp.readdir(base))
+      .filter(name => name !== path.basename(exportPath));
+    assert.deepStrictEqual(outside, []);
+  });
+
+  // GHSA-97wv-p4xx-c7mg: an entry that cannot be written (here a file entry
+  // colliding with a directory created by an earlier entry) must fail the
+  // import with an error, not emit an unhandled 'error' event that takes the
+  // whole process down.
+  it('rejects rather than crashing when a tar entry cannot be written', async function() {
+    const base = await fsp.mkdtemp(path.join(os.tmpdir(), 'apos-extract-write-error-'));
+    const archivePath = path.join(base, 'evil-export.gz');
+
+    await makeEntriesArchive(archivePath, [
+      [
+        {
+          name: 'collision/',
+          type: 'directory'
+        }
+      ],
+      [ { name: 'collision' }, 'PWNED' ]
+    ]);
+
+    await assert.rejects(gzipFormat.input(archivePath), { code: 'EISDIR' });
+  });
 });
 
 async function makeArchive(archivePath) {
@@ -385,6 +445,35 @@ async function makeDirTraversalArchive(archivePath) {
     name: '../evil/',
     type: 'directory'
   });
+
+  pack.finalize();
+  await done;
+}
+
+async function makeEntriesArchive(archivePath, entries) {
+  const pack = tar.pack();
+  const gzip = zlib.createGzip();
+  const out = fs.createWriteStream(archivePath);
+
+  const done = new Promise((resolve, reject) => {
+    out.on('finish', resolve);
+    out.on('error', reject);
+    gzip.on('error', reject);
+    pack.on('error', reject);
+  });
+
+  pack.pipe(gzip).pipe(out);
+
+  pack.entry({ name: 'aposDocs.json' }, '[]');
+  pack.entry({ name: 'aposAttachments.json' }, '[]');
+
+  for (const [ header, body ] of entries) {
+    if (body === undefined) {
+      pack.entry(header);
+    } else {
+      pack.entry(header, body);
+    }
+  }
 
   pack.finalize();
   await done;

@@ -175,15 +175,30 @@ async function extract(filepath, exportPath) {
     .pipe(gunzip)
     .pipe(extract);
 
+  // Every entry must land strictly inside the extraction directory.
+  const base = path.resolve(exportPath) + path.sep;
+
   return new Promise((resolve, reject) => {
-    readStream.on('error', reject);
-    gunzip.on('error', reject);
-    extract.on('error', reject);
+    // Stop reading the archive once extraction has failed, so the open file
+    // and the half-consumed tar stream are not left dangling.
+    const fail = error => {
+      readStream.destroy();
+      reject(error);
+    };
+
+    readStream.on('error', fail);
+    gunzip.on('error', fail);
+    extract.on('error', fail);
 
     extract.on('entry', (header, stream, next) => {
       // Normalize \ to / before checking for zip-slip
       const name = header.name.replace(/\\/g, '/');
-      if (name.includes('../')) {
+      // Check where the entry actually resolves to rather than looking for
+      // `../` in its name, which misses names such as `..` or `./..`. The
+      // extraction directory itself (e.g. a `./` entry) already exists and is
+      // skipped as well, as are absolute names, which our archives never use.
+      const target = path.join(exportPath, name);
+      if (path.isAbsolute(name) || !path.resolve(target).startsWith(base)) {
         // Reject zip-slip attacks without revealing information. Discard any
         // body and ALWAYS advance to the next entry. Directory entries carry
         // no body but tar-stream still requires next() to be called; skipping
@@ -195,17 +210,20 @@ async function extract(filepath, exportPath) {
       }
       if (header.type === 'directory') {
         fsp
-          .mkdir(path.join(exportPath, name))
+          .mkdir(target)
           .then(next)
-          .catch(reject);
+          .catch(fail);
       } else {
         // Advance on the WRITE finishing, not on the source entry's `end`.
         // `end` fires once the entry has been read out of the archive, while
         // the destination may still be flushing, so gating on it let
         // extraction resolve with files still partly (or not at all) on disk —
         // an intermittent ENOENT/truncated read for whoever read them next.
-        const writeStream = fs.createWriteStream(path.join(exportPath, name));
-        writeStream.on('error', reject);
+        // The `error` listener is required: without it a failed write (e.g.
+        // an entry colliding with a directory) is an unhandled 'error' event
+        // that terminates the process.
+        const writeStream = fs.createWriteStream(target);
+        writeStream.on('error', fail);
         writeStream.on('finish', next);
         stream.pipe(writeStream);
       }
