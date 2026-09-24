@@ -24,7 +24,7 @@ module.exports = function(self) {
         return;
       }
 
-      if (!input.recaptcha) {
+      if (!input.recaptcha || ((typeof input.recaptcha) !== 'string')) {
         formErrors.push({
           global: true,
           error: 'recaptcha',
@@ -36,9 +36,16 @@ module.exports = function(self) {
 
       try {
         const url = 'https://www.google.com/recaptcha/api/siteverify';
-        const recaptchaUri = `${url}?secret=${recaptchaSecret}&response=${input.recaptcha}`;
-
-        const response = await self.apos.http.post(recaptchaUri);
+        // Encode the parameters so a crafted token cannot inject others
+        const response = await self.apos.http.post(url, {
+          body: new URLSearchParams({
+            secret: recaptchaSecret,
+            response: input.recaptcha
+          }).toString(),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
 
         if (!response.success) {
           formErrors.push({
