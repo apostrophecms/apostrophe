@@ -94,26 +94,34 @@
             :data-apos-change-type="entry.row.type"
           >
             <div class="apos-doc-version-changes__row-main">
-              <AposDocVersionChangePath
-                class="apos-doc-version-changes__row-label"
-                :class="{
-                  'apos-doc-version-changes__row-label--meta': entry.order
-                }"
-                :segments="entry.segments"
-                compact
-                data-apos-test="doc-version-change-path"
-              />
-              <span class="apos-doc-version-changes__row-aside">
+              <span class="apos-doc-version-changes__row-lead">
+                <AposDocVersionChangePath
+                  class="apos-doc-version-changes__row-label"
+                  :class="{
+                    'apos-doc-version-changes__row-label--meta': entry.order
+                  }"
+                  :segments="entry.segments"
+                  compact
+                  data-apos-test="doc-version-change-path"
+                />
+                <span
+                  v-if="entry.row.ai"
+                  class="apos-doc-version-changes__row-separator"
+                  aria-hidden="true"
+                >·</span>
                 <AposDocVersionAiBadge
                   v-if="entry.row.ai"
                   v-apos-tooltip="entry.row.ai === 'assisted'
                     ? 'apostrophe:versionAiAssistedChangeTooltip'
                     : 'apostrophe:versionAiChangeTooltip'"
                   :ai="entry.row.ai"
+                  subtle
                   :data-apos-test="entry.row.ai === 'assisted'
                     ? 'doc-version-change-ai-assisted'
                     : 'doc-version-change-ai'"
                 />
+              </span>
+              <span class="apos-doc-version-changes__row-aside">
                 <AposButton
                   v-if="entry.detail"
                   class="apos-doc-version-changes__row-toggle"
@@ -140,16 +148,21 @@
               class="apos-doc-version-changes__diff"
               data-apos-test="doc-version-change-diff"
             >
-              <AposDocVersionChangeBlock
-                v-if="entry.changed && entry.layout === 'block'"
-                :key="`block-${revealed}`"
-                :entry="entry"
-              />
-              <AposDocVersionChangeText
-                v-else-if="entry.changed"
-                :key="`sides-${revealed}`"
-                :entry="entry"
-              />
+              <div
+                v-if="entry.changed"
+                class="apos-doc-version-changes__diff-box"
+              >
+                <AposDocVersionChangeBlock
+                  v-if="entry.layout === 'block'"
+                  :key="`block-${revealed}`"
+                  :entry="entry"
+                />
+                <AposDocVersionChangeText
+                  v-else
+                  :key="`sides-${revealed}`"
+                  :entry="entry"
+                />
+              </div>
               <AposDocVersionChangeFormat
                 v-if="entry.format.length"
                 :lines="entry.format"
@@ -594,11 +607,30 @@ $pad-x: $spacing-base + $spacing-half;
     gap: $spacing-half $spacing-base;
   }
 
+  // The field or action, and AI's part in it right after
+  &__row-lead {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: baseline;
+    gap: $spacing-one-quarter;
+    min-width: 0;
+
+    :deep(.apos-doc-version-ai-badge) {
+      flex-shrink: 0;
+    }
+  }
+
+  &__row-separator {
+    flex-shrink: 0;
+    color: var(--a-base-4);
+    font-size: var(--a-type-smaller);
+  }
+
   &__row-label {
     @include type-base;
 
     & {
-      flex: 1 1 0;
+      flex: 0 1 auto;
       min-width: 0;
       line-height: var(--a-line-tall);
     }
@@ -628,16 +660,19 @@ $pad-x: $spacing-base + $spacing-half;
     }
   }
 
+  // Each change of the row in a box of its own: the text, then each
+  // formatting line
   &__diff {
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-three-quarters;
     margin-top: $spacing-base;
-    border: 1px solid var(--a-base-8);
-    border-radius: var(--a-border-radius);
   }
 
-  &__pane + &__format,
-  &__block + &__format {
-    border-top: 1px solid var(--a-base-8);
+  &__diff-box {
+    overflow: hidden;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
   }
 
   &__nav {

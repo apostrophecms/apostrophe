@@ -13,25 +13,39 @@
       <li
         v-for="(part, index) in parts"
         :key="index"
+        class="apos-doc-version-changes__order-item"
+        :class="`apos-doc-version-changes__order-item--${part.change}`"
         data-apos-test="doc-version-change-order-item"
         :data-apos-order-change="part.change"
       >
+        <component
+          :is="marks[part.change].icon"
+          v-if="marks[part.change]"
+          :size="14"
+          class="apos-doc-version-changes__order-icon"
+        />
+        <span
+          v-else
+          class="apos-doc-version-changes__order-icon"
+          aria-hidden="true"
+        />
         <template v-if="part.change === 'elided'">
           <span
-            class="apos-doc-version-changes__elided"
+            class="apos-doc-version-changes__order-ordinal apos-doc-version-changes__elided"
             aria-hidden="true"
           >…</span>
           <span class="apos-sr-only">{{ $t('apostrophe:versionUnchangedItemsOmitted') }}</span>
         </template>
-        <component
-          :is="marks[part.change].tag"
-          v-else-if="marks[part.change]"
-          :data-apos-version-change="part.change"
-        >
-          <span class="apos-sr-only">{{ `${$t(marks[part.change].label)} ` }}</span>{{ part.text }}
-        </component>
         <template v-else>
-          {{ part.text }}
+          <span class="apos-doc-version-changes__order-ordinal">{{ part.ordinal }}.</span>
+          <component
+            :is="marks[part.change].tag"
+            v-if="marks[part.change]"
+            :data-apos-version-change="part.change"
+          >
+            <span class="apos-sr-only">{{ `${$t(marks[part.change].label)} ` }}</span>{{ part.text }}
+          </component>
+          <span v-else>{{ part.text }}</span>
         </template>
       </li>
     </ul>
@@ -80,9 +94,10 @@
 // A change as one block rather than two sides: the words of a rich text in
 // reading order and in their bold and italic, removed ones struck through
 // where they were and added ones where they are; or the items of an array
-// or area one to a line, the ones that moved removed where they were and
-// added where they are. Cut short, as the sides are, until the full text is
-// asked for
+// or area one to a numbered line, in the newer order, the ones that moved
+// removed where they were and added where they are, each such line in the
+// color and with the icon of its side. Cut short, as the sides are, until
+// the full text is asked for
 import {
   computed, nextTick, onMounted, ref
 } from 'vue';
@@ -98,11 +113,13 @@ const props = defineProps({
 const marks = {
   added: {
     tag: 'ins',
-    label: 'apostrophe:versionAddedText'
+    label: 'apostrophe:versionAddedText',
+    icon: 'plus-circle-icon'
   },
   removed: {
     tag: 'del',
-    label: 'apostrophe:versionRemovedText'
+    label: 'apostrophe:versionRemovedText',
+    icon: 'minus-circle-icon'
   }
 };
 
@@ -176,6 +193,61 @@ onMounted(async () => {
 
   &__order {
     @include apos-list-reset();
+
+    & {
+      // The lines' tint reaches the edges of the block
+      margin: 0 (-$spacing-base);
+    }
+  }
+
+  &__order-item {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-half;
+    padding: 0 $spacing-base;
+
+    &--added {
+      background-color: color-mix(in srgb, var(--a-success-fade) 45%, var(--a-background-primary));
+    }
+
+    &--removed {
+      background-color: color-mix(in srgb, var(--a-danger-fade) 45%, var(--a-background-primary));
+    }
+
+    // The line's tint stands in for the mark's
+    ins[data-apos-version-change],
+    del[data-apos-version-change] {
+      padding: 0;
+      background-color: transparent;
+    }
+  }
+
+  &__order-icon {
+    display: flex;
+    flex: 0 0 14px;
+    align-items: center;
+    // On the first line, like the text beside it
+    height: calc(var(--a-line-tall) * 1em);
+
+    :deep(.material-design-icon__svg) {
+      bottom: 0;
+    }
+
+    .apos-doc-version-changes__order-item--added & {
+      color: var(--a-success-dark);
+    }
+
+    .apos-doc-version-changes__order-item--removed & {
+      color: var(--a-danger-button-hover);
+    }
+  }
+
+  &__order-ordinal {
+    flex-shrink: 0;
+    min-width: 2ch;
+    color: var(--a-base-2);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
   }
 }
 </style>

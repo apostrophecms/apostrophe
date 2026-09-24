@@ -1,7 +1,10 @@
 <template>
   <span
     class="apos-doc-version-ai-badge"
-    :class="{ 'apos-doc-version-ai-badge--assisted': ai === 'assisted' }"
+    :class="{
+      'apos-doc-version-ai-badge--assisted': ai === 'assisted',
+      'apos-doc-version-ai-badge--subtle': subtle
+    }"
     data-apos-test="doc-version-ai-badge"
   >
     {{ $t(ai === 'assisted'
@@ -18,6 +21,11 @@ defineProps({
   ai: {
     type: String,
     default: 'changed'
+  },
+  // Plain text rather than a badge, for a line of text it follows
+  subtle: {
+    type: Boolean,
+    default: false
   }
 });
 </script>
@@ -43,5 +51,16 @@ defineProps({
 // sits over the page in the preview
 .apos-doc-version-ai-badge--assisted {
   background-color: var(--a-background-primary);
+}
+
+.apos-doc-version-ai-badge--subtle {
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  color: var(--a-base-2);
+  font-size: var(--a-type-smaller);
+  font-weight: var(--a-weight-base);
+  letter-spacing: 0;
+  line-height: inherit;
 }
 </style>

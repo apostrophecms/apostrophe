@@ -83,11 +83,11 @@ defineProps({
 
     &--new {
       border-bottom: 1px solid var(--a-base-8);
-      background-color: var(--a-success-fade);
+      background-color: color-mix(in srgb, var(--a-success-fade) 45%, var(--a-background-primary));
     }
 
     &--old {
-      background-color: var(--a-danger-fade);
+      background-color: color-mix(in srgb, var(--a-danger-fade) 45%, var(--a-background-primary));
     }
   }
 

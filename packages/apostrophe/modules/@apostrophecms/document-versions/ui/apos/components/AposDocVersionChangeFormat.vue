@@ -110,10 +110,19 @@ defineProps({
 .apos-doc-version-changes {
   &__format {
     @include apos-list-reset();
+
+    & {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-three-quarters;
+    }
   }
 
-  &__format-line + &__format-line {
-    border-top: 1px solid var(--a-base-8);
+  // A box of its own, as the text of the row is
+  &__format-line {
+    overflow: hidden;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
   }
 
   &__format-header {

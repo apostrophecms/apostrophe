@@ -497,10 +497,12 @@ onBeforeUnmount(() => {
 }
 
 :deep(.apos-modal__main.apos-modal__main--with-rails) {
-  grid-template-columns: 15% 1fr max(320px, 15%);
+  // Tabs rail 15% narrower than the default 15%; that width goes to the
+  // change list
+  grid-template-columns: 12.75% 1fr max(320px, 17.25%);
 
   &:has(> .apos-modal__rail--collapsed) {
-    grid-template-columns: $modal-rail-collapsed-w 1fr max(320px, 15%);
+    grid-template-columns: $modal-rail-collapsed-w 1fr max(320px, 17.25%);
   }
 }
 

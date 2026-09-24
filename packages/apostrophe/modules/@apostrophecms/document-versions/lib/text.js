@@ -297,10 +297,10 @@ function addText(rows, ctx, {
  * word, as `{ text, change }` parts in reading order, `change` being `same`,
  * `added` or `removed`. A row whose texts do not differ has no `added` or
  * `removed` part. The order of an array or area compares item by item:
- * each part is a whole item, without the commas of the text, so an item
- * that moved is marked whole and the ones it passed are not, and where it
- * was also says the position it had (`#1 Card (was #3)`). Run after
- * `addText`. A row that cannot be compared has no parts.
+ * each part is a whole item, its name without the commas of the text and
+ * its position in the newer document as `ordinal`, so an item that moved
+ * is marked whole and the ones it passed are not. Run after `addText`. A
+ * row that cannot be compared has no parts.
  *
  * A rich text row with `textParts` (see `addFormat`) has those instead,
  * the words in their bold and italic (`marks`).
@@ -428,58 +428,65 @@ function changeOf(part) {
 
 // The parts of an order row: whole items, in the order a reader of both
 // sides meets them, an item that moved being `removed` where it was and
-// `added` where it is. Where it was, it also says the position it had
-// there. No part holds the commas of the text. The items that moved are the
-// row's `movedItems` when it names them, otherwise the fewest that explain
-// the new order
+// `added` where it is. Each part has the item's name as `text` and, as
+// `ordinal`, its position in the newer document; where a moved item was,
+// the position of the item it stood before, so the list reads in the
+// newer order throughout. No part holds the commas of the text. The items
+// that moved are the row's `movedItems` when it names them, otherwise the
+// fewest that explain the new order
 function orderDiff(row, ctx) {
-  const part = (id, change) => {
-    const item = row.items[id];
-    const was = (change === 'removed') && (item.olderOrdinal !== item.ordinal);
-    return {
-      text: was
-        ? `${itemText(item, ctx)} ${wasText(item.olderOrdinal, ctx)}`
-        : itemText(item, ctx),
-      change
-    };
-  };
+  const part = (id, change) => ({
+    text: itemName(row.items[id], ctx),
+    ordinal: row.items[id].ordinal,
+    change
+  });
+  let parts;
   if (!row.movedItems) {
-    return diffArrays(row.old, row.new)
+    parts = diffArrays(row.old, row.new)
       .flatMap(found => found.value.map(id => part(id, changeOf(found))));
-  }
-  const moved = new Set(row.movedItems);
-  const parts = [];
-  let at = 0;
-  for (const id of row.new) {
-    if (moved.has(id)) {
-      parts.push(part(id, 'added'));
-      continue;
+  } else {
+    const moved = new Set(row.movedItems);
+    parts = [];
+    let at = 0;
+    for (const id of row.new) {
+      if (moved.has(id)) {
+        parts.push(part(id, 'added'));
+        continue;
+      }
+      // The items that stayed stand in one order on both sides
+      for (; row.old[at] !== id; at++) {
+        parts.push(part(row.old[at], 'removed'));
+      }
+      parts.push(part(id, 'same'));
+      at++;
     }
-    // The items that stayed stand in one order on both sides
-    for (; row.old[at] !== id; at++) {
-      parts.push(part(row.old[at], 'removed'));
-    }
-    parts.push(part(id, 'same'));
-    at++;
+    parts.push(...row.old.slice(at).map(id => part(id, 'removed')));
   }
-  return [
-    ...parts,
-    ...row.old.slice(at).map(id => part(id, 'removed'))
-  ];
+  // Where it was, a moved item takes the position of the next item that
+  // is there in the newer document, or of the last one at the end
+  let next = null;
+  for (const found of [ ...parts ].reverse()) {
+    if (found.change === 'removed') {
+      found.ordinal = next ?? parts.findLast(other => other.change !== 'removed')?.ordinal ??
+        found.ordinal;
+    } else {
+      next = found.ordinal;
+    }
+  }
+  return parts;
 }
 
 // An item of an order row: `#2 Rich Text · Its title`
-function itemText({
-  ordinal, label, title
-}, ctx) {
-  const type = label && (ctx.t ? ctx.t(label) : label);
-  const name = [ type, title ].filter(Boolean).join(' · ');
-  return name ? `#${ordinal} ${name}` : `#${ordinal}`;
+function itemText(item, ctx) {
+  const name = itemName(item, ctx);
+  return name ? `#${item.ordinal} ${name}` : `#${item.ordinal}`;
 }
 
-// The position an item that moved had: `(was #3)`
-function wasText(ordinal, ctx) {
-  return ctx.t ? ctx.t('apostrophe:versionOrderWas', { ordinal }) : `(#${ordinal})`;
+// The name of an item of an order row: `Rich Text · Its title`, `''` when
+// it has neither
+function itemName({ label, title }, ctx) {
+  const type = label && (ctx.t ? ctx.t(label) : label);
+  return [ type, title ].filter(Boolean).join(' · ');
 }
 
 // `scalar`, one of the special types, or `null` when the value has no text.
