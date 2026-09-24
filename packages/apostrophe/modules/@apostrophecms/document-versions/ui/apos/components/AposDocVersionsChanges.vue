@@ -140,9 +140,14 @@
               class="apos-doc-version-changes__diff"
               data-apos-test="doc-version-change-diff"
             >
+              <AposDocVersionChangeBlock
+                v-if="entry.changed && entry.layout === 'block'"
+                :key="`block-${revealed}`"
+                :entry="entry"
+              />
               <AposDocVersionChangeText
-                v-if="entry.changed"
-                :key="revealed"
+                v-else-if="entry.changed"
+                :key="`sides-${revealed}`"
                 :entry="entry"
               />
               <AposDocVersionChangeFormat
@@ -629,7 +634,8 @@ $pad-x: $spacing-base + $spacing-half;
     border-radius: var(--a-border-radius);
   }
 
-  &__pane + &__format {
+  &__pane + &__format,
+  &__block + &__format {
     border-top: 1px solid var(--a-base-8);
   }
 

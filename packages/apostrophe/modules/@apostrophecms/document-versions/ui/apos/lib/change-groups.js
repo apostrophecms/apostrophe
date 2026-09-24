@@ -68,7 +68,7 @@ function getChangeGroups(rows, filter) {
       segments.push(path.at(-1));
     }
     const diff = row.diff || [];
-    const short = order ? diff : elide(diff);
+    const short = order ? elideItems(diff) : elide(diff);
     // Two images may share a title
     const changed = diff.some(part => part.change !== 'same') || Boolean(row.images);
     const format = row.formatChanges || [];
@@ -82,8 +82,16 @@ function getChangeGroups(rows, filter) {
       key: String(index),
       row,
       segments,
-      // Its parts are whole items, shown as a list in the side's colour
+      // Its parts are whole items, one to a line
       order,
+      // How the change shows: `block`, both sides in one stream of parts,
+      // for rich text and the order of items; `sides`, each side apart
+      layout: (order || row.kind === 'richText') ? 'block' : 'sides',
+      // What the block shows, in full and with the long unchanged runs cut
+      // down: of text, the words away from a change; of an order, the items
+      // away from a move
+      inline: diff,
+      inlineShort: short,
       // What each side shows: the parts both share and its own, in full
       // and with the long unchanged runs cut down
       parts: bySide(diff),
@@ -136,6 +144,28 @@ function getChangeGroups(rows, filter) {
         }
       ].filter(Boolean);
     });
+  }
+
+  // The items of an order with every run of unchanged ones cut down to one
+  // `elided` part, but for the items next to a moved one, which show where
+  // it went and where it was. A single item is shown rather than cut
+  function elideItems(parts) {
+    const moved = index => parts[index] && (parts[index].change !== 'same');
+    const kept = parts.map((part, index) => {
+      return moved(index) || moved(index - 1) || moved(index + 1);
+    });
+    const list = [];
+    let run = [];
+    parts.forEach((part, index) => {
+      if (!kept[index]) {
+        run.push(part);
+        return;
+      }
+      list.push(...((run.length > 1) ? [ { change: 'elided' } ] : run), part);
+      run = [];
+    });
+    list.push(...((run.length > 1) ? [ { change: 'elided' } ] : run));
+    return list;
   }
 }
 

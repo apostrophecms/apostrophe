@@ -844,6 +844,7 @@
   "versionThisVersion": "This Version",
   "versionUnchanged": "The content of this version matches the one before it.",
   "versionUnchangedOmitted": "Unchanged text omitted",
+  "versionUnchangedItemsOmitted": "Unchanged items omitted",
   "versionUnsupported": "This version was saved as a document type this site no longer has. It cannot be shown or restored.",
   "versionViewChanges": "View Changes",
   "versionWidgetChange": "{{ widget }} — {{ changes }}",

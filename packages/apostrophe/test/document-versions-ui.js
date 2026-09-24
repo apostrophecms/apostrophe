@@ -145,7 +145,7 @@ describe('Document Versions UI', function () {
         assert.equal(entry.order, true);
         assert.equal(entry.own, false);
         assert.deepEqual(entry.segments, [ { label: 'apostrophe:versionOrderChanged' } ]);
-        // Whole items, never cut down
+        // Whole items, never cut inside
         assert.equal(entry.elided, false);
         assert.deepEqual(entry.short, entry.parts);
         assert.equal(group.type, 'modified');
@@ -257,6 +257,79 @@ describe('Document Versions UI', function () {
         row([ title ], { diff })
       ], all);
       assert.equal(entry.elided, false);
+    });
+
+    it('should show rich text and order as one block, anything else as two sides', async function () {
+      const lib = await getLib();
+      const words = Array.from({ length: 60 }, (_, i) => `word${i}`).join(' ');
+      const diff = [
+        {
+          change: 'same',
+          text: `${words} `
+        },
+        {
+          change: 'removed',
+          text: 'old'
+        },
+        {
+          change: 'added',
+          text: 'new'
+        }
+      ];
+      const groups = lib.getChangeGroups([
+        row([ main, widget, content ], {
+          kind: 'richText',
+          diff
+        }),
+        row([ main, widget, {
+          name: 'items',
+          label: 'Items'
+        } ], {
+          kind: 'array',
+          diff
+        }),
+        row([ title ], { diff })
+      ], all);
+      const [ richText, order, leaf ] = groups.flatMap(group => group.entries);
+      assert.deepEqual(
+        [ richText, order, leaf ].map(entry => entry.layout),
+        [ 'block', 'block', 'sides' ]
+      );
+      // Both sides in reading order, the long unchanged run cut down
+      assert.deepEqual(richText.inline, diff);
+      assert.deepEqual(
+        richText.inlineShort.map(part => part.change),
+        [ 'elided', 'same', 'removed', 'added' ]
+      );
+      // Whole items, never cut inside
+      assert.deepEqual(order.inlineShort, diff);
+    });
+
+    it('should cut a long order down to the items next to a move', async function () {
+      const lib = await getLib();
+      const item = (text, change = 'same') => ({
+        text,
+        change
+      });
+      // #1 dragged from after #9 to the top, eleven items in all
+      const diff = [
+        item('#1', 'added'),
+        ...[ 2, 3, 4, 5, 6, 7, 8, 9 ].map(ordinal => item(`#${ordinal}`)),
+        item('#1', 'removed'),
+        item('#10'),
+        item('#11')
+      ];
+      const [ { entries: [ entry ] } ] = lib.getChangeGroups([
+        row([ main ], {
+          kind: 'area',
+          diff
+        })
+      ], all);
+      assert.deepEqual(entry.inlineShort.map(part => part.text || part.change), [
+        '#1', '#2', 'elided', '#9', '#1', '#10', '#11'
+      ]);
+      assert.equal(entry.elided, true);
+      assert.deepEqual(entry.inline, diff);
     });
 
     it('should tell whether a row has anything to expand', async function () {
