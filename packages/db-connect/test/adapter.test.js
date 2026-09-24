@@ -2285,6 +2285,36 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       expect(names).to.not.include('ttldropped');
     });
 
+    it('replaces a plain index created before TTL support', async function() {
+      const coll = db.collection('test');
+      // What createIndex({ expires: 1 }, { expireAfterSeconds: 0 }) used
+      // to build, since expireAfterSeconds was ignored
+      const name = await coll.createIndex({ expires: 1 });
+      const definition = async () => {
+        if (ADAPTER === 'sqlite') {
+          return db._sqlite.prepare(
+            'SELECT sql FROM sqlite_master WHERE type = \'index\' AND name = ?'
+          ).get(name).sql;
+        }
+        const result = await db._pool.query(
+          'SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = $2',
+          [ db._schema || 'public', name ]
+        );
+        return result.rows[0].indexdef;
+      };
+      expect(await definition()).to.not.include('$date');
+      const ttlName = await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      expect(ttlName).to.equal(name);
+      const replaced = await definition();
+      expect(replaced).to.include('$date');
+      // Creating it again at the next startup leaves it alone
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      expect(await definition()).to.equal(replaced);
+      const ttlIndexes = (await coll.indexes()).filter(i => i.key && i.key.expires);
+      expect(ttlIndexes.length).to.equal(1);
+      expect(ttlIndexes[0].expireAfterSeconds).to.equal(0);
+    });
+
     it('the expiration query uses the index', async function() {
       const coll = db.collection('test');
       await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });

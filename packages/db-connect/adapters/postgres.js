@@ -1982,6 +1982,22 @@ class PostgresCollection {
     // Generate MongoDB-compatible index name for indexInformation() compatibility
     const mongoName = options.name || keyEntries.map(([ k, v ]) => `${k}_${v}`).join('_');
 
+    // Before TTL support, expireAfterSeconds was ignored, leaving a plain
+    // text index under the same name. CREATE INDEX IF NOT EXISTS would keep
+    // it, and the expiration query can't use it, so replace it once
+    if (options.expireAfterSeconds != null) {
+      const existing = await this._pool.query(
+        'SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = $2',
+        [ this._schema || 'public', indexName ]
+      );
+      if (existing.rows[0] && !existing.rows[0].indexdef.includes('$date')) {
+        const schemaPrefix = this._schema ? `"${escapeIdentifier(this._schema)}".` : '';
+        await this._pool.query(
+          `DROP INDEX IF EXISTS ${schemaPrefix}"${escapeIdentifier(indexName)}"`
+        );
+      }
+    }
+
     // Store index metadata
     this._indexes.set(indexName, {
       keys,

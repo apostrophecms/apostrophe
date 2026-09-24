@@ -1883,6 +1883,18 @@ class SqliteCollection {
 
     const mongoName = options.name || keyEntries.map(([ k, v ]) => `${k}_${v}`).join('_');
 
+    // Before TTL support, expireAfterSeconds was ignored, leaving a plain
+    // text index under the same name. CREATE INDEX IF NOT EXISTS would keep
+    // it, and the expiration query can't use it, so replace it once
+    if (options.expireAfterSeconds != null) {
+      const existing = this._db._sqlite.prepare(
+        'SELECT sql FROM sqlite_master WHERE type = \'index\' AND name = ?'
+      ).get(indexName);
+      if (existing && existing.sql && !existing.sql.includes('$date')) {
+        this._db._sqlite.exec(`DROP INDEX IF EXISTS "${escapeIdentifier(indexName)}"`);
+      }
+    }
+
     this._indexes.set(indexName, {
       keys,
       options,
