@@ -2643,4 +2643,81 @@ describe('sanitizeHtml', function() {
       );
     });
   });
+
+  describe('GHSA-x3q4-9hxx-gx8m: nonTextTags discard region ended early by an implied close', function() {
+    // With scripting enabled, browsers parse <noscript> content as raw text up
+    // to the first `</noscript`. htmlparser2 parses it as markup, so an end tag
+    // for an ancestor inside <noscript> makes htmlparser2 close the <noscript>
+    // implicitly. That implied close must not end the discard region early.
+    const noscriptOptions = {
+      allowedTags: [ 'div', 'img', 'p' ],
+      allowedAttributes: { img: [ 'src' ] },
+      nonTextTags: [ 'script', 'style', 'textarea', 'option', 'noscript' ]
+    };
+
+    it('should not emit noscript content after an ancestor end tag inside noscript', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><noscript></div><img src="http://evil.test/t.gif"></noscript>', noscriptOptions),
+        '<div></div>'
+      );
+    });
+
+    it('should resume normal output after the real noscript end tag', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><noscript></div><img src="http://evil.test/t.gif"></noscript><p>after</p>', noscriptOptions),
+        '<div></div><p>after</p>'
+      );
+    });
+
+    it('should close every ancestor unwound from inside noscript', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><p><noscript></div><img src="http://evil.test/t.gif"><p>x</p></noscript><p>after</p>', noscriptOptions),
+        '<div><p></p></div><p>after</p>'
+      );
+    });
+
+    it('should recognize noscript end tags the way a browser does', function() {
+      [ '</NOSCRIPT>', '</noscript/>', '</noscript >', '</noscript\n>' ].forEach(function(end) {
+        assert.strictEqual(
+          sanitizeHtml('<div><noscript></div><img src="http://evil.test/t.gif">' + end + '<p>after</p>', noscriptOptions),
+          '<div></div><p>after</p>'
+        );
+      });
+    });
+
+    it('should not treat a longer tag name as the noscript end tag', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><noscript></div><img src="http://evil.test/a.gif"></noscriptx><img src="http://evil.test/b.gif">', noscriptOptions),
+        '<div></div>'
+      );
+    });
+
+    it('should still discard well-formed noscript content and keep what follows', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><noscript><img src="http://evil.test/t.gif"><style>a{}</style><p>x</p></noscript><p>after</p></div>', noscriptOptions),
+        '<div><p>after</p></div>'
+      );
+    });
+
+    it('should still end an option discard region on an implied close by the next option', function() {
+      assert.strictEqual(
+        sanitizeHtml('<select><option>a<option>b</select><p>after</p>'),
+        '<p>after</p>'
+      );
+    });
+
+    it('should still end an option discard region when an ancestor end tag closes it', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><select><option>a</div><p>after</p>', { allowedTags: [ 'div', 'p' ] }),
+        '<div></div><p>after</p>'
+      );
+    });
+
+    it('should still keep content following a discarded style element', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><style>.x{color:red}</style><p>ok</p></div>'),
+        '<div><p>ok</p></div>'
+      );
+    });
+  });
 });
