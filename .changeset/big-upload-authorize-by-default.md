@@ -20,4 +20,4 @@ Both routes passed no `authorize` callback to `apos.http.bigUploadMiddleware()`,
 
 The middleware in `apostrophe` itself now requires a logged-in user by default and bounds the client-declared chunk count, so this module is protected even without the explicit callback; the callback keeps the routes safe when installed alongside an older `apostrophe`.
 
-Thanks to [Kai Zhi](https://github.com/kaizhi888) and [bp0lr](https://github.com/bp0lr) for reporting the vulnerability, and to [bp0lr](https://github.com/bp0lr) for contributing additional hardening.
+Thanks to [Kai Zhi](https://github.com/kaizhi888) and [Bp0lr](https://github.com/bp0lr) for reporting the vulnerability, and to [Bp0lr](https://github.com/bp0lr) for contributing additional hardening.
