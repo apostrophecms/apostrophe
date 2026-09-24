@@ -35,6 +35,7 @@
             v-if="versions.length"
             ref="body"
             class="apos-doc-editor__body apos-doc-version-editor__body"
+            data-apos-read-only
           >
             <template v-if="!unsupported">
               <AposSchema
