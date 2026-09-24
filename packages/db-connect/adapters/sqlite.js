@@ -18,6 +18,7 @@ const {
   prefixUpperBound,
   validateInteger
 } = require('../lib/shared');
+const { TtlReaper, ttlIndexOptions } = require('../lib/ttl');
 const { AggregationCursor } = require('../lib/aggregation-cursor');
 
 // =============================================================================
@@ -1859,6 +1860,7 @@ class SqliteCollection {
   }
 
   async createIndex(keys, options = {}) {
+    options = ttlIndexOptions(keys, options);
     this._ensureTable();
 
     const keyEntries = Object.entries(keys);
@@ -1881,11 +1883,27 @@ class SqliteCollection {
 
     const mongoName = options.name || keyEntries.map(([ k, v ]) => `${k}_${v}`).join('_');
 
+    // Before TTL support, expireAfterSeconds was ignored, leaving a plain
+    // text index under the same name. CREATE INDEX IF NOT EXISTS would keep
+    // it, and the expiration query can't use it, so replace it once
+    if (options.expireAfterSeconds != null) {
+      const existing = this._db._sqlite.prepare(
+        'SELECT sql FROM sqlite_master WHERE type = \'index\' AND name = ?'
+      ).get(indexName);
+      if (existing && existing.sql && !existing.sql.includes('$date')) {
+        this._db._sqlite.exec(`DROP INDEX IF EXISTS "${escapeIdentifier(indexName)}"`);
+      }
+    }
+
     this._indexes.set(indexName, {
       keys,
       options,
       mongoName
     });
+
+    if (options.expireAfterSeconds != null) {
+      this._db._client._ttlReaper.start();
+    }
 
     const tableName = this._quotedTableName();
     const escapedIndexName = escapeIdentifier(indexName);
@@ -2028,7 +2046,10 @@ class SqliteCollection {
           key: storedIndex.keys,
           unique: storedIndex.options.unique || false,
           ...(storedIndex.options.sparse ? { sparse: true } : {}),
-          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {})
+          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {}),
+          ...(storedIndex.options.expireAfterSeconds != null
+            ? { expireAfterSeconds: storedIndex.options.expireAfterSeconds }
+            : {})
         });
       } else {
         indexes.push({
@@ -2047,7 +2068,10 @@ class SqliteCollection {
           key: storedIndex.keys,
           unique: storedIndex.options.unique || false,
           ...(storedIndex.options.sparse ? { sparse: true } : {}),
-          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {})
+          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {}),
+          ...(storedIndex.options.expireAfterSeconds != null
+            ? { expireAfterSeconds: storedIndex.options.expireAfterSeconds }
+            : {})
         });
       }
     }
@@ -2271,6 +2295,7 @@ class SqliteClient {
     this._ext = path.extname(dbPath) || '.sqlite';
     this._databases = new Map();
     this._siblingDbs = new Map();
+    this._ttlReaper = new TtlReaper(this);
   }
 
   db(name) {
@@ -2305,6 +2330,7 @@ class SqliteClient {
   async close() {
     if (!this._closed) {
       this._closed = true;
+      await this._ttlReaper.stop();
       this._sqlite.close();
       for (const [ , db ] of this._siblingDbs) {
         db.close();

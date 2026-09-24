@@ -6,7 +6,7 @@ public/apos-frontend
 .DS_Store
 coverage/
 .nyc_output
-claude-tools/logs/
+**/claude-tools/logs/
 .claude
 specs/
 scratch/
