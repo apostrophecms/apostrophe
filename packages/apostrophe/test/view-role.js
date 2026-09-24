@@ -87,13 +87,17 @@ describe('viewRole', function() {
   });
 
   it('does not load users through a relationship for the public', async function() {
-    const article = await apos.modules.article.find(apos.task.getAnonReq(), {}).toObject();
+    const article = await apos.modules.article
+      .find(apos.task.getAnonReq(), {})
+      .toObject();
     assert.equal(article.title, 'Article');
     assert.deepEqual(article._authors, []);
   });
 
   it('still loads users through a relationship for an admin', async function() {
-    const article = await apos.modules.article.find(apos.task.getAdminReq(), {}).toObject();
+    const article = await apos.modules.article
+      .find(apos.task.getAdminReq(), {})
+      .toObject();
     assert.deepEqual(article._authors.map(({ title }) => title), [ 'Author' ]);
   });
 
