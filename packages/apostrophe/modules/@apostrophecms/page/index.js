@@ -1669,12 +1669,14 @@ database.`);
             // Move outside tree
             throw self.apos.error('forbidden');
           }
-          // Enforce destination-parent authorization: a cross-parent move
-          // into a non-archive destination requires "create" permission on
-          // that destination (the same boundary the page-insert route
-          // enforces). The one exception is restoring a page out of the
-          // archive, which is permitted into any destination the actor may
-          // edit even without "create".
+          // Enforce destination-parent authorization: a move into, or a
+          // reorder within, a non-archive parent requires "create" permission
+          // on that parent (the same boundary the page-insert route
+          // enforces). This includes same-parent reorders, since they re-rank
+          // the parent's other children (GHSA-2jrp-qc93-h2j8). The one
+          // exception is restoring a page out of the archive, which is
+          // permitted into any destination the actor may edit even without
+          // "create".
           //
           // That exception is NOT dead code: with @apostrophecms-pro/advanced-
           // permission, per-document permissions grant edit (and view/publish)
@@ -1686,7 +1688,6 @@ database.`);
           // x4fh) gated the whole check on "moving out of the archive" and
           // disabled create enforcement for every normal move.
           if (
-            (oldParent._id !== parent._id) &&
             (parent.type !== '@apostrophecms/archive-page') &&
             (!parent._create) &&
             !(oldParent.type === '@apostrophecms/archive-page' && parent._edit)
