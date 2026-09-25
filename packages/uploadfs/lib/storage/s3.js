@@ -8,22 +8,22 @@ const {
   S3Client,
   GetObjectCommand,
   DeleteObjectCommand,
-  PutObjectAclCommand
+  CopyObjectCommand
 } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { NodeHttpHandler } = require('@smithy/node-http-handler');
 const { extname } = require('path');
 const { PassThrough } = require('stream');
 const utils = require('../utils');
+const disabledFileKey = require('./disabledFileKey.js');
 
-module.exports = function() {
+module.exports = function () {
   let contentTypes;
   let client;
   let cachingTime;
   let https;
   let bucket;
   let bucketObjectsACL;
-  let disabledBucketObjectsACL;
   let endpoint;
   let defaultTypes;
   let noProtoEndpoint;
@@ -48,8 +48,10 @@ module.exports = function() {
       }
 
       bucket = options.bucket;
-      bucketObjectsACL = options.bucketObjectsACL || 'public-read';
-      disabledBucketObjectsACL = options.disabledBucketObjectsACL || 'private';
+      bucketObjectsACL = options.bucketObjectsACL === false
+        ? false
+        : (options.bucketObjectsACL || 'public-read');
+
       noGzipContentTypes = options.noGzipContentTypes || require('./noGzipContentTypes');
       addNoGzipContentTypes = options.addNoGzipContentTypes || [];
       // bc for the `endpoint`, `secure` and `port` options
@@ -102,7 +104,7 @@ module.exports = function() {
       return callback(null);
     },
 
-    copyIn: function(localPath, path, options, callback) {
+    copyIn: function (localPath, path, options, callback) {
       let ext = extname(path);
       if (ext.length) {
         ext = ext.substr(1);
@@ -116,11 +118,14 @@ module.exports = function() {
 
       const params = {
         Bucket: bucket,
-        ACL: bucketObjectsACL,
         Key: utils.removeLeadingSlash(self.options, path),
         Body: inputStream,
         ContentType: contentType
       };
+
+      if (bucketObjectsACL) {
+        params.ACL = bucketObjectsACL;
+      }
 
       if (gzipAppropriate(contentType)) {
         params.ContentEncoding = 'gzip';
@@ -148,7 +153,7 @@ module.exports = function() {
       }
     },
 
-    streamOut: function(path, options) {
+    streamOut: function (path, options) {
       const result = new PassThrough();
       const params = {
         Bucket: bucket,
@@ -187,29 +192,26 @@ module.exports = function() {
       return result;
     },
 
-    copyOut: function(path, localPath, options, callback) {
+    copyOut: function (path, localPath, options, callback) {
       let finished = false;
       const outputStream = fs.createWriteStream(localPath);
       const inputStream = self.streamOut(path, options);
       inputStream.pipe(outputStream);
-      inputStream.on('error', function(err) {
-        // Watch out for any oddities in stream implementation
+      inputStream.on('error', function (err) {
         if (finished) {
           return;
         }
         finished = true;
         return callback(err);
       });
-      outputStream.on('error', function(err) {
-        // Watch out for any oddities in stream implementation
+      outputStream.on('error', function (err) {
         if (finished) {
           return;
         }
         finished = true;
         return callback(err);
       });
-      outputStream.on('finish', function() {
-        // Watch out for any oddities in stream implementation
+      outputStream.on('finish', function () {
         if (finished) {
           return;
         }
@@ -218,7 +220,7 @@ module.exports = function() {
       });
     },
 
-    remove: function(path, callback) {
+    remove: function (path, callback) {
       const command = new DeleteObjectCommand({
         Bucket: bucket,
         Key: utils.removeLeadingSlash(self.options, path)
@@ -229,28 +231,25 @@ module.exports = function() {
         .catch(err => callback(err));
     },
 
-    enable: function(path, callback) {
-      const command = new PutObjectAclCommand({
+    rename: function(from, to, callback) {
+      const copyCommand = new CopyObjectCommand({
         Bucket: bucket,
-        ACL: bucketObjectsACL,
-        Key: utils.removeLeadingSlash(self.options, path)
+        CopySource: bucket + '/' + utils.removeLeadingSlash(self.options, from),
+        Key: utils.removeLeadingSlash(self.options, to)
       });
-
-      client.send(command)
-        .then(result => callback(null, result))
+      client.send(copyCommand)
+        .then(() => {
+          self.remove(from, callback);
+        })
         .catch(err => callback(err));
     },
 
-    disable: function(path, callback) {
-      const command = new PutObjectAclCommand({
-        Bucket: bucket,
-        ACL: disabledBucketObjectsACL,
-        Key: utils.removeLeadingSlash(self.options, path)
-      });
+    enable: function (path, callback) {
+      return disabledFileKey.enable(self, path, callback);
+    },
 
-      client.send(command)
-        .then(result => callback(null, result))
-        .catch(err => callback(err));
+    disable: function (path, callback) {
+      return disabledFileKey.disable(self, path, callback);
     },
 
     getUrl: function (path) {
@@ -264,8 +263,7 @@ module.exports = function() {
       return utils.addPathToUrl(self.options, url, path);
     },
 
-    destroy: function(callback) {
-      // No file descriptors or timeouts held
+    destroy: function (callback) {
       return callback(null);
     }
   };

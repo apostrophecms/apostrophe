@@ -9,6 +9,7 @@ const defaultGzipBlacklist = require('../../defaultGzipBlacklist');
 const createLogger = require('../logger.js');
 const verbose = false;
 const _ = require('lodash');
+const disabledFileKey = require('./disabledFileKey.js');
 
 let logger = createLogger();
 
@@ -475,20 +476,19 @@ module.exports = function() {
       }, callback);
     },
 
-    disable: function(path, callback) {
+    rename: function(from, to, callback) {
       if (!self.blobSvcs.length) {
         return callback(new Error('At least one valid container must be included in the replicateCluster configuration.'));
       }
-      const dPath = utils.getDisabledPath(path, self.options.disabledFileKey);
       async.each(self.blobSvcs, function(blob, callback) {
-        copyBlob(blob, path, dPath, function(e) {
+        copyBlob(blob, from, to, function(e) {
           // if copy fails, abort
           if (e) {
             return callback(clusterError(blob, e));
           } else {
             // otherwise, remove original file (azure does not currently
             // support rename operations, so we dance)
-            self.remove(path, callback);
+            self.remove(from, callback);
           }
         });
       }, function(err) {
@@ -496,22 +496,12 @@ module.exports = function() {
       });
     },
 
+    disable: function(path, callback) {
+      return disabledFileKey.disable(self, path, callback);
+    },
+
     enable: function(path, callback) {
-      if (!self.blobSvcs.length) {
-        return callback(new Error('At least one valid container must be included in the replicateCluster configuration.'));
-      }
-      const dPath = utils.getDisabledPath(path, self.options.disabledFileKey);
-      async.each(self.blobSvcs, function(blob, callback) {
-        copyBlob(blob, dPath, path, function(e) {
-          if (e) {
-            return callback(clusterError(blob, e));
-          } else {
-            self.remove(dPath, callback);
-          }
-        });
-      }, function(err) {
-        callback(err);
-      });
+      return disabledFileKey.enable(self, path, callback);
     },
 
     getUrl: function (path) {
