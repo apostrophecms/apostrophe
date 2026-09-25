@@ -275,7 +275,7 @@ The module automatically provides an `/llms.txt` route to communicate your AI us
 
 2. **Disallow AI Training**: States content should NOT be used for AI training datasets but permits real-time search and retrieval with attribution
 
-3. **Custom Content**: Write your own `llms.txt` policies from scratch
+3. **Custom Content**: Write your own `llms.txt` from scratch. The text is served verbatim, so to pass Lighthouse and match [llmstxt.org](https://llmstxt.org/) it should include an H1, at least one Markdown link (`[title](url)`), and H2 sections that contain only link lists.
 
 4. **Disabled**: Returns 404 for `/llms.txt` requests
 
@@ -284,14 +284,12 @@ The module automatically provides an `/llms.txt` route to communicate your AI us
 - Use **llms.txt** (Disallow AI Training mode) to clearly communicate your policies
 - This dual approach provides both technical enforcement and clear policy communication
 
-**What's included in the generated file:**
-- Site name and description
-- AI training policy (based on your selection)
-- Organization information
-- Links to main pages with descriptions
-- Available content types
-- Technical details about structured data
-- Sitemap reference (if @apostrophecms/sitemap is installed)
+**What's included in the generated file:** (follows [llmstxt.org](https://llmstxt.org/))
+- One H1 with the public site name (`seoSiteName`, or the site hostname — never the internal global document title)
+- An optional one-line blockquote from `seoSiteDescription`
+- Free-form policy text (no headings), plus organization and content-type labels when available
+- `## Main Pages` — Markdown links to top-level pages (`- [title](url): optional description`)
+- `## Optional` — Markdown links to `/robots.txt` and `/sitemap.xml` (sitemap only if `@apostrophecms/sitemap` is installed)
 
 ### Sitemap Integration
 

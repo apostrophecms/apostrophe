@@ -449,19 +449,115 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
 
       const llmsTxt = await apos.http.get('http://localhost:3000/llms.txt');
 
-      assert(llmsTxt.length > 0, 'llms.txt should have content');
-      assert(llmsTxt.includes('#'), 'Should have markdown headers');
+      assertLlmsTxtSpec(llmsTxt);
       assert(llmsTxt.includes('Test Site for LLMs'), 'Should include site name');
       assert(
         llmsTxt.includes('A test site demonstrating llms.txt'),
         'Should include site description'
       );
-      assert(llmsTxt.includes('http://localhost:3000'), 'Should include base URL');
+      const afterH1 = nextNonEmptyLine(llmsTxt, '# ');
+      assert(afterH1.startsWith('> '), 'Description should be a blockquote after the H1');
       assert(
-        llmsTxt.includes('## AI Training Policy') ||
-        llmsTxt.includes('AI Training'),
-        'Should include AI policy section'
+        llmsTxt.includes('responsible AI crawling'),
+        'Should include allow-mode AI policy'
       );
+      assert(
+        !llmsTxt.includes('## AI Training Policy'),
+        'Policy must not use an H2 heading'
+      );
+    });
+
+    it('should not use the global doc title as the llms.txt H1', async function () {
+      const req = apos.task.getReq();
+
+      const global = await apos.global.findGlobal(req);
+      await apos.doc.db.updateOne(
+        { _id: global._id },
+        {
+          $set: {
+            llmsTxtSelection: 'allow'
+          },
+          $unset: {
+            seoSiteName: 1
+          }
+        }
+      );
+
+      const llmsTxt = await apos.http.get('http://localhost:3000/llms.txt');
+      const firstLine = llmsTxt.split('\n').find(line => line.trim());
+
+      assertLlmsTxtSpec(llmsTxt);
+      assert(firstLine.startsWith('# '), 'First line should be an H1');
+      assert.notStrictEqual(firstLine, '# global', 'H1 must not be the global doc title');
+    });
+
+    it('should output the same llms.txt structure in disallow mode', async function () {
+      const req = apos.task.getReq();
+
+      const global = await apos.global.findGlobal(req);
+      await apos.doc.db.updateOne(
+        { _id: global._id },
+        {
+          $set: {
+            seoSiteName: 'Test Site for LLMs',
+            seoSiteDescription: 'A test site demonstrating llms.txt',
+            llmsTxtSelection: 'disallow'
+          }
+        }
+      );
+
+      const llmsTxt = await apos.http.get('http://localhost:3000/llms.txt');
+
+      assertLlmsTxtSpec(llmsTxt);
+      assert(
+        llmsTxt.includes('should NOT be used for training'),
+        'Should include disallow-mode AI policy'
+      );
+      assert(
+        !llmsTxt.includes('## AI Training Policy'),
+        'Policy must not use an H2 heading'
+      );
+      assert(!llmsTxt.includes('## Important'), 'Should not include an Important H2');
+    });
+
+    it('should return custom llms.txt content verbatim', async function () {
+      const req = apos.task.getReq();
+      const customText = 'Custom llms.txt body\nwith two lines.';
+
+      const global = await apos.global.findGlobal(req);
+      await apos.doc.db.updateOne(
+        { _id: global._id },
+        {
+          $set: {
+            llmsTxtSelection: 'custom',
+            llmsCustomText: customText
+          }
+        }
+      );
+
+      const llmsTxt = await apos.http.get('http://localhost:3000/llms.txt');
+      assert.strictEqual(llmsTxt, customText);
+    });
+
+    it('should return 404 when llms.txt is disabled', async function () {
+      const req = apos.task.getReq();
+
+      const global = await apos.global.findGlobal(req);
+      await apos.doc.db.updateOne(
+        { _id: global._id },
+        {
+          $set: {
+            llmsTxtSelection: 'disabled'
+          }
+        }
+      );
+
+      try {
+        await apos.http.get('http://localhost:3000/llms.txt');
+        assert.fail('disabled llms.txt should 404');
+      } catch (error) {
+        assert.strictEqual(error.status, 404);
+      }
     });
   });
 
@@ -600,4 +696,36 @@ function getAppConfig() {
       }
     }
   };
-};
+}
+
+function nextNonEmptyLine(text, prefix) {
+  const lines = text.split('\n');
+  const index = lines.findIndex(line => line.startsWith(prefix));
+  return lines.slice(index + 1).find(line => line.trim()) || '';
+}
+
+function assertLlmsTxtSpec(llmsTxt) {
+  const lines = llmsTxt.split('\n');
+  const firstLine = lines.find(line => line.trim());
+
+  assert(firstLine && /^# \S/.test(firstLine), 'First non-empty line should be an H1');
+  assert.strictEqual(
+    lines.filter(line => line.startsWith('# ')).length,
+    1,
+    'File should contain exactly one H1'
+  );
+  assert(!lines.some(line => /^#{3,} /.test(line)), 'File should not contain H3+ headings');
+
+  assert(/\[.+\]\(.+\)/.test(llmsTxt), 'File should contain a Markdown link');
+  assert(llmsTxt.length >= 50, 'File should be at least 50 characters (Lighthouse)');
+
+  const firstH2 = lines.findIndex(line => line.startsWith('## '));
+  assert(firstH2 !== -1, 'File should contain at least one H2 section');
+  lines.slice(firstH2).filter(line => line.trim()).forEach(line => {
+    assert(
+      line.startsWith('## ') ||
+        /^- \[[^\]]+\]\(https?:\/\/[^)]+\)(: .+)?$/.test(line),
+      `H2 sections may contain only headings or Markdown links: ${line}`
+    );
+  });
+}
