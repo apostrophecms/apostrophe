@@ -43,7 +43,7 @@ const ORDER = Symbol('order');
  *   for `extend`, `isEqual` and `isEmpty`.
  * @property {(type: string) => object|undefined} getWidgetManager The
  *   widget module for a widget `type` (`apos.area.getWidgetManager`), read
- *   for `schema`, `label`, `options.renderVersions`,
+ *   for `schema`, `label`, `options.versionsRender`,
  *   `options.versionsRenderDeleted` and `getRichText`.
  *   `undefined` for a type without a module.
  * @property {(doc: object, namespace: string, ...pathKeyValue: any[]) => void} setMeta
@@ -231,7 +231,7 @@ function walk(schema, older, newer, ctx) {
  *   the widget holding it is marked as changed instead, or, in a top-level
  *   area, the field is highlighted.
  * - `_olderVersion: <the older widget>` on a changed widget whose type sets
- *   the `renderVersions` option, so its template can compare the two. For
+ *   the `versionsRender` option, so its template can compare the two. For
  *   a rich text type the copy's `content` also becomes its markup with the
  *   changed text marked (see `lib/rich-text-diff.js`), unless no text
  *   changed or the change cannot be shown that way.
@@ -322,13 +322,13 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
     }
     setAi(widget, '_changedWithAi', row.ai);
     const manager = ctx.getWidgetManager(widget.type);
-    if ((row.kind === 'richText') && manager?.options.renderVersions) {
+    if ((row.kind === 'richText') && manager?.options.versionsRender) {
       markRichText(widget, row, ctx);
     }
     if (widget._modified || widget._olderVersion) {
       continue;
     }
-    if (manager?.options.renderVersions) {
+    if (manager?.options.versionsRender) {
       widget._olderVersion = _.cloneDeep(resolve(older, widgetPath));
     } else {
       widget._modified = true;

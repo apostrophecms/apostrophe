@@ -155,7 +155,7 @@ function widgetModules() {
         options: {
           label: `Nested ${depth}`,
           // One widget type opts into receiving its older version
-          ...(depth === 5 && { renderVersions: true })
+          ...(depth === 5 && { versionsRender: true })
         },
         fields: {
           add: container(depth + 1)

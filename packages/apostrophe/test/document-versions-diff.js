@@ -35,14 +35,14 @@ describe('Document Versions diff engine', function () {
         'plain-text-widget': {
           extend: '@apostrophecms/rich-text-widget',
           options: {
-            renderVersions: false
+            versionsRender: false
           }
         },
         // Its template shows its title and the older version's
         'version-note-widget': {
           extend: '@apostrophecms/widget-type',
           options: {
-            renderVersions: true
+            versionsRender: true
           },
           fields: {
             add: {
@@ -56,7 +56,7 @@ describe('Document Versions diff engine', function () {
         'plain-note-widget': {
           extend: 'version-note-widget',
           options: {
-            renderVersions: false
+            versionsRender: false
           }
         },
         // Inherits `versionsRenderDeleted: false`
