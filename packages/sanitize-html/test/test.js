@@ -1025,6 +1025,17 @@ describe('sanitizeHtml', function() {
       '<img src="fallback.jpg" srcset="/upload/f_auto,q_auto:eco,c_fit,w_1460,h_2191/abc.jpg 1460w, /upload/f_auto,q_auto:eco,c_fit,w_1360,h_2041/abc.jpg" />'
     );
   });
+  it('should apply allowedSchemesByTag restrictions to srcset URLs', function() {
+    assert.equal(
+      sanitizeHtml('<img src="https://example.com/fallback.jpg" srcset="https://example.com/foo.jpg 100w" />', {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'img' ]),
+        allowedAttributes: { img: [ 'src', 'srcset' ] },
+        allowedSchemes: [ 'http', 'https' ],
+        allowedSchemesByTag: { img: [] }
+      }),
+      '<img />'
+    );
+  });
   it('should drop javascript: in form action', function() {
     assert.equal(
       sanitizeHtml('<form action="javascript:alert(1)"><button>x</button></form>', {
