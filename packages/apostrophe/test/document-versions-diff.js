@@ -1618,7 +1618,7 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
-    it('should say the position an item that moved had', function () {
+    it('should number where a moved item was in the newer order', function () {
       const orderRow = (older, newer) => {
         const result = {
           old: [ ...older ],
@@ -1638,22 +1638,25 @@ describe('Document Versions diff engine', function () {
         orderRow([ 'a', 'b', 'c', 'd', 'e' ], [ 'a', 'b', 'd', 'e', 'c' ]),
         orderRow([ 'a', 'b', 'c', 'd', 'e' ], [ 'e', 'a', 'c', 'b', 'd' ])
       ], apos.docVersions.getDiffContext(req));
-      assert.deepEqual(fromMiddle.diff.map(part => [ part.change, part.text ]), [
-        [ 'same', '#1 A' ],
-        [ 'same', '#2 B' ],
-        [ 'removed', '#5 C (was #3)' ],
-        [ 'same', '#3 D' ],
-        [ 'same', '#4 E' ],
-        [ 'added', '#5 C' ]
+      const parts = row => row.diff.map(part => [ part.change, part.ordinal, part.text ]);
+      // Where it was, a moved item takes the position of the item after
+      // it, or of the last item at the end
+      assert.deepEqual(parts(fromMiddle), [
+        [ 'same', 1, 'A' ],
+        [ 'same', 2, 'B' ],
+        [ 'removed', 3, 'C' ],
+        [ 'same', 3, 'D' ],
+        [ 'same', 4, 'E' ],
+        [ 'added', 5, 'C' ]
       ]);
-      assert.deepEqual(twoMoves.diff.map(part => [ part.change, part.text ]), [
-        [ 'added', '#1 E' ],
-        [ 'same', '#2 A' ],
-        [ 'removed', '#4 B (was #2)' ],
-        [ 'same', '#3 C' ],
-        [ 'added', '#4 B' ],
-        [ 'same', '#5 D' ],
-        [ 'removed', '#1 E (was #5)' ]
+      assert.deepEqual(parts(twoMoves), [
+        [ 'added', 1, 'E' ],
+        [ 'same', 2, 'A' ],
+        [ 'removed', 3, 'B' ],
+        [ 'same', 3, 'C' ],
+        [ 'added', 4, 'B' ],
+        [ 'same', 5, 'D' ],
+        [ 'removed', 5, 'E' ]
       ]);
     });
 
@@ -1672,21 +1675,20 @@ describe('Document Versions diff engine', function () {
       await apos.docVersions.addChangeText(req, rows);
       assert.equal(rows.length, 1);
       assert.equal(rows[0].newText, '#1 Nested 2, #2 Rich Text, #3 Opaque, #4 Card · Two, #5 Card · One');
-      // An item that moved is marked whole, where it was, with the position it
-      // had, and where it is
+      // An item that moved is marked whole, where it was and where it is
       const [ { diff } ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
       const side = change => diff
         .filter(part => [ 'same', change ].includes(part.change))
-        .map(part => part.text)
+        .map(part => `#${part.ordinal} ${part.text}`)
         .join(', ');
       assert.equal(side('added'), rows[0].newText);
-      assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
-        [ 'same', '#1 Nested 2' ],
-        [ 'same', '#2 Rich Text' ],
-        [ 'same', '#3 Opaque' ],
-        [ 'removed', '#5 Card · One (was #4)' ],
-        [ 'same', '#4 Card · Two' ],
-        [ 'added', '#5 Card · One' ]
+      assert.deepEqual(diff.map(part => [ part.change, part.ordinal, part.text ]), [
+        [ 'same', 1, 'Nested 2' ],
+        [ 'same', 2, 'Rich Text' ],
+        [ 'same', 3, 'Opaque' ],
+        [ 'removed', 4, 'Card · One' ],
+        [ 'same', 4, 'Card · Two' ],
+        [ 'added', 5, 'Card · One' ]
       ]);
     });
 
@@ -2949,22 +2951,22 @@ describe('Document Versions diff engine', function () {
       assert.equal(marked.find(item => item._id === byAi._id)._movedWithAi, 'changed');
 
       // The order row marks the same two, each where it was before the
-      // versions with the position it had then
+      // versions, numbered in the newer order
       await apos.docVersions.addChangeText(req, rows);
       const text = require('../modules/@apostrophecms/document-versions/lib/text.js');
       const [ row ] = text.addWordDiff(rows, apos.docVersions.getDiffContext(req));
       const { diff, newText } = row;
       const side = change => diff
         .filter(part => [ 'same', change ].includes(part.change))
-        .map(part => part.text)
+        .map(part => `#${part.ordinal} ${part.text}`)
         .join(', ');
       assert.equal(side('added'), newText);
-      assert.deepEqual(diff.map(part => [ part.change, part.text ]), [
-        [ 'added', '#1 Opaque' ],
-        [ 'removed', '#3 Nested 2 (was #1)' ],
-        [ 'same', '#2 Rich Text' ],
-        [ 'added', '#3 Nested 2' ],
-        [ 'removed', '#1 Opaque (was #3)' ]
+      assert.deepEqual(diff.map(part => [ part.change, part.ordinal, part.text ]), [
+        [ 'added', 1, 'Opaque' ],
+        [ 'removed', 2, 'Nested 2' ],
+        [ 'same', 2, 'Rich Text' ],
+        [ 'added', 3, 'Nested 2' ],
+        [ 'removed', 3, 'Opaque' ]
       ]);
     });
 
