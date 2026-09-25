@@ -123,7 +123,7 @@ module.exports = {
 
           // A widget of a document version, posted with the widget it was
           // in the version before, hands it to its template when its type
-          // sets `renderVersions`
+          // sets `versionsRender`
           const older = await getOlderVersion();
 
           widget._edit = true;
@@ -141,7 +141,7 @@ module.exports = {
           return render();
           async function getOlderVersion() {
             const data = req.body.widget?._olderVersion;
-            if (!data || (typeof data !== 'object') || !manager.options.renderVersions) {
+            if (!data || (typeof data !== 'object') || !manager.options.versionsRender) {
               return null;
             }
             try {

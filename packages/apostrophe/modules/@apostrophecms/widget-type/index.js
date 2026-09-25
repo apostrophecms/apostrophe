@@ -72,7 +72,7 @@
 // If true, the image widget is automatically previewed live following changes
 // in the editor modal. Should not be combined with `contextual`.
 //
-// ### `renderVersions`
+// ### `versionsRender`
 //
 // If true, a widget of this type shown in a document version that changed
 // it receives the widget as it was in the version before, as
