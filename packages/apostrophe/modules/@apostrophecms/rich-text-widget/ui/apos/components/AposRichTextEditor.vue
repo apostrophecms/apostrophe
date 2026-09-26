@@ -94,7 +94,26 @@
       class="apos-rich-text-editor__editor"
       :class="editorModifiers"
     >
+      <!--
+        A document version shows its markup as it is: the editor would drop
+        the marks of what changed. Its links do not navigate, as in the
+        editor
+      -->
+      <div
+        v-if="isVersionView"
+        :class="inline ? null : editorOptions.className"
+        data-apos-test="rich-text-version"
+        @click.prevent
+      >
+        <!-- eslint-disable vue/no-v-html -->
+        <div
+          class="apos-rich-text-editor__version"
+          v-html="modelValue"
+        />
+        <!-- eslint-enable vue/no-v-html -->
+      </div>
       <editor-content
+        v-else
         :editor="editor"
         :class="inline ? null : editorOptions.className"
       />
@@ -128,6 +147,7 @@
 // field type when a rich text field appears in any schema. Everything that
 // is specific to widgets, such as contextual styles and the widget's own
 // schema fields, belongs in `AposRichTextWidgetEditor` and not here.
+import { unref } from 'vue';
 import { mapState } from 'pinia';
 import {
   Editor,
@@ -167,6 +187,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { klona } from 'klona';
 import { createId } from 'apostrophe/lib/beneath.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 import removeSlash from 'Modules/@apostrophecms/rich-text-widget/lib/remove-slash.js';
 import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import createContextHistory, { setContent } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
@@ -179,6 +200,12 @@ export default {
     BubbleMenu,
     FloatingMenu,
     AposTiptapTableControls
+  },
+  inject: {
+    aposGraphKey: {
+      from: 'aposGraphKey',
+      default: null
+    }
   },
   props: {
     // The rich text markup being edited
@@ -280,6 +307,10 @@ export default {
   },
   computed: {
     ...mapState(useModalStore, [ 'getAdminDirectionClass' ]),
+    // Inside the versions modal: read only, with the marks of what changed
+    isVersionView() {
+      return useDocVersionMarkersStore().has(unref(this.aposGraphKey));
+    },
     bubbleMenuTippyOptions() {
       return {
         // Keeps the menu inside the query container that gives `100cqw` the
@@ -466,6 +497,9 @@ export default {
     }
   },
   mounted() {
+    if (this.isVersionView) {
+      return;
+    }
     this.contextHistory = (this.history === 'context') &&
       !!this.docId &&
       (this.docId === window.apos.adminBar?.contextId) &&
@@ -1124,8 +1158,33 @@ function traverseNextNode(node) {
 
   .apos-rich-text-editor:not(.apos-rich-text-editor--inline) {
   /* stylelint-disable-next-line selector-class-pattern */
-    .apos-rich-text-editor__editor :deep(.ProseMirror) {
+    .apos-rich-text-editor__editor :deep(.ProseMirror),
+    .apos-rich-text-editor__version {
       padding: 10px 0;
+    }
+  }
+
+  // The marks of a document version: removed text struck through in red,
+  // added text underlined in green. Long words wrap as in the editor
+  .apos-rich-text-editor__version {
+    overflow-wrap: break-word;
+
+    :deep([data-apos-version-change]) {
+      padding: 0 2px;
+      border-radius: var(--a-border-radius);
+      text-decoration-thickness: 1px;
+    }
+
+    :deep(ins[data-apos-version-change]) {
+      color: var(--a-success-dark);
+      background-color: var(--a-success-fade);
+      text-decoration-line: underline;
+    }
+
+    :deep(del[data-apos-version-change]) {
+      color: var(--a-danger-button-hover);
+      background-color: var(--a-danger-fade);
+      text-decoration-line: line-through;
     }
   }
 
@@ -1293,8 +1352,9 @@ function traverseNextNode(node) {
 
   // Inline, the space between blocks is the site's business, not ours
   /* stylelint-disable-next-line selector-class-pattern */
-  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) :deep(.ProseMirror) {
-    > * + * {
+  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) :deep(.ProseMirror),
+  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) .apos-rich-text-editor__version {
+    > :deep(* + *) {
       margin-top: 0.75em;
     }
   }

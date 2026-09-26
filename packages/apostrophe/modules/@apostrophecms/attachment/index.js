@@ -127,6 +127,10 @@ module.exports = {
 
     // Lazy cache for types whose schema contains attachment fields.
     self.typesWithAttachmentFields = new Map();
+
+    // Sources of documents holding attachments beyond `aposDocs`, by name.
+    // See `addDocSource`
+    self.docSources = {};
   },
 
   tasks(self) {
@@ -260,9 +264,25 @@ module.exports = {
         self.apos.schema.addFieldType({
           name: self.name,
           convert: self.convert,
+          isEqual: self.isEqual,
           index: self.index,
           register: self.register
         });
+      },
+      // Whether the attachment fields of two documents hold the same file
+      // with the same crop. The rest of the value is a copy of the attachment
+      // record taken at save time, references from documents included, and
+      // it changes without the field being edited
+      isEqual(req, field, one, two) {
+        const [ first, second ] = [ one, two ].map(object => {
+          const value = object[field.name];
+          return (value && typeof value === 'object') ? value : null;
+        });
+        if (!first || !second) {
+          return first === second;
+        }
+        return first._id === second._id &&
+          _.isEqual(first.crop ?? null, second.crop ?? null);
       },
       async convert(req, field, data, object) {
         let info = data[field.name];
@@ -1519,8 +1539,21 @@ module.exports = {
         }
         next();
       },
+      // Register a source of documents that hold attachments, beyond the
+      // `aposDocs` collection, so that `recomputeAllDocReferences` counts
+      // them. `source(work)` is an async function that awaits `work(doc)`
+      // for each document it holds, one document at a time, never
+      // collecting them, so a large source runs in constant memory. Each
+      // `doc` carries the attachments where `all` finds them, an `_id`
+      // that `updateDocReferences` was given for it, and `archived` when
+      // it counts as an archived holder. A source registered again under
+      // the same name replaces the earlier one
+      addDocSource(name, source) {
+        self.docSources[name] = source;
+      },
       // Recompute the `docIds` and `archivedDocIds` arrays
-      // from scratch. Should only be needed by the
+      // from scratch, over `aposDocs` and every registered document
+      // source. Should only be needed by the
       // one-time migration that fixes these for older
       // databases, but can be run at any time via the
       // `apostrophe-attachments:recompute-doc-references`
@@ -1528,6 +1561,9 @@ module.exports = {
       async recomputeAllDocReferences() {
         const attachmentUpdates = {};
         await self.apos.migration.eachDoc({}, 5, addAttachmentUpdates);
+        for (const source of Object.values(self.docSources)) {
+          await source(addAttachmentUpdates);
+        }
         await attachments();
         await self.alterAttachments();
 

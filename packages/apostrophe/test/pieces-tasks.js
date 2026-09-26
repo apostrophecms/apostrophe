@@ -71,14 +71,14 @@ describe('Pieces - tasks', function() {
       total: 10
     });
     const docs = await apos.doc.db.find({ type: 'article' }).toArray();
-    assert.equal(docs.length, 30);
+    assert.equal(docs.length, 20);
 
     const result = await apos.task.invoke('article:touch');
     assert.equal(result.touched, 10);
     assert.equal(result.errors, 0);
 
     const touched = await apos.doc.db.find({ type: 'article' }).toArray();
-    assert.equal(touched.length, 30);
+    assert.equal(touched.length, 20);
 
     for (const doc of touched) {
       const old = docs.find(d => d._id === doc._id);

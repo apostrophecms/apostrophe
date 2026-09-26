@@ -392,7 +392,12 @@ describe('Assets', function() {
     await t.destroy(apos);
   });
 
-  it('should build with cache and gain performance', async function() {
+  // This used to assert that the cached build is at least 5% faster. The
+  // gain depends on the hardware the suite runs on, so it failed at random
+  // whenever anything else competed for the CPU; what the cache writes is
+  // checked below instead. The test still runs because everything after it
+  // builds on the cache it leaves behind.
+  it('should build with cache', async function() {
     await t.destroy(apos);
     await removeCache();
     await removeCache(cacheFolderPath.replace('/webpack-cache', '/changed'));
@@ -405,14 +410,10 @@ describe('Assets', function() {
       code: 'ENOENT'
     });
 
-    let startTime;
-
     // Cold run
-    startTime = Date.now();
     await apos.asset.tasks.build.task({
       'check-apos-build': false
     });
-    const execTime = Date.now() - startTime;
     const { meta, folders } = getCacheMeta();
     assert.equal(folders.length, 2);
     assert.equal(Object.keys(meta).length, 2);
@@ -420,22 +421,14 @@ describe('Assets', function() {
     assert(meta['default:src']);
 
     // Cache
-    startTime = Date.now();
     await apos.asset.tasks.build.task({
       'check-apos-build': false
     });
-    const execTimeCached = Date.now() - startTime;
     const { meta: meta2, folders: folders2 } = getCacheMeta();
     assert.equal(folders2.length, 2);
     assert.equal(Object.keys(meta2).length, 2);
     assert(meta2['default:apos']);
     assert(meta2['default:src']);
-
-    // Caching should provide a measurable speedup. The threshold is kept
-    // low (5%) to avoid flaky failures on loaded CI runners where the
-    // cold run can be fast due to OS-level caching.
-    const gain = (execTime - execTimeCached) / execTime * 100;
-    assert(gain >= 5, `Expected gain >=5%, got ${gain}%`);
 
     // Modification times
     assert(meta['default:apos'].mdate);

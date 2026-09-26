@@ -126,6 +126,8 @@ module.exports = {
     placeholderText: 'apostrophe:richTextPlaceholder',
     placeholderTextWithInsertMenu: 'apostrophe:richTextPlaceholderWithInsertMenu',
     defaultData: { content: '' },
+    // Document versions show the text that changed inside `content`
+    versionsRender: true,
     className: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Hostnames from which `<img>` tags in `import.html` may be fetched.

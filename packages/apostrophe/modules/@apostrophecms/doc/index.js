@@ -277,7 +277,11 @@ module.exports = {
             aposLocale: draftLocale,
             lastPublishedAt
           };
-          await manager.insertDraftOf(req, doc, draft, options);
+          // The draft copy, and its republication when the type publishes
+          // automatically, are side effects of this insert, which records
+          // its own version
+          const draftReq = req.clone({ aposSkipVersion: true });
+          await manager.insertDraftOf(draftReq, doc, draft, options);
           // Published doc must know it is published, otherwise various bugs
           // ensue
           return self.apos.doc.db.updateOne({
@@ -310,18 +314,11 @@ module.exports = {
       },
       '@apostrophecms/doc-type:afterDelete': {
         // Deleting a draft implies deleting the document completely, since
-        // a draft must always exist. Deleting a published doc implies deleting
-        // the "previous" copy, since it only makes sense as a tool to revert
-        // the published doc's content. Note that deleting a draft recursively
-        // deletes both the published and previous docs.
+        // a draft must always exist, so the published copy goes with it.
         async deleteOtherModes(req, doc, options) {
           if (doc.aposLocale && doc.aposLocale.endsWith(':draft')) {
             await cleanup('published');
             await self.emit('afterAllModesDeleted', req, doc, options);
-            return;
-          }
-          if (doc.aposLocale && doc.aposLocale.endsWith(':published')) {
-            return cleanup('previous');
           }
           async function cleanup(mode) {
             const peer = await self.apos.doc.db.findOne({
@@ -359,6 +356,9 @@ module.exports = {
       // remove the old document, but will still update the new document. The
       // new _id for each pair will be used for retrieving the "existing"
       // document in this case.
+      //
+      // Emits `afterChangeDocIds` with `pairs` and `{ keep, skipReplace }`
+      // once every document is rewritten.
 
       async changeDocIds(pairs, { keep, skipReplace = false } = {}) {
         let renamed = 0;
@@ -392,10 +392,12 @@ module.exports = {
           }
           const isPage = self.apos.page.isPage(existing);
           if (isPage) {
-            replacement.path = existing.path.replace(
-              existing.aposDocId,
-              replacement.aposDocId
-            );
+            const moved = { path: existing.path };
+            self.replaceDocIdReferences(moved, {
+              oldId: oldAposDocId,
+              newId: replacement.aposDocId
+            });
+            replacement.path = moved.path;
           }
           try {
             if (!skipReplace) {
@@ -443,12 +445,17 @@ module.exports = {
           }
           if (isPage && !skipReplace) {
             for (const page of pages) {
-              if (page.path.includes(oldAposDocId)) {
+              // Updates the snapshot too, so a later pair reads the new path
+              const moved = self.replaceDocIdReferences(page, {
+                oldId: oldAposDocId,
+                newId: replacement.aposDocId
+              });
+              if (moved) {
                 await self.apos.doc.db.updateOne({
                   _id: page._id
                 }, {
                   $set: {
-                    path: page.path.replace(oldAposDocId, replacement.aposDocId)
+                    path: page.path
                   }
                 });
               }
@@ -459,30 +466,66 @@ module.exports = {
               aposDocId: { $in: existing.relatedReverseIds }
             }).toArray();
             for (const doc of relatedDocs) {
-              replaceId(doc, oldAposDocId, replacement.aposDocId);
+              self.replaceDocIdReferences(doc, {
+                oldId: oldAposDocId,
+                newId: replacement.aposDocId
+              });
               await self.apos.doc.db.replaceOne({
                 _id: doc._id
               }, doc);
             }
           }
         }
+        await self.emit('afterChangeDocIds', pairs, {
+          keep,
+          skipReplace
+        });
         await self.apos.attachment.recomputeAllDocReferences();
         return {
           renamed,
           kept
         };
-        function replaceId(obj, oldId, newId) {
-          if (obj == null) {
+      },
+      // Replace the document id `oldId` (an `aposDocId`) with `newId` wherever
+      // `doc` refers to it: as a segment of its page `path`, as a value at any
+      // depth, and as an object key at any depth, such as the `fields` storage
+      // of a relationship. A key already named `newId` is overwritten. Mutates
+      // `doc` and returns whether anything changed.
+      replaceDocIdReferences(doc, { oldId, newId }) {
+        // A locale rename keeps the id
+        if (oldId === newId) {
+          return false;
+        }
+        let changed = false;
+        if (typeof doc.path === 'string') {
+          const path = doc.path
+            .split('/')
+            .map(segment => (segment === oldId) ? newId : segment)
+            .join('/');
+          if (path !== doc.path) {
+            doc.path = path;
+            changed = true;
+          }
+        }
+        replace(doc);
+        return changed;
+
+        function replace(value) {
+          if (!value || (typeof value !== 'object')) {
             return;
           }
-          if ((typeof obj) !== 'object') {
-            return;
-          }
-          for (const key of Object.keys(obj)) {
-            if (obj[key] === oldId) {
-              obj[key] = newId;
+          for (let key of Object.keys(value)) {
+            if (key === oldId) {
+              value[newId] = value[oldId];
+              delete value[oldId];
+              key = newId;
+              changed = true;
+            }
+            if (value[key] === oldId) {
+              value[key] = newId;
+              changed = true;
             } else {
-              replaceId(obj[key], oldId, newId);
+              replace(value[key]);
             }
           }
         }
@@ -1329,6 +1372,33 @@ module.exports = {
       getManager(type) {
         return self.managers[self.normalizeType(type)];
       },
+      // Moves the virtual `_explicitSave`, `_restoreVersion` and `_ai`
+      // properties of a document about to be saved to `req.aposExplicitSave`,
+      // `req.aposRestoreVersion` and `req.aposAi`. Called on REST write bodies
+      // and on localized documents after `beforeLocalize`.
+      // `_explicitSave: true` marks a save the user asked for, not an autosave.
+      // `_restoreVersion` is the `_id` of the version being restored.
+      // `_ai: true` marks a save whose content was written by an AI tool.
+      setSaveFlags(req, input) {
+        if (!input || (typeof input !== 'object')) {
+          return;
+        }
+        const explicitSave = self.apos.launder.boolean(input._explicitSave);
+        const restoreVersion = self.apos.launder.id(input._restoreVersion);
+        const ai = self.apos.launder.boolean(input._ai);
+        delete input._explicitSave;
+        delete input._restoreVersion;
+        delete input._ai;
+        if (explicitSave) {
+          req.aposExplicitSave = true;
+        }
+        if (restoreVersion) {
+          req.aposRestoreVersion = restoreVersion;
+        }
+        if (ai) {
+          req.aposAi = true;
+        }
+      },
       // Lock the given doc to a given `tabId`, such
       // that other calls to `apos.doc.lock` for that doc id will
       // fail unless they have the same `tabId`. If
@@ -1927,7 +1997,7 @@ module.exports = {
           })
           : oldId;
 
-        const modes = [ 'previous', 'draft', 'published' ];
+        const modes = [ 'draft', 'published' ];
         const pairs = modes.map(mode =>
           [
             `${originalId}:${locale}:${mode}`,

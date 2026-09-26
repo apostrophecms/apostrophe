@@ -68,6 +68,7 @@ module.exports = {
     '@apostrophecms/submitted-draft': {},
     '@apostrophecms/recently-edited': {},
     '@apostrophecms/command-menu': {},
-    '@apostrophecms/translation': {}
+    '@apostrophecms/translation': {},
+    '@apostrophecms/document-versions': {}
   }
 };
