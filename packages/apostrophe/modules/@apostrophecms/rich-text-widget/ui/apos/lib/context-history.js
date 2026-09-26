@@ -19,6 +19,7 @@
 import { Extension, getHTMLFromFragment } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Step } from '@tiptap/pm/transform';
+import { history, undoDepth } from '@tiptap/pm/history';
 
 // Set on transactions that replay history, so that they are not recorded
 // as new history in turn
@@ -37,7 +38,14 @@ const newGroupDelay = 500;
 //
 // `newGroup` is false when the record continues the typing of the previous
 // one and may be merged into it.
-export default function createContextHistory({ onRecord }) {
+//
+// With `collab: true`, several people are editing the text at once, and
+// replaying recorded steps would take back their typing along with ours. The
+// editor then keeps its own history with `prosemirror-history`, which knows
+// how to rebase it over everyone else's changes, and records are just
+// `{ collab: true, newGroup }`: the context bar asks the editor to undo or
+// redo one of its own groups (see `collabHistoryPlugins`).
+export default function createContextHistory({ onRecord, collab = false }) {
   return Extension.create({
     name: 'aposContextHistory',
     // The toolbar's undo and redo buttons call these by name
@@ -85,9 +93,59 @@ export default function createContextHistory({ onRecord }) {
       };
     },
     addProseMirrorPlugins() {
-      return [ createHistoryPlugin({ onRecord }) ];
+      return collab
+        ? collabHistoryPlugins({ onRecord })
+        : [ createHistoryPlugin({ onRecord }) ];
     }
   });
+}
+
+// As deep as the context bar's own history
+const collabHistoryDepth = 500;
+
+// See `collab` above. Each transaction the user makes is reported once the
+// view has it; it starts a new record if `prosemirror-history` started a new
+// group for it, so that undoing a record undoes exactly one group
+export function collabHistoryPlugins({ onRecord }) {
+  const key = new PluginKey('aposCollabHistory');
+  return [
+    history({ depth: collabHistoryDepth }),
+    new Plugin({
+      key,
+      state: {
+        init() {
+          return { userChange: false };
+        },
+        apply(tr, value) {
+          const appended = tr.getMeta('appendedTransaction');
+          const userChange = tr.docChanged &&
+            !tr.getMeta('history$') &&
+            (tr.getMeta('addToHistory') !== false) &&
+            !tr.getMeta(HISTORY_META);
+          if (appended) {
+            return value;
+          }
+          return { userChange };
+        }
+      },
+      view(view) {
+        let depth = undoDepth(view.state);
+        return {
+          update(view) {
+            const current = undoDepth(view.state);
+            const { userChange } = key.getState(view.state);
+            if (userChange && current) {
+              onRecord({
+                collab: true,
+                newGroup: current > depth
+              });
+            }
+            depth = current;
+          }
+        };
+      }
+    })
+  ];
 }
 
 // The ProseMirror plugin doing the recording, separate from the extension

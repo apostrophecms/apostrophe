@@ -82,6 +82,8 @@ export default () => {
   // site has a site-wide prefix or locale prefix. It can become handy when the
   // given url is already prefixed, which is the case when using the document's
   // computed `_url` field for instance.
+  // `signal`: an `AbortSignal`, e.g. from an `AbortController`. Aborting it
+  // aborts the request, which then fails with the `abort` event as its error.
   //
   // If the status code is >= 400 an error is thrown. The error object will be
   // similar to a `fullResponse` object, with a `status` property.
@@ -116,6 +118,12 @@ export default () => {
 
     if (!url) {
       return callback(new Error('url is not defined'));
+    }
+    if (options.signal?.aborted) {
+      // Aborting before send() fires no event, so fail here instead
+      const error = new Error('aborted');
+      error.name = 'abort';
+      return callback(error);
     }
 
     if (apos.sitePrefix && options.prefix !== false) {
@@ -265,6 +273,9 @@ export default () => {
         }
       }
     });
+    if (options.signal) {
+      options.signal.addEventListener('abort', () => xmlhttp.abort(), { once: true });
+    }
     xmlhttp.send(data);
 
     function getHeaders() {

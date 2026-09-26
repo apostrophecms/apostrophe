@@ -1,0 +1,126 @@
+// What other people editing the same document are doing, see
+// `TheAposCollabPresence` and the collaboration decorations of the rich text
+// editor. Each person has a color, passed as `--apos-collab-color`.
+//
+// The timing is kept in step with `markerHold` and `markerFade` in
+// `collab/ui/apos/stores/collab.js`: a marker holds for 3s, then fades out
+// over 2s.
+
+// Something someone just did, on a widget or a field
+.apos-collab-marker {
+  animation: apos-collab-marker 5s ease-out forwards;
+}
+
+.apos-collab-positioned {
+  position: relative;
+}
+
+.apos-collab-marker::after,
+.apos-collab-focus::after {
+  content: attr(data-apos-collab-name);
+  position: absolute;
+  z-index: $z-index-widget-label;
+  top: 0;
+  right: 0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background-color: var(--apos-collab-color);
+  color: #fff;
+  font-family: var(--a-family-default, sans-serif);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-100%);
+}
+
+.apos-collab-marker::after {
+  animation: apos-collab-fade 5s ease-out forwards;
+}
+
+@keyframes apos-collab-marker {
+  0%,
+  60% {
+    outline: 2px solid var(--apos-collab-color);
+    outline-offset: 2px;
+  }
+
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+}
+
+@keyframes apos-collab-fade {
+  0%,
+  60% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+// Where someone is working right now
+.apos-collab-focus {
+  outline: 1px dashed var(--apos-collab-color);
+  outline-offset: 2px;
+}
+
+// Text someone just changed, in a rich text editor
+.apos-collab-change {
+  animation: apos-collab-change 5s ease-out forwards;
+}
+
+@keyframes apos-collab-change {
+  0%,
+  60% {
+    background-color: color-mix(in srgb, var(--apos-collab-color) 25%, transparent);
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+
+.apos-collab-change__tag,
+.apos-collab-cursor__label {
+  position: absolute;
+  z-index: $z-index-widget-label;
+  padding: 0 4px;
+  border-radius: 3px;
+  background-color: var(--apos-collab-color);
+  color: #fff;
+  font-family: var(--a-family-default, sans-serif);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  transform: translateY(-100%);
+}
+
+.apos-collab-change__tag {
+  animation: apos-collab-fade 5s ease-out forwards;
+}
+
+// Someone else's cursor
+.apos-collab-cursor {
+  position: relative;
+  margin-right: -1px;
+  margin-left: -1px;
+  border-left: 2px solid var(--apos-collab-color);
+  pointer-events: none;
+}
+
+.apos-collab-cursor__label {
+  top: 0;
+  left: -2px;
+}
+
+.apos-collab-selection {
+  background-color: color-mix(in srgb, var(--apos-collab-color) 20%, transparent);
+}

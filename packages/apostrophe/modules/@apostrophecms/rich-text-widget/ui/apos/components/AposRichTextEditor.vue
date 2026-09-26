@@ -168,9 +168,18 @@ import { klona } from 'klona';
 import { createId } from 'apostrophe/lib/beneath.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import removeSlash from 'Modules/@apostrophecms/rich-text-widget/lib/remove-slash.js';
-import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
-import createContextHistory, { setContent } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
+import { Extension, createDocument } from '@tiptap/core';
+import { undo as undoCommand, redo as redoCommand } from '@tiptap/pm/history';
+import { withoutHistory, withoutSaving } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
+import createContextHistory, { setContent, HISTORY_META } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
 import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
+import {
+  useCollabStore, colorFor, markerHold, markerFade
+} from 'Modules/@apostrophecms/collab/stores/collab.js';
+import TextSync, { COLLAB_REMOTE } from 'Modules/@apostrophecms/collab/lib/text-sync.js';
+import {
+  collabDecorations, addChange, removeChange, setCursors, changedRanges
+} from 'Modules/@apostrophecms/collab/lib/decorations.js';
 
 export default {
   name: 'AposRichTextEditor',
@@ -357,11 +366,10 @@ export default {
       return this.getOptionsForEditor();
     },
     initialContent() {
-      const content = this.transformNamedAnchors(this.modelValue || '');
-      if (content.length) {
-        return content;
-      }
-
+      return this.prepareContent(this.modelValue);
+    },
+    // The markup for an empty editor, see `prepareContent`
+    emptyContent() {
       // If we don't supply a valid instance of the first style, then
       // the text align control will not work until the user manually
       // applies a style or refreshes the page
@@ -440,7 +448,9 @@ export default {
     // and the editor has to show it. Not done for a local history, whose
     // parent never changes the value behind our back
     modelValue(value) {
-      if (!this.contextHistory || !this.editor) {
+      // When several people edit the text at once, it only ever changes
+      // through the collaboration session, which has already put it here
+      if (!this.contextHistory || !this.editor || this.textSync) {
         return;
       }
       if ((value === this.lastEmitted) || (value === this.editor.getHTML())) {
@@ -458,6 +468,10 @@ export default {
         apos.bus.$emit('close-context-menus');
         this.$emit('focus');
       }
+      if (!newVal) {
+        // Save what we typed without waiting
+        this.textSync?.checkpoint();
+      }
     },
     isShowingInsert(newVal) {
       if (newVal) {
@@ -470,6 +484,18 @@ export default {
       !!this.docId &&
       (this.docId === window.apos.adminBar?.contextId) &&
       !this.$el.closest('[data-apos-modal]');
+    // Several people may be editing this text at once
+    const session = useCollabStore().session;
+    this.collabSession = (
+      this.contextHistory &&
+      this.historyTarget &&
+      session &&
+      (session.docId === this.docId)
+    )
+      ? session
+      : null;
+    // Steps typed before collaboration could start, see `collabHost`
+    this.preCollabSteps = [];
     this.historyKey = createId();
     this.instantiateEditor();
     if (this.contextHistory) {
@@ -477,13 +503,39 @@ export default {
         target: this.historyTarget,
         editor: this.editor,
         el: this.$el,
-        flush: () => this.emitUpdate()
+        flush: () => this.emitUpdate(),
+        ...(this.collabSession && {
+          collabHistory: direction => this.collabHistory(direction)
+        })
       });
+    }
+    if (this.collabSession) {
+      this.textSync = new TextSync({
+        key: this.historyTarget,
+        session: this.collabSession,
+        host: this.collabHost()
+      });
+      this.unwatchCursors = this.$watch(
+        () => this.remoteCursors(),
+        cursors => setCursors(this.editor.view, cursors),
+        { deep: true }
+      );
     }
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
   beforeUnmount() {
     editorRegistry.unregister(this.historyKey);
+    this.unwatchCursors?.();
+    if (this.textSync) {
+      if (this.pending) {
+        this.emitUpdate();
+      }
+      this.textSync.destroy();
+      this.textSync = null;
+    }
+    for (const timer of this.changeTimers || []) {
+      clearTimeout(timer);
+    }
     this.editor?.destroy();
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
@@ -501,8 +553,15 @@ export default {
         Gapcursor,
         HardBreak,
         this.contextHistory
-          ? createContextHistory({ onRecord: this.onHistoryRecord })
+          ? createContextHistory({
+            onRecord: this.onHistoryRecord,
+            collab: !!this.collabSession
+          })
           : History,
+        this.collabSession && Extension.create({
+          name: 'aposCollabDecorations',
+          addProseMirrorPlugins: () => [ collabDecorations() ]
+        }),
         HorizontalRule,
         Italic,
         OrderedList,
@@ -538,6 +597,7 @@ export default {
         autofocus: this.autofocus,
         editable: !this.readOnly,
         onUpdate: this.editorUpdate,
+        onTransaction: this.onTransaction,
         extensions,
         editorProps: {
           attributes: {
@@ -572,6 +632,7 @@ export default {
         },
         onSelectionUpdate: ({ editor }) => {
           this.hasSelection = !editor.view.state.selection.empty;
+          this.sendAwareness();
           this.$nextTick(() => {
             if (this.hasSelection) {
               this.$emit('interaction');
@@ -680,10 +741,14 @@ export default {
         refreshOptions.refresh = false;
       }
     },
-    async editorUpdate() {
+    async editorUpdate({ transaction } = {}) {
+      const remote = !!transaction?.getMeta(COLLAB_REMOTE);
+      if (this.textSync && !remote) {
+        this.textSync.localChanged();
+      }
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
-      if (this.docId === window.apos.adminBar.contextId) {
+      if (!remote && (this.docId === window.apos.adminBar.contextId)) {
         apos.bus.$emit('context-editing');
       }
       // Debounce updates. We have our own plumbing for
@@ -706,13 +771,133 @@ export default {
       }
       const html = this.editor.getHTML();
       this.lastEmitted = html;
-      if (this.contextHistory) {
+      if (this.textSync) {
+        // The collaboration session saves the text. Everything else holding
+        // a copy of it just needs to hear about it
+        withoutSaving(() => withoutHistory(() => this.$emit('update:modelValue', html)));
+      } else if (this.contextHistory) {
         // What was typed is already on the undo stack, step by step (see
         // `onHistoryRecord`). This only saves it
         withoutHistory(() => this.$emit('update:modelValue', html));
       } else {
         this.$emit('update:modelValue', html);
       }
+    },
+    // What `TextSync` needs of us, see `text-sync.js`
+    collabHost() {
+      return {
+        getState: () => this.editor.state,
+        dispatch: tr => this.editor.view.dispatch(tr),
+        registerPlugin: plugin => this.editor.registerPlugin(plugin),
+        unregisterPlugin: name => this.editor.unregisterPlugin(name),
+        setContent: ({ doc, value }) => {
+          const { schema } = this.editor;
+          const next = doc
+            ? schema.nodeFromJSON(doc)
+            : createDocument(
+              this.prepareContent(value),
+              schema,
+              this.editor.options.parseOptions
+            );
+          const tr = this.editor.state.tr
+            .replaceWith(0, this.editor.state.doc.content.size, next.content)
+            .setMeta('addToHistory', false)
+            .setMeta(HISTORY_META, true)
+            .setMeta('preventUpdate', true);
+          this.editor.view.dispatch(tr);
+        },
+        afterInit: () => {
+          const steps = this.preCollabSteps;
+          this.preCollabSteps = [];
+          if (steps.length) {
+            const tr = this.editor.state.tr;
+            for (const step of steps) {
+              tr.maybeStep(step);
+            }
+            if (tr.docChanged) {
+              this.editor.view.dispatch(tr);
+            }
+          }
+          this.emitUpdate();
+        },
+        getValue: () => this.editor.getHTML(),
+        onRemote: (tr, batch) => this.showRemoteChange(tr, batch),
+        onReset: () => this.emitUpdate()
+      };
+    },
+    // Remember what is typed before collaboration can start, to apply it
+    // again once it has (see `afterInit` above)
+    onTransaction({ transaction }) {
+      if (
+        this.textSync &&
+        !this.textSync.ready &&
+        transaction.docChanged &&
+        (transaction.getMeta('addToHistory') !== false)
+      ) {
+        this.preCollabSteps.push(...transaction.steps);
+      }
+    },
+    // Tint what someone else just changed, with their name, for a while
+    showRemoteChange(tr, batch) {
+      const view = this.editor?.view;
+      if (!view) {
+        return;
+      }
+      const id = addChange(view, {
+        // `rebased` is how many of our own steps were taken off first
+        ranges: changedRanges(tr, {
+          from: tr.getMeta('rebased') || 0,
+          count: batch.count
+        }),
+        color: colorFor(batch.userId),
+        title: batch.title
+      });
+      this.changeTimers = this.changeTimers || [];
+      const timer = setTimeout(() => {
+        this.changeTimers = this.changeTimers.filter(t => t !== timer);
+        removeChange(view, id);
+      }, markerHold + markerFade);
+      this.changeTimers.push(timer);
+    },
+    // Where everyone else's cursor is in this text
+    remoteCursors() {
+      const store = useCollabStore();
+      return Object.values(store.collaborators)
+        .filter(({ awareness }) => awareness?.key === this.historyTarget)
+        .map(({
+          tabId, awareness, color, title
+        }) => ({
+          tabId,
+          anchor: awareness.anchor,
+          head: awareness.head,
+          color,
+          title
+        }));
+    },
+    // Tell everyone else where our cursor is
+    sendAwareness() {
+      if (!this.collabSession || !this.textSync?.ready || !this.editor) {
+        return;
+      }
+      const { anchor, head } = this.editor.state.selection;
+      this.collabSession.setAwareness({
+        key: this.historyTarget,
+        anchor,
+        head,
+        version: this.textSync.version,
+        widgetId: this.historyTarget.match(/^@([^.]+)\./)?.[1]
+      });
+    },
+    // Undo or redo our own typing, and nobody else's, for the context bar
+    collabHistory(direction) {
+      const command = (direction === 'undo') ? undoCommand : redoCommand;
+      command(this.editor.state, this.editor.view.dispatch);
+      this.editor.view.focus();
+    },
+    // The markup to give the editor for `value`
+    prepareContent(value) {
+      const content = this.transformNamedAnchors(value || '');
+      return content.length ? content : this.emptyContent;
     },
     // Hand the context bar what a transaction did, for its undo stack
     onHistoryRecord(record) {

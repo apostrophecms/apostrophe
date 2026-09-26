@@ -1371,6 +1371,14 @@ module.exports = {
         if (!tabId) {
           throw self.apos.error('invalid', 'no tabId was passed');
         }
+        if (self.apos.collab.isCollaborative(doc)) {
+          // Several people may edit it at once, so the lock just says who
+          // is here
+          if (!self.apos.permission.can(req, 'edit', doc)) {
+            throw self.apos.error('forbidden');
+          }
+          return self.apos.collab.join(req, doc, tabId);
+        }
         let criteria = { _id };
         if (!options.force) {
           criteria.$or = [
@@ -1464,6 +1472,9 @@ module.exports = {
         }
         if (!tabId) {
           throw self.apos.error('invalid', 'no tabId');
+        }
+        if (self.apos.collab.isCollaborative(doc)) {
+          return self.apos.collab.leave(req, doc, tabId);
         }
         await self.db.updateOne({
           _id: id,

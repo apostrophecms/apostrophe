@@ -27,6 +27,7 @@ module.exports = {
     '@apostrophecms/login': {},
     '@apostrophecms/doc': {},
     '@apostrophecms/job': {},
+    '@apostrophecms/collab': {},
     '@apostrophecms/ai': {},
     '@apostrophecms/ai-adapter-anthropic': {},
     '@apostrophecms/ai-adapter-openai': {},

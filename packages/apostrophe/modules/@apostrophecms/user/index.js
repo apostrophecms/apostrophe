@@ -50,6 +50,8 @@ module.exports = {
     slugPrefix: 'user-',
     localized: false,
     versions: false,
+    // Accounts are security sensitive: one person edits one at a time
+    collaborative: false,
     editRole: 'admin',
     publishRole: 'admin',
     viewRole: 'admin',

@@ -257,3 +257,218 @@ describe('Notifications', function() {
     );
   });
 });
+
+// Two processes share one database, as in any real deployment: messages
+// triggered in one must reach polls waiting in the other
+describe('Notification channels', function() {
+  this.timeout(t.timeout);
+
+  let apos;
+  // A second process of the same site
+  let other;
+  let notification;
+  let req;
+  const allowed = new Set([ 'open', 'other' ]);
+
+  before(async function() {
+    const options = {
+      root: module,
+      shortName: `test-channels-${Date.now()}`,
+      modules: {
+        '@apostrophecms/notification': {
+          options: {
+            queryInterval: 300,
+            channelQueryInterval: 100,
+            longPollingTimeout: 1500
+          }
+        }
+      }
+    };
+    apos = await t.create(options);
+    other = await t.create(options);
+    for (const instance of [ apos, other ]) {
+      instance.notification.addChannelType('test', {
+        canSubscribe: async (req, id) => allowed.has(id)
+      });
+    }
+    notification = apos.notification;
+    req = apos.task.getReq({ user: { _id: 'user1' } });
+  });
+
+  after(async function() {
+    // The database is shared, and dropped along with the first
+    await other.destroy();
+    await t.destroy(apos);
+  });
+
+  beforeEach(async function() {
+    await notification.db.deleteMany({});
+    await notification.channelDb.deleteMany({});
+  });
+
+  // Triggered in `instance`, which defaults to the process that polls
+  function send(channel, data, options = {}, instance = apos) {
+    return instance.notify(req, {
+      bus: true,
+      channel,
+      event: {
+        name: 'test-event',
+        data
+      },
+      ...options
+    });
+  }
+
+  function poll(query, user = req.user) {
+    const pollReq = apos.task.getReq({ user });
+    pollReq.query = {
+      ...query,
+      ...(query.channels && { channels: JSON.stringify(query.channels) })
+    };
+    return notification.restApiRoutes.getAll.route(pollReq);
+  }
+
+  it('requires a registered channel type and the bus flag', async function() {
+    await assert.rejects(send('nope:open', 1), { name: 'invalid' });
+    await assert.rejects(send('test', 1), { name: 'invalid' });
+    await assert.rejects(send('test:', 1), { name: 'invalid' });
+    await assert.rejects(
+      apos.notify(req, 'hello', { channel: 'test:open' }),
+      { name: 'invalid' }
+    );
+  });
+
+  it('numbers messages on each channel from 1 with no gaps or duplicates', async function() {
+    // Both processes at once
+    const results = await Promise.all([
+      ...Array.from({ length: 20 }, (v, i) => send('test:open', i, {}, (i % 2) ? other : apos)),
+      ...Array.from({ length: 5 }, (v, i) => send('test:other', i, {}, other))
+    ]);
+
+    const seqs = channel => results
+      .filter(result => result.channel === channel)
+      .map(({ seq }) => seq)
+      .sort((a, b) => a - b);
+
+    assert.deepEqual(seqs('test:open'), Array.from({ length: 20 }, (v, i) => i + 1));
+    assert.deepEqual(seqs('test:other'), [ 1, 2, 3, 4, 5 ]);
+  });
+
+  it('delivers messages after the given seq, in order, without touching personal notifications', async function() {
+    await send('test:open', 'a');
+    await send('test:open', 'b');
+    await send('test:open', 'c');
+
+    const result = await poll({ channels: { 'test:open': 1 } });
+
+    assert.deepEqual(
+      result.channelMessages.map(({ seq, event }) => [ seq, event.data ]),
+      [ [ 2, 'b' ], [ 3, 'c' ] ]
+    );
+    assert.deepEqual(result.notifications, []);
+    assert.equal(await notification.db.countDocuments({}), 0);
+  });
+
+  it('starts a new subscriber at the current seq and responds at once', async function() {
+    await send('test:open', 'a');
+    await send('test:open', 'b');
+
+    const start = Date.now();
+    const result = await poll({ channels: { 'test:open': null } });
+
+    assert.deepEqual(result.channelCursors, { 'test:open': 2 });
+    assert.deepEqual(result.channelMessages, []);
+    assert.ok(Date.now() - start < 1000);
+  });
+
+  it('refuses channels the user may not subscribe to', async function() {
+    await send('test:open', 'a');
+    allowed.delete('other');
+    try {
+      await send('test:other', 'secret');
+      const result = await poll({
+        channels: {
+          'test:open': 0,
+          'test:other': 0,
+          'nope:open': 0
+        }
+      });
+
+      assert.deepEqual(result.refusedChannels.sort(), [ 'nope:open', 'test:other' ]);
+      assert.deepEqual(result.channelMessages.map(({ channel }) => channel), [ 'test:open' ]);
+    } finally {
+      allowed.add('other');
+    }
+  });
+
+  it('rejects malformed or excessive channel subscriptions', async function() {
+    await assert.rejects(poll({ channels: 'not json' }), { name: 'invalid' });
+    await assert.rejects(poll({ channels: '[]' }), { name: 'invalid' });
+
+    const many = {};
+    for (let i = 0; i <= notification.options.maxChannels; i++) {
+      many[`test:open${i}`] = 0;
+    }
+    await assert.rejects(poll({ channels: many }), { name: 'invalid' });
+  });
+
+  it('spares the sending tab the event but still advances its cursor', async function() {
+    await send('test:open', 'mine', { originTabId: 'tab1' });
+    await send('test:open', 'theirs', { originTabId: 'tab2' });
+
+    const result = await poll({
+      tabId: 'tab1',
+      channels: { 'test:open': 0 }
+    });
+
+    assert.deepEqual(
+      result.channelMessages.map(({ seq, event }) => [ seq, event?.data ]),
+      [ [ 1, undefined ], [ 2, 'theirs' ] ]
+    );
+  });
+
+  it('never delivers an expired channel message', async function() {
+    const { seq } = await send('test:open', 'old');
+    await notification.channelDb.updateOne(
+      {
+        channel: 'test:open',
+        seq
+      },
+      { $set: { expireAt: new Date(Date.now() - 1000) } }
+    );
+    await send('test:open', 'new');
+
+    const result = await poll({ channels: { 'test:open': 0 } });
+
+    assert.deepEqual(result.channelMessages.map(({ seq }) => seq), [ 2 ]);
+  });
+
+  it('delivers a message triggered in another process within the query interval', async function() {
+    const start = Date.now();
+    const pending = poll({ channels: { 'test:open': 0 } });
+    await new Promise(resolve => setTimeout(resolve, 200));
+    await send('test:open', 'hello', {}, other);
+    const result = await pending;
+
+    assert.deepEqual(result.channelMessages.map(({ event }) => event.data), [ 'hello' ]);
+    // Well within the long polling timeout
+    assert.ok(Date.now() - start < 1000);
+  });
+
+  it('does not deliver messages on channels the poll did not ask for', async function() {
+    const pending = poll({ channels: { 'test:open': 0 } });
+    await send('test:other', 'elsewhere', {}, other);
+    const result = await pending;
+
+    assert.deepEqual(result.channelMessages, []);
+  });
+
+  it('delivers a personal notification triggered in another process', async function() {
+    const pending = poll({});
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await other.notify(req, 'hello');
+    const result = await pending;
+
+    assert.equal(result.notifications.length, 1);
+  });
+});

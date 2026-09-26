@@ -7,6 +7,20 @@ export const useNotificationStore = defineStore('notification', () => {
   const clientNotifs = ref([]);
   const dismissed = ref([]);
   const processes = ref({});
+  // Channel subscriptions: the last `seq` received on each channel, or null
+  // until the server tells us where the channel stands, and how many
+  // subscribers asked for each
+  const channelCursors = {};
+  const channelRefs = {};
+  // Channels to the resolve functions of `subscribeChannel` calls waiting
+  // for messages to start flowing
+  const channelWaiters = {};
+  // Only the latest call to `poll` may carry on: `restartPoll` retires the
+  // others by bumping the generation
+  let pollGeneration = 0;
+  let pollTimer = null;
+  let pollController = null;
+  let polling = false;
 
   const notifications = computed(() => {
     return [ ...clientNotifs.value, ...backendNotifs.value ]
@@ -78,24 +92,37 @@ export const useNotificationStore = defineStore('notification', () => {
   }
 
   async function poll() {
+    polling = true;
+    const generation = ++pollGeneration;
+    clearTimeout(pollTimer);
     try {
       if (document.visibilityState === 'hidden') {
         // Wait for tab to become visible
-        setTimeout(poll, 5000);
+        schedulePoll(5000);
       } else {
         const allNotifications = [ ...backendNotifs.value, ...dismissed.value ];
         const latestTimestamp = allNotifications
           .map(({ updatedAt }) => updatedAt)
           .sort()
           .at(-1);
+        const subscribed = Object.keys(channelCursors).length > 0;
 
+        pollController = new AbortController();
         const res = await apos.http.get(apos.notification.action, {
-          ...(latestTimestamp && {
-            qs: {
+          qs: {
+            ...(latestTimestamp && {
               modifiedOnOrSince: latestTimestamp
-            }
-          })
+            }),
+            ...(subscribed && {
+              channels: JSON.stringify(channelCursors),
+              tabId: apos.adminBar?.tabId
+            })
+          },
+          signal: pollController.signal
         });
+        if (generation !== pollGeneration) {
+          return;
+        }
 
         const incoming = res.notifications || [];
         // Bus notifications are pure event carriers: emit their events
@@ -111,18 +138,27 @@ export const useNotificationStore = defineStore('notification', () => {
             return !res.dismissed.some((element) => notif._id === element._id);
           });
         }
+        receiveChannelMessages(res);
+        if (generation !== pollGeneration) {
+          // Restarted while we were emitting events: a newer poll carries on
+          return;
+        }
         // If using long polling we should reconnect promptly, the server
         // is responsible for keeping that request open for a reasonable
         // amount of time if there are no new messages, not us
         const timeout = apos.notification.longPolling
           ? 50
           : apos.notification.pollingInterval;
-        setTimeout(poll, timeout);
+        schedulePoll(timeout);
       }
     } catch (err) {
+      if (generation !== pollGeneration) {
+        // Aborted by restartPoll, which has already started the next poll
+        return;
+      }
       // eslint-disable-next-line no-console
       console.error(err);
-      setTimeout(poll, 5000);
+      schedulePoll(5000);
     }
 
     // Emit each bus notification's event, oldest first — clearEvent
@@ -136,6 +172,112 @@ export const useNotificationStore = defineStore('notification', () => {
         }
         await dismiss(notif._id);
       }
+    }
+  }
+
+  function schedulePoll(ms) {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(poll, ms);
+  }
+
+  // Abandon the pending poll, if any, and poll again now. Does nothing
+  // until polling has been started
+  function restartPoll() {
+    if (!polling) {
+      return;
+    }
+    const controller = pollController;
+    // Retire the pending poll before aborting it, so its failure is ignored
+    pollGeneration++;
+    controller?.abort();
+    poll();
+  }
+
+  // Channel messages arrive in `seq` order per channel. Each message's
+  // event is emitted on `apos.bus` with its data, plus a second argument
+  // `{ channel, seq, senderId }`. A message this tab sent carries no event.
+  //
+  // If messages were missed (this tab fell further behind than the server
+  // keeps messages), `notification-channel-gap` is emitted with
+  // `{ channel, after, next }` so the subscriber can resynchronize. If the
+  // user may not subscribe, `notification-channel-refused` is emitted with
+  // `{ channel }` and the subscription is dropped.
+  function receiveChannelMessages(res) {
+    for (const channel of res.refusedChannels || []) {
+      delete channelCursors[channel];
+      delete channelRefs[channel];
+      (channelWaiters[channel] || []).forEach(resolve => resolve());
+      delete channelWaiters[channel];
+      apos.bus.$emit('notification-channel-refused', { channel });
+    }
+    for (const [ channel, seq ] of Object.entries(res.channelCursors || {})) {
+      if (channelCursors[channel] === null) {
+        channelCursors[channel] = seq;
+      }
+    }
+    for (const [ channel, waiters ] of Object.entries(channelWaiters)) {
+      if (channelCursors[channel] !== null) {
+        delete channelWaiters[channel];
+        waiters.forEach(resolve => resolve());
+      }
+    }
+    for (const {
+      channel, seq, event, senderId
+    } of res.channelMessages || []) {
+      const cursor = channelCursors[channel];
+      if ((cursor == null) || (seq <= cursor)) {
+        // Unsubscribed meanwhile, or already seen
+        continue;
+      }
+      if (seq > cursor + 1) {
+        apos.bus.$emit('notification-channel-gap', {
+          channel,
+          after: cursor,
+          next: seq
+        });
+      }
+      channelCursors[channel] = seq;
+      if (event?.name) {
+        apos.bus.$emit(event.name, event.data, {
+          channel,
+          seq,
+          senderId
+        });
+      }
+    }
+  }
+
+  // Start receiving the messages triggered on `channel` from now on (see
+  // `apos.notify` on the server). Calls are counted: the subscription lasts
+  // until `unsubscribeChannel` has been called as many times.
+  //
+  // Resolves once the server has taken the subscription, so that nothing
+  // triggered after that is missed. Also resolves, at once, if nothing is
+  // polling, e.g. because no one is logged in
+  function subscribeChannel(channel) {
+    channelRefs[channel] = (channelRefs[channel] || 0) + 1;
+    if (channelRefs[channel] === 1) {
+      channelCursors[channel] = null;
+      restartPoll();
+    }
+    if (!polling || (channelCursors[channel] !== null)) {
+      return Promise.resolve();
+    }
+    return new Promise(resolve => {
+      channelWaiters[channel] = [ ...(channelWaiters[channel] || []), resolve ];
+    });
+  }
+
+  // The pending poll may still bring messages for the channel; they are
+  // ignored, which spares us a request
+  function unsubscribeChannel(channel) {
+    if (!channelRefs[channel]) {
+      return;
+    }
+    channelRefs[channel]--;
+    if (!channelRefs[channel]) {
+      delete channelRefs[channel];
+      delete channelCursors[channel];
     }
   }
 
@@ -217,6 +359,8 @@ export const useNotificationStore = defineStore('notification', () => {
     updateProcess,
     notify,
     poll,
+    subscribeChannel,
+    unsubscribeChannel,
     pollJob,
     dismiss,
     clearEvent

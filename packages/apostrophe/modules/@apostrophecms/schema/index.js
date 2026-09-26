@@ -29,7 +29,8 @@ const patchControlProperties = new Set([
   '_patches',
   '_position',
   '_publish',
-  '_targetId'
+  '_targetId',
+  '_collab'
 ]);
 
 module.exports = {
@@ -2410,6 +2411,12 @@ still output the value of this field with a regular template expression.`);
             clonedBases[base] = true;
           }
         }
+      },
+
+      // True if `key` is a property of a PATCH request that controls how it
+      // is carried out, such as `_advisoryLock`, rather than a field to patch
+      isPatchControlProperty(key) {
+        return patchControlProperties.has(key);
       },
 
       // Given a `patch` containing mongo-style patch operators like `$push`,

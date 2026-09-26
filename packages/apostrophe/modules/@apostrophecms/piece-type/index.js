@@ -1041,6 +1041,9 @@ module.exports = {
           const patches = Array.isArray(input._patches)
             ? input._patches
             : [ input ];
+          // Sequences and broadcasts the patches if several people may be
+          // editing the piece at once
+          const collab = await self.apos.collab.startPatch(req, piece, input);
           // Conventional for loop so we can handle the last one specially
           for (let i = 0; i < patches.length; i++) {
             const input = patches[i];
@@ -1060,14 +1063,16 @@ module.exports = {
                 force
               });
             }
-            if (possiblePatchedFields) {
+            if (possiblePatchedFields && (!collab || collab.applicable(piece, input))) {
               await self.applyPatch(req, piece, input, {
                 force: self.apos.launder.boolean(input._advisory)
               }, { fetchRelationships });
+              collab?.applied(input);
             }
             if (i === patches.length - 1) {
               if (possiblePatchedFields) {
                 await self.update(req, piece);
+                await collab?.finish(piece);
               }
               result = self.findOneForEditing(
                 req,

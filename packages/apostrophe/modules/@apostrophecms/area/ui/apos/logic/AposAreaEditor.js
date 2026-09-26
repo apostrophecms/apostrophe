@@ -7,7 +7,9 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
-import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
+import applyPatch, { invert } from 'Modules/@apostrophecms/area/lib/apply-patch.js';
+import { diffWidget } from 'Modules/@apostrophecms/schema/lib/diff-to-patch.js';
+import { useCollabStore } from 'Modules/@apostrophecms/collab/stores/collab.js';
 import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { klona } from 'klona';
 
@@ -370,9 +372,14 @@ export default {
       ) {
         return;
       }
+      // How to take it back again, if asked, see `CollabSession`
+      const inverses = event.inverses && invert(this.id, this.next, event.patch);
       const result = applyPatch(this.id, this.next, event.patch);
       if (!result) {
         return;
+      }
+      if (inverses) {
+        event.inverses.push(...inverses);
       }
       for (const id of result.changed) {
         this.edited[id] = true;
@@ -386,6 +393,33 @@ export default {
       }
       this.next = result.items;
       event.claim();
+    },
+    // Report changes to a widget field by field, rather than replacing it
+    // whole, for when others may be editing the same widget. `before` is the
+    // widget as it was saved before this edit. Each patch comes with what
+    // takes it back, worked out as it is applied, see `CollabSession`
+    contextEditedFields(before, updated) {
+      const patches = diffWidget(before, updated, { areas: 'replace' });
+      if (!patches.length) {
+        return;
+      }
+      // As saved, not as a live preview may have left it on the page
+      let items = this.next.map(widget => (widget._id === before._id) ? before : widget);
+      const inverses = [];
+      for (const patch of patches) {
+        inverses.push(invert(this.id, items, patch, { deep: true }) || []);
+        const result = applyPatch(this.id, items, patch, { deep: true });
+        if (result) {
+          items = result.items;
+        }
+      }
+      apos.bus.$emit('context-edited', {
+        patch: patches,
+        // For undo: back to `before`, field by field
+        inverse: diffWidget(updated, before, { areas: 'replace' }),
+        inverses,
+        target: { widgetId: updated._id }
+      });
     },
     // Report an edit to the context bar, with the patch that takes it back
     // for its undo history, and what it was done to so that undoing it can
@@ -415,6 +449,9 @@ export default {
       if (!widget) {
         return;
       }
+      // The modal's live preview changes our copy of the widget as the user
+      // works, so this is the only record of what it was before
+      const before = klona(widget);
 
       apos.area.activeEditor = this;
       apos.bus.$on('apos-refreshing', cancelRefresh);
@@ -439,7 +476,7 @@ export default {
       apos.area.activeEditor = null;
       apos.bus.$off('apos-refreshing', cancelRefresh);
       if (result) {
-        return this.update(result);
+        return this.update(result, { before });
       }
     },
     async up({ index }) {
@@ -613,6 +650,9 @@ export default {
         apos.bus.$on('apos-refreshing', cancelRefresh);
 
         const preview = this.widgetPreview(widget.type, index, false);
+        // The modal's live preview changes our copy of the widget as the
+        // user works, so this is the only record of what it was before
+        const before = klona(widget);
         const result = await apos.modal.execute(componentName, {
           modelValue: widget,
           options: this.widgetOptionsByType(widget.type),
@@ -626,7 +666,7 @@ export default {
         apos.area.activeEditor = null;
         apos.bus.$off('apos-refreshing', cancelRefresh);
         if (result) {
-          return this.update(result);
+          return this.update(result, { before });
         }
       }
     },
@@ -652,12 +692,16 @@ export default {
         }
       }
     },
-    async update(updated, { autosave = true, reverting = false } = {}) {
+    // `before` is the widget as it was before the user started this edit,
+    // for when our own copy no longer says, as after a modal's live preview
+    async update(updated, {
+      autosave = true, reverting = false, before = null
+    } = {}) {
       // Before anything below can change it. A caller that changed the
       // widget in place rather than handing us a new one has already lost
       // the state we would need to put back, so no inverse is recorded and
       // the edit is undone the old way, by replaying the history
-      const prior = this.next.find(widget => widget._id === updated._id);
+      const prior = before || this.next.find(widget => widget._id === updated._id);
       const inverse = (prior && (prior !== updated))
         ? {
           [`@${updated._id}`]: klona(prior)
@@ -670,13 +714,20 @@ export default {
         updated.metaType = 'widget';
       }
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
-        this.contextEdited(
-          {
-            [`@${updated._id}`]: updated
-          },
-          inverse,
-          { widgetId: updated._id }
-        );
+        const collaborating = prior && (prior !== updated) &&
+          (useCollabStore().session?.docId === this.docId);
+        if (collaborating) {
+          // Others may be editing the same widget: save only what changed
+          this.contextEditedFields(prior, updated);
+        } else {
+          this.contextEdited(
+            {
+              [`@${updated._id}`]: updated
+            },
+            inverse,
+            { widgetId: updated._id }
+          );
+        }
       }
 
       this.next = this.next.map((widget) => {

@@ -1246,6 +1246,9 @@ database.`);
             throw self.apos.error('forbidden');
           }
           const patches = Array.isArray(input._patches) ? input._patches : [ input ];
+          // Sequences and broadcasts the patches if several people may be
+          // editing the page at once
+          const collab = await self.apos.collab.startPatch(req, page, input);
           // Conventional for loop so we can handle the last one specially
           for (let i = 0; (i < patches.length); i++) {
             const input = patches[i];
@@ -1263,8 +1266,9 @@ database.`);
               });
             }
             self.enforceParkedProperties(req, page, input, { onlyIfPresent: true });
-            if (possiblePatchedFields) {
+            if (possiblePatchedFields && (!collab || collab.applicable(page, input))) {
               await self.applyPatch(req, page, input, { fetchRelationships });
+              collab?.applied(input);
             }
             if (i === (patches.length - 1)) {
               if (possiblePatchedFields) {
@@ -1275,6 +1279,7 @@ database.`);
                   const position = self.apos.launder.string(input._position);
                   modified = await self.move(req, page._id, targetId, position);
                 }
+                await collab?.finish(page, { moved: !!modified });
                 result = await self
                   .findOneForEditing(req, { _id }, { attachments: true });
                 if (modified) {

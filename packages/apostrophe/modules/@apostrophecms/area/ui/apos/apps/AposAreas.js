@@ -3,7 +3,7 @@ import createApp, { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { nextTick } from 'vue';
 import { createId } from 'apostrophe/lib/beneath.js';
-import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
+import applyPatch, { invert } from 'Modules/@apostrophecms/area/lib/apply-patch.js';
 
 export default function() {
   const mountedApps = new Map();
@@ -151,11 +151,17 @@ export default function() {
       if (_docId !== apos.adminBar?.contextId) {
         return;
       }
+      const inverses = event.inverses && invert(data._id, data.items, event.patch, {
+        deep: true
+      });
       const result = applyPatch(data._id, data.items, event.patch, {
         deep: true
       });
       if (!result) {
         return;
+      }
+      if (inverses) {
+        event.inverses.push(...inverses);
       }
       data.items = result.items;
       for (const id of result.changed) {

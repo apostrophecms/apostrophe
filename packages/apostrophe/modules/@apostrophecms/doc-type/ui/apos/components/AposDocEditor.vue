@@ -145,6 +145,7 @@ import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin'
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import diffToPatch from 'Modules/@apostrophecms/schema/lib/diff-to-patch.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 
@@ -724,11 +725,23 @@ export default {
       draft = false,
       keepOpen = false
     }) {
-      const body = this.getRequestBody({ update: Boolean(this.currentId) });
+      let body = this.getRequestBody({ update: Boolean(this.currentId) });
       const route = this.currentId
         ? `${this.moduleAction}/${this.currentId}`
         : this.moduleAction;
-      const requestMethod = this.currentId ? apos.http.put : apos.http.post;
+      let requestMethod = this.currentId ? apos.http.put : apos.http.post;
+      const patches = this.getCollabPatches();
+      if (patches) {
+        // Others may be editing the document at the same time: save only
+        // what we changed, so what they changed survives
+        body = {
+          _patches: patches,
+          _collab: {
+            tabId: apos.adminBar?.tabId
+          }
+        };
+        requestMethod = apos.http.patch;
+      }
 
       if (this.currentId) {
         this.addLockToRequest(body);
@@ -748,7 +761,7 @@ export default {
         }
         apos.bus.$emit('content-changed', {
           doc,
-          action: (requestMethod === apos.http.put) ? 'update' : 'insert',
+          action: (requestMethod === apos.http.post) ? 'insert' : 'update',
           localeSwitched: this.localeSwitched
         });
       } catch (e) {
@@ -1004,6 +1017,22 @@ export default {
       this.updateModalData(this.modalData.id, { locale });
       this.localeSwitched = locale !== apos.i18n.locale;
       this.published = null;
+    },
+    // When several people may be editing the document at once, the patches
+    // that turn the document as it was when the modal opened into what the
+    // user made of it. Otherwise null: the whole document is saved
+    getCollabPatches() {
+      const data = this.docFields.data;
+      if (
+        !this.currentId ||
+        this.restoreOnly ||
+        !apos.modules[data.type]?.collaborative ||
+        (this.original?.type !== data.type) ||
+        (this.original?.aposMode && (this.original.aposMode !== 'draft'))
+      ) {
+        return null;
+      }
+      return diffToPatch(this.schema, this.original, data);
     },
     getRequestBody({ newInstance = false, update = false }) {
       const body = newInstance

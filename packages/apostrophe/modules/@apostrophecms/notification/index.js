@@ -33,6 +33,19 @@
 // resent on every admin page load. Defaults to 86400 (one day); set it to
 // 0 to keep notifications until they are dismissed. Individual
 // notifications may override it via the `expireAfter` option of `trigger`.
+//
+// ### `channelExpireAfter`: seconds a channel message (see `trigger`) is
+// kept. Channel messages are never dismissed, so this is how long a tab
+// that fell behind can still catch up. Defaults to 120.
+//
+// ### `channelQueryInterval`: interval in milliseconds between database
+// queries while long polling on behalf of a tab subscribed to channels. The
+// database is the only place messages are found, whichever process
+// triggered them, so this is how long a message may take to be picked up.
+// Defaults to 150.
+//
+// ### `maxChannels`: the most channels a single poll may subscribe to.
+// Defaults to 10.
 
 const delay = require('bluebird').delay;
 
@@ -44,11 +57,15 @@ module.exports = {
     queryInterval: 1000,
     // Used only when longPolling is false
     pollingInterval: 5000,
-    expireAfter: 86400
+    expireAfter: 86400,
+    channelExpireAfter: 120,
+    channelQueryInterval: 150,
+    maxChannels: 10
   },
   extend: '@apostrophecms/module',
   async init(self) {
     self.apos.notify = self.trigger;
+    self.channelTypes = {};
     await self.ensureCollection();
     self.addMigrations();
     self.enableBrowserData();
@@ -71,6 +88,20 @@ module.exports = {
     //
     // Waits up to 10 seconds for new notifications (long polling),
     // but then responds with an empty array to avoid proxy server timeouts.
+    //
+    // The client may also subscribe to channels (see `trigger`) by passing
+    // `channels`, a JSON object mapping each channel name to the `seq` of
+    // the last message already received on it, or to `null` to start from
+    // now. The response then also has:
+    //
+    // `channelMessages`: an array of `{ channel, seq, event, originTabId }`
+    // with `seq` greater than the one given, sorted by channel and `seq`.
+    // For a message whose `originTabId` matches the `tabId` query parameter,
+    // `event` is omitted: the sender already has it.
+    //
+    // `channelCursors`: the current `seq` of each channel passed as `null`.
+    //
+    // `refusedChannels`: channels the user may not subscribe to.
     getAll: {
       before: 'middleware:@apostrophecms/global',
       async route(req) {
@@ -86,30 +117,54 @@ module.exports = {
           throw self.apos.error('invalid');
         }
         const seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
+        const tabId = self.apos.launder.string(req.query.tabId) || null;
+        const {
+          channels,
+          channelCursors,
+          refusedChannels
+        } = await self.subscribe(req, req.query.channels);
+        const subscribed = Object.keys(channels);
+        const queryInterval = self.options.queryInterval || 1000;
+        const interval = subscribed.length
+          ? Math.min(queryInterval, self.options.channelQueryInterval)
+          : queryInterval;
         return await attempt();
 
         async function attempt() {
-          if (
-            self.options.longPolling &&
-              (Date.now() - start >= self.options.longPollingTimeout)
-          ) {
-            return {
+          const remaining = self.options.longPollingTimeout - (Date.now() - start);
+          if (self.options.longPolling && (remaining <= 0)) {
+            return respond({
               notifications: [],
-              dismissed: []
-            };
+              dismissed: [],
+              channelMessages: []
+            });
           }
 
-          const { notifications, dismissed } = await self.find(req, {
+          const found = await self.find(req, {
             modifiedOnOrSince,
-            seenIds
+            seenIds,
+            channels,
+            tabId
           });
-          if (self.options.longPolling && !notifications.length && !dismissed.length) {
-            await delay(self.options.queryInterval || 1000);
+          if (
+            self.options.longPolling &&
+            !found.notifications.length &&
+            !found.dismissed.length &&
+            !found.channelMessages.length &&
+            // A new subscriber learns its starting point right away
+            !Object.keys(channelCursors).length
+          ) {
+            await delay(Math.min(interval, remaining));
             return attempt();
           }
+          return respond(found);
+        }
+
+        function respond(found) {
           return {
-            notifications,
-            dismissed
+            ...found,
+            channelCursors,
+            refusedChannels
           };
         }
       }
@@ -293,6 +348,16 @@ module.exports = {
       // argument becomes optional, and the options object may be passed in
       // its place: `apos.notify(req, { bus: true, event })`.
       //
+      // If `options.channel` is also set, the message goes to a channel
+      // rather than to the user: every tab subscribed to that channel emits
+      // `event` once, in the order messages were triggered on the channel,
+      // and nothing is dismissed. The channel name is `type:id`, where
+      // `type` was registered with `addChannelType`. `options.originTabId`
+      // may name the sending browser tab, which is spared the event.
+      // `options.expireAfter` defaults to the `channelExpireAfter` option.
+      // Resolves to `{ channel, seq }`, where `seq` is the message's position
+      // on the channel.
+      //
       // Throws an error if there is no `req.user`.
       //
       // `interpolate` may contain an object with properties to be
@@ -324,6 +389,12 @@ module.exports = {
         }
         if (!message && !options.bus) {
           throw self.apos.error('required');
+        }
+        if (options.channel) {
+          if (!options.bus) {
+            throw self.apos.error('invalid', 'a channel notification must be a bus notification');
+          }
+          return self.triggerChannel(req, options);
         }
 
         req.body = req.body || {};
@@ -379,6 +450,161 @@ module.exports = {
         };
       },
 
+      // Implements `trigger` for a channel message. Messages on a channel
+      // are numbered from 1 with no gaps. Each is inserted at one past the
+      // highest `seq` found; the unique index refuses a `seq` another
+      // process took first, and we try again. A message is thus stored
+      // before any later one can be, which is what lets `find` hand
+      // messages out by `seq` without skipping any.
+      //
+      // Sorting and range queries use `seqKey`, the zero-padded string
+      // form of `seq`, because not every database adapter orders numbers
+      // stored in documents numerically.
+      async triggerChannel(req, options) {
+        const channel = self.launderChannel(options.channel);
+        if (!channel) {
+          throw self.apos.error('invalid', 'unknown channel type');
+        }
+        const expireAfter = (options.expireAfter != null)
+          ? options.expireAfter
+          : self.options.channelExpireAfter;
+        const message = {
+          channel,
+          event: options.event,
+          originTabId: options.originTabId || null,
+          senderId: req.user._id,
+          createdAt: new Date(),
+          ...(expireAfter && {
+            expireAt: new Date(Date.now() + expireAfter * 1000)
+          })
+        };
+        await self.emit('beforeSave', req, message);
+        for (let attempt = 0; attempt < 100; attempt++) {
+          const seq = (await self.getChannelSeq(channel)) + 1;
+          try {
+            await self.channelDb.insertOne({
+              _id: self.apos.util.generateId(),
+              ...message,
+              seq,
+              seqKey: self.getSeqKey(seq)
+            });
+            return {
+              channel,
+              seq
+            };
+          } catch (e) {
+            if (e.code !== 11000) {
+              throw e;
+            }
+          }
+        }
+        throw self.apos.error('error', `could not store a message on channel ${channel}`);
+      },
+
+      // Registers a type of channel. `canSubscribe(req, id)` must resolve to
+      // true if `req` may receive messages on the channel `name:id`.
+      addChannelType(name, { canSubscribe }) {
+        if (name.includes(':')) {
+          throw new Error(`A channel type name may not contain ":" (${name})`);
+        }
+        self.channelTypes[name] = { canSubscribe };
+      },
+
+      // Returns `{ type, id }` for a `type:id` channel name, or null if it
+      // is not a string or its type is not registered. The id may itself
+      // contain colons.
+      parseChannel(channel) {
+        if ((typeof channel) !== 'string') {
+          return null;
+        }
+        const at = channel.indexOf(':');
+        if (at === -1) {
+          return null;
+        }
+        const type = channel.substring(0, at);
+        const id = channel.substring(at + 1);
+        if (!self.channelTypes[type] || !id.length) {
+          return null;
+        }
+        return {
+          type,
+          id
+        };
+      },
+
+      getSeqKey(seq) {
+        return String(seq).padStart(15, '0');
+      },
+
+      launderChannel(channel) {
+        return self.parseChannel(channel) ? channel : null;
+      },
+
+      // Resolves to the `seq` of the latest message stored on the channel,
+      // or 0 if there is none.
+      async getChannelSeq(channel) {
+        const [ latest ] = await self.channelDb.find({ channel })
+          .sort({ seqKey: -1 })
+          .limit(1)
+          .project({ seq: 1 })
+          .toArray();
+        return latest ? latest.seq : 0;
+      },
+
+      // Validates the `channels` query parameter of a poll: a JSON object
+      // mapping channel names to the last `seq` seen, or null for "from
+      // now". Resolves to `{ channels, channelCursors, refusedChannels }`,
+      // where `channels` maps each permitted channel to the `seq` to deliver
+      // after and `channelCursors` holds the starting `seq` of each channel
+      // that was given as null.
+      async subscribe(req, param) {
+        const result = {
+          channels: {},
+          channelCursors: {},
+          refusedChannels: []
+        };
+        if (!param) {
+          return result;
+        }
+        let requested;
+        try {
+          requested = JSON.parse(param);
+        } catch (e) {
+          throw self.apos.error('invalid');
+        }
+        if (!requested || ((typeof requested) !== 'object') || Array.isArray(requested)) {
+          throw self.apos.error('invalid');
+        }
+        const entries = Object.entries(requested);
+        if (entries.length > self.options.maxChannels) {
+          throw self.apos.error('invalid', 'too many channels');
+        }
+        for (const [ channel, since ] of entries) {
+          const parsed = self.parseChannel(channel);
+          let permitted = false;
+          if (parsed) {
+            try {
+              permitted = await self.channelTypes[parsed.type]
+                .canSubscribe(req, parsed.id);
+            } catch (e) {
+              self.apos.util.error(e);
+            }
+          }
+          if (!permitted) {
+            result.refusedChannels.push(channel);
+            continue;
+          }
+          if (since == null) {
+            const seq = await self.getChannelSeq(channel);
+            result.channels[channel] = seq;
+            result.channelCursors[channel] = seq;
+          } else {
+            result.channels[channel] = Math.max(0, self.apos.launder.integer(since));
+          }
+        }
+        return result;
+      },
+
       // The dismiss method accepts the following arguments:
       // - req: A valid req.
       // - noteId: The _id of an active notification.
@@ -429,6 +655,11 @@ module.exports = {
       // If `options.modifiedOnOrSince` is set, notifications
       // greater than the timestamp are sent,
       // minus any notifications whose IDs are in `options.seenIds`.
+      //
+      // If `options.channels` is set, mapping channel names to a `seq`, the
+      // result also has a `channelMessages` array holding the messages
+      // after that `seq` on each channel (see `getAll`). `options.tabId`
+      // strips the event from messages that tab sent.
 
       async find(req, options) {
         try {
@@ -462,7 +693,8 @@ module.exports = {
 
           return {
             notifications,
-            dismissed
+            dismissed,
+            channelMessages: await self.findChannelMessages(options)
           };
         } catch (err) {
           if (self.apos.db.closed) {
@@ -471,7 +703,8 @@ module.exports = {
             // long polling requests. Send an empty response
             return {
               notifications: [],
-              dismissed: []
+              dismissed: [],
+              channelMessages: []
             };
           } else {
             throw err;
@@ -492,6 +725,56 @@ module.exports = {
           expireAfterSeconds: 0,
           sparse: true
         });
+        // Channel messages live apart from notifications: they have no
+        // recipient, are never dismissed and are ordered by `seq`, which
+        // the unique index keeps free of duplicates
+        self.channelDb = self.apos.db.collection('aposNotificationChannels');
+        await self.channelDb.createIndex({
+          channel: 1,
+          seqKey: 1
+        }, {
+          unique: true
+        });
+        await self.channelDb.createIndex({ expireAt: 1 }, {
+          expireAfterSeconds: 0,
+          sparse: true
+        });
+      },
+
+      // See `find`
+      async findChannelMessages({ channels, tabId }) {
+        const entries = Object.entries(channels || {});
+        if (!entries.length) {
+          return [];
+        }
+        const messages = await self.channelDb.find({
+          $and: [
+            {
+              $or: entries.map(([ channel, since ]) => ({
+                channel,
+                seqKey: { $gt: self.getSeqKey(since) }
+              }))
+            },
+            {
+              $or: [
+                { expireAt: null },
+                { expireAt: { $gt: new Date() } }
+              ]
+            }
+          ]
+        }).sort({
+          channel: 1,
+          seqKey: 1
+        }).limit(1000).toArray();
+        return messages.map(({
+          channel, seq, event, originTabId, senderId
+        }) => ({
+          channel,
+          seq,
+          originTabId,
+          senderId,
+          ...((!tabId || (originTabId !== tabId)) && { event })
+        }));
       },
 
       addMigrations() {

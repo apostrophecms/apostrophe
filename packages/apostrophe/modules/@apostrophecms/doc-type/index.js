@@ -7,6 +7,9 @@ module.exports = {
   options: {
     localized: true,
     contextBar: true,
+    // Several people may edit a document of this type at once, see the
+    // `@apostrophecms/collab` module
+    collaborative: true,
     editRole: 'contributor',
     publishRole: 'editor',
     viewRole: false,
@@ -1878,6 +1881,7 @@ module.exports = {
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
+        browserOptions.collaborative = self.apos.collab.isCollaborativeType(self.name);
         browserOptions.previewDraft = self.isLocalized() &&
           !browserOptions.autopublish &&
           self.options.previewDraft;

@@ -32,6 +32,7 @@
         :draft-mode="draftMode"
         @switch-draft-mode="switchDraftMode"
       />
+      <TheAposCollabPresence v-if="collabActive" />
       <TheAposContextModeAndSettings
         class="apos-admin-bar__control-group"
         :context="context"
@@ -57,9 +58,12 @@ import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin'
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
-import { isWithoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
+import { isWithoutHistory, isWithoutSaving } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { replay, html } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
 import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
+import { useNotificationStore } from 'Modules/@apostrophecms/ui/stores/notification';
+import { useCollabStore } from 'Modules/@apostrophecms/collab/stores/collab.js';
+import CollabSession from 'Modules/@apostrophecms/collab/lib/session.js';
 
 // Undo history deeper than this is forgotten, oldest first
 const maxHistory = 500;
@@ -73,8 +77,16 @@ function singleValueKey(patch) {
 
 // The keys of an entry for the undo history, as opposed to a bare patch,
 // which is what `context-edited` was given before undo could be done
-// without replaying every edit since the page was loaded
-const entryKeys = [ 'patch', 'inverse', 'target' ];
+// without replaying every edit since the page was loaded.
+//
+// `patch` and `inverse` may also be arrays of patches, applied in order.
+// `inverses` then optionally says what takes back each patch of `patch`,
+// for the collaboration session
+const entryKeys = [ 'patch', 'inverse', 'inverses', 'target' ];
+
+function toList(patch) {
+  return Array.isArray(patch) ? patch : [ patch ];
+}
 
 export default {
   name: 'TheAposContextBar',
@@ -126,11 +138,27 @@ export default {
       // If a published context doc itself is not editable this will contain a
       // hint that the draft version is editable, when appropriate. It should
       // only be consulted when the context doc is published and not editable
-      draftIsEditable: false
+      draftIsEditable: false,
+      // The id of the document the collaboration session is for, when
+      // several people may edit it at once, see `updateCollabSession`
+      collabDocId: null,
+      // Whether the session has anything of ours not yet saved
+      collabPending: false,
+      collabRefreshing: false,
+      collabRefreshAgain: false
     };
   },
   computed: {
     ...mapState(useModalStore, [ 'hasChooserModal' ]),
+    ...mapState(useWidgetStore, [ 'focusedWidget' ]),
+    // True if several people may edit the context document at once
+    collaborative() {
+      return !!apos.modules[this.context.type]?.collaborative &&
+        (!this.context.aposMode || (this.context.aposMode === 'draft'));
+    },
+    collabActive() {
+      return !!this.collabDocId;
+    },
     contextBarActive() {
       return window.apos.adminBar.contextBar &&
         (this.canEdit || this.moduleOptions.canLocalize);
@@ -150,7 +178,7 @@ export default {
       }
     },
     needToAutosave() {
-      return !!this.patchesSinceSave.length;
+      return !!this.patchesSinceSave.length || this.collabPending;
     },
     canPublish() {
       return this.context._publish || apos.modules[this.context.type].canPublish;
@@ -205,6 +233,10 @@ export default {
       this.$nextTick(() => {
         this.$emit('visibility-changed');
       });
+    },
+    // Let everyone else editing see which widget we are working on
+    focusedWidget(widgetId) {
+      this.collabSession()?.setAwareness(widgetId ? { widgetId } : {});
     }
   },
   async mounted() {
@@ -300,6 +332,7 @@ export default {
     async onPushContext({
       doc
     }) {
+      await this.stopCollabSession({ save: true });
       if (!this.draftMode !== 'draft') {
         await this.switchDraftMode('draft');
       }
@@ -368,6 +401,9 @@ export default {
       }
     },
     async onPublish() {
+      // Everything we typed must be saved first. The server asks everyone
+      // else to save theirs
+      await this.collabSession()?.flush();
       if (!this.canPublish) {
         const submitted = await this.submitDraft(this.context);
         if (submitted) {
@@ -389,7 +425,12 @@ export default {
       }
     },
     onBeforeUnload(e) {
-      if (this.patchesSinceSave.length || this.saving || this.editing) {
+      if (
+        this.patchesSinceSave.length ||
+        this.saving ||
+        this.editing ||
+        this.collabPending
+      ) {
         e.preventDefault();
         // No actual control over the message is possible in modern browsers,
         // but Chrome requires we set a string here
@@ -521,6 +562,7 @@ export default {
                 this.lockNotAvailable();
               }
             }
+            await this.updateCollabSession();
           }
         } else {
           if (this.editMode) {
@@ -528,6 +570,7 @@ export default {
               this.lockNotAvailable();
             }
           }
+          await this.updateCollabSession();
           if (!this.contextStack.length) {
             // Refresh the context document on the page, if it is not a pushed
             // special case with its own rendering, like the palette
@@ -560,24 +603,35 @@ export default {
     // still be undone, but only the old way: by replaying every edit since
     // the page was loaded and rendering the page again.
     onContextEdited(payload) {
+      if (isWithoutSaving()) {
+        // Text the collaboration session saves as it is typed
+        return;
+      }
       const isEntry = !!payload?.patch &&
         (typeof payload.patch === 'object') &&
         Object.keys(payload).every(key => entryKeys.includes(key));
       const patch = klona(isEntry ? payload.patch : payload);
+      const inverse = (isEntry && payload.inverse) ? klona(payload.inverse) : null;
+      const target = (isEntry && payload.target) ? { ...payload.target } : null;
+      const inverses = (isEntry && payload.inverses) ? klona(payload.inverses) : null;
       if (isWithoutHistory()) {
         // A change to save that is not an action of the user's to undo:
         // typing its editor already recorded step by step
         // (`onContextHistoryRecord`), or content an editor provisioned for
         // itself. Nothing to add to the history, and nothing about to be
         // redone was overwritten
-        this.queuePatch(patch);
+        this.queuePatch(patch, {
+          inverse,
+          inverses,
+          target
+        });
         return;
       }
       const entry = {
         id: this.nextEntryId++,
         patch,
-        inverse: (isEntry && payload.inverse) ? klona(payload.inverse) : null,
-        target: (isEntry && payload.target) ? { ...payload.target } : null
+        inverse,
+        target
       };
       const top = this.patchesSinceLoaded.at(-1);
       if (
@@ -598,14 +652,50 @@ export default {
         this.mergeableEntryId = (entry.target?.kind === 'field') ? entry.id : null;
       }
       this.undone = [];
-      this.queuePatch(patch);
+      this.queuePatch(patch, {
+        inverse: entry.inverse,
+        inverses,
+        target: entry.target
+      });
     },
     // What a rich text editor on the page did, as ProseMirror steps. The
     // editor saves the result by itself, see `isWithoutHistory`. Records that
     // continue the same typing are merged into one entry, as tiptap's own
     // history would group them
+    //
+    // When several people edit the document at once, the editor keeps the
+    // steps itself, in a history that knows how to rebase them over everyone
+    // else's typing, and the record just says which editor to ask: see
+    // `collab` in `applyHistoryChange`
     onContextHistoryRecord(record) {
       const top = this.patchesSinceLoaded.at(-1);
+      if (record.collab) {
+        if (
+          !record.newGroup &&
+          top?.richText?.collab &&
+          (top.id === this.mergeableEntryId) &&
+          (top.richText.instanceKey === record.instanceKey)
+        ) {
+          return;
+        }
+        const entry = {
+          id: this.nextEntryId++,
+          richText: markRaw({
+            collab: true,
+            instanceKey: record.instanceKey,
+            target: record.target
+          }),
+          target: {
+            kind: 'richText',
+            patchKey: record.target,
+            widgetId: record.target?.match(/^@([^.]+)\./)?.[1]
+          }
+        };
+        this.pushEntry(entry);
+        this.mergeableEntryId = entry.id;
+        this.undone = [];
+        return;
+      }
       if (
         !record.newGroup &&
         top?.richText &&
@@ -642,7 +732,7 @@ export default {
       this.patchesSinceLoaded.push(entry);
       if (this.patchesSinceLoaded.length > maxHistory) {
         const forgotten = this.patchesSinceLoaded.shift();
-        const patch = this.forwardPatch(forgotten);
+        const patch = !forgotten.richText?.collab && this.forwardPatch(forgotten);
         if (patch) {
           this.commitPatch(patch);
         }
@@ -671,14 +761,38 @@ export default {
       }
       return entry.patch;
     },
-    queuePatch(patch) {
-      this.patchesSinceSave.push(patch);
+    // Save `patch`, or each patch of an array of them. `inverse`,
+    // `inverses` and `target` are needed only when several people edit the
+    // document at once, see `CollabSession`
+    queuePatch(patch, {
+      inverse = null, inverses = null, target = null
+    } = {}) {
+      const session = this.collabSession();
+      if (session) {
+        const patches = toList(patch);
+        patches.forEach((patch, i) => {
+          session.queuePatch(patch, {
+            // A lone patch's inverse is the inverse. For several, only
+            // `inverses` can say which goes with which
+            inverses: inverses?.[i] ||
+              ((patches.length === 1) && inverse ? toList(inverse) : null),
+            target
+          });
+        });
+        return;
+      }
+      this.patchesSinceSave.push(...toList(patch));
       if (!this.saving) {
         this.savePromise = this.save();
       }
     },
     // Resolves once everything queued so far has been saved
     async flushSaves() {
+      const session = this.collabSession();
+      if (session) {
+        await session.flush();
+        return;
+      }
       if (this.patchesSinceSave.length && !this.saving) {
         this.savePromise = this.save();
       }
@@ -723,6 +837,7 @@ export default {
           return;
         }
       }
+      await this.updateCollabSession();
       if (this.draftMode !== 'draft') {
         // Entering edit mode implies entering draft mode and
         // a refresh.
@@ -732,6 +847,9 @@ export default {
       }
     },
     async refresh(options = {}) {
+      // Rendering the page again replaces every editor on it, so whatever
+      // was typed and not yet sent must go first
+      await this.collabSession()?.flush();
       // In breakpoint preview mode, uses the fake body.
       const refreshable = document.querySelector('[data-apos-refreshable-body]') ||
         document.querySelector('[data-apos-refreshable]');
@@ -873,6 +991,12 @@ export default {
         return;
       }
       const entry = this.patchesSinceLoaded.at(-1);
+      if (this.collabActive && !this.isReversible(entry)) {
+        // Replaying every edit since the page was loaded would take back
+        // everyone else's work too, so this one cannot be undone
+        this.patchesSinceLoaded.pop();
+        return this.undo();
+      }
       if (!this.isReversible(entry)) {
         this.undone.push(this.patchesSinceLoaded.pop());
         return this.refreshAfterHistoryChange('apostrophe:undoFailed');
@@ -886,6 +1010,10 @@ export default {
         return;
       }
       const entry = this.undone.at(-1);
+      if (this.collabActive && !this.isReversible(entry)) {
+        this.undone.pop();
+        return this.redo();
+      }
       if (!this.isReversible(entry)) {
         this.patchesSinceLoaded.push(this.undone.pop());
         return this.refreshAfterHistoryChange('apostrophe:redoFailed');
@@ -906,6 +1034,17 @@ export default {
       this.mergeableEntryId = null;
       try {
         let patch;
+        if (entry.richText?.collab) {
+          // The editor's own history takes back our typing and nobody
+          // else's. If the editor is gone, so is the typing
+          const richText = entry.richText;
+          const editor = editorRegistry.find(richText.instanceKey, richText.target);
+          if (!editor?.collabHistory) {
+            return true;
+          }
+          editor.collabHistory(direction);
+          return true;
+        }
         if (entry.richText) {
           const richText = entry.richText;
           const editor = editorRegistry.find(richText.instanceKey, richText.target);
@@ -928,19 +1067,32 @@ export default {
           patch = klona((direction === 'undo') ? entry.inverse : entry.patch);
         }
         const removed = [];
-        const shown = this.applyToPage(patch, removed);
+        let shown = true;
+        // Only needed when others may be editing too, see `CollabSession`
+        const inverses = [];
+        for (const each of toList(patch)) {
+          const result = this.applyToPageWithInverses(each, removed);
+          shown = result.claimed && shown;
+          inverses.push(result.inverses);
+        }
         // Putting this edit back means putting back what was just taken off
         // the page, which is not always what the edit itself added: a widget
         // can have gained content since, as a layout does when it fills
         // itself with columns
-        this.refreshRestore(
-          (direction === 'undo') ? entry.patch : entry.inverse,
-          removed
-        );
-        this.queuePatch(patch);
+        const opposite = (direction === 'undo') ? entry.patch : entry.inverse;
+        if (!Array.isArray(opposite)) {
+          this.refreshRestore(opposite, removed);
+        }
+        this.queuePatch(patch, {
+          inverses,
+          target: entry.target
+        });
         if (shown) {
           await this.$nextTick();
           this.showTarget(entry.target);
+        } else if (this.collabActive) {
+          // Rendering the whole document again would throw away what others
+          // are in the middle of, and the change is saved all the same
         } else {
           // Nothing on the page claimed it, so render the whole document
           // again, as undo always used to
@@ -970,6 +1122,25 @@ export default {
         }
       });
       return claimed;
+    },
+    // As `applyToPage`, for the collaboration session, which also needs to
+    // know how to take the patch back again: resolves to `{ claimed,
+    // inverses }`, see `invert` in `apply-patch.js`
+    applyToPageWithInverses(patch, removed = []) {
+      let claimed = false;
+      const inverses = [];
+      apos.bus.$emit('context-history-apply', {
+        patch,
+        removed,
+        inverses,
+        claim() {
+          claimed = true;
+        }
+      });
+      return {
+        claimed,
+        inverses
+      };
     },
     // Bring the patch that puts these widgets back up to date with what they
     // held when they were taken away
@@ -1103,6 +1274,7 @@ export default {
       return true;
     },
     lockNotAvailable() {
+      this.stopCollabSession();
       if (this.contextStack.length) {
         // If we try to edit palette and someone else has it locked,
         // we should just revert to the page context. Ask the palette
@@ -1111,6 +1283,157 @@ export default {
       } else {
         // If the context is the page, we should stay, but in preview mode
         this.switchEditMode(false);
+      }
+    },
+    // The collaboration session, if several people may be editing the
+    // context document right now
+    collabSession() {
+      const session = useCollabStore().session;
+      return (session && (session.docId === this.context._id)) ? session : null;
+    },
+    // Start or stop the collaboration session to suit the context document
+    // and whether we are editing it
+    async updateCollabSession() {
+      const wanted = this.editMode && this.collaborative && this.canEdit
+        ? this.context._id
+        : null;
+      if (this.collabDocId === wanted) {
+        return;
+      }
+      await this.stopCollabSession({ save: true });
+      if (!wanted) {
+        return;
+      }
+      const store = useCollabStore();
+      const notificationStore = useNotificationStore();
+      const session = new CollabSession({
+        docId: wanted,
+        tabId: window.apos.adminBar.tabId,
+        action: apos.modules['@apostrophecms/collab'].action,
+        http: apos.http,
+        bus: apos.bus,
+        channels: {
+          subscribe: channel => notificationStore.subscribeChannel(channel),
+          unsubscribe: channel => notificationStore.unsubscribeChannel(channel)
+        },
+        applyToPage: patch => this.applyToPageWithInverses(patch),
+        callbacks: {
+          onContext: doc => {
+            if (doc._id === this.context._id) {
+              this.context = doc;
+            }
+          },
+          onStatus: ({ busy, pending }) => {
+            this.collabPending = pending;
+            this.saving = busy;
+            if (!busy) {
+              this.saved = true;
+            }
+          },
+          onRefused: (e) => {
+            // eslint-disable-next-line no-console
+            console.error(e);
+            apos.notify('apostrophe:changeNotSaved', {
+              type: 'error',
+              icon: 'alert-circle-icon'
+            });
+          },
+          onFatal: () => this.lockNotAvailable(),
+          onRefresh: () => this.collabRefresh(),
+          onRemotePatches: data => this.onRemotePatches(data),
+          // The text shows the change itself, see `AposRichTextEditor`, but
+          // it is still what that person did last
+          onRemoteText: data => store.recordAction(data, {
+            patchKey: data.batch.key,
+            widgetId: data.batch.key.match(/^@([^.]+)\./)?.[1],
+            quiet: true
+          }),
+          onPresence: data => store.onPresence(data),
+          onPublished: async data => {
+            this.context = {
+              ...this.context,
+              modified: false,
+              lastPublishedAt: data.lastPublishedAt
+            };
+            this.published = await this.getPublished();
+          },
+          onAwareness: data => store.onAwareness(data)
+        }
+      });
+      store.setSession(session);
+      this.collabDocId = wanted;
+      await session.start();
+      try {
+        const { presence } = await apos.http.get(`${session.action}/presence`, {
+          qs: { docId: wanted }
+        });
+        if (this.collabSession() === session) {
+          store.setPresence(presence || []);
+        }
+      } catch (e) {
+        // Who else is here shows up as they do something
+      }
+    },
+    // With `save`, send whatever is still waiting to go first. Not when we
+    // just lost the right to edit, since the server would refuse it anyway
+    async stopCollabSession({ save = false } = {}) {
+      const store = useCollabStore();
+      const session = store.session;
+      if (session) {
+        store.setSession(null);
+        this.collabDocId = null;
+        if (save) {
+          try {
+            await session.flush();
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error(e);
+          }
+        }
+        session.stop();
+      }
+      this.collabDocId = null;
+      this.collabPending = false;
+    },
+    // Someone else's patches were just applied to the page
+    onRemotePatches(data) {
+      this.context = {
+        ...this.context,
+        modified: true
+      };
+      const store = useCollabStore();
+      for (const target of (data.targets || []).filter(Boolean)) {
+        store.recordAction(data, target);
+      }
+      if (!data.targets?.length) {
+        store.recordAction(data, {});
+      }
+    },
+    // The document changed in a way that cannot be shown piece by piece:
+    // save what we have and render it again
+    async collabRefresh() {
+      if (this.collabRefreshing) {
+        this.collabRefreshAgain = true;
+        return;
+      }
+      this.collabRefreshing = true;
+      try {
+        do {
+          this.collabRefreshAgain = false;
+          await this.collabSession()?.flush();
+          try {
+            this.context = await apos.http.get(`${this.action}/${this.context._id}`, {
+              qs: {
+                aposMode: 'draft'
+              }
+            });
+          } catch (e) {
+            // Keep what we have
+          }
+          await this.refresh({ scrollcheck: true });
+        } while (this.collabRefreshAgain);
+      } finally {
+        this.collabRefreshing = false;
       }
     },
     async updateDraftIsEditable() {

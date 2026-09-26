@@ -8,6 +8,9 @@
 // emitted for a parent component to deal with, so that these editors can also
 // be used inside a modal.
 
+import { withoutSaving } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
+import { useCollabStore } from 'Modules/@apostrophecms/collab/stores/collab.js';
+
 // Everything the editor of a field edited in place is told about it.
 // `AposWysiwygField` accepts these too, and passes them straight through
 export const wysiwygProps = {
@@ -68,6 +71,15 @@ export default {
     placeholder() {
       return this.$t(this.field.placeholder || this.field.label || '');
     }
+  },
+  created() {
+    // Set when several people may be editing the document at once. The text
+    // is then saved as it is typed by the collaboration session, not by
+    // patching the whole value, see `save`
+    const session = useCollabStore().session;
+    this.collabSession = (this.onPage && session && (session.docId === this.docId))
+      ? session
+      : null;
   },
   watch: {
     modelValue(value) {
@@ -140,7 +152,7 @@ export default {
         this.pending = null;
       }
       if (this.onPage) {
-        apos.bus.$emit('context-edited', {
+        const report = () => apos.bus.$emit('context-edited', {
           patch: {
             [this.patchKey]: this.next
           },
@@ -153,6 +165,12 @@ export default {
             patchKey: this.patchKey
           }
         });
+        if (this.collabSession) {
+          // Saved as it was typed
+          withoutSaving(report);
+        } else {
+          report();
+        }
         this.lastSaved = this.next;
         // The document on the server is not the only thing holding this
         // value. Every area editor on the page keeps its own copy of the
@@ -187,6 +205,13 @@ export default {
     // just as they do when the user types
     contextHistoryApplyHandler(event) {
       if (!this.onPage || !Object.hasOwn(event.patch, this.patchKey)) {
+        return;
+      }
+      if (this.collabSession) {
+        // Someone replaced the value some other way, and the collaboration
+        // session hears about it too, in step with everything else typed
+        // here. Showing it now could mix the two up
+        event.claim();
         return;
       }
       if (this.pending) {

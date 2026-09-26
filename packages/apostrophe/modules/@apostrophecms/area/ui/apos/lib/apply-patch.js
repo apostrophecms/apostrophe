@@ -66,7 +66,10 @@ export default function applyPatch(areaId, items, patch, { deep = false } = {}) 
 function push(items, {
   $each, $before, $after, $position
 }) {
-  const each = klona(Array.isArray($each) ? $each : []);
+  // A widget that is already here is not added again, as on the server:
+  // two people can put back the same widget at once
+  const each = klona(Array.isArray($each) ? $each : [])
+    .filter(item => !item?._id || !items.some(existing => existing._id === item._id));
   let position = items.length;
   if ($position !== undefined) {
     position = Math.min(Math.max(parseInt($position) || 0, 0), items.length);
@@ -168,4 +171,128 @@ function setPath(object, path, value) {
   }
   target[keys[keys.length - 1]] = klona(value);
   return object;
+}
+
+// The patches that take back `patch`, if it were applied to `items` right
+// now, in the order they must be applied. Returns `null` if the patch has
+// nothing to do with this area, like `applyPatch`.
+//
+// Unlike the inverse an edit records when it is made, this is worked out
+// from the area as it stands, so it is exact even after other people's
+// changes were applied underneath the edit (see `CollabSession`)
+export function invert(areaId, items, patch, { deep = false } = {}) {
+  const itemsKey = `@${areaId}.items`;
+  if (patch.$push?.[itemsKey]) {
+    const value = patch.$push[itemsKey];
+    const added = (Array.isArray(value.$each) ? value.$each : [])
+      .filter(item => item?._id && !items.some(existing => existing._id === item._id))
+      .map(item => item._id);
+    return added.length
+      ? [ { $pullAllById: { [itemsKey]: added } } ]
+      : [];
+  }
+  if (patch.$pullAllById?.[itemsKey]) {
+    const value = patch.$pullAllById[itemsKey];
+    const ids = Array.isArray(value) ? value : [ value ];
+    const inverses = [];
+    // Each widget goes back after whatever preceded it, which by then is
+    // either still there or already put back
+    let previous = null;
+    for (const item of items) {
+      if (ids.includes(item._id)) {
+        inverses.push({
+          $push: {
+            [itemsKey]: previous
+              ? {
+                $each: [ klona(item) ],
+                $after: previous
+              }
+              : {
+                $each: [ klona(item) ],
+                $position: 0
+              }
+          }
+        });
+      }
+      previous = item._id;
+    }
+    return inverses;
+  }
+  if (patch.$move?.[itemsKey]) {
+    const { $item } = patch.$move[itemsKey];
+    const index = items.findIndex(item => item._id === $item);
+    if (index === -1) {
+      return [];
+    }
+    const next = items[index + 1];
+    const prior = items[index - 1];
+    if (!next && !prior) {
+      return [];
+    }
+    return [ {
+      $move: {
+        [itemsKey]: next
+          ? {
+            $item,
+            $before: next._id
+          }
+          : {
+            $item,
+            $after: prior._id
+          }
+      }
+    } ];
+  }
+  for (const key of Object.keys(patch)) {
+    if (!key.startsWith('@')) {
+      continue;
+    }
+    const dot = key.indexOf('.');
+    const id = key.substring(1, (dot === -1) ? undefined : dot);
+    const path = (dot === -1) ? null : key.substring(dot + 1);
+    if (id === areaId) {
+      if (!path && patch[key]?.items) {
+        return [ { [key]: { items: klona(items) } } ];
+      }
+      continue;
+    }
+    for (const item of items) {
+      const object = (item._id === id)
+        ? item
+        : (deep ? findNested(item, id) : null);
+      if (!object) {
+        continue;
+      }
+      const prior = path ? getPath(object, path) : object;
+      return [ { [key]: (prior === undefined) ? null : klona(prior) } ];
+    }
+  }
+  return null;
+}
+
+function findNested(object, id) {
+  for (const [ key, val ] of Object.entries(object)) {
+    if (key.startsWith('_') || !val || (typeof val !== 'object')) {
+      continue;
+    }
+    if (val._id === id) {
+      return val;
+    }
+    const found = findNested(val, id);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+}
+
+function getPath(object, path) {
+  let target = object;
+  for (const key of path.split('.')) {
+    if (!target || (typeof target !== 'object')) {
+      return undefined;
+    }
+    target = target[key];
+  }
+  return target;
 }

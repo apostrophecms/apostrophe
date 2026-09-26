@@ -26,3 +26,25 @@ export function withoutHistory(fn) {
 export function isWithoutHistory() {
   return depth > 0;
 }
+
+// When several people edit the document at once, the text of a rich text or
+// string field is saved by the collaboration session, as it is typed, rather
+// than by patching the whole value. The editor still reports the new value,
+// so that everything holding a copy of it hears about it, but wraps the
+// report in `withoutSaving()`: the context bar then neither saves it nor
+// records it as an action to undo.
+
+let savingDepth = 0;
+
+export function withoutSaving(fn) {
+  savingDepth++;
+  try {
+    return fn();
+  } finally {
+    savingDepth--;
+  }
+}
+
+export function isWithoutSaving() {
+  return savingDepth > 0;
+}
