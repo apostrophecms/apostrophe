@@ -12,9 +12,6 @@ env:
   # so the image comes from the shared docker cache.
   AI_SMOKE_NODE_VERSION: "24"
   AI_SMOKE_MONGODB_VERSION: "8"
-  # automatic-translation ref for the import-export tests with Pro modules,
-  # overridden by the workflow_dispatch input. Empty means the default branch.
-  APOS_AUTOMATIC_TRANSLATION_REF: document-versions
 
 on:
   push:
