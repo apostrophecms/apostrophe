@@ -1,4 +1,5 @@
 ---
+"sanitize-html": patch
 "apostrophe": patch
 ---
 
