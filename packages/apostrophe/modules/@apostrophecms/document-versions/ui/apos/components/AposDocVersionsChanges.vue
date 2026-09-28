@@ -299,16 +299,16 @@ function matches(row) {
   return changeGroups.matchesFilter(row, filter.value);
 }
 
-// What an empty list says: a restore and a first version are baselines,
-// while a version compared with the one before it and left with nothing
-// ended where that one did
+// What an empty list says: a restore is a baseline, a first version has
+// nothing before it, and a version compared with the one before it and left
+// with nothing ended where that one did
 const emptyMessage = computed(() => {
   if (props.version?.restoredFrom) {
     return 'apostrophe:versionRestoredBaseline';
   }
   return props.compared
     ? 'apostrophe:versionUnchanged'
-    : 'apostrophe:versionNoChanges';
+    : 'apostrophe:versionFirst';
 });
 
 const shownRows = computed(() => props.rows.filter(matches));

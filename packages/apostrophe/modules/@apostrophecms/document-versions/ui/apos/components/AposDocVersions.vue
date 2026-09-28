@@ -480,8 +480,6 @@ onMounted(async () => {
   }
   if (versions.value.length) {
     selectVersion(versions.value[0]);
-  } else {
-    evaluateConditions(props.doc);
   }
 });
 

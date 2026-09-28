@@ -12,7 +12,7 @@ import {
  * The tabs of the versions modal: the read-only schema of the document's
  * type, grouped as the document editor groups it, with the conditional
  * fields evaluated against the version shown. A tab none of whose fields
- * renders is not visible.
+ * renders is not visible, and there are no tabs until a version is shown.
  *
  * @param {object} options
  * @param {import('vue').Ref<object>} options.moduleOptions
@@ -22,7 +22,7 @@ import {
  * @param {object} options.doc
  *   The document the modal opened for
  * @param {import('vue').Ref<{ data: object }>} options.docFields
- *   The version shown
+ *   The version shown, `data` empty until one is
  */
 export function useDocVersionTabs({
   moduleOptions, unsupported, doc, docFields
@@ -51,11 +51,10 @@ export function useDocVersionTabs({
     );
   }
 
-  // With no version to show, the tabs follow the live document
-  function evaluateConditions(data = docFields.value.data) {
+  function evaluateConditions() {
     conditionalFields.value = getConditionalFields(
       schema.value,
-      data,
+      docFields.value.data,
       externalConditionsResults.value
     );
   }
@@ -93,7 +92,7 @@ export function useDocVersionTabs({
   }
 
   const versionTabs = computed(() => {
-    if (unsupported.value) {
+    if (unsupported.value || !docFields.value.data.type) {
       return [];
     }
     const tabs = Object.entries(groups.value)
