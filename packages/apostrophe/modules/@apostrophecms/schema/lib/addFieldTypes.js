@@ -239,12 +239,14 @@ module.exports = (self) => {
     wysiwyg: true,
     // Names this field in the breadcrumb trail shown when editing in place
     wysiwygIcon: 'format-text-icon',
+    wysiwygValue: textValue,
     // When rendered in place the permalinks are resolved, exactly as they
     // are for a rich text widget
     async wysiwygRender(req, field, value) {
       return richTextManager().renderRichText(req, value || '');
     },
     extract(req, field, value) {
+      value = textValue(value);
       return richTextManager().isEmptyRichText(value) ? [] : [ { text: value } ];
     },
     convert(req, field, data, destination) {
@@ -264,12 +266,12 @@ module.exports = (self) => {
       const silent = (field.silent === undefined) ? false : field.silent;
       texts.push({
         weight: field.weight || 10,
-        text: self.apos.util.htmlToPlaintext(value || ''),
+        text: self.apos.util.htmlToPlaintext(textValue(value) || ''),
         silent
       });
     },
     isEmpty(field, value) {
-      return richTextManager().isEmptyRichText(value);
+      return richTextManager().isEmptyRichText(textValue(value));
     },
     validate(field, options, warn) {
       for (const name of [ 'toolbar', 'styles', 'insert' ]) {
@@ -293,6 +295,15 @@ module.exports = (self) => {
     return self.apos.modules['@apostrophecms/rich-text-widget'];
   }
 
+  // The value of a field that stores text, or `undefined` if the property
+  // holds an object instead. That happens when a field of another type, most
+  // often an area, once had the same name: removing a field from the schema
+  // leaves its data in the database, and a new field that takes the name
+  // inherits it. Such a value was never text, so treat it as never set
+  function textValue(value) {
+    return ((value != null) && ((typeof value) === 'object')) ? undefined : value;
+  }
+
   self.addFieldType({
     name: 'string',
     extractable: [ 'text' ],
@@ -303,6 +314,7 @@ module.exports = (self) => {
     // in place today is text, and the user is better served by one familiar
     // icon than by a distinction between kinds of text they did not ask about
     wysiwygIcon: 'format-text-icon',
+    wysiwygValue: textValue,
     // One line of text is part of whatever line the template put it on, so it
     // is rendered inline and edited inline. Many lines of text are a block of
     // their own. A template that disagrees says so with `with { tag: ... }`
@@ -322,6 +334,7 @@ module.exports = (self) => {
       return field.textarea ? escaped.replace(/\r?\n/g, '<br />') : escaped;
     },
     extract(req, field, value) {
+      value = textValue(value);
       return value ? [ { text: value } ] : [];
     },
     convert(req, field, data, destination) {
@@ -353,12 +366,12 @@ module.exports = (self) => {
       const silent = field.silent === undefined ? true : field.silent;
       texts.push({
         weight: field.weight || 15,
-        text: value,
+        text: textValue(value),
         silent
       });
     },
     isEmpty(field, value) {
-      return !value.length;
+      return !textValue(value)?.length;
     },
     validate(field, options, warn, fail) {
       if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {

@@ -1671,7 +1671,12 @@ still output the value of this field with a regular template expression.`);
         if (!tag.match(/^[a-zA-Z][a-zA-Z0-9-]*$/)) {
           throw usage(`"${tag}" is not a valid HTML tag name.`);
         }
-        const value = object[field.name];
+        // A field type may refuse a stored value that is not its own, such as
+        // an area left behind by a field that once had this name. See
+        // `wysiwygValue` in the `string` and `richText` field types
+        const value = fieldType.wysiwygValue
+          ? fieldType.wysiwygValue(object[field.name])
+          : object[field.name];
         const docId = object._docId || ((object.metaType === 'doc') ? object._id : null);
         const canEdit = !!(
           object._edit &&

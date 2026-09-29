@@ -784,4 +784,173 @@ describe('Field Tag and Wysiwyg Fields', function () {
     assert.equal(page.sections[1].detail, '<p>The second detail</p>');
     assert.equal(page.sections[0].caption, 'The first caption');
   });
+
+  // A project that once had an area named `body` in a widget, removed it from
+  // the schema, and later added a `body` field of another type. The widgets
+  // saved in the meantime still carry the old area, which is an object
+  describe('a field that used to be an area', function () {
+    function legacyModules(bodyField) {
+      return {
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                parkedId: 'legacy',
+                type: 'legacy-page',
+                slug: '/legacy',
+                title: 'Legacy'
+              }
+            ],
+            types: [
+              {
+                name: 'legacy-page',
+                label: 'Legacy Page'
+              }
+            ]
+          }
+        },
+        'legacy-widget': {
+          extend: '@apostrophecms/widget-type',
+          fields: {
+            add: {
+              body: bodyField
+            }
+          }
+        },
+        'legacy-page': {
+          extend: '@apostrophecms/page-type',
+          fields: {
+            add: {
+              subtitle: {
+                type: 'string',
+                label: 'Subtitle'
+              },
+              main: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    legacy: {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+    }
+
+    async function standUpWithLegacyArea(newBodyField) {
+      apos = await t.create({
+        root: module,
+        modules: legacyModules({
+          type: 'area',
+          options: {
+            widgets: {
+              '@apostrophecms/rich-text': {}
+            }
+          }
+        })
+      });
+      const shortName = apos.options.shortName;
+      const req = apos.task.getReq({ mode: 'draft' });
+      const page = await apos.page.find(req, { slug: '/legacy' }).toObject();
+      page.main = {
+        _id: 'legacyArea',
+        metaType: 'area',
+        items: [
+          {
+            _id: 'legacyWidget',
+            metaType: 'widget',
+            type: 'legacy',
+            body: {
+              _id: 'legacyBody',
+              metaType: 'area',
+              items: [
+                {
+                  _id: 'legacyRichText',
+                  metaType: 'widget',
+                  type: '@apostrophecms/rich-text',
+                  content: '<p>Old area content</p>'
+                }
+              ]
+            }
+          }
+        ]
+      };
+      await apos.page.update(req, page);
+      await apos.page.publish(req, page);
+
+      // The area is gone from the schema, and a field of another type has
+      // taken its name. Same database
+      await apos.destroy();
+      apos = await t.create({
+        root: module,
+        shortName,
+        modules: legacyModules(newBodyField)
+      });
+    }
+
+    function renderBody(req, page) {
+      return apos.modules['legacy-page'].renderString(
+        req,
+        '{% field data.page.main.items[0], \'body\' %}',
+        { page }
+      );
+    }
+
+    for (const [ type, value, expected ] of [
+      [ 'string', 'Typed on the page', 'Typed on the page' ],
+      [ 'richText', '<p>Typed on the page</p>', '<p>Typed on the page</p>' ]
+    ]) {
+      describe(`now a ${type} field`, function () {
+        this.timeout(t.timeout);
+
+        beforeEach(async function () {
+          await standUpWithLegacyArea({
+            type,
+            label: 'Body'
+          });
+        });
+
+        it('should render the stale area as an empty value for the public', async function () {
+          const req = apos.task.getAnonReq();
+          const page = await apos.page.find(req, { slug: '/legacy' }).toObject();
+          const html = await renderBody(req, page);
+          assert(!html.includes('[object Object]'), html);
+          assert(!html.includes('Old area content'), html);
+          assert.match(html, /^<(span|div) class="apos-wysiwyg-field[^"]*">\s*<\/(span|div)>$/);
+        });
+
+        it('should hand the editor no value in place of the stale area', async function () {
+          const req = apos.task.getReq({
+            mode: 'draft',
+            query: { aposEdit: '1' }
+          });
+          const page = await apos.page.find(req, { slug: '/legacy' }).toObject();
+          const html = await renderBody(req, page);
+          assert(html.includes('data-patch-key="@legacyWidget.body"'), html);
+          assert(html.includes('data-value=\'null\''), html);
+        });
+
+        it('should still allow other edits to the document', async function () {
+          const req = apos.task.getReq({ mode: 'draft' });
+          const page = await apos.page.find(req, { slug: '/legacy' }).toObject();
+          // Not the title: a parked page keeps the title it was parked with
+          req.body = { _patches: [ { subtitle: 'Edited elsewhere' } ] };
+          const result = await apos.page.patch(req, page._id);
+          assert.equal(result.subtitle, 'Edited elsewhere');
+        });
+
+        it('should replace the stale area when the field is edited', async function () {
+          const req = apos.task.getReq({ mode: 'draft' });
+          const page = await apos.page.find(req, { slug: '/legacy' }).toObject();
+          req.body = { _patches: [ { '@legacyWidget.body': value } ] };
+          const result = await apos.page.patch(req, page._id);
+          assert.equal(result.main.items[0].body, expected);
+          const html = await renderBody(req, result);
+          assert(html.includes(expected), html);
+        });
+      });
+    }
+  });
 });

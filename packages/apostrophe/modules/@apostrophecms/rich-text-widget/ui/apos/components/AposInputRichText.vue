@@ -32,12 +32,27 @@
 // text widget uses, so a rich text field and a rich text widget behave the
 // same way and honor the same options.
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import textValue from 'Modules/@apostrophecms/schema/lib/textValue.js';
 
 export default {
   name: 'AposInputRichText',
   mixins: [ AposInputMixin ],
   emits: [ 'update:modelValue' ],
+  data() {
+    return {
+      // Overrides the mixin, to refuse a stale object. See `watchValue`
+      next: textValue(
+        (this.modelValue?.data !== undefined) ? this.modelValue.data : ''
+      )
+    };
+  },
   methods: {
+    // A stale object, e.g. an area that once had this field's name, is
+    // edited as an empty value. See `textValue`
+    watchValue() {
+      this.error = this.modelValue.error;
+      this.next = textValue(this.modelValue.data);
+    },
     update(content) {
       if (this.field.readOnly) {
         return;

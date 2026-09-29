@@ -1,5 +1,6 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import AposFieldDirectionMixin from 'Modules/@apostrophecms/schema/mixins/AposFieldDirection.js';
+import textValue from 'Modules/@apostrophecms/schema/lib/textValue.js';
 
 export default {
   name: 'AposInputString',
@@ -13,6 +14,10 @@ export default {
   },
   data() {
     return {
+      // Overrides the mixin, to refuse a stale object. See `watchValue`
+      next: textValue(
+        (this.modelValue?.data !== undefined) ? this.modelValue.data : ''
+      ),
       step: undefined,
       wasPopulated: false
     };
@@ -102,6 +107,12 @@ export default {
     this.wasPopulated = this.next && this.next.length;
   },
   methods: {
+    // A stale object, e.g. an area that once had this field's name, is
+    // edited as an empty value. See `textValue`
+    watchValue() {
+      this.error = this.modelValue.error;
+      this.next = textValue(this.modelValue.data);
+    },
     enterEmit() {
       if (this.field.enterSubmittable) {
         // Include the validated results in cases where an Enter keydown should
