@@ -1,17 +1,14 @@
 /* jshint node:true */
 
 // Local filesystem-based backend for uploadfs. See also
-// s3.js. The main difference between this backend and just using
-// the local filesystem directly is that it creates parent
-// folders automatically when they are discovered to be missing,
-// and it encourages you to write code that will still work
-// when you switch to the s3 backend
+// s3.js.
 
 const dirname = require('path').dirname;
 const fs = require('fs');
 const copyFile = require('../copyFile.js');
 const async = require('async');
 const utils = require('../utils.js');
+const disabledFileKey = require('./disabledFileKey.js');
 
 module.exports = function() {
   let uploadsPath;
@@ -30,16 +27,12 @@ module.exports = function() {
       if (!uploadsUrl) {
         return callback('uploadsUrl not set');
       }
-      // We use a timeout that we reinstall each time rather than
-      // an interval to avoid pileups
       timeout = setTimeout(cleanup, 1000);
       return callback(null);
 
       function cleanup() {
         timeout = null;
         const list = removeCandidates;
-        // Longest paths first, so we don't try to remove parents before children
-        // and wind up never getting rid of the parent
         list.sort(function(a, b) {
           if (a.length > b.length) {
             return -1;
@@ -49,33 +42,22 @@ module.exports = function() {
             return 0;
           }
         });
-        // Building new list for next pass
         removeCandidates = [];
-        // Parallelism here just removes things too soon, preventing a parent
-        // from being removed
-        // after a child
         return async.eachSeries(list, function(path, callback) {
           const uploadPath = uploadsPath + path;
           fs.rmdir(uploadPath, function(e) {
-            // We're not fussy about the outcome, if it still has files in it we're
-            // actually depending on this to fail
             if (!e) {
-              // It worked, so try to remove the parent (which will fail if
-              // not empty, etc.)
               add(dirname(path));
             }
             return callback(null);
           });
         }, function() {
-          // Try again in 1 second, typically removing another layer of
-          // parents if empty, etc.
           if (!self.destroyed) {
             timeout = setTimeout(cleanup, 1000);
           }
         });
 
         function add(path) {
-          // Don't remove uploadfs itself
           if (path.length > 1) {
             removeCandidates.push(path);
           }
@@ -84,7 +66,6 @@ module.exports = function() {
     },
 
     destroy: function(callback) {
-      // node cannot exit if we still hold a timeout
       if (timeout) {
         clearTimeout(timeout);
       }
@@ -114,17 +95,14 @@ module.exports = function() {
       }
     },
 
+    rename: function(from, to, callback) {
+      return fs.rename(uploadsPath + from, uploadsPath + to, callback);
+    },
+
     enable: function(path, callback) {
       if (self.options.disabledFileKey) {
-        return fs.rename(
-          uploadsPath + utils.getDisabledPath(path, self.options.disabledFileKey),
-          uploadsPath + path,
-          callback
-        );
+        return disabledFileKey.enable(self, path, callback);
       } else {
-        // World readable, owner writable. Reasonable since
-        // web accessible files are world readable in that
-        // sense regardless
         return fs.chmod(uploadsPath + path, self.getEnablePermissions(), callback);
       }
     },
@@ -135,14 +113,8 @@ module.exports = function() {
 
     disable: function(path, callback) {
       if (self.options.disabledFileKey) {
-        return fs.rename(
-          uploadsPath + path,
-          uploadsPath + utils.getDisabledPath(path, self.options.disabledFileKey),
-          callback
-        );
+        return disabledFileKey.disable(self, path, callback);
       } else {
-        // No access. Note this means you must explicitly
-        // enable to get read access back, even with copyFileOut
         return fs.chmod(uploadsPath + path, self.getDisablePermissions(), callback);
       }
     },
@@ -225,7 +197,6 @@ module.exports = function() {
       }
     },
 
-    // Exported for unit testing only
     _testCopyFile: function(path1, path2, options, callback) {
       return copyFile(path1, path2, options, callback);
     }
