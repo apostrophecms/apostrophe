@@ -1,5 +1,0 @@
----
-'@apostrophecms/db-connect': patch
----
-
-Fixed the sqlite adapter rejecting a Windows database path. The adapter parsed `sqlite://` URIs with `new URL`, but the thing after the scheme is a filesystem path, not a URL. On Windows, `sqlite://C:\site\data\site.sqlite` was read as host `C` with port `\site\data\site.sqlite` and thrown out as `ERR_INVALID_URL`, so a site using the default sqlite adapter could not start at all; POSIX escaped this only because its absolute paths begin with `/`. The path after the scheme is now taken verbatim, which also fixes three quieter bugs on every platform: a path containing a space was percent-encoded, so a project under `My Project` silently created and used a directory named `My%20Project`; the relative form `sqlite://Data/site.db` was lowercased to `data/`; and `sqlite://:memory:` failed with a URL parse error instead of the adapter's own explanation. The `file://` spelling of a drive path, `sqlite:///C:/site/data/site.sqlite`, is now accepted on Windows as well.
