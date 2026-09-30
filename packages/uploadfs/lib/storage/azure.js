@@ -266,6 +266,7 @@ module.exports = function() {
         options.replicateClusters.push({
           account: options.account,
           key: options.key,
+          sas: options.sas,
           container: options.container
         });
       }
@@ -513,10 +514,12 @@ module.exports = function() {
     getUrl: function (path) {
       /** @type {BlobSvc} */
       const blob = self.blobSvcs[0];
-      const baseUrl = blob.svc.getContainerClient(blob.container)
-        .getBlobClient('')
-        .url
-        .replace(/\/$/, '');
+      // In SAS mode the client URL carries the SAS token as its query
+      // string. It is a credential and must never appear in public URLs
+      const url = new URL(blob.svc.getContainerClient(blob.container).url);
+      url.search = '';
+      url.hash = '';
+      const baseUrl = url.toString().replace(/\/$/, '');
       return utils.addPathToUrl(self.options, baseUrl, path);
     },
 

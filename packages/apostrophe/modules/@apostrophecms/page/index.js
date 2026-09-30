@@ -334,8 +334,8 @@ module.exports = {
               throw self.apos.error('forbidden');
             }
 
+            // Only suggest pages the user is allowed to view
             const query = self.getRestQuery(req)
-              .permission(false)
               .limit(10)
               .relationships(false)
               .areas(false);
@@ -381,8 +381,10 @@ module.exports = {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
+            // The tree includes pages the user can view but not necessarily
+            // edit. Pages the user cannot view (visibility, viewRole) are
+            // left out, along with their descendants
             const page = await self.getRestQuery(req)
-              .permission(false)
               .and({ level: 0 })
               .children({
                 depth: 1000,
@@ -390,7 +392,6 @@ module.exports = {
                 orphan: null,
                 relationships: false,
                 areas: false,
-                permission: false,
                 withPublished: self.apos.launder.boolean(req.query.withPublished),
                 project: self.getAllProjection()
               }).toObject();
@@ -457,14 +458,17 @@ module.exports = {
         ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
-          // Edit access to draft is sufficient to fetch either
           await self.publicApiCheckAsync(req);
           const criteria = self.getIdCriteria(_id);
-          const result = await self
+          // Normal view permissions apply (visibility, viewRole)
+          const found = await self
             .getRestQuery(req)
-            .permission(false)
             .and(criteria)
             .toObject();
+          const manager = found && self.apos.doc.getManager(found.type);
+          const result = manager
+            ? manager.removeForbiddenFields(req, found)
+            : found;
 
           if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
@@ -924,6 +928,7 @@ module.exports = {
       get: {
         ':_id/locales': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          await self.publicApiCheckAsync(req);
           return {
             results: await self.apos.doc.getLocales(req, _id)
           };
@@ -1665,12 +1670,14 @@ database.`);
             // Move outside tree
             throw self.apos.error('forbidden');
           }
-          // Enforce destination-parent authorization: a cross-parent move
-          // into a non-archive destination requires "create" permission on
-          // that destination (the same boundary the page-insert route
-          // enforces). The one exception is restoring a page out of the
-          // archive, which is permitted into any destination the actor may
-          // edit even without "create".
+          // Enforce destination-parent authorization: a move into, or a
+          // reorder within, a non-archive parent requires "create" permission
+          // on that parent (the same boundary the page-insert route
+          // enforces). This includes same-parent reorders, since they re-rank
+          // the parent's other children (GHSA-2jrp-qc93-h2j8). The one
+          // exception is restoring a page out of the archive, which is
+          // permitted into any destination the actor may edit even without
+          // "create".
           //
           // That exception is NOT dead code: with @apostrophecms-pro/advanced-
           // permission, per-document permissions grant edit (and view/publish)
@@ -1682,7 +1689,6 @@ database.`);
           // x4fh) gated the whole check on "moving out of the archive" and
           // disabled create enforcement for every normal move.
           if (
-            (oldParent._id !== parent._id) &&
             (parent.type !== '@apostrophecms/archive-page') &&
             (!parent._create) &&
             !(oldParent.type === '@apostrophecms/archive-page' && parent._edit)

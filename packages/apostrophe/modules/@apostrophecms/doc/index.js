@@ -1783,13 +1783,22 @@ module.exports = {
         }
         await self.emit('afterReplicate');
       },
-      // Determine which locales exist for the given doc _id
+      // Determine which locales exist for the given doc _id. Only
+      // locale and mode versions of the doc that `req` is allowed
+      // to view are returned.
       async getLocales(req, _id) {
         const criteria = {
-          aposDocId: _id.split(':')[0]
+          $and: [
+            {
+              aposDocId: _id.split(':')[0]
+            },
+            self.apos.permission.criteria(req, 'view')
+          ]
         };
         if (!self.apos.permission.can(req, 'view-draft')) {
-          criteria.aposMode = 'published';
+          criteria.$and.push({
+            aposMode: 'published'
+          });
         }
         const existing = await self.apos.doc.db.find(criteria).project({
           _id: 1,

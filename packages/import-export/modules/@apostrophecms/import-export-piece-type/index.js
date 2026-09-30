@@ -52,7 +52,16 @@ module.exports = {
       post: {
         ...self.options.importExport?.import !== false && {
           importExportImport: [
-            self.apos.http.bigUploadMiddleware(),
+            // The chunked upload protocol allocates storage and writes
+            // files before the handler below ever runs, so the same check
+            // the handler makes has to be made up front too
+            self.apos.http.bigUploadMiddleware({
+              authorize(req) {
+                if (!req.user) {
+                  throw self.apos.error('forbidden');
+                }
+              }
+            }),
             async (req) => {
               return self.apos.modules['@apostrophecms/import-export']
                 .import(req, self.__meta.name);

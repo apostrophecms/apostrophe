@@ -667,6 +667,24 @@ module.exports = self => {
         throw new Error(`Import is disabled for this module: ${doc.type}`);
       }
 
+      // The key column name and its value both come from the imported file
+      // and end up in a database query. gzip archives are parsed with EJSON
+      // and CSV cells are JSON-parsed, so the value may be an object such as
+      // `{ $ne: null }`: only accept plain field names and plain values,
+      // so a row can only ever match on the exact key it names.
+      if (!updateField || updateField.startsWith('$') || updateField.includes('.')) {
+        throw new Error(`Invalid key column: ${updateKey}`);
+      }
+      const keyValue = doc[updateKey];
+      if (
+        (keyValue !== undefined) &&
+        (keyValue !== null) &&
+        (typeof keyValue !== 'string') &&
+        !((typeof keyValue === 'number') && Number.isFinite(keyValue))
+      ) {
+        throw new Error(`Invalid value for key column ${updateKey}: must be a string or a number`);
+      }
+
       if (!doc[updateField]) {
         doc[updateField] = doc[updateKey];
       }

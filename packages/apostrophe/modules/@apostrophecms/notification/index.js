@@ -115,6 +115,7 @@ module.exports = {
       }
     },
     getOne(req, _id) {
+      self.requireUser(req);
       return self.find(req, { displayingIds: [ _id ] });
     },
     async post(req) {
@@ -176,25 +177,20 @@ module.exports = {
       throw self.apos.error('unimplemented');
     },
     async patch(req, _id) {
+      self.requireUser(req);
       const dismissed = self.apos.launder.boolean(req.body.dismissed);
       if (dismissed) {
-        await self.emit('beforeSave', req, {
-          _id,
-          dismissed
-        });
-
-        await self.db.updateOne({ _id }, {
-          $set: {
-            dismissed
-          },
-          $currentDate: {
-            updatedAt: true
-          }
-        });
+        await self.dismiss(req, _id);
       }
     },
+    // Like `dismiss`, a notification that is not the user's own,
+    // or no longer exists, is left alone without an error
     async delete(req, _id) {
-      await self.db.deleteMany({ _id });
+      self.requireUser(req);
+      await self.db.deleteMany({
+        _id,
+        userId: req.user._id
+      });
     }
   }),
   apiRoutes(self) {
@@ -204,6 +200,7 @@ module.exports = {
         // emitting twice. Returns `true` if the event was found and cleared.
         // Returns `false` if not found (because it was already cleared).
         ':_id/clear-event': async function (req) {
+          self.requireUser(req);
           const lockId = `clear-event-${req.params._id}`;
 
           let response;
@@ -212,6 +209,7 @@ module.exports = {
 
             response = await self.db.updateOne({
               _id: req.params._id,
+              userId: req.user._id,
               event: {
                 $ne: null
               }
@@ -363,17 +361,25 @@ module.exports = {
 
       // The dismiss method accepts the following arguments:
       // - req: A valid req.
-      // - noteId: The _id of an active notification.
+      // - noteId: The _id of an active notification belonging to
+      //   `req.user`. A notification belonging to anyone else, or one
+      //   that no longer exists, is left alone without an error.
       // - delay: An optional integer of milliseconds to pause before the
       //   notification actually dismisses.
       async dismiss (req, noteId, delay) {
-        if (!req.user) {
-          throw self.apos.error('forbidden');
-        }
+        self.requireUser(req);
 
         await pause(delay);
 
         try {
+          const owned = await self.db.findOne({
+            _id: noteId,
+            userId: req.user._id
+          });
+          if (!owned) {
+            return;
+          }
+
           await self.emit('beforeSave', req, {
             _id: noteId,
             dismissed: true
@@ -381,7 +387,8 @@ module.exports = {
 
           await self.db.updateOne(
             {
-              _id: noteId
+              _id: noteId,
+              userId: req.user._id
             },
             {
               $set: {
@@ -405,6 +412,15 @@ module.exports = {
           return new Promise((resolve) => setTimeout(resolve, delay));
         }
       },
+      // Notifications are private to the user they were triggered for,
+      // so every route and method acting on them requires a user and
+      // acts only on that user's own notifications.
+      requireUser(req) {
+        if (!req.user?._id) {
+          throw self.apos.error('forbidden');
+        }
+      },
+
       // Resolves with an object with `notifications` and `dismissed`
       // properties.
       //
