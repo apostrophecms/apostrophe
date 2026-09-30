@@ -40,10 +40,20 @@ module.exports = {
         }
 
         try {
+          if ((typeof token) !== 'string') {
+            throw self.apos.error('invalid', req.t('AposRecap:invalidToken'));
+          }
           const url = 'https://www.google.com/recaptcha/api/siteverify';
-          const recaptchaUri = `${url}?secret=${secret}&response=${token}`;
-
-          const response = await self.apos.http.post(recaptchaUri);
+          // Encode the parameters so a crafted token cannot inject others
+          const response = await self.apos.http.post(url, {
+            body: new URLSearchParams({
+              secret,
+              response: token
+            }).toString(),
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          });
 
           if (!response.success) {
             self.logInfo(req, 'recaptcha-invalid-token', {

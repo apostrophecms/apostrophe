@@ -256,6 +256,15 @@ function sanitizeHtml(html, options, _recursing) {
   let transformMap;
   let skipText;
   let skipTextDepth;
+  // Browsers (with scripting enabled) parse <noscript> content as raw text up
+  // to the first `</noscript`, but htmlparser2 parses it as markup, so an end
+  // tag for an ancestor can make htmlparser2 close the <noscript> implicitly
+  // much earlier. `rawTextEnd` is the source offset where the browser ends the
+  // <noscript> being discarded, and `skipRawText` is set while htmlparser2 has
+  // already closed it but the browser has not, so that we keep discarding
+  // until we reach that offset (GHSA-x3q4-9hxx-gx8m).
+  let rawTextEnd;
+  let skipRawText;
   let addedText = false;
 
   initializeState();
@@ -265,6 +274,7 @@ function sanitizeHtml(html, options, _recursing) {
       if (options.onOpenTag) {
         options.onOpenTag(name, attribs);
       }
+      updateRawTextRegion();
 
       // If `enforceHtmlBoundary` is `true` and this has found the opening
       // `html` tag, reset the state.
@@ -272,6 +282,9 @@ function sanitizeHtml(html, options, _recursing) {
         initializeState();
       }
 
+      if (skipRawText) {
+        return;
+      }
       if (skipText) {
         skipTextDepth++;
         return;
@@ -313,6 +326,9 @@ function sanitizeHtml(html, options, _recursing) {
           if (nonTextTagsArray.indexOf(name) !== -1) {
             skipText = true;
             skipTextDepth = 1;
+            if (frame.tag.toLowerCase() === 'noscript') {
+              rawTextEnd = findRawTextEnd('noscript', parser.endIndex + 1);
+            }
           }
         }
       }
@@ -410,6 +426,14 @@ function sanitizeHtml(html, options, _recursing) {
                 delete frame.attribs[a];
                 return;
               }
+            }
+
+            // `<meta http-equiv="refresh" content="0;url=...">` navigates to a
+            // URL embedded in `content`, so scheme check that URL too
+            // (GHSA-cv27-6wvh-8x7j). Other meta `content` values are left alone.
+            if (name === 'meta' && a.toLowerCase() === 'content' && isRefresh(attribs) && naughtyRefresh(value)) {
+              delete frame.attribs[a];
+              return;
             }
 
             if (name === 'script' && a === 'src') {
@@ -598,7 +622,8 @@ function sanitizeHtml(html, options, _recursing) {
       frame.openingTagLength = result.length - frame.tagPosition;
     },
     ontext: function(text) {
-      if (skipText) {
+      updateRawTextRegion();
+      if (skipText || skipRawText) {
         return;
       }
       const lastFrame = stack[stack.length - 1];
@@ -680,10 +705,24 @@ function sanitizeHtml(html, options, _recursing) {
         options.onCloseTag(name, isImplied);
       }
 
-      if (skipText) {
+      updateRawTextRegion();
+      if (skipRawText) {
+        // Still inside the browser's raw text: only close elements that were
+        // opened before the discarded region, so the output stays balanced.
+        const lastFrame = stack[stack.length - 1];
+        if (!lastFrame || lastFrame.tag !== name) {
+          return;
+        }
+      } else if (skipText) {
         skipTextDepth--;
         if (!skipTextDepth) {
           skipText = false;
+          if (rawTextEnd !== null) {
+            // htmlparser2 closed the element implicitly (e.g. an ancestor's
+            // end tag) before the browser would. Close its frame below, but
+            // keep discarding up to the browser's end tag.
+            skipRawText = true;
+          }
         } else {
           return;
         }
@@ -786,6 +825,27 @@ function sanitizeHtml(html, options, _recursing) {
     transformMap = {};
     skipText = false;
     skipTextDepth = 0;
+    rawTextEnd = null;
+    skipRawText = false;
+  }
+
+  // Leave the raw text region once the parser reaches the offset where the
+  // browser ends it.
+  function updateRawTextRegion() {
+    if (rawTextEnd !== null && parser.startIndex >= rawTextEnd) {
+      rawTextEnd = null;
+      skipRawText = false;
+    }
+  }
+
+  // Offset of the end tag that ends a raw text element in a browser: the
+  // first case-insensitive `</name` followed by HTML whitespace, `/` or `>`.
+  // With no such end tag the element runs to the end of the input.
+  function findRawTextEnd(tagName, from) {
+    const re = new RegExp('</' + tagName + '[\\t\\n\\f\\r />]', 'ig');
+    re.lastIndex = from;
+    const match = re.exec(html);
+    return match ? match.index : Infinity;
   }
 
   function escapeHtml(s, quote) {
@@ -824,6 +884,86 @@ function sanitizeHtml(html, options, _recursing) {
     });
   }
 
+  function isRefresh(attribs) {
+    return Object.keys(attribs).some(function(a) {
+      return a.toLowerCase() === 'http-equiv' &&
+        String(attribs[a]).trim().toLowerCase() === 'refresh';
+    });
+  }
+
+  // True if the `content` of a `<meta http-equiv="refresh">` must be dropped:
+  // its destination URL fails the scheme policy, or it cannot be parsed as a
+  // refresh at all (a browser would ignore it then, so nothing is lost).
+  // Extracts the URL the way the HTML standard's "shared declarative refresh
+  // steps" do, so that spelling, separator, quoting and case variations of
+  // `url=`, or no `url=` at all, all yield the URL a browser would navigate to.
+  function naughtyRefresh(content) {
+    const input = String(content);
+    const isWhitespace = function(c) {
+      return c === ' ' || c === '\t' || c === '\n' || c === '\f' || c === '\r';
+    };
+    let position = 0;
+    const skipWhitespace = function() {
+      while (position < input.length && isWhitespace(input[position])) {
+        position++;
+      }
+    };
+    const lowerAt = function(i) {
+      return (input[i] || '').toLowerCase();
+    };
+    skipWhitespace();
+    const timeStart = position;
+    while (position < input.length && /[0-9.]/.test(input[position])) {
+      position++;
+    }
+    if (position === timeStart) {
+      return true;
+    }
+    if (position < input.length) {
+      const c = input[position];
+      if (c !== ';' && c !== ',' && !isWhitespace(c)) {
+        return true;
+      }
+      skipWhitespace();
+      if (input[position] === ';' || input[position] === ',') {
+        position++;
+      }
+      skipWhitespace();
+    }
+    if (position >= input.length) {
+      // No URL: refreshes the current document
+      return false;
+    }
+    let url = input.slice(position);
+    let quoted = true;
+    if (lowerAt(position) === 'u') {
+      quoted = false;
+      if (lowerAt(position + 1) === 'r' && lowerAt(position + 2) === 'l') {
+        position += 3;
+        skipWhitespace();
+        if (input[position] === '=') {
+          position++;
+          skipWhitespace();
+          quoted = true;
+        }
+      }
+    }
+    if (quoted) {
+      const quote = input[position];
+      if (quote === '"' || quote === '\'') {
+        position++;
+      }
+      url = input.slice(position);
+      if (quote === '"' || quote === '\'') {
+        const end = url.indexOf(quote);
+        if (end !== -1) {
+          url = url.slice(0, end);
+        }
+      }
+    }
+    return naughtyHref('meta', url);
+  }
+
   // True if this is an SVG SMIL animation element that animates a URL-bearing
   // attribute, e.g. `<animate attributeName="href" values="#safe;javascript:...">`.
   //
@@ -839,12 +979,14 @@ function sanitizeHtml(html, options, _recursing) {
   // animation on the strength of its target instead. Animations of attributes
   // that are not URL sinks, such as `fill` or `opacity`, are unaffected.
   function animatesUrlAttribute(name, attribs) {
-    if (svgAnimationTags.indexOf(name.toLowerCase()) === -1) {
+    // In an XML serialization a prefixed name such as `svg:animate` is the same
+    // element as `animate`, so match on the local name (GHSA-374f-7chj-9948).
+    if (svgAnimationTags.indexOf(localPart(name)) === -1) {
       return false;
     }
     const schemeCheckedAttributes = options.allowedSchemesAppliedToAttributes || [];
     return Object.keys(attribs || {}).some(function(attributeName) {
-      if (attributeName.toLowerCase() !== 'attributename') {
+      if (localPart(attributeName) !== 'attributename') {
         return false;
       }
       const target = (attribs[attributeName] || '').trim().toLowerCase();
@@ -855,6 +997,12 @@ function sanitizeHtml(html, options, _recursing) {
         schemeCheckedAttributes.indexOf(target) !== -1 ||
         schemeCheckedAttributes.indexOf(localName) !== -1;
     });
+  }
+
+  // Lowercased name with any namespace prefix removed.
+  function localPart(name) {
+    const lower = name.toLowerCase();
+    return lower.slice(lower.lastIndexOf(':') + 1);
   }
 
   function parseUrl(value) {

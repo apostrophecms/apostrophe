@@ -42,9 +42,16 @@ module.exports = {
         }
 
         try {
+          if ((typeof token) !== 'string') {
+            throw self.apos.error('invalid', req.t('AposHcaptcha:invalidToken'));
+          }
           const url = 'https://hcaptcha.com/siteverify';
           const options = {
-            body: `response=${token}&secret=${secret}`,
+            // Encode the parameters so a crafted token cannot inject others
+            body: new URLSearchParams({
+              response: token,
+              secret
+            }).toString(),
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded'
             }

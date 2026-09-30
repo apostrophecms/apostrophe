@@ -403,6 +403,7 @@ module.exports = {
         // for which the given document has been localized
         ':_id/locales': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          await self.publicApiCheckAsync(req);
           return {
             results: await self.apos.doc.getLocales(req, _id)
           };

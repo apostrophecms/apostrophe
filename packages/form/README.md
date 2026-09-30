@@ -161,6 +161,7 @@ Configure `@apostrophecms/form` with these options:
 | `recaptchaSecret` | String | Secret key from reCAPTCHA site configuration |
 | `recaptchaSite` | String | Site key for reCAPTCHA integration |
 | `classPrefix` | String | Namespace for CSS classes on form elements |
+| `uploadLimits` | Object | Limits for multipart form submissions, merged with the defaults: `fileSize` (bytes per file, default: the `maxSize` option of `@apostrophecms/attachment` if set, otherwise 20MB), `files` (default: `20`), `fields` (default: `50`) and `fieldSize` (bytes per non-file field, default: 1MB). Files are only accepted for forms that have a matching file field |
 
 ### Available Field Types
 

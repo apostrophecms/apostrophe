@@ -5,6 +5,7 @@ const fs = require('fs');
 const { rimraf } = require('rimraf');
 const delimiter = require('path').delimiter;
 const createLogger = require('./lib/logger.js');
+const utils = require('./lib/utils.js');
 
 function generateId() {
   return crypto.randomBytes(16).toString('hex');
@@ -186,6 +187,10 @@ function Uploadfs() {
       callback = options;
       options = {};
     }
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
     path = prefixPath(path);
     return self._storage.copyIn(localPath, path, options, callback);
   };
@@ -211,11 +216,15 @@ function Uploadfs() {
    * @param  {Function} callback    Receives the usual err argument
    */
   self.copyOut = function (path, localPath, options, callback) {
-    path = prefixPath(path);
     if (typeof options === 'function') {
       callback = options;
       options = {};
     }
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
+    path = prefixPath(path);
     return self._storage.copyOut(path, localPath, options, callback);
   };
 
@@ -230,6 +239,10 @@ function Uploadfs() {
    * @param  {Function} callback    Receives the usual err argument
    */
   self.streamOut = function (path, options) {
+    const error = utils.checkPath(path);
+    if (error) {
+      return utils.errorStream(error);
+    }
     path = prefixPath(path);
     return self._storage.streamOut(path, options);
   };
@@ -296,6 +309,11 @@ function Uploadfs() {
     if (typeof options === 'function') {
       callback = options;
       options = {};
+    }
+    // copyIn would also refuse a bad path, but not before we did all the work
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
     }
 
     const sizes = options.sizes || imageSizes;
@@ -479,6 +497,10 @@ function Uploadfs() {
   };
 
   self.remove = function (path, callback) {
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
     path = prefixPath(path);
     return self._storage.remove(path, callback);
   };
@@ -499,6 +521,10 @@ function Uploadfs() {
    */
 
   self.enable = function (path, callback) {
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
     path = prefixPath(path);
     return self._storage.enable(path, callback);
   };
@@ -519,6 +545,10 @@ function Uploadfs() {
    */
 
   self.disable = function (path, callback) {
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
     path = prefixPath(path);
     return self._storage.disable(path, callback);
   };
