@@ -19,13 +19,16 @@
     "apostrophe"
   ],
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/anchors#readme",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/apostrophe/issues"
+  },
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "devDependencies": {
     "apostrophe": "workspace:^",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.5"
+    "mocha": "^11.8.0"
   },
   "publishConfig": {
     "access": "public"

@@ -19,13 +19,13 @@
   "license": "MIT",
   "devDependencies": {
     "apostrophe": "workspace:^",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
     "lodash.range": "^3.2.0",
-    "mocha": "^11.7.5"
+    "mocha": "^11.8.0"
   },
   "dependencies": {
-    "redis": "^4.0.1"
+    "redis": "^4.7.1"
   },
   "apostropheTestConfig": {
     "requiresRedis": true

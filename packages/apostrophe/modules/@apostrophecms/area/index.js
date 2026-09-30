@@ -121,17 +121,43 @@ module.exports = {
             return 'aposLivePreviewSchemaNotYetValid';
           }
 
+          // A widget of a document version, posted with the widget it was
+          // in the version before, hands it to its template when its type
+          // sets `versionsRender`
+          const older = await getOlderVersion();
+
           widget._edit = true;
           widget._docId = _docId;
           // So that carrying out relationship loading again can yield results
           // (the idsStorage must be populated as if we were saving)
           self.apos.schema.prepareForStorage(req, widget);
+          if (older) {
+            self.apos.schema.prepareForStorage(req, older);
+          }
           await load();
+          if (older) {
+            widget._olderVersion = older;
+          }
           return render();
+          async function getOlderVersion() {
+            const data = req.body.widget?._olderVersion;
+            if (!data || (typeof data !== 'object') || !manager.options.versionsRender) {
+              return null;
+            }
+            try {
+              return await manager.sanitize(req, data, options);
+            } catch (e) {
+              // It renders as it would without its older version
+              return null;
+            }
+          }
           async function load() {
             // Hint to call nested widget loaders as if it were a doc
             widget._virtual = true;
-            return manager.loadIfSuitable(req, [ widget ]);
+            if (older) {
+              older._virtual = true;
+            }
+            return manager.loadIfSuitable(req, older ? [ widget, older ] : [ widget ]);
           }
           async function render() {
             if (req.aposExternalFront) {
@@ -382,6 +408,44 @@ module.exports = {
         }
         return `${found.dotPath}.${name}`;
       },
+      // Implementation of the `{% area %}` custom tag, also used by the
+      // `{% field %}` custom tag when the field in question is an area, so
+      // that the two produce identical markup. `usage` is an optional
+      // function accepting a message and returning an error that also
+      // explains the correct syntax of the tag being rendered.
+      async renderAreaTag(req, doc, name, _with, {
+        usage = (message) => new Error(message)
+      } = {}) {
+        let area;
+        if ((!doc) || ((typeof doc) !== 'object')) {
+          throw usage('You must pass an existing doc or widget as the first argument.');
+        }
+        if ((typeof name) !== 'string') {
+          throw usage('The second argument must be an area name.');
+        }
+        if (!name.match(/^\w+$/)) {
+          throw usage('area names should be made up only of letters, underscores and digits. Otherwise they will not save properly.');
+        }
+        area = doc[name];
+        if (!area) {
+          area = await self.addMissingArea(doc, name, { throwIfNotFound: true });
+        }
+        const manager = self.apos.util.getManagerOf(doc);
+        const field = manager.schema.find(field => field.name === name);
+        if (!field) {
+          throw new Error(`The doc of type ${doc.type} with the slug ${doc.slug} has no field named ${name}.
+In Apostrophe 3.x areas must be part of the schema for each page or piece type.`);
+        }
+        area._fieldId = field._id;
+        area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
+        // For existing areas this is propagated at load time, areas in
+        // array items will always be existing areas
+        area._edit = area._edit || doc._edit;
+
+        self.prepForRender(area, doc, name);
+        const content = await self.renderArea(req, area, _with);
+        return content;
+      },
       prepForRender(area, context, fieldName) {
         const manager = self.apos.util.getManagerOf(context);
         const field = manager.schema.find(field => field.name === fieldName);
@@ -550,7 +614,10 @@ module.exports = {
           if (self.apos.externalFrontKey) {
             await self.apos.template.annotateDocForExternalFront(
               doc,
-              { scene: req.scene }
+              {
+                scene: req.scene,
+                req
+              }
             );
           }
 
@@ -697,7 +764,10 @@ module.exports = {
           data.type = type;
           return manager.output(req, data, options);
         } catch (e) {
-          console.error(e);
+          self.logError(req, 'widget-render-error', e.message, {
+            widgetType: type,
+            stack: e.stack
+          });
           throw e;
         }
       },

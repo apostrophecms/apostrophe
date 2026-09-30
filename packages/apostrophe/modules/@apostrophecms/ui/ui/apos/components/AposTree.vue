@@ -36,7 +36,7 @@
 
 <script>
 import { klona } from 'klona';
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 
 export default {
   name: 'AposTree',

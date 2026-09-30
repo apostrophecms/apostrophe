@@ -35,7 +35,6 @@ module.exports = {
     return {
       post: {
         async aiHelper(req) {
-          console.log('req.body', req.body);
           try {
             const aiHelper = self.apos.modules['@apostrophecms/ai-helper'];
             aiHelper.checkPermissions(req);

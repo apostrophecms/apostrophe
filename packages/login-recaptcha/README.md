@@ -58,6 +58,19 @@ module.exports = {
 
 Once configured, reCAPTCHA verification should work on all login attempts.
 
+### Right-to-left websites
+
+On a website whose current locale is right-to-left, the login page is laid out right-to-left as well (the reCAPTCHA badge keeps its own fixed position). If your editors prefer a left-to-right login page, set the `direction` option of the `@apostrophecms/login` module (*not* this module):
+
+```javascript
+// modules/@apostrophecms/login/index.js
+module.exports = {
+  options: {
+    direction: 'ltr'
+  }
+};
+```
+
 ### Content security headers
 
 If your site has a content security policy, including if you use the [Apostrophe Security Headers](https://www.npmjs.com/package/@apostrophecms/security-headers) module, you will need to add additional configuration to use this module. This module adds a script tag to the site's `head` tag fetching reCAPTCHA code. That reCAPTCHA code also constructs an iframe. The external script and iframe use the `www.google.com` and `www.gstatic.com` domains, so we need to allow resources from that domain.

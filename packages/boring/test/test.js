@@ -47,12 +47,12 @@ describe('boring', function() {
     assert(argv._[1] === 'sideways');
     assert(argv.foo === true);
     assert(argv.bar === 'whee');
-    assert(argv["super-cool"] === 'totally');
+    assert(argv['super-cool'] === 'totally');
     const valid = {
       foo: 1,
       bar: 1,
       _: 1,
-      "super-cool": 1
+      'super-cool': 1
     };
     for (const key in argv) {
       if (!valid[key]) {

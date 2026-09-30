@@ -548,7 +548,11 @@ module.exports = {
         let role = argv._[2] || argv.role;
         if (!role) {
           role = 'admin';
-          console.log('You did not pass a second argument or --role, assuming admin');
+          self.logWarn(
+            'role-assumed',
+            'You did not pass a second argument or --role, assuming admin',
+            { role }
+          );
         }
         if (![ 'guest', 'contributor', 'editor', 'admin' ].includes(role)) {
           throw 'Second argument or --role must be one of: guest, contributor, editor, admin';

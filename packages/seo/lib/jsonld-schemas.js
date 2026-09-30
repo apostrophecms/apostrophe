@@ -1,7 +1,10 @@
 const _ = require('lodash');
 const { getImageData } = require('./utils');
 class JsonLdSchemaHandler {
-  constructor(customSchemas = {}, seoFieldMappings = {}) {
+  constructor(customSchemas = {}, seoFieldMappings = {}, seoModule = null) {
+    // The module is the log seam; the handler itself has no apos context.
+    this.seoModule = seoModule;
+
     this.schemas = {
       WebSite: this.getWebsiteSchema,
       Organization: this.getOrganizationSchema,
@@ -35,7 +38,7 @@ class JsonLdSchemaHandler {
   // Debug logging helper - only logs when APOS_SEO_DEBUG is enabled
   logDebug(message, ...data) {
     if (process.env.APOS_SEO_DEBUG) {
-      console.warn(`[SEO] ${message}`, ...data);
+      this.seoModule?.logDebug('jsonld-debug', message, data.length ? { data } : undefined);
     }
   }
 

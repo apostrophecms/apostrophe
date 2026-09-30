@@ -1,4 +1,4 @@
-import { isEqual } from 'lodash';
+import { isEqual } from 'apostrophe/lib/beneath.js';
 import {
   ref, unref, computed, nextTick
 } from 'vue';

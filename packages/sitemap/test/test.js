@@ -1142,6 +1142,55 @@ describe('Sitemap – static build URL generation', function () {
   });
 });
 
+describe('Sitemap – locale hostname scheme consistency', function () {
+  let apos;
+
+  before(async function () {
+    apos = await t.create({
+      root: module,
+      baseUrl: 'https://kidney.ca',
+      testModule: true,
+      modules: getAppConfig({
+        multilanguage: true,
+        perLocale: true
+      })
+    });
+  });
+
+  after(async function () {
+    await t.destroy(apos);
+  });
+
+  it('per-locale sitemap for a locale hostname should use the baseUrl scheme', async function () {
+    const frXml = await apos.http.get('/sitemaps/fr.xml');
+
+    assert(frXml.indexOf('<loc>https://fr.example.com/</loc>') !== -1,
+      'French locale hostname sitemap should use https, matching the site baseUrl scheme');
+    assert(frXml.indexOf('http://fr.example.com') === -1,
+      'French locale hostname sitemap should not fall back to http');
+  });
+
+  it('hreflang alternates for a locale hostname should also use the baseUrl scheme', async function () {
+    const enXml = await apos.http.get('/sitemaps/en.xml');
+
+    assert(
+      enXml.indexOf('hreflang="fr" href="https://fr.example.com/"') !== -1,
+      'French hreflang alternate embedded in the English sitemap should use https'
+    );
+    assert(
+      enXml.indexOf('href="http://fr.example.com/"') === -1,
+      'French hreflang alternate should not fall back to http'
+    );
+  });
+
+  it('sitemap index should use the baseUrl scheme for every locale entry', async function () {
+    const indexXml = await apos.http.get('/sitemaps/index.xml');
+
+    assert(indexXml.indexOf('<loc>https://kidney.ca/sitemaps/en.xml</loc>') !== -1);
+    assert(indexXml.indexOf('<loc>https://kidney.ca/sitemaps/fr.xml</loc>') !== -1);
+  });
+});
+
 function getProductAppConfig({
   perPage = 3, staticUrls = false, multilanguage = false
 } = {}) {

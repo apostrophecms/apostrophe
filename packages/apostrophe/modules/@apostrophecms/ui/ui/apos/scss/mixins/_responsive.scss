@@ -8,6 +8,7 @@ $breakpoints: (
 );
 
 $modal-rail-right-w: 22%;
+$modal-rail-collapsed-w: 32px;
 
 // We default to mobile first, but make a max-with option available as well.
 @mixin media-up($bp) {

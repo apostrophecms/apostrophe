@@ -41,6 +41,12 @@ describe('Attachment', function() {
               disabledFileKey: 'testkey'
             }
           }
+        },
+        // The docIds counts below track documents only, not version records
+        '@apostrophecms/image': {
+          options: {
+            versions: false
+          }
         }
       }
     });
@@ -266,8 +272,7 @@ describe('Attachment', function() {
       assert(attachment);
       assert(attachment.archived === false);
       assert(attachment.docIds);
-      // Should be 3 because of "previous"
-      assert(attachment.docIds.length === 3);
+      assert(attachment.docIds.length === 2);
       assert(attachment.docIds.find(docId => docId === `${image.aposDocId}:en:draft`));
       assert(attachment.docIds.find(docId => docId === `${image.aposDocId}:en:published`));
       assert(attachment.archivedDocIds);
@@ -283,8 +288,8 @@ describe('Attachment', function() {
       await apos.image.update(req, image);
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(!attachment.archived);
-      // Because "draft" and "previous" both have it, unarchived
-      assert(attachment.docIds.length === 2);
+      // Because the draft still has it, unarchived
+      assert(attachment.docIds.length === 1);
       assert(attachment.archivedDocIds.length === 1);
       // Should still be accessible at this point because the draft still uses
       // it
@@ -306,7 +311,7 @@ describe('Attachment', function() {
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(attachment.archived);
       assert(attachment.docIds.length === 0);
-      assert(attachment.archivedDocIds.length === 3);
+      assert(attachment.archivedDocIds.length === 2);
       let good = false;
       try {
         fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
@@ -322,8 +327,7 @@ describe('Attachment', function() {
       attachment = await apos.attachment.db.findOne({ _id: image.attachment._id });
       assert(!attachment.archived);
       assert(attachment.docIds.length === 1);
-      // Don't forget "previous"
-      assert(attachment.archivedDocIds.length === 2);
+      assert(attachment.archivedDocIds.length === 1);
       try {
         const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
         assert(fd);
@@ -331,6 +335,107 @@ describe('Attachment', function() {
       } catch (e) {
         assert(false);
       }
+    });
+  });
+
+  describe('field equality', function() {
+    const field = {
+      name: 'file',
+      type: 'attachment'
+    };
+    const file = {
+      _id: 'one',
+      name: 'resume',
+      extension: 'pdf',
+      docIds: [],
+      archivedDocIds: [],
+      used: true
+    };
+
+    it('should compare the file and ignore the copy of its record', function() {
+      const req = apos.task.getReq();
+      assert.strictEqual(apos.attachment.isEqual(req, field, { file }, {
+        file: {
+          ...file,
+          docIds: [ 'doc:en:draft', 'doc:en:published' ],
+          archivedDocIds: [ 'version' ],
+          utilized: true
+        }
+      }), true);
+      assert.strictEqual(apos.attachment.isEqual(req, field, { file }, {
+        file: {
+          ...file,
+          _id: 'two'
+        }
+      }), false);
+    });
+
+    it('should compare the crop', function() {
+      const req = apos.task.getReq();
+      const crop = {
+        top: 0,
+        left: 10,
+        width: 100,
+        height: 50
+      };
+      const cropped = {
+        file: {
+          ...file,
+          crop
+        }
+      };
+      assert.strictEqual(apos.attachment.isEqual(req, field, cropped, {
+        file: {
+          ...file,
+          crop: { ...crop }
+        }
+      }), true);
+      assert.strictEqual(apos.attachment.isEqual(req, field, cropped, {
+        file: {
+          ...file,
+          crop: {
+            ...crop,
+            left: 20
+          }
+        }
+      }), false);
+      assert.strictEqual(apos.attachment.isEqual(req, field, cropped, { file }), false);
+      // No crop is stored as `null`, or not at all
+      assert.strictEqual(apos.attachment.isEqual(req, field, { file }, {
+        file: {
+          ...file,
+          crop: null
+        }
+      }), true);
+    });
+
+    it('should compare a field with no file', function() {
+      const req = apos.task.getReq();
+      assert.strictEqual(apos.attachment.isEqual(req, field, { file: null }, {}), true);
+      assert.strictEqual(
+        apos.attachment.isEqual(req, field, { file }, { file: null }),
+        false
+      );
+      assert.strictEqual(apos.attachment.isEqual(req, field, {}, { file }), false);
+    });
+
+    it('should serve the schema module when it compares documents', function() {
+      const req = apos.task.getReq();
+      const schema = [ field ];
+      const saved = {
+        file: {
+          ...file,
+          docIds: [ 'doc:en:draft' ]
+        }
+      };
+      assert.strictEqual(apos.schema.isEqual(req, schema, { file }, saved), true);
+      assert.deepStrictEqual(apos.schema.getChanges(req, schema, { file }, saved), []);
+      assert.deepStrictEqual(apos.schema.getChanges(req, schema, { file }, {
+        file: {
+          ...file,
+          _id: 'two'
+        }
+      }), [ 'file' ]);
     });
   });
 

@@ -17,8 +17,11 @@ module.exports = {
     className: false,
     icon: 'play-box-icon',
     placeholder: true,
+    initialModal: false,
     placeholderClass: false,
-    placeholderUrl: 'https://youtu.be/Q5UX9yexEyM'
+    components: {
+      widget: 'AposVideoWidget'
+    }
   },
   // NOTE: Disabled until we are out of beta
   // styles: {
@@ -38,5 +41,15 @@ module.exports = {
         required: true
       }
     }
+  },
+  extendMethods(self) {
+    return {
+      getBrowserData(_super, req) {
+        return {
+          ..._super(req),
+          placeholderUrl: self.options.placeholderUrl
+        };
+      }
+    };
   }
 };

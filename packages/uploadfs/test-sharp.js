@@ -1,3 +1,6 @@
+// A manually run script: its output is program output.
+/* eslint-disable no-console */
+
 const uploadfs = require('./uploadfs.js')();
 const fs = require('fs');
 const async = require('async');

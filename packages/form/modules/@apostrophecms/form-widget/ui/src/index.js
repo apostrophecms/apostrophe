@@ -42,6 +42,9 @@ export default () => {
 
         let input;
         const formData = new window.FormData();
+        // Files are appended after the `data` field, because the server
+        // only accepts files once it knows which form they belong to
+        const fileFields = [];
 
         try {
           // Collect field values on the event
@@ -51,7 +54,7 @@ export default () => {
           for (const field in input) {
             // Upload file field files if input has files.
             if (typeof input[field] === 'object' && input[field].files) {
-              await appendFiles(field, input[field], formData);
+              fileFields.push([ field, input[field] ]);
 
               input[field] = 'files-pending';
             }
@@ -108,6 +111,9 @@ export default () => {
         let formErrors = null;
 
         formData.append('data', JSON.stringify(input));
+        for (const [ field, fieldInput ] of fileFields) {
+          await appendFiles(field, fieldInput, formData);
+        }
 
         try {
           await apos.http.post('/api/v1/@apostrophecms/form/submit', {

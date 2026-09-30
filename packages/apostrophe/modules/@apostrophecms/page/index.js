@@ -334,8 +334,8 @@ module.exports = {
               throw self.apos.error('forbidden');
             }
 
+            // Only suggest pages the user is allowed to view
             const query = self.getRestQuery(req)
-              .permission(false)
               .limit(10)
               .relationships(false)
               .areas(false);
@@ -381,8 +381,10 @@ module.exports = {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
+            // The tree includes pages the user can view but not necessarily
+            // edit. Pages the user cannot view (visibility, viewRole) are
+            // left out, along with their descendants
             const page = await self.getRestQuery(req)
-              .permission(false)
               .and({ level: 0 })
               .children({
                 depth: 1000,
@@ -390,7 +392,6 @@ module.exports = {
                 orphan: null,
                 relationships: false,
                 areas: false,
-                permission: false,
                 withPublished: self.apos.launder.boolean(req.query.withPublished),
                 project: self.getAllProjection()
               }).toObject();
@@ -457,14 +458,17 @@ module.exports = {
         ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
-          // Edit access to draft is sufficient to fetch either
           await self.publicApiCheckAsync(req);
           const criteria = self.getIdCriteria(_id);
-          const result = await self
+          // Normal view permissions apply (visibility, viewRole)
+          const found = await self
             .getRestQuery(req)
-            .permission(false)
             .and(criteria)
             .toObject();
+          const manager = found && self.apos.doc.getManager(found.type);
+          const result = manager
+            ? manager.removeForbiddenFields(req, found)
+            : found;
 
           if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
@@ -508,6 +512,7 @@ module.exports = {
       // pages.
       async post(req) {
         await self.publicApiCheckAsync(req);
+        self.apos.doc.setSaveFlags(req, req.body);
         let targetId = self.apos.launder.string(req.body._targetId);
         let position = self.apos.launder.string(req.body._position || 'lastChild');
         // Here we have to normalize before calling insert because we
@@ -610,6 +615,7 @@ module.exports = {
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
+        self.apos.doc.setSaveFlags(req, req.body);
 
         return self.withLock(req, async () => {
           const page = await self.findForEditing(req, { _id }).toObject();
@@ -676,6 +682,7 @@ module.exports = {
       async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
+        self.apos.doc.setSaveFlags(req, req.body);
         return self.patch(req, _id);
       }
     };
@@ -924,6 +931,7 @@ module.exports = {
       get: {
         ':_id/locales': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
+          await self.publicApiCheckAsync(req);
           return {
             results: await self.apos.doc.getLocales(req, _id)
           };
@@ -1065,7 +1073,7 @@ or @apostrophecms/page-type, or remove the entry from park.`);
           const distinct = await self.apos.doc.db.distinct('type');
           for (const type of distinct) {
             if (!_.includes(managed, type)) {
-              self.apos.util.warnDev(`The aposDocs mongodb collection contains docs with the type ${type || 'undefined or null'}
+              self.apos.util.warnDev(`The aposDocs collection contains docs with the type ${type || 'undefined or null'}
 but there is no module that manages that type. You must implement
 a module of that name that extends @apostrophecms/piece-type or
 @apostrophecms/page-type, or remove these documents from the
@@ -1359,6 +1367,7 @@ database.`);
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
         browserOptions.localized = true;
         browserOptions.autopublish = false;
+        browserOptions.versions = self.apos.docVersions.hasVersions(self.options);
         // A list of all valid page types, including parked pages etc. This is
         // not a menu of choices for creating a page manually
         browserOptions.validPageTypes = self.apos.instancesOf('@apostrophecms/page-type').map(module => module.__meta.name);
@@ -1653,7 +1662,11 @@ database.`);
           }
           const manager = self.apos.doc.getManager(moved.type);
           await manager.emit('beforeMove', req, moved, target, position);
-          determineRankAndNewParent();
+          const redirected = determineRankAndNewParent();
+          if (redirected) {
+            // Moved before the archive instead, that move did the work
+            return redirected;
+          }
           // Simple check to see if we are moving the page beneath itself
           if (parent.path.split('/').includes(moved.aposDocId)) {
             throw self.apos.error('forbidden', 'Cannot move a page under itself');
@@ -1665,12 +1678,14 @@ database.`);
             // Move outside tree
             throw self.apos.error('forbidden');
           }
-          // Enforce destination-parent authorization: a cross-parent move
-          // into a non-archive destination requires "create" permission on
-          // that destination (the same boundary the page-insert route
-          // enforces). The one exception is restoring a page out of the
-          // archive, which is permitted into any destination the actor may
-          // edit even without "create".
+          // Enforce destination-parent authorization: a move into, or a
+          // reorder within, a non-archive parent requires "create" permission
+          // on that parent (the same boundary the page-insert route
+          // enforces). This includes same-parent reorders, since they re-rank
+          // the parent's other children (GHSA-2jrp-qc93-h2j8). The one
+          // exception is restoring a page out of the archive, which is
+          // permitted into any destination the actor may edit even without
+          // "create".
           //
           // That exception is NOT dead code: with @apostrophecms-pro/advanced-
           // permission, per-document permissions grant edit (and view/publish)
@@ -1682,7 +1697,6 @@ database.`);
           // x4fh) gated the whole check on "moving out of the archive" and
           // disabled create enforcement for every normal move.
           if (
-            (oldParent._id !== parent._id) &&
             (parent.type !== '@apostrophecms/archive-page') &&
             (!parent._create) &&
             !(oldParent.type === '@apostrophecms/archive-page' && parent._edit)
@@ -1705,7 +1719,7 @@ database.`);
           // Do not report the additional changes to the event - BC.
           // Concatenate all changes to one unique array.
           changed = Object.values(
-            [ movedChange, ...peersChange, changed ]
+            [ movedChange, ...peersChange, ...changed ]
               .reduce((acc, change) => {
                 acc[change._id] = {
                   ...acc[change._id] || {},
@@ -1745,6 +1759,9 @@ database.`);
             }
             return moved;
           }
+          // Sets `parent` and `rank`. Returns the promise of the move it
+          // delegates to when the page is sent to the last child of the home
+          // page, where the archive must stay last
           function determineRankAndNewParent() {
             if (position === 'firstChild') {
               parent = target;
@@ -2724,7 +2741,15 @@ database.`);
             ]
           });
           if (!page) {
-            console.log(`No page with that slug or _id was found in ${req.locale}:${req.mode}.`);
+            self.logWarn(
+              'orphan-not-found',
+              `No page with that slug or _id was found in ${req.locale}:${req.mode}.`,
+              {
+                slugOrId,
+                locale: req.locale,
+                mode: req.mode
+              }
+            );
           } else {
             const rank = (await self.apos.doc.db.find({
               path: self.matchDescendants(home),
@@ -2749,7 +2774,15 @@ database.`);
             }, {
               $set
             });
-            console.log(`Reattached as the last child of the home page in ${req.locale}:${req.mode}.`);
+            self.logInfo(
+              'orphan-reattached',
+              `Reattached as the last child of the home page in ${req.locale}:${req.mode}.`,
+              {
+                _id: page._id,
+                locale: req.locale,
+                mode: req.mode
+              }
+            );
           }
         }
       },
@@ -3168,8 +3201,7 @@ database.`);
           const names = Object.keys(self.apos.i18n.locales);
           const locales = [
             ...names.map(locale => `${locale}:draft`),
-            ...names.map(locale => `${locale}:published`),
-            ...names.map(locale => `${locale}:previous`)
+            ...names.map(locale => `${locale}:published`)
           ];
           let changes = 0;
           const winners = new Map();
@@ -3219,7 +3251,7 @@ database.`);
       },
       async deduplicateRanks2Migration() {
         for (const locale of Object.keys(self.apos.i18n.locales)) {
-          for (const mode of [ 'previous', 'draft', 'published' ]) {
+          for (const mode of [ 'draft', 'published' ]) {
             const pages = await self.apos.doc.db.find({
               slug: /^\//,
               aposLocale: `${locale}:${mode}`

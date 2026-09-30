@@ -25,12 +25,12 @@
     "url": "https://github.com/apostrophecms/launder/issues"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.5"
+    "mocha": "^11.8.0"
   },
   "dependencies": {
-    "dayjs": "^1.11.7"
+    "dayjs": "^1.11.23"
   },
   "apostropheTestConfig": {
     "requiresMongo": false

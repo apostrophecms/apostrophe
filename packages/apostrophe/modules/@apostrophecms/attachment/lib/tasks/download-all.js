@@ -1,7 +1,8 @@
-// Direct use of console is appropriate in tasks. -Tom
-
 const fs = require('fs');
 const sep = require('path').sep;
+
+// One progress line per this many attachments, rather than one per attachment.
+const PROGRESS_EVERY = 100;
 
 // Download everything Apostrophe believes to be in uploadfs.
 // Useful when uploadfs is not using a storage backend we
@@ -13,7 +14,6 @@ module.exports = function(self) {
     if (!argv.to) {
       throw 'You must specify a --to=directory argument';
     }
-    console.log(`Downloading all attachments to ${argv.to} (this takes time)`);
     const files = fs.readdirSync(argv.to);
     if ((files.length > 0) && (!argv.resume)) {
       throw `The directory ${argv.to} is not empty and --resume not specified, exiting`;
@@ -24,11 +24,25 @@ module.exports = function(self) {
     const total = await self.db.count();
     let n = 0;
     const parallel = argv.parallel ? parseInt(argv.parallel) : 1;
+    self.logInfo(
+      'download-all-start',
+      `Downloading all attachments to ${argv.to} (this takes time)`,
+      {
+        to: argv.to,
+        total,
+        parallel
+      }
+    );
     await self.each({}, parallel, async function(file) {
       const isImage = [ 'jpg', 'png', 'gif', 'webp' ].includes(file.extension);
       const originalFile = filename(file);
       n++;
-      console.log(n + ' of ' + total + ': ' + originalFile);
+      if (n % PROGRESS_EVERY === 0) {
+        self.logInfo('download-all-progress', `${n} of ${total}`, {
+          done: n,
+          total
+        });
+      }
       const files = [
         originalFile
       ];
@@ -45,17 +59,24 @@ module.exports = function(self) {
         const to = argv.to + file;
         const tmp = to + '.tmp';
         if (fs.existsSync(to)) {
-          console.log(`${to} already exists, skipping`);
+          self.logDebug('download-exists', `${to} already exists, skipping`, { file });
         } else {
           try {
-            console.log(`about to copy out: ${file}`);
+            self.logDebug('download-file', `about to copy out: ${file}`, { file });
             await copyOut(`/attachments/${file}`, tmp);
             fs.renameSync(tmp, argv.to + file);
           } catch (e) {
             if (e.code === 'ENOSPC') {
               throw e;
             } else {
-              console.log(`${e.code}: ${file} was probably never uploaded to uploadfs, skipping`);
+              self.logWarn(
+                'download-missing',
+                `${e.code}: ${file} was probably never uploaded to uploadfs, skipping`,
+                {
+                  file,
+                  code: e.code
+                }
+              );
             }
           }
         }
@@ -71,6 +92,10 @@ module.exports = function(self) {
         name += '.' + file.extension;
         return name;
       }
+    });
+    self.logInfo('download-all-complete', `Downloaded ${n} of ${total} attachment(s)`, {
+      done: n,
+      total
     });
   };
 };

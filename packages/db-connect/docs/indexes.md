@@ -24,6 +24,7 @@ Field values in the `keys` object:
 | `unique` | If `true`, enforces a uniqueness constraint. Inserting a duplicate value throws a duplicate key error (code `11000`). |
 | `sparse` | If `true`, only indexes documents where the indexed field exists. Documents without the field are omitted from the index. |
 | `type` | Index value type: `'number'`, `'date'`, or omitted for the default text-based index. See below. |
+| `expireAfterSeconds` | Makes this a TTL index. See [TTL Indexes](#ttl-indexes). |
 
 ### Compound Indexes
 
@@ -85,6 +86,24 @@ await collection.createIndex(
   { type: 'date', unique: true, sparse: true }
 );
 ```
+
+## TTL Indexes
+
+A TTL index removes each document once the date in the indexed field, plus `expireAfterSeconds`, is in the past:
+
+```js
+// Remove each document once its "expires" date is reached
+await collection.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+
+// Remove each document one hour after its "createdAt" date
+await collection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 });
+```
+
+As in MongoDB, a TTL index must be a single-field index, not on `_id`. Documents whose field is missing or does not hold a date never expire.
+
+In PostgreSQL and SQLite, a TTL index is always a `date` index, so that the expiration query is efficient. As in MongoDB, expired documents are removed by a background task that runs every 60 seconds, so an expired document may still be found for up to a minute or so. Queries that must not see expired documents should also filter on the date themselves. The background task stops when the client is closed.
+
+Expiration only applies while a client that has called `createIndex` with `expireAfterSeconds` is connected. Apostrophe creates its indexes at startup, so in practice this is always the case.
 
 ## Array Fields
 

@@ -1,5 +1,6 @@
 ---
 import { widgets } from 'apostrophe-astro-config/doctypes';
+import { logError } from '../lib/log.js';
 
 const { widget, options, ...props } = Astro.props;
 const isEdit = widget._edit && Astro.url.searchParams.get("aposEdit");
@@ -10,7 +11,7 @@ const componentFound = key in widgets;
 let Component;
 
 if (!componentFound) {
-  console.error(`Missing widget mapping for ${key}`);
+  logError(`Missing widget mapping for ${key}`);
 } else {
   Component = widgets[key];
 }

@@ -69,7 +69,7 @@ describe('UploadFS Local', function () {
   it('streamOut should work for local filesystem', async function() {
     const input = uploadfs.streamOut('/test_copy.txt');
     const chunks = [];
-    for await (let chunk of input) {
+    for await (const chunk of input) {
       chunks.push(chunk);
     }
     const data = Buffer.concat(chunks);

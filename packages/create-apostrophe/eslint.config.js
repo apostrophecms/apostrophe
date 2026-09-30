@@ -1,4 +1,4 @@
-import apostrophe from 'eslint-config-apostrophe';
+import apostrophe from 'eslint-config-apostrophe/strict';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([

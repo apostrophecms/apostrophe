@@ -1,4 +1,4 @@
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 
 // Provide basic bridging functionality between tabs
 // and the modal body.

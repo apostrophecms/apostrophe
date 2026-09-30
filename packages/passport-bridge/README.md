@@ -294,7 +294,7 @@ You can also determine the login URLs by invoking the `@apostrophecms/passport-b
 
 ### Using login links with headless ApostropheCMS and an Astro Frontend
 
-When using `@apostrophecms/passport-bridge` with an Astro frontend (via [`@apostrophecms/apostrophe-astro`](https://github.com/apostrophecms/apostrophe-astro)), the built-in `loginLinks` component won't work since Astro handles template rendering instead of Nunjucks.
+When using `@apostrophecms/passport-bridge` with an Astro frontend (via [`@apostrophecms/apostrophe-astro`](https://apostrophecms.com/extensions/apostrophe-astro)), the built-in `loginLinks` component won't work since Astro handles template rendering instead of Nunjucks.
 
 **1. Configure Astro Proxy Routes**
 
@@ -368,6 +368,10 @@ After successful authentication, users will be redirected to your Astro frontend
 ## Error Handling
 
 The `failureRedirect` configuration will send users to your specified error page (e.g., `/login?error=oauth_failed`) where you can display appropriate error messages based on URL parameters.
+
+### Right-to-left websites
+
+The error page shown when a login attempt is rejected follows the text direction of the current locale. Set the `direction` option of the `@apostrophecms/login` module to `ltr` or `rtl` to force a direction for it, as for the login page itself.
 
 ### Configuring your identity provider
 

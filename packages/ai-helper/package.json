@@ -4,7 +4,7 @@
   "description": "AI helpers for content creation",
   "main": "index.js",
   "scripts": {
-    "test": "npm run lint",
+    "test": "npm run lint && mocha",
     "lint": "eslint --ext .js,.vue ."
   },
   "repository": {
@@ -23,13 +23,15 @@
     "url": "https://github.com/apostrophecms/ai-helper/issues"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:^"
+    "apostrophe": "workspace:^",
+    "eslint": "^9.39.5",
+    "eslint-config-apostrophe": "workspace:^",
+    "mocha": "^11.8.0"
   },
   "dependencies": {
-    "@paralleldrive/cuid2": "^3.0.4",
+    "@paralleldrive/cuid2": "^3.3.0",
     "marked": "^4.3.0",
-    "node-fetch": "^2.6.9",
-    "sharp": "^0.35.2"
+    "node-fetch": "^2.7.0",
+    "sharp": "^0.35.4"
   }
 }

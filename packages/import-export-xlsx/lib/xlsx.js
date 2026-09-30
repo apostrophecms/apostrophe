@@ -1,5 +1,10 @@
 const XLSX = require('@e965/xlsx');
 
+// `logDebug`, `logInfo`, `logWarn` and `logError` are not declared here:
+// `registerFormats` in `@apostrophecms/import-export` stamps them onto every
+// format it registers, so a format reports through the module that owns it
+// without carrying an apos context. They are absent when a format object is
+// used outside the module, hence the optional calls.
 module.exports = {
   label: 'XLSX',
   extension: '.xlsx',
@@ -22,7 +27,9 @@ module.exports = {
     XLSX.utils.book_append_sheet(workbook, worksheet);
     XLSX.writeFile(workbook, filepath, { compression: true });
 
-    console.info(`[xlsx] docs and attachments written to ${filepath}`);
+    this.logInfo?.('xlsx-written', `docs and attachments written to ${filepath}`, {
+      filepath
+    });
   }
 };
 

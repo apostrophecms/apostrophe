@@ -13,19 +13,19 @@
 //
 // -Tom
 
-var categoriesByCode = require('unicode-7.0.0/categories');
+const categoriesByCode = require('unicode-7.0.0/categories');
 
-var i;
-var previousBad;
-var start;
-var end;
+let i;
+let previousBad;
+let start;
+let end;
 
-var ranges = [];
+const ranges = [];
 
-for (var i = 0; (i < categoriesByCode.length); i++) {
-  var category = categoriesByCode[i];
-  var first = category.substr(0, 1);
-  var bad = false;
+for (i = 0; (i < categoriesByCode.length); i++) {
+  const category = categoriesByCode[i];
+  const first = category.substr(0, 1);
+  let bad = false;
   if ((first === 'C') || (first === 'M') || (first === 'P') || (first === 'S') || (first === 'Z')) {
     bad = true;
   }
@@ -44,5 +44,6 @@ if (previousBad) {
   ranges.push([ start, i ]);
 }
 
+// Program output: the ranges are what this script was run to print.
+// eslint-disable-next-line no-console
 console.log(JSON.stringify(ranges));
-

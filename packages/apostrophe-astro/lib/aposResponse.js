@@ -2,6 +2,7 @@ import config from 'apostrophe-astro-config/config';
 import { request } from 'undici';
 import zlib from 'zlib';
 import { promisify } from 'util';
+import { logError, logWarn } from './log.js';
 
 // Promisify zlib functions
 const gunzipAsync = promisify(zlib.gunzip);
@@ -126,7 +127,7 @@ export default async function aposResponse(req) {
           }
           // Skip unknown encodings silently
         } catch (decompressError) {
-          console.error(decompressError);
+          logError(decompressError);
           // If decompression fails, return original response
           return new Response(new Uint8Array(bodyArrayBuffer), {
             ...rest,
@@ -137,7 +138,7 @@ export default async function aposResponse(req) {
       }
 
       if (looksLikeChunkedEncoding(buffer)) {
-        console.warn('⚠️ Warning: response appears to be chunked-encoded. undici may not have decoded it.');
+        logWarn('Response appears to be chunked-encoded. undici may not have decoded it.');
       }
 
       // Create response with decoded data and remove content-encoding header
@@ -149,12 +150,12 @@ export default async function aposResponse(req) {
         headers: responseHeaders
       });
     } catch (bodyError) {
-      console.error(bodyError);
+      logError(bodyError);
       // If we can't process the body, fall back to the original response
       return new Response(res.body, { ...rest, status: statusCode, headers: responseHeaders });
     }
   } catch (error) {
-    console.error(error);
+    logError(error);
     // Handle any unexpected errors
     return new Response(`Server error: ${error.message}`, { status: 500 });
   }

@@ -4,7 +4,36 @@
 // module, see `logInfo`, `logError`, etc. methods available in every module via
 // the base class, @apostrophecms/module.
 //
-// ### `logger`
+// ## Configuring logging: the module options below are LEGACY
+//
+// Every option of this module is deprecated in favor of the top-level `log`
+// option of Apostrophe, which takes the same keys with the same meaning:
+//
+// ```js
+// require('apostrophe')({
+//   shortName: 'my-site',
+//   log: {
+//     format: 'structured',
+//     logger: pino(),
+//     messageAs: 'msg',
+//     filter: { '*': { severity: [ 'warn', 'error' ] } }
+//   },
+//   modules: { /* ... */ }
+// });
+// ```
+//
+// Migrating is a paste, and it is worth doing: module options do not exist
+// yet when cluster notices and fatal startup failures are emitted, so nothing
+// configured here can ever reach them, while the top-level option holds from
+// the first line of the process. It also carries `format`, which selects the
+// output rendering and has no module-level equivalent.
+//
+// The two surfaces never merge. When the top-level `log` option is present it
+// is the entire logging configuration: every option below, and the legacy
+// `logger` option of @apostrophecms/util, are ignored and listed in a startup
+// warning. They keep working, unchanged, for projects that have not migrated.
+//
+// ### `logger` (LEGACY)
 //
 // Optional. It can be an object or a function.
 // If a function it accepts `apos` and returns an object with
@@ -13,26 +42,23 @@
 // down. The object, or the returned object, must have `info`, `debug`, `warn`
 // and `error` methods. If `destroy` is present it will be invoked and awaited
 // (Promise) when Apostrophe is shut down. If this option is not supplied, logs
-// are simply written to the Node.js `console`. Calls to `apos.utils.info`,
+// are rendered to stdout and stderr by Apostrophe. Calls to `apos.utils.info`,
 // `apos.utils.error`, etc. or module level `self.logInfo`, `self.logError`, etc
 // are routed through this object by Apostrophe. This provides compatibility out
 // of the box with many popular logging modules, including`pino`, `winston`,
 // etc.
 //
-// ## Options
-//
-// ### `messageAs`
+// ### `messageAs` (LEGACY)
 //
 // When the messageAs option is set, the message argument to apos.util.info,
 // etc. is bundled into the second, object - based argument as a property of the
 // name given, and only the object argument is passed to the `logger`, which is
 // useful if using Pino. If there is no object-based argument an object is
 // created. Example: ```js { options: { messageAs: 'msg' } } ``` The resulting
-// util log call will be: ```js self.apos.util.error({ msg:
-// '@apostrophecms/login: incorrect-username: User admin failed to log in',
-// type: 'incorrect-username' module: '@apostrophecms/login' }); ```
+// util log call will be: ```js self.apos.util.error({ msg: 'User admin failed
+// to log in', type: 'incorrect-username' module: '@apostrophecms/login' }); ```
 //
-// ### `filter`
+// ### `filter` (LEGACY)
 //
 // By module name, or `*` we can specify any mix of severity levels and
 // specific event types, and entries are kept if *either* criterion is met.
@@ -70,6 +96,11 @@
 // module, are logged. The logs will be kept if *either* criterion is met.
 // `filter['*'] = true` enables logging of all events from all modules.
 //
+// When no `events` are given for `*`, the startup event `apos-listening` is
+// kept whatever the severity filter says, so that production logs still
+// confirm the site came up. Give `*` its own `events` - `[]` included - to
+// take that over.
+//
 // ## Environment Variables
 //
 // ### `APOS_FILTER_LOGS`
@@ -87,15 +118,48 @@
 //
 
 const _ = require('lodash');
+const createLogger = require('../../../logger.js');
+
+// The options the legacy surfaces share with the top-level `log` option.
+const LEGACY_OPTIONS = [ 'logger', 'messageAs', 'filter' ];
 
 module.exports = {
   options: {
     alias: 'structuredLog'
   },
   init(self) {
+    self.resolveOptions();
     self.filters = {};
     self.filterCache = {};
     self.initFilters();
+  },
+  handlers(self) {
+    return {
+      'apostrophe:modulesRegistered': {
+        // Late enough that every module's options exist, so one warning can
+        // list everything the top-level `log` option displaced.
+        warnIgnoredOptions() {
+          const ignored = [ ...self.ignoredOptions ];
+          if (self.topLevel && self.apos.util?.options.logger) {
+            ignored.push('@apostrophecms/util: logger');
+          }
+          if (!ignored.length) {
+            return;
+          }
+          // Straight to the process logger: this module cannot log through
+          // itself, and a warning about ignored configuration - `filter`
+          // included - has no business being filtered by it.
+          self.apos.logger.warn(
+            'ignored-log-options',
+            'The top-level `log` option is the whole logging configuration.',
+            {
+              module: self.__meta.name,
+              ignored
+            }
+          );
+        }
+      }
+    };
   },
   methods(self) {
     // Keep those inside the methods because of performance.
@@ -118,11 +182,38 @@ module.exports = {
       : (str) => str;
 
     return {
+      // The top-level `log` option and the legacy module options never merge:
+      // when the first is present it replaces the second wholesale, and what
+      // it displaced is remembered for the startup warning.
+      resolveOptions() {
+        const top = self.apos.options.log;
+        self.topLevel = !!top;
+        self.ignoredOptions = [];
+        if (!self.topLevel) {
+          return;
+        }
+        for (const name of LEGACY_OPTIONS) {
+          if (self.options[name] !== undefined) {
+            self.ignoredOptions.push(`${self.__meta.name}: ${name}`);
+            delete self.options[name];
+          }
+        }
+        for (const name of [ 'messageAs', 'filter' ]) {
+          if (top[name] !== undefined) {
+            self.options[name] = top[name];
+          }
+        }
+        // A logger handed down from an outer process is this process's logger
+        // already - core made it so - and is not installed as a backend.
+        if (top.logger && !createLogger.isLogger(top.logger)) {
+          self.options.logger = top.logger;
+        }
+      },
       // Stringify object arguments. If `NODE_ENV` is not `production`,
       // pretty print the objects and add a new line at the end of string
       // arguments. This method is meant to be used from the methods of a custom
-      // `logger`. See the default logger implementation in `util/lib/logger.js`
-      // for an example.
+      // `logger` that writes to the console itself; the default logger renders
+      // envelopes instead.
       formatLogByEnv(args) {
         return args.map((arg) => {
           if (typeof arg === 'string') {
@@ -165,6 +256,15 @@ module.exports = {
           self.filters['*'] = {
             ...self.filters['*'],
             severity: self.getDefaultSeverity(isProduction)
+          };
+        }
+        // The site is up: worth having in every environment, including
+        // production, where the default severity keeps warnings and errors
+        // only. `events: []` drops it like any other event.
+        if (!self.filters['*'].events) {
+          self.filters['*'] = {
+            ...self.filters['*'],
+            events: self.getDefaultEvents()
           };
         }
 
@@ -227,6 +327,11 @@ module.exports = {
           ? [ 'warn', 'error' ]
           : [ 'debug', 'info', 'warn', 'error' ];
       },
+      // Event types kept whatever the severity, unless the configuration
+      // names its own.
+      getDefaultEvents() {
+        return [ 'apos-listening' ];
+      },
 
       // Internal method, do not use it directly. See `@apostrophecms/module`
       // for module level logging methods - logInfo, logError, etc. `moduleSelf`
@@ -267,17 +372,16 @@ module.exports = {
       // `severity` and `eventType` are required.
       // `req`, `message` and `data` are optional.
       // `req` is an apos request object. If provided, the `data` argument will
-      // be enriched with additional information from the request. `data.module`
-      // is recognized as a special property and is used to refortmat the
-      // message. `data.severity` is always set to the value of the `severity`
-      // argument. `data.type` is always set to the value of the `eventType`
-      // argument. message is optional, if not provided it is generated from the
-      // eventType and data.module. Optional message values: - `module:
-      // eventType: message` - `eventType: message`: (missing module) - `module:
-      // eventType`: (missing message) - `eventType`: (missing module and
-      // message)
+      // be enriched with additional information from the request.
+      // `data.severity` is always set to the value of the `severity` argument.
+      // `data.type` is always set to the value of the `eventType` argument.
+      // `message` is optional and stays exactly as the developer wrote it: the
+      // module name and the event type are fields of their own, and whatever
+      // renders the entry composes the visible line from them.
       //
-      // Returns [ data ] or [ message, data ] depending on option.messageAs.
+      // Returns [ data ] or [ message, data ]: the message travels separately
+      // unless `option.messageAs` names the property it belongs in, and there
+      // is nothing to pass separately when the call had no message of its own.
       // `data` is always an object containing at least a `type` and `severity`
       // properties.
       processLoggerArgs(moduleSelf, severity, ...args) {
@@ -308,17 +412,13 @@ module.exports = {
         obj = obj ? { ...obj } : {};
         const aposModule = moduleSelf.__meta?.name ?? '__unknown__';
 
-        if (typeof message === 'string' && message.trim().length > 0) {
-          message = aposModule
-            ? `${aposModule}: ${eventType}: ${message}`
-            : `${eventType}: ${message}`;
-        } else {
-          message = aposModule
-            ? `${aposModule}: ${eventType}`
-            : eventType;
-        }
+        message = (typeof message === 'string' && message.trim().length > 0)
+          ? message
+          : undefined;
         if (self.options.messageAs) {
-          data[self.options.messageAs] = message;
+          if (message !== undefined) {
+            data[self.options.messageAs] = message;
+          }
           delete obj[self.options.messageAs];
         }
         // Preserve the property order.
@@ -333,7 +433,10 @@ module.exports = {
         data.type = eventType;
         data.severity = severity;
 
-        return self.options.messageAs ? [ data ] : [ message, data ];
+        if (self.options.messageAs || message === undefined) {
+          return [ data ];
+        }
+        return [ message, data ];
       },
 
       // Enrich the `data` argument with additional information from the

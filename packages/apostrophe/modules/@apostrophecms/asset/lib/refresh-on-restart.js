@@ -29,6 +29,7 @@
         if (!reloadId) {
           reloadId = result;
         } else if (result !== reloadId) {
+          // eslint-disable-next-line no-console
           console.log('Apostrophe restarted, refreshing the page');
           window.location.reload();
           return;

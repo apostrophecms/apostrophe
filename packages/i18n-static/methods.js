@@ -65,7 +65,8 @@ module.exports = self => {
 
     async generateNewGlobalIdAndUpdateCache(req) {
       const aposLocale = `${req.locale}:${req.mode}`;
-      const i18nStaticPiecesByNamespace = await self.findPiecesAndGroupByNamespace(aposLocale);
+      const i18nStaticPiecesByNamespace =
+        await self.findPiecesAndGroupByNamespace(aposLocale);
       await self.apos.cache.set(req.locale, 'i18n-static', i18nStaticPiecesByNamespace);
 
       const i18nStaticId = self.apos.util.generateId();

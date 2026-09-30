@@ -1,10 +1,22 @@
 # Apostrophe CLI
 
-The Apostrophe CLI is a cross-platform starting point for creating and configuring [ApostropheCMS](https://github.com/apostrophecms/apostrophe) projects, providing a simple boilerplate generator and wrapping other useful functions into an easy to use command line tool.
+The Apostrophe CLI scaffolds widgets, pieces, and modules inside an existing [ApostropheCMS](https://github.com/apostrophecms/apostrophe) project, and wraps a few other useful functions into an easy to use command line tool.
 
-**Requires Node.js 8+**
+**Requires Node.js 22+**
 
-First, install `@apostrophecms/cli` as a global NPM module:
+## You don't need this to start a project
+
+To create a new Apostrophe project, run the guided installer directly — no install required:
+
+```bash
+npm create apostrophe@latest
+```
+
+See the [create-apostrophe README](https://github.com/apostrophecms/apostrophe/tree/main/packages/create-apostrophe#readme) for starter kits, unattended mode, and the full flag list.
+
+Install the CLI when you want the `add` commands, which generate module boilerplate inside a project you already have.
+
+## Installation
 
 ```bash
 npm install -g @apostrophecms/cli
@@ -20,29 +32,46 @@ apos
 
 ## Create a project
 
-To create a new project with the tool:
+If you already have the CLI installed, `apos create` is a convenience alias for the guided installer:
+
 ```bash
-apos create <shortname-without-spaces>
+apos create
 ```
 
-This will create a local copy of the [ApostropheCMS public demo](https://github.com/apostrophecms/public-demo).
+It takes no arguments — project name, starter kit, and database are all chosen through prompts. It does exactly what `npm create apostrophe@latest` does, so use whichever you find handier.
 
-### Astro projects
+For scripted or CI installs, call the installer directly, since `apos create` doesn't pass arguments through:
 
-Hybrid ApostropheCMS + Astro projects are automatically detected by the presence of a `backend/` directory. When detected, the CLI will:
-- Update the shortname in `backend/app.js` and `backend/package.json`
-- Run `npm install` in both `backend/` and `frontend/` directories
-- Create the admin user
-
-Example:
 ```bash
-apos create my-site --starter=apostrophecms/astro-public-demo
+npm create apostrophe@latest -- --unattended \
+  --project-name=my-site --password=secret --telemetry=off
 ```
 
-**Note:** The `add` commands below are only available for standard ApostropheCMS projects. They are not currently supported in hybrid Astro projects.
+## Telemetry
+
+Telemetry is opt-in and anonymous. If you have the CLI installed, you can manage your preference through it:
+
+```bash
+apos telemetry status    # show current preference
+apos telemetry on        # opt in
+apos telemetry off       # opt out
+apos telemetry preview   # print the exact payload that would be sent
+```
+
+These are aliases too — `npm create apostrophe@latest -- telemetry status` works the same way, without the CLI. `create-apostrophe` owns the telemetry implementation; see its [README](https://github.com/apostrophecms/apostrophe/tree/main/packages/create-apostrophe#readme) for exactly what is collected, and the `APOS_TELEMETRY=0` kill switch.
+
+## Astro projects
+
+Hybrid ApostropheCMS + Astro projects are detected by the presence of a `backend/` directory.
+
+**The `add` commands below are not supported in hybrid Astro projects.** Running `apos add` from the root of such a project exits with an error.
+
+To create a hybrid project, choose an Astro starter kit when the installer prompts you.
 
 ## Create a widget
+
 To bootstrap the necessary files and basic configuration for a new Apostrophe widget, run the following command from within your Apostrophe project's root directory:
+
 ```bash
 # "-widgets" will automatically be appended to the end of your module name
 apos add widget fancy-button
@@ -66,6 +95,7 @@ apos add widget tabs --player
 ```
 
 ## Create a piece
+
 To bootstrap the necessary files and basic configuration for a new Apostrophe piece type, run the following command from within your Apostrophe project's root directory:
 
 ```bash
@@ -74,14 +104,16 @@ apos add piece vegetable
 
 Then remember to register `'vegetable': {}` in `app.js` above.
 
-If you run the `add piece` command with the `--page` flag, the command will also set up a corresponding piece-pages module with your new piece type. Similarly, you can run the `add piece` command with the `--widget` flag, which will also set up a corresponding piece-widgets module along with your new piece type. These flags can be used together or separately.
+If you run the `add piece` command with the `--page` flag, the command will also set up a corresponding piece-pages module with your new piece type.
 
 ```bash
-apos add piece vegetable --page --widget
+apos add piece vegetable --page
 ```
 
 ## Create an empty Apostrophe module
+
 To bootstrap the necessary files and basic configuration for a brand-new Apostrophe module that doesn't extend one of the usual suspects like pieces or widgets:
+
 ```bash
 apos add module <module name>
 ```
@@ -90,4 +122,4 @@ Remember to register the module in `app.js` with the other module types.
 
 ---------------
 
-For more documentation for ApostropheCMS, visit the [documentation site](https://docs.apostrophecms.org).
+For more documentation for ApostropheCMS, visit the [documentation site](https://apostrophecms.com/docs/).

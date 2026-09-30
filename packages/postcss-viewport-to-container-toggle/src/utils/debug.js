@@ -1,3 +1,6 @@
+// The opt-in debug channel of a PostCSS plugin, which has no logger of its own.
+/* eslint-disable no-console */
+
 /**
  * Creates debug utilities for logging and tracking the processing of CSS rules.
  *

@@ -42,26 +42,26 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@apidevtools/swagger-parser": "^12.0.0",
-    "@openapitools/openapi-generator-cli": "^2.31.1",
-    "express": "^5.1.0",
-    "js-yaml": "^4.1.0",
+    "@apidevtools/swagger-parser": "^12.1.0",
+    "@openapitools/openapi-generator-cli": "^2.41.0",
+    "express": "^5.2.1",
+    "js-yaml": "^4.3.2",
     "open": "^10.2.0",
-    "swagger-ui-dist": "^5.29.0"
+    "swagger-ui-dist": "^5.32.14"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
-    "@stoplight/spectral-cli": "^6.15.0",
+    "@stoplight/spectral-cli": "^6.16.3",
     "eslint": "^8.57.1",
     "eslint-config-apostrophe": "^6.0.2",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-jsdoc": "^59.0.0",
+    "eslint-plugin-jsdoc": "^59.1.0",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^7.2.1",
-    "stylelint": "^16.24.0",
-    "stylelint-config-apostrophe": "^4.3.0",
+    "eslint-plugin-promise": "^7.3.0",
+    "stylelint": "^16.26.1",
+    "stylelint-config-apostrophe": "^4.4.0",
     "swagger-cli": "^4.0.4"
   }
 }

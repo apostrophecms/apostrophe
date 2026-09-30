@@ -35,10 +35,11 @@ module.exports = ({
       manifest: manifestRelPath,
       sourcemap: sourceMaps,
       emptyOutDir: false,
-      assetDir: 'assets',
+      assetsDir: 'assets',
       rollupOptions: {
         output: {
-          entryFileNames: '[name]-build.js'
+          entryFileNames: '[name]-build.js',
+          assetFileNames
         }
       }
     }
@@ -46,3 +47,18 @@ module.exports = ({
 
   return config;
 };
+
+// Assets that come from a module's `public/` folder (e.g. fonts referenced
+// from CSS via `url('/modules/...')`) are emitted at their original path,
+// without a content hash. This way `apos.asset.url('/modules/...')` in a
+// template matches the URL the built CSS requests, e.g. for preloading.
+// Cache busting is already provided by the release directory, just like
+// for the unhashed `[name]-build.js` entry files.
+function assetFileNames({ names = [], originalFileNames = [] }) {
+  const original = originalFileNames[0]?.replaceAll('\\', '/');
+  const isCss = names.some((name) => name.endsWith('.css'));
+  if (!isCss && original?.startsWith('modules/')) {
+    return original;
+  }
+  return 'assets/[name]-[hash][extname]';
+}

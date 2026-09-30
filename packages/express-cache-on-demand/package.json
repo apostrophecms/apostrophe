@@ -34,9 +34,9 @@
     "requiresMongo": false
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "express": "^4.22.0",
-    "mocha": "^11.7.5"
+    "express": "^4.22.2",
+    "mocha": "^11.8.0"
   }
 }

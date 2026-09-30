@@ -247,7 +247,12 @@ async function cleanData(paths) {
         await fs.rm(path.join(filePath, name), { recursive: true });
       }
     } catch (error) {
-      console.error(error); // eslint-disable-line no-console
+      // Nothing to clean: the directory is only created when something is
+      // written to it, so it is absent until the first export of a run. Saying
+      // so on every suite made real errors harder to spot.
+      if (error.code !== 'ENOENT') {
+        console.error(error); // eslint-disable-line no-console
+      }
     }
   }
 }

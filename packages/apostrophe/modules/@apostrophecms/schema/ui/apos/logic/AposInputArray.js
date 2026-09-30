@@ -3,9 +3,8 @@ import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposIn
 import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin';
 import { getConditionTypesObject, hasParentConditionalField } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
-import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
-import { get } from 'lodash';
+import { createId, get } from 'apostrophe/lib/beneath.js';
 import { Sortable } from 'sortablejs-vue3';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 

@@ -1,3 +1,6 @@
+// A command line filter: its report is program output.
+/* eslint-disable no-console */
+
 const fs = require('fs');
 const csvParse = require('csv-parse/lib/sync');
 
@@ -19,7 +22,8 @@ for (const record of records) {
   if (!record.TTL) {
     record.TTL = 3600;
   }
-  // Normalize case and deal with a common suffix when copying and pasting to a spreadsheet
+  // Normalize case and deal with a common suffix when copying and pasting
+  // to a spreadsheet
   const type = record.Type.toUpperCase().replace(' RECORD', '');
   if (type === 'MX') {
     if (!record.Priority) {
@@ -48,7 +52,9 @@ function parse (input) {
     trim: true
   }).filter(row => Object.keys(row).length > 0).map(row =>
     Object.fromEntries(
-      Object.entries(row).map(([ key, val ]) => [ key.trim(), (val != null) ? val.toString().trim() : val ])
+      Object.entries(row).map(
+        ([ key, val ]) => [ key.trim(), (val != null) ? val.toString().trim() : val ]
+      )
     )
   );
 }

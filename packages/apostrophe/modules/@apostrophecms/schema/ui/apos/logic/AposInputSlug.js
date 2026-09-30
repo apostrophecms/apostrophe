@@ -3,7 +3,7 @@
 // errors.
 import { klona } from 'klona';
 import sluggo from 'sluggo';
-import { deburr } from 'lodash';
+import { deburr } from 'apostrophe/lib/beneath.js';
 import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import AposFieldDirectionMixin from 'Modules/@apostrophecms/schema/mixins/AposFieldDirection.js';

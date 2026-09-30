@@ -4,8 +4,7 @@ import { $t } from './i18next';
 import {
   computePosition, arrow, offset, flip, shift
 } from '@floating-ui/dom';
-import { createId } from '@paralleldrive/cuid2';
-import { isEqual } from 'lodash';
+import { createId, isEqual } from 'apostrophe/lib/beneath.js';
 
 const getTooltipHtml = (id, tooltip) =>
   `<div id="${id}" class="apos-tooltip" role="tooltip">

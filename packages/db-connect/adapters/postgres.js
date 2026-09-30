@@ -13,6 +13,7 @@ const {
   prefixUpperBound,
   validateInteger
 } = require('../lib/shared');
+const { TtlReaper, ttlIndexOptions } = require('../lib/ttl');
 const { AggregationCursor } = require('../lib/aggregation-cursor');
 
 // =============================================================================
@@ -125,6 +126,8 @@ function profileQuery(sql, start) {
 }
 
 function profileReport() {
+  // The report is what the profiler was asked for.
+  /* eslint-disable no-console */
   console.log('\n=== PostgreSQL Adapter Profile ===\n');
 
   // High-level categories
@@ -146,6 +149,7 @@ function profileReport() {
   }
 
   console.log('\n=== End Profile ===\n');
+  /* eslint-enable no-console */
 }
 
 function profileReset() {
@@ -925,8 +929,16 @@ function buildOrderBy(sort, options = {}) {
       if (field === '_id') {
         clauses.push(`_id ${direction === -1 ? 'DESC' : 'ASC'}`);
       } else {
-        const jsonPath = buildJsonTextPath(field);
-        clauses.push(`${jsonPath} ${direction === -1 ? 'DESC' : 'ASC'}`);
+        // Numbers compare numerically, everything else as text: text alone
+        // puts 10 before 2. Non-numbers are NULL in the first clause, so they
+        // follow the numbers ascending and precede them descending, as in MongoDB.
+        const order = direction === -1 ? 'DESC' : 'ASC';
+        const jsonPath = buildJsonPath(field);
+        const jsonTextPath = buildJsonTextPath(field);
+        clauses.push(
+          `CASE WHEN jsonb_typeof(${jsonPath}) = 'number' THEN (${jsonTextPath})::numeric END ${order}`
+        );
+        clauses.push(`${jsonTextPath} ${order}`);
       }
     }
   }
@@ -1072,38 +1084,62 @@ class PostgresCursor {
     if (this._exhausted) {
       return null;
     }
-    if (!this._cursorClient) {
-      await this._collection._ensureTable();
-      this._cursorClient = await this._collection._pool.connect();
-      this._cursorName = `cur_${generateId()}`;
+    // Any failure below releases the pooled client before rethrowing, so a
+    // cursor abandoned by an error never keeps a connection checked out.
+    try {
+      if (!this._cursorClient) {
+        await this._collection._ensureTable();
+        this._cursorClient = await this._collection._pool.connect();
+        this._cursorName = `cur_${generateId()}`;
 
-      const { sql, params } = this._buildFindSql();
+        const { sql, params } = this._buildFindSql();
+
+        const escapedCursorName = escapeIdentifier(this._cursorName);
+        await this._cursorClient.query('BEGIN');
+        await this._cursorClient.query(
+          `DECLARE "${escapedCursorName}" CURSOR FOR ${sql}`,
+          params
+        );
+      }
 
       const escapedCursorName = escapeIdentifier(this._cursorName);
-      await this._cursorClient.query('BEGIN');
-      await this._cursorClient.query(
-        `DECLARE "${escapedCursorName}" CURSOR FOR ${sql}`,
-        params
+      const result = await this._cursorClient.query(
+        `FETCH NEXT FROM "${escapedCursorName}"`
       );
+
+      if (result.rows.length === 0) {
+        await this._release();
+        return null;
+      }
+
+      const row = result.rows[0];
+      const doc = deserializeDocument(row.data, row._id);
+      const meta = row._score != null ? { textScore: parseFloat(row._score) } : {};
+      return this._projection ? applyProjection(doc, this._projection, meta) : doc;
+    } catch (e) {
+      await this._release();
+      throw e;
     }
+  }
 
-    const escapedCursorName = escapeIdentifier(this._cursorName);
-    const result = await this._cursorClient.query(
-      `FETCH NEXT FROM "${escapedCursorName}"`
-    );
-
-    if (result.rows.length === 0) {
-      this._exhausted = true;
-      await this._cursorClient.query('COMMIT');
-      this._cursorClient.release();
-      this._cursorClient = null;
-      return null;
+  // Ends the cursor's transaction and returns its client to the pool. The
+  // transaction only ever reads, so ROLLBACK is correct whether it is healthy
+  // or already aborted by a failed statement. Safe to call without a client.
+  async _release() {
+    const client = this._cursorClient;
+    this._cursorClient = null;
+    this._exhausted = true;
+    if (!client) {
+      return;
     }
-
-    const row = result.rows[0];
-    const doc = deserializeDocument(row.data, row._id);
-    const meta = row._score != null ? { textScore: parseFloat(row._score) } : {};
-    return this._projection ? applyProjection(doc, this._projection, meta) : doc;
+    try {
+      await client.query('ROLLBACK');
+    } catch (e) {
+      // The connection is gone; let the pool discard it rather than reuse it
+      client.release(e);
+      return;
+    }
+    client.release();
   }
 
   async hasNext() {
@@ -1118,14 +1154,8 @@ class PostgresCursor {
   }
 
   async close() {
-    if (this._cursorClient) {
-      const escapedCursorName = escapeIdentifier(this._cursorName);
-      await this._cursorClient.query(`CLOSE "${escapedCursorName}"`);
-      await this._cursorClient.query('COMMIT');
-      this._cursorClient.release();
-      this._cursorClient = null;
-      this._exhausted = true;
-    }
+    this._peeked = undefined;
+    await this._release();
   }
 
   addCursorFlag() {
@@ -1147,6 +1177,14 @@ class PostgresCursor {
         return {
           done: false,
           value: doc
+        };
+      },
+      // Called by `for await` on break, return or a throwing body
+      async return() {
+        await this.cursor.close();
+        return {
+          done: true,
+          value: undefined
         };
       }
     };
@@ -1902,6 +1940,7 @@ class PostgresCollection {
    * );
    */
   async createIndex(keys, options = {}) {
+    options = ttlIndexOptions(keys, options);
     await this._ensureTable();
 
     const keyEntries = Object.entries(keys);
@@ -1977,12 +2016,32 @@ class PostgresCollection {
     // Generate MongoDB-compatible index name for indexInformation() compatibility
     const mongoName = options.name || keyEntries.map(([ k, v ]) => `${k}_${v}`).join('_');
 
+    // Before TTL support, expireAfterSeconds was ignored, leaving a plain
+    // text index under the same name. CREATE INDEX IF NOT EXISTS would keep
+    // it, and the expiration query can't use it, so replace it once
+    if (options.expireAfterSeconds != null) {
+      const existing = await this._pool.query(
+        'SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = $2',
+        [ this._schema || 'public', indexName ]
+      );
+      if (existing.rows[0] && !existing.rows[0].indexdef.includes('$date')) {
+        const schemaPrefix = this._schema ? `"${escapeIdentifier(this._schema)}".` : '';
+        await this._pool.query(
+          `DROP INDEX IF EXISTS ${schemaPrefix}"${escapeIdentifier(indexName)}"`
+        );
+      }
+    }
+
     // Store index metadata
     this._indexes.set(indexName, {
       keys,
       options,
       mongoName
     });
+
+    if (options.expireAfterSeconds != null) {
+      this._db._client._ttlReaper.start();
+    }
 
     const qualifiedName = this._qualifiedName();
     const escapedIndexName = escapeIdentifier(indexName);
@@ -2110,7 +2169,10 @@ class PostgresCollection {
           key: storedIndex.keys,
           unique: storedIndex.options.unique || false,
           ...(storedIndex.options.sparse ? { sparse: true } : {}),
-          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {})
+          ...(storedIndex.options.type ? { type: storedIndex.options.type } : {}),
+          ...(storedIndex.options.expireAfterSeconds != null
+            ? { expireAfterSeconds: storedIndex.options.expireAfterSeconds }
+            : {})
         });
       } else {
         indexes.push({
@@ -2346,6 +2408,7 @@ class PostgresClient {
     this._defaultSchema = options._defaultSchema || null;
     this._realDb = options._realDb || null;
     this._databases = new Map();
+    this._ttlReaper = new TtlReaper(this);
   }
 
   db(name) {
@@ -2383,6 +2446,7 @@ class PostgresClient {
   async close() {
     if (!this._poolEnded) {
       this._poolEnded = true;
+      await this._ttlReaper.stop();
       await this._pool.end();
     }
   }

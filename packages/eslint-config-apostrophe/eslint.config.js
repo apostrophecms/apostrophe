@@ -52,6 +52,10 @@ export default defineConfig([
       'no-class-assign': 'error',
       'no-compare-neg-zero': 'error',
       'no-cond-assign': 'error',
+      // Server side diagnostics belong in the log pipeline (`self.logInfo` and
+      // friends), not on the console. A warning here, an error in `strict`, and
+      // an error already in browser and test code below.
+      'no-console': 'warn',
       'no-const-assign': 'error',
       'no-constant-condition': [ 'error', { checkLoops: false } ],
       'no-control-regex': 'error',
@@ -339,7 +343,7 @@ export default defineConfig([
     }
   },
   {
-    files: [ '**/ui/**/*.js', '**/*.vue' ],
+    files: [ '**/ui/**/*.js', '**/ui/**/*.mjs', '**/*.vue' ],
     languageOptions: {
       globals: {
         ...globals.browser,

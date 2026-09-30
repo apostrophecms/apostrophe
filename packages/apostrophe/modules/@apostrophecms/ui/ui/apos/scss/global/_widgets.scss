@@ -5,3 +5,22 @@
 [data-rich-text] p:empty::after {
   content: '\00A0';
 }
+
+// Briefly outlines something on the page that just changed, e.g. on undo, so
+// the eye goes to it. The admin colors are not defined everywhere on a page,
+// hence the fallback
+.apos-change-target {
+  animation: apos-change-target 1500ms ease-out;
+}
+
+@keyframes apos-change-target {
+  from {
+    outline: 2px solid var(--a-primary, #6516dd);
+    outline-offset: 2px;
+  }
+
+  to {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+}

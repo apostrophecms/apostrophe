@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { PassThrough } = require('stream');
 /**
  * Helper functions
  **/
@@ -62,6 +63,39 @@ module.exports = {
     } else {
       return key.replace(/^\//, '');
     }
+  },
+
+  // Returns an error if `path` is not acceptable as an uploadfs path,
+  // otherwise null. `..` segments are never legitimate: they could escape
+  // the uploads folder of the local backend, and in cloud backends they can
+  // be normalized away when the key becomes part of a request URL, reaching
+  // other buckets or containers. Backslashes count as separators because they
+  // are separators on Windows and are also normalized to slashes in URLs.
+
+  checkPath(path) {
+    if (
+      (typeof path !== 'string') ||
+      path.includes('\0') ||
+      path.split(/[/\\]/).includes('..')
+    ) {
+      return module.exports.invalidPathError(path);
+    }
+    return null;
+  },
+
+  invalidPathError(path) {
+    const error = new Error(`uploadfs: invalid path ${JSON.stringify(path)}`);
+    error.code = 'EUPLOADFSPATH';
+    return error;
+  },
+
+  // A readable stream that fails with `error`, for methods like
+  // `streamOut` that report errors via the stream
+
+  errorStream(error) {
+    const stream = new PassThrough();
+    process.nextTick(() => stream.destroy(error));
+    return stream;
   }
 
 };

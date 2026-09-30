@@ -103,7 +103,7 @@ import {
 import {
   computePosition, offset, shift, flip, arrow
 } from '@floating-ui/dom';
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 
 import { useAposTheme } from '../composables/AposTheme.js';
 import { useFocusTrap } from '../composables/AposFocusTrap.js';

@@ -314,4 +314,156 @@ describe('pages - move destination permission (GHSA-wr5r-wqp2-x4fh)', function (
       'the editor must not have relocated their page under the admin-only section via REST'
     );
   });
+
+  // GHSA-2jrp-qc93-h2j8: a same-parent reorder also re-ranks the parent's
+  // other children, so it requires the same "create" permission on the
+  // parent as a move into that parent does.
+
+  // An editor-editable page nested under an admin-only section, alongside
+  // an admin-only sibling. Only an admin can set this up.
+  async function nestedFixtures(slugPrefix) {
+    const admin = adminReq();
+    const secret = await apos.page.insert(admin, homeId, 'lastChild', {
+      title: 'Secret Section',
+      type: 'secret-page',
+      slug: `/${slugPrefix}-secret`
+    });
+    const secretChild = await apos.page.insert(admin, secret._id, 'lastChild', {
+      title: 'Secret Child',
+      type: 'secret-page',
+      slug: `/${slugPrefix}-secret/child`
+    });
+    const nested = await apos.page.insert(admin, secret._id, 'lastChild', {
+      title: 'Nested Public Page',
+      type: 'public-page',
+      slug: `/${slugPrefix}-secret/nested`
+    });
+    return {
+      secret,
+      secretChild,
+      nested
+    };
+  }
+
+  async function getRank(_id) {
+    const page = await apos.page.find(adminReq(), { _id }).toObject();
+    return page.rank;
+  }
+
+  for (const position of [ 'firstChild', 'before' ]) {
+    it(`forbids an editor from reordering pages under an admin-only section (${position})`, async function () {
+      const {
+        secret, secretChild, nested
+      } = await nestedFixtures(`same-parent-${position.toLowerCase()}`);
+
+      // Preconditions: the editor may edit the nested page but has no
+      // create rights on its admin-only parent
+      const nestedForEditor = await apos.page
+        .find(editorReq(), { _id: nested._id })
+        .toObject();
+      assert.equal(nestedForEditor._edit, true);
+      const secretForEditor = await apos.page
+        .find(editorReq(), { _id: secret._id })
+        .permission(false)
+        .toObject();
+      assert.notEqual(secretForEditor._create, true);
+
+      const siblingRankBefore = await getRank(secretChild._id);
+      const nestedRankBefore = await getRank(nested._id);
+
+      const targetId = position === 'firstChild' ? secret._id : secretChild._id;
+      await assert.rejects(
+        apos.page.move(editorReq(), nested._id, targetId, position),
+        { name: 'forbidden' }
+      );
+
+      assert.equal(
+        await getRank(secretChild._id),
+        siblingRankBefore,
+        'the admin-only sibling must not be re-ranked'
+      );
+      assert.equal(await getRank(nested._id), nestedRankBefore);
+    });
+  }
+
+  it('forbids a same-parent reorder under an admin-only section over the REST PATCH route', async function () {
+    const {
+      secret, secretChild, nested
+    } = await nestedFixtures('same-parent-rest');
+
+    await t.createUser(apos, 'editor', { username: 'rest-editor-2' });
+    const jar = await t.loginAs(apos, 'rest-editor-2');
+    await apos.http.get('/', { jar });
+
+    const siblingRankBefore = await getRank(secretChild._id);
+    await assert.rejects(
+      apos.http.patch(`/api/v1/@apostrophecms/page/${nested._id}`, {
+        body: {
+          _targetId: secret._id,
+          _position: 'firstChild'
+        },
+        jar
+      }),
+      { status: 403 }
+    );
+    assert.equal(await getRank(secretChild._id), siblingRankBefore);
+  });
+
+  it('still allows an admin to reorder pages under the admin-only section', async function () {
+    const {
+      secret, secretChild, nested
+    } = await nestedFixtures('same-parent-admin');
+
+    await apos.page.move(adminReq(), nested._id, secret._id, 'firstChild');
+    assert.ok(await getRank(nested._id) < await getRank(secretChild._id));
+  });
+
+  it('still allows an editor to reorder pages under a parent they may create within', async function () {
+    const admin = adminReq();
+    const parent = await apos.page.insert(admin, homeId, 'lastChild', {
+      title: 'Ordinary Parent',
+      type: 'public-page',
+      slug: '/same-parent-ok'
+    });
+    const first = await apos.page.insert(admin, parent._id, 'lastChild', {
+      title: 'First',
+      type: 'public-page',
+      slug: '/same-parent-ok/first'
+    });
+    const second = await apos.page.insert(admin, parent._id, 'lastChild', {
+      title: 'Second',
+      type: 'public-page',
+      slug: '/same-parent-ok/second'
+    });
+
+    await apos.page.move(editorReq(), second._id, first._id, 'before');
+    assert.ok(await getRank(second._id) < await getRank(first._id));
+
+    await apos.page.move(editorReq(), second._id, parent._id, 'lastChild');
+    assert.ok(await getRank(second._id) > await getRank(first._id));
+
+    // Reordering top level pages under the home page
+    await apos.page.move(editorReq(), parent._id, homeId, 'firstChild');
+    assert.equal(await getRank(parent._id), 0);
+  });
+
+  it('still allows an editor to reorder pages within the archive', async function () {
+    const admin = adminReq();
+    const first = await apos.page.insert(admin, homeId, 'lastChild', {
+      title: 'Archived First',
+      type: 'public-page',
+      slug: '/archived-first'
+    });
+    const second = await apos.page.insert(admin, homeId, 'lastChild', {
+      title: 'Archived Second',
+      type: 'public-page',
+      slug: '/archived-second'
+    });
+    await apos.page.archive(editorReq(), first._id);
+    await apos.page.archive(editorReq(), second._id);
+
+    await apos.page.move(editorReq(), second._id, first._id, 'before');
+    const find = (_id) => apos.page.find(admin, { _id }).archived(null).toObject();
+    assert.ok((await find(second._id)).rank < (await find(first._id)).rank);
+  });
 });

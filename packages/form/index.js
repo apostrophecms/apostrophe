@@ -210,7 +210,7 @@ module.exports = {
 
           return null;
         } catch (err) {
-          self.apos.util.error('⚠️ @apostrophecms/form submission email notification error: ', err);
+          self.logError('notification-email-failed', err.message, { stack: err.stack });
 
           return null;
         }
@@ -232,6 +232,66 @@ module.exports = {
             subject: options.subject || form.title
           }
         );
+      },
+      // Limits applied to multipart form submissions. Configurable via the
+      // `uploadLimits` option, which is merged with these defaults. `fileSize`
+      // defaults to the `maxSize` option of `@apostrophecms/attachment` if
+      // set, otherwise 20MB.
+      getUploadLimits() {
+        return {
+          fileSize: self.apos.attachment.options.maxSize || 20 * 1024 * 1024,
+          files: 20,
+          fields: 50,
+          fieldSize: 1024 * 1024,
+          ...self.options.uploadLimits
+        };
+      },
+      // Returns the `fieldName` of every file field in the form, including
+      // those nested in groups, conditionals, etc.
+      getFileFieldNames(form) {
+        const names = [];
+        self.apos.area.walk({
+          contents: form.contents
+        }, function(area) {
+          for (const widget of (area.items || [])) {
+            const manager = self.apos.area.getWidgetManager(widget.type);
+            if (
+              manager &&
+              self.apos.instanceOf(manager, '@apostrophecms/form-file-field-widget')
+            ) {
+              names.push(widget.fieldName);
+            }
+          }
+        });
+        return names;
+      },
+      // multer `fileFilter`. A file is accepted only if the `data` field,
+      // which identifies the form, arrived before it, the form exists and
+      // the file belongs to one of its file fields. This way nothing is
+      // written to disk for any other request.
+      async checkUploadedFile(req, file) {
+        if (!req.aposFormFileFieldNames) {
+          // Look the form up only once per request
+          req.aposFormFileFieldNames = (async () => {
+            let input;
+            try {
+              input = JSON.parse(req.body?.data);
+            } catch (e) {
+              return [];
+            }
+            if ((typeof input?._id) !== 'string') {
+              return [];
+            }
+            const formId = self.inferIdLocaleAndMode(req, input._id);
+            const form = await self.find(req, {
+              _id: self.apos.launder.id(formId)
+            }).toObject();
+            return form ? self.getFileFieldNames(form) : [];
+          })();
+        }
+        const names = await req.aposFormFileFieldNames;
+        const matches = file.fieldname.match(/^(.+)-\d+$/);
+        return Boolean(matches && names.includes(matches[1]));
       },
       // Normalize Multer's `req.files` (array) to the historical multiparty shape
       // expected by submit handlers (object keyed by field name with name/path/etc.).
@@ -270,11 +330,46 @@ module.exports = {
     };
   },
   apiRoutes(self) {
+    const upload = multer({
+      dest: os.tmpdir(),
+      limits: self.getUploadLimits(),
+      fileFilter(req, file, cb) {
+        self.checkUploadedFile(req, file).then(ok => {
+          return ok
+            ? cb(null, true)
+            : cb(self.apos.error('invalid', 'Unexpected file'));
+        }).catch(cb);
+      }
+    }).any();
+
+    function uploadError(req, err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        // Report it on the field, like other form errors
+        return self.apos.error('invalid', {
+          formErrors: [ {
+            field: (err.field || '').replace(/-\d+$/, ''),
+            error: 'invalid',
+            message: req.t('aposForm:fileUploadError')
+          } ]
+        });
+      }
+      if (err.name === 'invalid') {
+        return err;
+      }
+      return self.apos.error('invalid', err.message);
+    }
+
     return {
       post: {
         // Route to accept the submitted form.
         submit: [
-          multer({ dest: os.tmpdir() }).any(),
+          (req, res, next) => upload(req, res, (err) => {
+            if (err) {
+              // multer has already removed any files it staged
+              return self.routeSendError(req, uploadError(req, err));
+            }
+            return next();
+          }),
           self.normalizeFiles,
           async function (req) {
             try {
@@ -351,7 +446,7 @@ module.exports = {
 
             return null;
           } catch (err) {
-            self.apos.util.error('⚠️ @apostrophecms/form submission email confirmation error: ', err);
+            self.logError('confirmation-email-failed', err.message, { stack: err.stack });
 
             return null;
           }

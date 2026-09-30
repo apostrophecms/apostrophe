@@ -15,7 +15,7 @@
   </p>
 </div>
 
-This module improves [@apostrophecms/import-export](https://github.com/apostrophecms/import-export) by adding the `xlsx` format.
+This module improves [@apostrophecms/import-export](https://apostrophecms.com/extensions/import-export) by adding the `xlsx` format.
 
 > Why does this specific format live in another module?
 
@@ -23,9 +23,9 @@ Historically because it relied on a [dependency that was not hosted on NPM](http
 
 ## Requirement
 
-[@apostrophecms/import-export](https://github.com/apostrophecms/import-export) should be installed and instantiated.
+[@apostrophecms/import-export](https://apostrophecms.com/extensions/import-export) should be installed and instantiated.
 
-Please refer to the module's [README](https://github.com/apostrophecms/import-export#readme) before continuing.
+Please refer to the module's [README](https://apostrophecms.com/extensions/import-export) before continuing.
 
 ## Installation
 

@@ -1,11 +1,14 @@
 const Sharp = require('sharp');
+const createLogger = require('../logger.js');
 
 module.exports = function () {
+  let logger = createLogger();
   return {
     /**
      * Initialize the module.
      */
     init: function (options, callback) {
+      logger = createLogger(options.logger);
       return callback(null);
     },
 
@@ -135,7 +138,7 @@ module.exports = function () {
           return callback(null);
         })
         .catch((err) => {
-          console.error(err);
+          logger.error(err);
           return callback(err);
         });
 

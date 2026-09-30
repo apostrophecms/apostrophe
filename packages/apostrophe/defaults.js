@@ -27,6 +27,11 @@ module.exports = {
     '@apostrophecms/login': {},
     '@apostrophecms/doc': {},
     '@apostrophecms/job': {},
+    '@apostrophecms/ai': {},
+    '@apostrophecms/ai-adapter-anthropic': {},
+    '@apostrophecms/ai-adapter-openai': {},
+    '@apostrophecms/ai-adapter-openai-compatible': {},
+    '@apostrophecms/ai-adapter-google': {},
     '@apostrophecms/modal': {},
     '@apostrophecms/oembed': {},
     '@apostrophecms/pager': {},
@@ -63,6 +68,7 @@ module.exports = {
     '@apostrophecms/submitted-draft': {},
     '@apostrophecms/recently-edited': {},
     '@apostrophecms/command-menu': {},
-    '@apostrophecms/translation': {}
+    '@apostrophecms/translation': {},
+    '@apostrophecms/document-versions': {}
   }
 };

@@ -1,4 +1,4 @@
-import { throttle } from 'lodash';
+import { throttle } from 'apostrophe/lib/beneath.js';
 import {
   getMoveChanges,
   getResizeChanges,

@@ -674,7 +674,7 @@ function extractCustomType(field, doc, { rootSelector, storage } = {}) {
   const ruleName = field.customType;
   const rule = customRules[ruleName];
   if (!rule) {
-
+    // eslint-disable-next-line no-console
     console.error(
       `[styles] Unknown customType "${ruleName}" on field "${field.name}". ` +
       'The field will be skipped. Available types: ' +

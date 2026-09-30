@@ -88,6 +88,7 @@ module.exports = {
       robotsCustomText: {
         label: 'aposSeo:robotsCustomText',
         type: 'string',
+        extractable: false,
         textarea: true,
         required: true,
         if: {
@@ -198,7 +199,8 @@ module.exports = {
                 add: {
                   telephone: {
                     label: 'aposSeo:telephone',
-                    type: 'string'
+                    type: 'string',
+                    extractable: false
                   },
                   type: {
                     label: 'aposSeo:contactType',
@@ -311,6 +313,7 @@ module.exports = {
       seoSearchQueryParam: {
         label: 'aposSeo:searchQueryParam',
         type: 'string',
+        extractable: false,
         def: 'q',
         help: 'aposSeo:searchQueryParamHelp' // "The query parameter your site uses for search (e.g., 'q', 'search', 'query')"
       }
@@ -523,7 +526,7 @@ Allow: /
             req.res.setHeader('Content-Type', 'text/plain');
             return robotsTxtContent;
           } catch (err) {
-            console.error(err);
+            self.logError(req, 'robots-txt-error', err.message, { stack: err.stack });
             return 'An error occurred generating robots.txt';
           }
         },
@@ -620,7 +623,9 @@ Allow: /
                 });
               }
             } catch (err) {
-              console.error('Error fetching pages for llms.txt:', err);
+              self.logError(req, 'llms-txt-pages-error', 'Error fetching pages for llms.txt', {
+                stack: err.stack
+              });
             }
 
             // Content Types Available
@@ -691,7 +696,9 @@ Allow: /
             req.res.setHeader('Content-Type', 'text/plain; charset=utf-8');
             return content;
           } catch (err) {
-            console.error('Error generating llms.txt:', err);
+            self.logError(req, 'llms-txt-error', 'Error generating llms.txt', {
+              stack: err.stack
+            });
             req.res.status(500);
             return 'An error occurred generating llms.txt';
           }

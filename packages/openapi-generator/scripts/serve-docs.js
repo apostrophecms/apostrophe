@@ -32,7 +32,6 @@ app.use('/swagger-ui', express.static(swaggerUiAssetPath));
 
 // Optional: serve custom CSS from a local ./styles folder inside this package
 const localStylesDir = path.join(__dirname, '../styles');
-console.log('style!!!!!!!!!!!!!', localStylesDir)
 if (fs.existsSync(localStylesDir)) {
   app.use('/styles', express.static(localStylesDir, {
     setHeaders: (res, filePath) => {

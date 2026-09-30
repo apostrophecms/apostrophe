@@ -733,6 +733,7 @@ export default {
       if (this.currentId) {
         this.addLockToRequest(body);
       }
+      body._explicitSave = true;
 
       let doc;
       try {
