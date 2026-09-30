@@ -159,9 +159,9 @@ module.exports = function(options) {
       .concat(self.options.unparsedSections.map(getExtendKey));
 
     const upgradeHints = {
-      construct: 'in Apostrophe 3.x, "construct" has been replaced with "methods", "routes", "apiRoutes", etc.',
-      beforeConstruct: 'in Apostrophe 3.x, "beforeConstruct" has been replaced with "beforeSuperClass". It takes (self) and should be solely concerned with modifying the options before the base class sees them. It must be synchronous. Check out the new fields section, you might not need beforeSuperClass.',
-      afterConstruct: 'in Apostrophe 3.x, "afterConstruct" has been replaced with "init". It takes (self) and may be an async function.'
+      construct: 'in Apostrophe, "construct" has been replaced with "methods", "routes", "apiRoutes", etc.',
+      beforeConstruct: 'in Apostrophe, "beforeConstruct" has been replaced with "beforeSuperClass". It takes (self) and should be solely concerned with modifying the options before the base class sees them. It must be synchronous. Check out the new fields section, you might not need beforeSuperClass.',
+      afterConstruct: 'in Apostrophe, "afterConstruct" has been replaced with "init". It takes (self) and may be an async function.'
     };
 
     for (const step of steps) {
