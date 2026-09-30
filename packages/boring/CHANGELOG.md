@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 (2026-09-30)
+
+### Changes
+
+- The package is now linted with the shared Apostrophe configuration; no behavior change.
+
 ## 1.1.1
 
 * Edits project metadata and README.
