@@ -194,7 +194,7 @@ To import areas as rich text HTML markup, add the `importAsRichText: true` optio
 
 ### Create a file for your format:
 
-Add your format under `lib/formats/<format_name>.js` and export it in l`ib/formats/index.js`.
+Add your format under `lib/formats/<format_name>.js` and export it in `lib/formats/index.js`.
 
 **Simple example** (for a single file without attachment files):
 
@@ -318,7 +318,7 @@ module.exports = {
 
 You might want to scope one or multiple formats in another module for several reasons:
 
-- The formats rely on a dependency that is not hosted on NPM (which is the case with [@apostrophecms/import-export-xlsx](https://github.com/apostrophecms/apostrophe/tree/main/packages/import-export-xlsx))
+- The formats rely on a dependency that is not hosted on NPM (which is the case with [@apostrophecms/import-export-xlsx](https://apostrophecms.com/extensions/import-export-xlsx))
 - You want to fully scope the format in a separate module and repository for an easier maintenance
 - ...
 
@@ -328,7 +328,7 @@ To do so, simply create an apostrophe module that improves `@apostrophecms/impor
 Example with an `import-export-excel` module:
 
 ```js
-const formats: {
+const formats = {
   xls: {
     label: 'XLS',
     extension: '.xls',
