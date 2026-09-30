@@ -15,7 +15,7 @@
     "url": "https://github.com/apostrophecms/apostrophe.git",
     "directory": "packages/import-export"
   },
-  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/import-export#readme",
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/import-export#readme",
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "devDependencies": {
