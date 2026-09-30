@@ -154,14 +154,19 @@ module.exports = {
         // for await (const docs of cursor) {
         //   // await iterator(docs);
         // }
-        return require('util').promisify(broadband)(cursor, limit, async function (doc, cb) {
-          try {
-            await iterator(doc);
-            return cb(null);
-          } catch (err) {
-            return cb(err);
-          }
-        });
+        try {
+          return await require('util').promisify(broadband)(cursor, limit, async function (doc, cb) {
+            try {
+              await iterator(doc);
+              return cb(null);
+            } catch (err) {
+              return cb(err);
+            }
+          });
+        } finally {
+          // The cursor is ours whether or not the iterator survived
+          await cursor.close();
+        }
       },
       // Invoke an async iterator function once for each area in each doc in
       // the aposDocs collection. The `iterator` function receives
