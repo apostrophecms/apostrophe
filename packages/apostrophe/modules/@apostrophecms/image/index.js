@@ -333,15 +333,24 @@ module.exports = {
         });
 
         const imageTagManager = self.apos.doc.getManager('@apostrophecms/image-tag');
-        const tag = (operation === 'create')
-          ? await imageTagManager.insert(
-            req,
-            {
+        let tag;
+        if (operation === 'create') {
+          // Reuse an existing tag with the same slug instead of inserting a
+          // duplicate.
+          const desiredSlug = self.apos.util.slugify(title);
+          const lockName = `@apostrophecms/image-tag:create:${req.locale}:${desiredSlug}`;
+          tag = await self.apos.lock.withLock(lockName, async () => {
+            const existing = await imageTagManager
+              .find(req, { slug: desiredSlug })
+              .toObject();
+            return existing || imageTagManager.insert(req, {
               ...imageTagManager.newInstance(),
               title
-            }
-          )
-          : await imageTagManager.find(req, { slug }).toObject();
+            });
+          });
+        } else {
+          tag = await imageTagManager.find(req, { slug }).toObject();
+        }
 
         return self.apos.modules['@apostrophecms/job'].runBatch(
           req,

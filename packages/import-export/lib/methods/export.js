@@ -599,7 +599,13 @@ module.exports = self => {
         delete self.timeoutIds[id];
         return new Promise((resolve, _reject) => {
           self.apos.attachment.uploadfs.remove(downloadPath, error => {
-            if (error) {
+            // The download being gone already is this handler's whole purpose,
+            // so treat it as done rather than as a failure. It happens
+            // routinely: another process cleaned up, a restart flushed the
+            // pending expirations through `apostrophe:destroy`, or a test suite
+            // emptied its uploads directory. Reporting it buried real errors in
+            // a stack trace per export.
+            if (error && error.code !== 'ENOENT') {
               self.apos.util.error(error);
             }
             resolve();

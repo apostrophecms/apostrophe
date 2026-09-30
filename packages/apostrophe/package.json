@@ -5,10 +5,9 @@
   "main": "index.js",
   "scripts": {
     "pretest": "npm run lint",
-    "test": "npm run test:base && npm run test:missing && npm run test:assets && npm run test:esm",
-    "test:base": "nyc mocha -t 10000 --ignore=test/assets.js",
+    "test": "npm run test:base && npm run test:missing && npm run test:esm",
+    "test:base": "nyc mocha -t 10000",
     "test:missing": "nyc mocha -t 10000 test/add-missing-schema-fields-project/test.js",
-    "test:assets": "nyc mocha -t 10000 test/assets.js",
     "test:esm": "mocha -t 1000 test/esm-project/esm.js",
     "eslint": "eslint .",
     "eslint-fix": "npm run eslint -- --fix",
@@ -24,7 +23,7 @@
   },
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/apostrophe",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "apostrophe",
@@ -38,13 +37,16 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
-    "@apostrophecms/emulate-mongo-3-driver": "workspace:^",
+    "@apostrophecms/db-connect": "workspace:^",
     "@apostrophecms/vue-material-design-icons": "^1.0.0",
+    "@babel/core": "^7.29.0",
+    "@babel/plugin-transform-modules-commonjs": "^7.28.0",
+    "@babel/plugin-transform-react-jsx": "^7.28.0",
     "@ctrl/tinycolor": "^4.1.0",
     "@floating-ui/dom": "^1.5.3",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/semantic-conventions": "^1.0.1",
-    "@paralleldrive/cuid2": "^2.2.2",
+    "@paralleldrive/cuid2": "^3.3.0",
     "@tiptap/extension-color": "^2.4.0",
     "@tiptap/extension-floating-menu": "^2.0.3",
     "@tiptap/extension-highlight": "^2.0.3",
@@ -85,7 +87,7 @@
     "express-cache-on-demand": "workspace:^",
     "express-session": "^1.18.2",
     "fs-extra": "^7.0.1",
-    "glob": "^10.4.5",
+    "glob": "^13.0.0",
     "he": "^1.2.0",
     "html-to-text": "^9.0.5",
     "i18next": "^20.3.2",
@@ -100,7 +102,6 @@
     "minimatch": "^3.1.4",
     "mkdirp": "^0.5.5",
     "multer": "^2.1.1",
-    "node-fetch": "^2.6.1",
     "nodemailer": "^9.0.1",
     "nunjucks": "^3.2.1",
     "oembetter": "workspace:^",
@@ -127,6 +128,7 @@
     "sluggo": "^1.0.0",
     "sortablejs": "^1.15.0",
     "sortablejs-vue3": "^1.2.11",
+    "source-map-support": "^0.5.21",
     "tiny-emitter": "^2.1.0",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
@@ -141,6 +143,7 @@
     "xregexp": "^2.0.0"
   },
   "devDependencies": {
+    "chai": "^4.3.10",
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
     "form-data": "^4.0.4",

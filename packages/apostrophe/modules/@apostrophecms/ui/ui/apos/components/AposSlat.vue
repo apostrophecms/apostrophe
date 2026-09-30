@@ -8,6 +8,7 @@
       'apos-is-only-child': slatCount === 1,
       'apos-is-selected': selected,
       'apos-is-disabled': disabled,
+      'apos-is-not-draggable': !draggable,
     }"
     :aria-current="engaged"
     role="listitem"
@@ -22,7 +23,7 @@
   >
     <div class="apos-slat__main">
       <drag-icon
-        v-if="slatCount > 1"
+        v-if="slatCount > 1 && draggable"
         class="apos-slat__control apos-slat__control--drag"
         :size="13"
       />
@@ -158,6 +159,10 @@ export default {
     editorIcon: {
       type: String,
       default: null
+    },
+    draggable: {
+      type: Boolean,
+      default: true
     }
   },
   emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked', 'select' ],
@@ -209,7 +214,7 @@ export default {
       return e.target.click();
     },
     toggleEngage() {
-      if (this.slatCount > 1) {
+      if (this.draggable && this.slatCount > 1) {
         if (this.engaged) {
           this.disengage();
         } else {
@@ -278,7 +283,8 @@ export default {
     }
 
     &.apos-slat-list__item--disabled,
-    &.apos-is-only-child {
+    &.apos-is-only-child,
+    &.apos-is-not-draggable {
       &:hover,
       &:active {
         cursor: default;

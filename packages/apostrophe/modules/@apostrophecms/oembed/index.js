@@ -54,7 +54,8 @@ module.exports = {
 
         self.oembetter.allowlist(minimumAllowlist.concat(self.options.allowlist || []));
 
-        const minimumEndpoints = self.options.minimumEndpoints || self.oembetter.suggestedEndpoints;
+        const minimumEndpoints = self.options.minimumEndpoints ||
+          self.oembetter.suggestedEndpoints;
         self.oembetter.endpoints(
           minimumEndpoints.concat(self.options.endpoints || [])
         );

@@ -147,11 +147,20 @@ module.exports = {
 };
 
 async function extract(filepath, exportPath) {
-  if (fs.existsSync(exportPath)) {
+  // A directory on its own does not prove the extraction finished: it is
+  // created before any entry is written, so an interrupted run leaves one
+  // behind and every later attempt would treat it as complete. `aposDocs.json`
+  // is written by `output()` for every archive and is the first thing
+  // `input()` reads, so its presence is the marker of a usable extraction.
+  // Reuse still matters: the `overrideLocale` branch of `import()` calls
+  // `input()` a second time on the same archive and depends on it.
+  if (fs.existsSync(path.join(exportPath, 'aposDocs.json'))) {
     return;
   }
 
-  await fsp.mkdir(exportPath);
+  // `recursive` so a partial extraction's leftover directory is reused rather
+  // than throwing EEXIST.
+  await fsp.mkdir(exportPath, { recursive: true });
 
   const readStream = fs.createReadStream(filepath);
   const gunzip = zlib.createGunzip();
@@ -161,15 +170,30 @@ async function extract(filepath, exportPath) {
     .pipe(gunzip)
     .pipe(extract);
 
+  // Every entry must land strictly inside the extraction directory.
+  const base = path.resolve(exportPath) + path.sep;
+
   return new Promise((resolve, reject) => {
-    readStream.on('error', reject);
-    gunzip.on('error', reject);
-    extract.on('error', reject);
+    // Stop reading the archive once extraction has failed, so the open file
+    // and the half-consumed tar stream are not left dangling.
+    const fail = error => {
+      readStream.destroy();
+      reject(error);
+    };
+
+    readStream.on('error', fail);
+    gunzip.on('error', fail);
+    extract.on('error', fail);
 
     extract.on('entry', (header, stream, next) => {
       // Normalize \ to / before checking for zip-slip
       const name = header.name.replace(/\\/g, '/');
-      if (name.includes('../')) {
+      // Check where the entry actually resolves to rather than looking for
+      // `../` in its name, which misses names such as `..` or `./..`. The
+      // extraction directory itself (e.g. a `./` entry) already exists and is
+      // skipped as well, as are absolute names, which our archives never use.
+      const target = path.join(exportPath, name);
+      if (path.isAbsolute(name) || !path.resolve(target).startsWith(base)) {
         // Reject zip-slip attacks without revealing information. Discard any
         // body and ALWAYS advance to the next entry. Directory entries carry
         // no body but tar-stream still requires next() to be called; skipping
@@ -181,12 +205,22 @@ async function extract(filepath, exportPath) {
       }
       if (header.type === 'directory') {
         fsp
-          .mkdir(path.join(exportPath, name))
+          .mkdir(target)
           .then(next)
-          .catch(reject);
+          .catch(fail);
       } else {
-        stream.pipe(fs.WriteStream(path.join(exportPath, name)));
-        stream.on('end', next);
+        // Advance on the WRITE finishing, not on the source entry's `end`.
+        // `end` fires once the entry has been read out of the archive, while
+        // the destination may still be flushing, so gating on it let
+        // extraction resolve with files still partly (or not at all) on disk —
+        // an intermittent ENOENT/truncated read for whoever read them next.
+        // The `error` listener is required: without it a failed write (e.g.
+        // an entry colliding with a directory) is an unhandled 'error' event
+        // that terminates the process.
+        const writeStream = fs.createWriteStream(target);
+        writeStream.on('error', fail);
+        writeStream.on('finish', next);
+        stream.pipe(writeStream);
       }
     });
     extract.on('finish', resolve);

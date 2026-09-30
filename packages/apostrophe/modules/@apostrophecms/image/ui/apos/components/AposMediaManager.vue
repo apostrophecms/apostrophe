@@ -816,6 +816,13 @@ export default {
           return [];
         }
 
+        const { count } = await apos.http.get(action, {
+          draft: true,
+          qs: {
+            count: true
+          }
+        });
+
         const response = await apos.http.get(
           action,
           {
@@ -823,7 +830,8 @@ export default {
             qs: {
               sort: {
                 title: 1
-              }
+              },
+              perPage: Math.max(count, 1)
             }
           }
         );

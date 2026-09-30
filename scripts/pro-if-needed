@@ -7,4 +7,4 @@ fi
 
 echo "Installing dependencies on Pro modules for testing"
 
-pnpm add git+ssh://git@github.com:apostrophecms/automatic-translation || exit 1
+pnpm add git+ssh://git@github.com:apostrophecms/automatic-translation#stable || exit 1

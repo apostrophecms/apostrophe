@@ -26,6 +26,7 @@
               'apos-input--error': duplicate
             }"
             :disabled="disabled"
+            :draggable="draggable"
             :engaged="engaged === item._id"
             :parent="listId"
             :slat-count="next.length"
@@ -87,6 +88,10 @@ export default {
     duplicate: {
       type: String,
       default: null
+    },
+    draggable: {
+      type: Boolean,
+      default: true
     }
   },
   emits: [ 'item-clicked', 'select', 'update:modelValue' ],
@@ -104,7 +109,7 @@ export default {
     dragOptions() {
       return {
         animation: 0,
-        disabled: this.disabled || this.next.length <= 1,
+        disabled: !this.draggable || this.disabled || this.next.length <= 1,
         ghostClass: 'apos-is-dragging'
       };
     }

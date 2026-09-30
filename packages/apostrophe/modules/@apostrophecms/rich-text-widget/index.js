@@ -132,6 +132,8 @@ module.exports = {
     // The list is empty by default, which disables image fetching during
     // rich text HTML import. Add hostnames here to opt in.
     imageImportAllowedHostnames: [],
+    // Maximum size in bytes of a CSV file uploaded to create a table
+    csvTableMaxSize: 10 * 1024 * 1024,
     tableOptions: {
       resizable: true,
       handleWidth: 10,
@@ -942,9 +944,12 @@ module.exports = {
             const href = content.indexOf(' href="', left);
             const close = content.indexOf('"', href + 7);
             if ((left !== -1) && (href !== -1) && (close !== -1)) {
-              content = content.substring(0, href + 6) +
+              // ` href="` is seven characters, so `href + 7` keeps the opening
+              // quote and `close` keeps the closing one. Substituting an
+              // unquoted url would let a space in it start a second attribute
+              content = content.substring(0, href + 7) +
                 doc._url +
-                content.substring(close + 1);
+                content.substring(close);
             } else {
               // So we don't get stuck in an infinite loop
               break;

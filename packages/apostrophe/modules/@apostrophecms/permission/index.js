@@ -17,6 +17,13 @@ const ranks = {
   admin: 3
 };
 
+// The rank of `role`. The general public, and any user without a
+// recognized role, rank below every role, so that a type's `viewRole`,
+// `editRole` or `publishRole` restricts them too
+function rankOf(role) {
+  return Object.hasOwn(ranks, role) ? ranks[role] : -1;
+}
+
 module.exports = {
   options: {
     alias: 'permission'
@@ -98,7 +105,7 @@ module.exports = {
 
         function checkRoleConfig (permRole) {
           return manager && manager.options[permRole] &&
-            (ranks[role] < ranks[manager.options[permRole]]);
+            (rankOf(role) < ranks[manager.options[permRole]]);
         }
 
         function canView() {
@@ -148,13 +155,13 @@ module.exports = {
 
         const restrictedViewTypes = Object.keys(self.apos.doc.managers)
           .filter(name =>
-            ranks[self.apos.doc.getManager(name).options.viewRole] > ranks[role]);
+            ranks[self.apos.doc.getManager(name).options.viewRole] > rankOf(role));
         const restrictedEditTypes = Object.keys(self.apos.doc.managers)
           .filter(name =>
-            ranks[self.apos.doc.getManager(name).options.editRole] > ranks[role]);
+            ranks[self.apos.doc.getManager(name).options.editRole] > rankOf(role));
         const restrictedPublishTypes = Object.keys(self.apos.doc.managers)
           .filter(name =>
-            ranks[self.apos.doc.getManager(name).options.publishRole] > ranks[role]);
+            ranks[self.apos.doc.getManager(name).options.publishRole] > rankOf(role));
         if (action === 'view') {
           if (role === 'guest') {
             return {

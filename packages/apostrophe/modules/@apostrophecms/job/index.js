@@ -110,7 +110,9 @@ module.exports = {
           // sends a response with a jobId to the browser
           job = await self.start(options);
 
-          self.setTotal(job, ids.length);
+          // Persist the total before work begins so the completed notification
+          // and job document always report it, even if processing finishes fast.
+          await self.setTotal(job, ids.length);
           // Runs after response is already sent
           run();
 
@@ -244,7 +246,9 @@ module.exports = {
               },
               setTotal (n) {
                 total = n;
-                return self.setTotal(job, n);
+                const result = self.setTotal(job, n);
+                promises.push(result);
+                return result;
               },
               setResults (_results) {
                 results = _results;
@@ -412,12 +416,12 @@ module.exports = {
       //
       // No promise is returned as this method just updates
       // the job tracking information in the background.
-      setTotal(job, total) {
-        self.db.updateOne({ _id: job._id }, { $set: { total } }, function (err) {
-          if (err) {
-            self.apos.util.error(err);
-          }
-        });
+      async setTotal(job, total) {
+        try {
+          await self.db.updateOne({ _id: job._id }, { $set: { total } });
+        } catch (err) {
+          self.apos.util.error(err);
+        }
       },
       // Mark the given job as ended. If `success`
       // is true the job is reported as an overall

@@ -1,6 +1,12 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
+// The REST API etag tests below issue their conditional request via rawGet
+// (raw node:http): the built-in fetch used by apos.http adds Cache-Control:
+// no-cache to any request carrying a conditional header (Fetch standard), which
+// would suppress the asserted 304s. The page-serving etag tests stay on
+// apos.http (those routes set 304 explicitly).
+const { rawGet } = t;
 
 describe('Pages', function() {
   let apos;
@@ -1087,11 +1093,8 @@ describe('Pages', function() {
     };
 
     const response1 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, { fullResponse: true });
-    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, {
-      fullResponse: true,
-      headers: {
-        'if-none-match': response1.headers.etag
-      }
+    const response2 = await rawGet(apos, `/api/v1/@apostrophecms/page/${homeId}`, {
+      'if-none-match': response1.headers.etag
     });
 
     assert(response1.status === 200);
@@ -1125,11 +1128,8 @@ describe('Pages', function() {
     // so requesting it again should not return a 304 status code
     const pageUpdateResponse = await apos.doc.update(apos.task.getReq(), pageDoc);
 
-    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, {
-      fullResponse: true,
-      headers: {
-        'if-none-match': response1.headers.etag
-      }
+    const response2 = await rawGet(apos, `/api/v1/@apostrophecms/page/${homeId}`, {
+      'if-none-match': response1.headers.etag
     });
 
     const eTag1Parts = response1.headers.etag.split(':');
@@ -1165,11 +1165,8 @@ describe('Pages', function() {
     outOfDateETagParts[2] = Number(outOfDateETagParts[2]) -
       (4444 + 1) * 1000; // 1s outdated
 
-    const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, {
-      fullResponse: true,
-      headers: {
-        'if-none-match': outOfDateETagParts.join(':')
-      }
+    const response2 = await rawGet(apos, `/api/v1/@apostrophecms/page/${homeId}`, {
+      'if-none-match': outOfDateETagParts.join(':')
     });
 
     const eTag1Parts = response1.headers.etag.split(':');

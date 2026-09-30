@@ -891,6 +891,11 @@ module.exports = {
             if (!self.isUniqueError(err)) {
               throw err;
             }
+            // fixUniqueError handlers adjust slug-like properties. Nothing
+            // can make an _id unique, so retrying repeats the same failure.
+            if (self.isIdUniqueError(err)) {
+              throw err;
+            }
             if (!firstError) {
               firstError = err;
             }
@@ -1287,9 +1292,17 @@ module.exports = {
           return false;
         }
         return err.code === 13596 ||
-          err.code === 13596 ||
           err.code === 11000 ||
           err.code === 11001;
+      },
+      // True if `err` is a unique index error naming `_id`. Adapters report the
+      // offending key in `keyValue`; MongoDB also supplies `keyPattern`.
+      isIdUniqueError(err) {
+        if (!self.isUniqueError(err)) {
+          return false;
+        }
+        const key = err.keyValue || err.keyPattern;
+        return !!key && Object.hasOwn(key, '_id');
       },
       // Set the manager object corresponding
       // to a given doc type. Typically `manager`
@@ -1770,13 +1783,22 @@ module.exports = {
         }
         await self.emit('afterReplicate');
       },
-      // Determine which locales exist for the given doc _id
+      // Determine which locales exist for the given doc _id. Only
+      // locale and mode versions of the doc that `req` is allowed
+      // to view are returned.
       async getLocales(req, _id) {
         const criteria = {
-          aposDocId: _id.split(':')[0]
+          $and: [
+            {
+              aposDocId: _id.split(':')[0]
+            },
+            self.apos.permission.criteria(req, 'view')
+          ]
         };
         if (!self.apos.permission.can(req, 'view-draft')) {
-          criteria.aposMode = 'published';
+          criteria.$and.push({
+            aposMode: 'published'
+          });
         }
         const existing = await self.apos.doc.db.find(criteria).project({
           _id: 1,

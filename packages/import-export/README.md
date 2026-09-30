@@ -9,7 +9,7 @@
     <a aria-label="Join the community on Discord" href="http://chat.apostrophecms.org">
       <img alt="" src="https://img.shields.io/discord/517772094482677790?color=5865f2&label=Join%20the%20Discord&logo=discord&logoColor=fff&labelColor=000&style=for-the-badge&logoWidth=20">
     </a>
-    <a aria-label="License" href="https://github.com/apostrophecms/import-export/blob/main/LICENSE.md">
+    <a aria-label="License" href="https://github.com/apostrophecms/apostrophe/blob/main/packages/import-export/LICENSE.md">
       <img alt="" src="https://img.shields.io/static/v1?style=for-the-badge&labelColor=000000&label=License&message=MIT&color=3DA639">
     </a>
   </p>
@@ -194,7 +194,7 @@ To import areas as rich text HTML markup, add the `importAsRichText: true` optio
 
 ### Create a file for your format:
 
-Add your format under `lib/formats/<format_name>.js` and export it in l`ib/formats/index.js`.
+Add your format under `lib/formats/<format_name>.js` and export it in `lib/formats/index.js`.
 
 **Simple example** (for a single file without attachment files):
 
@@ -318,7 +318,7 @@ module.exports = {
 
 You might want to scope one or multiple formats in another module for several reasons:
 
-- The formats rely on a dependency that is not hosted on NPM (which is the case with [@apostrophecms/import-export-xlsx](https://github.com/apostrophecms/import-export-xlsx))
+- The formats rely on a dependency that is not hosted on NPM (which is the case with [@apostrophecms/import-export-xlsx](https://apostrophecms.com/extensions/import-export-xlsx))
 - You want to fully scope the format in a separate module and repository for an easier maintenance
 - ...
 
@@ -328,7 +328,7 @@ To do so, simply create an apostrophe module that improves `@apostrophecms/impor
 Example with an `import-export-excel` module:
 
 ```js
-const formats: {
+const formats = {
   xls: {
     label: 'XLS',
     extension: '.xls',
