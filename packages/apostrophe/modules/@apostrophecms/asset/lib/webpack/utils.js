@@ -154,7 +154,7 @@ module.exports = {
           }),
           scss: getImportFileOutput(paths.scss, {
             enumerateImports: true,
-            importSuffix: 'Stylesheet'
+            importName: false
           })
         };
       });

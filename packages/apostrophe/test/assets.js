@@ -1617,6 +1617,29 @@ describe('Assets', function() {
         }, file);
       }
     }
+    {
+      // Stylesheets have no exports. Importing them with a bound name
+      // (e.g. `import mainStylesheet from "./main.scss"`) leaves that
+      // binding unused and, since webpack 5.110, logs a
+      // "export 'default' was not found" warning for every one of them.
+      const aposBuildDir = path.join(process.cwd(), 'test/apos-build/default');
+      const importFiles = (await fs.readdir(aposBuildDir))
+        .filter(file => file.endsWith('-import.js'));
+      assert(importFiles.length > 0);
+      let sawBareSassImport = false;
+      for (const file of importFiles) {
+        const contents = fs.readFileSync(path.join(aposBuildDir, file), 'utf-8');
+        assert.doesNotMatch(
+          contents,
+          /Stylesheet/,
+          `${file} should not import stylesheets as unused default bindings`
+        );
+        if (/import\s+["'][^"']+\.scss["'];/.test(contents)) {
+          sawBareSassImport = true;
+        }
+      }
+      assert(sawBareSassImport, 'expected at least one bare Sass side-effect import');
+    }
 
     process.env.NODE_ENV = 'development';
     await deleteBuiltFolders(publicFolderPath, true);
