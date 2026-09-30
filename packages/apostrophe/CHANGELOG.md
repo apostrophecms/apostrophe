@@ -1,5 +1,249 @@
 # Changelog
 
+## 4.33.0 (2026-09-30)
+
+### Adds
+
+- Added `apos.ai`, a provider-agnostic AI API for text generation with tool calling, image generation and background jobs. Feature code is written once, against one normalized surface: switching between Anthropic, OpenAI, Google or any OpenAI-compatible service is a configuration change, not a rewrite. It is opt-in - no provider and no key are configured out of the box.
+
+  - `@apostrophecms/ai`: the engine - normalized request and result shapes, a tool registry, an agent loop, effort levels, retries, a permission seam and a mock mode for tests.
+  - `@apostrophecms/ai-adapter-anthropic`: Anthropic (Claude) support, via the Messages API. An entry may set `workspaceId` (or export `APOS_ANTHROPIC_WORKSPACE_ID`) to send the `anthropic-workspace-id` header, required with an identity-linked API key that is not scoped to a single workspace.
+  - `@apostrophecms/ai-adapter-openai`: OpenAI support, via the Responses and Images APIs.
+  - `@apostrophecms/ai-adapter-openai-compatible`: support for any Chat Completions service (Groq, Mistral, OpenRouter, Ollama, vLLM and friends) with no adapter code of your own.
+  - `@apostrophecms/ai-adapter-google`: Google (Gemini) support, text and images through one API.
+
+  AI actions check permissions through `apos.ai.can(req, ...)`, not `apos.permission.can()` directly - the same signature, plus AI policy on top: user accounts and permission groups are denied to the AI outright, for every action including reading, whatever the user's own permissions allow.
+
+  Supporting changes, useful on their own:
+
+  - Notifications: a notification sent with `bus: true` is a pure event carrier - it is never rendered, and its `event` is emitted on `apos.bus` in exactly one browser tab, then dismissed. The options object may be passed in place of the message.
+  - Jobs: cooperative cancellation (`reporting.isCanceling()`, a `cancel` route and a `canceled` status), an `expireAfter` option that expires job records from the database, `userId` ownership that restricts the status and cancel routes, a `notifications: false` option for callers with their own progress transport, and the error of a failed job recorded on its document.
+  - Schema: `apos.schema.extract()` returns the content of a doc or widget as a flat array of text and image items with dot paths, selected by the new `extractable` policy on field types and schema fields.
+  - Widgets: widget managers implement `extract()`, defaulting to a walk of their own schema; rich text and image widgets contribute their content directly, and `extractable` is accepted as a widget type option.
+
+- Document Versions ships in core as `@apostrophecms/document-versions`, on for pages and pieces by default and set per type with the `versions` option: a history of drafts and publications with the editor who saved each one and whether AI was involved, a list of what every version changed field by field, those changes marked on the document where they render, restore from a version's own entry, and Undo Publish through the history. Existing version records are converted on upgrade.
+- Added the `direction` option to `@apostrophecms/login` (`ltr` or `rtl`) to force the text direction of the login page and the pages related to it (password reset, additional login requirements) regardless of the direction of the current locale; unset, the login page keeps following the locale. Projects that override `TheAposLogin.vue` keep the `<html dir>` fix but lose the root direction class; projects that override `login.html` without extending `data.outerLayout` must set the `dir` attribute themselves.
+- Added a `richText` schema field type, so rich text is no longer available only as a widget in an area. A `richText` field is edited with the same editor, sanitized with the same rules, and indexed for search the same way as the content of a rich text widget.
+
+  ```javascript
+  fields: {
+    add: {
+      body: {
+        label: 'Body',
+        type: 'richText',
+        // Exactly the options a rich text widget accepts in an area,
+        // merged over the `defaultOptions` of `@apostrophecms/rich-text-widget`
+        options: {
+          toolbar: [ 'styles', 'bold', 'italic', 'link' ],
+          styles: [
+            { tag: 'p', label: 'Paragraph' },
+            { tag: 'h3', label: 'Heading 3' }
+          ]
+        }
+      }
+    }
+  }
+  ```
+
+  The behavior of rich text is still configured in exactly one place, the `@apostrophecms/rich-text-widget` module: its `defaultOptions`, its `tools`, and its methods govern `richText` fields too, so an existing project that has customized rich text gets the same customizations in schema fields without doing anything. To support this, the editor itself was factored out of `AposRichTextWidgetEditor.vue` into a new, reusable `AposRichTextEditor.vue`, which both the widget editor and the new `AposInputRichText.vue` field instantiate. The widget editor keeps its name, its props, its events and its markup, and continues to accept per-area editor options, so nothing changes for existing rich text widgets or for projects that have overridden either component.
+
+  Permalinks are stored as placeholders in a `richText` field, just as they are in a rich text widget. Widgets replace them with real URLs when they are rendered; a schema field has no render-time hook of its own, unless you are using `{% field %}` (or `Field` in JSX, or `AposField` in Astro). If you want a `richText` field but don't want to place it on the page in a WYSIWYG way, call `apos.modules['@apostrophecms/rich-text-widget'].renderRichText(req, html)` on the markup.
+
+- Fields can now be edited in place from JSX templates and from external fronts such as Astro, not only from Nunjucks.
+
+  JSX templates get a `Field` helper alongside `Area`, which is the `{% field %}` tag with the same `with` clause:
+
+  ```jsx
+  export default function ({ page }, { Field, Area }) {
+    return (
+      <article>
+        <Field
+          doc={page}
+          name="headline"
+          with={{ tag: "h1", className: "article__headline" }}
+        />
+        <Area area={page.main} />
+      </article>
+    );
+  }
+  ```
+
+  `with` accepts either `className` or `class`, whichever you are used to. Either way the result is a `class` attribute.
+
+  External fronts are sent what it takes to display a field and edit it, under `_wysiwygFields` on the document, widget, array item or object the field belongs to. `@apostrophecms/apostrophe-astro` renders that with its own `AposField` component.
+
+  When using Astro, a non-area field must be explicitly declared as WYSIWYG. Do that by setting `wysiwyg: true` when declaring the field, or add it to the `wysiwygFields` array option of the relevant module, whichever is convenient. A name in `wysiwygFields` that is not in the schema throws at startup. Nunjucks and JSX need no such flag: they run inside Apostrophe and work everything out when the template reaches the field. An external front receives its data before its templates run, so it has to say in advance, and a page carries dozens of fields no template renders in place — every SEO field, every Open Graph field, every slug, on the page, its ancestors, its children and any pieces alongside them. On a demo site, annotating all of them added 70% to the response.
+
+  A visitor who cannot edit a field is sent only what it takes to display it, so a page served to the public carries no editors to mount, no icons and no patch keys.
+
+  A field rendered in place now names its definition with `data-field-id` instead of carrying a copy of it in `data-field`. Every doc type and widget type already ships its schema to the browser, so a page with fifty fields of one type no longer repeats that type's definition of them fifty times. The definition is looked up in that schema when the editor mounts; a field held back by `allowedSchema` is not there, so the value stays where it is, displayed and not editable, exactly as it is for a user who cannot edit it.
+
+  Supporting change, useful on its own: `apos.schema.wysiwygFieldData(req, object, field, with)` returns everything needed to render a field in place and edit it. `renderWysiwygField` renders from it, and the external front annotation is built from it, so the two cannot drift apart.
+
+- Added the `{% field %}` custom tag, which outputs one schema field of a document, widget, array item or object and lets the user edit it in place, right where it appears on the page:
+
+  ```njk
+  {% field data.page, 'headline' with { tag: 'h1', class: 'article__headline' } %}
+  {% field data.page, 'body' %}
+  {% for section in data.page.sections %}
+    {% field section, 'caption' with { tag: 'h2' } %}
+  {% endfor %}
+  ```
+
+  If the field is an area, `{% field %}` is exactly `{% area %}`: same markup, same editor, same `with` clause. Otherwise the field type must offer an on-page editor, which today means `richText` and `string`. Any other type throws an exception naming the field and its type, rather than displaying something the user cannot edit.
+
+  A single line string is rendered inline and edited inline. `Name: {% field data.page, 'name' %}` keeps its place on the line when the editor arrives, in a box no wider than the text, rather than becoming a block of its own and pushing the rest of the line down. The tag is chosen by the field type, which knows what shape its value is: a `string` is a `span`, a `string` with `textarea: true` is a `div`, and so is rich text. Nothing is printed after the closing tag either, not even a newline, so a field can be followed immediately by a full stop.
+
+  The editor asks the browser what the site's own CSS made of the tag rather than reading the tag name, so a `span` a stylesheet turned into a block is treated as one. A value too long for the room left on the line does begin on the next line, as any wide inline object does, since text cannot flow around the box you type in.
+
+  Outside of edit mode nothing but the value is rendered, so the tag is safe to use on any page: rich text renders as it does in a widget, permalinks and all, and a string is escaped as text, with the line breaks of a `textarea: true` string preserved. In edit mode the editor is mounted in place, styled to inherit the page's own typography so that editing feels like typing on the page rather than filling in a form, and taking up no more room than the markup it replaced, so that nothing on the page moves when editing begins. A `string` field grows as you type; a single line string refuses line breaks and collapses pasted ones. The editors save exactly as an area on the page does, patching one field at a time through the context bar, and they emit `update:modelValue` and `changed` when a component uses them elsewhere. Read only fields, and fields of a document other than the one the page is about, are displayed but not editable, again just like an area.
+
+  Coming near a field outlines it and raises the same breadcrumb trail a widget has, so the user can see what they are about to edit, and can find out that they can edit it at all. The trail is built the way a widget builds its own, by walking up the page, so a field of a widget is preceded by that widget and by whatever contains it, and clicking a crumb focuses that widget. It opens with an icon for the field type, which a field type sets with `wysiwygIcon` and an individual field can override with a `wysiwygIcon` property of its own.
+
+  Exactly one trail is ever on screen. A field takes the trail from the widget it belongs to, since its own trail already names that widget, and the field being edited keeps the trail while the mouse passes over anything else, which is how widgets have always behaved among themselves.
+
+  The `with` clause accepts `tag`, which overrides the tag the field type chose, plus `class` (or `className`, for those used to JSX; either way the result is a `class` attribute), `style`, `attrs`, and `edit: false` to render a field that is never editable in place. When the field is an area, `with` means what it means for `{% area %}`.
+
+  Field types opt in with a `wysiwyg` property, and can customize the rest:
+
+  - `wysiwyg: true` — this type can be edited in place.
+  - `wysiwygComponent` — the editor component, `AposWysiwygInput` plus the capitalized type name by convention.
+  - `wysiwygRender(req, field, value)` — the markup for the value; escaped text by default.
+  - `wysiwygTag(field)` — the tag the value is rendered as when the template does not say, `div` by default. Given the field, so that one type can answer differently depending on how it is configured, as `string` does.
+  - `wysiwygModifiers(field)` — extra `apos-wysiwyg-field--*` classes, so that one type can be styled differently depending on how it is configured.
+  - `wysiwygIcon` — the icon that opens the breadcrumb trail, `pencil-icon` by default.
+
+  A field of an array item or an object is patched by its own `@id.fieldName` key, so editing one caption of one item leaves the rest of the document alone, just as editing one field of a widget does.
+
+  Supporting changes, useful on their own: `apos.area.renderAreaTag()` and `apos.schema.renderFieldTag()` carry out the work of the two tags, so either can be invoked directly, and the `with` clause is now parsed by one shared implementation. The breadcrumb trail is now defined once, as a set of SCSS mixins in `@apostrophecms/ui`, and included by both the widget trail and the field trail, so the two cannot drift apart. Which trail is on screen is decided in one place as well: the widget store answers with `labeled`, and a widget asks it rather than working the question out for itself, which is what keeps two trails from ever appearing at once. `AposRichTextEditor` accepts an `inline` prop, which drops the padding, the empty-state block, the inter-block spacing, the size containment and the widget `className` that the editor wears in a widget or a modal, none of which belong on a field the editor is standing in for.
+
+- Adds in-context video widget empty state you can paste a video url into
+
+### Changes
+
+- Undo and redo on the page now reverse the edit itself, rather than replaying every edit made since the page was loaded and then rendering the whole page again.
+
+  What that means while editing:
+
+  - **The page stays where it is.** Only the widget or field that changed is updated, so nothing else on the page is torn down and rebuilt around you. Undo no longer flashes, and the scroll position no longer has to be pinned to stop the page jumping.
+  - **Undo shows you what it did.** The change is scrolled into view if it is off screen, and briefly outlined. Until now there was nothing to go to: an undo could quietly change something you could not see.
+  - **Each press is one small save.** Undo used to send the whole history — the page as it was when you started, plus every edit since, which could be hundreds of patches — and the server had to re-check the entire document each time, so undo got slower the longer you worked. Now it sends a single change, which takes the server's fast path for a single widget.
+  - **Typing comes back a burst at a time**, and the same burst whether you undo inside a rich text editor or from the admin bar. It used to be taken back in arbitrary once-a-second slices when undone from outside the editor.
+  - **Rich text history survives the page being rendered again.** Editing a piece, or anything else that refreshes the main content area, used to destroy every editor on the page and the typing history with it. The history now holds the editing steps rather than the editor, so it also survives deleting a widget and undoing that deletion — which used to lose everything you had typed in it.
+  - **Undoing typing no longer throws away your redo.** A rich text editor kept a second history of its own, which could disagree with the page's: undoing typing in one widget wiped the redo of edits elsewhere, and undo appeared to do nothing at all once the editor's own history ran out.
+  - **An undo can no longer be quietly undone by an autosave** that was still in flight. History changes go through the same queue as every other edit, in order, so an undo made while offline still reaches the server when the connection is back.
+  - **The publish and discard controls tell the truth afterwards.** Undoing everything you did leaves nothing to publish and no draft to discard, where the admin bar used to go on offering both.
+  - **The history is bounded**, so a long editing session no longer accumulates without limit.
+
+  Two things are deliberately unchanged. A rich text editor in a modal keeps its own undo history, since there is no page history there to join. And code that reports edits the old way, with a bare patch, still works exactly as it did, undone by replaying the history and rendering the page again.
+
+  For developers: `context-edited` accepts `{ patch, inverse, target }`, where `inverse` is the patch that takes the edit back and `target` describes what was edited (`widgetId`, `anchorId` or `patchKey`). A bare patch, as emitted until now, is still accepted.
+
+- Logging is now fully structured. Every diagnostic Apostrophe emits - boot and cluster notices, fatal startup errors, deprecations, runtime error catches and long-running tasks, which report a start, periodic progress and a summary instead of a line per item - is a typed event rather than a raw `console` call. Program output such as task help, listings and reports is unchanged.
+
+  - The new top-level `log` option configures logging for the whole process from its first line, with `format`, a custom `logger`, `messageAs` and `filter`. When present it is the entire configuration and the legacy `@apostrophecms/log` and `@apostrophecms/util` options are ignored, with a startup warning listing them.
+  - `format` defaults to `auto`: colorized pretty output in development, one JSON object per line in production. `format: 'legacy'` pins the output shape of earlier releases. `APOS_LOG_FORMAT`, `APOS_FILTER_LOGS`, `NO_COLOR` and `FORCE_COLOR` set or override this per process.
+  - The moment the site starts listening is the `apos-listening` event, drawn as a startup banner in development and kept by the default filter in production.
+  - `require('apostrophe/logger')` is the same logger as a standalone factory, usable before or entirely without an `apos` object.
+  - Libraries that have no `apos` object, including uploadfs, express-cache-on-demand and sanitize-html, receive a logger from Apostrophe and join the pipeline. What they receive is the console's own surface, `log` included, so a library never has to know an event type.
+  - In a call to `apos.util.log` and friends, an object in final position is the event data whatever the number of arguments, so its keys are queryable fields instead of text inspected into the message. Previously only a call of exactly `(message, object)` was read that way.
+  - The logger's severities are `debug`, `info`, `warn` and `error`, and its first argument is always an event type. There is deliberately no `log` method: calling one throws an error naming the four severities, rather than filing a console-style message as an event type.
+  - For custom loggers, the message no longer carries the `'<module>: <event-type>'` prefix - read the `module` and `type` fields instead. `apos.util.warnDev` no longer prefixes a warning icon, since the renderer marks severity.
+  - An event's `stack` is the error's own stack string, no longer an array of trimmed lines with the first one dropped. The human formats indent it below the entry, and it stays a single escaped string in structured mode.
+
+- Errors passed to `next(err)` by Express middleware are logged as structured `request-error` events by `@apostrophecms/express` and answered with JSON for the API, the external front and any client not preferring HTML, and plain text for browser navigations, instead of Express's raw stack on stderr and its HTML error page.
+- Notifications now expire at the database level, rather than lingering forever when nothing dismisses them and being re-sent on every admin page load. The lifetime is set by the new `expireAfter` option of the `@apostrophecms/notification` module, in seconds, defaulting to `86400` (one day); set it to `0` for the previous behavior. A one-time `notification-expire` migration clears the existing backlog. Also fixed `apos.notification.dismiss()` creating a stray database document when the notification it names is already gone.
+- Reduced the size of the logged-in admin UI JavaScript bundle by roughly 200KB minified (about 90KB gzipped) with no change in behavior. Neither `lodash` nor `@paralleldrive/cuid2` is bundled into the admin UI any more; the few things the browser needed from them now come from small, dependency-free implementations in `apostrophe/lib/beneath.js`, which browser code imports explicitly.
+
+  - lodash (previously ~165KB, in part duplicated) is gone. `lodash` is CommonJS and not tree-shakeable, so a single `import { isEqual } from 'lodash'` pulled the whole library in for one function. The handful of methods the admin UI uses (`isEqual`, `get`, `merge`, `isPlainObject`, `deburr`, `debounce`, `throttle`) are now in `beneath.js`, fuzz-tested against the real lodash.
+  - `@paralleldrive/cuid2` (which drags in `@noble/hashes`, and under some dependency layouts `bignumber.js`) is gone from the bundle. `beneath.js` exports a `createId()` that produces the same 24-character id shape using the Web Crypto API, with uniform character distribution. Server-side id generation elsewhere (`apos.util.generateId`) still uses the real cuid2.
+  - Because these are ordinary module imports rather than build-time aliases, the change applies to any bundler (Vite and webpack), and the source honestly shows where these functions come from. `beneath.js` is an ES module; the one universal file that also uses it on the server (`schema/lib/newInstance.js`) `require()`s it, so **Apostrophe now requires Node 22.12 or newer** (for `require(esm)`). The package's `engines` field has been updated accordingly.
+
+- Fields rendered in place, by the `{% field %}` tag or for an external front such as Astro, now carry the editor only for the document the page is actually about — the piece of a show page, otherwise the page itself, which is the document the admin bar takes as its context. Everything else a page renders is there to be read and is edited on its own page: the fifty pieces of an index page, the home page and the ancestors and children behind the navigation, the global doc. Each of those was sent a document id, a patch key, a field id, the name of an editor component, its icon and a second copy of its own value, for an editor the browser then declined to mount, on every page, for every field. They are now emitted as the value in the tag and with the classes the field type asked for, and nothing else. A request that is about no page at all, as when the area editor asks for fresh markup for a single widget, rules out nothing.
+
+### Fixes
+
+- Fixes the order of relationship autocomplete suggestions, which were sorted by `relationshipSuggestionSort` (most recently updated first, by default) rather than by search quality. Without this, for instance, "About Us" was not the first result when typing "about." This is why the search quality signal is so important that it must preempt other sort criteria when autocomplete prompts are present, as it already does elsewhere. The relationship input now sends `relationshipSuggestionSort` only when listing suggestions for an empty input.
+- Fixed the breadcrumb trail of a widget or of a field edited in place picking up the site's own list styling. The trail is an `<ol>` of `<li>` elements rendered inside the page, so a rule as ordinary as `.features li::before { content: '✓' }` put a checkmark on every crumb when the thing being edited was inside that list. Crumbs now refuse markers and generated content, while the site's own list items keep theirs.
+- `retryUntilUnique` no longer retries an `_id` collision that `fixUniqueError` handlers cannot resolve.
+- The rich text widget bubble menu now stays within its container (including the piece-editor modal body beside the right rail) and wraps toolbar controls onto additional rows when it would otherwise overflow, instead of being clipped.
+- Fixed a field edited in place with the `{% field %}` tag leaving the browser's copy of the widget it belongs to out of date. The edit was patched to the document on the server and nothing else was told, so copying, cutting or duplicating that widget, or opening its editor, went on working from the value the page had been rendered with, and the user's typing was quietly undone. Every area editor holding the widget, at any depth, now hears about the edit and updates its own copy.
+- `apos.migration.each` now closes its cursor when the iterator throws, instead of leaving it open (PRO-10051).
+- Rich text permalinks are now substituted as quoted `href` attributes. `linkPermalinks` had been dropping both quotes since permalinks were introduced, emitting `<a href=/contact>` rather than `<a href="/contact">`. Browsers tolerate an unquoted attribute value, so the markup usually behaved, but a URL containing a space became two attributes. This affects rich text everywhere, both widgets and `richText` schema fields, since both share `linkPermalinks`.
+- A relationship field with an array `withType` now fails at startup, instead of passing validation and throwing on every query that loads it.
+- Starting in version 2.17.6, `sanitize-html` began escaping any markup preserved inside a disallowed iframe tag, which was a change
+  in behavior due to an upstream change in `htmlparser2`. This fix ensures such "fallback markup" is preserved without escaping, but also
+  fully sanitized according to the same rules as the original input. Thanks to [sumitjhacodes](https://github.com/sumitjhacodes) for
+  the fix.
+- Fixed the orphaned document-type boot warning hardcoding "mongodb collection" — it now says "collection" so the message doesn't misreport the database on SQLite (or other non-MongoDB) projects.
+- The undo and redo keyboard shortcuts no longer seize `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z` while a modal is open. In-context undo and redo apply to the page being edited, so triggering them from a dialog rolled back changes the editor could not see. The keystroke is now left to the browser in that situation, restoring native text undo inside the dialog, and page-level undo and redo continue to work as before when no modal is open.
+- Fixed fields rendered by the `{% field %}` tag becoming permanently uneditable for the life of a page load, while every area on the same page stayed editable. A field is not editable in place when it belongs to a document other than the one being edited, which the browser decides by comparing the element's document id against the admin bar's context id. That comparison was made once, and the element was struck off the list of candidates before the comparison was made, so a pass that ran while the two legitimately disagreed — as they do briefly when the context bar restores the draft mode it remembers for the tab after the page has already rendered in the other mode — left the field inert until the next full navigation. A field judged to belong to another document now stays a candidate, so a later pass reconsiders it once the context has settled, in the same spirit as an area recomputing whether it is foreign rather than settling the question once.
+
+### Security
+
+- `apos.http.bigUploadMiddleware()` now requires a logged-in user by default, and the `aposBigUpload` protocol it implements has been hardened (CWE-400, CWE-306, CWE-770, GHSA-86wm-68pq-5jwq).
+
+  The middleware accepted an optional `authorize` callback, but a route that did not supply one processed `start`, `chunk` and `end` requests from anyone. Since the protocol allocates server-side upload state and writes chunks to uploadfs before the route's own handler runs, any permission check made by the route was made too late. An unauthenticated request could create upload records, store chunk data and drive filesystem work on a site using such a route. Specifically:
+
+  - The middleware now refuses any request without `req.user` unless the route supplies its own `authorize` callback. Authorization runs before the request body is parsed, so an unauthorized request no longer reaches multer or leaves a temporary file behind. A route that genuinely accepts anonymous big uploads may pass `authorize: false` to opt out, and is then responsible for its own protection against abuse. Only `false` opts out: any other non-function value now throws at startup, so a misspelled or undefined variable cannot quietly leave a route open.
+  - The client-declared chunk count per file is now required to be a positive integer (or zero, for a zero-byte file) no greater than the new `bigUploadMaxChunks` option (default 10000, allowing a 40GB file at the client's 4MB chunk size), and the number of files may not exceed the new `bigUploadMaxFiles` option (default 10). The count drives a loop over uploadfs both when assembling a file and when cleaning it up; a declared count of `Number.MAX_SAFE_INTEGER` left cleanup running effectively forever, and because expired uploads are cleaned up at the start of every new one, one such record stalled every later upload on the site. Cleanup also bounds the chunk count and the number of files it reads back from an existing record, so a record written before this release cannot hang it.
+  - When assembling an upload fails partway through `end`, the temporary files already assembled for it are now removed rather than left behind.
+  - A failed `end` request no longer crashes the process. A request naming an upload id that does not exist sent its response and then passed `null` to the background cleanup routine, producing an unhandled rejection, which by default terminates Node. As a backstop, the middleware no longer returns a promise to Express, which ignores it; anything that rejects on the way to the route is now logged and answered with a 500.
+  - The upload id sent to `chunk` and `end` is now laundered to a string. As an object it reached the MongoDB selector as a query operator, so `aposBigUpload[id][$ne]=` selected an arbitrary upload in progress rather than the caller's own (CWE-943). Uploads additionally record the user that started them and are only readable by that same user.
+  - `start`, `chunk` and `end` now report a rejected request with its own status code (400 or 404) instead of a blanket 500, a 500 carries the underlying error and stack to the log rather than an empty event, and a refused request is logged without a stack.
+
+  In `@apostrophecms/import-export`, the `importExportImport` routes of `@apostrophecms/import-export-page` and `@apostrophecms/import-export-piece-type` now authorize the chunked upload before it is processed (CWE-400, CWE-306, GHSA-86wm-68pq-5jwq).
+
+  Both routes passed no `authorize` callback to `apos.http.bigUploadMiddleware()`, so an unauthenticated request could complete the `aposBigUpload` `start`, `chunk` and `end` steps — creating upload state, storing chunk data and assembling a temporary file — before `import()` reached its own `req.user` check and rejected the import. Each route now makes that same check up front, and unauthenticated requests are refused before any upload state exists.
+
+  The middleware in `apostrophe` itself now requires a logged-in user by default and bounds the client-declared chunk count, so this module is protected even without the explicit callback; the callback keeps the routes safe when installed alongside an older `apostrophe`.
+
+  Thanks to [Kai Zhi](https://github.com/kaizhi888) and [Bp0lr](https://github.com/bp0lr) for reporting the vulnerability, and to [Bp0lr](https://github.com/bp0lr) for contributing additional hardening.
+
+- Hardened the single-use token that moves a logged-in session to a locale served from another hostname. The token was generated with a non-cryptographic ID generator, stayed valid for an hour, could be redeemed on any hostname, and could be redeemed more than once by simultaneous requests. It is now 256 bits from a cryptographically secure source, expires after 60 seconds, is accepted only on the hostname it was minted for, and is consumed atomically. The redirect that strips it from the URL is sent with `Referrer-Policy: no-referrer` and `Cache-Control: no-store`. The session is adopted under a freshly generated session id, and an invalid token no longer wipes the visitor's existing session. `@apostrophecms/passport-bridge` now mints its cross-locale tokens through the same code (CWE-598, CWE-384, GHSA-hhvr-8m24-qqr3).
+
+  In addition, the `@paralleldrive/cuid2` dependency has been updated to version 3, which draws on the platform's cryptographically secure random number generator rather than `Math.random`. This strengthens every identifier and token Apostrophe generates with it, including login bearer tokens and password reset tokens. The format of generated ids is unchanged.
+
+  Thanks to [Anisetti Chaitanya Eshwar Prasad](https://github.com/chaitanyaeshwarprasad) for reporting the vulnerability.
+
+- The rich text widget's CSV-to-table upload route accepted uploads from anyone, including logged-out visitors, and never removed the temporary file it staged on disk, whether the upload was rejected or accepted. Repeated requests could fill the system temporary directory. The route now requires the same permission as uploading attachments (checked before anything is written to disk), limits uploads to a single file of at most `csvTableMaxSize` bytes (a new rich text widget option, 10MB by default), and always removes the temporary file when the request completes (CWE-459, CWE-400, CWE-862, GHSA-qhcq-9pm2-c9w9).
+
+  Thanks to [Bp0lr](https://github.com/bp0lr) for reporting the vulnerability.
+
+- On the SQLite and PostgreSQL adapters, the in-memory helpers that apply projections and update operators to dotted field paths did not stop a path from walking into `Object.prototype` or other built-ins shared by the whole Node.js process. Since the `project` query builder of the REST API accepts field names from logged-in users with editing access, a single request could delete a built-in method such as `hasOwnProperty` and break the site for every user until restart. Field paths containing `__proto__`, `constructor` or `prototype` are now ignored, and the helpers only traverse properties a document actually has, never inherited ones. As defense in depth, the `project` query builder now also discards field names containing those segments. The default MongoDB adapter was not affected (CWE-1321, CWE-400, GHSA-j5rq-xfvr-p969).
+
+  Thanks to [Daniel Coles](https://github.com/manus-pi) and [Jace](https://github.com/manus-use) for reporting the vulnerability.
+
+- The `:_id/locales` REST route of piece types and pages did not apply the public API check used by the other read routes, and `apos.doc.getLocales()` did not apply document-level view permissions. As a result, a caller could learn which locales exist for documents they are not allowed to view, including draft locales of document types restricted by `viewRole` for logged-in users. The route now requires the same public API access as its sibling routes, and only the locale versions of a document that the current user is permitted to view are returned (CWE-862, CWE-200, GHSA-gqh3-7856-rjjg).
+
+  Thanks to [Santosh Kumar Puppala](https://github.com/Santoshkumarpuppala) and [thota murari](https://github.com/thotamurari) for reporting the vulnerability.
+
+- The `exist-in-locale` route of the `@apostrophecms/i18n` module only checked that the user was logged in. It then reported which of the requested documents existed in a given locale and mode, without checking whether the user was allowed to view them. A low-privilege user could therefore learn whether restricted documents, including drafts, existed in a given locale. The route now reports only documents the user is permitted to view. It rejects draft mode for users who cannot view drafts, and it rejects modes other than `draft` and `published` (CWE-862, CWE-200, GHSA-vmxh-77cw-65j7).
+
+  Thanks to [thota murari](https://github.com/thotamurari) for reporting the vulnerability.
+
+- The notification REST API's `PATCH` and `DELETE` routes and the `clear-event` route did not check who was asking, so anyone who knew a notification's `_id` could dismiss it, delete it or clear its event, even without logging in. These routes, the single-notification `GET` route and the server-side `dismiss` method now require a logged-in user and act only on that user's own notifications. A notification belonging to someone else is left alone, the same way a notification that no longer exists is (CWE-862, CWE-639, GHSA-vwwx-px9w-crrc). The practical risk was low: notification ids are randomly generated and are only ever sent to the notification's own recipient, and there is no known way for anyone else to obtain one.
+
+  Thanks to [K Shanmukha Srinivasulu Royal](https://github.com/Chittu13) for reporting the vulnerability.
+
+- Reordering a page among its siblings under the same parent now requires permission to create pages under that parent, just like moving a page to a new parent or inserting a page there. Previously that check only applied when a page moved to a different parent. As a result, a user who could edit one page nested under a restricted parent (for example a page type with `editRole: 'admin'`) could reorder it and so change the rank, and therefore the navigation order, of that parent's other children, which they had no permission to edit. Reordering within the archive is still allowed (CWE-862, GHSA-2jrp-qc93-h2j8).
+
+  Thanks to [Daniel Coles](https://github.com/manus-pi) for reporting the vulnerability.
+
+- The page REST API now enforces view permissions when fetching a single page, when fetching the full page tree (`all=1`) and when autocompleting page titles. Previously these requests skipped view permission checks, so users could read pages they were not allowed to view: with a `publicApiProjection` configured, anonymous visitors could see the projected fields of `loginRequired` pages, and logged-in contributors and editors could read pages whose type has a `viewRole` above their role. The page tree still includes pages the user can view but not edit. Fields restricted with `viewPermission` are now also removed from single-page responses, as they already are for pieces. In addition, a `viewRole` set on a page or piece type now applies to anonymous site visitors too, as was always intended; before this change it only restricted logged-in users, a bug that should not have been relied upon (CWE-285, CWE-862, GHSA-2j32-q6rx-h844).
+
+  Thanks to [Anisetti Chaitanya Eshwar Prasad](https://github.com/chaitanyaeshwarprasad) for reporting the vulnerability.
+
+- The browser-side `apos.http.parseQuery` helper, which the admin UI runs on the current page's query string, let parameter names containing `__proto__`, `constructor` or `prototype` segments modify `Object.prototype`. A crafted link could therefore alter the behavior of the admin UI for a logged-in user who opened it. Such parameters are now ignored, and the parser only descends into the result's own properties. The dot-path setter used to replay undo and redo in areas is hardened the same way (CWE-1321, CWE-79, GHSA-m2m5-rw3w-cwmj).
+
+  Thanks to [LoGiCaL\_\_](https://github.com/Xx-LoGiCaL-xX) for reporting the vulnerability.
+
+- Confirming the current password in `@apostrophecms/settings` subforms, including the password change form (`PATCH /api/v1/@apostrophecms/settings/password`), was not throttled, so someone holding an authenticated session but not the password could guess it without limit and then replace it. These confirmations are now throttled according to the `throttle` options of the `@apostrophecms/login` module, just like logging in. Attempts are counted per user in a separate namespace, so mistakes in the settings dialog never lock the user out of the login form, and simultaneous guesses are held to the same limit as sequential ones (CWE-307, GHSA-653j-g8j7-gh54).
+
+  Thanks to [thota murari](https://github.com/thotamurari) for reporting the vulnerability.
+
+- A doc type's `viewRole` option did not apply to the general public (logged-out visitors), only to logged-in users below the required role. As a result, the public could load `@apostrophecms/user` docs, which have `viewRole: 'admin'`, through a relationship, e.g. via a piece type's REST API `publicApiProjection` or a template. `viewRole` was always intended to apply to the public as well, and this was a bug that should not have been relied upon. The public, and any user without a recognized role, now rank below `guest`, so `viewRole` (as well as `editRole` and `publishRole`) restricts them as intended. **This may change what your site displays:** if your templates or public APIs show users reached through a relationship (for instance as the author of an article), those users will no longer be loaded for logged-out visitors. Use a separate piece type, such as an "author" type, to represent people publicly (CWE-863, GHSA-xf6w-q65w-4f2w).
+
 ## 4.32.2 (2026-08-27)
 
 ### Fixes

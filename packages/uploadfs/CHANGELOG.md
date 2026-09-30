@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.28.0 (2026-09-30)
+
+### Adds
+
+- uploadfs accepts a console-shaped `logger` option, documented in the README; Apostrophe passes one, so uploadfs diagnostics join its log pipeline.
+
+### Security
+
+- When the Azure backend was configured with a SAS token (`sas: true`), `getUrl()` returned a base URL that still carried the SAS token as its query string, so the credential was included in public attachment URLs (CWE-522, CWE-200, GHSA-hhph-8536-gfq5). `getUrl()` now strips the query string from the container URL, so public URLs contain no credentials and are well formed. The top-level `sas` option is now also honored when `replicateClusters` is not used, as documented.
+
+  The practical impact is expected to be very limited, because this configuration could not have worked in production:
+
+  - The file path was appended after the query string, which altered the signature, so every attachment URL generated this way was broken. A site in this state would not have displayed any images or served any file downloads.
+  - The top-level `sas: true` option was ignored, so a SAS token configured that way was treated as an account key and could not authenticate. Only a `sas: true` setting inside `replicateClusters` took effect, and only when that was the first cluster listed.
+  - Sites using the `cdn` option never had the token in their URLs.
+
+  If you ever deployed uploadfs with a SAS token in `replicateClusters`, revoke or rotate that token.
+
+  Thanks to [Kimi Security Team](https://github.com/KimiSecurityTeam) for reporting the vulnerability.
+
+- Uploadfs did not validate the paths passed to its methods, so an application that passed an untrusted path to `copyIn`, `copyOut`, `streamOut`, `remove`, `enable` or `disable` could read, write, delete or change the permissions of files outside the uploads folder when using the local backend. Apostrophe itself builds these paths from generated ids and sanitized file names, but uploadfs now enforces this on its own: paths containing `..` segments are refused with an error for every backend (this also stops keys that cloud SDKs would normalize into another bucket or container), and the local backend additionally verifies that every filesystem path it touches resolves to a location inside `uploadsPath` (CWE-22, GHSA-gmfx-5g6x-rr72).
+
+  Thanks to [loulu1ou](https://github.com/loulu1ou) for reporting the vulnerability.
+
 ## 1.27.0 (2026-07-10)
 
 ### Changes

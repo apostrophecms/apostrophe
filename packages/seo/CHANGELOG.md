@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.0 (2026-09-30)
+
+### Changes
+
+- Diagnostics are structured events rather than raw `console` calls; task listings and reports still print as program output.
+- Corrected typos and grammar in the README documentation.
+- Sets code-like or configuration-like fields to be non-translated by automatic-translations
+
 ## 1.6.0 (2026-07-10)
 
 ### Adds
