@@ -1,5 +1,124 @@
 # Changelog
 
+## 4.32.0 (2026-09-30)
+
+### Adds
+
+- Added support for modules to declare _literal content_ routes - URLs that serve non-page files such as `robots.txt`, `sitemap.xml`, or `llms.txt` rather than rendered pages. External front-end integrations (such as the Astro integration) can now read these routes and serve such files correctly instead of attempting to render them as pages. Custom modules can contribute their own routes by handling the new `@apostrophecms/url:getLiteralContentRoutes` event.
+- Added support for `draggable: false` on non-inline `array` schema fields. Previously this option was only respected when `inline: true`. When set on a standard (modal-based) array field, drag-and-drop reordering and keyboard reordering are now disabled in the array editor's slat list.
+- Introduced support for postgres://, sqlite://, and multipostgres:// database URIs in addition to mongodb://. The new db-connect API supports all of the database operations currently used in our own core, pro and multisite modules. For more information see the documentation.
+- The session secret and the uploadfs `disabledFileKey` can now be supplied via the `APOS_SESSION_SECRET` and `APOS_UPLOADFS_DISABLED_FILE_KEY` environment variables. As with other Apostrophe environment variables, these take precedence over the corresponding `app.js` configuration.
+- JSX support for templates within ApostropheCMS. JSX is now co-equal with Nunjucks, with a gradual migration strategy. Anyone who is familiar with React will be very comfortable writing JSX templates, which also offer a superior debugging experience, and templates can be migrated gradually. JSX is a great option for those who don't wish to create parallel Astro and ApostropheCMS projects, but still prefer a modern syntax. For more information, see the new [JSX templates guide](https://apostrophecms.com/docs/guide/jsx-templates.html).
+
+### Changes
+
+- The server-side HTTP client (`apos.http`) now uses Node's built-in `fetch` instead of `node-fetch`.
+
+  `node-fetch` is no longer maintained, and Node's built-in `fetch` is its standard, actively maintained successor, available in every Node.js version Apostrophe supports - so this is the right time to adopt it. We do not consider this a breaking change: common `apos.http.*` usage is unchanged, and we deliberately preserved compatibility where it mattered - `form-data` request bodies, cookie jars, the `timeout` option (now backed by an `AbortSignal`), and absolute redirect `Location` headers all behave as before.
+
+  Most code that calls `apos.http.get()`, `apos.http.post()`, etc. needs no changes. A few things to be aware of if you use advanced options or read raw responses:
+
+  - The `agent` option is no longer supported (the built-in `fetch` has no equivalent). Pass an undici `dispatcher` instead; `apos.http` throws if `agent` is given.
+  - A `Host` request header can no longer be set (it is disallowed by the fetch standard and is silently ignored).
+  - `originalResponse: true` now resolves with the built-in `fetch` `Response`. Its `body` is a web `ReadableStream` (use `require('node:stream').Readable.fromWeb()` to read it as a Node stream), and node-fetch-only helpers such as `.buffer()` are no longer available.
+  - Requests that send a conditional header (`If-None-Match` / `If-Modified-Since`) now also send `Cache-Control: no-cache`, as required by the fetch standard. An endpoint that returns `304 Not Modified` based on those headers may return `200` to such a request.
+
+  New capabilities:
+
+  - The `timeout` option (in milliseconds) and the standard `signal` (`AbortSignal`) and undici `dispatcher` options are supported.
+  - A request `body` may be a native `FormData`, in addition to a `form-data` package instance.
+
+- Bumped `glob` to `^13` (core) and `rimraf` to `^6` (uploadfs) to clear the deprecated `glob@10` warning shown on every install. The old `glob@10` arrived both directly from core and transitively through `uploadfs` → `rimraf@5`; both now resolve to the current, supported `glob@13` (`rimraf@6` depends on `glob@13` as well). No API or behavior changes.
+
+### Fixes
+
+- Fixed the tag popover in the media library (used to apply tags to images in bulk) so it loads all image tags instead of only the first 50. Tags beyond the first 50 can now be found and applied, and creating a tag whose name already exists no longer produces a duplicate.
+- Fixes the order of relationship autocomplete suggestions, which were sorted by `relationshipSuggestionSort` (most recently updated first, by default) rather than by search quality. Without this, for instance, "About Us" was not the first result when typing "about." This is why the search quality signal is so important that it must preempt other sort criteria when autocomplete prompts are present, as it already does elsewhere. The relationship input now sends `relationshipSuggestionSort` only when listing suggestions for an empty input.
+- `retryUntilUnique` no longer retries an `_id` collision that `fixUniqueError` handlers cannot resolve.
+- The rich text widget bubble menu now stays within its container (including the piece-editor modal body beside the right rail) and wraps toolbar controls onto additional rows when it would otherwise overflow, instead of being clipped.
+- Redirects reported to an external front end are now sent with an HTTP status of 200, fixing a 500 error in Astro when a soft redirect was followed.
+
+  Apostrophe cannot issue a redirect itself when an external front end holds the browser's connection, so `@apostrophecms/express` replaces `res.redirect` with one that describes the redirect as JSON (`{ redirect: true, url, status }`) for the front end to act on. That response carries no `Location` header, because the external front end is not the party being redirected. It was, however, inheriting whatever status the request had already set, and `@apostrophecms/soft-redirect` sets `req.statusCode` to 302 before the redirect is emitted. The result was a 302 with a body and no `Location` — which `@apostrophecms/apostrophe-astro` reasonably treated as bodiless, discarding the very payload it needed and failing with `Unexpected end of JSON input`.
+
+  Visiting a page at a slug it used to live at therefore produced a 500 rather than a redirect. Redirects created with `@apostrophecms/redirect` were unaffected, as those are emitted from middleware that never sets a status first.
+
+- `apos.migration.each` now closes its cursor when the iterator throws, instead of leaving it open (PRO-10051).
+- Notifications now expire at the database level, rather than lingering forever when nothing dismisses them and being re-sent on every admin page load. The lifetime is set by the new `expireAfter` option of the `@apostrophecms/notification` module, in seconds, defaulting to `86400` (one day); set it to `0` for the previous behavior. A one-time `notification-expire` migration clears the existing backlog. Also fixed `apos.notification.dismiss()` creating a stray database document when the notification it names is already gone.
+- Rich text permalinks are now substituted as quoted `href` attributes. `linkPermalinks` had been dropping both quotes since permalinks were introduced, emitting `<a href=/contact>` rather than `<a href="/contact">`. Browsers tolerate an unquoted attribute value, so the markup usually behaved, but a URL containing a space became two attributes. This affects rich text everywhere, both widgets and `richText` schema fields, since both share `linkPermalinks`.
+- A relationship field with an array `withType` now fails at startup, instead of passing validation and throwing on every query that loads it.
+- Fix: starting in version 2.17.6, `sanitize-html` began escaping any markup preserved inside a disallowed iframe tag, which was a change
+  in behavior due to an upstream change in `htmlparser2`. This fix ensures such "fallback markup" is preserved without escaping, but also
+  fully sanitized according to the same rules as the original input. Thanks to [sumitjhacodes](https://github.com/sumitjhacodes) for
+  the fix.
+- Fixed the orphaned document-type boot warning hardcoding "mongodb collection" — it now says "collection" so the message doesn't misreport the database on SQLite (or other non-MongoDB) projects.
+- The undo and redo keyboard shortcuts no longer seize `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z` while a modal is open. In-context undo and redo apply to the page being edited, so triggering them from a dialog rolled back changes the editor could not see. The keystroke is now left to the browser in that situation, restoring native text undo inside the dialog, and page-level undo and redo continue to work as before when no modal is open.
+- Batch jobs now reliably record their total item count, so completion notifications no longer occasionally report a null total.
+
+### Security
+
+- Security: `apos.http.bigUploadMiddleware()` now requires a logged-in user by default, and the `aposBigUpload` protocol it implements has been hardened (CWE-400, CWE-306, CWE-770, GHSA-86wm-68pq-5jwq).
+
+  The middleware accepted an optional `authorize` callback, but a route that did not supply one processed `start`, `chunk` and `end` requests from anyone. Since the protocol allocates server-side upload state and writes chunks to uploadfs before the route's own handler runs, any permission check made by the route was made too late. An unauthenticated request could create upload records, store chunk data and drive filesystem work on a site using such a route. Specifically:
+
+  - The middleware now refuses any request without `req.user` unless the route supplies its own `authorize` callback. Authorization runs before the request body is parsed, so an unauthorized request no longer reaches multer or leaves a temporary file behind. A route that genuinely accepts anonymous big uploads may pass `authorize: false` to opt out, and is then responsible for its own protection against abuse. Only `false` opts out: any other non-function value now throws at startup, so a misspelled or undefined variable cannot quietly leave a route open.
+  - The client-declared chunk count per file is now required to be a positive integer (or zero, for a zero-byte file) no greater than the new `bigUploadMaxChunks` option (default 10000, allowing a 40GB file at the client's 4MB chunk size), and the number of files may not exceed the new `bigUploadMaxFiles` option (default 10). The count drives a loop over uploadfs both when assembling a file and when cleaning it up; a declared count of `Number.MAX_SAFE_INTEGER` left cleanup running effectively forever, and because expired uploads are cleaned up at the start of every new one, one such record stalled every later upload on the site. Cleanup also bounds the chunk count and the number of files it reads back from an existing record, so a record written before this release cannot hang it.
+  - When assembling an upload fails partway through `end`, the temporary files already assembled for it are now removed rather than left behind.
+  - A failed `end` request no longer crashes the process. A request naming an upload id that does not exist sent its response and then passed `null` to the background cleanup routine, producing an unhandled rejection, which by default terminates Node. As a backstop, the middleware no longer returns a promise to Express, which ignores it; anything that rejects on the way to the route is now logged and answered with a 500.
+  - The upload id sent to `chunk` and `end` is now laundered to a string. As an object it reached the MongoDB selector as a query operator, so `aposBigUpload[id][$ne]=` selected an arbitrary upload in progress rather than the caller's own (CWE-943). Uploads additionally record the user that started them and are only readable by that same user.
+  - `start`, `chunk` and `end` now report a rejected request with its own status code (400 or 404) instead of a blanket 500, a 500 carries the underlying error and stack to the log rather than an empty event, and a refused request is logged without a stack.
+
+  In `@apostrophecms/import-export`, the `importExportImport` routes of `@apostrophecms/import-export-page` and `@apostrophecms/import-export-piece-type` now authorize the chunked upload before it is processed (CWE-400, CWE-306, GHSA-86wm-68pq-5jwq).
+
+  Both routes passed no `authorize` callback to `apos.http.bigUploadMiddleware()`, so an unauthenticated request could complete the `aposBigUpload` `start`, `chunk` and `end` steps — creating upload state, storing chunk data and assembling a temporary file — before `import()` reached its own `req.user` check and rejected the import. Each route now makes that same check up front, and unauthenticated requests are refused before any upload state exists.
+
+  The middleware in `apostrophe` itself now requires a logged-in user by default and bounds the client-declared chunk count, so this module is protected even without the explicit callback; the callback keeps the routes safe when installed alongside an older `apostrophe`.
+
+  Thanks to [Kai Zhi](https://github.com/kaizhi888) and [Bp0lr](https://github.com/bp0lr) for reporting the vulnerability, and to [Bp0lr](https://github.com/bp0lr) for contributing additional hardening.
+
+- Security: hardened the single-use token that moves a logged-in session to a locale served from another hostname. The token was generated with a non-cryptographic ID generator, stayed valid for an hour, could be redeemed on any hostname, and could be redeemed more than once by simultaneous requests. It is now 256 bits from a cryptographically secure source, expires after 60 seconds, is accepted only on the hostname it was minted for, and is consumed atomically. The redirect that strips it from the URL is sent with `Referrer-Policy: no-referrer` and `Cache-Control: no-store`. The session is adopted under a freshly generated session id, and an invalid token no longer wipes the visitor's existing session (CWE-598, CWE-384, GHSA-hhvr-8m24-qqr3).
+
+  In addition, the `@paralleldrive/cuid2` dependency has been updated to version 3, which draws on the platform's cryptographically secure random number generator rather than `Math.random`. This strengthens every identifier and token Apostrophe generates with it, including login bearer tokens and password reset tokens. The format of generated ids is unchanged.
+
+  Thanks to [Anisetti Chaitanya Eshwar Prasad](https://github.com/chaitanyaeshwarprasad) for reporting the vulnerability.
+
+- Security: the rich text widget's CSV-to-table upload route accepted uploads from anyone, including logged-out visitors, and never removed the temporary file it staged on disk, whether the upload was rejected or accepted. Repeated requests could fill the system temporary directory. The route now requires the same permission as uploading attachments (checked before anything is written to disk), limits uploads to a single file of at most `csvTableMaxSize` bytes (a new rich text widget option, 10MB by default), and always removes the temporary file when the request completes (CWE-459, CWE-400, CWE-862, GHSA-qhcq-9pm2-c9w9).
+
+  Thanks to [Bp0lr](https://github.com/bp0lr) for reporting the vulnerability.
+
+- Security: on the SQLite and PostgreSQL adapters, the in-memory helpers that apply projections and update operators to dotted field paths did not stop a path from walking into `Object.prototype` or other built-ins shared by the whole Node.js process. Since the `project` query builder of the REST API accepts field names from logged-in users with editing access, a single request could delete a built-in method such as `hasOwnProperty` and break the site for every user until restart. Field paths containing `__proto__`, `constructor` or `prototype` are now ignored, and the helpers only traverse properties a document actually has, never inherited ones. As defense in depth, the `project` query builder now also discards field names containing those segments. The default MongoDB adapter was not affected (CWE-1321, CWE-400, GHSA-j5rq-xfvr-p969).
+
+  Thanks to [Daniel Coles](https://github.com/manus-pi) and [Jace](https://github.com/manus-use) for reporting the vulnerability.
+
+- Security: the `:_id/locales` REST route of piece types and pages did not apply the public API check used by the other read routes, and `apos.doc.getLocales()` did not apply document-level view permissions. As a result, a caller could learn which locales exist for documents they are not allowed to view, including draft locales of document types restricted by `viewRole` for logged-in users. The route now requires the same public API access as its sibling routes, and only the locale versions of a document that the current user is permitted to view are returned (CWE-862, CWE-200, GHSA-gqh3-7856-rjjg).
+
+  Thanks to [Santosh Kumar Puppala](https://github.com/Santoshkumarpuppala) and [thota murari](https://github.com/thotamurari) for reporting the vulnerability.
+
+- Security: the `exist-in-locale` route of the `@apostrophecms/i18n` module only checked that the user was logged in. It then reported which of the requested documents existed in a given locale and mode, without checking whether the user was allowed to view them. A low-privilege user could therefore learn whether restricted documents, including drafts, existed in a given locale. The route now reports only documents the user is permitted to view. It rejects draft mode for users who cannot view drafts, and it rejects modes other than `draft` and `published` (CWE-862, CWE-200, GHSA-vmxh-77cw-65j7).
+
+  Thanks to [thota murari](https://github.com/thotamurari) for reporting the vulnerability.
+
+- Security: the notification REST API's `PATCH` and `DELETE` routes and the `clear-event` route did not check who was asking, so anyone who knew a notification's `_id` could dismiss it, delete it or clear its event, even without logging in. These routes, the single-notification `GET` route and the server-side `dismiss` method now require a logged-in user and act only on that user's own notifications. A notification belonging to someone else is left alone, the same way a notification that no longer exists is (CWE-862, CWE-639, GHSA-vwwx-px9w-crrc). The practical risk was low: notification ids are randomly generated and are only ever sent to the notification's own recipient, and there is no known way for anyone else to obtain one.
+
+  Thanks to [K Shanmukha Srinivasulu Royal](https://github.com/Chittu13) for reporting the vulnerability.
+
+- Security: reordering a page among its siblings under the same parent now requires permission to create pages under that parent, just like moving a page to a new parent or inserting a page there. Previously that check only applied when a page moved to a different parent. As a result, a user who could edit one page nested under a restricted parent (for example a page type with `editRole: 'admin'`) could reorder it and so change the rank, and therefore the navigation order, of that parent's other children, which they had no permission to edit. Reordering within the archive is still allowed (CWE-862, GHSA-2jrp-qc93-h2j8).
+
+  Thanks to [Daniel Coles](https://github.com/manus-pi) for reporting the vulnerability.
+
+- Security: the page REST API now enforces view permissions when fetching a single page, when fetching the full page tree (`all=1`) and when autocompleting page titles. Previously these requests skipped view permission checks, so users could read pages they were not allowed to view: with a `publicApiProjection` configured, anonymous visitors could see the projected fields of `loginRequired` pages, and logged-in contributors and editors could read pages whose type has a `viewRole` above their role. The page tree still includes pages the user can view but not edit. Fields restricted with `viewPermission` are now also removed from single-page responses, as they already are for pieces. In addition, a `viewRole` set on a page or piece type now applies to anonymous site visitors too, as was always intended; before this change it only restricted logged-in users, a bug that should not have been relied upon (CWE-285, CWE-862, GHSA-2j32-q6rx-h844).
+
+  Thanks to [Anisetti Chaitanya Eshwar Prasad](https://github.com/chaitanyaeshwarprasad) for reporting the vulnerability.
+
+- Security: the browser-side `apos.http.parseQuery` helper, which the admin UI runs on the current page's query string, let parameter names containing `__proto__`, `constructor` or `prototype` segments modify `Object.prototype`. A crafted link could therefore alter the behavior of the admin UI for a logged-in user who opened it. Such parameters are now ignored, and the parser only descends into the result's own properties. The dot-path setter used to replay undo and redo in areas is hardened the same way (CWE-1321, CWE-79, GHSA-m2m5-rw3w-cwmj).
+
+  Thanks to [LoGiCaL\_\_](https://github.com/Xx-LoGiCaL-xX) for reporting the vulnerability.
+
+- Security: confirming the current password in `@apostrophecms/settings` subforms, including the password change form (`PATCH /api/v1/@apostrophecms/settings/password`), was not throttled, so someone holding an authenticated session but not the password could guess it without limit and then replace it. These confirmations are now throttled according to the `throttle` options of the `@apostrophecms/login` module, just like logging in. Attempts are counted per user in a separate namespace, so mistakes in the settings dialog never lock the user out of the login form, and simultaneous guesses are held to the same limit as sequential ones (CWE-307, GHSA-653j-g8j7-gh54).
+
+  Thanks to [thota murari](https://github.com/thotamurari) for reporting the vulnerability.
+
+- Security: a doc type's `viewRole` option did not apply to the general public (logged-out visitors), only to logged-in users below the required role. As a result, the public could load `@apostrophecms/user` docs, which have `viewRole: 'admin'`, through a relationship, e.g. via a piece type's REST API `publicApiProjection` or a template. `viewRole` was always intended to apply to the public as well, and this was a bug that should not have been relied upon. The public, and any user without a recognized role, now rank below `guest`, so `viewRole` (as well as `editRole` and `publishRole`) restricts them as intended. **This may change what your site displays:** if your templates or public APIs show users reached through a relationship (for instance as the author of an article), those users will no longer be loaded for logged-out visitors. Use a separate piece type, such as an "author" type, to represent people publicly (CWE-863, GHSA-xf6w-q65w-4f2w).
+
 ## 4.31.2 (2026-08-13)
 
 ### Changes
