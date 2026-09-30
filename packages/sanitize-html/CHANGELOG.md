@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.17.8 (2026-09-30)
+
+### Fixes
+
+- Fix: starting in version 2.17.6, `sanitize-html` began escaping any markup preserved inside a disallowed iframe tag, which was a change
+  in behavior due to an upstream change in `htmlparser2`. This fix ensures such "fallback markup" is preserved without escaping, but also
+  fully sanitized according to the same rules as the original input. Thanks to [sumitjhacodes](https://github.com/sumitjhacodes) for
+  the fix.
+- `allowedSchemesByTag` is now applied to `srcset` and `imagesrcset` URLs. Previously the per-tag lookup used the attribute name instead of the tag name, so these attributes always fell back to the global `allowedSchemes` and ignored a tag-specific scheme allowlist. Thanks to
+  [spokodev](https://github.com/spokodev) for the fix.
+
+### Security
+
+- Security: when `meta` was allowed together with its `http-equiv` and `content` attributes, the destination URL of a `<meta http-equiv="refresh" content="0;url=...">` was never checked against `allowedSchemes`, because it is embedded in `content` rather than being an attribute of its own. So `javascript:`, `data:` and other disallowed destinations passed through. The refresh URL is now extracted the way browsers do it, allowing for the different spellings, separators, quoting and letter case of `url=`, and checked against `allowedSchemes` (or `allowedSchemesByTag.meta`). If it is rejected, or the content cannot be parsed as a refresh, the `content` attribute is removed. `content` on other `meta` elements is unchanged. The default configuration does not allow `meta` and was not affected (CWE-79, CWE-601, GHSA-cv27-6wvh-8x7j).
+
+  Thanks to [adrbogacz](https://github.com/adrbogacz) for reporting the vulnerability.
+
+- Security: when `noscript` is listed in `nonTextTags`, the discarded region could end too early. Browsers with scripting enabled treat `<noscript>` content as raw text up to the first `</noscript>`, but the underlying parser treats it as markup, so an end tag for an enclosing element inside `<noscript>` closed it implicitly and the rest of its content was emitted as ordinary sanitized markup. The discard region now continues until the point where a browser would end the `<noscript>` element, while implied closes of other `nonTextTags` such as `<option>` behave as before (CWE-79, CWE-436, GHSA-x3q4-9hxx-gx8m).
+
+  Thanks to [joaquiniglesiaslug](https://github.com/joaquiniglesiaslug) for reporting the vulnerability.
+
+- Security: the check that drops SVG animation elements (`animate`, `animateColor`, `animateMotion`, `animateTransform`, `set`) when they retarget a URL attribute such as `href` compared the full tag name, so a namespace-prefixed spelling like `svg:animate` was not recognized when such tags were allowed (for example with `allowedTags: false`). In XML serializations such as XHTML or standalone SVG, the prefixed element is a real animation element and could retarget a link to a `javascript:` URL after sanitization. The element and `attributeName` are now matched by their local names, ignoring any prefix (CWE-79, CWE-184, GHSA-374f-7chj-9948).
+
+  Thanks to [Kai Aizen (SnailSploit)](https://github.com/SnailSploit) for reporting the vulnerability.
+
 ## 2.17.7 (2026-08-13)
 
 ### Security
