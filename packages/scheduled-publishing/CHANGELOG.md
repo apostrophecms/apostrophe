@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.6 (2026-09-30)
+
+### Changes
+
+- Corrected grammar, removed duplicated lines from the wildcard redirect examples, and dropped an off-topic section from the README documentation.
+- Corrected typos and grammar in the README documentation.
+
 ## 1.0.5 (2024-09-05)
 
 ### Adds

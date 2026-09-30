@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.7.1 (2026-09-30)
+
+### Changes
+
+- Updates README for new create action
+
 ## 3.7.0 (2026-06-10)
 
 ### Adds
