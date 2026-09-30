@@ -18,7 +18,8 @@ export default {
           label: 'apostrophe:email',
           placeholder: 'apostrophe:loginEnterEmail',
           type: 'email',
-          required: true
+          required: true,
+          direction: apos.login.direction
         }
       ]
     };

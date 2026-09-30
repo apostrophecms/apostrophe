@@ -4,7 +4,7 @@
       v-show="loaded"
       class="apos-login apos-theme-dark"
       data-apos-test="loginPage"
-      :class="themeClass"
+      :class="[ themeClass, directionClass ]"
     >
       <transition name="fade-outer">
         <div

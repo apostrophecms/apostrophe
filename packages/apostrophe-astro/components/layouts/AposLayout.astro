@@ -3,13 +3,14 @@ import AposRunLayout from "./AposRunLayout.astro";
 import AposEditLayout from "./AposEditLayout.astro";
 import AposRefreshLayout from "./AposRefreshLayout.astro";
 import config from 'apostrophe-astro-config/config';
+import { logWarn } from '../../lib/log.js';
 
 const { aposData } = Astro.props;
 
 // Forward Apostrophe response headers to Astro based on the config
 let headersToInclude = config.includeResponseHeaders;
 if (!headersToInclude && config.forwardHeaders) {
-  console.warn('forwardHeaders is deprecated. Please use includeResponseHeaders instead.');
+  logWarn('forwardHeaders is deprecated. Please use includeResponseHeaders instead.');
   headersToInclude = config.forwardHeaders;
 }
 

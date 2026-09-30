@@ -98,6 +98,81 @@ To run **all** of the tests for one module, try:
 pnpm -C packages/apostrophe test
 ```
 
+## How do I check the translations?
+
+Every package keeps its translations in `i18n/<locale>.json` (or
+`i18n/<namespace>/<locale>.json`). `scripts/scan-translations.mjs` compares each
+of those against its `en.json` and reports keys that are missing, stale, or
+*broken* — where the key resolves but renders wrong.
+
+The most common break is a translated interpolation variable. `{{ count }}` and
+`{{ width }}` are i18next variables, not words, so when a translation comes back
+as `{{ ancho }}` or `{{ Count }}` nothing throws: the phrase just renders with an
+empty slot or a literal `{{ ancho }}`.
+
+```bash
+pnpm scan:translations
+```
+
+`en.json` is the source of truth. The i18n module appends `en` to the i18next
+fallback chain unconditionally, so it is the phrase every locale ultimately
+resolves to. A finding always means the translation is wrong until proven
+otherwise — English is only the outlier in edge cases, such as a variable
+renamed in code without the phrase being updated.
+
+When every locale spells a variable the same wrong way, the scan says so. That
+is not evidence English is wrong: translations arrive in batches from a single
+source, so they are not independent observations. It only tells you how many
+files a fix will touch. Confirm against the `$t()` or `self.apos.notify()` call
+site before editing either side.
+
+The scan is standalone and not wired into `pnpm lint` or CI. It exits non-zero
+when it finds an `error`-severity problem; missing and untranslated keys are
+reported at `warn` and `info` so they do not drown out real breakage.
+
+```bash
+# Just the breakage, ignoring the backlog of missing keys.
+node scripts/scan-translations.mjs --only=placeholder-mismatch,malformed-interpolation
+
+# One package, one locale.
+node scripts/scan-translations.mjs --package=seo --locale=fr
+```
+
+The report is long, so write it to a file rather than scrolling it:
+
+```bash
+node scripts/scan-translations.mjs --out=translations.txt
+node scripts/scan-translations.mjs --json --out=translations.json
+```
+
+### Clearing a backlog of missing keys
+
+Do not work down the report by hand. `--stubs` turns it into a work order:
+
+```bash
+node scripts/scan-translations.mjs --only=missing-key --stubs=./stubs
+```
+
+That writes one JSON file per locale under `./stubs`, mirroring the path each
+belongs to, containing only that locale's missing keys with their English text:
+
+```json
+{
+  "importDraftsOnly": "Import all documents as drafts",
+  "mode": "Mode"
+}
+```
+
+Send those files to whoever does the translating, then merge each returned file
+over its counterpart under `packages/`. Because the stub holds exactly the keys
+that were absent, merging it in cannot overwrite an existing translation, and
+re-running the scan should report nothing for that locale.
+
+Scope the work with `--package` and `--locale` to produce one reviewable batch
+at a time rather than a single enormous drop.
+
+Run `node scripts/scan-translations.mjs --help` for all rules and options.
+
 ## Configuring tests for CI
 
 The monorepo CI workflow automatically detects packages that need testing. It looks for specific configurations in each package's `package.json`.

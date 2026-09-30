@@ -37,14 +37,8 @@ describe('UploadFS GCS', function () {
 
   it('uploadfs should init gcs connection without error', function(done) {
     return uploadfs.init(gcsOptions, function(e) {
-      if (e) {
-        console.log('=======E', e);
-      }
       assert(!e, 'gcs init without error');
       uploadfs.copyIn('test.txt', dstPath, function(e) {
-        if (e) {
-          console.log('=======EE', e);
-        }
         assert(!e, 'gcs copyIn without error');
         done();
       });

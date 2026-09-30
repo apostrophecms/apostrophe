@@ -8,6 +8,22 @@ Add the following to your `.eslintrc` file to use in your project:
 }
 ```
 
+## Strict configuration
+
+`eslint-config-apostrophe/strict` is the same configuration with its advisory rules promoted to errors, for a codebase that is already clean and wants to stay that way:
+
+```javascript
+import apostrophe from 'eslint-config-apostrophe/strict';
+```
+
+Today that means `no-console`, which is a warning in the default configuration: on the server, diagnostics belong in Apostrophe's log pipeline (`self.logInfo`, `self.logWarn`, `self.logError`, `self.logDebug`, or `apos.util.*` outside a module), not on the console. Program output - a task's own listing, help text or report - is the exception, and says so at the call site:
+
+```javascript
+// The listing is what the task was invoked to print.
+// eslint-disable-next-line no-console
+console.log(`${moduleName}:${name}`);
+```
+
 ## Contributing
 
 To contribute to this config or run tests, clone the repository and run `npm install`. You can then run `npm test` to run the basic tests.

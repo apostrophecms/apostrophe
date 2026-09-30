@@ -61,7 +61,10 @@ module.exports = self => {
       try {
         await util.promisify(self.apos.attachment.uploadfs.remove)(target);
       } catch (error) {
-        console.error(error, `Unable to remove uploadfs path: "${target}"`);
+        self.logError('uploadfs-remove-failed', `Unable to remove uploadfs path: "${target}"`, {
+          path: target,
+          stack: error.stack
+        });
       }
     }
   };
@@ -160,6 +163,10 @@ module.exports = self => {
           // continue the import with the current locale overriding the docs one:
           const { noteId: notificationId } = await self.apos.notify(req, ' ', {
             type: 'warning',
+            // Hidden carrier for the event below. Nothing else dismisses it,
+            // so give it the shortest lifetime the option offers: the event
+            // fires on mount, independently of the dismiss timer
+            dismiss: 1,
             event: {
               name: 'import-export-import-locale-differs',
               data: {
@@ -246,7 +253,7 @@ module.exports = self => {
 
       if (!duplicatedDocs.length) {
         const logs = Object.values(failedLog);
-        reporting.end(true, logs);
+        await reporting.end(true, logs);
 
         const notifMsg = `aposImportExport:${logs.length ? 'importFailedForSome' : 'importSucceed'}`;
 
@@ -314,6 +321,9 @@ module.exports = self => {
       // to display the duplicated docs modal
       await self.apos.notify(req, ' ', {
         type: 'warning',
+        // Hidden carrier, dismissed by nothing else; see the locale-differs
+        // notification above
+        dismiss: 1,
         event: {
           name: 'import-export-import-duplicates',
           data: results
@@ -343,6 +353,11 @@ module.exports = self => {
       await jobManager.setTotal(job, total);
 
       return {
+        // Every one of these is a database write, so every caller must await
+        // it. Dropping the promise lets an import resolve while it is still
+        // reporting its own progress, and whoever reads the job next — the
+        // progress display, or the client the import route answered — sees
+        // counters that are short by however many writes are still in flight.
         reporting: {
           success(n) {
             return jobManager.success(job, n);
@@ -447,7 +462,7 @@ module.exports = self => {
             aposLocale,
             detail: req.t('aposImportExport:typeUnknown', { type })
           };
-          reporting.failure();
+          await reporting.failure();
         }
 
         checkedTypes.add(type);
@@ -478,7 +493,7 @@ module.exports = self => {
             aposLocale,
             detail: req.t('aposImportExport:errorCantImportType', { type })
           };
-          reporting.failure();
+          await reporting.failure();
           continue;
         }
 
@@ -588,9 +603,9 @@ module.exports = self => {
               translate
             });
             await self.setImportedAt(doc);
-            reporting.success();
+            await reporting.success();
           } catch (error) {
-            reporting.failure();
+            await reporting.failure();
             failedIds.push(doc.aposDocId);
             failedLog[doc._id] = {
               _id: doc._id,
@@ -621,10 +636,10 @@ module.exports = self => {
           });
           if (inserted) {
             await self.setImportedAt(cloned);
-            reporting.success();
+            await reporting.success();
           }
         } catch (error) {
-          reporting.failure();
+          await reporting.failure();
           failedIds.push(cloned.aposDocId);
           failedLog[cloned._id] = {
             _id: cloned._id,
@@ -653,6 +668,24 @@ module.exports = self => {
       const manager = self.apos.doc.getManager(doc.type);
       if (!self.canImport(req, doc.type)) {
         throw new Error(`Import is disabled for this module: ${doc.type}`);
+      }
+
+      // The key column name and its value both come from the imported file
+      // and end up in a database query. gzip archives are parsed with EJSON
+      // and CSV cells are JSON-parsed, so the value may be an object such as
+      // `{ $ne: null }`: only accept plain field names and plain values,
+      // so a row can only ever match on the exact key it names.
+      if (!updateField || updateField.startsWith('$') || updateField.includes('.')) {
+        throw new Error(`Invalid key column: ${updateKey}`);
+      }
+      const keyValue = doc[updateKey];
+      if (
+        (keyValue !== undefined) &&
+        (keyValue !== null) &&
+        (typeof keyValue !== 'string') &&
+        !((typeof keyValue === 'number') && Number.isFinite(keyValue))
+      ) {
+        throw new Error(`Invalid value for key column ${updateKey}: must be a string or a number`);
       }
 
       if (!doc[updateField]) {
@@ -709,6 +742,7 @@ module.exports = self => {
         let modified = translate;
         if (translate) {
           modified = await self.translateDocument(req, docToInsert);
+          self.setTranslationSaveFlag(_req, docToInsert);
         }
         if (manager.options.autopublish === true) {
           modified = false;
@@ -773,6 +807,7 @@ module.exports = self => {
 
           if (translate) {
             await self.translateDocument(req, docToUpdate, { update: true });
+            self.setTranslationSaveFlag(_req, docToUpdate);
           }
 
           self.isPage(manager)
@@ -843,7 +878,7 @@ module.exports = self => {
             docIds
           });
           importedAttachments.push(attachmentInfo.attachment._id);
-          reporting.success();
+          await reporting.success();
         } catch (err) {
           self.apos.util.error(err);
           // Only register an error if no duplicated docs because
@@ -892,7 +927,10 @@ module.exports = self => {
           throw new Error('Inserting document failed');
         }
 
-        if (manager.options.autopublish === true) {
+        if (await self.isAlreadyPublished(doc, {
+          manager,
+          method
+        })) {
           return true;
         }
       }
@@ -924,6 +962,7 @@ module.exports = self => {
         let modified = translate;
         if (translate) {
           modified = await self.translateDocument(req, docToInsert);
+          self.setTranslationSaveFlag(_req, docToInsert);
         }
         // If the piece is autopublished, the translation will be published
         // and we don't want to set the modified flag.
@@ -963,6 +1002,7 @@ module.exports = self => {
         if (translate) {
           docToUpdate.__originalLocale = doc.__originalLocale;
           await self.translateDocument(req, docToUpdate, { update: true });
+          self.setTranslationSaveFlag(_req, docToUpdate);
         }
         if (self.isPage(manager)) {
           await importPage.update({
@@ -1029,6 +1069,17 @@ module.exports = self => {
         existing: update,
         silent: false
       });
+    },
+
+    // A translation provider marks the document it translated with the
+    // virtual `_ai` (see `apos.doc.setSaveFlags`). The document is saved
+    // with a request of its own, so carry the mark over to that request
+    // here. Only `_ai` is read: the imported data never sets save flags
+    setTranslationSaveFlag(req, doc) {
+      if (doc._ai === true) {
+        req.aposAi = true;
+      }
+      delete doc._ai;
     },
 
     canImport(req, docType) {
@@ -1128,7 +1179,7 @@ module.exports = self => {
         .find(format => format.label === formatLabel);
 
       if (!format) {
-        jobManager.failure(job);
+        await jobManager.failure(job);
         throw self.apos.error(`invalid format "${formatLabel}"`);
       }
 
@@ -1168,10 +1219,10 @@ module.exports = self => {
 
               try {
                 await self.insertOrUpdateAttachment(req, { attachmentInfo });
-                jobManager.success(job);
+                await jobManager.success(job);
                 importedAttachments.push(id);
               } catch (err) {
-                jobManager.failure(job);
+                await jobManager.failure(job);
                 failedLog[attachmentInfo.attachment._id] = {
                   _id: attachmentInfo.attachment._id,
                   aposDocId: attachmentInfo.attachment._id,
@@ -1206,9 +1257,9 @@ module.exports = self => {
           }
 
           await self.setImportedAt(doc);
-          jobManager.success(job);
+          await jobManager.success(job);
         } catch (err) {
-          jobManager.failure(job);
+          await jobManager.failure(job);
           failedIds.push(doc.aposDocId);
           if (!failedLog[doc._id]) {
             failedLog[doc._id] = {
@@ -1436,6 +1487,25 @@ module.exports = self => {
         ids: [],
         types: new Set()
       });
+    },
+
+    // Whether the draft insert has already published this doc, so the
+    // published doc from the file must be skipped: the type autopublishes,
+    // or a handler published this particular doc during the draft insert.
+    // Only on insert. On update the published doc always exists and the
+    // file's version must still be applied.
+    async isAlreadyPublished(doc, { manager, method }) {
+      if (manager.options.autopublish === true) {
+        return true;
+      }
+      if (method !== 'insert') {
+        return false;
+      }
+      const existing = await self.apos.doc.db.findOne(
+        { _id: doc._id },
+        { projection: { _id: 1 } }
+      );
+      return Boolean(existing);
     },
 
     // Stamp the specific document that was imported.

@@ -58,6 +58,36 @@ module.exports = {
 
 Once configured, hCaptcha verification should work on all login attempts.
 
+### Language
+
+The hCaptcha is displayed in the language of the admin UI: the `defaultAdminLocale` of the `@apostrophecms/i18n` module when set, otherwise the locale of the login page. Set `hl` to force a specific language ([ISO 639-1 code](https://docs.hcaptcha.com/languages)). hCaptcha falls back to auto-detection when the code is not supported.
+
+```javascript
+// modules/@apostrophecms/login/index.js
+module.exports = {
+  options: {
+    hcaptcha: {
+      site: 'ADD YOUR SITE KEY',
+      secret: 'ADD YOUR SECRET KEY',
+      hl: 'en'
+    }
+  }
+};
+```
+
+### Right-to-left websites
+
+On a website whose current locale is right-to-left, the login page and the hCaptcha widget are laid out right-to-left as well. If your editors prefer a left-to-right login page, set the `direction` option of the `@apostrophecms/login` module (*not* this module):
+
+```javascript
+// modules/@apostrophecms/login/index.js
+module.exports = {
+  options: {
+    direction: 'ltr'
+  }
+};
+```
+
 ### Content security headers
 
 If your site has a content security policy, including if you use the [Apostrophe Security Headers](https://www.npmjs.com/package/@apostrophecms/security-headers) module, you will need to add additional configuration to use this module. This module adds a script tag to the site's `head` tag fetching hCaptcha code, so we need to allow resources from that domain.

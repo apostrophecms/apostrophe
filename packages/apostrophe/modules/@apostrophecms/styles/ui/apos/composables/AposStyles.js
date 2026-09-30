@@ -1,8 +1,7 @@
 import {
   ref, reactive, onBeforeUnmount
 } from 'vue';
-import { createId } from '@paralleldrive/cuid2';
-import { isEqual } from 'lodash';
+import { createId, isEqual } from 'apostrophe/lib/beneath.js';
 import { renderScopedStyles } from 'Modules/@apostrophecms/styles/render-factory.js';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
 

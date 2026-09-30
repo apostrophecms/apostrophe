@@ -9,7 +9,7 @@
     <a aria-label="Join the community on Discord" href="http://chat.apostrophecms.org">
       <img alt="" src="https://img.shields.io/discord/517772094482677790?color=5865f2&label=Join%20the%20Discord&logo=discord&logoColor=fff&labelColor=000&style=for-the-badge&logoWidth=20">
     </a>
-    <a aria-label="License" href="https://github.com/apostrophecms/form/blob/main/LICENSE.md">
+    <a aria-label="License" href="https://github.com/apostrophecms/apostrophe/blob/main/packages/form/LICENSE.md">
       <img alt="" src="https://img.shields.io/static/v1?style=for-the-badge&labelColor=000000&label=License&message=MIT&color=3DA639">
     </a>
   </p>
@@ -161,6 +161,7 @@ Configure `@apostrophecms/form` with these options:
 | `recaptchaSecret` | String | Secret key from reCAPTCHA site configuration |
 | `recaptchaSite` | String | Site key for reCAPTCHA integration |
 | `classPrefix` | String | Namespace for CSS classes on form elements |
+| `uploadLimits` | Object | Limits for multipart form submissions, merged with the defaults: `fileSize` (bytes per file, default: the `maxSize` option of `@apostrophecms/attachment` if set, otherwise 20MB), `files` (default: `20`), `fields` (default: `50`) and `fieldSize` (bytes per non-file field, default: 1MB). Files are only accepted for forms that have a matching file field |
 
 ### Available Field Types
 
@@ -194,7 +195,7 @@ export default {
 
 The rich text widget allows editors to add instructions within forms. Any widget type can be included in this configuration.
 
-> **Need different field types for different forms?** The `formWidgets` option is global and cannot be set per-area or per-page. If you need separate sets of allowed fields (for example, a simple contact form vs. a detailed application form), extend the `@apostrophecms/form` module to create a second form piece-type with its own `formWidgets` configuration. **However**, without additional controls, all editors can use both form types. Use [`@apostrophecms-pro/advanced-permission`](https://github.com/apostrophecms/advanced-permission) to restrict which user groups can create and manage each form type—ensuring junior editors only access basic forms while senior staff can use advanced forms. [Learn more about Pro features](#-ready-for-more).
+> **Need different field types for different forms?** The `formWidgets` option is global and cannot be set per-area or per-page. If you need separate sets of allowed fields (for example, a simple contact form vs. a detailed application form), extend the `@apostrophecms/form` module to create a second form piece-type with its own `formWidgets` configuration. **However**, without additional controls, all editors can use both form types. Use [`@apostrophecms-pro/advanced-permission`](https://apostrophecms.com/extensions/advanced-permission) to restrict which user groups can create and manage each form type—ensuring junior editors only access basic forms while senior staff can use advanced forms. [Learn more about Pro features](#-ready-for-more).
 
 ## Handling Submissions
 
@@ -366,7 +367,7 @@ export default {
 
 This generates BEM-style classes like `my-form__input`, `my-form__label`, and `my-form__error` on form elements.
 
-For teams who prefer visual design tools, the [Palette extension](https://apostrophecms.com/extensions/palette-extension) allows in-context CSS customization without writing code. [Learn more about Pro features](#-ready-for-more).
+For teams who prefer visual design tools, Apostrophe's built-in [global styles](https://docs.apostrophecms.org/guide/global-styles.html) let editors adjust CSS properties from the admin interface without writing code.
 
 ## Field-Specific Options
 
@@ -549,12 +550,10 @@ The open-source form builder provides powerful form creation capabilities, but e
 
 - **📄 Document Management** - Version control for forms with complete audit trails. Track changes to form fields, restore previous versions, and maintain compliance with form modification history.
 
-- **🎨 Visual Design Tools** - Use the Palette extension for in-context CSS customization of form styling without writing code. Perfect for teams without dedicated frontend developers.
-
 Create an account on Apostrophe Workspaces and upgrade to [**ApostropheCMS Pro**](https://app.apostrophecms.com/login) or **[contact our team](https://apostrophecms.com/contact-us)** to learn about Pro licensing and access enterprise features that enhance form management, compliance, and team collaboration.
 
 ---
 
 <div>
-  <p>Made with ❤️ by the <a href="https://apostrophecms.com">ApostropheCMS</a> team. <strong>Found this useful? <a href="https://github.com/apostrophecms/form">Give us a star on GitHub!</a> ⭐</strong></p>
+  <p>Made with ❤️ by the <a href="https://apostrophecms.com">ApostropheCMS</a> team. <strong>Found this useful? <a href="https://github.com/apostrophecms/apostrophe">Give us a star on GitHub!</a> ⭐</strong></p>
 </div>

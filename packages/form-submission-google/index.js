@@ -62,7 +62,7 @@ module.exports = {
               form.googleSheetName = await self.getFirstSheet(form.googleSpreadsheetId);
             } catch (error) {
               form.googleSheetName = null;
-              self.apos.util.error('⚠️ Google sheet info request error: ', error);
+              self.logError('sheet-info-failed', error.message, { stack: error.stack });
             }
 
             if (!form.googleSheetName) {
@@ -88,7 +88,7 @@ module.exports = {
           try {
             header = await self.getHeaderRow(target);
           } catch (err) {
-            self.apos.util.error('⚠️ @apostrophecms/form Google Sheets submission error: ', err);
+            self.logError('submission-failed', err.message, { stack: err.stack });
 
             if (req.user) {
               self.apos.notify(req, 'aposForms:googleSheetSubmissionError', {
@@ -207,7 +207,7 @@ module.exports = {
           scopes: [ 'https://www.googleapis.com/auth/spreadsheets' ]
         });
       } catch (error) {
-        self.apos.util.error('⚠️ Google Authentication Error: ', error);
+        self.logError('authentication-failed', error.message, { stack: error.stack });
         return;
       }
 

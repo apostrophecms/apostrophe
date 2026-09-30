@@ -21,6 +21,9 @@
   If you need to force an update from the calling component, increment the
   `generation` prop. This should be done only if the value has changed for
   an external reason.
+
+  The `beforeField` scoped slot renders inside each field's wrapper, ahead
+  of its input, and receives the `field`.
 -->
 <template>
   <component
@@ -37,6 +40,10 @@
       :style="(fieldStyle === 'table' && field.columnStyle) || {}"
       :class="{'apos-field--hidden': !displayComponent(field)}"
     >
+      <slot
+        name="beforeField"
+        :field="field"
+      />
       <component
         :is="fieldComponentMap[field.type]"
         :ref="field.name"

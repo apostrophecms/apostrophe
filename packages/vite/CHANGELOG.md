@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 (2026-09-30)
+
+### Changes
+
+- Vite's own build output is indented under the build entry it belongs to in the human log formats, and becomes structured events when the format is machine readable; the build and HMR notices carry event types. A logged error's `stack` is the stack string itself, no longer an array of trimmed lines.
+- Assets from a module's `public/` folder that are referenced from CSS, such as web fonts loaded with `url('/modules/...')`, are now emitted at their original path instead of a content-hashed copy under `assets/`. As a result, `apos.asset.url('/modules/...')` in a template now matches the URL requested by the built CSS, so `<link rel="preload">` tags for web fonts work as intended rather than downloading each font twice. Cache busting is still provided by the release directory. Note that Vite still inlines assets smaller than 4 KB into the CSS, so such small fonts should not be preloaded. Also fixes the `assetsDir` build option, which was misspelled and silently ignored.
+- Corrected three typos in the README's asset import and `@/` alias documentation.
+
 ## 1.1.2 (2026-07-10)
 
 ### Fixes

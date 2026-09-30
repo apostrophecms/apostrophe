@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.5 (2026-09-30)
+
+### Changes
+
+- Removed the README references to the deprecated `@apostrophecms-pro/palette` extension, pointing at the built-in global styles feature instead where an equivalent exists.
+- Broken links in the README and `package.json` of these packages, as surfaced by their pages on the ApostropheCMS extensions site, are corrected. The license badges pointed at the retired standalone repositories, and in the case of `@apostrophecms/redirect` and `@apostrophecms/form-submission-google` at the Blog module's license rather than their own; "Give us a star on GitHub!" pointed at the archived `apostrophecms/form` and `apostrophecms/anchors` repositories; and `@apostrophecms/import-export` linked `@apostrophecms/import-export-xlsx` to its archived repository. All now resolve within the monorepo. The `@apostrophecms/form` README also linked `@apostrophecms-pro/advanced-permission` to a private repository, which 404s for anyone without access; it now links to the public extension page.
+
+  In `package.json`, `@apostrophecms/favicon` had its `repository.directory` misspelled as `packages/favison` and `@apostrophecms/import-export` had `packages/` missing from its `homepage`. `@apostrophecms/favicon`, `@apostrophecms/anchors` and `@apostrophecms/form-submission-google` were each missing a `bugs` field, so tools that need one derived it from `homepage` and produced an unusable URL. No code changes.
+
+### Security
+
+- The CAPTCHA token submitted by the browser was inserted without encoding into the server-side verification request sent to reCAPTCHA (forms and login) or hCaptcha (login), so a crafted token could add or override parameters of that request. The verification parameters are now encoded with `URLSearchParams` and sent as a form-encoded POST body, and tokens that are not strings are rejected without being verified (CWE-88, GHSA-44qr-rrjg-2cqq).
+
+  Thanks to [Anisetti Chaitanya Eshwar Prasad](https://github.com/chaitanyaeshwarprasad) for reporting the vulnerability.
+
+- The public form submission route wrote every uploaded file to the system temporary directory with no size or count limits, before checking which form it was for or whether that form accepts files at all. Anonymous visitors could use this to fill the disk. Uploaded files are now only accepted after the form has been identified, and only for that form's file fields; anything else is rejected before it reaches the disk. Multipart submissions are also limited in file size, file count and field count, configurable with the new `uploadLimits` option. The file size limit defaults to the attachment module's `maxSize` option if set, otherwise 20MB. Upload errors and aborted requests now stop the submission instead of processing it with incomplete data. The form widget's browser code now sends the form data before the files, which the server requires (CWE-400, CWE-770, GHSA-89mh-mm8c-mv7f).
+
+  Thanks to [Anisetti Chaitanya Eshwar Prasad](https://github.com/chaitanyaeshwarprasad) for reporting the vulnerability.
+
 ## 1.5.4 (2026-07-10)
 
 ### Security

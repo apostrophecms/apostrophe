@@ -1,6 +1,7 @@
-/* global describe, it, before, after, beforeEach */
+/* global describe, it, before, after, beforeEach, afterEach */
 /* eslint-disable no-unused-expressions */
 const { expect } = require('chai');
+const prototypeGuard = require('./prototype-guard');
 
 // Security tests for SQL injection prevention
 // These tests verify that inputs are properly escaped or rejected as appropriate
@@ -311,6 +312,88 @@ describe(`Security Tests (${ADAPTER})`, function() {
       // Only one document should exist
       const count = await db.collection('sectest').countDocuments({ _id: 'atomic1' });
       expect(count).to.equal(1);
+    });
+  });
+
+  // Field names in projections and updates may come from untrusted input
+  // (e.g. the `project` query builder of the REST API). On the SQL adapters
+  // they are applied in JavaScript, and must never be able to reach
+  // Object.prototype or other built-ins shared by the whole process.
+  describe('Field paths cannot reach built-in prototypes', function() {
+    const marker = '__dbConnectPrototypeMarker';
+    let snap;
+
+    before(async function() {
+      await db.collection('sectest').insertOne({
+        _id: 'proto1',
+        title: 'Proto',
+        list: [ 1, 2 ]
+      });
+    });
+
+    after(async function() {
+      await db.collection('sectest').deleteOne({ _id: 'proto1' });
+    });
+
+    beforeEach(function() {
+      // eslint-disable-next-line no-extend-native
+      Object.defineProperty(Object.prototype, marker, {
+        value: 'marker',
+        configurable: true,
+        writable: true,
+        enumerable: false
+      });
+      snap = prototypeGuard.snapshot();
+    });
+
+    // Always put the built-ins back, even if the test failed, so that a
+    // vulnerable implementation cannot wreck the rest of the test run
+    afterEach(function() {
+      prototypeGuard.restore(snap);
+      delete Object.prototype[marker];
+    });
+
+    function expectBuiltinsUnchanged() {
+      expect(prototypeGuard.changes(snap), 'built-in objects were modified').to.deep.equal([]);
+    }
+
+    it('exclusion projection via find().project() does not delete Object.prototype members', async function() {
+      const docs = await db.collection('sectest').find({ _id: 'proto1' })
+        .project({
+          'constructor.prototype.hasOwnProperty': 0,
+          [`constructor.prototype.${marker}`]: 0,
+          'constructor.keys': 0,
+          'list.constructor.prototype.map': 0
+        })
+        .toArray();
+      expect(Object.prototype.hasOwnProperty).to.be.a('function');
+      expect(({})[marker]).to.equal('marker');
+      expect(Object.keys).to.be.a('function');
+      expect([].map).to.be.a('function');
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0].title).to.equal('Proto');
+      expectBuiltinsUnchanged();
+    });
+
+    it('exclusion projection via findOne() does not delete Object.prototype members', async function() {
+      const doc = await db.collection('sectest').findOne({ _id: 'proto1' }, {
+        projection: { [`constructor.prototype.${marker}`]: 0 }
+      });
+      expect(({})[marker]).to.equal('marker');
+      expect(doc.title).to.equal('Proto');
+      expectBuiltinsUnchanged();
+    });
+
+    it('update operators do not modify built-ins', async function() {
+      const collection = db.collection('sectest');
+      await collection.updateOne({ _id: 'proto1' }, { $set: { 'constructor.prototype.polluted': 'yes' } });
+      await collection.updateOne({ _id: 'proto1' }, { $unset: { [`constructor.prototype.${marker}`]: '' } });
+      await collection.updateOne({ _id: 'proto1' }, { $inc: { 'constructor.prototype.counter': 1 } });
+      await collection.updateMany({ _id: 'proto1' }, { $set: { '__proto__.polluted': 'yes' } });
+      expect(({}).polluted).to.equal(undefined);
+      expect(({}).counter).to.equal(undefined);
+      expect(({})[marker]).to.equal('marker');
+      expectBuiltinsUnchanged();
     });
   });
 });

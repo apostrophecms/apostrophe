@@ -129,9 +129,8 @@ import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixi
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 import dayjs from 'dayjs';
-import { isEqual } from 'lodash';
+import { createId, isEqual } from 'apostrophe/lib/beneath.js';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
-import { createId } from '@paralleldrive/cuid2';
 
 dayjs.extend(advancedFormat);
 
@@ -182,6 +181,12 @@ export default {
     canLocalize() {
       return this.moduleOptions.canLocalize && this.activeMedia._id;
     },
+    canViewVersions() {
+      return this.moduleOptions.versions &&
+        this.activeMedia._id &&
+        this.activeMedia._edit &&
+        !this.restoreOnly;
+    },
     moreMenu() {
       const menu = [ {
         label: 'apostrophe:discardChanges',
@@ -191,6 +196,12 @@ export default {
         menu.push({
           label: 'apostrophe:localize',
           action: 'localize'
+        });
+      }
+      if (this.canViewVersions) {
+        menu.push({
+          label: apos.modules['@apostrophecms/document-versions'].pluralLabel,
+          action: 'versions'
         });
       }
       if (this.activeMedia._id && this.activeMedia._delete && !this.restoreOnly) {
@@ -430,6 +441,23 @@ export default {
       }
       apos.bus.$emit('admin-menu-click', {
         itemName: '@apostrophecms/i18n:localize',
+        props: {
+          doc: this.activeMedia
+        }
+      });
+    },
+    async versions() {
+      // A restore replaces the image: unsaved changes go first
+      if (this.isModified) {
+        if (!await this.confirmAndCancel()) {
+          return;
+        }
+
+        await this.cancel();
+        await this.updateActiveDoc(this.activeMedia);
+      }
+      apos.bus.$emit('admin-menu-click', {
+        itemName: '@apostrophecms/document-versions:editor',
         props: {
           doc: this.activeMedia
         }

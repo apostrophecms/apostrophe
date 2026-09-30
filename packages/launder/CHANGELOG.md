@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.2 (2026-09-30)
+
+### Fixes
+
+- The `launder` package was missing its LICENSE.md file. The license type was always correctly stated as MIT.
+  Thanks to Leonardo Cardozo Vargas for pointing out the omission.
+
 ## 1.7.1
 
 ### Security

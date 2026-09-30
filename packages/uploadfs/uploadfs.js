@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const { rimraf } = require('rimraf');
 const delimiter = require('path').delimiter;
+const createLogger = require('./lib/logger.js');
+const utils = require('./lib/utils.js');
 
 function generateId() {
   return crypto.randomBytes(16).toString('hex');
@@ -19,6 +21,8 @@ function Uploadfs() {
   let scaledJpegQuality;
   let ensuredTempDir = false;
   const self = this;
+  // Replaced in `init` with whatever the `logger` option provides.
+  self.logger = createLogger();
   /**
    * Initialize uploadfs. The init method passes options to the backend and
    * invokes a callback when the backend is ready.
@@ -29,10 +33,13 @@ function Uploadfs() {
    * @param  {Object}   options.cdn               - An object, that defines cdn settings
    * @param  {Boolean}  options.cdn.enabled=true  - Whether the cdn should be enabled
    * @param  {String}   options.cdn.url           - The cdn-url
+   * @param  {Object}   options.logger            - A console-shaped object receiving
+   *                                                uploadfs diagnostics
    * @param  {Function} callback                  - Will receive the usual err argument
    */
   self.init = function (options, callback) {
     self.options = options;
+    self.logger = createLogger(options.logger);
     self.prefix = self.options.prefix || '';
     // bc: support options.backend
     self._storage = options.storage || options.backend;
@@ -46,7 +53,7 @@ function Uploadfs() {
       try {
         library = require('./lib/storage/' + self._storage + '.js');
       } catch (e) {
-        console.error(
+        self.logger.error(
           'Unable to require the ' +
             self._storage +
             ' storage backend, your node version may be too old for it'
@@ -78,7 +85,7 @@ function Uploadfs() {
     self._image = options.image;
     // Throw warnings about deprecated processors or load default
     if (self._image === 'jimp' || self._image === 'imagecrunch') {
-      console.error(
+      self.logger.warn(
         'The specified processor is no longer supported, defaulting to the sharp.js library.'
       );
       self._image = 'sharp';
@@ -94,9 +101,9 @@ function Uploadfs() {
         const requiring = `./lib/image/${self._image}.js`;
         self._image = require(requiring)();
       } catch (e) {
-        console.error(e);
+        self.logger.error(e);
         if (self._image === 'sharp') {
-          console.error(
+          self.logger.warn(
             'Sharp not available on this operating system. Trying to fall back to imagemagick.'
           );
           fallback = true;
@@ -180,6 +187,10 @@ function Uploadfs() {
       callback = options;
       options = {};
     }
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
     path = prefixPath(path);
     return self._storage.copyIn(localPath, path, options, callback);
   };
@@ -205,11 +216,15 @@ function Uploadfs() {
    * @param  {Function} callback    Receives the usual err argument
    */
   self.copyOut = function (path, localPath, options, callback) {
-    path = prefixPath(path);
     if (typeof options === 'function') {
       callback = options;
       options = {};
     }
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
+    path = prefixPath(path);
     return self._storage.copyOut(path, localPath, options, callback);
   };
 
@@ -224,6 +239,10 @@ function Uploadfs() {
    * @param  {Function} callback    Receives the usual err argument
    */
   self.streamOut = function (path, options) {
+    const error = utils.checkPath(path);
+    if (error) {
+      return utils.errorStream(error);
+    }
     path = prefixPath(path);
     return self._storage.streamOut(path, options);
   };
@@ -290,6 +309,11 @@ function Uploadfs() {
     if (typeof options === 'function') {
       callback = options;
       options = {};
+    }
+    // copyIn would also refuse a bad path, but not before we did all the work
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
     }
 
     const sizes = options.sizes || imageSizes;
@@ -473,6 +497,10 @@ function Uploadfs() {
   };
 
   self.remove = function (path, callback) {
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
     path = prefixPath(path);
     return self._storage.remove(path, callback);
   };
@@ -493,6 +521,10 @@ function Uploadfs() {
    */
 
   self.enable = function (path, callback) {
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
     path = prefixPath(path);
     return self._storage.enable(path, callback);
   };
@@ -513,6 +545,10 @@ function Uploadfs() {
    */
 
   self.disable = function (path, callback) {
+    const error = utils.checkPath(path);
+    if (error) {
+      return callback(error);
+    }
     path = prefixPath(path);
     return self._storage.disable(path, callback);
   };

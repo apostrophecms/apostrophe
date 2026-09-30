@@ -126,12 +126,16 @@ module.exports = {
     placeholderText: 'apostrophe:richTextPlaceholder',
     placeholderTextWithInsertMenu: 'apostrophe:richTextPlaceholderWithInsertMenu',
     defaultData: { content: '' },
+    // Document versions show the text that changed inside `content`
+    versionsRender: true,
     className: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Hostnames from which `<img>` tags in `import.html` may be fetched.
     // The list is empty by default, which disables image fetching during
     // rich text HTML import. Add hostnames here to opt in.
     imageImportAllowedHostnames: [],
+    // Maximum size in bytes of a CSV file uploaded to create a table
+    csvTableMaxSize: 10 * 1024 * 1024,
     tableOptions: {
       resizable: true,
       handleWidth: 10,
@@ -506,7 +510,7 @@ module.exports = {
         try {
           return await self.loadInlineRelationships(req, widgets, [ 'permalinkIds', 'imageIds' ]);
         } catch (e) {
-          console.error(e);
+          self.logError(req, 'load-error', e.message, { stack: e.stack });
           throw e;
         }
       },
@@ -850,6 +854,88 @@ module.exports = {
         return [ ...(options.toolbar || []), ...(options.insert || []) ];
       },
 
+      // Merge the given per-instance rich text options, such as those
+      // configured for a single rich text widget in an area or for a single
+      // `richText` schema field, over this module's `defaultOptions`. Both
+      // the rich text widget and the `richText` schema field type use this
+      // method, so that overriding `defaultOptions`, or this method, changes
+      // the behavior of both
+      combineOptions(options = {}) {
+        return {
+          ...self.options.defaultOptions,
+          ...options
+        };
+      },
+
+      // Sanitize rich text markup according to the given per-instance rich
+      // text options, which are merged with `defaultOptions` first. Used by
+      // the `richText` schema field type, and indirectly by the rich text
+      // widget, so that both permit exactly the same markup for a given
+      // configuration
+      sanitizeRichText(html, options = {}) {
+        return self.sanitizeHtml(
+          html || '',
+          self.optionsToSanitizeHtml(self.combineOptions(options))
+        );
+      },
+
+      // Returns the `aposDocId`s of all of the permalinks found in the given
+      // rich text markup
+      getPermalinkIds(content) {
+        const permalinkAnchors = (content || '').match(/"#apostrophe-permalink-[^"?]*?\?/g);
+        return (permalinkAnchors && permalinkAnchors.map(anchor => {
+          const matches = anchor.match(/apostrophe-permalink-(.*)\?/);
+          return matches[1];
+        })) || [];
+      },
+
+      // Returns the `aposDocId`s of all of the inline images found in the
+      // given rich text markup
+      getImageIds(content) {
+        const quotedAction = self.apos.util.regExpQuote(self.apos.modules['@apostrophecms/image'].action);
+        const imageAnchors = (content || '').match(new RegExp(`${quotedAction}/([^/]+)/src`, 'g'));
+        return (imageAnchors && imageAnchors.map(anchor => {
+          const matches = anchor.match(new RegExp(`${quotedAction}/([^/]+)/src`));
+          return matches[1];
+        })) || [];
+      },
+
+      // Given rich text markup, such as the value of a `richText` schema
+      // field, return markup in which permalink placeholders and inline image
+      // placeholder URLs have been replaced with actual, SEO-friendly URLs.
+      //
+      // Rich text widgets get this treatment automatically when they are
+      // rendered, because widgets have an `output` method. A `richText` schema
+      // field is just a property of a document, with no render-time hook of
+      // its own, so call this method when you want the same treatment. Note
+      // that inline images still display without it, because the image module
+      // serves them at their placeholder URL
+      async renderRichText(req, content) {
+        content = content || '';
+        if (!content.length) {
+          return content;
+        }
+        const holder = {
+          permalinkIds: self.getPermalinkIds(content),
+          imageIds: self.getImageIds(content)
+        };
+        await self.loadInlineRelationships(req, [ holder ], [ 'permalinkIds', 'imageIds' ]);
+        content = self.linkPermalinks(holder, content);
+        content = self.linkImages(holder, content);
+        return content;
+      },
+
+      // True if the given rich text markup contains nothing a user would
+      // consider content. Tables and figures count as content even though
+      // they may contain no text
+      isEmptyRichText(content) {
+        content = (content || '').trim();
+        const text = self.apos.util.htmlToPlaintext(content).trim();
+        return text.length === 0 &&
+          content.includes('<table') === false &&
+          content.includes('<figure') === false;
+      },
+
       getStyleClasses(heading) {
         if (!heading.class) {
           return [];
@@ -865,18 +951,53 @@ module.exports = {
         });
       },
 
+      // The widget's HTML markup is its content; there is no sub-schema
+      // to walk
+      extract(req, widget, options) {
+        if (self.isEmpty(widget)) {
+          return [];
+        }
+        return [
+          {
+            path: `${options.path}.content`,
+            text: widget.content,
+            tags: [ 'text' ]
+          }
+        ];
+      },
+
       isEmpty(widget) {
-        const content = (widget.content || '').trim();
-        const text = self.apos.util.htmlToPlaintext(content).trim();
-        return text.length === 0 &&
-          content.includes('<table') === false &&
-          content.includes('<figure') === false;
+        return self.isEmptyRichText(widget.content);
       },
 
       sanitizeHtml(html, options) {
-        html = sanitizeHtml(html, options);
+        html = sanitizeHtml(html, {
+          logger: self.getSanitizeLogger(),
+          ...options
+        });
         html = self.sanitizeAnchors(html);
         return html;
+      },
+
+      // sanitize-html warns from inside the sanitizing call, so it repeats a
+      // configuration warning on every piece of content. Ours says it once.
+      getSanitizeLogger() {
+        if (!self.sanitizeLogger) {
+          const logger = self.getConsoleLogger('sanitize-html');
+          const said = new Set();
+          self.sanitizeLogger = {
+            ...logger,
+            warn(...args) {
+              const key = args.join(' ');
+              if (said.has(key)) {
+                return;
+              }
+              said.add(key);
+              logger.warn(...args);
+            }
+          };
+        }
+        return self.sanitizeLogger;
       },
 
       sanitizeAnchors(html) {
@@ -942,9 +1063,12 @@ module.exports = {
             const href = content.indexOf(' href="', left);
             const close = content.indexOf('"', href + 7);
             if ((left !== -1) && (href !== -1) && (close !== -1)) {
-              content = content.substring(0, href + 6) +
+              // ` href="` is seven characters, so `href + 7` keeps the opening
+              // quote and `close` keeps the closing one. Substituting an
+              // unquoted url would let a space in it start a second attribute
+              content = content.substring(0, href + 7) +
                 doc._url +
-                content.substring(close + 1);
+                content.substring(close);
             } else {
               // So we don't get stuck in an infinite loop
               break;
@@ -1071,10 +1195,7 @@ module.exports = {
     return {
       async sanitize(_super, req, input, options) {
         try {
-          const rteOptions = {
-            ...self.options.defaultOptions,
-            ...options
-          };
+          const rteOptions = self.combineOptions(options);
 
           const output = await _super(req, input, rteOptions);
           const finalOptions = self.optionsToSanitizeHtml(rteOptions);
@@ -1156,23 +1277,14 @@ module.exports = {
 
           output.content = self.sanitizeHtml(input.content, finalOptions);
 
-          const permalinkAnchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
-          output.permalinkIds = (permalinkAnchors && permalinkAnchors.map(anchor => {
-            const matches = anchor.match(/apostrophe-permalink-(.*)\?/);
-            return matches[1];
-          })) || [];
-          const quotedAction = self.apos.util.regExpQuote(self.apos.modules['@apostrophecms/image'].action);
-          const imageAnchors = output.content.match(new RegExp(`${quotedAction}/([^/]+)/src`, 'g'));
-          output.imageIds = (imageAnchors && imageAnchors.map(anchor => {
-            const matches = anchor.match(new RegExp(`${quotedAction}/([^/]+)/src`));
-            return matches[1];
-          })) || [];
+          output.permalinkIds = self.getPermalinkIds(output.content);
+          output.imageIds = self.getImageIds(output.content);
           return output;
         } catch (e) {
           // Because the trace for template errors is not very
           // useful, for now we log any error here up front
           // until we improve that or this has been stable for a while
-          console.error(e);
+          self.logError(req, 'sanitize-error', e.message, { stack: e.stack });
           throw e;
         }
       },
@@ -1232,7 +1344,13 @@ module.exports = {
         return true;
       }
 
-      console.log('This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. You can add --confirm to the command to skip this message and run the command');
+      self.logWarn(
+        'confirmation-required',
+        'This task will perform an update on all existing rich-text widget. ' +
+        'You should manually backup your database before running this command ' +
+        'in case it becomes necessary to revert the changes. You can add --confirm ' +
+        'to the command to skip this message and run the command'
+      );
 
       return false;
     };

@@ -127,3 +127,53 @@ describe('totp module', function () {
     });
   });
 });
+
+describe('@apostrophecms/login-totp login direction', function () {
+  let apos;
+
+  this.timeout(25000);
+
+  after(async function () {
+    await testUtil.destroy(apos);
+  });
+
+  it('should render the login page LTR on an RTL locale', async function () {
+    apos = await testUtil.create({
+      shortname: 'loginTest',
+      testModule: true,
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            session: {
+              secret: 'test-this-module'
+            }
+          }
+        },
+        '@apostrophecms/i18n': {
+          options: {
+            locales: {
+              en: { label: 'English' },
+              he: {
+                label: 'Hebrew',
+                prefix: '/he',
+                direction: 'rtl'
+              }
+            }
+          }
+        },
+        '@apostrophecms/login-totp': {},
+        '@apostrophecms/login': {
+          options: {
+            direction: 'ltr',
+            totp: {
+              secret: 'totpsecret'
+            }
+          }
+        }
+      }
+    });
+
+    const page = await apos.http.get('/he/login');
+    assert.match(page, /<html lang="he" dir="ltr"/);
+  });
+});

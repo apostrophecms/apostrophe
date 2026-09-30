@@ -16,11 +16,11 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "devDependencies": {
-    "cssnano": "^7.0.6",
-    "eslint": "^9.39.1",
+    "cssnano": "^7.1.9",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.5",
-    "postcss": "^8.4.47"
+    "mocha": "^11.8.0",
+    "postcss": "^8.5.27"
   },
   "apostropheTestConfig": {
     "requiresMongo": false

@@ -3,6 +3,7 @@ const dayjs = require('dayjs');
 const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const joinr = require('./joinr');
+const { finalize, consultProbe } = require('./extract.js');
 
 const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
 
@@ -72,7 +73,7 @@ module.exports = (self) => {
         for (const group of Object.keys(field.options.groups)) {
           widgets = {
             ...widgets,
-            ...group.widgets
+            ...field.options.groups[group].widgets
           };
         }
       }
@@ -80,6 +81,8 @@ module.exports = (self) => {
       for (const name of Object.keys(widgets)) {
         check(name);
       }
+
+      resolveWidgetExtractable();
 
       function check(name) {
         if (!self.apos.modules[`${name}-widget`]) {
@@ -93,6 +96,111 @@ module.exports = (self) => {
           }
         }
       }
+      // Resolves the extraction policy of every widget type configured in
+      // this area to `false | [tags]`, merging the widget module's
+      // `extractable` option with the per-widget area configuration, so
+      // the extraction walk is a single read per widget. The module
+      // option's form is validated by the widget-type module itself.
+      function resolveWidgetExtractable() {
+        field._extractableWidgets = {};
+        const configured = self.apos.area.getWidgets(field.options || {});
+        for (const [ name, widgetOptions ] of Object.entries(configured)) {
+          const manager = self.apos.area.getWidgetManager(name);
+          if (!manager) {
+            continue;
+          }
+          const moduleTags = normalizeExtractable(manager.options.extractable ?? true);
+          const configTags = normalizeExtractable(widgetOptions?.extractable ?? true);
+          if (configTags === undefined) {
+            fail(`The "${name}" widget's "extractable" property must be true, false or an array of tag strings.`);
+          }
+          field._extractableWidgets[name] =
+            (moduleTags === false || configTags === false)
+              ? false
+              : _.uniq([ ...moduleTags, ...configTags ]);
+        }
+      }
+      function normalizeExtractable(value) {
+        if (value === false) {
+          return false;
+        }
+        if (value === true) {
+          return [];
+        }
+        if (Array.isArray(value) &&
+          value.every(tag => typeof tag === 'string' && tag.length)) {
+          return value;
+        }
+        return undefined;
+      }
+    },
+    extract(req, field, value, path) {
+      const widgets = value?.items;
+      if (!Array.isArray(widgets) || !widgets.length) {
+        return [];
+      }
+      const policies = field._extractableWidgets ?? {};
+      const items = [];
+      for (const widget of widgets) {
+        // An unconfigured or opted-out widget type is skipped whole
+        const policy = policies[widget.type];
+        if (!policy) {
+          continue;
+        }
+        const manager = self.apos.area.getWidgetManager(widget.type);
+        if (!manager) {
+          continue;
+        }
+        const context = {
+          path: `@${widget._id}`,
+          schemaPath: `${path.schema}.${widget.type}`,
+          tags: policy.length ? _.uniq([ ...path.tags, ...policy ]) : path.tags,
+          probe: path.probe
+        };
+        let found = path.probe && consultProbe(self, path.probe, {
+          kind: 'widget',
+          manager,
+          widget,
+          path: context.path,
+          schemaPath: context.schemaPath,
+          tags: context.tags
+        });
+        found ??= manager.extract(req, widget, context);
+        const defaults = {
+          path: context.path,
+          schemaPath: context.schemaPath,
+          type: `widget:${widget.type}`,
+          label: manager.label,
+          tags: context.tags
+        };
+        for (const item of found) {
+          const final = finalize(item, defaults);
+          // A text item still on the bare widget anchor names no property
+          // to write back to: applying it would replace the whole widget
+          // object. Warn at the source, on every occurrence — a production
+          // audit trail of un-appliable content — without breaking
+          // mid-migration projects
+          if (final.text != null && !final.metaOnly && final.path === context.path) {
+            self.logWarn(req, 'widget-extract-pathless-item',
+              `The "${widget.type}" widget contributed an extract item without a "path". ` +
+              'The path defaulted to the whole widget and the item cannot be applied ' +
+              'back to the document. Give the item an explicit "path" (and "tags") — ' +
+              'see the extract method in @apostrophecms/widget-type.',
+              {
+                widgetType: widget.type,
+                widgetId: widget._id,
+                path: final.path,
+                schemaPath: final.schemaPath
+              }
+            );
+          }
+          items.push(final);
+        }
+      }
+      if (items.length) {
+        items.push({ metaOnly: true });
+      }
+      return items;
     },
     index: function (value, field, texts) {
       for (const item of ((value && value.items) || [])) {
@@ -108,8 +216,114 @@ module.exports = (self) => {
     }
   });
 
+  // Rich text, as a schema field rather than as a widget in an area. The
+  // value is HTML markup, edited with the same editor and sanitized with
+  // the same rules as the rich text widget.
+  //
+  // Rich text options such as `toolbar`, `styles` and `insert` are given in
+  // the field's `options` property, exactly as they would be for a rich text
+  // widget configured in an area, and are merged with the `defaultOptions` of
+  // the `@apostrophecms/rich-text-widget` module. That module remains the one
+  // place where the behavior of rich text is configured, so overriding its
+  // options or its methods changes the behavior of both.
+  //
+  // Note that permalinks are stored as placeholders, just as they are in a
+  // rich text widget. Widgets replace them with real URLs when they are
+  // rendered; a schema field has no render-time hook of its own, so call
+  // `apos.modules['@apostrophecms/rich-text-widget'].renderRichText(req, html)`
+  // if you want the same treatment. Inline images display either way.
+  self.addFieldType({
+    name: 'richText',
+    extractable: [ 'text' ],
+    // Editable in place with `{% field %}`
+    wysiwyg: true,
+    // Names this field in the breadcrumb trail shown when editing in place
+    wysiwygIcon: 'format-text-icon',
+    // When rendered in place the permalinks are resolved, exactly as they
+    // are for a rich text widget
+    async wysiwygRender(req, field, value) {
+      return richTextManager().renderRichText(req, value || '');
+    },
+    extract(req, field, value) {
+      return richTextManager().isEmptyRichText(value) ? [] : [ { text: value } ];
+    },
+    convert(req, field, data, destination) {
+      const manager = richTextManager();
+      const content = manager.sanitizeRichText(
+        self.apos.launder.string(data[field.name]),
+        field.options || {}
+      );
+      destination[field.name] = content;
+      if (field.required && manager.isEmptyRichText(content)) {
+        throw self.apos.error('required');
+      }
+    },
+    // Same weight and same silent setting as the rich text widget, so that
+    // rich text indexes and summarizes identically either way
+    index(value, field, texts) {
+      const silent = (field.silent === undefined) ? false : field.silent;
+      texts.push({
+        weight: field.weight || 10,
+        text: self.apos.util.htmlToPlaintext(value || ''),
+        silent
+      });
+    },
+    isEmpty(field, value) {
+      return richTextManager().isEmptyRichText(value);
+    },
+    validate(field, options, warn) {
+      for (const name of [ 'toolbar', 'styles', 'insert' ]) {
+        if (field[name]) {
+          warn(stripIndents`
+            Remember to nest "${name}" inside "options" when configuring a richText field.
+
+            Otherwise, "${name}" has no effect.
+          `);
+        }
+      }
+    },
+    def: ''
+  });
+
+  // The rich text widget module owns every aspect of rich text behavior,
+  // including the options and the sanitization rules. It is looked up at
+  // call time so that the `richText` field type can be registered before
+  // that module exists
+  function richTextManager() {
+    return self.apos.modules['@apostrophecms/rich-text-widget'];
+  }
+
   self.addFieldType({
     name: 'string',
+    extractable: [ 'text' ],
+    // Editable in place with `{% field %}`
+    wysiwyg: true,
+    // Names this field in the breadcrumb trail shown when editing in place.
+    // The same icon a rich text widget wears: every field that can be edited
+    // in place today is text, and the user is better served by one familiar
+    // icon than by a distinction between kinds of text they did not ask about
+    wysiwygIcon: 'format-text-icon',
+    // One line of text is part of whatever line the template put it on, so it
+    // is rendered inline and edited inline. Many lines of text are a block of
+    // their own. A template that disagrees says so with `with { tag: ... }`
+    wysiwygTag(field) {
+      return field.textarea ? 'div' : 'span';
+    },
+    // A `textarea: true` string grows as you type; anything else is a single
+    // line that wraps. They need different styling, so say which is which
+    wysiwygModifiers(field) {
+      return [ field.textarea ? 'textarea' : 'input' ];
+    },
+    // Escaped, because a string is text and not markup. The line breaks a
+    // `textarea: true` string can contain are honored, so that what is
+    // displayed matches what was typed
+    async wysiwygRender(req, field, value) {
+      const escaped = self.apos.util.escapeHtml((value == null) ? '' : value.toString());
+      return field.textarea ? escaped.replace(/\r?\n/g, '<br />') : escaped;
+    },
+    extract(req, field, value) {
+      return value ? [ { text: value } ] : [];
+    },
     convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.string(data[field.name]);
       destination[field.name] = checkStringLength(
@@ -758,6 +972,8 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'password',
+    // A hard "never extract"
+    extractable: false,
     async convert(req, field, data, destination) {
       // This is the only field type that we never update unless
       // there is actually a new value — a blank password is not cool. -Tom
@@ -922,6 +1138,28 @@ module.exports = (self) => {
         self.apos.schema.indexFields(field.schema, item, texts);
       });
     },
+    extract(req, field, value, path) {
+      if (!Array.isArray(value) || !value.length) {
+        return [];
+      }
+      const items = [];
+      for (const item of value) {
+        // Anchor on the item's _id so paths survive reordering
+        const found = self.apos.schema.extract(req, field.schema, item, {
+          path: `@${item._id}`,
+          schemaPath: path.schema,
+          tags: path.tags,
+          probe: path.probe
+        });
+        for (const sub of found) {
+          items.push(sub);
+        }
+      }
+      if (items.length) {
+        items.push({ metaOnly: true });
+      }
+      return items;
+    },
     validate: function (field, options, warn, fail) {
       for (const subField of field.schema || field.fields.add) {
         self.validateField(subField, options, field);
@@ -1042,6 +1280,17 @@ module.exports = (self) => {
       if (value) {
         self.apos.schema.indexFields(field.schema, value, texts);
       }
+    },
+    extract(req, field, value, path) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return [];
+      }
+      return self.apos.schema.extract(req, field.schema, value, {
+        path: path.value,
+        schemaPath: path.schema,
+        tags: path.tags,
+        probe: path.probe
+      });
     },
     def: {}
   });
@@ -1314,39 +1563,36 @@ module.exports = (self) => {
       if (!field.withType) {
         fail('withType property is missing. Hint: it must match the name of a doc type module.');
       }
-      if (Array.isArray(field.withType)) {
-        _.each(field.withType, function (type) {
-          lintType(type);
-        });
-      } else {
-        lintType(field.withType);
-        const withTypeManager = self.apos.doc.getManager(field.withType);
-        field.editor = field.editor || withTypeManager.options.relationshipEditor;
-        field.postprocessor = field.postprocessor ||
-          withTypeManager.options.relationshipPostprocessor;
-        field.editorLabel = field.editorLabel ||
-          withTypeManager.options.relationshipEditorLabel;
-        field.editorIcon = field.editorIcon ||
-          withTypeManager.options.relationshipEditorIcon;
-        field.suggestionLabel = field.suggestionLabel ||
-          withTypeManager.options.relationshipSuggestionLabel;
-        field.suggestionHelp = field.suggestionHelp ||
-          withTypeManager.options.relationshipSuggestionHelp;
-        field.suggestionLimit = field.suggestionLimit ||
-          withTypeManager.options.relationshipSuggestionLimit;
-        field.suggestionSort = field.suggestionSort ||
-          withTypeManager.options.relationshipSuggestionSort;
-        field.suggestionIcon = field.suggestionIcon ||
-          withTypeManager.options.relationshipSuggestionIcon;
-        field.suggestionFields = field.suggestionFields ||
-          withTypeManager.options.relationshipSuggestionFields;
+      if (typeof field.withType !== 'string') {
+        fail('withType property must be the name of a single piece or page type module. Relationships with more than one type are not supported.');
+      }
+      lintType(field.withType);
+      const withTypeManager = self.apos.doc.getManager(field.withType);
+      field.editor = field.editor || withTypeManager.options.relationshipEditor;
+      field.postprocessor = field.postprocessor ||
+        withTypeManager.options.relationshipPostprocessor;
+      field.editorLabel = field.editorLabel ||
+        withTypeManager.options.relationshipEditorLabel;
+      field.editorIcon = field.editorIcon ||
+        withTypeManager.options.relationshipEditorIcon;
+      field.suggestionLabel = field.suggestionLabel ||
+        withTypeManager.options.relationshipSuggestionLabel;
+      field.suggestionHelp = field.suggestionHelp ||
+        withTypeManager.options.relationshipSuggestionHelp;
+      field.suggestionLimit = field.suggestionLimit ||
+        withTypeManager.options.relationshipSuggestionLimit;
+      field.suggestionSort = field.suggestionSort ||
+        withTypeManager.options.relationshipSuggestionSort;
+      field.suggestionIcon = field.suggestionIcon ||
+        withTypeManager.options.relationshipSuggestionIcon;
+      field.suggestionFields = field.suggestionFields ||
+        withTypeManager.options.relationshipSuggestionFields;
 
-        if (!field.schema && !Array.isArray(field.withType)) {
-          const fieldsOption = withTypeManager.options.relationshipFields;
-          const fields = fieldsOption && fieldsOption.add;
-          field.fields = fields && klona(fields);
-          field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
-        }
+      if (!field.schema) {
+        const fieldsOption = withTypeManager.options.relationshipFields;
+        const fields = fieldsOption && fieldsOption.add;
+        field.fields = fields && klona(fields);
+        field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
       }
       validateSchema(field);
       if (field.filters) {
@@ -1428,6 +1674,9 @@ module.exports = (self) => {
           fail('withType property is missing. Hint: it must match the name of a piece or page type module. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
         }
         field.withType = withType;
+      }
+      if (typeof field.withType !== 'string') {
+        fail('withType property must be the name of a single piece or page type module. Relationships with more than one type are not supported.');
       }
       const otherModule = _.find(
         self.apos.doc.managers,

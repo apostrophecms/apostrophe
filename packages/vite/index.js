@@ -284,7 +284,7 @@ module.exports = {
               {
                 hostname,
                 error: e.message,
-                stack: e.stack.split('\n').slice(1).map(line => line.trim())
+                stack: e.stack
               }
             );
             return null;

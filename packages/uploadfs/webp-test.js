@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// A manually run script: its output is program output.
+/* eslint-disable no-console */
 
 const fs = require('fs');
 const { join } = require('path');

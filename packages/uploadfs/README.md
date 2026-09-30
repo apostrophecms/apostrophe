@@ -372,6 +372,14 @@ storage: require('mystorage.js')
 
 * In backends like Google Cloud Storage and S3, uploadfs finesses the path so that paths with a leading slash like `/foo/bar.txt` behave reasonably and a double slash never appears in the URL. For Apostrophe this is a requirement. However, if you have your heart set on the double slashes, you can set the `strictPaths` option to `true`.
 
+* uploadfs writes its own diagnostics to the console. If your application has a logging pipeline of its own, pass any console-shaped object as the `logger` option and they are delivered to it instead:
+
+```javascript
+logger: myLogger // an object with log, debug, info, warn and error methods
+```
+
+Any method you do not provide falls back to the console, except `log`, which falls back to your `info` when you have one. So a logger that offers only `info` and `error` — pino, for instance — still receives everything it can express.
+
 ## Extra features for S3: caching, HTTPS, CDNs, permissions, and No Gzip Content Types
 
 By default, when users fetch files from S3 via the web, the browser is instructed to cache them for 24 hours. This is reasonable, but you can change that cache lifetime by specifying the `cachingTime` option, in seconds:

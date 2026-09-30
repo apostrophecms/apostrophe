@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/favicon",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Edit the favicon (the icon in the browser tab) within ApostropheCMS",
   "main": "index.js",
   "scripts": {
@@ -11,15 +11,18 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/apostrophecms/apostrophe.git",
-    "directory": "packages/favison"
+    "directory": "packages/favicon"
   },
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/favicon#readme",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/apostrophe/issues"
+  },
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "stylelint": "^16.5.0",
+    "stylelint": "^16.26.1",
     "stylelint-config-apostrophe": "workspace:^"
   }
 }

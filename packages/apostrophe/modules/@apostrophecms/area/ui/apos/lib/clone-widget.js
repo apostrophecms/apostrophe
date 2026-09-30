@@ -1,5 +1,5 @@
 import { klona } from 'klona';
-import { createId } from '@paralleldrive/cuid2';
+import { createId } from 'apostrophe/lib/beneath.js';
 
 // Safely clone a widget. Regenerates all array item, area, object
 // and widget ids so they are considered new. Useful when copying

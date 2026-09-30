@@ -2,3 +2,6 @@ node_modules
 npm-debug.log
 .DS_Store
 package-lock.json
+# Test files
+test/public/uploads
+test/data

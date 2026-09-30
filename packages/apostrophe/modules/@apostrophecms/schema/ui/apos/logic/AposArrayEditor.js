@@ -1,8 +1,7 @@
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
-import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
-import { get } from 'lodash';
+import { createId, get } from 'apostrophe/lib/beneath.js';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 

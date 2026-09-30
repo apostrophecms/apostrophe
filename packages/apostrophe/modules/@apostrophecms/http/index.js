@@ -11,7 +11,15 @@ module.exports = {
     // 2 hour limit to process a "big upload,"
     // which could be something like an entire site
     // with its attachments
-    bigUploadMaxSeconds: 2 * 60 * 60
+    bigUploadMaxSeconds: 2 * 60 * 60,
+    // Most files a single "big upload" may declare. The admin UI sends
+    // one file per upload
+    bigUploadMaxFiles: 10,
+    // Most chunks a single file of a "big upload" may declare. The chunk
+    // count is supplied by the client and drives a loop over uploadfs both
+    // when assembling the file and when cleaning it up, so it is bounded.
+    // At the client's 4MB chunk size this allows a 40GB file
+    bigUploadMaxChunks: 10000
   },
   init(self) {
     // Map friendly errors created via `apos.error` to status codes.

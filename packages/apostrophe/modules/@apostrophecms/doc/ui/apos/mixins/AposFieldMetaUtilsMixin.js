@@ -1,7 +1,7 @@
 // A mixin to be implemented by the registered external metadata components.
 // Registers the component props and provides useful util methods.
 
-import isPlainObject from 'lodash/isPlainObject';
+import { isPlainObject } from 'apostrophe/lib/beneath.js';
 
 export default {
   props: {

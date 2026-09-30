@@ -26,6 +26,13 @@
 // option determines how often the browser polls for new notifications.
 // Not used when `longPolling` is `true` (the default).
 // `pollingInterval` defaults to 5000 (5 seconds).
+//
+// ### `expireAfter`: seconds a notification document is kept before the
+// database expires it. Dismissing a notification is browser-driven, so a
+// notification nobody ever dismisses would otherwise live forever and be
+// resent on every admin page load. Defaults to 86400 (one day); set it to
+// 0 to keep notifications until they are dismissed. Individual
+// notifications may override it via the `expireAfter` option of `trigger`.
 
 const delay = require('bluebird').delay;
 
@@ -36,12 +43,14 @@ module.exports = {
     longPollingTimeout: 10000,
     queryInterval: 1000,
     // Used only when longPolling is false
-    pollingInterval: 5000
+    pollingInterval: 5000,
+    expireAfter: 86400
   },
   extend: '@apostrophecms/module',
   async init(self) {
     self.apos.notify = self.trigger;
     await self.ensureCollection();
+    self.addMigrations();
     self.enableBrowserData();
   },
   restApiRoutes: (self) => ({
@@ -106,6 +115,7 @@ module.exports = {
       }
     },
     getOne(req, _id) {
+      self.requireUser(req);
       return self.find(req, { displayingIds: [ _id ] });
     },
     async post(req) {
@@ -167,25 +177,20 @@ module.exports = {
       throw self.apos.error('unimplemented');
     },
     async patch(req, _id) {
+      self.requireUser(req);
       const dismissed = self.apos.launder.boolean(req.body.dismissed);
       if (dismissed) {
-        await self.emit('beforeSave', req, {
-          _id,
-          dismissed
-        });
-
-        await self.db.updateOne({ _id }, {
-          $set: {
-            dismissed
-          },
-          $currentDate: {
-            updatedAt: true
-          }
-        });
+        await self.dismiss(req, _id);
       }
     },
+    // Like `dismiss`, a notification that is not the user's own,
+    // or no longer exists, is left alone without an error
     async delete(req, _id) {
-      await self.db.deleteMany({ _id });
+      self.requireUser(req);
+      await self.db.deleteMany({
+        _id,
+        userId: req.user._id
+      });
     }
   }),
   apiRoutes(self) {
@@ -195,6 +200,7 @@ module.exports = {
         // emitting twice. Returns `true` if the event was found and cleared.
         // Returns `false` if not found (because it was already cleared).
         ':_id/clear-event': async function (req) {
+          self.requireUser(req);
           const lockId = `clear-event-${req.params._id}`;
 
           let response;
@@ -203,6 +209,7 @@ module.exports = {
 
             response = await self.db.updateOne({
               _id: req.params._id,
+              userId: req.user._id,
               event: {
                 $ne: null
               }
@@ -264,11 +271,25 @@ module.exports = {
       // `options.icon`, set to an active Vue Materials Icons icon name, will
       // set an icon on the notification.
       //
+      // `options.expireAfter` overrides the module option of the same name
+      // for this notification: a number of seconds after which the database
+      // expires the document, or 0 to keep it until it is dismissed.
+      //
       // `options.job` can be set to an object with properties related to an
       // Apostrophe Job (from the @apostrophecms/job module) for the
       // notification to track the job's progress. These can include the job
       // `_id` and, for the 'completed' stage, the job `action`,
       // e.g., 'archive'.
+      //
+      // `options.event`, an object with `name` and optional `data`
+      // properties, is emitted on the browser bus (`apos.bus`) in exactly
+      // one tab when the notification arrives.
+      //
+      // If `options.bus` is set to `true`, the notification is a pure
+      // message-bus carrier: it is never rendered — the browser emits its
+      // `event` and dismisses it. `event` is then required, the `message`
+      // argument becomes optional, and the options object may be passed in
+      // its place: `apos.notify(req, { bus: true, event })`.
       //
       // Throws an error if there is no `req.user`.
       //
@@ -291,7 +312,15 @@ module.exports = {
         if (!req.user) {
           throw self.apos.error('forbidden');
         }
-        if (!message) {
+        if (message && (typeof message === 'object') && !Array.isArray(message)) {
+          // The options object may be passed in place of the message
+          options = message;
+          message = null;
+        }
+        if (options.bus && !options.event?.name) {
+          throw self.apos.error('invalid', 'a bus notification requires an event');
+        }
+        if (!message && !options.bus) {
           throw self.apos.error('required');
         }
 
@@ -301,7 +330,7 @@ module.exports = {
           _id: self.apos.util.generateId(),
           createdAt: new Date(),
           userId: req.user._id,
-          message,
+          message: message || null,
           icon: options.icon,
           interpolate: interpolate || options.interpolate || {},
           // Defaults to true, otherwise launder as boolean
@@ -318,6 +347,14 @@ module.exports = {
         }
 
         Object.assign(notification, options);
+
+        const expireAfter = (options.expireAfter != null)
+          ? options.expireAfter
+          : self.options.expireAfter;
+        delete notification.expireAfter;
+        if (expireAfter) {
+          notification.expireAt = new Date(Date.now() + expireAfter * 1000);
+        }
 
         await self.emit('beforeSave', req, notification);
 
@@ -342,17 +379,25 @@ module.exports = {
 
       // The dismiss method accepts the following arguments:
       // - req: A valid req.
-      // - noteId: The _id of an active notification.
+      // - noteId: The _id of an active notification belonging to
+      //   `req.user`. A notification belonging to anyone else, or one
+      //   that no longer exists, is left alone without an error.
       // - delay: An optional integer of milliseconds to pause before the
       //   notification actually dismisses.
       async dismiss (req, noteId, delay) {
-        if (!req.user) {
-          throw self.apos.error('forbidden');
-        }
+        self.requireUser(req);
 
         await pause(delay);
 
         try {
+          const owned = await self.db.findOne({
+            _id: noteId,
+            userId: req.user._id
+          });
+          if (!owned) {
+            return;
+          }
+
           await self.emit('beforeSave', req, {
             _id: noteId,
             dismissed: true
@@ -360,7 +405,8 @@ module.exports = {
 
           await self.db.updateOne(
             {
-              _id: noteId
+              _id: noteId,
+              userId: req.user._id
             },
             {
               $set: {
@@ -369,8 +415,6 @@ module.exports = {
               $currentDate: {
                 updatedAt: true
               }
-            }, {
-              upsert: true
             }
           );
         } catch (error) {
@@ -386,6 +430,15 @@ module.exports = {
           return new Promise((resolve) => setTimeout(resolve, delay));
         }
       },
+      // Notifications are private to the user they were triggered for,
+      // so every route and method acting on them requires a user and
+      // acts only on that user's own notifications.
+      requireUser(req) {
+        if (!req.user?._id) {
+          throw self.apos.error('forbidden');
+        }
+      },
+
       // Resolves with an object with `notifications` and `dismissed`
       // properties.
       //
@@ -397,6 +450,13 @@ module.exports = {
         try {
           const results = await self.db.find({
             userId: req.user._id,
+            // The database sweeps expired notifications periodically rather
+            // than instantly, and not every supported database honors expiry
+            // yet, so never send one that is still stored past its time
+            $or: [
+              { expireAt: null },
+              { expireAt: { $gt: new Date() } }
+            ],
             ...(options.modifiedOnOrSince && {
               updatedAt: {
                 $gt: new Date(options.modifiedOnOrSince)
@@ -440,6 +500,34 @@ module.exports = {
         await self.db.createIndex({
           userId: 1,
           createdAt: 1
+        });
+        // Per-document expiry: `expireAfterSeconds: 0` expires each document
+        // at the exact time stored in its `expireAt` field. `sparse` keeps
+        // notifications that opted out of expiry off the index entirely
+        await self.db.createIndex({ expireAt: 1 }, {
+          expireAfterSeconds: 0,
+          sparse: true
+        });
+      },
+
+      addMigrations() {
+        if (!self.options.expireAfter) {
+          return;
+        }
+        // Notifications predating `expireAt` never expire, so they pile up
+        // for the lifetime of the project. Discard those already past the
+        // expiry they would have been given, stamp the rest
+        self.apos.migration.add('notification-expire', async () => {
+          const ms = self.options.expireAfter * 1000;
+          const expireAt = new Date(Date.now() + ms);
+          await self.db.deleteMany({
+            expireAt: { $exists: false },
+            createdAt: { $lt: new Date(Date.now() - ms) }
+          });
+          await self.db.updateMany(
+            { expireAt: { $exists: false } },
+            { $set: { expireAt } }
+          );
         });
       }
     };

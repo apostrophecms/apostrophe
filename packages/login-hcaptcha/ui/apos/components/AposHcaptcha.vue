@@ -12,6 +12,12 @@ export default {
       type: String,
       default: null
     },
+    // Widget language, an ISO 639-1 code. hCaptcha auto-detects when unset
+    // or unsupported.
+    hl: {
+      type: String,
+      default: null
+    },
     url: {
       type: String,
       default: 'https://js.hcaptcha.com/1/api.js?render=explicit'
@@ -65,6 +71,7 @@ export default {
 
       const options = {
         sitekey: this.sitekey,
+        ...(this.hl ? { hl: this.hl } : {}),
         callback: this.verify,
         'expired-callback': this.reset,
         'error-callback': this.reset

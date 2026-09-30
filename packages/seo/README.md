@@ -405,7 +405,7 @@ Enter your verification meta tag content from Google Search Console in the globa
 ### Sitemap Installation
 
 > [!TIP]
-> Installations of the sitemap module is optional, but highly recommended for better search rankings
+> Installation of the sitemap module is optional, but highly recommended for better search rankings
 
 Install the companion sitemap module for XML sitemap generation:
 

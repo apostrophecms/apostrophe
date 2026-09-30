@@ -3,7 +3,9 @@ const cacheOnDemand = require('cache-on-demand');
 
 module.exports = expressCacheOnDemand;
 
-function expressCacheOnDemand(hasher = expressHasher) {
+// `logger` is any console-shaped object; this package has no framework context
+// of its own, so the host application decides where its diagnostics go.
+function expressCacheOnDemand(hasher = expressHasher, { logger = console } = {}) {
   const codForMiddleware = cacheOnDemand(worker, hasher);
 
   return (req, res, next) => {
@@ -29,7 +31,7 @@ function expressCacheOnDemand(hasher = expressHasher) {
       // the above three methods. Anything else doesn't
       // make sense with this middleware
 
-      console.error(
+      logger.error(
         `cacheOnDemand.middleware does not know how to deliver a response for ${req.originalUrl || req.url},\n` +
         'use the middleware only with routes that end with res.redirect, res.send or res.end'
       );

@@ -1,6 +1,18 @@
 const assert = require('assert');
 const testUtil = require('apostrophe/test-lib/test');
 
+// Collects the parameters of an outgoing CAPTCHA verification request,
+// whether they were sent in the query string or a form-encoded body
+function verifyParams(url, options = {}) {
+  const params = new URLSearchParams(new URL(url).search);
+  if (options.body) {
+    for (const [ key, value ] of new URLSearchParams(String(options.body))) {
+      params.append(key, value);
+    }
+  }
+  return params;
+}
+
 const getSiteConfig = function () {
   return {
     // reCAPTCHA test keys
@@ -247,5 +259,94 @@ describe('@apostrophecms/login-recaptcha', function () {
     } finally {
       apos.http.post = post;
     }
+  });
+
+  // GHSA-44qr-rrjg-2cqq
+  it('should URL-encode the token in the verification request', async function () {
+    const token = 'attacker_token&secret=INJECTED_SECRET&something=1 +%';
+    const calls = [];
+    const post = apos.http.post;
+    apos.http.post = async (...args) => {
+      calls.push(args);
+      return { success: true };
+    };
+    try {
+      await apos.login.checkRecaptcha(apos.task.getReq(), token);
+    } finally {
+      apos.http.post = post;
+    }
+    assert.equal(calls.length, 1);
+    const params = verifyParams(...calls[0]);
+    assert.deepEqual([ ...new Set(params.keys()) ].sort(), [ 'response', 'secret' ]);
+    assert.deepEqual(params.getAll('secret'), [ apos.login.options.recaptcha.secret ]);
+    assert.deepEqual(params.getAll('response'), [ token ]);
+  });
+
+  it('should reject a token that is not a string without verifying it', async function () {
+    const calls = [];
+    const post = apos.http.post;
+    apos.http.post = async (...args) => {
+      calls.push(args);
+      return { success: true };
+    };
+    try {
+      await assert.rejects(
+        apos.login.checkRecaptcha(apos.task.getReq(), { token: 'x' })
+      );
+    } finally {
+      apos.http.post = post;
+    }
+    assert.equal(calls.length, 0);
+  });
+});
+
+describe('@apostrophecms/login-recaptcha login direction', function () {
+  let apos;
+
+  this.timeout(25000);
+
+  after(async function () {
+    await testUtil.destroy(apos);
+  });
+
+  it('should render the login page LTR on an RTL locale', async function () {
+    apos = await testUtil.create({
+      shortname: 'loginTest',
+      testModule: true,
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            session: {
+              secret: 'test-this-module'
+            }
+          }
+        },
+        '@apostrophecms/i18n': {
+          options: {
+            locales: {
+              en: { label: 'English' },
+              he: {
+                label: 'Hebrew',
+                prefix: '/he',
+                direction: 'rtl'
+              }
+            }
+          }
+        },
+        '@apostrophecms/login-recaptcha': {},
+        '@apostrophecms/login': {
+          options: {
+            direction: 'ltr',
+            recaptcha: {
+              site: getSiteConfig().site,
+              secret: getSiteConfig().secret
+            }
+          }
+        }
+      }
+    });
+
+    const page = await apos.http.get('/he/login');
+    assert.match(page, /<html lang="he" dir="ltr"/);
   });
 });

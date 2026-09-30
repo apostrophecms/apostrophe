@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 (2026-09-30)
+
+### Adds
+
+- The middleware accepts a console-shaped `logger` option; Apostrophe passes one so the unsupported-response error joins the log pipeline.
+
 ## 1.0.4 (2025-12-01)
 
 * Default hash function now distinguishes requests by hostname, and respects `req.originalUrl` in preference to `req.url` if available (ApostropheCMS).

@@ -1008,4 +1008,25 @@ describe('Command-Menu', function() {
 
     assert.deepEqual(actual, expected);
   });
+
+  it('should mark undo and redo shortcuts to skip when a modal is open', function() {
+    const undo = apos.commandMenu.commands['@apostrophecms/admin-bar:undo'];
+    const redo = apos.commandMenu.commands['@apostrophecms/admin-bar:redo'];
+
+    assert.equal(undo.skipInModal, true);
+    assert.equal(redo.skipInModal, true);
+  });
+
+  it('shouldHandleShortcut should skip skipInModal commands only when a modal is open', async function() {
+    const { shouldHandleShortcut } = await import(
+      '../modules/@apostrophecms/command-menu/ui/apos/lib/should-handle-shortcut.mjs'
+    );
+    const skipInModal = { skipInModal: true };
+    const other = { skipInModal: false };
+
+    assert.equal(shouldHandleShortcut(skipInModal, { modalStackLength: 0 }), true);
+    assert.equal(shouldHandleShortcut(skipInModal, { modalStackLength: 1 }), false);
+    assert.equal(shouldHandleShortcut(other, { modalStackLength: 1 }), true);
+    assert.equal(shouldHandleShortcut({}, { modalStackLength: 1 }), true);
+  });
 });

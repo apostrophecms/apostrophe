@@ -19,6 +19,7 @@ const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const addFieldTypes = require('./lib/addFieldTypes');
 const newInstance = require('./lib/newInstance.js');
+const { finalize, consultProbe } = require('./lib/extract.js');
 
 // Properties of a patch that are acted upon by the PATCH routes themselves
 // and never reach `convert`. See `patchWidgetIfSuitable`.
@@ -116,6 +117,19 @@ module.exports = {
               field.required = true;
             }
           });
+        }
+
+        // The `wysiwygFields` option of a doc type or widget type names the
+        // fields an external front renders in place, including the ones it
+        // inherited rather than declared, like `title`. Adding a field again
+        // just to set `wysiwyg: true` on it would replace the original
+        // definition, prefix, `required` and all
+        for (const name of (module?.options.wysiwygFields || [])) {
+          const field = _.find(schema, { name });
+          if (!field) {
+            throw new Error(`Module ${module.__meta.name}: the wysiwygFields option names ${name}, which is not in the schema.`);
+          }
+          field.wysiwyg = true;
         }
 
         // If nothing else will do, just modify the schema with a function
@@ -514,6 +528,183 @@ module.exports = {
           }
           fieldType.index(object[field.name], field, texts);
         });
+      },
+
+      // Extract the content of `doc` (or any sub-object matching `schema`,
+      // such as a widget) as a flat array of items, by walking the schema.
+      // Whether a field extracts, and with which tags, is the `extractable`
+      // policy resolved once at schema validation time — the walk never
+      // recomputes it, so only validated schemas (any schema registered
+      // with a doc type or widget type) yield items.
+      //
+      // Each item has:
+      //
+      // - `path`: a dot path to the content in `doc`, compatible with
+      //   `apos.util.get` and `apos.util.set`. Content nested in array
+      //   items and widgets is anchored on the nearest `_id`
+      //   (`@xyz.field`), never on array indexes.
+      // - `schemaPath`: the field-name hierarchy, for labels and debugging.
+      // - `type`: the field type, or `widget:name` for widget content.
+      // - `label`: the field label.
+      // - `tags`: the item's resolved tags (see `extractable`).
+      // - `text`: the text content, on text-bearing items.
+      // - `image`: `{ url }` or `{ data, mediaType }`, on image items.
+      // - `metaOnly`: `true` on structural container markers (arrays,
+      //   areas), which carry no direct content.
+      //
+      // Options:
+      //
+      // - `include`: keep only items carrying at least one of these tags
+      //   (omit to keep everything extracted). Structural `metaOnly`
+      //   markers carry no content to select on and are always kept —
+      //   filter them out yourself if unwanted.
+      // - `exclude`: drop items carrying any of these tags, `metaOnly`
+      //   markers included. Wins over `include`.
+      // - `extend`: an object mapping an item `type` to a function. Each
+      //   matching item is replaced by the function's return value, with
+      //   the original item as the sole argument. Consumer-specific
+      //   transforms belong here, per call, never in the field type
+      //   itself, so one consumer's reshaping can never leak into
+      //   another's call.
+      // - `maxLength`: a budget for the total `text` length. Items are
+      //   kept in walk order until the budget would be exceeded; the first
+      //   item over budget and everything after it are dropped.
+      // - `path`, `schemaPath`, `tags`: prefixes for the emitted paths,
+      //   and container tags to union into everything the sub-walk emits.
+      //   Passed by extractors and widget managers reentering the walk for
+      //   a sub-schema; rarely useful otherwise.
+      // - `probe`: a function consulted at each dispatch point before the
+      //   default extractor runs. It receives a context object — for
+      //   fields `{ kind: 'field', field, value, path, schemaPath, tags }`,
+      //   for widgets in areas `{ kind: 'widget', manager, widget, path,
+      //   schemaPath, tags }` — and returns an array of items to use in
+      //   place of the default extraction (finalized with the same
+      //   defaults; an empty array suppresses the dispatch point), or
+      //   `undefined` to proceed normally. With a probe, every field of a
+      //   validated schema is consulted, including fields whose type does
+      //   not extract or that are opted out — a consumer may own content
+      //   core cannot see — and their items inherit the container's tags.
+      //   Unvalidated schemas are never walked, probe or not. Widgets keep
+      //   their opt-out semantics: a widget opted out at the module or
+      //   area level is skipped without consulting the probe. The probe
+      //   travels with `path`/`schemaPath`/`tags` through container
+      //   extractors and widget managers to every depth.
+      //
+      // Container field types (arrays, objects, areas) implement `extract`
+      // by calling this method again on their sub-schema, without query
+      // options.
+
+      extract(req, schema, doc, options = {}) {
+        const {
+          include = null,
+          exclude = null,
+          extend = null,
+          maxLength = null,
+          path = '',
+          schemaPath = '',
+          tags: inherited = null,
+          probe = null
+        } = options;
+        if (include !== null && !isTagArray(include)) {
+          throw self.apos.error('invalid', '"include" must be an array of tag strings');
+        }
+        if (exclude !== null && !isTagArray(exclude)) {
+          throw self.apos.error('invalid', '"exclude" must be an array of tag strings');
+        }
+        if (inherited !== null && !isTagArray(inherited)) {
+          throw self.apos.error('invalid', '"tags" must be an array of tag strings');
+        }
+        if (extend !== null && (
+          typeof extend !== 'object' ||
+          Array.isArray(extend) ||
+          !Object.values(extend).every(fn => typeof fn === 'function')
+        )) {
+          throw self.apos.error(
+            'invalid',
+            '"extend" must be an object mapping field types to functions'
+          );
+        }
+        if (maxLength !== null && (!Number.isInteger(maxLength) || maxLength <= 0)) {
+          throw self.apos.error('invalid', '"maxLength" must be a positive integer');
+        }
+        if (probe !== null && typeof probe !== 'function') {
+          throw self.apos.error('invalid', '"probe" must be a function');
+        }
+        const items = [];
+        for (const field of schema) {
+          // Only fields of validated schemas carry `_extractable`. The
+          // probe is consulted for all of them, even `false` ones — that
+          // value conflates "the type cannot extract" with "opted out",
+          // and a probe may own content core cannot see
+          const active = Array.isArray(field._extractable);
+          if (!active && !(probe && field._extractable === false)) {
+            continue;
+          }
+          const own = active ? field._extractable : [];
+          const fieldTags = inherited?.length
+            ? _.uniq([ ...inherited, ...own ])
+            : own;
+          const fieldPath = {
+            value: path ? `${path}.${field.name}` : field.name,
+            schema: schemaPath ? `${schemaPath}.${field.name}` : field.name,
+            tags: fieldTags,
+            probe
+          };
+          let found = probe && consultProbe(self, probe, {
+            kind: 'field',
+            field,
+            value: doc?.[field.name],
+            path: fieldPath.value,
+            schemaPath: fieldPath.schema,
+            tags: fieldTags
+          });
+          found ??= active
+            ? self.fieldTypes[field.type]
+              .extract(req, field, doc?.[field.name], fieldPath) ?? []
+            : [];
+          const defaults = {
+            path: fieldPath.value,
+            schemaPath: fieldPath.schema,
+            type: field.type,
+            label: field.label,
+            tags: fieldTags
+          };
+          for (const item of found) {
+            items.push(finalize(item, defaults));
+          }
+        }
+        if (!include && !exclude && !extend && (maxLength === null)) {
+          return items;
+        }
+        const kept = [];
+        let total = 0;
+        for (const item of items) {
+          if (include && !item.metaOnly && !hasAny(item.tags, include)) {
+            continue;
+          }
+          if (exclude && hasAny(item.tags, exclude)) {
+            continue;
+          }
+          const final = (extend && extend[item.type])
+            ? extend[item.type](item)
+            : item;
+          if ((maxLength !== null) && final.text) {
+            total += final.text.length;
+            if (total > maxLength) {
+              break;
+            }
+          }
+          kept.push(final);
+        }
+        return kept;
+
+        function hasAny(itemTags, query) {
+          return itemTags.some(tag => query.includes(tag));
+        }
+        function isTagArray(value) {
+          return Array.isArray(value) &&
+            value.every(tag => typeof tag === 'string' && tag.length);
+        }
       },
 
       async evaluateCondition(
@@ -1134,63 +1325,6 @@ module.exports = {
           if (!relationship.name.match(/^_/)) {
             throw Error('Relationships should always be given names beginning with an underscore (_). Otherwise we would waste space in your database storing the results statically. There would also be a conflict with the array field withRelationships syntax. Relationship name is: ' + relationship._dotPath);
           }
-          if (Array.isArray(relationship.withType)) {
-            // Polymorphic join
-            for (const type of relationship.withType) {
-              const manager = self.apos.doc.getManager(type);
-              if (!manager) {
-                throw Error('I cannot find the instance type ' + type);
-              }
-              const find = manager.find;
-
-              const relationships = withRelationshipsNext[relationship._dotPath] || false;
-              const options = {
-                find,
-                builders: { relationships }
-              };
-              const subname = relationship.name + ':' + type;
-              const _relationship = _.assign({}, relationship, {
-                name: subname,
-                withType: type
-              });
-
-              // Allow options to the get() method to be
-              // specified in the relationship configuration
-              if (_relationship.builders) {
-                _.extend(options.builders, _relationship.builders);
-              }
-              if (_relationship.buildersByType && _relationship.buildersByType[type]) {
-                _.extend(options.builders, _relationship.buildersByType[type]);
-              }
-              await self.apos.util.recursionGuard(req, `${_relationship.type}:${_relationship.withType}`, () => {
-                // Allow options to the getter to be specified in the schema,
-                return self.fieldTypes[_relationship.type]
-                  .relate(req, _relationship, _objects, options);
-              });
-              _.each(_objects, function (object) {
-                if (object[subname]) {
-                  if (Array.isArray(object[subname])) {
-                    object[relationship.name] = (object[relationship.name] || [])
-                      .concat(object[subname]);
-                  } else {
-                    object[relationship.name] = object[subname];
-                  }
-                }
-              });
-            }
-            if (relationship.idsStorage) {
-              _.each(_objects, function (object) {
-                if (object[relationship.name]) {
-                  const locale = `${req.locale}:${req.mode}`;
-                  object[relationship.name] = self.apos.util.orderById(
-                    object[relationship.idsStorage].map(id => `${id}:${locale}`),
-                    object[relationship.name]
-                  );
-                }
-              });
-            }
-          }
-
           const manager = self.apos.doc.getManager(relationship.withType);
           if (!manager) {
             throw Error('I cannot find the instance type ' + relationship.withType);
@@ -1403,8 +1537,18 @@ module.exports = {
         if (type.extend) {
           // Allow a field type to extend another field type and merge
           // in some differences.
-          fieldType = _.cloneDeep(self.fieldTypes[type.extend]);
+          const parent = self.fieldTypes[type.extend];
+          fieldType = _.cloneDeep(parent);
           _.merge(fieldType, type);
+          // A subtype's extractable tags union with its parent's;
+          // lodash merges arrays index-wise, which would drop parent tags
+          if (parent && Array.isArray(parent.extractable) &&
+            Array.isArray(type.extractable)) {
+            fieldType.extractable = _.uniq([
+              ...parent.extractable,
+              ...type.extractable
+            ]);
+          }
         }
         // For bc. csv was a bad name for the string converter, but
         // we need to accept it, and even keep the property around
@@ -1434,6 +1578,184 @@ module.exports = {
 
       getFieldType(typeName) {
         return self.fieldTypes[typeName];
+      },
+
+      // Implementation of the `{% field %}` custom tag. Renders the named
+      // field of the given doc, widget, array item or object, and makes it
+      // editable in place if the user is editing and the field type has an
+      // on-page editor.
+      //
+      // If the field is an area this is exactly equivalent to `{% area %}`.
+      //
+      // `usage` is an optional function accepting a message and returning an
+      // error that also explains the correct syntax of the tag.
+      async renderFieldTag(req, object, name, _with, {
+        usage = (message) => new Error(message)
+      } = {}) {
+        if ((!object) || ((typeof object) !== 'object')) {
+          throw usage('You must pass an existing doc or widget as the first argument.');
+        }
+        if ((typeof name) !== 'string') {
+          throw usage('The second argument must be a field name.');
+        }
+        if (!name.match(/^\w+$/)) {
+          throw usage('Field names are made up only of letters, underscores and digits.');
+        }
+        const manager = self.apos.util.getManagerOf(object);
+        const field = manager.schema.find(field => field.name === name);
+        if (!field) {
+          throw usage(`The ${object.metaType} of type ${object.type} has no field named ${name}.`);
+        }
+        if (field.type === 'area') {
+          // An area is already editable in place, and its own tag knows
+          // everything there is to know about doing that
+          return self.apos.area.renderAreaTag(req, object, name, _with, { usage });
+        }
+        return self.renderWysiwygField(req, object, field, _with, { usage });
+      },
+
+      // Render one non-area field of `object` in place, per the `{% field %}`
+      // custom tag. See `renderFieldTag`.
+      async renderWysiwygField(req, object, field, _with, {
+        usage = (message) => new Error(message)
+      } = {}) {
+        return self.render(
+          req,
+          'wysiwygField',
+          await self.wysiwygFieldData(req, object, field, _with, { usage })
+        );
+      },
+
+      // Whether a field of the document with this `_id` can be edited in
+      // place on this request. Exactly one document is edited on a page — the
+      // piece of a show page, otherwise the page itself — and it is the one
+      // the admin bar takes as its context. Everything else a page renders is
+      // there to be displayed: the fifty pieces of an index page, the home
+      // page and the ancestors and children behind the navigation, the global
+      // doc. Their fields are edited on their own pages, so annotating them
+      // here would cost bytes on every page and buy nothing.
+      //
+      // A request that is not rendering a page has no such context to go by,
+      // as when the area editor asks for fresh markup for a single widget.
+      // The only document in play there is the one being edited, so nothing
+      // is ruled out.
+      editableInPlace(req, docId) {
+        const context = req.data?.piece || req.data?.page;
+        return !context || (docId === context._id);
+      },
+
+      // Everything there is to say about one non-area field of `object`
+      // rendered in place: the markup a visitor sees, and what the editor
+      // needs to take over from it if the user is editing. Nunjucks passes
+      // this to the `wysiwygField` template, JSX renders it directly, and an
+      // external front such as Astro receives it as JSON. See
+      // `renderWysiwygField` and `renderFieldTag`.
+      //
+      // Note that the field definition itself is named by `fieldId` rather
+      // than sent. Every doc type and widget type already ships its schema to
+      // the browser, so the definition is there to be looked up, and a page
+      // with fifty fields on it would otherwise carry fifty copies of
+      // something it already has.
+      async wysiwygFieldData(req, object, field, _with, {
+        usage = (message) => new Error(message)
+      } = {}) {
+        const fieldType = self.fieldTypes[field.type];
+        if (!fieldType.wysiwyg) {
+          throw usage(`The field ${field.name} is of type ${field.type}, which has no on-page editor.
+
+Only field types with the "wysiwyg" property can be edited in place. You can
+still output the value of this field with a regular template expression.`);
+        }
+        _with = _with || {};
+        const tag = _with.tag || self.wysiwygTagName(field);
+        if (!tag.match(/^[a-zA-Z][a-zA-Z0-9-]*$/)) {
+          throw usage(`"${tag}" is not a valid HTML tag name.`);
+        }
+        const value = object[field.name];
+        const docId = object._docId || ((object.metaType === 'doc') ? object._id : null);
+        const canEdit = !!(
+          object._edit &&
+          !field.readOnly &&
+          (_with.edit !== false) &&
+          req.query.aposEdit &&
+          self.editableInPlace(req, docId)
+        );
+        // `className` is an alternative to `class`, for those used to JSX
+        const className = _with.class || _with.className;
+        const classes = [
+          'apos-wysiwyg-field',
+          `apos-wysiwyg-field--${field.type}`,
+          ...(fieldType.wysiwygModifiers
+            ? fieldType.wysiwygModifiers(field).map(modifier => `apos-wysiwyg-field--${modifier}`)
+            : []),
+          ...(className ? [ className ] : [])
+        ];
+        return {
+          fieldId: field._id,
+          // Always JSON, so that the editor gets the value the user typed and
+          // not a rendering of it, whatever the field type stores. Only the
+          // editor reads it, so a field that will not be edited here is spared
+          // carrying a second copy of its own value
+          valueJson: canEdit
+            ? JSON.stringify((value === undefined) ? null : value)
+            : null,
+          rendered: await self.renderWysiwygValue(req, field, value),
+          tag,
+          classes: classes.join(' '),
+          canEdit,
+          component: self.wysiwygComponentName(field.type),
+          icon: self.wysiwygIconName(field),
+          docId,
+          patchKey: (object.metaType === 'doc')
+            ? field.name
+            : `@${object._id}.${field.name}`,
+          _with
+        };
+      },
+
+      // Render the value of a wysiwyg field as the markup a visitor sees when
+      // not editing. Field types that store markup, like `richText`, take care
+      // of this themselves via a `wysiwygRender` method; for everything else
+      // the value is escaped as text.
+      async renderWysiwygValue(req, field, value) {
+        const fieldType = self.fieldTypes[field.type];
+        if (fieldType.wysiwygRender) {
+          return fieldType.wysiwygRender(req, field, value);
+        }
+        return self.apos.util.escapeHtml((value == null) ? '' : value.toString());
+      },
+
+      // The Vue component that edits the given field type in place. Field
+      // types may specify `wysiwygComponent`, otherwise the name follows
+      // the standard pattern, e.g. `AposWysiwygInputRichText`.
+      wysiwygComponentName(type) {
+        const fieldType = self.fieldTypes[type];
+        return (fieldType && fieldType.wysiwygComponent) ||
+          'AposWysiwygInput' + self.apos.util.capitalizeFirst(type);
+      },
+
+      // The icon that opens the breadcrumb trail of a field edited in place,
+      // as a widget's trail opens with the icon of the widget type. A field
+      // may name its own `wysiwygIcon`, otherwise the field type speaks for
+      // all of its fields. Whichever icon is named must be registered with
+      // the `icons` section of a module, as all icons are.
+      wysiwygIconName(field) {
+        const fieldType = self.fieldTypes[field.type];
+        return field.wysiwygIcon ||
+          (fieldType && fieldType.wysiwygIcon) ||
+          'pencil-icon';
+      },
+
+      // The tag a field is rendered as when the template does not say. A
+      // field type answers with `wysiwygTag(field)`, which may depend on how
+      // the field is configured: a single line string is part of the line the
+      // template put it on, so it is a `span`, while a `textarea: true` string
+      // and rich text are blocks. Anything with nothing to say gets a `div`.
+      // The `tag` of the `with` clause outranks all of this.
+      wysiwygTagName(field) {
+        const fieldType = self.fieldTypes[field.type];
+        return (fieldType && fieldType.wysiwygTag && fieldType.wysiwygTag(field)) ||
+          'div';
       },
 
       addFieldMetadataComponent(namespace, component) {
@@ -1642,6 +1964,7 @@ module.exports = {
         if (options.type === 'doc type' && (field.editPermission || field.viewPermission) && parent) {
           warn(`editPermission or viewPermission must be defined on root fields only, provided on "${parent.name}.${field.name}"`);
         }
+        resolveExtractable();
         if (fieldType.validate) {
           fieldType.validate(field, options, warn, fail);
         }
@@ -1665,6 +1988,40 @@ module.exports = {
             ${s}
 
           `;
+        }
+        // Resolves the field's extraction policy to `false` or an array of
+        // tags, cached as `field._extractable` so the extraction walk is a
+        // single read. The type is the gate: a field instance can opt out of
+        // an extractable type or extend its tags, but can never force in a
+        // type that does not extract.
+        function resolveExtractable() {
+          const typeTags = normalizeExtractable(
+            fieldType.extractable ?? !!fieldType.extract,
+            `The "${field.type}" field type's "extractable" property`
+          );
+          if (typeTags !== false && !fieldType.extract) {
+            fail(`The "${field.type}" field type declares "extractable" but has no extract method.`);
+          }
+          const fieldTags = normalizeExtractable(
+            field.extractable ?? true,
+            'The "extractable" property'
+          );
+          field._extractable = (typeTags === false || fieldTags === false)
+            ? false
+            : _.uniq([ ...typeTags, ...fieldTags ]);
+        }
+        function normalizeExtractable(value, label) {
+          if (value === false) {
+            return false;
+          }
+          if (value === true) {
+            return [];
+          }
+          if (Array.isArray(value) &&
+            value.every(tag => typeof tag === 'string' && tag.length)) {
+            return value;
+          }
+          return fail(`${label} must be true, false or an array of tag strings.`);
         }
       },
 
@@ -2521,6 +2878,12 @@ module.exports = {
         browserOptions.customCellIndicators = self.uiManagerIndicators;
         return browserOptions;
       }
+    };
+  },
+
+  customTags(self) {
+    return {
+      field: require('./lib/custom-tags/field.js')(self)
     };
   }
 };

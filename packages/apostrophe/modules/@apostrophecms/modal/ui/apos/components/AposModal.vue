@@ -515,7 +515,7 @@ function onKeydownTab(event) {
   // which puts the content under display:none and makes every candidate's
   // offsetParent null.
   const elements = getFocusableElements(modalEl.value)
-    .filter(el => el.offsetParent !== null);
+    .filter(el => el.offsetParent !== null && !el.closest('[inert]'));
   // Keep the store snapshot consistent for other consumers.
   store.updateModalData(props.modalData.id, { elementsToFocus: elements });
   cycleElementsToFocus(event, elements);
@@ -714,6 +714,7 @@ function close() {
     display: grid;
     flex-grow: 1;
     overflow-y: auto;
+    transition: grid-template-columns 200ms cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .apos-modal__overlay {
@@ -815,10 +816,22 @@ function close() {
     @include media-up(lap) {
       grid-template-columns: 15% 1fr minmax(250px, $modal-rail-right-w);
     }
+
+    &:has(> .apos-modal__rail--collapsed) {
+      grid-template-columns: $modal-rail-collapsed-w 1fr minmax(200px, 10%);
+
+      @include media-up(lap) {
+        grid-template-columns: $modal-rail-collapsed-w 1fr minmax(250px, $modal-rail-right-w);
+      }
+    }
   }
 
   .apos-modal__main--with-left-rail {
     grid-template-columns: 22% 78%;
+
+    &:has(> .apos-modal__rail--collapsed) {
+      grid-template-columns: $modal-rail-collapsed-w 1fr;
+    }
   }
 
   .apos-modal__main--with-right-rail {

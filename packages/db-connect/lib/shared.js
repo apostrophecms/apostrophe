@@ -89,26 +89,50 @@ function deserializeDocument(data, id) {
 // Nested Field Operations
 // =============================================================================
 
+// Field paths may come from untrusted input (for instance projections
+// passed through a REST API). These segments would let a path escape the
+// document and reach Object.prototype or other built-ins shared by the
+// whole process, so paths containing them are ignored, as in apos.util.set
+const unsafePathSegments = new Set([ '__proto__', 'constructor', 'prototype' ]);
+
+// Returns the segments of a dotted path, or null if the path is unsafe
+function splitPath(path) {
+  const parts = String(path).split('.');
+  if (parts.some(part => unsafePathSegments.has(part))) {
+    return null;
+  }
+  return parts;
+}
+
+// Only own properties are traversed, so that a path like `toString.call`
+// cannot reach a built-in method through the prototype chain
+function getOwn(obj, key) {
+  return (obj != null) && Object.hasOwn(Object(obj), key) ? obj[key] : undefined;
+}
+
 function getNestedField(obj, path) {
-  const parts = path.split('.');
+  const parts = splitPath(path);
+  if (!parts) {
+    return undefined;
+  }
   let current = obj;
   for (const part of parts) {
     if (current == null) {
       return undefined;
     }
-    current = current[part];
+    current = getOwn(current, part);
   }
   return current;
 }
 
 function setNestedField(obj, path, value) {
-  const parts = path.split('.');
-  if (parts.includes('__proto__')) {
+  const parts = splitPath(path);
+  if (!parts) {
     return;
   }
   let current = obj;
   for (let i = 0; i < parts.length - 1; i++) {
-    if (current[parts[i]] == null) {
+    if (getOwn(current, parts[i]) == null) {
       current[parts[i]] = {};
     }
     current = current[parts[i]];
@@ -117,10 +141,13 @@ function setNestedField(obj, path, value) {
 }
 
 function unsetNestedField(obj, path) {
-  const parts = path.split('.');
+  const parts = splitPath(path);
+  if (!parts) {
+    return;
+  }
   let current = obj;
   for (let i = 0; i < parts.length - 1; i++) {
-    if (current[parts[i]] == null) {
+    if (getOwn(current, parts[i]) == null) {
       return;
     }
     current = current[parts[i]];

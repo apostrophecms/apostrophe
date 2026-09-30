@@ -1,6 +1,18 @@
 const assert = require('assert').strict;
 const testUtil = require('apostrophe/test-lib/test');
 
+// Collects the parameters of an outgoing CAPTCHA verification request,
+// whether they were sent in the query string or a form-encoded body
+function verifyParams(url, options = {}) {
+  const params = new URLSearchParams(new URL(url).search);
+  if (options.body) {
+    for (const [ key, value ] of new URLSearchParams(String(options.body))) {
+      params.append(key, value);
+    }
+  }
+  return params;
+}
+
 const getSiteConfig = function () {
   return {
     // hCaptcha test keys
@@ -114,6 +126,7 @@ describe('@apostrophecms/login-hcaptcha', function () {
       );
 
       assert.equal(context.requirementProps.AposHcaptcha.sitekey, siteConfig.site);
+      assert.equal(context.requirementProps.AposHcaptcha.hl, 'en');
 
       await apos.http.post(
         '/api/v1/@apostrophecms/login/login',
@@ -236,5 +249,98 @@ describe('@apostrophecms/login-hcaptcha', function () {
         'error-codes': [ 'invalid-input-response' ]
       }
     });
+  });
+
+  // GHSA-44qr-rrjg-2cqq
+  it('should URL-encode the token in the verification request', async function () {
+    const token = 'attacker_token&secret=INJECTED_SECRET&something=1 +%';
+    const calls = [];
+    const post = apos.http.post;
+    apos.http.post = async (...args) => {
+      calls.push(args);
+      return { success: true };
+    };
+    try {
+      await apos.login.checkHcaptcha(apos.task.getReq(), token);
+    } finally {
+      apos.http.post = post;
+    }
+    assert.equal(calls.length, 1);
+    const params = verifyParams(...calls[0]);
+    assert.deepEqual([ ...new Set(params.keys()) ].sort(), [ 'response', 'secret' ]);
+    assert.deepEqual(params.getAll('secret'), [ apos.login.options.hcaptcha.secret ]);
+    assert.deepEqual(params.getAll('response'), [ token ]);
+  });
+
+  it('should reject a token that is not a string without verifying it', async function () {
+    const calls = [];
+    const post = apos.http.post;
+    apos.http.post = async (...args) => {
+      calls.push(args);
+      return { success: true };
+    };
+    try {
+      await assert.rejects(
+        apos.login.checkHcaptcha(apos.task.getReq(), { token: 'x' })
+      );
+    } finally {
+      apos.http.post = post;
+    }
+    assert.equal(calls.length, 0);
+  });
+});
+
+describe('@apostrophecms/login-hcaptcha widget language and login direction', function () {
+  let apos;
+
+  this.timeout(25000);
+
+  after(async function () {
+    await testUtil.destroy(apos);
+  });
+
+  it('should follow the default admin locale and honor hcaptcha.hl', async function () {
+    const config = getAppConfig();
+    config['@apostrophecms/i18n'] = {
+      options: {
+        defaultAdminLocale: 'en',
+        locales: {
+          en: { label: 'English' },
+          he: {
+            label: 'Hebrew',
+            prefix: '/he',
+            direction: 'rtl'
+          }
+        }
+      }
+    };
+    config['@apostrophecms/login'].options.direction = 'ltr';
+    apos = await testUtil.create({
+      shortname: 'loginTest',
+      testModule: true,
+      modules: config
+    });
+
+    // establish session
+    const jar = apos.http.jar();
+    await apos.http.get('/he/', { jar });
+
+    const context = await apos.http.post('/he/api/v1/@apostrophecms/login/context', {
+      body: {},
+      jar
+    });
+    assert.equal(context.requirementProps.AposHcaptcha.hl, 'en');
+
+    apos.login.options.hcaptcha.hl = 'fr';
+    const overridden = await apos.http.post('/he/api/v1/@apostrophecms/login/context', {
+      body: {},
+      jar
+    });
+    assert.equal(overridden.requirementProps.AposHcaptcha.hl, 'fr');
+  });
+
+  it('should render the login page LTR on an RTL locale', async function () {
+    const page = await apos.http.get('/he/login');
+    assert.match(page, /<html lang="he" dir="ltr"/);
   });
 });

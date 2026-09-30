@@ -32,14 +32,14 @@
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/create-apostrophe#readme",
   "dependencies": {
     "@apostrophecms/db-connect": "workspace:^",
-    "@clack/prompts": "^1.4.0",
+    "@clack/prompts": "^1.7.0",
     "@umami/node": "^0.4.0",
     "picocolors": "^1.1.1",
-    "yauzl": "^3.2.0"
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.5"
+    "mocha": "^11.8.0"
   }
 }

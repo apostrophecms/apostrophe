@@ -5,6 +5,18 @@ const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 
+// Collects the parameters of an outgoing CAPTCHA verification request,
+// whether they were sent in the query string or a form-encoded body
+function verifyParams(url, options = {}) {
+  const params = new URLSearchParams(new URL(url).search);
+  if (options.body) {
+    for (const [ key, value ] of new URLSearchParams(String(options.body))) {
+      params.append(key, value);
+    }
+  }
+  return params;
+}
+
 describe('Forms module', function () {
   let apos;
 
@@ -724,6 +736,50 @@ describe('Forms module', function () {
     assert(emailSetTwo.indexOf('emailOne@example.net') > -1);
     assert(emailSetTwo.indexOf('emailTwo@example.net') > -1);
     assert(emailSetTwo.indexOf('emailThree@example.net') > -1);
+  });
+
+  // GHSA-44qr-rrjg-2cqq
+  it('URL-encodes the reCAPTCHA token in the verification request', async function () {
+    const forms = apos3.modules['@apostrophecms/form'];
+    const token = 'attacker_token&secret=INJECTED_SECRET&something=1 +%';
+    const calls = [];
+    const post = apos3.http.post;
+    apos3.http.post = async (...args) => {
+      calls.push(args);
+      return { success: true };
+    };
+    const formErrors = [];
+    try {
+      await forms.checkRecaptcha(apos3.task.getReq(), { recaptcha: token }, formErrors);
+    } finally {
+      apos3.http.post = post;
+    }
+    assert.deepEqual(formErrors, []);
+
+    assert.equal(calls.length, 1);
+    const params = verifyParams(...calls[0]);
+    assert.deepEqual([ ...new Set(params.keys()) ].sort(), [ 'response', 'secret' ]);
+    assert.deepEqual(params.getAll('secret'), [ forms.options.recaptchaSecret ]);
+    assert.deepEqual(params.getAll('response'), [ token ]);
+  });
+
+  it('rejects a reCAPTCHA token that is not a string without verifying it', async function () {
+    const forms = apos3.modules['@apostrophecms/form'];
+    const calls = [];
+    const post = apos3.http.post;
+    apos3.http.post = async (...args) => {
+      calls.push(args);
+      return { success: true };
+    };
+    const formErrors = [];
+    try {
+      await forms.checkRecaptcha(apos3.task.getReq(), { recaptcha: [ 'a', 'b' ] }, formErrors);
+    } finally {
+      apos3.http.post = post;
+    }
+    assert.equal(calls.length, 0);
+    assert.equal(formErrors.length, 1);
+    assert.equal(formErrors[0].error, 'recaptcha');
   });
 
   it('destroys the third instance', async function () {

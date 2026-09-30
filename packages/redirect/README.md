@@ -9,7 +9,7 @@
     <a aria-label="Join the community on Discord" href="http://chat.apostrophecms.org">
       <img alt="" src="https://img.shields.io/discord/517772094482677790?color=5865f2&label=Join%20the%20Discord&logo=discord&logoColor=fff&labelColor=000&style=for-the-badge&logoWidth=20">
     </a>
-    <a aria-label="License" href="https://github.com/apostrophecms/blog/blob/main/LICENSE.md">
+    <a aria-label="License" href="https://github.com/apostrophecms/apostrophe/blob/main/packages/redirect/LICENSE.md">
       <img alt="" src="https://img.shields.io/static/v1?style=for-the-badge&labelColor=000000&label=License&message=MIT&color=3DA639">
     </a>
   </p>
@@ -128,7 +128,6 @@ This will redirect **all** URLs beginning with `/auto/` to your destination, lik
 ```
 /auto/hyundai -> /fr/auto
 /auto/hyundai/ioniq-5 -> /fr/auto
-/auto/hyundai/ioniq-5 -> /fr/auto
 ```
 
 ⚠️ Note that this **discards the rest of the URL**. If this is not what you want, see below for ways to avoid it.
@@ -137,7 +136,7 @@ This will redirect **all** URLs beginning with `/auto/` to your destination, lik
 
 If you have a redirect rule with no `*`, it will always beat a redirect rule with an `*`.
 
-Fro instance, if you have rules like this:
+For instance, if you have rules like this:
 
 ```
 /auto/gm/bolt -> /en/auto/gm/bolt
@@ -153,7 +152,7 @@ Then actual redirects will play out like this:
 
 ### Capturing wildcards
 
-If you are creating an "URL" redirect, and not an "Internal Page" one, you may also "capture" and reuse the rest of the URL by including the `*` . This is useful when the rest of the URL is still correct.
+If you are creating a "URL" redirect, and not an "Internal Page" one, you may also "capture" and reuse the rest of the URL by including the `*` . This is useful when the rest of the URL is still correct.
 
 For instance, if your "Old URL" is:
 
@@ -172,12 +171,11 @@ Then redirects will occur like this:
 ```
 /auto/hyundai -> /fr/auto/hyundai
 /auto/hyundai/ioniq-5 -> /fr/auto/hyundai/ioniq-5
-/auto/hyundai/ioniq-5 -> /fr/auto/hyundai/ioniq-5
 ```
 
 ### Creating fallbacks with multiple wildcard rules
 
-Note that if you have two redirect rules involving an `*` and one is longer than the other, **the longer match always wins.*
+Note that if you have two redirect rules involving an `*` and one is longer than the other, **the longer match always wins.**
 
 For example, if your redirects are set up like this:
 
@@ -192,7 +190,6 @@ Then redirects will play out like this:
 /auto/mercedes -> /fr/auto/mercedes
 /auto/mercedes/w123 -> /fr/auto/mercedes/w123
 /auto/hyundai -> /en/car/hyundai
-/auto/hyundai/ioniq-5 -> /en/car/hyundai/ioniq-5
 /auto/hyundai/ioniq-5 -> /en/car/hyundai/ioniq-5
 ```
 

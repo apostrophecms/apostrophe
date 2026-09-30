@@ -234,12 +234,16 @@ function getMetaHead(data, options) {
 
   // JSON-LD Structured Data with error handling
   if (shouldGenerateJsonLd(data)) {
+    const seoModule = options.apos?.modules?.['@apostrophecms/seo'];
     try {
-      const seoModule = options.apos?.modules?.['@apostrophecms/seo'];
       const customSchemas = seoModule?.getCustomSchemas?.() || {};
 
       const seoFieldMappings = seoModule?.options?.seoFieldMappings || {};
-      const jsonLdHandler = new JsonLdSchemaHandler(customSchemas, seoFieldMappings);
+      const jsonLdHandler = new JsonLdSchemaHandler(
+        customSchemas,
+        seoFieldMappings,
+        seoModule
+      );
       const schemas = jsonLdHandler.generateSchemas(data);
 
       if (schemas.length > 0) {
@@ -262,9 +266,13 @@ function getMetaHead(data, options) {
         });
       }
     } catch (err) {
+      seoModule?.logError('jsonld-error', 'Error generating JSON-LD', {
+        stack: err.stack
+      });
       if (process.env.APOS_SEO_DEBUG) {
-        console.error('[SEO] Error generating JSON-LD:', err);
-        console.error('[SEO] Data that caused error:', JSON.stringify(data, null, 2));
+        seoModule?.logDebug('jsonld-error-data', 'Data that caused the JSON-LD error', {
+          data
+        });
       }
     }
   }

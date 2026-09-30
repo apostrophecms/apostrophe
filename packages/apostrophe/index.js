@@ -13,8 +13,13 @@ const npmResolve = require('resolve');
 const glob = require('./lib/glob.js');
 const moogRequire = require('./lib/moog-require');
 const importFresh = require('./lib/import-fresh');
+const createLogger = require('./logger');
 const { pathToFileURL } = require('node:url');
 let defaults = require('./defaults.js');
+
+// What core itself stamps on the lines it emits before, around and after the
+// life of an `apos` object - the same name it carries as a moog-like object.
+const CORE = 'apostrophe';
 
 // ## Top-level options
 //
@@ -43,6 +48,34 @@ let defaults = require('./defaults.js');
 // Alternatively the `APOS_CLUSTER_PROCESSES` environment variable
 // can be set to a number, which will effectively set the cluster
 // option to `cluster: { processes: n }`.
+//
+// `log`
+//
+// The logging configuration of the whole process, read before anything can
+// emit - which is why it lives here and not in a module: cluster notices and
+// fatal startup failures happen long before `@apostrophecms/log` exists.
+//
+// ```js
+// log: {
+//   format: 'structured',  // structured | pretty | plain | legacy | auto
+//   logger: pino(),        // object only; bypasses the built-in renderer
+//   messageAs: 'msg',      // shape delivered to a custom logger
+//   filter: { '*': { severity: [ 'warn', 'error' ] } }
+// }
+// ```
+//
+// `format` defaults to `auto`: pretty output in development, one JSON object
+// per line in production. `APOS_LOG_FORMAT` overrides it for the whole
+// process, and `legacy` pins the `message {json}` shape of earlier releases.
+//
+// The keys are exactly the options `@apostrophecms/log` supports, and when
+// this option is present it is the *entire* logging configuration: the
+// module's own options and the legacy `logger` option of
+// `@apostrophecms/util` are ignored, with a startup warning listing them.
+// Without it, those legacy surfaces keep working as before.
+//
+// This option is read from `app.js` before `data/local.js` is merged, so it
+// has no effect there.
 //
 // `openTelemetryProvider`
 //
@@ -89,6 +122,10 @@ let defaults = require('./defaults.js');
 // The actual entry point, a wrapper that enables the telemetry and starts the
 // root span
 module.exports = async function(options) {
+  // Line zero: the one logger of the process, so that everything from here on
+  // - cluster notices, startup failures, every module - shares one destination
+  // and one format.
+  const logger = processLogger(options);
   const telemetry = opentelemetry(options);
   let spanName = 'apostrophe:boot';
   const guardTime = 20000;
@@ -100,7 +137,11 @@ module.exports = async function(options) {
     };
   }
   if (options.cluster && (process.env.NODE_ENV !== 'production')) {
-    console.log('NODE_ENV is not set to production, disabling cluster mode');
+    logger.warn(
+      'cluster-disabled',
+      'NODE_ENV is not set to production, disabling cluster mode',
+      { module: CORE }
+    );
     options.cluster = false;
   }
 
@@ -127,19 +168,37 @@ module.exports = async function(options) {
             capped = ' (using minimum of 2)';
           }
         }
-        console.log(`Starting ${processes} cluster child processes${capped}`);
+        logger.info(
+          'cluster-start',
+          `Starting ${processes} cluster child processes${capped}`,
+          {
+            module: CORE,
+            processes
+          }
+        );
         for (let i = 0; i < processes; i++) {
           clusterFork();
         }
         cluster.on('exit', (worker, code, signal) => {
           if (code !== 0) {
             if ((Date.now() - worker.bornAt) < guardTime) {
-              console.error(`Worker process ${worker.process.pid} failed in ${seconds(Date.now() - worker.bornAt)}, waiting ${seconds(guardTime)} before restart`);
+              const ran = Date.now() - worker.bornAt;
+              logger.error(
+                'cluster-worker-failed',
+                `Worker process ${worker.process.pid} failed in ${seconds(ran)}, ` +
+                `waiting ${seconds(guardTime)} before restart`,
+                {
+                  module: CORE,
+                  pid: worker.process.pid,
+                  ran,
+                  guardTime
+                }
+              );
               setTimeout(() => {
-                respawn(worker);
+                respawn(worker, logger);
               }, guardTime);
             } else {
-              respawn(worker);
+              respawn(worker, logger);
             }
           }
         });
@@ -153,13 +212,16 @@ module.exports = async function(options) {
       // continue as a worker operation, the pid should be recorded
       // by the auto instrumentation
       spanName += ':worker';
-      console.log(`Cluster worker ${process.pid} started`);
+      logger.info('cluster-worker-started', `Cluster worker ${process.pid} started`, {
+        module: CORE,
+        pid: process.pid
+      });
     }
   }
 
   // Create and activate the root span for the boot tracer
   const self = await telemetry.startActiveSpan(spanName, async (span) => {
-    const res = await apostrophe(options, telemetry, span);
+    const res = await apostrophe(options, telemetry, span, { logger });
     span.setStatus(telemetry.api.SpanStatusCode.OK);
     span.end();
     return res;
@@ -168,8 +230,9 @@ module.exports = async function(options) {
   return self;
 };
 
-// The actual apostrophe bootstrap
-async function apostrophe(options, telemetry, rootSpan) {
+// The actual apostrophe bootstrap. `context` carries what the entry point
+// built before the boot began.
+async function apostrophe(options, telemetry, rootSpan, { logger }) {
   // The core is not a true moog object but it must look enough like one
   // to participate as an async event emitter
   const self = {
@@ -177,6 +240,10 @@ async function apostrophe(options, telemetry, rootSpan) {
       name: 'apostrophe'
     }
   };
+
+  // The process logger. `@apostrophecms/log` consumes it, and so does
+  // `apos.util` through the default logger.
+  self.logger = logger;
 
   // Terminates the process. Emits the `apostrophe:beforeExit` async event;
   // use this mechanism to invoke any pre-exit application level tasks. Any
@@ -192,7 +259,10 @@ async function apostrophe(options, telemetry, rootSpan) {
       // we are at the point where errors are ignored,
       // if emitter is already registered, all handler errors
       // are already recorded by the event module instrumentation
-      console.error('beforeExit emit error', e);
+      logger.error('before-exit-emit-error', e.message, {
+        module: CORE,
+        stack: e.stack
+      });
     }
 
     if (code !== 0) {
@@ -209,7 +279,10 @@ async function apostrophe(options, telemetry, rootSpan) {
       try {
         await options.beforeExit(code, message);
       } catch (e) {
-        console.error('beforeExit handler error', e);
+        logger.error('before-exit-handler-error', e.message, {
+          module: CORE,
+          stack: e.stack
+        });
       }
     }
     process.exit(code);
@@ -237,7 +310,7 @@ async function apostrophe(options, telemetry, rootSpan) {
       rootDir,
       npmRootDir,
       selfDir
-    } = buildRoot(options);
+    } = buildRoot(options, logger);
     self.root = root;
     self.rootDir = rootDir;
     self.npmRootDir = npmRootDir;
@@ -261,6 +334,18 @@ async function apostrophe(options, telemetry, rootSpan) {
     testModule();
 
     self.options = await mergeConfiguration(options, defaults);
+    // The logger was built before merging, so `log` is what app.js passed and
+    // nothing else. Restoring it keeps the option and the live logger in
+    // agreement, whatever merging did to the copy.
+    if (options.log) {
+      self.options.log = options.log;
+    } else if (self.options.log) {
+      delete self.options.log;
+      self.logger.warn(
+        'log-option-ignored',
+        'The `log` option is read before data/local.js is merged. Configure it in app.js.'
+      );
+    }
     await autodetectBundles();
     acceptGlobalOptions();
 
@@ -339,8 +424,11 @@ async function apostrophe(options, telemetry, rootSpan) {
     return self;
   } catch (e) {
     if (options.exit === false) {
-      console.error('apostrophe: error occurred during startup, continuing:');
-      console.error(e);
+      logger.error('startup-error', e.message, {
+        module: CORE,
+        outcome: 'continuing',
+        stack: e.stack
+      });
       // returns undefined, for legacy reasons
     } else if (options.exit === 'throw') {
       // A more sensible approach for those who want to do something
@@ -348,7 +436,11 @@ async function apostrophe(options, telemetry, rootSpan) {
       throw e;
     } else {
       // Longstanding default behavior
-      console.error(e);
+      logger.error('startup-error', e.message, {
+        module: CORE,
+        outcome: 'exiting',
+        stack: e.stack
+      });
       await self._exit(1, e);
     }
   }
@@ -397,19 +489,26 @@ async function apostrophe(options, telemetry, rootSpan) {
       try {
         _.merge(self.options.modules, await self.root.import(pathToFileURL(config)));
       } catch (e) {
-        console.error(stripIndent`
-          When nestedModuleSubdirs is active, any modules.js file beneath:
+        logger.error(
+          'nested-module-subdirs-parse-failed',
+          stripIndent`
+            When nestedModuleSubdirs is active, any modules.js file beneath:
 
-          ${self.localModules}
+            ${self.localModules}
 
-          must export an object containing configuration for Apostrophe modules.
+            must export an object containing configuration for Apostrophe modules.
 
-          The file:
+            The file:
 
-          ${config}
+            ${config}
 
-          did not parse.
-        `);
+            did not parse.
+          `,
+          {
+            module: CORE,
+            file: config
+          }
+        );
         throw e;
       }
     }
@@ -548,6 +647,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.localModules = self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/modules');
     const synth = await moogRequire({
       root: self.root,
+      logger: self.logger,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.localModules,
       defaultBaseClass: '@apostrophecms/module',
@@ -761,7 +861,7 @@ async function apostrophe(options, telemetry, rootSpan) {
             return;
           }
 
-          console.warn(message);
+          logger.warn(name, message, { module: CORE });
         }
       }
     }
@@ -870,8 +970,47 @@ module.exports.bundle = {
   directory: 'modules'
 };
 
+// Build the process logger from the top-level `log` option. An orchestrator
+// running many instances hands one down already built - taking it as is, with
+// its context, is what keeps a whole process on one logger.
+function processLogger(options) {
+  const log = options.log || {};
+  if (typeof log !== 'object') {
+    throw new Error(
+      'The `log` option must be an object with any of the format, logger, ' +
+      'messageAs and filter keys.'
+    );
+  }
+  if (createLogger.isLogger(log.logger)) {
+    return log.logger;
+  }
+  if (typeof log.logger === 'function') {
+    throw new Error(
+      'The `log.logger` option must be an object with debug, info, warn and ' +
+      'error methods. The factory function form is only accepted by the ' +
+      'legacy `logger` option of @apostrophecms/util.'
+    );
+  }
+  return createLogger({
+    format: log.format || 'auto',
+    logger: log.logger,
+    test: Boolean(options.test)
+  });
+}
+
 function seconds(msec) {
   return (Math.round(msec / 100) / 10) + ' seconds';
+}
+
+// `buildRoot` is public API, so a caller outside a boot may have no logger to
+// hand. One lazy instance covers those paths rather than one per call.
+let fallbackLogger = null;
+function bootLogger(logger) {
+  if (logger) {
+    return logger;
+  }
+  fallbackLogger = fallbackLogger || createLogger();
+  return fallbackLogger;
 }
 
 function clusterFork() {
@@ -879,15 +1018,18 @@ function clusterFork() {
   worker.bornAt = Date.now();
 }
 
-function respawn(worker) {
-  console.error(`Respawning worker process ${worker.process.pid}`);
+function respawn(worker, logger) {
+  logger.warn('cluster-worker-respawn', `Respawning worker process ${worker.process.pid}`, {
+    module: CORE,
+    pid: worker.process.pid
+  });
   clusterFork();
 }
 
 module.exports.buildRoot = buildRoot;
 
-function buildRoot(options) {
-  const root = getRoot(options);
+function buildRoot(options, logger) {
+  const root = getRoot(options, logger);
   const rootDir = options.rootDir || path.dirname(root.filename);
   const npmRootDir = options.npmRootDir || rootDir;
   const selfDir = __dirname;
@@ -899,7 +1041,7 @@ function buildRoot(options) {
     selfDir
   };
 }
-function getRoot(options) {
+function getRoot(options, logger) {
   const root = options.root;
   if (root?.filename && root?.require) {
     return {
@@ -933,7 +1075,14 @@ function getRoot(options) {
       filename,
       import: dynamicImport,
       require: (id) => {
-        console.warn(`self.apos.root.require is now async, please verify that you await the promise (${id})`);
+        bootLogger(logger).warn(
+          'root-require-async',
+          `self.apos.root.require is now async, please verify that you await the promise (${id})`,
+          {
+            module: CORE,
+            id
+          }
+        );
 
         return dynamicImport(id);
       }

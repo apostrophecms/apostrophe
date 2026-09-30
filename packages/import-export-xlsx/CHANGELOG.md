@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 (2026-09-30)
+
+### Changes
+
+- Diagnostics are structured events rather than raw `console` calls; task listings and reports still print as program output.
+- Updated README links that pointed at the standalone repositories of modules since migrated into this monorepo. They now point at the corresponding extension page on apostrophecms.com.
+
 ## 1.1.0 (2026-07-10)
 
 ### Changes

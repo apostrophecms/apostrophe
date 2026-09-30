@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/login-hcaptcha",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Adds hCaptcha to Apostrophe login pages",
   "main": "index.js",
   "scripts": {
@@ -23,8 +23,8 @@
   "license": "MIT",
   "devDependencies": {
     "apostrophe": "workspace:^",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.5"
+    "mocha": "^11.8.0"
   }
 }

@@ -6,9 +6,9 @@
 // * `renderJsxTemplate(req, resolved, data, module)` which loads the
 //   compiled JSX module, invokes its default-exported function with
 //   `(data, helpers)`, and flattens the resulting node tree into HTML.
-// * The `Area`, `Component`, `Template`, `Extend`, and `Widget` runtime
-//   helpers exposed to JSX templates as the second argument to their
-//   default function.
+// * The `Area`, `Field`, `Component`, `Template`, `Extend`, and `Widget`
+//   runtime helpers exposed to JSX templates as the second argument to
+//   their default function.
 // * The cross-engine bridge: when a JSX template invokes `Template`/
 //   `Extend` against a Nunjucks `.html` layout, the helper synthesizes a
 //   Nunjucks string that extends the target and turns each named prop
@@ -126,7 +126,7 @@ module.exports = function(self) {
       }
     },
 
-    // Build the `{ apos, helpers, Area, Component, Extend, Template,
+    // Build the `{ apos, helpers, Area, Field, Component, Extend, Template,
     // Widget, ... }` object passed as the second argument to every JSX
     // template. The closure captures `req`, `module` (the module whose
     // template is currently being rendered, used to resolve `Template`
@@ -147,6 +147,7 @@ module.exports = function(self) {
         __t: req.t && req.t.bind(req),
 
         Area: (props) => self.jsxArea(req, props),
+        Field: (props) => self.jsxField(req, props),
         Component: (props) => self.jsxComponent(req, props),
         Widget: (props) => self.jsxWidget(req, props),
         Template: (props) => self.jsxInvoke(req, module, props, {
@@ -232,6 +233,26 @@ module.exports = function(self) {
         area._edit = area._edit || doc._edit;
         self.apos.area.prepForRender(area, doc, name);
         const html = await self.apos.area.renderArea(req, area, ctx);
+        return new Raw(html);
+      })();
+    },
+
+    // Implementation of the `<Field doc={..} name=".." with={..} />` helper,
+    // the JSX equivalent of the `{% field %}` custom tag. Renders one field of
+    // a doc, widget, array item or object and lets the user edit it in place,
+    // right where it appears on the page. If the field is an area this is
+    // exactly `<Area>`.
+    jsxField(req, props) {
+      const {
+        doc, name, with: ctx
+      } = props || {};
+      const usage = (message) => new Error(`${message}
+
+Usage: <Field doc={data.page} name='fieldName' with={{ tag: 'h2' }} />`);
+      return (async () => {
+        const html = await self.apos.schema.renderFieldTag(
+          req, doc, name, ctx, { usage }
+        );
         return new Raw(html);
       })();
     },

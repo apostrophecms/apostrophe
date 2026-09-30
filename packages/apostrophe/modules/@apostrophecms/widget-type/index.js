@@ -72,6 +72,30 @@
 // If true, the image widget is automatically previewed live following changes
 // in the editor modal. Should not be combined with `contextual`.
 //
+// ### `versionsRender`
+//
+// If true, a widget of this type shown in a document version that changed
+// it receives the widget as it was in the version before, as
+// `data.widget._olderVersion`, so its template can show what changed. An
+// unchanged widget does not receive it. A type that leaves this option
+// unset is marked as modified as a whole. `@apostrophecms/rich-text-widget`
+// sets it: the text that changed is marked inside its `content`.
+//
+// ### `versionsRenderDeleted`
+//
+// Defaults to true: a widget of this type deleted in a document version is
+// shown in place in that version, marked as deleted. Set it to `false` for
+// a type whose widgets place themselves in their parent's layout, where a
+// deleted one shown in place would overlap the others. The widget holding
+// it is then marked as modified instead, or, when there is none, its
+// top-level field. `@apostrophecms/layout-column-widget` sets it to `false`.
+//
+// ### `titleField`
+//
+// The name of a schema field of this widget type, dot notation allowed,
+// whose value labels a widget of this type in a document version's list
+// of changes, as the `titleField` of an array field labels its items.
+//
 // ## Fields
 //
 // You will need to configure the schema fields for your widget using
@@ -201,6 +225,15 @@ module.exports = {
     }
 
     self.label = self.options.label;
+
+    const extractable = self.options.extractable;
+    const validExtractable = extractable === undefined ||
+      typeof extractable === 'boolean' ||
+      (Array.isArray(extractable) &&
+        extractable.every(tag => typeof tag === 'string' && tag.length));
+    if (!validExtractable) {
+      throw new Error(`${self.__meta.name}: "extractable" must be true, false or an array of tag strings`);
+    }
 
     self.composeSchema();
     self.composeWidgetOperations();
@@ -631,6 +664,46 @@ module.exports = {
         self.apos.schema.indexFields(self.schema, widget, texts);
       },
 
+      // Extract the widget's content for `apos.schema.extract`, which
+      // documents the item shape and drives this walk. By default the
+      // widget's own schema is walked, which covers any widget built from
+      // ordinary fields and areas. Override to contribute content only
+      // this widget knows about, returning your own items ahead of a
+      // recursive walk of the sub-schema:
+      //
+      // ```js
+      // extract(req, widget, options) {
+      //   return [
+      //     {
+      //       text: widget.special,
+      //       path: `${options.path}.special`,
+      //       tags: [ 'text' ]
+      //     },
+      //     ...self.apos.schema.extract(req, self.schema, widget, options)
+      //   ];
+      // }
+      // ```
+      //
+      // `options` carries the `path`, `schemaPath` and `tags` context of
+      // the walk and must travel to the recursive call unchanged.
+      //
+      // An item for content the sub-schema does not own MUST carry an
+      // explicit `path` naming the property the content lives at, and the
+      // `tags` its consumers select on (`[ 'text' ]` for translatable
+      // text). Without a `path` the item defaults to the path of the whole
+      // widget object, which no consumer can safely write back to; without
+      // its own `tags` the item inherits only the area's tags and
+      // tag-filtered consumers will not see it. Other missing item
+      // properties (`type`, `label`, `schemaPath`) are filled in by the
+      // caller.
+
+      extract(req, widget, options) {
+        if (self.isEmpty(widget)) {
+          return [];
+        }
+        return self.apos.schema.extract(req, self.schema, widget, options);
+      },
+
       // Return true if this widget should be considered
       // empty, for instance it is a rich text widget
       // with no text or meaningful formatting so far.
@@ -814,6 +887,7 @@ module.exports = {
               // write something to stdout. Should
               // not become an apos.util.log call. -Tom
 
+              // eslint-disable-next-line no-console
               console.log(doc.slug + ':' + dotPath);
             }
           }

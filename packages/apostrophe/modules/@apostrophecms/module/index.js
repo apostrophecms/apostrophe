@@ -260,16 +260,23 @@ module.exports = {
             self.logError(req, `api-error${typeTrail}`, msg, {
               name: response.name,
               status: response.code,
-              stack: (error.stack || '').split('\n').slice(1).map(line => line.trim()),
+              stack: error.stack,
               cause: error.cause,
               errorPath: response.path,
               data: response.data
             });
           } catch (e) {
-            // We can't afford to throw here, it would hang the response.
-            e.message = 'Structured logging error: ' + e.message;
-
-            console.error(e);
+            // We can't afford to throw here, it would hang the response, so
+            // the report goes straight to the process logger - the pipeline
+            // is what just failed.
+            try {
+              self.apos.logger.error('structured-logging-error', e.message, {
+                module: self.__meta?.name,
+                stack: e.stack
+              });
+            } catch (nested) {
+              // There is nowhere left to report it
+            }
           }
         }
         function getResponse(err) {

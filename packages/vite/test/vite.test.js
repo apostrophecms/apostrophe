@@ -323,6 +323,84 @@ describe('@apostrophecms/vite', function () {
         assert(apos.vite.isHostnameAllowed('user:pass@[2001:db8::1]:3000', [ '2001:db8::1' ]));
       });
     });
+
+    describe('getViteLogger', function () {
+      let format;
+
+      before(function () {
+        format = apos.logger.format;
+      });
+
+      afterEach(function () {
+        apos.logger.format = format;
+      });
+
+      const esc = '\u001b';
+      const colorful =
+        `${esc}[32mvite v6.4.3${esc}[0m building...\n\n${esc}[1mdone${esc}[0m`;
+
+      // Everything vite wrote to the stream while `fn` ran.
+      const captured = async (fn) => {
+        const written = [];
+        const { write } = process.stdout;
+        process.stdout.write = (chunk) => {
+          written.push(chunk.toString());
+          return true;
+        };
+        try {
+          await fn();
+        } finally {
+          process.stdout.write = write;
+        }
+        return written;
+      };
+
+      it('should leave the output of previous releases alone', async function () {
+        apos.logger.format = 'legacy';
+        assert.equal(await apos.vite.getViteLogger(), null);
+      });
+
+      it('should indent vite output under the build entry, colors and all',
+        async function () {
+          apos.logger.format = 'pretty';
+          const logger = await apos.vite.getViteLogger();
+          const written = await captured(() => logger.info(colorful));
+          assert.deepEqual(written, [
+            `    ${esc}[32mvite v6.4.3${esc}[0m building...\n`,
+            `    ${esc}[1mdone${esc}[0m\n`
+          ]);
+        });
+
+      it('should indent vite output without color in the plain format', async function () {
+        apos.logger.format = 'plain';
+        const logger = await apos.vite.getViteLogger();
+        const written = await captured(() => logger.info(colorful));
+        assert.deepEqual(written, [
+          '    vite v6.4.3 building...\n',
+          '    done\n'
+        ]);
+      });
+
+      it('should emit one event per line when the stream is machine readable',
+        async function () {
+          for (const machine of [ 'structured', null ]) {
+            apos.logger.format = machine;
+            const logger = await apos.vite.getViteLogger();
+            const entries = [];
+            const logInfo = apos.vite.logInfo;
+            apos.vite.logInfo = (type, message) => entries.push([ type, message ]);
+            try {
+              logger.info(colorful);
+            } finally {
+              apos.vite.logInfo = logInfo;
+            }
+            assert.deepEqual(entries, [
+              [ 'vite', 'vite v6.4.3 building...' ],
+              [ 'vite', 'done' ]
+            ], String(machine));
+          }
+        });
+    });
   });
 
   describe('Build', function () {
@@ -608,6 +686,30 @@ describe('@apostrophecms/vite', function () {
       assert.ok(fs.existsSync(path.join(bundleDir, 'public-module-bundle.js')));
       assert.ok(fs.existsSync(path.join(bundleDir, 'public-src-module-bundle.js')));
       assert.ok(fs.existsSync(path.join(bundleDir, 'tools-module-bundle.js')));
+    });
+
+    it('should emit public module assets at the URL apos.asset.url() returns', async function () {
+      const bundleDir = apos.asset.getBundleRootDir();
+      const css = await fs.readFile(path.join(bundleDir, 'article-bundle.css'), 'utf8');
+      const fonts = [
+        // Same file name in two modules must not collide
+        '/modules/article-page/fonts/sans.woff2',
+        '/modules/article-widget/fonts/sans.woff2'
+      ];
+      for (const font of fonts) {
+        assert.ok(css.includes(`url(${apos.asset.url(font)})`), `CSS does not reference ${font}`);
+        const built = await fs.readFile(path.join(bundleDir, font));
+        const source = await fs.readFile(path.join(
+          __dirname,
+          'modules',
+          font.replace(/^\/modules\/([^/]+)\//, '$1/public/')
+        ));
+        assert.ok(built.equals(source), `unexpected content for ${font}`);
+      }
+      const hashed = fs.existsSync(path.join(bundleDir, 'assets'))
+        ? (await fs.readdir(path.join(bundleDir, 'assets'))).filter(f => f.endsWith('.woff2'))
+        : [];
+      assert.deepEqual(hashed, [], 'no hashed copies of fonts expected');
     });
   });
 });

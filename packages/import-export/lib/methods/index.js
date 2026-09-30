@@ -20,6 +20,17 @@ module.exports = self => {
     registerFormats(formats = {}) {
       verifyFormats(formats);
 
+      for (const format of Object.values(formats)) {
+        // Formats carry no apos context; these are the seam they get for
+        // reporting. Non-enumerable so they never count as format keys.
+        for (const method of [ 'logDebug', 'logInfo', 'logWarn', 'logError' ]) {
+          Object.defineProperty(format, method, {
+            value: (...args) => self[method](...args),
+            configurable: true
+          });
+        }
+      }
+
       self.formats = {
         ...self.formats,
         ...formats
@@ -71,9 +82,14 @@ module.exports = self => {
         }
         self.debug(`removed: ${filepath}`);
       } catch (err) {
-        console.trace(err);
-        self.apos.util.error(
-          `Error while trying to remove the file or folder: ${filepath}. You might want to remove it yourself.`
+        self.logError(
+          'remove-failed',
+          `Error while trying to remove the file or folder: ${filepath}. ` +
+            'You might want to remove it yourself.',
+          {
+            filepath,
+            stack: err.stack
+          }
         );
       }
     },

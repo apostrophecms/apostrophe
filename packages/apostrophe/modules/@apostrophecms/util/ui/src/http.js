@@ -5,6 +5,7 @@ export default () => {
   // This is a lean, IE11-friendly implementation.
 
   const busyActive = {};
+  const unsafeKeys = [ '__proto__', 'constructor', 'prototype' ];
   const apos = window.apos;
   apos.http = {};
 
@@ -297,6 +298,11 @@ export default () => {
   // arrays and nesting with the classic PHP/Java bracket syntax.
   // If a key is set with no = it is considered null, per
   // the java convention. Good for use with window.location.search.
+  //
+  // The query string is often attacker-controlled, so a parameter whose
+  // name includes a `__proto__`, `constructor` or `prototype` segment is
+  // ignored, and only own properties are ever descended into, so that
+  // parsing can never modify `Object.prototype` or other built-ins.
 
   apos.http.parseQuery = function(query) {
     query = query.replace(/^\?/, '');
@@ -320,23 +326,28 @@ export default () => {
       let context = data;
       key = decodeURIComponent(key);
       const path = key.split('[');
+      if (path.some(function(subKey) {
+        return unsafeKeys.includes(subKey.replace(']', ''));
+      })) {
+        return;
+      }
       path.forEach(function(subKey) {
         if (subKey === ']') {
-          if (!Array.isArray(context[parentKey])) {
+          if (!Array.isArray(own(context, parentKey))) {
             context[parentKey] = [];
           }
           context = context[parentKey];
           parentKey = context.length;
         } else if (subKey.match(/^\d+]/)) {
           match = subKey.match(/^\d+/);
-          if (!Array.isArray(context[parentKey])) {
+          if (!Array.isArray(own(context, parentKey))) {
             context[parentKey] = [];
           }
           context = context[parentKey];
           parentKey = parseInt(match);
         } else {
           match = subKey.replace(']', '');
-          if (!context[parentKey]) {
+          if (!own(context, parentKey)) {
             context[parentKey] = {};
           }
           context = context[parentKey];
@@ -344,13 +355,21 @@ export default () => {
         }
       });
       value = (value === null) ? value : decodeURIComponent(value);
-      if (Array.isArray(context[parentKey])) {
-        context[parentKey].push(value);
-      } else if (context[parentKey] !== undefined) {
-        context[parentKey] = [ context[parentKey], value ];
+      const existing = own(context, parentKey);
+      if (Array.isArray(existing)) {
+        existing.push(value);
+      } else if (existing !== undefined) {
+        context[parentKey] = [ existing, value ];
       } else {
         context[parentKey] = value;
       }
+    }
+    // The value of the own property `key` of `object`, ignoring anything
+    // inherited from its prototype
+    function own(object, key) {
+      return Object.prototype.hasOwnProperty.call(object, key)
+        ? object[key]
+        : undefined;
     }
   };
 

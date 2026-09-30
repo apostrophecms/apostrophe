@@ -4,7 +4,7 @@
     data-apos-video-url="{{ data.manager.options.placeholderUrl }}"
   >
   </div>
-{% else %}
+{% elif not data.widget.aposPlaceholder %}
   {% if data.options.className %}
     {% set className = data.options.className %}
   {% elif data.manager.options.className %}

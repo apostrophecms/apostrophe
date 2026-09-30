@@ -65,6 +65,8 @@ module.exports = {
     versionCheck: true
   },
   async init(self) {
+    // Extended JSON of the driver in use, for modules that serialize documents
+    self.EJSON = dbConnect.EJSON;
     await self.connectToDb();
     await self.versionCheck();
   },
