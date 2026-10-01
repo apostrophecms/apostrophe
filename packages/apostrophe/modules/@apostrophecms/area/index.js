@@ -450,7 +450,7 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
         const manager = self.apos.util.getManagerOf(context);
         const field = manager.schema.find(field => field.name === fieldName);
         if (!field) {
-          throw new Error(`The requested ${context.metaType} has no field named ${fieldName}. In Apostrophe 3.x, areas must be part of the schema for each page or piece type.`);
+          throw new Error(`The requested ${context.metaType} has no field named ${fieldName}. In Apostrophe, areas must be part of the schema for each page or piece type.`);
         }
         area._fieldId = field._id;
         area._docId = context._docId || ((context.metaType === 'doc') ? context._id : null);
@@ -470,7 +470,7 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
       // natively.
       async renderArea(req, area, _with, { inline = false } = {}) {
         if (!area._id) {
-          throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
+          throw new Error('All areas must have an _id property in Apostrophe. Area details:\n\n' + JSON.stringify(area));
         }
         const choices = [];
 
