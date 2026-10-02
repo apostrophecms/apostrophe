@@ -1275,6 +1275,26 @@ describe('sanitizeHtml', function() {
       }), '<span style="color:yellow;text-align:center;font-family:helvetica"></span>'
     );
   });
+  it('Should merge tag-specific and global styles without giving a __proto__ key special meaning', function() {
+    // JSON.parse creates an own "__proto__" property, as configuration loaded
+    // from a file would
+    const allowedStyles = JSON.parse(`{
+      "*": { "color": [], "__proto__": [ "inherited" ] },
+      "span": { "__proto__": [ "inherited" ], "font-family": [] }
+    }`);
+    allowedStyles['*'].color.push(/yellow/);
+    allowedStyles.span['font-family'].push(/helvetica/);
+    assert.equal(
+      sanitizeHtml('<span style=\'color: yellow; font-family: helvetica; inherited: true\'></span>', {
+        allowedTags: false,
+        allowedAttributes: {
+          span: [ 'style' ]
+        },
+        allowedStyles
+      }), '<span style="color:yellow;font-family:helvetica"></span>'
+    );
+    assert.equal(({}).length, undefined);
+  });
   it('should delete the script tag', function() {
     assert.equal(sanitizeHtml('<script src="https://www.unauthorized.com/lib.js"></script>', {
       allowedTags: [ 'script' ],

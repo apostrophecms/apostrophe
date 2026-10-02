@@ -29,7 +29,6 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "deepmerge": "^4.3.1",
     "escape-string-regexp": "^4.0.0",
     "htmlparser2": "^12.0.0",
     "is-plain-object": "^5.1.0",
