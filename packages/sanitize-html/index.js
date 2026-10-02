@@ -1,7 +1,6 @@
 const htmlparser = require('htmlparser2');
 const escapeStringRegexp = require('escape-string-regexp');
 const { isPlainObject } = require('is-plain-object');
-const deepmerge = require('deepmerge');
 const parseSrcset = require('parse-srcset');
 const { parse: postcssParse } = require('postcss');
 const { naughtyHref: launderNaughtyHref } = require('launder');
@@ -51,6 +50,29 @@ function each(obj, cb) {
 // Avoid false positives with .__proto__, .hasOwnProperty, etc.
 function has(obj, key) {
   return ({}).hasOwnProperty.call(obj, key);
+}
+
+// Combine the tag-specific and wildcard lists of allowed classes
+function mergeClasses(specific, wildcard) {
+  if (!Array.isArray(specific) || !Array.isArray(wildcard)) {
+    return wildcard;
+  }
+  return specific.concat(wildcard);
+}
+
+// Combine the tag-specific and wildcard allowed styles, concatenating the
+// lists of regular expressions for properties that appear in both. The result
+// has no prototype, so a property named `__proto__` is just another property
+function mergeStyles(specific, wildcard) {
+  const merged = Object.create(null);
+  for (const rules of [ specific, wildcard ]) {
+    for (const prop of Object.keys(rules)) {
+      merged[prop] = has(merged, prop)
+        ? merged[prop].concat(rules[prop])
+        : rules[prop];
+    }
+  }
+  return merged;
 }
 
 // Returns those elements of `a` for which `cb(a)` returns truthy
@@ -542,7 +564,7 @@ function sanitizeHtml(html, options, _recursing) {
               if (allowedSpecificClasses && allowedWildcardClasses) {
                 value = filterClasses(
                   value,
-                  deepmerge(allowedSpecificClasses, allowedWildcardClasses),
+                  mergeClasses(allowedSpecificClasses, allowedWildcardClasses),
                   allowedClassesGlobs
                 );
               } else {
@@ -1053,7 +1075,7 @@ function sanitizeHtml(html, options, _recursing) {
 
     // Merge global and tag-specific styles into new AST.
     if (allowedStyles[astRules.selector] && allowedStyles['*']) {
-      selectedRule = deepmerge(
+      selectedRule = mergeStyles(
         allowedStyles[astRules.selector],
         allowedStyles['*']
       );
