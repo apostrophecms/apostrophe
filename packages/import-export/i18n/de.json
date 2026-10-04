@@ -23,7 +23,7 @@
   "importDuplicateMessage": "Überprüfen Sie die Elemente, die Sie während des Imports überschreiben möchten.",
   "importFailed": "Import fehlgeschlagen",
   "importFailedForSome": "{{ count }} Dokumente hatten während des Imports einen Fehler",
-  "importFileError": "Der Import der {{ format }}-Datei ist fehlgeschlagen",
+  "importFileError": "Der Import der {{ type }}-Datei ist fehlgeschlagen",
   "importModalDescription": "Das Importieren von Inhalten erfordert eine {{ formats }}-Datei. Siehe unsere <a href=\"https://github.com/apostrophecms/import-export\" target=\"_blank\">offizielle Dokumentation</a>.",
   "importSucceed": "Import erfolgreich!",
   "importWarning": "Das Importieren einer Apostrophe-Exportdatei auf einer inkompatiblen Website kann unvorhersehbar sein.",

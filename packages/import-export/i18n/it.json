@@ -23,7 +23,7 @@
   "importDuplicateMessage": "Controlla gli elementi che desideri sovrascrivere durante l'importazione.",
   "importFailed": "Importazione non riuscita",
   "importFailedForSome": "{{ count }} documenti hanno riscontrato errori durante l'importazione",
-  "importFileError": "L'importazione del file {{ format }} è fallita",
+  "importFileError": "L'importazione del file {{ type }} è fallita",
   "importModalDescription": "L'importazione di contenuti richiede un file {{ formats }}. Consulta la nostra <a href=\"https://github.com/apostrophecms/import-export\" target=\"_blank\">documentazione ufficiale</a>.",
   "importSucceed": "Importazione riuscita!",
   "importWarning": "Importare un file di esportazione di Apostrophe su un sito web incompatibile potrebbe non comportarsi come previsto.",
@@ -36,5 +36,5 @@
   "title": "Titolo",
   "type": "Tipo",
   "typeUnknown": "Tipo \"{{ type }}\" non valido.",
-  "unsupportedFileType": "Il tipo di file {{tipo }} non è supportato."
+  "unsupportedFileType": "Il tipo di file {{ type }} non è supportato."
 }
