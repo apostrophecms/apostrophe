@@ -339,7 +339,7 @@
   "localizingNotificationWarning_plural": "{{ count }} documenti localizzati correttamente, {{ skipCount }}",
   "localizingReportDesc": "Alcuni documenti non potevano essere localizzati. ",
   "localizingReportHeading": "Il documento {{ count }} non poteva essere localizzato",
-  "localizingReportHeading_plural": "{{ Count }} I documenti non potevano essere localizzati",
+  "localizingReportHeading_plural": "{{ count }} I documenti non potevano essere localizzati",
   "logOut": "Esci",
   "logOutNotLoggedIn": "Non sei connesso.",
   "login": "Accedi",

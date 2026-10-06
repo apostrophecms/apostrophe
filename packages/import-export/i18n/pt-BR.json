@@ -23,7 +23,7 @@
   "importDuplicateMessage": "Marque os itens que você deseja sobrescrever durante a importação.",
   "importFailed": "Falha na importação",
   "importFailedForSome": "{{ count }} documentos encontraram erro durante a importação",
-  "importFileError": "A importação do arquivo {{ format }} falhou",
+  "importFileError": "A importação do arquivo {{ type }} falhou",
   "importModalDescription": "Importar conteúdo requer um arquivo {{ formats }}. Veja nossa <a href=\"https://github.com/apostrophecms/import-export\" target=\"_blank\">documentação oficial</a>.",
   "importSucceed": "Importação bem-sucedida!",
   "importWarning": "Importar um arquivo de exportação do Apostrophe em um site incompatível pode não funcionar como esperado.",

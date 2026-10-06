@@ -23,7 +23,7 @@
   "importDuplicateMessage": "Cochez les éléments que vous souhaitez écraser lors de l'importation.",
   "importFailed": "L'importation a échoué",
   "importFailedForSome": "{{ count }} documents ont rencontré une erreur lors de l'importation",
-  "importFileError": "L'importation du fichier {{ format }} a échoué",
+  "importFileError": "L'importation du fichier {{ type }} a échoué",
   "importModalDescription": "L'importation de contenu nécessite un fichier {{ formats }}. Consultez notre <a href=\"https://github.com/apostrophecms/import-export\" target=\"_blank\">documentation officielle</a>.",
   "importSucceed": "Importation réussie !",
   "importWarning": "L'importation d'un fichier d'exportation Apostrophe sur un site Web incompatible peut ne pas se dérouler comme prévu.",
