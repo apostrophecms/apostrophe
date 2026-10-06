@@ -94,6 +94,21 @@ describe('External Front', function() {
               }
             }
           }
+        },
+        'product-page': {
+          extend: '@apostrophecms/piece-page-type'
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                title: 'Products',
+                type: 'product-page',
+                slug: '/products',
+                parkedId: 'products'
+              }
+            ]
+          }
         }
       }
     });
@@ -704,9 +719,65 @@ describe('External Front', function() {
     assert(data.page.slug === '/');
   });
 
+  it('does not send bestPage to the external front for a page', async function() {
+    const data = await apos.http.get('/products', {
+      headers: externalFrontHeaders()
+    });
+    assert.strictEqual(data.bestPage, undefined);
+    assert.strictEqual(data.page.slug, '/products');
+    assert.strictEqual(data.page.type, 'product-page');
+  });
+
+  it('does not send bestPage to the external front for a piece page', async function() {
+    await apos.product.insert(apos.task.getReq(), {
+      title: 'Shown Product',
+      slug: 'shown-product'
+    });
+    const data = await apos.http.get('/products/shown-product', {
+      headers: externalFrontHeaders()
+    });
+    assert.strictEqual(data.bestPage, undefined);
+    assert.strictEqual(data.page.slug, '/products');
+    assert.strictEqual(data.piece.slug, 'shown-product');
+  });
+
+  it('does not send bestPage to the external front for a missing page', async function() {
+    try {
+      await apos.http.get('/no-such-page', {
+        headers: externalFrontHeaders()
+      });
+      assert.fail('should have thrown 404 error');
+    } catch (e) {
+      assert.strictEqual(e.status, 404);
+      assert.strictEqual(e.body.bestPage, undefined);
+      assert.strictEqual(e.body.page, null);
+      assert.strictEqual(e.body.home.slug, '/');
+    }
+  });
+
+  it('does not send bestPage to the external front for a missing piece', async function() {
+    try {
+      await apos.http.get('/products/no-such-product', {
+        headers: externalFrontHeaders()
+      });
+      assert.fail('should have thrown 404 error');
+    } catch (e) {
+      assert.strictEqual(e.status, 404);
+      assert.strictEqual(e.body.bestPage, undefined);
+      assert.strictEqual(e.body.piece, undefined);
+    }
+  });
+
   it('fetch home normally', async function() {
     const data = await await apos.http.get('/', {});
     assert.strictEqual(typeof data, 'string');
     assert(data.includes('Home Page Template'));
   });
+
+  function externalFrontHeaders() {
+    return {
+      'x-requested-with': 'AposExternalFront',
+      'apos-external-front-key': process.env.APOS_EXTERNAL_FRONT_KEY
+    };
+  }
 });
