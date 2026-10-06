@@ -23,7 +23,7 @@
   "importDuplicateMessage": "Skontrolujte položky, ktoré chcete pri importe prepísať.",
   "importFailed": "Import zlyhal",
   "importFailedForSome": "{{ count }} dokumentov malo pri importe chybu",
-  "importFileError": "Import súboru {{ format }} zlyhal",
+  "importFileError": "Import súboru {{ type }} zlyhal",
   "importModalDescription": "Import obsahu vyžaduje súbor {{ formats }}. Pozrite si našu <a href=\"https://github.com/apostrophecms/import-export\" target=\"_blank\">oficiálnu dokumentáciu</a>.",
   "importSucceed": "Import úspešný!",
   "importWarning": "Importovanie exportného súboru Apostrophe na nekompatibilnej webovej stránke nemusí fungovať, ako sa očakáva.",
