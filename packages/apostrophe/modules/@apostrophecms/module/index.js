@@ -519,6 +519,8 @@ module.exports = {
             req.scene = 'apos';
           }
           data = self.apos.template.getRenderDataArgs(req, data, self);
+          // Only needed to populate `page`, never by the external front
+          delete data.bestPage;
           await self.apos.template.annotateDataForExternalFront(
             req,
             template,
