@@ -397,6 +397,54 @@ describe('AI live smoke', function() {
     });
   });
 
+  describe('anthropic structured output without forcing', function() {
+    // A real dialect contract: the newer adaptive models reject a forced
+    // tool, so on them the synthetic final-answer tool is left to its
+    // description. The shared battery's structured case runs on the low
+    // route, whose model still takes the forced tool
+    const provider = PROVIDERS.find((row) => row.name === 'anthropic');
+    let apos;
+
+    before(async function() {
+      if (!enabled || !provider.key) {
+        this.skip();
+      }
+      apos = await createFor(provider);
+    });
+
+    after(async function() {
+      if (apos) {
+        return t.destroy(apos);
+      }
+    });
+
+    it('returns structured output on an adaptive model', async function() {
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'invent a cat',
+        {
+          effort: 'medium',
+          schema: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              age: { type: 'integer' }
+            },
+            required: [ 'name', 'age' ],
+            additionalProperties: false
+          },
+          maxTokens: 4000,
+          cache: false
+        }
+      );
+      record(apos, req, result, { object: result.object });
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(typeof result.object.name, 'string');
+      assert.equal(typeof result.object.age, 'number');
+    });
+  });
+
   describe('google thinking', function() {
     // Two dialect contracts. Gemini returns signed thought steps and
     // requires them back verbatim when the turn's tool results are
