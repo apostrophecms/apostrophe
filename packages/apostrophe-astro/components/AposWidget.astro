@@ -2,7 +2,12 @@
 import { widgets } from 'apostrophe-astro-config/doctypes';
 import { logError } from '../lib/log.js';
 
-const { widget, options, ...props } = Astro.props;
+// `editWrapper={false}` leaves out the `data-apos-widget` wrapper of edit
+// mode. The render-widget endpoint uses it: the area editor puts that markup
+// in a widget component of its own, exactly as it does with the inner HTML of
+// the wrapper on a page it loads, and a wrapper left inside it would hide
+// fields rendered in place with `AposField` from their editors
+const { widget, options, editWrapper = true, ...props } = Astro.props;
 const isEdit = widget._edit && Astro.url.searchParams.get("aposEdit");
 
 const key = widget.type;
@@ -32,7 +37,7 @@ let StylesWrapperElement = "div";
 let stylesElements = options?.aposStylesElements || null;
 let stylesAttributes = options?.aposStylesAttributes || {};
 
-if (isEdit) {
+if (isEdit && editWrapper) {
   WrapperElement = "div";
   wrapperAttributes["data-apos-widget"] = widget._id;
   // Also add anchor if present to maintain consistent layout
