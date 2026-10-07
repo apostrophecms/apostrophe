@@ -31,6 +31,10 @@ const FINISH_REASONS = Object.freeze([
   'stop', 'toolCalls', 'length', 'refusal'
 ]);
 
+// The optional usage fields: the shares of inputTokens a provider's
+// prompt cache served or stored, reported only when the provider does
+const CACHE_USAGE_KEYS = Object.freeze([ 'cacheReadTokens', 'cacheWriteTokens' ]);
+
 // A tool's consequence class; scheduling and nesting rules derive from it
 const TOOL_KINDS = Object.freeze([ 'query', 'action', 'agent' ]);
 
@@ -84,6 +88,7 @@ module.exports = {
   MESSAGE_ROLES,
   PART_ROLES,
   FINISH_REASONS,
+  CACHE_USAGE_KEYS,
   TOOL_KINDS,
   PENDING_POLICIES,
   GENERATE_OPTIONS,

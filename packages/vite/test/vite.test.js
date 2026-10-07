@@ -687,6 +687,30 @@ describe('@apostrophecms/vite', function () {
       assert.ok(fs.existsSync(path.join(bundleDir, 'public-src-module-bundle.js')));
       assert.ok(fs.existsSync(path.join(bundleDir, 'tools-module-bundle.js')));
     });
+
+    it('should emit public module assets at the URL apos.asset.url() returns', async function () {
+      const bundleDir = apos.asset.getBundleRootDir();
+      const css = await fs.readFile(path.join(bundleDir, 'article-bundle.css'), 'utf8');
+      const fonts = [
+        // Same file name in two modules must not collide
+        '/modules/article-page/fonts/sans.woff2',
+        '/modules/article-widget/fonts/sans.woff2'
+      ];
+      for (const font of fonts) {
+        assert.ok(css.includes(`url(${apos.asset.url(font)})`), `CSS does not reference ${font}`);
+        const built = await fs.readFile(path.join(bundleDir, font));
+        const source = await fs.readFile(path.join(
+          __dirname,
+          'modules',
+          font.replace(/^\/modules\/([^/]+)\//, '$1/public/')
+        ));
+        assert.ok(built.equals(source), `unexpected content for ${font}`);
+      }
+      const hashed = fs.existsSync(path.join(bundleDir, 'assets'))
+        ? (await fs.readdir(path.join(bundleDir, 'assets'))).filter(f => f.endsWith('.woff2'))
+        : [];
+      assert.deepEqual(hashed, [], 'no hashed copies of fonts expected');
+    });
   });
 });
 

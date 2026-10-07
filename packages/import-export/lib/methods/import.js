@@ -670,6 +670,24 @@ module.exports = self => {
         throw new Error(`Import is disabled for this module: ${doc.type}`);
       }
 
+      // The key column name and its value both come from the imported file
+      // and end up in a database query. gzip archives are parsed with EJSON
+      // and CSV cells are JSON-parsed, so the value may be an object such as
+      // `{ $ne: null }`: only accept plain field names and plain values,
+      // so a row can only ever match on the exact key it names.
+      if (!updateField || updateField.startsWith('$') || updateField.includes('.')) {
+        throw new Error(`Invalid key column: ${updateKey}`);
+      }
+      const keyValue = doc[updateKey];
+      if (
+        (keyValue !== undefined) &&
+        (keyValue !== null) &&
+        (typeof keyValue !== 'string') &&
+        !((typeof keyValue === 'number') && Number.isFinite(keyValue))
+      ) {
+        throw new Error(`Invalid value for key column ${updateKey}: must be a string or a number`);
+      }
+
       if (!doc[updateField]) {
         doc[updateField] = doc[updateKey];
       }
@@ -724,6 +742,7 @@ module.exports = self => {
         let modified = translate;
         if (translate) {
           modified = await self.translateDocument(req, docToInsert);
+          self.setTranslationSaveFlag(_req, docToInsert);
         }
         if (manager.options.autopublish === true) {
           modified = false;
@@ -788,6 +807,7 @@ module.exports = self => {
 
           if (translate) {
             await self.translateDocument(req, docToUpdate, { update: true });
+            self.setTranslationSaveFlag(_req, docToUpdate);
           }
 
           self.isPage(manager)
@@ -942,6 +962,7 @@ module.exports = self => {
         let modified = translate;
         if (translate) {
           modified = await self.translateDocument(req, docToInsert);
+          self.setTranslationSaveFlag(_req, docToInsert);
         }
         // If the piece is autopublished, the translation will be published
         // and we don't want to set the modified flag.
@@ -981,6 +1002,7 @@ module.exports = self => {
         if (translate) {
           docToUpdate.__originalLocale = doc.__originalLocale;
           await self.translateDocument(req, docToUpdate, { update: true });
+          self.setTranslationSaveFlag(_req, docToUpdate);
         }
         if (self.isPage(manager)) {
           await importPage.update({
@@ -1047,6 +1069,17 @@ module.exports = self => {
         existing: update,
         silent: false
       });
+    },
+
+    // A translation provider marks the document it translated with the
+    // virtual `_ai` (see `apos.doc.setSaveFlags`). The document is saved
+    // with a request of its own, so carry the mark over to that request
+    // here. Only `_ai` is read: the imported data never sets save flags
+    setTranslationSaveFlag(req, doc) {
+      if (doc._ai === true) {
+        req.aposAi = true;
+      }
+      delete doc._ai;
     },
 
     canImport(req, docType) {

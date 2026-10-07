@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/openapi-generator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Automatically generate comprehensive OpenAPI 3.0 specifications for your ApostropheCMS project. Discovers routes and schemas at runtime, and outputs clean YAML for Swagger UI, Redoc, or VS Code OpenAPI tools.",
   "scripts": {},
   "keywords": [
@@ -55,7 +55,7 @@
   "devDependencies": {
     "@stoplight/spectral-cli": "^6.16.3",
     "eslint": "^8.57.1",
-    "eslint-config-apostrophe": "^6.0.2",
+    "eslint-config-apostrophe": "^6.1.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsdoc": "^59.1.0",
     "eslint-plugin-node": "^11.1.0",

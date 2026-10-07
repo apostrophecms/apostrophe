@@ -93,8 +93,13 @@ describe('AI adapter: openai-compatible', function() {
     object: 'chat.completion',
     model: 'gpt-5.6-terra-2026-06-26',
     choices: [ choice() ],
+    // prompt_tokens is the whole prompt; the details break it down
     usage: {
       prompt_tokens: 12,
+      prompt_tokens_details: {
+        cached_tokens: 6,
+        cache_write_tokens: 4
+      },
       completion_tokens: 7
     },
     ...extras
@@ -361,15 +366,30 @@ describe('AI adapter: openai-compatible', function() {
   });
 
   describe('response parsing', function() {
-    it('parses a text turn', function() {
+    it('parses a text turn, carrying the cache shares of the input total', function() {
       assert.deepEqual(adapter.parseResponse(fixture()), {
         content: [ text('a haiku') ],
         finishReason: 'stop',
         usage: {
           inputTokens: 12,
-          outputTokens: 7
+          outputTokens: 7,
+          cacheReadTokens: 6,
+          cacheWriteTokens: 4
         },
         model: 'gpt-5.6-terra-2026-06-26'
+      });
+    });
+
+    it('reports no cache shares when the host sends none', function() {
+      const turn = adapter.parseResponse(fixture({
+        usage: {
+          prompt_tokens: 12,
+          completion_tokens: 7
+        }
+      }));
+      assert.deepEqual(turn.usage, {
+        inputTokens: 12,
+        outputTokens: 7
       });
     });
 
@@ -602,7 +622,9 @@ describe('AI adapter: openai-compatible', function() {
       assert.equal(result.model, 'gpt-5.6-terra-2026-06-26');
       assert.deepEqual(result.usage, {
         inputTokens: 12,
-        outputTokens: 7
+        outputTokens: 7,
+        cacheReadTokens: 6,
+        cacheWriteTokens: 4
       });
 
       const [ call ] = httpCalls;

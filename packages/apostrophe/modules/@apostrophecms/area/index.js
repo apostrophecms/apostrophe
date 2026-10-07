@@ -121,17 +121,43 @@ module.exports = {
             return 'aposLivePreviewSchemaNotYetValid';
           }
 
+          // A widget of a document version, posted with the widget it was
+          // in the version before, hands it to its template when its type
+          // sets `versionsRender`
+          const older = await getOlderVersion();
+
           widget._edit = true;
           widget._docId = _docId;
           // So that carrying out relationship loading again can yield results
           // (the idsStorage must be populated as if we were saving)
           self.apos.schema.prepareForStorage(req, widget);
+          if (older) {
+            self.apos.schema.prepareForStorage(req, older);
+          }
           await load();
+          if (older) {
+            widget._olderVersion = older;
+          }
           return render();
+          async function getOlderVersion() {
+            const data = req.body.widget?._olderVersion;
+            if (!data || (typeof data !== 'object') || !manager.options.versionsRender) {
+              return null;
+            }
+            try {
+              return await manager.sanitize(req, data, options);
+            } catch (e) {
+              // It renders as it would without its older version
+              return null;
+            }
+          }
           async function load() {
             // Hint to call nested widget loaders as if it were a doc
             widget._virtual = true;
-            return manager.loadIfSuitable(req, [ widget ]);
+            if (older) {
+              older._virtual = true;
+            }
+            return manager.loadIfSuitable(req, older ? [ widget, older ] : [ widget ]);
           }
           async function render() {
             if (req.aposExternalFront) {
@@ -424,7 +450,7 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
         const manager = self.apos.util.getManagerOf(context);
         const field = manager.schema.find(field => field.name === fieldName);
         if (!field) {
-          throw new Error(`The requested ${context.metaType} has no field named ${fieldName}. In Apostrophe 3.x, areas must be part of the schema for each page or piece type.`);
+          throw new Error(`The requested ${context.metaType} has no field named ${fieldName}. In Apostrophe, areas must be part of the schema for each page or piece type.`);
         }
         area._fieldId = field._id;
         area._docId = context._docId || ((context.metaType === 'doc') ? context._id : null);
@@ -444,7 +470,7 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
       // natively.
       async renderArea(req, area, _with, { inline = false } = {}) {
         if (!area._id) {
-          throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
+          throw new Error('All areas must have an _id property in Apostrophe. Area details:\n\n' + JSON.stringify(area));
         }
         const choices = [];
 

@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/apostrophe-astro",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "type": "module",
   "description": "Apostrophe integration for Astro",
   "repository": {
@@ -19,7 +19,7 @@
   "license": "MIT",
   "dependencies": {
     "lodash.deburr": "^4.1.0",
-    "sluggo": "^1.0.0",
+    "sluggo": "^1.0.1",
     "undici": "^8.10.1"
   },
   "peerDependencies": {

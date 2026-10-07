@@ -305,7 +305,6 @@ describe('#import - documents published by the draft insert', function() {
     }
 
     const job = await jobManager.db.findOne({ _id: result.jobId });
-    // Re-publishing the existing doc also writes a `:previous` copy.
     const after = await apos.doc.db
       .find({
         type: 'force-published-piece',

@@ -1563,39 +1563,36 @@ module.exports = (self) => {
       if (!field.withType) {
         fail('withType property is missing. Hint: it must match the name of a doc type module.');
       }
-      if (Array.isArray(field.withType)) {
-        _.each(field.withType, function (type) {
-          lintType(type);
-        });
-      } else {
-        lintType(field.withType);
-        const withTypeManager = self.apos.doc.getManager(field.withType);
-        field.editor = field.editor || withTypeManager.options.relationshipEditor;
-        field.postprocessor = field.postprocessor ||
-          withTypeManager.options.relationshipPostprocessor;
-        field.editorLabel = field.editorLabel ||
-          withTypeManager.options.relationshipEditorLabel;
-        field.editorIcon = field.editorIcon ||
-          withTypeManager.options.relationshipEditorIcon;
-        field.suggestionLabel = field.suggestionLabel ||
-          withTypeManager.options.relationshipSuggestionLabel;
-        field.suggestionHelp = field.suggestionHelp ||
-          withTypeManager.options.relationshipSuggestionHelp;
-        field.suggestionLimit = field.suggestionLimit ||
-          withTypeManager.options.relationshipSuggestionLimit;
-        field.suggestionSort = field.suggestionSort ||
-          withTypeManager.options.relationshipSuggestionSort;
-        field.suggestionIcon = field.suggestionIcon ||
-          withTypeManager.options.relationshipSuggestionIcon;
-        field.suggestionFields = field.suggestionFields ||
-          withTypeManager.options.relationshipSuggestionFields;
+      if (typeof field.withType !== 'string') {
+        fail('withType property must be the name of a single piece or page type module. Relationships with more than one type are not supported.');
+      }
+      lintType(field.withType);
+      const withTypeManager = self.apos.doc.getManager(field.withType);
+      field.editor = field.editor || withTypeManager.options.relationshipEditor;
+      field.postprocessor = field.postprocessor ||
+        withTypeManager.options.relationshipPostprocessor;
+      field.editorLabel = field.editorLabel ||
+        withTypeManager.options.relationshipEditorLabel;
+      field.editorIcon = field.editorIcon ||
+        withTypeManager.options.relationshipEditorIcon;
+      field.suggestionLabel = field.suggestionLabel ||
+        withTypeManager.options.relationshipSuggestionLabel;
+      field.suggestionHelp = field.suggestionHelp ||
+        withTypeManager.options.relationshipSuggestionHelp;
+      field.suggestionLimit = field.suggestionLimit ||
+        withTypeManager.options.relationshipSuggestionLimit;
+      field.suggestionSort = field.suggestionSort ||
+        withTypeManager.options.relationshipSuggestionSort;
+      field.suggestionIcon = field.suggestionIcon ||
+        withTypeManager.options.relationshipSuggestionIcon;
+      field.suggestionFields = field.suggestionFields ||
+        withTypeManager.options.relationshipSuggestionFields;
 
-        if (!field.schema && !Array.isArray(field.withType)) {
-          const fieldsOption = withTypeManager.options.relationshipFields;
-          const fields = fieldsOption && fieldsOption.add;
-          field.fields = fields && klona(fields);
-          field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
-        }
+      if (!field.schema) {
+        const fieldsOption = withTypeManager.options.relationshipFields;
+        const fields = fieldsOption && fieldsOption.add;
+        field.fields = fields && klona(fields);
+        field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
       }
       validateSchema(field);
       if (field.filters) {
@@ -1677,6 +1674,9 @@ module.exports = (self) => {
           fail('withType property is missing. Hint: it must match the name of a piece or page type module. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
         }
         field.withType = withType;
+      }
+      if (typeof field.withType !== 'string') {
+        fail('withType property must be the name of a single piece or page type module. Relationships with more than one type are not supported.');
       }
       const otherModule = _.find(
         self.apos.doc.managers,

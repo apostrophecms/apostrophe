@@ -42,3 +42,6 @@ module.exports = connect;
 module.exports.dump = require('./lib/dump');
 module.exports.restore = require('./lib/restore');
 module.exports.copyDatabase = require('./lib/copy-database');
+// The driver's Extended JSON, for callers that serialize documents without
+// depending on the driver themselves
+module.exports.EJSON = require('@apostrophecms/emulate-mongo-3-driver').BSON.EJSON;

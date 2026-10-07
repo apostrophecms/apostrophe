@@ -7,4 +7,5 @@ fi
 
 echo "Installing dependencies on Pro modules for testing"
 
-pnpm add git+ssh://git@github.com:apostrophecms/automatic-translation || exit 1
+# APOS_AUTOMATIC_TRANSLATION_REF picks a branch, tag or commit; the default branch otherwise
+pnpm add "git+ssh://git@github.com:apostrophecms/automatic-translation${APOS_AUTOMATIC_TRANSLATION_REF:+#$APOS_AUTOMATIC_TRANSLATION_REF}" || exit 1

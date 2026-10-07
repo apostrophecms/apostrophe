@@ -1,4 +1,4 @@
-/* global describe, it, before, after, beforeEach */
+/* global describe, it, before, after, beforeEach, afterEach */
 /* eslint-disable no-unused-expressions */
 const { expect } = require('chai');
 
@@ -410,6 +410,161 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         expect(doc2).to.be.null;
       });
     }
+  });
+
+  describe('cursor abandonment', function() {
+    // A cursor left behind by `break`, by a throwing loop body or by a query
+    // error must not keep a connection checked out. Only postgres has one to
+    // lose (a pooled client inside an open transaction); the other adapters
+    // run the same cases so the parity is asserted rather than assumed.
+    const POOL_MAX = 2;
+    const isPostgres = ADAPTER === 'postgres' || ADAPTER === 'multipostgres';
+    let abandonClient;
+    let abandonDb;
+    let pool;
+
+    function withTimeout(promise, ms) {
+      let timer;
+      const timeout = new Promise((resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`did not complete within ${ms}ms`)), ms);
+        timer.unref();
+      });
+      return Promise.race([ promise, timeout ]).finally(() => clearTimeout(timer));
+    }
+
+    function checkedOut() {
+      return pool.totalCount - pool.idleCount;
+    }
+
+    before(async function() {
+      if (isPostgres) {
+        // A pool small enough that a single leaked cursor is visible
+        const postgres = require('../adapters/postgres');
+        const user = process.env.PGUSER || process.env.USER;
+        const password = process.env.PGPASSWORD || '';
+        const auth = password ? `${user}:${password}@` : `${user}@`;
+        abandonClient = await postgres.connect(
+          `postgres://${auth}localhost:5432/dbtest_adapter`,
+          { max: POOL_MAX }
+        );
+        abandonDb = abandonClient.db();
+        pool = abandonDb._pool;
+      } else {
+        abandonDb = db;
+      }
+    });
+
+    after(async function() {
+      try {
+        await abandonDb.collection('abandon').drop();
+      } catch (e) {
+        // ignore
+      }
+      if (abandonClient) {
+        await abandonClient.close();
+      }
+    });
+
+    beforeEach(async function() {
+      try {
+        await abandonDb.collection('abandon').drop();
+      } catch (e) {
+        // ignore
+      }
+      await abandonDb.collection('abandon').insertMany([
+        {
+          _id: 'a1',
+          title: 'Alpha'
+        },
+        {
+          _id: 'a2',
+          title: 'Beta'
+        },
+        {
+          _id: 'a3',
+          title: 'Gamma'
+        }
+      ]);
+    });
+
+    async function expectQueriesStillWork() {
+      const col = abandonDb.collection('abandon');
+      const doc = await withTimeout(col.findOne({ _id: 'a1' }), 3000);
+      expect(doc).to.exist;
+      expect(doc.title).to.equal('Alpha');
+      if (isPostgres) {
+        expect(checkedOut()).to.equal(0);
+        expect(pool.waitingCount).to.equal(0);
+      }
+    }
+
+    it('should release the connection when for await exits through break', async function() {
+      const col = abandonDb.collection('abandon');
+      for (let i = 0; i <= POOL_MAX; i++) {
+        const seen = [];
+        for await (const doc of col.find({}).sort({ _id: 1 })) {
+          seen.push(doc._id);
+          if (doc._id === 'a2') {
+            break;
+          }
+        }
+        expect(seen).to.deep.equal([ 'a1', 'a2' ]);
+      }
+      await expectQueriesStillWork();
+    });
+
+    it('should release the connection when the for await body throws', async function() {
+      const col = abandonDb.collection('abandon');
+      for (let i = 0; i <= POOL_MAX; i++) {
+        let caught;
+        try {
+          for await (const doc of col.find({}).sort({ _id: 1 })) {
+            if (doc._id === 'a2') {
+              throw new Error(`consumer failed on ${doc._id}`);
+            }
+          }
+        } catch (e) {
+          caught = e;
+        }
+        expect(caught.message).to.equal('consumer failed on a2');
+      }
+      await expectQueriesStillWork();
+    });
+
+    it('should leave a closed cursor exhausted after hasNext() peeked', async function() {
+      // mongodb's driver rejects next() on a closed cursor; the SQL adapters
+      // report exhaustion, and the peeked document must not resurface
+      if (!isPostgres && ADAPTER !== 'sqlite') {
+        this.skip();
+      }
+      const cursor = abandonDb.collection('abandon').find({}).sort({ _id: 1 });
+      expect(await cursor.hasNext()).to.be.true;
+      await cursor.close();
+      expect(await cursor.hasNext()).to.be.false;
+      expect(await cursor.next()).to.be.null;
+      await expectQueriesStillWork();
+    });
+
+    it('should release the connection when the query fails inside next()', async function() {
+      // sqlite tolerates an invalid regular expression, so there is no
+      // failing query to abandon there
+      if (!isPostgres) {
+        this.skip();
+      }
+      const col = abandonDb.collection('abandon');
+      for (let i = 0; i <= POOL_MAX; i++) {
+        const cursor = col.find({ title: { $regex: '(' } });
+        let caught;
+        try {
+          await cursor.next();
+        } catch (e) {
+          caught = e;
+        }
+        expect(caught.message).to.match(/regular expression/);
+        expect(await cursor.next()).to.be.null;
+      }
+      await expectQueriesStillWork();
+    });
   });
 
   describe('updateOne', function() {
@@ -2152,6 +2307,303 @@ describe(`Database Adapter (${ADAPTER})`, function() {
   });
 
   // ============================================
+  // SECTION 6b: TTL Indexes (expireAfterSeconds)
+  // ============================================
+
+  describe('TTL Indexes', function() {
+    const past = seconds => new Date(Date.now() - seconds * 1000);
+    const future = seconds => new Date(Date.now() + seconds * 1000);
+
+    it('indexes() reports expireAfterSeconds', async function() {
+      const coll = db.collection('test');
+      await coll.insertOne({ _id: 'ttl0' });
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      const indexes = await coll.indexes();
+      const ttlIndex = indexes.find(i => i.key && i.key.expires === 1);
+      expect(ttlIndex).to.exist;
+      expect(ttlIndex.expireAfterSeconds).to.equal(0);
+    });
+
+    if (ADAPTER === 'mongodb') {
+      return;
+    }
+
+    it('rejects compound and _id TTL indexes', async function() {
+      const coll = db.collection('test');
+      let error;
+      try {
+        await coll.createIndex({
+          a: 1,
+          b: 1
+        }, { expireAfterSeconds: 10 });
+      } catch (e) {
+        error = e;
+      }
+      expect(error).to.exist;
+      error = null;
+      try {
+        await coll.createIndex({ _id: 1 }, { expireAfterSeconds: 10 });
+      } catch (e) {
+        error = e;
+      }
+      expect(error).to.exist;
+    });
+
+    it('removes documents once the date plus expireAfterSeconds has passed', async function() {
+      const coll = db.collection('test');
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 60 });
+      await coll.insertMany([
+        // Expired: date + 60 seconds is in the past
+        {
+          _id: 'old',
+          expires: past(120)
+        },
+        // Not expired: date is in the past, but date + 60 seconds is not
+        {
+          _id: 'recent',
+          expires: past(30)
+        },
+        {
+          _id: 'future',
+          expires: future(30)
+        },
+        // Never expire: no date, or not a date
+        { _id: 'missing' },
+        {
+          _id: 'string',
+          expires: 'not a date'
+        },
+        {
+          _id: 'null',
+          expires: null
+        }
+      ]);
+      await client._ttlReaper.run();
+      const ids = (await coll.find({}).toArray()).map(doc => doc._id).sort();
+      expect(ids).to.deep.equal([ 'future', 'missing', 'null', 'recent', 'string' ]);
+    });
+
+    it('expireAfterSeconds: 0 expires documents at the date itself', async function() {
+      const coll = db.collection('test');
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      await coll.insertMany([
+        {
+          _id: 'past',
+          expires: past(1)
+        },
+        {
+          _id: 'future',
+          expires: future(60)
+        }
+      ]);
+      await client._ttlReaper.run();
+      const ids = (await coll.find({}).toArray()).map(doc => doc._id);
+      expect(ids).to.deep.equal([ 'future' ]);
+    });
+
+    it('supports nested fields', async function() {
+      const coll = db.collection('test');
+      await coll.createIndex({ 'meta.expires': 1 }, { expireAfterSeconds: 0 });
+      await coll.insertMany([
+        {
+          _id: 'past',
+          meta: { expires: past(1) }
+        },
+        {
+          _id: 'future',
+          meta: { expires: future(60) }
+        }
+      ]);
+      await client._ttlReaper.run();
+      const ids = (await coll.find({}).toArray()).map(doc => doc._id);
+      expect(ids).to.deep.equal([ 'future' ]);
+    });
+
+    it('stops expiring documents once the TTL index is dropped', async function() {
+      const coll = db.collection('test');
+      const name = await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      await coll.dropIndex(name);
+      await coll.insertOne({
+        _id: 'past',
+        expires: past(60)
+      });
+      await client._ttlReaper.run();
+      expect(await coll.findOne({ _id: 'past' })).to.exist;
+    });
+
+    it('does not recreate a dropped collection', async function() {
+      const coll = db.collection('ttldropped');
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      await coll.drop();
+      await client._ttlReaper.run();
+      const names = (await db.listCollections().toArray()).map(c => c.name);
+      expect(names).to.not.include('ttldropped');
+    });
+
+    it('replaces a plain index created before TTL support', async function() {
+      const coll = db.collection('test');
+      // What createIndex({ expires: 1 }, { expireAfterSeconds: 0 }) used
+      // to build, since expireAfterSeconds was ignored
+      const name = await coll.createIndex({ expires: 1 });
+      const definition = async () => {
+        if (ADAPTER === 'sqlite') {
+          return db._sqlite.prepare(
+            'SELECT sql FROM sqlite_master WHERE type = \'index\' AND name = ?'
+          ).get(name).sql;
+        }
+        const result = await db._pool.query(
+          'SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND indexname = $2',
+          [ db._schema || 'public', name ]
+        );
+        return result.rows[0].indexdef;
+      };
+      expect(await definition()).to.not.include('$date');
+      const ttlName = await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      expect(ttlName).to.equal(name);
+      const replaced = await definition();
+      expect(replaced).to.include('$date');
+      // Creating it again at the next startup leaves it alone
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      expect(await definition()).to.equal(replaced);
+      const ttlIndexes = (await coll.indexes()).filter(i => i.key && i.key.expires);
+      expect(ttlIndexes.length).to.equal(1);
+      expect(ttlIndexes[0].expireAfterSeconds).to.equal(0);
+    });
+
+    it('the expiration query uses the index', async function() {
+      const coll = db.collection('test');
+      await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+      const docs = [];
+      for (let i = 0; i < 200; i++) {
+        docs.push({
+          _id: `doc${i}`,
+          expires: future(i + 1)
+        });
+      }
+      await coll.insertMany(docs);
+      // Same criteria the reaper passes to deleteMany. Turn the SELECT into
+      // the DELETE deleteMany actually runs, since an ORDER BY can change
+      // the plan
+      const explained = await coll.find({ expires: { $lte: new Date() } }).explain();
+      const params = explained.params;
+      const sql = explained.sql
+        .replace(/^SELECT .*? FROM /, 'DELETE FROM ')
+        .replace(/ ORDER BY .*$/, '');
+      expect(sql).to.match(/^DELETE FROM \S+ WHERE /);
+      if (ADAPTER === 'sqlite') {
+        const planRows = db._sqlite.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params);
+        const planText = planRows.map(r => r.detail || '').join('\n');
+        expect(planText).to.match(/SEARCH.*USING INDEX/);
+      } else {
+        const pgClient = await db._pool.connect();
+        try {
+          await pgClient.query('BEGIN');
+          await pgClient.query(`ANALYZE ${coll._qualifiedName()}`);
+          await pgClient.query('SET LOCAL enable_seqscan = off');
+          const explain = await pgClient.query(`EXPLAIN ${sql}`, params);
+          const planText = explain.rows.map(r => r['QUERY PLAN']).join('\n');
+          expect(planText).to.match(/Index (Only )?Scan|Bitmap Index Scan/);
+          await pgClient.query('ROLLBACK');
+        } finally {
+          pgClient.release();
+        }
+      }
+    });
+
+    describe('background timer', function() {
+      const adapter = (ADAPTER === 'sqlite' || ADAPTER === 'postgres' || ADAPTER === 'multipostgres') &&
+        require(ADAPTER === 'sqlite' ? '../adapters/sqlite' : '../adapters/postgres');
+      let uri;
+      let ttlClient;
+      let ttlDb;
+
+      beforeEach(async function() {
+        // A dedicated client so we control when its timer starts and stops
+        if (ADAPTER === 'sqlite') {
+          const dbPath = require('path').join(require('os').tmpdir(), 'dbtest-ttl.db');
+          uri = `sqlite://${dbPath}`;
+        } else {
+          const user = process.env.PGUSER || process.env.USER;
+          const password = process.env.PGPASSWORD || '';
+          const auth = password ? `${user}:${password}@` : `${user}@`;
+          uri = (ADAPTER === 'multipostgres')
+            ? `multipostgres://${auth}localhost:5432/dbtest_adapter-testschema`
+            : `postgres://${auth}localhost:5432/dbtest_adapter`;
+        }
+        ttlClient = await adapter.connect(uri);
+        ttlDb = ttlClient.db();
+        await ttlDb.collection('ttltimer').drop();
+      });
+
+      afterEach(async function() {
+        await ttlClient.close();
+        const cleanupClient = await adapter.connect(uri);
+        await cleanupClient.db().collection('ttltimer').drop();
+        await cleanupClient.close();
+      });
+
+      it('defaults to a 60 second interval, like MongoDB', function() {
+        expect(ttlClient._ttlReaper.interval).to.equal(60 * 1000);
+      });
+
+      it('does not start a timer until a TTL index exists', async function() {
+        await ttlDb.collection('ttltimer').createIndex({ expires: 1 });
+        expect(ttlClient._ttlReaper._timer).to.equal(null);
+      });
+
+      it('removes expired documents on a timer and stops the timer on close', async function() {
+        ttlClient._ttlReaper.interval = 50;
+        const coll = ttlDb.collection('ttltimer');
+        await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        expect(ttlClient._ttlReaper._timer).to.not.equal(null);
+        await coll.insertOne({
+          _id: 'past',
+          expires: past(1)
+        });
+        const deadline = Date.now() + 5000;
+        while (await coll.findOne({ _id: 'past' })) {
+          expect(Date.now()).to.be.below(deadline);
+          await new Promise(resolve => setTimeout(resolve, 25));
+        }
+        await ttlClient.close();
+        expect(ttlClient._ttlReaper._timer).to.equal(null);
+      });
+
+      it('takes no action once shutdown has begun', async function() {
+        const coll = ttlDb.collection('ttltimer');
+        await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        let deletes = 0;
+        const deleteMany = coll.deleteMany;
+        coll.deleteMany = function(...args) {
+          deletes++;
+          return deleteMany.apply(this, args);
+        };
+        await ttlClient.close();
+        // As if the timer fired during or after shutdown
+        await ttlClient._ttlReaper.run();
+        expect(deletes).to.equal(0);
+      });
+
+      it('close() waits for a pass in progress', async function() {
+        const coll = ttlDb.collection('ttltimer');
+        await coll.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        let finished = false;
+        const deleteMany = coll.deleteMany;
+        coll.deleteMany = async function(...args) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          const result = await deleteMany.apply(this, args);
+          finished = true;
+          return result;
+        };
+        const pass = ttlClient._ttlReaper.run();
+        await ttlClient.close();
+        expect(finished).to.equal(true);
+        await pass;
+      });
+    });
+  });
+
+  // ============================================
   // SECTION 7: Bulk Operations
   // ============================================
 
@@ -2397,6 +2849,95 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       expect(docs[1]._id).to.equal('s3'); // a, 1
       expect(docs[2]._id).to.equal('s4'); // b, 2
       expect(docs[3]._id).to.equal('s2'); // b, 1
+    });
+  });
+
+  describe('Numeric Sort', function() {
+    const ranks = [ 9, 10, 99, 100, 2, -1, 1.5, -20, 0 ];
+    const ascending = [ -20, -1, 0, 1.5, 2, 9, 10, 99, 100 ];
+
+    beforeEach(async function() {
+      await db.collection('test').insertMany(ranks.map((rank, i) => ({
+        _id: `r${i}`,
+        rank,
+        level: i % 2,
+        nested: { rank }
+      })));
+    });
+
+    it('should sort numbers numerically, ascending', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({ rank: 1 })
+        .toArray();
+      expect(docs.map(doc => doc.rank)).to.deep.equal(ascending);
+    });
+
+    it('should sort numbers numerically, descending', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({ rank: -1 })
+        .toArray();
+      expect(docs.map(doc => doc.rank)).to.deep.equal([ ...ascending ].reverse());
+    });
+
+    it('should sort a nested number numerically', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({ 'nested.rank': 1 })
+        .toArray();
+      expect(docs.map(doc => doc.nested.rank)).to.deep.equal(ascending);
+    });
+
+    it('should sort numerically after another sort field', async function() {
+      const docs = await db.collection('test')
+        .find({})
+        .sort({
+          level: 1,
+          rank: -1
+        })
+        .toArray();
+      expect(docs.map(doc => [ doc.level, doc.rank ])).to.deep.equal([
+        [ 0, 99 ],
+        [ 0, 9 ],
+        [ 0, 2 ],
+        [ 0, 1.5 ],
+        [ 0, 0 ],
+        [ 1, 100 ],
+        [ 1, 10 ],
+        [ 1, -1 ],
+        [ 1, -20 ]
+      ]);
+    });
+
+    it('should sort numbers before strings in a mixed field', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'm1',
+          rank: '5'
+        },
+        {
+          _id: 'm2',
+          rank: 'apple'
+        },
+        {
+          _id: 'm3',
+          rank: '10'
+        }
+      ]);
+      const mixed = [ ...ascending, '10', '5', 'apple' ];
+
+      const up = await db.collection('test')
+        .find({})
+        .sort({ rank: 1 })
+        .toArray();
+      expect(up.map(doc => doc.rank)).to.deep.equal(mixed);
+
+      const down = await db.collection('test')
+        .find({})
+        .sort({ rank: -1 })
+        .toArray();
+      expect(down.map(doc => doc.rank)).to.deep.equal([ ...mixed ].reverse());
     });
   });
 

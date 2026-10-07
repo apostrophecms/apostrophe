@@ -241,7 +241,7 @@ module.exports = {
             ? [ {
               name: FINAL_ANSWER,
               description: FINAL_ANSWER_DESCRIPTION,
-              parameters: schema
+              parametersJsonSchema: schema
             } ]
             : [])
         ];
@@ -274,13 +274,14 @@ module.exports = {
         };
 
         // The model-facing tool definition; the JSON Schema travels
-        // verbatim as the OpenAPI-subset parameters (the service polices
-        // any keyword it does not accept)
+        // verbatim as `parametersJsonSchema`, the declaration's JSON
+        // Schema field — its `parameters` sibling is an OpenAPI subset
+        // that rejects keywords such as `additionalProperties`
         function toFunctionDeclaration(tool) {
           return {
             name: tool.name,
             description: tool.description,
-            parameters: tool.input
+            parametersJsonSchema: tool.input
           };
         }
         function toPart(part) {
@@ -540,14 +541,18 @@ module.exports = {
       },
       // The response's usageMetadata → normalized token counts;
       // thinking tokens are billed as output, so they add into
-      // outputTokens
+      // outputTokens. promptTokenCount already counts the cached
+      // share, reported beside it only on a cache hit; the service
+      // reports no cache writes
       normalizeUsage(response) {
         const usage = response.usageMetadata;
+        const read = usage?.cachedContentTokenCount;
         return {
           inputTokens: usage?.promptTokenCount,
           outputTokens: usage?.candidatesTokenCount === undefined
             ? undefined
-            : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0)
+            : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0),
+          ...(Number.isFinite(read) && { cacheReadTokens: read })
         };
       },
       // Map any error the transport produced to a normalized apos

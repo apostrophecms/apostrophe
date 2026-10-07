@@ -257,3 +257,173 @@ describe('Notifications', function() {
     );
   });
 });
+
+describe('Notification authorization', function() {
+  this.timeout(t.timeout);
+
+  let apos;
+  let adminReq;
+  let editorReq;
+  let adminJar;
+  let editorJar;
+
+  before(async function() {
+    apos = await t.create({
+      root: module
+    });
+    const admin = await t.createAdmin(apos);
+    const editor = await t.createUser(apos, 'editor');
+    adminReq = apos.task.getReq({ user: admin });
+    editorReq = apos.task.getReq({ user: editor });
+    adminJar = await withCsrf(await t.loginAs(apos, 'admin'));
+    editorJar = await withCsrf(await t.loginAs(apos, 'editor'));
+  });
+
+  after(function() {
+    return t.destroy(apos);
+  });
+
+  beforeEach(function() {
+    return apos.notification.db.deleteMany({});
+  });
+
+  async function adminNote() {
+    const { noteId } = await apos.notify(adminReq, 'secret', {
+      event: { name: 'my-event' }
+    });
+    return noteId;
+  }
+
+  // Any page view sets the CSRF cookie, which a browser would always have,
+  // so that requests are not simply refused by the CSRF check
+  async function withCsrf(jar) {
+    await apos.http.get('/', { jar });
+    return jar;
+  }
+
+  function anonJar() {
+    return withCsrf(apos.http.jar());
+  }
+
+  function url(noteId, suffix = '') {
+    return `/api/v1/@apostrophecms/notification/${noteId}${suffix}`;
+  }
+
+  it('the public cannot dismiss a notification', async function() {
+    const noteId = await adminNote();
+
+    await assert.rejects(apos.http.patch(url(noteId), {
+      body: { dismissed: true },
+      jar: await anonJar()
+    }));
+
+    const doc = await apos.notification.db.findOne({ _id: noteId });
+    assert.equal(doc.dismissed, undefined);
+  });
+
+  it('the public cannot delete a notification', async function() {
+    const noteId = await adminNote();
+
+    await assert.rejects(apos.http.delete(url(noteId), {
+      jar: await anonJar()
+    }));
+
+    assert.ok(await apos.notification.db.findOne({ _id: noteId }));
+  });
+
+  it('the public cannot clear the event of a notification', async function() {
+    const noteId = await adminNote();
+
+    await assert.rejects(apos.http.post(url(noteId, '/clear-event'), {
+      body: {},
+      jar: await anonJar()
+    }));
+
+    const doc = await apos.notification.db.findOne({ _id: noteId });
+    assert.equal(doc.event.name, 'my-event');
+  });
+
+  it('the public is refused cleanly when fetching a notification', async function() {
+    const noteId = await adminNote();
+
+    await assert.rejects(
+      apos.http.get(url(noteId), {
+        jar: await anonJar()
+      }),
+      err => {
+        assert.equal(err.status, 403);
+        return true;
+      }
+    );
+  });
+
+  it('a user cannot dismiss, delete or clear the event of another user\'s notification', async function() {
+    const noteId = await adminNote();
+
+    await apos.http.patch(url(noteId), {
+      body: { dismissed: true },
+      jar: editorJar
+    }).catch(() => {});
+    await apos.http.delete(url(noteId), {
+      jar: editorJar
+    }).catch(() => {});
+    const cleared = await apos.http.post(url(noteId, '/clear-event'), {
+      body: {},
+      jar: editorJar
+    }).catch(() => false);
+
+    assert.equal(cleared, false);
+    const doc = await apos.notification.db.findOne({ _id: noteId });
+    assert.ok(doc);
+    assert.equal(doc.dismissed, undefined);
+    assert.equal(doc.event.name, 'my-event');
+  });
+
+  it('dismiss: does not dismiss another user\'s notification', async function() {
+    const noteId = await adminNote();
+
+    await apos.notification.dismiss(editorReq, noteId).catch(() => {});
+
+    const doc = await apos.notification.db.findOne({ _id: noteId });
+    assert.equal(doc.dismissed, undefined);
+  });
+
+  it('a user can still dismiss, clear the event of and delete their own notification', async function() {
+    const noteId = await adminNote();
+
+    const cleared = await apos.http.post(url(noteId, '/clear-event'), {
+      body: {},
+      jar: adminJar
+    });
+    assert.equal(cleared, true);
+
+    await apos.http.patch(url(noteId), {
+      body: { dismissed: true },
+      jar: adminJar
+    });
+    const doc = await apos.notification.db.findOne({ _id: noteId });
+    assert.equal(doc.dismissed, true);
+    assert.equal(doc.event, null);
+
+    await apos.http.delete(url(noteId), {
+      jar: adminJar
+    });
+    assert.equal(await apos.notification.db.findOne({ _id: noteId }), null);
+
+    // Dismissing one that is already gone is still not an error for the
+    // browser, which may dismiss a notification cleaned up in the meantime
+    await apos.http.patch(url(noteId), {
+      body: { dismissed: true },
+      jar: adminJar
+    });
+  });
+
+  it('dismiss: still dismisses the user\'s own notification', async function() {
+    const noteId = await adminNote();
+
+    await apos.notification.dismiss(adminReq, noteId);
+
+    const doc = await apos.notification.db.findOne({ _id: noteId });
+    assert.equal(doc.dismissed, true);
+  });
+});

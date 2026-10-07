@@ -449,7 +449,7 @@ export default {
         });
       }
 
-      for (const [ index, item ] of items.entries()) {
+      const widgets = items.map((item, index) => {
         const widget = this.newWidget(
           this.layoutColumnWidgetName,
           contentFieldDefPerColumn[index]
@@ -461,11 +461,17 @@ export default {
           rowspan: item.rowspan,
           order: item.order
         });
-        this.insert({
-          widget,
-          index
-        });
-      }
+        return widget;
+      });
+      // Saved, but not recorded as an edit to undo: the user added a
+      // layout, not these columns. Undo therefore takes the whole layout
+      // back in one press, and a layout restored by redo fills itself in
+      // again the same way it did when it was created
+      this.insertMany({
+        widgets,
+        index: this.next.length,
+        history: false
+      });
 
       await this.$nextTick();
       this.clickOnGrid();
@@ -514,15 +520,23 @@ export default {
       if (!patch || !patch._id) {
         return;
       }
-      const widget = this.next.find(w => w._id === patch._id);
-      if (widget?.type !== this.layoutColumnWidgetName) {
+      const existing = this.next.find(w => w._id === patch._id);
+      if (existing?.type !== this.layoutColumnWidgetName) {
         return;
       }
       // IMPORTANT: The patch carries the widget _id,
       // this is not the same as the nested object _id in the widget.
       // Be sure to keep the existing internal _id's intact.
       const { _id, ...rest } = patch;
-      Object.assign(widget, rest);
+      // A copy, rather than a change to the widget we already hold: the
+      // area editor reads the widget as it was to work out what would take
+      // this change back, so undo can put the column where it was. The
+      // copy is shallow so that the column's own content is still the very
+      // same object, and nothing nested in it is torn down and rebuilt
+      const widget = {
+        ...existing,
+        ...rest
+      };
       // eslint-disable-next-line no-console
       this.update(widget).catch(console.error);
     },
@@ -538,13 +552,17 @@ export default {
     },
     // Apply a full widget patch
     layoutPatchFull(patch) {
-      const widget = this.next.find(w => w._id === patch._id);
-      if (widget?.type !== this.layoutColumnWidgetName) {
+      const existing = this.next.find(w => w._id === patch._id);
+      if (existing?.type !== this.layoutColumnWidgetName) {
         return;
       }
 
       const { _id, ...rest } = patch;
-      Object.assign(widget, rest);
+      // A copy, for the reasons given in `layoutPatchOne`
+      const widget = {
+        ...existing,
+        ...rest
+      };
 
       // eslint-disable-next-line no-console
       this.update(widget).catch(console.error);

@@ -21,7 +21,9 @@ export const wysiwygProps = {
     type: null,
     default: null
   },
-  // The document the field belongs to, if any
+  // The document to patch as the field is edited. Null in a modal, which
+  // saves its own copy of the value rather than patching anything: see
+  // `AposWysiwygFields`
   docId: {
     type: String,
     default: null
@@ -48,6 +50,9 @@ export default {
   data() {
     return {
       next: this.modelValue,
+      // What the server has, as far as we know. It is what undoing our next
+      // save puts back
+      lastSaved: this.modelValue,
       pending: null
     };
   },
@@ -71,10 +76,30 @@ export default {
       }
     }
   },
+  mounted() {
+    apos.bus.$on('context-history-apply', this.contextHistoryApplyHandler);
+  },
   beforeUnmount() {
     this.flush();
+    apos.bus.$off('context-history-apply', this.contextHistoryApplyHandler);
   },
   methods: {
+    // Put the cursor in this field, because the user asked to edit it, e.g.
+    // by clicking the last crumb of its trail. Only the editor knows what its
+    // own markup looks like, so `AposWysiwygField` asks rather than guessing.
+    //
+    // The default handles an ordinary form control or a rich text editing
+    // area, whether it is this component's own root element or nested inside
+    // it. An editor that is none of those things overrides this method
+    focus() {
+      const el = this.$el;
+      if (el?.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+      const selector = 'textarea, input, select, [contenteditable="true"]';
+      const focusable = el.matches(selector) ? el : el.querySelector(selector);
+      focusable?.focus();
+    },
     // Accept a new value and save it right away. For editors that debounce
     // on their own, such as rich text
     update(value) {
@@ -116,8 +141,19 @@ export default {
       }
       if (this.onPage) {
         apos.bus.$emit('context-edited', {
-          [this.patchKey]: this.next
+          patch: {
+            [this.patchKey]: this.next
+          },
+          inverse: {
+            [this.patchKey]: this.lastSaved
+          },
+          target: {
+            kind: 'field',
+            docId: this.docId,
+            patchKey: this.patchKey
+          }
         });
+        this.lastSaved = this.next;
         // The document on the server is not the only thing holding this
         // value. Every area editor on the page keeps its own copy of the
         // widget the field belongs to, and that copy is what copying,
@@ -129,10 +165,43 @@ export default {
           value: this.next
         });
       }
+      // The document on the server is not the only thing holding this value,
+      // and in a modal it is not holding it at all. Every area editor keeps
+      // its own copy of the widget the field belongs to, and that copy is
+      // what copying, cutting, duplicating and opening the widget's editor
+      // work from — and, in a modal, what is saved when the user says so. It
+      // has to hear about this either way
+      apos.bus.$emit('field-edited', {
+        docId: this.docId,
+        patchKey: this.patchKey,
+        value: this.next
+      });
       // For a parent component that manages the value itself, as
       // `AposInputArea` does for an area editor in a modal
       this.$emit('update:modelValue', this.next);
       this.$emit('changed', this.next);
+    },
+    // The context bar is undoing or redoing an edit. If it is one of ours,
+    // show the value it put back. The server hears about it from the context
+    // bar, but the area editors holding a copy of our widget hear it from us,
+    // just as they do when the user types
+    contextHistoryApplyHandler(event) {
+      if (!this.onPage || !Object.hasOwn(event.patch, this.patchKey)) {
+        return;
+      }
+      if (this.pending) {
+        clearTimeout(this.pending);
+        this.pending = null;
+      }
+      const value = event.patch[this.patchKey];
+      this.next = value;
+      this.lastSaved = value;
+      apos.bus.$emit('field-edited', {
+        docId: this.docId,
+        patchKey: this.patchKey,
+        value
+      });
+      event.claim();
     }
   }
 };

@@ -94,7 +94,26 @@
       class="apos-rich-text-editor__editor"
       :class="editorModifiers"
     >
+      <!--
+        A document version shows its markup as it is: the editor would drop
+        the marks of what changed. Its links do not navigate, as in the
+        editor
+      -->
+      <div
+        v-if="isVersionView"
+        :class="inline ? null : editorOptions.className"
+        data-apos-test="rich-text-version"
+        @click.prevent
+      >
+        <!-- eslint-disable vue/no-v-html -->
+        <div
+          class="apos-rich-text-editor__version"
+          v-html="modelValue"
+        />
+        <!-- eslint-enable vue/no-v-html -->
+      </div>
       <editor-content
+        v-else
         :editor="editor"
         :class="inline ? null : editorOptions.className"
       />
@@ -128,6 +147,7 @@
 // field type when a rich text field appears in any schema. Everything that
 // is specific to widgets, such as contextual styles and the widget's own
 // schema fields, belongs in `AposRichTextWidgetEditor` and not here.
+import { unref } from 'vue';
 import { mapState } from 'pinia';
 import {
   Editor,
@@ -167,7 +187,11 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { klona } from 'klona';
 import { createId } from 'apostrophe/lib/beneath.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 import removeSlash from 'Modules/@apostrophecms/rich-text-widget/lib/remove-slash.js';
+import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
+import createContextHistory, { setContent } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
+import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
 
 export default {
   name: 'AposRichTextEditor',
@@ -176,6 +200,12 @@ export default {
     BubbleMenu,
     FloatingMenu,
     AposTiptapTableControls
+  },
+  inject: {
+    aposGraphKey: {
+      from: 'aposGraphKey',
+      default: null
+    }
   },
   props: {
     // The rich text markup being edited
@@ -237,6 +267,23 @@ export default {
     emptyLabel: {
       type: String,
       default: 'apostrophe:emptyRichTextWidget'
+    },
+    // Who keeps the undo history. `local` is tiptap's own, as in a modal.
+    // `context` is the context bar's, shared with every other edit made on
+    // the page, and is what an editor mounted on the page asks for. An editor
+    // that turns out not to be editing the page's document, or that sits in
+    // a modal after all, keeps a local history regardless
+    history: {
+      type: String,
+      default: 'local'
+    },
+    // What this editor edits, as a patch key: `@id.content` for a rich text
+    // widget, the patch key of a field edited in place. Required for a
+    // `context` history, which may have to patch the value directly if the
+    // editor is gone by the time the user undoes their typing
+    historyTarget: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'update:modelValue', 'focus', 'blur', 'interaction' ],
@@ -250,11 +297,20 @@ export default {
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
       hasSelection: false,
-      openedPopover: false
+      openedPopover: false,
+      // Whether the context bar keeps our history, see the `history` prop
+      contextHistory: false,
+      // The markup we last reported, so that a new `modelValue` we did not
+      // send ourselves can be told apart from the echo of one we did
+      lastEmitted: null
     };
   },
   computed: {
     ...mapState(useModalStore, [ 'getAdminDirectionClass' ]),
+    // Inside the versions modal: read only, with the marks of what changed
+    isVersionView() {
+      return useDocVersionMarkersStore().has(unref(this.aposGraphKey));
+    },
     bubbleMenuTippyOptions() {
       return {
         // Keeps the menu inside the query container that gives `100cqw` the
@@ -410,6 +466,19 @@ export default {
     }
   },
   watch: {
+    // Normally the value we are given is only the echo of what we reported.
+    // On the page it can also be one the context bar put back, e.g. on undo,
+    // and the editor has to show it. Not done for a local history, whose
+    // parent never changes the value behind our back
+    modelValue(value) {
+      if (!this.contextHistory || !this.editor) {
+        return;
+      }
+      if ((value === this.lastEmitted) || (value === this.editor.getHTML())) {
+        return;
+      }
+      setContent(this.editor, this.transformNamedAnchors(value || ''));
+    },
     isFocused(newVal) {
       if (!newVal) {
         this.$emit('blur');
@@ -428,10 +497,27 @@ export default {
     }
   },
   mounted() {
+    if (this.isVersionView) {
+      return;
+    }
+    this.contextHistory = (this.history === 'context') &&
+      !!this.docId &&
+      (this.docId === window.apos.adminBar?.contextId) &&
+      !this.$el.closest('[data-apos-modal]');
+    this.historyKey = createId();
     this.instantiateEditor();
+    if (this.contextHistory) {
+      editorRegistry.register(this.historyKey, {
+        target: this.historyTarget,
+        editor: this.editor,
+        el: this.$el,
+        flush: () => this.emitUpdate()
+      });
+    }
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
   beforeUnmount() {
+    editorRegistry.unregister(this.historyKey);
     this.editor?.destroy();
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
@@ -448,7 +534,9 @@ export default {
         Dropcursor,
         Gapcursor,
         HardBreak,
-        History,
+        this.contextHistory
+          ? createContextHistory({ onRecord: this.onHistoryRecord })
+          : History,
         HorizontalRule,
         Italic,
         OrderedList,
@@ -650,7 +738,23 @@ export default {
         clearTimeout(this.pending);
         this.pending = null;
       }
-      this.$emit('update:modelValue', this.editor.getHTML());
+      const html = this.editor.getHTML();
+      this.lastEmitted = html;
+      if (this.contextHistory) {
+        // What was typed is already on the undo stack, step by step (see
+        // `onHistoryRecord`). This only saves it
+        withoutHistory(() => this.$emit('update:modelValue', html));
+      } else {
+        this.$emit('update:modelValue', html);
+      }
+    },
+    // Hand the context bar what a transaction did, for its undo stack
+    onHistoryRecord(record) {
+      apos.bus.$emit('context-history-record', {
+        ...record,
+        instanceKey: this.historyKey,
+        target: this.historyTarget
+      });
     },
     // Legacy content may have `id` and `name` attributes on anchor tags
     // but our tiptap anchor extension needs them on a separate `span`, so nest
@@ -1054,22 +1158,63 @@ function traverseNextNode(node) {
 
   .apos-rich-text-editor:not(.apos-rich-text-editor--inline) {
   /* stylelint-disable-next-line selector-class-pattern */
-    .apos-rich-text-editor__editor :deep(.ProseMirror) {
+    .apos-rich-text-editor__editor :deep(.ProseMirror),
+    .apos-rich-text-editor__version {
       padding: 10px 0;
     }
   }
 
-/* stylelint-disable-next-line selector-class-pattern, selector-no-qualifying-type */
+  // The marks of a document version: removed text struck through in red,
+  // added text underlined in green. Long words wrap as in the editor
+  .apos-rich-text-editor__version {
+    overflow-wrap: break-word;
+
+    :deep([data-apos-version-change]) {
+      padding: 0 2px;
+      border-radius: var(--a-border-radius);
+      text-decoration-thickness: 1px;
+    }
+
+    :deep(ins[data-apos-version-change]) {
+      color: var(--a-success-dark);
+      background-color: var(--a-success-fade);
+      text-decoration-line: underline;
+    }
+
+    :deep(del[data-apos-version-change]) {
+      color: var(--a-danger-button-hover);
+      background-color: var(--a-danger-fade);
+      text-decoration-line: line-through;
+    }
+  }
+
+  // The hint that an empty editor is waiting to be typed in. It is Apostrophe's
+  // own UI, but it hangs off a paragraph of the document being edited, so
+  // everything the site styles that paragraph with reaches it: in a widget or a
+  // field edited in place there is no modal in between, and the page's own type
+  // is what a pseudo element inherits. Every inherited property that would
+  // change how the hint reads is therefore stated outright rather than left to
+  // whatever the site has to say about `p`
+  /* stylelint-disable-next-line selector-class-pattern, selector-no-qualifying-type */
   .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) {
     display: block;
     margin: 5px 0 10px;
     padding-top: 5px;
     border-top: 1px solid var(--a-primary-transparent-50);
     color: var(--a-primary-transparent-50);
+    font-family: var(--a-family-default);
     font-size: var(--a-type-smaller);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-style: normal;
+    font-variant: normal;
     font-weight: 600;
+    line-height: var(--a-line-tall);
+    text-align: start;
+    text-indent: 0;
+    text-transform: uppercase;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    word-spacing: normal;
+    white-space: normal;
     content: attr(data-placeholder);
     pointer-events: none;
   }
@@ -1107,6 +1252,8 @@ function traverseNextNode(node) {
     min-height: 2em;
   }
 
+  // The label of an editor with nothing in it, which sits in the page next to
+  // the hint above and has the same reason to spell out what it inherits
   .apos-rich-text-editor__editor_after {
     @include type-small;
 
@@ -1121,9 +1268,14 @@ function traverseNextNode(node) {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
+      font-style: normal;
+      font-variant: normal;
       font-weight: 700;
+      text-indent: 0;
       text-transform: uppercase;
+      text-decoration: none;
       letter-spacing: 1px;
+      word-spacing: normal;
       text-align: center;
     }
 
@@ -1200,8 +1352,9 @@ function traverseNextNode(node) {
 
   // Inline, the space between blocks is the site's business, not ours
   /* stylelint-disable-next-line selector-class-pattern */
-  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) :deep(.ProseMirror) {
-    > * + * {
+  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) :deep(.ProseMirror),
+  .apos-rich-text-editor:not(.apos-rich-text-editor--inline) .apos-rich-text-editor__version {
+    > :deep(* + *) {
       margin-top: 0.75em;
     }
   }

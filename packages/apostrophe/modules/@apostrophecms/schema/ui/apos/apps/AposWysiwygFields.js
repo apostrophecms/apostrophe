@@ -42,14 +42,27 @@ export default function() {
   }
 
   function createFieldApp(el) {
+    // A read only preview, such as a past version of the document, shows
+    // the value and nothing more
+    if (el.closest('[data-apos-read-only]')) {
+      el.removeAttribute('data-apos-wysiwyg-field-newly-editable');
+      return;
+    }
+
     // The definition is not in the markup: the page already carries the
     // schema of every doc type and widget type on it, so the field is named
     // by its id and looked up there
     const fieldId = el.getAttribute('data-field-id');
     const field = getFieldById(fieldId);
-    const value = JSON.parse(el.getAttribute('data-value'));
+    let value = JSON.parse(el.getAttribute('data-value'));
     const options = JSON.parse(el.getAttribute('data-options') || '{}') || {};
-    const docId = el.getAttribute('data-doc-id');
+    // Empty when the markup came from the area editor on behalf of a modal.
+    // The field has a document like any other — the one the modal is editing
+    // — but the request that rendered it was not rendering a page, so there
+    // was no context to name, and nothing here is ours to patch: the modal
+    // saves. Normalized because an empty attribute and a missing one are two
+    // ways of saying the same thing
+    const docId = el.getAttribute('data-doc-id') || null;
     const patchKey = el.getAttribute('data-patch-key');
     const componentName = el.getAttribute('data-component');
     // `undefined` rather than null, so that the wrapper's own default applies
@@ -59,6 +72,11 @@ export default function() {
     // edited on this page is displayed but not editable here. Edit it on
     // its own page, or in a modal.
     //
+    // Markup that names no document is the modal case above, and is edited
+    // here: the document in play is the one the modal is editing, and the
+    // modal is what saves it. An area rendered in a modal is editable for
+    // exactly the same reason.
+    //
     // Which document that is can change without this element being
     // re-rendered: the context bar restores the draft mode it remembers for
     // the tab after the page has already been rendered in the other mode, so
@@ -66,7 +84,7 @@ export default function() {
     // about to change. Leave the element eligible rather than consuming it,
     // so the next pass can reconsider — an area recomputes `foreign` for the
     // same reason instead of settling it once and for all
-    if (!docId || (docId !== apos.adminBar?.contextId)) {
+    if (docId && (docId !== apos.adminBar?.contextId)) {
       el.setAttribute('data-apos-wysiwyg-field-foreign', true);
       return;
     }
@@ -109,10 +127,33 @@ export default function() {
         rootMargin: '600px'
       });
       observer.observe(el);
+      apos.bus.$on('context-history-apply', applyWhilePending);
     }
 
+    // Undo and redo leave the rest of the page as it is, rather than
+    // rendering it again, so a field still waiting for its editor would
+    // otherwise come up with the value the page was loaded with
+    function applyWhilePending(event) {
+      if (!document.body.contains(el)) {
+        apos.bus.$off('context-history-apply', applyWhilePending);
+        return;
+      }
+      if (!Object.hasOwn(event.patch, patchKey)) {
+        return;
+      }
+      value = event.patch[patchKey];
+      apos.bus.$emit('field-edited', {
+        docId,
+        patchKey,
+        value
+      });
+      event.claim();
+    }
+
+    // The newest entry: a scroll right after `observe` arrives in the same
+    // callback as the first report, which still says the field is out of view
     function observed(entries) {
-      if (!entries[0].isIntersecting) {
+      if (!entries.at(-1).isIntersecting) {
         return;
       }
       if (!created) {
@@ -122,6 +163,7 @@ export default function() {
     }
 
     function mountApp() {
+      apos.bus.$off('context-history-apply', applyWhilePending);
       // A field the page rendered inline, e.g. `with { tag: 'span' }`, has to
       // be edited inline: a block box here would drop the value onto a line
       // of its own, taking everything after it along. Asked now rather than

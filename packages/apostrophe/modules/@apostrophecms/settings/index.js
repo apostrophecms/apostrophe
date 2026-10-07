@@ -35,7 +35,9 @@
 //     // passed as props. previewComponent: 'MyComponent',
 //     // Optional protection type. Currently allowed values are `password`
 //     // and `true` (alias of `password`). If specified, the subform will be
-//     // protected by the user current password.
+//     // protected by the user current password. Confirming it is throttled
+//     // like logging in, according to the `throttle` options of the
+//     // `@apostrophecms/login` module.
 //     protection: true,
 //     // Optional flag to indicate that the subform should be reloaded after save.
 //     reload: true
@@ -526,7 +528,18 @@ module.exports = {
       },
 
       // Handle the password protected subform.
+      //
+      // Confirming the current password here is just as much a
+      // password guessing surface as the login form, so the same throttle
+      // applies: after `throttle.allowedAttempts` consecutive failures the
+      // check locks out for `throttle.lockoutMinutes`, both options belonging
+      // to the `@apostrophecms/login` module. Otherwise someone who obtained
+      // an authenticated session, but not the password, could brute force it
+      // here at full speed and then change it, locking the real user out of
+      // their own account.
       async handlePasswordProtectedSubform(req, subform, payload) {
+        await self.checkPasswordAttempts(req);
+
         try {
           await self.apos.user.verifyPassword(req.user, payload.passwordCurrent);
         } catch (e) {
@@ -538,7 +551,65 @@ module.exports = {
             }
           );
         }
+        // Only consecutive failures count toward the limit
+        await self.apos.login.clearLoginAttempts(
+          req.user.username,
+          self.getPasswordAttemptsNamespace()
+        );
+
         return subform;
+      },
+
+      // Count one attempt to confirm `req.user`'s current password, throwing
+      // a `forbidden` error instead if they have already reached the limit
+      // described by the `throttle` options of the `@apostrophecms/login`
+      // module. The caller clears the count once the password checks out.
+      //
+      // The attempt is counted before the password is verified, and counting
+      // and checking happen together under a lock, because either one on its
+      // own leaves the limit easy to sail past: requests arriving at the same
+      // time would otherwise each read the same count, find it below the
+      // limit, and all go on to guess, so the number of guesses would be
+      // governed by how many an attacker sends at once rather than by the
+      // limit.
+      async checkPasswordAttempts(req) {
+        const { throttle } = self.apos.login.options;
+        const namespace = self.getPasswordAttemptsNamespace();
+
+        return self.apos.lock.withLock(
+          `${namespace}:${req.user._id}`,
+          async () => {
+            const { cachedAttempts, reached } = await self.apos.login
+              .checkLoginAttempts(req.user.username, namespace);
+
+            if (reached) {
+              throw self.apos.error(
+                'forbidden',
+                req.t('apostrophe:loginMaxAttemptsReached', {
+                  count: throttle.lockoutMinutes
+                }),
+                {
+                  path: 'passwordCurrent'
+                }
+              );
+            }
+            await self.apos.login.addLoginAttempt(
+              req.user.username,
+              cachedAttempts,
+              namespace
+            );
+          }
+        );
+      },
+
+      // The `apos.cache` namespace in which current password confirmations
+      // are counted, deliberately distinct from the namespaces the login
+      // module throttles logins and login requirements in: mistyping the
+      // current password in the settings dialog must not lock the user out of
+      // logging in, and a hijacked session must not be usable to lock the
+      // real user out of the login form either.
+      getPasswordAttemptsNamespace() {
+        return `${self.__meta.name}/passwordCurrent`;
       },
 
       // Handle the after save logic. If the saved subform requires reload

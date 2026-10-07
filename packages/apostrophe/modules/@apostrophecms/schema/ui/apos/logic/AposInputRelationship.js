@@ -189,7 +189,8 @@ export default {
       if (this.field.suggestionLimit) {
         qs.perPage = this.field.suggestionLimit;
       }
-      if (this.field.suggestionSort) {
+      // When autocompleting, let the back end sort by search quality
+      if (this.field.suggestionSort && !qs.autocomplete) {
         qs.sort = this.field.suggestionSort;
       }
       if (this.field.withType === '@apostrophecms/image') {

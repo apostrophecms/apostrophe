@@ -3,7 +3,7 @@
 // together — each validator exists so a malformed answer travels the
 // retry path instead of returning as a short success.
 
-const { FINISH_REASONS } = require('./constants');
+const { FINISH_REASONS, CACHE_USAGE_KEYS } = require('./constants');
 const { isObject, isAbort } = require('./util');
 
 module.exports = (self) => {
@@ -156,6 +156,11 @@ module.exports = (self) => {
         !Number.isFinite(turn.usage.inputTokens) ||
         !Number.isFinite(turn.usage.outputTokens)) {
         malformed('assistant turn', '"usage" must carry inputTokens and outputTokens');
+      }
+      for (const key of CACHE_USAGE_KEYS) {
+        if (turn.usage[key] !== undefined && !Number.isFinite(turn.usage[key])) {
+          malformed('assistant turn', `"usage.${key}" must be a number when present`);
+        }
       }
       return turn;
     },

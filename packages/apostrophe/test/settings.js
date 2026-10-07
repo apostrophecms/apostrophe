@@ -428,6 +428,137 @@ describe('user settings', function () {
     assert.equal(validateUser.displayName, 'Editor');
 
   });
+
+  it('should throttle current password confirmation attempts', async function () {
+    apos = await createCommonInstance();
+    const { jar, user } = await login(apos);
+    const { allowedAttempts } = apos.login.options.throttle;
+
+    // Wrong passwords are reported as such, until the limit is reached
+    for (let attempt = 0; attempt < allowedAttempts; attempt++) {
+      await assert.rejects(
+        apos.http.patch('/api/v1/@apostrophecms/settings/display', {
+          body: {
+            displayName: 'Hacker',
+            passwordCurrent: `invalid${attempt}`
+          },
+          jar
+        }),
+        function (err) {
+          assert.equal(err.status, 403);
+          assert.equal(err.body.message, 'apostrophe:passwordCurrentError');
+          return true;
+        }
+      );
+    }
+
+    // Past the limit even the correct password is refused, so guessing
+    // cannot continue
+    await assert.rejects(
+      apos.http.patch('/api/v1/@apostrophecms/settings/display', {
+        body: {
+          displayName: 'Hacker',
+          passwordCurrent: 'editor'
+        },
+        jar
+      }),
+      function (err) {
+        assert.equal(err.status, 403);
+        assert.equal(
+          err.body.message,
+          'Too many attempts. You may try again in a minute.'
+        );
+        return true;
+      }
+    );
+
+    // The lockout covers every password protected subform, including the
+    // password change form, not just the one the attempts were made through
+    await assert.rejects(
+      apos.http.patch('/api/v1/@apostrophecms/settings/password', {
+        body: {
+          password: 'newpassword',
+          passwordRepeat: 'newpassword',
+          passwordCurrent: 'editor'
+        },
+        jar
+      }),
+      function (err) {
+        assert.equal(err.status, 403);
+        assert.equal(
+          err.body.message,
+          'Too many attempts. You may try again in a minute.'
+        );
+        return true;
+      }
+    );
+
+    // None of the above changed anything
+    {
+      const validateUser = await apos.user
+        .find(apos.task.getReq(), { _id: user._id })
+        .toObject();
+      assert.equal(validateUser.displayName, '');
+    }
+
+    // Logging in is throttled in a namespace of its own, so guessing here
+    // cannot be used to lock the real user out of the login form
+    assert(await t.loginAs(apos, 'editor', 'editor'));
+
+    // Once the lockout expires the correct password is accepted again
+    const namespace = apos.settings.getPasswordAttemptsNamespace();
+    await apos.login.clearLoginAttempts(user.username, namespace);
+    await apos.http.patch('/api/v1/@apostrophecms/settings/display', {
+      body: {
+        displayName: 'Editor',
+        passwordCurrent: 'editor'
+      },
+      jar
+    });
+
+    const validateUser = await apos.user
+      .find(apos.task.getReq(), { _id: user._id })
+      .toObject();
+    assert.equal(validateUser.displayName, 'Editor');
+
+    // Succeeding resets the count, so occasional typos never accumulate
+    // into a lockout
+    assert.equal(await apos.cache.get(namespace, user.username), undefined);
+  });
+
+  it('should throttle simultaneous current password confirmation attempts', async function () {
+    apos = await createCommonInstance();
+    const { jar } = await login(apos);
+    const { allowedAttempts } = apos.login.options.throttle;
+    const total = allowedAttempts * 3;
+
+    // Sending the guesses at once rather than one at a time must not get
+    // more of them past the limit
+    const messages = await Promise.all(
+      Array.from({ length: total }, (value, index) => apos.http
+        .patch('/api/v1/@apostrophecms/settings/display', {
+          body: {
+            displayName: `Hacker ${index}`,
+            passwordCurrent: `invalid${index}`
+          },
+          jar
+        })
+        .then(() => 'accepted')
+        .catch(err => (err.body && err.body.message) || err.message)
+      )
+    );
+
+    assert.equal(
+      messages.filter(message => message === 'apostrophe:passwordCurrentError').length,
+      allowedAttempts
+    );
+    assert.equal(
+      messages.filter(
+        message => message === 'Too many attempts. You may try again in a minute.'
+      ).length,
+      total - allowedAttempts
+    );
+  });
 });
 
 async function createCommonInstance() {

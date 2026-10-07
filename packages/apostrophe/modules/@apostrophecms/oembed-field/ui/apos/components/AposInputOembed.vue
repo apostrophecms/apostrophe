@@ -10,7 +10,7 @@
       <div class="apos-input-wrapper">
         <input
           :id="uid"
-          v-model="next.url"
+          v-model="url"
           :class="classes"
           type="url"
           :placeholder="$t(field.placeholder)"
@@ -67,6 +67,20 @@ export default {
     classes () {
       return [ 'apos-input', 'apos-input--oembed' ];
     },
+    // A document without a value for this field passes `null`, kept as is
+    // until something is typed
+    url: {
+      get () {
+        return this.next?.url || '';
+      },
+      set (url) {
+        if (this.next) {
+          this.next.url = url;
+        } else {
+          this.next = { url };
+        }
+      }
+    },
     icon () {
       if (this.error) {
         return 'circle-medium-icon';
@@ -112,11 +126,22 @@ export default {
       return false;
     },
     async watchNext () {
-      await this.loadOembed();
-
-      this.validateAndEmit();
+      if (!this.next) {
+        this.oembedResult = {};
+        this.oembedError = null;
+        this.dynamicRatio = '';
+        this.tempReadOnly = false;
+        this.validateAndEmit();
+        return;
+      }
+      if (await this.loadOembed()) {
+        this.validateAndEmit();
+      }
     },
+    // Resolves to `false` when the value was replaced while the query ran,
+    // leaving the result to the newer query
     async loadOembed () {
+      const next = this.next;
       this.tempReadOnly = true;
       this.oembedResult = {};
       this.oembedError = null;
@@ -126,27 +151,36 @@ export default {
         const result = await apos.http.get(`${apos.oembed.action}/query`, {
           busy: true,
           qs: {
-            url: this.next.url
+            url: next.url
           }
         });
-        this.next.title = result.title || '';
-        this.next.thumbnail = result.thumbnail_url || '';
+        if (this.next !== next) {
+          return false;
+        }
+        next.title = result.title || '';
+        next.thumbnail = result.thumbnail_url || '';
         this.oembedResult = result;
 
         if (typeof result.height === 'number' && typeof result.width === 'number') {
           this.dynamicRatio = (result.height / result.width);
         }
       } catch (error) {
+        if (this.next !== next) {
+          return false;
+        }
         if (error.body && error.body.message) {
           this.oembedError = error.body;
         } else {
           this.oembedError = { message: this.$t('apostrophe:oembedInvalidEmbedUrl') };
         }
-        this.next.title = '';
-        this.next.thumbnail = '';
+        next.title = '';
+        next.thumbnail = '';
       } finally {
-        this.tempReadOnly = false;
+        if (this.next === next) {
+          this.tempReadOnly = false;
+        }
       }
+      return true;
     }
   }
 };

@@ -1,6 +1,6 @@
 {
   "name": "sanitize-html",
-  "version": "2.17.7",
+  "version": "2.18.0",
   "description": "Clean up user-submitted HTML, preserving allowlisted elements and allowlisted attributes on a per-element basis",
   "sideEffects": false,
   "main": "index.js",
@@ -29,7 +29,6 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "deepmerge": "^4.3.1",
     "escape-string-regexp": "^4.0.0",
     "htmlparser2": "^12.0.0",
     "is-plain-object": "^5.1.0",

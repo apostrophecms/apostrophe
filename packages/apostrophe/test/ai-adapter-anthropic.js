@@ -95,8 +95,11 @@ describe('AI adapter: anthropic', function() {
     model: 'claude-sonnet-4-6-20250929',
     stop_reason: 'end_turn',
     stop_sequence: null,
+    // Only the uncached share is input_tokens; the total is 12
     usage: {
-      input_tokens: 12,
+      input_tokens: 2,
+      cache_creation_input_tokens: 4,
+      cache_read_input_tokens: 6,
       output_tokens: 7
     },
     ...extras
@@ -501,16 +504,36 @@ describe('AI adapter: anthropic', function() {
   });
 
   describe('response parsing', function() {
-    it('parses a text turn', function() {
+    it('parses a text turn, summing the cache shares into the input total', function() {
       assert.deepEqual(adapter.parseResponse(fixture()), {
         content: [ text('a haiku') ],
         finishReason: 'stop',
         usage: {
           inputTokens: 12,
-          outputTokens: 7
+          outputTokens: 7,
+          cacheReadTokens: 6,
+          cacheWriteTokens: 4
         },
         model: 'claude-sonnet-4-6-20250929'
       });
+    });
+
+    it('reports no cache shares when the service sent none', function() {
+      const turn = adapter.parseResponse(fixture({
+        usage: {
+          input_tokens: 12,
+          output_tokens: 7
+        }
+      }));
+      assert.deepEqual(turn.usage, {
+        inputTokens: 12,
+        outputTokens: 7
+      });
+      // A missing input count stays missing, so the engine retries the turn
+      assert.equal(
+        adapter.parseResponse(fixture({ usage: { output_tokens: 7 } })).usage.inputTokens,
+        undefined
+      );
     });
 
     it('maps the stop reasons', function() {
@@ -735,7 +758,9 @@ describe('AI adapter: anthropic', function() {
       assert.equal(result.model, 'claude-sonnet-4-6-20250929');
       assert.deepEqual(result.usage, {
         inputTokens: 12,
-        outputTokens: 7
+        outputTokens: 7,
+        cacheReadTokens: 6,
+        cacheWriteTokens: 4
       });
 
       const [ call ] = httpCalls;
