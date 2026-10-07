@@ -72,30 +72,39 @@ describe('AI adapter: google', function() {
   // A minimal normalized adapter request, as the engine assembles it
   const request = (extras = {}) => ({
     messages: [ userMessage('write a haiku about cats') ],
-    model: 'gemini-3.5-flash',
+    model: 'gemini-3.8-flash',
     maxTokens: 65536,
     cache: false,
     ...extras
   });
-  // A canned generateContent candidate and response body
-  const candidate = (extras = {}) => ({
-    content: {
-      role: 'model',
-      parts: [ { text: 'a haiku' } ]
-    },
-    finishReason: 'STOP',
-    index: 0,
-    ...extras
+  const userStep = (value) => ({
+    type: 'user_input',
+    content: [ text(value) ]
   });
+  // Every real response leads with a signed thought step, even when
+  // no thought tokens were spent
+  const thoughtStep = (signature = 'sig-1') => ({
+    type: 'thought',
+    signature
+  });
+  const outputStep = (value) => ({
+    type: 'model_output',
+    content: [ text(value) ]
+  });
+  // A canned Interactions response body
   const fixture = (extras = {}) => ({
-    candidates: [ candidate() ],
-    usageMetadata: {
-      promptTokenCount: 12,
-      candidatesTokenCount: 7,
-      totalTokenCount: 19
+    object: 'interaction',
+    status: 'completed',
+    model: 'gemini-3.8-flash',
+    steps: [ thoughtStep(), outputStep('a haiku') ],
+    usage: {
+      total_input_tokens: 12,
+      total_output_tokens: 7,
+      total_thought_tokens: 0,
+      total_cached_tokens: 0,
+      total_tool_use_tokens: 0,
+      total_tokens: 19
     },
-    modelVersion: 'gemini-3.5-flash-0519',
-    responseId: 'resp_1',
     ...extras
   });
   // An apos.http >= 400 throw: Error with status, headers, body
@@ -114,35 +123,44 @@ describe('AI adapter: google', function() {
     assert.equal(apos.ai.active, true);
     const info = apos.ai.modelInfo();
     assert.equal(info.provider, 'google');
-    assert.equal(info.model, 'gemini-3.5-flash');
+    assert.equal(info.model, 'gemini-3.8-flash');
     assert.equal(info.contextWindow, 1048576);
     assert.equal(info.maxOutputTokens, 65536);
-    assert.equal(apos.ai.modelInfo({ effort: 'low' }).model, 'gemini-3.1-flash-lite');
+    assert.equal(apos.ai.modelInfo({ effort: 'low' }).model, 'gemini-3.5-flash-lite');
     const high = apos.ai.modelInfo({ effort: 'high' });
-    assert.equal(high.model, 'gemini-3.5-flash');
+    assert.equal(high.model, 'gemini-3.8-flash');
     assert.equal(high.reasoning, 'high');
+  });
+
+  it('declares the thinking levels each text model accepts', function() {
+    const { models } = apos.ai.getAdapter('google');
+    assert.deepEqual(
+      models['gemini-3.5-flash-lite'].reasoning,
+      [ 'minimal', 'low', 'medium', 'high' ]
+    );
+    assert.deepEqual(
+      models['gemini-3.8-flash'].reasoning,
+      [ 'low', 'medium', 'high' ]
+    );
   });
 
   describe('request translation', function() {
     it('builds the minimal body', function() {
       assert.deepEqual(adapter.buildBody(request()), {
-        contents: [ {
-          role: 'user',
-          parts: [ { text: 'write a haiku about cats' } ]
-        } ],
-        generationConfig: { maxOutputTokens: 65536 }
+        model: 'gemini-3.8-flash',
+        store: false,
+        input: [ userStep('write a haiku about cats') ],
+        generation_config: { max_output_tokens: 65536 }
       });
     });
 
-    it('carries the system prompt as systemInstruction', function() {
+    it('carries the system prompt as system_instruction', function() {
       const body = adapter.buildBody(request({ system: 'You help editors.' }));
-      assert.deepEqual(body.systemInstruction, {
-        parts: [ { text: 'You help editors.' } ]
-      });
-      assert.equal(body.contents.length, 1);
+      assert.equal(body.system_instruction, 'You help editors.');
+      assert.equal(body.input.length, 1);
     });
 
-    it('translates the assistant role to model', function() {
+    it('translates a conversation to steps, in order', function() {
       const body = adapter.buildBody(request({
         messages: [
           userMessage('Do we have a pricing page?'),
@@ -153,10 +171,11 @@ describe('AI adapter: google', function() {
           userMessage('Create one.')
         ]
       }));
-      assert.deepEqual(
-        body.contents.map((content) => content.role),
-        [ 'user', 'model', 'user' ]
-      );
+      assert.deepEqual(body.input, [
+        userStep('Do we have a pricing page?'),
+        outputStep('No, I did not find one.'),
+        userStep('Create one.')
+      ]);
     });
 
     it('translates both image part forms', function() {
@@ -179,38 +198,36 @@ describe('AI adapter: google', function() {
           ]
         } ]
       }));
-      assert.deepEqual(body.contents[0].parts.slice(1), [
+      assert.deepEqual(body.input[0].content.slice(1), [
         {
-          fileData: {
-            fileUri: 'https://generativelanguage.googleapis.com/v1beta/files/f1'
-          }
+          type: 'image',
+          uri: 'https://generativelanguage.googleapis.com/v1beta/files/f1'
         },
         {
-          inlineData: {
-            mimeType: 'image/png',
-            data: 'aGk='
-          }
+          type: 'image',
+          data: 'aGk=',
+          mime_type: 'image/png'
         }
       ]);
     });
 
     it('passes reasoning through as the thinking level', function() {
       assert.equal(
-        adapter.buildBody(request()).generationConfig.thinkingConfig,
+        adapter.buildBody(request()).generation_config.thinking_level,
         undefined
       );
       assert.deepEqual(
-        adapter.buildBody(request({ reasoning: 'high' })).generationConfig,
+        adapter.buildBody(request({ reasoning: 'high' })).generation_config,
         {
-          maxOutputTokens: 65536,
-          thinkingConfig: { thinkingLevel: 'high' }
+          max_output_tokens: 65536,
+          thinking_level: 'high'
         }
       );
     });
 
-    it('omits generationConfig entirely when nothing resolved', function() {
+    it('omits generation_config entirely when nothing resolved', function() {
       const body = adapter.buildBody(request({ maxTokens: undefined }));
-      assert.equal('generationConfig' in body, false);
+      assert.equal('generation_config' in body, false);
     });
 
     it('places nothing for any cache policy', function() {
@@ -222,7 +239,7 @@ describe('AI adapter: google', function() {
       }
     });
 
-    it('translates tool definitions to functionDeclarations, as JSON Schema', function() {
+    it('translates tool definitions to function tools, as JSON Schema', function() {
       const input = {
         type: 'object',
         properties: { title: { type: 'string' } },
@@ -236,24 +253,28 @@ describe('AI adapter: google', function() {
         } ]
       }));
       assert.deepEqual(body.tools, [ {
-        functionDeclarations: [ {
-          name: 'find_pages',
-          description: 'Find pages',
-          parametersJsonSchema: input
-        } ]
+        type: 'function',
+        name: 'find_pages',
+        description: 'Find pages',
+        parameters: input
       } ]);
     });
 
-    it('carries tool calls and results, recovering the response name from the call id', function() {
+    it('carries tool calls and results, naming each result after its call', function() {
       const body = adapter.buildBody(request({
         messages: [
+          userMessage('Find the pricing page.'),
           {
             role: 'assistant',
             content: [
+              {
+                type: 'thought',
+                signature: 'sig-1'
+              },
               text('searching'),
               {
                 type: 'toolCall',
-                id: 'find_pages-0',
+                id: 'call_1',
                 name: 'find_pages',
                 input: { title: 'Pricing' }
               }
@@ -263,45 +284,38 @@ describe('AI adapter: google', function() {
             role: 'tool',
             content: [ {
               type: 'toolResult',
-              toolCallId: 'find_pages-0',
+              toolCallId: 'call_1',
               output: { id: 'p1' }
             } ]
           }
         ]
       }));
-      assert.deepEqual(body.contents, [
+      assert.deepEqual(body.input.slice(1), [
+        thoughtStep('sig-1'),
+        outputStep('searching'),
         {
-          role: 'model',
-          parts: [
-            { text: 'searching' },
-            {
-              functionCall: {
-                name: 'find_pages',
-                args: { title: 'Pricing' }
-              }
-            }
-          ]
+          type: 'function_call',
+          id: 'call_1',
+          name: 'find_pages',
+          arguments: { title: 'Pricing' }
         },
         {
-          role: 'user',
-          parts: [ {
-            functionResponse: {
-              name: 'find_pages',
-              response: { id: 'p1' }
-            }
-          } ]
+          type: 'function_result',
+          call_id: 'call_1',
+          name: 'find_pages',
+          result: { id: 'p1' }
         }
       ]);
     });
 
-    it('wraps a tool error result in the functionResponse', function() {
+    it('flags a tool error result', function() {
       const body = adapter.buildBody(request({
         messages: [
           {
             role: 'assistant',
             content: [ {
               type: 'toolCall',
-              id: 'x-0',
+              id: 'call_1',
               name: 'x',
               input: {}
             } ]
@@ -310,56 +324,92 @@ describe('AI adapter: google', function() {
             role: 'tool',
             content: [ {
               type: 'toolResult',
-              toolCallId: 'x-0',
+              toolCallId: 'call_1',
               error: 'boom'
             } ]
           }
         ]
       }));
-      assert.deepEqual(body.contents[1].parts[0], {
-        functionResponse: {
-          name: 'x',
-          response: { error: 'boom' }
-        }
+      assert.deepEqual(body.input[1], {
+        type: 'function_result',
+        call_id: 'call_1',
+        name: 'x',
+        result: { error: 'boom' },
+        is_error: true
       });
     });
 
-    it('restores part-level thought signatures exactly as received', function() {
+    it('replays thought parts as thought steps, in place and verbatim', function() {
+      const summary = [ text('Looking for the page.') ];
       const body = adapter.buildBody(request({
         messages: [ {
           role: 'assistant',
           content: [
             {
-              type: 'text',
-              text: 'searching',
-              thoughtSignature: 'sig-text'
+              type: 'thought',
+              signature: 'sig-1',
+              summary
             },
-            {
-              type: 'toolCall',
-              id: 'find_pages-0',
-              name: 'find_pages',
-              input: { title: 'Pricing' },
-              thoughtSignature: 'sig-call'
-            }
+            text('done')
           ]
         } ]
       }));
-      assert.deepEqual(body.contents[0].parts, [
+      assert.deepEqual(body.input, [
         {
-          text: 'searching',
-          thoughtSignature: 'sig-text'
+          type: 'thought',
+          signature: 'sig-1',
+          summary
         },
-        {
-          functionCall: {
-            name: 'find_pages',
-            args: { title: 'Pricing' }
-          },
-          thoughtSignature: 'sig-call'
-        }
+        outputStep('done')
       ]);
     });
 
-    it('skips assistant parts another dialect owns', function() {
+    it('groups each run of text and image parts into one model_output step', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            text('here it is'),
+            {
+              type: 'image',
+              image: {
+                data: 'aGk=',
+                mediaType: 'image/png'
+              }
+            },
+            {
+              type: 'toolCall',
+              id: 'call_1',
+              name: 'x',
+              input: {}
+            },
+            text('and more')
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.input, [
+        {
+          type: 'model_output',
+          content: [
+            text('here it is'),
+            {
+              type: 'image',
+              data: 'aGk=',
+              mime_type: 'image/png'
+            }
+          ]
+        },
+        {
+          type: 'function_call',
+          id: 'call_1',
+          name: 'x',
+          arguments: {}
+        },
+        outputStep('and more')
+      ]);
+    });
+
+    it('skips assistant parts and part properties another dialect owns', function() {
       const body = adapter.buildBody(request({
         messages: [ {
           role: 'assistant',
@@ -372,14 +422,18 @@ describe('AI adapter: google', function() {
                 signature: 'x'
               }
             },
-            text('visible')
+            {
+              type: 'text',
+              text: 'visible',
+              thoughtSignature: 'legacy'
+            }
           ]
         } ]
       }));
-      assert.deepEqual(body.contents[0].parts, [ { text: 'visible' } ]);
+      assert.deepEqual(body.input, [ outputStep('visible') ]);
     });
 
-    it('adds the synthetic final-answer function and forces it for a pure structured call', function() {
+    it('sends a structured-output schema as the JSON text response format', function() {
       const schema = {
         type: 'object',
         properties: { title: { type: 'string' } },
@@ -387,59 +441,66 @@ describe('AI adapter: google', function() {
         additionalProperties: false
       };
       const body = adapter.buildBody(request({ schema }));
-      const [ tool ] = body.tools;
-      assert.equal(tool.functionDeclarations.length, 1);
-      assert.equal(tool.functionDeclarations[0].name, '_final_answer');
-      assert.equal(typeof tool.functionDeclarations[0].description, 'string');
-      assert.deepEqual(tool.functionDeclarations[0].parametersJsonSchema, schema);
-      assert.equal('parameters' in tool.functionDeclarations[0], false);
-      assert.deepEqual(body.toolConfig, {
-        functionCallingConfig: {
-          mode: 'ANY',
-          allowedFunctionNames: [ '_final_answer' ]
-        }
+      assert.deepEqual(body.response_format, {
+        type: 'text',
+        mime_type: 'application/json',
+        schema
       });
+      assert.equal('tools' in body, false);
     });
 
-    it('does not force the final-answer function when thinking is on', function() {
+    it('sends the schema beside function tools', function() {
+      const input = { type: 'object' };
+      const schema = {
+        type: 'object',
+        properties: { title: { type: 'string' } }
+      };
       const body = adapter.buildBody(request({
-        schema: { type: 'object' },
-        reasoning: 'high'
+        tools: [ {
+          name: 'find_pages',
+          description: 'Find pages',
+          input
+        } ],
+        schema
       }));
-      assert.equal(body.tools[0].functionDeclarations[0].name, '_final_answer');
-      assert.equal('toolConfig' in body, false);
+      assert.equal(body.tools.length, 1);
+      assert.deepEqual(body.response_format.schema, schema);
     });
   });
 
   describe('response parsing', function() {
-    it('parses a text turn', function() {
+    it('parses a text turn, carrying the thought step as a thought part', function() {
       assert.deepEqual(adapter.parseResponse(fixture()), {
-        content: [ text('a haiku') ],
+        content: [
+          {
+            type: 'thought',
+            signature: 'sig-1'
+          },
+          text('a haiku')
+        ],
         finishReason: 'stop',
         usage: {
           inputTokens: 12,
-          outputTokens: 7
+          outputTokens: 7,
+          cacheReadTokens: 0
         },
-        model: 'gemini-3.5-flash-0519'
+        model: 'gemini-3.8-flash'
       });
     });
 
-    it('maps the finish reasons', function() {
+    it('maps the statuses', function() {
       for (const [ theirs, ours ] of [
-        [ 'STOP', 'stop' ],
-        [ 'MAX_TOKENS', 'length' ],
-        // The engine converts the refusal finish reason to the
-        // refusal error
-        [ 'SAFETY', 'refusal' ],
-        [ 'PROHIBITED_CONTENT', 'refusal' ],
-        // Unknown reasons yield none: the engine treats the turn as
-        // malformed and retries, never a truncated success
-        [ 'MALFORMED_FUNCTION_CALL', undefined ]
+        [ 'completed', 'stop' ],
+        [ 'incomplete', 'length' ],
+        // Unsettled or unknown statuses yield none: the engine treats
+        // the turn as malformed and retries, never a truncated success
+        [ 'in_progress', undefined ],
+        [ 'queued', undefined ],
+        [ 'cancelled', undefined ],
+        [ 'weird', undefined ]
       ]) {
         assert.equal(
-          adapter.parseResponse(fixture({
-            candidates: [ candidate({ finishReason: theirs }) ]
-          })).finishReason,
+          adapter.parseResponse(fixture({ status: theirs })).finishReason,
           ours
         );
       }
@@ -447,11 +508,11 @@ describe('AI adapter: google', function() {
 
     it('adds thinking tokens into the output count', function() {
       const turn = adapter.parseResponse(fixture({
-        usageMetadata: {
-          promptTokenCount: 12,
-          candidatesTokenCount: 7,
-          thoughtsTokenCount: 5,
-          totalTokenCount: 24
+        usage: {
+          total_input_tokens: 12,
+          total_output_tokens: 7,
+          total_thought_tokens: 5,
+          total_tokens: 24
         }
       }));
       assert.deepEqual(turn.usage, {
@@ -460,13 +521,13 @@ describe('AI adapter: google', function() {
       });
     });
 
-    it('carries the cached share of the prompt, reported only on a cache hit', function() {
+    it('carries the cached share of the input', function() {
       const turn = adapter.parseResponse(fixture({
-        usageMetadata: {
-          promptTokenCount: 12,
-          cachedContentTokenCount: 5,
-          candidatesTokenCount: 7,
-          totalTokenCount: 19
+        usage: {
+          total_input_tokens: 12,
+          total_cached_tokens: 5,
+          total_output_tokens: 7,
+          total_tokens: 19
         }
       }));
       assert.deepEqual(turn.usage, {
@@ -474,158 +535,151 @@ describe('AI adapter: google', function() {
         outputTokens: 7,
         cacheReadTokens: 5
       });
-      // The default fixture has no cached content, so no share
-      assert.deepEqual(adapter.parseResponse(fixture()).usage, {
-        inputTokens: 12,
-        outputTokens: 7
+    });
+
+    it('translates function calls under the service ids, whatever the status', function() {
+      const steps = [
+        thoughtStep('sig-call'),
+        {
+          type: 'function_call',
+          id: 'call_1',
+          name: 'search',
+          arguments: { q: 'a' },
+          // The service's copy of the thought signature
+          signature: 'sig-call'
+        },
+        {
+          type: 'function_call',
+          id: 'call_2',
+          name: 'search',
+          arguments: { q: 'b' },
+          signature: 'sig-call'
+        }
+      ];
+      for (const status of [ 'requires_action', 'incomplete' ]) {
+        const turn = adapter.parseResponse(fixture({
+          status,
+          steps
+        }));
+        assert.deepEqual(turn.content, [
+          {
+            type: 'thought',
+            signature: 'sig-call'
+          },
+          {
+            type: 'toolCall',
+            id: 'call_1',
+            name: 'search',
+            input: { q: 'a' }
+          },
+          {
+            type: 'toolCall',
+            id: 'call_2',
+            name: 'search',
+            input: { q: 'b' }
+          }
+        ]);
+        assert.equal(turn.finishReason, 'toolCalls');
+      }
+    });
+
+    it('carries a thought summary on the thought part', function() {
+      const summary = [ text('Looking for the page.') ];
+      const turn = adapter.parseResponse(fixture({
+        steps: [
+          {
+            type: 'thought',
+            signature: 'sig-1',
+            summary
+          },
+          outputStep('found it')
+        ]
+      }));
+      assert.deepEqual(turn.content[0], {
+        type: 'thought',
+        signature: 'sig-1',
+        summary
       });
     });
 
-    it('translates function calls, forcing the toolCalls finish reason, and drops thought parts', function() {
+    it('keeps the output text blocks, in order, and skips what it does not own', function() {
       const turn = adapter.parseResponse(fixture({
-        candidates: [ candidate({
-          content: {
-            role: 'model',
-            parts: [
+        steps: [
+          userStep('echoed input'),
+          thoughtStep(),
+          {
+            type: 'model_output',
+            content: [
+              text('one'),
               {
-                thought: true,
-                text: 'let me see'
+                type: 'image',
+                data: 'aW1n',
+                mime_type: 'image/png'
               },
-              { text: 'checking' },
-              {
-                functionCall: {
-                  name: 'find_pages',
-                  args: { title: 'Pricing' }
-                }
-              }
+              text('two')
             ]
-          },
-          // The dialect reports STOP on tool-call turns
-          finishReason: 'STOP'
-        }) ]
+          }
+        ]
       }));
-      assert.deepEqual(turn.content, [
-        text('checking'),
-        {
-          type: 'toolCall',
-          // Synthesized: Gemini function calls carry no id
-          id: 'find_pages-0',
-          name: 'find_pages',
-          input: { title: 'Pricing' }
-        }
-      ]);
-      assert.equal(turn.finishReason, 'toolCalls');
+      assert.deepEqual(turn.content.slice(1), [ text('one'), text('two') ]);
     });
 
-    it('synthesizes a distinct id per function call in a turn', function() {
-      const turn = adapter.parseResponse(fixture({
-        candidates: [ candidate({
-          content: {
-            role: 'model',
-            parts: [
-              {
-                functionCall: {
-                  name: 'search',
-                  args: { q: 'a' }
-                }
-              },
-              {
-                functionCall: {
-                  name: 'search',
-                  args: { q: 'b' }
-                }
-              }
-            ]
-          },
-          finishReason: 'STOP'
-        }) ]
-      }));
-      assert.deepEqual(turn.content.map((part) => part.id), [ 'search-0', 'search-1' ]);
+    it('parses the structured answer onto the turn object', function() {
+      const object = {
+        title: 'Pricing',
+        description: 'Our plans'
+      };
+      // The service pretty-prints the JSON, trailing whitespace and all
+      const json = `${JSON.stringify(object, null, 2)} `;
+      const turn = adapter.parseResponse(
+        fixture({ steps: [ thoughtStep(), outputStep(json) ] }),
+        request({ schema: { type: 'object' } })
+      );
+      assert.deepEqual(turn.object, object);
+      assert.equal(turn.finishReason, 'stop');
+      // The JSON also stays on the content so the transcript round-trips
+      assert.deepEqual(turn.content.slice(1), [ text(json) ]);
     });
 
-    it('carries part-level thought signatures on the normalized parts', function() {
-      const turn = adapter.parseResponse(fixture({
-        candidates: [ candidate({
-          content: {
-            role: 'model',
-            parts: [
-              {
-                text: 'searching',
-                thoughtSignature: 'sig-text'
-              },
-              {
-                functionCall: {
-                  name: 'find_pages',
-                  args: { title: 'Pricing' }
-                },
-                thoughtSignature: 'sig-call'
-              }
-            ]
-          },
-          finishReason: 'STOP'
-        }) ]
-      }));
-      assert.deepEqual(turn.content, [
-        {
-          type: 'text',
-          text: 'searching',
-          thoughtSignature: 'sig-text'
-        },
-        {
-          type: 'toolCall',
-          id: 'find_pages-0',
-          name: 'find_pages',
-          input: { title: 'Pricing' },
-          thoughtSignature: 'sig-call'
-        }
-      ]);
-    });
-
-    it('throws the refusal error on a blocked prompt', function() {
+    it('treats malformed structured JSON as a retryable response', function() {
       assert.throws(
-        () => adapter.parseResponse({
-          promptFeedback: { blockReason: 'SAFETY' },
-          usageMetadata: { promptTokenCount: 12 }
-        }),
+        () => adapter.parseResponse(
+          fixture({ steps: [ thoughtStep(), outputStep('not json') ] }),
+          request({ schema: { type: 'object' } })
+        ),
         (e) => {
-          assert.equal(e.name, 'aiRefusal');
-          assert.match(e.message, /SAFETY/);
+          assert.equal(e.name, 'aiRetry');
+          assert.match(e.message, /malformed structured JSON/);
           return true;
         }
       );
     });
 
-    it('turns a final-answer function call into a structured stop turn', function() {
-      const object = { title: 'Pricing' };
-      const turn = adapter.parseResponse(
-        fixture({
-          candidates: [ candidate({
-            content: {
-              role: 'model',
-              parts: [ {
-                functionCall: {
-                  name: '_final_answer',
-                  args: object
-                }
-              } ]
-            },
-            finishReason: 'STOP'
-          }) ]
-        }),
-        request({ schema: { type: 'object' } })
-      );
-      assert.deepEqual(turn.object, object);
-      assert.equal(turn.finishReason, 'stop');
-      assert.deepEqual(turn.content, [ text(JSON.stringify(object)) ]);
-    });
-
-    it('leaves a free-text answer without an object for the backstop to retry', function() {
-      const turn = adapter.parseResponse(
-        fixture(),
-        request({ schema: { type: 'object' } })
-      );
-      assert.equal('object' in turn, false);
-      assert.equal(turn.finishReason, 'stop');
+    it('parses no object from a tool-call or truncated turn, or without a schema request', function() {
+      const schema = { type: 'object' };
+      const call = adapter.parseResponse(fixture({
+        status: 'requires_action',
+        steps: [
+          thoughtStep(),
+          {
+            type: 'function_call',
+            id: 'call_1',
+            name: 'echo',
+            arguments: { value: 'hi' }
+          }
+        ]
+      }), request({ schema }));
+      assert.equal('object' in call, false);
+      const truncated = adapter.parseResponse(fixture({
+        status: 'incomplete',
+        steps: [ thoughtStep(), outputStep('{"title": "Pri') ]
+      }), request({ schema }));
+      assert.equal(truncated.finishReason, 'length');
+      assert.equal('object' in truncated, false);
+      const plain = adapter.parseResponse(fixture({
+        steps: [ thoughtStep(), outputStep('{"a":1}') ]
+      }));
+      assert.equal('object' in plain, false);
     });
   });
 
@@ -714,6 +768,22 @@ describe('AI adapter: google', function() {
     let waits;
     let originalPost;
 
+    // A schema the engine validates the structured answer against
+    const metadataSchema = {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          maxLength: 60
+        },
+        description: {
+          type: 'string',
+          maxLength: 160
+        }
+      },
+      required: [ 'title', 'description' ]
+    };
+
     before(function() {
       originalPost = apos.http.post;
     });
@@ -762,27 +832,26 @@ describe('AI adapter: google', function() {
       assert.equal(result.text, 'a haiku');
       assert.equal(result.finishReason, 'stop');
       assert.equal(result.provider, 'google');
-      // The model the response named, not the routed alias
-      assert.equal(result.model, 'gemini-3.5-flash-0519');
+      assert.equal(result.model, 'gemini-3.8-flash');
       assert.deepEqual(result.usage, {
         inputTokens: 12,
-        outputTokens: 7
+        outputTokens: 7,
+        cacheReadTokens: 0
       });
 
       const [ call ] = httpCalls;
       assert.equal(
         call.url,
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent'
+        'https://generativelanguage.googleapis.com/v1/interactions'
       );
       assert.equal(call.options.headers['x-goog-api-key'], 'sk-test');
       assert.equal(call.options.timeout, 600000);
       // The whole body: the default short cache policy adds nothing
       assert.deepEqual(call.options.body, {
-        contents: [ {
-          role: 'user',
-          parts: [ { text: 'write a haiku about cats' } ]
-        } ],
-        generationConfig: { maxOutputTokens: 65536 }
+        model: 'gemini-3.8-flash',
+        store: false,
+        input: [ userStep('write a haiku about cats') ],
+        generation_config: { max_output_tokens: 65536 }
       });
     });
 
@@ -790,41 +859,35 @@ describe('AI adapter: google', function() {
       httpScript = [ () => fixture() ];
       await apos.ai.generate(apos.task.getReq(), 'p', {
         provider: 'gateway',
-        model: 'gemini-3.5-flash'
+        model: 'gemini-3.8-flash'
       });
       const [ call ] = httpCalls;
       assert.equal(
         call.url,
-        'https://llm-gateway.example.com/google/v1beta/models/gemini-3.5-flash:generateContent'
+        'https://llm-gateway.example.com/google/v1/interactions'
       );
       assert.equal(call.options.headers['x-goog-api-key'], 'sk-gw');
-      assert.equal(call.options.body.generationConfig.maxOutputTokens, 65536);
+      assert.equal(call.options.body.model, 'gemini-3.8-flash');
+      assert.equal(call.options.body.generation_config.max_output_tokens, 65536);
     });
 
-    it('drives a thinking tool loop end to end, replaying the thought signature', async function() {
+    it('drives a thinking tool loop end to end, replaying the thought step', async function() {
       httpScript = [
         () => fixture({
-          candidates: [ candidate({
-            content: {
-              role: 'model',
-              parts: [ {
-                functionCall: {
-                  name: 'echo',
-                  args: { value: 'pricing' }
-                },
-                thoughtSignature: 'sig-call'
-              } ]
-            },
-            finishReason: 'STOP'
-          }) ]
+          status: 'requires_action',
+          steps: [
+            thoughtStep('sig-call'),
+            {
+              type: 'function_call',
+              id: 'call_1',
+              name: 'echo',
+              arguments: { value: 'pricing' },
+              signature: 'sig-call'
+            }
+          ]
         }),
         () => fixture({
-          candidates: [ candidate({
-            content: {
-              role: 'model',
-              parts: [ { text: 'done' } ]
-            }
-          }) ]
+          steps: [ thoughtStep('sig-done'), outputStep('done') ]
         })
       ];
       const result = await apos.ai.generate(apos.task.getReq(), 'use the tool', {
@@ -836,35 +899,113 @@ describe('AI adapter: google', function() {
       assert.equal(httpCalls.length, 2);
       // Thinking was on for both turns of the loop
       for (const call of httpCalls) {
-        assert.deepEqual(
-          call.options.body.generationConfig.thinkingConfig,
-          { thinkingLevel: 'high' }
-        );
+        assert.equal(call.options.body.generation_config.thinking_level, 'high');
       }
-      // The second call replays the function call with its thought
-      // signature restored, exactly as received, and pairs the
-      // function response back by name
-      assert.deepEqual(httpCalls[1].options.body.contents.slice(1), [
+      // The second call replays the thought step in its place, the
+      // call under the service's id, and the result naming its function
+      assert.deepEqual(httpCalls[1].options.body.input.slice(1), [
+        thoughtStep('sig-call'),
         {
-          role: 'model',
-          parts: [ {
-            functionCall: {
-              name: 'echo',
-              args: { value: 'pricing' }
-            },
-            thoughtSignature: 'sig-call'
-          } ]
+          type: 'function_call',
+          id: 'call_1',
+          name: 'echo',
+          arguments: { value: 'pricing' }
         },
         {
-          role: 'user',
-          parts: [ {
-            functionResponse: {
-              name: 'echo',
-              response: { value: 'pricing' }
-            }
-          } ]
+          type: 'function_result',
+          call_id: 'call_1',
+          name: 'echo',
+          result: { value: 'pricing' }
         }
       ]);
+    });
+
+    it('returns a validated object for a structured call over the wire', async function() {
+      const object = {
+        title: 'Pricing',
+        description: 'Our plans'
+      };
+      httpScript = [ () => fixture({
+        steps: [ thoughtStep(), outputStep(JSON.stringify(object)) ]
+      }) ];
+      const result = await apos.ai.generate(apos.task.getReq(), {
+        messages: [ {
+          role: 'user',
+          content: 'write the metadata'
+        } ],
+        schema: metadataSchema
+      });
+      assert.deepEqual(result.object, object);
+      const { body } = httpCalls[0].options;
+      assert.equal(body.response_format.mime_type, 'application/json');
+      assert.deepEqual(
+        body.response_format.schema.required,
+        [ 'title', 'description' ]
+      );
+    });
+
+    it('retries a structured answer the schema rejects', async function() {
+      const object = {
+        title: 'Pricing',
+        description: 'Our plans'
+      };
+      httpScript = [
+        () => fixture({
+          steps: [ thoughtStep(), outputStep('{"title":"Pricing"}') ]
+        }),
+        () => fixture({
+          steps: [ thoughtStep(), outputStep(JSON.stringify(object)) ]
+        })
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), {
+        messages: [ {
+          role: 'user',
+          content: 'write the metadata'
+        } ],
+        schema: metadataSchema
+      });
+      assert.deepEqual(result.object, object);
+      assert.equal(httpCalls.length, 2);
+      assert.equal(logRecords[0].type, 'retry');
+    });
+
+    it('runs a tool loop to a structured answer, the schema beside the tools', async function() {
+      const object = {
+        title: 'Pricing',
+        description: 'Our plans'
+      };
+      httpScript = [
+        () => fixture({
+          status: 'requires_action',
+          steps: [
+            thoughtStep('sig-call'),
+            {
+              type: 'function_call',
+              id: 'call_1',
+              name: 'echo',
+              arguments: { value: 'pricing' },
+              signature: 'sig-call'
+            }
+          ]
+        }),
+        () => fixture({
+          steps: [ thoughtStep('sig-done'), outputStep(JSON.stringify(object)) ]
+        })
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), {
+        messages: [ {
+          role: 'user',
+          content: 'look up the page, then write its metadata'
+        } ],
+        tools: [ 'echo' ],
+        schema: metadataSchema
+      });
+      assert.deepEqual(result.object, object);
+      assert.equal(httpCalls.length, 2);
+      for (const call of httpCalls) {
+        assert.equal(call.options.body.tools[0].name, 'echo');
+        assert.equal(call.options.body.response_format.type, 'text');
+      }
     });
 
     it('retries a 429 at the RetryInfo delay', async function() {
@@ -918,21 +1059,9 @@ describe('AI adapter: google', function() {
       );
     });
 
-    it('surfaces a blocked prompt as the refusal error, without a retry', async function() {
-      httpScript = [ () => ({
-        promptFeedback: { blockReason: 'SAFETY' },
-        usageMetadata: { promptTokenCount: 12 }
-      }) ];
-      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
-        assert.equal(e.name, 'aiRefusal');
-        return true;
-      });
-      assert.equal(httpCalls.length, 1);
-    });
-
-    it('retries an unknown finish reason as a malformed turn', async function() {
+    it('retries an unsettled status as a malformed turn', async function() {
       httpScript = [
-        () => fixture({ candidates: [ candidate({ finishReason: 'WEIRD' }) ] }),
+        () => fixture({ status: 'in_progress' }),
         () => fixture()
       ];
       const result = await apos.ai.generate(apos.task.getReq(), 'p');

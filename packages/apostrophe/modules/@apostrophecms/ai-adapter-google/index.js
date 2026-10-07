@@ -15,14 +15,8 @@
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
 
-// Gemini forbids a response schema alongside function calling, so
-// structured output is delivered through a synthetic tool whose
-// parameters are the request's `schema`. The model calls it to
-// answer; parseResponse turns that call back into a plain structured
-// answer. Its name leads with an underscore, which the engine's
-// tool-name rule forbids, so it can never collide with a real tool.
-const FINAL_ANSWER = '_final_answer';
-const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this function with the required fields. This is the only way to return your response.';
+// The Interactions API version the adapter speaks: the stable surface
+const API_VERSION = 'v1';
 // The dialect's finish reasons → the normalized vocabulary; the
 // whole safety family maps to refusal, which always arrives as an
 // error
@@ -41,9 +35,13 @@ const FINISH_REASONS = {
 const ASPECTS = [
   '1:1', '3:2', '2:3', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'
 ];
-// The `thinkingLevel` values every current text model accepts
+// The `thinking_level` values a text model accepts; Gemini 3.8 Flash
+// refuses `minimal`
 const THINKING_LEVELS = Object.freeze([
   'minimal', 'low', 'medium', 'high'
+]);
+const FLASH_THINKING_LEVELS = Object.freeze([
+  'low', 'medium', 'high'
 ]);
 // The normalized quality tiers → the dialect's output resolution
 // (the uppercase K is required)
@@ -90,27 +88,26 @@ module.exports = {
             caching: true
           },
           effort: {
-            low: { model: 'gemini-3.1-flash-lite' },
-            medium: { model: 'gemini-3.5-flash' },
+            low: { model: 'gemini-3.5-flash-lite' },
+            medium: { model: 'gemini-3.8-flash' },
             high: {
-              model: 'gemini-3.5-flash',
+              model: 'gemini-3.8-flash',
               reasoning: 'high'
             }
           },
-          // `reasoning` is the dialect's `thinkingLevel` vocabulary,
-          // shared by both current text models
+          // `reasoning` is the dialect's `thinking_level` vocabulary
           models: {
-            'gemini-3.1-flash-lite': {
-              label: 'Gemini 3.1 Flash-Lite',
+            'gemini-3.5-flash-lite': {
+              label: 'Gemini 3.5 Flash-Lite',
               contextWindow: 1048576,
               maxOutputTokens: 65536,
               reasoning: THINKING_LEVELS
             },
-            'gemini-3.5-flash': {
-              label: 'Gemini 3.5 Flash',
+            'gemini-3.8-flash': {
+              label: 'Gemini 3.8 Flash',
               contextWindow: 1048576,
               maxOutputTokens: 65536,
-              reasoning: THINKING_LEVELS
+              reasoning: FLASH_THINKING_LEVELS
             },
             'gemini-3.1-flash-image': {
               label: 'Gemini 3.1 Flash Image',
@@ -130,7 +127,7 @@ module.exports = {
           },
           async chat(req, request) {
             const response = await self.apos.http.post(
-              `${this.baseUrl}/v1beta/models/${request.model}:generateContent`,
+              `${this.baseUrl}/${API_VERSION}/interactions`,
               {
                 headers: {
                   'x-goog-api-key': this.apiKey
@@ -202,31 +199,35 @@ module.exports = {
         };
       },
       // Translate a normalized adapter request (see the engine's
-      // buildRequest) to a generateContent body: the system prompt
-      // becomes `systemInstruction`, the assistant role becomes
-      // `model`, `maxTokens` and `reasoning` travel in
-      // `generationConfig` (as `maxOutputTokens` and the thinking
-      // level, verbatim), each omitted when unresolved. A thought
-      // signature parseResponse carried on a part is restored at the
-      // part level, exactly as received — Gemini requires it back when
-      // a function call is replayed. Part types this dialect does not
-      // own are skipped. The model is not part of the body — it rides
-      // in the request URL. The cache policy places nothing: the
-      // provider caches prompt prefixes automatically and the ttl
-      // level is not settable per request.
+      // buildRequest) to an Interactions body. Stateless: `input`
+      // replays the whole transcript as steps on every call. The
+      // system prompt travels as `system_instruction`, tool definitions
+      // become function tools, a structured-output `schema` becomes the
+      // JSON text `response_format` (which composes with function
+      // tools), and `maxTokens` and `reasoning` ride
+      // `generation_config` (as `max_output_tokens` and the thinking
+      // level, verbatim), each omitted when unresolved. A user message
+      // becomes a `user_input` step. An assistant turn translates part
+      // by part, in order: this adapter's own opaque `thought` parts
+      // back to the `thought` steps they came from — Gemini requires
+      // every one resent exactly as received — each tool request to a
+      // `function_call` step, and each run of text and image parts to
+      // one `model_output` step. A `tool` message (a batch's results)
+      // becomes one `function_result` step per result. Part types this
+      // dialect does not own are skipped. The cache policy places
+      // nothing: the provider caches prompt prefixes automatically and
+      // the ttl level is not settable per request.
       buildBody(request) {
         const {
-          system, messages, maxTokens, reasoning, tools, schema
+          system, messages, model, maxTokens, reasoning, tools, schema
         } = request;
         const generationConfig = {
-          ...(maxTokens !== undefined && { maxOutputTokens: maxTokens }),
-          ...(reasoning !== undefined && {
-            thinkingConfig: { thinkingLevel: reasoning }
-          })
+          ...(maxTokens !== undefined && { max_output_tokens: maxTokens }),
+          ...(reasoning !== undefined && { thinking_level: reasoning })
         };
-        // Gemini pairs a function response to its call by name, not id,
-        // so recover the name of the call the engine's synthesized id
-        // refers to (parseResponse mints those ids)
+        // The service refuses a function result that does not name its
+        // function, which the normalized result does not carry: recover
+        // it from the call the result answers
         const toolNamesById = new Map();
         for (const message of messages) {
           for (const part of message.content) {
@@ -235,188 +236,186 @@ module.exports = {
             }
           }
         }
-        const functionDeclarations = [
-          ...(tools || []).map(toFunctionDeclaration),
-          ...(schema
-            ? [ {
-              name: FINAL_ANSWER,
-              description: FINAL_ANSWER_DESCRIPTION,
-              parametersJsonSchema: schema
-            } ]
-            : [])
-        ];
         return {
-          ...(system !== undefined && {
-            systemInstruction: {
-              parts: [ { text: system } ]
+          model,
+          // Stateless: the engine drives its own loop and owns the
+          // transcript; the service stores interactions unless told not
+          // to
+          store: false,
+          ...(system !== undefined && { system_instruction: system }),
+          input: messages.flatMap(toSteps),
+          ...(tools && { tools: tools.map(toTool) }),
+          ...(schema && {
+            response_format: {
+              type: 'text',
+              mime_type: 'application/json',
+              schema
             }
           }),
-          contents: messages.map((message) => ({
-            role: message.role === 'assistant' ? 'model' : 'user',
-            parts: message.content.map(toPart).filter(Boolean)
-          })),
-          ...(functionDeclarations.length && {
-            tools: [ { functionDeclarations } ]
-          }),
-          // Force the structured answer only when nothing else needs the
-          // turn: a real tool the model must be free to call first, or
-          // thinking. Otherwise the description drives it and the
-          // engine's backstop retries a miss.
-          ...(schema && !(tools && tools.length) && reasoning === undefined && {
-            toolConfig: {
-              functionCallingConfig: {
-                mode: 'ANY',
-                allowedFunctionNames: [ FINAL_ANSWER ]
-              }
-            }
-          }),
-          ...(Object.keys(generationConfig).length && { generationConfig })
+          ...(Object.keys(generationConfig).length && {
+            generation_config: generationConfig
+          })
         };
 
-        // The model-facing tool definition; the JSON Schema travels
-        // verbatim as `parametersJsonSchema`, the declaration's JSON
-        // Schema field — its `parameters` sibling is an OpenAPI subset
-        // that rejects keywords such as `additionalProperties`
-        function toFunctionDeclaration(tool) {
-          return {
-            name: tool.name,
-            description: tool.description,
-            parametersJsonSchema: tool.input
-          };
+        // One normalized message → its Interactions steps
+        function toSteps(message) {
+          if (message.role === 'tool') {
+            return message.content.map((part) => ({
+              type: 'function_result',
+              call_id: part.toolCallId,
+              name: toolNamesById.get(part.toolCallId),
+              ...(part.error !== undefined
+                ? {
+                  result: { error: part.error },
+                  is_error: true
+                }
+                : { result: part.output })
+            }));
+          }
+          if (message.role === 'assistant') {
+            return toAssistantSteps(message.content);
+          }
+          return [ {
+            type: 'user_input',
+            content: message.content.map(toContent)
+          } ];
         }
-        function toPart(part) {
-          // The thought signature parseResponse carried over, restored
-          // at the part level exactly as the service sent it
-          const signature = part.thoughtSignature !== undefined &&
-            { thoughtSignature: part.thoughtSignature };
+        function toAssistantSteps(content) {
+          const steps = [];
+          for (const part of content) {
+            if (part.type === 'thought') {
+              // The thought step this adapter's parseResponse carried
+              // over, replayed verbatim in its place
+              steps.push({
+                type: 'thought',
+                signature: part.signature,
+                ...(part.summary !== undefined && { summary: part.summary })
+              });
+            } else if (part.type === 'toolCall') {
+              steps.push({
+                type: 'function_call',
+                id: part.id,
+                name: part.name,
+                arguments: part.input
+              });
+            } else if (part.type === 'text' || part.type === 'image') {
+              const last = steps.at(-1);
+              if (last?.type === 'model_output') {
+                last.content.push(toContent(part));
+              } else {
+                steps.push({
+                  type: 'model_output',
+                  content: [ toContent(part) ]
+                });
+              }
+            }
+            // Anything else is another dialect's part; not ours to
+            // translate
+          }
+          return steps;
+        }
+        function toContent(part) {
           if (part.type === 'text') {
             return {
-              text: part.text,
-              ...signature
+              type: 'text',
+              text: part.text
             };
           }
-          if (part.type === 'toolCall') {
-            return {
-              functionCall: {
-                name: part.name,
-                args: part.input
-              },
-              ...signature
+          // part.type === 'image', in one of the two normalized forms
+          return part.image.url !== undefined
+            ? {
+              type: 'image',
+              uri: part.image.url
+            }
+            : {
+              type: 'image',
+              data: part.image.data,
+              mime_type: part.image.mediaType
             };
-          }
-          if (part.type === 'toolResult') {
-            return {
-              functionResponse: {
-                name: toolNamesById.get(part.toolCallId),
-                response: part.error !== undefined
-                  ? { error: part.error }
-                  : part.output
-              }
-            };
-          }
-          if (part.type === 'image') {
-            // In one of the two normalized forms
-            return part.image.url !== undefined
-              ? {
-                fileData: { fileUri: part.image.url }
-              }
-              : {
-                inlineData: {
-                  mimeType: part.image.mediaType,
-                  data: part.image.data
-                }
-              };
-          }
-          // Another dialect's part; not ours to translate
-          return null;
+        }
+        // The model-facing tool definition; the JSON Schema travels
+        // verbatim as the parameters
+        function toTool(tool) {
+          return {
+            type: 'function',
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.input
+          };
         }
       },
-      // Translate a generateContent response to the normalized
-      // assistant turn { content, finishReason, usage, model }. A
-      // blocked prompt arrives with no candidates and throws the
-      // refusal error here; a safety-family finish reason maps to the
-      // refusal finish reason — "refused" always arrives as an error.
-      // The dialect reports STOP on tool-call turns, so functionCall
-      // parts force the toolCalls finish reason. Gemini function calls
-      // carry no id, but the normalized shape needs one to pair a
-      // result back to its call: the adapter synthesizes a per-turn id
-      // (buildBody recovers the tool name from it). When the request
-      // asked for structured output and the model called the synthetic
-      // final-answer function, that call is the answer, not a function
-      // for the core to run: it becomes a `stop` turn carrying the
-      // arguments on `object` (and their JSON in the text, so the
-      // transcript round-trips). Anything else — free text, a real
-      // function call — parses normally, leaving no `object` for the
-      // engine backstop to retry on. Thought summary parts are not
-      // conversation content and do not travel, but a part-level
-      // thought signature does: it rides the normalized part, and
-      // buildBody must send it back exactly as received when the part
-      // is replayed. Thinking tokens are billed as output, so they add
-      // into outputTokens. An unknown finish reason maps to no
+      // Translate an Interactions response to the normalized assistant
+      // turn { content, finishReason, usage, model }. The steps
+      // translate in order — order matters, because buildBody replays
+      // them in place: a `thought` step rides along as this adapter's
+      // opaque `thought` part (its signature, and its summary when the
+      // service sent one), a `function_call` step becomes a toolCall
+      // part under the service's own call id, and a `model_output`
+      // step's text blocks become text parts. A turn that requested
+      // tools finishes as 'toolCalls' whatever its status; otherwise
+      // `completed` maps to 'stop' and `incomplete` (the output cap,
+      // thinking included) to 'length'. Any other status maps to no
       // finishReason — the engine's turn validation treats that as a
       // malformed (retryable) response, never a truncated success.
+      // When the request asked for structured output, the final
+      // answer's text is the JSON object: it is parsed onto the turn's
+      // `object`, which the engine backstop-validates; malformed JSON
+      // is a retryable response.
       parseResponse(response, request = {}) {
-        const blockReason = response.promptFeedback?.blockReason;
-        if (blockReason) {
-          throw self.apos.error('aiRefusal', `the model blocked this request: ${blockReason}`);
-        }
-        const [ candidate ] = response.candidates || [];
-        let callIndex = 0;
-        const content = (candidate?.content?.parts || [])
-          .filter((part) => !part.thought)
-          .map(fromPart)
-          .filter(Boolean);
-        const usageTokens = self.normalizeUsage(response);
-        if (request.schema) {
-          const answer = content.find(
-            (part) => part.type === 'toolCall' && part.name === FINAL_ANSWER
-          );
-          if (answer) {
-            return {
-              content: [ {
-                type: 'text',
-                text: JSON.stringify(answer.input)
-              } ],
-              object: answer.input,
-              finishReason: 'stop',
-              usage: usageTokens,
-              model: response.modelVersion
-            };
-          }
-        }
-        return {
+        const content = (response.steps || []).flatMap(fromStep);
+        const finishReason = content.some((part) => part.type === 'toolCall')
+          ? 'toolCalls'
+          : {
+            completed: 'stop',
+            incomplete: 'length'
+          }[response.status];
+        const turn = {
           content,
-          finishReason: content.some((part) => part.type === 'toolCall')
-            ? 'toolCalls'
-            : FINISH_REASONS[candidate?.finishReason],
-          usage: usageTokens,
-          model: response.modelVersion
+          finishReason,
+          usage: self.normalizeUsage(response),
+          model: response.model
         };
+        if (request.schema && finishReason === 'stop') {
+          const text = content
+            .filter((part) => part.type === 'text')
+            .map((part) => part.text)
+            .join('');
+          try {
+            turn.object = JSON.parse(text);
+          } catch (e) {
+            throw self.apos.error('aiRetry', 'the model returned malformed structured JSON');
+          }
+        }
+        return turn;
 
-        function fromPart(part) {
-          // Gemini attaches a thought signature at the part level and
-          // requires it back, exactly as received, when the part is
-          // replayed — it rides the normalized part for buildBody to
-          // restore
-          const signature = part.thoughtSignature !== undefined &&
-            { thoughtSignature: part.thoughtSignature };
-          if (typeof part.text === 'string') {
-            return {
-              type: 'text',
-              text: part.text,
-              ...signature
-            };
+        function fromStep(step) {
+          if (step.type === 'thought') {
+            return [ {
+              type: 'thought',
+              signature: step.signature,
+              ...(step.summary !== undefined && { summary: step.summary })
+            } ];
           }
-          if (part.functionCall) {
-            return {
+          if (step.type === 'function_call') {
+            // The step's own copy of the preceding thought signature
+            // stays behind: the thought part carries it, and the
+            // service accepts the call without it
+            return [ {
               type: 'toolCall',
-              id: `${part.functionCall.name}-${callIndex++}`,
-              name: part.functionCall.name,
-              input: part.functionCall.args || {},
-              ...signature
-            };
+              id: step.id,
+              name: step.name,
+              input: step.arguments || {}
+            } ];
           }
-          return null;
+          if (step.type === 'model_output') {
+            return (step.content || [])
+              .filter((block) => block.type === 'text')
+              .map((block) => ({
+                type: 'text',
+                text: block.text
+              }));
+          }
+          return [];
         }
       },
       // Translate a normalized image request { prompt, aspect,
@@ -522,7 +521,7 @@ module.exports = {
             throw self.apos.error('aiRefusal', `the model blocked this request: ${refusal.finishReason}`);
           }
         }
-        const usages = responses.map((response) => self.normalizeUsage(response));
+        const usages = responses.map(imageUsage);
         return {
           images,
           model: responses[0]?.modelVersion,
@@ -538,20 +537,29 @@ module.exports = {
             ? defined.reduce((sum, value) => sum + value, 0)
             : undefined;
         }
+        // The generateContent usageMetadata → normalized token counts
+        function imageUsage(response) {
+          const usage = response.usageMetadata;
+          return {
+            inputTokens: usage?.promptTokenCount,
+            outputTokens: usage?.candidatesTokenCount === undefined
+              ? undefined
+              : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0)
+          };
+        }
       },
-      // The response's usageMetadata → normalized token counts;
-      // thinking tokens are billed as output, so they add into
-      // outputTokens. promptTokenCount already counts the cached
-      // share, reported beside it only on a cache hit; the service
-      // reports no cache writes
+      // The response's usage → normalized token counts; thinking
+      // tokens are billed as output, so they add into outputTokens.
+      // total_input_tokens already counts the cached share reported
+      // beside it; the service reports no cache writes
       normalizeUsage(response) {
-        const usage = response.usageMetadata;
-        const read = usage?.cachedContentTokenCount;
+        const usage = response.usage;
+        const read = usage?.total_cached_tokens;
         return {
-          inputTokens: usage?.promptTokenCount,
-          outputTokens: usage?.candidatesTokenCount === undefined
+          inputTokens: usage?.total_input_tokens,
+          outputTokens: usage?.total_output_tokens === undefined
             ? undefined
-            : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0),
+            : usage.total_output_tokens + (usage.total_thought_tokens || 0),
           ...(Number.isFinite(read) && { cacheReadTokens: read })
         };
       },
