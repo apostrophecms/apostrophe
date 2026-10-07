@@ -768,6 +768,26 @@ describe('External Front', function() {
     }
   });
 
+  it('literal-routes declares a global scope by default', async function() {
+    const data = await apos.http.get('/api/v1/@apostrophecms/url/literal-routes', {
+      headers: externalFrontHeaders()
+    });
+    assert(Array.isArray(data.patterns));
+    assert.strictEqual(data.scope, 'global');
+  });
+
+  it('literal-routes declares the configured scope', async function() {
+    apos.url.options.literalRoutesScope = 'host';
+    try {
+      const data = await apos.http.get('/api/v1/@apostrophecms/url/literal-routes', {
+        headers: externalFrontHeaders()
+      });
+      assert.strictEqual(data.scope, 'host');
+    } finally {
+      apos.url.options.literalRoutesScope = 'global';
+    }
+  });
+
   it('fetch home normally', async function() {
     const data = await await apos.http.get('/', {});
     assert.strictEqual(typeof data, 'string');

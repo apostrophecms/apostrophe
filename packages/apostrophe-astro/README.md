@@ -231,6 +231,8 @@ An array of HTTP headers that you want to prevent from being forwarded from the 
 
 By default, all headers are forwarded except those specified in this array.
 
+Do not exclude `host` in a multisite project. Multisite selects the site by the `host` header, so pages and literal content files would no longer reach the right site.
+
 ### `forwardHeaders` (deprecated)
 
 This option has been replaced by `includeResponseHeaders` which provides clearer naming for its purpose. If both options are provided, `includeResponseHeaders` takes precedence. `forwardHeaders` will be removed in a future version.
@@ -743,6 +745,8 @@ As this integration proxies certain Apostrophe endpoints, there are some routes 
 In addition, literal content files declared by your Apostrophe modules — `robots.txt`, `sitemap.xml`, `llms.txt`
 and any others — are recognised at request time by a middleware and sent to the raw proxy instead of the page
 renderer. Since v1.14.0 you no longer need to list these individually in `proxyRoutes`.
+
+In a multisite project each site has its own list of literal content files, recognised by the request's `host`. This requires current versions of `apostrophe`, multisite and this integration. With an older `apostrophe` or multisite, all sites share the list of the first site that is requested.
 
 These routes exist in SSR mode only. A static build injects none of them.
 
