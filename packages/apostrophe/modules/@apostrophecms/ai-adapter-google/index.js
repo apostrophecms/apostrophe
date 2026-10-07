@@ -1,16 +1,19 @@
 // The standard Google (Gemini) adapter for `apos.ai`. It registers
 // itself with the AI engine at startup; configure the provider with
 // just a key under the engine's `providers.google` entry to use it.
-// All knowledge of the Gemini generateContent dialect — request
-// translation, response parsing, error mapping — lives here. Image
-// generation and editing ride the same surface: an image-capable
-// Gemini model returns inline image parts, so one dialect covers
-// text and images.
+// All knowledge of the Gemini Interactions dialect — request
+// translation, response parsing, error mapping — lives here.
 //
-// Url-form image parts translate to the dialect's `fileData.fileUri`,
-// which the service accepts for its own Files API URIs, not for
-// arbitrary web URLs — pass base64 `{ data, mediaType }` parts for
-// images the service cannot reach.
+// Requests are stateless (`store: false`, no `previous_interaction_id`)
+// since the engine drives its own loop and owns the transcript. Image
+// generation and editing ride the same surface: an image-capable
+// Gemini model returns inline images in its output, so one dialect
+// covers text and images.
+//
+// Url-form image parts translate to the dialect's `uri`, which the
+// service accepts for its own Files API URIs, not for arbitrary web
+// URLs — pass base64 `{ data, mediaType }` parts for images the
+// service cannot reach.
 //
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
