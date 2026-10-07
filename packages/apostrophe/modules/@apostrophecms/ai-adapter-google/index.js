@@ -17,24 +17,14 @@
 
 // The Interactions API version the adapter speaks: the stable surface
 const API_VERSION = 'v1';
-// The dialect's finish reasons → the normalized vocabulary; the
-// whole safety family maps to refusal, which always arrives as an
-// error
-const FINISH_REASONS = {
-  STOP: 'stop',
-  MAX_TOKENS: 'length',
-  SAFETY: 'refusal',
-  RECITATION: 'refusal',
-  PROHIBITED_CONTENT: 'refusal',
-  BLOCKLIST: 'refusal',
-  SPII: 'refusal',
-  IMAGE_SAFETY: 'refusal'
-};
-// The ratio set every current image model takes — what the core's
-// nearest-match resolves against
-const ASPECTS = [
+// The ratio sets the image models take — what the core's nearest-match
+// resolves against; the Flash models add the extreme banner ratios
+const ASPECTS = Object.freeze([
   '1:1', '3:2', '2:3', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'
-];
+]);
+const FLASH_ASPECTS = Object.freeze([
+  ...ASPECTS, '1:4', '4:1', '1:8', '8:1'
+]);
 // The `thinking_level` values a text model accepts; Gemini 3.8 Flash
 // refuses `minimal`
 const THINKING_LEVELS = Object.freeze([
@@ -50,6 +40,10 @@ const IMAGE_SIZES = {
   medium: '1K',
   high: '2K'
 };
+// The image models that refuse any resolution but 1K
+const ONE_K_IMAGE_MODELS = Object.freeze([
+  'gemini-3.1-flash-lite-image'
+]);
 // The thought signature Gemini accepts for a trace another model
 // produced
 const FOREIGN_THOUGHT_SIGNATURE = 'skip_thought_signature_validator';
@@ -126,7 +120,7 @@ module.exports = {
             },
             'gemini-3.1-flash-image': {
               label: 'Gemini 3.1 Flash Image',
-              aspects: ASPECTS
+              aspects: FLASH_ASPECTS
             },
             'gemini-3-pro-image': {
               label: 'Gemini 3 Pro Image',
@@ -134,7 +128,7 @@ module.exports = {
             },
             'gemini-3.1-flash-lite-image': {
               label: 'Gemini 3.1 Flash-Lite Image',
-              aspects: ASPECTS
+              aspects: FLASH_ASPECTS
             }
           },
           validate() {
@@ -155,7 +149,7 @@ module.exports = {
             return self.parseResponse(response, request);
           },
           // text → image and image(s) + text → image, on the same
-          // generateContent surface; the core resolved `aspect` to a
+          // Interactions surface; the core resolved `aspect` to a
           // declared ratio the dialect takes verbatim. The dialect
           // returns one image per call — no count knob — so `count`
           // fans out as that many concurrent requests, their starts
@@ -174,7 +168,7 @@ module.exports = {
                   );
                 }
                 return self.apos.http.post(
-                  `${this.baseUrl}/v1beta/models/${request.model}:generateContent`,
+                  `${this.baseUrl}/${API_VERSION}/interactions`,
                   {
                     headers: {
                       'x-goog-api-key': this.apiKey
@@ -398,13 +392,7 @@ module.exports = {
       // is a retryable response.
       parseResponse(response, request = {}) {
         if (response.status === 'failed') {
-          const errors = response.errors || [];
-          const classified = errors.map(classifyError).filter(Boolean);
-          const [ code, message ] =
-            classified.find(([ name ]) => name === 'aiRefusal') ||
-            classified[0] ||
-            [ 'aiRetry', errors[0]?.message || 'the interaction failed' ];
-          throw self.apos.error(code, message);
+          throw self.apos.error(...classifyFailure(response));
         }
         const content = (response.steps || []).flatMap(fromStep);
         const finishReason = content.some((part) => part.type === 'toolCall')
@@ -463,57 +451,62 @@ module.exports = {
         }
       },
       // Translate a normalized image request { prompt, aspect,
-      // quality, images? } to a generateContent body: one user turn,
-      // the prompt first and any edit sources after it. The dials ride
-      // `generationConfig.imageConfig` — the resolved aspect verbatim
-      // as `aspectRatio`, quality as the `imageSize` resolution — each
-      // omitted when unset, so the provider default applies. An
-      // image-capable model wants TEXT beside IMAGE in
-      // `responseModalities`.
+      // quality, images?, model } to a stateless Interactions body: one
+      // `user_input` step, the prompt first and any edit sources after
+      // it. The image `response_format` asks for an image and carries
+      // the dials — the resolved aspect verbatim as `aspect_ratio`,
+      // quality as the `image_size` resolution (1K on a model that
+      // takes nothing else) — each omitted when unset, so the provider
+      // default applies. Images come back inline by default; the
+      // stable API rejects the `delivery` field that would say so.
       async buildImageBody(request, baseUrl) {
-        const imageConfig = {
-          ...(request.aspect !== undefined && { aspectRatio: request.aspect }),
-          ...(request.quality !== undefined && {
-            imageSize: IMAGE_SIZES[request.quality]
-          })
-        };
         const sources = request.images
           ? await self.resolveImageSources(request.images, baseUrl, request.signal)
           : [];
         return {
-          contents: [ {
-            role: 'user',
-            parts: [
-              { text: request.prompt },
+          model: request.model,
+          store: false,
+          input: [ {
+            type: 'user_input',
+            content: [
+              {
+                type: 'text',
+                text: request.prompt
+              },
               ...sources
             ]
           } ],
-          generationConfig: {
-            responseModalities: [ 'TEXT', 'IMAGE' ],
-            ...(Object.keys(imageConfig).length && { imageConfig })
+          response_format: {
+            type: 'image',
+            ...(request.aspect !== undefined && { aspect_ratio: request.aspect }),
+            ...(request.quality !== undefined && {
+              image_size: ONE_K_IMAGE_MODELS.includes(request.model)
+                ? '1K'
+                : IMAGE_SIZES[request.quality]
+            })
           }
         };
       },
-      // The normalized source refs → the parts an edit sends. Inline
-      // data travels as `inlineData`; a url on the service's own
-      // endpoint (a Files API upload) passes through as `fileData`;
-      // any other url is fetched and inlined, since the service does
-      // not load arbitrary web URLs (built-in fetch — apos.http reads
-      // text only). A source that will not load is a caller error, not
-      // a provider one — a hard stop, no retry.
+      // The normalized source refs → the image content an edit sends.
+      // Inline data travels as `data`; a url on the service's own
+      // endpoint (a Files API upload) passes through as `uri`; any
+      // other url is fetched and inlined, since the service does not
+      // load arbitrary web URLs (built-in fetch — apos.http reads text
+      // only). A source that will not load is a caller error, not a
+      // provider one — a hard stop, no retry.
       resolveImageSources(images, baseUrl, signal) {
         return Promise.all(images.map(async (source) => {
           if (source.data !== undefined) {
             return {
-              inlineData: {
-                mimeType: source.mediaType,
-                data: source.data
-              }
+              type: 'image',
+              data: source.data,
+              mime_type: source.mediaType
             };
           }
           if (source.url.startsWith(baseUrl)) {
             return {
-              fileData: { fileUri: source.url }
+              type: 'image',
+              uri: source.url
             };
           }
           const response = await fetch(source.url, {
@@ -523,52 +516,45 @@ module.exports = {
             throw self.apos.error('invalid', `could not fetch image source "${source.url}": HTTP ${response.status}`);
           }
           return {
-            inlineData: {
-              mimeType: response.headers.get('content-type') || 'application/octet-stream',
-              data: Buffer.from(await response.arrayBuffer()).toString('base64')
-            }
+            type: 'image',
+            data: Buffer.from(await response.arrayBuffer()).toString('base64'),
+            mime_type: response.headers.get('content-type') || 'application/octet-stream'
           };
         }));
       },
-      // Translate the fanned-out generateContent responses to the
+      // Translate the fanned-out Interactions responses to the
       // normalized image result { images, model, usage }: the inline
-      // image parts across all responses and candidates, each typed by
-      // its mime subtype; commentary text parts are not images and do
-      // not travel. Refusals — a blocked prompt, a safety-family
-      // finish — throw only when NOTHING was produced: anything that
-      // survived is delivered. Token usage sums across the requests.
-      // No pixel `size`: this dialect works in ratios, which the core
-      // echoes as `aspect`.
+      // images of every response's `model_output` steps, each typed by
+      // its mime subtype. The `thought` steps hold the model's interim
+      // drafts, not results, and commentary text is not an image;
+      // neither travels. A `failed` interaction throws what its errors
+      // say only when NOTHING was produced: anything that survived is
+      // delivered. Token usage sums across the requests. No pixel
+      // `size`: this dialect works in ratios, which the core echoes as
+      // `aspect`.
       parseImageResponses(responses) {
-        const candidates = responses.flatMap(
-          (response) => response.candidates || []
-        );
-        const images = candidates.flatMap((candidate) =>
-          (candidate.content?.parts || [])
-            .filter((part) => part.inlineData)
-            .map((part) => ({
-              type: (part.inlineData.mimeType || 'image/png').replace('image/', ''),
-              data: part.inlineData.data
+        const images = responses.flatMap((response) =>
+          (response.steps || [])
+            .filter((step) => step.type === 'model_output')
+            .flatMap((step) => step.content || [])
+            .filter((block) => block.type === 'image' && block.data)
+            .map((block) => ({
+              type: (block.mime_type || 'image/png').replace('image/', ''),
+              data: block.data
             }))
         );
         if (!images.length) {
-          const blocked = responses.find(
-            (response) => response.promptFeedback?.blockReason
+          const failed = responses.find(
+            (response) => response.status === 'failed'
           );
-          if (blocked) {
-            throw self.apos.error('aiRefusal', `the model blocked this request: ${blocked.promptFeedback.blockReason}`);
-          }
-          const refusal = candidates.find(
-            (candidate) => FINISH_REASONS[candidate.finishReason] === 'refusal'
-          );
-          if (refusal) {
-            throw self.apos.error('aiRefusal', `the model blocked this request: ${refusal.finishReason}`);
+          if (failed) {
+            throw self.apos.error(...classifyFailure(failed));
           }
         }
-        const usages = responses.map(imageUsage);
+        const usages = responses.map((response) => self.normalizeUsage(response));
         return {
           images,
-          model: responses[0]?.modelVersion,
+          model: responses[0]?.model,
           usage: {
             inputTokens: total(usages.map((usage) => usage.inputTokens)),
             outputTokens: total(usages.map((usage) => usage.outputTokens))
@@ -580,16 +566,6 @@ module.exports = {
           return defined.length
             ? defined.reduce((sum, value) => sum + value, 0)
             : undefined;
-        }
-        // The generateContent usageMetadata → normalized token counts
-        function imageUsage(response) {
-          const usage = response.usageMetadata;
-          return {
-            inputTokens: usage?.promptTokenCount,
-            outputTokens: usage?.candidatesTokenCount === undefined
-              ? undefined
-              : usage.candidatesTokenCount + (usage.thoughtsTokenCount || 0)
-          };
         }
       },
       // The response's usage → normalized token counts; thinking
@@ -634,6 +610,17 @@ module.exports = {
     };
   }
 };
+
+// A `failed` interaction → the apos error code and message it throws
+// as: a refusal when any of its errors is a block, else the first
+// error that classifies, else a transient failure
+function classifyFailure(response) {
+  const errors = response.errors || [];
+  const classified = errors.map(classifyError).filter(Boolean);
+  return classified.find(([ name ]) => name === 'aiRefusal') ||
+    classified[0] ||
+    [ 'aiRetry', errors[0]?.message || 'the interaction failed' ];
+}
 
 // A Gemini error { code, message } → the apos error code and message
 // it travels as, or undefined when nothing marks it. The live service

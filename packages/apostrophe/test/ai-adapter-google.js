@@ -1525,38 +1525,44 @@ describe('AI adapter: google', function() {
 
     // The provider instance the engine bound with this suite's config
     const instance = () => apos.ai.providers.google.adapter;
-    const imagePart = (extras = {}) => ({
-      inlineData: {
-        mimeType: 'image/png',
-        data: 'aW1n'
-      },
+    const imageBlock = (extras = {}) => ({
+      type: 'image',
+      mime_type: 'image/jpeg',
+      data: 'aW1n',
       ...extras
     });
+    // A canned image interaction: the signed thought step that holds
+    // the interim drafts, then the image itself
     const imageResponse = (extras = {}) => ({
-      candidates: [ {
-        content: {
-          role: 'model',
-          parts: [ imagePart() ]
-        },
-        finishReason: 'STOP',
-        index: 0
-      } ],
-      usageMetadata: {
-        promptTokenCount: 9,
-        candidatesTokenCount: 1290
+      object: 'interaction',
+      status: 'completed',
+      model: 'gemini-3.1-flash-image',
+      steps: [
+        thoughtStep('sig-img'),
+        {
+          type: 'model_output',
+          content: [ imageBlock() ]
+        }
+      ],
+      usage: {
+        total_input_tokens: 14,
+        total_output_tokens: 1487,
+        total_thought_tokens: 0,
+        total_cached_tokens: 0,
+        total_tokens: 1501
       },
-      modelVersion: 'gemini-3.1-flash-image',
       ...extras
     });
 
-    it('declares the current image models and their shared ratio set', function() {
+    it('declares the current image models and their ratio sets', function() {
       const { models } = apos.ai.getAdapter('google');
       const aspects = [
         '1:1', '3:2', '2:3', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'
       ];
-      assert.deepEqual(models['gemini-3.1-flash-image'].aspects, aspects);
+      const flashAspects = [ ...aspects, '1:4', '4:1', '1:8', '8:1' ];
+      assert.deepEqual(models['gemini-3.1-flash-image'].aspects, flashAspects);
       assert.deepEqual(models['gemini-3-pro-image'].aspects, aspects);
-      assert.deepEqual(models['gemini-3.1-flash-lite-image'].aspects, aspects);
+      assert.deepEqual(models['gemini-3.1-flash-lite-image'].aspects, flashAspects);
     });
 
     it('generates from a prompt, mapping aspect and quality to the dialect', async function() {
@@ -1572,32 +1578,32 @@ describe('AI adapter: google', function() {
       const [ call ] = httpCalls;
       assert.equal(
         call.url,
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent'
+        'https://generativelanguage.googleapis.com/v1/interactions'
       );
       assert.equal(call.options.headers['x-goog-api-key'], 'sk-test');
       assert.equal(call.options.timeout, 600000);
       assert.deepEqual(call.options.body, {
-        contents: [ {
-          role: 'user',
-          parts: [ { text: 'a watercolor fox' } ]
+        model: 'gemini-3.1-flash-image',
+        store: false,
+        input: [ {
+          type: 'user_input',
+          content: [ text('a watercolor fox') ]
         } ],
-        generationConfig: {
-          responseModalities: [ 'TEXT', 'IMAGE' ],
-          imageConfig: {
-            aspectRatio: '16:9',
-            imageSize: '2K'
-          }
+        response_format: {
+          type: 'image',
+          aspect_ratio: '16:9',
+          image_size: '2K'
         }
       });
       assert.deepEqual(result, {
         images: [ {
-          type: 'png',
+          type: 'jpeg',
           data: 'aW1n'
         } ],
         model: 'gemini-3.1-flash-image',
         usage: {
-          inputTokens: 9,
-          outputTokens: 1290
+          inputTokens: 14,
+          outputTokens: 1487
         }
       });
     });
@@ -1610,8 +1616,25 @@ describe('AI adapter: google', function() {
         quality: 'medium',
         model: 'gemini-3.1-flash-image'
       });
-      assert.deepEqual(httpCalls[0].options.body.generationConfig.imageConfig, {
-        imageSize: '1K'
+      assert.deepEqual(httpCalls[0].options.body.response_format, {
+        type: 'image',
+        image_size: '1K'
+      });
+    });
+
+    it('asks a 1K-only model for 1K whatever the quality', async function() {
+      httpScript = [ () => imageResponse() ];
+      await instance().image(apos.task.getReq(), {
+        prompt: 'a fox',
+        count: 1,
+        aspect: '4:1',
+        quality: 'high',
+        model: 'gemini-3.1-flash-lite-image'
+      });
+      assert.deepEqual(httpCalls[0].options.body.response_format, {
+        type: 'image',
+        aspect_ratio: '4:1',
+        image_size: '1K'
       });
     });
 
@@ -1619,25 +1642,23 @@ describe('AI adapter: google', function() {
       httpScript = [
         () => imageResponse(),
         () => imageResponse({
-          candidates: [ {
-            content: {
-              role: 'model',
-              parts: [
-                { text: 'here is your fox' },
-                imagePart({
-                  inlineData: {
-                    mimeType: 'image/jpeg',
-                    data: 'aW1nMg=='
-                  }
+          steps: [
+            thoughtStep('sig-img'),
+            {
+              type: 'model_output',
+              content: [
+                text('here is your fox'),
+                imageBlock({
+                  mime_type: 'image/png',
+                  data: 'aW1nMg=='
                 })
               ]
-            },
-            finishReason: 'STOP',
-            index: 0
-          } ],
-          usageMetadata: {
-            promptTokenCount: 9,
-            candidatesTokenCount: 1300
+            }
+          ],
+          usage: {
+            total_input_tokens: 14,
+            total_output_tokens: 1300,
+            total_thought_tokens: 20
           }
         })
       ];
@@ -1652,23 +1673,49 @@ describe('AI adapter: google', function() {
       assert.equal(waits.length, 1);
       assert(waits[0] >= 500 && waits[0] < 1000);
       // One image per request, the same body each time; commentary
-      // text parts do not travel
+      // text does not travel
       assert.deepEqual(httpCalls[0].options.body, httpCalls[1].options.body);
       assert.deepEqual(result.images, [
         {
-          type: 'png',
+          type: 'jpeg',
           data: 'aW1n'
         },
         {
-          type: 'jpeg',
+          type: 'png',
           data: 'aW1nMg=='
         }
       ]);
+      // Thinking tokens count as output
       assert.deepEqual(result.usage, {
-        inputTokens: 18,
-        outputTokens: 2590
+        inputTokens: 28,
+        outputTokens: 2807
       });
       assert.deepEqual(logRecords, []);
+    });
+
+    it('delivers only the model_output images, never a thought step\'s', async function() {
+      httpScript = [ () => imageResponse({
+        steps: [
+          {
+            type: 'thought',
+            signature: 'sig-img',
+            summary: [ imageBlock({ data: 'ZHJhZnQ=' }) ]
+          },
+          {
+            type: 'model_output',
+            content: [ imageBlock() ]
+          }
+        ]
+      }) ];
+      const result = await instance().image(apos.task.getReq(), {
+        prompt: 'a fox',
+        count: 1,
+        model: 'gemini-3.1-flash-image'
+      });
+      assert.deepEqual(result.images, [ {
+        type: 'jpeg',
+        data: 'aW1n'
+      } ]);
     });
 
     it('delivers the survivors of a partial fan-out, logging the losses', async function() {
@@ -1676,7 +1723,10 @@ describe('AI adapter: google', function() {
         () => imageResponse(),
         () => {
           throw httpError(500, {}, {
-            error: { message: 'internal error' }
+            error: {
+              code: 'internal_error',
+              message: 'internal error'
+            }
           });
         },
         () => imageResponse()
@@ -1689,8 +1739,8 @@ describe('AI adapter: google', function() {
       assert.equal(result.images.length, 2);
       // Usage sums over the surviving requests only
       assert.deepEqual(result.usage, {
-        inputTokens: 18,
-        outputTokens: 2580
+        inputTokens: 28,
+        outputTokens: 2974
       });
       const [ record ] = logRecords;
       assert.equal(logRecords.length, 1);
@@ -1727,14 +1777,14 @@ describe('AI adapter: google', function() {
     });
 
     it('omits unset dials, and leaves usage the service never reported unset', async function() {
-      httpScript = [ () => imageResponse({ usageMetadata: undefined }) ];
+      httpScript = [ () => imageResponse({ usage: undefined }) ];
       const result = await instance().image(apos.task.getReq(), {
         prompt: 'a fox',
         count: 1,
         model: 'gemini-3-pro-image'
       });
-      assert.deepEqual(httpCalls[0].options.body.generationConfig, {
-        responseModalities: [ 'TEXT', 'IMAGE' ]
+      assert.deepEqual(httpCalls[0].options.body.response_format, {
+        type: 'image'
       });
       assert.deepEqual(result.usage, {
         inputTokens: undefined,
@@ -1742,7 +1792,7 @@ describe('AI adapter: google', function() {
       });
     });
 
-    it('edits with inline and service-hosted sources as parts after the prompt', async function() {
+    it('edits with inline and service-hosted sources after the prompt', async function() {
       httpScript = [ () => imageResponse() ];
       await instance().image(apos.task.getReq(), {
         prompt: 'make the fox wear a red scarf',
@@ -1757,18 +1807,18 @@ describe('AI adapter: google', function() {
           { url: 'https://generativelanguage.googleapis.com/v1beta/files/f1' }
         ]
       });
-      assert.deepEqual(httpCalls[0].options.body.contents, [ {
-        role: 'user',
-        parts: [
-          { text: 'make the fox wear a red scarf' },
+      assert.deepEqual(httpCalls[0].options.body.input, [ {
+        type: 'user_input',
+        content: [
+          text('make the fox wear a red scarf'),
           {
-            inlineData: {
-              mimeType: 'image/png',
-              data: 'aGk='
-            }
+            type: 'image',
+            data: 'aGk=',
+            mime_type: 'image/png'
           },
           {
-            fileData: { fileUri: 'https://generativelanguage.googleapis.com/v1beta/files/f1' }
+            type: 'image',
+            uri: 'https://generativelanguage.googleapis.com/v1beta/files/f1'
           }
         ]
       } ]);
@@ -1795,11 +1845,10 @@ describe('AI adapter: google', function() {
         images: [ { url: 'https://example.com/fox.jpg' } ]
       });
       assert.equal(fetchCalls[0].url, 'https://example.com/fox.jpg');
-      assert.deepEqual(httpCalls[0].options.body.contents[0].parts[1], {
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: 'AQID'
-        }
+      assert.deepEqual(httpCalls[0].options.body.input[0].content[1], {
+        type: 'image',
+        data: 'AQID',
+        mime_type: 'image/jpeg'
       });
     });
 
@@ -1818,27 +1867,31 @@ describe('AI adapter: google', function() {
       assert.equal(httpCalls.length, 0);
     });
 
-    it('throws the refusal error on a blocked prompt', async function() {
-      httpScript = [ () => ({
-        promptFeedback: { blockReason: 'SAFETY' },
-        usageMetadata: { promptTokenCount: 9 }
-      }) ];
-      await assert.rejects(instance().image(apos.task.getReq(), {
+    it('leaves a prompt blocked over HTTP to the engine, which reads a refusal', async function() {
+      httpScript = [ () => {
+        throw httpError(400, {}, {
+          error: {
+            code: 'invalid_request',
+            message: 'Request blocked due to prohibited content guidelines. Please modify your input and retry.'
+          }
+        });
+      } ];
+      const error = await instance().image(apos.task.getReq(), {
         prompt: 'p',
         count: 1,
         model: 'gemini-3.1-flash-image'
-      }), (e) => e.name === 'aiRefusal');
+      }).catch((e) => e);
+      assert.equal(error.status, 400);
+      assert.equal(instance().normalizeError(error).name, 'aiRefusal');
     });
 
-    it('throws the refusal error on a safety finish that produced no image', async function() {
+    it('throws a failed interaction that produced no image as its errors say', async function() {
       httpScript = [ () => imageResponse({
-        candidates: [ {
-          content: {
-            role: 'model',
-            parts: []
-          },
-          finishReason: 'IMAGE_SAFETY',
-          index: 0
+        status: 'failed',
+        steps: [],
+        errors: [ {
+          code: 'image_safety',
+          message: 'blocked'
         } ]
       }) ];
       await assert.rejects(instance().image(apos.task.getReq(), {
@@ -1846,6 +1899,42 @@ describe('AI adapter: google', function() {
         count: 1,
         model: 'gemini-3.1-flash-image'
       }), (e) => e.name === 'aiRefusal');
+      httpScript = [ () => imageResponse({
+        status: 'failed',
+        steps: [],
+        errors: [ {
+          code: 'no_image',
+          message: 'no image'
+        } ]
+      }) ];
+      await assert.rejects(instance().image(apos.task.getReq(), {
+        prompt: 'p',
+        count: 1,
+        model: 'gemini-3.1-flash-image'
+      }), (e) => e.name === 'aiRetry');
+    });
+
+    it('delivers the images beside a failed interaction in a fan-out', async function() {
+      httpScript = [
+        () => imageResponse({
+          status: 'failed',
+          steps: [],
+          errors: [ {
+            code: 'image_safety',
+            message: 'blocked'
+          } ]
+        }),
+        () => imageResponse()
+      ];
+      const result = await instance().image(apos.task.getReq(), {
+        prompt: 'p',
+        count: 2,
+        model: 'gemini-3.1-flash-image'
+      });
+      assert.deepEqual(result.images, [ {
+        type: 'jpeg',
+        data: 'aW1n'
+      } ]);
     });
   });
 });
