@@ -330,7 +330,7 @@ describe('AI adapter: google', function() {
           }
         ]
       }));
-      assert.deepEqual(body.input[1], {
+      assert.deepEqual(body.input[2], {
         type: 'function_result',
         call_id: 'call_1',
         name: 'x',
@@ -364,11 +364,163 @@ describe('AI adapter: google', function() {
       ]);
     });
 
+    it('replays several thought parts and a trailing one, each in its place', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            {
+              type: 'thought',
+              signature: 'sig-1'
+            },
+            {
+              type: 'thought',
+              signature: 'sig-2'
+            },
+            text('done'),
+            {
+              type: 'thought',
+              signature: 'sig-3'
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.input, [
+        thoughtStep('sig-1'),
+        thoughtStep('sig-2'),
+        outputStep('done'),
+        thoughtStep('sig-3')
+      ]);
+    });
+
+    it('opens a message with a tool call another model made with the placeholder', function() {
+      // An Anthropic turn: its thinking part is not a Gemini thought
+      const body = adapter.buildBody(request({
+        messages: [
+          userMessage('Find the pricing page.'),
+          {
+            role: 'assistant',
+            content: [
+              {
+                type: 'thinking',
+                block: {
+                  type: 'thinking',
+                  thinking: 'hidden',
+                  signature: 'x'
+                }
+              },
+              text('Searching.'),
+              {
+                type: 'toolCall',
+                id: 'toolu_1',
+                name: 'find_pages',
+                input: { title: 'Pricing' }
+              }
+            ]
+          }
+        ]
+      }));
+      // The placeholder leads: a turn holding a thought step must open
+      // with one
+      assert.deepEqual(body.input.slice(1), [
+        thoughtStep('skip_thought_signature_validator'),
+        outputStep('Searching.'),
+        {
+          type: 'function_call',
+          id: 'toolu_1',
+          name: 'find_pages',
+          arguments: { title: 'Pricing' }
+        }
+      ]);
+    });
+
+    it('covers parallel foreign tool calls with one placeholder', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'assistant',
+          content: [
+            {
+              type: 'toolCall',
+              id: 'call_a',
+              name: 'x',
+              input: {}
+            },
+            {
+              type: 'toolCall',
+              id: 'call_b',
+              name: 'x',
+              input: {}
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.input.map((step) => step.signature ?? step.id), [
+        'skip_thought_signature_validator',
+        'call_a',
+        'call_b'
+      ]);
+    });
+
+    it('judges each assistant message on its own thought parts', function() {
+      const call = (id) => ({
+        type: 'toolCall',
+        id,
+        name: 'echo',
+        input: { value: id }
+      });
+      const result = (id) => ({
+        role: 'tool',
+        content: [ {
+          type: 'toolResult',
+          toolCallId: id,
+          output: { value: id }
+        } ]
+      });
+      const body = adapter.buildBody(request({
+        messages: [
+          userMessage('echo one'),
+          {
+            role: 'assistant',
+            content: [
+              {
+                type: 'thought',
+                signature: 'sig-1'
+              },
+              call('call_1')
+            ]
+          },
+          result('call_1'),
+          userMessage('echo two'),
+          {
+            role: 'assistant',
+            content: [ call('toolu_2') ]
+          },
+          result('toolu_2'),
+          {
+            role: 'assistant',
+            content: [ text('both echoed') ]
+          }
+        ]
+      }));
+      assert.deepEqual(
+        body.input
+          .filter((step) => step.type === 'thought')
+          .map((step) => step.signature),
+        [ 'sig-1', 'skip_thought_signature_validator' ]
+      );
+      assert.deepEqual(body.input[5], thoughtStep('skip_thought_signature_validator'));
+      assert.equal(body.input[6].id, 'toolu_2');
+    });
+
     it('groups each run of text and image parts into one model_output step', function() {
       const body = adapter.buildBody(request({
         messages: [ {
           role: 'assistant',
           content: [
+            {
+              type: 'thought',
+              signature: 'sig-1'
+            },
             text('here it is'),
             {
               type: 'image',
@@ -388,6 +540,7 @@ describe('AI adapter: google', function() {
         } ]
       }));
       assert.deepEqual(body.input, [
+        thoughtStep('sig-1'),
         {
           type: 'model_output',
           content: [
@@ -420,6 +573,13 @@ describe('AI adapter: google', function() {
                 type: 'thinking',
                 thinking: 'hidden',
                 signature: 'x'
+              }
+            },
+            {
+              type: 'reasoning',
+              item: {
+                type: 'reasoning',
+                encrypted_content: 'opaque'
               }
             },
             {
@@ -504,6 +664,47 @@ describe('AI adapter: google', function() {
           ours
         );
       }
+    });
+
+    it('throws a failed interaction as its errors say', function() {
+      const failed = (errors, steps) => () => adapter.parseResponse(fixture({
+        status: 'failed',
+        errors,
+        ...(steps && { steps })
+      }));
+      const throwsAs = (thunk, name, message) => assert.throws(thunk, (e) => {
+        assert.equal(e.name, name);
+        assert.match(e.message, message);
+        return true;
+      });
+      // Any block wins, whatever else failed beside it
+      throwsAs(failed([
+        { code: 'no_image' },
+        {
+          code: 'safety',
+          message: 'Blocked for safety.'
+        }
+      ]), 'aiRefusal', /^Blocked for safety\.$/);
+      throwsAs(failed([ {
+        code: 'missing_thought_signature',
+        message: 'The response is missing a required thought signature.'
+      } ]), 'invalid', /^Gemini rejected the replayed conversation: The response is missing/);
+      throwsAs(failed([ { code: 'malformed_function_call' } ]), 'aiRetry', /^malformed_function_call$/);
+      throwsAs(failed([ {
+        code: 'api_error',
+        message: 'Internal error.'
+      } ]), 'aiRetry', /^Internal error\.$/);
+      throwsAs(failed(), 'aiRetry', /^the interaction failed$/);
+      // A function call on a failed interaction is not a request to act
+      throwsAs(failed([ { code: 'unexpected_tool_call' } ], [
+        thoughtStep(),
+        {
+          type: 'function_call',
+          id: 'call_1',
+          name: 'x',
+          arguments: {}
+        }
+      ]), 'aiRetry', /^unexpected_tool_call$/);
     });
 
     it('adds thinking tokens into the output count', function() {
@@ -600,6 +801,24 @@ describe('AI adapter: google', function() {
         signature: 'sig-1',
         summary
       });
+    });
+
+    it('carries several thought steps and a trailing one, in order', function() {
+      const turn = adapter.parseResponse(fixture({
+        steps: [
+          thoughtStep('sig-1'),
+          thoughtStep('sig-2'),
+          outputStep('done'),
+          thoughtStep('sig-3')
+        ]
+      }));
+      assert.deepEqual(turn.content, [
+        thoughtStep('sig-1'),
+        thoughtStep('sig-2'),
+        text('done'),
+        thoughtStep('sig-3')
+      ]);
+      assert.equal(turn.finishReason, 'stop');
     });
 
     it('keeps the output text blocks, in order, and skips what it does not own', function() {
@@ -704,42 +923,124 @@ describe('AI adapter: google', function() {
     it('prefers the provider message', function() {
       const error = adapter.normalizeError(httpError(400, {}, {
         error: {
+          code: 'invalid_request',
+          message: 'Thinking level THINKING_LEVEL_MINIMAL is not supported for this model.'
+        }
+      }));
+      assert.equal(error.name, 'invalid');
+      assert.equal(error.data.status, 400);
+      assert.equal(
+        error.message,
+        'Thinking level THINKING_LEVEL_MINIMAL is not supported for this model.'
+      );
+    });
+
+    it('reads the gateway\'s array-wrapped auth errors', function() {
+      const invalidKey = adapter.normalizeError(httpError(400, {}, [ {
+        error: {
           code: 400,
           message: 'API key not valid. Please pass a valid API key.',
           status: 'INVALID_ARGUMENT'
         }
-      }));
-      assert.equal(error.name, 'invalid');
-      assert.equal(error.message, 'API key not valid. Please pass a valid API key.');
+      } ]));
+      assert.equal(invalidKey.name, 'invalid');
+      assert.equal(invalidKey.message, 'API key not valid. Please pass a valid API key.');
+      const noKey = adapter.normalizeError(httpError(403, {}, [ {
+        error: {
+          code: 403,
+          message: 'Method doesn\'t allow unregistered callers.',
+          status: 'PERMISSION_DENIED'
+        }
+      } ]));
+      assert.equal(noKey.name, 'forbidden');
+      assert.equal(noKey.data.status, 403);
+      assert.equal(noKey.message, 'Method doesn\'t allow unregistered callers.');
     });
 
-    it('reads the retry hint from the header or the RetryInfo detail', function() {
-      const header = adapter.normalizeError(httpError(429, { 'retry-after': '7' }));
+    it('reads the retry delay from the Retry-After header only', function() {
+      const header = adapter.normalizeError(httpError(429, { 'retry-after': '7' }, {
+        error: {
+          code: 'rate_limit_exceeded',
+          message: 'Rate limit exceeded.'
+        }
+      }));
+      assert.equal(header.name, 'aiRetry');
+      assert.equal(header.data.kind, 'rateLimit');
       assert.equal(header.data.retryAfter, 7);
-      const detail = adapter.normalizeError(httpError(429, {}, {
+      assert.equal(header.message, 'Rate limit exceeded.');
+      const bare = adapter.normalizeError(httpError(429, {}, {
         error: {
-          code: 429,
-          message: 'Resource has been exhausted (e.g. check quota).',
-          status: 'RESOURCE_EXHAUSTED',
-          details: [ {
-            '@type': 'type.googleapis.com/google.rpc.RetryInfo',
-            retryDelay: '37s'
-          } ]
+          code: 'quota_exceeded',
+          message: 'Daily quota exceeded.'
         }
       }));
-      assert.equal(detail.data.retryAfter, 37);
-      const garbage = adapter.normalizeError(httpError(429, {}, {
+      assert.equal(bare.name, 'aiRetry');
+      assert.equal(bare.data.retryAfter, undefined);
+    });
+
+    it('maps a blocked generation to a refusal, by its message or its code', function() {
+      const observed = adapter.normalizeError(httpError(400, {}, {
         error: {
-          code: 429,
-          message: 'Resource has been exhausted (e.g. check quota).',
-          status: 'RESOURCE_EXHAUSTED',
-          details: [ {
-            '@type': 'type.googleapis.com/google.rpc.RetryInfo',
-            retryDelay: 'soon'
-          } ]
+          code: 'invalid_request',
+          message: 'Request blocked due to prohibited content guidelines. Please modify your input and retry.'
         }
       }));
-      assert.equal(garbage.data.retryAfter, undefined);
+      assert.equal(observed.name, 'aiRefusal');
+      assert.equal(observed.data.status, 400);
+      assert.equal(
+        observed.message,
+        'Request blocked due to prohibited content guidelines. Please modify your input and retry.'
+      );
+      for (const code of [ 'safety', 'prohibited_content', 'image_safety', 'content_blocked' ]) {
+        const documented = adapter.normalizeError(httpError(400, {}, {
+          error: {
+            code,
+            message: 'Blocked.'
+          }
+        }));
+        assert.equal(documented.name, 'aiRefusal');
+        assert.equal(documented.message, 'Blocked.');
+      }
+    });
+
+    it('maps the documented generation errors to the transient code', function() {
+      for (const code of [
+        'malformed_function_call', 'malformed_tool_call', 'unexpected_tool_call',
+        'too_many_tool_calls', 'no_image'
+      ]) {
+        const error = adapter.normalizeError(httpError(400, {}, {
+          error: { code }
+        }));
+        assert.equal(error.name, 'aiRetry');
+        assert.equal(error.message, code);
+      }
+    });
+
+    it('explains a rejected thought signature, by its message or its code', function() {
+      const hint = 'Gemini transcripts must be replayed exactly as returned, "thought" parts unmodified; a transcript edited by hand or recorded by an earlier version of this adapter may not replay.';
+      const observed = adapter.normalizeError(httpError(400, {}, {
+        error: {
+          code: 'invalid_request',
+          message: 'Corrupted thought signature.'
+        }
+      }));
+      assert.equal(observed.name, 'invalid');
+      assert.equal(observed.data.status, 400);
+      assert.equal(
+        observed.message,
+        `Gemini rejected the replayed conversation: Corrupted thought signature. ${hint}`
+      );
+      const documented = adapter.normalizeError(httpError(400, {}, {
+        error: {
+          code: 'missing_thought_signature',
+          message: 'The response is missing a required thought signature.'
+        }
+      }));
+      assert.equal(documented.name, 'invalid');
+      assert.equal(
+        documented.message,
+        `Gemini rejected the replayed conversation: The response is missing a required thought signature. ${hint}`
+      );
     });
 
     it('maps timeouts and network failures to the transient code', function() {
@@ -920,6 +1221,63 @@ describe('AI adapter: google', function() {
       ]);
     });
 
+    it('continues a tool transcript another provider produced', async function() {
+      httpScript = [
+        () => fixture({
+          steps: [ thoughtStep('sig-done'), outputStep('done') ]
+        })
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), {
+        messages: [
+          userMessage('use the tool'),
+          {
+            role: 'assistant',
+            content: [
+              {
+                type: 'thinking',
+                block: {
+                  type: 'thinking',
+                  thinking: 'hidden',
+                  signature: 'x'
+                }
+              },
+              {
+                type: 'toolCall',
+                id: 'toolu_1',
+                name: 'echo',
+                input: { value: 'pricing' }
+              }
+            ]
+          },
+          {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: 'toolu_1',
+              output: { value: 'pricing' }
+            } ]
+          }
+        ],
+        tools: [ 'echo' ]
+      });
+      assert.equal(result.text, 'done');
+      assert.deepEqual(httpCalls[0].options.body.input.slice(1), [
+        thoughtStep('skip_thought_signature_validator'),
+        {
+          type: 'function_call',
+          id: 'toolu_1',
+          name: 'echo',
+          arguments: { value: 'pricing' }
+        },
+        {
+          type: 'function_result',
+          call_id: 'toolu_1',
+          name: 'echo',
+          result: { value: 'pricing' }
+        }
+      ]);
+    });
+
     it('returns a validated object for a structured call over the wire', async function() {
       const object = {
         title: 'Pricing',
@@ -1008,18 +1366,13 @@ describe('AI adapter: google', function() {
       }
     });
 
-    it('retries a 429 at the RetryInfo delay', async function() {
+    it('retries a 429 at the Retry-After delay', async function() {
       httpScript = [
         () => {
-          throw httpError(429, {}, {
+          throw httpError(429, { 'retry-after': '2' }, {
             error: {
-              code: 429,
-              message: 'Resource has been exhausted (e.g. check quota).',
-              status: 'RESOURCE_EXHAUSTED',
-              details: [ {
-                '@type': 'type.googleapis.com/google.rpc.RetryInfo',
-                retryDelay: '2s'
-              } ]
+              code: 'rate_limit_exceeded',
+              message: 'Rate limit exceeded.'
             }
           });
         },
@@ -1031,21 +1384,21 @@ describe('AI adapter: google', function() {
       assert.deepEqual(waits, [ 2000 ]);
       const [ record ] = logRecords;
       assert.equal(record.type, 'retry');
-      assert.equal(record.message, 'Resource has been exhausted (e.g. check quota).');
+      assert.equal(record.message, 'Rate limit exceeded.');
       assert.equal(record.data.kind, 'rateLimit');
       assert.equal(record.data.status, 429);
       assert.equal(record.data.retryAfter, 2);
     });
 
-    it('hard-stops an invalid API key, arriving as the 400 quirk', async function() {
+    it('hard-stops an invalid API key, arriving as the gateway\'s 400', async function() {
       httpScript = [ () => {
-        throw httpError(400, {}, {
+        throw httpError(400, {}, [ {
           error: {
             code: 400,
             message: 'API key not valid. Please pass a valid API key.',
             status: 'INVALID_ARGUMENT'
           }
-        });
+        } ]);
       } ];
       await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
         assert.equal(e.name, 'invalid');
@@ -1056,6 +1409,44 @@ describe('AI adapter: google', function() {
       assert.deepEqual(
         logRecords.map((record) => [ record.type, record.data.code ]),
         [ [ 'failure', 'invalid' ] ]
+      );
+    });
+
+    it('stops on a blocked request without retrying', async function() {
+      httpScript = [ () => {
+        throw httpError(400, {}, {
+          error: {
+            code: 'invalid_request',
+            message: 'Request blocked due to prohibited content guidelines. Please modify your input and retry.'
+          }
+        });
+      } ];
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.equal(e.name, 'aiRefusal');
+        return true;
+      });
+      assert.equal(httpCalls.length, 1);
+      assert.deepEqual(
+        logRecords.map((record) => [ record.type, record.data.code, record.data.status ]),
+        [ [ 'failure', 'aiRefusal', 400 ] ]
+      );
+    });
+
+    it('retries a failed interaction', async function() {
+      httpScript = [
+        () => fixture({
+          status: 'failed',
+          steps: [],
+          errors: [ { code: 'malformed_function_call' } ]
+        }),
+        () => fixture()
+      ];
+      const result = await apos.ai.generate(apos.task.getReq(), 'p');
+      assert.equal(result.text, 'a haiku');
+      assert.equal(httpCalls.length, 2);
+      assert.deepEqual(
+        logRecords.map((record) => [ record.type, record.data.code ]),
+        [ [ 'retry', 'aiRetry' ] ]
       );
     });
 

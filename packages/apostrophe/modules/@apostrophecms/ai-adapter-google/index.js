@@ -50,6 +50,21 @@ const IMAGE_SIZES = {
   medium: '1K',
   high: '2K'
 };
+// The thought signature Gemini accepts for a trace another model
+// produced
+const FOREIGN_THOUGHT_SIGNATURE = 'skip_thought_signature_validator';
+// The documented error codes for a generation the service blocked
+const BLOCKED_CODES = Object.freeze([
+  'safety', 'recitation', 'language', 'prohibited_content', 'spii',
+  'blocklist', 'image_safety', 'image_prohibited_content',
+  'image_recitation', 'image_other', 'content_blocked'
+]);
+// The documented error codes for a generation that went wrong in a way
+// a new attempt may not repeat
+const GENERATION_ERROR_CODES = Object.freeze([
+  'malformed_function_call', 'malformed_tool_call', 'unexpected_tool_call',
+  'too_many_tool_calls', 'no_image'
+]);
 
 module.exports = {
   options: {
@@ -212,11 +227,13 @@ module.exports = {
       // back to the `thought` steps they came from — Gemini requires
       // every one resent exactly as received — each tool request to a
       // `function_call` step, and each run of text and image parts to
-      // one `model_output` step. A `tool` message (a batch's results)
-      // becomes one `function_result` step per result. Part types this
-      // dialect does not own are skipped. The cache policy places
-      // nothing: the provider caches prompt prefixes automatically and
-      // the ttl level is not settable per request.
+      // one `model_output` step. A message with tool requests and no
+      // thought part opens with a placeholder thought step. A `tool`
+      // message (a batch's results) becomes one `function_result` step
+      // per result. Part types this dialect does not own are skipped.
+      // The cache policy places nothing: the provider caches prompt
+      // prefixes automatically and the ttl level is not settable per
+      // request.
       buildBody(request) {
         const {
           system, messages, model, maxTokens, reasoning, tools, schema
@@ -282,6 +299,20 @@ module.exports = {
         }
         function toAssistantSteps(content) {
           const steps = [];
+          // The service refuses a function call no thought step
+          // precedes, as in a transcript another model produced, and a
+          // turn holding a thought step must open with one: Gemini's
+          // documented dummy signature leads such a message, one for
+          // all its calls
+          if (
+            content.some((part) => part.type === 'toolCall') &&
+            !content.some((part) => part.type === 'thought')
+          ) {
+            steps.push({
+              type: 'thought',
+              signature: FOREIGN_THOUGHT_SIGNATURE
+            });
+          }
           for (const part of content) {
             if (part.type === 'thought') {
               // The thought step this adapter's parseResponse carried
@@ -351,17 +382,30 @@ module.exports = {
       // opaque `thought` part (its signature, and its summary when the
       // service sent one), a `function_call` step becomes a toolCall
       // part under the service's own call id, and a `model_output`
-      // step's text blocks become text parts. A turn that requested
-      // tools finishes as 'toolCalls' whatever its status; otherwise
-      // `completed` maps to 'stop' and `incomplete` (the output cap,
-      // thinking included) to 'length'. Any other status maps to no
-      // finishReason — the engine's turn validation treats that as a
-      // malformed (retryable) response, never a truncated success.
+      // step's text blocks become text parts. A `failed` interaction
+      // throws what its `errors` say: a refusal when any of them is a
+      // block, the broken-transcript error when one rejects a thought
+      // signature, otherwise a transient failure. Past that, a turn
+      // that requested tools finishes as 'toolCalls' whatever its status;
+      // otherwise `completed` maps to 'stop' and `incomplete` (the
+      // output cap, thinking included) to 'length'. Any other status
+      // maps to no finishReason — the engine's turn validation treats
+      // that as a malformed (retryable) response, never a truncated
+      // success.
       // When the request asked for structured output, the final
       // answer's text is the JSON object: it is parsed onto the turn's
       // `object`, which the engine backstop-validates; malformed JSON
       // is a retryable response.
       parseResponse(response, request = {}) {
+        if (response.status === 'failed') {
+          const errors = response.errors || [];
+          const classified = errors.map(classifyError).filter(Boolean);
+          const [ code, message ] =
+            classified.find(([ name ]) => name === 'aiRefusal') ||
+            classified[0] ||
+            [ 'aiRetry', errors[0]?.message || 'the interaction failed' ];
+          throw self.apos.error(code, message);
+        }
         const content = (response.steps || []).flatMap(fromStep);
         const finishReason = content.some((part) => part.type === 'toolCall')
           ? 'toolCalls'
@@ -564,25 +608,56 @@ module.exports = {
         };
       },
       // Map any error the transport produced to a normalized apos
-      // error, the only shape the engine reacts to: the engine's shared
-      // status ladder, plus the one thing this service does its own way
-      // — when no Retry-After header arrives, the retry delay is in the
-      // RetryInfo detail Gemini puts in the error body. No request id
-      // header exists on this API.
+      // error, the only shape the engine reacts to. A blocked
+      // generation is a refusal, a generation error a transient
+      // failure and a rejected thought signature a broken transcript;
+      // everything else takes the engine's shared status ladder. The
+      // API gateway in front of the service answers an auth failure in
+      // an older error shape, wrapped in an array. No request id header
+      // exists on this API.
       normalizeError(error) {
-        return self.apos.ai.normalizeHttpError(error, {
-          retryHint: (e) => retryInfoSeconds(e.body?.error?.details)
-        });
-
-        // The google.rpc.RetryInfo detail carries a protobuf Duration
-        // like "37s"
-        function retryInfoSeconds(details) {
-          const info = (details || []).find((detail) =>
-            detail['@type'] === 'type.googleapis.com/google.rpc.RetryInfo');
-          const match = /^(\d+(?:\.\d+)?)s$/.exec(info?.retryDelay || '');
-          return match ? Math.ceil(Number(match[1])) : undefined;
+        const body = Array.isArray(error?.body) ? error.body[0] : error?.body;
+        const classified = classifyError(body?.error);
+        if (classified) {
+          return self.apos.error(classified[0], classified[1], {
+            status: error.status
+          });
         }
+        return self.apos.ai.normalizeHttpError(body === error?.body
+          ? error
+          : {
+            ...error,
+            message: error.message,
+            body
+          });
       }
     };
   }
 };
+
+// A Gemini error { code, message } → the apos error code and message
+// it travels as, or undefined when nothing marks it. The live service
+// reports blocks and rejected thought signatures as a generic
+// `invalid_request` told apart only by its message, so the message is
+// matched beside the documented codes.
+function classifyError({ code, message } = {}) {
+  if (
+    BLOCKED_CODES.includes(code) ||
+    (code === 'invalid_request' && message?.startsWith('Request blocked due to'))
+  ) {
+    return [ 'aiRefusal', message || 'the model refused this request' ];
+  }
+  if (
+    code === 'missing_thought_signature' ||
+    (code === 'invalid_request' && /thought signature/i.test(message))
+  ) {
+    const reason = (message || code).replace(/\.$/, '');
+    return [
+      'invalid',
+      `Gemini rejected the replayed conversation: ${reason}. Gemini transcripts must be replayed exactly as returned, "thought" parts unmodified; a transcript edited by hand or recorded by an earlier version of this adapter may not replay.`
+    ];
+  }
+  if (GENERATION_ERROR_CODES.includes(code)) {
+    return [ 'aiRetry', message || code ];
+  }
+}
