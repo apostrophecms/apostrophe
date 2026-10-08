@@ -72,7 +72,7 @@ describe('AI adapter: openai', function() {
   // A minimal normalized adapter request, as the engine assembles it
   const request = (extras = {}) => ({
     messages: [ userMessage('write a haiku about cats') ],
-    model: 'gpt-5.6-terra',
+    model: 'gpt-6.1-sol',
     maxTokens: 128000,
     cache: false,
     ...extras
@@ -109,7 +109,7 @@ describe('AI adapter: openai', function() {
     id: 'resp_1',
     object: 'response',
     status: 'completed',
-    model: 'gpt-5.6-terra-2026-06-26',
+    model: 'gpt-6.1-sol',
     output: [ messageItem('a haiku') ],
     // input_tokens is the whole prompt; the details break it down
     usage: {
@@ -138,12 +138,25 @@ describe('AI adapter: openai', function() {
     assert.equal(apos.ai.active, true);
     const info = apos.ai.modelInfo();
     assert.equal(info.provider, 'openai');
-    assert.equal(info.model, 'gpt-5.6-terra');
+    assert.equal(info.model, 'gpt-6.1-sol');
     assert.equal(info.contextWindow, 1050000);
     assert.equal(info.maxOutputTokens, 128000);
     const high = apos.ai.modelInfo({ effort: 'high' });
-    assert.equal(high.model, 'gpt-5.6-sol');
+    assert.equal(high.model, 'gpt-6.1-sol');
     assert.equal(high.reasoning, 'high');
+  });
+
+  it('declares the reasoning efforts per model', function() {
+    const { models } = apos.ai.getAdapter('openai');
+    assert.deepEqual(models['gpt-6-luna'].reasoning, [
+      'none', 'low', 'medium', 'high', 'xhigh', 'max'
+    ]);
+    // The Sol and Astra models refuse 'none'
+    for (const model of [ 'gpt-6.1-sol', 'gpt-6-astra' ]) {
+      assert.deepEqual(models[model].reasoning, [
+        'low', 'medium', 'high', 'xhigh', 'max'
+      ]);
+    }
   });
 
   it('declares the image models and their aspects', function() {
@@ -168,7 +181,7 @@ describe('AI adapter: openai', function() {
   describe('request translation', function() {
     it('builds the minimal stateless body', function() {
       assert.deepEqual(adapter.buildBody(request()), {
-        model: 'gpt-5.6-terra',
+        model: 'gpt-6.1-sol',
         store: false,
         input: [ {
           role: 'user',
@@ -412,7 +425,7 @@ describe('AI adapter: openai', function() {
           cacheReadTokens: 6,
           cacheWriteTokens: 4
         },
-        model: 'gpt-5.6-terra-2026-06-26'
+        model: 'gpt-6.1-sol'
       });
     });
 
@@ -665,7 +678,7 @@ describe('AI adapter: openai', function() {
       assert.equal(result.finishReason, 'stop');
       assert.equal(result.provider, 'openai');
       // The model the response named, not the routed alias
-      assert.equal(result.model, 'gpt-5.6-terra-2026-06-26');
+      assert.equal(result.model, 'gpt-6.1-sol');
       assert.deepEqual(result.usage, {
         inputTokens: 12,
         outputTokens: 7,
@@ -679,7 +692,7 @@ describe('AI adapter: openai', function() {
       assert.equal(call.options.timeout, 600000);
       // The whole body: the default short cache policy adds nothing
       assert.deepEqual(call.options.body, {
-        model: 'gpt-5.6-terra',
+        model: 'gpt-6.1-sol',
         store: false,
         input: [ {
           role: 'user',
@@ -696,7 +709,7 @@ describe('AI adapter: openai', function() {
       httpScript = [ () => fixture() ];
       await apos.ai.generate(apos.task.getReq(), 'p', {
         provider: 'gateway',
-        model: 'gpt-5.6-terra'
+        model: 'gpt-6.1-sol'
       });
       const [ call ] = httpCalls;
       assert.equal(call.url, 'https://llm-gateway.example.com/openai/v1/responses');
