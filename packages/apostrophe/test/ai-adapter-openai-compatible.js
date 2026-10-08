@@ -72,7 +72,7 @@ describe('AI adapter: openai-compatible', function() {
   // A minimal normalized adapter request, as the engine assembles it
   const request = (extras = {}) => ({
     messages: [ userMessage('write a haiku about cats') ],
-    model: 'gpt-5.6-terra',
+    model: 'gpt-6.1-sol',
     maxTokens: 128000,
     cache: false,
     ...extras
@@ -91,7 +91,7 @@ describe('AI adapter: openai-compatible', function() {
   const fixture = (extras = {}) => ({
     id: 'chatcmpl-1',
     object: 'chat.completion',
-    model: 'gpt-5.6-terra-2026-06-26',
+    model: 'gpt-6.1-sol',
     choices: [ choice() ],
     // prompt_tokens is the whole prompt; the details break it down
     usage: {
@@ -120,14 +120,27 @@ describe('AI adapter: openai-compatible', function() {
     assert.equal(apos.ai.active, true);
     const info = apos.ai.modelInfo();
     assert.equal(info.provider, 'openai-compatible');
-    assert.equal(info.model, 'gpt-5.6-terra');
+    assert.equal(info.model, 'gpt-6.1-sol');
     assert.equal(info.contextWindow, 1050000);
     assert.equal(info.maxOutputTokens, 128000);
     const high = apos.ai.modelInfo({ effort: 'high' });
-    assert.equal(high.model, 'gpt-5.6-sol');
+    assert.equal(high.model, 'gpt-6.1-sol');
     // No reasoning on the native high row: the reasoning path for
     // OpenAI proper is the openai adapter
     assert.equal(high.reasoning, undefined);
+  });
+
+  it('declares the reasoning efforts per model', function() {
+    const { models } = apos.ai.getAdapter('openai-compatible');
+    assert.deepEqual(models['gpt-6-luna'].reasoning, [
+      'none', 'low', 'medium', 'high', 'xhigh', 'max'
+    ]);
+    // The Sol and Astra models refuse 'none'
+    for (const model of [ 'gpt-6.1-sol', 'gpt-6-astra' ]) {
+      assert.deepEqual(models[model].reasoning, [
+        'low', 'medium', 'high', 'xhigh', 'max'
+      ]);
+    }
   });
 
   it('declares the same image models as the openai adapter', function() {
@@ -142,7 +155,7 @@ describe('AI adapter: openai-compatible', function() {
   describe('request translation', function() {
     it('builds the minimal body, collapsing one text part to a string', function() {
       assert.deepEqual(adapter.buildBody(request()), {
-        model: 'gpt-5.6-terra',
+        model: 'gpt-6.1-sol',
         messages: [ {
           role: 'user',
           content: 'write a haiku about cats'
@@ -376,7 +389,7 @@ describe('AI adapter: openai-compatible', function() {
           cacheReadTokens: 6,
           cacheWriteTokens: 4
         },
-        model: 'gpt-5.6-terra-2026-06-26'
+        model: 'gpt-6.1-sol'
       });
     });
 
@@ -619,7 +632,7 @@ describe('AI adapter: openai-compatible', function() {
       assert.equal(result.finishReason, 'stop');
       assert.equal(result.provider, 'openai-compatible');
       // The model the response named, not the routed alias
-      assert.equal(result.model, 'gpt-5.6-terra-2026-06-26');
+      assert.equal(result.model, 'gpt-6.1-sol');
       assert.deepEqual(result.usage, {
         inputTokens: 12,
         outputTokens: 7,
@@ -633,7 +646,7 @@ describe('AI adapter: openai-compatible', function() {
       assert.equal(call.options.timeout, 600000);
       // The whole body: the default short cache policy adds nothing
       assert.deepEqual(call.options.body, {
-        model: 'gpt-5.6-terra',
+        model: 'gpt-6.1-sol',
         messages: [ {
           role: 'user',
           content: 'write a haiku about cats'
@@ -646,7 +659,7 @@ describe('AI adapter: openai-compatible', function() {
       httpScript = [ () => fixture() ];
       await apos.ai.generate(apos.task.getReq(), 'p', {
         provider: 'gateway',
-        model: 'gpt-5.6-terra'
+        model: 'gpt-6.1-sol'
       });
       const [ call ] = httpCalls;
       assert.equal(call.url, 'https://llm-gateway.example.com/openai/v1/chat/completions');
@@ -684,7 +697,7 @@ describe('AI adapter: openai-compatible', function() {
       httpScript = [ () => fixture() ];
       await apos.ai.generate(apos.task.getReq(), 'p', {
         provider: 'gateway',
-        model: 'gpt-5.6-sol',
+        model: 'gpt-6.1-sol',
         tools: [ 'echo' ],
         reasoning: 'high'
       });

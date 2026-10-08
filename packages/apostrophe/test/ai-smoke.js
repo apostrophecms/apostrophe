@@ -396,6 +396,198 @@ describe('AI live smoke', function() {
       assert(step.result !== undefined);
     });
   });
+
+  describe('anthropic structured output without forcing', function() {
+    // A real dialect contract: the newer adaptive models reject a forced
+    // tool, so on them the synthetic final-answer tool is left to its
+    // description. The shared battery's structured case runs on the low
+    // route, whose model still takes the forced tool
+    const provider = PROVIDERS.find((row) => row.name === 'anthropic');
+    let apos;
+
+    before(async function() {
+      if (!enabled || !provider.key) {
+        this.skip();
+      }
+      apos = await createFor(provider);
+    });
+
+    after(async function() {
+      if (apos) {
+        return t.destroy(apos);
+      }
+    });
+
+    it('returns structured output on an adaptive model', async function() {
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'invent a cat',
+        {
+          effort: 'medium',
+          schema: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              age: { type: 'integer' }
+            },
+            required: [ 'name', 'age' ],
+            additionalProperties: false
+          },
+          maxTokens: 4000,
+          cache: false
+        }
+      );
+      record(apos, req, result, { object: result.object });
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(typeof result.object.name, 'string');
+      assert.equal(typeof result.object.age, 'number');
+    });
+  });
+
+  describe('google thinking', function() {
+    // Two dialect contracts. Gemini returns signed thought steps and
+    // requires them back verbatim when the turn's tool results are
+    // submitted — the adapter carries them as its opaque `thought` part;
+    // the shared battery never raises the reasoning level, so it only
+    // replays the minimal ones. And the response schema travels beside
+    // the function tools on the same request, which the shared battery
+    // never combines
+    const provider = PROVIDERS.find((row) => row.name === 'google');
+    let apos;
+
+    before(async function() {
+      if (!enabled || !provider.key) {
+        this.skip();
+      }
+      apos = await createFor(provider);
+    });
+
+    after(async function() {
+      if (apos) {
+        return t.destroy(apos);
+      }
+    });
+
+    it('replays thought parts across a tool round trip', async function() {
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'call the echo tool with value "hi"',
+        {
+          effort: 'low',
+          reasoning: 'high',
+          tools: [ 'echo' ],
+          maxTokens: 4000,
+          cache: false
+        }
+      );
+      record(apos, req, result, { text: result.text.slice(0, 80) });
+      assert.equal(result.finishReason, 'stop');
+      const step = result.steps.find((entry) => entry.toolCall.name === 'echo');
+      assert(step);
+      assert(step.result !== undefined);
+      const calling = result.messages.find((message) => message.role === 'assistant' &&
+        message.content.some((part) => part.type === 'toolCall'));
+      const thought = calling.content.find((part) => part.type === 'thought');
+      assert.equal(typeof thought.signature, 'string');
+    });
+
+    it('returns structured output beside a tool', async function() {
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'call the echo tool with value "hi", then report what it echoed',
+        {
+          // The 'low' model repeats the tool call on every turn when a
+          // response schema is present, until the step cap
+          effort: 'medium',
+          tools: [ 'echo' ],
+          schema: {
+            type: 'object',
+            properties: { echoed: { type: 'string' } },
+            required: [ 'echoed' ],
+            additionalProperties: false
+          },
+          maxTokens: provider.maxTokens,
+          cache: false
+        }
+      );
+      record(apos, req, result, { object: result.object });
+      assert.equal(result.finishReason, 'stop');
+      assert(result.steps.find((entry) => entry.toolCall.name === 'echo'));
+      assert.equal(typeof result.object.echoed, 'string');
+    });
+  });
+
+  describe('cross-provider transcript', function() {
+    // A transcript is plain data, so one provider can continue another's.
+    // Gemini refuses a function call that no thought of its own precedes,
+    // so the google adapter opens each foreign tool-calling message with
+    // the service's dummy thought signature; only a live call proves the
+    // service accepts it. Anthropic records, Google continues, one
+    // instance each, as a stored transcript would be reloaded
+    const recorder = PROVIDERS.find((row) => row.name === 'anthropic');
+    const continuer = PROVIDERS.find((row) => row.name === 'google');
+    let apos;
+    // The recorded case's transcript, the continued case's input
+    let transcript;
+
+    before(function() {
+      if (!enabled || !recorder.key || !continuer.key) {
+        this.skip();
+      }
+    });
+
+    afterEach(async function() {
+      if (apos) {
+        await t.destroy(apos);
+        apos = null;
+      }
+    });
+
+    it('records a tool transcript on anthropic', async function() {
+      apos = await createFor(recorder);
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'call the echo tool with value "hi"',
+        {
+          effort: 'low',
+          tools: [ 'echo' ],
+          maxTokens: recorder.maxTokens,
+          cache: false
+        }
+      );
+      record(apos, req, result, { messages: result.messages.length });
+      assert.equal(result.finishReason, 'stop');
+      assert(result.steps.find((entry) => entry.toolCall.name === 'echo'));
+      transcript = result.messages;
+    });
+
+    it('continues it with tools on google', async function() {
+      // Nothing to continue when the recording case skipped or failed
+      if (!transcript) {
+        this.skip();
+      }
+      apos = await createFor(continuer);
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'now call the echo tool with value "bye"',
+        {
+          messages: transcript,
+          effort: 'low',
+          tools: [ 'echo' ],
+          maxTokens: continuer.maxTokens,
+          cache: false
+        }
+      );
+      record(apos, req, result, { text: result.text.slice(0, 80) });
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(result.provider, continuer.name);
+    });
+  });
 });
 
 // Non-repeating prose of about `chars` characters: repetitive text

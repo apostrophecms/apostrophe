@@ -205,9 +205,9 @@ describe('AI: named providers and baseUrl', function() {
 
     it('reports the anthropic adapter\'s own declarations', function() {
       const { models } = apos.ai.modelCatalog().providers.anthropic;
-      assert.equal(models['claude-sonnet-5'].label, 'Sonnet 5');
+      assert.equal(models['claude-sonnet-5-5'].label, 'Sonnet 5.5');
       assert.deepEqual(
-        models['claude-sonnet-5'].reasoning,
+        models['claude-sonnet-5-5'].reasoning,
         [ 'low', 'medium', 'high', 'xhigh', 'max' ]
       );
       assert.deepEqual(
@@ -318,7 +318,7 @@ describe('AI: named providers and baseUrl', function() {
     it('keeps the native defaults: effort table and model metadata', function() {
       const info = apos.ai.modelInfo();
       assert.equal(info.provider, 'openai-compatible');
-      assert.equal(info.model, 'gpt-5.6-terra');
+      assert.equal(info.model, 'gpt-6.1-sol');
       assert.equal(info.contextWindow, 1050000);
       assert.equal(info.maxOutputTokens, 128000);
       assert.equal(info.capabilities.image, true);
@@ -327,11 +327,11 @@ describe('AI: named providers and baseUrl', function() {
     it('sends the native-routed call through the gateway door', async function() {
       const result = await apos.ai.generate(apos.task.getReq(), 'p');
       assert.equal(result.provider, 'openai-compatible');
-      assert.equal(result.model, 'gpt-5.6-terra');
+      assert.equal(result.model, 'gpt-6.1-sol');
       const [ hit ] = hits;
       assert.equal(hit.url, '/v1/chat/completions');
       assert.equal(hit.headers.authorization, 'Bearer sk-test');
-      assert.equal(hit.body.model, 'gpt-5.6-terra');
+      assert.equal(hit.body.model, 'gpt-6.1-sol');
       assert.equal(hit.body.max_completion_tokens, 128000);
     });
   });

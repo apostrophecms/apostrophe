@@ -119,7 +119,7 @@ describe('AI adapter: anthropic', function() {
     assert.equal(apos.ai.active, true);
     const info = apos.ai.modelInfo();
     assert.equal(info.provider, 'anthropic');
-    assert.equal(info.model, 'claude-sonnet-5');
+    assert.equal(info.model, 'claude-sonnet-5-5');
     assert.equal(info.contextWindow, 1000000);
     assert.equal(info.maxOutputTokens, 64000);
     assert.equal(info.reasoning, 'medium');
@@ -127,7 +127,7 @@ describe('AI adapter: anthropic', function() {
     assert.equal(low.model, 'claude-haiku-4-5');
     assert.equal(low.reasoning, undefined);
     const high = apos.ai.modelInfo({ effort: 'high' });
-    assert.equal(high.model, 'claude-opus-5');
+    assert.equal(high.model, 'claude-opus-5-5');
     assert.equal(high.reasoning, 'high');
   });
 
@@ -245,7 +245,7 @@ describe('AI adapter: anthropic', function() {
     it('maps reasoning levels to effort on an adaptive model', function() {
       for (const level of [ 'low', 'medium', 'high', 'xhigh', 'max' ]) {
         const body = adapter.buildBody(request({
-          model: 'claude-opus-5',
+          model: 'claude-opus-5-5',
           reasoning: level
         }));
         assert.deepEqual(body.thinking, { type: 'adaptive' });
@@ -255,7 +255,7 @@ describe('AI adapter: anthropic', function() {
 
     it('never sends a token budget to an adaptive model', function() {
       const body = adapter.buildBody(request({
-        model: 'claude-sonnet-5',
+        model: 'claude-sonnet-5-5',
         reasoning: 'high'
       }));
       assert.equal(body.thinking.budget_tokens, undefined);
@@ -304,7 +304,7 @@ describe('AI adapter: anthropic', function() {
       );
       throwsInvalid(
         () => adapter.buildBody(request({
-          model: 'claude-opus-5',
+          model: 'claude-opus-5-5',
           reasoning: 'extreme'
         })),
         /reasoning "extreme" is not an effort level/
@@ -484,6 +484,15 @@ describe('AI adapter: anthropic', function() {
       const body = adapter.buildBody(request({
         schema: { type: 'object' },
         reasoning: 'high'
+      }));
+      assert.equal(body.tools[0].name, '_final_answer');
+      assert.equal('tool_choice' in body, false);
+    });
+
+    it('does not force the final-answer tool on an adaptive model', function() {
+      const body = adapter.buildBody(request({
+        model: 'claude-sonnet-5-5',
+        schema: { type: 'object' }
       }));
       assert.equal(body.tools[0].name, '_final_answer');
       assert.equal('tool_choice' in body, false);
@@ -770,7 +779,7 @@ describe('AI adapter: anthropic', function() {
       // No workspaceId on this entry, no header
       assert.equal('anthropic-workspace-id' in call.options.headers, false);
       assert.equal(call.options.timeout, 600000);
-      assert.equal(call.options.body.model, 'claude-sonnet-5');
+      assert.equal(call.options.body.model, 'claude-sonnet-5-5');
       assert.equal(call.options.body.max_tokens, 64000);
       // The default short cache policy became the rolling marker
       assert.deepEqual(call.options.body.messages, [ {
@@ -787,7 +796,7 @@ describe('AI adapter: anthropic', function() {
       httpScript = [ () => fixture() ];
       await apos.ai.generate(apos.task.getReq(), 'p', {
         provider: 'gateway',
-        model: 'claude-sonnet-5'
+        model: 'claude-sonnet-5-5'
       });
       const [ call ] = httpCalls;
       assert.equal(call.url, 'https://llm-gateway.example.com/anthropic/v1/messages');
@@ -932,10 +941,12 @@ describe('AI adapter: anthropic', function() {
             description: { type: 'string' }
           },
           required: [ 'title', 'description' ]
-        }
+        },
+        effort: 'low'
       });
       assert.deepEqual(result.object, object);
-      // No real tools and no reasoning at medium effort: the tool is forced
+      // No real tools, no reasoning and a model that takes a forced tool
+      // at low effort: the tool is forced
       assert.deepEqual(httpCalls[0].options.body.tool_choice, {
         type: 'tool',
         name: '_final_answer'
@@ -1086,16 +1097,16 @@ describe('AI adapter: anthropic', function() {
       );
       assert.deepEqual(labels, {
         'claude-haiku-4-5': 'Haiku 4.5',
-        'claude-sonnet-5': 'Sonnet 5',
-        'claude-opus-5': 'Opus 5'
+        'claude-sonnet-5-5': 'Sonnet 5.5',
+        'claude-opus-5-5': 'Opus 5.5'
       });
     });
 
     it('declares effort levels as the reasoning of an adaptive model', function() {
       const { models } = adapter.adapter();
       const levels = [ 'low', 'medium', 'high', 'xhigh', 'max' ];
-      assert.deepEqual(models['claude-sonnet-5'].reasoning, levels);
-      assert.deepEqual(models['claude-opus-5'].reasoning, levels);
+      assert.deepEqual(models['claude-sonnet-5-5'].reasoning, levels);
+      assert.deepEqual(models['claude-opus-5-5'].reasoning, levels);
     });
 
     it('declares the configured budget names as the reasoning of a budgeted model', function() {

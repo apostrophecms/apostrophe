@@ -19,10 +19,13 @@
 
 const image = require('./lib/image');
 
-// The `reasoning.effort` values every current text model accepts —
-// the whole GPT-5.6 tier shares one vocabulary
+// The `reasoning.effort` values a text model accepts; GPT-6.1 Sol and
+// GPT-6 Astra refuse `none`
 const REASONING_EFFORTS = Object.freeze([
   'none', 'low', 'medium', 'high', 'xhigh', 'max'
+]);
+const THINKING_EFFORTS = Object.freeze([
+  'low', 'medium', 'high', 'xhigh', 'max'
 ]);
 
 module.exports = {
@@ -57,31 +60,31 @@ module.exports = {
             caching: true
           },
           effort: {
-            low: { model: 'gpt-5.6-luna' },
-            medium: { model: 'gpt-5.6-terra' },
+            low: { model: 'gpt-6-luna' },
+            medium: { model: 'gpt-6.1-sol' },
             high: {
-              model: 'gpt-5.6-sol',
+              model: 'gpt-6.1-sol',
               reasoning: 'high'
             }
           },
           models: {
-            'gpt-5.6-luna': {
-              label: 'GPT-5.6 Luna',
+            'gpt-6-luna': {
+              label: 'GPT-6 Luna',
               contextWindow: 1050000,
               maxOutputTokens: 128000,
               reasoning: REASONING_EFFORTS
             },
-            'gpt-5.6-terra': {
-              label: 'GPT-5.6 Terra',
+            'gpt-6.1-sol': {
+              label: 'GPT-6.1 Sol',
               contextWindow: 1050000,
               maxOutputTokens: 128000,
-              reasoning: REASONING_EFFORTS
+              reasoning: THINKING_EFFORTS
             },
-            'gpt-5.6-sol': {
-              label: 'GPT-5.6 Sol',
+            'gpt-6-astra': {
+              label: 'GPT-6 Astra',
               contextWindow: 1050000,
               maxOutputTokens: 128000,
-              reasoning: REASONING_EFFORTS
+              reasoning: THINKING_EFFORTS
             },
             ...image.models
           },
