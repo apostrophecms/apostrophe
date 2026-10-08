@@ -84,6 +84,7 @@
               :meta="meta"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
+              :server-errors="serverErrors"
               @update:model-value="updateDocFields"
               @validate="triggerValidate"
             />
