@@ -10,7 +10,10 @@ module.exports = {
 
   options: {
     alias: 'url',
-    static: false
+    static: false,
+    // `global` when the literal routes are the same for every Host, `host`
+    // when they depend on it (multisite).
+    literalRoutesScope: 'global'
   },
 
   restApiRoutes(self) {
@@ -63,14 +66,17 @@ module.exports = {
       get: {
         // GET /api/v1/@apostrophecms/url/literal-routes
         //
-        // Returns `{ patterns: [ ... ] }`.
+        // Returns `{ patterns: [ ... ], scope }`, where `scope` is the
+        // `literalRoutesScope` option: `global` lets the consumer cache the
+        // patterns once, `host` means it must cache them per Host.
         // See the `getLiteralContentRoutes` method.
         'literal-routes': async (req) => {
           if (!self.isExternalFront(req)) {
             throw self.apos.error('forbidden');
           }
           return {
-            patterns: await self.getLiteralContentRoutes(req)
+            patterns: await self.getLiteralContentRoutes(req),
+            scope: self.options.literalRoutesScope
           };
         }
       }
