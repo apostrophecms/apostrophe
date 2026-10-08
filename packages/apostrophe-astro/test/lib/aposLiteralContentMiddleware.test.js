@@ -165,14 +165,14 @@ describe('aposLiteralContentMiddleware', () => {
       assert.deepEqual(calls, [ 'alpha.test' ]);
     });
 
-    it('evicts the least recently used host past 100 hosts', async () => {
+    it('evicts the least recently used host past 500 hosts', async () => {
       const { onRequest, calls } = await load(() => manifest([ '/robots.txt' ], 'host'));
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 500; i++) {
         await run(onRequest, `http://site${i}.test/robots.txt`);
       }
       // Touch site0, so site1 is now the least recently used.
       await run(onRequest, 'http://site0.test/robots.txt');
-      await run(onRequest, 'http://site100.test/robots.txt');
+      await run(onRequest, 'http://site500.test/robots.txt');
       calls.length = 0;
       await run(onRequest, 'http://site0.test/robots.txt');
       await run(onRequest, 'http://site1.test/robots.txt');

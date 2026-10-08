@@ -34,7 +34,7 @@ const MAX_NOT_FOUND = 5;
 
 // Only hosts the backend serves are cached per host, so this is a safety net.
 // The least recently used host is evicted past this size.
-const MAX_HOSTS = 100;
+const MAX_HOSTS = 500;
 
 // How long a host without a manifest is skipped before asking again.
 const UNKNOWN_HOST_TTL = 30 * 1000;
