@@ -188,6 +188,9 @@ module.exports = {
                     .annotateAreaForExternalFront(field, v, { scene: req.scene });
                 }
               });
+              // Fields rendered in place with `AposField` need the same
+              // annotations they get when the whole page is rendered
+              await self.apos.template.annotateWysiwygFieldsForExternalFront(req, area);
               const result = {
                 ...req.data,
                 options,

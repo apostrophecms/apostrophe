@@ -1354,20 +1354,12 @@ module.exports = {
 
       async annotateDocForExternalFront(doc, { scene, req } = {}) {
         const handled = new WeakSet();
-        const wysiwygHandled = new WeakSet();
         const missingAreas = [];
-        const wysiwygFields = [];
         self.apos.doc.walk(doc, (o, k, v) => {
           if (o._edit === true && !handled.has(o)) {
             handled.add(o);
             for (const field of self.missingSchemaAreas(o)) {
               missingAreas.push([ o, field ]);
-            }
-          }
-          if (req && !wysiwygHandled.has(o)) {
-            wysiwygHandled.add(o);
-            for (const field of self.wysiwygSchemaFields(o)) {
-              wysiwygFields.push([ o, field ]);
             }
           }
           if (v && v.metaType === 'area') {
@@ -1402,7 +1394,28 @@ module.exports = {
           area._docId = o._docId ?? (o.metaType === 'doc' ? o._id : null);
           self.annotateAreaForExternalFront(field, area, { scene });
         }
-        // Likewise after the walk, since rendering a value is asynchronous
+        if (req) {
+          await self.annotateWysiwygFieldsForExternalFront(req, doc);
+        }
+      },
+
+      // Annotate every field of `root`, and of everything nested in it, that
+      // an external front may render in place with its `AposField` component.
+      // Used for whole docs, and by the `render-widget` route for a widget
+      // that was just added or edited, which would otherwise come back with
+      // nothing to edit in place until the page is refreshed.
+      async annotateWysiwygFieldsForExternalFront(req, root) {
+        const handled = new WeakSet();
+        const wysiwygFields = [];
+        self.apos.doc.walk(root, (o) => {
+          if (!handled.has(o)) {
+            handled.add(o);
+            for (const field of self.wysiwygSchemaFields(o)) {
+              wysiwygFields.push([ o, field ]);
+            }
+          }
+        });
+        // After the walk, since rendering a value is asynchronous
         for (const [ o, field ] of wysiwygFields) {
           await self.annotateWysiwygFieldForExternalFront(req, o, field);
         }
