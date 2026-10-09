@@ -1,22 +1,44 @@
 <template>
-  <div
-    class="apos-media-editor"
-    :class="{
-      'apos-is-replacing': showReplace
-    }"
-  >
+  <div class="apos-media-editor">
     <div
       v-if="activeMedia"
       class="apos-media-editor__inner"
     >
-      <div class="apos-media-editor__thumb-wrapper">
+      <div
+        class="apos-media-editor__thumb-wrapper"
+        :class="{
+          'apos-is-dragging': dragging,
+          'apos-is-uploading': uploading
+        }"
+        @dragover="dragOver"
+        @dragleave="dragging = false"
+        @drop.prevent="dropFile"
+      >
         <img
           v-if="activeMedia.attachment && activeMedia.attachment._urls"
           class="apos-media-editor__thumb"
           :src="activeMedia.attachment._urls[restoreOnly ? 'one-sixth' : 'one-third']"
           :alt="activeMedia.description || ''"
         >
+        <div
+          v-if="dragging || uploading"
+          class="apos-media-editor__thumb-overlay"
+        >
+          <AposSpinner v-if="uploading" />
+          <cloud-upload-icon
+            v-else
+            :size="38"
+          />
+        </div>
       </div>
+      <input
+        ref="fileInput"
+        type="file"
+        class="apos-sr-only"
+        :accept="attachmentField?.accept"
+        tabindex="-1"
+        @change="chooseFile"
+      >
       <ul class="apos-media-editor__details">
         <li
           v-if="createdDate"
@@ -43,15 +65,12 @@
         </li>
       </ul>
       <ul class="apos-media-editor__links">
-        <li
-          class="apos-media-editor__link"
-          aria-hidden="true"
-        >
+        <li class="apos-media-editor__link">
           <AposButton
             type="quiet"
             label="apostrophe:replace"
-            :disabled="isArchived"
-            @click="showReplace = true"
+            :disabled="!canReplace"
+            @click="$refs.fileInput.click()"
           />
         </li>
         <li
@@ -82,7 +101,7 @@
         v-if="docFields.data.title !== undefined"
         ref="schema"
         v-model="docFields"
-        :schema="schema"
+        :schema="formSchema"
         :modifiers="['small', 'inverted']"
         :trigger-validation="triggerValidation"
         :doc-id="docFields.data._id"
@@ -129,7 +148,7 @@ import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixi
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { klona } from 'klona';
 import dayjs from 'dayjs';
-import { createId, isEqual } from 'apostrophe/lib/beneath.js';
+import { createId } from 'apostrophe/lib/beneath.js';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 
 dayjs.extend(advancedFormat);
@@ -163,10 +182,22 @@ export default {
       original: klona(this.media),
       lipKey: '',
       triggerValidation: false,
-      showReplace: false
+      dragging: false,
+      uploading: false
     };
   },
   computed: {
+    // The attachment is replaced via the "Replace" button or by dropping
+    // a file on the preview, not via a field in the form
+    formSchema() {
+      return this.schema.filter(field => field.name !== 'attachment');
+    },
+    attachmentField() {
+      return this.schema.find(field => field.name === 'attachment');
+    },
+    canReplace() {
+      return !this.isArchived && !this.uploading && !this.attachmentField?.readOnly;
+    },
     moduleOptions() {
       return window.apos.modules[this.activeMedia.type] || {};
     },
@@ -270,19 +301,9 @@ export default {
           if (!(Object.keys(oldData).length > 0 && Object.keys(newData).length > 0)) {
             this.$emit('modified', false);
           } else {
-            this.$emit('modified', detectDocChange(this.schema, this.original, newData));
+            this.emitModified();
           }
         });
-
-        if ((this.activeMedia.attachment && !newData.attachment)) {
-          this.updateActiveAttachment({});
-        } else if (
-          (newData.attachment && !this.activeMedia.attachment) ||
-          (this.activeMedia.attachment && !newData.attachment) ||
-          !isEqual(newData.attachment, this.activeMedia.attachment)
-        ) {
-          this.updateActiveAttachment(newData.attachment);
-        }
       }
     },
     async media(newVal) {
@@ -297,9 +318,16 @@ export default {
     moreMenuHandler(item) {
       this[item.action]();
     },
+    emitModified() {
+      // The attachment is not part of the form, so it is tracked
+      // separately in activeMedia
+      this.$emit('modified', detectDocChange(this.schema, this.original, {
+        ...this.docFields.data,
+        attachment: this.activeMedia.attachment
+      }));
+    },
     async updateActiveDoc(newMedia) {
       newMedia = newMedia || {};
-      this.showReplace = false;
       this.activeMedia = klona(newMedia);
       this.restoreOnly = !!this.activeMedia.archived;
       this.original = klona(newMedia);
@@ -407,23 +435,95 @@ export default {
             fallback: `${errorMessage} ${this.moduleLabels.singular}`
           });
         }
-      } finally {
-        this.showReplace = false;
       }
     },
     generateLipKey() {
       this.lipKey = createId();
     },
     cancel() {
-      this.showReplace = false;
       this.$emit('back');
     },
     lockNotAvailable() {
       this.$emit('modified', false);
       this.cancel();
     },
-    updateActiveAttachment(attachment) {
-      this.activeMedia.attachment = attachment;
+    dragOver(event) {
+      event.preventDefault();
+      if (this.canReplace) {
+        this.dragging = true;
+      }
+    },
+    dropFile(event) {
+      this.dragging = false;
+      if (!this.canReplace) {
+        return;
+      }
+      const [ file ] = event.dataTransfer.files || [];
+      if (file) {
+        return this.replaceFile(file);
+      }
+    },
+    chooseFile(event) {
+      const [ file ] = event.target.files || [];
+      // Allow the same file to be chosen again later
+      event.target.value = null;
+      if (file) {
+        return this.replaceFile(file);
+      }
+    },
+    async replaceFile(file) {
+      const extension = `.${file.name.split('.').pop()}`.toLowerCase();
+      const accept = this.attachmentField?.accept;
+      if (accept && !accept.split(',').includes(extension)) {
+        await apos.notify('apostrophe:fileTypeNotAccepted', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true,
+          interpolate: {
+            extension,
+            extensions: accept
+          }
+        });
+        return;
+      }
+      this.uploading = true;
+      try {
+        await apos.notify('apostrophe:uploading', {
+          dismiss: true,
+          icon: 'cloud-upload-icon',
+          interpolate: {
+            name: file.name
+          }
+        });
+        const formData = new window.FormData();
+        formData.append('file', file);
+        const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+          body: formData
+        });
+        await apos.notify('apostrophe:uploaded', {
+          type: 'success',
+          dismiss: true,
+          icon: 'check-all-icon',
+          interpolate: {
+            name: file.name,
+            count: 1
+          }
+        });
+        this.activeMedia.attachment = attachment;
+        this.emitModified();
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error uploading file.', error);
+        const msg = error.body?.message || this.$t('apostrophe:uploadError');
+        await apos.notify(msg, {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true,
+          localize: false
+        });
+      } finally {
+        this.uploading = false;
+      }
     },
     viewMedia () {
       window.open(this.activeMedia.attachment._urls.original, '_blank');
@@ -482,17 +582,37 @@ export default {
   }
 
   .apos-media-editor__thumb-wrapper {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     height: 180px;
     margin-bottom: 20px;
     border: 1px solid var(--a-base-7);
+    transition: border-color 200ms ease;
+
+    &.apos-is-dragging {
+      border: 2px dashed var(--a-primary);
+    }
   }
 
   .apos-media-editor__thumb {
     max-width: 100%;
     max-height: 100%;
+    // Avoid spurious dragleave events from the child
+    pointer-events: none;
+  }
+
+  .apos-media-editor__thumb-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--a-primary);
+    background-color: var(--a-base-10);
+    opacity: 0.85;
+    pointer-events: none;
   }
 
   .apos-media-editor :deep(.apos-field) {
@@ -534,14 +654,6 @@ export default {
 
     & + & {
       margin-left: 20px;
-    }
-  }
-
-  :deep([data-apos-field='attachment']) {
-    .apos-media-editor:not(.apos-is-replacing) & {
-      position: absolute;
-      left: -999rem;
-      opacity: 0;
     }
   }
 
