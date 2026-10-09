@@ -290,9 +290,14 @@ export default {
       // race condition when toggling selection off
       return this.media?.archived;
     },
-    // The `isModified` prop also covers the manager's selection
+    // The `isModified` prop also covers the manager's selection.
+    // The attachment is not part of the form, so it is tracked
+    // separately in activeMedia
     isDocModified() {
-      return detectDocChange(this.schema, this.original, this.docFields.data);
+      return detectDocChange(this.schema, this.original, {
+        ...this.docFields.data,
+        attachment: this.activeMedia.attachment
+      });
     },
     saveDisabled() {
       if (this.docFields.hasErrors) {
@@ -330,12 +335,7 @@ export default {
       this[item.action]();
     },
     emitModified() {
-      // The attachment is not part of the form, so it is tracked
-      // separately in activeMedia
-      this.$emit('modified', detectDocChange(this.schema, this.original, {
-        ...this.docFields.data,
-        attachment: this.activeMedia.attachment
-      }));
+      this.$emit('modified', this.isDocModified);
     },
     async updateActiveDoc(newMedia) {
       newMedia = newMedia || {};
