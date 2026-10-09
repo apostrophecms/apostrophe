@@ -170,6 +170,7 @@
   "discardDraftAffirmativeLabel": "Sim, descartar alterações",
   "discardDraftDescription": "Isso descartará todas as alterações desde a última publicação do documento.",
   "discardImageChangesPrompt": "Deseja descartar alterações para a imagem ativa?",
+  "discardSelectionPrompt": "Tem certeza de que deseja descartar sua seleção?",
   "dismissSubmission": "Dispensar Envio",
   "dismissedSubmission": "Envio Dispensado.",
   "displayName": "Nome de Exibição",

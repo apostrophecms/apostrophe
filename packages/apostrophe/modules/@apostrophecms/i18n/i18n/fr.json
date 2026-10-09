@@ -170,6 +170,7 @@
   "discardDraftAffirmativeLabel": "Oui, annuler les modifications",
   "discardDraftDescription": "Cela annulera les modifications effectuées depuis la dernière publication du document.",
   "discardImageChangesPrompt": "Voulez-vous annuler les modifications de cette image ?",
+  "discardSelectionPrompt": "Voulez-vous vraiment annuler votre sélection ?",
   "dismissSubmission": "Rejeter la soumission",
   "dismissedSubmission": "Submission rejetée.",
   "displayName": "Afficher le nom",

@@ -170,6 +170,7 @@
   "discardDraftAffirmativeLabel": "Sí, descartar cambios",
   "discardDraftDescription": "Esto descartará todos los cambios que se han hecho desde la ultima vez que fue publicado.",
   "discardImageChangesPrompt": "¿Quiere descartar los cambios a la imagen activa?",
+  "discardSelectionPrompt": "¿Está seguro de que quiere descartar su selección?",
   "dismissSubmission": "Descartar Propuesta",
   "dismissedSubmission": "Propuesta descartada.",
   "displayName": "Nombre Para Mostrar",
