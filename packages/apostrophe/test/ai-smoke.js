@@ -26,19 +26,19 @@ const assert = require('assert/strict');
 // Model pins, so a bump is a conscious edit here rather than drift: the
 // openai row pins gpt-image-2, the google row gemini-3.1-flash-image.
 
+// Every low route reasons, so each cap leaves headroom for the reasoning
+// tokens ahead of the text
 const PROVIDERS = [
   {
     name: 'anthropic',
     envKey: 'APOS_ANTHROPIC_KEY',
-    maxTokens: 200,
+    maxTokens: 2000,
     cacheShares: {
       cold: 'cacheWriteTokens',
       warm: 'cacheReadTokens'
     }
   },
   {
-    // Reasoning-capable routes need headroom for the reasoning tokens
-    // ahead of the text, hence the larger caps
     name: 'openai',
     envKey: 'APOS_OPENAI_KEY',
     imageModel: 'gpt-image-2',
@@ -377,20 +377,30 @@ describe('AI live smoke', function() {
 
     it('replays thinking blocks across a tool round trip', async function() {
       const req = apos.task.getReq();
+      // An adaptive model skips thinking on a trivial ask, so the ask
+      // takes some working out before the tool call
       const result = await apos.ai.generate(
         req,
-        'call the echo tool with value "hi"',
+        'Find the smallest prime above 1000 whose digits sum to 20, then ' +
+          'call the echo tool with it as the value',
         {
           effort: 'low',
-          reasoning: 'low',
+          reasoning: 'high',
           tools: [ 'echo' ],
-          // Above the 'low' thinking budget, with room for the answer
           maxTokens: 3000,
           cache: false
         }
       );
-      record(apos, req, result, { text: result.text.slice(0, 80) });
+      const thinkingParts = result.messages
+        .flatMap((message) => message.content)
+        .filter((part) => part.type === 'thinking').length;
+      record(apos, req, result, {
+        text: result.text.slice(0, 80),
+        thinkingParts
+      });
       assert.equal(result.finishReason, 'stop');
+      // Without a thinking block the round trip replayed nothing
+      assert(thinkingParts > 0);
       const step = result.steps.find((entry) => entry.toolCall.name === 'echo');
       assert(step);
       assert(step.result !== undefined);
@@ -400,8 +410,9 @@ describe('AI live smoke', function() {
   describe('anthropic structured output without forcing', function() {
     // A real dialect contract: the newer adaptive models reject a forced
     // tool, so on them the synthetic final-answer tool is left to its
-    // description. The shared battery's structured case runs on the low
-    // route, whose model still takes the forced tool
+    // description. The shared battery's structured case covers Haiku,
+    // which takes a forced tool but is not given one; this one covers a
+    // model that rejects it
     const provider = PROVIDERS.find((row) => row.name === 'anthropic');
     let apos;
 
