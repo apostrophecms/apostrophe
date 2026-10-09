@@ -348,6 +348,9 @@ describe('AI live smoke', function() {
         assert(image.data.length > 0);
         assert.equal(result.provider, provider.name);
         assert.equal(result.aspect, '1:1');
+        // Image output bills at its own rate, so its share must travel
+        assert(result.usage.imageOutputTokens > 0);
+        assert(result.usage.imageOutputTokens <= result.usage.outputTokens);
         generated = image;
       });
 
@@ -378,6 +381,9 @@ describe('AI live smoke', function() {
         assert(result.images[0].data.length > 0);
         assert.equal(result.provider, provider.name);
         assert.equal(result.aspect, '1:1');
+        // The source image is part of the input
+        assert(result.usage.imageInputTokens > 0);
+        assert(result.usage.imageInputTokens <= result.usage.inputTokens);
       });
     });
   }

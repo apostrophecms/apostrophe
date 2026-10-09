@@ -554,6 +554,19 @@ describe('AI image dials', function() {
       });
     });
 
+    it('reports the image shares the adapter reported', async function() {
+      const usage = {
+        inputTokens: 1041,
+        outputTokens: 196,
+        imageInputTokens: 1024,
+        imageOutputTokens: 196
+      };
+      imageScript = [ () => imageResult({ usage }) ];
+      const result = await apos.ai.generateImage(apos.task.getReq(), 'a fox');
+      assert.deepEqual(usageRecords[0].usage, usage);
+      assert.deepEqual(result.usage, usage);
+    });
+
     it('reports a rejected result, and one without usage', async function() {
       imageScript = [
         () => ({ images: [] }),

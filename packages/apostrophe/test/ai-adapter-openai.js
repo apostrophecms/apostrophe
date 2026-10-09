@@ -972,6 +972,41 @@ describe('AI adapter: openai', function() {
       });
     });
 
+    it('carries the image shares of either total', async function() {
+      // An edit's usage as the service reports it: the source image
+      // is most of the input
+      httpScript = [ () => imageResponse({
+        usage: {
+          input_tokens: 1041,
+          input_tokens_details: {
+            image_tokens: 1024,
+            text_tokens: 17
+          },
+          output_tokens: 196,
+          output_tokens_details: {
+            image_tokens: 196,
+            text_tokens: 0
+          },
+          total_tokens: 1237
+        }
+      }) ];
+      const result = await instance().image(apos.task.getReq(), {
+        prompt: 'make the fox green',
+        count: 1,
+        model: 'gpt-image-2',
+        images: [ {
+          data: 'aGk=',
+          mediaType: 'image/png'
+        } ]
+      });
+      assert.deepEqual(result.usage, {
+        inputTokens: 1041,
+        outputTokens: 196,
+        imageInputTokens: 1024,
+        imageOutputTokens: 196
+      });
+    });
+
     it('edits inline source images as a multipart upload', async function() {
       httpScript = [ () => imageResponse() ];
       const result = await instance().image(apos.task.getReq(), {

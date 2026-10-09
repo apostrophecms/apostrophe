@@ -908,7 +908,7 @@ describe('AI tools', function() {
       ]);
     });
 
-    it('sums a cache share over the turns that reported it', async function() {
+    it('sums a share over the turns that reported it', async function() {
       const req = apos.task.getReq();
       const withShares = (turn, shares) => () => {
         const base = turn();
@@ -922,7 +922,8 @@ describe('AI tools', function() {
       };
       chatScript = [
         withShares(toolTurn(toolCall('c1', 'echo', { value: 'a' })), {
-          cacheWriteTokens: 8
+          cacheWriteTokens: 8,
+          imageInputTokens: 6
         }),
         withShares(toolTurn(toolCall('c2', 'echo', { value: 'b' })), {
           cacheReadTokens: 8,
@@ -936,7 +937,8 @@ describe('AI tools', function() {
         inputTokens: 40,
         outputTokens: 13,
         cacheReadTokens: 8,
-        cacheWriteTokens: 9
+        cacheWriteTokens: 9,
+        imageInputTokens: 6
       });
     });
 
@@ -1841,6 +1843,21 @@ describe('AI tools', function() {
       }), (e) => {
         assert.equal(e.name, 'aiRetry');
         assert.match(e.message, /"usage.cacheReadTokens" must be a number when present/);
+        return true;
+      });
+      assert.throws(() => apos.ai.validateTurn({
+        content: [ {
+          type: 'text',
+          text: 'x'
+        } ],
+        finishReason: 'stop',
+        usage: {
+          ...usage,
+          imageInputTokens: 'many'
+        }
+      }), (e) => {
+        assert.equal(e.name, 'aiRetry');
+        assert.match(e.message, /"usage.imageInputTokens" must be a number when present/);
         return true;
       });
     });

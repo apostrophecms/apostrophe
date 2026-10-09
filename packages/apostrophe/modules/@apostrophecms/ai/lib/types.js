@@ -8,9 +8,10 @@
 // `import('./lib/types.js')` references.
 
 /**
- * Token counts for one call, aggregated across every model turn. The cache
- * shares are parts of `inputTokens`, never additions to it, and are present
- * only when the provider reported them: absent means unknown, not zero.
+ * Token counts for one call, aggregated across every model turn. The
+ * optional shares are parts of `inputTokens` or `outputTokens`, never
+ * additions to them, and are present only when the provider reported them:
+ * absent means unknown, not zero.
  *
  * @typedef {object} AiUsage
  * @property {number} inputTokens Every input token billed, cached or not.
@@ -19,6 +20,10 @@
  *   from the provider's prompt cache.
  * @property {number} [cacheWriteTokens] The share of `inputTokens` written
  *   to the provider's prompt cache.
+ * @property {number} [imageInputTokens] The share of `inputTokens` that
+ *   were images.
+ * @property {number} [imageOutputTokens] The share of `outputTokens` that
+ *   were images.
  */
 
 /**
