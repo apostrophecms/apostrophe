@@ -208,6 +208,7 @@ describe('AI image dials', function() {
     let imageScript;
     let imageCalls;
     let events;
+    let usageRecords;
 
     // A text-only provider, for capability rejections
     const textAdapter = () => ({
@@ -298,6 +299,11 @@ describe('AI image dials', function() {
                   record(req, context) {
                     events.push([ 'after', context ]);
                   }
+                },
+                '@apostrophecms/ai:usage': {
+                  record(req, usage) {
+                    usageRecords.push(usage);
+                  }
                 }
               };
             }
@@ -327,6 +333,7 @@ describe('AI image dials', function() {
       imageScript = [];
       imageCalls = [];
       events = [];
+      usageRecords = [];
     });
 
     it('routes via the image entry, resolving its default dials', async function() {
@@ -519,6 +526,64 @@ describe('AI image dials', function() {
       assert.equal(events[0][1].provider, 'fakeimg');
       assert.equal(events[0][1].request.prompt, 'a fox');
       assert.equal(events[1][1].result, result);
+    });
+
+    it('reports the response with what an image price reads', async function() {
+      imageScript = [ () => imageResult() ];
+      await apos.ai.generateImage(apos.task.getReq(), 'a fox');
+      assert.equal(usageRecords.length, 1);
+      const { at, ...record } = usageRecords[0];
+      assert(at instanceof Date);
+      assert.deepEqual(record, {
+        callId: events[0][1].callId,
+        kind: 'image',
+        provider: 'fakeimg',
+        model: 'fake-image-9000',
+        step: 1,
+        attempt: 1,
+        outcome: 'accepted',
+        usage: {
+          inputTokens: 9,
+          outputTokens: 1000
+        },
+        images: 1,
+        quality: 'medium',
+        aspect: '3:2',
+        size: '1024x1024',
+        metadata: {}
+      });
+    });
+
+    it('reports a rejected result, and one without usage', async function() {
+      imageScript = [
+        () => ({ images: [] }),
+        () => imageResult({ usage: undefined })
+      ];
+      await apos.ai.generateImage(apos.task.getReq(), 'a fox');
+      assert.deepEqual(
+        usageRecords.map(({
+          attempt, outcome, images, usage
+        }) => ({
+          attempt,
+          outcome,
+          images,
+          usage
+        })),
+        [
+          {
+            attempt: 1,
+            outcome: 'rejected',
+            images: 0,
+            usage: undefined
+          },
+          {
+            attempt: 2,
+            outcome: 'accepted',
+            images: 1,
+            usage: undefined
+          }
+        ]
+      );
     });
   });
 

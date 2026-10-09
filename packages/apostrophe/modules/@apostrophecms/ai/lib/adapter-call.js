@@ -114,6 +114,106 @@ module.exports = (self) => {
       const curve = self.options.retryBaseDelay * Math.pow(2, attempt - 1);
       return Math.floor(curve * (1 + Math.random()));
     },
+    // Report one provider response on the `usage` event, then let the
+    // verdict of `validate` (a thunk running the response validators)
+    // travel on: resolves with `response` when it passes, rethrows its
+    // throw otherwise. A response the engine rejects was still billed,
+    // so it is reported too, as outcome 'rejected'. `call` carries what
+    // the engine knows about the attempt: { callId, kind, provider,
+    // step, attempt, request }. A chat response whose usage is
+    // unreadable cannot be reported and leaves a log record instead;
+    // an image response is reported with or without usage, since its
+    // images are billed either way. Under APOS_AI_MOCK every record is
+    // flagged `mock`: its counts are an estimate nobody was billed for.
+    // A failing handler is logged, never allowed to fail the call it
+    // reports on.
+    async reportUsage(req, call, response, validate) {
+      let rejection = null;
+      try {
+        validate();
+      } catch (e) {
+        rejection = e;
+      }
+      const { request } = call;
+      const usage = readableUsage(response?.usage);
+      const missing = {
+        provider: call.provider,
+        model: request.model,
+        callId: call.callId,
+        attempt: call.attempt
+      };
+      if (!isObject(response) || (call.kind === 'chat' && !usage)) {
+        self.logWarn(req, 'usage-unreported', 'a provider response carried no readable usage', missing);
+      } else {
+        if (call.kind === 'image' && response.usage !== undefined && !usage) {
+          self.logWarn(req, 'usage-unreported', 'an image response carried unreadable usage', missing);
+        }
+        try {
+          await self.emit('usage', req, {
+            callId: call.callId,
+            ...(req.aposAiCallId && { parentCallId: req.aposAiCallId }),
+            kind: call.kind,
+            provider: call.provider,
+            model: (typeof response.model === 'string' && response.model) ||
+              request.model,
+            step: call.step,
+            attempt: call.attempt,
+            outcome: rejection ? 'rejected' : 'accepted',
+            ...(usage && { usage }),
+            ...(call.kind === 'chat'
+              ? { cache: request.cache ? request.cache.ttl : false }
+              : imageFacts()),
+            metadata: { ...self.options.usageMetadata },
+            ...(self.mockMode && { mock: true }),
+            at: new Date()
+          });
+        } catch (e) {
+          self.logError(req, 'hook', e.message, {
+            event: 'usage',
+            callId: call.callId,
+            stack: e.stack
+          });
+        }
+      }
+      if (rejection) {
+        throw rejection;
+      }
+      return response;
+
+      // What an image price reads besides tokens: how many images came
+      // back and the dials they were made with
+      function imageFacts() {
+        return {
+          images: Array.isArray(response.images) ? response.images.length : 0,
+          ...(request.quality !== undefined && { quality: request.quality }),
+          ...(request.aspect !== undefined && { aspect: request.aspect }),
+          ...(typeof response.size === 'string' && { size: response.size })
+        };
+      }
+
+      // A copy of the usage when every count it carries is a number,
+      // else null
+      function readableUsage(usage) {
+        if (!isObject(usage) ||
+          !Number.isFinite(usage.inputTokens) ||
+          !Number.isFinite(usage.outputTokens)) {
+          return null;
+        }
+        const copy = {
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens
+        };
+        for (const key of CACHE_USAGE_KEYS) {
+          if (usage[key] !== undefined) {
+            if (!Number.isFinite(usage[key])) {
+              return null;
+            }
+            copy[key] = usage[key];
+          }
+        }
+        return copy;
+      }
+    },
     // A method rather than a plain function so tests can substitute it
     // and skip the real waiting
     pause(ms) {

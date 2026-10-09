@@ -805,6 +805,9 @@ describe('AI generate', function() {
     // Captured structured failure records, [{ severity, type, message, data }]
     let logRecords;
     const events = [];
+    // The `usage` records, and a switch that makes their handler throw
+    const usageRecords = [];
+    let usageHandlerThrows = false;
 
     const turn = (extras = {}) => ({
       content: [ {
@@ -877,6 +880,14 @@ describe('AI generate', function() {
                   record(req, context) {
                     events.push([ 'after', context ]);
                   }
+                },
+                '@apostrophecms/ai:usage': {
+                  record(req, usage) {
+                    usageRecords.push(usage);
+                    if (usageHandlerThrows) {
+                      throw new Error('billing sink down');
+                    }
+                  }
                 }
               };
             }
@@ -917,6 +928,8 @@ describe('AI generate', function() {
       chatScript = [];
       chatCalls = [];
       events.length = 0;
+      usageRecords.length = 0;
+      usageHandlerThrows = false;
       // Capture the structured failure records (and keep them off the
       // test output)
       logRecords = [];
@@ -1124,6 +1137,160 @@ describe('AI generate', function() {
         assert.equal(e.name, 'invalid');
         assert.match(e.message, /tool calls/);
         return true;
+      });
+    });
+
+    describe('usage records', function() {
+      // The record minus its timestamp, which is checked on its own
+      const timeless = ({ at, ...record }) => {
+        assert(at instanceof Date);
+        return record;
+      };
+
+      it('reports each provider response, joined to its call', async function() {
+        chatScript = [ () => turn({
+          usage: {
+            inputTokens: 12,
+            outputTokens: 7,
+            cacheReadTokens: 10
+          }
+        }) ];
+        await apos.ai.generate(apos.task.getReq(), 'p');
+        assert.equal(usageRecords.length, 1);
+        const [ , [ , context ] ] = events;
+        assert.equal(typeof context.callId, 'string');
+        assert.deepEqual(timeless(usageRecords[0]), {
+          callId: context.callId,
+          kind: 'chat',
+          provider: 'fake',
+          model: 'fake-medium',
+          step: 1,
+          attempt: 1,
+          outcome: 'accepted',
+          usage: {
+            inputTokens: 12,
+            outputTokens: 7,
+            cacheReadTokens: 10
+          },
+          cache: 'short',
+          metadata: {}
+        });
+      });
+
+      it('reports the cache policy the request asked for', async function() {
+        chatScript = [ () => turn(), () => turn() ];
+        await apos.ai.generate(apos.task.getReq(), 'p', { cache: false });
+        await apos.ai.generate(apos.task.getReq(), 'p', { cache: 'long' });
+        assert.deepEqual(usageRecords.map((record) => record.cache), [ false, 'long' ]);
+      });
+
+      it('reports a rejected response, numbered by the attempt that got it', async function() {
+        chatScript = [
+          () => {
+            throw httpError(503);
+          },
+          // Billed, but a text part without its text
+          () => turn({ content: [ { type: 'text' } ] }),
+          () => turn()
+        ];
+        await apos.ai.generate(apos.task.getReq(), 'p');
+        assert.deepEqual(
+          usageRecords.map(({ attempt, outcome }) => ({
+            attempt,
+            outcome
+          })),
+          [
+            {
+              attempt: 2,
+              outcome: 'rejected'
+            },
+            {
+              attempt: 3,
+              outcome: 'accepted'
+            }
+          ]
+        );
+      });
+
+      it('reports a schema-mismatching structured answer as rejected', async function() {
+        const schema = {
+          type: 'object',
+          properties: { title: { type: 'string' } },
+          required: [ 'title' ]
+        };
+        chatScript = [
+          () => turn({ object: {} }),
+          () => turn({ object: { title: 'ok' } })
+        ];
+        await apos.ai.generate(apos.task.getReq(), {
+          messages: [ {
+            role: 'user',
+            content: 'p'
+          } ],
+          schema
+        });
+        assert.deepEqual(usageRecords.map((record) => record.outcome), [ 'rejected', 'accepted' ]);
+      });
+
+      it('reports a refused turn, though the call throws and afterGenerate never fires', async function() {
+        chatScript = [ () => turn({ finishReason: 'refusal' }) ];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+          assert.equal(e.name, 'aiRefusal');
+          return true;
+        });
+        assert.deepEqual(events.map(([ name ]) => name), [ 'before' ]);
+        assert.equal(usageRecords.length, 1);
+        assert.equal(usageRecords[0].outcome, 'accepted');
+        assert.deepEqual(usageRecords[0].usage, {
+          inputTokens: 12,
+          outputTokens: 7
+        });
+      });
+
+      it('logs a response whose usage cannot be read instead of reporting it', async function() {
+        chatScript = [
+          () => turn({ usage: { inputTokens: 12 } }),
+          () => turn()
+        ];
+        await apos.ai.generate(apos.task.getReq(), 'p');
+        assert.equal(usageRecords.length, 1);
+        assert.equal(usageRecords[0].attempt, 2);
+        const unreported = logRecords.filter((record) => record.type === 'usage-unreported');
+        assert.equal(unreported.length, 1);
+        assert.equal(unreported[0].severity, 'warn');
+        assert.equal(unreported[0].data.attempt, 1);
+        assert.equal(unreported[0].data.callId, usageRecords[0].callId);
+      });
+
+      it('logs a failing handler and lets the call succeed', async function() {
+        usageHandlerThrows = true;
+        chatScript = [ () => turn() ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p');
+        assert.equal(result.text, 'a haiku');
+        // Not retried: the response was reported once
+        assert.equal(chatCalls.length, 1);
+        const hook = logRecords.filter((record) => record.type === 'hook');
+        assert.equal(hook.length, 1);
+        assert.equal(hook[0].severity, 'error');
+        assert.equal(hook[0].message, 'billing sink down');
+        assert.equal(hook[0].data.event, 'usage');
+      });
+
+      it('copies usageMetadata onto every record', async function() {
+        const saved = apos.ai.options.usageMetadata;
+        try {
+          apos.ai.options.usageMetadata = { siteId: 's1' };
+          chatScript = [ () => turn(), () => turn() ];
+          await apos.ai.generate(apos.task.getReq(), 'p');
+          // A handler enriching one record leaves the next untouched
+          usageRecords[0].metadata.feature = 'chat';
+          await apos.ai.generate(apos.task.getReq(), 'p');
+          assert.deepEqual(usageRecords[1].metadata, { siteId: 's1' });
+          assert.deepEqual(apos.ai.options.usageMetadata, { siteId: 's1' });
+          assert.notEqual(usageRecords[0].callId, usageRecords[1].callId);
+        } finally {
+          apos.ai.options.usageMetadata = saved;
+        }
       });
     });
 
@@ -1686,11 +1853,25 @@ describe('AI generate', function() {
     });
 
     describe('with zero configuration', function() {
+      const usageRecords = [];
+
       before(async function() {
         await t.destroy(apos);
         apos = await t.create({
           root: module,
-          modules: {}
+          modules: {
+            'usage-watch': {
+              handlers() {
+                return {
+                  '@apostrophecms/ai:usage': {
+                    record(req, usage) {
+                      usageRecords.push(usage);
+                    }
+                  }
+                };
+              }
+            }
+          }
         });
       });
 
@@ -1707,6 +1888,21 @@ describe('AI generate', function() {
         assert.equal(result.finishReason, 'stop');
         assert(Number.isFinite(result.usage.inputTokens));
         assert(Number.isFinite(result.usage.outputTokens));
+        // The estimate is reported like a provider's counts, flagged
+        assert.equal(usageRecords.length, 1);
+        assert.equal(usageRecords[0].provider, 'mock');
+        assert.equal(usageRecords[0].mock, true);
+        assert.deepEqual(usageRecords[0].usage, result.usage);
+      });
+
+      it('flags the record whatever provider the call routed to', async function() {
+        usageRecords.length = 0;
+        await apos.ai.generate(apos.task.getReq(), 'p', {
+          provider: 'anthropic',
+          model: 'claude-sonnet-x'
+        });
+        assert.equal(usageRecords[0].provider, 'anthropic');
+        assert.equal(usageRecords[0].mock, true);
       });
 
       it('echoes an explicit provider and model into the placeholder routing', async function() {
