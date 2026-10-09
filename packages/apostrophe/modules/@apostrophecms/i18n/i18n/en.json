@@ -175,6 +175,7 @@
   "discardDraftAffirmativeLabel": "Yes, discard changes",
   "discardDraftDescription": "This will discard all changes since the document was last published.",
   "discardImageChangesPrompt": "Do you want to discard changes to the active image?",
+  "discardSelectionPrompt": "Are you sure you want to discard your selection?",
   "dismissSubmission": "Dismiss Submission",
   "dismissedSubmission": "Dismissed submission.",
   "displayName": "Display Name",

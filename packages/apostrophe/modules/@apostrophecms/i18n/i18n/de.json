@@ -170,6 +170,7 @@
   "discardDraftAffirmativeLabel": "Ja, Entwurf verwerfen",
   "discardDraftDescription": "Es werden alle Änderungen verworfen, die nach der letzten Veröffentlichung des Dokuments gemacht wurden.",
   "discardImageChangesPrompt": "Willst du die Änderungen an diesem Bild verwerfen?",
+  "discardSelectionPrompt": "Willst du deine Auswahl wirklich verwerfen?",
   "dismissSubmission": "Beitrag verwerfen",
   "dismissedSubmission": "Beitrag verworfen.",
   "displayName": "Anzeigename",

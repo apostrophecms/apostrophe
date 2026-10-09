@@ -170,6 +170,7 @@
   "discardDraftAffirmativeLabel": "Sì, scarta modifiche",
   "discardDraftDescription": "Questo scarterà tutte le modifiche apportate a partire momento in cui il documento è stato pubblicato per l'ultima volta.",
   "discardImageChangesPrompt": "Vuoi scartare le modifiche all'immagine attiva?",
+  "discardSelectionPrompt": "Sei sicuro di voler scartare la tua selezione?",
   "dismissSubmission": "Scarta proposta",
   "dismissedSubmission": "Proposta scartata.",
   "displayName": "Nome visualizzato",
