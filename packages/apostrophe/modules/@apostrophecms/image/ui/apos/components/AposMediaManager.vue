@@ -174,7 +174,6 @@ export default {
         message: 'apostrophe:uploadedMediaPlaceholder',
         emoji: '🖼'
       },
-      cancelDescription: 'apostrophe:discardImageChangesPrompt',
       debouncedGetMedia: debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT, {
         onSuccess: this.appendMedia
       }),
@@ -341,6 +340,13 @@ export default {
     // has been modified (via event from the editor)
     editorModified (val) {
       this.modified = val;
+    },
+    confirmAndCancel() {
+      // In relationship mode a changed selection alone also needs confirmation
+      this.cancelDescription = this.editing && this.modified
+        ? 'apostrophe:discardImageChangesPrompt'
+        : 'apostrophe:discardSelectionPrompt';
+      return AposModifiedMixin.methods.confirmAndCancel.call(this);
     },
     async getMedia(options = {}) {
       const result = {};
@@ -552,7 +558,7 @@ export default {
       if (this.editing && this.modified) {
         const discard = await apos.confirm({
           heading: this.cancelHeading,
-          description: this.cancelDescription,
+          description: 'apostrophe:discardImageChangesPrompt',
           negativeLabel: this.cancelNegativeLabel,
           affirmativeLabel: this.cancelAffirmativeLabel
         });

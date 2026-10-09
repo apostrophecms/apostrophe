@@ -170,6 +170,7 @@
   "discardDraftAffirmativeLabel": "Áno, zahodiť zmeny",
   "discardDraftDescription": "Tým sa odstránia všetky zmeny od posledného publikovania dokumentu.",
   "discardImageChangesPrompt": "Chcete zahodiť zmeny v aktívnom obrázku?",
+  "discardSelectionPrompt": "Naozaj chcete zahodiť svoj výber?",
   "dismissSubmission": "Zahodiť príspevok",
   "dismissedSubmission": "Príspevok zahodený.",
   "displayName": "Zobraziť meno",
