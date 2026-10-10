@@ -10,7 +10,7 @@ const Ajv = require('ajv/dist/2020').default;
 const {
   isObject, isAbort, startupFail
 } = require('./lib/util');
-const { DENIED_TYPES, CACHE_USAGE_KEYS } = require('./lib/constants');
+const { DENIED_TYPES, USAGE_SHARE_KEYS } = require('./lib/constants');
 
 // The protocol shapes this surface hands out or takes in, named once so the
 // blocks below can use them bare. lib/types.js declares them and nothing else.
@@ -37,6 +37,8 @@ module.exports = {
     //   APOS_AI_MOCK
     // mockImage: (req, request) => adapter image result, consulted only
     //   under APOS_AI_MOCK
+    // usageMetadata: an object copied onto every `usage` record as its
+    //   `metadata`, e.g. the site a multisite instance serves
     // Conservative agent-loop cap; any call may override it
     maxSteps: 5,
     // Transient-failure retry cap, counting calls
@@ -494,8 +496,12 @@ module.exports = {
        * tools: the loop then runs the real handlers, so tool code is testable
        * offline.
        *
-       * Emits `beforeGenerate` and `afterGenerate` around the call and
-       * `beforeToolCall` / `afterToolCall` around each handler execution.
+       * Emits `beforeGenerate` and `afterGenerate` around the call,
+       * `beforeToolCall` / `afterToolCall` around each handler execution and
+       * `usage` once per provider response — retried and rejected ones
+       * included, every one is billed — with that response's own token
+       * counts (see reportUsage in lib/adapter-call.js). `afterGenerate`
+       * fires only when the call returns; `usage` is the billing record.
        *
        * @param {object} req The caller's request object, carried into events,
        *   the adapter and every tool handler — the core never invents auth.
@@ -545,11 +551,19 @@ module.exports = {
           ? self.mockRecord('chat', provider)
           : self.providers[provider];
         const tools = new Map(canonical.tools.map((tool) => [ tool.name, tool ]));
-        const handlerContext = request.signal ? { signal: request.signal } : {};
+        const callId = self.apos.util.generateId();
+        // The call id rides along so a generate call a handler makes
+        // reports this call as its parent
+        const handlerContext = {
+          callId,
+          ...(request.signal && { signal: request.signal })
+        };
         // One shared, mutable payload for both generate events, so
         // handlers can enrich the request and correlate the two; its
-        // messages grow as the loop appends turns
+        // messages grow as the loop appends turns. `callId` joins it to
+        // the call's `usage` records
         const context = {
+          callId,
           provider,
           request
         };
@@ -592,23 +606,32 @@ module.exports = {
 
         async function runLoop() {
           for (let turns = 1; ; turns++) {
+            let attempt = 0;
             turn = await self.callAdapter(req, record, context.request, async () => {
-              const answer = self.validateTurn(
-                await record.adapter.chat(req, context.request)
-              );
-              // Only a 'stop' turn is the answer: tool turns run the loop
-              // with their own validation, a refusal surfaces as aiRefusal
-              // below, and a 'length' turn returns as-is — no object, the
-              // finish reason tells the caller why
-              if (canonical.schema && answer.finishReason === 'stop') {
-                self.validateStructured(answer, canonical.validateObject);
-              }
-              return answer;
+              attempt++;
+              const answer = await record.adapter.chat(req, context.request);
+              return self.reportUsage(req, {
+                callId,
+                kind: 'chat',
+                provider,
+                step: turns,
+                attempt,
+                request: context.request
+              }, answer, () => {
+                self.validateTurn(answer);
+                // Only a 'stop' turn is the answer: tool turns run the
+                // loop with their own validation, a refusal surfaces as
+                // aiRefusal below, and a 'length' turn returns as-is —
+                // no object, the finish reason tells the caller why
+                if (canonical.schema && answer.finishReason === 'stop') {
+                  self.validateStructured(answer, canonical.validateObject);
+                }
+              });
             });
             usage.inputTokens += turn.usage.inputTokens;
             usage.outputTokens += turn.usage.outputTokens;
-            // A cache share appears on the call only once a turn reported it
-            for (const key of CACHE_USAGE_KEYS) {
+            // A share appears on the call only once a turn reported it
+            for (const key of USAGE_SHARE_KEYS) {
               if (turn.usage[key] !== undefined) {
                 usage[key] = (usage[key] || 0) + turn.usage[key];
               }
@@ -823,7 +846,8 @@ module.exports = {
        * log records and mock behavior (placeholder images, no network —
        * scriptable via the `mockImage` option, see mockImage in lib/mock.js).
        * Emits `beforeGenerateImage` and `afterGenerateImage` around the call,
-       * sharing one mutable context.
+       * sharing one mutable context, and `usage` once per provider response,
+       * as generate does.
        *
        * @param {object} req
        * @param {string} prompt The subject to generate, or the edit to apply
@@ -883,16 +907,26 @@ module.exports = {
         const record = self.mockMode
           ? self.mockRecord('image', provider)
           : self.providers[provider];
+        const callId = self.apos.util.generateId();
         const context = {
+          callId,
           provider,
           request
         };
         await self.emit('beforeGenerateImage', req, context);
-        const result = await self.callAdapter(req, record, context.request, async () =>
-          self.validateImageResult(
-            await record.adapter.image(req, context.request)
-          )
-        );
+        let attempt = 0;
+        const result = await self.callAdapter(req, record, context.request, async () => {
+          attempt++;
+          const batch = await record.adapter.image(req, context.request);
+          return self.reportUsage(req, {
+            callId,
+            kind: 'image',
+            provider,
+            step: 1,
+            attempt,
+            request: context.request
+          }, batch, () => self.validateImageResult(batch));
+        });
         // The envelope: the adapter's minimal result plus what the
         // core knows — the provider and the resolved aspect it sent;
         // the pixel size only when the adapter reported one

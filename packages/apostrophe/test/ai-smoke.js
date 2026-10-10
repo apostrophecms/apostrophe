@@ -113,14 +113,26 @@ function record(apos, req, result, extra = {}) {
 }
 
 // One live instance per provider row: its single provider entry, the echo
-// tool, and the row's image route when it configures one
-function createFor(provider) {
+// tool, and the row's image route when it configures one. Its `usage`
+// records land in `usageRecords`, when given
+function createFor(provider, usageRecords = []) {
   return t.create({
     root: module,
     modules: {
       'tool-fixtures': {
         init(self) {
           self.apos.ai.addTool(echoTool());
+        }
+      },
+      'usage-watch': {
+        handlers() {
+          return {
+            '@apostrophecms/ai:usage': {
+              record(req, usage) {
+                usageRecords.push(usage);
+              }
+            }
+          };
         }
       },
       '@apostrophecms/ai': {
@@ -166,12 +178,13 @@ describe('AI live smoke', function() {
       // The image case's output, reused as the edit case's source so the
       // edit spends no extra generation call
       let generated;
+      const usageRecords = [];
 
       before(async function() {
         if (!enabled || !provider.key) {
           this.skip();
         }
-        apos = await createFor(provider);
+        apos = await createFor(provider, usageRecords);
         // The engine's own declaration gates the cases below, so this
         // table cannot drift from the adapters
         capabilities = apos.ai.modelInfo({ effort: 'low' }).capabilities;
@@ -181,6 +194,10 @@ describe('AI live smoke', function() {
         if (apos) {
           return t.destroy(apos);
         }
+      });
+
+      beforeEach(function() {
+        usageRecords.length = 0;
       });
 
       it('generates text', async function() {
@@ -204,6 +221,11 @@ describe('AI live smoke', function() {
         assert(result.model.length > 0);
         assert(Number.isFinite(result.usage.inputTokens));
         assert(Number.isFinite(result.usage.outputTokens));
+        // A live call reports real counts, never flagged as the mock's
+        assert.equal(usageRecords.length, 1);
+        assert.equal('mock' in usageRecords[0], false);
+        assert.equal(usageRecords[0].outcome, 'accepted');
+        assert.deepEqual(usageRecords[0].usage, result.usage);
       });
 
       it('runs a tool through the loop', async function() {
@@ -226,6 +248,18 @@ describe('AI live smoke', function() {
         const step = result.steps.find((entry) => entry.toolCall.name === 'echo');
         assert(step);
         assert(step.result !== undefined);
+        // A record per provider response, none flagged as the mock's;
+        // the accepted ones are the model turns the call's usage sums (a
+        // rejected response was billed, but never part of the call)
+        assert(usageRecords.every((usage) => !('mock' in usage)));
+        const accepted = usageRecords.filter((usage) => usage.outcome === 'accepted');
+        assert(accepted.length >= 2);
+        for (const key of [ 'inputTokens', 'outputTokens' ]) {
+          assert.equal(
+            accepted.reduce((sum, usage) => sum + usage.usage[key], 0),
+            result.usage[key]
+          );
+        }
       });
 
       it('returns structured output', async function() {
@@ -314,6 +348,9 @@ describe('AI live smoke', function() {
         assert(image.data.length > 0);
         assert.equal(result.provider, provider.name);
         assert.equal(result.aspect, '1:1');
+        // Image output bills at its own rate, so its share must travel
+        assert(result.usage.imageOutputTokens > 0);
+        assert(result.usage.imageOutputTokens <= result.usage.outputTokens);
         generated = image;
       });
 
@@ -344,6 +381,9 @@ describe('AI live smoke', function() {
         assert(result.images[0].data.length > 0);
         assert.equal(result.provider, provider.name);
         assert.equal(result.aspect, '1:1');
+        // The source image is part of the input
+        assert(result.usage.imageInputTokens > 0);
+        assert(result.usage.imageInputTokens <= result.usage.inputTokens);
       });
     });
   }

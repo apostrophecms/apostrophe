@@ -568,6 +568,7 @@ describe('AI tools', function() {
     let readGate = null;
     // [ [ 'before' | 'after', toolName, resultOrError ] ]
     const toolEvents = [];
+    const usageRecords = [];
 
     const toolCall = (id, name, input = {}) => ({
       type: 'toolCall',
@@ -835,6 +836,11 @@ describe('AI tools', function() {
                   record(req, payload) {
                     toolEvents.push([ 'after', payload.tool.name, payload.result ?? payload.error ]);
                   }
+                },
+                '@apostrophecms/ai:usage': {
+                  record(req, usage) {
+                    usageRecords.push(usage);
+                  }
                 }
               };
             }
@@ -858,6 +864,7 @@ describe('AI tools', function() {
       log.length = 0;
       depths.length = 0;
       toolEvents.length = 0;
+      usageRecords.length = 0;
       readGate = null;
     });
 
@@ -901,7 +908,7 @@ describe('AI tools', function() {
       ]);
     });
 
-    it('sums a cache share over the turns that reported it', async function() {
+    it('sums a share over the turns that reported it', async function() {
       const req = apos.task.getReq();
       const withShares = (turn, shares) => () => {
         const base = turn();
@@ -915,7 +922,8 @@ describe('AI tools', function() {
       };
       chatScript = [
         withShares(toolTurn(toolCall('c1', 'echo', { value: 'a' })), {
-          cacheWriteTokens: 8
+          cacheWriteTokens: 8,
+          imageInputTokens: 6
         }),
         withShares(toolTurn(toolCall('c2', 'echo', { value: 'b' })), {
           cacheReadTokens: 8,
@@ -929,7 +937,8 @@ describe('AI tools', function() {
         inputTokens: 40,
         outputTokens: 13,
         cacheReadTokens: 8,
-        cacheWriteTokens: 9
+        cacheWriteTokens: 9,
+        imageInputTokens: 6
       });
     });
 
@@ -1743,6 +1752,54 @@ describe('AI tools', function() {
       assert.equal(chatCalls.length, 2);
     });
 
+    it('reports a subagent\'s turns under the delegating call', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'sub_agent')),
+        toolTurn(toolCall('c2', 'echo', { value: 'from below' })),
+        textTurn('inner done'),
+        textTurn('outer done')
+      ];
+      const result = await apos.ai.generate(req, 'go', { tools: [ 'sub_agent' ] });
+
+      const [ outer, innerFirst, innerLast, outerLast ] = usageRecords;
+      assert.equal(usageRecords.length, 4);
+      assert.equal(outer.parentCallId, undefined);
+      assert.equal(outerLast.callId, outer.callId);
+      assert.deepEqual([ outer.step, outerLast.step ], [ 1, 2 ]);
+      assert.notEqual(innerFirst.callId, outer.callId);
+      assert.equal(innerLast.callId, innerFirst.callId);
+      assert.equal(innerFirst.parentCallId, outer.callId);
+      assert.equal(innerLast.parentCallId, outer.callId);
+      assert.deepEqual([ innerFirst.step, innerLast.step ], [ 1, 2 ]);
+      // The call's usage leaves the subagent's out, so summing every
+      // record counts each token once
+      const total = usageRecords.reduce(
+        (sum, record) => sum + record.usage.inputTokens, 0
+      );
+      assert.equal(result.usage.inputTokens, 30);
+      assert.equal(total, 60);
+      // The stamp lives on the handler's req clone only
+      assert.equal(req.aposAiCallId, undefined);
+    });
+
+    it('reports the billed turns of a call a handler stops', async function() {
+      chatScript = [ toolTurn(toolCall('c1', 'boom_forbidden')) ];
+      await assert.rejects(
+        apos.ai.generate(apos.task.getReq(), 'go', { tools: [ 'boom_forbidden' ] }),
+        (e) => {
+          assert.equal(e.name, 'forbidden');
+          return true;
+        }
+      );
+      assert.equal(usageRecords.length, 1);
+      assert.equal(usageRecords[0].outcome, 'accepted');
+      assert.deepEqual(usageRecords[0].usage, {
+        inputTokens: 10,
+        outputTokens: 5
+      });
+    });
+
     it('rejects malformed tool turns into the retry path', function() {
       const usage = {
         inputTokens: 1,
@@ -1786,6 +1843,21 @@ describe('AI tools', function() {
       }), (e) => {
         assert.equal(e.name, 'aiRetry');
         assert.match(e.message, /"usage.cacheReadTokens" must be a number when present/);
+        return true;
+      });
+      assert.throws(() => apos.ai.validateTurn({
+        content: [ {
+          type: 'text',
+          text: 'x'
+        } ],
+        finishReason: 'stop',
+        usage: {
+          ...usage,
+          imageInputTokens: 'many'
+        }
+      }), (e) => {
+        assert.equal(e.name, 'aiRetry');
+        assert.match(e.message, /"usage.imageInputTokens" must be a number when present/);
         return true;
       });
     });
