@@ -11,6 +11,7 @@
   "rateLimitExceeded": "Prekročený limit požiadaviek, skúste to znova neskôr",
   "utilityOperationLabel": "Vygenerovať obrázok s AI",
   "errorMessage": "Vyskytla sa chyba.",
+  "generateVariant": "Vygenerovať variant",
   "variantPromptLabel": "Ako by mal byť tento obrázok odlišný?",
   "variantPromptPlaceholder": "Popíšte, ako upraviť obrázok (voliteľné)",
   "generationFailed": "Generovanie pomocou AI zlyhalo. Skúste to znova.",
