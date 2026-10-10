@@ -11,6 +11,7 @@
   "rateLimitExceeded": "Limite de taux dépassée, réessayez plus tard",
   "utilityOperationLabel": "Générer une image avec l'IA",
   "errorMessage": "Une erreur s'est produite.",
+  "generateVariant": "Générer une variante",
   "variantPromptLabel": "Comment cette image devrait-elle être différente ?",
   "variantPromptPlaceholder": "Décrivez comment modifier l’image (facultatif)",
   "generationFailed": "La génération par l’IA a échoué. Veuillez réessayer.",
