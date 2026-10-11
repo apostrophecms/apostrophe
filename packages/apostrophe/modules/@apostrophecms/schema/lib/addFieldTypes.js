@@ -1171,9 +1171,29 @@ module.exports = (self) => {
       // honor arrayName. Changing it would require a migration
       const localArrayName = field.arrayName || field.name;
       field.scopedArrayName = `${metaType}.${type}.${localArrayName}`;
-      self.arrayManagers[field.scopedArrayName] = {
-        schema: field.schema
-      };
+      const existing = self.arrayManagers[field.scopedArrayName];
+      if (existing) {
+        // A nested array can share its parent's name and therefore its
+        // scopedArrayName. Keep the parent's schema and add any fields the
+        // nested array introduces that are not already present, so the
+        // manager still resolves every field of both the parent and the
+        // nested array (issue #4129). First registration wins on a name
+        // clash. The merged schema is a copy so the parent's own schema is
+        // not mutated.
+        const names = new Set(existing.schema.map(f => f.name));
+        const merged = existing.schema.slice();
+        for (const subField of field.schema) {
+          if (!names.has(subField.name)) {
+            merged.push(subField);
+            names.add(subField.name);
+          }
+        }
+        existing.schema = merged;
+      } else {
+        self.arrayManagers[field.scopedArrayName] = {
+          schema: field.schema
+        };
+      }
       self.register(metaType, type, field.schema, fieldPath);
     },
     isEqual(req, field, one, two) {
