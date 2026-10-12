@@ -1,6 +1,7 @@
 <template>
   <AposModal
     ref="modal"
+    :data-apos-test="chooserTestId"
     :modal="modal"
     :modal-title="modalTitle"
     :modal-data="modalData"

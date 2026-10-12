@@ -43,6 +43,12 @@ export default {
   },
   emits: [ 'modal-result', 'sort' ],
   computed: {
+    chooserTestId() {
+      if (!this.relationshipField || !this.title) {
+        return null;
+      }
+      return `relationship-chooser:${this.title}`;
+    },
     relationshipErrors() {
       if (!this.relationshipField) {
         return false;
