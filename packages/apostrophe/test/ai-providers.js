@@ -211,8 +211,8 @@ describe('AI: named providers and baseUrl', function() {
         [ 'low', 'medium', 'high', 'xhigh', 'max' ]
       );
       assert.deepEqual(
-        models['claude-haiku-4-5'].reasoning,
-        [ 'low', 'medium', 'high' ]
+        models['claude-haiku-5-5'].reasoning,
+        [ 'low', 'medium', 'high', 'xhigh', 'max' ]
       );
     });
 
