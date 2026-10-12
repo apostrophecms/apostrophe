@@ -124,8 +124,9 @@ describe('AI adapter: anthropic', function() {
     assert.equal(info.maxOutputTokens, 64000);
     assert.equal(info.reasoning, 'medium');
     const low = apos.ai.modelInfo({ effort: 'low' });
-    assert.equal(low.model, 'claude-haiku-4-5');
-    assert.equal(low.reasoning, undefined);
+    assert.equal(low.model, 'claude-haiku-5-5');
+    assert.equal(low.contextWindow, 1000000);
+    assert.equal(low.reasoning, 'medium');
     const high = apos.ai.modelInfo({ effort: 'high' });
     assert.equal(high.model, 'claude-opus-5-5');
     assert.equal(high.reasoning, 'high');
@@ -915,7 +916,7 @@ describe('AI adapter: anthropic', function() {
       });
     });
 
-    it('returns a validated object for a structured call, forcing the final-answer tool', async function() {
+    it('returns a validated object for a structured call at low effort, without forcing', async function() {
       const object = {
         title: 'Pricing',
         description: 'Our plans'
@@ -945,12 +946,14 @@ describe('AI adapter: anthropic', function() {
         effort: 'low'
       });
       assert.deepEqual(result.object, object);
-      // No real tools, no reasoning and a model that takes a forced tool
-      // at low effort: the tool is forced
-      assert.deepEqual(httpCalls[0].options.body.tool_choice, {
-        type: 'tool',
-        name: '_final_answer'
-      });
+      // The low rung is adaptive too: it thinks at the level the rung
+      // names, and the final-answer tool is offered, not forced
+      const { body } = httpCalls[0].options;
+      assert.equal(body.model, 'claude-haiku-5-5');
+      assert.deepEqual(body.thinking, { type: 'adaptive' });
+      assert.deepEqual(body.output_config, { effort: 'medium' });
+      assert.equal(body.tools[0].name, '_final_answer');
+      assert.equal('tool_choice' in body, false);
     });
 
     it('retries a structured call that answered in free text, then succeeds', async function() {
@@ -1096,7 +1099,7 @@ describe('AI adapter: anthropic', function() {
         Object.entries(models).map(([ id, meta ]) => [ id, meta.label ])
       );
       assert.deepEqual(labels, {
-        'claude-haiku-4-5': 'Haiku 4.5',
+        'claude-haiku-5-5': 'Haiku 5.5',
         'claude-sonnet-5-5': 'Sonnet 5.5',
         'claude-opus-5-5': 'Opus 5.5'
       });
@@ -1107,27 +1110,33 @@ describe('AI adapter: anthropic', function() {
       const levels = [ 'low', 'medium', 'high', 'xhigh', 'max' ];
       assert.deepEqual(models['claude-sonnet-5-5'].reasoning, levels);
       assert.deepEqual(models['claude-opus-5-5'].reasoning, levels);
+      assert.deepEqual(models['claude-haiku-5-5'].reasoning, levels);
     });
 
     it('declares the configured budget names as the reasoning of a budgeted model', function() {
-      assert.deepEqual(
-        adapter.adapter().models['claude-haiku-4-5'].reasoning,
-        [ 'low', 'medium', 'high' ]
-      );
-      // The definition is built from the options, so an extended budget
-      // table reaches a declaration built afterwards
-      const saved = adapter.options.thinkingBudgets;
+      // The definition is built from the options, so a model taken off
+      // the adaptive list and an extended budget table both reach a
+      // declaration built afterwards
+      const savedAdaptive = adapter.options.adaptiveModels;
+      const savedBudgets = adapter.options.thinkingBudgets;
       try {
+        adapter.options.adaptiveModels = savedAdaptive
+          .filter((model) => model !== 'claude-haiku-5-5');
+        assert.deepEqual(
+          adapter.adapter().models['claude-haiku-5-5'].reasoning,
+          [ 'low', 'medium', 'high' ]
+        );
         adapter.options.thinkingBudgets = {
-          ...saved,
+          ...savedBudgets,
           xhigh: 32768
         };
         assert.deepEqual(
-          adapter.adapter().models['claude-haiku-4-5'].reasoning,
+          adapter.adapter().models['claude-haiku-5-5'].reasoning,
           [ 'low', 'medium', 'high', 'xhigh' ]
         );
       } finally {
-        adapter.options.thinkingBudgets = saved;
+        adapter.options.adaptiveModels = savedAdaptive;
+        adapter.options.thinkingBudgets = savedBudgets;
       }
     });
   });
