@@ -2056,7 +2056,9 @@ module.exports = {
             locale
           });
 
-          self.apos.util.info(aposDocId);
+          // Program output: the bare id, so that it can be scripted.
+          // eslint-disable-next-line no-console
+          console.log(aposDocId);
 
           return aposDocId;
         }

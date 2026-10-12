@@ -1,9 +1,5 @@
 const _ = require('lodash');
 
-// Long tasks report a start, one line per this many documents, and a summary,
-// so that a million documents do not become a million log entries.
-const PROGRESS_EVERY = 100;
-
 module.exports = {
   extend: '@apostrophecms/doc-type',
   cascades: [
@@ -1399,19 +1395,13 @@ module.exports = {
             const deletes = [];
             let localized = 0;
 
-            self.logInfo('localize-start', 'Adding drafts and locales to documents', {
-              locales: locales.length
-            });
+            // eslint-disable-next-line no-console
+            console.log('Adding drafts and locales to documents');
 
             await self.apos.migration.eachDoc({ type: self.name }, async doc => {
               if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
                 deletes.push(doc._id);
                 localized++;
-                if (localized % PROGRESS_EVERY === 0) {
-                  self.logInfo('localize-progress', `Localized ${localized} document(s)`, {
-                    localized
-                  });
-                }
 
                 for (const locale of locales) {
                   const newDraft = {
@@ -1440,9 +1430,8 @@ module.exports = {
             await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
             await self.apos.attachment.recomputeAllDocReferences();
 
-            self.logInfo('localize-complete', `Done localizing ${localized} document(s)`, {
-              localized
-            });
+            // eslint-disable-next-line no-console
+            console.log(`Done localizing ${localized} document(s)`);
           }
         },
 
@@ -1463,25 +1452,14 @@ module.exports = {
             const deletes = [];
             let unlocalized = 0;
 
-            self.logInfo(
-              'unlocalize-start',
-              `Removing duplicated documents and updating ${mode} ones`,
-              {
-                locale,
-                mode
-              }
-            );
+            // eslint-disable-next-line no-console
+            console.log(`Removing duplicated documents and updating ${mode} ones`);
 
             await self.apos.migration.eachDoc({ type: self.name }, async doc => {
               deletes.push(doc._id);
 
               if (doc.aposDocId && doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
                 unlocalized++;
-                if (unlocalized % PROGRESS_EVERY === 0) {
-                  self.logInfo('unlocalize-progress', `Unlocalized ${unlocalized} document(s)`, {
-                    unlocalized
-                  });
-                }
                 const newDoc = {
                   ...doc,
                   aposLocale: undefined,
@@ -1497,9 +1475,8 @@ module.exports = {
             await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
             await self.apos.attachment.recomputeAllDocReferences();
 
-            self.logInfo('unlocalize-complete', `Done unlocalizing ${unlocalized} document(s)`, {
-              unlocalized
-            });
+            // eslint-disable-next-line no-console
+            console.log(`Done unlocalizing ${unlocalized} document(s)`);
           }
         },
 
@@ -1527,12 +1504,6 @@ module.exports = {
                 try {
                   await self.update(req, doc);
                   count++;
-                  if (count % PROGRESS_EVERY === 0) {
-                    self.logInfo('touch-progress', `Touched ${count} doc(s)`, {
-                      touched: count,
-                      errors: errCount
-                    });
-                  }
                 } catch (e) {
                   errCount++;
                   self.logError('touch-error', e.message, {
@@ -1548,10 +1519,8 @@ module.exports = {
                 await cursor.close();
               }
             }
-            self.logInfo('touch-complete', `Touched ${count} doc(s) with ${errCount} error(s)`, {
-              touched: count,
-              errors: errCount
-            });
+            // eslint-disable-next-line no-console
+            console.log(`Touched ${count} doc(s) with ${errCount} error(s)`);
 
             // Return, useful for tests and internal API's
             // It's in effect only when invoked via apos.task.invoke().
