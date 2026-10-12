@@ -1392,24 +1392,11 @@ module.exports = {
             renamed,
             kept
           } = await self.rename(oldLocale, newLocale, { keep });
-          self.logInfo(
-            'rename-locale-complete',
-            `Renamed ${renamed} documents from ${oldLocale} to ${newLocale}`,
-            {
-              renamed,
-              oldLocale,
-              newLocale
-            }
-          );
+          // eslint-disable-next-line no-console
+          console.log(`Renamed ${renamed} documents from ${oldLocale} to ${newLocale}`);
           if (keep) {
-            self.logInfo(
-              'rename-locale-conflicts',
-              `Due to conflicts, kept ${kept} documents from ${keep}`,
-              {
-                kept,
-                keep
-              }
-            );
+            // eslint-disable-next-line no-console
+            console.log(`Due to conflicts, kept ${kept} documents from ${keep}`);
           }
         }
       },

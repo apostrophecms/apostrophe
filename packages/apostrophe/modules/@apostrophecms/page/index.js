@@ -2741,15 +2741,8 @@ database.`);
             ]
           });
           if (!page) {
-            self.logWarn(
-              'orphan-not-found',
-              `No page with that slug or _id was found in ${req.locale}:${req.mode}.`,
-              {
-                slugOrId,
-                locale: req.locale,
-                mode: req.mode
-              }
-            );
+            // eslint-disable-next-line no-console
+            console.log(`No page with that slug or _id was found in ${req.locale}:${req.mode}.`);
           } else {
             const rank = (await self.apos.doc.db.find({
               path: self.matchDescendants(home),
@@ -2774,15 +2767,8 @@ database.`);
             }, {
               $set
             });
-            self.logInfo(
-              'orphan-reattached',
-              `Reattached as the last child of the home page in ${req.locale}:${req.mode}.`,
-              {
-                _id: page._id,
-                locale: req.locale,
-                mode: req.mode
-              }
-            );
+            // eslint-disable-next-line no-console
+            console.log(`Reattached as the last child of the home page in ${req.locale}:${req.mode}.`);
           }
         }
       },

@@ -1,8 +1,8 @@
+// Direct use of console is appropriate in tasks.
+/* eslint-disable no-console */
+
 const fs = require('fs');
 const sep = require('path').sep;
-
-// One progress line per this many attachments, rather than one per attachment.
-const PROGRESS_EVERY = 100;
 
 // Download everything Apostrophe believes to be in uploadfs.
 // Useful when uploadfs is not using a storage backend we
@@ -24,25 +24,12 @@ module.exports = function(self) {
     const total = await self.db.count();
     let n = 0;
     const parallel = argv.parallel ? parseInt(argv.parallel) : 1;
-    self.logInfo(
-      'download-all-start',
-      `Downloading all attachments to ${argv.to} (this takes time)`,
-      {
-        to: argv.to,
-        total,
-        parallel
-      }
-    );
+    console.log(`Downloading all attachments to ${argv.to} (this takes time)`);
     await self.each({}, parallel, async function(file) {
       const isImage = [ 'jpg', 'png', 'gif', 'webp' ].includes(file.extension);
       const originalFile = filename(file);
       n++;
-      if (n % PROGRESS_EVERY === 0) {
-        self.logInfo('download-all-progress', `${n} of ${total}`, {
-          done: n,
-          total
-        });
-      }
+      console.log(n + ' of ' + total + ': ' + originalFile);
       const files = [
         originalFile
       ];
@@ -59,24 +46,17 @@ module.exports = function(self) {
         const to = argv.to + file;
         const tmp = to + '.tmp';
         if (fs.existsSync(to)) {
-          self.logDebug('download-exists', `${to} already exists, skipping`, { file });
+          console.log(`${to} already exists, skipping`);
         } else {
           try {
-            self.logDebug('download-file', `about to copy out: ${file}`, { file });
+            console.log(`about to copy out: ${file}`);
             await copyOut(`/attachments/${file}`, tmp);
             fs.renameSync(tmp, argv.to + file);
           } catch (e) {
             if (e.code === 'ENOSPC') {
               throw e;
             } else {
-              self.logWarn(
-                'download-missing',
-                `${e.code}: ${file} was probably never uploaded to uploadfs, skipping`,
-                {
-                  file,
-                  code: e.code
-                }
-              );
+              console.log(`${e.code}: ${file} was probably never uploaded to uploadfs, skipping`);
             }
           }
         }
@@ -93,9 +73,6 @@ module.exports = function(self) {
         return name;
       }
     });
-    self.logInfo('download-all-complete', `Downloaded ${n} of ${total} attachment(s)`, {
-      done: n,
-      total
-    });
+    console.log(`Downloaded ${n} of ${total} attachment(s)`);
   };
 };
