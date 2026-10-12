@@ -738,6 +738,36 @@ describe('AI adapter: google', function() {
       });
     });
 
+    it('carries the image shares the modality lists report', function() {
+      const turn = adapter.parseResponse(fixture({
+        usage: {
+          total_input_tokens: 268,
+          input_tokens_by_modality: [
+            {
+              modality: 'text',
+              tokens: 10
+            },
+            {
+              modality: 'image',
+              tokens: 258
+            }
+          ],
+          total_output_tokens: 7,
+          output_tokens_by_modality: [ {
+            modality: 'text',
+            tokens: 7
+          } ],
+          total_tokens: 275
+        }
+      }));
+      // No image entry in the output list: unknown, so absent
+      assert.deepEqual(turn.usage, {
+        inputTokens: 268,
+        outputTokens: 7,
+        imageInputTokens: 258
+      });
+    });
+
     it('translates function calls under the service ids, whatever the status', function() {
       const steps = [
         thoughtStep('sig-call'),
@@ -1691,6 +1721,65 @@ describe('AI adapter: google', function() {
         outputTokens: 2807
       });
       assert.deepEqual(logRecords, []);
+    });
+
+    it('sums the image shares across fanned-out requests', async function() {
+      // A generation's and an edit's usage as the service reports
+      // them: the output lists name only the image tokens, the rest of
+      // the output being text and thinking
+      httpScript = [
+        () => imageResponse({
+          usage: {
+            total_input_tokens: 14,
+            input_tokens_by_modality: [ {
+              modality: 'text',
+              tokens: 14
+            } ],
+            total_output_tokens: 1463,
+            output_tokens_by_modality: [ {
+              modality: 'image',
+              tokens: 1120
+            } ],
+            total_thought_tokens: 0,
+            total_cached_tokens: 0,
+            total_tokens: 1477
+          }
+        }),
+        () => imageResponse({
+          usage: {
+            total_input_tokens: 1132,
+            input_tokens_by_modality: [
+              {
+                modality: 'image',
+                tokens: 1120
+              },
+              {
+                modality: 'text',
+                tokens: 12
+              }
+            ],
+            total_output_tokens: 1287,
+            output_tokens_by_modality: [ {
+              modality: 'image',
+              tokens: 1120
+            } ],
+            total_thought_tokens: 0,
+            total_cached_tokens: 0,
+            total_tokens: 2419
+          }
+        })
+      ];
+      const result = await instance().image(apos.task.getReq(), {
+        prompt: 'a fox',
+        count: 2,
+        model: 'gemini-3.1-flash-image'
+      });
+      assert.deepEqual(result.usage, {
+        inputTokens: 1146,
+        outputTokens: 2750,
+        imageInputTokens: 1120,
+        imageOutputTokens: 2240
+      });
     });
 
     it('delivers only the model_output images, never a thought step\'s', async function() {

@@ -321,7 +321,7 @@ module.exports = (self) => {
 
       const {
         providers, provider, effort, image, maxSteps, mock, mockImage,
-        retryAttempts, retryBaseDelay, retryMaxElapsed,
+        usageMetadata, retryAttempts, retryBaseDelay, retryMaxElapsed,
         jobExpireAfter, jobPollInterval
       } = options;
 
@@ -422,6 +422,10 @@ module.exports = (self) => {
 
       if (mockImage !== undefined && typeof mockImage !== 'function') {
         fail('"mockImage" must be a function');
+      }
+
+      if (usageMetadata !== undefined && !isObject(usageMetadata)) {
+        fail('"usageMetadata" must be an object');
       }
 
       for (const [ name, value ] of Object.entries({

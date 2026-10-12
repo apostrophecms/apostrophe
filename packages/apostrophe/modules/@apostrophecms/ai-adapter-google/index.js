@@ -532,9 +532,9 @@ module.exports = {
       // drafts, not results, and commentary text is not an image;
       // neither travels. A `failed` interaction throws what its errors
       // say only when NOTHING was produced: anything that survived is
-      // delivered. Token usage sums across the requests. No pixel
-      // `size`: this dialect works in ratios, which the core echoes as
-      // `aspect`.
+      // delivered. Token usage and its image shares sum across the
+      // requests. No pixel `size`: this dialect works in ratios, which
+      // the core echoes as `aspect`.
       parseImageResponses(responses) {
         const images = responses.flatMap((response) =>
           (response.steps || [])
@@ -559,32 +559,55 @@ module.exports = {
           images,
           model: responses[0]?.model,
           usage: {
-            inputTokens: total(usages.map((usage) => usage.inputTokens)),
-            outputTokens: total(usages.map((usage) => usage.outputTokens))
+            inputTokens: total('inputTokens'),
+            outputTokens: total('outputTokens'),
+            ...share('imageInputTokens'),
+            ...share('imageOutputTokens')
           }
         };
 
-        function total(values) {
-          const defined = values.filter((value) => value !== undefined);
+        function total(key) {
+          const defined = usages
+            .map((usage) => usage[key])
+            .filter((value) => value !== undefined);
           return defined.length
             ? defined.reduce((sum, value) => sum + value, 0)
             : undefined;
+        }
+
+        function share(key) {
+          const sum = total(key);
+          return sum === undefined ? {} : { [key]: sum };
         }
       },
       // The response's usage → normalized token counts; thinking
       // tokens are billed as output, so they add into outputTokens.
       // total_input_tokens already counts the cached share reported
-      // beside it; the service reports no cache writes
+      // beside it; the service reports no cache writes. The image
+      // shares come from the per-modality lists, where a missing entry
+      // is unknown rather than zero: an image model's output list names
+      // only its image tokens, though the rest of its output is text
+      // and thinking.
       normalizeUsage(response) {
         const usage = response.usage;
         const read = usage?.total_cached_tokens;
+        const imageInput = imageTokens(usage?.input_tokens_by_modality);
+        const imageOutput = imageTokens(usage?.output_tokens_by_modality);
         return {
           inputTokens: usage?.total_input_tokens,
           outputTokens: usage?.total_output_tokens === undefined
             ? undefined
             : usage.total_output_tokens + (usage.total_thought_tokens || 0),
-          ...(Number.isFinite(read) && { cacheReadTokens: read })
+          ...(Number.isFinite(read) && { cacheReadTokens: read }),
+          ...(Number.isFinite(imageInput) && { imageInputTokens: imageInput }),
+          ...(Number.isFinite(imageOutput) && { imageOutputTokens: imageOutput })
         };
+
+        function imageTokens(modalities) {
+          return Array.isArray(modalities)
+            ? modalities.find((entry) => entry?.modality === 'image')?.tokens
+            : undefined;
+        }
       },
       // Map any error the transport produced to a normalized apos
       // error, the only shape the engine reacts to. A blocked
