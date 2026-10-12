@@ -341,6 +341,21 @@ describe('AI engine', function() {
         jobExpireAfter: 'never'
       }, /"jobExpireAfter" must be a non-negative integer/);
     });
+
+    it('accepts usageMetadata as an object and rejects anything else', function() {
+      apos.ai.validateOptions({
+        ...valid(),
+        usageMetadata: { siteId: 's1' }
+      });
+      rejects({
+        ...valid(),
+        usageMetadata: 's1'
+      }, /"usageMetadata" must be an object/);
+      rejects({
+        ...valid(),
+        usageMetadata: [ 's1' ]
+      }, /"usageMetadata" must be an object/);
+    });
   });
 
   describe('registry and activation', function() {

@@ -135,7 +135,8 @@ function resolveSources(deps, images, signal) {
 
 // A response's base64 images plus what the core echoes in metadata: the
 // model, normalized token usage when the service reports it, and the
-// native pixel size when one was set.
+// native pixel size when one was set. Image tokens bill at their own
+// rates, so their shares of either total travel when reported.
 function parse(response, model, size) {
   return {
     images: (response.data || []).map((item) => ({
@@ -143,14 +144,20 @@ function parse(response, model, size) {
       data: item.b64_json
     })),
     model,
-    ...(response.usage && {
-      usage: {
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens
-      }
-    }),
+    ...(response.usage && { usage: normalizeUsage(response.usage) }),
     ...(size !== undefined && { size })
   };
+
+  function normalizeUsage(usage) {
+    const imageInput = usage.input_tokens_details?.image_tokens;
+    const imageOutput = usage.output_tokens_details?.image_tokens;
+    return {
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+      ...(Number.isFinite(imageInput) && { imageInputTokens: imageInput }),
+      ...(Number.isFinite(imageOutput) && { imageOutputTokens: imageOutput })
+    };
+  }
 }
 
 function extension(contentType) {
