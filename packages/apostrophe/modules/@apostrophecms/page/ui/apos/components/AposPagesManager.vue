@@ -1,5 +1,6 @@
 <template>
   <AposModal
+    :data-apos-test="chooserTestId"
     :modal="modal"
     :modal-data="modalData"
     modal-title="apostrophe:managePages"
