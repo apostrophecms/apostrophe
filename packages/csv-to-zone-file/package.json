@@ -25,11 +25,11 @@
     "csv-to-zone-file": "./bin/csv-to-zone-file"
   },
   "dependencies": {
-    "csv-parse": "^4.16.3",
-    "eslint-config-apostrophe": "workspace:^"
+    "csv-parse": "^7.0.3"
   },
   "devDependencies": {
-    "eslint": "^9.39.5"
+    "eslint": "^9.39.5",
+    "eslint-config-apostrophe": "workspace:^"
   },
   "apostropheTestConfig": {
     "requiresMongo": false
