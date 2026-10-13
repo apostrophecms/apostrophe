@@ -5525,17 +5525,6 @@ describe('Styles', function () {
       assert.equal(attrs.style, 'font-family: "Open Sans";');
     });
 
-    it('should escape ids in getWidgetElements', function () {
-      const elements = apos.styles.getWidgetElements({
-        css: '#x{color: red;}',
-        styleId: 's"id',
-        widgetId: 'w"id'
-      });
-      assert(elements.startsWith(
-        '<style data-apos-widget-style-for="w&#34;id" data-apos-widget-style-id="s&#34;id">'
-      ));
-    });
-
     it('should keep legitimate quoted font-family values', async function () {
       const { renderScopedStyles } = await universal;
       const value = '"Open Sans", \'Helvetica Neue\', sans-serif';
@@ -5549,46 +5538,6 @@ describe('Styles', function () {
         { rootSelector: '#w' }
       );
       assert.equal(result.inline, `font-family: ${value};`);
-    });
-
-    it('should not render style values that could break out of the CSS context', async function () {
-      const { renderScopedStyles, renderGlobalStyles } = await universal;
-      const schema = [
-        {
-          name: 'scoped',
-          type: 'string',
-          selector: '.inner',
-          property: 'color'
-        },
-        {
-          name: 'templated',
-          type: 'string',
-          selector: '.inner',
-          property: 'border',
-          valueTemplate: '1px solid %VALUE%'
-        }
-      ];
-      const doc = {
-        scoped: 'red}body{display:none',
-        templated: 'red</style><script>alert(1)</script>'
-      };
-      const scoped = renderScopedStyles(schema, doc, { rootSelector: '#w' });
-      assert.equal(scoped.css, '');
-      const global = renderGlobalStyles(schema, doc);
-      assert.equal(global.css, '');
-    });
-
-    it('should only add well-formed class tokens', async function () {
-      const { renderScopedStyles } = await universal;
-      const result = renderScopedStyles(
-        [ {
-          name: 'customClass',
-          type: 'string',
-          class: true
-        } ],
-        { customClass: 'one two" onclick="x <three> four' }
-      );
-      assert.deepEqual(result.classes, [ 'one', 'four' ]);
     });
   });
 

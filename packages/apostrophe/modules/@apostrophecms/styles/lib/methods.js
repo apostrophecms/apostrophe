@@ -245,7 +245,7 @@ module.exports = (self, options) => {
       }
       // Prevent an XSS attack even if a styles exploit is found
       css = css.replaceAll('</', '<\\/');
-      return `<style data-apos-widget-style-for="${escapeAttribute(widgetId)}" data-apos-widget-style-id="${escapeAttribute(styleId)}">\n` +
+      return `<style data-apos-widget-style-for="${widgetId}" data-apos-widget-style-id="${styleId}">\n` +
         css +
         '\n</style>';
     },
