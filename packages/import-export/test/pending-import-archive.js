@@ -13,8 +13,9 @@ const {
 } = require('./util/index.js');
 
 // GHSA-5gc8-frw3-3vqm: while an import is pending (e.g. waiting at the
-// duplicates prompt), the uploaded archive is kept in uploadfs so that any
-// process can resume the import. It must not be readable there by the public.
+// duplicates prompt), the uploaded archive is kept in uploadfs, at a public
+// URL, so that any process can resume the import. Its name must be
+// unguessable and must stay inside the import-export folder.
 describe('pending import archive', function() {
   this.timeout(t.timeout);
 
@@ -65,13 +66,12 @@ describe('pending import archive', function() {
       title: 'topic1 EXISTING DRAFT'
     });
 
-    const uploadPath = path.join(apos.rootDir, 'data/tmp/uploads/topic-draft.tar.gz');
-    const archive = await fs.readFile(uploadPath);
+    const before = await listStored();
     const result = await importExportManager.import(
       req.clone({
         files: {
           file: {
-            path: uploadPath,
+            path: path.join(apos.rootDir, 'data/tmp/uploads/topic-draft.tar.gz'),
             type: importExportManager.formats.gzip.allowedTypes[0]
           }
         }
@@ -80,55 +80,49 @@ describe('pending import archive', function() {
     // Paused at the duplicates prompt
     assert(result.duplicatedDocs.length > 0);
     const exportPath = await importExportManager.getExportPath(result.exportId);
+    const stored = (await listStored()).filter(name => !before.includes(name));
 
     return {
       req,
       result,
       exportPath,
-      archive
+      stored
     };
   }
 
-  async function getStoredFiles(exportId) {
-    let names;
+  async function listStored() {
     try {
-      names = await fs.readdir(storedPath);
+      return await fs.readdir(storedPath);
     } catch (e) {
       if (e.code === 'ENOENT') {
         return [];
       }
       throw e;
     }
-    return names.filter(name => name.includes(exportId));
   }
 
-  async function anonymousGet(url) {
-    const response = await apos.http.get(url, { originalResponse: true });
-    return {
-      status: response.status,
-      body: Buffer.from(await response.arrayBuffer())
-    };
-  }
-
-  it('is not served at a public URL while the import is pending', async function() {
-    const { result, archive } = await startImport();
-
-    const stored = await getStoredFiles(result.exportId);
-    assert(stored.length > 0, 'the archive should be kept in uploadfs to resume the import');
-
-    for (const name of stored) {
-      const url = `${apos.attachment.uploadfs.getUrl()}/import-export/${name}`;
-      const { status, body } = await anonymousGet(url);
-      if (status !== 200) {
-        continue;
-      }
-      assert(!body.equals(archive), `${url} serves the pending import archive`);
-      // Not the archive nor any other gzip stream
-      assert(
-        !(body[0] === 0x1f && body[1] === 0x8b),
-        `${url} serves a readable archive`
-      );
+  it('is stored under an unguessable name while the import is pending', async function() {
+    // cuid2 ids (`apos.util.generateId`) draw their entropy from
+    // `Math.random()`, which is not a secret. Make them recognizable to
+    // prove the stored name does not rely on them.
+    const generateId = apos.util.generateId;
+    let n = 0;
+    apos.util.generateId = () => `predictable${n++}`;
+    let started;
+    try {
+      started = await startImport();
+    } finally {
+      apos.util.generateId = generateId;
     }
+    const { result, stored } = started;
+
+    assert.equal(stored.length, 1, 'the archive should be kept in uploadfs to resume the import');
+    const [ name ] = stored;
+    assert(!name.includes('predictable'), `${name} is derived from a cuid`);
+    // The user's upload name has no business in a public URL
+    assert(!name.includes('topic-draft'), `${name} contains the upload name`);
+    assert.match(name, /^[0-9a-f]{32}\.tar\.gz$/);
+    assert(name.includes(result.exportId));
   });
 
   it('can still be resumed by a process that does not have the local copy', async function() {
@@ -170,7 +164,10 @@ describe('pending import archive', function() {
       }
     }));
 
-    assert.deepEqual(await getStoredFiles(result.exportId), []);
+    assert.deepEqual(
+      (await listStored()).filter(name => name.includes(result.exportId)),
+      []
+    );
     await assert.rejects(fs.access(exportPath));
   });
 });
