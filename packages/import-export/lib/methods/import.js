@@ -1334,9 +1334,6 @@ module.exports = self => {
 
     async cleanExport(req) {
       self.debug('[import] cleaning export...');
-      if (!req.user) {
-        throw self.apos.error('forbidden');
-      }
       const exportPath = await self.getExportPath(
         self.apos.launder.string(req.body.exportId)
       );
