@@ -1138,8 +1138,12 @@ module.exports = {
       // if you're not sure what you're doing.
       getRestQuery(req, omitPermissionCheck = false) {
         const query = self.find(req).attachments(true);
-        query.applyBuildersSafely(req.query);
-        if (!omitPermissionCheck && !self.canAccessApi(req)) {
+        const restricted = !omitPermissionCheck && !self.canAccessApi(req);
+        // Builders must not operate on fields hidden by the projection
+        query.applyBuildersSafely(req.query, {
+          publicApiProjection: restricted ? self.options.publicApiProjection : null
+        });
+        if (restricted) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({

@@ -1679,6 +1679,46 @@ module.exports = {
         return true;
       },
 
+      // Returns a copy of the laundered `sort` object without any keys that
+      // refer to properties excluded by the `projection`. Used for public API
+      // requests restricted by `publicApiProjection`, so that sorting cannot
+      // be used to learn the relative values of hidden fields. Returns
+      // `undefined` if no keys remain, so that the default sort applies.
+      // Non-object sorts (e.g. `'search'`) are returned unchanged.
+      sortAllowedByProjection(sort, projection) {
+        if (!sort || (typeof sort !== 'object')) {
+          return sort;
+        }
+        if (!projection || !Object.keys(projection).length) {
+          return sort;
+        }
+        const values = Object.values(projection);
+        const hasInclusion = values.some(v => v && v !== 0);
+        const included = key => Object.hasOwn(projection, key) &&
+          Boolean(projection[key]);
+        const excluded = key => Object.hasOwn(projection, key) &&
+          ((projection[key] === 0) || (projection[key] === false));
+        const result = {};
+        for (const [ key, value ] of Object.entries(sort)) {
+          let allowed;
+          if (key === '_id') {
+            allowed = !excluded('_id');
+          } else {
+            // `titleSortified` reveals the same information as `title`.
+            // A dot path is exposed if it, or any of its ancestors, is.
+            const parts = key.replace(/Sortified$/, '').split('.');
+            const paths = parts.map((part, i) => parts.slice(0, i + 1).join('.'));
+            allowed = hasInclusion
+              ? paths.some(included)
+              : !paths.some(excluded);
+          }
+          if (allowed) {
+            result[key] = value;
+          }
+        }
+        return Object.keys(result).length ? result : undefined;
+      },
+
       // Returns true if the current user is permitted to view the field
       // exposed by the named filter according to any schema-level
       // `viewPermission`. Filters that don't resolve to a schema field are
@@ -3332,8 +3372,13 @@ module.exports = {
         // Invoke builders whose names are present in a `params` object (often
         // this is `req.query`), skipping all builders without a `launder`
         // method. Never trust a browser.
+        //
+        // If `options.publicApiProjection` is set, builders that filter on
+        // schema fields excluded by that projection are skipped, and sort
+        // keys excluded by it are dropped, so that they cannot be used to
+        // learn the values of hidden fields.
 
-        applyBuildersSafely(params) {
+        applyBuildersSafely(params, { publicApiProjection } = {}) {
           for (let [ name, value ] of Object.entries(params)) {
             if (!_.has(query.builders, name)) {
               continue;
@@ -3341,7 +3386,13 @@ module.exports = {
             if (!query.builders[name].launder) {
               continue;
             }
+            if (!self.choicesFieldAllowedByProjection(name, publicApiProjection)) {
+              continue;
+            }
             value = query.builders[name].launder(value);
+            if ((name === 'sort') && publicApiProjection) {
+              value = self.sortAllowedByProjection(value, publicApiProjection);
+            }
             query[name](value);
           }
           return query;
