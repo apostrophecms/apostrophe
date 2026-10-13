@@ -3,6 +3,16 @@ const presets = require('./presets');
 const { klona } = require('klona');
 const breakpointPreviewTransformer = require('postcss-viewport-to-container-toggle/standalone');
 
+// Escape a value for use inside a double-quoted HTML attribute
+function escapeAttribute(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&#34;')
+    .replace(/'/g, '&#39;');
+}
+
 module.exports = (self, options) => {
   return {
     // Public APIs
@@ -235,7 +245,7 @@ module.exports = (self, options) => {
       }
       // Prevent an XSS attack even if a styles exploit is found
       css = css.replaceAll('</', '<\\/');
-      return `<style data-apos-widget-style-for="${widgetId}" data-apos-widget-style-id="${styleId}">\n` +
+      return `<style data-apos-widget-style-for="${escapeAttribute(widgetId)}" data-apos-widget-style-id="${escapeAttribute(styleId)}">\n` +
         css +
         '\n</style>';
     },
@@ -247,7 +257,9 @@ module.exports = (self, options) => {
     // additional attributes to merge. `class` and `style` attributes
     // are merged with the styles values, keeping classes unique.
     // Optional third argument `options`:
-    // - asObject: boolean - if true, returns attributes as an object
+    // - asObject: boolean - if true, returns attributes as an object.
+    //   The values are NOT escaped in that case, the caller must escape
+    //   them for the output context (Nunjucks autoescape, JSX, Astro etc.)
     getWidgetAttributes(styles, additionalAttrs = {}, options = {}) {
       const {
         classes = [], inline, styleId, widgetId
@@ -318,7 +330,7 @@ module.exports = (self, options) => {
       }
 
       return attrs
-        .map(([ key, value ]) => `${key}="${value}"`)
+        .map(([ key, value ]) => `${key}="${escapeAttribute(value)}"`)
         .join(' ');
     },
 

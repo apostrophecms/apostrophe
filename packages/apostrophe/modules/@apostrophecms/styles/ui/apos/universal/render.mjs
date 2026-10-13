@@ -104,6 +104,16 @@ const FILTERS = {
   object: filterObject
 };
 
+// Characters never needed in a style value that could break out of the
+// declaration block or the element the CSS is rendered into.
+const UNSAFE_VALUE_CHARS = /[<>{}]/;
+// Characters that have no place in a class name token.
+const UNSAFE_CLASS_CHARS = /[<>"'`]/;
+
+function isUnsafeValue(value) {
+  return typeof value === 'string' && UNSAFE_VALUE_CHARS.test(value);
+}
+
 /**
  * Renders CSS stylesheet from a schema and document object.
  *
@@ -481,6 +491,17 @@ function normalize(field, doc, {
     properties = [];
   }
 
+  // Defense in depth, a free-form value can't break out of its context.
+  if (isUnsafeValue(fieldValue)) {
+    return {
+      raw: field,
+      selectors: [],
+      properties: [],
+      value: null,
+      unit: ''
+    };
+  }
+
   if (!fieldValue && fieldValue !== 0) {
     fieldValue = null;
   }
@@ -811,19 +832,27 @@ function interpolate(template, value, {
   if (!Array.isArray(subfields)) {
     // Simple mode for primitive values: replace %VALUE% placeholder
     if (typeof value !== 'object') {
+      if (isUnsafeValue(value)) {
+        return '';
+      }
       return template.replace(/%VALUE%/gi, String(value ?? '') + unit);
     }
 
     // Arrays are not supported as input values, so we ignore that check.
     // Object value mode without subfields: replace %key% placeholders
     // This handles values like {top, right, bottom, left}
-    return template.replace(/%([^%]+)%/g, (_, key) => {
+    let unsafe = false;
+    const result = template.replace(/%([^%]+)%/g, (_, key) => {
       if (key.toUpperCase() === 'VALUE') {
         return '';
       }
       const keyValue = value[key];
+      if (isUnsafeValue(keyValue)) {
+        unsafe = true;
+      }
       return String(keyValue ?? '') + unit;
     });
+    return unsafe ? '' : result;
   }
 
   if (!subfields.length) {
@@ -866,7 +895,8 @@ function interpolate(template, value, {
         const nestedValue = value[subfieldName];
         if (typeof nestedValue !== 'object' ||
           nestedValue == null ||
-          nestedValue[valueKey] == null
+          nestedValue[valueKey] == null ||
+          isUnsafeValue(nestedValue[valueKey])
         ) {
           replaceFailed = true;
           return '';
@@ -877,7 +907,7 @@ function interpolate(template, value, {
 
       // Simple key - must match a subfield (e.g., %top%)
       const subfield = subfieldsByName.get(key);
-      if (!subfield || value[key] == null) {
+      if (!subfield || value[key] == null || isUnsafeValue(value[key])) {
         replaceFailed = true;
         return '';
       }
@@ -957,17 +987,20 @@ function applyFieldClass(fieldClass, value, storage) {
     return false;
   }
 
-  if (Array.isArray(value)) {
-    for (const v of value) {
-      if (typeof v === 'string') {
-        storage.classes.add(v);
+  const values = Array.isArray(value) ? value : [ value ];
+  let added = false;
+  for (const v of values) {
+    if (typeof v !== 'string') {
+      continue;
+    }
+    // Free-form values must be valid class name tokens
+    for (const token of v.split(/\s+/)) {
+      if (token && !UNSAFE_CLASS_CHARS.test(token)) {
+        storage.classes.add(token);
+        added = true;
       }
     }
-    return value.length > 0;
-  } else if (typeof value === 'string') {
-    storage.classes.add(value);
-    return true;
   }
 
-  return false;
+  return added;
 }
