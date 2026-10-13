@@ -1,7 +1,9 @@
 {
   "dayjsTitleDateFormat": "MMM D, YYYY, hh:mm:ss A",
   "errorCantImportType": "Impossible d'importer le type \"{{ type }}\"",
+  "errorCantPublishType": "Vous n'êtes pas autorisé à publier des documents de type \"{{ type }}\", la version publiée n'a pas été importée",
   "errorInsertingDocument": "L'insertion/la mise à jour a échoué avec le message : {{ message }}",
+  "errorInvalidDocMode": "Le mode de ce document ne correspond pas à son ID",
   "export": "Exporter {{ type }}",
   "exportAttachmentError": "Certaines pièces jointes n'ont pas pu être ajoutées au fichier {{ format }}",
   "exportFailed": "Échec de l'exportation",
