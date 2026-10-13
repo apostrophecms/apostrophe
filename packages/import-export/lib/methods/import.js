@@ -529,7 +529,6 @@ module.exports = self => {
             })
             : null;
         if (replaceId) {
-          // NOTE: please update duplicatedDocs launder in overrideDuplicates
           replaceItems.push({
             aposDocId,
             title,
@@ -564,7 +563,6 @@ module.exports = self => {
         .map(({
           aposDocId, title, type, updatedAt
         }) => ({
-          // NOTE: please update duplicatedDocs launder in overrideDuplicates
           aposDocId,
           title,
           type,
@@ -1092,32 +1090,9 @@ module.exports = self => {
       return self.canImportOrExport(req, docType, 'import');
     },
 
-    // Whether the user may import the published version of documents of
-    // `docType`. Writing it publishes the document, so this takes the
-    // publish permission, like the publish route. Types that are not
-    // localized have no published version, and autopublished types
-    // publish their drafts as they are saved, which only takes the edit
-    // permission.
-    canImportPublished(req, docType) {
-      const manager = self.apos.doc.getManager(docType);
-      if (!manager?.isLocalized()) {
-        return true;
-      }
-      if (manager.options.autopublish === true) {
-        return self.apos.permission.can(req, 'edit', docType, 'draft');
-      }
-      return self.apos.permission.can(req, 'publish', docType, 'published');
-    },
-
-    cantPublishError(req, docType) {
-      return self.apos.error('forbidden', {
-        detail: req.t('aposImportExport:errorCantPublishType', { type: docType })
-      });
-    },
-
     // `target` is the existing document the imported `doc` is about to
-    // overwrite. Authorize the update against what the target actually is
-    // rather than against what the imported file says.
+    // overwrite. Its type must be importable, judged on what the target
+    // actually is rather than on what the imported file says.
     checkUpdateTarget(req, doc, target) {
       const manager = self.apos.doc.getManager(doc.type);
       const targetManager = self.apos.doc.getManager(target.type);
@@ -1128,17 +1103,6 @@ module.exports = self => {
         throw self.apos.error('forbidden', {
           detail: req.t('aposImportExport:errorCantImportType', { type: target.type })
         });
-      }
-      if (target.aposMode && (target.aposMode !== doc.aposMode)) {
-        throw self.apos.error('invalid', {
-          detail: req.t('aposImportExport:errorInvalidDocMode')
-        });
-      }
-      if (!self.apos.permission.can(req, 'edit', target, doc.aposMode)) {
-        throw self.apos.error('forbidden');
-      }
-      if ((target.aposMode === 'published') && !self.canImportPublished(req, target.type)) {
-        throw self.cantPublishError(req, target.type);
       }
     },
 

@@ -1,9 +1,7 @@
 {
   "dayjsTitleDateFormat": "MMM D, YYYY, hh:mm:ss A",
   "errorCantImportType": "Typ \"{{ type }}\" nie je možné importovať",
-  "errorCantPublishType": "Nemáte oprávnenie publikovať dokumenty typu \"{{ type }}\", publikovaná verzia nebola importovaná",
   "errorInsertingDocument": "Vloženie/aktualizácia zlyhala so správou: {{ message }}",
-  "errorInvalidDocMode": "Režim tohto dokumentu nezodpovedá jeho ID",
   "export": "Exportovať {{ type }}",
   "exportAttachmentError": "Niektoré prílohy sa nedali pridať do súboru {{ format }}",
   "exportFailed": "Export zlyhal",

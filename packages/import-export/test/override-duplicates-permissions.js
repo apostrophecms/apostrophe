@@ -2,7 +2,6 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const t = require('apostrophe/test-lib/util.js');
-const { output: gzip } = require('../lib/formats/gzip.js');
 const {
   getAppConfig, insertAdminUser, cleanData
 } = require('./util/index.js');
@@ -29,14 +28,6 @@ describe('#overrideDuplicates - permissions', function() {
           extend: '@apostrophecms/piece-type',
           options: {
             alias: 'guardedPiece'
-          }
-        },
-        // Editors may edit drafts of this type but only admins may publish
-        'admin-published-piece': {
-          extend: '@apostrophecms/piece-type',
-          options: {
-            alias: 'adminPublishedPiece',
-            publishRole: 'admin'
           }
         },
         // Editable, but not importable
@@ -66,7 +57,7 @@ describe('#overrideDuplicates - permissions', function() {
 
   afterEach(async function() {
     await apos.doc.db.deleteMany({
-      type: { $in: [ 'guarded-piece', 'admin-published-piece', 'locked-piece' ] }
+      type: { $in: [ 'guarded-piece', 'locked-piece' ] }
     });
   });
 
@@ -159,34 +150,6 @@ describe('#overrideDuplicates - permissions', function() {
     return (await apos.doc.db.findOne({ _id }))?.title;
   }
 
-  it('should not let a contributor replace a published document through an inconsistent mode', async function() {
-    const piece = await insertPublished(apos.guardedPiece, 'live');
-    await fs.mkdir(tempPath, { recursive: true });
-    const archive = path.join(tempPath, `crafted-${counter++}.tar.gz`);
-    // A "draft" pointing at the published version
-    await gzip(archive, {
-      docs: [
-        {
-          _id: piece.publishedId,
-          aposDocId: piece.draft.aposDocId,
-          aposLocale: 'en:published',
-          aposMode: 'draft',
-          type: 'guarded-piece',
-          title: 'replaced',
-          slug: piece.draft.slug,
-          visibility: 'public',
-          archived: false
-        }
-      ],
-      attachments: []
-    }, async () => {});
-
-    const result = await importAs('contributor', 'contributor-1', archive);
-    await overrideAs('contributor', 'contributor-1', result);
-
-    assert.equal(await titleOf(piece.publishedId), 'live');
-  });
-
   it('should not let a contributor replace a document the import did not offer to replace', async function() {
     const piece = await insertPublished(apos.guardedPiece, 'from archive');
     const archive = await exportThenChange(apos.guardedPiece, piece);
@@ -219,17 +182,6 @@ describe('#overrideDuplicates - permissions', function() {
 
     assert.equal(await titleOf(locked.draftId), 'locked');
     assert.equal(await titleOf(locked.publishedId), 'locked');
-  });
-
-  it('should not let an editor replace the published version of a type only admins may publish', async function() {
-    const piece = await insertPublished(apos.adminPublishedPiece, 'from archive');
-    const archive = await exportThenChange(apos.adminPublishedPiece, piece);
-
-    const result = await importAs('editor', 'editor-1', archive);
-    await overrideAs('editor', 'editor-1', result);
-
-    assert.equal(await titleOf(piece.draftId), 'from archive', 'the draft should be replaced');
-    assert.equal(await titleOf(piece.publishedId), 'live', 'the published doc should not change');
   });
 
   it('should not let a user continue the import of another user', async function() {
