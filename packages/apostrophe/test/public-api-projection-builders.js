@@ -224,6 +224,45 @@ describe('Public API projection: sort and filter builders (GHSA-rqgm-cfrp-4hx8)'
     }
   });
 
+  it('anonymous: related pages (_ancestors, _children) are limited to the projection', async function() {
+    const req = apos.task.getReq();
+    const parent = await apos.page.find(req, { title: 'Article A' }).toObject();
+    const child = await apos.page.insert(req, parent._id, 'lastChild', {
+      type: 'secret-page',
+      title: 'Child Page',
+      secret: 12345,
+      visibility: 'public'
+    });
+    // `path` is needed for ancestors and children to be loaded at all
+    apos.page.options.publicApiProjection = {
+      title: 1,
+      slug: 1,
+      path: 1,
+      level: 1,
+      rank: 1,
+      _url: 1
+    };
+    try {
+      const withChildren = await apos.http.get(`/api/v1/@apostrophecms/page/${parent._id}`);
+      assert.strictEqual(withChildren.secret, undefined);
+      assert.strictEqual(withChildren._children.length, 1);
+      assert.strictEqual(withChildren._children[0].title, 'Child Page');
+      assert.strictEqual(withChildren._children[0].secret, undefined);
+      assert.strictEqual(withChildren._children[0].type, undefined);
+      const deeper = await apos.http.get(`/api/v1/@apostrophecms/page/${parent._id}?children[depth]=2`);
+      assert.strictEqual(deeper._children[0].secret, undefined);
+      const withAncestors = await apos.http.get(`/api/v1/@apostrophecms/page/${child._id}`);
+      assert.strictEqual(withAncestors.secret, undefined);
+      const ancestor = withAncestors._ancestors.find(page => page.title === 'Article A');
+      assert(ancestor);
+      assert.strictEqual(ancestor.secret, undefined);
+      assert.strictEqual(ancestor.type, undefined);
+    } finally {
+      delete apos.page.options.publicApiProjection;
+      await apos.page.delete(req, child);
+    }
+  });
+
   it('API key (not restricted by the projection): can sort and filter by any field', async function() {
     const ascending = await apos.http.get(`/api/v1/article?apikey=${apiKey}&sort[secret]=1`);
     assert.deepStrictEqual(titles(ascending), bySecret(1));
