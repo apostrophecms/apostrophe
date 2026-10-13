@@ -367,7 +367,6 @@ module.exports = {
             // populates totalPages when perPage is present
             await query.toCount();
             const docs = await query.toArray();
-            self.apos.doc.applyPublicApiProjectionToRelated(req, docs);
 
             const choices = query.get('choicesResults');
             return {
@@ -408,7 +407,6 @@ module.exports = {
             if (!page) {
               throw self.apos.error('notfound');
             }
-            self.apos.doc.applyPublicApiProjectionToRelated(req, page);
 
             if (flat) {
               const result = [];
@@ -436,7 +434,6 @@ module.exports = {
             if (!result) {
               throw self.apos.error('notfound');
             }
-            self.apos.doc.applyPublicApiProjectionToRelated(req, result);
 
             // Attach `_url` and `_urls` properties to the home page
             self.apos.attachment.all(result, { annotate: true });
@@ -493,8 +490,6 @@ module.exports = {
               inline
             });
           }
-          // After rendering, which may use every field of related documents
-          self.apos.doc.applyPublicApiProjectionToRelated(req, result);
           // Attach `_url` and `_urls` properties
           self.apos.attachment.all(result, { annotate: true });
           return result;

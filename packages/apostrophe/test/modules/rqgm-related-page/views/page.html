@@ -1,8 +1,0 @@
-<h1>{{ data.page.title }}</h1>
-{% for author in data.page._author %}
-  <p class="author-bio">{{ author.bio }}</p>
-{% endfor %}
-{% for category in data.page._category %}
-  <p class="category-note">{{ category.internalNote }}</p>
-{% endfor %}
-{% area data.page, 'main' %}

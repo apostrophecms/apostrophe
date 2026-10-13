@@ -409,18 +409,6 @@ module.exports = {
   },
   methods(self) {
     return {
-      // Images reached through a relationship, as in image widgets, are part
-      // of public REST API responses even if this type has no
-      // `publicApiProjection`, limited to the fields needed to display them
-      getRelatedPublicApiProjection() {
-        return self.options.publicApiProjection || {
-          title: 1,
-          alt: 1,
-          credit: 1,
-          creditUrl: 1,
-          attachment: 1
-        };
-      },
       // Image docs are attachment containers themselves — their
       // attachments are discovered via relationship walking from
       // the content docs that reference them.  Iterating all
