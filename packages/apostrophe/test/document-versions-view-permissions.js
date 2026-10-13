@@ -1,6 +1,6 @@
-// Regression tests for GHSA-vh56-5m88-39rq: the change list of a version
-// must not include fields restricted by `viewPermission` when the user lacks
-// that permission.
+// Regression tests for GHSA-vh56-5m88-39rq: the change list, the change
+// counts and the change highlights of a version must not include fields
+// restricted by `viewPermission` when the user lacks that permission.
 
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
@@ -107,5 +107,108 @@ describe('Document versions: viewPermission fields in change lists (GHSA-vh56-5m
       assert(fieldNames(changes.rows).includes('articleSecret'));
       assert(JSON.stringify(changes).includes('NEW-SECRET-VALUE'));
     });
+  }
+
+  // Three versions: the first by one author, the next two by another, the
+  // last saved with AI so that those two consolidate. Each of the last two
+  // changes the title and the restricted field
+  async function recordArticle() {
+    const req = getReq(apos, { mode: 'draft' });
+    const article = await apos.modules.article.insert(req, {
+      ...apos.modules.article.newInstance(),
+      title: 'Article',
+      articleSecret: 'OLD-SECRET-VALUE'
+    });
+    const otherReq = getReq(apos, {
+      mode: 'draft',
+      _id: 'otherUserId',
+      username: 'other'
+    });
+    await apos.docVersions.saveFor(otherReq, {
+      ...article,
+      title: 'Article v2',
+      articleSecret: 'NEW-SECRET-VALUE'
+    }, true);
+    await apos.docVersions.saveFor(otherReq.clone({ aposAi: true }), {
+      ...article,
+      title: 'Article v3',
+      articleSecret: 'NEWER-SECRET-VALUE'
+    }, true);
+    const versions = await apos.docVersions.find(
+      req,
+      apos.docVersions.getTimelineCriteria(article)
+    );
+    return {
+      article,
+      versions
+    };
+  }
+
+  function getTimeline(role, article, query = {}) {
+    return apos.http.get('/api/v1/@apostrophecms/document-versions', {
+      jar: jars[role],
+      qs: {
+        docId: article._id,
+        ...query
+      }
+    });
+  }
+
+  function getVersion(role, versionId, query = {}) {
+    return apos.http.get(`/api/v1/@apostrophecms/document-versions/${versionId}`, {
+      jar: jars[role],
+      qs: query
+    });
+  }
+
+  const expectedCounts = {
+    editor: 1,
+    admin: 2
+  };
+
+  for (const role of [ 'editor', 'admin' ]) {
+    const visible = role === 'admin' ? 'counts' : 'does not count';
+
+    it(`${visible} viewPermission fields in the timeline change counts (${role})`, async function() {
+      const { article } = await recordArticle();
+      const { results } = await getTimeline(role, article);
+      assert.deepEqual(
+        results.map(item => item.changeCount),
+        [ expectedCounts[role], expectedCounts[role], 0 ]
+      );
+    });
+
+    it(`${visible} viewPermission fields in the consolidated timeline change counts (${role})`, async function() {
+      const { article } = await recordArticle();
+      const { results } = await getTimeline(role, article, { consolidate: 1 });
+      assert.equal(results.length, 2);
+      assert.equal(results[0].versionIds.length, 2);
+      assert.deepEqual(
+        results.map(item => item.changeCount),
+        [ expectedCounts[role], 0 ]
+      );
+    });
+
+    it(`${visible} viewPermission fields in the change count of one version (${role})`, async function() {
+      const { versions } = await recordArticle();
+      const version = await getVersion(role, versions[0]._id);
+      assert.equal(version.changeCount, expectedCounts[role]);
+    });
+
+    for (const query of [ { annotate: 1 }, {
+      annotate: 1,
+      consolidate: 1
+    } ]) {
+      const suffix = query.consolidate ? ', consolidated' : '';
+      const shows = role === 'admin' ? 'highlights' : 'does not highlight';
+
+      it(`${shows} viewPermission fields in an annotated version (${role}${suffix})`, async function() {
+        const { versions } = await recordArticle();
+        const { doc } = await getVersion(role, versions[0]._id, query);
+        const highlighted = Object.keys(doc.aposMeta || {});
+        assert(highlighted.includes('title'));
+        assert.equal(highlighted.includes('articleSecret'), role === 'admin');
+      });
+    }
   }
 });
