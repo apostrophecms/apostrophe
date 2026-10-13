@@ -74,6 +74,23 @@ module.exports = self => {
       if (!req.user) {
         throw self.apos.error('forbidden');
       }
+      // The upload, its copy in uploadfs and its extraction are kept while
+      // the user is asked to confirm the locale or the duplicates, but
+      // never once the import has failed
+      const artifacts = {};
+      try {
+        return await self.importFile(req, moduleName, artifacts);
+      } catch (error) {
+        if (artifacts.exportId) {
+          await storage.remove(artifacts.exportId);
+        } else if (req.files?.file?.path) {
+          await self.remove(req.files.file.path);
+        }
+        throw error;
+      }
+    },
+
+    async importFile(req, moduleName, artifacts) {
       const { file } = req.files || {};
       const importDraftsOnly = self.apos.launder.boolean(req.body.importDraftsOnly);
       const translate = self.apos.launder.boolean(req.body.translate);
@@ -103,10 +120,11 @@ module.exports = self => {
           }
 
           const exportId = await self.getExportId(exportPath);
+          artifacts.exportId = exportId;
           await storage.download(exportId);
           ({
             docs, attachmentsInfo = [], exportPath: artifactsPath
-          } = await format.input(exportPath));
+          } = await format.input(exportPath, { limits: self.options.importLimits }));
           await self.setExportArtifactsPath(exportId, artifactsPath);
         } else {
           if (!file) {
@@ -119,12 +137,13 @@ module.exports = self => {
 
           const exportId = await self.setExportId(file.path);
           await self.setExportOwner(exportId, req.user._id);
+          artifacts.exportId = exportId;
           exportPath = await self.getExportPath(exportId);
           await storage.upload(exportId);
 
           ({
             docs, attachmentsInfo = [], exportPath: artifactsPath
-          } = await format.input(exportPath));
+          } = await format.input(exportPath, { limits: self.options.importLimits }));
           await self.setExportArtifactsPath(exportId, artifactsPath);
         }
 
@@ -1270,7 +1289,7 @@ module.exports = self => {
       await storage.download(exportId);
       const {
         docs, attachmentsInfo = [], exportPath: artifactsPath
-      } = await format.input(exportPath);
+      } = await format.input(exportPath, { limits: self.options.importLimits });
       await self.setExportArtifactsPath(exportId, artifactsPath);
 
       const filteredDocs = importDraftsOnly
