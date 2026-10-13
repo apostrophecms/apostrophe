@@ -26,19 +26,7 @@ console.log(`${moduleName}:${name}`);
 
 ## Contributing
 
-To contribute to this config or run tests, clone the repository and run `npm install`. You can then run `npm test` to run the basic tests.
-
-## Viewing differences between the standard configuration and ours
-
-From this project's root, run
-
-```
-npm run compare
-```
-
-This will print a report in your terminal which shows which rules we not added to our config and which rules we have specifically modified.
-
-All missing rules should be added to the `.eslintrc.json` with a definition even if we agree with the standard. This ensures that we are aware of any new rules or changed defintions that are made to the standard and will allow us to lock down the rule definitions that we agree with.
+Edit `eslint.config.js`, then run `npm run eslint` to lint this package with the updated configuration.
 
 ## Changelog
 
