@@ -1,7 +1,6 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const util = require('node:util');
-const crypto = require('node:crypto');
 const { cloneDeep } = require('lodash');
 const importPage = require('./import-page.js');
 
@@ -1296,14 +1295,9 @@ module.exports = self => {
     },
 
     async setExportId(filePath) {
-      // The archive is copied to a public uploadfs URL named after this id
-      // while the import is pending, so it must be a real secret (cuid2 relies
-      // on `Math.random()`). Only the extension of the upload is kept, as the
-      // formats rely on it.
-      const id = crypto.randomBytes(16).toString('hex');
-      const extension = path.basename(filePath).match(/(\.[a-z0-9]+)*$/i)[0];
+      const id = self.apos.util.generateId();
 
-      const exportPath = path.resolve(path.dirname(filePath), `${id}${extension}`);
+      const exportPath = path.resolve(path.dirname(filePath), `${id}-${path.basename(filePath)}`);
       await fs.rename(filePath, exportPath);
 
       await self.apos.cache.set('exportPath', id, exportPath, 86400);

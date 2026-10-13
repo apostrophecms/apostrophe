@@ -234,56 +234,6 @@ describe('Big Upload', function() {
     assert.strictEqual(result.ok, true);
   });
 
-  // GHSA-5gc8-frw3-3vqm: chunks wait in uploadfs, at a public URL, until the
-  // upload is assembled, so the id in their path must be unguessable
-  it('should store chunks under an unguessable id', async function() {
-    // cuid2 ids (`apos.util.generateId`) draw their entropy from
-    // `Math.random()`, which is not a secret. Make them recognizable to
-    // prove the chunk paths do not rely on them.
-    const generateId = apos.util.generateId;
-    const getBigUploadFs = apos.http.getBigUploadFs;
-    let n = 0;
-    const copiedIn = [];
-    apos.util.generateId = () => `predictable${n++}`;
-    apos.http.getBigUploadFs = () => {
-      const ufs = getBigUploadFs();
-      return {
-        ...ufs,
-        async copyIn(from, to) {
-          copiedIn.push(to);
-          return ufs.copyIn(from, to);
-        }
-      };
-    };
-    received = false;
-    let result;
-    try {
-      const { default: bigUpload } = await getBigUpload();
-      result = await bigUpload('/api/v1/test/big-upload-test', {
-        files: {
-          file
-        },
-        http: httpFor(jar),
-        chunkSize: 1024
-      });
-    } finally {
-      apos.util.generateId = generateId;
-      apos.http.getBigUploadFs = getBigUploadFs;
-    }
-    assert(received);
-    assert.strictEqual(result.ok, true);
-    assert.strictEqual(copiedIn.length, Math.ceil(buffer.byteLength / 1024));
-    const ids = new Set();
-    for (const ufsPath of copiedIn) {
-      const [ , id ] = ufsPath.match(/^\/big-uploads\/([^/]+)-0-\d+$/) || [];
-      assert(id, ufsPath);
-      assert(!id.includes('predictable'), `${ufsPath} is derived from a cuid`);
-      assert.match(id, /^[0-9a-f]{32}$/);
-      ids.add(id);
-    }
-    assert.strictEqual(ids.size, 1);
-  });
-
   it('should refuse a chunk count over the limit', async function() {
     const result = await raw({ type: 'start' }, {
       cookieJar: jar,

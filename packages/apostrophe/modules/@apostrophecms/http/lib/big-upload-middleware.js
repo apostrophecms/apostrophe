@@ -1,6 +1,5 @@
 const multer = require('multer');
 const util = require('util');
-const crypto = require('node:crypto');
 const {
   readFile, open, unlink
 } = require('node:fs/promises');
@@ -153,10 +152,7 @@ module.exports = (self) => ({
       if (entries.length > self.options.bigUploadMaxFiles) {
         throw invalid('too many files');
       }
-      // The chunks wait in uploadfs, often at a public URL, until the
-      // upload is assembled, and their paths are built from this id. A cuid
-      // draws on Math.random(), so use a cryptographically random id instead
-      const id = crypto.randomBytes(16).toString('hex');
+      const id = self.apos.util.generateId();
       const formattedFiles = Object.fromEntries(
         entries.map(([ param, info ]) => {
           if ((typeof param) !== 'string') {

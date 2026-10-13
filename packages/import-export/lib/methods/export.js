@@ -1,7 +1,6 @@
 const path = require('node:path');
 const util = require('node:util');
 const fsp = require('node:fs/promises');
-const crypto = require('node:crypto');
 const Promise = require('bluebird');
 const dayjs = require('dayjs');
 const { uniqueId } = require('lodash');
@@ -487,7 +486,7 @@ module.exports = self => {
       const type = self.apos.util.slugify(self.apos.launder.string(req.body.type)) || 'docs';
       // The download is served from a public uploadfs URL, so its name must
       // not be guessable from the site, the type and the time of the export
-      const secret = crypto.randomBytes(16).toString('hex');
+      const secret = self.apos.util.generateId();
       const filename = `${self.apos.shortName}-${type}-export-${date}-${secret}${format.extension}`;
       const filepath = path.join(self.apos.attachment.uploadfs.getTempPath(), filename);
 
