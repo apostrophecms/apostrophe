@@ -1,5 +1,5 @@
 const fs = require('fs');
-const csvParse = require('csv-parse/lib/sync');
+const { parse: csvParse } = require('csv-parse/sync');
 
 const data = fs.readFileSync('/dev/stdin', 'utf8');
 const records = parse(data);
