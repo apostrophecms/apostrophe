@@ -1,6 +1,10 @@
 const { TinyColor } = require('@ctrl/tinycolor');
 const _ = require('lodash');
 
+// TinyColor finds functional notations like rgb() anywhere in the string,
+// so the whole value must also have the shape of a color
+const colorShape = /^\s*(?:#?[0-9a-f]{3,8}|[a-z]+|(?:rgba?|hsla?|hsva?|cmyk)[\s(][-+0-9.%,\s/]*\)?)\s*$/i;
+
 module.exports = {
   options: {
     name: 'color',
@@ -34,7 +38,8 @@ module.exports = {
 
             const isVariable = destination[field.name].startsWith('--');
             const test = new TinyColor(destination[field.name]);
-            if (!test.isValid && !isVariable) {
+            const isColor = test.isValid && colorShape.test(destination[field.name]);
+            if (!isColor && !isVariable) {
               destination[field.name] = null;
             } else if (isVariable) {
               // CSS custom property names: only allow alphanumeric, hyphens, underscores
