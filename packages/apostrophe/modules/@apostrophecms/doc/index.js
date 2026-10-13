@@ -1372,6 +1372,37 @@ module.exports = {
       getManager(type) {
         return self.managers[self.normalizeType(type)];
       },
+      // Removes the fields the user may not view (`viewPermission`) from a
+      // document or array of documents about to be returned by a REST API,
+      // and from every document nested in it at any depth: documents loaded
+      // through relationships (including those in widgets, array and object
+      // fields, and nested or reverse relationships) and pages in
+      // `_ancestors` and `_children`. Each document is passed to the
+      // `removeForbiddenFields` method of its own type's manager.
+      // Modifies and returns `docOrDocs`.
+      removeForbiddenFieldsDeep(req, docOrDocs) {
+        const seen = new Set();
+        walk(docOrDocs);
+        return docOrDocs;
+        function walk(value) {
+          if (!value || (typeof value !== 'object') || seen.has(value)) {
+            return;
+          }
+          seen.add(value);
+          if (Array.isArray(value)) {
+            for (const item of value) {
+              walk(item);
+            }
+            return;
+          }
+          if (value.metaType === 'doc') {
+            self.getManager(value.type)?.removeForbiddenFields(req, value);
+          }
+          for (const item of Object.values(value)) {
+            walk(item);
+          }
+        }
+      },
       // Moves the virtual `_explicitSave`, `_restoreVersion` and `_ai`
       // properties of a document about to be saved to `req.aposExplicitSave`,
       // `req.aposRestoreVersion` and `req.aposAi`. Called on REST write bodies

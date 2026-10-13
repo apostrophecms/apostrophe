@@ -343,11 +343,13 @@ module.exports = {
               query.type(type);
             }
 
-            const results = await query.toArray();
             return {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
-              results: results.map(page => self.removeForbiddenFieldsDeep(req, page))
+              results: self.apos.doc.removeForbiddenFieldsDeep(
+                req,
+                await query.toArray()
+              )
             };
           }
 
@@ -371,7 +373,7 @@ module.exports = {
 
             const choices = query.get('choicesResults');
             return {
-              results: docs.map(doc => self.removeForbiddenFieldsDeep(req, doc)),
+              results: self.apos.doc.removeForbiddenFieldsDeep(req, docs),
               pages: query.get('totalPages'),
               currentPage: query.get('page') || 1,
               ...choices && { choices }
@@ -408,7 +410,7 @@ module.exports = {
             if (!page) {
               throw self.apos.error('notfound');
             }
-            self.removeForbiddenFieldsDeep(req, page);
+            self.apos.doc.removeForbiddenFieldsDeep(req, page);
 
             if (flat) {
               const result = [];
@@ -436,7 +438,7 @@ module.exports = {
             if (!result) {
               throw self.apos.error('notfound');
             }
-            self.removeForbiddenFieldsDeep(req, result);
+            self.apos.doc.removeForbiddenFieldsDeep(req, result);
 
             // Attach `_url` and `_urls` properties to the home page
             self.apos.attachment.all(result, { annotate: true });
@@ -468,7 +470,7 @@ module.exports = {
             .getRestQuery(req)
             .and(criteria)
             .toObject();
-          const result = self.removeForbiddenFieldsDeep(req, found);
+          const result = self.apos.doc.removeForbiddenFieldsDeep(req, found);
 
           if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
@@ -3046,22 +3048,6 @@ database.`);
       // an asynchronous check of the public API permissions.
       async publicApiCheckAsync(req) {
         return self.publicApiCheck(req);
-      },
-      // Removes the fields the user may not view (`viewPermission`) from a
-      // page returned by the REST API, and from the related pages embedded
-      // in it (`_ancestors` and `_children`, recursively). Returns the page.
-      removeForbiddenFieldsDeep(req, page) {
-        if (!page || (typeof page !== 'object')) {
-          return page;
-        }
-        const manager = self.apos.doc.getManager(page.type);
-        if (manager) {
-          manager.removeForbiddenFields(req, page);
-        }
-        for (const related of [ ...(page._ancestors || []), ...(page._children || []) ]) {
-          self.removeForbiddenFieldsDeep(req, related);
-        }
-        return page;
       },
       getAllProjection() {
         return {

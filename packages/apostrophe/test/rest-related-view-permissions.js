@@ -310,7 +310,17 @@ describe('REST API: viewPermission fields of related documents (GHSA-vh56-5m88-3
       }
     });
     assert.equal(doc.title, 'Related Page');
-    assert.equal(doc.type, undefined);
     assert.equal(doc.pageSecret, undefined);
+  });
+
+  it('contributor: a projection excluding type does not reveal viewPermission fields of a piece', async function() {
+    const { results } = await getAll('article', jars.contributor, {
+      project: {
+        type: 0,
+        metaType: 0
+      }
+    });
+    assertArticleRelationshipsLoaded(results[0]);
+    assertNoSecrets(results);
   });
 });

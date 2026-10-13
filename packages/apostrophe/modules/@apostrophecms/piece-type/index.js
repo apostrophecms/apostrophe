@@ -275,8 +275,10 @@ module.exports = {
           }
           result.pages = query.get('totalPages');
           result.currentPage = query.get('page') || 1;
-          result.results = (await query.toArray())
-            .map(doc => self.removeForbiddenFields(req, doc));
+          result.results = self.apos.doc.removeForbiddenFieldsDeep(
+            req,
+            await query.toArray()
+          );
           const renderAreas = req.query['render-areas'];
           const inline = renderAreas === 'inline';
           if (inline || self.apos.launder.boolean(renderAreas)) {
@@ -317,7 +319,7 @@ module.exports = {
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           await self.publicApiCheckAsync(req);
-          const doc = self.removeForbiddenFields(
+          const doc = self.apos.doc.removeForbiddenFieldsDeep(
             req,
             await self.getRestQuery(req).and({ _id }).toObject()
           );
