@@ -48,6 +48,16 @@ describe('Document versions: viewPermission fields in change lists (GHSA-vh56-5m
     return t.destroy(apos);
   });
 
+  // Versions are ordered by `createdAt` alone, so each one must be recorded
+  // in a later millisecond than the previous one: databases order ties
+  // differently
+  async function nextMillisecond() {
+    const now = Date.now();
+    while (Date.now() <= now) {
+      await new Promise(resolve => setTimeout(resolve, 1));
+    }
+  }
+
   async function insertChangedArticle() {
     const req = getReq(apos, { mode: 'draft' });
     const article = await apos.modules.article.insert(req, {
@@ -61,6 +71,7 @@ describe('Document versions: viewPermission fields in change lists (GHSA-vh56-5m
       _id: 'otherUserId',
       username: 'other'
     });
+    await nextMillisecond();
     await apos.modules.article.update(otherReq, {
       ...article,
       title: 'Article v2',
@@ -124,11 +135,13 @@ describe('Document versions: viewPermission fields in change lists (GHSA-vh56-5m
       _id: 'otherUserId',
       username: 'other'
     });
+    await nextMillisecond();
     await apos.docVersions.saveFor(otherReq, {
       ...article,
       title: 'Article v2',
       articleSecret: 'NEW-SECRET-VALUE'
     }, true);
+    await nextMillisecond();
     await apos.docVersions.saveFor(otherReq.clone({ aposAi: true }), {
       ...article,
       title: 'Article v3',

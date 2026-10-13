@@ -346,10 +346,7 @@ module.exports = {
             return {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
-              results: self.apos.doc.removeForbiddenFieldsDeep(
-                req,
-                await query.toArray()
-              )
+              results: await query.toArray()
             };
           }
 
@@ -373,7 +370,7 @@ module.exports = {
 
             const choices = query.get('choicesResults');
             return {
-              results: self.apos.doc.removeForbiddenFieldsDeep(req, docs),
+              results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
               pages: query.get('totalPages'),
               currentPage: query.get('page') || 1,
               ...choices && { choices }
@@ -410,7 +407,6 @@ module.exports = {
             if (!page) {
               throw self.apos.error('notfound');
             }
-            self.apos.doc.removeForbiddenFieldsDeep(req, page);
 
             if (flat) {
               const result = [];
@@ -438,7 +434,6 @@ module.exports = {
             if (!result) {
               throw self.apos.error('notfound');
             }
-            self.apos.doc.removeForbiddenFieldsDeep(req, result);
 
             // Attach `_url` and `_urls` properties to the home page
             self.apos.attachment.all(result, { annotate: true });
@@ -470,7 +465,10 @@ module.exports = {
             .getRestQuery(req)
             .and(criteria)
             .toObject();
-          const result = self.apos.doc.removeForbiddenFieldsDeep(req, found);
+          const manager = found && self.apos.doc.getManager(found.type);
+          const result = manager
+            ? manager.removeForbiddenFields(req, found)
+            : found;
 
           if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
@@ -547,14 +545,10 @@ module.exports = {
             ...body
           };
           newChild._previewable = true;
-          const manager = self.apos.doc.getManager(newChild.type);
-          // `type` comes from the request body here
-          return manager?.removeForbiddenFields
-            ? manager.removeForbiddenFields(req, newChild)
-            : newChild;
+          return newChild;
         }
 
-        const result = await self.withLock(req, async () => {
+        return self.withLock(req, async () => {
           const targetPage = await self
             .findForEditing(req, self.getIdCriteria(targetId))
             .ancestors(true)
@@ -589,7 +583,6 @@ module.exports = {
             permission: false
           });
         });
-        return self.apos.doc.removeForbiddenFieldsDeep(req, result);
       },
       // Consider using `PATCH` instead unless you're sure you have 100% up to
       // date data for every property of the page. If you are trying to change
@@ -624,7 +617,7 @@ module.exports = {
         await self.publicApiCheckAsync(req);
         self.apos.doc.setSaveFlags(req, req.body);
 
-        const result = await self.withLock(req, async () => {
+        return self.withLock(req, async () => {
           const page = await self.findForEditing(req, { _id }).toObject();
           if (!page) {
             throw self.apos.error('notfound');
@@ -668,7 +661,6 @@ module.exports = {
           }
           return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
         });
-        return self.apos.doc.removeForbiddenFieldsDeep(req, result);
       },
       async delete(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
@@ -691,10 +683,7 @@ module.exports = {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
         self.apos.doc.setSaveFlags(req, req.body);
-        return self.apos.doc.removeForbiddenFieldsDeep(
-          req,
-          await self.patch(req, _id)
-        );
+        return self.patch(req, _id);
       }
     };
   },
@@ -715,10 +704,7 @@ module.exports = {
             // Not subject to draft/publish workflow
             throw self.apos.error('invalid');
           }
-          return self.apos.doc.removeForbiddenFieldsDeep(
-            req,
-            await self.publish(req, draft)
-          );
+          return self.publish(req, draft);
         },
         ':_id/localize': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -739,12 +725,9 @@ module.exports = {
           if ((!toLocale) || (toLocale === req.locale)) {
             throw self.apos.error('invalid');
           }
-          return self.apos.doc.removeForbiddenFieldsDeep(
-            req,
-            await self.localize(req, draft, toLocale, {
-              update
-            })
-          );
+          return self.localize(req, draft, toLocale, {
+            update
+          });
         },
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
@@ -757,12 +740,9 @@ module.exports = {
           if (!published) {
             throw self.apos.error('notfound');
           }
-          return self.apos.doc.removeForbiddenFieldsDeep(
+          return self.withLock(
             req,
-            await self.withLock(
-              req,
-              async () => self.unpublish(req, published)
-            )
+            async () => self.unpublish(req, published)
           );
         },
         ':_id/submit': async (req) => {
@@ -805,10 +785,7 @@ module.exports = {
             // Not subject to draft/publish workflow
             throw self.apos.error('invalid');
           }
-          return self.apos.doc.removeForbiddenFieldsDeep(
-            req,
-            await self.revertDraftToPublished(req, draft)
-          );
+          return self.revertDraftToPublished(req, draft);
         },
         ':_id/revert-published-to-previous': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -824,10 +801,7 @@ module.exports = {
             // Not subject to draft/publish workflow
             throw self.apos.error('invalid');
           }
-          return self.apos.doc.removeForbiddenFieldsDeep(
-            req,
-            await self.revertPublishedToPrevious(req, published)
-          );
+          return self.revertPublishedToPrevious(req, published);
         },
         ':_id/share': async (req) => {
           const { _id } = req.params;
@@ -849,7 +823,7 @@ module.exports = {
             ? await self.share(req, draft)
             : await self.unshare(req, draft);
 
-          return self.apos.doc.removeForbiddenFieldsDeep(req, sharedDoc);
+          return sharedDoc;
         },
         publish (req) {
           if (!Array.isArray(req.body._ids)) {
