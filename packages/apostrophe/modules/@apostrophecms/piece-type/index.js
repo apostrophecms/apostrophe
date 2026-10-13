@@ -364,15 +364,21 @@ module.exports = {
           newInstance._previewable = self.addUrlsViaModule &&
             (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
           delete newInstance._url;
-          return newInstance;
+          return self.removeForbiddenFields(req, newInstance);
         }
-        return await self.convertInsertAndRefresh(req, req.body);
+        return self.apos.doc.removeForbiddenFieldsDeep(
+          req,
+          await self.convertInsertAndRefresh(req, req.body)
+        );
       },
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
         self.apos.doc.setSaveFlags(req, req.body);
-        return self.convertUpdateAndRefresh(req, req.body, _id);
+        return self.apos.doc.removeForbiddenFieldsDeep(
+          req,
+          await self.convertUpdateAndRefresh(req, req.body, _id)
+        );
       },
       async delete(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
@@ -389,7 +395,12 @@ module.exports = {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
         self.apos.doc.setSaveFlags(req, req.body);
-        return self.convertPatchAndRefresh(req, req.body, _id, { fetchRelationships });
+        return self.apos.doc.removeForbiddenFieldsDeep(
+          req,
+          await self.convertPatchAndRefresh(req, req.body, _id, {
+            fetchRelationships
+          })
+        );
       }
     };
 
@@ -422,7 +433,10 @@ module.exports = {
             // Not subject to draft/publish workflow
             throw self.apos.error('invalid');
           }
-          return self.publish(req, draft);
+          return self.apos.doc.removeForbiddenFieldsDeep(
+            req,
+            await self.publish(req, draft)
+          );
         },
         async publish(req) {
           if (!Array.isArray(req.body._ids)) {
@@ -545,9 +559,12 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           const update = self.apos.launder.boolean(req.body.update);
-          return self.localize(req, draft, toLocale, {
-            update
-          });
+          return self.apos.doc.removeForbiddenFieldsDeep(
+            req,
+            await self.localize(req, draft, toLocale, {
+              update
+            })
+          );
         },
         ':_id/unpublish': async (req) => {
           const _id = self.apos.i18n.inferIdLocaleAndMode(req, req.params._id);
@@ -560,7 +577,10 @@ module.exports = {
           if (!published) {
             throw self.apos.error('notfound');
           }
-          return self.unpublish(req, published);
+          return self.apos.doc.removeForbiddenFieldsDeep(
+            req,
+            await self.unpublish(req, published)
+          );
         },
         ':_id/submit': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -600,7 +620,10 @@ module.exports = {
             // Not subject to draft/publish workflow
             throw self.apos.error('invalid');
           }
-          return self.revertDraftToPublished(req, draft);
+          return self.apos.doc.removeForbiddenFieldsDeep(
+            req,
+            await self.revertDraftToPublished(req, draft)
+          );
         },
         ':_id/revert-published-to-previous': async (req) => {
           const _id = self.inferIdLocaleAndMode(req, req.params._id);
@@ -616,7 +639,10 @@ module.exports = {
             // Not subject to draft/publish workflow
             throw self.apos.error('invalid');
           }
-          return self.revertPublishedToPrevious(req, published);
+          return self.apos.doc.removeForbiddenFieldsDeep(
+            req,
+            await self.revertPublishedToPrevious(req, published)
+          );
         },
         ':_id/share': async (req) => {
           const { _id } = req.params;
@@ -638,7 +664,7 @@ module.exports = {
             ? await self.share(req, draft)
             : await self.unshare(req, draft);
 
-          return sharedDoc;
+          return self.apos.doc.removeForbiddenFieldsDeep(req, sharedDoc);
         }
       }
     };

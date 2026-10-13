@@ -58,7 +58,7 @@ module.exports = {
         if (!doc) {
           throw self.apos.error('notfound');
         }
-        return doc;
+        return self.removeForbiddenFieldsDeep(req, doc);
       }
     };
   },
