@@ -286,4 +286,43 @@ describe('Public API projection: sort and filter builders (GHSA-rqgm-cfrp-4hx8)'
     const response = await apos.http.get('/api/v1/article?search=zzprivatealpha');
     assert.strictEqual(response.results.length, 0);
   });
+
+  // Search results must still be sorted by search quality, including when a
+  // sort on a hidden field is requested and dropped.
+
+  it('anonymous: full text search results are sorted by search quality', async function() {
+    const req = apos.task.getReq();
+    // Inserted from best to worst match, so that the default sort
+    // (most recently updated first) is the reverse of search quality
+    const ranked = [
+      {
+        title: 'Rank zzranked zzranked zzranked',
+        secret: 3
+      },
+      {
+        title: 'Rank zzranked',
+        secret: 2
+      },
+      {
+        title: 'Rank Note Only',
+        secretNote: 'zzranked',
+        secret: 1
+      }
+    ];
+    for (const article of ranked) {
+      await apos.article.insert(req, {
+        ...apos.article.newInstance(),
+        ...article,
+        visibility: 'public'
+      });
+    }
+    const expected = (await apos.article.find(req).search('zzranked').toArray())
+      .map(doc => doc.title);
+    assert.deepStrictEqual(expected, ranked.map(article => article.title));
+
+    const response = await apos.http.get('/api/v1/article?search=zzranked');
+    assert.deepStrictEqual(titles(response), expected);
+    const hiddenSort = await apos.http.get('/api/v1/article?search=zzranked&sort[secret]=1');
+    assert.deepStrictEqual(titles(hiddenSort), expected);
+  });
 });
