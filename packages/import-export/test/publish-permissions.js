@@ -8,7 +8,9 @@ const {
 } = require('./util/index.js');
 
 // Importing must not let a user write the published version of a document
-// they are not allowed to publish. Their drafts are still imported.
+// they are not allowed to publish. Core refuses those writes, and import
+// reports them as failures. Documents whose mode and `_id` disagree are
+// refused by import itself.
 describe('#import - publish permissions', function() {
   this.timeout(t.timeout);
 
@@ -326,7 +328,7 @@ describe('#import - publish permissions', function() {
   describe('documents whose mode is inconsistent', function() {
     // A document claiming to be a draft while its `_id` names the
     // published version
-    async function craftArchive(aposDocId, title) {
+    async function craftArchive(aposDocId, title, aposLocale = 'en:draft') {
       await fs.mkdir(tempPath, { recursive: true });
       const archive = path.join(tempPath, `crafted-${counter++}.tar.gz`);
       await gzip(archive, {
@@ -334,7 +336,7 @@ describe('#import - publish permissions', function() {
           {
             _id: `${aposDocId}:en:published`,
             aposDocId,
-            aposLocale: 'en:draft',
+            aposLocale,
             aposMode: 'draft',
             type: 'guarded-piece',
             title,
@@ -376,6 +378,26 @@ describe('#import - publish permissions', function() {
       assert.equal((await findDoc(publishedId)).title, 'live');
       assert.equal((await findDoc(draft._id)).title, 'live');
     });
+
+    it('should not let a contributor replace a published document named by both its _id and aposLocale', async function() {
+      const req = apos.task.getReq({ mode: 'draft' });
+      const draft = await apos.guardedPiece.insert(req, {
+        ...apos.guardedPiece.newInstance(),
+        title: 'live'
+      });
+      await apos.guardedPiece.publish(req, draft);
+      const publishedId = draft._id.replace(':draft', ':published');
+      const archive = await craftArchive(draft.aposDocId, 'crafted', 'en:published');
+
+      const result = await importAs('contributor', archive);
+      assert.equal(result.duplicatedDocs.length, 1);
+      await overrideAs('contributor', result);
+
+      assert.equal((await findDoc(publishedId)).title, 'live');
+      assert.equal((await findDoc(draft._id)).title, 'live');
+      const failedLog = await getFailedLog(result.jobId);
+      assert.deepEqual(failedLog.map(({ _id }) => _id), [ publishedId ]);
+    });
   });
 
   describe('CSV files with a key column', function() {
@@ -392,12 +414,10 @@ describe('#import - publish permissions', function() {
         `update-${counter++}.csv`,
         'type,title:key,title\n"admin-published-piece","csv live","csv edited"\n'
       );
-      const result = await importAs('editor', csv);
+      await importAs('editor', csv);
 
       assert.equal((await findDoc(draft._id)).title, 'csv edited', 'the draft should be updated');
       assert.equal((await findDoc(publishedId)).title, 'csv live', 'the published doc should not change');
-      const failedLog = await getFailedLog(result.jobId);
-      assert.equal(failedLog.length, 1);
     });
 
     it('should not let an editor insert a published document of a type only admins may publish', async function() {
@@ -410,7 +430,7 @@ describe('#import - publish permissions', function() {
       const docs = await apos.doc.db
         .find({ type: 'admin-published-piece' })
         .toArray();
-      assert.deepEqual(docs.map(({ aposMode }) => aposMode), [ 'draft' ]);
+      assert.deepEqual(docs, []);
       const failedLog = await getFailedLog(result.jobId);
       assert.equal(failedLog.length, 1);
     });

@@ -694,12 +694,6 @@ module.exports = self => {
 
       self.handleRichTextFields(manager, doc);
 
-      // Users who may not publish documents of this type
-      // only get to import their drafts
-      const publishDenied = !importDraftsOnly &&
-        !self.canImportPublished(req, doc.type);
-      const draftsOnly = importDraftsOnly || publishDenied;
-
       if (!doc[updateKey]) {
         return insert();
       }
@@ -731,7 +725,7 @@ module.exports = self => {
       async function insert() {
         // Insert as "published" to insert
         // in both draft and published versions:
-        const _req = req.clone({ mode: draftsOnly ? 'draft' : 'published' });
+        const _req = req.clone({ mode: importDraftsOnly ? 'draft' : 'published' });
 
         const type = doc.type;
         const docToInsert = {};
@@ -741,7 +735,7 @@ module.exports = self => {
           fetchRelationships: false
         });
 
-        if (draftsOnly) {
+        if (importDraftsOnly) {
           delete docToInsert.lastPublishedAt;
         }
 
@@ -760,21 +754,16 @@ module.exports = self => {
           // let's set it back to the original type:
           docToInsert.type = type;
 
-          await importPage.insert({
+          return importPage.insert({
             manager: self.apos.page,
             doc: docToInsert,
             req: _req,
             duplicatedDocs,
             modified
           });
-        } else {
-          await manager.insert(_req, docToInsert, { setModified: modified });
         }
 
-        // The draft is imported, report the published version that is not
-        if (publishDenied) {
-          throw self.cantPublishError(req, type);
-        }
+        return manager.insert(_req, docToInsert, { setModified: modified });
       }
 
       async function update() {
@@ -799,10 +788,6 @@ module.exports = self => {
 
         const docsToUpdate = [ matchingDraft, matchingPublished ].filter(doc => {
           if (!doc) {
-            return false;
-          }
-          // Never update the published version for a user who may not publish
-          if (publishDenied && doc.aposMode === 'published') {
             return false;
           }
           // If `importDraftsOnly` is true, we only update the existing draft version.
@@ -851,13 +836,6 @@ module.exports = self => {
                 : false
             }
           });
-        }
-
-        // The draft is imported, report the published version that is not.
-        // Core does not find a published version this user may not edit
-        // for editing, the draft tells whether it exists
-        if (publishDenied && (matchingPublished || matchingDraft?.lastPublishedAt)) {
-          throw self.cantPublishError(req, doc.type);
         }
       }
     },
@@ -956,10 +934,6 @@ module.exports = self => {
           method
         })) {
           return true;
-        }
-
-        if (!self.canImportPublished(req, doc.type)) {
-          throw self.cantPublishError(req, doc.type);
         }
       }
 
@@ -1112,29 +1086,6 @@ module.exports = self => {
 
     canImport(req, docType) {
       return self.canImportOrExport(req, docType, 'import');
-    },
-
-    // Whether the user may import the published version of documents of
-    // `docType`. Writing it publishes the document, so this takes the
-    // publish permission, like the publish route. Types that are not
-    // localized have no published version, and autopublished types
-    // publish their drafts as they are saved, which only takes the edit
-    // permission.
-    canImportPublished(req, docType) {
-      const manager = self.apos.doc.getManager(docType);
-      if (!manager?.isLocalized()) {
-        return true;
-      }
-      if (manager.options.autopublish === true) {
-        return self.apos.permission.can(req, 'edit', docType, 'draft');
-      }
-      return self.apos.permission.can(req, 'publish', docType, 'published');
-    },
-
-    cantPublishError(req, docType) {
-      return self.apos.error('forbidden', {
-        detail: req.t('aposImportExport:errorCantPublishType', { type: docType })
-      });
     },
 
     // `aposMode`, `aposLocale` and `_id` all come from the imported file.

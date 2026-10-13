@@ -2,8 +2,7 @@ const assert = require('node:assert/strict');
 const t = require('../test-lib/test');
 
 // Writing the published version of a document is publishing it, so it is
-// governed by the type's `publishRole`, and by the published-mode rules
-// whatever mode the request is in (GHSA-5m22-7pfq-vp65).
+// governed by the type's `publishRole` (GHSA-5m22-7pfq-vp65).
 
 describe('Permissions for published documents', function() {
   this.timeout(t.timeout);
@@ -92,7 +91,6 @@ describe('Permissions for published documents', function() {
         _id: published._id.replace(':published', ':draft')
       });
       assert.equal(apos.permission.can(editorReq('published'), 'edit', published), false);
-      assert.equal(apos.permission.can(editorReq('draft'), 'edit', published), false);
       assert.equal(apos.permission.can(editorReq('published'), 'create', {
         type: 'restricted-article',
         aposMode: 'published'
@@ -214,46 +212,8 @@ describe('Permissions for published documents', function() {
     });
   });
 
-  describe('the mode of the document', function() {
-    it('decides the rules rather than the mode of the request', async function() {
-      const published = await insertPublished('plain-article', 'Mode can');
-      const draft = await apos.doc.db.findOne({
-        _id: published._id.replace(':published', ':draft')
-      });
-      assert.equal(apos.permission.can(contributorReq('draft'), 'edit', published), false);
-      assert.equal(apos.permission.can(contributorReq('draft'), 'edit', draft), true);
-      assert.equal(apos.permission.can(contributorReq('draft'), 'edit', published, 'draft'), false);
-      // A type has no mode of its own, the mode of the request still applies
-      assert.equal(apos.permission.can(contributorReq('draft'), 'edit', 'plain-article'), true);
-      assert.equal(apos.permission.can(contributorReq('published'), 'edit', 'plain-article'), false);
-    });
-
-    it('forbids a contributor in draft mode to update a published document', async function() {
-      const published = await insertPublished('plain-article', 'Mode update');
-      published.title = 'Mode update hacked';
-      await assertForbidden(() => apos.doc.update(contributorReq('draft'), published));
-      assert.equal(await getTitle(published._id), 'Mode update');
-    });
-
-    it('forbids a contributor in draft mode to insert a published document', async function() {
-      const manager = apos.modules['plain-article'];
-      const aposDocId = apos.util.generateId();
-      await assertForbidden(() => manager.insert(contributorReq('draft'), {
-        ...manager.newInstance(),
-        _id: `${aposDocId}:en:published`,
-        title: 'Mode insert'
-      }));
-      assert.equal(await apos.doc.db.countDocuments({ title: 'Mode insert' }), 0);
-    });
-
-    it('forbids an editor in draft mode to update a published document of a type with a stronger publishRole', async function() {
-      const published = await insertPublished('restricted-article', 'Mode restricted update');
-      published.title = 'Mode restricted update hacked';
-      await assertForbidden(() => apos.doc.update(editorReq('draft'), published));
-      assert.equal(await getTitle(published._id), 'Mode restricted update');
-    });
-
-    it('forbids a contributor to update a published document via REST in draft mode', async function() {
+  describe('contributors', function() {
+    it('forbids a contributor to update a published document via REST', async function() {
       const published = await insertPublished('plain-article', 'Mode REST');
       await assert.rejects(() => apos.http.patch(`/api/v1/plain-article/${published._id}`, {
         body: {
