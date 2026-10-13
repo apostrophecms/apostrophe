@@ -234,13 +234,6 @@ async function extract(filepath, exportPath, limits = {}) {
         fail(new Error(`Import archive has too many entries (maximum ${maxEntries})`));
         return;
       }
-      // Our archives only hold files and directories, skip anything else
-      // (links, devices...)
-      if (![ 'file', 'directory' ].includes(header.type)) {
-        stream.on('end', next);
-        stream.resume();
-        return;
-      }
       // Normalize \ to / before checking for zip-slip
       const name = header.name.replace(/\\/g, '/');
       // Check where the entry actually resolves to rather than looking for

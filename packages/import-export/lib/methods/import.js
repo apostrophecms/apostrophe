@@ -134,9 +134,6 @@ module.exports = self => {
           format = Object
             .values(self.formats)
             .find(format => format.allowedTypes.includes(file.type));
-          if (!format) {
-            throw new Error(`invalid: unsupported file type ${file.type}`);
-          }
 
           const exportId = await self.setExportId(file.path);
           artifacts.exportId = exportId;
