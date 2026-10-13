@@ -118,6 +118,7 @@ module.exports = self => {
             .find(format => format.allowedTypes.includes(file.type));
 
           const exportId = await self.setExportId(file.path);
+          await self.setExportOwner(exportId, req.user._id);
           exportPath = await self.getExportPath(exportId);
           await storage.upload(exportId);
 
@@ -336,7 +337,7 @@ module.exports = self => {
 
     async instantiateJob(req, total, { ids, types }) {
       const jobManager = self.apos.modules['@apostrophecms/job'];
-      const job = await jobManager.start();
+      const job = await jobManager.start({ userId: req.user._id });
 
       const { noteId } = await self.apos.notify(req, 'aposImportExport:importing', {
         icon: 'database-import-icon',
@@ -1322,6 +1323,15 @@ module.exports = self => {
       return self.apos.cache.get('exportId', exportPath);
     },
 
+    // Records the `_id` of the user who uploaded the export
+    async setExportOwner(id, userId) {
+      await self.apos.cache.set('exportOwner', id, userId, 86400);
+    },
+
+    async getExportOwner(id) {
+      return self.apos.cache.get('exportOwner', id);
+    },
+
     async cleanExport(req) {
       self.debug('[import] cleaning export...');
       const exportPath = await self.getExportPath(
@@ -1331,6 +1341,10 @@ module.exports = self => {
         throw self.apos.error.invalid('no such export path');
       }
       const exportId = await self.getExportId(exportPath);
+      // Only the user who uploaded the export may discard it
+      if (await self.getExportOwner(exportId) !== req.user._id) {
+        throw self.apos.error('forbidden');
+      }
 
       const jobId = self.apos.launder.string(req.body.jobId);
       const notificationId = self.apos.launder.string(req.body.notificationId);
@@ -1338,7 +1352,10 @@ module.exports = self => {
       if (jobId) {
         const jobManager = self.apos.modules['@apostrophecms/job'];
         try {
-          const job = await jobManager.db.findOneAndUpdate({ _id: jobId }, {
+          const job = await jobManager.db.findOneAndUpdate({
+            _id: jobId,
+            userId: req.user._id
+          }, {
             $set: {
               ended: true,
               status: 'completed'
