@@ -1122,15 +1122,20 @@ module.exports = {
       // several read as one list (see `getConsolidatedRows`). Rows carry their
       // text, word diff and formatting changes (see `lib/text.js`). `before`
       // are the rows AI changed before the pairs (see `getAiRowsBefore`).
-      // Checks no permission on the contents; related documents read as `req`
+      // Checks no permission on the contents, except that fields `req` may not
+      // view (`viewPermission`) are left out; related documents read as `req`
       // sees them. Empty for no pairs and for a type whose module is gone
       async getChangeList(req, pairs, { before } = {}) {
         let rows = [];
-        if (pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type)) {
+        const manager = pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type);
+        if (manager) {
           const ctx = self.getDiffContext(req, pairs.at(-1).newer);
+          const forbidden = self.getForbiddenFieldNames(req, manager);
+          const visible = self.getConsolidatedRows(req, pairs, { before })
+            .filter(row => !forbidden.has(row.path[0].name));
           rows = text.addWordDiff(await self.addChangeText(
             req,
-            text.addFormat(self.getConsolidatedRows(req, pairs, { before }), ctx)
+            text.addFormat(visible, ctx)
           ), ctx);
         }
         return {
@@ -1142,6 +1147,15 @@ module.exports = {
             ai: rows.filter(row => row.ai).length
           }
         };
+      },
+      // The names of the top-level fields of `manager`'s schema that its
+      // `removeForbiddenFields` removes for `req`
+      getForbiddenFieldNames(req, manager) {
+        const probe = Object.fromEntries(
+          manager.schema.map(field => [ field.name, true ])
+        );
+        const kept = manager.removeForbiddenFields(req, { ...probe }) || {};
+        return new Set(Object.keys(probe).filter(name => !(name in kept)));
       },
       // Every change from `older` to `newer`, two stored versions of one
       // document, as rows at full depth (see `lib/diff.js`)
