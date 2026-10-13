@@ -158,14 +158,11 @@ module.exports = {
       // One version with its document. `annotate=1` marks the document with the
       // changes of the version; `consolidate=1` with those of the consolidated
       // version it is the newest of (see `getOne`)
-      async getOne(req, versionId) {
-        return self.apos.doc.removeForbiddenFieldsDeep(
-          req,
-          await self.getOne(req, versionId, {
-            annotate: self.apos.launder.boolean(req.query.annotate),
-            consolidate: self.apos.launder.boolean(req.query.consolidate)
-          })
-        );
+      getOne(req, versionId) {
+        return self.getOne(req, versionId, {
+          annotate: self.apos.launder.boolean(req.query.annotate),
+          consolidate: self.apos.launder.boolean(req.query.consolidate)
+        });
       }
     };
   },

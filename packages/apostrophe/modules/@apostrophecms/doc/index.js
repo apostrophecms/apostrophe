@@ -58,7 +58,7 @@ module.exports = {
         if (!doc) {
           throw self.apos.error('notfound');
         }
-        return self.removeForbiddenFieldsDeep(req, doc);
+        return doc;
       }
     };
   },
@@ -1372,20 +1372,27 @@ module.exports = {
       getManager(type) {
         return self.managers[self.normalizeType(type)];
       },
-      // Removes the fields the user may not view (`viewPermission`) from a
-      // document or array of documents about to be returned by a REST API,
-      // and from every document nested in it at any depth: documents loaded
-      // through relationships (including those in widgets, array and object
-      // fields, and nested or reverse relationships) and pages in
-      // `_ancestors` and `_children`. Each document is passed to the
-      // `removeForbiddenFields` method of its own type's manager.
-      // Modifies and returns `docOrDocs`.
-      removeForbiddenFieldsDeep(req, docOrDocs) {
+      // Removes the fields the user may not view (`viewPermission`) from
+      // every document found at any depth in `value`, a REST API response:
+      // documents loaded through relationships (including those in widgets,
+      // array and object fields, and nested or reverse relationships), pages
+      // in `_ancestors` and `_children`, etc. Each document is passed to the
+      // `removeForbiddenFields` method of its own type's manager. Called for
+      // every `apiRoutes` and `restApiRoutes` response. Values that are not
+      // plain objects or arrays (strings, buffers, streams...) are left
+      // alone. Modifies and returns `value`.
+      removeForbiddenFieldsDeep(req, value) {
         const seen = new Set();
-        walk(docOrDocs);
-        return docOrDocs;
+        walk(value);
+        return value;
         function walk(value) {
-          if (!value || (typeof value !== 'object') || seen.has(value)) {
+          if (
+            !value ||
+            (typeof value !== 'object') ||
+            seen.has(value) ||
+            ArrayBuffer.isView(value) ||
+            (typeof value.pipe === 'function')
+          ) {
             return;
           }
           seen.add(value);

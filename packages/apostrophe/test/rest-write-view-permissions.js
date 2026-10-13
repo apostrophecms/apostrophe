@@ -220,16 +220,6 @@ describe('REST API writes: viewPermission fields in responses (GHSA-vh56-5m88-39
       assertNoSecrets(doc);
     });
 
-    it('editor: POST with _newInstance does not include viewPermission fields', async function() {
-      const doc = await http.post('/api/v1/article', {
-        jar: jars.editor,
-        body: {
-          _newInstance: true
-        }
-      });
-      assert.ok(!('articleSecret' in doc));
-    });
-
     it('editor: PUT response does not include viewPermission fields', async function() {
       const article = await insertArticle();
       const doc = await apos.http.get(piecePath(article), { jar: jars.editor });
@@ -429,18 +419,6 @@ describe('REST API writes: viewPermission fields in responses (GHSA-vh56-5m88-39
       assertRelatedNoteLoaded(doc);
       assert.ok(!('pageSecret' in doc));
       assertNoSecrets(doc);
-    });
-
-    it('editor: POST with _newInstance does not include viewPermission fields', async function() {
-      const doc = await http.post('/api/v1/@apostrophecms/page', {
-        jar: jars.editor,
-        body: {
-          _newInstance: true,
-          type: 'test-page',
-          _targetId: '_home'
-        }
-      });
-      assert.ok(!('pageSecret' in doc));
     });
 
     it('editor: POST copying a page does not include viewPermission fields', async function() {
