@@ -1,9 +1,6 @@
 const fs = require('node:fs/promises');
-const { createReadStream, createWriteStream } = require('node:fs');
 const path = require('node:path');
 const util = require('node:util');
-const crypto = require('node:crypto');
-const { pipeline } = require('node:stream/promises');
 const { cloneDeep } = require('lodash');
 const importPage = require('./import-page.js');
 
@@ -30,58 +27,13 @@ module.exports = self => {
       }
 
       const target = path.resolve('/import-export', path.basename(exportPath));
-      const encrypted = `${exportPath}.enc`;
-      const {
-        key, iv, tag
-      } = await self.apos.cache.get('exportKey', id) || {};
-      if (!key) {
-        throw self.apos.error('notfound', 'no key for the stored import archive');
-      }
-      try {
-        await util.promisify(self.apos.attachment.uploadfs.copyOut)(target, encrypted);
-        const decipher = crypto.createDecipheriv(
-          'aes-256-gcm',
-          Buffer.from(key, 'base64'),
-          Buffer.from(iv, 'base64')
-        );
-        decipher.setAuthTag(Buffer.from(tag, 'base64'));
-        await pipeline(
-          createReadStream(encrypted),
-          decipher,
-          createWriteStream(exportPath)
-        );
-      } catch (error) {
-        await fs.rm(exportPath, { force: true });
-        throw error;
-      } finally {
-        await fs.rm(encrypted, { force: true });
-      }
+      await util.promisify(self.apos.attachment.uploadfs.copyOut)(target, exportPath);
     },
-    // The archive is kept in uploadfs so that any process can resume the
-    // import, but uploadfs files are typically served at a public URL, so it
-    // is stored encrypted. The key never leaves the database (cache).
     upload: async (id) => {
       const exportPath = await self.getExportPath(id);
+      const source = exportPath;
       const target = path.resolve('/import-export', path.basename(exportPath));
-      const encrypted = `${exportPath}.enc`;
-      const key = crypto.randomBytes(32);
-      const iv = crypto.randomBytes(12);
-      const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-      try {
-        await pipeline(
-          createReadStream(exportPath),
-          cipher,
-          createWriteStream(encrypted)
-        );
-        await self.apos.cache.set('exportKey', id, {
-          key: key.toString('base64'),
-          iv: iv.toString('base64'),
-          tag: cipher.getAuthTag().toString('base64')
-        }, 86400);
-        await util.promisify(self.apos.attachment.uploadfs.copyIn)(encrypted, target);
-      } finally {
-        await fs.rm(encrypted, { force: true });
-      }
+      await util.promisify(self.apos.attachment.uploadfs.copyIn)(source, target);
     },
     remove: async (id) => {
       const exportPath = await self.getExportPath(id);
@@ -114,8 +66,6 @@ module.exports = self => {
           stack: error.stack
         });
       }
-
-      await self.apos.cache.delete('exportKey', id);
     }
   };
 
