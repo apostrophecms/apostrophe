@@ -69,6 +69,12 @@ module.exports = {
           if (!req.user) {
             throw self.apos.error('notfound');
           }
+          // Slugs are unique across all docs, so anyone choosing a slug must
+          // learn that it is taken, even by a doc they cannot view. Users who
+          // cannot edit anything have no need to know
+          if (!self.apos.permission.can(req, 'view-draft')) {
+            throw self.apos.error('forbidden');
+          }
           const slug = self.apos.launder.string(req.body.slug);
           const _id = self.apos.launder.id(req.body._id);
           const criteria = { slug };
