@@ -2025,8 +2025,16 @@ module.exports = {
             return projection;
           },
           finalize() {
-            let projection = query.get('project') || {};
+            let projection = { ...query.get('project') };
             const relationships = query.get('relationships');
+            // Never exclude `type` and `metaType` (see below). Removing the
+            // fields a user may not view from REST API responses also relies
+            // on them (`apos.doc.removeForbiddenFieldsDeep`)
+            for (const property of [ 'type', 'metaType' ]) {
+              if ((property in projection) && !projection[property]) {
+                delete projection[property];
+              }
+            }
             // Keys beginning with `_` are computed values
             // (exception: `_id`). They do not make sense
             // in MongoDB projections. However Apostrophe

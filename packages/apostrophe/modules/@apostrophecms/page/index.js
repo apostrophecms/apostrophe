@@ -370,7 +370,7 @@ module.exports = {
 
             const choices = query.get('choicesResults');
             return {
-              results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
+              results: docs,
               pages: query.get('totalPages'),
               currentPage: query.get('page') || 1,
               ...choices && { choices }
@@ -461,14 +461,10 @@ module.exports = {
           await self.publicApiCheckAsync(req);
           const criteria = self.getIdCriteria(_id);
           // Normal view permissions apply (visibility, viewRole)
-          const found = await self
+          const result = await self
             .getRestQuery(req)
             .and(criteria)
             .toObject();
-          const manager = found && self.apos.doc.getManager(found.type);
-          const result = manager
-            ? manager.removeForbiddenFields(req, found)
-            : found;
 
           if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
