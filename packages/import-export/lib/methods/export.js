@@ -483,7 +483,11 @@ module.exports = self => {
 
     async exportFile(req, reporting, format, data, expiration) {
       const date = dayjs().format('YYYYMMDDHHmmss');
-      const filename = `${self.apos.shortName}-${req.body.type.toLowerCase()}-export-${date}${format.extension}`;
+      const type = self.apos.util.slugify(self.apos.launder.string(req.body.type)) || 'docs';
+      // The download is served from a public uploadfs URL, so its name must
+      // not be guessable from the site, the type and the time of the export
+      const secret = self.apos.util.generateId();
+      const filename = `${self.apos.shortName}-${type}-export-${date}-${secret}${format.extension}`;
       const filepath = path.join(self.apos.attachment.uploadfs.getTempPath(), filename);
 
       try {
