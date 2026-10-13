@@ -303,6 +303,11 @@ module.exports = self => {
       await self.updateJobResults(jobId, {
         failedLog: logs
       });
+      await self.setDuplicatesAnalysis(req, {
+        jobId,
+        exportId,
+        duplicatedDocs
+      });
 
       const results = {
         importDraftsOnly,
@@ -995,6 +1000,7 @@ module.exports = self => {
         if (!docToUpdate) {
           return;
         }
+        self.checkUpdateTarget(req, doc, docToUpdate);
         await manager.convert(_req, doc, docToUpdate, {
           presentFieldsOnly: true,
           fetchRelationships: false
@@ -1086,6 +1092,84 @@ module.exports = self => {
       return self.canImportOrExport(req, docType, 'import');
     },
 
+    // Whether the user may import the published version of documents of
+    // `docType`. Writing it publishes the document, so this takes the
+    // publish permission, like the publish route. Types that are not
+    // localized have no published version, and autopublished types
+    // publish their drafts as they are saved, which only takes the edit
+    // permission.
+    canImportPublished(req, docType) {
+      const manager = self.apos.doc.getManager(docType);
+      if (!manager?.isLocalized()) {
+        return true;
+      }
+      if (manager.options.autopublish === true) {
+        return self.apos.permission.can(req, 'edit', docType, 'draft');
+      }
+      return self.apos.permission.can(req, 'publish', docType, 'published');
+    },
+
+    cantPublishError(req, docType) {
+      return self.apos.error('forbidden', {
+        detail: req.t('aposImportExport:errorCantPublishType', { type: docType })
+      });
+    },
+
+    // `target` is the existing document the imported `doc` is about to
+    // overwrite. Authorize the update against what the target actually is
+    // rather than against what the imported file says.
+    checkUpdateTarget(req, doc, target) {
+      const manager = self.apos.doc.getManager(doc.type);
+      const targetManager = self.apos.doc.getManager(target.type);
+      // Pages may change type, other documents may not
+      const sameType = (target.type === doc.type) ||
+        Boolean(targetManager && self.isPage(targetManager) && self.isPage(manager));
+      if (!sameType || !self.canImport(req, target.type)) {
+        throw self.apos.error('forbidden', {
+          detail: req.t('aposImportExport:errorCantImportType', { type: target.type })
+        });
+      }
+      if (target.aposMode && (target.aposMode !== doc.aposMode)) {
+        throw self.apos.error('invalid', {
+          detail: req.t('aposImportExport:errorInvalidDocMode')
+        });
+      }
+      if (!self.apos.permission.can(req, 'edit', target, doc.aposMode)) {
+        throw self.apos.error('forbidden');
+      }
+      if ((target.aposMode === 'published') && !self.canImportPublished(req, target.type)) {
+        throw self.cantPublishError(req, target.type);
+      }
+    },
+
+    // Remember the duplicates an import found, so that `overrideDuplicates`
+    // relies on them rather than on what the browser sends back
+    async setDuplicatesAnalysis(req, {
+      jobId, exportId, duplicatedDocs
+    }) {
+      await self.apos.cache.set('importDuplicates', jobId, {
+        userId: req.user?._id ?? null,
+        exportId,
+        duplicatedDocs: duplicatedDocs.map(({ aposDocId, replaceId }) => ({
+          aposDocId,
+          replaceId: replaceId || null
+        }))
+      }, 86400);
+    },
+
+    async getDuplicatesAnalysis(req, { jobId, exportId }) {
+      const analysis = jobId &&
+        await self.apos.cache.get('importDuplicates', jobId);
+      if (
+        !analysis ||
+        (analysis.userId !== (req.user?._id ?? null)) ||
+        (analysis.exportId !== exportId)
+      ) {
+        throw self.apos.error('forbidden', 'No such import in progress for this user');
+      }
+      return analysis;
+    },
+
     // `self.apos.page.isPage` does not work here since
     // the slug can be omitted in a CSV or Excel file.
     isPage(manager) {
@@ -1151,20 +1235,21 @@ module.exports = self => {
       const importDraftsOnly = self.apos.launder.boolean(req.body.importDraftsOnly);
       const translate = self.apos.launder.boolean(req.body.translate);
       const overrideLocale = self.apos.launder.boolean(req.body.overrideLocale);
-      const exportPath = await self.getExportPath(
-        self.apos.launder.string(req.body.exportId)
-      );
-      const docIds = self.apos.launder.strings(req.body.docIds);
-      const duplicatedDocs = req.body.duplicatedDocs?.map(duplicatedDoc => {
-        return {
-          aposDocId: self.apos.launder.string(duplicatedDoc.aposDocId),
-          title: self.apos.launder.string(duplicatedDoc.title),
-          type: self.apos.launder.string(duplicatedDoc.type),
-          updatedAt: self.apos.launder.date(duplicatedDoc.updatedAt),
-          replaceId: self.apos.launder.string(duplicatedDoc.replaceId)
-        };
-      }) ?? [];
       const jobId = self.apos.launder.string(req.body.jobId);
+      const requestedExportId = self.apos.launder.string(req.body.exportId);
+
+      // Only replace documents the import found duplicates for, for this
+      // user, and with the replacement it chose: the browser can only
+      // narrow down that list
+      const analysis = await self.getDuplicatesAnalysis(req, {
+        jobId,
+        exportId: requestedExportId
+      });
+      const duplicatedDocs = analysis.duplicatedDocs;
+      const docIds = self.apos.launder.strings(req.body.docIds)
+        .filter(aposDocId => duplicatedDocs.some(doc => doc.aposDocId === aposDocId));
+
+      const exportPath = await self.getExportPath(requestedExportId);
       const importedAttachments = self.apos.launder.strings(req.body.importedAttachments);
       const formatLabel = self.apos.launder.string(req.body.formatLabel);
       const failedIds = [];
