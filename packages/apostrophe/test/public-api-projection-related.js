@@ -177,6 +177,7 @@ describe('Public API projection: related documents (GHSA-rqgm-cfrp-4hx8)', funct
               _author: 1,
               _authorBrief: 1,
               _category: 1,
+              _pages: 1,
               main: 1,
               links: 1
             }
@@ -206,6 +207,12 @@ describe('Public API projection: related documents (GHSA-rqgm-cfrp-4hx8)', funct
               _category: {
                 type: 'relationship',
                 withType: 'rqgm-category'
+              },
+              // Related pages are limited to the projection of
+              // @apostrophecms/page
+              _pages: {
+                type: 'relationship',
+                withType: '@apostrophecms/any-page-type'
               },
               main: {
                 type: 'area',
@@ -352,6 +359,28 @@ describe('Public API projection: related documents (GHSA-rqgm-cfrp-4hx8)', funct
     const response = await apos.http.get('/api/v1/rqgm-article');
     assert.strictEqual(response.results.length, 1);
     assertArticleRestricted(response.results[0]);
+  });
+
+  it('anonymous: related pages are limited to the projection of @apostrophecms/page', async function() {
+    const req = apos.task.getReq();
+    await apos.modules['rqgm-article'].update(req, {
+      ...await apos.modules['rqgm-article'].find(req, { _id: article._id }).toObject(),
+      _pages: [ page ]
+    });
+    try {
+      const doc = await apos.http.get(`/api/v1/rqgm-article/${article._id}`);
+      assert.strictEqual(doc._pages.length, 1);
+      assert.strictEqual(doc._pages[0].title, 'Related Page');
+      assert.strictEqual(doc._pages[0].secretNote, undefined);
+      assertNoSecrets(doc);
+      const full = await apos.http.get(`/api/v1/rqgm-article/${article._id}?apikey=${apiKey}`);
+      assert.strictEqual(full._pages[0].secretNote, 'zzpagesecret');
+    } finally {
+      await apos.modules['rqgm-article'].update(req, {
+        ...await apos.modules['rqgm-article'].find(req, { _id: article._id }).toObject(),
+        _pages: []
+      });
+    }
   });
 
   it('anonymous: reverse relationships are limited to the projection of the related type', async function() {
