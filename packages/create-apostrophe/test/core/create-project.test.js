@@ -148,7 +148,7 @@ describe('core/create-project', function () {
     ]);
   });
 
-  it('preflight: pnpm → ok:false failStage:null unsupported_pm, no steps', async function () {
+  it('preflight: pnpm → ok:false failStage:preflight unsupported_pm, no steps', async function () {
     const {
       events, tasks, logger, telemetry
     } = spies();
@@ -177,14 +177,14 @@ describe('core/create-project', function () {
       dbChoice: 'sqlite',
       packageManager: 'pnpm',
       durationMs: res.durationMs,
-      failStage: null,
+      failStage: 'preflight',
       errorCode: 'unsupported_pm'
     });
     assert.equal(calls.length, 0);
     assert.equal(tasks.length, 0);
     assert.equal(events.length, 1);
     assert.equal(events[0].name, 'install_fail');
-    assert.equal(events[0].payload.failStage, null);
+    assert.equal(events[0].payload.failStage, 'preflight');
     assert.equal(events[0].payload.errorCode, 'unsupported_pm');
   });
 

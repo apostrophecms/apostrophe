@@ -113,13 +113,14 @@ Both events carry:
 
 `install_fail` additionally carries:
 
-- **`failStage`** - which stage failed (see below), or `null` for a preflight
-  failure (Node / package-manager check, before any stage runs).
+- **`failStage`** - which stage failed (see below), or `preflight` for a
+  failure in the package-manager check, before any stage runs.
 - **`errorCode`** - a symbolic code, present only when it's one of the known
   values below. Unknown codes are dropped, never raw error text.
 
 ### Fail stages
 
+- **`preflight`** - the package-manager check, before any stage ran.
 - **`clone`** - cloning the starter kit.
 - **`scaffold`** - writing project identity, secrets, and `.env`.
 - **`dependency_install`** - `npm install` (or pnpm/yarn).
@@ -127,7 +128,6 @@ Both events carry:
 - **`sample_data`** - downloading and importing demo content.
 - **`admin`** - creating the admin user.
 - **`unknown`** - unexpected error that didn't map to a stage.
-- **`null`** - preflight, before any stage ran.
 
 ### Error codes
 
