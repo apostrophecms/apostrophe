@@ -98,6 +98,12 @@ describe('REST API: viewPermission fields of related documents (GHSA-vh56-5m88-3
         },
         article: {
           extend: '@apostrophecms/piece-type',
+          options: {
+            publicApiProjection: {
+              title: 1,
+              _notes: 1
+            }
+          },
           fields: {
             add: {
               articleSecret: {
@@ -216,6 +222,8 @@ describe('REST API: viewPermission fields of related documents (GHSA-vh56-5m88-3
       },
       body: noteWidgetArea()
     });
+    await apos.modules['note-piece'].publish(req, note);
+    await apos.modules.article.publish(req, article);
   });
 
   after(async function() {
@@ -282,6 +290,13 @@ describe('REST API: viewPermission fields of related documents (GHSA-vh56-5m88-3
   it('contributor: piece GET all does not return viewPermission fields of related documents', async function() {
     const { results } = await getAll('article', jars.contributor);
     assertArticleRelationshipsLoaded(results[0]);
+    assertNoSecrets(results);
+  });
+
+  it('anonymous: public API projection does not return viewPermission fields of related documents', async function() {
+    const { results } = await apos.http.get('/api/v1/article');
+    assert.equal(results[0].title, 'Main Article');
+    assert.equal(results[0]._notes[0].title, 'Related Note');
     assertNoSecrets(results);
   });
 
