@@ -907,6 +907,159 @@ module.exports = {
           }
         }
       },
+      // Limits the documents nested in REST API results to what the public
+      // REST API of their own type would return. `docOrDocs` is a document or
+      // an array of documents fetched with `getRestQuery`. If the request is
+      // restricted to the `publicApiProjection` of their type (the user can't
+      // `canAccessApi`), every document loaded through a relationship at any
+      // depth (including reverse relationships and relationships in widgets,
+      // array and object fields) is limited to the `publicApiProjection` of
+      // its own type (see `getRelatedPublicApiProjection`), or removed if its
+      // type has no public REST API. The
+      // `_ancestors` and `_children` of the results are already limited by
+      // the query, only the documents related to them are processed.
+      //
+      // Call this after rendering areas, if requested, so that templates
+      // still see the related documents, just like when rendering pages.
+      // Modifies and returns `docOrDocs`.
+      applyPublicApiProjectionToRelated(req, docOrDocs) {
+        const verdicts = new Map();
+        const docs = Array.isArray(docOrDocs) ? docOrDocs : [ docOrDocs ];
+        for (const doc of docs) {
+          if (doc && !getApiModule(doc.type)?.canAccessApi(req)) {
+            walkProperties(doc, true);
+          }
+        }
+        return docOrDocs;
+
+        // REST API access to pages is governed by `@apostrophecms/page`
+        function getApiModule(type) {
+          const manager = self.getManager(type);
+          return (manager && self.apos.instanceOf(manager, '@apostrophecms/page-type'))
+            ? self.apos.page
+            : manager;
+        }
+
+        // Returns false if `value` is a document that must be removed
+        function walk(value) {
+          if (!value || (typeof value !== 'object')) {
+            return true;
+          }
+          if (Array.isArray(value)) {
+            for (let i = value.length - 1; i >= 0; i--) {
+              if (!walk(value[i])) {
+                value.splice(i, 1);
+              }
+            }
+            return true;
+          }
+          // The same object may appear more than once
+          if (verdicts.has(value)) {
+            return verdicts.get(value);
+          }
+          verdicts.set(value, true);
+          if (value.metaType === 'doc') {
+            const verdict = limit(value);
+            verdicts.set(value, verdict);
+            if (!verdict) {
+              return false;
+            }
+          }
+          walkProperties(value, false);
+          return true;
+        }
+
+        function walkProperties(object, limited) {
+          for (const [ key, value ] of Object.entries(object)) {
+            if (limited && [ '_ancestors', '_children' ].includes(key) && Array.isArray(value)) {
+              for (const page of value) {
+                if (page && (typeof page === 'object')) {
+                  walkProperties(page, true);
+                }
+              }
+            } else if (!walk(value)) {
+              delete object[key];
+            }
+          }
+        }
+
+        // Applies the public API projection of the document's type to it.
+        // Returns false if the document must be removed instead
+        function limit(doc) {
+          const module = getApiModule(doc.type);
+          if (!module) {
+            return false;
+          }
+          if (module.canAccessApi(req)) {
+            return true;
+          }
+          const projection = module.getRelatedPublicApiProjection
+            ? module.getRelatedPublicApiProjection()
+            : module.options.publicApiProjection;
+          if (!projection) {
+            return false;
+          }
+          const entries = Object.entries(projection);
+          if (entries.some(([ , value ]) => value)) {
+            // `type` and `metaType` are always projected by Apostrophe,
+            // `_fields` belongs to the relationship, not to the document
+            const always = [ 'type', 'metaType', '_fields' ];
+            if (!Object.hasOwn(projection, '_id') || projection._id) {
+              always.push('_id');
+            }
+            include(
+              doc,
+              entries.filter(([ , value ]) => value).map(([ key ]) => key.split('.')),
+              always
+            );
+          } else {
+            for (const [ key ] of entries) {
+              exclude(doc, key.split('.'));
+            }
+          }
+          return true;
+        }
+
+        function include(object, paths, always = []) {
+          for (const key of Object.keys(object)) {
+            const included = always.includes(key) ||
+              paths.some(path => (path.length === 1) && (path[0] === key));
+            if (included) {
+              continue;
+            }
+            const subpaths = paths
+              .filter(path => (path.length > 1) && (path[0] === key))
+              .map(path => path.slice(1));
+            const value = object[key];
+            if (!subpaths.length || !value || (typeof value !== 'object')) {
+              delete object[key];
+              continue;
+            }
+            for (const item of (Array.isArray(value) ? value : [ value ])) {
+              if (item && (typeof item === 'object')) {
+                include(item, subpaths);
+              }
+            }
+          }
+        }
+
+        function exclude(object, path) {
+          if (!object || (typeof object !== 'object')) {
+            return;
+          }
+          if (Array.isArray(object)) {
+            for (const item of object) {
+              exclude(item, path);
+            }
+            return;
+          }
+          if (path.length === 1) {
+            delete object[path[0]];
+          } else if (Object.hasOwn(object, path[0])) {
+            exclude(object[path[0]], path.slice(1));
+          }
+        }
+      },
       // Retry the given "actor" async function until it
       // does not yield a MongoDB error related to
       // unique indexes. The actor is not passed

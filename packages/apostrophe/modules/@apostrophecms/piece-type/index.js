@@ -284,6 +284,8 @@ module.exports = {
               inline
             });
           }
+          // After rendering, which may use every field of related documents
+          self.apos.doc.applyPublicApiProjectionToRelated(req, result.results);
 
           const filterDynamicChoices = await self.apos.schema.getFilterDynamicChoices(
             req,
@@ -346,6 +348,8 @@ module.exports = {
               inline
             });
           }
+          // After rendering, which may use every field of related documents
+          self.apos.doc.applyPublicApiProjectionToRelated(req, doc);
           self.apos.attachment.all(doc, { annotate: true });
           return doc;
         }

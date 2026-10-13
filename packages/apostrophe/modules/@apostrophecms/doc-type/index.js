@@ -1719,6 +1719,15 @@ module.exports = {
         return Object.keys(result).length ? result : undefined;
       },
 
+      // Returns the projection applied to documents of this type when they
+      // are loaded through a relationship for a REST API request restricted
+      // by `publicApiProjection`, or `null` to leave them out of the response
+      // (see `apos.doc.applyPublicApiProjectionToRelated`). By default this
+      // is the `publicApiProjection` of this type, if any.
+      getRelatedPublicApiProjection() {
+        return self.options.publicApiProjection || null;
+      },
+
       // Returns true if the current user is permitted to view the field
       // exposed by the named filter according to any schema-level
       // `viewPermission`. Filters that don't resolve to a schema field are
