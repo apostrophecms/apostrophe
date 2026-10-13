@@ -2421,9 +2421,11 @@ describe('Pieces', function() {
           hidden: false
         };
         const inserted = await apos.modules.board.insert(req, candidate);
-        await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+        // publishRole is admin, so the editor edits the draft
+        const draftId = inserted._id.replace(':published', ':draft');
+        await apos.http.get(`/api/v1/board/${draftId}`, { jar });
         const board = await apos.http.put(
-          `/api/v1/board/${inserted._id}`,
+          `/api/v1/board/${draftId}`,
           {
             body: {
               ...inserted,

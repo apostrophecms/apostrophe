@@ -91,9 +91,15 @@ describe('Permissions for published documents', function() {
       const draft = await apos.doc.db.findOne({
         _id: published._id.replace(':published', ':draft')
       });
-      assert.equal(apos.permission.can(editorReq('published'), 'edit', 'restricted-article'), false);
-      assert.equal(apos.permission.can(editorReq('published'), 'create', 'restricted-article'), false);
       assert.equal(apos.permission.can(editorReq('published'), 'edit', published), false);
+      assert.equal(apos.permission.can(editorReq('draft'), 'edit', published), false);
+      assert.equal(apos.permission.can(editorReq('published'), 'create', {
+        type: 'restricted-article',
+        aposMode: 'published'
+      }), false);
+      // Checks by type name tell whether the user can edit the type at all,
+      // the UI relies on that
+      assert.equal(apos.permission.can(editorReq('published'), 'edit', 'restricted-article'), true);
       assert.equal(apos.permission.can(editorReq('draft'), 'edit', 'restricted-article'), true);
       assert.equal(apos.permission.can(editorReq('draft'), 'create', 'restricted-article'), true);
       assert.equal(apos.permission.can(editorReq('draft'), 'edit', draft), true);

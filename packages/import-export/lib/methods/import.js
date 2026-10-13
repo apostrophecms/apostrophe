@@ -853,8 +853,10 @@ module.exports = self => {
           });
         }
 
-        // The draft is imported, report the published version that is not
-        if (publishDenied && matchingPublished) {
+        // The draft is imported, report the published version that is not.
+        // Core does not find a published version this user may not edit
+        // for editing, the draft tells whether it exists
+        if (publishDenied && (matchingPublished || matchingDraft?.lastPublishedAt)) {
           throw self.cantPublishError(req, doc.type);
         }
       }

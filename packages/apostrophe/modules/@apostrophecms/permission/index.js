@@ -24,6 +24,39 @@ function rankOf(role) {
   return Object.hasOwn(ranks, role) ? ranks[role] : -1;
 }
 
+// The mode of the version of a doc, `draft` or `published`, as named by its
+// `_id`, `aposLocale` or `aposMode`. If any of them names `published`, so
+// does this, since writing that doc could alter published content. `null`
+// for a type name, or a doc not subject to the draft/publish workflow
+function modeOf(docOrType) {
+  if (!docOrType || (typeof docOrType !== 'object')) {
+    return null;
+  }
+  const {
+    _id, aposLocale, aposMode
+  } = docOrType;
+  const modes = [
+    (typeof _id === 'string') && _id.split(':')[2],
+    (typeof aposLocale === 'string') && aposLocale.split(':')[1],
+    aposMode
+  ];
+  if (modes.includes('published')) {
+    return 'published';
+  }
+  if (modes.includes('draft')) {
+    return 'draft';
+  }
+  return null;
+}
+
+// True if editing the published docs of the type managed by `manager` is
+// publishing them, which requires the type's `publishRole`. Not so for types
+// without a published version, or that publish every edit automatically
+function restrictsPublishedEdits(manager) {
+  return Boolean(manager && manager.isLocalized && manager.isLocalized() &&
+    !manager.options.autopublish);
+}
+
 module.exports = {
   options: {
     alias: 'permission'
@@ -59,9 +92,20 @@ module.exports = {
       // of determining permissions. This is useful to decide whether
       // a user should get access to the manage view of articles even
       // though they are technically in published mode on the page.
+      //
+      // If `docOrType` is a draft or published doc, its own mode
+      // takes precedence over both, since that is the version an
+      // operation on it would read or write.
+      //
+      // Editing or creating the published version of a doc is
+      // publishing it, so it also requires the type's `publishRole`,
+      // except for types that publish every edit automatically.
+      // Checks by type name are not affected by this, they tell
+      // whether the user can edit the type at all.
 
       can(req, action, docOrType, mode) {
-        mode = mode || req.mode;
+        const docMode = modeOf(docOrType);
+        mode = docMode || mode || req.mode;
         const role = req.user && req.user.role;
         if (role === 'admin') {
           return true;
@@ -125,6 +169,13 @@ module.exports = {
           if (mode === 'draft') {
             return (role === 'contributor') || (role === 'editor');
           }
+          if (
+            (docMode === 'published') &&
+            restrictsPublishedEdits(manager) &&
+            checkRoleConfig('publishRole')
+          ) {
+            return false;
+          }
           return role === 'editor';
         }
 
@@ -162,6 +213,9 @@ module.exports = {
         const restrictedPublishTypes = Object.keys(self.apos.doc.managers)
           .filter(name =>
             ranks[self.apos.doc.getManager(name).options.publishRole] > rankOf(role));
+        // Editing their published docs is publishing them
+        const restrictedPublishedEditTypes = restrictedPublishTypes
+          .filter(name => restrictsPublishedEdits(self.apos.doc.getManager(name)));
         if (action === 'view') {
           if (role === 'guest') {
             return {
@@ -231,7 +285,21 @@ module.exports = {
             return {
               type: {
                 $nin: restrictedEditTypes
-              }
+              },
+              ...(restrictedPublishedEditTypes.length && {
+                $or: [
+                  {
+                    aposMode: {
+                      $ne: 'published'
+                    }
+                  },
+                  {
+                    type: {
+                      $nin: restrictedPublishedEditTypes
+                    }
+                  }
+                ]
+              })
             };
           } else {
             return {
