@@ -8,6 +8,8 @@ import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
+import { contiguousRange } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
+import { runWidgetBatch } from 'Modules/@apostrophecms/area/lib/batch-widgets.js';
 import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { klona } from 'klona';
 
@@ -101,7 +103,13 @@ export default {
     };
   },
   computed: {
-    ...mapState(useWidgetStore, [ 'focusedWidget', 'hoveredWidget', 'focusedArea' ]),
+    ...mapState(useWidgetStore, [
+      'focusedWidget',
+      'hoveredWidget',
+      'focusedArea',
+      'selectedWidgetIds',
+      'selectionGraphKey'
+    ]),
     isEmptySingleton() {
       return this.next.length === 0 &&
         this.options.widgets &&
@@ -216,7 +224,8 @@ export default {
     ...mapActions(useWidgetStore, [ 'setFocusedArea', 'setFocusedWidget' ]),
     ...mapActions(useModalStore, [ 'isOnTop' ]),
     ...mapActions(useWidgetGraphStore, {
-      storeGetAncestors: 'getAncestors'
+      storeGetAncestors: 'getAncestors',
+      storeHasAncestor: 'hasAncestor'
     }),
     bindEventListeners() {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
@@ -226,6 +235,8 @@ export default {
       apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$on('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$on('command-menu-area-remove-widget', this.handleRemove);
+      apos.bus.$on('widget-selection-collect', this.onSelectionCollect);
+      apos.bus.$on('widget-selection-mutate', this.onSelectionMutate);
       apos.bus.$on('context-history-apply', this.contextHistoryApplyHandler);
       window.addEventListener('keydown', this.focusParentEvent);
     },
@@ -237,6 +248,8 @@ export default {
       apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$off('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$off('command-menu-area-remove-widget', this.handleRemove);
+      apos.bus.$off('widget-selection-collect', this.onSelectionCollect);
+      apos.bus.$off('widget-selection-mutate', this.onSelectionMutate);
       apos.bus.$off('context-history-apply', this.contextHistoryApplyHandler);
       window.removeEventListener('keydown', this.focusParentEvent);
     },
@@ -254,9 +267,17 @@ export default {
       this.setFocusedArea(null);
     },
     handleCopy() {
+      if (this.isInsideContentEditable()) {
+        return;
+      }
+      if (this.selectedWidgetIds.length > 1) {
+        if (this.ownsFocusedWidget()) {
+          this.runSelectionBatch('copy');
+        }
+        return;
+      }
       if (
         !this.isInsideFocusedArea() ||
-        this.isInsideContentEditable() ||
         this.focusedWidgetIndex === -1
       ) {
         return;
@@ -265,9 +286,17 @@ export default {
       this.copy({ index: this.focusedWidgetIndex });
     },
     handleCut() {
+      if (this.isInsideContentEditable()) {
+        return;
+      }
+      if (this.selectedWidgetIds.length > 1) {
+        if (this.ownsFocusedWidget()) {
+          this.runSelectionBatch('cut');
+        }
+        return;
+      }
       if (
         !this.isInsideFocusedArea() ||
-        this.isInsideContentEditable() ||
         this.focusedWidgetIndex === -1
       ) {
         return;
@@ -276,9 +305,17 @@ export default {
       this.cut({ index: this.focusedWidgetIndex });
     },
     handleDuplicate() {
+      if (this.isInsideContentEditable()) {
+        return;
+      }
+      if (this.selectedWidgetIds.length > 1) {
+        if (this.ownsFocusedWidget()) {
+          this.runSelectionBatch('clone');
+        }
+        return;
+      }
       if (
         !this.isInsideFocusedArea() ||
-        this.isInsideContentEditable() ||
         this.focusedWidgetIndex === -1
       ) {
         return;
@@ -298,15 +335,74 @@ export default {
       this.paste({ index: Math.max(this.focusedWidgetIndex, 0) });
     },
     handleRemove() {
+      if (this.isInsideContentEditable()) {
+        return;
+      }
+      if (this.selectedWidgetIds.length > 1) {
+        if (this.ownsFocusedWidget()) {
+          this.runSelectionBatch('remove');
+        }
+        return;
+      }
       if (
         !this.isInsideFocusedArea() ||
-        this.isInsideContentEditable() ||
         this.focusedWidgetIndex === -1
       ) {
         return;
       }
 
       this.remove({ index: this.focusedWidgetIndex });
+    },
+    ownsFocusedWidget() {
+      return this.next.some((widget) => widget._id === this.focusedWidget);
+    },
+    runSelectionBatch(name) {
+      const graphKey = this.selectionGraphKey || unref(this.aposGraphKey);
+      runWidgetBatch(name, {
+        hasAncestor: (id, ancestorId) => {
+          return graphKey ? this.storeHasAncestor(graphKey, id, ancestorId) : false;
+        }
+      });
+    },
+    onSelectionCollect(bag) {
+      if (this.foreign || !bag?.entries) {
+        return;
+      }
+      const selected = new Set(this.selectedWidgetIds);
+      this.next.forEach((widget, index) => {
+        if (selected.has(widget._id)) {
+          bag.entries.push({
+            widget: klona(widget),
+            index
+          });
+        }
+      });
+    },
+    onSelectionMutate({
+      name, ids, changes
+    } = {}) {
+      if (this.foreign || !ids?.length) {
+        return;
+      }
+      const idSet = new Set(ids);
+      const mine = this.next.filter((widget) => idSet.has(widget._id));
+      if (!mine.length) {
+        return;
+      }
+      if (name === 'remove') {
+        const change = this.removeSelected(mine, {
+          emit: !Array.isArray(changes)
+        });
+        if (Array.isArray(changes) && change) {
+          changes.push(change);
+        }
+      } else if (name === 'up') {
+        this.moveSelected(mine, -1);
+      } else if (name === 'down') {
+        this.moveSelected(mine, 1);
+      } else if (name === 'clone') {
+        this.cloneSelected(mine);
+      }
     },
     areaUpdatedHandler(area) {
       for (const item of this.next) {
@@ -504,6 +600,143 @@ export default {
         ...this.next.slice(index + 2)
       ];
     },
+    removeSelected(widgets, { emit = true } = {}) {
+      const idSet = new Set(widgets.map((widget) => widget._id));
+      const indexes = widgets
+        .map((widget) => this.next.findIndex((item) => item._id === widget._id))
+        .filter((index) => index !== -1)
+        .sort((a, b) => a - b);
+      if (!indexes.length) {
+        return null;
+      }
+      const removed = indexes.map((index) => klona(this.next[index]));
+      const first = indexes[0];
+      const last = indexes[indexes.length - 1];
+      const before = this.next[last + 1]?._id;
+      const after = this.next[first - 1]?._id;
+      let change = null;
+      if (this.docId === window.apos.adminBar.contextId) {
+        const push = {
+          $each: removed
+        };
+        if (before) {
+          push.$before = before;
+        } else if (after) {
+          push.$after = after;
+        }
+        change = {
+          patch: {
+            $pullAllById: {
+              [`@${this.id}.items`]: removed.map((widget) => widget._id)
+            }
+          },
+          inverse: {
+            $push: {
+              [`@${this.id}.items`]: push
+            }
+          },
+          target: {
+            widgetId: removed[0]._id,
+            anchorId: before || after
+          }
+        };
+        if (emit) {
+          this.contextEdited(change.patch, change.inverse, change.target);
+        }
+      }
+      this.next = this.next.filter((widget) => !idSet.has(widget._id));
+      return change;
+    },
+    moveSelected(widgets, direction) {
+      const ids = widgets.map((widget) => widget._id);
+      const range = contiguousRange(this.next.map((widget) => widget._id), ids);
+      if (!range) {
+        return;
+      }
+      if (direction < 0) {
+        if (range.first === 0) {
+          return;
+        }
+        const neighbor = this.next[range.first - 1];
+        const firstId = this.next[range.first]._id;
+        const lastId = this.next[range.last]._id;
+        if (this.docId === window.apos.adminBar.contextId) {
+          this.contextEdited(
+            {
+              $move: {
+                [`@${this.id}.items`]: {
+                  $item: neighbor._id,
+                  $after: lastId
+                }
+              }
+            },
+            {
+              $move: {
+                [`@${this.id}.items`]: {
+                  $item: neighbor._id,
+                  $before: firstId
+                }
+              }
+            },
+            { widgetId: firstId }
+          );
+        }
+        const next = [ ...this.next ];
+        const [ item ] = next.splice(range.first - 1, 1);
+        next.splice(range.last, 0, item);
+        this.next = next;
+        return;
+      }
+      if (range.last >= this.next.length - 1) {
+        return;
+      }
+      const neighbor = this.next[range.last + 1];
+      const firstId = this.next[range.first]._id;
+      const lastId = this.next[range.last]._id;
+      if (this.docId === window.apos.adminBar.contextId) {
+        this.contextEdited(
+          {
+            $move: {
+              [`@${this.id}.items`]: {
+                $item: neighbor._id,
+                $before: firstId
+              }
+            }
+          },
+          {
+            $move: {
+              [`@${this.id}.items`]: {
+                $item: neighbor._id,
+                $after: lastId
+              }
+            }
+          },
+          { widgetId: firstId }
+        );
+      }
+      const next = [ ...this.next ];
+      const [ item ] = next.splice(range.last + 1, 1);
+      next.splice(range.first, 0, item);
+      this.next = next;
+    },
+    cloneSelected(widgets) {
+      const max = this.options.max || this.field?.max;
+      if (max && (this.next.length + widgets.length > max)) {
+        apos.notify('This area cannot hold more widgets', {
+          type: 'warning',
+          dismiss: true
+        });
+        return;
+      }
+      const clones = widgets.map((widget) => cloneWidget(widget));
+      const lastIndex = Math.max(...widgets.map((widget) => {
+        return this.next.findIndex((item) => item._id === widget._id);
+      }));
+      this.insertMany({
+        index: lastIndex + 1,
+        widgets: clones
+      });
+    },
     async remove({ index }, { autosave = true } = {}) {
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
         const widget = this.next[index];
@@ -638,19 +871,29 @@ export default {
       });
     },
     async paste({ index }) {
-      const clipboard = apos.area.widgetClipboard.get();
-      if (clipboard) {
-        const widget = clipboard;
-        const allowed = this.contextMenuOptions.menu.find(
-          option => option.name === widget.type
-        );
-        if (allowed) {
-          this.add({
-            index,
-            clipboard
-          });
-        }
+      const widgets = apos.area.widgetClipboard.getMany();
+      if (!widgets.length) {
+        return;
       }
+      const allowed = widgets.every((widget) => {
+        return this.contextMenuOptions.menu.find((option) => {
+          return option.name === widget.type;
+        });
+      });
+      if (!allowed) {
+        return;
+      }
+      if (widgets.length === 1) {
+        this.add({
+          index,
+          clipboard: widgets[0]
+        });
+        return;
+      }
+      this.insertMany({
+        index,
+        widgets: widgets.map((widget) => cloneWidget(widget))
+      });
     },
     async update(updated, { autosave = true, reverting = false } = {}) {
       // Before anything below can change it. A caller that changed the
@@ -697,6 +940,20 @@ export default {
       widget,
       clipboard
     }) {
+      if (Array.isArray(clipboard)) {
+        const allowed = clipboard.every((widget) => {
+          return this.contextMenuOptions.menu.find((option) => {
+            return option.name === widget.type;
+          });
+        });
+        if (!allowed) {
+          return;
+        }
+        return this.insertMany({
+          index,
+          widgets: clipboard.map((widget) => cloneWidget(widget))
+        });
+      }
       if (clipboard) {
         clipboard = cloneWidget(clipboard);
         return this.insert({

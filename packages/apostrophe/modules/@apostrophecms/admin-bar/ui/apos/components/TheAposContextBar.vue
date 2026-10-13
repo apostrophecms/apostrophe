@@ -977,14 +977,18 @@ export default {
       if (!removed.length || !patch?.$push) {
         return;
       }
-      const push = Object.values(patch.$push)[0];
-      if (!push?.$each?.length) {
-        return;
+      // One undo can put widgets back into several areas. Each area's
+      // `$push` has to be brought up to date with what was just taken off
+      // the page, not only the first.
+      for (const push of Object.values(patch.$push)) {
+        if (!push?.$each?.length) {
+          continue;
+        }
+        push.$each = push.$each.map(widget => {
+          const captured = removed.find(item => item._id === widget._id);
+          return captured ? klona(captured) : widget;
+        });
       }
-      push.$each = push.$each.map(widget => {
-        const captured = removed.find(item => item._id === widget._id);
-        return captured ? klona(captured) : widget;
-      });
     },
     // Scroll to what an undo or redo just changed, if it is not on screen,
     // and point it out. `target` may have `patchKey`, the field edited in

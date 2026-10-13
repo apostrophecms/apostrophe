@@ -12,6 +12,8 @@ export default function() {
 
   createWidgetClipboardApp();
 
+  createSelectionToolbar();
+
   createAreaApps();
 
   document.documentElement.style.setProperty('--a-widget-margin', apos.ui.widgetMargin);
@@ -218,6 +220,16 @@ export default function() {
     }
   }
 
+  function createSelectionToolbar() {
+    const component = apos.vueComponents.AposWidgetSelectionToolbar;
+    if (!component) {
+      return;
+    }
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    createApp(component).mount(el);
+  }
+
   function createWidgetClipboardApp() {
     const key = 'aposWidgetClipboard';
     const marker = 'apos-widget:';
@@ -226,10 +238,23 @@ export default function() {
     // storage event handle
     class Clipboard {
       set(widget) {
+        this.write([ widget ]);
+      }
+
+      setMany(widgets) {
+        this.write(widgets);
+      }
+
+      write(widgets) {
+        const list = (widgets || []).filter((widget) => widget?.type);
+        if (!list.length) {
+          return;
+        }
         const id = createId();
         localStorage.setItem(key, JSON.stringify({
           id,
-          widget
+          widget: list[0],
+          widgets: list
         }));
         // Stamp the OS clipboard so a later paste can tell whether this
         // widget copy is still the most recent thing the user copied
@@ -241,6 +266,17 @@ export default function() {
 
       get() {
         return this.getEntry()?.widget || null;
+      }
+
+      getMany() {
+        const entry = this.getEntry();
+        if (!entry) {
+          return [];
+        }
+        if (Array.isArray(entry.widgets) && entry.widgets.length) {
+          return entry.widgets;
+        }
+        return entry.widget?.type ? [ entry.widget ] : [];
       }
 
       getId() {
@@ -262,6 +298,13 @@ export default function() {
         }
         if (!parsed || typeof parsed !== 'object') {
           return null;
+        }
+        if (typeof parsed.id === 'string' && Array.isArray(parsed.widgets) && parsed.widgets[0]?.type) {
+          return {
+            id: parsed.id,
+            widget: parsed.widgets[0],
+            widgets: parsed.widgets
+          };
         }
         if (typeof parsed.id === 'string' && parsed.widget?.type) {
           return parsed;

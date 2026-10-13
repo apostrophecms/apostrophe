@@ -8,6 +8,7 @@
     :data-apos-test="`widget:${widget.type}`"
     :data-apos-widget-foreign="foreign ? 1 : 0"
     :data-apos-widget-id="widget._id"
+    :data-apos-widget-type="widget.type"
     :data-apos-widget-change="versionChanges[0]"
     :role="versionChanges.length ? 'group' : undefined"
     :aria-label="versionChangeLabel"
@@ -37,6 +38,8 @@
       tabindex="0"
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
+      @mousedown="onMouseDown($event, widget._id)"
+      @selectstart="onSelectStart"
       @click="getFocus($event, widget._id);"
       @keyup.esc="onKeyup"
       @keyup.space="onKeyup"
@@ -105,7 +108,7 @@
           :options="options"
           :breadcrumb-operations="widgetBreadcrumbOperations"
           :disabled="disabled"
-          :is-focused="isFocused"
+          :is-focused="showFocusedChrome"
           @widget-focus="getFocus"
           @update="$emit('update', $event)"
           @operation="onOperation"
@@ -138,7 +141,7 @@
       </div>
       <div
         class="apos-area-widget-guard"
-        :class="{'apos-is-disabled': isFocused}"
+        :class="{'apos-is-disabled': showFocusedChrome}"
       />
       <div
         v-if="!controlsDisabled"
@@ -159,8 +162,10 @@
           :tabbable="isFocused"
           :model-value="widget"
           :widget-options="widgetOptions"
+          :include-contents="hasDescendants"
           @update="$emit('update', $event)"
           @operation="onOperation"
+          @include-contents="includeContents"
         />
       </div>
       <div
@@ -182,7 +187,7 @@
           :model-value="renderedWidget"
           :meta="meta"
           :doc-id="docId"
-          :focused="isFocused"
+          :focused="showFocusedChrome"
           @update="$emit('update', $event)"
           @suppress-widget-controls="doSuppressWidgetControls"
           @suppress-add-content-buttons="doSuppressAddContentButtons"
@@ -245,6 +250,8 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 import changeTypes from 'Modules/@apostrophecms/document-versions/lib/change-types.js';
+import { includeDescendants } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
+import { nextSelectionFromClick } from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
 
 export default {
   name: 'AposAreaWidget',
@@ -362,6 +369,7 @@ export default {
         open: 'apos-is-open',
         focus: 'apos-is-focused',
         highlight: 'apos-is-highlighted',
+        multi: 'apos-is-multi',
         adjust: 'apos-is-ui-adjusted',
         suppressWidgetControls: 'apos-is-suppressing-widget-controls'
       },
@@ -395,10 +403,14 @@ export default {
   computed: {
     ...mapState(useWidgetStore, [
       'focusedWidget',
+      'focusedArea',
       'hoveredWidget',
       'hoveredNonForeignWidget',
       'emphasizedWidgets',
-      'labeled'
+      'labeled',
+      'selectedWidgetIds',
+      'selectionAnchorId',
+      'pinnedWidgetIds'
     ]),
     ...mapState(useBreakpointPreviewStore, { breakpointPreviewMode: 'mode' }),
     adminContentDirectionClass() {
@@ -497,6 +509,24 @@ export default {
     isFocused() {
       return this.focusedWidget === this.widget._id;
     },
+    isMulti() {
+      return this.selectedWidgetIds.length > 1;
+    },
+    isSelected() {
+      return this.selectedWidgetIds.includes(this.widget._id);
+    },
+    // One selected widget keeps the breadcrumb, add menus and modify
+    // controls. Several selected widgets wear the hover highlight only.
+    showFocusedChrome() {
+      return this.isFocused && !this.isMulti;
+    },
+    hasDescendants() {
+      const graphKey = unref(this.aposGraphKey);
+      if (!graphKey || !this.widget?._id) {
+        return false;
+      }
+      return this.getDescendants(graphKey, this.widget._id).length > 0;
+    },
     isHovered() {
       return this.hoveredWidget === this.widget._id;
     },
@@ -522,14 +552,17 @@ export default {
     },
     controlsClasses() {
       return {
-        [this.classes.show]: this.isFocused,
+        [this.classes.show]: this.showFocusedChrome,
         [this.classes.suppressWidgetControls]: this.isSuppressingWidgetControls
       };
     },
     containerClasses() {
       const classes = {
-        [this.classes.highlight]: this.isHighlighted || this.isHovered,
-        [this.classes.focus]: this.isFocused
+        [this.classes.highlight]: (this.isHighlighted && !this.isMulti) ||
+          this.isHovered ||
+          (this.isMulti && this.isSelected),
+        [this.classes.focus]: this.showFocusedChrome,
+        [this.classes.multi]: this.isMulti
       };
       if (this.mounted) {
         classes[this.classes.adjust] = this.adjustUi();
@@ -538,7 +571,7 @@ export default {
     },
     labelsClasses() {
       return {
-        [this.classes.show]: this.isLabeled,
+        [this.classes.show]: this.isLabeled && !this.isMulti,
         // Force LTR for breadcrumbs for now so that nested AreaWidgets
         // behave properly.
         'apos-ltr': true
@@ -546,7 +579,8 @@ export default {
     },
     addClasses() {
       return {
-        [this.classes.show]: (this.isHovered && !this.focusedWidget) || this.isFocused,
+        [this.classes.show]: !this.isMulti &&
+          ((this.isHovered && !this.focusedWidget) || this.isFocused),
         [`${this.classes.open}--menu-${this.menuOpen}`]: !!this.menuOpen
       };
     },
@@ -656,12 +690,17 @@ export default {
       this.isSuppressingWidgetControls = false;
       this.isSuppressingAddContentButtons = false;
     },
-    ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
+    ...mapActions(useWidgetStore, [
+      'setFocusedWidget',
+      'setHoveredWidget',
+      'setWidgetSelection'
+    ]),
     ...mapActions(useModalStore, [ 'getAdminContentDirectionClass' ]),
     ...mapActions(useDocVersionMarkersStore, { getVersionChange: 'get' }),
     ...mapActions(useWidgetGraphStore, {
       storeRegisterWidget: 'registerWidget',
-      storeUnregisterWidget: 'unregisterWidget'
+      storeUnregisterWidget: 'unregisterWidget',
+      getDescendants: 'getDescendants'
     }),
     // The versions modal shows the changes behind this widget's marker
     showVersionChange() {
@@ -830,13 +869,93 @@ export default {
       }
     },
 
+    // Shift-click is our range gesture. The browser also treats it as
+    // "extend the text selection", which paints over the widget outline.
+    // Cancelling mousedown stops that selection from starting, and in
+    // current browsers it also stops the click, so the gesture is handled
+    // here. Shift-click inside a text editor is left alone.
+    onMouseDown(event, widgetId) {
+      if (this.isEditingText(event)) {
+        return;
+      }
+      if (event.shiftKey) {
+        event.preventDefault();
+        this.clearNativeSelection();
+        this.getFocus(event, widgetId);
+        return;
+      }
+      if (this.isMulti) {
+        this.clearNativeSelection();
+      }
+    },
+    onSelectStart(event) {
+      if (this.isEditingText(event)) {
+        return;
+      }
+      if (event.shiftKey || this.isMulti) {
+        event.preventDefault();
+      }
+    },
+    isEditingText(event) {
+      const target = event.target;
+      if (!target?.closest) {
+        return false;
+      }
+      return !!target.closest('input, textarea, [contenteditable]');
+    },
+    clearNativeSelection() {
+      window.getSelection?.().removeAllRanges();
+    },
     // Ask the parent AposAreaEditor to make us focused
     getFocus(e, widgetId) {
       if (e) {
         e.stopPropagation();
       }
       this.isSuppressed = false;
-      this.setFocusedWidget(widgetId, this.areaId);
+      if (!widgetId) {
+        this.setFocusedWidget(null, null);
+        return;
+      }
+      const result = nextSelectionFromClick({
+        event: e,
+        widgetId,
+        fallbackAreaId: this.areaId,
+        state: {
+          selectedWidgetIds: this.selectedWidgetIds,
+          selectionAnchorId: this.selectionAnchorId,
+          pinnedWidgetIds: this.pinnedWidgetIds
+        }
+      });
+      this.setWidgetSelection(result.next, {
+        primaryId: result.primaryId,
+        areaId: result.areaId,
+        graphKey: unref(this.aposGraphKey)
+      });
+      if (e?.shiftKey || result.next.selectedWidgetIds.length > 1) {
+        this.clearNativeSelection();
+      }
+    },
+    includeContents(event) {
+      event?.stopPropagation?.();
+      const graphKey = unref(this.aposGraphKey);
+      const baseIds = this.selectedWidgetIds.length
+        ? this.selectedWidgetIds
+        : [ this.widget._id ];
+      const descendants = baseIds.flatMap((id) => {
+        return graphKey ? this.getDescendants(graphKey, id) : [];
+      });
+      const next = includeDescendants({
+        selectedWidgetIds: baseIds,
+        selectionAnchorId: this.selectionAnchorId || this.widget._id,
+        pinnedWidgetIds: this.pinnedWidgetIds.length
+          ? this.pinnedWidgetIds
+          : baseIds
+      }, descendants);
+      this.setWidgetSelection(next, {
+        primaryId: this.focusedWidget || this.widget._id,
+        areaId: this.areaId,
+        graphKey
+      });
     },
 
     // Our widget was hovered
@@ -860,6 +979,11 @@ export default {
     },
     unfocus(event) {
       if (event.target.closest('[data-apos-ignore-unfocus="true"]')) {
+        return;
+      }
+      // Another widget handles its own click. Clearing here would drop a
+      // widget that was just added to the selection.
+      if (event.target.closest('[data-apos-widget-id]')) {
         return;
       }
       if (!this.$el.contains(event.target)) {
@@ -999,6 +1123,7 @@ export default {
 }
 
 .apos-area-widget-guard {
+  z-index: $z-index-default;
   position: absolute;
   top: 0;
   left: 0;
@@ -1080,6 +1205,10 @@ export default {
   border-radius: var(--a-border-radius);
   outline: 1px solid transparent;
   transition: outline 200ms ease;
+
+  &.apos-is-multi {
+    user-select: none;
+  }
 
   &:focus {
     box-shadow: 0 0 11px 1px var(--a-primary-transparent-25);

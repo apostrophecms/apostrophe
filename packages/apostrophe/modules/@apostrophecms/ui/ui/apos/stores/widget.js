@@ -8,6 +8,17 @@ export const useWidgetStore = defineStore('widget', () => {
   const emphasizedWidgets = ref(new Set());
   const focusedWidget = ref(null);
   const focusedArea = ref(null);
+  // More than one widget. `focusedWidget` stays the primary (last clicked)
+  // so keyboard shortcuts keep working. `pinnedWidgetIds` is the selection
+  // at the last click that was not a shift-click, so a shorter range can
+  // shrink without dropping widgets that were toggled on their own.
+  const selectedWidgetIds = ref([]);
+  const selectionAnchorId = ref(null);
+  const pinnedWidgetIds = ref([]);
+  const selectionGraphKey = ref(null);
+  // Bumped after a batch change that does not change which ids are
+  // selected, so the toolbar can re-read widget positions from the DOM.
+  const selectionRevision = ref(0);
   const hoveredWidget = ref(null);
   const hoveredNonForeignWidget = ref(null);
   // Fields edited in place, per the `{% field %}` custom tag. They wear the
@@ -21,11 +32,14 @@ export const useWidgetStore = defineStore('widget', () => {
   // the widget it belongs to, and whatever they are editing over whatever the
   // mouse is merely passing over, which is how widgets have always behaved
   const labeled = computed(() => {
+    // Several selected widgets wear the highlight only. The breadcrumb
+    // stays off all of them, and off whatever the pointer is passing over.
+    const multi = selectedWidgetIds.value.length > 1;
     const order = [
       [ 'field', focusedField.value ],
-      [ 'widget', focusedWidget.value ],
+      [ 'widget', multi ? null : focusedWidget.value ],
       [ 'field', hoveredField.value ],
-      [ 'widget', hoveredWidget.value ]
+      [ 'widget', (multi || focusedWidget.value) ? null : hoveredWidget.value ]
     ];
     const winner = order.find(([ type, id ]) => id);
     return winner
@@ -86,14 +100,53 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
+  // A single widget, or none. Also the way a batch edit that leaves one
+  // widget standing collapses back to the ordinary controls.
   async function setFocusedWidget(id, areaId, { scrollTo = false } = {}) {
+    if (!id) {
+      selectedWidgetIds.value = [];
+      selectionAnchorId.value = null;
+      pinnedWidgetIds.value = [];
+      focusedWidget.value = null;
+      setFocusedArea(null);
+      return;
+    }
+    selectedWidgetIds.value = [ id ];
+    selectionAnchorId.value = id;
+    pinnedWidgetIds.value = [ id ];
     focusedWidget.value = id;
-    setFocusedArea(id ? areaId : null);
+    setFocusedArea(areaId);
 
-    if (id && scrollTo) {
+    if (scrollTo) {
       await nextTick();
       await scrollToWidget(id);
     }
+  }
+
+  function setWidgetSelection(next, {
+    primaryId = null,
+    areaId = null,
+    graphKey = null
+  } = {}) {
+    const selected = [ ...(next?.selectedWidgetIds || []) ];
+    selectedWidgetIds.value = selected;
+    selectionAnchorId.value = selected.includes(next?.selectionAnchorId)
+      ? next.selectionAnchorId
+      : (selected[selected.length - 1] || null);
+    pinnedWidgetIds.value = [ ...(next?.pinnedWidgetIds || []) ];
+    if (graphKey) {
+      selectionGraphKey.value = graphKey;
+    }
+    const primary = selected.includes(primaryId)
+      ? primaryId
+      : (selected[selected.length - 1] || null);
+    focusedWidget.value = primary;
+    setFocusedArea(primary ? areaId : null);
+    selectionRevision.value += 1;
+  }
+
+  function bumpSelectionRevision() {
+    selectionRevision.value += 1;
   }
 
   async function scrollToWidget(id) {
@@ -209,6 +262,11 @@ export const useWidgetStore = defineStore('widget', () => {
     emphasizedWidgets,
     focusedWidget,
     focusedArea,
+    selectedWidgetIds,
+    selectionAnchorId,
+    pinnedWidgetIds,
+    selectionGraphKey,
+    selectionRevision,
     hoveredWidget,
     hoveredNonForeignWidget,
     focusedField,
@@ -223,6 +281,8 @@ export const useWidgetStore = defineStore('widget', () => {
     clearFocusedField,
     setFocusedArea,
     setFocusedWidget,
+    setWidgetSelection,
+    bumpSelectionRevision,
     scrollToWidget,
     isElementInView,
     scrollToElement,

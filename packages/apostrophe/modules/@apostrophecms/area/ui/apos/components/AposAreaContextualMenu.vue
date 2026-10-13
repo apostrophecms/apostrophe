@@ -212,19 +212,26 @@ export default {
           ...createWidgetOperation
         });
       }
-      const clipboard = apos.area.widgetClipboard.get();
-      if (clipboard) {
-        const widget = clipboard;
-        const matchingChoice = menu.find(option => option.name === widget.type);
-        if (matchingChoice) {
+      const widgets = apos.area.widgetClipboard.getMany();
+      if (widgets.length) {
+        const choices = widgets.map((widget) => {
+          return menu.find((option) => option.name === widget.type);
+        });
+        if (choices.every(Boolean)) {
+          const matchingChoice = choices[0];
           menu.unshift({
             type: 'clipboard',
             ...matchingChoice,
-            label: {
-              key: 'apostrophe:pasteWidget',
-              widget: this.$t(matchingChoice.label)
-            },
-            clipboard: widget
+            label: widgets.length === 1
+              ? {
+                key: 'apostrophe:pasteWidget',
+                widget: this.$t(matchingChoice.label)
+              }
+              : {
+                key: 'apostrophe:pasteWidgets',
+                count: widgets.length
+              },
+            clipboard: widgets.length === 1 ? widgets[0] : widgets
           });
         }
       }

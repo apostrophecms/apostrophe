@@ -191,16 +191,19 @@ export default {
       ];
     },
     getClipboardGroups() {
-      const clipboard = apos.area.widgetClipboard.get();
-      if (!clipboard) {
+      const clipboardWidgets = apos.area.widgetClipboard.getMany();
+      if (!clipboardWidgets.length) {
         return [];
       }
 
       const widgets = this.groups.flatMap(group => Object.values(group.widgets));
-      const matchingChoice = widgets.find(widget => widget.name === clipboard.type);
-      if (!matchingChoice) {
+      const choices = clipboardWidgets.map((widget) => {
+        return widgets.find((choice) => choice.name === widget.type);
+      });
+      if (choices.some((choice) => !choice)) {
         return [];
       }
+      const matchingChoice = choices[0];
 
       const group = {
         label: this.$t('apostrophe:areaExpandedMenuClipboard'),
@@ -208,11 +211,18 @@ export default {
           {
             type: 'clipboard',
             ...matchingChoice,
-            label: {
-              key: 'apostrophe:pasteWidget',
-              widget: this.$t(matchingChoice.label)
-            },
-            clipboard
+            label: clipboardWidgets.length === 1
+              ? {
+                key: 'apostrophe:pasteWidget',
+                widget: this.$t(matchingChoice.label)
+              }
+              : {
+                key: 'apostrophe:pasteWidgets',
+                count: clipboardWidgets.length
+              },
+            clipboard: clipboardWidgets.length === 1
+              ? clipboardWidgets[0]
+              : clipboardWidgets
           }
         ],
         columns: 1
