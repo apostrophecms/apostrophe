@@ -1,5 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
+const cheerio = require('cheerio');
 const universal = import(
   '../modules/@apostrophecms/styles/ui/apos/universal/render.mjs'
 );
@@ -5366,6 +5367,122 @@ describe('Styles', function () {
         hasWrapper: true,
         closesWrapper: true
       }, 'Nunjucks helpers should render correctly in widget template with inline styles');
+    });
+  });
+
+  describe('Color style values in wrapper attributes', function () {
+    let apos;
+    let page;
+    let jar;
+
+    const payload = 'rgb(1,2,3)" tabindex="0" autofocus onfocus="document.body.dataset.color=1';
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          'test-style-page': {
+            fields: {
+              add: {
+                body: {
+                  type: 'area',
+                  options: {
+                    widgets: {
+                      'test-nostyle': {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          'test-nostyle-widget': {
+            styles: {
+              add: {
+                // Core preset, renders inline (no selector)
+                border: 'border',
+                textColor: {
+                  type: 'color',
+                  property: 'color'
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const req = apos.task.getReq();
+      const input = {
+        slug: '/test-styles-color',
+        type: 'test-style-page',
+        title: 'Test Styles Color Page',
+        metaType: 'doc'
+      };
+      const instance = apos.util.getManagerOf(input).newInstance();
+      page = await apos.doc.insert(req, {
+        ...instance,
+        ...input
+      });
+      jar = apos.http.jar();
+    });
+
+    after(async function () {
+      return t.destroy(apos);
+    });
+
+    async function renderWithInput(input) {
+      const req = apos.task.getReq();
+      const manager = apos.area.getWidgetManager('test-nostyle');
+      const widget = {};
+      await apos.schema.convert(req, manager.schema, input, widget);
+      await apos.doc.update(req, {
+        ...page,
+        body: {
+          ...page.body,
+          items: [
+            {
+              ...widget,
+              _id: apos.util.generateId(),
+              type: 'test-nostyle',
+              metaType: 'widget'
+            }
+          ]
+        }
+      });
+      const html = await apos.http.get('/test-styles-color', { jar });
+      const $ = cheerio.load(html);
+      const $wrapper = $('[data-apos-widget-style-wrapper-for]');
+      assert.equal($wrapper.length, 1, 'wrapper is rendered');
+      return $wrapper.get(0).attribs;
+    }
+
+    function assertNoInjectedAttributes(attrs) {
+      for (const name of [ 'onfocus', 'autofocus', 'tabindex' ]) {
+        assert.equal(attrs[name], undefined, `${name} attribute must not be injected`);
+      }
+    }
+
+    it('should not inject attributes through a color field', async function () {
+      const attrs = await renderWithInput({
+        textColor: payload
+      });
+      assertNoInjectedAttributes(attrs);
+    });
+
+    it('should not inject attributes through the border preset color', async function () {
+      const attrs = await renderWithInput({
+        border: {
+          active: true,
+          color: payload
+        }
+      });
+      assertNoInjectedAttributes(attrs);
+    });
+
+    it('should still render legitimate colors inline', async function () {
+      const attrs = await renderWithInput({
+        textColor: 'rgba(1, 2, 3, 0.5)'
+      });
+      assert.equal(attrs.style, 'color: rgba(1, 2, 3, 0.5);');
     });
   });
 
