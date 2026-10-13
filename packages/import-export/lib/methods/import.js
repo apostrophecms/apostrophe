@@ -923,6 +923,8 @@ module.exports = self => {
         doc.aposMode = 'draft';
       }
 
+      self.checkDocMode(req, doc, manager);
+
       if (doc.aposMode === 'published') {
         if (failedIds.includes(doc.aposDocId)) {
           throw new Error('Inserting document failed');
@@ -1085,6 +1087,37 @@ module.exports = self => {
 
     canImport(req, docType) {
       return self.canImportOrExport(req, docType, 'import');
+    },
+
+    // `aposMode`, `aposLocale` and `_id` all come from the imported file.
+    // Permissions are checked for the mode named by `aposMode`, while core
+    // saves the document in the mode named by its `_id`: refuse documents
+    // of localized types where they do not agree.
+    checkDocMode(req, doc, manager) {
+      if (!manager.isLocalized()) {
+        return;
+      }
+      const {
+        aposMode, aposLocale, _id
+      } = doc;
+      const [ locale, mode, ...extraLocale ] = typeof aposLocale === 'string'
+        ? aposLocale.split(':')
+        : [];
+      const valid = [ 'draft', 'published' ].includes(aposMode) &&
+        ((aposLocale === undefined) || (
+          locale && (mode === aposMode) && !extraLocale.length
+        )) &&
+        ((_id === undefined) || (
+          (aposLocale !== undefined) &&
+          (typeof doc.aposDocId === 'string') &&
+          !doc.aposDocId.includes(':') &&
+          (_id === `${doc.aposDocId}:${aposLocale}`)
+        ));
+      if (!valid) {
+        throw self.apos.error('invalid', {
+          detail: req.t('aposImportExport:errorInvalidDocMode')
+        });
+      }
     },
 
     // `self.apos.page.isPage` does not work here since
