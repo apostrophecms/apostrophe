@@ -69,6 +69,16 @@ describe('Public API projection: related documents (GHSA-rqgm-cfrp-4hx8)', funct
             }
           }
         },
+        '@apostrophecms/image': {
+          fields: {
+            add: {
+              internalCode: {
+                type: 'string',
+                label: 'Internal Code'
+              }
+            }
+          }
+        },
         'rqgm-featured-widget': {
           extend: '@apostrophecms/widget-type',
           fields: {
@@ -178,6 +188,7 @@ describe('Public API projection: related documents (GHSA-rqgm-cfrp-4hx8)', funct
               _authorBrief: 1,
               _category: 1,
               _pages: 1,
+              _image: 1,
               main: 1,
               links: 1
             }
@@ -207,6 +218,11 @@ describe('Public API projection: related documents (GHSA-rqgm-cfrp-4hx8)', funct
               _category: {
                 type: 'relationship',
                 withType: 'rqgm-category'
+              },
+              // Core images have a projection for related documents
+              _image: {
+                type: 'relationship',
+                withType: '@apostrophecms/image'
               },
               // Related pages are limited to the projection of
               // @apostrophecms/page
@@ -379,6 +395,44 @@ describe('Public API projection: related documents (GHSA-rqgm-cfrp-4hx8)', funct
       await apos.modules['rqgm-article'].update(req, {
         ...await apos.modules['rqgm-article'].find(req, { _id: article._id }).toObject(),
         _pages: []
+      });
+    }
+  });
+
+  it('anonymous: related images are limited to the fields needed to display them', async function() {
+    const req = apos.task.getReq();
+    const image = await apos.image.insert(req, {
+      ...apos.image.newInstance(),
+      title: 'Image I',
+      alt: 'Alt Text',
+      internalCode: 'zzimagecode',
+      attachment: {
+        _id: apos.util.generateId(),
+        name: 'image',
+        title: 'image',
+        extension: 'png',
+        group: 'images',
+        width: 100,
+        height: 100
+      }
+    });
+    await apos.modules['rqgm-article'].update(req, {
+      ...await apos.modules['rqgm-article'].find(req, { _id: article._id }).toObject(),
+      _image: [ image ]
+    });
+    try {
+      const doc = await apos.http.get(`/api/v1/rqgm-article/${article._id}`);
+      assert.strictEqual(doc._image.length, 1);
+      assert.strictEqual(doc._image[0].title, 'Image I');
+      assert.strictEqual(doc._image[0].alt, 'Alt Text');
+      assert(doc._image[0].attachment);
+      assert.strictEqual(doc._image[0].internalCode, undefined);
+      const full = await apos.http.get(`/api/v1/rqgm-article/${article._id}?apikey=${apiKey}`);
+      assert.strictEqual(full._image[0].internalCode, 'zzimagecode');
+    } finally {
+      await apos.modules['rqgm-article'].update(req, {
+        ...await apos.modules['rqgm-article'].find(req, { _id: article._id }).toObject(),
+        _image: []
       });
     }
   });
