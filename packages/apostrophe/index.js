@@ -635,7 +635,9 @@ async function apostrophe(options, telemetry, rootSpan, { logger }) {
     // and throws an exception if we don't
     function checkTestModule() {
       const testFor = `node_modules${path.sep}mocha`;
-      if (!require.main.filename.includes(testFor)) {
+      // require.main is undefined when mocha's entry point is ESM (mocha 12+)
+      const entry = require.main?.filename || process.argv[1] || '';
+      if (!entry.includes(testFor)) {
         throw new Error('mocha does not seem to be running, is this really a test?');
       }
     }
