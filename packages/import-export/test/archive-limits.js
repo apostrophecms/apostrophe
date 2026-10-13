@@ -102,7 +102,6 @@ describe('#import - archive limits and cleanup', function() {
   let importExportManager;
   let tempPath;
   let uploadfsPath;
-  let counter = 0;
 
   before(async function() {
     apos = await t.create({
@@ -165,7 +164,7 @@ describe('#import - archive limits and cleanup', function() {
   }
 
   it('removes the upload and its extraction when the archive is invalid', async function() {
-    const name = `invalid-${counter++}.tar.gz`;
+    const name = `invalid-${apos.util.generateId()}.tar.gz`;
     await makeArchive(path.join(tempPath, name), {}, { docs: '{ not json' });
 
     await assert.rejects(importArchive(name));
@@ -173,7 +172,7 @@ describe('#import - archive limits and cleanup', function() {
   });
 
   it('enforces `importLimits` and removes the upload and its extraction', async function() {
-    const name = `too-big-${counter++}.tar.gz`;
+    const name = `too-big-${apos.util.generateId()}.tar.gz`;
     await makeArchive(path.join(tempPath, name), {
       'attachments/zeros.bin': 5 * MiB
     });
@@ -183,7 +182,7 @@ describe('#import - archive limits and cleanup', function() {
   });
 
   it('still imports an archive within the limits and cleans up after it', async function() {
-    const name = `valid-${counter++}.tar.gz`;
+    const name = `valid-${apos.util.generateId()}.tar.gz`;
     await makeArchive(path.join(tempPath, name), {
       'attachments/small.bin': 1024
     });

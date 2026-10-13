@@ -2,9 +2,24 @@ const path = require('node:path');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const stream = require('node:stream/promises');
+const { Transform } = require('node:stream');
 const zlib = require('node:zlib');
 const tar = require('tar-stream');
 const { EJSON } = require('bson');
+
+// Default limits on what extracting an import archive may write. The
+// `importLimits` option of the import-export module overrides them.
+const defaultLimits = {
+  // Maximum number of entries (files and directories) in the archive
+  maxEntries: 100000,
+  // Maximum total size of the extracted files, in bytes. Unset by
+  // default, `maxCompressionRatio` limits it instead
+  maxExtractedSize: null,
+  // Maximum total size of the extracted files, as a multiple of the size
+  // of the archive. Up to `MIN_EXTRACTED_SIZE` bytes are always allowed
+  maxCompressionRatio: 100
+};
+const MIN_EXTRACTED_SIZE = 64 * 1024 * 1024;
 
 // `logDebug`, `logInfo`, `logWarn` and `logError` are not declared here:
 // `registerFormats` in `lib/methods/index.js` stamps them onto every format it
@@ -20,72 +35,87 @@ module.exports = {
     'application/x-gzip'
   ],
   includeAttachments: true,
-  async input(filepath) {
+  async input(filepath, { limits } = {}) {
     let exportPath = filepath;
+    let extracted = false;
 
     // If the given path is actually the archive, we first need to extract it.
     // Then we no longer need the archive file, so we remove it.
     if (filepath.endsWith(this.allowedExtension)) {
-      exportPath = filepath.replace(this.allowedExtension, '');
+      exportPath = filepath.slice(0, -this.allowedExtension.length);
 
-      await extract(filepath, exportPath);
+      try {
+        await extract(filepath, exportPath, limits);
+      } catch (error) {
+        await removeDirectory(exportPath, this);
+        throw error;
+      }
+      extracted = true;
 
       await remove(filepath, this);
     }
 
-    const docsPath = path.join(exportPath, 'aposDocs.json');
-    const attachmentsPath = path.join(exportPath, 'aposAttachments.json');
-    const attachmentFilesPath = path.join(exportPath, 'attachments');
+    try {
+      const docsPath = path.join(exportPath, 'aposDocs.json');
+      const attachmentsPath = path.join(exportPath, 'aposAttachments.json');
+      const attachmentFilesPath = path.join(exportPath, 'attachments');
 
-    const docs = await fsp.readFile(docsPath);
-    const attachments = await fsp.readFile(attachmentsPath);
+      const docs = await fsp.readFile(docsPath);
+      const attachments = await fsp.readFile(attachmentsPath);
 
-    const parsedDocs = EJSON.parse(docs);
-    const parsedAttachments = EJSON.parse(attachments);
+      const parsedDocs = EJSON.parse(docs);
+      const parsedAttachments = EJSON.parse(attachments);
 
-    const attachmentsInfo = parsedAttachments.map(attachment => {
-      // The archive is parsed with EJSON, which can revive objects such as
-      // `{ $ne: null }`. Require the identity fields to be plain strings so
-      // they cannot (a) smuggle a MongoDB query operator into the later
-      // `attachment.db.findOne({ _id })` lookup, nor (b) coerce into an
-      // unexpected on-disk path below.
-      if (
-        typeof attachment._id !== 'string' ||
-        typeof attachment.name !== 'string' ||
-        typeof attachment.extension !== 'string'
-      ) {
-        throw new Error('Invalid attachment metadata in import archive: _id, name and extension must be strings');
-      }
+      const attachmentsInfo = parsedAttachments.map(attachment => {
+        // The archive is parsed with EJSON, which can revive objects such as
+        // `{ $ne: null }`. Require the identity fields to be plain strings so
+        // they cannot (a) smuggle a MongoDB query operator into the later
+        // `attachment.db.findOne({ _id })` lookup, nor (b) coerce into an
+        // unexpected on-disk path below.
+        if (
+          typeof attachment._id !== 'string' ||
+          typeof attachment.name !== 'string' ||
+          typeof attachment.extension !== 'string'
+        ) {
+          throw new Error('Invalid attachment metadata in import archive: _id, name and extension must be strings');
+        }
 
-      const filename = `${attachment._id}-${attachment.name}.${attachment.extension}`;
-      const filePath = path.join(attachmentFilesPath, filename);
+        const filename = `${attachment._id}-${attachment.name}.${attachment.extension}`;
+        const filePath = path.join(attachmentFilesPath, filename);
 
-      // Guard against path traversal (GHSA-79qf-vqgc-7xx3): the `_id`, `name`
-      // and `extension` fields come straight from the untrusted archive, so a
-      // `../` sequence (or an absolute path) could otherwise point `file.path`
-      // at an arbitrary host file, which would then be read and copied into the
-      // public uploads directory. Reject any entry whose reconstructed source
-      // path escapes the extraction's attachments directory. The tar entry
-      // names are guarded separately in `extract()` above.
-      const base = path.resolve(attachmentFilesPath) + path.sep;
-      if (!path.resolve(filePath).startsWith(base)) {
-        throw new Error(`Invalid attachment path in import archive: ${filename}`);
-      }
+        // Guard against path traversal (GHSA-79qf-vqgc-7xx3): the `_id`, `name`
+        // and `extension` fields come straight from the untrusted archive, so a
+        // `../` sequence (or an absolute path) could otherwise point `file.path`
+        // at an arbitrary host file, which would then be read and copied into the
+        // public uploads directory. Reject any entry whose reconstructed source
+        // path escapes the extraction's attachments directory. The tar entry
+        // names are guarded separately in `extract()` above.
+        const base = path.resolve(attachmentFilesPath) + path.sep;
+        if (!path.resolve(filePath).startsWith(base)) {
+          throw new Error(`Invalid attachment path in import archive: ${filename}`);
+        }
+
+        return {
+          attachment,
+          file: {
+            name: `${attachment.name}.${attachment.extension}`,
+            path: filePath
+          }
+        };
+      });
 
       return {
-        attachment,
-        file: {
-          name: `${attachment.name}.${attachment.extension}`,
-          path: filePath
-        }
+        docs: parsedDocs,
+        attachmentsInfo,
+        exportPath
       };
-    });
-
-    return {
-      docs: parsedDocs,
-      attachmentsInfo,
-      exportPath
-    };
+    } catch (error) {
+      // Nothing can be done with an extraction that cannot be read
+      if (extracted) {
+        await removeDirectory(exportPath, this);
+      }
+      throw error;
+    }
   },
   async output(
     filepath,
@@ -151,7 +181,7 @@ module.exports = {
   }
 };
 
-async function extract(filepath, exportPath) {
+async function extract(filepath, exportPath, limits = {}) {
   // A directory on its own does not prove the extraction finished: it is
   // created before any entry is written, so an interrupted run leaves one
   // behind and every later attempt would treat it as complete. `aposDocs.json`
@@ -162,6 +192,10 @@ async function extract(filepath, exportPath) {
   if (fs.existsSync(path.join(exportPath, 'aposDocs.json'))) {
     return;
   }
+
+  const { maxEntries, maxExtractedSize } = await getExtractLimits(filepath, limits);
+  let entries = 0;
+  let extractedSize = 0;
 
   // `recursive` so a partial extraction's leftover directory is reused rather
   // than throwing EEXIST.
@@ -181,8 +215,12 @@ async function extract(filepath, exportPath) {
   return new Promise((resolve, reject) => {
     // Stop reading the archive once extraction has failed, so the open file
     // and the half-consumed tar stream are not left dangling.
+    let writeStream;
     const fail = error => {
       readStream.destroy();
+      gunzip.destroy();
+      extract.destroy();
+      writeStream?.destroy();
       reject(error);
     };
 
@@ -191,6 +229,18 @@ async function extract(filepath, exportPath) {
     extract.on('error', fail);
 
     extract.on('entry', (header, stream, next) => {
+      entries++;
+      if (entries > maxEntries) {
+        fail(new Error(`Import archive has too many entries (maximum ${maxEntries})`));
+        return;
+      }
+      // Our archives only hold files and directories, skip anything else
+      // (links, devices...)
+      if (![ 'file', 'directory' ].includes(header.type)) {
+        stream.on('end', next);
+        stream.resume();
+        return;
+      }
       // Normalize \ to / before checking for zip-slip
       const name = header.name.replace(/\\/g, '/');
       // Check where the entry actually resolves to rather than looking for
@@ -222,14 +272,68 @@ async function extract(filepath, exportPath) {
         // The `error` listener is required: without it a failed write (e.g.
         // an entry colliding with a directory) is an unhandled 'error' event
         // that terminates the process.
-        const writeStream = fs.createWriteStream(target);
+        //
+        // The size is counted on the bytes actually extracted, not on the
+        // size the entry header claims.
+        const limit = new Transform({
+          transform(chunk, encoding, callback) {
+            extractedSize += chunk.length;
+            if (extractedSize > maxExtractedSize) {
+              callback(new Error(`Import archive exceeds the maximum extracted size (${maxExtractedSize} bytes)`));
+              return;
+            }
+            callback(null, chunk);
+          }
+        });
+        writeStream = fs.createWriteStream(target);
+        stream.on('error', fail);
+        limit.on('error', fail);
         writeStream.on('error', fail);
         writeStream.on('finish', next);
-        stream.pipe(writeStream);
+        stream.pipe(limit).pipe(writeStream);
       }
     });
     extract.on('finish', resolve);
   });
+}
+
+// The limits that apply to the extraction of the archive at `filepath`,
+// see `defaultLimits`
+async function getExtractLimits(filepath, limits = {}) {
+  const {
+    maxEntries, maxExtractedSize, maxCompressionRatio
+  } = {
+    ...defaultLimits,
+    ...Object.fromEntries(
+      Object.entries(limits || {}).filter(([ , value ]) => value != null)
+    )
+  };
+  let maxSize = maxExtractedSize ?? Infinity;
+  if (maxCompressionRatio) {
+    const { size } = await fsp.stat(filepath);
+    maxSize = Math.min(
+      maxSize,
+      Math.max(size * maxCompressionRatio, MIN_EXTRACTED_SIZE)
+    );
+  }
+  return {
+    maxEntries,
+    maxExtractedSize: maxSize
+  };
+}
+
+async function removeDirectory(dirpath, format) {
+  try {
+    await fsp.rm(dirpath, {
+      recursive: true,
+      force: true
+    });
+  } catch (error) {
+    format?.logError?.('extraction-remove-failed', `Unable to remove the extracted archive: "${dirpath}"`, {
+      dirpath,
+      stack: error.stack
+    });
+  }
 }
 
 // This independent function is designed for file removal.
