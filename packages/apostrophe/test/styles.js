@@ -1,5 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
+const cheerio = require('cheerio');
 const universal = import(
   '../modules/@apostrophecms/styles/ui/apos/universal/render.mjs'
 );
@@ -5366,6 +5367,228 @@ describe('Styles', function () {
         hasWrapper: true,
         closesWrapper: true
       }, 'Nunjucks helpers should render correctly in widget template with inline styles');
+    });
+  });
+
+  describe('Free-form style values in wrapper attributes', function () {
+    let apos;
+    let page;
+    let jar;
+
+    const fontPayload = 'serif" tabindex="0" autofocus onfocus="document.body.dataset.inline=\'executed\'';
+    const classPayload = 'nice" onmouseover="document.body.dataset.cls=1';
+    const freeFormStyles = {
+      add: {
+        // Free-form string rendered inline (no selector)
+        customFont: {
+          type: 'string',
+          property: 'font-family'
+        },
+        // Free-form string rendered as a class
+        customClass: {
+          type: 'string',
+          class: true
+        }
+      }
+    };
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          'test-style-page': {
+            fields: {
+              add: {
+                body: {
+                  type: 'area',
+                  options: {
+                    widgets: {
+                      // Automatic styles wrapper
+                      'test-nostyle': {},
+                      // Nunjucks helpers in the widget template
+                      'test-style': {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          'test-nostyle-widget': {
+            styles: freeFormStyles
+          },
+          'test-style-widget': {
+            options: {
+              stylesWrapper: false
+            },
+            styles: freeFormStyles
+          }
+        }
+      });
+
+      const req = apos.task.getReq();
+      const input = {
+        slug: '/test-styles-xss',
+        type: 'test-style-page',
+        title: 'Test Styles XSS Page',
+        metaType: 'doc'
+      };
+      const instance = apos.util.getManagerOf(input).newInstance();
+      page = await apos.doc.insert(req, {
+        ...instance,
+        ...input
+      });
+      jar = apos.http.jar();
+    });
+
+    after(async function () {
+      return t.destroy(apos);
+    });
+
+    async function renderWithWidget(type) {
+      // The values survive the standard string field converter
+      const req = apos.task.getReq();
+      const manager = apos.area.getWidgetManager(type);
+      const widget = {};
+      await apos.schema.convert(req, manager.schema, {
+        customFont: fontPayload,
+        customClass: classPayload
+      }, widget);
+      assert.equal(widget.customFont, fontPayload);
+      assert.equal(widget.customClass, classPayload);
+
+      await apos.doc.update(req, {
+        ...page,
+        body: {
+          ...page.body,
+          items: [
+            {
+              ...widget,
+              _id: apos.util.generateId(),
+              type,
+              metaType: 'widget'
+            }
+          ]
+        }
+      });
+      return apos.http.get('/test-styles-xss', { jar });
+    }
+
+    function assertNoInjectedAttributes(html) {
+      const $ = cheerio.load(html);
+      const $wrapper = $('[data-apos-widget-style-wrapper-for]');
+      assert.equal($wrapper.length, 1, 'wrapper is rendered');
+      const attrs = $wrapper.get(0).attribs;
+      for (const name of [ 'onfocus', 'autofocus', 'tabindex', 'onmouseover' ]) {
+        assert.equal(attrs[name], undefined, `${name} attribute must not be injected`);
+      }
+      // The value is kept intact inside the style attribute
+      assert.equal(attrs.style, `font-family: ${fontPayload};`);
+    }
+
+    it('should escape free-form style values in the automatic wrapper', async function () {
+      const html = await renderWithWidget('test-nostyle');
+      assertNoInjectedAttributes(html);
+      assert(html.includes('style="font-family: serif&#34;'), 'quote is escaped inside the style attribute');
+    });
+
+    it('should escape free-form style values in the nunjucks attributes helper', async function () {
+      const html = await renderWithWidget('test-style');
+      assert(html.includes('<article id="'), 'wrapper is rendered');
+      assertNoInjectedAttributes(html);
+    });
+
+    it('should escape every attribute value in getWidgetAttributes', function () {
+      const attrs = apos.styles.getWidgetAttributes({
+        styleId: 'sid',
+        widgetId: 'wid',
+        classes: [ 'a"b' ],
+        inline: 'font-family: "Open Sans", \'Times New Roman\', <b> & co;'
+      }, {
+        'data-extra': 'x" onclick="alert(1)'
+      });
+      assert.equal(
+        attrs,
+        'id="sid" data-apos-widget-style-wrapper-for="wid" ' +
+        'data-apos-widget-style-classes="a&#34;b" class="a&#34;b" ' +
+        'style="font-family: &#34;Open Sans&#34;, &#39;Times New Roman&#39;, &lt;b&gt; &amp; co;" ' +
+        'data-extra="x&#34; onclick=&#34;alert(1)"'
+      );
+    });
+
+    it('should keep raw values in getWidgetAttributes asObject mode', function () {
+      const attrs = apos.styles.getWidgetAttributes({
+        styleId: 'sid',
+        widgetId: 'wid',
+        classes: [],
+        inline: 'font-family: "Open Sans";'
+      }, {}, { asObject: true });
+      assert.equal(attrs.style, 'font-family: "Open Sans";');
+    });
+
+    it('should escape ids in getWidgetElements', function () {
+      const elements = apos.styles.getWidgetElements({
+        css: '#x{color: red;}',
+        styleId: 's"id',
+        widgetId: 'w"id'
+      });
+      assert(elements.startsWith(
+        '<style data-apos-widget-style-for="w&#34;id" data-apos-widget-style-id="s&#34;id">'
+      ));
+    });
+
+    it('should keep legitimate quoted font-family values', async function () {
+      const { renderScopedStyles } = await universal;
+      const value = '"Open Sans", \'Helvetica Neue\', sans-serif';
+      const result = renderScopedStyles(
+        [ {
+          name: 'customFont',
+          type: 'string',
+          property: 'font-family'
+        } ],
+        { customFont: value },
+        { rootSelector: '#w' }
+      );
+      assert.equal(result.inline, `font-family: ${value};`);
+    });
+
+    it('should not render style values that could break out of the CSS context', async function () {
+      const { renderScopedStyles, renderGlobalStyles } = await universal;
+      const schema = [
+        {
+          name: 'scoped',
+          type: 'string',
+          selector: '.inner',
+          property: 'color'
+        },
+        {
+          name: 'templated',
+          type: 'string',
+          selector: '.inner',
+          property: 'border',
+          valueTemplate: '1px solid %VALUE%'
+        }
+      ];
+      const doc = {
+        scoped: 'red}body{display:none',
+        templated: 'red</style><script>alert(1)</script>'
+      };
+      const scoped = renderScopedStyles(schema, doc, { rootSelector: '#w' });
+      assert.equal(scoped.css, '');
+      const global = renderGlobalStyles(schema, doc);
+      assert.equal(global.css, '');
+    });
+
+    it('should only add well-formed class tokens', async function () {
+      const { renderScopedStyles } = await universal;
+      const result = renderScopedStyles(
+        [ {
+          name: 'customClass',
+          type: 'string',
+          class: true
+        } ],
+        { customClass: 'one two" onclick="x <three> four' }
+      );
+      assert.deepEqual(result.classes, [ 'one', 'four' ]);
     });
   });
 
