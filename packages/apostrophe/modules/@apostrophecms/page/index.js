@@ -3005,11 +3005,22 @@ database.`);
             });
           } else {
             // Note that we MUST NOT honor the "project" query builder here
-            query.project({
+            const projection = {
               ...self.options.publicApiProjection,
               cacheInvalidatedAt: 1
-            });
+            };
+            query.project(projection);
             query.set('publicApiProjection', self.options.publicApiProjection);
+            // The related pages must be limited to the projection too
+            for (const name of [ 'ancestors', 'children' ]) {
+              const value = query.get(name);
+              if (value) {
+                query[name]({
+                  ...((typeof value === 'object') ? value : {}),
+                  project: projection
+                });
+              }
+            }
           }
         }
         return query;

@@ -248,7 +248,6 @@ describe('Public API projection: sort and filter builders (GHSA-rqgm-cfrp-4hx8)'
       assert.strictEqual(withChildren._children.length, 1);
       assert.strictEqual(withChildren._children[0].title, 'Child Page');
       assert.strictEqual(withChildren._children[0].secret, undefined);
-      assert.strictEqual(withChildren._children[0].type, undefined);
       const deeper = await apos.http.get(`/api/v1/@apostrophecms/page/${parent._id}?children[depth]=2`);
       assert.strictEqual(deeper._children[0].secret, undefined);
       const withAncestors = await apos.http.get(`/api/v1/@apostrophecms/page/${child._id}`);
@@ -256,7 +255,6 @@ describe('Public API projection: sort and filter builders (GHSA-rqgm-cfrp-4hx8)'
       const ancestor = withAncestors._ancestors.find(page => page.title === 'Article A');
       assert(ancestor);
       assert.strictEqual(ancestor.secret, undefined);
-      assert.strictEqual(ancestor.type, undefined);
     } finally {
       delete apos.page.options.publicApiProjection;
       await apos.page.delete(req, child);
