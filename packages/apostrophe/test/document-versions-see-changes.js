@@ -600,4 +600,61 @@ describe('Document Versions draft changes', function () {
       );
     });
   });
+
+  describe('the page in See Changes', function () {
+    let page;
+
+    before(async function () {
+      const req = ann();
+      const inserted = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Page in See Changes',
+        type: 'default-page',
+        main: {
+          metaType: 'area',
+          items: [ 'kept', 'deleted' ].map(_id => ({
+            _id,
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            content: `<p>The ${_id} paragraph.</p>`
+          }))
+        }
+      });
+      page = await apos.page.find(req, { _id: inserted._id }).toObject();
+      await apos.page.publish(req, page);
+      await wait(5);
+      page.main.items = page.main.items.filter(widget => widget._id !== 'deleted');
+      page.title = 'Page in See Changes, edited';
+      await saveAs(apos.page, req, page);
+    });
+
+    // The page as `serve` loads it, after `beforeSend` with `query`
+    async function beforeSend(query) {
+      const req = draftReq();
+      req.query = query;
+      req.data.page = await apos.page.find(req, { _id: page._id }).toObject();
+      await apos.page.emit('beforeSend', req);
+      return req.data.page;
+    }
+
+    it('should show the draft marked with its changes, deleted widgets back in place', async function () {
+      const shown = await beforeSend({
+        aposEdit: '1',
+        aposSeeChanges: '1'
+      });
+
+      assert.deepEqual(shown.main.items.map(widget => widget._id), [ 'kept', 'deleted' ]);
+      assert.equal(shown.main.items[1]._deleted, true);
+      assert.equal(shown.main._edit, true);
+      assert.equal(shown.title, 'Page in See Changes, edited');
+      assert.equal(typeof shown._url, 'string');
+    });
+
+    it('should show the draft as it is without edit mode or the flag', async function () {
+      for (const query of [ { aposSeeChanges: '1' }, { aposEdit: '1' } ]) {
+        const shown = await beforeSend(query);
+
+        assert.deepEqual(shown.main.items.map(widget => widget._id), [ 'kept' ]);
+      }
+    });
+  });
 });

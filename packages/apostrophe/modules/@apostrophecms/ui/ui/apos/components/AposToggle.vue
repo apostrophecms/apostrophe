@@ -3,7 +3,7 @@
     <div
       class="apos-toggle__slider"
       :tabindex="disableFocus ? null : '0'"
-      :class="{'apos-toggle__slider--activated': !modelValue}"
+      :class="classes"
       @click="$emit('toggle')"
       @keydown.stop.space="$emit('toggle')"
       @keydown.stop.enter="$emit('toggle')"
@@ -22,6 +22,13 @@ export default {
     disableFocus: {
       type: Boolean,
       default: false
+    },
+    // `small` for a compact toggle, as in a menu item
+    modifiers: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'toggle' ],
@@ -29,6 +36,14 @@ export default {
     return {
       activated: false
     };
+  },
+  computed: {
+    classes() {
+      return [
+        ...this.modifiers.map(modifier => `apos-toggle__slider--${modifier}`),
+        { 'apos-toggle__slider--activated': !this.modelValue }
+      ];
+    }
   },
   methods: {
     toggle() {
@@ -41,6 +56,9 @@ export default {
   $toggle-height: 13px;
   $toggle-width: $toggle-height * 1.7;
   $btn-size: $toggle-height;
+  // As high as a small icon (14px) with its padding
+  $small-toggle-height: 10px;
+  $small-toggle-width: $small-toggle-height * 1.7;
 
   .apos-toggle {
     &__slider {
@@ -69,6 +87,21 @@ export default {
         background-color: var(--a-white);
         transition: all 300ms ease-out;
       }
+    }
+
+    &__slider--small {
+      width: $small-toggle-width;
+      height: $small-toggle-height;
+      padding: 2px;
+
+      &::before {
+        width: $small-toggle-height;
+        height: $small-toggle-height;
+      }
+    }
+
+    &__slider--small.apos-toggle__slider--activated::before {
+      transform: translateX(calc($small-toggle-width - $small-toggle-height));
     }
 
     &__slider--activated {

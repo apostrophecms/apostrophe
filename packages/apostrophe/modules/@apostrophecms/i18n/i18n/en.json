@@ -612,6 +612,8 @@
   "searchLabel": "Search Page",
   "searchLocales": "Search Locales",
   "searchLocalesPlaceholder": "Search locales...",
+  "seeChanges": "See Changes",
+  "seeChangesNotLoaded": "The changes could not be loaded.",
   "select": "Select",
   "selectAll": "Select All",
   "selectBoxMessage": "{{ num }} {{ label }} selected.",

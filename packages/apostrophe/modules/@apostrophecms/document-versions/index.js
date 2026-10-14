@@ -90,6 +90,40 @@ module.exports = {
           await self.saveFor(req, doc, await self.canHaveVersion(req, doc));
         }
       },
+      '@apostrophecms/page:beforeSend': {
+        // See Changes renders the page from the draft marked with its
+        // changes since the last publication, deleted widgets back in place.
+        // Every render passes here, an external front's included. Only the
+        // schema fields are swapped, so the rest of what was loaded for the
+        // page stays
+        async showDraftChanges(req) {
+          if ((req.query.aposSeeChanges !== '1') || !req.query.aposEdit) {
+            return;
+          }
+          const context = req.data.piece || req.data.page;
+          if (!context?._edit || (context.aposMode !== 'draft')) {
+            return;
+          }
+          let changes;
+          try {
+            changes = await self.getDraftChanges(req, context._id, { annotate: true });
+          } catch (e) {
+            if (e.name === 'notfound') {
+              return;
+            }
+            throw e;
+          }
+          const manager = self.apos.doc.getManager(context.type);
+          const query = manager.find(req);
+          await query.finalize();
+          await query.after([ changes.doc ]);
+          for (const field of manager.schema) {
+            if (Object.hasOwn(changes.doc, field.name)) {
+              context[field.name] = changes.doc[field.name];
+            }
+          }
+        }
+      },
       '@apostrophecms/doc:afterAllModesDeleted': {
         async deleteVersion(req, doc) {
           await self.removeAllFor(req, doc);
@@ -281,6 +315,24 @@ module.exports = {
           action: 'versions',
           label: self.options.pluralLabel,
           modal: self.getComponentName('versions', 'AposDocVersions'),
+          moduleIf: {
+            versions: true
+          },
+          conditions: [ 'canEdit' ]
+        });
+        // See Changes, which the context bar turns on and off: the page
+        // shows the changes of its draft since the last publication.
+        // Offered for types that record versions of their drafts (see
+        // `hasDraftVersions`)
+        self.apos.doc.addContextOperation({
+          moduleName: self.__meta.name,
+          context: 'update',
+          action: 'see-changes',
+          type: 'toggle',
+          label: 'apostrophe:seeChanges',
+          location: 'context-bar',
+          hasUrl: true,
+          manuallyPublished: true,
           moduleIf: {
             versions: true
           },

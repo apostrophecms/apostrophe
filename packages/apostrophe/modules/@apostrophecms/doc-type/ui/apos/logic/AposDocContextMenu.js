@@ -3,6 +3,7 @@ import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin'
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
+import { useContextOperationsStore } from 'Modules/@apostrophecms/ui/stores/contextOperations.js';
 
 export default {
   name: 'AposDocContextMenu',
@@ -102,6 +103,12 @@ export default {
     crossLocale: {
       type: Boolean,
       default: false
+    },
+    // Where the menu is shown. Custom operations with a `location` are only
+    // offered by the menu in that place, see `addContextOperation`
+    location: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],
@@ -229,7 +236,10 @@ export default {
         .map(op => ({
           label: op.label,
           action: op.action,
-          modifiers: op.modifiers || []
+          modifiers: op.modifiers || [],
+          ...(op.type === 'toggle' && {
+            checked: useContextOperationsStore().isChecked(op.action)
+          })
         }));
       menus.sort((a, b) => a.modifiers.length - b.modifiers.length);
       return menus;
@@ -237,10 +247,14 @@ export default {
     customOperationsByContext() {
       return this.customOperations.filter(({
         manuallyPublished, hasUrl, conditions, context,
-        if: ifProps, moduleIf, crossLocale
+        if: ifProps, moduleIf, crossLocale, location
       }) => {
         // In cross-locale mode, only show operations explicitly marked as safe
         if (this.crossLocale && !crossLocale) {
+          return false;
+        }
+
+        if (location && (location !== this.location)) {
           return false;
         }
 
@@ -539,6 +553,13 @@ export default {
       }
       if (operation.type === 'event') {
         apos.bus.$emit(operation.action, props);
+        return;
+      }
+      if (operation.type === 'toggle') {
+        apos.bus.$emit(operation.action, {
+          ...props,
+          checked: !useContextOperationsStore().isChecked(operation.action)
+        });
         return;
       }
       await apos.modal.execute(operation.modal, props);

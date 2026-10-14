@@ -13,7 +13,8 @@
       class="apos-context-menu__button"
       :class="modifiers"
       :tabindex="tabindex"
-      role="menuitem"
+      :role="isToggle ? 'menuitemcheckbox' : 'menuitem'"
+      :aria-checked="isToggle ? String(menuItem.checked) : null"
       data-apos-test="context-menu-item"
       :data-apos-test-context-menu-button="$t(label)"
       :data-apos-test-selected="selected"
@@ -31,6 +32,14 @@
       <span class="apos-context-menu__label">
         {{ $t(label) }}
       </span>
+      <AposToggle
+        v-if="isToggle"
+        class="apos-context-menu__toggle"
+        aria-hidden="true"
+        :model-value="!menuItem.checked"
+        :modifiers="[ 'small' ]"
+        disable-focus
+      />
     </button>
   </li>
 </template>
@@ -53,6 +62,10 @@ export default {
   computed: {
     tabindex() {
       return this.open ? '0' : '-1';
+    },
+    // An item that is on or off, shown with a switch
+    isToggle() {
+      return typeof this.menuItem.checked === 'boolean';
     },
     selected() {
       return this.menuItem.modifiers?.includes('selected');
@@ -102,6 +115,12 @@ export default {
 
 .apos-context-menu__item:not(.apos-context-menu__item--separator) {
   min-height: 36px;
+}
+
+.apos-context-menu__toggle {
+  margin-left: auto;
+  padding-left: $spacing-double;
+  pointer-events: none;
 }
 
 .apos-context-menu__separator {
