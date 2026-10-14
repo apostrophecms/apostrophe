@@ -220,6 +220,7 @@ export default {
             ...this.operationButtonDefault,
             icon: operation.icon
           },
+          triggerAriaLabel: this.getOperationAriaLabel(operation),
           ignoreUnfocus: true,
           teleportContent: this.teleportModals,
           disabled,
@@ -227,12 +228,22 @@ export default {
         };
       }
 
+      const ariaLabel = this.getOperationAriaLabel(operation);
+
       return {
         ...this.operationButtonDefault,
         icon: operation.icon,
         action: operation.action,
-        tooltip: operation.tooltip || null
+        tooltip: operation.tooltip || null,
+        attrs: ariaLabel ? { 'aria-label': ariaLabel } : {}
       };
+    },
+    // Breadcrumb operations are icon only, so without this they are
+    // announced with the placeholder label of `AposButton`. Use the
+    // operation label if there is one, otherwise its tooltip.
+    getOperationAriaLabel(operation) {
+      const label = operation.label || operation.tooltip;
+      return label ? this.$t(label) : null;
     },
     getOperationListeners(operation) {
       const listeners = {};

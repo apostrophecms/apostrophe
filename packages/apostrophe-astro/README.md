@@ -40,6 +40,9 @@
   - [Creating Astro page components](#creating-astro-page-components)
     - [Understanding the `AposArea` component](#understanding-the-aposarea-component)
     - [Understanding the `AposField` component](#understanding-the-aposfield-component)
+      - [Telling Apostrophe which fields you render](#telling-apostrophe-which-fields-you-render)
+      - [Why the opt in](#why-the-opt-in)
+      - [Props](#props)
   - [Creating Astro widget components](#creating-astro-widget-components)
     - [Placeholders are important in widgets that use them](#placeholders-are-important-in-widgets-that-use-them)
     - [Remember, relationship properties might not be populated](#remember-relationship-properties-might-not-be-populated)
@@ -59,6 +62,9 @@
   - [Output and logging](#output-and-logging)
   - [Debugging](#debugging)
     - [Widget Render Hook](#widget-render-hook)
+      - [1. Configure the Integration](#1-configure-the-integration)
+      - [2. Create the Hook File](#2-create-the-hook-file)
+      - [Notes](#notes)
   - [Enabling the `render-area` option to ApostropheCMS REST APIs](#enabling-the-render-area-option-to-apostrophecms-rest-apis)
   - [Enabling the `@apostrophecms/layout-widget` in an existing project](#enabling-the-apostrophecmslayout-widget-in-an-existing-project)
     - [Backend updates](#backend-updates)
@@ -230,6 +236,8 @@ At the present time, Astro is not compatible with the `nonce` property of `conte
 An array of HTTP headers that you want to prevent from being forwarded from the browser to Apostrophe. This is particularly useful in single-site setups where you want to block the `host` header to allow Astro and Apostrophe to run on different hostnames.
 
 By default, all headers are forwarded except those specified in this array.
+
+Do not exclude `host` in a multisite project. Multisite selects the site by the `host` header, so pages and literal content files would no longer reach the right site.
 
 ### `forwardHeaders` (deprecated)
 
@@ -743,6 +751,8 @@ As this integration proxies certain Apostrophe endpoints, there are some routes 
 In addition, literal content files declared by your Apostrophe modules — `robots.txt`, `sitemap.xml`, `llms.txt`
 and any others — are recognised at request time by a middleware and sent to the raw proxy instead of the page
 renderer. Since v1.14.0 you no longer need to list these individually in `proxyRoutes`.
+
+In a multisite project each site has its own list of literal content files, recognised by the request's `host`. This requires most recent versions of `apostrophe`, multisite and this integration. With an older `apostrophe` or multisite, all sites share the list of the first site that is requested.
 
 These routes exist in SSR mode only. A static build injects none of them.
 

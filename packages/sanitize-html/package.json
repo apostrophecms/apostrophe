@@ -29,7 +29,6 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "deepmerge": "^4.3.1",
     "escape-string-regexp": "^4.0.0",
     "htmlparser2": "^12.0.0",
     "is-plain-object": "^5.1.0",
@@ -40,7 +39,7 @@
   "devDependencies": {
     "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.8.0",
+    "mocha": "^12.0.3",
     "sinon": "^9.2.4"
   },
   "apostropheTestConfig": {

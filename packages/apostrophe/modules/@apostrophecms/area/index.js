@@ -188,6 +188,9 @@ module.exports = {
                     .annotateAreaForExternalFront(field, v, { scene: req.scene });
                 }
               });
+              // Fields rendered in place with `AposField` need the same
+              // annotations they get when the whole page is rendered
+              await self.apos.template.annotateWysiwygFieldsForExternalFront(req, area);
               const result = {
                 ...req.data,
                 options,
@@ -606,8 +609,12 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
       // its normal properties. Otherwise a rendering of the entire area
       // is supplied as the `_rendered` property of that area and the
       // `items` array is suppressed from the response.
+      //
+      // The fields the user may not view (`viewPermission`) are removed
+      // from the documents first (see `apos.doc.removeForbiddenFieldsDeep`).
       async renderDocsAreas(req, within, { inline = false } = {}) {
         within = Array.isArray(within) ? within : [];
+        self.apos.doc.removeForbiddenFieldsDeep(req, within);
         let index = 0;
         // Loop over the docs in the array passed in.
         for (const doc of within) {

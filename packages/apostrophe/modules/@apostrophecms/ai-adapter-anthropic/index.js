@@ -7,8 +7,10 @@
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
 
-// Anthropic has no response-schema mode, so structured output is
-// delivered through tool use: a synthetic tool whose input schema is
+// Anthropic's response-schema mode rejects much of portable JSON Schema
+// (`oneOf`, `minItems` above 1, open `additionalProperties`), so
+// structured output is delivered through tool use: a synthetic tool
+// whose input schema is
 // the request's `schema`. The model calls it to answer; parseResponse
 // turns that call back into a plain structured answer. Its name leads
 // with an underscore, which the engine's tool-name rule forbids, so
@@ -40,7 +42,10 @@ module.exports = {
     // deeply to think, and a reasoning level names an effort level
     // instead of a token budget. Extend the list when configuring a
     // newer model of the same kind
-    adaptiveModels: [ 'claude-opus-5', 'claude-sonnet-5' ]
+    adaptiveModels: [
+      'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5',
+      'claude-opus-5', 'claude-sonnet-5'
+    ]
   },
   init(self) {
     self.apos.ai.addAdapter(self.adapter());
@@ -74,46 +79,49 @@ module.exports = {
             image: false,
             caching: true
           },
+          // The adaptive models think whether or not a request says so,
+          // so every rung names the level it thinks at rather than
+          // leaving it to the provider's default
           effort: {
-            low: { model: 'claude-haiku-4-5' },
-            // The adaptive models think whether or not a request says
-            // so, so both rungs name the level they think at rather
-            // than leaving it to the provider's default
+            low: {
+              model: 'claude-haiku-5-5',
+              reasoning: 'medium'
+            },
             medium: {
-              model: 'claude-sonnet-5',
+              model: 'claude-sonnet-5-5',
               reasoning: 'medium'
             },
             high: {
-              model: 'claude-opus-5',
+              model: 'claude-opus-5-5',
               reasoning: 'high'
             }
           },
           // maxOutputTokens is the default cap a call inherits, not the
           // model's ceiling: this adapter posts and waits for a whole
           // answer, so the default stays where one response comfortably
-          // completes inside the timeout. The published ceilings are
-          // 128k for the Claude 5 models and 64k for Haiku 4.5.
+          // completes inside the timeout. The published ceiling is 128k
+          // for every model here.
           // `reasoning` declares what a call may pass, in this dialect's
           // own vocabulary: effort levels on the adaptive models, the
           // configured budget names on the budgeted ones.
           models: {
-            'claude-haiku-4-5': {
-              label: 'Haiku 4.5',
-              contextWindow: 200000,
-              maxOutputTokens: 32000,
-              reasoning: reasoningValues('claude-haiku-4-5')
-            },
-            'claude-sonnet-5': {
-              label: 'Sonnet 5',
+            'claude-haiku-5-5': {
+              label: 'Haiku 5.5',
               contextWindow: 1000000,
               maxOutputTokens: 64000,
-              reasoning: reasoningValues('claude-sonnet-5')
+              reasoning: reasoningValues('claude-haiku-5-5')
             },
-            'claude-opus-5': {
-              label: 'Opus 5',
+            'claude-sonnet-5-5': {
+              label: 'Sonnet 5.5',
               contextWindow: 1000000,
               maxOutputTokens: 64000,
-              reasoning: reasoningValues('claude-opus-5')
+              reasoning: reasoningValues('claude-sonnet-5-5')
+            },
+            'claude-opus-5-5': {
+              label: 'Opus 5.5',
+              contextWindow: 1000000,
+              maxOutputTokens: 64000,
+              reasoning: reasoningValues('claude-opus-5-5')
             }
           },
           validate() {
@@ -160,7 +168,8 @@ module.exports = {
       // turn's thinking preserved unmodified when its tool results come
       // back. Part types this dialect does not own are skipped. A
       // structured-output `schema` adds the synthetic final-answer
-      // tool, forced when nothing competes for the turn. Throws
+      // tool, forced when nothing competes for the turn and the model
+      // takes a forced tool. Throws
       // "invalid" on requests the dialect cannot express.
       buildBody(request) {
         const invalid = (message) => {
@@ -192,12 +201,13 @@ module.exports = {
           ...(system !== undefined && { system }),
           ...(wireTools.length && { tools: wireTools }),
           // Force the structured answer only when nothing else needs the
-          // turn: a real tool the model must be free to call first, or a
+          // turn — a real tool the model must be free to call first, or a
           // budgeted thinking turn, which Anthropic forbids alongside a
-          // forced tool — adaptive thinking carries no such restriction.
-          // Otherwise the tool's description drives it and the engine's
-          // backstop retries a miss.
-          ...(schema && !(tools && tools.length) && !budgeted && {
+          // forced tool — and the model is not adaptive: an adaptive
+          // model either rejects a forced tool outright or answers it
+          // without thinking. Otherwise the tool's description drives it
+          // and the engine's backstop retries a miss.
+          ...(schema && !(tools && tools.length) && !budgeted && !adaptive && {
             tool_choice: {
               type: 'tool',
               name: FINAL_ANSWER

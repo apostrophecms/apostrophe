@@ -114,7 +114,10 @@ module.exports = (self) => {
     // it are unaffected. Every batch is stamped, not only agent tools,
     // so a handler that spawns without declaring `kind: 'agent'` is
     // contained all the same; `_context.depth` is the informational
-    // copy a handler may act on.
+    // copy a handler may act on. The calling run's `callId`, taken from
+    // `context`, is stamped beside it (`aposAiCallId`), so a nested
+    // generate reports it as its parent on its `usage` records; it is
+    // not part of `_context`.
     //
     // `onToolCall`, the caller's per-call progress hook, is awaited
     // around each handler that runs — a call naming no registered tool
@@ -125,9 +128,13 @@ module.exports = (self) => {
     async executeToolCalls(req, tools, calls, context = {}, onToolCall = null) {
       const outcomes = new Array(calls.length);
       const depth = (req.aposAiDepth || 0) + 1;
-      const handlerReq = req.clone({ aposAiDepth: depth });
+      const { callId, ...shared } = context;
+      const handlerReq = req.clone({
+        aposAiDepth: depth,
+        ...(callId && { aposAiCallId: callId })
+      });
       const handlerContext = {
-        ...context,
+        ...shared,
         depth
       };
       const queries = [];

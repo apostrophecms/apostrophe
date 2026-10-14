@@ -27,6 +27,11 @@ describe('External Front', function() {
                 type: 'string',
                 label: 'Heading',
                 wysiwyg: true
+              },
+              text: {
+                type: 'richText',
+                label: 'Text',
+                wysiwyg: true
               }
             }
           }
@@ -93,6 +98,21 @@ describe('External Front', function() {
                 }
               }
             }
+          }
+        },
+        'product-page': {
+          extend: '@apostrophecms/piece-page-type'
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                title: 'Products',
+                type: 'product-page',
+                slug: '/products',
+                parkedId: 'products'
+              }
+            ]
           }
         }
       }
@@ -678,6 +698,47 @@ describe('External Front', function() {
     assert.strictEqual(heading.rendered, 'In a widget');
   });
 
+  it('render-widget annotates the fields of a widget for the external front', async function() {
+    // The area editor asks for fresh markup for a widget that was just added,
+    // edited or previewed. Without the annotations the front end can neither
+    // render rich text as markup nor edit any field in place until the page
+    // is refreshed
+    await t.createAdmin(apos, { username: 'render-widget-admin' });
+    const jar = await t.loginAs(apos, 'render-widget-admin');
+    // The CSRF cookie
+    await apos.http.get('/', { jar });
+    // The CSRF cookie
+    await apos.http.get('/', { jar });
+    const areaFieldId = apos.product.schema.find(field => field.name === 'main')._id;
+    const result = await apos.http.post('/api/v1/@apostrophecms/area/render-widget?aposEdit=1&aposMode=draft', {
+      jar,
+      headers: {
+        'x-requested-with': 'AposExternalFront',
+        'apos-external-front-key': process.env.APOS_EXTERNAL_FRONT_KEY
+      },
+      body: {
+        _docId: 'product1:en:draft',
+        areaFieldId,
+        type: 'test',
+        widget: {
+          _id: 'testwidget2',
+          metaType: 'widget',
+          type: 'test',
+          heading: '',
+          text: '<p>Some <strong>rich</strong> text</p>'
+        }
+      }
+    });
+    const heading = result.widget._wysiwygFields.heading;
+    assert(heading, 'an empty field is annotated too');
+    assert.strictEqual(heading.canEdit, true);
+    assert.strictEqual(heading.patchKey, '@testwidget2.heading');
+    assert.strictEqual(heading.docId, 'product1:en:draft');
+    const text = result.widget._wysiwygFields.text;
+    assert.strictEqual(text.canEdit, true);
+    assert(text.rendered.includes('<strong>rich</strong>'), text.rendered);
+  });
+
   it('annotateDocForExternalFront leaves fields alone without a req', async function() {
     const doc = productWithFields();
 
@@ -704,9 +765,85 @@ describe('External Front', function() {
     assert(data.page.slug === '/');
   });
 
+  it('does not send bestPage to the external front for a page', async function() {
+    const data = await apos.http.get('/products', {
+      headers: externalFrontHeaders()
+    });
+    assert.strictEqual(data.bestPage, undefined);
+    assert.strictEqual(data.page.slug, '/products');
+    assert.strictEqual(data.page.type, 'product-page');
+  });
+
+  it('does not send bestPage to the external front for a piece page', async function() {
+    await apos.product.insert(apos.task.getReq(), {
+      title: 'Shown Product',
+      slug: 'shown-product'
+    });
+    const data = await apos.http.get('/products/shown-product', {
+      headers: externalFrontHeaders()
+    });
+    assert.strictEqual(data.bestPage, undefined);
+    assert.strictEqual(data.page.slug, '/products');
+    assert.strictEqual(data.piece.slug, 'shown-product');
+  });
+
+  it('does not send bestPage to the external front for a missing page', async function() {
+    try {
+      await apos.http.get('/no-such-page', {
+        headers: externalFrontHeaders()
+      });
+      assert.fail('should have thrown 404 error');
+    } catch (e) {
+      assert.strictEqual(e.status, 404);
+      assert.strictEqual(e.body.bestPage, undefined);
+      assert.strictEqual(e.body.page, null);
+      assert.strictEqual(e.body.home.slug, '/');
+    }
+  });
+
+  it('does not send bestPage to the external front for a missing piece', async function() {
+    try {
+      await apos.http.get('/products/no-such-product', {
+        headers: externalFrontHeaders()
+      });
+      assert.fail('should have thrown 404 error');
+    } catch (e) {
+      assert.strictEqual(e.status, 404);
+      assert.strictEqual(e.body.bestPage, undefined);
+      assert.strictEqual(e.body.piece, undefined);
+    }
+  });
+
+  it('literal-routes declares a global scope by default', async function() {
+    const data = await apos.http.get('/api/v1/@apostrophecms/url/literal-routes', {
+      headers: externalFrontHeaders()
+    });
+    assert(Array.isArray(data.patterns));
+    assert.strictEqual(data.scope, 'global');
+  });
+
+  it('literal-routes declares the configured scope', async function() {
+    apos.url.options.literalRoutesScope = 'host';
+    try {
+      const data = await apos.http.get('/api/v1/@apostrophecms/url/literal-routes', {
+        headers: externalFrontHeaders()
+      });
+      assert.strictEqual(data.scope, 'host');
+    } finally {
+      apos.url.options.literalRoutesScope = 'global';
+    }
+  });
+
   it('fetch home normally', async function() {
     const data = await await apos.http.get('/', {});
     assert.strictEqual(typeof data, 'string');
     assert(data.includes('Home Page Template'));
   });
+
+  function externalFrontHeaders() {
+    return {
+      'x-requested-with': 'AposExternalFront',
+      'apos-external-front-key': process.env.APOS_EXTERNAL_FRONT_KEY
+    };
+  }
 });

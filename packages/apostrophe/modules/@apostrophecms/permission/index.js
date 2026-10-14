@@ -24,6 +24,14 @@ function rankOf(role) {
   return Object.hasOwn(ranks, role) ? ranks[role] : -1;
 }
 
+// True if editing the published docs of the type managed by `manager` is
+// publishing them, which requires the type's `publishRole`. Not so for types
+// without a published version, or that publish every edit automatically
+function restrictsPublishedEdits(manager) {
+  return Boolean(manager && manager.isLocalized && manager.isLocalized() &&
+    !manager.options.autopublish);
+}
+
 module.exports = {
   options: {
     alias: 'permission'
@@ -59,6 +67,12 @@ module.exports = {
       // of determining permissions. This is useful to decide whether
       // a user should get access to the manage view of articles even
       // though they are technically in published mode on the page.
+      //
+      // Editing or creating a published doc is publishing it, so
+      // it also requires the type's `publishRole`, except for types
+      // that publish every edit automatically. Checks by type name
+      // are not affected by this, they tell whether the user can
+      // edit the type at all.
 
       can(req, action, docOrType, mode) {
         mode = mode || req.mode;
@@ -125,6 +139,13 @@ module.exports = {
           if (mode === 'draft') {
             return (role === 'contributor') || (role === 'editor');
           }
+          if (
+            (typeof docOrType === 'object') &&
+            restrictsPublishedEdits(manager) &&
+            checkRoleConfig('publishRole')
+          ) {
+            return false;
+          }
           return role === 'editor';
         }
 
@@ -162,6 +183,9 @@ module.exports = {
         const restrictedPublishTypes = Object.keys(self.apos.doc.managers)
           .filter(name =>
             ranks[self.apos.doc.getManager(name).options.publishRole] > rankOf(role));
+        // Editing their published docs is publishing them
+        const restrictedPublishedEditTypes = restrictedPublishTypes
+          .filter(name => restrictsPublishedEdits(self.apos.doc.getManager(name)));
         if (action === 'view') {
           if (role === 'guest') {
             return {
@@ -231,7 +255,21 @@ module.exports = {
             return {
               type: {
                 $nin: restrictedEditTypes
-              }
+              },
+              ...(restrictedPublishedEditTypes.length && {
+                $or: [
+                  {
+                    aposMode: {
+                      $ne: 'published'
+                    }
+                  },
+                  {
+                    type: {
+                      $nin: restrictedPublishedEditTypes
+                    }
+                  }
+                ]
+              })
             };
           } else {
             return {

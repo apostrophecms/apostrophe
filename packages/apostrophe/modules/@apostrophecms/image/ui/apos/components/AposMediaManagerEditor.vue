@@ -112,8 +112,9 @@
         />
         <AposButton
           class="apos-media-editor__save"
-          :disabled="docFields.hasErrors"
+          :disabled="saveDisabled"
           :label="restoreOnly ? 'apostrophe:restore' : 'apostrophe:save'"
+          :attrs="{ 'data-apos-test': 'media-editor-save' }"
           type="primary"
           @click="save"
         />
@@ -257,6 +258,16 @@ export default {
       // ?. necessary to avoid reference to null due to
       // race condition when toggling selection off
       return this.media?.archived;
+    },
+    // The `isModified` prop also covers the manager's selection
+    isDocModified() {
+      return detectDocChange(this.schema, this.original, this.docFields.data);
+    },
+    saveDisabled() {
+      if (this.docFields.hasErrors) {
+        return true;
+      }
+      return !this.restoreOnly && !this.isDocModified;
     }
   },
   watch: {
@@ -431,7 +442,7 @@ export default {
     async localize(media) {
       // If there are changes warn the user before discarding them before
       // the localize operation
-      if (this.isModified) {
+      if (this.isDocModified) {
         if (!await this.confirmAndCancel()) {
           return;
         }
@@ -448,7 +459,7 @@ export default {
     },
     async versions() {
       // A restore replaces the image: unsaved changes go first
-      if (this.isModified) {
+      if (this.isDocModified) {
         if (!await this.confirmAndCancel()) {
           return;
         }

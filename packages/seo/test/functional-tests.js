@@ -463,6 +463,45 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
         'Should include AI policy section'
       );
     });
+
+    it('should answer 404 for llms.txt when it is disabled', async function () {
+      const req = apos.task.getReq();
+
+      const global = await apos.global.findGlobal(req);
+      await apos.doc.db.updateOne(
+        { _id: global._id },
+        { $set: { llmsTxtSelection: 'disabled' } }
+      );
+
+      try {
+        await apos.http.get('http://localhost:3000/llms.txt');
+        assert.fail('should have thrown 404 error');
+      } catch (e) {
+        assert.equal(e.status, 404);
+      }
+    });
+
+    it('should answer 500 for robots.txt and llms.txt when generating them fails', async function () {
+      const find = apos.doc.find;
+      apos.doc.find = (req, criteria, ...rest) => {
+        if (criteria?.type === '@apostrophecms/global') {
+          throw new Error('Simulated failure');
+        }
+        return find(req, criteria, ...rest);
+      };
+      try {
+        for (const file of [ 'robots.txt', 'llms.txt' ]) {
+          try {
+            await apos.http.get(`http://localhost:3000/${file}`);
+            assert.fail(`${file} should have thrown 500 error`);
+          } catch (e) {
+            assert.equal(e.status, 500, file);
+          }
+        }
+      } finally {
+        apos.doc.find = find;
+      }
+    });
   });
 
   describe('Edge Cases - Missing Data', function () {

@@ -140,6 +140,30 @@ export default {
     pluralLabel: 'Articles'
 ```
 
+### Archive size limits
+
+To protect the server's storage, extracting an import archive (`.tar.gz`) stops, and the import fails, as soon as the archive goes over one of these limits. Whatever was uploaded and extracted is removed whenever an import fails. Set the `importLimits` option of this module to change them:
+
+```javascript
+export default {
+  options: {
+    importLimits: {
+      // Maximum number of files and directories in the archive
+      maxEntries: 100000,
+      // Maximum total size of the extracted files, in bytes.
+      // No absolute maximum by default
+      maxExtractedSize: null,
+      // Maximum total size of the extracted files, as a multiple of the
+      // size of the archive. Up to 64MB may always be extracted.
+      // Set to `false` to disable this check
+      maxCompressionRatio: 100
+    }
+  }
+};
+```
+
+Exports made by this module stay well within the defaults, because media files barely compress. The defaults mostly stop "compression bombs", small archives that would expand into huge amounts of data. If your server has limited disk space, also set `maxExtractedSize`.
+
 ## Importing documents from another locale
 
 Regardless of the original locale, imported documents are imported into the current locale. You will be prompted to confirm if the locale is different and you do not have, or are not opting to use, the automatic translation module.

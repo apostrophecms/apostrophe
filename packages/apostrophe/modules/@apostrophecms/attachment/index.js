@@ -166,7 +166,10 @@ module.exports = {
       post: {
         upload: [
           self.canUpload,
-          require('multer')({ dest: require('os').tmpdir() }).single('file'),
+          require('multer')({
+            dest: require('os').tmpdir(),
+            defParamCharset: 'utf8'
+          }).single('file'),
           async function (req) {
             try {
               // The file comes from multer middleware

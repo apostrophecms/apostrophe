@@ -49,7 +49,7 @@ if (!widget && shouldRender) {
 
 {
   widget && !renderWarn && (
-    <AposWidget {widget} options={widgetOptions} {...props} />
+    <AposWidget {widget} options={widgetOptions} {...props} editWrapper={false} />
   )
 }
 {renderWarn && <p>Unable to render this widget.</p>}

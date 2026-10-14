@@ -8,9 +8,10 @@
 // `import('./lib/types.js')` references.
 
 /**
- * Token counts for one call, aggregated across every model turn. The cache
- * shares are parts of `inputTokens`, never additions to it, and are present
- * only when the provider reported them: absent means unknown, not zero.
+ * Token counts for one call, aggregated across every model turn. The
+ * optional shares are parts of `inputTokens` or `outputTokens`, never
+ * additions to them, and are present only when the provider reported them:
+ * absent means unknown, not zero.
  *
  * @typedef {object} AiUsage
  * @property {number} inputTokens Every input token billed, cached or not.
@@ -19,6 +20,46 @@
  *   from the provider's prompt cache.
  * @property {number} [cacheWriteTokens] The share of `inputTokens` written
  *   to the provider's prompt cache.
+ * @property {number} [imageInputTokens] The share of `inputTokens` that
+ *   were images.
+ * @property {number} [imageOutputTokens] The share of `outputTokens` that
+ *   were images.
+ */
+
+/**
+ * What the `usage` event reports: one provider response, the unit providers
+ * bill and price, including a tier that depends on that request's prompt
+ * size. Every record is billed, whatever its outcome; nested runs report
+ * their own records, so summing every record counts each token once.
+ *
+ * @typedef {object} AiUsageRecord
+ * @property {string} callId The generate or generateImage call the response
+ *   belongs to; also on that call's event context.
+ * @property {string} [parentCallId] The delegating call, on a nested run.
+ * @property {'chat'|'image'} kind
+ * @property {string} provider
+ * @property {string} model What answered, when the provider reports it, else
+ *   the model requested.
+ * @property {number} step The model turn within the call, 1-based; 1 for an
+ *   image call.
+ * @property {number} attempt The retry attempt within the step, 1-based.
+ * @property {'accepted'|'rejected'} outcome Whether the engine kept the
+ *   response; a rejected one was retried or stopped the call.
+ * @property {AiUsage} [usage] This response's own counts. Always present on
+ *   a chat record; on an image record only when the provider reported it.
+ * @property {false|'short'|'long'} [cache] The prompt-cache policy the
+ *   request asked for; chat only.
+ * @property {number} [images] How many images the response carried; image
+ *   only.
+ * @property {string} [quality] The quality dial sent; image only.
+ * @property {string} [aspect] The resolved aspect sent; image only.
+ * @property {string} [size] The native pixel size, when reported; image only.
+ * @property {object} metadata A copy of the `usageMetadata` option, `{}` by
+ *   default; handlers may add to it.
+ * @property {true} [mock] Set under APOS_AI_MOCK: the counts are the mock's
+ *   estimate and nothing was billed. `provider` is then whatever the call
+ *   routed to, not necessarily 'mock'.
+ * @property {Date} at
  */
 
 /**

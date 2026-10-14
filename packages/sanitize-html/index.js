@@ -1,7 +1,6 @@
 const htmlparser = require('htmlparser2');
 const escapeStringRegexp = require('escape-string-regexp');
 const { isPlainObject } = require('is-plain-object');
-const deepmerge = require('deepmerge');
 const parseSrcset = require('parse-srcset');
 const { parse: postcssParse } = require('postcss');
 const { naughtyHref: launderNaughtyHref } = require('launder');
@@ -51,6 +50,29 @@ function each(obj, cb) {
 // Avoid false positives with .__proto__, .hasOwnProperty, etc.
 function has(obj, key) {
   return ({}).hasOwnProperty.call(obj, key);
+}
+
+// Combine the tag-specific and wildcard lists of allowed classes
+function mergeClasses(specific, wildcard) {
+  if (!Array.isArray(specific) || !Array.isArray(wildcard)) {
+    return wildcard;
+  }
+  return specific.concat(wildcard);
+}
+
+// Combine the tag-specific and wildcard allowed styles, concatenating the
+// lists of regular expressions for properties that appear in both. The result
+// has no prototype, so a property named `__proto__` is just another property
+function mergeStyles(specific, wildcard) {
+  const merged = Object.create(null);
+  for (const rules of [ specific, wildcard ]) {
+    for (const prop of Object.keys(rules)) {
+      merged[prop] = has(merged, prop)
+        ? merged[prop].concat(rules[prop])
+        : rules[prop];
+    }
+  }
+  return merged;
 }
 
 // Returns those elements of `a` for which `cb(a)` returns truthy
@@ -103,14 +125,23 @@ module.exports = sanitizeHtml;
 // attribute name state with an empty attribute name buffer.
 const VALID_HTML_ATTRIBUTE_NAME = /^[^\0\t\n\f\r /<=>]+$/;
 
-// Ignore the _recursing flag; it's there for recursive
-// invocation as a guard against this exploit:
-// https://github.com/fb55/htmlparser2/issues/105
+// How many discarded <iframe> elements can be nested while their fallback
+// markup is still re-sanitized as HTML (see the `ontext` handler). Deeper
+// fallback is escaped as text, so that crafted input cannot recurse without
+// bound or re-parse the remainder of the input once per iframe
+// (GHSA-c9rx-x947-fp3h).
+const MAX_IFRAME_FALLBACK_DEPTH = 8;
 
-function sanitizeHtml(html, options, _recursing) {
+// `_fallback` is internal: it is set when re-sanitizing the fallback markup
+// of a discarded <iframe>, to carry the current nesting depth into the
+// recursive call.
+
+function sanitizeHtml(html, options, _fallback) {
   if (html == null) {
     return '';
   }
+  const baseDepth = (_fallback && _fallback.depth) || 0;
+  const iframeFallbackDepth = (_fallback && _fallback.iframeFallbackDepth) || 0;
   if (typeof html === 'number') {
     html = html.toString();
   }
@@ -542,7 +573,7 @@ function sanitizeHtml(html, options, _recursing) {
               if (allowedSpecificClasses && allowedWildcardClasses) {
                 value = filterClasses(
                   value,
-                  deepmerge(allowedSpecificClasses, allowedWildcardClasses),
+                  mergeClasses(allowedSpecificClasses, allowedWildcardClasses),
                   allowedClassesGlobs
                 );
               } else {
@@ -682,11 +713,17 @@ function sanitizeHtml(html, options, _recursing) {
         // (including after an unclosed <iframe>) arrives as a single text node.
         // When the iframe is discarded, re-sanitize that fallback markup as HTML
         // instead of escaping it as plain text (issue #5550).
+        // The nested call continues from the current depth so that
+        // `nestingLimit` applies to the whole output.
         tag === 'iframe' &&
         !tagAllowed(tag) &&
-        options.disallowedTagsMode === 'discard'
+        options.disallowedTagsMode === 'discard' &&
+        iframeFallbackDepth < MAX_IFRAME_FALLBACK_DEPTH
       ) {
-        result += sanitizeHtml(text, options);
+        result += sanitizeHtml(text, options, {
+          depth,
+          iframeFallbackDepth: iframeFallbackDepth + 1
+        });
       } else if (!addedText) {
         const escaped = escapeHtml(text, false);
         if (options.textFilter) {
@@ -819,7 +856,7 @@ function sanitizeHtml(html, options, _recursing) {
 
   function initializeState() {
     result = '';
-    depth = 0;
+    depth = baseDepth;
     stack = [];
     skipMap = {};
     transformMap = {};
@@ -1053,7 +1090,7 @@ function sanitizeHtml(html, options, _recursing) {
 
     // Merge global and tag-specific styles into new AST.
     if (allowedStyles[astRules.selector] && allowedStyles['*']) {
-      selectedRule = deepmerge(
+      selectedRule = mergeStyles(
         allowedStyles[astRules.selector],
         allowedStyles['*']
       );

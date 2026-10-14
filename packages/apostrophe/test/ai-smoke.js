@@ -26,19 +26,19 @@ const assert = require('assert/strict');
 // Model pins, so a bump is a conscious edit here rather than drift: the
 // openai row pins gpt-image-2, the google row gemini-3.1-flash-image.
 
+// Every low route reasons, so each cap leaves headroom for the reasoning
+// tokens ahead of the text
 const PROVIDERS = [
   {
     name: 'anthropic',
     envKey: 'APOS_ANTHROPIC_KEY',
-    maxTokens: 200,
+    maxTokens: 2000,
     cacheShares: {
       cold: 'cacheWriteTokens',
       warm: 'cacheReadTokens'
     }
   },
   {
-    // Reasoning-capable routes need headroom for the reasoning tokens
-    // ahead of the text, hence the larger caps
     name: 'openai',
     envKey: 'APOS_OPENAI_KEY',
     imageModel: 'gpt-image-2',
@@ -113,14 +113,26 @@ function record(apos, req, result, extra = {}) {
 }
 
 // One live instance per provider row: its single provider entry, the echo
-// tool, and the row's image route when it configures one
-function createFor(provider) {
+// tool, and the row's image route when it configures one. Its `usage`
+// records land in `usageRecords`, when given
+function createFor(provider, usageRecords = []) {
   return t.create({
     root: module,
     modules: {
       'tool-fixtures': {
         init(self) {
           self.apos.ai.addTool(echoTool());
+        }
+      },
+      'usage-watch': {
+        handlers() {
+          return {
+            '@apostrophecms/ai:usage': {
+              record(req, usage) {
+                usageRecords.push(usage);
+              }
+            }
+          };
         }
       },
       '@apostrophecms/ai': {
@@ -166,12 +178,13 @@ describe('AI live smoke', function() {
       // The image case's output, reused as the edit case's source so the
       // edit spends no extra generation call
       let generated;
+      const usageRecords = [];
 
       before(async function() {
         if (!enabled || !provider.key) {
           this.skip();
         }
-        apos = await createFor(provider);
+        apos = await createFor(provider, usageRecords);
         // The engine's own declaration gates the cases below, so this
         // table cannot drift from the adapters
         capabilities = apos.ai.modelInfo({ effort: 'low' }).capabilities;
@@ -181,6 +194,10 @@ describe('AI live smoke', function() {
         if (apos) {
           return t.destroy(apos);
         }
+      });
+
+      beforeEach(function() {
+        usageRecords.length = 0;
       });
 
       it('generates text', async function() {
@@ -204,6 +221,11 @@ describe('AI live smoke', function() {
         assert(result.model.length > 0);
         assert(Number.isFinite(result.usage.inputTokens));
         assert(Number.isFinite(result.usage.outputTokens));
+        // A live call reports real counts, never flagged as the mock's
+        assert.equal(usageRecords.length, 1);
+        assert.equal('mock' in usageRecords[0], false);
+        assert.equal(usageRecords[0].outcome, 'accepted');
+        assert.deepEqual(usageRecords[0].usage, result.usage);
       });
 
       it('runs a tool through the loop', async function() {
@@ -226,6 +248,18 @@ describe('AI live smoke', function() {
         const step = result.steps.find((entry) => entry.toolCall.name === 'echo');
         assert(step);
         assert(step.result !== undefined);
+        // A record per provider response, none flagged as the mock's;
+        // the accepted ones are the model turns the call's usage sums (a
+        // rejected response was billed, but never part of the call)
+        assert(usageRecords.every((usage) => !('mock' in usage)));
+        const accepted = usageRecords.filter((usage) => usage.outcome === 'accepted');
+        assert(accepted.length >= 2);
+        for (const key of [ 'inputTokens', 'outputTokens' ]) {
+          assert.equal(
+            accepted.reduce((sum, usage) => sum + usage.usage[key], 0),
+            result.usage[key]
+          );
+        }
       });
 
       it('returns structured output', async function() {
@@ -314,6 +348,9 @@ describe('AI live smoke', function() {
         assert(image.data.length > 0);
         assert.equal(result.provider, provider.name);
         assert.equal(result.aspect, '1:1');
+        // Image output bills at its own rate, so its share must travel
+        assert(result.usage.imageOutputTokens > 0);
+        assert(result.usage.imageOutputTokens <= result.usage.outputTokens);
         generated = image;
       });
 
@@ -344,6 +381,9 @@ describe('AI live smoke', function() {
         assert(result.images[0].data.length > 0);
         assert.equal(result.provider, provider.name);
         assert.equal(result.aspect, '1:1');
+        // The source image is part of the input
+        assert(result.usage.imageInputTokens > 0);
+        assert(result.usage.imageInputTokens <= result.usage.inputTokens);
       });
     });
   }
@@ -377,15 +417,119 @@ describe('AI live smoke', function() {
 
     it('replays thinking blocks across a tool round trip', async function() {
       const req = apos.task.getReq();
+      // An adaptive model skips thinking on a trivial ask, so the ask
+      // takes some working out before the tool call
+      const result = await apos.ai.generate(
+        req,
+        'Find the smallest prime above 1000 whose digits sum to 20, then ' +
+          'call the echo tool with it as the value',
+        {
+          effort: 'low',
+          reasoning: 'high',
+          tools: [ 'echo' ],
+          maxTokens: 3000,
+          cache: false
+        }
+      );
+      const thinkingParts = result.messages
+        .flatMap((message) => message.content)
+        .filter((part) => part.type === 'thinking').length;
+      record(apos, req, result, {
+        text: result.text.slice(0, 80),
+        thinkingParts
+      });
+      assert.equal(result.finishReason, 'stop');
+      // Without a thinking block the round trip replayed nothing
+      assert(thinkingParts > 0);
+      const step = result.steps.find((entry) => entry.toolCall.name === 'echo');
+      assert(step);
+      assert(step.result !== undefined);
+    });
+  });
+
+  describe('anthropic structured output without forcing', function() {
+    // A real dialect contract: the newer adaptive models reject a forced
+    // tool, so on them the synthetic final-answer tool is left to its
+    // description. The shared battery's structured case covers Haiku,
+    // which takes a forced tool but is not given one; this one covers a
+    // model that rejects it
+    const provider = PROVIDERS.find((row) => row.name === 'anthropic');
+    let apos;
+
+    before(async function() {
+      if (!enabled || !provider.key) {
+        this.skip();
+      }
+      apos = await createFor(provider);
+    });
+
+    after(async function() {
+      if (apos) {
+        return t.destroy(apos);
+      }
+    });
+
+    it('returns structured output on an adaptive model', async function() {
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'invent a cat',
+        {
+          effort: 'medium',
+          schema: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              age: { type: 'integer' }
+            },
+            required: [ 'name', 'age' ],
+            additionalProperties: false
+          },
+          maxTokens: 4000,
+          cache: false
+        }
+      );
+      record(apos, req, result, { object: result.object });
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(typeof result.object.name, 'string');
+      assert.equal(typeof result.object.age, 'number');
+    });
+  });
+
+  describe('google thinking', function() {
+    // Two dialect contracts. Gemini returns signed thought steps and
+    // requires them back verbatim when the turn's tool results are
+    // submitted — the adapter carries them as its opaque `thought` part;
+    // the shared battery never raises the reasoning level, so it only
+    // replays the minimal ones. And the response schema travels beside
+    // the function tools on the same request, which the shared battery
+    // never combines
+    const provider = PROVIDERS.find((row) => row.name === 'google');
+    let apos;
+
+    before(async function() {
+      if (!enabled || !provider.key) {
+        this.skip();
+      }
+      apos = await createFor(provider);
+    });
+
+    after(async function() {
+      if (apos) {
+        return t.destroy(apos);
+      }
+    });
+
+    it('replays thought parts across a tool round trip', async function() {
+      const req = apos.task.getReq();
       const result = await apos.ai.generate(
         req,
         'call the echo tool with value "hi"',
         {
           effort: 'low',
-          reasoning: 'low',
+          reasoning: 'high',
           tools: [ 'echo' ],
-          // Above the 'low' thinking budget, with room for the answer
-          maxTokens: 3000,
+          maxTokens: 4000,
           cache: false
         }
       );
@@ -394,6 +538,105 @@ describe('AI live smoke', function() {
       const step = result.steps.find((entry) => entry.toolCall.name === 'echo');
       assert(step);
       assert(step.result !== undefined);
+      const calling = result.messages.find((message) => message.role === 'assistant' &&
+        message.content.some((part) => part.type === 'toolCall'));
+      const thought = calling.content.find((part) => part.type === 'thought');
+      assert.equal(typeof thought.signature, 'string');
+    });
+
+    it('returns structured output beside a tool', async function() {
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'call the echo tool with value "hi", then report what it echoed',
+        {
+          // The 'low' model repeats the tool call on every turn when a
+          // response schema is present, until the step cap
+          effort: 'medium',
+          tools: [ 'echo' ],
+          schema: {
+            type: 'object',
+            properties: { echoed: { type: 'string' } },
+            required: [ 'echoed' ],
+            additionalProperties: false
+          },
+          maxTokens: provider.maxTokens,
+          cache: false
+        }
+      );
+      record(apos, req, result, { object: result.object });
+      assert.equal(result.finishReason, 'stop');
+      assert(result.steps.find((entry) => entry.toolCall.name === 'echo'));
+      assert.equal(typeof result.object.echoed, 'string');
+    });
+  });
+
+  describe('cross-provider transcript', function() {
+    // A transcript is plain data, so one provider can continue another's.
+    // Gemini refuses a function call that no thought of its own precedes,
+    // so the google adapter opens each foreign tool-calling message with
+    // the service's dummy thought signature; only a live call proves the
+    // service accepts it. Anthropic records, Google continues, one
+    // instance each, as a stored transcript would be reloaded
+    const recorder = PROVIDERS.find((row) => row.name === 'anthropic');
+    const continuer = PROVIDERS.find((row) => row.name === 'google');
+    let apos;
+    // The recorded case's transcript, the continued case's input
+    let transcript;
+
+    before(function() {
+      if (!enabled || !recorder.key || !continuer.key) {
+        this.skip();
+      }
+    });
+
+    afterEach(async function() {
+      if (apos) {
+        await t.destroy(apos);
+        apos = null;
+      }
+    });
+
+    it('records a tool transcript on anthropic', async function() {
+      apos = await createFor(recorder);
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'call the echo tool with value "hi"',
+        {
+          effort: 'low',
+          tools: [ 'echo' ],
+          maxTokens: recorder.maxTokens,
+          cache: false
+        }
+      );
+      record(apos, req, result, { messages: result.messages.length });
+      assert.equal(result.finishReason, 'stop');
+      assert(result.steps.find((entry) => entry.toolCall.name === 'echo'));
+      transcript = result.messages;
+    });
+
+    it('continues it with tools on google', async function() {
+      // Nothing to continue when the recording case skipped or failed
+      if (!transcript) {
+        this.skip();
+      }
+      apos = await createFor(continuer);
+      const req = apos.task.getReq();
+      const result = await apos.ai.generate(
+        req,
+        'now call the echo tool with value "bye"',
+        {
+          messages: transcript,
+          effort: 'low',
+          tools: [ 'echo' ],
+          maxTokens: continuer.maxTokens,
+          cache: false
+        }
+      );
+      record(apos, req, result, { text: result.text.slice(0, 80) });
+      assert.equal(result.finishReason, 'stop');
+      assert.equal(result.provider, continuer.name);
     });
   });
 });

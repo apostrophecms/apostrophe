@@ -32,10 +32,23 @@ export default {
     relationshipField: {
       type: [ Object, Boolean ],
       default: false
+    },
+    // Passed by AposInputRelationship for the benefit of custom choosers.
+    // Declared so it does not fall through to the root element as a
+    // native `title` attribute, which shows as a tooltip everywhere
+    title: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'modal-result', 'sort' ],
   computed: {
+    chooserTestId() {
+      if (!this.relationshipField || !this.title) {
+        return null;
+      }
+      return `relationship-chooser:${this.title}`;
+    },
     relationshipErrors() {
       if (!this.relationshipField) {
         return false;
