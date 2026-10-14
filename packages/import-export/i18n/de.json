@@ -2,6 +2,7 @@
   "dayjsTitleDateFormat": "MMM D, YYYY, hh:mm:ss A",
   "errorCantImportType": "Typ \"{{ type }}\" kann nicht importiert werden",
   "errorInsertingDocument": "Einfügen/Aktualisieren fehlgeschlagen mit der Meldung: {{ message }}",
+  "errorInvalidDocMode": "Der Modus dieses Dokuments stimmt nicht mit seiner ID überein",
   "export": "Exportiere {{ type }}",
   "exportAttachmentError": "Einige Anhänge konnten nicht zur {{ format }}-Datei hinzugefügt werden",
   "exportFailed": "Export fehlgeschlagen",

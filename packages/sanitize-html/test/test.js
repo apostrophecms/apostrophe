@@ -2105,6 +2105,55 @@ describe('sanitizeHtml', function() {
       '<b>ok</b>'
     );
   });
+  describe('GHSA-c9rx-x947-fp3h: nested discarded iframe fallback', function() {
+    it('should not overflow the stack on deeply nested unclosed iframes', function() {
+      assert.doesNotThrow(function() {
+        sanitizeHtml('<iframe>'.repeat(20000));
+      });
+    });
+
+    it('should not overflow the stack on deeply nested unclosed iframes followed by text', function() {
+      let result;
+      assert.doesNotThrow(function() {
+        result = sanitizeHtml('<iframe>'.repeat(20000) + 'x');
+      });
+      assert(!/<iframe/i.test(result));
+    });
+
+    it('should still keep the fallback of a few nested discarded iframes', function() {
+      assert.strictEqual(
+        sanitizeHtml('<iframe><p>a</p><iframe><p>b</p><iframe><p>c</p>'),
+        '<p>a</p><p>b</p><p>c</p>'
+      );
+    });
+
+    it('should enforce nestingLimit across a discarded iframe fallback', function() {
+      assert.strictEqual(
+        sanitizeHtml('<iframe><b><b><iframe><b><b>x', {
+          allowedTags: [ 'b' ],
+          nestingLimit: 3
+        }),
+        '<b><b>x</b></b>'
+      );
+    });
+
+    it('should cap output nesting at nestingLimit with many nested discarded iframes', function() {
+      const input = ('<iframe>' + '<b>'.repeat(3)).repeat(50) + 'x';
+      const result = sanitizeHtml(input, {
+        allowedTags: [ 'b' ],
+        nestingLimit: 3
+      });
+      let depth = 0;
+      let max = 0;
+      result.replace(/<(\/?)b>/g, function(match, closing) {
+        depth += closing ? -1 : 1;
+        max = Math.max(max, depth);
+        return match;
+      });
+      assert(max <= 3, `nesting depth ${max} exceeds nestingLimit`);
+      assert(result.includes('x'));
+    });
+  });
 
   describe('CVE-2026-44990 regression and raw-text edge cases', function() {
     it('should escape raw-text inner content when xmp tag is disallowed and discarded under custom nonTextTags', function() {

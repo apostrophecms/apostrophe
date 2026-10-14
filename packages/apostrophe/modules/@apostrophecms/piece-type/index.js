@@ -275,8 +275,7 @@ module.exports = {
           }
           result.pages = query.get('totalPages');
           result.currentPage = query.get('page') || 1;
-          result.results = (await query.toArray())
-            .map(doc => self.removeForbiddenFields(req, doc));
+          result.results = await query.toArray();
           const renderAreas = req.query['render-areas'];
           const inline = renderAreas === 'inline';
           if (inline || self.apos.launder.boolean(renderAreas)) {
@@ -317,10 +316,7 @@ module.exports = {
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           await self.publicApiCheckAsync(req);
-          const doc = self.removeForbiddenFields(
-            req,
-            await self.getRestQuery(req).and({ _id }).toObject()
-          );
+          const doc = await self.getRestQuery(req).and({ _id }).toObject();
 
           if (
             self.options.cache &&
@@ -1135,8 +1131,12 @@ module.exports = {
       // if you're not sure what you're doing.
       getRestQuery(req, omitPermissionCheck = false) {
         const query = self.find(req).attachments(true);
-        query.applyBuildersSafely(req.query);
-        if (!omitPermissionCheck && !self.canAccessApi(req)) {
+        const restricted = !omitPermissionCheck && !self.canAccessApi(req);
+        // Builders must not operate on fields hidden by the projection
+        query.applyBuildersSafely(req.query, {
+          publicApiProjection: restricted ? self.options.publicApiProjection : null
+        });
+        if (restricted) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({

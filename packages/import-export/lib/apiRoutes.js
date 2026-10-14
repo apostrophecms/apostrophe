@@ -26,10 +26,18 @@ module.exports = self => {
     },
     post: {
       async overrideDuplicates(req) {
+        if (!req.user) {
+          throw self.apos.error('forbidden');
+        }
+
         return self.overrideDuplicates(req);
       },
 
       async cleanExport(req) {
+        if (!req.user) {
+          throw self.apos.error('forbidden');
+        }
+
         return self.cleanExport(req);
       }
     }
