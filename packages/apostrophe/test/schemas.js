@@ -1448,6 +1448,61 @@ describe('Schemas', function() {
     assert.notStrictEqual(result.color, malicious);
   });
 
+  it('should NOT allow trailing or leading content around a valid color', async function() {
+    const schema = apos.schema.compose({
+      addFields: simpleFields
+    });
+    const req = apos.task.getReq();
+    const malicious = [
+      'rgb(1,2,3)<img src=x onerror=alert(1)>',
+      'rgb(1,2,3)</textarea><script>alert(1)</script>',
+      'hsl(0,100%,50%);--x:1}</style><script>alert(1)</script>',
+      'rgba(1,2,3,0.5)" autofocus onfocus="alert(1)',
+      'rgb(1,2,3)}body{display:none}',
+      'rgb(1,2,3) red',
+      '<img src=x onerror=alert(1)>rgb(1,2,3)',
+      'xrgb(1,2,3)',
+      'hsla(0, 100%, 50%, 0.5)\n<b>'
+    ];
+    for (const color of malicious) {
+      const result = {};
+      await apos.schema.convert(req, schema, { color }, result);
+      assert.strictEqual(result.color, null, `should reject ${color}`);
+    }
+  });
+
+  it('should keep legitimate color values unchanged', async function() {
+    const schema = apos.schema.compose({
+      addFields: simpleFields
+    });
+    const req = apos.task.getReq();
+    const legitimate = [
+      '#ddeeff',
+      '#DEF',
+      '#ABCDEF80',
+      'ddeeff',
+      'red',
+      'RebeccaPurple',
+      'transparent',
+      'rgb(1, 2, 3)',
+      'RGB(1,2,3)',
+      'rgba(1, 2, 3, 0.5)',
+      'rgba(1,2,3,.5)',
+      'rgb(1 2 3 / 50%)',
+      'rgb(10%, 20%, 30%)',
+      'hsl(0, 100%, 50%)',
+      'hsla(0,100%,50%,0.3)',
+      'hsv(0, 100%, 100%)',
+      'hsva(0, 100%, 100%, 0.5)',
+      '--somevar'
+    ];
+    for (const color of legitimate) {
+      const result = {};
+      await apos.schema.convert(req, schema, { color }, result);
+      assert.strictEqual(result.color, color, `should accept ${color}`);
+    }
+  });
+
   it('should update a password if provided', async function() {
     const schema = apos.schema.compose({
       addFields: [

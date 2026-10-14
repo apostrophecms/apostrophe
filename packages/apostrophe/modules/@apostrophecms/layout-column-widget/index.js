@@ -19,6 +19,7 @@ module.exports = {
         layoutColMove: {
           nativeAction: 'move',
           placement: 'breadcrumb',
+          label: 'apostrophe:layoutColumnMove',
           icon: 'cursor-move-icon',
           rawEvents: [ 'mousedown', 'touchstart' ],
           hidden: true

@@ -204,6 +204,32 @@ describe('Images', function() {
     assert(image.title === 'Test Image');
   });
 
+  it('REST: should preserve UTF-8 attachment filenames', async function() {
+    jar = await login('admin');
+
+    const formData = new FormData();
+    const stream = fs.createReadStream(
+      path.join(apos.rootDir, '/public/test-image.jpg')
+    );
+
+    formData.append('file', stream, {
+      filename: '日本語.jpg'
+    });
+
+    const attachment = await apos.http.post(
+      '/api/v1/@apostrophecms/attachment/upload',
+      {
+        body: formData,
+        jar
+      }
+    );
+
+    stream.close();
+
+    assert.equal(attachment.name, '日本語');
+    assert.equal(attachment.title, '日本語');
+  });
+
   it('REST: autocrop should have no effect when there are no widget options', async function() {
     const result = await apos.http.post('/api/v1/@apostrophecms/image/autocrop', {
       body: {

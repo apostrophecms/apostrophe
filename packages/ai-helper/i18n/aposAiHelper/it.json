@@ -11,6 +11,7 @@
   "rateLimitExceeded": "Limite di richieste superato, riprova più tardi",
   "utilityOperationLabel": "Genera un'immagine con AI",
   "errorMessage": "Si è verificato un errore.",
+  "generateVariant": "Genera Variante",
   "variantPromptLabel": "In che modo questa immagine dovrebbe essere diversa?",
   "variantPromptPlaceholder": "Descrivi come modificare l’immagine (facoltativo)",
   "generationFailed": "La generazione AI non è riuscita. Riprova.",

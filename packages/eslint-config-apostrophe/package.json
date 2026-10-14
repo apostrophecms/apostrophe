@@ -8,9 +8,7 @@
   },
   "type": "module",
   "scripts": {
-    "compare": "node ./lib/index",
-    "eslint": "eslint . -c eslintrc.json",
-    "test": "mocha ."
+    "eslint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -29,8 +27,7 @@
     "neostandard": "^0.12.2"
   },
   "devDependencies": {
-    "eslint": "^9.34.0",
-    "mocha": "^11.7.5"
+    "eslint": "^9.34.0"
   },
   "apostropheTestConfig": {
     "requiresMongo": false

@@ -21,7 +21,7 @@
     "eslint-config-apostrophe": "workspace:^"
   },
   "dependencies": {
-    "googleapis": "^88.2.0",
+    "googleapis": "^185.0.0",
     "klona": "^2.0.4",
     "lodash.has": "^4.5.2"
   }

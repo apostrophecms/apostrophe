@@ -20,7 +20,7 @@
     "chai": "^4.3.10",
     "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:^",
-    "mocha": "^11.7.1"
+    "mocha": "^12.0.3"
   },
   "dependencies": {
     "@apostrophecms/emulate-mongo-3-driver": "workspace:^",

@@ -2430,9 +2430,11 @@ describe('Pieces', function() {
           hidden: false
         };
         const inserted = await apos.modules.board.insert(req, candidate);
-        await apos.http.get(`/api/v1/board/${inserted._id}`, { jar });
+        // publishRole is admin, so the editor edits the draft
+        const draftId = inserted._id.replace(':published', ':draft');
+        await apos.http.get(`/api/v1/board/${draftId}`, { jar });
         const board = await apos.http.put(
-          `/api/v1/board/${inserted._id}`,
+          `/api/v1/board/${draftId}`,
           {
             body: {
               ...inserted,
@@ -2456,17 +2458,22 @@ describe('Pieces', function() {
           sku: board.sku,
           hidden: board.hidden
         };
+        // Fields the user may not view are not returned, and their stored
+        // values are left alone
         const expected = {
           title: 'Icarus',
           slug: 'board-icarus',
           stock: 77,
-          discontinued: 'April 2077',
+          discontinued: undefined,
           nickname: 'f1',
           sku: 'LI',
-          hidden: false
+          hidden: undefined
         };
 
         assert.deepEqual(actual, expected);
+        const stored = await apos.doc.db.findOne({ _id: board._id });
+        assert.equal(stored.discontinued, 'April 2077');
+        assert.equal(stored.hidden, false);
       });
 
       it('should be able to retrieve all fields when using find', async function() {
@@ -2589,17 +2596,22 @@ describe('Pieces', function() {
           sku: board.sku,
           hidden: board.hidden
         };
+        // Fields the user may not view are not returned, and their stored
+        // values are left alone
         const expected = {
           title: 'Icarus',
           slug: 'board-icarus',
           stock: 77,
-          discontinued: 'April 2077',
+          discontinued: undefined,
           nickname: 'f1',
           sku: 'LI',
-          hidden: false
+          hidden: undefined
         };
 
         assert.deepEqual(actual, expected);
+        const stored = await apos.doc.db.findOne({ _id: board._id });
+        assert.equal(stored.discontinued, 'April 2077');
+        assert.equal(stored.hidden, false);
       });
 
       it('should be able to retrieve all fields when using find', async function() {

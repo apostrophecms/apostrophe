@@ -542,8 +542,12 @@ module.exports = {
       // its normal properties. Otherwise a rendering of the entire area
       // is supplied as the `_rendered` property of that area and the
       // `items` array is suppressed from the response.
+      //
+      // The fields the user may not view (`viewPermission`) are removed
+      // from the documents first (see `apos.doc.removeForbiddenFieldsDeep`).
       async renderDocsAreas(req, within, { inline = false } = {}) {
         within = Array.isArray(within) ? within : [];
+        self.apos.doc.removeForbiddenFieldsDeep(req, within);
         let index = 0;
         // Loop over the docs in the array passed in.
         for (const doc of within) {
