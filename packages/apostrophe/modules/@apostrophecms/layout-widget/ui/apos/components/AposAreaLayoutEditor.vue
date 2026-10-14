@@ -399,7 +399,7 @@ export default {
     },
     switchLayoutMode({ widgetId, data }) {
       this.cleanRemovedWidget();
-      if (this.aposReadOnly || !widgetId || widgetId !== this.parentOptions?.widgetId) {
+      if (this.readOnly || !widgetId || widgetId !== this.parentOptions?.widgetId) {
         return;
       }
       this.layoutMode = data.value;

@@ -19,7 +19,7 @@ export default {
       default: null
     },
     // A read only view, such as See Changes or a document version: no
-    // controls are mounted and nothing below changes the area
+    // controls are mounted
     aposReadOnly: {
       from: 'aposReadOnly',
       default: false
@@ -107,6 +107,11 @@ export default {
     };
   },
   computed: {
+    // Nothing changes the area in a read only view or for a read only field,
+    // the keyboard shortcuts included
+    readOnly() {
+      return !!(this.aposReadOnly || this.field?.readOnly);
+    },
     ...mapState(useWidgetStore, [ 'focusedWidget', 'hoveredWidget', 'focusedArea' ]),
     isEmptySingleton() {
       return this.next.length === 0 &&
@@ -414,7 +419,7 @@ export default {
       }
     },
     async editStyles({ widgetId, index }) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       if (this.foreign) {
@@ -452,7 +457,7 @@ export default {
       }
     },
     async up({ index }) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       if (this.docId === window.apos.adminBar.contextId) {
@@ -486,7 +491,7 @@ export default {
       ];
     },
     async down({ index }) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       if (this.docId === window.apos.adminBar.contextId) {
@@ -520,7 +525,7 @@ export default {
       ];
     },
     async remove({ index }, { autosave = true } = {}) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
@@ -565,7 +570,7 @@ export default {
       }
     },
     async cut({ index }) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       apos.area.widgetClipboard.set(this.next[index]);
@@ -585,7 +590,7 @@ export default {
       });
     },
     async edit({ index }) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       if (this.foreign) {
@@ -655,7 +660,7 @@ export default {
       }
     },
     clone({ index }) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       const widget = cloneWidget(this.next[index]);
@@ -665,7 +670,7 @@ export default {
       });
     },
     async paste({ index }) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       const clipboard = apos.area.widgetClipboard.get();
@@ -683,7 +688,7 @@ export default {
       }
     },
     async update(updated, { autosave = true, reverting = false } = {}) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       // Before anything below can change it. A caller that changed the
@@ -730,7 +735,7 @@ export default {
       widget,
       clipboard
     }) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       if (clipboard) {
@@ -805,7 +810,7 @@ export default {
     async insert({
       index, widget, autosave = true
     } = {}) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       if (!widget._id) {
@@ -859,7 +864,7 @@ export default {
     async insertMany({
       index, widgets, autosave = true, history = true
     } = {}) {
-      if (this.aposReadOnly) {
+      if (this.readOnly) {
         return;
       }
       if (!widgets?.length) {

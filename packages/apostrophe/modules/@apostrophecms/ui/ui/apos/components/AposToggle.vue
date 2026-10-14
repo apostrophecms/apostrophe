@@ -2,11 +2,12 @@
   <div class="apos-toggle__container">
     <div
       class="apos-toggle__slider"
-      :tabindex="disableFocus ? null : '0'"
+      :tabindex="disableFocus || disabled ? null : '0'"
+      :aria-disabled="disabled ? 'true' : null"
       :class="classes"
-      @click="$emit('toggle')"
-      @keydown.stop.space="$emit('toggle')"
-      @keydown.stop.enter="$emit('toggle')"
+      @click="emitToggle"
+      @keydown.stop.space="emitToggle"
+      @keydown.stop.enter="emitToggle"
     />
   </div>
 </template>
@@ -20,6 +21,11 @@ export default {
       required: true
     },
     disableFocus: {
+      type: Boolean,
+      default: false
+    },
+    // Shows the state and does not change it
+    disabled: {
       type: Boolean,
       default: false
     },
@@ -41,11 +47,19 @@ export default {
     classes() {
       return [
         ...this.modifiers.map(modifier => `apos-toggle__slider--${modifier}`),
-        { 'apos-toggle__slider--activated': !this.modelValue }
+        {
+          'apos-toggle__slider--activated': !this.modelValue,
+          'apos-toggle__slider--disabled': this.disabled
+        }
       ];
     }
   },
   methods: {
+    emitToggle() {
+      if (!this.disabled) {
+        this.$emit('toggle');
+      }
+    },
     toggle() {
       this.activated = !this.activated;
     }
@@ -116,6 +130,22 @@ export default {
       &::before {
         transform: translateX(calc($toggle-width - $btn-size));
       }
+    }
+
+    &__slider--disabled {
+      cursor: not-allowed;
+      background-color: var(--a-base-7);
+
+      &:focus,
+      &:hover,
+      &:active {
+        box-shadow: none;
+        outline: none;
+      }
+    }
+
+    &__slider--disabled.apos-toggle__slider--activated {
+      background-color: var(--a-base-5);
     }
   }
 </style>

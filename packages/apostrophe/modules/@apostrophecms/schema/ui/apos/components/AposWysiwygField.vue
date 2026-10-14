@@ -15,6 +15,7 @@
     @focusout="blur"
   >
     <div
+      v-if="!aposReadOnly"
       ref="label"
       class="apos-wysiwyg-field__label apos-ltr"
       :class="{
@@ -65,12 +66,14 @@
       </ol>
     </div>
     <!--
-      A read only view shows what the page rendered and mounts no editor
+      A read only view shows what the page rendered, with no trail and no
+      editor
     -->
     <!-- eslint-disable vue/no-v-html -->
     <div
       v-if="aposReadOnly"
       class="apos-wysiwyg-field__rendering"
+      data-apos-test="wysiwyg-field-rendering"
       v-html="rendering"
     />
     <!-- eslint-enable vue/no-v-html -->
