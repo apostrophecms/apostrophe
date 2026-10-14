@@ -69,6 +69,12 @@ module.exports = {
           if (!req.user) {
             throw self.apos.error('notfound');
           }
+          // Slugs are unique across all docs, so anyone choosing a slug must
+          // learn that it is taken, even by a doc they cannot view. Users who
+          // cannot edit anything have no need to know
+          if (!self.apos.permission.can(req, 'view-draft')) {
+            throw self.apos.error('forbidden');
+          }
           const slug = self.apos.launder.string(req.body.slug);
           const _id = self.apos.launder.id(req.body._id);
           const criteria = { slug };
@@ -1371,6 +1377,44 @@ module.exports = {
       // with `@apostrophecms/page` always have one).
       getManager(type) {
         return self.managers[self.normalizeType(type)];
+      },
+      // Removes the fields the user may not view (`viewPermission`) from
+      // every document found at any depth in `value`, a REST API response:
+      // documents loaded through relationships (including those in widgets,
+      // array and object fields, and nested or reverse relationships), pages
+      // in `_ancestors` and `_children`, etc. Each document is passed to the
+      // `removeForbiddenFields` method of its own type's manager. Called for
+      // every `apiRoutes` and `restApiRoutes` response. Values that are not
+      // plain objects or arrays (strings, buffers, streams...) are left
+      // alone. Modifies and returns `value`.
+      removeForbiddenFieldsDeep(req, value) {
+        const seen = new Set();
+        walk(value);
+        return value;
+        function walk(value) {
+          if (
+            !value ||
+            (typeof value !== 'object') ||
+            seen.has(value) ||
+            ArrayBuffer.isView(value) ||
+            (typeof value.pipe === 'function')
+          ) {
+            return;
+          }
+          seen.add(value);
+          if (Array.isArray(value)) {
+            for (const item of value) {
+              walk(item);
+            }
+            return;
+          }
+          if (value.metaType === 'doc') {
+            self.getManager(value.type)?.removeForbiddenFields(req, value);
+          }
+          for (const item of Object.values(value)) {
+            walk(item);
+          }
+        }
       },
       // Moves the virtual `_explicitSave`, `_restoreVersion` and `_ai`
       // properties of a document about to be saved to `req.aposExplicitSave`,
