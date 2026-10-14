@@ -212,6 +212,11 @@ export default function() {
       if (graphKey) {
         app.provide('aposGraphKey', graphKey);
       }
+      // A read only view, such as See Changes or a document version: every
+      // editor below shows the content and mounts nothing that changes it
+      if (el.closest('[data-apos-read-only]')) {
+        app.provide('aposReadOnly', true);
+      }
       app.mount(el);
       mountedApps.set(el, app);
       created = true;

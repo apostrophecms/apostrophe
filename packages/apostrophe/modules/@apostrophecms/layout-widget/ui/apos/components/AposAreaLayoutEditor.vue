@@ -19,7 +19,7 @@
     @click="setFocusedWidget(parentOptions.widgetId, areaId)"
   >
     <div
-      v-if="next.length === 0 && !foreign && layoutMode === 'debug'"
+      v-if="next.length === 0 && !foreign && !aposReadOnly && layoutMode === 'debug'"
       class="apos-empty-area"
       tabindex="0"
       @paste="paste(0)"
@@ -399,7 +399,7 @@ export default {
     },
     switchLayoutMode({ widgetId, data }) {
       this.cleanRemovedWidget();
-      if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
+      if (this.aposReadOnly || !widgetId || widgetId !== this.parentOptions?.widgetId) {
         return;
       }
       this.layoutMode = data.value;

@@ -45,6 +45,12 @@ export const wysiwygProps = {
 };
 
 export default {
+  inject: {
+    aposReadOnly: {
+      from: 'aposReadOnly',
+      default: false
+    }
+  },
   props: wysiwygProps,
   emits: [ 'update:modelValue', 'changed' ],
   data() {
@@ -63,7 +69,7 @@ export default {
       return !!(this.docId && (this.docId === window.apos.adminBar.contextId));
     },
     readOnly() {
-      return !!this.field.readOnly;
+      return !!(this.aposReadOnly || this.field.readOnly);
     },
     placeholder() {
       return this.$t(this.field.placeholder || this.field.label || '');

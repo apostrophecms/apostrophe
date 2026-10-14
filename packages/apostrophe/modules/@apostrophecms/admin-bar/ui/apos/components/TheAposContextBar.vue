@@ -845,7 +845,7 @@ export default {
       };
 
       if (doc._url) {
-        refreshable.innerHTML = await apos.http.get(doc._url, {
+        const html = await apos.http.get(doc._url, {
           qs,
           headers: {
             'Cache-Control': 'no-cache'
@@ -854,6 +854,12 @@ export default {
           busy: true,
           prefix: false
         });
+        // See Changes shows the page read only. The outer element, so that
+        // it survives a switch of the breakpoint preview, which moves the
+        // page in and out of its own body
+        document.querySelector('[data-apos-refreshable]')
+          .toggleAttribute('data-apos-read-only', this.seeChanges);
+        refreshable.innerHTML = html;
       }
 
       if (this.editMode && !this.seeChanges && (!this.original)) {
