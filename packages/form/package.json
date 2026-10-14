@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/form",
-  "version": "1.5.5",
+  "version": "1.5.6",
   "description": "Build forms for ApostropheCMS in a simple user interface.",
   "main": "index.js",
   "scripts": {

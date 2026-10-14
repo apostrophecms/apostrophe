@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.4 (2026-10-14)
+
+### Security
+
+- Upgrade `googleapis` to the latest version to address `node-forge` and `uuid` security advisories.
+
 ## 1.0.3 (2026-09-30)
 
 ### Changes
