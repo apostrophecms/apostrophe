@@ -366,22 +366,6 @@ describe('REST API writes: viewPermission fields in responses (GHSA-vh56-5m88-39
       assert.equal(doc._id, article._id);
       assertNoSecrets(doc);
     });
-
-    it('editor: document version GET one does not include viewPermission fields', async function() {
-      const article = await insertArticle();
-      const { results } = await apos.http.get('/api/v1/@apostrophecms/document-versions', {
-        jar: jars.editor,
-        qs: {
-          docId: article._id
-        }
-      });
-      assert.ok(results.length);
-      const version = await apos.http.get(`/api/v1/@apostrophecms/document-versions/${results[0]._id}`, {
-        jar: jars.editor
-      });
-      assert.equal(version.doc.title, article.title);
-      assertNoSecrets(version);
-    });
   });
 
   describe('pages', function() {

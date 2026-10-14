@@ -359,6 +359,12 @@ module.exports = self => {
     async instantiateJob(req, total, { ids, types }) {
       const jobManager = self.apos.modules['@apostrophecms/job'];
       const job = await jobManager.start({ userId: req.user._id });
+      // The job module of this version of apostrophe does not record the
+      // owner itself, and clean-export only ends the caller's own job
+      await jobManager.db.updateOne(
+        { _id: job._id },
+        { $set: { userId: req.user._id } }
+      );
 
       const { noteId } = await self.apos.notify(req, 'aposImportExport:importing', {
         icon: 'database-import-icon',
