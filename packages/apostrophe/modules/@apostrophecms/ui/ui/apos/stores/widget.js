@@ -16,6 +16,9 @@ export const useWidgetStore = defineStore('widget', () => {
   const selectionAnchorId = ref(null);
   const pinnedWidgetIds = ref([]);
   const selectionGraphKey = ref(null);
+  // Set in the same turn a multi-selection replaces single-widget controls,
+  // while focus is still inside them. The selection bar consumes it.
+  const selectionToolbarFocus = ref(false);
   // Bumped after a batch change that does not change which ids are
   // selected, so the toolbar can re-read widget positions from the DOM.
   const selectionRevision = ref(0);
@@ -107,6 +110,8 @@ export const useWidgetStore = defineStore('widget', () => {
       selectedWidgetIds.value = [];
       selectionAnchorId.value = null;
       pinnedWidgetIds.value = [];
+      selectionGraphKey.value = null;
+      selectionToolbarFocus.value = false;
       focusedWidget.value = null;
       setFocusedArea(null);
       return;
@@ -129,12 +134,21 @@ export const useWidgetStore = defineStore('widget', () => {
     graphKey = null
   } = {}) {
     const selected = [ ...(next?.selectedWidgetIds || []) ];
+    const enteringMulti = selectedWidgetIds.value.length <= 1 && selected.length > 1;
+    if (enteringMulti) {
+      const active = (typeof document !== 'undefined') && document.activeElement;
+      selectionToolbarFocus.value = Boolean(
+        active?.closest?.('.apos-area-widget-controls--modify')
+      );
+    }
     selectedWidgetIds.value = selected;
     selectionAnchorId.value = selected.includes(next?.selectionAnchorId)
       ? next.selectionAnchorId
       : (selected[selected.length - 1] || null);
     pinnedWidgetIds.value = [ ...(next?.pinnedWidgetIds || []) ];
-    if (graphKey) {
+    if (!selected.length) {
+      selectionGraphKey.value = null;
+    } else if (graphKey) {
       selectionGraphKey.value = graphKey;
     }
     const primary = selected.includes(primaryId)
@@ -143,6 +157,10 @@ export const useWidgetStore = defineStore('widget', () => {
     focusedWidget.value = primary;
     setFocusedArea(primary ? areaId : null);
     selectionRevision.value += 1;
+  }
+
+  function clearSelectionToolbarFocus() {
+    selectionToolbarFocus.value = false;
   }
 
   function bumpSelectionRevision() {
@@ -266,6 +284,7 @@ export const useWidgetStore = defineStore('widget', () => {
     selectionAnchorId,
     pinnedWidgetIds,
     selectionGraphKey,
+    selectionToolbarFocus,
     selectionRevision,
     hoveredWidget,
     hoveredNonForeignWidget,
@@ -282,6 +301,7 @@ export const useWidgetStore = defineStore('widget', () => {
     setFocusedArea,
     setFocusedWidget,
     setWidgetSelection,
+    clearSelectionToolbarFocus,
     bumpSelectionRevision,
     scrollToWidget,
     isElementInView,

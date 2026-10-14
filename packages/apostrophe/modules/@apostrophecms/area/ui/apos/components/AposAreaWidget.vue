@@ -35,6 +35,7 @@
       class="apos-area-widget-inner"
       :class="containerClasses"
       :aria-disabled="versionChanges[0] === 'deleted' ? 'true' : undefined"
+      :aria-selected="isMulti ? (isSelected ? 'true' : 'false') : undefined"
       tabindex="0"
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
@@ -558,9 +559,10 @@ export default {
     },
     containerClasses() {
       const classes = {
-        [this.classes.highlight]: (this.isHighlighted && !this.isMulti) ||
-          this.isHovered ||
-          (this.isMulti && this.isSelected),
+        [this.classes.highlight]: !(this.isMulti && this.isSelected) && (
+          (this.isHighlighted && !this.isMulti) ||
+          this.isHovered
+        ),
         [this.classes.focus]: this.showFocusedChrome,
         [this.classes.selected]: this.isMulti && this.isSelected,
         [this.classes.multi]: this.isMulti
@@ -986,7 +988,7 @@ export default {
         return;
       }
 
-      if (event.key === 'Enter' || event.key === 'Space') {
+      if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         this.getFocus(event, this.widget._id);
       }
@@ -1205,8 +1207,8 @@ export default {
   }
 
   // Multi-select drops the focus chrome, so the chosen widgets need a
-  // mark of their own: a solid stroke and a soft halo, heavier than the
-  // dashed hover outline they also wear.
+  // mark of their own: a solid stroke and a soft halo. They do not also
+  // take the dashed highlight outline.
   &.apos-is-selected {
     outline: 2px solid var(--a-primary);
     outline-offset: 1px;

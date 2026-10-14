@@ -72,7 +72,7 @@
                       v-for="icon in item.previewIcons"
                       :key="icon.name"
                       :size="25"
-                      :title="icon.name"
+                      aria-hidden="true"
                       class="apos-widget__preview--icon"
                     />
                   </div>
@@ -94,10 +94,10 @@
                   {{ $t(item.label) }}
                 </p>
                 <p
-                  v-if="item.description"
+                  v-if="item.clipboardDescription || item.description"
                   class="apos-widget__help"
                 >
-                  {{ $t(item.description) }}
+                  {{ item.clipboardDescription || $t(item.description) }}
                 </p>
               </button>
             </div>
@@ -246,7 +246,7 @@ export default {
           clipboard
         };
       if (clipboardWidgets.length > 1) {
-        tile.description = choices
+        tile.clipboardDescription = choices
           .map((choice) => this.$t(choice.label))
           .join(', ');
       }

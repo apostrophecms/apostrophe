@@ -7,8 +7,12 @@
       data-apos-ignore-unfocus="true"
       data-apos-test="widgetSelectionToolbar"
     >
-      <AposButtonGroup>
-        <span class="apos-widget-selection-toolbar__count">
+      <AposButtonGroup :aria-labelledby="countId">
+        <span
+          :id="countId"
+          class="apos-widget-selection-toolbar__count"
+          aria-live="polite"
+        >
           {{ $t('apostrophe:widgetsSelected', { count: selectedWidgetIds.length }) }}
         </span>
         <AposButton
@@ -23,6 +27,7 @@
 </template>
 
 <script>
+import { createId } from 'apostrophe/lib/beneath.js';
 import { mapState, mapActions } from 'pinia';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph';
@@ -39,11 +44,17 @@ import { getOperationTooltip } from 'Modules/@apostrophecms/area/lib/operations.
 
 export default {
   name: 'AposWidgetSelectionToolbar',
+  data() {
+    return {
+      countId: `apos-widget-selection-count-${createId()}`
+    };
+  },
   computed: {
     ...mapState(useWidgetStore, [
       'focusedWidget',
       'selectedWidgetIds',
       'selectionGraphKey',
+      'selectionToolbarFocus',
       'selectionRevision'
     ]),
     visible() {
@@ -135,7 +146,18 @@ export default {
       };
     }
   },
+  watch: {
+    visible: {
+      flush: 'pre',
+      handler(visible) {
+        if (visible) {
+          this.focusBarIfControlsHadIt();
+        }
+      }
+    }
+  },
   methods: {
+    ...mapActions(useWidgetStore, [ 'clearSelectionToolbarFocus' ]),
     ...mapActions(useWidgetGraphStore, {
       hasAncestor: 'hasAncestor'
     }),
@@ -160,6 +182,22 @@ export default {
           apos.bus.$emit(operation.action, { widgetId: id });
         }
       }
+    },
+    // The bar replaces the per-widget controls. If focus was in those
+    // controls, put it on the first button here. Later clicks keep
+    // whatever already has focus, because this only runs when the bar
+    // first appears.
+    focusBarIfControlsHadIt() {
+      if (!this.selectionToolbarFocus) {
+        return;
+      }
+      this.clearSelectionToolbarFocus();
+      this.$nextTick(() => {
+        const root = this.$el?.querySelector
+          ? this.$el
+          : document.querySelector('.apos-widget-selection-toolbar');
+        root?.querySelector('button:not([disabled])')?.focus();
+      });
     },
     runBatch(name) {
       const graphKey = this.graphKey;

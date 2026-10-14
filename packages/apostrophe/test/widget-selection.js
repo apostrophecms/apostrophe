@@ -32,7 +32,7 @@ describe('widget selection', function() {
       areaId: 'area'
     });
     assert.deepEqual(removed.selectedWidgetIds, [ 'b' ]);
-    assert.equal(removed.selectionAnchorId, 'a');
+    assert.equal(removed.selectionAnchorId, 'b');
     assert.deepEqual(removed.pinnedWidgetIds, [ 'b' ]);
   });
 
@@ -165,5 +165,48 @@ describe('widget selection', function() {
       areaItemIds: items
     });
     assert.deepEqual(shrunk.selectedWidgetIds, [ 'child-1', 'child-2', 'a' ]);
+  });
+
+  it('drops a selected descendant when its ancestor is also selected', function() {
+    const ids = [ 'parent', 'child', 'other' ];
+    const outer = lib.outermostIds(ids, (id, ancestorId) => {
+      return ancestorId === 'parent' && id === 'child';
+    });
+    assert.deepEqual(outer, [ 'parent', 'other' ]);
+  });
+
+  it('drops removed widgets and their descendants and repairs the anchor', function() {
+    const state = {
+      selectedWidgetIds: [ 'parent', 'child', 'sibling' ],
+      selectionAnchorId: 'child',
+      pinnedWidgetIds: [ 'parent', 'child', 'sibling', 'kept' ]
+    };
+    const next = lib.selectionWithout(
+      state,
+      [ 'parent' ],
+      (id) => id === 'child'
+    );
+    assert.deepEqual(next.selectedWidgetIds, [ 'sibling' ]);
+    assert.equal(next.selectionAnchorId, 'sibling');
+    assert.deepEqual(next.pinnedWidgetIds, [ 'sibling', 'kept' ]);
+
+    const keptAnchor = lib.selectionWithout({
+      selectedWidgetIds: [ 'a', 'b' ],
+      selectionAnchorId: 'a',
+      pinnedWidgetIds: [ 'a', 'b' ]
+    }, [ 'b' ]);
+    assert.deepEqual(keptAnchor.selectedWidgetIds, [ 'a' ]);
+    assert.equal(keptAnchor.selectionAnchorId, 'a');
+  });
+
+  it('reports a contiguous sibling run and rejects a gap or an outsider', function() {
+    const items = [ 'a', 'b', 'c', 'd', 'e' ];
+    assert.deepEqual(lib.contiguousRange(items, [ 'd', 'b', 'c' ]), {
+      first: 1,
+      last: 3
+    });
+    assert.equal(lib.contiguousRange(items, [ 'a', 'c' ]), null);
+    assert.equal(lib.contiguousRange(items, [ 'a', 'from-another-area' ]), null);
+    assert.equal(lib.contiguousRange(items, []), null);
   });
 });

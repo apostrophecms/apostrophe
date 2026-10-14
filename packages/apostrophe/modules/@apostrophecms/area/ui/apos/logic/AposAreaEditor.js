@@ -224,7 +224,8 @@ export default {
     ...mapActions(useWidgetStore, [
       'setFocusedArea',
       'setFocusedWidget',
-      'setWidgetSelection'
+      'setWidgetSelection',
+      'scrollToWidget'
     ]),
     ...mapActions(useModalStore, [ 'isOnTop' ]),
     ...mapActions(useWidgetGraphStore, {
@@ -738,9 +739,9 @@ export default {
       }));
       this.insertMany({
         index: lastIndex + 1,
-        widgets: clones
+        widgets: clones,
+        select: 'all'
       });
-      this.selectInserted(clones);
     },
     async remove({ index }, { autosave = true } = {}) {
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
@@ -880,19 +881,10 @@ export default {
       if (!allowed) {
         return;
       }
-      if (widgets.length === 1) {
-        this.add({
-          index,
-          clipboard: widgets[0]
-        });
-        return;
-      }
-      const clones = widgets.map((widget) => cloneWidget(widget));
-      this.insertMany({
+      return this.add({
         index,
-        widgets: clones
+        clipboard: widgets.length === 1 ? widgets[0] : widgets
       });
-      this.selectInserted(clones);
     },
     async update(updated, { autosave = true, reverting = false } = {}) {
       // Before anything below can change it. A caller that changed the
@@ -949,12 +941,11 @@ export default {
           return;
         }
         const clones = clipboard.map((widget) => cloneWidget(widget));
-        const inserted = this.insertMany({
+        return this.insertMany({
           index,
-          widgets: clones
+          widgets: clones,
+          select: 'all'
         });
-        this.selectInserted(clones);
-        return inserted;
       }
       if (clipboard) {
         clipboard = cloneWidget(clipboard);
@@ -1077,7 +1068,7 @@ export default {
     // way, so that undo takes back the layout the user added, columns and
     // all, and redo brings it back whole
     async insertMany({
-      index, widgets, autosave = true, history = true
+      index, widgets, autosave = true, history = true, select = 'last'
     } = {}) {
       if (!widgets?.length) {
         return;
@@ -1125,30 +1116,29 @@ export default {
         ...this.next.slice(index)
       ];
       // Unlike `insert`, no editor is opened: these are widgets the editor
-      // provisioned rather than widgets the user picked
-      const last = widgets[widgets.length - 1];
-      this.setFocusedWidget(last._id, this.areaId, { scrollTo: true });
-    },
-    // insertMany focuses only the last widget, which is right for a layout
-    // filling in its columns. A paste or duplicate of several widgets should
-    // leave that whole set selected.
-    selectInserted(widgets) {
-      if (!widgets || widgets.length < 2) {
+      // provisioned rather than widgets the user picked.
+      // `select: 'last'` is a layout filling in its columns. `select: 'all'`
+      // is a paste or duplicate, and leaves that set selected when there
+      // is more than one. `false` inserts without moving the selection.
+      if (select === false) {
         return;
       }
-      const ids = widgets.map((widget) => widget._id).filter(Boolean);
-      if (ids.length < 2) {
+      const ids = widgets.map((widget) => widget._id);
+      if (select === 'all' && ids.length >= 2) {
+        this.setWidgetSelection({
+          selectedWidgetIds: ids,
+          selectionAnchorId: ids[0],
+          pinnedWidgetIds: ids
+        }, {
+          primaryId: ids[ids.length - 1],
+          areaId: this.areaId,
+          graphKey: unref(this.aposGraphKey)
+        });
+        await this.$nextTick();
+        await this.scrollToWidget(ids[ids.length - 1]);
         return;
       }
-      this.setWidgetSelection({
-        selectedWidgetIds: ids,
-        selectionAnchorId: ids[0],
-        pinnedWidgetIds: ids
-      }, {
-        primaryId: ids[ids.length - 1],
-        areaId: this.areaId,
-        graphKey: unref(this.aposGraphKey)
-      });
+      this.setFocusedWidget(ids[ids.length - 1], this.areaId, { scrollTo: true });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];

@@ -175,12 +175,19 @@ function replaceSelection(widgetId) {
 }
 
 function toggleWidget(state, widgetId) {
-  const selectedWidgetIds = state.selectedWidgetIds.includes(widgetId)
+  const removing = state.selectedWidgetIds.includes(widgetId);
+  const selectedWidgetIds = removing
     ? state.selectedWidgetIds.filter((id) => id !== widgetId)
     : [ ...state.selectedWidgetIds, widgetId ];
+  // Turning a widget off leaves the anchor on a widget that is still
+  // selected. The store keeps the same rule, so a following shift-click
+  // ranges from something the user can still see.
+  const selectionAnchorId = !selectedWidgetIds.length
+    ? null
+    : (removing ? selectedWidgetIds[selectedWidgetIds.length - 1] : widgetId);
   return {
     selectedWidgetIds,
-    selectionAnchorId: selectedWidgetIds.length ? widgetId : null,
+    selectionAnchorId,
     pinnedWidgetIds: [ ...selectedWidgetIds ]
   };
 }
