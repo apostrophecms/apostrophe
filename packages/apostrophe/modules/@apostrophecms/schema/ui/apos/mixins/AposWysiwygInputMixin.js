@@ -160,16 +160,6 @@ export default {
           }
         });
         this.lastSaved = this.next;
-        // The document on the server is not the only thing holding this
-        // value. Every area editor on the page keeps its own copy of the
-        // widget the field belongs to, and that copy is what copying,
-        // cutting, duplicating or opening the widget's editor works from, so
-        // it has to hear about this as well
-        apos.bus.$emit('field-edited', {
-          docId: this.docId,
-          patchKey: this.patchKey,
-          value: this.next
-        });
       }
       // The document on the server is not the only thing holding this value,
       // and in a modal it is not holding it at all. Every area editor keeps
