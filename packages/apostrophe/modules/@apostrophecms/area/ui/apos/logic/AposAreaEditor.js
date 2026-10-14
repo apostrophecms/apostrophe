@@ -9,7 +9,7 @@ import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGrap
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
 import { contiguousRange } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
-import { runWidgetBatch } from 'Modules/@apostrophecms/area/lib/batch-widgets.js';
+import { notifyClipboard, runWidgetBatch } from 'Modules/@apostrophecms/area/lib/batch-widgets.js';
 import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { klona } from 'klona';
 
@@ -221,7 +221,11 @@ export default {
     this.unbindEventListeners();
   },
   methods: {
-    ...mapActions(useWidgetStore, [ 'setFocusedArea', 'setFocusedWidget' ]),
+    ...mapActions(useWidgetStore, [
+      'setFocusedArea',
+      'setFocusedWidget',
+      'setWidgetSelection'
+    ]),
     ...mapActions(useModalStore, [ 'isOnTop' ]),
     ...mapActions(useWidgetGraphStore, {
       storeGetAncestors: 'getAncestors',
@@ -736,6 +740,7 @@ export default {
         index: lastIndex + 1,
         widgets: clones
       });
+      this.selectInserted(clones);
     },
     async remove({ index }, { autosave = true } = {}) {
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
@@ -782,19 +787,11 @@ export default {
     async cut({ index }) {
       apos.area.widgetClipboard.set(this.next[index]);
       await this.remove({ index });
-      apos.notify('Widget cut to clipboard', {
-        type: 'success',
-        icon: 'content-cut-icon',
-        dismiss: true
-      });
+      notifyClipboard('cut', 1);
     },
     async copy({ index }) {
       apos.area.widgetClipboard.set(this.next[index]);
-      apos.notify('Widget copied to clipboard', {
-        type: 'success',
-        icon: 'content-copy-icon',
-        dismiss: true
-      });
+      notifyClipboard('copy', 1);
     },
     async edit({ index }) {
       if (this.foreign) {
@@ -890,10 +887,12 @@ export default {
         });
         return;
       }
+      const clones = widgets.map((widget) => cloneWidget(widget));
       this.insertMany({
         index,
-        widgets: widgets.map((widget) => cloneWidget(widget))
+        widgets: clones
       });
+      this.selectInserted(clones);
     },
     async update(updated, { autosave = true, reverting = false } = {}) {
       // Before anything below can change it. A caller that changed the
@@ -949,10 +948,13 @@ export default {
         if (!allowed) {
           return;
         }
-        return this.insertMany({
+        const clones = clipboard.map((widget) => cloneWidget(widget));
+        const inserted = this.insertMany({
           index,
-          widgets: clipboard.map((widget) => cloneWidget(widget))
+          widgets: clones
         });
+        this.selectInserted(clones);
+        return inserted;
       }
       if (clipboard) {
         clipboard = cloneWidget(clipboard);
@@ -1126,6 +1128,27 @@ export default {
       // provisioned rather than widgets the user picked
       const last = widgets[widgets.length - 1];
       this.setFocusedWidget(last._id, this.areaId, { scrollTo: true });
+    },
+    // insertMany focuses only the last widget, which is right for a layout
+    // filling in its columns. A paste or duplicate of several widgets should
+    // leave that whole set selected.
+    selectInserted(widgets) {
+      if (!widgets || widgets.length < 2) {
+        return;
+      }
+      const ids = widgets.map((widget) => widget._id).filter(Boolean);
+      if (ids.length < 2) {
+        return;
+      }
+      this.setWidgetSelection({
+        selectedWidgetIds: ids,
+        selectionAnchorId: ids[0],
+        pinnedWidgetIds: ids
+      }, {
+        primaryId: ids[ids.length - 1],
+        areaId: this.areaId,
+        graphKey: unref(this.aposGraphKey)
+      });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];

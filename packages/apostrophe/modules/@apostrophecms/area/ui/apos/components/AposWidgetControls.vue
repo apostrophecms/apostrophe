@@ -30,12 +30,6 @@
         v-bind="widgetRemoveControl"
         @click="handleClick(widgetRemoveControl)"
       />
-
-      <AposButton
-        v-if="includeContents"
-        v-bind="includeContentsControl"
-        @click="includeContentsClick"
-      />
     </AposButtonGroup>
   </div>
 </template>
@@ -86,13 +80,9 @@ export default {
     widgetOptions: {
       type: Object,
       required: true
-    },
-    includeContents: {
-      type: Boolean,
-      default: false
     }
   },
-  emits: [ 'update', 'operation', 'include-contents' ],
+  emits: [ 'update', 'operation' ],
   computed: {
     widgetDefaultControl() {
       return {
@@ -155,18 +145,6 @@ export default {
 
       // Custom widget operations displayed in the secondary controls
       return controls.concat(this.widgetCustomSecondaryOperations.map(renderOperation));
-    },
-    includeContentsControl() {
-      return {
-        ...this.widgetDefaultControl,
-        label: 'apostrophe:includeContents',
-        icon: 'file-tree-icon',
-        tooltip: {
-          content: 'apostrophe:includeContents',
-          placement: 'left'
-        },
-        action: 'include-contents'
-      };
     },
     widgetRemoveControl() {
       const { widgetOperations = [] } = this.moduleOptions;
@@ -231,10 +209,6 @@ export default {
         action: operation.action || operation.name,
         ...operation
       }));
-    },
-    includeContentsClick(event) {
-      event?.stopPropagation?.();
-      this.$emit('include-contents', event);
     },
     async handleClick({
       modal, action, nativeAction, ignoreResult = false

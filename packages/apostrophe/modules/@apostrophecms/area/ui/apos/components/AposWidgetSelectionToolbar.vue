@@ -1,27 +1,25 @@
 <template>
-  <div
-    v-if="visible"
-    ref="toolbar"
-    class="apos-widget-selection-toolbar"
-    :class="{ 'apos-widget-selection-toolbar--modal': inModal }"
-    data-apos-ignore-unfocus="true"
-    data-apos-test="widgetSelectionToolbar"
-    :style="positionStyle"
-  >
-    <AposButtonGroup :modifiers="[ 'vertical' ]">
-      <AposButton
-        v-if="showIncludeContents"
-        v-bind="includeContentsButton"
-        @click="includeContents"
-      />
-      <AposButton
-        v-for="control in controls"
-        :key="control.name"
-        v-bind="control"
-        @click="run(control)"
-      />
-    </AposButtonGroup>
-  </div>
+  <Transition name="apos-widget-selection">
+    <div
+      v-if="visible"
+      class="apos-widget-selection-toolbar"
+      :class="{ 'apos-widget-selection-toolbar--modal': inModal }"
+      data-apos-ignore-unfocus="true"
+      data-apos-test="widgetSelectionToolbar"
+    >
+      <AposButtonGroup>
+        <span class="apos-widget-selection-toolbar__count">
+          {{ $t('apostrophe:widgetsSelected', { count: selectedWidgetIds.length }) }}
+        </span>
+        <AposButton
+          v-for="control in controls"
+          :key="control.name"
+          v-bind="control"
+          @click="run(control)"
+        />
+      </AposButtonGroup>
+    </div>
+  </Transition>
 </template>
 
 <script>
@@ -31,7 +29,6 @@ import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGrap
 import {
   commonBatchOperations,
   contiguousRange,
-  includeDescendants,
   outermostIds
 } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
 import {
@@ -42,25 +39,21 @@ import { getOperationTooltip } from 'Modules/@apostrophecms/area/lib/operations.
 
 export default {
   name: 'AposWidgetSelectionToolbar',
-  data() {
-    return {
-      top: 0,
-      left: 0,
-      inModal: false
-    };
-  },
   computed: {
     ...mapState(useWidgetStore, [
       'focusedWidget',
-      'focusedArea',
       'selectedWidgetIds',
-      'selectionAnchorId',
-      'pinnedWidgetIds',
       'selectionGraphKey',
       'selectionRevision'
     ]),
     visible() {
       return this.selectedWidgetIds.length > 1;
+    },
+    inModal() {
+      const el = this.focusedWidget
+        ? widgetContext(this.focusedWidget)?.el
+        : null;
+      return !!el?.closest('[data-apos-modal]');
     },
     graphKey() {
       return this.selectionGraphKey || window.apos.adminBar?.contextId || null;
@@ -92,15 +85,6 @@ export default {
       }
       return contiguousRange(contexts[0].itemIds, ids);
     },
-    showIncludeContents() {
-      const graphKey = this.graphKey;
-      if (!graphKey) {
-        return false;
-      }
-      return this.selectedWidgetIds.some((id) => {
-        return this.getDescendants(graphKey, id).length > 0;
-      });
-    },
     controls() {
       const range = this.moveRange;
       const itemCount = range
@@ -121,7 +105,10 @@ export default {
           return {
             ...this.buttonDefaults,
             ...operation,
-            tooltip: getOperationTooltip(operation)
+            tooltip: getOperationTooltip({
+              ...operation,
+              tooltip: operation.tooltip || operation.label
+            }, { placement: 'top' })
           };
         });
     },
@@ -139,18 +126,6 @@ export default {
       ];
       return commonBatchOperations(lists, allowlist);
     },
-    includeContentsButton() {
-      return {
-        ...this.buttonDefaults,
-        name: 'includeContents',
-        label: 'apostrophe:includeContents',
-        icon: 'file-tree-icon',
-        tooltip: {
-          content: 'apostrophe:includeContents',
-          placement: 'left'
-        }
-      };
-    },
     buttonDefaults() {
       return {
         iconOnly: true,
@@ -158,43 +133,11 @@ export default {
         modifiers: [ 'small', 'inline' ],
         iconSize: 16
       };
-    },
-    positionStyle() {
-      return {
-        top: `${this.top}px`,
-        left: `${this.left}px`
-      };
     }
-  },
-  watch: {
-    visible: {
-      immediate: true,
-      handler(visible) {
-        if (visible) {
-          this.$nextTick(this.place);
-        }
-      }
-    },
-    focusedWidget() {
-      this.$nextTick(this.place);
-    },
-    selectionRevision() {
-      this.$nextTick(this.place);
-    }
-  },
-  mounted() {
-    window.addEventListener('scroll', this.place, true);
-    window.addEventListener('resize', this.place);
-  },
-  beforeUnmount() {
-    window.removeEventListener('scroll', this.place, true);
-    window.removeEventListener('resize', this.place);
   },
   methods: {
-    ...mapActions(useWidgetStore, [ 'setWidgetSelection' ]),
     ...mapActions(useWidgetGraphStore, {
-      hasAncestor: 'hasAncestor',
-      getDescendants: 'getDescendants'
+      hasAncestor: 'hasAncestor'
     }),
     operationsFor(type) {
       if (!type) {
@@ -202,44 +145,6 @@ export default {
       }
       const manager = window.apos.area?.widgetManagers?.[type];
       return window.apos.modules[manager]?.widgetOperations || [];
-    },
-    place() {
-      const el = this.$refs.toolbar;
-      const id = this.focusedWidget;
-      if (!this.visible || !el || !id) {
-        return;
-      }
-      const widget = document.querySelector(`[data-apos-widget-id="${CSS.escape(id)}"]`);
-      if (!widget) {
-        return;
-      }
-      const rect = widget.getBoundingClientRect();
-      const bar = window.apos.adminBar?.height || 0;
-      const width = el.offsetWidth || 32;
-      const height = el.offsetHeight || 32;
-      const minTop = bar + 8;
-      const maxTop = Math.max(minTop, window.innerHeight - height - 8);
-      const maxLeft = Math.max(8, window.innerWidth - width - 8);
-      this.top = Math.min(Math.max(rect.top + 16, minTop), maxTop);
-      this.left = Math.min(Math.max(rect.right - width - 16, 8), maxLeft);
-      this.inModal = !!widget.closest('[data-apos-modal]');
-    },
-    includeContents(event) {
-      event?.stopPropagation?.();
-      const graphKey = this.graphKey;
-      const descendants = this.selectedWidgetIds.flatMap((id) => {
-        return graphKey ? this.getDescendants(graphKey, id) : [];
-      });
-      const next = includeDescendants({
-        selectedWidgetIds: this.selectedWidgetIds,
-        selectionAnchorId: this.selectionAnchorId,
-        pinnedWidgetIds: this.pinnedWidgetIds
-      }, descendants);
-      this.setWidgetSelection(next, {
-        primaryId: this.focusedWidget,
-        areaId: this.focusedArea,
-        graphKey
-      });
     },
     run(operation) {
       if (operation.modal) {
@@ -272,9 +177,23 @@ export default {
 .apos-widget-selection-toolbar {
   z-index: $z-index-widget-selection;
   position: fixed;
+  bottom: 24px;
+  left: 50%;
+  translate: -50% 0;
 
   &--modal {
     z-index: $z-index-widget-selection-modal;
+  }
+
+  &__count {
+    @include type-base;
+
+    & {
+      align-self: center;
+      padding: 0 10px 0 6px;
+      border-right: 1px solid var(--a-primary-transparent-25);
+      white-space: nowrap;
+    }
   }
 
   :deep(.apos-button-group__inner) {
@@ -291,5 +210,16 @@ export default {
     background-color: transparent;
     color: var(--a-base-1);
   }
+}
+
+.apos-widget-selection-enter-active,
+.apos-widget-selection-leave-active {
+  transition: opacity 200ms ease, translate 200ms ease;
+}
+
+.apos-widget-selection-enter-from,
+.apos-widget-selection-leave-to {
+  opacity: 0;
+  translate: -50% 16px;
 }
 </style>

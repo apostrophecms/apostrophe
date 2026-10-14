@@ -63,8 +63,21 @@
                     :size="20"
                     class="apos-icon--add"
                   />
+                  <div
+                    v-if="item.previewIcons?.length"
+                    class="apos-widget__preview-icons"
+                  >
+                    <component
+                      :is="icon.icon"
+                      v-for="icon in item.previewIcons"
+                      :key="icon.name"
+                      :size="25"
+                      :title="icon.name"
+                      class="apos-widget__preview--icon"
+                    />
+                  </div>
                   <img
-                    v-if="item.previewUrl"
+                    v-else-if="item.previewUrl"
                     :src="item.previewUrl"
                     :alt="`${item.name} preview`"
                     class="apos-widget__preview-image"
@@ -204,27 +217,43 @@ export default {
         return [];
       }
       const matchingChoice = choices[0];
+      const sameType = choices.every((choice) => choice.name === matchingChoice.name);
+      const label = clipboardWidgets.length === 1
+        ? {
+          key: 'apostrophe:pasteWidget',
+          widget: this.$t(matchingChoice.label)
+        }
+        : {
+          key: 'apostrophe:pasteWidgets',
+          count: clipboardWidgets.length
+        };
+      const clipboard = clipboardWidgets.length === 1
+        ? clipboardWidgets[0]
+        : clipboardWidgets;
+      // A mixed clipboard is not one widget's screenshot. Show each
+      // distinct type's icon, in the order those types appear.
+      const tile = sameType
+        ? {
+          type: 'clipboard',
+          ...matchingChoice,
+          label,
+          clipboard
+        }
+        : {
+          type: 'clipboard',
+          previewIcons: this.distinctPreviewIcons(choices),
+          label,
+          clipboard
+        };
+      if (clipboardWidgets.length > 1) {
+        tile.description = choices
+          .map((choice) => this.$t(choice.label))
+          .join(', ');
+      }
 
       const group = {
         label: this.$t('apostrophe:areaExpandedMenuClipboard'),
-        widgets: [
-          {
-            type: 'clipboard',
-            ...matchingChoice,
-            label: clipboardWidgets.length === 1
-              ? {
-                key: 'apostrophe:pasteWidget',
-                widget: this.$t(matchingChoice.label)
-              }
-              : {
-                key: 'apostrophe:pasteWidgets',
-                count: clipboardWidgets.length
-              },
-            clipboard: clipboardWidgets.length === 1
-              ? clipboardWidgets[0]
-              : clipboardWidgets
-          }
-        ],
+        widgets: [ tile ],
         columns: 1
       };
 
@@ -253,6 +282,24 @@ export default {
       }
 
       return group;
+    },
+    distinctPreviewIcons(choices) {
+      const seen = new Set();
+      const icons = [];
+      for (const choice of choices) {
+        if (seen.has(choice.name)) {
+          continue;
+        }
+        seen.add(choice.name);
+        const icon = choice.previewIcon || choice.icon;
+        if (icon) {
+          icons.push({
+            name: choice.name,
+            icon
+          });
+        }
+      }
+      return icons;
     },
     getIcon(widget) {
       return widget.previewIcon || widget.icon;
@@ -438,6 +485,16 @@ export default {
 
 .apos-widget__preview-image {
   width: 100%;
+}
+
+.apos-widget__preview-icons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  max-width: 80%;
+  color: var(--a-text-primary);
 }
 
 .apos-widget-group__label,

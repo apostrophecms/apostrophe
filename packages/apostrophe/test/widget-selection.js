@@ -137,20 +137,16 @@ describe('widget selection', function() {
     assert.equal(combined.target.widgetId, 'w1');
   });
 
-  it('keeps pinned descendants when a later shift-click changes the sibling range', function() {
+  it('keeps pinned widgets from outside the area when a shift-click changes the sibling range', function() {
     const items = [ 'a', 'b', 'c', 'd' ];
-    const anchor = lib.applyWidgetSelection({
-      gesture: 'plain',
-      widgetId: 'a',
-      areaId: 'area',
-      areaItemIds: items
-    });
-    const withChildren = lib.includeDescendants(anchor, [ 'child-1', 'child-2' ]);
-    assert.deepEqual(withChildren.selectedWidgetIds, [ 'a', 'child-1', 'child-2' ]);
-    assert.deepEqual(withChildren.pinnedWidgetIds, [ 'a', 'child-1', 'child-2' ]);
+    const withOutside = {
+      selectedWidgetIds: [ 'a', 'child-1', 'child-2' ],
+      selectionAnchorId: 'a',
+      pinnedWidgetIds: [ 'a', 'child-1', 'child-2' ]
+    };
 
     const ranged = lib.applyWidgetSelection({
-      state: withChildren,
+      state: withOutside,
       gesture: 'range',
       widgetId: 'c',
       areaId: 'area',

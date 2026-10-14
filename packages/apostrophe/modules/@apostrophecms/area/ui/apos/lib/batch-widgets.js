@@ -25,14 +25,7 @@ export function runWidgetBatch(name, { hasAncestor } = {}) {
   const entryIds = entries.map((entry) => entry.widget._id);
   if (name === 'copy' || name === 'cut') {
     apos.area.widgetClipboard.setMany(entries.map((entry) => entry.widget));
-    apos.notify(
-      name === 'cut' ? 'Widgets cut to clipboard' : 'Widgets copied to clipboard',
-      {
-        type: 'success',
-        icon: name === 'cut' ? 'content-cut-icon' : 'content-copy-icon',
-        dismiss: true
-      }
-    );
+    notifyClipboard(name, entries.length);
     if (name === 'cut') {
       removeSelection(entryIds, hasAncestor);
     }
@@ -64,6 +57,22 @@ function removeSelection(ids, hasAncestor) {
     apos.bus.$emit('context-edited', edit);
   }
   dropRemoved(ids, hasAncestor);
+}
+
+export function notifyClipboard(name, count) {
+  apos.notify(
+    name === 'cut'
+      ? 'apostrophe:widgetsCutToClipboard'
+      : 'apostrophe:widgetsCopiedToClipboard',
+    {
+      type: 'success',
+      icon: name === 'cut' ? 'content-cut-icon' : 'content-copy-icon',
+      dismiss: true,
+      interpolate: {
+        count
+      }
+    }
+  );
 }
 
 function dropRemoved(removedIds, hasAncestor) {

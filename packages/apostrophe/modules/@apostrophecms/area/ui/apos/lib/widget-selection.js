@@ -49,24 +49,6 @@ export function applyWidgetSelection({
   return replaceSelection(widgetId);
 }
 
-// Descendants added from Include contents stay in the pinned set, so a
-// later shift-click in the parent area does not drop them.
-export function includeDescendants(state, descendantIds = []) {
-  const selectedWidgetIds = unique([
-    ...state.selectedWidgetIds,
-    ...descendantIds
-  ]);
-  const pinnedWidgetIds = unique([
-    ...state.pinnedWidgetIds,
-    ...descendantIds
-  ]);
-  return {
-    selectedWidgetIds,
-    selectionAnchorId: state.selectionAnchorId || selectedWidgetIds[0] || null,
-    pinnedWidgetIds
-  };
-}
-
 // Drop removed widgets, and anything isDescendant says was inside one of
 // them. The parent already contains those children.
 export function selectionWithout(state, removedIds = [], isDescendant = null) {

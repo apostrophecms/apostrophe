@@ -141,7 +141,7 @@
       </div>
       <div
         class="apos-area-widget-guard"
-        :class="{'apos-is-disabled': showFocusedChrome}"
+        :class="{'apos-is-disabled': guardDisabled}"
       />
       <div
         v-if="!controlsDisabled"
@@ -162,10 +162,8 @@
           :tabbable="isFocused"
           :model-value="widget"
           :widget-options="widgetOptions"
-          :include-contents="hasDescendants"
           @update="$emit('update', $event)"
           @operation="onOperation"
-          @include-contents="includeContents"
         />
       </div>
       <div
@@ -250,7 +248,6 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 import changeTypes from 'Modules/@apostrophecms/document-versions/lib/change-types.js';
-import { includeDescendants } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
 import { nextSelectionFromClick } from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
 
 export default {
@@ -369,6 +366,7 @@ export default {
         open: 'apos-is-open',
         focus: 'apos-is-focused',
         highlight: 'apos-is-highlighted',
+        selected: 'apos-is-selected',
         multi: 'apos-is-multi',
         adjust: 'apos-is-ui-adjusted',
         suppressWidgetControls: 'apos-is-suppressing-widget-controls'
@@ -516,16 +514,18 @@ export default {
       return this.selectedWidgetIds.includes(this.widget._id);
     },
     // One selected widget keeps the breadcrumb, add menus and modify
-    // controls. Several selected widgets wear the hover highlight only.
+    // controls. Several selected widgets drop that chrome and wear
+    // apos-is-selected instead of the focus outline.
     showFocusedChrome() {
       return this.isFocused && !this.isMulti;
     },
-    hasDescendants() {
-      const graphKey = unref(this.aposGraphKey);
-      if (!graphKey || !this.widget?._id) {
-        return false;
-      }
-      return this.getDescendants(graphKey, this.widget._id).length > 0;
+    // Raising this widget (it is the focused one, or contains it) puts
+    // its rendered content at z-index 0, under this guard. The guard has
+    // to step aside or the controls of a nested widget never receive the
+    // click. The focused widget's own guard still steps aside only while
+    // its chrome is showing.
+    guardDisabled() {
+      return this.showFocusedChrome || (this.raised && !this.isFocused);
     },
     isHovered() {
       return this.hoveredWidget === this.widget._id;
@@ -562,6 +562,7 @@ export default {
           this.isHovered ||
           (this.isMulti && this.isSelected),
         [this.classes.focus]: this.showFocusedChrome,
+        [this.classes.selected]: this.isMulti && this.isSelected,
         [this.classes.multi]: this.isMulti
       };
       if (this.mounted) {
@@ -650,12 +651,10 @@ export default {
 
     this.registerInGraph();
 
-    if (this.focusedWidget) {
-      // If another widget was in focus (because the user clicked the "add"
-      // menu, for example), and this widget was created, give the new widget
-      // focus.
-      this.setFocusedWidget(this.widget._id, this.areaId);
-    }
+    // A widget the user just added is focused in insert() before this
+    // component mounts. Claiming focus here would also run for areas that
+    // mount as they scroll into view, and that replaces a selection already
+    // in progress with whichever of those widgets mounts last.
 
     // Do not set up sticky controls if they are disabled
     if (this.controlsDisabled) {
@@ -699,8 +698,7 @@ export default {
     ...mapActions(useDocVersionMarkersStore, { getVersionChange: 'get' }),
     ...mapActions(useWidgetGraphStore, {
       storeRegisterWidget: 'registerWidget',
-      storeUnregisterWidget: 'unregisterWidget',
-      getDescendants: 'getDescendants'
+      storeUnregisterWidget: 'unregisterWidget'
     }),
     // The versions modal shows the changes behind this widget's marker
     showVersionChange() {
@@ -934,28 +932,6 @@ export default {
       if (e?.shiftKey || result.next.selectedWidgetIds.length > 1) {
         this.clearNativeSelection();
       }
-    },
-    includeContents(event) {
-      event?.stopPropagation?.();
-      const graphKey = unref(this.aposGraphKey);
-      const baseIds = this.selectedWidgetIds.length
-        ? this.selectedWidgetIds
-        : [ this.widget._id ];
-      const descendants = baseIds.flatMap((id) => {
-        return graphKey ? this.getDescendants(graphKey, id) : [];
-      });
-      const next = includeDescendants({
-        selectedWidgetIds: baseIds,
-        selectionAnchorId: this.selectionAnchorId || this.widget._id,
-        pinnedWidgetIds: this.pinnedWidgetIds.length
-          ? this.pinnedWidgetIds
-          : baseIds
-      }, descendants);
-      this.setWidgetSelection(next, {
-        primaryId: this.focusedWidget || this.widget._id,
-        areaId: this.areaId,
-        graphKey
-      });
     },
 
     // Our widget was hovered
@@ -1204,7 +1180,7 @@ export default {
   min-height: 50px;
   border-radius: var(--a-border-radius);
   outline: 1px solid transparent;
-  transition: outline 200ms ease;
+  transition: outline 200ms ease, box-shadow 200ms ease;
 
   &.apos-is-multi {
     user-select: none;
@@ -1226,6 +1202,15 @@ export default {
     &:deep(.apos-rich-text-editor__editor.apos-is-visually-empty) {
       box-shadow: none;
     }
+  }
+
+  // Multi-select drops the focus chrome, so the chosen widgets need a
+  // mark of their own: a solid stroke and a soft halo, heavier than the
+  // dashed hover outline they also wear.
+  &.apos-is-selected {
+    outline: 2px solid var(--a-primary);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 4px var(--a-primary-transparent-25);
   }
 
   .apos-area-widget-inner &::after {
