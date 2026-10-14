@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.17.9 (2026-10-14)
+
+### Changes
+
+- Remove the `deepmerge` dependency, which was used only to combine tag-specific and `*` (all tags) entries in `allowedClasses` and `allowedStyles`. That is now done by a few lines of code within sanitize-html.
+
+  This is not a fix for a vulnerability in sanitize-html. Security scanners such as Snyk now report [CVE-2026-93753](https://security.snyk.io/vuln/SNYK-JS-DEEPMERGE-19964053) in `deepmerge`, which can affect applications that merge untrusted objects, such as parsed JSON request bodies. sanitize-html only ever merged the developer's own configuration, never anything taken from the HTML being sanitized, so it was not exploitable through sanitize-html. Since we needed only a small part of what `deepmerge` does, we removed the dependency so that these reports no longer appear for sanitize-html users.
+
+### Security
+
+- Since 2.17.8, the fallback markup of a discarded `<iframe>` was re-sanitized by a recursive call with no limit, one level per nested unclosed `<iframe>`. A few kilobytes of crafted input could throw `RangeError: Maximum call stack size exceeded` with the default options, and the `nestingLimit` option was not enforced across the fallback because each nested call started counting from zero. The fallback of a discarded `<iframe>` is still sanitized and kept, but only up to eight nested `<iframe>` elements (deeper fallback is escaped as text, as before 2.17.8), and the current nesting depth now carries into the nested call so `nestingLimit` applies to the whole output. Only 2.17.8 was affected, and the exception is thrown synchronously, so applications that catch errors from `sanitizeHtml` only lost the affected request (CWE-674, GHSA-c9rx-x947-fp3h).
+
+  Thanks to [hkmj19](https://github.com/hkmj19), [JohnBeckley](https://github.com/JohnBeckley), and [amikhailovstiltsoft](https://github.com/amikhailovstiltsoft) for reporting the vulnerability.
+
 ## 2.17.8 (2026-09-30)
 
 ### Fixes

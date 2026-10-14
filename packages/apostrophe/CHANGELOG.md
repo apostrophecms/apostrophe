@@ -1,5 +1,62 @@
 # Changelog
 
+## 4.32.1 (2026-10-14)
+
+### Adds
+
+- Relationship chooser modals (pages, pieces and images) carry a `data-apos-test="relationship-chooser:<field label>"` attribute, so end-to-end tests can find them now that the field label is no longer rendered as a `title` attribute on the modal.
+
+### Changes
+
+- Test suites that use the `testModule` option now run under mocha 12.
+
+### Fixes
+
+- Fixed icon-only widget breadcrumb operations, such as the Styles button on a layout column, being announced by screen readers as "Provide a Button Label". These buttons now take their accessible name from the operation's `label`, or from its `tooltip` when no label is set. This also covers breadcrumb operations added by project code.
+- Fix interpolation variables that were mistyped or translated in several locales, which made i18next render them as empty strings. The batch localization notifications now show the localized and skipped document counts in German, Spanish, Italian, Portuguese (Brazil) and Slovak, the minimum image size shows its dimensions in Spanish and Slovak, and the import error notifications show the file type in all translated locales. The German "Create new" command menu label no longer has the English text appended. A test now checks that bundled translations only use variables declared in `en.json`. Thanks to [Michael Lip](https://github.com/theluckystrike) for the contribution.
+- The image editor in the media manager now disables "Save" until the image's fields are changed, as other editors do.
+- Cancelling an image selection in the media manager now asks to discard the selection rather than changes to the active image.
+- The decorative shadow above the media manager's editor footer no longer shows a "Shadow" tooltip or reads as an image to screen readers.
+- Choosing images, pieces or pages for a relationship field no longer displays an untranslated tooltip such as `apostrophe:image` wherever the mouse hovers in the manager modal.
+- Fixes translated strings whose interpolation variables were misspelled or translated (e.g. `{{ skipcount }}`, `{{ ancho }}`, `{{ format }}`), so values like counts, image dimensions and file types now render in de, es, fr, it, pt-BR and sk. Removes two stale Slovak tag keys.
+- Adds missing de, es, fr, it, pt-BR and sk translations for the Recently Edited manager, background styles, layout column editing, breakpoint preview, publication status and other admin UI strings, the import-export draft and AI translation options, and the AI Helper "Generate Variant" button.
+- Corrects mistranslated, truncated and partly English admin UI strings in de, es, fr, it, pt-BR and sk. Slovak plurals now use the numbered forms i18next expects for Slovak (`key_1` for 2–4, `key_2` for 0 and 5+), so counts no longer always show the singular. Fixes the German date format rendering "Uhr" as an hour.
+- Preserve UTF-8 filenames when uploading attachments, rather than converting incorrectly to `latin1` as `multer` does by default.
+
+  Thanks to [yoshimasa sugawara](https://github.com/y-sugawara179) for this fix.
+
+- Widget editor modals now show server-side validation errors on the fields they belong to. When a widget's `sanitize` method throws an `invalid` error whose `data.errors` entries name fields by `path`, the modal switches to that field's tab and displays the message beneath it. Previously the save was blocked with no feedback at all.
+
+### Security
+
+- The color field accepted any value that merely contained a valid `rgb()`, `hsl()` or similar color, so extra content before or after the color was stored as-is. When such a color is used by a widget style field rendered inline (no `selector`), that content reached the wrapper's `style` attribute and could inject HTML attributes into the published page. The whole value must now be a valid color, otherwise it is discarded like any other invalid color. Legitimate values (hex, named colors, `transparent`, `rgb()`/`rgba()`/`hsl()`/`hsla()` notations, CSS variable names) are stored unchanged. Exploitation requires permission to edit content using a color field (CWE-20, CWE-79, GHSA-vmgj-9cwm-cf3h).
+
+  Thanks to [N.HARSHA VARDHAN](https://github.com/saiharsha0546-dot) for reporting the vulnerability.
+
+- Upgrade `csv-parse` to 7.x to address a security advisory.
+- Widget style values were written into the generated wrapper's `style` and `class` attributes without HTML attribute escaping, so a project-defined free-form `string` style field could be used by an editor to inject additional HTML attributes into the published page. All attribute values rendered by `getWidgetAttributes()` and the `apos.styles.attributes()` helper are now escaped. Only projects that define a free-form style field are affected, and exploitation requires permission to edit the widget (CWE-79, CWE-116, GHSA-7jg5-frgc-c67w).
+
+  Thanks to [Fariskhi Vidyan](https://github.com/farisv) for reporting the vulnerability.
+
+- Importing could write the published version of documents the importing user was not allowed to publish. A contributor could create or replace published content with a crafted archive, and an editor could import or update published documents of a type whose `publishRole` is `admin`. Import now refuses documents whose mode, locale and `_id` disagree. Exploiting this required a logged-in user allowed to import the type.
+
+  The rest was a gap in the core permission check, fixed there, which also covers import. A type's `publishRole` was always meant to govern its published content, but editing or creating the published version of a document did not honor it: an editor could change published documents of a type whose `publishRole` is `admin`, including through the REST API, without publishing them through the normal workflow. That was a bug and should not have been relied upon. Editing or creating a published document now requires the `publishRole`. Types with `autopublish: true`, types without a draft/published distinction, and permission checks made with a type name rather than a document are unchanged (CWE-285, CWE-863, GHSA-5m22-7pfq-vp65).
+
+  Thanks to [Mufeed VH](https://github.com/mufeedvh) and [Vivek R](https://github.com/123vivekr) for reporting the vulnerability.
+
+- Upgrade `nodemailer` to 10.x to address several security advisories.
+- Fields restricted by `viewPermission` are now removed from every document in every REST API response (`apiRoutes` and `restApiRoutes` of all modules) for a user who lacks that permission, not just from the documents requested from the page and piece REST APIs. This includes documents loaded through relationships (also nested and reverse relationships, and relationships inside widgets, array fields and object fields), the related pages embedded in page responses (`_ancestors` and `_children`), the home page response, page `autocomplete` results, areas rendered with `render-areas`, and the documents returned after a write: `POST`, `PUT` and `PATCH` (including archiving, restoring and moving pages), publish, unpublish, revert, localize and share, as well as `GET /api/v1/@apostrophecms/doc/:_id`. Saving a document without those fields in the request body still leaves their stored values untouched, as before. Each document is filtered according to its own type's schema. A `project` query parameter can also no longer exclude `type` or `metaType`, which could previously be used to keep a page's restricted fields in the response. The reported problems with `GET /api/v1/@apostrophecms/page/:_id`, which in 4.31.2 and earlier ignored type-level `viewRole` and did not remove `viewPermission` fields, were already corrected in 4.32.0 and are now covered by additional tests. Enforcing `viewRole` on that route was always the intended behavior, and the earlier behavior was a bug that should not have been relied upon. This only affects sites that use `viewPermission`. Anonymous visitors were affected only where a `publicApiProjection` includes a relationship to documents of a type with such fields (CWE-200, CWE-863, GHSA-vh56-5m88-39rq).
+
+  Thanks to [harshavardhan98899-lab](https://github.com/harshavardhan98899-lab) for reporting the vulnerability.
+
+- For anonymous REST API requests restricted by `publicApiProjection`, the `sort` query parameter and the per-field filter query parameters could operate on fields excluded by the projection, revealing the relative order of hidden values or which documents had a given hidden value. Sort keys and field filters not permitted by the projection are now ignored for these requests. In addition, the related pages embedded in anonymous page REST API responses (`_ancestors` and `_children`) were not limited to `publicApiProjection` when the projection included `path`; they now are. Authenticated requests and API key requests are not affected. Only sites that set `publicApiProjection` were affected. Full text search (`search`, `autocomplete`) is unchanged: it covers every field not marked `searchable: false`, exactly as the public site search does, so sensitive text fields should be marked `searchable: false` (CWE-200, CWE-639, GHSA-rqgm-cfrp-4hx8).
+
+  Thanks to [N.HARSHA VARDHAN](https://github.com/saiharsha0546-dot) for reporting the vulnerability.
+
+- The `slug-taken` route of `@apostrophecms/doc` told any logged-in user, including guests who cannot edit anything, whether a slug was in use, even by documents they could not view. It now requires the ability to edit content (the `view-draft` permission held by contributors, editors and admins). Because slugs are unique across all documents, users who can choose a slug still learn that it is already taken; this is inherent in globally unique slugs, and the route reveals nothing about the document beyond that (CWE-200, CWE-203, GHSA-f66c-mpj2-3r8h).
+
+  Thanks to [T.Jaswanth](https://github.com/Jaswanth080901) for reporting the vulnerability.
+
 ## 4.32.0 (2026-09-30)
 
 ### Adds

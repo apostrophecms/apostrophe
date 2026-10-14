@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.4 (2026-10-14)
+
+### Fixes
+
+- `llms.txt` and `robots.txt` no longer answer 200 when they have nothing to serve: a disabled `llms.txt` answers 404, and a failure while generating either file answers 500.
+
 ## 1.4.3 (2026-06-10)
 
 ### Security
