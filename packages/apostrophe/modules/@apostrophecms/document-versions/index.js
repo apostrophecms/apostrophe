@@ -168,6 +168,14 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
+        // Every change of the draft of the document `docId` since its last
+        // publication (see `getDraftChanges`); `annotate=1` adds the draft
+        // marked with them
+        'draft-changes': (req) => {
+          return self.getDraftChanges(req, req.query.docId, {
+            annotate: self.apos.launder.boolean(req.query.annotate)
+          });
+        },
         // The change list of a version; with `consolidate=1`, of the consolidated
         // version it is the newest of
         ':versionId/changes': (req) => {
@@ -332,6 +340,14 @@ module.exports = {
         }
 
         return true;
+      },
+      // Whether a doc type module records versions of its drafts: it has
+      // versions, and its documents have a draft that is not published at
+      // once on every save
+      hasDraftVersions(moduleOptions) {
+        return self.hasVersions(moduleOptions) &&
+          (moduleOptions.autopublish !== true) &&
+          (moduleOptions.localized !== false);
       },
       // Whether a doc type marked `versions: false` still records its
       // publication points. A localized type published by hand keeps
@@ -1113,6 +1129,98 @@ module.exports = {
           compared: Boolean(compared.length)
         };
       },
+      // Every change of the draft of the document `docId` (its `_id` in any
+      // mode) since its last publication: `{ rows, counts, baseline, doc }`.
+      // The rows are the change list of the published document against the
+      // draft (see `getChangeList`), each changed path once, credited to the
+      // versions recorded since the publication (see `attribute` in
+      // `lib/diff.js`) and carrying what an editor of the value needs (see
+      // `addFieldData`). A document never published is compared with a new
+      // document of its type; `baseline` says which, `{ kind: 'published',
+      // at }` or `{ kind: 'default' }`. `annotate` adds `doc`, the draft
+      // marked with the changes (see `getAnnotatedDoc`). Throws `invalid`
+      // for a malformed id, `notfound` when the draft does not exist, `req`
+      // cannot edit it or its type records no draft versions
+      async getDraftChanges(req, docId, { annotate = false } = {}) {
+        const id = self.apos.launder.id(docId);
+        if (!id) {
+          throw self.apos.error('invalid');
+        }
+        const draftReq = req.clone({ mode: 'draft' });
+        const found = await self.getRestDocQuery(draftReq)
+          .and({ _id: id.replace(/:[\w]+$/, ':draft') })
+          .toObject();
+        const manager = found && self.apos.doc.getManager(found.type);
+        if (!manager || !self.hasDraftVersions(manager.options)) {
+          throw self.apos.error('notfound');
+        }
+        const draft = self.apos.util.clonePermanent(found);
+        const criteria = self.getTimelineCriteria(draft);
+        const [ published, publication ] = await Promise.all([
+          self.apos.doc.db.findOne({ _id: draft._id.replace(/:draft$/, ':published') }),
+          self.findOne(draftReq, {
+            ...criteria,
+            mode: 'published'
+          }, {
+            project: { createdAt: 1 },
+            raw: true
+          })
+        ]);
+        // The later of the two: a publish that changed nothing records no
+        // version, and a promoted draft takes the time of the publish
+        const since = published
+          ? [ published.lastPublishedAt, publication?.createdAt ]
+            .filter(Boolean)
+            .sort((one, two) => two - one)[0]
+          : null;
+        const records = await self.find(draftReq, {
+          ...criteria,
+          ...(since && { createdAt: { $gt: since } })
+        }, {
+          sort: { createdAt: 1 }
+        });
+        const contents = [
+          published || manager.newInstance(),
+          ...records.map(record => record.doc),
+          draft
+        ];
+        // The last pair, the draft ahead of its newest version, has no
+        // version to credit
+        const pairs = contents.slice(1).map((newer, i) => {
+          const record = records[i];
+          return {
+            older: contents[i],
+            newer,
+            ai: Boolean(record?.ai),
+            ...(record && {
+              author: {
+                _id: record.authorId ?? null,
+                title: record.author
+              },
+              changedAt: record.updatedAt || record.createdAt
+            })
+          };
+        });
+
+        const { rows, counts } = await self.getChangeList(draftReq, pairs);
+        const ctx = self.getDiffContext(draftReq, draft);
+        diff.attribute(manager.schema, pairs, rows, ctx);
+        diff.addFieldData(manager.schema, rows, draft, ctx);
+
+        return {
+          rows,
+          counts,
+          baseline: published
+            ? {
+              kind: 'published',
+              at: published.lastPublishedAt ?? null
+            }
+            : { kind: 'default' },
+          ...(annotate && {
+            doc: self.getAnnotatedDoc(draftReq, contents[0], draft, { rows })
+          })
+        };
+      },
       // The change list between contents of one document, as the modal shows
       // it: `{ rows, counts: { added, modified, deleted, ai } }`. `pairs` are
       // `{ older, newer, ai }`, oldest first; one pair compares two contents,
@@ -1247,7 +1355,8 @@ module.exports = {
             lng: self.apos.i18n.getAdminLocale(req)
           }),
           getRichTextStyles: () => self.apos.modules['@apostrophecms/rich-text-widget']
-            .options.defaultOptions.styles || []
+            .options.defaultOptions.styles || [],
+          getAreaWidgets: options => self.apos.area.getWidgets(options)
         };
       },
       // Recompute `changeCount` for every version, one timeline at a time.
