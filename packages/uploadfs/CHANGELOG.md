@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.26.3 (2026-10-14)
+
+### Security
+
+- Upgrade the optional `@google-cloud/storage` dependency to 8.x to address a `uuid` security advisory. The Google Cloud Storage backend now requires Node.js 22 or later.
+
 ## 1.26.2 (2026-09-30)
 
 ### Changes

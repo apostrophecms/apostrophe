@@ -1,6 +1,6 @@
 {
   "name": "csv-to-zone-file",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Converts CSV to a zone-file just good enough to import into Amazon Route 53",
   "main": "app.js",
   "scripts": {

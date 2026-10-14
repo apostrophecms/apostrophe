@@ -1,6 +1,6 @@
 {
   "name": "@apostrophecms/form-submission-google",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Google spreadsheet submission for the ApostropheCMS form builder.",
   "main": "index.js",
   "scripts": {
