@@ -93,7 +93,30 @@
             data-apos-test="doc-version-change"
             :data-apos-change-type="entry.row.type"
           >
-            <div class="apos-doc-version-changes__row-main">
+            <component
+              :is="entry.detail ? 'button' : 'div'"
+              class="apos-doc-version-changes__row-main"
+              v-bind="entry.detail ? {
+                type: 'button',
+                'aria-expanded': expanded.has(entry.key) ? 'true' : 'false',
+                'aria-controls': `${baseId}-${entry.key}`,
+                'data-apos-test': 'doc-version-change-toggle',
+                onClick: () => toggle(entry.key)
+              } : {}"
+            >
+              <chevron-right-icon
+                v-if="entry.detail"
+                :size="14"
+                class="apos-doc-version-changes__row-chevron"
+                :class="{
+                  'apos-doc-version-changes__row-chevron--open': expanded.has(entry.key)
+                }"
+                aria-hidden="true"
+              />
+              <span
+                v-else
+                class="apos-doc-version-changes__row-chevron"
+              />
               <span class="apos-doc-version-changes__row-lead">
                 <AposDocVersionChangePath
                   class="apos-doc-version-changes__row-label"
@@ -121,27 +144,13 @@
                     : 'doc-version-change-ai'"
                 />
               </span>
-              <span class="apos-doc-version-changes__row-aside">
-                <AposButton
-                  v-if="entry.detail"
-                  class="apos-doc-version-changes__row-toggle"
-                  type="quiet"
-                  :label="expanded.has(entry.key)
-                    ? 'apostrophe:versionCollapseChanges'
-                    : 'apostrophe:versionSeeChanges'"
-                  :attrs="{
-                    'aria-expanded': expanded.has(entry.key),
-                    'aria-controls': `${baseId}-${entry.key}`,
-                    'data-apos-test': 'doc-version-change-toggle'
-                  }"
-                  @click="toggle(entry.key)"
-                />
-                <AposDocVersionChangeType
-                  v-else-if="!entry.own"
-                  :type="entry.row.type"
-                />
+              <span
+                v-if="!entry.detail && !entry.own"
+                class="apos-doc-version-changes__row-aside"
+              >
+                <AposDocVersionChangeType :type="entry.row.type" />
               </span>
-            </div>
+            </component>
             <div
               v-if="entry.detail && expanded.has(entry.key)"
               :id="`${baseId}-${entry.key}`"
@@ -347,7 +356,7 @@ function focus() {
 // `widgetId` (and, when it `moved`, the order of its area), or those of the
 // top-level field `field` outside any widget, `marked` as `isMarkerTarget`
 // takes it. Their rows expand alone,
-// their group becomes the navigator's, and focus goes to the row's toggle.
+// their group becomes the navigator's, and focus goes to the row's header.
 // Resolves `false` when the list has no such row
 async function reveal(target) {
   const targets = props.rows.filter(row => changeGroups.isMarkerTarget(row, target));
@@ -376,7 +385,7 @@ async function reveal(target) {
   const { group, entry } = entries.find(({ entry }) => !entry.order) || entries[0];
   select(groups.value.indexOf(group));
   await nextTick();
-  // A row with nothing to expand has no toggle: its group's header then
+  // A row with nothing to expand has no button: its group's header then
   const toggle = list.value?.querySelector(
     `[aria-controls="${CSS.escape(`${baseId}-${entry.key}`)}"]`
   ) || getGroupEl(group.key)?.querySelector(
@@ -597,14 +606,56 @@ $pad-x: $spacing-base + $spacing-half;
   }
 
   &__row {
-    padding: $spacing-base $pad-x;
     background-color: var(--a-background-primary);
   }
 
+  // The row's header; a button when the row has a detail to expand
   &__row-main {
+    @include apos-button-reset();
+
+    & {
+      display: flex;
+      box-sizing: border-box;
+      align-items: center;
+      gap: $spacing-half;
+      width: 100%;
+      padding: $spacing-half $pad-x;
+      text-align: left;
+    }
+  }
+
+  button#{&}__row-main {
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--a-primary);
+      outline-offset: -2px;
+    }
+  }
+
+  // Sized for the rows without one too, so the labels line up
+  &__row-chevron {
     display: flex;
-    align-items: baseline;
-    gap: $spacing-half $spacing-base;
+    flex-shrink: 0;
+    width: 14px;
+    color: var(--a-base-2);
+    transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+
+    :deep(.material-design-icon__svg) {
+      bottom: 0;
+    }
+  }
+
+  &__row-chevron--open {
+    transform: rotate(90deg);
+  }
+
+  button#{&}__row-main:hover &__row-chevron {
+    color: var(--a-text-primary);
+  }
+
+  button#{&}__row-main:hover &__row-label {
+    text-decoration: underline;
   }
 
   // The field or action, and AI's part in it right after
@@ -650,23 +701,13 @@ $pad-x: $spacing-base + $spacing-half;
     margin-left: auto;
   }
 
-  &__row-toggle :deep(.apos-button) {
-    font-size: var(--a-type-smaller);
-    transform: none;
-
-    &:hover:not([disabled]),
-    &:focus:not([disabled]) {
-      transform: none;
-    }
-  }
-
   // Each change of the row in a box of its own: the text, then each
   // formatting line
   &__diff {
     display: flex;
     flex-direction: column;
     gap: $spacing-three-quarters;
-    margin-top: $spacing-base;
+    padding: $spacing-one-quarter $pad-x $spacing-base;
   }
 
   &__diff-box {

@@ -788,7 +788,6 @@
   "versionChangeModified": "Modified",
   "versionChangeMoved": "Moved",
   "versionChanges": "Changes",
-  "versionCollapseChanges": "Collapse Changes",
   "versionEditedBy": "Edited by {{ author }}",
   "versionEdits": "{{ count }} edit",
   "versionEditsBy": "{{ count }} edit by {{ author }}",
