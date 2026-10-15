@@ -30,7 +30,30 @@
     </template>
     <template #main>
       <AposModalBody>
-        <template #bodyMain />
+        <template #bodyMain>
+          <div
+            class="apos-see-changes__list"
+            data-apos-test="see-changes-list"
+          >
+            <section
+              v-for="group in groups"
+              :key="group.key"
+              data-apos-test="see-changes-group"
+            >
+              <AposDocVersionChangeGroup :group="group" />
+              <ul class="apos-see-changes__entries">
+                <AposDocVersionChangeEntry
+                  v-for="entry in group.entries"
+                  :key="entry.key"
+                  :entry="entry"
+                  :expanded="expanded.has(entry.key)"
+                  :detail-id="`${baseId}-${entry.key}`"
+                  @toggle="toggle(entry.key)"
+                />
+              </ul>
+            </section>
+          </div>
+        </template>
       </AposModalBody>
     </template>
   </AposModal>
@@ -38,8 +61,9 @@
 
 <script setup>
 import {
-  onMounted, ref, watch
+  computed, onMounted, reactive, ref, useId, watch
 } from 'vue';
+import changeGroups from '../lib/change-groups.js';
 import { useSeeChangesStore } from '../stores/seeChanges.js';
 
 // See Changes' window: a floating window the page stays usable around. It
@@ -54,6 +78,18 @@ const MARGIN = 16;
 
 const modalEl = ref(null);
 const store = useSeeChangesStore();
+const baseId = useId();
+
+// The keys of the entries showing their detail
+const expanded = reactive(new Set());
+
+const groups = computed(() => {
+  return changeGroups.getChangeGroups(store.payload?.rows || [], []);
+});
+
+watch(() => store.payload, () => {
+  expanded.clear();
+});
 
 const modal = ref({
   active: false,
@@ -91,4 +127,18 @@ function focus() {
 function close() {
   modal.value.showModal = false;
 }
+
+function toggle(key) {
+  if (expanded.has(key)) {
+    expanded.delete(key);
+  } else {
+    expanded.add(key);
+  }
+}
 </script>
+
+<style lang="scss" scoped>
+.apos-see-changes__entries {
+  @include apos-list-reset();
+}
+</style>
