@@ -10,7 +10,8 @@ module.exports = (self) => {
     // `authorId` or `ai`. The author is the document's `updatedBy`, the
     // user whose save recorded the version. A converted record has `mode`,
     // so a rerun resumes where the last one stopped. Returns the number of
-    // records converted.
+    // records converted. Array items and objects get their arrayFieldId and
+    // objectFieldId, as the legacy records predate them.
     async convertLegacyVersions() {
       let converted = 0;
       await self.apos.migration.each(
@@ -22,13 +23,14 @@ module.exports = (self) => {
           const doc = packed
             ? await self.unpack(version.doc)
             : version.doc;
+          const changed = self.apos.doc.addFieldIds(doc);
           await self.db.updateOne({ _id: version._id }, {
             $set: {
               ...self.getTimelineCriteria(doc),
               mode: self.getMode(doc),
               authorId: doc.updatedBy?._id ?? null,
               ai: false,
-              doc: packed
+              doc: (packed && !changed)
                 ? version.doc
                 : await self.pack(doc)
             }
@@ -108,6 +110,7 @@ module.exports = (self) => {
       // when one is given
       async function insertPublicationPoint(doc, createdAt, previousDoc) {
         const content = self.apos.util.clonePermanent(doc);
+        self.apos.doc.addFieldIds(content);
         const version = {
           _id: createId(),
           metaType: 'version',
@@ -126,6 +129,44 @@ module.exports = (self) => {
         await self.insert(req, version);
         return self.updateReferencesFor(req, version._id);
       }
+    },
+    // Add arrayFieldId and objectFieldId to the array items and objects of
+    // versions recorded before they existed. A draft version can be rewritten
+    // by a later save, so the write applies only if the record is unchanged
+    // since it was read; otherwise read it again and retry. Returns the
+    // number of records updated.
+    async addFieldIdsToVersions() {
+      let updated = 0;
+      await self.apos.migration.each(
+        self.db,
+        { mode: { $exists: true } },
+        5,
+        async version => {
+          for (let attempt = 0; version && (attempt < 5); attempt++) {
+            if (typeof version.doc !== 'string') {
+              return;
+            }
+            const doc = await self.unpack(version.doc);
+            if (!self.apos.doc.addFieldIds(doc)) {
+              return;
+            }
+            const { matchedCount } = await self.db.updateOne({
+              _id: version._id,
+              doc: version.doc
+            }, {
+              $set: {
+                doc: await self.pack(doc)
+              }
+            });
+            if (matchedCount) {
+              updated++;
+              return;
+            }
+            version = await self.db.findOne({ _id: version._id });
+          }
+        }
+      );
+      return updated;
     },
     // Drop the `previous` mode documents the store now replaces, releasing
     // the attachment references they hold. Returns the number removed.

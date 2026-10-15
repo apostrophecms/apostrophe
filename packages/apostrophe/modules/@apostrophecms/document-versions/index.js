@@ -267,6 +267,7 @@ module.exports = {
         self.apos.migration.add('seed-publication-points', self.seedPublicationPoints);
         self.apos.migration.add('remove-previous-mode-docs', self.removePreviousModeDocs);
         self.apos.migration.add('set-legacy-change-counts', self.setChangeCountTask);
+        self.apos.migration.add('add-field-ids-to-versions', self.addFieldIdsToVersions);
       },
       addContextMenu() {
         self.apos.doc.addContextOperation({

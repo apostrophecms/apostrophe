@@ -3471,6 +3471,7 @@ describe('Schemas', function() {
             metaType: 'arrayItem',
             moon: 'Io',
             planet: 'Jupiter',
+            arrayFieldId: undefined,
             scopedArrayName: undefined
           },
           {
@@ -3478,6 +3479,7 @@ describe('Schemas', function() {
             metaType: 'arrayItem',
             moon: 'Phobos',
             planet: 'Mars',
+            arrayFieldId: undefined,
             scopedArrayName: undefined
           }
         ],
@@ -3486,6 +3488,7 @@ describe('Schemas', function() {
           metaType: 'objectItem',
           moon: 'Triton',
           planet: 'Neptune',
+          objectFieldId: undefined,
           scopedObjectName: undefined
         },
         pageId: [ home._id ],
@@ -5644,12 +5647,14 @@ describe('Schemas', function() {
               {
                 _id: 'tutu',
                 metaType: 'arrayItem',
+                arrayFieldId: undefined,
                 scopedArrayName: undefined,
                 objectArrayString: ''
               }
             ],
             showObjectArray: false,
             metaType: 'objectItem',
+            objectFieldId: undefined,
             scopedObjectName: undefined
           },
           showObject: true
@@ -5775,12 +5780,14 @@ describe('Schemas', function() {
             {
               _id: 'root_id',
               metaType: 'arrayItem',
+              arrayFieldId: undefined,
               scopedArrayName: undefined,
               rootString: 'toto',
               rootArray: [
                 {
                   _id: 'root_array_id',
                   metaType: 'arrayItem',
+                  arrayFieldId: undefined,
                   scopedArrayName: undefined,
                   rootArrayString: 'Item 1',
                   showRootArrayString: true
@@ -5788,6 +5795,7 @@ describe('Schemas', function() {
                 {
                   _id: 'root_array_id2',
                   metaType: 'arrayItem',
+                  arrayFieldId: undefined,
                   scopedArrayName: undefined,
                   rootArrayString: '',
                   showRootArrayString: false

@@ -761,9 +761,12 @@ module.exports = {
         } else if (object.metaType === 'widget') {
           return self.apos.area.getWidgetManager(object.type);
         } else if (object.metaType === 'arrayItem') {
-          return self.apos.schema.getArrayManager(object.scopedArrayName);
+          // Items stored before arrayFieldId existed have only the legacy name
+          return self.apos.schema.getArrayManagerById(object.arrayFieldId) ||
+            self.apos.schema.getArrayManager(object.scopedArrayName);
         } else if (object.metaType === 'object') {
-          return self.apos.schema.getObjectManager(object.scopedObjectName);
+          return self.apos.schema.getObjectManagerById(object.objectFieldId) ||
+            self.apos.schema.getObjectManager(object.scopedObjectName);
         } else if (log) {
           self.apos.util.error(`Unsupported metaType in getManagerOf: ${object.metaType}`);
         }

@@ -1082,6 +1082,7 @@ module.exports = (self) => {
           _id
         };
         result.metaType = 'arrayItem';
+        result.arrayFieldId = field._id;
         result.scopedArrayName = field.scopedArrayName;
         try {
           const options = {
@@ -1166,9 +1167,15 @@ module.exports = (self) => {
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // Unlike the field _id, scopedArrayName is stored on every array item in
-      // the database, so it keeps its original flat form and continues to
-      // honor arrayName. Changing it would require a migration
+      // Array items are matched to their schema by arrayFieldId, which is
+      // the field _id and so unique even when a nested array shares the name
+      // of its parent. scopedArrayName is flat and can collide that way. It
+      // is still written for the benefit of processes running older code
+      // during a deployment, and read only for items stored before
+      // arrayFieldId existed
+      self.arrayManagersById[fieldPath] = {
+        schema: field.schema
+      };
       const localArrayName = field.arrayName || field.name;
       field.scopedArrayName = `${metaType}.${type}.${localArrayName}`;
       self.arrayManagers[field.scopedArrayName] = {
@@ -1234,6 +1241,7 @@ module.exports = (self) => {
         }
       }
       result.metaType = 'objectItem';
+      result.objectFieldId = field._id;
       result.scopedObjectName = field.scopedObjectName;
       destination[field.name] = result;
       if (errors.length) {
@@ -1241,8 +1249,10 @@ module.exports = (self) => {
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // Stored in the database on every object, so it keeps its original flat
-      // form and continues to honor objectName. See scopedArrayName above
+      // See arrayFieldId and scopedArrayName above
+      self.objectManagersById[fieldPath] = {
+        schema: field.schema
+      };
       const localObjectName = field.objectName || field.name;
       field.scopedObjectName = `${metaType}.${type}.${localObjectName}`;
       self.objectManagers[field.scopedObjectName] = {

@@ -40,7 +40,9 @@ module.exports = {
     self.fieldTypes = {};
     self.fieldsById = {};
     self.arrayManagers = {};
+    self.arrayManagersById = {};
     self.objectManagers = {};
+    self.objectManagersById = {};
     self.fieldMetadataComponents = [];
     self.uiManagerIndicators = [];
 
@@ -1431,6 +1433,7 @@ module.exports = {
 
             object._id = object._id || self.apos.util.generateId();
             object.metaType = 'arrayItem';
+            object.arrayFieldId = field._id;
             object.scopedArrayName = field.scopedArrayName;
           },
           object: (field, object) => {
@@ -1439,6 +1442,7 @@ module.exports = {
             }
 
             object.metaType = 'object';
+            object.objectFieldId = field._id;
             object.scopedObjectName = field.scopedObjectName;
           },
           relationship: (field, doc) => {
@@ -2481,13 +2485,29 @@ still output the value of this field with a regular template expression.`);
       // parallelism with doc type and widget managers. This allows the
       // getManagerOf method to operate on objects of any of three types: doc,
       // widget or array item.
+      //
+      // `name` is a legacy scopedArrayName, which is not unique when nested
+      // arrays share a name. Prefer getArrayManagerById.
       getArrayManager(name) {
         return self.arrayManagers[name];
       },
+      // Fetch the manager of the array field with the given _id, as found in
+      // the arrayFieldId property of its items
+      getArrayManagerById(_id) {
+        return self.arrayManagersById[_id];
+      },
       // This allows the getManagerOf method to operate on objects of type
       // "object".
+      //
+      // `name` is a legacy scopedObjectName, which is not unique when nested
+      // objects share a name. Prefer getObjectManagerById.
       getObjectManager(name) {
         return self.objectManagers[name];
+      },
+      // Fetch the manager of the object field with the given _id, as found in
+      // the objectFieldId property of the object
+      getObjectManagerById(_id) {
+        return self.objectManagersById[_id];
       },
       // Regenerate all array item, area and widget ids so they are considered
       // new. Useful when copying an entire doc.
