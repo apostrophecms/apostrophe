@@ -25,7 +25,51 @@ describe('Document Versions draft changes', function () {
         'module-versions_false': {},
         'module-autopublish_true-versions_true': {},
         'module-localized_false-versions_true': {},
-        ...modules
+        ...modules,
+        blank: {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              flag: { type: 'boolean' },
+              tags: {
+                type: 'checkboxes',
+                choices: [ {
+                  label: 'One',
+                  value: 'one'
+                } ]
+              },
+              items: {
+                type: 'array',
+                fields: {
+                  add: {
+                    label: { type: 'string' }
+                  }
+                }
+              },
+              code: {
+                type: 'string',
+                required: true
+              },
+              meta: {
+                type: 'object',
+                fields: {
+                  add: {
+                    ref: {
+                      type: 'string',
+                      required: true
+                    },
+                    on: { type: 'boolean' }
+                  }
+                }
+              },
+              note: {
+                type: 'string',
+                required: true,
+                if: { flag: true }
+              }
+            }
+          }
+        }
       }
     });
     // The fixture's documents relate to `topic1`, published so that the
@@ -354,6 +398,21 @@ describe('Document Versions draft changes', function () {
     assert.equal(rowAt(rows, 'count').old, apos.nested.newInstance().count);
     assert.equal(rowAt(rows, 'count').ai, 'changed');
     assert.deepEqual(authorsOf(rowAt(rows, 'count')), [ 'bob' ]);
+  });
+
+  it('should compare a document never published with a new one as a save stores it', async function () {
+    const req = ann();
+    const doc = apos.modules.blank.newInstance();
+    await apos.modules.blank.convert(req, {
+      title: 'Saved with no input',
+      code: 'C1',
+      meta: { ref: 'R1' }
+    }, doc);
+    const draft = await apos.modules.blank.insert(req, doc);
+
+    const { rows } = await apos.docVersions.getDraftChanges(req, draft._id);
+
+    assert.deepEqual(rows.map(row => namesOf(row).join('/')).sort(), [ 'code', 'meta/ref', 'slug', 'title' ]);
   });
 
   it('should key a relationship by its field name', async function () {

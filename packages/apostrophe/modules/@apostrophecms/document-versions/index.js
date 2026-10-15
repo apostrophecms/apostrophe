@@ -1190,11 +1190,11 @@ module.exports = {
       // versions recorded since the publication (see `attribute` in
       // `lib/diff.js`) and carrying what an editor of the value needs (see
       // `addFieldData`). A document never published is compared with a new
-      // document of its type; `baseline` says which, `{ kind: 'published',
-      // at }` or `{ kind: 'default' }`. `annotate` adds `doc`, the draft
-      // marked with the changes (see `getAnnotatedDoc`). Throws `invalid`
-      // for a malformed id, `notfound` when the draft does not exist, `req`
-      // cannot edit it or its type records no draft versions
+      // document of its type as a save stores it; `baseline` says which,
+      // `{ kind: 'published', at }` or `{ kind: 'default' }`. `annotate` adds
+      // `doc`, the draft marked with the changes (see `getAnnotatedDoc`).
+      // Throws `invalid` for a malformed id, `notfound` when the draft does
+      // not exist, `req` cannot edit it or its type records no draft versions
       async getDraftChanges(req, docId, { annotate = false } = {}) {
         const id = self.apos.launder.id(docId);
         if (!id) {
@@ -1234,7 +1234,7 @@ module.exports = {
           sort: { createdAt: 1 }
         });
         const contents = [
-          published || manager.newInstance(),
+          published || await getEmptyDoc(),
           ...records.map(record => record.doc),
           draft
         ];
@@ -1274,6 +1274,24 @@ module.exports = {
             doc: self.getAnnotatedDoc(draftReq, contents[0], draft, { rows })
           })
         };
+
+        // A new document as a save with no input stores it, so that a field
+        // left alone is no change. A field that fails to convert, such as a
+        // required one, keeps what conversion wrote, else its initial value
+        async function getEmptyDoc() {
+          const initial = manager.newInstance();
+          const doc = { ...initial };
+          try {
+            await self.apos.schema.convert(draftReq, manager.schema, initial, doc, {
+              fetchRelationships: false
+            });
+          } catch (errors) {
+            if (!Array.isArray(errors)) {
+              throw errors;
+            }
+          }
+          return doc;
+        }
       },
       // The change list between contents of one document, as the modal shows
       // it: `{ rows, counts: { added, modified, deleted, ai } }`. `pairs` are
