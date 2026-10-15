@@ -47,6 +47,7 @@
     <div
       ref="list"
       class="apos-doc-version-changes__list"
+      tabindex="-1"
     >
       <p
         v-if="!rows.length"
@@ -156,6 +157,8 @@
 // runs from below its group down to the changed value. The group header
 // alone states the change type. The navigator at the bottom steps through
 // the groups the filter shows; a click on a group header goes to that one.
+// The list is no tab stop, which Firefox makes of a scroll container: its
+// buttons are the stops.
 import {
   computed, inject, nextTick, reactive, ref, useId, watch
 } from 'vue';

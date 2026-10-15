@@ -16,10 +16,14 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
   // `{ rows, counts, baseline }`, see `getDraftChanges`
   const payload = ref(null);
 
+  let requestId = 0;
+
   // Fetches the changes of `id`, the context document, and marks its
   // widgets. Resolves `false`, with the user told, when they could not be
-  // loaded
+  // loaded. Only the most recent call may update the state: one that a
+  // later call or `clear()` superseded resolves `true` and changes nothing
   async function load(id) {
+    const request = ++requestId;
     const markersStore = useDocVersionMarkersStore();
     const { action } = apos.modules['@apostrophecms/document-versions'];
     let response;
@@ -32,6 +36,9 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
         }
       });
     } catch (e) {
+      if (request !== requestId) {
+        return true;
+      }
       // eslint-disable-next-line no-console
       console.error(e);
       apos.notify('apostrophe:seeChangesNotLoaded', {
@@ -39,6 +46,9 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
         icon: 'alert-circle-icon'
       });
       return false;
+    }
+    if (request !== requestId) {
+      return true;
     }
     const { doc, ...rest } = response;
     if (docId.value && (docId.value !== id)) {
@@ -55,6 +65,7 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
   }
 
   function clear() {
+    requestId++;
     if (docId.value) {
       useDocVersionMarkersStore().clear(docId.value);
     }

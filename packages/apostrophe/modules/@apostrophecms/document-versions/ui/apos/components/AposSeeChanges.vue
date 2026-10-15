@@ -28,40 +28,34 @@
         @click="close"
       />
     </template>
+    <template #primaryControls>
+      <span
+        class="apos-see-changes__count"
+        data-apos-test="see-changes-count"
+      >
+        <span aria-hidden="true">·</span>
+        {{ $t('apostrophe:seeChangesEdits', { count: rows.length }) }}
+      </span>
+      <AposDocVersionChangesFilter
+        v-if="rows.length"
+        v-model="filter"
+        :counts="store.payload.counts"
+        :shown="shown"
+      />
+    </template>
     <template #main>
-      <AposModalBody>
-        <template #bodyMain>
-          <div
-            class="apos-see-changes__list"
-            data-apos-test="see-changes-list"
-          >
-            <section
-              v-for="group in groups"
-              :key="group.key"
-              data-apos-test="see-changes-group"
-            >
-              <AposDocVersionChangeGroup :group="group" />
-              <ul class="apos-see-changes__entries">
-                <AposDocVersionChangeEntry
-                  v-for="entry in group.entries"
-                  :key="entry.key"
-                  :entry="entry"
-                  :expanded="expanded.has(entry.key)"
-                  :detail-id="`${baseId}-${entry.key}`"
-                  @toggle="toggle(entry.key)"
-                />
-              </ul>
-            </section>
-          </div>
-        </template>
-      </AposModalBody>
+      <AposSeeChangesList
+        :rows="rows"
+        :baseline="store.payload?.baseline"
+        :filter="filter"
+      />
     </template>
   </AposModal>
 </template>
 
 <script setup>
 import {
-  computed, onMounted, reactive, ref, useId, watch
+  computed, onMounted, ref, watch
 } from 'vue';
 import changeGroups from '../lib/change-groups.js';
 import { useSeeChangesStore } from '../stores/seeChanges.js';
@@ -78,18 +72,13 @@ const MARGIN = 16;
 
 const modalEl = ref(null);
 const store = useSeeChangesStore();
-const baseId = useId();
 
-// The keys of the entries showing their detail
-const expanded = reactive(new Set());
+// The checked filter options, kept when the changes reload
+const filter = ref([]);
 
-const groups = computed(() => {
-  return changeGroups.getChangeGroups(store.payload?.rows || [], []);
-});
-
-watch(() => store.payload, () => {
-  expanded.clear();
-});
+const rows = computed(() => store.payload?.rows || []);
+const shown = computed(() => rows.value
+  .filter(row => changeGroups.matchesFilter(row, filter.value)).length);
 
 const modal = ref({
   active: false,
@@ -127,18 +116,37 @@ function focus() {
 function close() {
   modal.value.showModal = false;
 }
-
-function toggle(key) {
-  if (expanded.has(key)) {
-    expanded.delete(key);
-  } else {
-    expanded.add(key);
-  }
-}
 </script>
 
 <style lang="scss" scoped>
-.apos-see-changes__entries {
-  @include apos-list-reset();
+// Lined up with the list below; its controls set its height
+.apos-see-changes :deep(.apos-modal__header__main) {
+  padding: $spacing-three-quarters ($spacing-base + $spacing-half);
+}
+
+// The count follows the title, the filter goes to the end
+.apos-see-changes :deep(.apos-modal__controls--primary) {
+  flex-grow: 1;
+}
+
+.apos-see-changes :deep(.apos-modal__controls--primary > .apos-context-menu) {
+  margin-right: 0;
+}
+
+// The list scrolls on its own, under the header
+.apos-see-changes :deep(.apos-modal__main) {
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.apos-see-changes__count {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-half;
+  margin-right: auto;
+  margin-left: $spacing-half;
+  color: var(--a-base-2);
+  font-size: var(--a-type-smaller);
+  white-space: nowrap;
 }
 </style>

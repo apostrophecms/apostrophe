@@ -62,6 +62,7 @@
         <AposDocVersionChangeType :type="entry.row.type" />
       </span>
     </component>
+    <slot name="meta" />
     <div
       v-if="entry.detail && expanded"
       :id="detailId"
@@ -81,11 +82,13 @@
           v-else
           :key="`sides-${revealed}`"
           :entry="entry"
+          :labels="labels"
         />
       </div>
       <AposDocVersionChangeFormat
         v-if="entry.format.length"
         :lines="entry.format"
+        :labels="labels"
       />
     </div>
   </li>
@@ -93,7 +96,7 @@
 
 <script setup>
 // An entry of a group of changes: its header, a button that expands its
-// detail when it has one, and the detail
+// detail when it has one, what the `meta` slot adds below it, and the detail
 defineProps({
   // An entry of `change-groups.js`
   entry: {
@@ -114,6 +117,11 @@ defineProps({
   revealed: {
     type: Number,
     default: 0
+  },
+  // The sides' labels, `{ new, old }`, in place of a version's
+  labels: {
+    type: Object,
+    default: null
   }
 });
 
@@ -143,7 +151,7 @@ $pad-x: $spacing-base + $spacing-half;
     }
   }
 
-  button#{&}__row-main {
+  &__row-main:is(button) {
     cursor: pointer;
 
     &:focus-visible {
@@ -169,7 +177,7 @@ $pad-x: $spacing-base + $spacing-half;
     transform: rotate(90deg);
   }
 
-  button#{&}__row-main:hover &__row-chevron {
+  &__row-main:is(button):hover &__row-chevron {
     color: var(--a-text-primary);
   }
 

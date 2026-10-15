@@ -7,6 +7,7 @@
     <div class="apos-doc-versions-panel__track">
       <div
         class="apos-doc-versions-panel__pane apos-doc-versions-panel__pane--list"
+        tabindex="-1"
         data-apos-test="doc-versions-panel-list"
         :inert="view !== 'list' || undefined"
       >
@@ -14,6 +15,7 @@
       </div>
       <div
         class="apos-doc-versions-panel__pane apos-doc-versions-panel__pane--changes"
+        tabindex="-1"
         data-apos-test="doc-versions-panel-changes"
         :inert="view !== 'changes' || undefined"
       >
@@ -25,8 +27,9 @@
 
 <script setup>
 // The right-hand panel of the versions modal: the version list, or one
-// version's change list slid in over it. Each pane scrolls on its own; the
-// pane out of view is inert so it takes no focus.
+// version's change list slid in over it. Each pane scrolls on its own and is
+// no tab stop, which Firefox makes of a scroll container: its buttons are the
+// stops. The pane out of view is inert so it takes no focus.
 defineProps({
   view: {
     type: String,
