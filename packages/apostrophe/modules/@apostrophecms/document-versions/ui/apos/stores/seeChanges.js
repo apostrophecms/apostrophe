@@ -15,6 +15,8 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
   const docId = ref(null);
   // `{ rows, counts, baseline }`, see `getDraftChanges`
   const payload = ref(null);
+  // The markers of the page's widgets by `_id`, see `getWidgetChanges`
+  const widgetChanges = ref({});
 
   let requestId = 0;
 
@@ -54,7 +56,8 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
     if (docId.value && (docId.value !== id)) {
       markersStore.clear(docId.value);
     }
-    markersStore.set(id, widgetChangesLib.getWidgetChanges(doc));
+    widgetChanges.value = widgetChangesLib.getWidgetChanges(doc);
+    markersStore.set(id, widgetChanges.value);
     docId.value = id;
     payload.value = rest;
     return true;
@@ -71,12 +74,14 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
     }
     docId.value = null;
     payload.value = null;
+    widgetChanges.value = {};
   }
 
   return {
     active,
     docId,
     payload,
+    widgetChanges,
     setActive,
     load,
     clear
