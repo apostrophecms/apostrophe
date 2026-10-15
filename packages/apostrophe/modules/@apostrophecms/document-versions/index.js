@@ -44,7 +44,8 @@ module.exports = {
     label: 'apostrophe:versionLabel',
     pluralLabel: 'apostrophe:versionPluralLabel',
     components: {
-      versions: 'AposDocVersions'
+      versions: 'AposDocVersions',
+      seeChanges: 'AposSeeChanges'
     },
     // Draft saves replace the newest draft version in place until this much
     // time, in milliseconds, has passed since that version was created. Then
@@ -353,7 +354,8 @@ module.exports = {
           label: self.options.label,
           pluralLabel: self.options.pluralLabel,
           components: {
-            versions: 'AposDocVersions'
+            versions: 'AposDocVersions',
+            seeChanges: self.getComponentName('seeChanges', 'AposSeeChanges')
           },
           name: self.__meta.name
         };

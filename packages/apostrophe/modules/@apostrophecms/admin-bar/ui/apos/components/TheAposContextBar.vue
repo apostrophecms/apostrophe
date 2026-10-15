@@ -33,6 +33,7 @@
         @switch-draft-mode="switchDraftMode"
       />
       <TheAposContextModeAndSettings
+        ref="modeAndSettings"
         class="apos-admin-bar__control-group"
         :context="context"
         :published="published"
@@ -61,6 +62,9 @@ import { isWithoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.j
 import { replay, html } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
 import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
 import { useContextOperationsStore } from 'Modules/@apostrophecms/ui/stores/contextOperations.js';
+// See Changes belongs to the versions module, but its payload must load
+// before the page markup goes in, which only `refresh` can order. The points
+// marked "versions module" are the ones that could move there
 import { useSeeChangesStore } from 'Modules/@apostrophecms/document-versions/stores/seeChanges.js';
 
 // Undo history deeper than this is forgotten, oldest first
@@ -210,6 +214,8 @@ export default {
     seeChanges(newVal) {
       window.apos.adminBar.seeChanges = newVal;
       useContextOperationsStore().setChecked('see-changes', newVal);
+      // Versions module
+      useSeeChangesStore().setActive(newVal);
     },
     contextBarActive() {
       this.$nextTick(() => {
@@ -226,6 +232,7 @@ export default {
     apos.bus.$on('context-edited', this.onContextEdited);
     apos.bus.$on('context-history-record', this.onContextHistoryRecord);
     apos.bus.$on('content-changed', this.onContentChanged);
+    // Versions module: its See Changes operation
     apos.bus.$on('see-changes', this.onSeeChanges);
 
     window.addEventListener('beforeunload', this.onBeforeUnload);
@@ -767,13 +774,26 @@ export default {
       // The changes are those of the draft as saved
       await this.flushSaves();
       this.seeChanges = true;
+      this.openSeeChanges();
       await this.refresh();
+    },
+    // The mode's window. It closes itself when the mode ends; closed by the
+    // user, it ends the mode and focus goes back to the menu that holds the
+    // See Changes item. Versions module, the focus return included
+    async openSeeChanges() {
+      const { components } = apos.modules['@apostrophecms/document-versions'];
+      await apos.modal.execute(components.seeChanges);
+      if (this.seeChanges) {
+        await this.leaveSeeChanges();
+        this.$refs.modeAndSettings?.$el.querySelector('[aria-haspopup="menu"]')?.focus();
+      }
     },
     async leaveSeeChanges({ refresh = true } = {}) {
       if (!this.seeChanges) {
         return;
       }
       this.seeChanges = false;
+      // Versions module
       useSeeChangesStore().clear();
       if (refresh) {
         await this.refresh();
@@ -824,6 +844,7 @@ export default {
         doc._url = window.location.pathname + window.location.search;
       }
 
+      // Versions module, awaited here so the markers exist before the areas mount
       if (this.seeChanges && !await useSeeChangesStore().load(this.context._id)) {
         await this.leaveSeeChanges({ refresh: false });
       }

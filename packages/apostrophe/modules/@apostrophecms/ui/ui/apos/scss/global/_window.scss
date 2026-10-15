@@ -29,7 +29,7 @@
   }
 }
 
-.apos-window-is-dragging {
+.apos-window-is-dragging:not(.apos-window-is-dragging--page-visible) {
   [data-apos-refreshable] {
     filter: blur(2px);
   }

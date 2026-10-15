@@ -94,6 +94,12 @@ export const useModalStore = defineStore('modal', () => {
     return stack.value.length;
   }
 
+  // The modals that block the page: all but those without an overlay,
+  // such as a window the page stays usable around
+  function getBlockingDepth() {
+    return stack.value.filter(modal => modal.overlay !== 'none').length;
+  }
+
   function getAt(index) {
     const last = stack.value.length - 1;
     const target = index < 0
@@ -288,6 +294,7 @@ export const useModalStore = defineStore('modal', () => {
     get,
     getAt,
     getDepth,
+    getBlockingDepth,
     getProperties,
     execute,
     updateModalData,

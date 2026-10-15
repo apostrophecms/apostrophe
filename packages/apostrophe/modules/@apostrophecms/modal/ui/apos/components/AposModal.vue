@@ -10,7 +10,7 @@
       ref="modalEl"
       :class="classes"
       role="dialog"
-      aria-modal="true"
+      :aria-modal="modal.overlay === 'none' ? null : 'true'"
       :aria-labelledby="props.modalData.id"
       data-apos-modal
       :data-apos-graph-key="props.graphKey || undefined"
@@ -21,7 +21,7 @@
     >
       <transition :name="transitionType">
         <div
-          v-if="modal.showModal"
+          v-if="modal.showModal && (modal.overlay !== 'none')"
           :class="[
             'apos-modal__overlay',
             { [`apos-modal__overlay--${modal.overlay}`]: modal.overlay }
@@ -270,6 +270,9 @@ const size = ref(
 );
 
 const getDefaultPosition = (origin = 'right') => {
+  if (props.modal.initialPosition) {
+    return props.modal.initialPosition;
+  }
   const adminBarHeight = window.apos?.adminBar?.height || 0;
   const windowSize = window.innerWidth;
   const spacing = 30;
@@ -290,15 +293,25 @@ const {
   startResizing,
   setPosition: setWindowPosition,
   constrainPosition,
+  constrainSize,
   cleanup: cleanupDraggable
 } = useDraggableWindow({
   size,
+  storageKey: props.modal.storageKey || null,
+  // A window without an overlay sits beside the page, which stays in view
+  blurPage: computed(() => props.modal.overlay !== 'none'),
   getDefaultPosition: () => getDefaultPosition(props.modal.origin),
   minWidth: props.modal.minWidth || 300,
   maxWidth: props.modal.maxWidth || 800,
   minHeight: props.modal.minHeight || 300,
   maxHeight: props.modal.maxHeight || null
 });
+
+// A modal without an overlay leaves the page usable: the store tells such
+// modals apart from those that block the page
+watch(() => props.modal.overlay, overlay => {
+  store.updateModalData(props.modalData.id, { overlay });
+}, { immediate: true });
 
 // Wrap handler to only work for window modals and primary mouse button
 const startDragging = (e) => {
@@ -484,6 +497,7 @@ watch(() => props.modal.initialSize, (newSize) => {
 function handleResize() {
   if (isWindowModal.value) {
     constrainPosition();
+    constrainSize();
   }
 }
 
@@ -689,6 +703,24 @@ function close() {
     // Default dimensions are set via inline styles from DEFAULT_WINDOW_SIZE constant
     .apos-modal__inner {
       border-radius: 10px;
+    }
+
+    .apos-modal__inner.apos-window--resizing {
+      outline: 2px solid var(--a-base-5);
+      outline-offset: -2px;
+    }
+
+    .apos-modal__header__main {
+      padding: 2.5px 10px 0;
+      border-top: 1px solid var(--a-base-9);
+    }
+
+    .apos-modal__heading {
+      font-size: var(--a-type-label);
+    }
+
+    .apos-modal__controls--secondary {
+      margin-right: 10px;
     }
 
     :deep(.apos-modal__body) {

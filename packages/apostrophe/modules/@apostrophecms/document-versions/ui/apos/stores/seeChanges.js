@@ -5,9 +5,10 @@ import { useDocVersionMarkersStore } from './docVersionMarkers.js';
 
 /**
  * See Changes: the changes of the draft of the document on the page since
- * its last publication. The context bar turns the mode on and off; this
- * store holds what the mode shows. The widgets of the page find their
- * markers under the page's graph key, the context document's `_id`.
+ * its last publication. The context bar turns the mode on and off and
+ * mirrors it as `active`; this store holds what the mode shows. The widgets
+ * of the page find their markers under the page's graph key, the context
+ * document's `_id`.
  */
 export const useSeeChangesStore = defineStore('seeChanges', () => {
   const active = ref(false);
@@ -44,17 +45,19 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
       markersStore.clear(docId.value);
     }
     markersStore.set(id, widgetChangesLib.getWidgetChanges(doc));
-    active.value = true;
     docId.value = id;
     payload.value = rest;
     return true;
+  }
+
+  function setActive(value) {
+    active.value = value;
   }
 
   function clear() {
     if (docId.value) {
       useDocVersionMarkersStore().clear(docId.value);
     }
-    active.value = false;
     docId.value = null;
     payload.value = null;
   }
@@ -63,6 +66,7 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
     active,
     docId,
     payload,
+    setActive,
     load,
     clear
   };
