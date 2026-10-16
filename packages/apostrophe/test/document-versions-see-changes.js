@@ -91,7 +91,8 @@ describe('Document Versions draft changes', function () {
                 type: 'area',
                 options: {
                   widgets: {
-                    '@apostrophecms/rich-text': {}
+                    '@apostrophecms/rich-text': {},
+                    embed: {}
                   }
                 }
               },
@@ -107,6 +108,28 @@ describe('Document Versions draft changes', function () {
             }
           }
         },
+        // Stores its code outside its schema, and keeps it through a save with
+        // its own `sanitize`
+        'embed-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Embed'
+          },
+          fields: {
+            add: {
+              caption: { type: 'string' }
+            }
+          },
+          extendMethods(self) {
+            return {
+              async sanitize(_super, req, input, ...rest) {
+                const output = await _super(req, input, ...rest);
+                output.code = self.apos.launder.string(input.code);
+                return output;
+              }
+            };
+          }
+        },
         story: {
           extend: '@apostrophecms/piece-type',
           fields: {
@@ -117,7 +140,8 @@ describe('Document Versions draft changes', function () {
                   widgets: {
                     '@apostrophecms/rich-text': {},
                     'story-link': {},
-                    opaque: {}
+                    opaque: {},
+                    embed: {}
                   }
                 }
               },
@@ -1195,31 +1219,150 @@ describe('Document Versions draft changes', function () {
       assert.equal(rowAt(await rowsOf(draft._id), 'items', 'item1'), undefined);
     });
 
-    it('should not restore what a widget stores outside its schema, which a save drops', async function () {
-      const opaque = (_id) => ({
+    function embed(_id, code, caption = '') {
+      return {
         _id,
         metaType: 'widget',
-        type: 'opaque'
+        type: 'embed',
+        caption,
+        code
+      };
+    }
+
+    it('should put back what a widget modified whole stores outside its schema, its fields as they are', async function () {
+      const { draft, rows } = await edited({
+        main: area('main1', [ embed('changed', 'One', 'Caption'), richText('c', '<p>C</p>') ])
+      }, draft => {
+        draft.main.items[0].code = 'Two';
+        draft.main.items[0].caption = 'Edited';
+      });
+      const { restore } = rowAt(rows, 'main', 'changed');
+
+      assert.equal(restore.patch['@changed'].code, 'One');
+      assert.equal(restore.patch['@changed'].caption, 'Edited');
+      assert.equal(restore.inverse['@changed'].code, 'Two');
+      await apply(draft._id, restore.patch);
+
+      const widget = (await stored(draft._id)).main.items[0];
+      assert.equal(widget.code, 'One');
+      assert.equal(widget.caption, 'Edited');
+      const after = await rowsOf(draft._id);
+      assert.equal(rowAt(after, 'main', 'changed'), undefined);
+      assert.equal(rowAt(after, 'main', 'changed', 'caption').new, 'Edited');
+
+      await apply(draft._id, restore.inverse);
+      assert.equal((await stored(draft._id)).main.items[0].code, 'Two');
+    });
+
+    it('should put back a deleted widget and take out an added one with what they store outside their schema', async function () {
+      const { draft, rows } = await edited({
+        main: area('main1', [ embed('deleted', 'Held'), richText('c', '<p>C</p>') ])
+      }, draft => {
+        draft.main.items = [ draft.main.items[1], embed('added', 'New') ];
+      });
+      const deleted = rowAt(rows, 'main', 'deleted').restore;
+      const added = rowAt(rows, 'main', 'added').restore;
+
+      await apply(draft._id, deleted.patch);
+      assert.deepEqual(idsOf((await stored(draft._id)).main), [ 'deleted', 'c', 'added' ]);
+      assert.equal((await stored(draft._id)).main.items[0].code, 'Held');
+
+      await apply(draft._id, added.patch);
+      assert.deepEqual(idsOf((await stored(draft._id)).main), [ 'deleted', 'c' ]);
+      await apply(draft._id, added.inverse);
+      assert.equal((await stored(draft._id)).main.items[2].code, 'New');
+    });
+
+    it('should not restore a widget of a type its area does not allow, nor one holding such a widget', async function () {
+      const card = _id => ({
+        _id,
+        metaType: 'widget',
+        type: 'card'
+      });
+      const link = (_id, inner) => ({
+        ...storyLink(_id, []),
+        inner: area(`${_id}-inner`, [ inner ])
       });
       const { draft } = await edited({
-        main: area('main1', [ opaque('changed'), opaque('holding'), opaque('empty') ])
+        main: area('main1', [
+          link('holding', embed('embed1', 'Kept')),
+          link('keeping', embed('embed2', 'Kept')),
+          richText('c', '<p>C</p>')
+        ])
       }, draft => {
-        draft.main.items = draft.main.items.slice(0, 1);
+        draft.main.items = draft.main.items.slice(2);
       });
-      // Only data written around the model API is stored outside a schema
+      // Allowed by the areas' options when they were written
       await apos.doc.db.updateOne({ _id: draft._id.replace(':draft', ':published') }, {
         $set: {
-          'main.items.0.data': 'One',
-          'main.items.1.data': 'Held'
+          'main.items.0.inner.items.0': card('card1'),
+          'main.items.3': card('card2')
         }
       });
-      await apos.doc.db.updateOne({ _id: draft._id }, { $set: { 'main.items.0.data': 'Two' } });
 
       const rows = await rowsOf(draft._id);
-      assert.equal(rowAt(rows, 'main', 'changed').type, 'modified');
-      assert.equal(rowAt(rows, 'main', 'changed').restore, undefined);
       assert.equal(rowAt(rows, 'main', 'holding').restore, undefined);
-      assert.ok(rowAt(rows, 'main', 'empty').restore);
+      assert.equal(rowAt(rows, 'main', 'card2').type, 'deleted');
+      assert.equal(rowAt(rows, 'main', 'card2').restore, undefined);
+      await apply(draft._id, rowAt(rows, 'main', 'keeping').restore.patch);
+      assert.equal((await stored(draft._id)).main.items[0].inner.items[0].code, 'Kept');
+    });
+
+    it('should leave out a widget of a type the site no longer has, and never anchor on it', async function () {
+      const gone = _id => ({
+        _id,
+        metaType: 'widget',
+        type: 'gone'
+      });
+      const link = (_id, inner) => ({
+        ...storyLink(_id, []),
+        inner: area(`${_id}-inner`, [ inner ])
+      });
+      const { draft } = await edited({
+        main: area('main1', [
+          richText('a', '<p>A</p>'),
+          richText('deleted', '<p>Deleted</p>'),
+          link('holding', embed('embed1', 'Kept')),
+          richText('c', '<p>C</p>')
+        ])
+      }, draft => {
+        draft.main.items = [ draft.main.items[0], draft.main.items[3] ];
+      });
+      // Left by a widget type removed from the project
+      await apos.doc.db.updateOne({ _id: draft._id.replace(':draft', ':published') }, {
+        $set: { 'main.items.2.inner.items.1': gone('gone1') }
+      });
+      await apos.doc.db.updateOne({ _id: draft._id }, {
+        $set: {
+          'main.items': [
+            gone('gone2'),
+            richText('a', '<p>A</p>'),
+            richText('c', '<p>C</p>'),
+            gone('gone3')
+          ]
+        }
+      });
+
+      const { rows, doc } = await apos.docVersions.getDraftChanges(ann(), draft._id, {
+        annotate: true
+      });
+      assert.deepEqual(rows.map(row => namesOf(row).join('/')), [
+        'main/deleted',
+        'main/holding'
+      ]);
+      assert.deepEqual(rows.map(row => row.path.at(-1).ordinal), [ 2, 3 ]);
+      // Back in place among the widgets the page shows
+      const shown = doc.main.items.filter(item => item.type !== 'gone');
+      assert.deepEqual(shown.map(item => item._id), [ 'a', 'deleted', 'holding', 'c' ]);
+
+      const deleted = rowAt(rows, 'main', 'deleted').restore;
+      assert.equal(deleted.patch.$push['@main1.items'].$before, 'c');
+      await apply(draft._id, deleted.patch);
+      await apply(draft._id, rowAt(rows, 'main', 'holding').restore.patch);
+      const { main } = await stored(draft._id);
+      assert.deepEqual(idsOf(main), [ 'a', 'deleted', 'holding', 'c' ]);
+      assert.deepEqual(idsOf(main.items[2].inner), [ 'embed1' ]);
+      assert.equal((await rowsOf(draft._id)).length, 0);
     });
 
     describe('over HTTP', function () {

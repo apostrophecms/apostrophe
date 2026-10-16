@@ -585,19 +585,37 @@ describe('Document Versions diff engine', function () {
       assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
     });
 
-    it('should compare a widget of an unknown type as a whole', function () {
+    it('should leave out a widget of a type the site no longer has, as the page does', function () {
       const older = buildDoc();
       const newer = buildDoc();
-      const olderWidget = older.section.rows[0].content.items[2];
-      const widget = newer.section.rows[0].content.items[2];
-      olderWidget.type = 'gone';
-      widget.type = 'gone';
+      const { items } = newer.section.rows[0].content;
+      older.section.rows[0].content.items[2].type = 'gone';
+      items[2].type = 'gone';
+      items[2].payload.n = 3;
+      items.push({
+        _id: 'added-gone',
+        metaType: 'widget',
+        type: 'gone'
+      });
       assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
-      widget.payload.n = 3;
+    });
+
+    it('should count positions without a widget of a type the site no longer has', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const olderItems = older.section.rows[0].content.items;
+      const newerItems = newer.section.rows[0].content.items;
+      olderItems[0].type = 'gone';
+      newerItems[0].type = 'gone';
+      // Moved past the widgets the page shows: no change of order
+      newerItems.push(newerItems.shift());
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
+
+      newerItems.splice(1, 1);
       const rows = apos.docVersions.getChangeRows(req, older, newer);
-      assert.equal(rows.length, 1);
-      assert.equal(rows[0].fieldType, 'widget');
-      assert.equal(rows[0].path.at(-1).label, 'gone');
+      assert.deepEqual(rows.map(row => [ row.type, row.path.at(-1).ordinal ]), [
+        [ 'deleted', 2 ]
+      ]);
     });
 
     it('should report an object that appears or goes as one row', function () {
@@ -1079,14 +1097,14 @@ describe('Document Versions diff engine', function () {
         newer: doc => {
           doc.zone.items.push('A widget');
         },
-        rows: [ [ 'added', 'widget', 'widget', 'Zone > ' ] ]
+        rows: []
       },
       {
         name: 'a widget without a type',
         newer: doc => {
           delete doc.zone.items[1].type;
         },
-        rows: [ [ 'modified', 'widget', 'widget', 'Zone > ' ] ]
+        rows: [ [ 'deleted', 'widget', 'widget', 'Zone > Card' ] ]
       },
       {
         name: 'rich text widget content that becomes a number',

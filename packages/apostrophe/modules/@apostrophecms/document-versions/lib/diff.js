@@ -59,7 +59,8 @@ const ORDER = Symbol('order');
  *   of blocks and inline styles.
  * @property {(options: object) => Object<string, object>} [getAreaWidgets]
  *   The widget types an area field's `options` allow, with the options of
- *   each, groups included (`apos.area.getWidgets`). Read by `addFieldData`.
+ *   each, groups included (`apos.area.getWidgets`). Read by `addFieldData`
+ *   and `addRestore`.
  * @property {(err: Error, path: PathSegment[]) => void} [onError] Told of
  *   every failure the engine recovered from, with the path of the field or
  *   row it happened at. The module logs them.
@@ -316,7 +317,12 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
       if (manager?.options.versionsRenderDeleted !== false) {
         const area = resolve(doc, row.path.slice(0, -1));
         if (area?.items) {
-          const at = Math.min(row.path.at(-1).ordinal - 1, area.items.length);
+          // Positions count the widgets of the types the site has
+          const known = knownWidgets(area, ctx);
+          const index = row.path.at(-1).ordinal - 1;
+          const at = (index < known.length)
+            ? area.items.indexOf(known[index])
+            : area.items.length;
           area.items.splice(at, 0, {
             ..._.cloneDeep(row.old),
             _deleted: true,
@@ -613,11 +619,16 @@ function locate(schema, path, ctx) {
 
 /**
  * Adds `restore` to every row that a PATCH of the newer document can put
- * back to its older value exactly: the older value at `patchKey`, or for a
+ * back to its older value exactly: the older value at `patchKey`; for a
  * whole item or widget added or deleted, the list operation that takes it
- * out or puts it back at its place. Values are in the form a save takes,
- * each relationship as `{ _id, _fields }` entries made from its stored ids.
- * Rows are modified in place, after `addFieldData`.
+ * out or puts it back at its place; for a widget modified whole, what it
+ * stores outside its schema, its fields left as they are. Values are in the
+ * form a save takes, each relationship as `{ _id, _fields }` entries made
+ * from its stored ids. A widget type that stores data outside its schema
+ * keeps it through its own `sanitize`, as it must. None when a save would
+ * drop a widget the patch writes, at any depth: of a type the site no longer
+ * has, or one its area does not allow. Rows are modified in place, after
+ * `addFieldData`.
  *
  * @param {object[]} schema The schema of the document the rows are of.
  * @param {ChangeRow[]} rows
@@ -631,9 +642,9 @@ function locate(schema, path, ctx) {
  * @param {(field: object, id: string) => string} options.relatedId The `_id`
  *   a save finds a related document by, from the `aposDocId` a relationship
  *   stores.
- * @param {Set<string>} options.loadable The related `_id`s of the older
- *   document that the request can load (see `getRelatedIds`).
- * @param {DiffContext} ctx
+ * @param {Set<string>} options.loadable The related `_id`s of both
+ *   documents that the request can load (see `getRelatedIds`).
+ * @param {DiffContext} ctx With `getAreaWidgets`.
  * @returns {ChangeRow[]} `rows`.
  */
 function addRestore(schema, rows, {
@@ -649,8 +660,11 @@ function addRestore(schema, rows, {
 
   // None for a field the save would skip or the request may not change:
   // read only, or not the request's to edit, along the path or anywhere in
-  // the value; none either when a related document the older value holds no
-  // longer loads, since the save would leave it out
+  // the value; none either when a related document the restored value holds
+  // no longer loads, nor when a widget either side writes is of a type its
+  // area does not allow, since the save would leave it out. A widget of a
+  // type the site no longer has is left out by the save as by every edit,
+  // and is no change of its own
   function getRestore(row) {
     const target = locate(schema, row.path, ctx);
     if (
@@ -664,43 +678,76 @@ function addRestore(schema, rows, {
     const onField = field => {
       blocked ||= Boolean(field.readOnly) || !canEdit(field);
     };
-    const toOlder = {
+    const onWidget = (widget, options) => {
+      blocked ||= Boolean(ctx.getWidgetManager(widget.type)) && !options;
+    };
+    const restoring = {
       toId(field, id) {
         const _id = relatedId(field, id);
         blocked ||= !loadable.has(_id);
         return _id;
       },
-      onField
+      onField,
+      onWidget
     };
-    const toNewer = {
+    const undoing = {
       toId: relatedId,
-      onField
+      onField,
+      onWidget
     };
     const { itemAt } = target;
     const whole = itemAt === row.path.length - 1;
     let restore;
-    if (whole && (row.kind !== 'richText')) {
-      // A widget modified whole changed what it stores outside its schema,
-      // which no save writes
-      restore = (row.type !== 'modified') && row.listKey &&
-        getListRestore(row, target, deleted => (deleted ? toOlder : toNewer));
-    } else {
+    if (!whole || (row.kind === 'richText')) {
       restore = {
-        patch: { [row.patchKey]: valueAt(older, row, target, toOlder) },
-        inverse: { [row.patchKey]: valueAt(newer, row, target, toNewer) }
+        patch: { [row.patchKey]: valueAt(older, row, target, restoring) },
+        inverse: { [row.patchKey]: valueAt(newer, row, target, undoing) }
       };
+    } else if (row.type === 'modified') {
+      restore = getWidgetRestore(row, target, restoring, undoing);
+    } else {
+      restore = row.listKey &&
+        getListRestore(row, target, deleted => (deleted ? restoring : undoing));
     }
     return blocked ? undefined : restore;
   }
 
+  // A widget modified whole changed what it stores outside its schema: that
+  // goes back, and its fields stay as they are, each a row of its own
+  function getWidgetRestore(row, { area }, restoring, undoing) {
+    const { widgetType } = row.path.at(-1);
+    const manager = ctx.getWidgetManager(widgetType);
+    const widget = resolve(newer, row.path);
+    if (!widget) {
+      return;
+    }
+    const options = widgetOptionsOf(area, widgetType);
+    const back = {
+      ..._.omit(
+        toInput(manager.schema, widget, ctx, restoring),
+        Object.keys(outsideSchema(manager, widget))
+      ),
+      ...outsideSchema(manager, resolve(older, row.path))
+    };
+    const current = toInput(manager.schema, widget, ctx, undoing);
+    restoring.onWidget(back, options);
+    undoing.onWidget(current, options);
+    return {
+      patch: { [row.patchKey]: back },
+      inverse: { [row.patchKey]: current }
+    };
+  }
+
   // A deleted item goes back next to a neighbour the newer list still has;
   // taking back the removal of an added one puts it next to its own
-  function getListRestore(row, { itemAt, fields }, sideOf) {
+  function getListRestore(row, {
+    itemAt, area, fields
+  }, sideOf) {
     const id = row.path[itemAt].name;
     const { widgetType } = row.path[itemAt];
     const listPath = row.path.slice(0, itemAt);
-    const olderList = listOf(resolve(older, listPath));
-    const newerList = listOf(resolve(newer, listPath));
+    const olderList = listOf(resolve(older, listPath), widgetType);
+    const newerList = listOf(resolve(newer, listPath), widgetType);
     const pull = { $pullAllById: { [row.listKey]: [ id ] } };
     const push = (item, place) => ({
       $push: {
@@ -713,13 +760,17 @@ function addRestore(schema, rows, {
     // Both ways, so that the restore can be undone
     const deleted = row.type === 'deleted';
     const item = (deleted ? olderList : newerList).find(item => item?._id === id);
-    if (!item || !isSaved(item, widgetType)) {
+    if (!item) {
       return;
     }
     const itemSchema = widgetType
-      ? ctx.getWidgetManager(widgetType).schema
+      ? (ctx.getWidgetManager(widgetType)?.schema || [])
       : (fields.at(-1)?.schema || []);
-    const input = toInput(itemSchema, item, ctx, sideOf(deleted));
+    const side = sideOf(deleted);
+    const input = toInput(itemSchema, item, ctx, side);
+    if (widgetType) {
+      side.onWidget(input, widgetOptionsOf(area, widgetType));
+    }
     return deleted
       ? {
         patch: push(input, placeOf(id, olderList, newerList)),
@@ -731,15 +782,8 @@ function addRestore(schema, rows, {
       };
   }
 
-  // Whether a save of the widget keeps all it holds: a type this site has,
-  // and nothing stored outside its schema but rich text markup
-  function isSaved(item, widgetType) {
-    if (!widgetType) {
-      return true;
-    }
-    const manager = ctx.getWidgetManager(widgetType);
-    return Boolean(manager) &&
-      (Boolean(manager.getRichText) || _.isEmpty(outsideSchema(manager, item)));
+  function widgetOptionsOf(area, widgetType) {
+    return ctx.getAreaWidgets(area?.options || {})[widgetType];
   }
 
   // Before the next item of `list` that `present` has, else after the
@@ -768,8 +812,10 @@ function addRestore(schema, rows, {
     return (value === undefined) ? null : value;
   }
 
-  function listOf(node) {
-    return Array.isArray(node) ? node : (node?.items || []);
+  // An area's widgets of the types the site has, so that no anchor is one
+  // the page does not show
+  function listOf(node, widgetType) {
+    return widgetType ? knownWidgets(node, ctx) : (Array.isArray(node) ? node : []);
   }
 }
 
@@ -798,7 +844,9 @@ function getRelatedIds(schema, doc, ctx, relatedId) {
 // A copy of `object` in the form a save takes, by its schema: every
 // relationship, at any depth, as the `{ _id, _fields }` entries a save reads,
 // in place of the ids and fields it stores. `side.toId` makes the `_id` of a
-// related document; `side.onField` is told of every field the copy holds
+// related document; `side.onField` is told of every field the copy holds,
+// `side.onWidget` of every widget in its areas, with the options its area
+// gives it
 function toInput(schema, object, ctx, side) {
   if (!object || (typeof object !== 'object')) {
     return object;
@@ -829,14 +877,21 @@ function fieldInput(field, holder, ctx, side) {
   }
   const value = holder?.[field.name];
   if ((kind === 'area') && Array.isArray(value?.items)) {
+    const allowed = side.onWidget && ctx.getAreaWidgets(field.options || {});
     return {
       ...value,
-      items: value.items.map(widget => toInput(
-        ctx.getWidgetManager(widget?.type)?.schema || [],
-        widget,
-        ctx,
-        side
-      ))
+      items: value.items.map(widget => {
+        const input = toInput(
+          ctx.getWidgetManager(widget?.type)?.schema || [],
+          widget,
+          ctx,
+          side
+        );
+        if (allowed && input && (typeof input === 'object')) {
+          side.onWidget(input, allowed[input.type]);
+        }
+        return input;
+      })
     };
   }
   if ((kind === 'array') && Array.isArray(value)) {
@@ -1104,15 +1159,17 @@ function walkArray(field, older, newer, ctx, path, rows) {
 }
 
 // Widgets match by `_id`, like array items; a matched pair walks the
-// widget type's schema, then its content outside the schema
+// widget type's schema, then its content outside the schema. A widget of a
+// type the site no longer has is left out, as the page and a save leave it
+// out, so that positions are the ones the page shows
 function walkArea(field, older, newer, ctx, path, rows) {
-  const entries = mergeItems(older?.items || [], newer?.items || []);
+  const entries = mergeItems(knownWidgets(older, ctx), knownWidgets(newer, ctx));
   walkOrder('area', field, entries, path, rows, (widget, ordinal) => {
     const manager = ctx.getWidgetManager(widget.type);
     return {
       ordinal,
-      label: manager?.label || widget.type,
-      title: manager?.options.titleField && text.getWidgetText(widget, ctx)
+      label: manager.label,
+      title: manager.options.titleField && text.getWidgetText(widget, ctx)
     };
   });
   for (const entry of entries) {
@@ -1123,12 +1180,12 @@ function walkArea(field, older, newer, ctx, path, rows) {
     } = entry;
     const widget = newWidget || oldWidget;
     const manager = ctx.getWidgetManager(widget.type);
-    const title = manager?.options.titleField && text.getWidgetText(widget, ctx);
+    const title = manager.options.titleField && text.getWidgetText(widget, ctx);
     const widgetPath = [
       ...path,
       {
         name: widget._id,
-        label: manager?.label || widget.type,
+        label: manager.label,
         ...(title && { title }),
         ordinal,
         widgetType: widget.type
@@ -1144,16 +1201,15 @@ function walkArea(field, older, newer, ctx, path, rows) {
         newWidget,
         field
       ));
-    } else if (!manager) {
-      if (!_.isEqual(oldWidget, newWidget)) {
-        rows.push(
-          row(widgetPath, 'modified', 'widget', 'widget', oldWidget, newWidget, field)
-        );
-      }
     } else {
       walkWidget(manager, oldWidget, newWidget, ctx, widgetPath, rows);
     }
   }
+}
+
+// The widgets of an area whose type the site has
+function knownWidgets(area, ctx) {
+  return (area?.items || []).filter(widget => ctx.getWidgetManager(widget?.type));
 }
 
 // Rich text lives outside the widget schema, so it is compared on its own
@@ -1179,7 +1235,7 @@ function walkWidget(manager, older, newer, ctx, path, rows) {
 }
 
 // What a widget stores outside its schema, which only the widget type itself
-// reads, and a save does not keep
+// reads and keeps through a save, with its own `sanitize`
 function outsideSchema(manager, widget) {
   const ignored = new Set(WIDGET_KEYS);
   for (const field of manager.schema) {

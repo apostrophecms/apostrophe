@@ -81,8 +81,8 @@
 
 <script setup>
 // Asks before a restore, showing what it returns to: the older value as the
-// entry's detail reads it, or for a widget or item added or deleted whole,
-// its type and title
+// entry's detail reads it, or for a whole widget or item, its type and
+// title
 import {
   computed, nextTick, onMounted, ref, useId
 } from 'vue';
@@ -118,12 +118,13 @@ const text = ref(null);
 // Whether the text is cut short by its height
 const cut = ref(false);
 
-const whole = computed(() => [ 'widget', 'arrayItem' ].includes(props.entry.row.kind) &&
+const whole = computed(() => [ 'widget', 'arrayItem' ].includes(props.entry.row.kind));
+const listed = computed(() => whole.value &&
   [ 'added', 'deleted' ].includes(props.entry.row.type));
-const removes = computed(() => whole.value && (props.entry.row.type === 'added'));
+const removes = computed(() => listed.value && (props.entry.row.type === 'added'));
 
 const title = computed(() => {
-  if (whole.value) {
+  if (listed.value) {
     const what = (props.entry.row.kind === 'widget') ? 'Widget' : 'Item';
     return removes.value
       ? `apostrophe:seeChangesRemoveAdded${what}`

@@ -1264,7 +1264,10 @@ module.exports = {
         if (rows.some(row => row.patchKey)) {
           const allowed = manager.allowedSchema(draftReq, found, found._ancestors?.at(-1))
             .map(field => field.name);
-          const ids = diff.getRelatedIds(manager.schema, contents[0], ctx, relatedId);
+          // Both sides: a widget modified whole keeps the draft's fields
+          const ids = new Set([ contents[0], draft ].flatMap(doc => [
+            ...diff.getRelatedIds(manager.schema, doc, ctx, relatedId)
+          ]));
           const loadable = ids.size
             ? await self.apos.doc.find(draftReq, { _id: { $in: [ ...ids ] } })
               .project({ _id: 1 })
