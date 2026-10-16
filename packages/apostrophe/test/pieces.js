@@ -1104,7 +1104,7 @@ describe('Pieces', function() {
           articlesFields: {},
           articlesIds: [],
           metaType: 'object',
-          scopedObjectName: 'doc.product.relationshipsInObject'
+          _objectFieldId: 'doc.product.relationshipsInObject'
         },
         searchSummary: inserted.searchSummary,
         slug: 'product-01',

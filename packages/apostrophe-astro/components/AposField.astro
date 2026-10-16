@@ -88,7 +88,7 @@ const attributes = {
 // dead code there
 // An array item and an object have no type of their own, so say what they
 // are the schema of
-const owner = doc?.type ?? doc?.scopedArrayName ?? doc?.scopedObjectName;
+const owner = doc?.type ?? doc?._arrayFieldId ?? doc?._objectFieldId;
 
 if ((import.meta as any).env.DEV && !data) {
   logWarnOnce(
