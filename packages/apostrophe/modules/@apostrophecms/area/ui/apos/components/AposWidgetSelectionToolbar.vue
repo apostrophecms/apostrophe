@@ -261,3 +261,17 @@ export default {
   translate: -50% 16px;
 }
 </style>
+
+<style lang="scss">
+.apos-widget-marquee {
+  z-index: $z-index-widget-selection;
+  position: fixed;
+  pointer-events: none;
+  border: 1px solid var(--a-primary);
+  background-color: var(--a-primary-transparent-25);
+
+  &--modal {
+    z-index: $z-index-widget-selection-modal;
+  }
+}
+</style>

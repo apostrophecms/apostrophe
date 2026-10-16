@@ -200,6 +200,7 @@ export default {
   watch: {
     editMode(newVal) {
       window.apos.adminBar.editMode = newVal;
+      apos.bus.$emit('admin-bar-edit-mode', newVal);
     },
     contextBarActive() {
       this.$nextTick(() => {

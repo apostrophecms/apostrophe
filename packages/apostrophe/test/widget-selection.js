@@ -1,12 +1,15 @@
 const assert = require('assert/strict');
 
 const getLib = async () => import('../modules/@apostrophecms/area/ui/apos/lib/widget-selection.js');
+const getDom = async () => import('../modules/@apostrophecms/area/ui/apos/lib/widget-selection-dom.js');
 
 describe('widget selection', function() {
   let lib;
+  let dom;
 
   before(async function() {
     lib = await getLib();
+    dom = await getDom();
   });
 
   it('toggles a widget on and off and resets the anchor', function() {
@@ -208,5 +211,137 @@ describe('widget selection', function() {
     assert.equal(lib.contiguousRange(items, [ 'a', 'c' ]), null);
     assert.equal(lib.contiguousRange(items, [ 'a', 'from-another-area' ]), null);
     assert.equal(lib.contiguousRange(items, []), null);
+  });
+
+  it('captures boxes that overlap a rectangle, including a parent and its child', function() {
+    const rect = {
+      left: 10,
+      top: 10,
+      right: 50,
+      bottom: 40
+    };
+    const boxes = [
+      {
+        id: 'partial',
+        left: 40,
+        top: 30,
+        right: 80,
+        bottom: 70
+      },
+      {
+        id: 'edge',
+        left: 50,
+        top: 10,
+        right: 70,
+        bottom: 40
+      },
+      {
+        id: 'miss',
+        left: 60,
+        top: 50,
+        right: 90,
+        bottom: 80
+      },
+      {
+        id: 'parent',
+        left: 0,
+        top: 0,
+        right: 100,
+        bottom: 100
+      },
+      {
+        id: 'child',
+        left: 12,
+        top: 12,
+        right: 30,
+        bottom: 28
+      }
+    ];
+    assert.deepEqual(dom.boxesInRect(boxes, rect), [ 'partial', 'parent', 'child' ]);
+    assert.deepEqual(dom.boxesInRect(boxes, {
+      left: 50,
+      top: 40,
+      right: 10,
+      bottom: 10
+    }), [ 'partial', 'parent', 'child' ]);
+  });
+
+  it('adds captured widgets without dropping the ones already selected', function() {
+    const state = {
+      selectedWidgetIds: [ 'a', 'b' ],
+      selectionAnchorId: 'b',
+      pinnedWidgetIds: [ 'a', 'b' ]
+    };
+    const next = lib.addCapturedWidgets(state, [ 'b', 'c', 'd' ]);
+    assert.deepEqual(next.selectedWidgetIds, [ 'a', 'b', 'c', 'd' ]);
+    assert.equal(next.selectionAnchorId, 'd');
+    assert.deepEqual(next.pinnedWidgetIds, [ 'a', 'b', 'c', 'd' ]);
+
+    const unchanged = lib.addCapturedWidgets(state, []);
+    assert.deepEqual(unchanged.selectedWidgetIds, [ 'a', 'b' ]);
+    assert.equal(unchanged.selectionAnchorId, 'b');
+    assert.deepEqual(unchanged.pinnedWidgetIds, [ 'a', 'b' ]);
+  });
+
+  it('keeps the outermost widget when a drag also captures its contents', function() {
+    const parents = {
+      child: 'parent',
+      parent: 'grandparent'
+    };
+    const parentOf = (id) => parents[id] || null;
+    const state = {
+      selectedWidgetIds: [ 'keeper' ],
+      selectionAnchorId: 'keeper',
+      pinnedWidgetIds: [ 'keeper' ]
+    };
+    const next = lib.addCapturedWidgets(
+      state,
+      [ 'grandparent', 'parent', 'child', 'sibling' ],
+      { parentOf }
+    );
+    assert.deepEqual(next.selectedWidgetIds, [ 'keeper', 'grandparent', 'sibling' ]);
+    assert.equal(next.selectionAnchorId, 'sibling');
+    assert.deepEqual(next.pinnedWidgetIds, [ 'keeper', 'grandparent', 'sibling' ]);
+
+    const capturedParent = lib.addCapturedWidgets({
+      selectedWidgetIds: [ 'child' ],
+      selectionAnchorId: 'child',
+      pinnedWidgetIds: [ 'child' ]
+    }, [ 'parent' ], { parentOf });
+    assert.deepEqual(capturedParent.selectedWidgetIds, [ 'parent' ]);
+    assert.equal(capturedParent.selectionAnchorId, 'parent');
+
+    const onlyChild = lib.addCapturedWidgets(state, [ 'child' ], { parentOf });
+    assert.deepEqual(onlyChild.selectedWidgetIds, [ 'keeper', 'child' ]);
+    assert.equal(onlyChild.selectionAnchorId, 'child');
+  });
+
+  it('selects one nested widget instead of the layout that contains it', function() {
+    const parents = {
+      child: 'parent',
+      parent: 'grandparent'
+    };
+    const parentOf = (id) => parents[id] || null;
+    const empty = {
+      selectedWidgetIds: [],
+      selectionAnchorId: null,
+      pinnedWidgetIds: []
+    };
+    const next = lib.addCapturedWidgets(
+      empty,
+      [ 'grandparent', 'parent', 'child' ],
+      { parentOf }
+    );
+    assert.deepEqual(next.selectedWidgetIds, [ 'child' ]);
+    assert.equal(next.selectionAnchorId, 'child');
+    assert.deepEqual(next.pinnedWidgetIds, [ 'child' ]);
+
+    const narrowed = lib.addCapturedWidgets({
+      selectedWidgetIds: [ 'grandparent', 'keeper' ],
+      selectionAnchorId: 'grandparent',
+      pinnedWidgetIds: [ 'grandparent', 'keeper' ]
+    }, [ 'grandparent', 'parent', 'child' ], { parentOf });
+    assert.deepEqual(narrowed.selectedWidgetIds, [ 'keeper', 'child' ]);
+    assert.equal(narrowed.selectionAnchorId, 'child');
   });
 });

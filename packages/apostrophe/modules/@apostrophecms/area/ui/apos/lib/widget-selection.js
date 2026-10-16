@@ -210,6 +210,106 @@ function rangeInArea(state, widgetId, areaItemIds) {
   };
 }
 
+// A meta-drag adds the widgets inside the rectangle. Ids already selected
+// stay selected. A drag whose rectangle hits a single widget selects that
+// widget, even when the layout around it also overlaps the rectangle.
+// When the rectangle hits more than one widget, an ancestor wins over the
+// widgets inside it, walking up until the outermost selected widget
+// remains. The anchor is the last captured widget that is still selected,
+// and the pins become the whole set.
+export function addCapturedWidgets(
+  state = emptySelection(),
+  ids = [],
+  { parentOf } = {}
+) {
+  const captured = unique((ids || []).filter(Boolean));
+  const selectedWidgetIds = [ ...(state?.selectedWidgetIds || []) ];
+  const pinnedWidgetIds = [ ...(state?.pinnedWidgetIds || []) ];
+  if (!captured.length) {
+    return {
+      selectedWidgetIds,
+      selectionAnchorId: state?.selectionAnchorId ?? null,
+      pinnedWidgetIds
+    };
+  }
+  const leaves = leavesOf(captured, parentOf);
+  const single = leaves.length === 1;
+  const chosen = single ? leaves : keepOutermost(captured, parentOf);
+  const merged = unique([ ...selectedWidgetIds, ...chosen ]);
+  const nextIds = single
+    ? preferWidget(merged, leaves[0], parentOf)
+    : keepOutermost(merged, parentOf);
+  const surviving = chosen.filter((id) => nextIds.includes(id));
+  return {
+    selectedWidgetIds: nextIds,
+    selectionAnchorId: surviving.length
+      ? surviving[surviving.length - 1]
+      : (state?.selectionAnchorId ?? null),
+    pinnedWidgetIds: [ ...nextIds ]
+  };
+}
+
+// Captured widgets that do not contain another captured widget.
+function leavesOf(ids, parentOf) {
+  if (typeof parentOf !== 'function') {
+    return ids;
+  }
+  return ids.filter((id) => {
+    return !ids.some((other) => {
+      return other !== id && isAncestor(id, other, parentOf);
+    });
+  });
+}
+
+// Keep `widget` and drop anything above or inside it, so a one-widget drag
+// is that widget rather than the layout that contains it.
+function preferWidget(ids, widget, parentOf) {
+  if (typeof parentOf !== 'function') {
+    return ids;
+  }
+  return ids.filter((id) => {
+    if (id === widget) {
+      return true;
+    }
+    return !isAncestor(id, widget, parentOf) &&
+      !isAncestor(widget, id, parentOf);
+  });
+}
+
+function isAncestor(ancestorId, id, parentOf) {
+  const seen = new Set([ id ]);
+  let parent = parentOf(id);
+  while (parent && !seen.has(parent)) {
+    if (parent === ancestorId) {
+      return true;
+    }
+    seen.add(parent);
+    parent = parentOf(parent);
+  }
+  return false;
+}
+
+// Drop a widget when an ancestor is also selected. `parentOf` returns the
+// parent widget id, or null at the top of the tree.
+export function keepOutermost(ids, parentOf) {
+  if (typeof parentOf !== 'function') {
+    return ids;
+  }
+  const selected = new Set(ids);
+  return ids.filter((id) => {
+    const seen = new Set([ id ]);
+    let parent = parentOf(id);
+    while (parent && !seen.has(parent)) {
+      if (selected.has(parent)) {
+        return false;
+      }
+      seen.add(parent);
+      parent = parentOf(parent);
+    }
+    return true;
+  });
+}
+
 function unique(ids) {
   return [ ...new Set(ids) ];
 }

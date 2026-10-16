@@ -79,7 +79,7 @@ export function nextSelectionFromClick({
       areaId: null
     };
   }
-  const gesture = selectionGesture(event);
+  const gesture = multiGesture(event);
   const id = innerWidgetId(event, widgetId);
   const target = widgetContext(id);
   const anchor = state.selectionAnchorId
@@ -112,6 +112,108 @@ export function nextSelectionFromClick({
 
 export function widgetSelector(widgetId) {
   return `[data-apos-widget-id="${CSS.escape(widgetId)}"]`;
+}
+
+// Multi-select and the drag net belong to editing. The page preview
+// leaves edit mode, but a modal is still an editing session.
+export function isEditingContext(target) {
+  if (typeof window !== 'undefined' && window.apos?.adminBar?.editMode) {
+    return true;
+  }
+  if (!target?.closest) {
+    return false;
+  }
+  return Boolean(target.closest('.apos-modal, [data-apos-schema-area]'));
+}
+
+// The nearest ancestor widget. Foreign widgets are not selectable, so the
+// walk continues through them to the next real parent.
+export function parentWidgetId(widgetId) {
+  let current = widgetContext(widgetId)?.el || null;
+  while (current) {
+    const parent = current.parentElement?.closest('[data-apos-widget-id]');
+    if (!parent) {
+      return null;
+    }
+    if (parent.getAttribute('data-apos-widget-foreign') !== '1') {
+      return parent.getAttribute('data-apos-widget-id');
+    }
+    current = parent;
+  }
+  return null;
+}
+
+// Widget ids whose boxes overlap `rect`, in document order. A shared edge
+// is not an overlap. Foreign widgets are skipped: batch edits ignore them.
+export function widgetIdsInRect(rect) {
+  if (typeof document === 'undefined' || !rect) {
+    return [];
+  }
+  const boxes = [];
+  for (const el of document.querySelectorAll('[data-apos-widget-id]')) {
+    if (el.getAttribute('data-apos-widget-foreign') === '1') {
+      continue;
+    }
+    const id = el.getAttribute('data-apos-widget-id');
+    if (!id) {
+      continue;
+    }
+    const bounds = el.getBoundingClientRect();
+    boxes.push({
+      id,
+      top: bounds.top,
+      left: bounds.left,
+      right: bounds.right,
+      bottom: bounds.bottom
+    });
+  }
+  return boxesInRect(boxes, rect);
+}
+
+export function boxesInRect(boxes, rect) {
+  const target = normalizeRect(rect);
+  if (!target) {
+    return [];
+  }
+  return (boxes || [])
+    .filter((box) => overlaps(box, target))
+    .map((box) => box.id);
+}
+
+function normalizeRect(rect) {
+  if (!rect) {
+    return null;
+  }
+  const left = Math.min(rect.left, rect.right);
+  const right = Math.max(rect.left, rect.right);
+  const top = Math.min(rect.top, rect.bottom);
+  const bottom = Math.max(rect.top, rect.bottom);
+  if (right <= left || bottom <= top) {
+    return null;
+  }
+  return {
+    left,
+    right,
+    top,
+    bottom
+  };
+}
+
+function overlaps(box, rect) {
+  return box.left < rect.right &&
+    box.right > rect.left &&
+    box.top < rect.bottom &&
+    box.bottom > rect.top;
+}
+
+// Meta, ctrl, and shift build a multi-selection only while editing.
+// Anywhere else they stay a plain click.
+function multiGesture(event) {
+  const gesture = selectionGesture(event);
+  if (gesture === 'plain' || isEditingContext(event?.target)) {
+    return gesture;
+  }
+  return 'plain';
 }
 
 // A mouse click on the widget body addresses the innermost widget under the
