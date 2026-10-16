@@ -14,6 +14,19 @@ module.exports = (self) => {
   }
 
   return {
+    // The adapter to make one provider request with. An entry may
+    // configure `apiKey` as a function minting short-lived credentials;
+    // it is resolved here, per request, so the adapter only ever sees
+    // a string in `this.apiKey`
+    async keyedAdapter(record) {
+      const { adapter } = record;
+      if (typeof adapter.apiKey !== 'function') {
+        return adapter;
+      }
+      return Object.create(adapter, {
+        apiKey: { value: await adapter.apiKey() }
+      });
+    },
     // Run one adapter call with retries, resolving with the value of
     // `call`, an async thunk performing a single adapter call and
     // validating its response. `call` is retried whole, so response

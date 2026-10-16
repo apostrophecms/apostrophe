@@ -182,7 +182,7 @@ describe('AI engine', function() {
       rejects({
         ...valid(),
         providers: { openai: { apiKey: 42 } }
-      }, /"providers\.openai\.apiKey" must be a string/);
+      }, /"providers\.openai\.apiKey" must be a string or a function returning one/);
       rejects({
         ...valid(),
         providers: {
@@ -671,6 +671,25 @@ describe('AI engine', function() {
         (apos) => apos.ai.addAdapter(fakeAdapter('fake', {
           settings: { workspaceId: {} }
         })));
+      });
+
+      it('fails on a malformed Amazon Bedrock setting', async function() {
+        await failsToActivate({
+          providers: {
+            anthropic: {
+              apiKey: 'k',
+              bedrockProfile: 'global'
+            }
+          }
+        }, /"bedrockProfile" requires "bedrockRegion"/, () => {});
+        await failsToActivate({
+          providers: {
+            openai: {
+              apiKey: 'k',
+              bedrockRegion: 'nowhere'
+            }
+          }
+        }, /"nowhere" is not an AWS region/, () => {});
       });
 
       it('fails on a routing entry referencing an unconfigured provider', async function() {

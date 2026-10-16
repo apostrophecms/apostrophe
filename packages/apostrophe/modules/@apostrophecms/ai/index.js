@@ -28,7 +28,20 @@ module.exports = {
   options: {
     alias: 'ai',
     // providers: { name: { apiKey, envKey, baseUrl, adapter, models,
-    //   effort, capabilities } }
+    //   effort, capabilities } }. `apiKey` is a string or an async
+    //   function returning one, called before every provider request
+    //   (retries included) so short-lived credentials stay fresh, e.g.
+    //   an Amazon Bedrock token provider. A key from the environment
+    //   wins over either
+    //
+    //   Amazon Bedrock: give the `anthropic` or `openai` entry a
+    //   `bedrockRegion` (e.g. 'us-east-1') and it calls Bedrock's
+    //   runtime endpoint with the same dialect and its own default
+    //   models and effort rows, keyed by a Bedrock API key from
+    //   APOS_BEDROCK_KEY — or, for IAM credentials, `apiKey:
+    //   getTokenProvider({ region })` from `@aws/bedrock-token-generator`.
+    //   `bedrockProfile` picks the cross-region inference profile
+    //   ('global', 'us', 'eu', ...); the default follows the region
     providers: {},
     // provider: the default provider name; inferred when only one is configured
     // effort: { default, levels: { name: { provider, model, reasoning } } }
@@ -609,7 +622,8 @@ module.exports = {
             let attempt = 0;
             turn = await self.callAdapter(req, record, context.request, async () => {
               attempt++;
-              const answer = await record.adapter.chat(req, context.request);
+              const adapter = await self.keyedAdapter(record);
+              const answer = await adapter.chat(req, context.request);
               return self.reportUsage(req, {
                 callId,
                 kind: 'chat',
@@ -917,7 +931,8 @@ module.exports = {
         let attempt = 0;
         const result = await self.callAdapter(req, record, context.request, async () => {
           attempt++;
-          const batch = await record.adapter.image(req, context.request);
+          const adapter = await self.keyedAdapter(record);
+          const batch = await adapter.image(req, context.request);
           return self.reportUsage(req, {
             callId,
             kind: 'image',

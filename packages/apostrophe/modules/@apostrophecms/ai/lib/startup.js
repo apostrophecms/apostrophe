@@ -35,14 +35,20 @@ module.exports = (self) => {
           fail(`adapter "${adapterName}" does not implement validate()`);
         }
         const aliased = adapterName !== name;
-        const envKey = entry.envKey || adapter.envKey;
+        const settings = self.resolveSettings(name, adapter, entry);
+        // What the entry's settings select, when the adapter's settings
+        // can pick a different service than its default one (Amazon
+        // Bedrock rather than the vendor's own API, say)
+        const configured = (adapter.configure &&
+          await adapter.configure({ ...settings })) || {};
+        const envKey = entry.envKey || configured.envKey || adapter.envKey;
         const envApiKey = envKey && process.env[envKey];
         const instance = {
           ...adapter,
           provider: name,
           apiKey: envApiKey || entry.apiKey,
-          baseUrl: entry.baseUrl || adapter.baseUrl,
-          ...self.resolveSettings(name, adapter, entry)
+          baseUrl: entry.baseUrl || configured.baseUrl || adapter.baseUrl,
+          ...settings
         };
         if (!self.mockMode) {
           await instance.validate();
@@ -52,18 +58,21 @@ module.exports = (self) => {
           adapterName,
           adapter: instance,
           capabilities: {
-            ...adapter.capabilities,
+            ...(configured.capabilities || adapter.capabilities),
             ...entry.capabilities
           },
-          models: self.mergeModels(adapter.models, entry.models),
+          models: self.mergeModels(
+            configured.models || adapter.models,
+            entry.models
+          ),
           // An aliased entry describes a different service than the
-          // adapter's native one, so the native effort rows do not apply
-          effort: aliased
-            ? { ...entry.effort }
-            : {
-              ...adapter.effort,
-              ...entry.effort
-            }
+          // adapter's native one, so the native effort rows do not
+          // apply; rows `configure` returned describe the service the
+          // entry's own settings selected, so they do
+          effort: {
+            ...(configured.effort || (aliased ? {} : adapter.effort)),
+            ...entry.effort
+          }
         };
         self.validateAspects(name, self.providers[name].models);
       }
@@ -332,7 +341,11 @@ module.exports = (self) => {
         if (!isObject(entry)) {
           fail(`"providers.${name}" must be an object`);
         }
-        checkString(entry.apiKey, `providers.${name}.apiKey`);
+        if (entry.apiKey !== undefined &&
+          typeof entry.apiKey !== 'string' &&
+          typeof entry.apiKey !== 'function') {
+          fail(`"providers.${name}.apiKey" must be a string or a function returning one`);
+        }
         checkString(entry.envKey, `providers.${name}.envKey`);
         checkString(entry.baseUrl, `providers.${name}.baseUrl`);
         checkString(entry.adapter, `providers.${name}.adapter`);
