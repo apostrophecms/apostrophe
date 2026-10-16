@@ -104,6 +104,7 @@
                     v-else-if="hasBeenLocalized && !isCrossLocale"
                     class="apos-modal__locale"
                     :locale="currentLocale"
+                    data-apos-test="modal-locale"
                   />
                   <div
                     v-if="hasSlot('primaryControls')"

@@ -28,6 +28,8 @@
         @click="close"
       />
     </template>
+    <!-- The window is about the page in its own locale -->
+    <template #localeDisplay />
     <template #primaryControls>
       <span
         class="apos-see-changes__count"
@@ -202,6 +204,11 @@ function onWidgetMarker({ graphKey, widgetId }) {
 // The count follows the title, the filter goes to the end
 .apos-see-changes :deep(.apos-modal__controls--primary) {
   flex-grow: 1;
+}
+
+// The locale's empty place takes no room
+.apos-see-changes :deep(.apos-modal__locale) {
+  margin-right: 0;
 }
 
 .apos-see-changes :deep(.apos-modal__controls--primary > .apos-context-menu) {
