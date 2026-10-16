@@ -69,6 +69,94 @@ describe('Document Versions draft changes', function () {
               }
             }
           }
+        },
+        // Relates to stories from inside a widget
+        'story-link-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Story link'
+          },
+          fields: {
+            add: {
+              caption: { type: 'string' },
+              // Not an editor's to change
+              secret: {
+                type: 'string',
+                editPermission: {
+                  action: 'edit',
+                  type: '@apostrophecms/user'
+                }
+              },
+              inner: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {}
+                  }
+                }
+              },
+              _stories: {
+                type: 'relationship',
+                withType: 'story',
+                fields: {
+                  add: {
+                    note: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        },
+        story: {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              main: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {},
+                    'story-link': {},
+                    opaque: {}
+                  }
+                }
+              },
+              items: {
+                type: 'array',
+                fields: {
+                  add: {
+                    label: { type: 'string' },
+                    secret: {
+                      type: 'string',
+                      editPermission: {
+                        action: 'edit',
+                        type: '@apostrophecms/user'
+                      }
+                    }
+                  }
+                }
+              },
+              _stories: {
+                type: 'relationship',
+                withType: 'story',
+                fields: {
+                  add: {
+                    note: { type: 'string' }
+                  }
+                }
+              },
+              flag: { type: 'boolean' },
+              note: {
+                type: 'string',
+                required: true,
+                if: { flag: true }
+              },
+              locked: {
+                type: 'string',
+                readOnly: true
+              }
+            }
+          }
         }
       }
     });
@@ -714,6 +802,454 @@ describe('Document Versions draft changes', function () {
 
         assert.deepEqual(shown.main.items.map(widget => widget._id), [ 'kept' ]);
       }
+    });
+  });
+
+  describe('restore', function () {
+    function richText(_id, content) {
+      return {
+        _id,
+        metaType: 'widget',
+        type: '@apostrophecms/rich-text',
+        content
+      };
+    }
+
+    function area(_id, items) {
+      return {
+        _id,
+        metaType: 'area',
+        items
+      };
+    }
+
+    function storyLink(_id, stories) {
+      return {
+        _id,
+        metaType: 'widget',
+        type: 'story-link',
+        caption: 'Caption',
+        secret: '',
+        _stories: stories
+      };
+    }
+
+    // Applies `patch` to the draft as the PATCH route does
+    async function patchDraft(_id, patch) {
+      return apos.modules.story.convertPatchAndRefresh(ann(), {
+        _patches: [ patch ]
+      }, _id);
+    }
+
+    // Saves a patch of a row's `restore` as the browser sends it
+    async function apply(_id, patch) {
+      return patchDraft(_id, JSON.parse(JSON.stringify(patch)));
+    }
+
+    async function rowsOf(_id) {
+      return (await apos.docVersions.getDraftChanges(ann(), _id)).rows;
+    }
+
+    async function stored(_id) {
+      return apos.doc.db.findOne({ _id });
+    }
+
+    function idsOf(area) {
+      return area.items.map(item => item._id);
+    }
+
+    // A published story whose draft `edit` changes, its rows computed
+    async function edited(doc, edit) {
+      let draft = await insertPublished(apos.modules.story, {
+        title: 'Story',
+        ...doc
+      });
+      edit(draft);
+      draft = await saveAs(apos.modules.story, ann(), draft);
+      return {
+        draft,
+        rows: await rowsOf(draft._id)
+      };
+    }
+
+    function storiesStorage(manager) {
+      return manager.schema.find(field => field.name === '_stories');
+    }
+
+    it('should put a value back and keep the other changes', async function () {
+      const { draft, rows } = await edited({
+        items: [ {
+          _id: 'item1',
+          label: 'One'
+        } ]
+      }, draft => {
+        draft.title = 'Story, edited';
+        draft.items[0].label = 'Uno';
+      });
+      const title = rowAt(rows, 'title');
+
+      assert.deepEqual(title.restore, {
+        patch: { title: 'Story' },
+        inverse: { title: 'Story, edited' }
+      });
+      await apply(draft._id, title.restore.patch);
+
+      const after = await rowsOf(draft._id);
+      assert.equal((await stored(draft._id)).title, 'Story');
+      assert.equal(rowAt(after, 'title'), undefined);
+      assert.equal(rowAt(after, 'items', 'item1', 'label').new, 'Uno');
+
+      await apply(draft._id, title.restore.inverse);
+      assert.equal(rowAt(await rowsOf(draft._id), 'title').new, 'Story, edited');
+    });
+
+    it('should put a deleted widget back before the next one the draft still has, its relationship with it', async function () {
+      const other = await apos.modules.story.insert(ann(), { title: 'Linked' });
+      const { draft, rows } = await edited({
+        main: area('main1', [
+          richText('a', '<p>A</p>'),
+          storyLink('link', [ {
+            ...other,
+            _fields: { note: 'Pinned' }
+          } ]),
+          richText('c', '<p>C</p>')
+        ])
+      }, draft => {
+        draft.main.items = draft.main.items.filter(item => item._id !== 'link');
+      });
+      const { restore } = rowAt(rows, 'main', 'link');
+
+      const { idsStorage, fieldsStorage } = storiesStorage(apos.modules['story-link-widget']);
+      const pushed = restore.patch.$push['@main1.items'];
+      assert.equal(pushed.$before, 'c');
+      // The related document by `_id` and fields only, as a save reads it
+      assert.deepEqual(pushed.$each[0]._stories, [ {
+        _id: other._id,
+        _fields: { note: 'Pinned' }
+      } ]);
+      assert.equal(idsStorage in pushed.$each[0], false);
+      assert.deepEqual(restore.inverse, { $pullAllById: { '@main1.items': [ 'link' ] } });
+      await apply(draft._id, restore.patch);
+
+      const link = (await stored(draft._id)).main.items[1];
+      assert.deepEqual(idsOf((await stored(draft._id)).main), [ 'a', 'link', 'c' ]);
+      assert.deepEqual(link[idsStorage], [ other.aposDocId ]);
+      assert.deepEqual(link[fieldsStorage], { [other.aposDocId]: { note: 'Pinned' } });
+      assert.equal(rowAt(await rowsOf(draft._id), 'main', 'link'), undefined);
+
+      await apply(draft._id, restore.inverse);
+      assert.deepEqual(idsOf((await stored(draft._id)).main), [ 'a', 'c' ]);
+    });
+
+    it('should take an added widget out, and its inverse put it back where it was', async function () {
+      const { draft, rows } = await edited({
+        main: area('main1', [ richText('a', '<p>A</p>'), richText('c', '<p>C</p>') ])
+      }, draft => {
+        draft.main.items.splice(1, 0, richText('added', '<p>Added</p>'));
+      });
+      const { restore } = rowAt(rows, 'main', 'added');
+
+      assert.deepEqual(restore.patch, { $pullAllById: { '@main1.items': [ 'added' ] } });
+      await apply(draft._id, restore.patch);
+      assert.deepEqual(idsOf((await stored(draft._id)).main), [ 'a', 'c' ]);
+      assert.equal((await rowsOf(draft._id)).length, 0);
+
+      assert.equal(restore.inverse.$push['@main1.items'].$before, 'c');
+      await apply(draft._id, restore.inverse);
+      assert.deepEqual(idsOf((await stored(draft._id)).main), [ 'a', 'added', 'c' ]);
+    });
+
+    it('should restore in an area nested in a widget, and in an array', async function () {
+      const link = storyLink('link', []);
+      link.inner = area('inner1', [ 'x', 'y', 'z' ].map(id => richText(id, `<p>${id}</p>`)));
+      const { draft, rows } = await edited({
+        main: area('main1', [ link ]),
+        items: [ 'one', 'two' ].map(_id => ({
+          _id,
+          label: _id,
+          secret: ''
+        }))
+      }, draft => {
+        const { inner } = draft.main.items[0];
+        inner.items = [ inner.items[0], inner.items[2] ];
+        inner.items[0].content = '<p>x, edited</p>';
+        draft.items = [ draft.items[1], {
+          _id: 'three',
+          label: 'three'
+        } ];
+      });
+      const restores = [
+        [ 'main', 'link', 'inner', 'y' ],
+        [ 'main', 'link', 'inner', 'x' ],
+        [ 'items', 'one' ],
+        [ 'items', 'three' ]
+      ].map(names => rowAt(rows, ...names).restore);
+
+      assert.equal(restores[0].patch.$push['@inner1.items'].$before, 'z');
+      assert.deepEqual(restores[1].patch, { '@x.content': '<p>x</p>' });
+      assert.equal(restores[2].patch.$push.items.$before, 'two');
+      assert.deepEqual(restores[3].patch, { $pullAllById: { items: [ 'three' ] } });
+      for (const restore of restores) {
+        await apply(draft._id, restore.patch);
+      }
+
+      const after = await stored(draft._id);
+      assert.deepEqual(after.main.items[0].inner.items.map(item => item.content), [ '<p>x</p>', '<p>y</p>', '<p>z</p>' ]);
+      assert.deepEqual(after.items.map(item => item._id), [ 'one', 'two' ]);
+      assert.equal((await rowsOf(draft._id)).length, 0);
+    });
+
+    it('should put deleted widgets back in their order, one restore after the other', async function () {
+      const { draft } = await edited({
+        main: area('main1', [ 'a', 'b', 'c' ].map(id => richText(id, `<p>${id}</p>`)))
+      }, draft => {
+        draft.main.items = draft.main.items.filter(item => item._id === 'c');
+      });
+
+      for (const id of [ 'b', 'a' ]) {
+        const { restore } = rowAt(await rowsOf(draft._id), 'main', id);
+        await apply(draft._id, restore.patch);
+      }
+
+      assert.deepEqual(idsOf((await stored(draft._id)).main), [ 'a', 'b', 'c' ]);
+    });
+
+    it('should put a deleted widget back after the previous one, else at its index', async function () {
+      const last = await edited({
+        main: area('main1', [ richText('a', '<p>A</p>'), richText('b', '<p>B</p>') ])
+      }, draft => {
+        draft.main.items = draft.main.items.slice(0, 1);
+      });
+      const replaced = await edited({
+        main: area('main2', [ richText('a', '<p>A</p>') ])
+      }, draft => {
+        draft.main.items = [ richText('x', '<p>X</p>') ];
+      });
+
+      const afterA = rowAt(last.rows, 'main', 'b').restore.patch.$push['@main1.items'];
+      const atIndex = rowAt(replaced.rows, 'main', 'a').restore.patch.$push['@main2.items'];
+      assert.equal(afterA.$after, 'a');
+      assert.equal(atIndex.$position, 0);
+      await apply(last.draft._id, { $push: { '@main1.items': afterA } });
+      await apply(replaced.draft._id, { $push: { '@main2.items': atIndex } });
+
+      assert.deepEqual(idsOf((await stored(last.draft._id)).main), [ 'a', 'b' ]);
+      assert.deepEqual(idsOf((await stored(replaced.draft._id)).main), [ 'a', 'x' ]);
+    });
+
+    it('should restore the published content of a draft whose widget _ids diverged', async function () {
+      // As an import from an environment whose content diverged leaves it
+      const { draft } = await edited({
+        main: area('main1', [ richText('p1', '<p>One</p>'), richText('p2', '<p>Two</p>') ])
+      }, draft => {
+        draft.main.items = [ richText('i1', '<p>One</p>'), richText('i2', '<p>Two</p>') ];
+      });
+
+      for (const id of [ 'p1', 'p2', 'i1', 'i2' ]) {
+        const { restore } = rowAt(await rowsOf(draft._id), 'main', id);
+        await apply(draft._id, restore.patch);
+      }
+
+      const { main } = await stored(draft._id);
+      assert.deepEqual(idsOf(main), [ 'p1', 'p2' ]);
+      assert.deepEqual(main.items.map(item => item.content), [ '<p>One</p>', '<p>Two</p>' ]);
+      assert.equal((await rowsOf(draft._id)).length, 0);
+    });
+
+    it('should refuse a restore of a widget gone since the list was computed, writing nothing', async function () {
+      let { draft, rows } = await edited({
+        main: area('main1', [ richText('a', '<p>A</p>') ])
+      }, draft => {
+        draft.main.items[0].content = '<p>A, edited</p>';
+      });
+      const { restore } = rowAt(rows, 'main', 'a');
+      draft.main.items = [];
+      draft = await saveAs(apos.modules.story, ann(), draft);
+
+      assert.deepEqual(restore.patch, { '@a.content': '<p>A</p>' });
+      await assert.rejects(apply(draft._id, restore.patch), { name: 'invalid' });
+      assert.deepEqual((await stored(draft._id)).main.items, []);
+    });
+
+    it('should put a relationship back with its fields', async function () {
+      const pinned = await apos.modules.story.insert(ann(), { title: 'Pinned' });
+      const other = await apos.modules.story.insert(ann(), { title: 'Other' });
+      const { draft, rows } = await edited({
+        _stories: [ {
+          ...pinned,
+          _fields: { note: 'Pinned' }
+        } ]
+      }, draft => {
+        draft._stories = [ other ];
+      });
+
+      const { restore } = rowAt(rows, '_stories');
+      assert.deepEqual(restore.patch, {
+        _stories: [ {
+          _id: pinned._id,
+          _fields: { note: 'Pinned' }
+        } ]
+      });
+      assert.deepEqual(restore.inverse, {
+        _stories: [ {
+          _id: other._id,
+          _fields: {}
+        } ]
+      });
+      await apply(draft._id, restore.patch);
+
+      const { idsStorage, fieldsStorage } = storiesStorage(apos.modules.story);
+      const after = await stored(draft._id);
+      assert.deepEqual(after[idsStorage], [ pinned.aposDocId ]);
+      assert.deepEqual(after[fieldsStorage], { [pinned.aposDocId]: { note: 'Pinned' } });
+      assert.equal(rowAt(await rowsOf(draft._id), '_stories'), undefined);
+    });
+
+    it('should not restore a relationship to a document deleted since, nor a widget holding one', async function () {
+      const gone = await apos.modules.story.insert(ann(), { title: 'Gone' });
+      const { draft } = await edited({
+        _stories: [ gone ],
+        main: area('main1', [ storyLink('link', [ gone ]) ])
+      }, draft => {
+        draft._stories = [];
+        draft.main.items = [];
+      });
+      await apos.doc.db.deleteMany({ aposDocId: gone.aposDocId });
+
+      const rows = await rowsOf(draft._id);
+      assert.equal(rowAt(rows, '_stories').type, 'deleted');
+      assert.equal(rowAt(rows, '_stories').restore, undefined);
+      assert.equal(rowAt(rows, 'main', 'link').type, 'deleted');
+      assert.equal(rowAt(rows, 'main', 'link').restore, undefined);
+    });
+
+    it('should not restore a read only field, nor an order', async function () {
+      const { draft } = await edited({
+        items: [ 'one', 'two' ].map(_id => ({
+          _id,
+          label: _id
+        }))
+      }, draft => {
+        draft.items.reverse();
+      });
+      // A save skips a read only field: write it as raw data would
+      await apos.doc.db.updateOne({ _id: draft._id }, { $set: { locked: 'Changed' } });
+
+      const rows = await rowsOf(draft._id);
+      assert.equal(rowAt(rows, 'locked').patchKey, 'locked');
+      assert.equal(rowAt(rows, 'locked').restore, undefined);
+      assert.equal(rowAt(rows, 'items').kind, 'array');
+      assert.equal(rowAt(rows, 'items').restore, undefined);
+    });
+
+    it('should not restore for an editor a field the editor may not edit, nor a widget holding one', async function () {
+      const link = storyLink('link', []);
+      link.secret = 'Secret';
+      const { draft } = await edited({
+        main: area('main1', [ storyLink('kept', []), link ]),
+        items: [ {
+          _id: 'item1',
+          label: 'One',
+          secret: 'Secret'
+        } ]
+      }, draft => {
+        const [ kept ] = draft.main.items;
+        kept.caption = 'Caption, edited';
+        kept.secret = 'Secret, edited';
+        draft.main.items = [ kept ];
+        draft.items[0].secret = 'Secret, edited';
+      });
+      const editor = draftReq({
+        role: 'editor',
+        _id: 'eve',
+        title: 'Eve'
+      });
+
+      const { rows } = await apos.docVersions.getDraftChanges(editor, draft._id);
+      const admins = await rowsOf(draft._id);
+      const paths = [
+        [ 'main', 'kept', 'secret' ],
+        [ 'main', 'link' ],
+        [ 'items', 'item1', 'secret' ]
+      ];
+      for (const names of paths) {
+        assert.equal(rowAt(rows, ...names).restore, undefined, names.join('/'));
+        assert.ok(rowAt(admins, ...names).restore, names.join('/'));
+      }
+      assert.ok(rowAt(rows, 'main', 'kept', 'caption').restore);
+    });
+
+    it('should put the default back in a document never published', async function () {
+      const draft = await apos.modules.story.insert(ann(), {
+        title: 'Story',
+        items: [ {
+          _id: 'item1',
+          label: 'One'
+        } ]
+      });
+
+      const rows = await rowsOf(draft._id);
+      await apply(draft._id, rowAt(rows, 'items', 'item1').restore.patch);
+
+      assert.deepEqual((await stored(draft._id)).items, []);
+      assert.equal(rowAt(await rowsOf(draft._id), 'items', 'item1'), undefined);
+    });
+
+    it('should not restore what a widget stores outside its schema, which a save drops', async function () {
+      const opaque = (_id) => ({
+        _id,
+        metaType: 'widget',
+        type: 'opaque'
+      });
+      const { draft } = await edited({
+        main: area('main1', [ opaque('changed'), opaque('holding'), opaque('empty') ])
+      }, draft => {
+        draft.main.items = draft.main.items.slice(0, 1);
+      });
+      // Only data written around the model API is stored outside a schema
+      await apos.doc.db.updateOne({ _id: draft._id.replace(':draft', ':published') }, {
+        $set: {
+          'main.items.0.data': 'One',
+          'main.items.1.data': 'Held'
+        }
+      });
+      await apos.doc.db.updateOne({ _id: draft._id }, { $set: { 'main.items.0.data': 'Two' } });
+
+      const rows = await rowsOf(draft._id);
+      assert.equal(rowAt(rows, 'main', 'changed').type, 'modified');
+      assert.equal(rowAt(rows, 'main', 'changed').restore, undefined);
+      assert.equal(rowAt(rows, 'main', 'holding').restore, undefined);
+      assert.ok(rowAt(rows, 'main', 'empty').restore);
+    });
+
+    describe('over HTTP', function () {
+      let jar;
+
+      before(async function () {
+        await addUser(apos, 'admin', { username: 'restorer' });
+        jar = await login(apos, 'admin', { username: 'restorer' });
+        // The CSRF cookie a write needs
+        await apos.http.get('/', { jar });
+      });
+
+      it('should answer invalid with the field errors for a value the other fields forbid', async function () {
+        // The note is required while the flag is on
+        const { draft, rows } = await edited({}, draft => {
+          draft.flag = true;
+          draft.note = 'Noted';
+        });
+        const { restore } = rowAt(rows, 'note');
+
+        const error = await apos.http.patch(`/api/v1/story/${draft._id}`, {
+          body: { _patches: [ restore.patch ] },
+          jar
+        }).catch(error => error);
+
+        assert.equal(error.status, 400);
+        assert.equal(error.body.name, 'invalid');
+        assert.equal(error.body.data.errors[0].path, 'note');
+        assert.equal((await stored(draft._id)).note, 'Noted');
+      });
     });
   });
 });

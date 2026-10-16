@@ -1189,10 +1189,11 @@ module.exports = {
       // draft (see `getChangeList`), each changed path once, credited to the
       // versions recorded since the publication (see `attribute` in
       // `lib/diff.js`) and carrying what an editor of the value needs (see
-      // `addFieldData`). A document never published is compared with a new
-      // document of its type as a save stores it; `baseline` says which,
-      // `{ kind: 'published', at }` or `{ kind: 'default' }`. `annotate` adds
-      // `doc`, the draft marked with the changes (see `getAnnotatedDoc`).
+      // `addFieldData`) and the patch that restores it (see `addRestore`).
+      // A document never published is compared with a new document of its
+      // type as a save stores it; `baseline` says which, `{ kind:
+      // 'published', at }` or `{ kind: 'default' }`. `annotate` adds `doc`,
+      // the draft marked with the changes (see `getAnnotatedDoc`).
       // Throws `invalid` for a malformed id, `notfound` when the draft does
       // not exist, `req` cannot edit it or its type records no draft versions
       async getDraftChanges(req, docId, { annotate = false } = {}) {
@@ -1260,6 +1261,26 @@ module.exports = {
         const ctx = self.getDiffContext(draftReq, draft);
         diff.attribute(manager.schema, pairs, rows, ctx);
         diff.addFieldData(manager.schema, rows, draft, ctx);
+        if (rows.some(row => row.patchKey)) {
+          const allowed = manager.allowedSchema(draftReq, found, found._ancestors?.at(-1))
+            .map(field => field.name);
+          const ids = diff.getRelatedIds(manager.schema, contents[0], ctx, relatedId);
+          const loadable = ids.size
+            ? await self.apos.doc.find(draftReq, { _id: { $in: [ ...ids ] } })
+              .project({ _id: 1 })
+              .relationships(false)
+              .areas(false)
+              .toArray()
+            : [];
+          diff.addRestore(manager.schema, rows, {
+            older: contents[0],
+            newer: draft,
+            editable: new Set(allowed),
+            canEdit,
+            relatedId,
+            loadable: new Set(loadable.map(doc => doc._id))
+          }, ctx);
+        }
 
         return {
           rows,
@@ -1291,6 +1312,24 @@ module.exports = {
             }
           }
           return doc;
+        }
+
+        // A field's own permissions, as `allowedSchema` reads them at the top
+        // level and a widget's at its own
+        function canEdit(field) {
+          const can = ({ action, type }) => self.apos.permission
+            .can(draftReq, action, type);
+          return (!field.editPermission && !field.viewPermission) ||
+            Boolean(field.editPermission && can(field.editPermission)) ||
+            Boolean(field.viewPermission && can(field.viewPermission));
+        }
+
+        // The `_id` a save of the draft finds a related document by: its
+        // draft in the draft's locale, unless its type is not localized
+        function relatedId(field, id) {
+          return self.apos.doc.getManager(field.withType)?.isLocalized()
+            ? `${id}:${draftReq.locale}:draft`
+            : id;
         }
       },
       // The change list between contents of one document, as the modal shows

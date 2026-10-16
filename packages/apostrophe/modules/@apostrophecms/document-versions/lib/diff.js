@@ -198,6 +198,13 @@ const ORDER = Symbol('order');
  *   `richText` field: the newer markup with the changed text marked (see
  *   `lib/rich-text-diff.js`), `null` when the change cannot be shown that
  *   way.
+ * @property {string} [listKey] Rows of `addFieldData` only, for a whole item
+ *   or widget that was added or deleted: where a PATCH of the document finds
+ *   the list it is in. `@<area _id>.items` for a widget, the area editor's
+ *   own form; the array's key, as `patchKey` has it, for an array item.
+ * @property {{ patch: object, inverse: object }} [restore] Rows of
+ *   `addRestore` only: the PATCH that puts the older value back, and the
+ *   one that takes that back again. None where a patch cannot do it exactly.
  */
 
 /**
@@ -489,7 +496,7 @@ function addFieldData(schema, rows, doc, ctx) {
     if (isOrder(row)) {
       continue;
     }
-    const target = locate(row);
+    const target = locate(schema, row.path, ctx);
     if (!target) {
       continue;
     }
@@ -498,6 +505,11 @@ function addFieldData(schema, rows, doc, ctx) {
     const patchKey = getPatchKey(row, target);
     if (patchKey) {
       row.patchKey = patchKey;
+    }
+    const listKey = patchKey && !names.length && (row.type !== 'modified') &&
+      getListKey(row, target);
+    if (listKey) {
+      row.listKey = listKey;
     }
     const widgetType = !names.length && row.path[itemAt]?.widgetType;
     const fieldId = widgetType ? area?._id : row.field?._id;
@@ -514,44 +526,6 @@ function addFieldData(schema, rows, doc, ctx) {
     }
   }
   return rows;
-
-  // The deepest array item or widget along the row's path, by index (-1 for
-  // none), the area field holding it when it is a widget, and the object
-  // fields below it that the row is inside of, by index. `null` when a name
-  // along the path is not in the schema
-  function locate(row) {
-    let fields = schema;
-    let parent = null;
-    let itemAt = -1;
-    let area = null;
-    let objects = [];
-    for (const [ i, segment ] of row.path.entries()) {
-      const kind = parent && getKind(parent, ctx);
-      if (segment.widgetType || (kind === 'array')) {
-        itemAt = i;
-        area = segment.widgetType ? parent : null;
-        fields = segment.widgetType
-          ? ctx.getWidgetManager(segment.widgetType)?.schema || []
-          : parent.schema || [];
-        parent = null;
-        objects = [];
-        continue;
-      }
-      parent = fields.find(field => field.name === segment.name);
-      if (!parent) {
-        return null;
-      }
-      if ((getKind(parent, ctx) === 'object') && (i < row.path.length - 1)) {
-        fields = parent.schema || [];
-        objects.push(i);
-      }
-    }
-    return {
-      itemAt,
-      area,
-      objects
-    };
-  }
 
   // A key that reaches this value and nothing else. An `@` reference names
   // an `_id` the draft holds exactly once, or, for an item the draft no
@@ -582,6 +556,296 @@ function addFieldData(schema, rows, doc, ctx) {
       ...((whole && (row.kind === 'richText')) ? [ 'content' ] : [])
     ].join('.');
   }
+
+  // Where the list holding a whole item or widget is: its area by `_id`, as
+  // the area editor addresses it, or its array by the key of the array field
+  function getListKey(row, { itemAt, area }) {
+    const path = row.path.slice(0, itemAt);
+    if (!area) {
+      const target = locate(schema, path, ctx);
+      return target && getPatchKey({ path }, target);
+    }
+    const id = resolve(doc, path)?._id;
+    return (id && (idCounts.get(id) === 1)) ? `@${id}.items` : undefined;
+  }
+}
+
+// The deepest array item or widget along `path`, by index (-1 for none), the
+// area field holding it when it is a widget, the object fields below it that
+// the path is inside of, by index, and every schema field along the path.
+// `null` when a name along the path is not in the schema
+function locate(schema, path, ctx) {
+  let fields = schema;
+  let parent = null;
+  let itemAt = -1;
+  let area = null;
+  let objects = [];
+  const along = [];
+  for (const [ i, segment ] of path.entries()) {
+    const kind = parent && getKind(parent, ctx);
+    if (segment.widgetType || (kind === 'array')) {
+      itemAt = i;
+      area = segment.widgetType ? parent : null;
+      fields = segment.widgetType
+        ? ctx.getWidgetManager(segment.widgetType)?.schema || []
+        : parent.schema || [];
+      parent = null;
+      objects = [];
+      continue;
+    }
+    parent = fields.find(field => field.name === segment.name);
+    if (!parent) {
+      return null;
+    }
+    along.push(parent);
+    if ((getKind(parent, ctx) === 'object') && (i < path.length - 1)) {
+      fields = parent.schema || [];
+      objects.push(i);
+    }
+  }
+  return {
+    itemAt,
+    area,
+    objects,
+    fields: along
+  };
+}
+
+/**
+ * Adds `restore` to every row that a PATCH of the newer document can put
+ * back to its older value exactly: the older value at `patchKey`, or for a
+ * whole item or widget added or deleted, the list operation that takes it
+ * out or puts it back at its place. Values are in the form a save takes,
+ * each relationship as `{ _id, _fields }` entries made from its stored ids.
+ * Rows are modified in place, after `addFieldData`.
+ *
+ * @param {object[]} schema The schema of the document the rows are of.
+ * @param {ChangeRow[]} rows
+ * @param {object} options
+ * @param {object} options.older The older document, as stored.
+ * @param {object} options.newer The newer document, as stored.
+ * @param {Set<string>} options.editable The names of the top-level fields
+ *   the request may edit.
+ * @param {(field: object) => boolean} options.canEdit Whether the request may
+ *   edit a field, at any depth, by its `editPermission` and `viewPermission`.
+ * @param {(field: object, id: string) => string} options.relatedId The `_id`
+ *   a save finds a related document by, from the `aposDocId` a relationship
+ *   stores.
+ * @param {Set<string>} options.loadable The related `_id`s of the older
+ *   document that the request can load (see `getRelatedIds`).
+ * @param {DiffContext} ctx
+ * @returns {ChangeRow[]} `rows`.
+ */
+function addRestore(schema, rows, {
+  older, newer, editable, canEdit, relatedId, loadable
+}, ctx) {
+  for (const row of rows) {
+    const restore = row.patchKey && getRestore(row);
+    if (restore) {
+      row.restore = restore;
+    }
+  }
+  return rows;
+
+  // None for a field the save would skip or the request may not change:
+  // read only, or not the request's to edit, along the path or anywhere in
+  // the value; none either when a related document the older value holds no
+  // longer loads, since the save would leave it out
+  function getRestore(row) {
+    const target = locate(schema, row.path, ctx);
+    if (
+      !target ||
+      !editable.has(target.fields[0]?.name) ||
+      target.fields.some(field => field.readOnly || !canEdit(field))
+    ) {
+      return;
+    }
+    let blocked = false;
+    const onField = field => {
+      blocked ||= Boolean(field.readOnly) || !canEdit(field);
+    };
+    const toOlder = {
+      toId(field, id) {
+        const _id = relatedId(field, id);
+        blocked ||= !loadable.has(_id);
+        return _id;
+      },
+      onField
+    };
+    const toNewer = {
+      toId: relatedId,
+      onField
+    };
+    const { itemAt } = target;
+    const whole = itemAt === row.path.length - 1;
+    let restore;
+    if (whole && (row.kind !== 'richText')) {
+      // A widget modified whole changed what it stores outside its schema,
+      // which no save writes
+      restore = (row.type !== 'modified') && row.listKey &&
+        getListRestore(row, target, deleted => (deleted ? toOlder : toNewer));
+    } else {
+      restore = {
+        patch: { [row.patchKey]: valueAt(older, row, target, toOlder) },
+        inverse: { [row.patchKey]: valueAt(newer, row, target, toNewer) }
+      };
+    }
+    return blocked ? undefined : restore;
+  }
+
+  // A deleted item goes back next to a neighbour the newer list still has;
+  // taking back the removal of an added one puts it next to its own
+  function getListRestore(row, { itemAt, fields }, sideOf) {
+    const id = row.path[itemAt].name;
+    const { widgetType } = row.path[itemAt];
+    const listPath = row.path.slice(0, itemAt);
+    const olderList = listOf(resolve(older, listPath));
+    const newerList = listOf(resolve(newer, listPath));
+    const pull = { $pullAllById: { [row.listKey]: [ id ] } };
+    const push = (item, place) => ({
+      $push: {
+        [row.listKey]: {
+          $each: [ item ],
+          ...place
+        }
+      }
+    });
+    // Both ways, so that the restore can be undone
+    const deleted = row.type === 'deleted';
+    const item = (deleted ? olderList : newerList).find(item => item?._id === id);
+    if (!item || !isSaved(item, widgetType)) {
+      return;
+    }
+    const itemSchema = widgetType
+      ? ctx.getWidgetManager(widgetType).schema
+      : (fields.at(-1)?.schema || []);
+    const input = toInput(itemSchema, item, ctx, sideOf(deleted));
+    return deleted
+      ? {
+        patch: push(input, placeOf(id, olderList, newerList)),
+        inverse: pull
+      }
+      : {
+        patch: pull,
+        inverse: push(input, placeOf(id, newerList, newerList))
+      };
+  }
+
+  // Whether a save of the widget keeps all it holds: a type this site has,
+  // and nothing stored outside its schema but rich text markup
+  function isSaved(item, widgetType) {
+    if (!widgetType) {
+      return true;
+    }
+    const manager = ctx.getWidgetManager(widgetType);
+    return Boolean(manager) &&
+      (Boolean(manager.getRichText) || _.isEmpty(outsideSchema(manager, item)));
+  }
+
+  // Before the next item of `list` that `present` has, else after the
+  // previous one, else at the same index
+  function placeOf(id, list, present) {
+    const ids = new Set(present.map(item => item?._id).filter(other => other !== id));
+    const index = list.findIndex(item => item?._id === id);
+    const next = list.slice(index + 1).find(item => ids.has(item?._id));
+    if (next) {
+      return { $before: next._id };
+    }
+    const previous = list.slice(0, index).reverse().find(item => ids.has(item?._id));
+    if (previous) {
+      return { $after: previous._id };
+    }
+    return { $position: index };
+  }
+
+  // The row's value in `doc`: its field's, taken from the object holding it,
+  // or the markup of a rich text widget. `null` for none, so that it survives
+  // the trip to the browser
+  function valueAt(doc, row, { itemAt, fields }, side) {
+    const value = (itemAt === row.path.length - 1)
+      ? resolve(doc, row.path)?.content
+      : fieldInput(fields.at(-1), resolve(doc, row.path.slice(0, -1)), ctx, side);
+    return (value === undefined) ? null : value;
+  }
+
+  function listOf(node) {
+    return Array.isArray(node) ? node : (node?.items || []);
+  }
+}
+
+/**
+ * The `_id`s of the documents the relationships of `doc` relate to, at any
+ * depth, as `relatedId` makes them. What `addRestore` asks to be loadable.
+ *
+ * @param {object[]} schema The schema of `doc`.
+ * @param {object} doc A document as stored.
+ * @param {DiffContext} ctx
+ * @param {(field: object, id: string) => string} relatedId See `addRestore`.
+ * @returns {Set<string>}
+ */
+function getRelatedIds(schema, doc, ctx, relatedId) {
+  const ids = new Set();
+  toInput(schema, doc, ctx, {
+    toId(field, id) {
+      const _id = relatedId(field, id);
+      ids.add(_id);
+      return _id;
+    }
+  });
+  return ids;
+}
+
+// A copy of `object` in the form a save takes, by its schema: every
+// relationship, at any depth, as the `{ _id, _fields }` entries a save reads,
+// in place of the ids and fields it stores. `side.toId` makes the `_id` of a
+// related document; `side.onField` is told of every field the copy holds
+function toInput(schema, object, ctx, side) {
+  if (!object || (typeof object !== 'object')) {
+    return object;
+  }
+  const input = { ...object };
+  for (const field of schema) {
+    if (field.idsStorage) {
+      delete input[field.idsStorage];
+      delete input[field.fieldsStorage];
+    }
+    if (_.has(object, field.name) || field.idsStorage) {
+      side.onField?.(field);
+      input[field.name] = fieldInput(field, object, ctx, side);
+    }
+  }
+  return input;
+}
+
+// The value of `field` in `holder`, as `toInput` has it
+function fieldInput(field, holder, ctx, side) {
+  const kind = getKind(field, ctx);
+  if (kind === 'relationship') {
+    const fields = holder?.[field.fieldsStorage] || {};
+    return (holder?.[field.idsStorage] || []).map(id => ({
+      _id: side.toId(field, id),
+      _fields: fields[id] || {}
+    }));
+  }
+  const value = holder?.[field.name];
+  if ((kind === 'area') && Array.isArray(value?.items)) {
+    return {
+      ...value,
+      items: value.items.map(widget => toInput(
+        ctx.getWidgetManager(widget?.type)?.schema || [],
+        widget,
+        ctx,
+        side
+      ))
+    };
+  }
+  if ((kind === 'array') && Array.isArray(value)) {
+    return value.map(item => toInput(field.schema || [], item, ctx, side));
+  }
+  if (kind === 'object') {
+    return toInput(field.schema || [], value, ctx, side);
+  }
+  return value;
 }
 
 // How many times each `_id` occurs inside a document, its own left out: what
@@ -618,7 +882,9 @@ module.exports = {
   annotate,
   consolidate,
   attribute,
-  addFieldData
+  addFieldData,
+  addRestore,
+  getRelatedIds
 };
 
 function walkFields(schema, older, newer, ctx, path, rows) {
@@ -907,6 +1173,14 @@ function walkWidget(manager, older, newer, ctx, path, rows) {
       return;
     }
   }
+  if (!_.isEqual(outsideSchema(manager, older), outsideSchema(manager, newer))) {
+    rows.push(row(path, 'modified', 'widget', 'widget', older, newer, null));
+  }
+}
+
+// What a widget stores outside its schema, which only the widget type itself
+// reads, and a save does not keep
+function outsideSchema(manager, widget) {
   const ignored = new Set(WIDGET_KEYS);
   for (const field of manager.schema) {
     ignored.add(field.name);
@@ -917,12 +1191,7 @@ function walkWidget(manager, older, newer, ctx, path, rows) {
       ignored.add(field.fieldsStorage);
     }
   }
-  const isContent = key => !ignored.has(key) && !key.startsWith('_');
-  const oldRest = _.pickBy(older, (value, key) => isContent(key));
-  const newRest = _.pickBy(newer, (value, key) => isContent(key));
-  if (!_.isEqual(oldRest, newRest)) {
-    rows.push(row(path, 'modified', 'widget', 'widget', older, newer, null));
-  }
+  return _.pickBy(widget, (value, key) => !ignored.has(key) && !key.startsWith('_'));
 }
 
 // The markup of a rich text widget of the annotated document, with the
