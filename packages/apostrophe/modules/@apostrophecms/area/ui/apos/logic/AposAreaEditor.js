@@ -272,61 +272,13 @@ export default {
       this.setFocusedArea(null);
     },
     handleCopy() {
-      if (this.isInsideContentEditable()) {
-        return;
-      }
-      if (this.selectedWidgetIds.length > 1) {
-        if (this.ownsFocusedWidget()) {
-          this.runSelectionBatch('copy');
-        }
-        return;
-      }
-      if (
-        !this.isInsideFocusedArea() ||
-        this.focusedWidgetIndex === -1
-      ) {
-        return;
-      }
-
-      this.copy({ index: this.focusedWidgetIndex });
+      this.runWidgetCommand('copy');
     },
     handleCut() {
-      if (this.isInsideContentEditable()) {
-        return;
-      }
-      if (this.selectedWidgetIds.length > 1) {
-        if (this.ownsFocusedWidget()) {
-          this.runSelectionBatch('cut');
-        }
-        return;
-      }
-      if (
-        !this.isInsideFocusedArea() ||
-        this.focusedWidgetIndex === -1
-      ) {
-        return;
-      }
-
-      this.cut({ index: this.focusedWidgetIndex });
+      this.runWidgetCommand('cut');
     },
     handleDuplicate() {
-      if (this.isInsideContentEditable()) {
-        return;
-      }
-      if (this.selectedWidgetIds.length > 1) {
-        if (this.ownsFocusedWidget()) {
-          this.runSelectionBatch('clone');
-        }
-        return;
-      }
-      if (
-        !this.isInsideFocusedArea() ||
-        this.focusedWidgetIndex === -1
-      ) {
-        return;
-      }
-
-      this.clone({ index: this.focusedWidgetIndex });
+      this.runWidgetCommand('clone');
     },
     handlePaste() {
       if (
@@ -340,23 +292,25 @@ export default {
       this.paste({ index: Math.max(this.focusedWidgetIndex, 0) });
     },
     handleRemove() {
+      this.runWidgetCommand('remove');
+    },
+    // Every area editor hears the shortcut. A multi-selection runs once,
+    // from the area that owns the focused widget. A single widget runs
+    // only in the focused area. The name is both the batch and the method.
+    runWidgetCommand(name) {
       if (this.isInsideContentEditable()) {
         return;
       }
       if (this.selectedWidgetIds.length > 1) {
         if (this.ownsFocusedWidget()) {
-          this.runSelectionBatch('remove');
+          this.runSelectionBatch(name);
         }
         return;
       }
-      if (
-        !this.isInsideFocusedArea() ||
-        this.focusedWidgetIndex === -1
-      ) {
+      if (!this.isInsideFocusedArea() || this.focusedWidgetIndex === -1) {
         return;
       }
-
-      this.remove({ index: this.focusedWidgetIndex });
+      this[name]({ index: this.focusedWidgetIndex });
     },
     ownsFocusedWidget() {
       return this.next.some((widget) => widget._id === this.focusedWidget);
