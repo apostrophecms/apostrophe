@@ -60,16 +60,48 @@
             >
               <template #meta>
                 <p
-                  v-if="entry.row.authors?.length || entry.row.changedAt"
                   class="apos-see-changes-list__credit"
                   data-apos-test="see-changes-credit"
                 >
+                  <!-- A change no version explains was made outside the editor -->
                   <span
-                    v-if="entry.row.authors?.length"
+                    v-if="!entry.row.authors?.length"
                     data-apos-test="see-changes-authors"
-                  >{{ formatList(entry.row.authors.map(author => author.title)) }}</span>
+                  >{{ $t('apostrophe:seeChangesSystem') }}</span>
                   <span
-                    v-if="entry.row.authors?.length && entry.row.changedAt"
+                    v-else-if="entry.row.authors.length === 1"
+                    data-apos-test="see-changes-authors"
+                  >{{ entry.row.authors[0].title }}</span>
+                  <!-- The newest author, the others behind a chip -->
+                  <span
+                    v-else
+                    class="apos-see-changes-list__authors"
+                    data-apos-test="see-changes-authors"
+                  >
+                    <span aria-hidden="true">{{ entry.row.authors.at(-1).title }}</span>
+                    <AposLabel
+                      class="apos-see-changes-list__more"
+                      :label="{
+                        key: 'apostrophe:seeChangesMoreAuthors',
+                        count: entry.row.authors.length - 1
+                      }"
+                      :tooltip="{
+                        content: formatList(entry.row.authors.slice(0, -1)
+                          .map(author => author.title)),
+                        localize: false
+                      }"
+                      aria-hidden="true"
+                      data-apos-test="see-changes-more-authors"
+                    />
+                    <span
+                      class="apos-sr-only"
+                      data-apos-test="see-changes-all-authors"
+                    >
+                      {{ formatList(entry.row.authors.map(author => author.title)) }}
+                    </span>
+                  </span>
+                  <span
+                    v-if="entry.row.changedAt"
                     aria-hidden="true"
                   > · </span>
                   <time
@@ -530,6 +562,21 @@ $chevron-x: 14px + $spacing-half;
     color: var(--a-base-1);
     font-size: var(--a-type-smaller);
     line-height: var(--a-line-base);
+  }
+
+  &__authors {
+    display: inline-flex;
+    gap: $spacing-half;
+    align-items: center;
+  }
+
+  &__more {
+    color: inherit;
+  }
+
+  // Over the label's own hover cursor, the text cursor over its text
+  &__authors &__more:hover {
+    cursor: default;
   }
 
   // Shown on hover and while its entry is open, which a tap does, and to the
