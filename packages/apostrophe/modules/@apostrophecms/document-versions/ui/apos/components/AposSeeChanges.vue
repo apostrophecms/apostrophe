@@ -116,10 +116,12 @@ watch(() => store.active, active => {
 onMounted(() => {
   modal.value.active = true;
   apos.bus.$on('doc-version-marker', onWidgetMarker);
+  apos.bus.$on('refreshed', onRefreshed);
 });
 
 onBeforeUnmount(() => {
   apos.bus.$off('doc-version-marker', onWidgetMarker);
+  apos.bus.$off('refreshed', onRefreshed);
 });
 
 function focus() {
@@ -135,6 +137,10 @@ function close() {
 
 // Whether the page shows the group the navigator is at
 const onPage = ref(true);
+// The group the navigator is at
+let current = null;
+// Whether the page keeps its scroll position while the target is marked
+let keepScroll = false;
 
 // Scrolled to only when it is out of sight, as an undo's change is
 const {
@@ -143,19 +149,31 @@ const {
 } = useDocVersionTarget({
   attribute: 'data-apos-see-changes-target',
   scroll(el) {
-    if (!widgetStore.isElementInView(el)) {
+    if (!keepScroll && !widgetStore.isElementInView(el)) {
       widgetStore.scrollToElement(el);
     }
   }
 });
 
 function navigateTo(group) {
+  current = group;
   if (!group) {
     clearTarget();
     onPage.value = true;
     return;
   }
   onPage.value = showTarget(getTarget(group));
+}
+
+// The page was rendered again, where it was: the group the navigator is at
+// is marked on it again
+function onRefreshed() {
+  if (!current) {
+    return;
+  }
+  keepScroll = true;
+  onPage.value = showTarget(getTarget(current));
+  keepScroll = false;
 }
 
 // Where the page shows a group: its widget, the field rendered in place,

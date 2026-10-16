@@ -1,6 +1,7 @@
 <template>
   <li
     class="apos-doc-version-changes__row"
+    :class="{ 'apos-doc-version-changes__row--actions': $slots.actions }"
     data-apos-test="doc-version-change"
     :data-apos-change-type="entry.row.type"
   >
@@ -64,7 +65,20 @@
     </component>
     <slot name="meta" />
     <div
-      v-if="entry.detail && expanded"
+      v-if="$slots.actions"
+      class="apos-doc-version-changes__row-actions"
+    >
+      <slot name="actions" />
+    </div>
+    <div
+      v-if="$slots.panel"
+      :id="detailId"
+      class="apos-doc-version-changes__row-panel"
+    >
+      <slot name="panel" />
+    </div>
+    <div
+      v-else-if="entry.detail && expanded"
       :id="detailId"
       class="apos-doc-version-changes__diff"
       data-apos-test="doc-version-change-diff"
@@ -96,7 +110,9 @@
 
 <script setup>
 // An entry of a group of changes: its header, a button that expands its
-// detail when it has one, what the `meta` slot adds below it, and the detail
+// detail when it has one, what the `meta` slot adds below it, and the detail.
+// The `actions` slot goes beside the header; the `panel` slot, when given,
+// shows in place of the detail
 defineProps({
   // An entry of `change-groups.js`
   entry: {
@@ -134,6 +150,34 @@ $pad-x: $spacing-base + $spacing-half;
 .apos-doc-version-changes {
   &__row {
     background-color: var(--a-background-primary);
+  }
+
+  // The actions beside the header and what the `meta` slot adds; the
+  // detail and the panel below both
+  &__row--actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    & > * {
+      grid-column: 1;
+    }
+
+    & > .apos-doc-version-changes__diff,
+    & > .apos-doc-version-changes__row-panel {
+      grid-column: 1 / -1;
+    }
+
+    & > .apos-doc-version-changes__row-actions {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+    }
+  }
+
+  &__row-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding: $spacing-half $pad-x $spacing-half 0;
   }
 
   // The row's header; a button when the row has a detail to expand

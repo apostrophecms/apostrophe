@@ -51,7 +51,7 @@
 
 <script>
 import { mapState } from 'pinia';
-import { markRaw } from 'vue';
+import { markRaw, toRaw } from 'vue';
 import { klona } from 'klona';
 import { createId } from 'apostrophe/lib/beneath.js';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
@@ -80,7 +80,10 @@ function singleValueKey(patch) {
 // The keys of an entry for the undo history, as opposed to a bare patch,
 // which is what `context-edited` was given before undo could be done
 // without replaying every edit since the page was loaded
-const entryKeys = [ 'patch', 'inverse', 'target' ];
+const entryKeys = [ 'patch', 'inverse', 'target', 'onSaved' ];
+
+// The `onSaved` callbacks of the patches waiting to be saved, by patch
+const onSavedByPatch = new WeakMap();
 
 export default {
   name: 'TheAposContextBar',
@@ -417,6 +420,7 @@ export default {
       }
     },
     async save() {
+      let saved = false;
       // More patches could get pushed during the async call to
       // send the previous batch, so keep going until we clear
       // the queue
@@ -436,21 +440,34 @@ export default {
           });
           this.context = doc;
           this.retrying = false;
+          saved = true;
+          this.settlePatches(patchesSinceSave, null);
         } catch (e) {
           if (this.isLockedError(e)) {
+            this.settlePatches([ ...patchesSinceSave, ...this.patchesSinceSave ], e);
             await this.showLockedError(e);
             return this.lockNotAvailable();
           }
           if ((e.status >= 400) && (e.status < 500)) {
             // The server refused this change and will refuse it again, so
             // retrying would spin forever with nothing to show for it. Say
-            // so, and let whatever else is waiting through
-            // eslint-disable-next-line no-console
-            console.error(e);
-            apos.notify('apostrophe:changeNotSaved', {
-              type: 'error',
-              icon: 'alert-circle-icon'
+            // so, unless whoever made every change refused does, and let
+            // whatever else is waiting through
+            const raw = patchesSinceSave.map(patch => toRaw(patch));
+            if (!raw.every(patch => onSavedByPatch.has(patch))) {
+              // eslint-disable-next-line no-console
+              console.error(e);
+              apos.notify('apostrophe:changeNotSaved', {
+                type: 'error',
+                icon: 'alert-circle-icon'
+              });
+            }
+            // Nothing to undo
+            this.patchesSinceLoaded = this.patchesSinceLoaded.filter(entry => {
+              const patch = toRaw(entry).patch;
+              return !(raw.includes(patch) && onSavedByPatch.has(patch));
             });
+            this.settlePatches(patchesSinceSave, e);
             continue;
           }
           this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
@@ -463,6 +480,20 @@ export default {
       }
       this.saving = false;
       this.saved = true;
+      // Versions module: See Changes shows the draft as saved
+      if (saved && this.seeChanges) {
+        await this.refresh({
+          scrollcheck: true
+        });
+      }
+    },
+    // Calls the `onSaved` of each patch that has one
+    settlePatches(patches, error) {
+      for (const patch of patches.map(patch => toRaw(patch))) {
+        const onSaved = onSavedByPatch.get(patch);
+        onSavedByPatch.delete(patch);
+        onSaved?.(error);
+      }
     },
     // Switch the mode to 'published' or 'draft'.
     //
@@ -578,6 +609,11 @@ export default {
     // what was edited, so that undoing it can show the user where. See
     // `showTarget` for the properties of `target`.
     //
+    // `onSaved(error)`, when given, is called with `null` once the patch is
+    // saved, or with the error when the server refused it or the lock was
+    // lost. A refused edit leaves the undo history, and when every patch
+    // refused has an `onSaved`, telling the user is left to them.
+    //
     // A bare patch is accepted too, as it was before. Such an edit can
     // still be undone, but only the old way: by replaying every edit since
     // the page was loaded and rendering the page again.
@@ -592,7 +628,7 @@ export default {
         // (`onContextHistoryRecord`), or content an editor provisioned for
         // itself. Nothing to add to the history, and nothing about to be
         // redone was overwritten
-        this.queuePatch(patch);
+        this.queuePatch(patch, payload.onSaved);
         return;
       }
       const entry = {
@@ -620,7 +656,7 @@ export default {
         this.mergeableEntryId = (entry.target?.kind === 'field') ? entry.id : null;
       }
       this.undone = [];
-      this.queuePatch(patch);
+      this.queuePatch(patch, isEntry ? payload.onSaved : null);
     },
     // What a rich text editor on the page did, as ProseMirror steps. The
     // editor saves the result by itself, see `isWithoutHistory`. Records that
@@ -693,7 +729,10 @@ export default {
       }
       return entry.patch;
     },
-    queuePatch(patch) {
+    queuePatch(patch, onSaved) {
+      if (onSaved) {
+        onSavedByPatch.set(patch, onSaved);
+      }
       this.patchesSinceSave.push(patch);
       if (!this.saving) {
         this.savePromise = this.save();
@@ -992,7 +1031,8 @@ export default {
         let patch;
         if (entry.richText) {
           const richText = entry.richText;
-          const editor = editorRegistry.find(richText.instanceKey, richText.target);
+          const editor = !this.seeChanges &&
+            editorRegistry.find(richText.instanceKey, richText.target);
           if (editor) {
             // The editor shows the change and saves it, as it does typing.
             // ProseMirror scrolls to the change itself
@@ -1010,6 +1050,12 @@ export default {
           };
         } else {
           patch = klona((direction === 'undo') ? entry.inverse : entry.patch);
+        }
+        if (this.seeChanges) {
+          // Versions module: nothing on the page is edited in See Changes,
+          // which renders it again once the change is saved
+          this.queuePatch(patch);
+          return true;
         }
         const removed = [];
         const shown = this.applyToPage(patch, removed);
