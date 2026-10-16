@@ -57,6 +57,9 @@ const ORDER = Symbol('order');
  * @property {() => object[]} [getRichTextStyles] The `styles` rich text is
  *   configured with by default, `{ tag, class, label }` each, for the names
  *   of blocks and inline styles.
+ * @property {(options: object) => Object<string, object>} [getAreaWidgets]
+ *   The widget types an area field's `options` allow, with the options of
+ *   each, groups included (`apos.area.getWidgets`). Read by `addFieldData`.
  * @property {(err: Error, path: PathSegment[]) => void} [onError] Told of
  *   every failure the engine recovered from, with the path of the field or
  *   row it happened at. The module logs them.
@@ -172,6 +175,29 @@ const ORDER = Symbol('order');
  *   path, one above it or one below it was saved with AI; `assisted` when it
  *   was saved without, after AI changed the path; `false` when AI never did.
  *   For an order row, the same of the versions that changed that order.
+ * @property {Array<{ _id: string|null, title: string }>} [authors] Rows of
+ *   `attribute` only: everyone whose version changed this path, oldest
+ *   first, each once. Empty when no version explains the change.
+ * @property {Date} [changedAt] Rows of `attribute` only: when the newest of
+ *   those versions changed it, when one of them has a time.
+ * @property {string} [patchKey] Rows of `addFieldData` only: where a PATCH
+ *   of the document sets this value. The field names from the top level,
+ *   dotted; below an array item, a widget or an object whose `_id` the
+ *   document holds exactly once, the deepest of them, `@<its _id>.` and the
+ *   field names from there. `@<_id>` alone for a whole item or widget,
+ *   `@<_id>.content` for the markup of a rich text widget. None for an order
+ *   row, nor where no `_id` reaches the value without ambiguity.
+ * @property {string} [fieldId] Rows of `addFieldData` only: the `_id` of the
+ *   schema field the row belongs to; for a whole item or widget, or the
+ *   markup of a rich text widget, the array or area holding it.
+ * @property {string} [widgetType] Rows of `addFieldData` only, for a whole
+ *   widget and the markup of a rich text widget: the widget `type`.
+ * @property {object} [widgetOptions] With `widgetType`: the options the area
+ *   holding the widget gives its type.
+ * @property {string|null} [markedHtml] Rows of `addFieldData` only, for a
+ *   `richText` field: the newer markup with the changed text marked (see
+ *   `lib/rich-text-diff.js`), `null` when the change cannot be shown that
+ *   way.
  */
 
 /**
@@ -406,10 +432,193 @@ function consolidate(schema, pairs, ctx, { before = [] } = {}) {
   return rows;
 }
 
+/**
+ * Credits the rows of a `consolidate` of `pairs` to the versions that made
+ * them: sets `authors` and `changedAt` on every row. A version changed a
+ * row when one of its own changes is at the row's path, above it or below
+ * it, as `consolidate` relates them for `ai`. Rows are modified in place.
+ *
+ * @param {object[]} schema The schema of the documents.
+ * @param {Array<{
+ *   older: object,
+ *   newer: object,
+ *   author?: { _id: string|null, title: string },
+ *   changedAt?: Date
+ * }>} pairs The pairs the rows consolidate, oldest first, each with who
+ *   saved its `newer` and when. A pair without an `author` credits no one.
+ * @param {ChangeRow[]} rows
+ * @param {DiffContext} ctx
+ * @returns {ChangeRow[]} `rows`.
+ */
+function attribute(schema, pairs, rows, ctx) {
+  const edits = pairs.map(pair => ({
+    author: pair.author,
+    changedAt: pair.changedAt,
+    keys: walk(schema, pair.older, pair.newer, ctx).map(keyOf)
+  }));
+  for (const row of rows) {
+    const key = keyOf(row);
+    const touching = edits.filter(edit => edit.keys.some(other => isRelated(key, other)));
+    row.authors = _.uniqBy(
+      touching.map(edit => edit.author).filter(Boolean),
+      author => author._id
+    );
+    const changedAt = touching.map(edit => edit.changedAt).filter(Boolean).at(-1);
+    if (changedAt) {
+      row.changedAt = changedAt;
+    }
+  }
+  return rows;
+}
+
+/**
+ * Adds to every row what an editor of its value needs: `patchKey`,
+ * `fieldId`, `widgetType` and `widgetOptions` where they apply, and the
+ * `markedHtml` of a `richText` field. Rows are modified in place.
+ *
+ * @param {object[]} schema The schema of the document the rows are of.
+ * @param {ChangeRow[]} rows
+ * @param {object} doc The document the patch keys address, as stored: the
+ *   newer side of the rows.
+ * @param {DiffContext} ctx
+ * @returns {ChangeRow[]} `rows`.
+ */
+function addFieldData(schema, rows, doc, ctx) {
+  const idCounts = countIds(doc);
+  for (const row of rows) {
+    if (isOrder(row)) {
+      continue;
+    }
+    const target = locate(row);
+    if (!target) {
+      continue;
+    }
+    const { itemAt, area } = target;
+    const names = row.path.slice(itemAt + 1).map(segment => segment.name);
+    const patchKey = getPatchKey(row, target);
+    if (patchKey) {
+      row.patchKey = patchKey;
+    }
+    const widgetType = !names.length && row.path[itemAt]?.widgetType;
+    const fieldId = widgetType ? area?._id : row.field?._id;
+    if (fieldId) {
+      row.fieldId = fieldId;
+    }
+    if (widgetType) {
+      row.widgetType = widgetType;
+      const allowed = area && ctx.getAreaWidgets?.(area.options || {});
+      row.widgetOptions = allowed?.[widgetType] || {};
+    }
+    if ((row.kind === 'richText') && row.field) {
+      row.markedHtml = getMarkedRichText(row, ctx);
+    }
+  }
+  return rows;
+
+  // The deepest array item or widget along the row's path, by index (-1 for
+  // none), the area field holding it when it is a widget, and the object
+  // fields below it that the row is inside of, by index. `null` when a name
+  // along the path is not in the schema
+  function locate(row) {
+    let fields = schema;
+    let parent = null;
+    let itemAt = -1;
+    let area = null;
+    let objects = [];
+    for (const [ i, segment ] of row.path.entries()) {
+      const kind = parent && getKind(parent, ctx);
+      if (segment.widgetType || (kind === 'array')) {
+        itemAt = i;
+        area = segment.widgetType ? parent : null;
+        fields = segment.widgetType
+          ? ctx.getWidgetManager(segment.widgetType)?.schema || []
+          : parent.schema || [];
+        parent = null;
+        objects = [];
+        continue;
+      }
+      parent = fields.find(field => field.name === segment.name);
+      if (!parent) {
+        return null;
+      }
+      if ((getKind(parent, ctx) === 'object') && (i < row.path.length - 1)) {
+        fields = parent.schema || [];
+        objects.push(i);
+      }
+    }
+    return {
+      itemAt,
+      area,
+      objects
+    };
+  }
+
+  // A key that reaches this value and nothing else. An `@` reference names
+  // an `_id` the draft holds exactly once, or, for an item the draft no
+  // longer has, not at all, since a patch finds the first object with it.
+  // Below an object with such an `_id` the key starts there, as the field
+  // app keys the fields of an object; otherwise at the item above. None
+  // when the item's `_id` is missing or not unique
+  function getPatchKey(row, { itemAt, objects }) {
+    const namesAfter = at => row.path.slice(at + 1).map(segment => segment.name);
+    for (const at of [ ...objects ].reverse()) {
+      const id = resolve(doc, row.path.slice(0, at + 1))?._id;
+      if (id && (idCounts.get(id) === 1)) {
+        return [ `@${id}`, ...namesAfter(at) ].join('.');
+      }
+    }
+    if (itemAt === -1) {
+      return namesAfter(-1).join('.');
+    }
+    const id = row.path[itemAt].name;
+    const whole = itemAt === row.path.length - 1;
+    const expected = (whole && (row.type === 'deleted')) ? 0 : 1;
+    if (!id || ((idCounts.get(id) || 0) !== expected)) {
+      return;
+    }
+    return [
+      `@${id}`,
+      ...namesAfter(itemAt),
+      ...((whole && (row.kind === 'richText')) ? [ 'content' ] : [])
+    ].join('.');
+  }
+}
+
+// How many times each `_id` occurs inside a document, its own left out: what
+// an `@` reference of a patch is looked up among
+function countIds(doc) {
+  const counts = new Map();
+  const visit = value => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || (typeof value !== 'object')) {
+      return;
+    }
+    if (typeof value._id === 'string') {
+      counts.set(value._id, (counts.get(value._id) || 0) + 1);
+    }
+    for (const [ key, child ] of Object.entries(value)) {
+      if (key !== '_id') {
+        visit(child);
+      }
+    }
+  };
+  for (const [ key, value ] of Object.entries(doc || {})) {
+    if (key !== '_id') {
+      visit(value);
+    }
+  }
+  return counts;
+}
+
 module.exports = {
   walk,
   annotate,
-  consolidate
+  consolidate,
+  attribute,
+  addFieldData
 };
 
 function walkFields(schema, older, newer, ctx, path, rows) {

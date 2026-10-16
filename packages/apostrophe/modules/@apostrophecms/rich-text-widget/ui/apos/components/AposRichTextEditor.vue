@@ -18,7 +18,7 @@
       class="apos-rich-text-editor__menus"
     >
       <bubble-menu
-        v-if="editor && !readOnly"
+        v-if="editor && !isReadOnly"
         plugin-key="richTextMenu"
         class="bubble-menu"
         :tippy-options="bubbleMenuTippyOptions"
@@ -50,7 +50,7 @@
       </bubble-menu>
     </div>
     <floating-menu
-      v-if="editor && !readOnly"
+      v-if="editor && !isReadOnly"
       :id="`insert-menu-${editorId}`"
       ref="insertMenu"
       plugin-key="insertMenu"
@@ -126,7 +126,7 @@
       {{ $t(emptyLabel) }}
     </div>
     <floating-menu
-      v-if="editor && !readOnly"
+      v-if="editor && !isReadOnly"
       :should-show="showTableControls"
       :tippy-options="tableTippyOptions"
       :editor="editor"
@@ -205,6 +205,10 @@ export default {
     aposGraphKey: {
       from: 'aposGraphKey',
       default: null
+    },
+    aposReadOnly: {
+      from: 'aposReadOnly',
+      default: false
     }
   },
   props: {
@@ -310,6 +314,10 @@ export default {
     // Inside the versions modal: read only, with the marks of what changed
     isVersionView() {
       return useDocVersionMarkersStore().has(unref(this.aposGraphKey));
+    },
+    // Read only on its own, or inside a read only view
+    isReadOnly() {
+      return this.readOnly || this.aposReadOnly;
     },
     bubbleMenuTippyOptions() {
       return {
@@ -570,7 +578,7 @@ export default {
       this.editor = new Editor({
         content: this.initialContent,
         autofocus: this.autofocus,
-        editable: !this.readOnly,
+        editable: !this.isReadOnly,
         onUpdate: this.editorUpdate,
         extensions,
         editorProps: {

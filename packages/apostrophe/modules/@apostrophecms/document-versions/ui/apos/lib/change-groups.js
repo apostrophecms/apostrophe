@@ -59,65 +59,15 @@ function getChangeGroups(rows, filter) {
       byKey.set(key, group);
       list.push(group);
     }
-    const segments = row.path.slice(path.length);
-    // The order of an array's or area's items reads as the last crumb
-    const order = [ 'array', 'area' ].includes(row.kind);
-    if (order) {
-      segments.push({ label: 'apostrophe:versionOrderChanged' });
-    }
-    // The row is the group's own field or widget: it was added or deleted
-    // whole, and its label stands in for the empty breadcrumb
-    const own = !segments.length;
-    if (own) {
-      group.type = row.type;
-      segments.push(path.at(-1));
-    }
-    const diff = row.diff || [];
-    const short = order ? elideItems(diff) : elide(diff);
-    // Two images may share a title
-    const changed = diff.some(part => part.change !== 'same') || Boolean(row.images);
-    const format = row.formatChanges || [];
-    const bySide = parts => Object.fromEntries(
-      Object.entries(sides).map(([ side, change ]) => [
-        side,
-        parts.filter(part => [ 'same', 'elided', change ].includes(part.change))
-      ])
-    );
-    group.entries.push({
+    const entry = getChangeEntry(row, {
       key: String(index),
-      row,
-      segments,
-      // Its parts are whole items, one to a line
-      order,
-      // How the change shows: `block`, both sides in one stream of parts,
-      // for rich text and the order of items; `sides`, each side apart
-      layout: (order || row.kind === 'richText') ? 'block' : 'sides',
-      // What the block shows, in full and with the long unchanged runs cut
-      // down: of text, the words away from a change; of an order, the items
-      // away from a move
-      inline: diff,
-      inlineShort: short,
-      // What each side shows: the parts both share and its own, in full
-      // and with the long unchanged runs cut down
-      parts: bySide(diff),
-      short: bySide(short),
-      elided: short.length !== diff.length,
-      own,
-      // Whether the text shows the change at all
-      changed,
-      // What changed in a rich text besides its words, a block each
-      format,
-      // The related images of each side, shown in place of their titles
-      images: row.images || {},
-      // Whether there is anything to expand: a row of which only the change
-      // is known has no toggle, and its change type when its group's header
-      // does not say it
-      detail: changed || format.length > 0,
-      text: {
-        new: Boolean(row.newText),
-        old: Boolean(row.oldText)
-      }
+      depth: path.length
     });
+    // The group's own field or widget gives the group its type
+    if (entry.own) {
+      group.type = row.type;
+    }
+    group.entries.push(entry);
   });
   return list;
 
@@ -127,6 +77,69 @@ function getChangeGroups(rows, filter) {
     const depth = row.path[1]?.widgetType ? 2 : 1;
     return row.path.slice(0, depth);
   }
+}
+
+// An entry of a group: the row, its breadcrumb below the group's `depth`
+// segments, and what its detail shows
+function getChangeEntry(row, { key, depth }) {
+  const segments = row.path.slice(depth);
+  // The order of an array's or area's items reads as the last crumb
+  const order = [ 'array', 'area' ].includes(row.kind);
+  if (order) {
+    segments.push({ label: 'apostrophe:versionOrderChanged' });
+  }
+  // The row is the group's own field or widget: it was added or deleted
+  // whole, and its label stands in for the empty breadcrumb
+  const own = !segments.length;
+  if (own) {
+    segments.push(row.path[depth - 1]);
+  }
+  const diff = row.diff || [];
+  const short = order ? elideItems(diff) : elide(diff);
+  // Two images may share a title
+  const changed = diff.some(part => part.change !== 'same') || Boolean(row.images);
+  const format = row.formatChanges || [];
+  const bySide = parts => Object.fromEntries(
+    Object.entries(sides).map(([ side, change ]) => [
+      side,
+      parts.filter(part => [ 'same', 'elided', change ].includes(part.change))
+    ])
+  );
+  return {
+    key,
+    row,
+    segments,
+    // Its parts are whole items, one to a line
+    order,
+    // How the change shows: `block`, both sides in one stream of parts,
+    // for rich text and the order of items; `sides`, each side apart
+    layout: (order || row.kind === 'richText') ? 'block' : 'sides',
+    // What the block shows, in full and with the long unchanged runs cut
+    // down: of text, the words away from a change; of an order, the items
+    // away from a move
+    inline: diff,
+    inlineShort: short,
+    // What each side shows: the parts both share and its own, in full
+    // and with the long unchanged runs cut down
+    parts: bySide(diff),
+    short: bySide(short),
+    elided: short.length !== diff.length,
+    own,
+    // Whether the text shows the change at all
+    changed,
+    // What changed in a rich text besides its words, a block each
+    format,
+    // The related images of each side, shown in place of their titles
+    images: row.images || {},
+    // Whether there is anything to expand: a row of which only the change
+    // is known has no toggle, and its change type when its group's header
+    // does not say it
+    detail: changed || format.length > 0,
+    text: {
+      new: Boolean(row.newText),
+      old: Boolean(row.oldText)
+    }
+  };
 
   // The parts with every long unchanged run cut down to the words next to a
   // change. Both sides share those runs, so they are cut alike. A run can be
@@ -218,5 +231,6 @@ function getChangeGroups(rows, filter) {
 export default {
   matchesFilter,
   isMarkerTarget,
-  getChangeGroups
+  getChangeGroups,
+  getChangeEntry
 };

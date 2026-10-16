@@ -12,27 +12,10 @@
       v-if="isDisplayWindow"
       #windowChrome="{ startResizing }"
     >
-      <div
-        v-for="handle in resizeHandles"
-        :key="handle.edge"
-        :class="[
-          'apos-window__resize-handle',
-          handle.type === 'corner'
-            ? `apos-window__resize-handle--corner apos-window__resize-handle--corner-${handle.edge}`
-            : `apos-window__resize-handle--${handle.edge}`
-        ]"
-        role="presentation"
-        aria-hidden="true"
-        :data-apos-test="`resize-handle-${handle.edge}`"
-        @mousedown.stop="(e) => startResizing(e, handle.edge)"
-      >
-        <AposIndicator
-          v-if="handle.showIcon"
-          icon="resize-bottom-right-icon"
-          :icon-size="18"
-          icon-color="var(--a-base-0)"
-        />
-      </div>
+      <AposWindowResizeHandles
+        :icon-corner="resizeIconCorner"
+        @resize="startResizing"
+      />
     </template>
     <template #secondaryControls>
       <div class="apos-widget-editor__controls">
@@ -113,7 +96,7 @@
 <script>
 import { createId } from 'apostrophe/lib/beneath.js';
 import { klona } from 'klona';
-import { mapState } from 'pinia';
+import { mapActions } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
@@ -208,7 +191,6 @@ export default {
     };
   },
   computed: {
-    ...mapState(useModalStore, [ 'stack' ]),
     changeDisplayIcon() {
       const name = this.isDisplayWindow ? this.modal.origin || 'right' : 'window';
       return `dock-${name}-icon`;
@@ -222,7 +204,7 @@ export default {
           : 'apostrophe:dockRight';
     },
     disabledChangeDisplay() {
-      return this.stack.length > 1;
+      return this.getBlockingDepth() > 1;
     },
     moduleOptions() {
       return window.apos.modules[apos.area.widgetManagers[this.type]];
@@ -266,55 +248,17 @@ export default {
     isDisplayWindow() {
       return this.modal.width === 'window';
     },
-    resizeHandles() {
-      return [
-        // Edge handles
-        {
-          type: 'edge',
-          edge: 'n',
-          showIcon: false
-        },
-        {
-          type: 'edge',
-          edge: 'e',
-          showIcon: false
-        },
-        {
-          type: 'edge',
-          edge: 's',
-          showIcon: false
-        },
-        {
-          type: 'edge',
-          edge: 'w',
-          showIcon: false
-        },
-        // Corner handles
-        {
-          type: 'corner',
-          edge: 'nw',
-          showIcon: false
-        },
-        {
-          type: 'corner',
-          edge: 'ne',
-          showIcon: false
-        },
-        {
-          type: 'corner',
-          edge: 'sw',
-          showIcon: this.modal.origin === 'right'
-        },
-        {
-          type: 'corner',
-          edge: 'se',
-          showIcon: this.modal.origin === 'left'
-        }
-      ];
+    // The window opens on its `origin` side; the resize icon sits in its
+    // bottom corner facing the page
+    resizeIconCorner() {
+      return {
+        right: 'sw',
+        left: 'se'
+      }[this.modal.origin] || null;
     },
     isForceSlide() {
       // If there are other modals open, force a slide modal
-      return this.stack.length > 1;
+      return this.getBlockingDepth() > 1;
     }
   },
   async mounted() {
@@ -411,6 +355,7 @@ export default {
     this.initPreview();
   },
   methods: {
+    ...mapActions(useModalStore, [ 'getBlockingDepth' ]),
     updateEditorDisplay() {
       if (this.isDisplayWindow) {
         if (this.moduleOptions.width === 'window') {
@@ -810,104 +755,6 @@ function guessOrigin(area, { isExplicitOrigin, origin }) {
 }
 
 .apos-modal--window {
-  $corner-handle-size: 18px;
-  $edge-handle-size: 2px;
-
-  &:deep(.apos-modal__inner.apos-window--resizing) {
-    outline: 2px solid var(--a-base-5);
-    outline-offset: -2px;
-  }
-
-  &:deep(.apos-window__resize-handle) {
-    z-index: $z-index-default;
-    position: absolute;
-    transition: background-color 200ms ease;
-  }
-
-  // Edge handles
-  &:deep(.apos-window__resize-handle--n),
-  &:deep(.apos-window__resize-handle--s) {
-    right: 0;
-    left: 0;
-    height: $edge-handle-size;
-    cursor: ns-resize;
-  }
-
-  &:deep(.apos-window__resize-handle--n) {
-    top: 0;
-  }
-
-  &:deep(.apos-window__resize-handle--s) {
-    bottom: 0;
-  }
-
-  &:deep(.apos-window__resize-handle--w),
-  &:deep(.apos-window__resize-handle--e) {
-    top: 0;
-    bottom: 0;
-    width: $edge-handle-size;
-    cursor: ew-resize;
-  }
-
-  &:deep(.apos-window__resize-handle--w) {
-    left: 0;
-  }
-
-  &:deep(.apos-window__resize-handle--e) {
-    right: 0;
-  }
-
-  // Corner handles
-  &:deep(.apos-window__resize-handle--corner) {
-    width: $corner-handle-size;
-    height: $corner-handle-size;
-
-    &:hover {
-      border-radius: 2px;
-    }
-  }
-
-  &:deep(.apos-window__resize-handle--corner-nw) {
-    top: 2px;
-    left: 2px;
-    cursor: nwse-resize;
-  }
-
-  &:deep(.apos-window__resize-handle--corner-ne) {
-    top: 2px;
-    right: 2px;
-    cursor: nesw-resize;
-  }
-
-  &:deep(.apos-window__resize-handle--corner-sw) {
-    bottom: 2px;
-    left: 2px;
-    cursor: nesw-resize;
-
-    .apos-indicator {
-      transform: scaleX(-1);
-    }
-  }
-
-  &:deep(.apos-window__resize-handle--corner-se) {
-    right: 2px;
-    bottom: 2px;
-    cursor: nwse-resize;
-  }
-
-  &:deep(.apos-modal__header__main) {
-    padding: 2.5px 10px 0;
-    border-top: 1px solid var(--a-base-9);
-  }
-
-  &:deep(.apos-modal__heading) {
-    font-size: var(--a-type-label);
-  }
-
-  &:deep(.apos-modal__controls--secondary) {
-    margin-right: 10px;
-  }
-
   &:deep(.apos-widget-editor__dock-button .apos-button--icon-only.apos-button--subtle) {
     padding: 7.5px 0;
 

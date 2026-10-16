@@ -15,6 +15,7 @@
     @focusout="blur"
   >
     <div
+      v-if="!aposReadOnly"
       ref="label"
       class="apos-wysiwyg-field__label apos-ltr"
       :class="{
@@ -64,8 +65,21 @@
         </li>
       </ol>
     </div>
+    <!--
+      A read only view shows what the page rendered, with no trail and no
+      editor
+    -->
+    <!-- eslint-disable vue/no-v-html -->
+    <div
+      v-if="aposReadOnly"
+      class="apos-wysiwyg-field__rendering"
+      data-apos-test="wysiwyg-field-rendering"
+      v-html="rendering"
+    />
+    <!-- eslint-enable vue/no-v-html -->
     <component
       :is="component"
+      v-else
       ref="editor"
       :field="field"
       :model-value="modelValue"
@@ -108,6 +122,12 @@ let next = 0;
 
 export default {
   name: 'AposWysiwygField',
+  inject: {
+    aposReadOnly: {
+      from: 'aposReadOnly',
+      default: false
+    }
+  },
   props: {
     ...wysiwygProps,
     // The editor for this field type, e.g. `AposWysiwygInputRichText`
@@ -125,6 +145,11 @@ export default {
     inline: {
       type: Boolean,
       default: false
+    },
+    // The markup the page rendered for the field
+    rendering: {
+      type: String,
+      default: ''
     }
   },
   emits: [ 'update:modelValue', 'changed' ],
@@ -147,7 +172,7 @@ export default {
   computed: {
     ...mapState(useWidgetStore, [ 'labeled', 'hoveredField', 'focusedField' ]),
     readOnly() {
-      return !!this.field.readOnly;
+      return !!(this.aposReadOnly || this.field.readOnly);
     },
     isHovered() {
       return this.hoveredField === this.id;
@@ -285,6 +310,10 @@ export default {
     display: inline-block;
     max-width: 100%;
     vertical-align: top;
+  }
+
+  .apos-wysiwyg-field__rendering {
+    display: contents;
   }
 
   .apos-wysiwyg-field__label {

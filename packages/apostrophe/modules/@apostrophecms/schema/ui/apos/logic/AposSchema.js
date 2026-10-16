@@ -4,6 +4,14 @@ import { getConditionTypesObject } from '../lib/conditionalFields';
 
 export default {
   name: 'AposSchema',
+  inject: {
+    // A read only view, such as See Changes or a document version: every
+    // field is shown as read only
+    aposReadOnly: {
+      from: 'aposReadOnly',
+      default: false
+    }
+  },
   props: {
     modelValue: {
       type: Object,
@@ -130,7 +138,8 @@ export default {
           [item.name]: {
             field: {
               ...item,
-              required
+              required,
+              ...(this.aposReadOnly && { readOnly: true })
             },
             serverError: this.serverErrors && this.serverErrors[item.name],
             modifiers: this.computeModifiers(item)

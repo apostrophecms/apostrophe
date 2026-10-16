@@ -85,7 +85,7 @@ export function useDocVersionRestore({
 
   // In-context editing: a restored slug moves the page under our feet
   function refreshRedirect(updated) {
-    const isInContextEdit = modalStore.stack.length === 1;
+    const isInContextEdit = modalStore.getBlockingDepth() === 1;
     if (isInContextEdit && originalDoc.slug !== updated.slug) {
       const current = new URL(window.location.href);
       if (!updated._url.match(current.pathname)) {

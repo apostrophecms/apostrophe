@@ -12,6 +12,7 @@
           v-if="!field.required"
           v-model="disabled"
           class="apos-toggle"
+          :disabled="field.readOnly"
           @toggle="toggle"
         />
         <input
@@ -20,6 +21,7 @@
           class="apos-input apos-input--date"
           :class="classes"
           type="date"
+          :disabled="field.readOnly"
           @change="setDateAndTime"
         >
         <span
@@ -33,6 +35,7 @@
           class="apos-input apos-input--time"
           :class="classes"
           type="time"
+          :disabled="field.readOnly"
           :aria-labelledby="`${uid} ${uid}-at`"
           @change="setDateAndTime"
         >

@@ -1574,7 +1574,7 @@ module.exports = {
       // }
       //
       // All properties are required except for `conditions`, `moduleName`,
-      // `modifiers` and `manuallyPublished`.
+      // `modifiers`, `manuallyPublished` and `location`.
       //
       // Context operations are universal, e.g. they are displayed by the
       // context menu no matter what the content type is, unless overridden by
@@ -1589,6 +1589,13 @@ module.exports = {
       //
       // `modal` is the name of the modal component to be opened by the
       // operation.
+      //
+      // `type` is `modal` (the default), `event` or `toggle`. An `event`
+      // operation emits its `action` on `apos.bus` instead of opening a
+      // modal. A `toggle` operation is an item that is on or off: it emits
+      // its `action` with `checked`, the state asked for, and shows the
+      // state that whatever owns it sets with `setChecked` of the
+      // `contextOperations` store.
       //
       // `label` is the menu item label to be shown when expanding the context
       // menu.
@@ -1607,6 +1614,11 @@ module.exports = {
       // An optional `manuallyPublished` boolean property is supported - if true
       // the menu will be shown only for docs which have `autopublish: false`
       // and `localized: true` options.
+      //
+      // An optional `location` property limits the operation to the menu
+      // shown in that place. The only location is `context-bar`, the menu
+      // next to "Preview" for the document being viewed on the page, never
+      // the one of an editor modal or a manager.
       //
       // `conditions` defines the circumstances under which the option should
       // be displayed. If all `conditions` are not met, the item is not
@@ -1637,8 +1649,9 @@ module.exports = {
 
         function validate ({
           action, context, type = 'modal', label, modal, conditions, if: ifProps,
-          crossLocale
+          crossLocale, location
         }) {
+          const allowedLocations = [ 'context-bar' ];
           const allowedConditions = [
             'canPublish',
             'canEdit',
@@ -1654,8 +1667,8 @@ module.exports = {
             'canShareDraft'
           ];
 
-          if (![ 'event', 'modal' ].includes(type)) {
-            throw self.apos.error('invalid', '`type` option must be `modal` (default) or `event`');
+          if (![ 'event', 'modal', 'toggle' ].includes(type)) {
+            throw self.apos.error('invalid', '`type` option must be `modal` (default), `event` or `toggle`');
           }
 
           if (!action || !context || !label || (type === 'modal' && !modal)) {
@@ -1687,6 +1700,12 @@ module.exports = {
           ) {
             throw self.apos.error(
               'invalid', 'The crossLocale property in addContextOperation must be a boolean.'
+            );
+          }
+
+          if (location !== undefined && !allowedLocations.includes(location)) {
+            throw self.apos.error(
+              'invalid', `The location property in addContextOperation must be one of these values:\n\t${allowedLocations.join('\n\t')}.`
             );
           }
         }

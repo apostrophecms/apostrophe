@@ -17,6 +17,12 @@ export default {
     aposGraphKey: {
       from: 'aposGraphKey',
       default: null
+    },
+    // A read only view, such as See Changes or a document version: no
+    // controls are mounted
+    aposReadOnly: {
+      from: 'aposReadOnly',
+      default: false
     }
   },
   props: {
@@ -101,6 +107,11 @@ export default {
     };
   },
   computed: {
+    // Nothing changes the area in a read only view or for a read only field,
+    // the keyboard shortcuts included
+    readOnly() {
+      return !!(this.aposReadOnly || this.field?.readOnly);
+    },
     ...mapState(useWidgetStore, [ 'focusedWidget', 'hoveredWidget', 'focusedArea' ]),
     isEmptySingleton() {
       return this.next.length === 0 &&
@@ -408,6 +419,9 @@ export default {
       }
     },
     async editStyles({ widgetId, index }) {
+      if (this.readOnly) {
+        return;
+      }
       if (this.foreign) {
         return;
       }
@@ -443,6 +457,9 @@ export default {
       }
     },
     async up({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       if (this.docId === window.apos.adminBar.contextId) {
         const $item = this.next[index]._id;
         const neighbor = this.next[index - 1]._id;
@@ -474,6 +491,9 @@ export default {
       ];
     },
     async down({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       if (this.docId === window.apos.adminBar.contextId) {
         const $item = this.next[index]._id;
         const neighbor = this.next[index + 1]._id;
@@ -505,6 +525,9 @@ export default {
       ];
     },
     async remove({ index }, { autosave = true } = {}) {
+      if (this.readOnly) {
+        return;
+      }
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
         const widget = this.next[index];
         // Put it back next to whichever neighbor it had
@@ -547,6 +570,9 @@ export default {
       }
     },
     async cut({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       apos.area.widgetClipboard.set(this.next[index]);
       await this.remove({ index });
       apos.notify('Widget cut to clipboard', {
@@ -564,6 +590,9 @@ export default {
       });
     },
     async edit({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       if (this.foreign) {
         try {
           const doc = await apos.http.get(
@@ -631,6 +660,9 @@ export default {
       }
     },
     clone({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       const widget = cloneWidget(this.next[index]);
       this.insert({
         widget,
@@ -638,6 +670,9 @@ export default {
       });
     },
     async paste({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       const clipboard = apos.area.widgetClipboard.get();
       if (clipboard) {
         const widget = clipboard;
@@ -653,6 +688,9 @@ export default {
       }
     },
     async update(updated, { autosave = true, reverting = false } = {}) {
+      if (this.readOnly) {
+        return;
+      }
       // Before anything below can change it. A caller that changed the
       // widget in place rather than handing us a new one has already lost
       // the state we would need to put back, so no inverse is recorded and
@@ -697,6 +735,9 @@ export default {
       widget,
       clipboard
     }) {
+      if (this.readOnly) {
+        return;
+      }
       if (clipboard) {
         clipboard = cloneWidget(clipboard);
         return this.insert({
@@ -769,6 +810,9 @@ export default {
     async insert({
       index, widget, autosave = true
     } = {}) {
+      if (this.readOnly) {
+        return;
+      }
       if (!widget._id) {
         widget._id = createId();
       }
@@ -820,6 +864,9 @@ export default {
     async insertMany({
       index, widgets, autosave = true, history = true
     } = {}) {
+      if (this.readOnly) {
+        return;
+      }
       if (!widgets?.length) {
         return;
       }

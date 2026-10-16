@@ -358,7 +358,9 @@ const { themeClass } = useAposTheme();
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
   apos.bus.$on('close-context-menus', hideContextMenu);
-  modalDepth.value = modalStore.getDepth();
+  // The layer the menu lives in: a window that leaves the page usable
+  // shares the page's layer
+  modalDepth.value = modalStore.getBlockingDepth();
 });
 
 onBeforeUnmount(() => {
@@ -377,7 +379,7 @@ function getMenuOffset() {
 }
 
 function hideWhenOtherOpen({ menuId }) {
-  if ((modalDepth.value === modalStore.getDepth()) && (props.menuId !== menuId)) {
+  if ((modalDepth.value === modalStore.getBlockingDepth()) && (props.menuId !== menuId)) {
     otherMenuOpened.value = true;
     hide();
   }
@@ -390,7 +392,7 @@ function setIconToCenterTo(el) {
 }
 
 function hideContextMenu(type) {
-  if (modalDepth.value !== modalStore.getDepth()) {
+  if (modalDepth.value !== modalStore.getBlockingDepth()) {
     return;
   }
   if (type === 'richText' && props.richTextMenu) {
@@ -588,7 +590,7 @@ const ignoreInputTypes = [
 // is on (the source), and preventDefault() can stop the browser's
 // default focus movement.
 function onKeydownTab(event) {
-  if (!isOpen.value || modalDepth.value !== modalStore.getDepth()) {
+  if (!isOpen.value || modalDepth.value !== modalStore.getBlockingDepth()) {
     return;
   }
   if (event.target?.nodeName?.toLowerCase() === 'textarea') {
@@ -602,7 +604,7 @@ function onKeydownTab(event) {
  * @param {KeyboardEvent} event
  */
 function onKeyup(event) {
-  if (!isOpen.value || modalDepth.value !== modalStore.getDepth()) {
+  if (!isOpen.value || modalDepth.value !== modalStore.getBlockingDepth()) {
     return;
   }
 

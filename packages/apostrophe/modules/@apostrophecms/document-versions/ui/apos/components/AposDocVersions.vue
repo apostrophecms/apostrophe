@@ -139,7 +139,7 @@
 
 <script setup>
 import {
-  computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch
+  computed, inject, nextTick, onBeforeUnmount, onMounted, provide, ref, watch
 } from 'vue';
 import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfiniteScroll.js';
 import { useAdvisoryLock } from 'Modules/@apostrophecms/ui/composables/useAdvisoryLock.js';
@@ -166,6 +166,10 @@ const props = defineProps({
 defineEmits([ 'modal-result', 'safe-close' ]);
 
 const $t = inject('i18n');
+
+// A version is shown, never edited: every editor below shows its value and
+// mounts nothing that changes it
+provide('aposReadOnly', true);
 
 const modal = ref({
   active: false,

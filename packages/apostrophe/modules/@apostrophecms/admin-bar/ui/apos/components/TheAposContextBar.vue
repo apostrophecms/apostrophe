@@ -33,6 +33,7 @@
         @switch-draft-mode="switchDraftMode"
       />
       <TheAposContextModeAndSettings
+        ref="modeAndSettings"
         class="apos-admin-bar__control-group"
         :context="context"
         :published="published"
@@ -60,6 +61,11 @@ import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { isWithoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { replay, html } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
 import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
+import { useContextOperationsStore } from 'Modules/@apostrophecms/ui/stores/contextOperations.js';
+// See Changes belongs to the versions module, but its payload must load
+// before the page markup goes in, which only `refresh` can order. The points
+// marked "versions module" are the ones that could move there
+import { useSeeChangesStore } from 'Modules/@apostrophecms/document-versions/stores/seeChanges.js';
 
 // Undo history deeper than this is forgotten, oldest first
 const maxHistory = 500;
@@ -107,6 +113,10 @@ export default {
       savePromise: null,
       patchesSinceSave: [],
       editMode: false,
+      // See Changes, a mode within edit mode: the page shows the changes of
+      // the draft since its last publication. Never remembered across
+      // page loads
+      seeChanges: false,
       draftMode,
       queryDraftMode: query.aposMode,
       original: null,
@@ -201,6 +211,12 @@ export default {
     editMode(newVal) {
       window.apos.adminBar.editMode = newVal;
     },
+    seeChanges(newVal) {
+      window.apos.adminBar.seeChanges = newVal;
+      useContextOperationsStore().setChecked('see-changes', newVal);
+      // Versions module
+      useSeeChangesStore().setActive(newVal);
+    },
     contextBarActive() {
       this.$nextTick(() => {
         this.$emit('visibility-changed');
@@ -216,6 +232,8 @@ export default {
     apos.bus.$on('context-edited', this.onContextEdited);
     apos.bus.$on('context-history-record', this.onContextHistoryRecord);
     apos.bus.$on('content-changed', this.onContentChanged);
+    // Versions module: its See Changes operation
+    apos.bus.$on('see-changes', this.onSeeChanges);
 
     window.addEventListener('beforeunload', this.onBeforeUnload);
     window.addEventListener('storage', this.onStorage);
@@ -228,6 +246,7 @@ export default {
     }
     window.apos.adminBar.tabId = tabId;
     window.apos.adminBar.editMode = false;
+    window.apos.adminBar.seeChanges = false;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
     // Explicit query parameter beats our state on the previous page
     lastBaseContext.draftMode = this.queryDraftMode || lastBaseContext.draftMode;
@@ -300,6 +319,7 @@ export default {
     async onPushContext({
       doc
     }) {
+      await this.leaveSeeChanges({ refresh: false });
       if (!this.draftMode !== 'draft') {
         await this.switchDraftMode('draft');
       }
@@ -479,6 +499,8 @@ export default {
           await this.unlock();
         }
       }
+      // The refresh or navigation below shows the page without the mode
+      await this.leaveSeeChanges({ refresh: false });
       try {
         // Returns the doc as represented in the new locale and mode
         const action = window.apos.modules[doc.type].action;
@@ -716,6 +738,9 @@ export default {
       }
     },
     async switchEditMode(editing) {
+      if (!editing) {
+        await this.leaveSeeChanges({ refresh: false });
+      }
       this.editMode = editing;
       if (editing) {
         if (!await this.lock(`${this.action}/${this.context._id}`)) {
@@ -728,6 +753,49 @@ export default {
         // a refresh.
         await this.switchDraftMode('draft');
       } else {
+        await this.refresh();
+      }
+    },
+    // The See Changes item of the context menu, see `enterSeeChanges`
+    async onSeeChanges({ checked }) {
+      if (checked) {
+        await this.enterSeeChanges();
+      } else {
+        await this.leaveSeeChanges();
+      }
+    },
+    // The page is rendered again from the draft marked with its changes
+    // since the last publication, which the See Changes store holds for
+    // the markers. Only for the context document itself, in edit mode
+    async enterSeeChanges() {
+      if (!this.editMode || this.hasCustomUi || this.seeChanges) {
+        return;
+      }
+      // The changes are those of the draft as saved
+      await this.flushSaves();
+      this.seeChanges = true;
+      this.openSeeChanges();
+      await this.refresh();
+    },
+    // The mode's window. It closes itself when the mode ends; closed by the
+    // user, it ends the mode and focus goes back to the menu that holds the
+    // See Changes item. Versions module, the focus return included
+    async openSeeChanges() {
+      const { components } = apos.modules['@apostrophecms/document-versions'];
+      await apos.modal.execute(components.seeChanges);
+      if (this.seeChanges) {
+        await this.leaveSeeChanges();
+        this.$refs.modeAndSettings?.$el.querySelector('[aria-haspopup="menu"]')?.focus();
+      }
+    },
+    async leaveSeeChanges({ refresh = true } = {}) {
+      if (!this.seeChanges) {
+        return;
+      }
+      this.seeChanges = false;
+      // Versions module
+      useSeeChangesStore().clear();
+      if (refresh) {
         await this.refresh();
       }
     },
@@ -776,6 +844,11 @@ export default {
         doc._url = window.location.pathname + window.location.search;
       }
 
+      // Versions module, awaited here so the markers exist before the areas mount
+      if (this.seeChanges && !await useSeeChangesStore().load(this.context._id)) {
+        await this.leaveSeeChanges({ refresh: false });
+      }
+
       const qs = {
         ...apos.http.parseQuery(window.location.search),
         aposRefresh: '1',
@@ -784,11 +857,16 @@ export default {
           ? {
             aposEdit: '1'
           }
+          : {}),
+        ...(this.seeChanges
+          ? {
+            aposSeeChanges: '1'
+          }
           : {})
       };
 
       if (doc._url) {
-        refreshable.innerHTML = await apos.http.get(doc._url, {
+        const html = await apos.http.get(doc._url, {
           qs,
           headers: {
             'Cache-Control': 'no-cache'
@@ -797,9 +875,15 @@ export default {
           busy: true,
           prefix: false
         });
+        // See Changes shows the page read only. The outer element, so that
+        // it survives a switch of the breakpoint preview, which moves the
+        // page in and out of its own body
+        document.querySelector('[data-apos-refreshable]')
+          .toggleAttribute('data-apos-read-only', this.seeChanges);
+        refreshable.innerHTML = html;
       }
 
-      if (this.editMode && (!this.original)) {
+      if (this.editMode && !this.seeChanges && (!this.original)) {
         // the first time we enter edit mode on the page, we need to
         // establish a baseline for undo/redo. Use our
         // "@ notation" PATCH feature. Sort the areas by DOM depth
