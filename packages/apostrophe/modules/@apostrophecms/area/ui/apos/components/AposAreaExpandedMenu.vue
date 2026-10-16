@@ -63,8 +63,21 @@
                     :size="20"
                     class="apos-icon--add"
                   />
+                  <div
+                    v-if="item.previewIcons?.length"
+                    class="apos-widget__preview-icons"
+                  >
+                    <component
+                      :is="icon.icon"
+                      v-for="icon in item.previewIcons"
+                      :key="icon.name"
+                      :size="25"
+                      aria-hidden="true"
+                      class="apos-widget__preview--icon"
+                    />
+                  </div>
                   <img
-                    v-if="item.previewUrl"
+                    v-else-if="item.previewUrl"
                     :src="item.previewUrl"
                     :alt="`${item.name} preview`"
                     class="apos-widget__preview-image"
@@ -81,10 +94,10 @@
                   {{ $t(item.label) }}
                 </p>
                 <p
-                  v-if="item.description"
+                  v-if="item.clipboardDescription || item.description"
                   class="apos-widget__help"
                 >
-                  {{ $t(item.description) }}
+                  {{ item.clipboardDescription || $t(item.description) }}
                 </p>
               </button>
             </div>
@@ -191,30 +204,56 @@ export default {
       ];
     },
     getClipboardGroups() {
-      const clipboard = apos.area.widgetClipboard.get();
-      if (!clipboard) {
+      const clipboardWidgets = apos.area.widgetClipboard.getMany();
+      if (!clipboardWidgets.length) {
         return [];
       }
 
       const widgets = this.groups.flatMap(group => Object.values(group.widgets));
-      const matchingChoice = widgets.find(widget => widget.name === clipboard.type);
-      if (!matchingChoice) {
+      const choices = clipboardWidgets.map((widget) => {
+        return widgets.find((choice) => choice.name === widget.type);
+      });
+      if (choices.some((choice) => !choice)) {
         return [];
+      }
+      const matchingChoice = choices[0];
+      const sameType = choices.every((choice) => choice.name === matchingChoice.name);
+      const label = clipboardWidgets.length === 1
+        ? {
+          key: 'apostrophe:pasteWidget',
+          widget: this.$t(matchingChoice.label)
+        }
+        : {
+          key: 'apostrophe:pasteWidgets',
+          count: clipboardWidgets.length
+        };
+      const clipboard = clipboardWidgets.length === 1
+        ? clipboardWidgets[0]
+        : clipboardWidgets;
+      // A mixed clipboard is not one widget's screenshot. Show each
+      // distinct type's icon, in the order those types appear.
+      const tile = sameType
+        ? {
+          type: 'clipboard',
+          ...matchingChoice,
+          label,
+          clipboard
+        }
+        : {
+          type: 'clipboard',
+          previewIcons: this.distinctPreviewIcons(choices),
+          label,
+          clipboard
+        };
+      if (clipboardWidgets.length > 1) {
+        tile.clipboardDescription = choices
+          .map((choice) => this.$t(choice.label))
+          .join(', ');
       }
 
       const group = {
         label: this.$t('apostrophe:areaExpandedMenuClipboard'),
-        widgets: [
-          {
-            type: 'clipboard',
-            ...matchingChoice,
-            label: {
-              key: 'apostrophe:pasteWidget',
-              widget: this.$t(matchingChoice.label)
-            },
-            clipboard
-          }
-        ],
+        widgets: [ tile ],
         columns: 1
       };
 
@@ -243,6 +282,24 @@ export default {
       }
 
       return group;
+    },
+    distinctPreviewIcons(choices) {
+      const seen = new Set();
+      const icons = [];
+      for (const choice of choices) {
+        if (seen.has(choice.name)) {
+          continue;
+        }
+        seen.add(choice.name);
+        const icon = choice.previewIcon || choice.icon;
+        if (icon) {
+          icons.push({
+            name: choice.name,
+            icon
+          });
+        }
+      }
+      return icons;
     },
     getIcon(widget) {
       return widget.previewIcon || widget.icon;
@@ -428,6 +485,16 @@ export default {
 
 .apos-widget__preview-image {
   width: 100%;
+}
+
+.apos-widget__preview-icons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  max-width: 80%;
+  color: var(--a-text-primary);
 }
 
 .apos-widget-group__label,

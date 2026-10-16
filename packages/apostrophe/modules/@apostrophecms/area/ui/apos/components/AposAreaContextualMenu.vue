@@ -212,20 +212,39 @@ export default {
           ...createWidgetOperation
         });
       }
-      const clipboard = apos.area.widgetClipboard.get();
-      if (clipboard) {
-        const widget = clipboard;
-        const matchingChoice = menu.find(option => option.name === widget.type);
-        if (matchingChoice) {
-          menu.unshift({
-            type: 'clipboard',
-            ...matchingChoice,
-            label: {
+      const widgets = apos.area.widgetClipboard.getMany();
+      if (widgets.length) {
+        const choices = widgets.map((widget) => {
+          return menu.find((option) => option.name === widget.type);
+        });
+        if (choices.every(Boolean)) {
+          const matchingChoice = choices[0];
+          const sameType = choices.every((choice) => choice.name === matchingChoice.name);
+          const label = widgets.length === 1
+            ? {
               key: 'apostrophe:pasteWidget',
               widget: this.$t(matchingChoice.label)
-            },
-            clipboard: widget
-          });
+            }
+            : {
+              key: 'apostrophe:pasteWidgets',
+              count: widgets.length
+            };
+          const clipboard = widgets.length === 1 ? widgets[0] : widgets;
+          // A mixed clipboard is not the first widget's type. The slide
+          // menu shows each type; this menu only has room for one icon.
+          menu.unshift(sameType
+            ? {
+              type: 'clipboard',
+              ...matchingChoice,
+              label,
+              clipboard
+            }
+            : {
+              type: 'clipboard',
+              icon: 'content-copy-icon',
+              label,
+              clipboard
+            });
         }
       }
       if (this.groupedMenus) {

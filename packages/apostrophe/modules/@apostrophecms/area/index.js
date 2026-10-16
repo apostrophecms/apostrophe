@@ -9,7 +9,13 @@ const cheerio = require('cheerio');
 // and for editing areas.
 
 module.exports = {
-  options: { alias: 'area' },
+  options: {
+    alias: 'area',
+    // Native actions the multi-select toolbar may offer. A project can add
+    // a name here when a non-structural operation should join that toolbar.
+    // The button still appears only when every selected widget defines it.
+    batchWidgetOperations: [ 'up', 'down', 'remove', 'cut', 'copy', 'clone' ]
+  },
   commands(self) {
     return {
       add: {
@@ -1062,6 +1068,7 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
           widgetPreview,
           contextualWidgetDefaultData,
           widgetManagers,
+          batchWidgetOperations: self.options.batchWidgetOperations,
           action: self.action,
           createWidgetOperations: self.createWidgetOperations
         };

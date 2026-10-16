@@ -4,6 +4,7 @@ import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGrap
 import { nextTick } from 'vue';
 import { createId } from 'apostrophe/lib/beneath.js';
 import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
+import { installWidgetMarqueeSelection } from 'Modules/@apostrophecms/area/lib/widget-marquee-selection.js';
 
 export default function() {
   const mountedApps = new Map();
@@ -11,6 +12,8 @@ export default function() {
   apos.area.widgetOptions = [];
 
   createWidgetClipboardApp();
+
+  installWidgetMarqueeSelection();
 
   createAreaApps();
 
@@ -226,10 +229,23 @@ export default function() {
     // storage event handle
     class Clipboard {
       set(widget) {
+        this.write([ widget ]);
+      }
+
+      setMany(widgets) {
+        this.write(widgets);
+      }
+
+      write(widgets) {
+        const list = (widgets || []).filter((widget) => widget?.type);
+        if (!list.length) {
+          return;
+        }
         const id = createId();
         localStorage.setItem(key, JSON.stringify({
           id,
-          widget
+          widget: list[0],
+          widgets: list
         }));
         // Stamp the OS clipboard so a later paste can tell whether this
         // widget copy is still the most recent thing the user copied
@@ -241,6 +257,17 @@ export default function() {
 
       get() {
         return this.getEntry()?.widget || null;
+      }
+
+      getMany() {
+        const entry = this.getEntry();
+        if (!entry) {
+          return [];
+        }
+        if (Array.isArray(entry.widgets) && entry.widgets.length) {
+          return entry.widgets;
+        }
+        return entry.widget?.type ? [ entry.widget ] : [];
       }
 
       getId() {
@@ -262,6 +289,13 @@ export default function() {
         }
         if (!parsed || typeof parsed !== 'object') {
           return null;
+        }
+        if (typeof parsed.id === 'string' && Array.isArray(parsed.widgets) && parsed.widgets[0]?.type) {
+          return {
+            id: parsed.id,
+            widget: parsed.widgets[0],
+            widgets: parsed.widgets
+          };
         }
         if (typeof parsed.id === 'string' && parsed.widget?.type) {
           return parsed;
