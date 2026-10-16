@@ -1768,8 +1768,6 @@ module.exports = {
               if (doc[field.name]) {
                 doc[field.name].forEach(item => {
                   item.metaType = 'arrayItem';
-                  item.arrayFieldId = field._id;
-                  item.scopedArrayName = field.scopedArrayName;
                   forSchema(field.schema, item);
                 });
               }
@@ -1777,8 +1775,6 @@ module.exports = {
               const value = doc[field.name];
               if (value) {
                 value.metaType = 'object';
-                value.objectFieldId = field._id;
-                value.scopedObjectName = field.scopedObjectName;
                 forSchema(field.schema, value);
               }
             } else if (field.type === 'relationship') {

@@ -165,9 +165,7 @@ export default {
           const next = this.items.map(item => ({
             ...item.schemaInput.data,
             _id: item._id,
-            metaType: 'arrayItem',
-            arrayFieldId: this.field._id,
-            scopedArrayName: this.field.scopedArrayName
+            metaType: 'arrayItem'
           }));
           this.next = next;
         }

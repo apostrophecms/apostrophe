@@ -1082,8 +1082,7 @@ module.exports = (self) => {
           _id
         };
         result.metaType = 'arrayItem';
-        result.arrayFieldId = field._id;
-        result.scopedArrayName = field.scopedArrayName;
+        result._arrayFieldId = field._id;
         try {
           const options = {
             fetchRelationships,
@@ -1167,18 +1166,9 @@ module.exports = (self) => {
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // Array items are matched to their schema by arrayFieldId, which is
-      // the field _id and so unique even when a nested array shares the name
-      // of its parent. scopedArrayName is flat and can collide that way. It
-      // is still written for the benefit of processes running older code
-      // during a deployment, and read only for items stored before
-      // arrayFieldId existed
-      self.arrayManagersById[fieldPath] = {
-        schema: field.schema
-      };
-      const localArrayName = field.arrayName || field.name;
-      field.scopedArrayName = `${metaType}.${type}.${localArrayName}`;
-      self.arrayManagers[field.scopedArrayName] = {
+      // Array items are matched to their schema by _arrayFieldId, the field
+      // _id, which is set when docs are loaded. See annotateFieldIds
+      self.arrayManagers[fieldPath] = {
         schema: field.schema
       };
       self.register(metaType, type, field.schema, fieldPath);
@@ -1241,21 +1231,15 @@ module.exports = (self) => {
         }
       }
       result.metaType = 'objectItem';
-      result.objectFieldId = field._id;
-      result.scopedObjectName = field.scopedObjectName;
+      result._objectFieldId = field._id;
       destination[field.name] = result;
       if (errors.length) {
         throw errors;
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // See arrayFieldId and scopedArrayName above
-      self.objectManagersById[fieldPath] = {
-        schema: field.schema
-      };
-      const localObjectName = field.objectName || field.name;
-      field.scopedObjectName = `${metaType}.${type}.${localObjectName}`;
-      self.objectManagers[field.scopedObjectName] = {
+      // See _arrayFieldId above
+      self.objectManagers[fieldPath] = {
         schema: field.schema
       };
       self.register(metaType, type, field.schema, fieldPath);

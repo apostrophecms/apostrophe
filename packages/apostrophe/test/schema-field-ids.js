@@ -21,8 +21,6 @@ const pieceType = (name) => ({
       pets: {
         type: 'array',
         label: 'Pets',
-        // Legacy override, deliberately different from the field name
-        arrayName: 'critters',
         fields: {
           add: {
             petName: {
@@ -36,8 +34,6 @@ const pieceType = (name) => ({
       favorite: {
         type: 'object',
         label: 'Favorite',
-        // Legacy override, deliberately different from the field name
-        objectName: 'preferred',
         fields: {
           add: {
             favoriteName: {
@@ -277,36 +273,16 @@ describe('Schema - field ids', function() {
 
   });
 
-  describe('scoped array and object names', function() {
+  describe('array and object managers', function() {
 
-    // These are persisted on array items and objects inside stored documents,
-    // so they intentionally keep the legacy flat form and continue to honor
-    // arrayName and objectName. Changing them is a data migration, not a
-    // refactor. See the _id tests above for the newer path based scheme.
-    it('should honor arrayName in scopedArrayName', function() {
+    it('should key array and object managers by field id', function() {
       const pets = fieldOf(apos.modules.article.schema, 'pets');
-      assert.equal(pets.scopedArrayName, 'doc.article.critters');
-      assert(apos.schema.getArrayManager('doc.article.critters'));
-    });
-
-    it('should honor objectName in scopedObjectName', function() {
-      const favorite = fieldOf(apos.modules.article.schema, 'favorite');
-      assert.equal(favorite.scopedObjectName, 'doc.article.preferred');
-      assert(apos.schema.getObjectManager('doc.article.preferred'));
-    });
-
-    it('should fall back to the field name when no override is given', function() {
       const favorite = fieldOf(apos.modules.article.schema, 'favorite');
       const toys = fieldOf(favorite.schema, 'toys');
-      assert.equal(toys.scopedArrayName, 'doc.article.toys');
-      assert(apos.schema.getArrayManager('doc.article.toys'));
-    });
-
-    it('should keep the scoped name distinct from the field id', function() {
-      const pets = fieldOf(apos.modules.article.schema, 'pets');
-      assert.equal(pets._id, 'doc.article.pets');
-      assert.equal(pets.scopedArrayName, 'doc.article.critters');
-      assert.notEqual(pets._id, pets.scopedArrayName);
+      assert.equal(apos.schema.getArrayManager(pets._id).schema, pets.schema);
+      assert.equal(apos.schema.getObjectManager(favorite._id).schema, favorite.schema);
+      assert.equal(toys._id, 'doc.article.favorite.toys');
+      assert.equal(apos.schema.getArrayManager(toys._id).schema, toys.schema);
     });
 
   });
@@ -378,7 +354,6 @@ describe('Schema - field id stability', function() {
               pets: {
                 type: 'array',
                 label: 'Renamed Pets',
-                arrayName: 'critters',
                 fields: {
                   add: {
                     petName: {

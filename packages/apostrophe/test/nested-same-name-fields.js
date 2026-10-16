@@ -1,9 +1,8 @@
 const t = require('../test-lib/test.js');
 const assert = require('node:assert/strict');
 
-// An array nested in an array of the same name, and an object nested in an
-// object of the same name, share a flat scopedArrayName or scopedObjectName.
-// Array items and objects must be matched to their own schemas anyway. See
+// An array nested in an array of the same name, or an object nested in an
+// object of the same name, must still be matched to its own schema. See
 // https://github.com/apostrophecms/apostrophe/issues/4129
 
 describe('Nested array and object fields sharing a name', function() {
@@ -175,24 +174,44 @@ describe('Nested array and object fields sharing a name', function() {
     return apos.util.getManagerOf(object).schema.find(field => field.name === name);
   }
 
-  it('stamps array items and objects with the ids of their own fields', async function() {
-    const article = await insertArticle('stamps');
-    const widget = article.main.items[0];
+  async function findArticle(_id) {
+    return apos.article.find(apos.task.getReq({ mode: 'draft' }), { _id }).toObject();
+  }
+
+  function assertAnnotated(doc) {
+    const widget = doc.main.items[0];
+    for (const outer of widget.items) {
+      assert.equal(outer._arrayFieldId, 'widget.test.items');
+      assert.equal(outer.items[0]._arrayFieldId, 'widget.test.items.items');
+    }
+    assert.equal(widget.settings._objectFieldId, 'widget.test.settings');
+    assert.equal(widget.settings.settings._objectFieldId, 'widget.test.settings.settings');
+  }
+
+  it('annotates array items and objects with the ids of their own fields when loaded', async function() {
+    const inserted = await insertArticle('annotated');
+    // Sanitized but not yet loaded content, such as a widget preview
+    assertAnnotated(inserted);
+    assertAnnotated(await findArticle(inserted._id));
+  });
+
+  it('stores no field ids or scoped names', async function() {
+    const inserted = await insertArticle('not-stored');
+    const stored = await apos.doc.db.findOne({ _id: inserted._id });
+    const widget = stored.main.items[0];
     const outer = widget.items[0];
-    const inner = outer.items[0];
-    assert.equal(outer.arrayFieldId, 'widget.test.items');
-    assert.equal(inner.arrayFieldId, 'widget.test.items.items');
-    assert.equal(widget.settings.objectFieldId, 'widget.test.settings');
-    assert.equal(widget.settings.settings.objectFieldId, 'widget.test.settings.settings');
-    // Still written for the benefit of processes running older code during a
-    // rolling deployment
-    assert.equal(outer.scopedArrayName, 'widget.test.items');
-    assert.equal(inner.scopedArrayName, 'widget.test.items');
-    assert.equal(widget.settings.scopedObjectName, 'widget.test.settings');
+    const objects = [ outer, outer.items[0], widget.settings, widget.settings.settings ];
+    for (const object of objects) {
+      assert.equal(object._arrayFieldId, undefined);
+      assert.equal(object._objectFieldId, undefined);
+      assert.equal(object.scopedArrayName, undefined);
+      assert.equal(object.scopedObjectName, undefined);
+    }
   });
 
   it('finds the right schema for nested array items sharing a name', async function() {
-    const article = await insertArticle('arrays');
+    const { _id } = await insertArticle('arrays');
+    const article = await findArticle(_id);
     const outer = article.main.items[0].items[0];
     const inner = outer.items[0];
     assert.equal(fieldOf(outer, 'area').type, 'area');
@@ -203,7 +222,8 @@ describe('Nested array and object fields sharing a name', function() {
   });
 
   it('finds the right schema for nested objects sharing a name', async function() {
-    const article = await insertArticle('objects');
+    const { _id } = await insertArticle('objects');
+    const article = await findArticle(_id);
     const outer = article.main.items[0].settings;
     const inner = outer.settings;
     assert.equal(fieldOf(outer, 'body').type, 'area');
@@ -213,68 +233,48 @@ describe('Nested array and object fields sharing a name', function() {
     assert.match(rendered, /outer body/);
   });
 
-  it('falls back to the flat name for items stored before field ids', async function() {
+  it('refuses to guess the schema of an array item or object that was not annotated', async function() {
+    // As stored by earlier releases
     const outer = {
       metaType: 'arrayItem',
       scopedArrayName: 'widget.test.items'
     };
-    assert(apos.util.getManagerOf(outer));
+    assert.throws(() => apos.util.getManagerOf(outer), /has no field id/);
     const object = {
       metaType: 'object',
       scopedObjectName: 'widget.test.settings'
     };
-    assert(apos.util.getManagerOf(object));
+    assert.throws(() => apos.util.getManagerOf(object), /has no field id/);
   });
 
-  // Strip the new properties directly in the database, leaving the doc as
-  // older code would have stored it
-  async function makeLegacy(_id) {
-    const doc = await apos.doc.db.findOne({ _id });
-    const widget = doc.main.items[0];
-    const $unset = {
-      'main.items.0.settings.objectFieldId': 1,
-      'main.items.0.settings.settings.objectFieldId': 1
-    };
-    widget.items.forEach((item, i) => {
-      $unset[`main.items.0.items.${i}.arrayFieldId`] = 1;
-      $unset[`main.items.0.items.${i}.items.0.arrayFieldId`] = 1;
+  it('annotates content stored by earlier releases when loaded', async function() {
+    const { _id } = await insertArticle('earlier-release');
+    await apos.doc.db.updateOne({ _id }, {
+      $set: {
+        'main.items.0.items.0.scopedArrayName': 'widget.test.items',
+        'main.items.0.items.0.items.0.scopedArrayName': 'widget.test.items',
+        'main.items.0.settings.scopedObjectName': 'widget.test.settings'
+      }
     });
-    await apos.doc.db.updateOne({ _id }, { $unset });
-    const legacy = await apos.doc.db.findOne({ _id });
-    assert.equal(legacy.main.items[0].items[0].arrayFieldId, undefined);
-    assert.equal(legacy.main.items[0].settings.objectFieldId, undefined);
-    return legacy;
-  }
-
-  function assertMigrated(doc, outerTitles) {
-    const widget = doc.main.items[0];
-    assert.deepEqual(widget.items.map(item => item.title), outerTitles);
-    for (const outer of widget.items) {
-      assert.equal(outer.arrayFieldId, 'widget.test.items');
-      assert.equal(outer.items[0].arrayFieldId, 'widget.test.items.items');
-      assert.equal(outer.items[0].area, 'just a string');
-      assert.match(outer.area.items[0].content, /outer area/);
-    }
-    assert.equal(widget.settings.objectFieldId, 'widget.test.settings');
-    assert.equal(widget.settings.settings.objectFieldId, 'widget.test.settings.settings');
-    assert.equal(widget.settings.settings.body, 'just a string');
-  }
-
-  it('adds field ids to legacy docs via a migration', async function() {
-    const article = await insertArticle('migrate', [ 'one', 'two' ]);
-    await makeLegacy(article._id);
-    const migration = apos.migration.migrations
-      .find(migration => migration.name === 'add-array-and-object-field-ids');
-    assert(migration);
-    await migration.fn();
-    assertMigrated(await apos.doc.db.findOne({ _id: article._id }), [ 'one', 'two' ]);
+    assertAnnotated(await findArticle(_id));
   });
 
-  it('migrates the rest of a doc whose object field is stored as an array', async function() {
-    const article = await insertArticle('object-as-array');
-    await makeLegacy(article._id);
+  it('annotates the docs of versions', async function() {
+    const article = await insertArticle('versions');
+    const versions = await apos.docVersions.find(
+      apos.task.getReq(),
+      apos.docVersions.getTimelineCriteria(article)
+    );
+    assert(versions.length);
+    for (const version of versions) {
+      assertAnnotated(version.doc);
+    }
+  });
+
+  it('loads a doc whose object field is stored as an array', async function() {
+    const { _id } = await insertArticle('object-as-array');
     // As the 2.x content upgrader stores an object field
-    await apos.doc.db.updateOne({ _id: article._id }, {
+    await apos.doc.db.updateOne({ _id }, {
       $set: {
         'main.items.0.settings': [
           {
@@ -286,81 +286,10 @@ describe('Nested array and object fields sharing a name', function() {
         ]
       }
     });
-    await apos.doc.addFieldIdsToDoc(await apos.doc.db.findOne({ _id: article._id }));
-    const doc = await apos.doc.db.findOne({ _id: article._id });
-    const outer = doc.main.items[0].items[0];
-    assert.equal(outer.arrayFieldId, 'widget.test.items');
-    assert.equal(outer.items[0].arrayFieldId, 'widget.test.items.items');
-    assert.equal(doc.main.items[0].settings[0]._id, 'upgraded');
-  });
-
-  it('does not write through stale array indexes when a doc changes mid-migration', async function() {
-    const article = await insertArticle('stale', [ 'one', 'two', 'three' ]);
-    const stale = await makeLegacy(article._id);
-    // Another process removes the first outer item after the migration read
-    // the doc but before it wrote
-    await apos.doc.db.updateOne({ _id: article._id }, {
-      $set: {
-        'main.items.0.items': stale.main.items[0].items.slice(1)
-      }
-    });
-    await apos.doc.addFieldIdsToDoc(stale);
-    assertMigrated(await apos.doc.db.findOne({ _id: article._id }), [ 'two', 'three' ]);
-  });
-  // Remove the new properties everywhere in `value`, as older code stored it
-  function stripFieldIds(value) {
-    if (Array.isArray(value)) {
-      value.forEach(stripFieldIds);
-    } else if (value && ((typeof value) === 'object')) {
-      delete value.arrayFieldId;
-      delete value.objectFieldId;
-      Object.values(value).forEach(stripFieldIds);
-    }
-    return value;
-  }
-
-  async function versionsOf(article) {
-    return apos.docVersions.db
-      .find(apos.docVersions.getTimelineCriteria(article))
-      .toArray();
-  }
-
-  it('adds field ids to legacy version records when converting them', async function() {
-    const article = await insertArticle('legacy-versions');
-    const records = await versionsOf(article);
-    assert(records.length);
-    // The shape the legacy versions module stored: no mode, a plain doc
-    for (const {
-      mode, locale, authorId, ai, ...record
-    } of records) {
-      const doc = stripFieldIds(await apos.docVersions.unpack(record.doc));
-      await apos.docVersions.db.replaceOne({ _id: record._id }, {
-        ...record,
-        docId: doc._id,
-        doc
-      });
-    }
-    await apos.docVersions.convertLegacyVersions();
-    for (const record of await versionsOf(article)) {
-      assertMigrated(await apos.docVersions.unpack(record.doc), [ 'outer' ]);
-    }
-  });
-
-  it('adds field ids to versions recorded before they existed', async function() {
-    const article = await insertArticle('old-versions');
-    const records = await versionsOf(article);
-    assert(records.length);
-    for (const record of records) {
-      const doc = stripFieldIds(await apos.docVersions.unpack(record.doc));
-      await apos.docVersions.db.updateOne({ _id: record._id }, {
-        $set: { doc: await apos.docVersions.pack(doc) }
-      });
-    }
-    assert(await apos.docVersions.addFieldIdsToVersions() >= records.length);
-    for (const record of await versionsOf(article)) {
-      assertMigrated(await apos.docVersions.unpack(record.doc), [ 'outer' ]);
-    }
-    // Nothing left to do on a rerun
-    assert.equal(await apos.docVersions.addFieldIdsToVersions(), 0);
+    const article = await findArticle(_id);
+    const outer = article.main.items[0].items[0];
+    assert.equal(outer._arrayFieldId, 'widget.test.items');
+    assert.equal(outer.items[0]._arrayFieldId, 'widget.test.items.items');
+    assert.equal(article.main.items[0].settings[0]._objectFieldId, undefined);
   });
 });

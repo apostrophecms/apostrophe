@@ -246,8 +246,6 @@ export default {
         this.currentDocToCurrentItem();
         for (const item of this.next) {
           item.metaType = 'arrayItem';
-          item.arrayFieldId = this.field._id;
-          item.scopedArrayName = this.field.scopedArrayName;
         }
         this.$emit('modal-result', this.next);
         this.modal.showModal = false;

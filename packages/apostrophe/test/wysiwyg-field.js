@@ -657,14 +657,12 @@ describe('Field Tag and Wysiwyg Fields', function () {
     page.sections = [
       {
         metaType: 'arrayItem',
-        scopedArrayName: 'doc-type.field-page.sections',
         _id: 'section1',
         caption: 'The first caption',
         detail: '<p>The first detail</p>'
       },
       {
         metaType: 'arrayItem',
-        scopedArrayName: 'doc-type.field-page.sections',
         _id: 'section2',
         caption: 'The second caption',
         detail: '<p>The second detail</p>'
