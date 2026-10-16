@@ -294,7 +294,6 @@ const {
   startResizing,
   setPosition: setWindowPosition,
   constrainPosition,
-  constrainSize,
   cleanup: cleanupDraggable
 } = useDraggableWindow({
   size,
@@ -506,7 +505,6 @@ watch(() => props.modal.initialSize, (newSize) => {
 function handleResize() {
   if (isWindowModal.value) {
     constrainPosition();
-    constrainSize();
   }
 }
 
