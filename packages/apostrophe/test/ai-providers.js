@@ -16,6 +16,8 @@ describe('AI: named providers and baseUrl', function() {
   let baseUrl;
   // The requests the stub host captured, one per adapter call
   let hits;
+  // How many upcoming requests the stub host answers with a 503
+  let failures = 0;
   let savedOpenaiKey;
   let savedAnthropicKey;
 
@@ -44,6 +46,12 @@ describe('AI: named providers and baseUrl', function() {
           body
         });
         response.setHeader('content-type', 'application/json');
+        if (failures > 0) {
+          failures--;
+          response.statusCode = 503;
+          response.end(JSON.stringify({ error: { message: 'overloaded' } }));
+          return;
+        }
         response.end(JSON.stringify({
           id: 'chatcmpl-1',
           object: 'chat.completion',
@@ -333,6 +341,107 @@ describe('AI: named providers and baseUrl', function() {
       assert.equal(hit.headers.authorization, 'Bearer sk-test');
       assert.equal(hit.body.model, 'gpt-6.1-sol');
       assert.equal(hit.body.max_completion_tokens, 128000);
+    });
+  });
+
+  // Short-lived credentials such as Amazon Bedrock tokens minted from
+  // the AWS credential chain: the entry's key is a function, called
+  // for every request
+  describe('an apiKey function', function() {
+    let minted;
+    const keyEnv = 'APOS_TEST_MINTED_KEY';
+
+    before(async function() {
+      delete process.env[keyEnv];
+      minted = 0;
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/ai': {
+            options: {
+              providers: {
+                minted: {
+                  adapter: 'openai-compatible',
+                  baseUrl,
+                  envKey: keyEnv,
+                  apiKey: async () => `token-${++minted}`,
+                  models: {
+                    'llama-3.1-8b-instant': { maxOutputTokens: 8192 }
+                  },
+                  effort: {
+                    medium: { model: 'llama-3.1-8b-instant' }
+                  },
+                  capabilities: { image: false }
+                }
+              }
+            }
+          }
+        }
+      });
+      // Retries need not wait or log
+      apos.ai.pause = async () => {};
+      apos.ai.logWarn = () => {};
+    });
+
+    after(function() {
+      delete process.env[keyEnv];
+    });
+
+    beforeEach(function() {
+      minted = 0;
+      failures = 0;
+    });
+
+    it('sends a freshly resolved key with each request', async function() {
+      await apos.ai.generate(apos.task.getReq(), 'p');
+      await apos.ai.generate(apos.task.getReq(), 'p');
+      assert.deepEqual(
+        hits.map(hit => hit.headers.authorization),
+        [ 'Bearer token-1', 'Bearer token-2' ]
+      );
+    });
+
+    it('resolves the key again for a retried request', async function() {
+      failures = 1;
+      const result = await apos.ai.generate(apos.task.getReq(), 'p');
+      assert.equal(result.text, 'a llama haiku');
+      assert.deepEqual(
+        hits.map(hit => hit.headers.authorization),
+        [ 'Bearer token-1', 'Bearer token-2' ]
+      );
+    });
+
+    it('lets a key from the environment win over the function', async function() {
+      await t.destroy(apos);
+      process.env[keyEnv] = 'env-key';
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/ai': {
+            options: {
+              providers: {
+                minted: {
+                  adapter: 'openai-compatible',
+                  baseUrl,
+                  envKey: keyEnv,
+                  apiKey: async () => `token-${++minted}`,
+                  models: {
+                    'llama-3.1-8b-instant': { maxOutputTokens: 8192 }
+                  },
+                  effort: {
+                    medium: { model: 'llama-3.1-8b-instant' }
+                  },
+                  capabilities: { image: false }
+                }
+              }
+            }
+          }
+        }
+      });
+      await apos.ai.generate(apos.task.getReq(), 'p');
+      assert.equal(minted, 0);
+      assert.equal(hits[0].headers.authorization, 'Bearer env-key');
     });
   });
 });

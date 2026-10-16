@@ -355,7 +355,8 @@
  * A provider adapter: the translation between the normalized protocol above and
  * one service's dialect. Registered with addAdapter and instantiated per
  * provider entry at startup, with `provider`, `apiKey` and `baseUrl` filled in
- * from the entry.
+ * from the entry. `apiKey` is always a string by the time `chat` or `image`
+ * runs: an entry's key function is resolved before each request.
  *
  * @typedef {object} AiAdapter
  * @property {string} name The registry name. A provider entry names it with
@@ -377,6 +378,15 @@
  * @property {Object<string, { model: string, reasoning?: string }>} effort The
  *   adapter's native routing rows, one per effort level. They do not apply to
  *   an aliased entry, which describes a different service.
+ * @property {(settings: Object<string, string>) =>
+ *   (Promise<AiAdapterConfig|void>|AiAdapterConfig|void)} [configure]
+ *   Called once per provider entry at startup with the entry's resolved
+ *   settings, before the key is read. When the settings select a
+ *   different service than the adapter's default one — Amazon Bedrock
+ *   rather than the vendor's own API, say — return what differs; each
+ *   returned field replaces the adapter's own for that entry, and the
+ *   entry's own config still wins over it. Unlike the adapter's native
+ *   effort rows, returned rows apply to an aliased entry too.
  * @property {() => Promise<void>|void} validate Fail startup on a configuration
  *   this adapter cannot work with, a missing key above all. Required.
  * @property {(req: object, request: AiAdapterRequest) => Promise<AiTurn>} [chat]
@@ -386,6 +396,18 @@
  *   the transient one is retried. Hints may ride on `error.data`
  *   (`status`, `kind`, `retryAfter` in seconds, `requestId`); they are
  *   log-bound, so never put keys, credentials or personal data there.
+ */
+
+/**
+ * What an adapter's `configure` returns for one provider entry: the
+ * declarations that differ for the service the entry's settings select.
+ *
+ * @typedef {object} AiAdapterConfig
+ * @property {string} [baseUrl]
+ * @property {string} [envKey]
+ * @property {Object<string, boolean>} [capabilities]
+ * @property {Object<string, AiModelMeta>} [models]
+ * @property {Object<string, { model: string, reasoning?: string }>} [effort]
  */
 
 module.exports = {};

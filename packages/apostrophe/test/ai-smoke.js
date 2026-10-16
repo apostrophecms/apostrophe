@@ -24,7 +24,17 @@ const assert = require('assert/strict');
 // cent each.
 //
 // Model pins, so a bump is a conscious edit here rather than drift: the
-// openai row pins gpt-image-2, the google row gemini-3.1-flash-image.
+// openai row pins gpt-image-2, the google row gemini-3.1-flash-image,
+// the bedrock-chat row its runtime model ID.
+//
+// The bedrock rows reach Amazon Bedrock's runtime endpoint in
+// APOS_BEDROCK_REGION (default us-east-1) through the stock adapters,
+// with a long-term Bedrock API key in APOS_BEDROCK_KEY or, with
+// APOS_BEDROCK_IAM=1, short-term tokens minted per request from the
+// ambient AWS credentials (profile, role, environment).
+const bedrockRegion = process.env.APOS_BEDROCK_REGION || 'us-east-1';
+// Only the Chat Completions row, which has no Bedrock mode, names it
+const bedrockRuntime = `https://bedrock-runtime.${bedrockRegion}.amazonaws.com`;
 
 // Every low route reasons, so each cap leaves headroom for the reasoning
 // tokens ahead of the text
@@ -72,6 +82,58 @@ const PROVIDERS = [
       warm: 'cacheReadTokens'
     },
     cacheHitOptional: true
+  },
+  {
+    // The stock adapters in Bedrock mode: their own routing, so the
+    // effort-level case below exercises the shipped defaults
+    name: 'bedrock-anthropic',
+    bedrock: true,
+    maxTokens: 2000,
+    cacheShares: {
+      cold: 'cacheWriteTokens',
+      warm: 'cacheReadTokens'
+    },
+    entry: {
+      adapter: 'anthropic',
+      bedrockRegion
+    }
+  },
+  {
+    name: 'bedrock-openai',
+    bedrock: true,
+    maxTokens: 2000,
+    cacheShares: {
+      cold: 'cacheWriteTokens',
+      warm: 'cacheReadTokens'
+    },
+    cacheHitOptional: true,
+    entry: {
+      adapter: 'openai',
+      bedrockRegion
+    }
+  },
+  {
+    // The Chat Completions dialect through the openai-compatible adapter,
+    // configured by hand, as for any vendor without a Bedrock mode of its
+    // own. Mistral Large 3, served in-Region and without reasoning
+    // levels. Not OpenAI's models, which the openai adapter's Bedrock
+    // mode covers; not gpt-oss, which loses its way under a non-strict
+    // response schema
+    name: 'bedrock-chat',
+    bedrock: true,
+    maxTokens: 2000,
+    entry: {
+      adapter: 'openai-compatible',
+      baseUrl: `${bedrockRuntime}/openai/v1`,
+      models: {
+        'mistral.mistral-large-3-675b-instruct': { maxOutputTokens: 32000 }
+      },
+      effort: {
+        low: { model: 'mistral.mistral-large-3-675b-instruct' },
+        medium: { model: 'mistral.mistral-large-3-675b-instruct' }
+      },
+      capabilities: { image: false }
+    }
   }
 ];
 
@@ -79,7 +141,15 @@ const enabled = process.env.APOS_AI_SMOKE === '1';
 
 // Captured at load, before any mocked suite's hooks touch the environment
 for (const provider of PROVIDERS) {
-  provider.key = process.env[provider.envKey];
+  provider.key = provider.bedrock ? bedrockKey() : process.env[provider.envKey];
+}
+
+function bedrockKey() {
+  if (process.env.APOS_BEDROCK_IAM === '1') {
+    const { getTokenProvider } = require('@aws/bedrock-token-generator');
+    return getTokenProvider({ region: bedrockRegion });
+  }
+  return process.env.APOS_BEDROCK_KEY;
 }
 
 // A fresh definition per apostrophe instance: activation canonicalizes
@@ -138,7 +208,13 @@ function createFor(provider, usageRecords = []) {
       '@apostrophecms/ai': {
         options: {
           providers: {
-            [provider.name]: { apiKey: provider.key }
+            [provider.name]: {
+              ...provider.entry,
+              // Never the adapter's own variable, which belongs to the
+              // vendor's direct API
+              ...(provider.bedrock && { envKey: 'APOS_BEDROCK_KEY' }),
+              apiKey: provider.key
+            }
           },
           ...(provider.imageModel && {
             image: {
@@ -226,6 +302,27 @@ describe('AI live smoke', function() {
         assert.equal('mock' in usageRecords[0], false);
         assert.equal(usageRecords[0].outcome, 'accepted');
         assert.deepEqual(usageRecords[0].usage, result.usage);
+      });
+
+      it('routes every effort level to a working model', async function() {
+        if (!capabilities.text) {
+          this.skip();
+        }
+        const req = apos.task.getReq();
+        const { levels } = apos.ai.modelCatalog().effort;
+        for (const effort of Object.keys(levels)) {
+          const result = await apos.ai.generate(req, 'reply with the single word OK', {
+            effort,
+            maxTokens: provider.maxTokens,
+            cache: false
+          });
+          record(apos, req, result, {
+            effort,
+            text: result.text.slice(0, 20)
+          });
+          assert.equal(result.finishReason, 'stop', effort);
+          assert(result.text.length > 0, effort);
+        }
       });
 
       it('runs a tool through the loop', async function() {

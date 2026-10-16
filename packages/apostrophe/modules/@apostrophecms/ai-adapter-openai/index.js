@@ -16,6 +16,11 @@
 //
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
+//
+// The same Responses dialect reaches OpenAI's models on Amazon Bedrock:
+// set the entry's `bedrockRegion` and supply a Bedrock key. Bedrock
+// carries its own subset of the models, so that mode has its own
+// defaults, and no Images API.
 
 const image = require('./lib/image');
 
@@ -32,7 +37,38 @@ module.exports = {
   options: {
     // Per-request timeout in milliseconds; a timed-out call is a
     // transient failure the engine retries
-    timeout: 600000
+    timeout: 600000,
+    // The models a `bedrockRegion` entry declares and routes to: the
+    // newest of each tier Amazon Bedrock's runtime endpoint serves
+    // through the Responses API
+    bedrockModels: {
+      'gpt-6-luna': {
+        label: 'GPT-6 Luna',
+        contextWindow: 1050000,
+        maxOutputTokens: 128000,
+        reasoning: REASONING_EFFORTS
+      },
+      'gpt-5.6-terra': {
+        label: 'GPT-5.6 Terra',
+        contextWindow: 1050000,
+        maxOutputTokens: 128000,
+        reasoning: THINKING_EFFORTS
+      },
+      'gpt-6.1-sol': {
+        label: 'GPT-6.1 Sol',
+        contextWindow: 1000000,
+        maxOutputTokens: 128000,
+        reasoning: THINKING_EFFORTS
+      }
+    },
+    bedrockEffort: {
+      low: { model: 'gpt-6-luna' },
+      medium: { model: 'gpt-5.6-terra' },
+      high: {
+        model: 'gpt-6.1-sol',
+        reasoning: 'high'
+      }
+    }
   },
   init(self) {
     self.apos.ai.addAdapter(self.adapter());
@@ -50,6 +86,35 @@ module.exports = {
           label: 'OpenAI',
           baseUrl: 'https://api.openai.com/v1',
           envKey: 'APOS_OPENAI_KEY',
+          settings: {
+            // The AWS region whose Amazon Bedrock runtime endpoint to
+            // call instead of OpenAI's API, with a Bedrock API key
+            // (APOS_BEDROCK_KEY by default) or a function minting
+            // short-term Bedrock tokens
+            bedrockRegion: {},
+            // The cross-region inference profile Bedrock routes through:
+            // `us` from a US or Canadian region by default, else `global`
+            // (Bedrock's global profile is also the cheaper one)
+            bedrockProfile: {}
+          },
+          configure({ bedrockRegion, bedrockProfile }) {
+            if (!bedrockRegion) {
+              if (bedrockProfile) {
+                throw new Error('"bedrockProfile" requires "bedrockRegion"');
+              }
+              return;
+            }
+            return {
+              baseUrl: `${self.apos.ai.bedrockRuntimeUrl(bedrockRegion)}/openai/v1`,
+              envKey: 'APOS_BEDROCK_KEY',
+              capabilities: {
+                ...this.capabilities,
+                image: false
+              },
+              models: self.options.bedrockModels,
+              effort: self.options.bedrockEffort
+            };
+          },
           capabilities: {
             text: true,
             tools: true,
@@ -92,11 +157,19 @@ module.exports = {
             self.apos.ai.requireApiKey(this);
           },
           async chat(req, request) {
+            const body = self.buildBody(request);
+            if (this.bedrockRegion) {
+              body.model = self.apos.ai.bedrockModelId(body.model, {
+                vendor: 'openai',
+                profile: this.bedrockProfile ||
+                  self.bedrockGeography(this.bedrockRegion)
+              });
+            }
             const response = await self.apos.http.post(`${this.baseUrl}/responses`, {
               headers: {
                 authorization: `Bearer ${this.apiKey}`
               },
-              body: self.buildBody(request),
+              body,
               timeout: self.options.timeout,
               ...(request.signal && { signal: request.signal })
             });
@@ -117,6 +190,14 @@ module.exports = {
             return self.normalizeError(error);
           }
         };
+      },
+      // The geographic cross-region inference profile Bedrock offers
+      // OpenAI's models through from an AWS region: the US one from a
+      // commercial US or Canadian region, else the global one
+      bedrockGeography(region) {
+        return /^(us|ca)-/.test(region) && !region.startsWith('us-gov-')
+          ? 'us'
+          : 'global';
       },
       // Translate a normalized adapter request (see the engine's
       // buildRequest) to a Responses API body: the system prompt travels

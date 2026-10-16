@@ -6,6 +6,10 @@
 //
 // The transport is `apos.http`, no SDK. Projects can adjust the dialect
 // by extending this module and overriding its methods.
+//
+// The same dialect reaches Claude on Amazon Bedrock: set the entry's
+// `bedrockRegion` and supply a Bedrock key, and the default models and
+// effort rows carry over unchanged.
 
 // Anthropic's response-schema mode rejects much of portable JSON Schema
 // (`oneOf`, `minItems` above 1, open `additionalProperties`), so
@@ -41,7 +45,8 @@ module.exports = {
     // Models whose thinking is adaptive: the model decides when and how
     // deeply to think, and a reasoning level names an effort level
     // instead of a token budget. Extend the list when configuring a
-    // newer model of the same kind
+    // newer model of the same kind. Amazon Bedrock model IDs match
+    // their Anthropic names here (see isAdaptive)
     adaptiveModels: [
       'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5',
       'claude-opus-5', 'claude-sonnet-5'
@@ -68,7 +73,32 @@ module.exports = {
             // anthropic-workspace-id header. Anthropic requires it when
             // the key is identity-linked and not scoped to a single
             // workspace; a scoped key ignores it
-            workspaceId: { envKey: 'APOS_ANTHROPIC_WORKSPACE_ID' }
+            workspaceId: { envKey: 'APOS_ANTHROPIC_WORKSPACE_ID' },
+            // The AWS region whose Amazon Bedrock runtime endpoint to
+            // call instead of Anthropic's API. The models, effort rows
+            // and request shape stay the same; the key becomes a Bedrock
+            // API key (APOS_BEDROCK_KEY by default) or a function minting
+            // short-term Bedrock tokens
+            bedrockRegion: {},
+            // The cross-region inference profile Bedrock routes through:
+            // by default the region's geography where Bedrock offers one
+            // (`us`, `eu`, `au`, `jp`, `us-gov`), else `global`
+            bedrockProfile: {}
+          },
+          configure({ bedrockRegion, bedrockProfile }) {
+            if (!bedrockRegion) {
+              if (bedrockProfile) {
+                throw new Error('"bedrockProfile" requires "bedrockRegion"');
+              }
+              return;
+            }
+            // Bedrock serves the same models, so the native rows hold
+            // even for an entry aliased under another name
+            return {
+              baseUrl: `${self.apos.ai.bedrockRuntimeUrl(bedrockRegion)}/anthropic`,
+              envKey: 'APOS_BEDROCK_KEY',
+              effort: this.effort
+            };
           },
           capabilities: {
             text: true,
@@ -128,14 +158,23 @@ module.exports = {
             self.apos.ai.requireApiKey(this);
           },
           async chat(req, request) {
+            const body = self.buildBody(request);
+            // Bedrock has no Anthropic workspaces
+            const workspaceId = !this.bedrockRegion && this.workspaceId;
+            if (this.bedrockRegion) {
+              body.model = self.apos.ai.bedrockModelId(body.model, {
+                vendor: 'anthropic',
+                profile: this.bedrockProfile ||
+                  self.bedrockGeography(this.bedrockRegion)
+              });
+            }
             const response = await self.apos.http.post(`${this.baseUrl}/v1/messages`, {
               headers: {
                 'x-api-key': this.apiKey,
                 'anthropic-version': self.options.version,
-                ...(this.workspaceId &&
-                  { 'anthropic-workspace-id': this.workspaceId })
+                ...(workspaceId && { 'anthropic-workspace-id': workspaceId })
               },
-              body: self.buildBody(request),
+              body,
               timeout: self.options.timeout,
               ...(request.signal && { signal: request.signal })
             });
@@ -146,10 +185,42 @@ module.exports = {
           }
         };
         function reasoningValues(model) {
-          return self.options.adaptiveModels.includes(model)
+          return self.isAdaptive(model)
             ? [ ...EFFORT_LEVELS ]
             : Object.keys(self.options.thinkingBudgets);
         }
+      },
+      // The geographic cross-region inference profile Bedrock offers
+      // Claude through from an AWS region, falling back to the global
+      // one where the region's geography has none
+      bedrockGeography(region) {
+        if (region.startsWith('us-gov-')) {
+          return 'us-gov';
+        }
+        if (/^(us|ca)-/.test(region)) {
+          return 'us';
+        }
+        if (region.startsWith('eu-')) {
+          return 'eu';
+        }
+        if (/^ap-southeast-[24]$/.test(region)) {
+          return 'au';
+        }
+        if (/^ap-northeast-[13]$/.test(region)) {
+          return 'jp';
+        }
+        return 'global';
+      },
+      // Whether the model's thinking is adaptive. Amazon Bedrock names
+      // the same models with a cross-region inference profile prefix and
+      // sometimes a version suffix (`us.anthropic.claude-opus-5-5`,
+      // `anthropic.claude-sonnet-4-5-20250929-v1:0`), so those are
+      // stripped before consulting `adaptiveModels`
+      isAdaptive(model) {
+        const base = model
+          .replace(/^(?:[a-z-]+\.)?anthropic\./, '')
+          .replace(/-v\d+:\d+$/, '');
+        return self.options.adaptiveModels.includes(base);
       },
       // Translate a normalized adapter request (see the engine's
       // buildRequest) to an Anthropic Messages API body: content parts
@@ -181,7 +252,7 @@ module.exports = {
         if (!Number.isInteger(maxTokens)) {
           invalid(`"maxTokens" is required: model "${model}" declares no maxOutputTokens to default to`);
         }
-        const adaptive = self.options.adaptiveModels.includes(model);
+        const adaptive = self.isAdaptive(model);
         // A turn that reserves part of max_tokens for thinking, which is
         // the shape of thinking a forced tool cannot share the turn with
         const budgeted = reasoning !== undefined && !adaptive;
