@@ -2,15 +2,15 @@
   <Transition name="apos-widget-selection">
     <div
       v-if="visible"
-      class="apos-widget-selection-toolbar"
-      :class="{ 'apos-widget-selection-toolbar--modal': inModal }"
+      class="apos-widget-controls-multiselect"
+      :class="{ 'apos-widget-controls-multiselect--modal': inModal }"
       data-apos-ignore-unfocus="true"
-      data-apos-test="widgetSelectionToolbar"
+      data-apos-test="widgetControlsMultiselect"
     >
       <AposButtonGroup :aria-labelledby="countId">
         <span
           :id="countId"
-          class="apos-widget-selection-toolbar__count"
+          class="apos-widget-controls-multiselect__count"
           aria-live="polite"
         >
           {{ $t('apostrophe:widgetsSelected', { count: selectedWidgetIds.length }) }}
@@ -43,7 +43,7 @@ import { runWidgetBatch } from 'Modules/@apostrophecms/area/lib/batch-widgets.js
 import { getOperationTooltip } from 'Modules/@apostrophecms/area/lib/operations.js';
 
 export default {
-  name: 'AposWidgetSelectionToolbar',
+  name: 'AposWidgetControlsMultiselect',
   data() {
     return {
       countId: `apos-widget-selection-count-${createId()}`
@@ -195,7 +195,7 @@ export default {
       this.$nextTick(() => {
         const root = this.$el?.querySelector
           ? this.$el
-          : document.querySelector('.apos-widget-selection-toolbar');
+          : document.querySelector('.apos-widget-controls-multiselect');
         root?.querySelector('button:not([disabled])')?.focus();
       });
     },
@@ -212,7 +212,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-widget-selection-toolbar {
+.apos-widget-controls-multiselect {
   z-index: $z-index-widget-selection;
   position: fixed;
   bottom: 24px;

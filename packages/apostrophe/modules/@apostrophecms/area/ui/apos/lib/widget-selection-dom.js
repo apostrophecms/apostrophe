@@ -225,7 +225,7 @@ function innerWidgetId(event, widgetId) {
     return widgetId;
   }
   const target = event.target;
-  if (target?.closest?.('.apos-area-widget-controls, .apos-widget-selection-toolbar')) {
+  if (target?.closest?.('.apos-area-widget-controls, .apos-widget-controls-multiselect')) {
     return widgetId;
   }
   const deepest = deepestWidgetId(event.clientX, event.clientY);
