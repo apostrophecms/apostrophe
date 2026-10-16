@@ -1166,11 +1166,6 @@ module.exports = (self) => {
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // Array items are matched to their schema by _arrayFieldId, the field
-      // _id, which is set when docs are loaded. See annotateFieldIds
-      self.arrayManagers[fieldPath] = {
-        schema: field.schema
-      };
       self.register(metaType, type, field.schema, fieldPath);
     },
     isEqual(req, field, one, two) {
@@ -1238,10 +1233,6 @@ module.exports = (self) => {
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // See _arrayFieldId above
-      self.objectManagers[fieldPath] = {
-        schema: field.schema
-      };
       self.register(metaType, type, field.schema, fieldPath);
     },
     validate: function (field, options, warn, fail) {

@@ -1765,7 +1765,8 @@ module.exports = {
                 }
               }
             } else if (field.type === 'array') {
-              if (doc[field.name]) {
+              // Content stored before the field became an array may not be one
+              if (Array.isArray(doc[field.name])) {
                 doc[field.name].forEach(item => {
                   item.metaType = 'arrayItem';
                   forSchema(field.schema, item);
@@ -1980,7 +1981,8 @@ module.exports = {
                 self.walkByMetaType(widget, handlers);
               }
             } else if (field.type === 'array') {
-              if (doc[field.name]) {
+              // Content stored before the field became an array may not be one
+              if (Array.isArray(doc[field.name])) {
                 doc[field.name].forEach(item => {
                   handlers.arrayItem(field, item);
                   forSchema(field.schema, item);

@@ -39,8 +39,6 @@ module.exports = {
   async init(self) {
     self.fieldTypes = {};
     self.fieldsById = {};
-    self.arrayManagers = {};
-    self.objectManagers = {};
     self.fieldMetadataComponents = [];
     self.uiManagerIndicators = [];
 
@@ -1431,9 +1429,6 @@ module.exports = {
 
             object._id = object._id || self.apos.util.generateId();
             object.metaType = 'arrayItem';
-            // Not stored, but saves the doc from going unannotated until
-            // it is loaded again
-            object._arrayFieldId = field._id;
           },
           object: (field, object) => {
             if (!object || !can(field)) {
@@ -1441,7 +1436,6 @@ module.exports = {
             }
 
             object.metaType = 'object';
-            object._objectFieldId = field._id;
           },
           relationship: (field, doc) => {
             if (!Array.isArray(doc[field.name]) || !can(field)) {
@@ -1463,6 +1457,9 @@ module.exports = {
         };
 
         self.apos.doc.walkByMetaType(doc, handlers);
+        // Not stored, but saves the doc from going unannotated until
+        // it is loaded again
+        self.annotateFieldIds(doc);
       },
 
       simulateRelationshipsFromStorage(req, doc) {
@@ -2477,20 +2474,22 @@ still output the value of this field with a regular template expression.`);
 
         return result;
       },
-      // Array "managers" currently offer just a schema property, for
-      // parallelism with doc type and widget managers. This allows the
-      // getManagerOf method to operate on objects of any of four types: doc,
-      // widget, array item or object.
+      // The "manager" of an array item is its array field, which has a
+      // schema property for parallelism with doc type and widget managers.
+      // This allows the getManagerOf method to operate on objects of any of
+      // four types: doc, widget, array item or object.
       //
       // `_id` is the _id of the array field, as found in the _arrayFieldId
       // property of its items
       getArrayManager(_id) {
-        return self.arrayManagers[_id];
+        const field = self.fieldsById[_id];
+        return (field?.type === 'array') ? field : undefined;
       },
       // `_id` is the _id of the object field, as found in the _objectFieldId
-      // property of the object
+      // property of the object. See getArrayManager
       getObjectManager(_id) {
-        return self.objectManagers[_id];
+        const field = self.fieldsById[_id];
+        return (field?.type === 'object') ? field : undefined;
       },
       // Set _arrayFieldId on every array item and _objectFieldId on every
       // object in `doc`, a doc or widget, to the _id of its own field, so

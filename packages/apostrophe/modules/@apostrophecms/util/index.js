@@ -760,6 +760,11 @@ module.exports = {
       // Array items and objects must have been annotated with the _id of
       // their field, which happens when docs are loaded or saved. See
       // `apos.schema.annotateFieldIds`. An error is thrown if they were not.
+      //
+      // Pass `log: false` when walking content that may have no schema, such
+      // as the stored items of an array field that was since removed. Then
+      // nothing is logged or thrown, and undefined is returned for anything
+      // whose manager cannot be determined.
       getManagerOf(object, { log = true } = {}) {
         if (object.metaType === 'doc') {
           return self.apos.doc.getManager(object.type);
@@ -775,7 +780,7 @@ module.exports = {
         return undefined;
 
         function requireFieldId(_id) {
-          if (!_id) {
+          if (!_id && log) {
             throw new Error(
               `This ${object.metaType} has no field id, so its schema cannot be determined.\n` +
               'Array items and objects are annotated with one when the doc containing them\n' +
