@@ -103,7 +103,9 @@ const modal = ref({
     top: window.innerHeight - SIZE.height - MARGIN
   },
   minWidth: 280,
-  minHeight: 200
+  minHeight: 200,
+  // The list's text stays selectable
+  dragFrom: 'header'
 });
 
 // The mode ended some other way: Preview, the menu, a context switch
