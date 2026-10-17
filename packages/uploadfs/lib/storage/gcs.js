@@ -22,9 +22,6 @@ module.exports = function() {
 
   const self = {
     init: function (options, callback) {
-      if (!(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
-        return callback('GOOGLE_APPLICATION_CREDENTIALS not set in env, cannot proceed');
-      }
       if (options.validation) {
         validation = options.validation;
       }
@@ -47,12 +44,14 @@ module.exports = function() {
           endpoint = protocol + endpoint + port;
         }
       }
-      // The storage client auth relies on the presence of the service account
-      // file path expressed in the environment variable
-      // GOOGLE_APPLICATION_CREDENTIALS and, of course, the presence of such file.
+      // The storage client auth relies on the presence of Application Default
+      // Credentials.
+      // i.e., one of GOOGLE_APPLICATION_CREDENTIALS environment variable; a
+      // credential file created by using the gcloud auth application-default
+      // login command`; or the attached service account, returned by the
+      // metadata server.
       //
-      //
-      // See https://cloud.google.com/docs/authentication/getting-started
+      // See https://docs.cloud.google.com/docs/authentication/application-default-credentials
       client = new storage.Storage();
       bucketName = options.bucket;
       defaultTypes = require(path.join(__dirname, '/contentTypes.js'));
