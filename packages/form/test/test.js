@@ -247,6 +247,59 @@ describe('Forms module', function () {
     assert.deepEqual(actual, expected);
   });
 
+  it('skips a checkboxes conditional only when none of the checked values match', function () {
+    const conditionals = {};
+    forms.trackConditionals(conditionals, {
+      conditionName: 'topics',
+      conditionValue: 'pricing',
+      contents: {
+        metaType: 'area',
+        items: [ { fieldName: 'budget' } ]
+      }
+    });
+
+    const whenChecked = [];
+    forms.collectToSkip({ topics: [ 'buyers', 'pricing' ] }, conditionals, whenChecked);
+    assert.deepEqual(whenChecked, []);
+
+    const whenUnchecked = [];
+    forms.collectToSkip({ topics: [ 'buyers' ] }, conditionals, whenUnchecked);
+    assert.deepEqual(whenUnchecked, [ 'budget' ]);
+
+    const whenEmpty = [];
+    forms.collectToSkip({ topics: [] }, conditionals, whenEmpty);
+    assert.deepEqual(whenEmpty, [ 'budget' ]);
+  });
+
+  it('skips fields nested in a group inside a hidden conditional', function () {
+    const conditionals = {};
+    forms.trackConditionals(conditionals, {
+      conditionName: 'hasCompany',
+      conditionValue: 'true',
+      contents: {
+        metaType: 'area',
+        items: [
+          { fieldName: 'company' },
+          {
+            type: '@apostrophecms/form-group',
+            contents: {
+              metaType: 'area',
+              items: [ { fieldName: 'vatNumber' } ]
+            }
+          }
+        ]
+      }
+    });
+
+    const skipped = [];
+    forms.collectToSkip({ hasCompany: false }, conditionals, skipped);
+    assert.deepEqual(skipped.sort(), [ 'company', 'vatNumber' ]);
+
+    const shown = [];
+    forms.collectToSkip({ hasCompany: true }, conditionals, shown);
+    assert.deepEqual(shown, []);
+  });
+
   it('should have the same widgets in group widget area as the main form widgets area, execpt group itself', function () {
     const formWidgets = {
       ...forms.schema.find(field => field.name === 'contents').options.widgets
