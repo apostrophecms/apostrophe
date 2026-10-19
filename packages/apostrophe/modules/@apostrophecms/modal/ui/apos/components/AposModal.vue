@@ -104,6 +104,7 @@
                     v-else-if="hasBeenLocalized && !isCrossLocale"
                     class="apos-modal__locale"
                     :locale="currentLocale"
+                    data-apos-test="modal-locale"
                   />
                   <div
                     v-if="hasSlot('primaryControls')"
@@ -293,7 +294,6 @@ const {
   startResizing,
   setPosition: setWindowPosition,
   constrainPosition,
-  constrainSize,
   cleanup: cleanupDraggable
 } = useDraggableWindow({
   size,
@@ -313,9 +313,14 @@ watch(() => props.modal.overlay, overlay => {
   store.updateModalData(props.modalData.id, { overlay });
 }, { immediate: true });
 
-// Wrap handler to only work for window modals and primary mouse button
+// Wrap handler to only work for window modals and primary mouse button. A
+// window whose `dragFrom` is `header` drags from its header only, so that
+// the text of its body can be selected
 const startDragging = (e) => {
   if (e.button !== 0) {
+    return;
+  }
+  if ((props.modal.dragFrom === 'header') && !e.target.closest('.apos-modal__header')) {
     return;
   }
   const nonDraggable = nonDraggableElements.some(
@@ -385,6 +390,9 @@ const innerClasses = computed(() => {
 
   if (props.modal.type === 'window') {
     classes.push('apos-window');
+    if (props.modal.dragFrom === 'header') {
+      classes.push('apos-window--drag-header');
+    }
   };
 
   return classes;
@@ -497,7 +505,6 @@ watch(() => props.modal.initialSize, (newSize) => {
 function handleResize() {
   if (isWindowModal.value) {
     constrainPosition();
-    constrainSize();
   }
 }
 
@@ -708,6 +715,11 @@ function close() {
     .apos-modal__inner.apos-window--resizing {
       outline: 2px solid var(--a-base-5);
       outline-offset: -2px;
+    }
+
+    .apos-window--drag-header .apos-modal__header {
+      cursor: grab;
+      user-select: none;
     }
 
     .apos-modal__header__main {

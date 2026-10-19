@@ -89,65 +89,14 @@
         </ul>
       </section>
     </div>
-    <nav
+    <AposDocVersionChangeNav
       v-if="groups.length"
-      class="apos-doc-version-changes__nav"
-      :aria-label="$t('apostrophe:versionNavLabel')"
-      data-apos-test="doc-version-changes-nav"
-    >
-      <div
-        class="apos-doc-version-changes__nav-status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <AposDocVersionChangePath
-          v-if="position >= 0"
-          class="apos-doc-version-changes__nav-label"
-          :segments="groups[position].path"
-          data-apos-test="doc-version-changes-nav-label"
-        />
-        <span
-          v-else
-          class="apos-doc-version-changes__nav-label"
-          data-apos-test="doc-version-changes-nav-label"
-        >{{ $t('apostrophe:versionNavLabel') }}</span>
-        <span
-          class="apos-doc-version-changes__nav-position"
-          data-apos-test="doc-version-changes-nav-position"
-        >
-          {{ $t('apostrophe:versionNavPosition', {
-            current: position + 1,
-            total: groups.length
-          }) }}
-        </span>
-      </div>
-      <div class="apos-doc-version-changes__nav-buttons">
-        <AposButton
-          ref="previousButton"
-          type="outline"
-          icon="chevron-left-icon"
-          icon-only
-          label="apostrophe:versionNavPrevious"
-          tooltip="apostrophe:versionNavPrevious"
-          :modifiers="[ 'small' ]"
-          :disabled="position <= 0"
-          :attrs="{ 'data-apos-test': 'doc-version-changes-nav-previous' }"
-          @click="step(-1)"
-        />
-        <AposButton
-          ref="nextButton"
-          type="outline"
-          icon="chevron-right-icon"
-          icon-only
-          label="apostrophe:versionNavNext"
-          tooltip="apostrophe:versionNavNext"
-          :modifiers="[ 'small' ]"
-          :disabled="position === groups.length - 1"
-          :attrs="{ 'data-apos-test': 'doc-version-changes-nav-next' }"
-          @click="step(1)"
-        />
-      </div>
-    </nav>
+      ref="nav"
+      :path="position >= 0 ? groups[position].path : null"
+      :position="position"
+      :total="groups.length"
+      @step="step"
+    />
   </section>
 </template>
 
@@ -238,8 +187,7 @@ const groups = computed(() => changeGroups.getChangeGroups(props.rows, filter.va
 
 const {
   position,
-  previousButton,
-  nextButton,
+  nav,
   setGroupEl,
   getGroupEl,
   reset: resetNavigator,
@@ -451,39 +399,6 @@ $pad-x: $spacing-base + $spacing-half;
       flex-direction: column;
       gap: 2px;
     }
-  }
-
-  &__nav {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: space-between;
-    gap: $spacing-base;
-    padding: $spacing-base $pad-x;
-    border-top: 1px solid var(--a-base-8);
-    background-color: var(--a-base-10);
-  }
-
-  &__nav-status {
-    @include type-base;
-
-    & {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-  }
-
-  &__nav-position {
-    color: var(--a-base-2);
-    font-size: var(--a-type-smaller);
-  }
-
-  &__nav-buttons {
-    display: flex;
-    flex-shrink: 0;
-    gap: $spacing-half;
   }
 }
 </style>
