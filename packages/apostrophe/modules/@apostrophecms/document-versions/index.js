@@ -1189,7 +1189,8 @@ module.exports = {
       // draft (see `getChangeList`), each changed path once, credited to the
       // versions recorded since the publication (see `attribute` in
       // `lib/diff.js`) and carrying what an editor of the value needs (see
-      // `addFieldData`) and the patch that restores it (see `addRestore`).
+      // `addFieldData`), whether `req` may change it and the patch that
+      // restores it (see `addRestore`).
       // A document never published is compared with a new document of its
       // type as a save stores it; `baseline` says which, `{ kind:
       // 'published', at }` or `{ kind: 'default' }`. `annotate` adds `doc`,

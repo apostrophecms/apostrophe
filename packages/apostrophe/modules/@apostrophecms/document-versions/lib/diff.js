@@ -203,6 +203,10 @@ const ORDER = Symbol('order');
  *   or widget that was added or deleted: where a PATCH of the document finds
  *   the list it is in. `@<area _id>.items` for a widget, the area editor's
  *   own form; the array's key, as `patchKey` has it, for an array item.
+ * @property {true} [editable] Rows of `addRestore` only: the request may
+ *   change the value at `patchKey`, no field along the path being read only
+ *   or beyond its permissions and no widget along it of a type its area
+ *   does not allow.
  * @property {{ patch: object, inverse: object }} [restore] Rows of
  *   `addRestore` only: the PATCH that puts the older value back, and the
  *   one that takes that back again. None where a patch cannot do it exactly.
@@ -578,8 +582,9 @@ function addFieldData(schema, rows, doc, ctx) {
 
 // The deepest array item or widget along `path`, by index (-1 for none), the
 // area field holding it when it is a widget, the object fields below it that
-// the path is inside of, by index, and every schema field along the path.
-// `null` when a name along the path is not in the schema
+// the path is inside of, by index, every schema field along the path and
+// every widget along it, `{ type, area }`. `null` when a name along the path
+// is not in the schema
 function locate(schema, path, ctx) {
   let fields = schema;
   let parent = null;
@@ -587,11 +592,18 @@ function locate(schema, path, ctx) {
   let area = null;
   let objects = [];
   const along = [];
+  const widgets = [];
   for (const [ i, segment ] of path.entries()) {
     const kind = parent && getKind(parent, ctx);
     if (segment.widgetType || (kind === 'array')) {
       itemAt = i;
       area = segment.widgetType ? parent : null;
+      if (segment.widgetType) {
+        widgets.push({
+          type: segment.widgetType,
+          area: parent
+        });
+      }
       fields = segment.widgetType
         ? ctx.getWidgetManager(segment.widgetType)?.schema || []
         : parent.schema || [];
@@ -613,14 +625,17 @@ function locate(schema, path, ctx) {
     itemAt,
     area,
     objects,
-    fields: along
+    fields: along,
+    widgets
   };
 }
 
 /**
- * Adds `restore` to every row that a PATCH of the newer document can put
- * back to its older value exactly: the older value at `patchKey`; for a
- * whole item or widget added or deleted, the list operation that takes it
+ * Adds `editable` to every row with a `patchKey` whose fields along its path
+ * the request may change and whose widgets along it their areas allow, and
+ * `restore` to those of them that a PATCH of the newer document can put back
+ * to its older value exactly: the older value at `patchKey`; for a whole
+ * item or widget added or deleted, the list operation that takes it
  * out or puts it back at its place; for a widget modified whole, what it
  * stores outside its schema, its fields left as they are. Values are in the
  * form a save takes, each relationship as `{ _id, _fields }` entries made
@@ -651,29 +666,34 @@ function addRestore(schema, rows, {
   older, newer, editable, canEdit, relatedId, loadable
 }, ctx) {
   for (const row of rows) {
-    const restore = row.patchKey && getRestore(row);
+    const target = row.patchKey && locate(schema, row.path, ctx);
+    if (!target || !isEditable(target)) {
+      continue;
+    }
+    row.editable = true;
+    const restore = getRestore(row, target);
     if (restore) {
       row.restore = restore;
     }
   }
   return rows;
 
-  // None for a field the save would skip or the request may not change:
-  // read only, or not the request's to edit, along the path or anywhere in
-  // the value; none either when a related document the restored value holds
-  // no longer loads, nor when a widget either side writes is of a type its
-  // area does not allow, since the save would leave it out. A widget of a
-  // type the site no longer has is left out by the save as by every edit,
-  // and is no change of its own
-  function getRestore(row) {
-    const target = locate(schema, row.path, ctx);
-    if (
-      !target ||
-      !editable.has(target.fields[0]?.name) ||
-      target.fields.some(field => field.readOnly || !canEdit(field))
-    ) {
-      return;
-    }
+  // None along the path is a field the save would skip or the request may
+  // not change, read only or not the request's to edit, nor a widget its
+  // area does not allow, which the save would leave out
+  function isEditable({ fields, widgets }) {
+    return editable.has(fields[0]?.name) &&
+      !fields.some(field => field.readOnly || !canEdit(field)) &&
+      widgets.every(({ type, area }) => widgetOptionsOf(area, type));
+  }
+
+  // None for a field the save would skip or the request may not change
+  // anywhere in the value; none either when a related document the restored
+  // value holds no longer loads, nor when a widget either side writes is of
+  // a type its area does not allow, since the save would leave it out. A
+  // widget of a type the site no longer has is left out by the save as by
+  // every edit, and is no change of its own
+  function getRestore(row, target) {
     let blocked = false;
     const onField = field => {
       blocked ||= Boolean(field.readOnly) || !canEdit(field);

@@ -1147,7 +1147,7 @@ describe('Document Versions draft changes', function () {
       assert.equal(rowAt(rows, 'main', 'link').restore, undefined);
     });
 
-    it('should not restore a read only field, nor an order', async function () {
+    it('should neither restore nor edit a read only field, nor an order', async function () {
       const { draft } = await edited({
         items: [ 'one', 'two' ].map(_id => ({
           _id,
@@ -1162,11 +1162,13 @@ describe('Document Versions draft changes', function () {
       const rows = await rowsOf(draft._id);
       assert.equal(rowAt(rows, 'locked').patchKey, 'locked');
       assert.equal(rowAt(rows, 'locked').restore, undefined);
+      assert.equal(rowAt(rows, 'locked').editable, undefined);
       assert.equal(rowAt(rows, 'items').kind, 'array');
       assert.equal(rowAt(rows, 'items').restore, undefined);
+      assert.equal(rowAt(rows, 'items').editable, undefined);
     });
 
-    it('should not restore for an editor a field the editor may not edit, nor a widget holding one', async function () {
+    it('should neither restore nor edit for an editor a field the editor may not edit, and not restore a widget holding one', async function () {
       const link = storyLink('link', []);
       link.secret = 'Secret';
       const { draft } = await edited({
@@ -1199,8 +1201,14 @@ describe('Document Versions draft changes', function () {
       for (const names of paths) {
         assert.equal(rowAt(rows, ...names).restore, undefined, names.join('/'));
         assert.ok(rowAt(admins, ...names).restore, names.join('/'));
+        assert.equal(rowAt(admins, ...names).editable, true, names.join('/'));
       }
       assert.ok(rowAt(rows, 'main', 'kept', 'caption').restore);
+      // Edited where the path allows it, whatever the value holds
+      assert.equal(rowAt(rows, 'main', 'kept', 'secret').editable, undefined);
+      assert.equal(rowAt(rows, 'items', 'item1', 'secret').editable, undefined);
+      assert.equal(rowAt(rows, 'main', 'link').editable, true);
+      assert.equal(rowAt(rows, 'main', 'kept', 'caption').editable, true);
     });
 
     it('should put the default back in a document never published', async function () {
@@ -1306,6 +1314,29 @@ describe('Document Versions draft changes', function () {
       assert.equal(rowAt(rows, 'main', 'card2').restore, undefined);
       await apply(draft._id, rowAt(rows, 'main', 'keeping').restore.patch);
       assert.equal((await stored(draft._id)).main.items[0].inner.items[0].code, 'Kept');
+    });
+
+    it('should neither restore nor edit a field of a widget its area does not allow', async function () {
+      const { draft } = await edited({
+        main: area('main1', [ storyLink('link', []) ])
+      }, () => {});
+      // Allowed by the area's options when it was written
+      const nested = caption => ({
+        ...storyLink('nested', []),
+        caption
+      });
+      await apos.doc.db.updateOne({ _id: draft._id.replace(':draft', ':published') }, {
+        $set: { 'main.items.0.inner': area('link-inner', [ nested('One') ]) }
+      });
+      await apos.doc.db.updateOne({ _id: draft._id }, {
+        $set: { 'main.items.0.inner': area('link-inner', [ nested('Two') ]) }
+      });
+
+      const rows = await rowsOf(draft._id);
+      const row = rowAt(rows, 'main', 'link', 'inner', 'nested', 'caption');
+      assert.equal(row.patchKey, '@nested.caption');
+      assert.equal(row.editable, undefined);
+      assert.equal(row.restore, undefined);
     });
 
     it('should leave out a widget of a type the site no longer has, and never anchor on it', async function () {

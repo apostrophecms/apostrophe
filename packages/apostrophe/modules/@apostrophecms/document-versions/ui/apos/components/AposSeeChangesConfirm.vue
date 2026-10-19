@@ -6,6 +6,7 @@
     tabindex="-1"
     :aria-labelledby="titleId"
     data-apos-test="see-changes-confirm"
+    @keyup.esc.stop="$emit('cancel')"
   >
     <p
       :id="titleId"
@@ -65,6 +66,14 @@
         @click="$emit('cancel')"
       />
       <AposButton
+        v-if="editable"
+        class="apos-see-changes-confirm__cancel"
+        type="quiet"
+        label="apostrophe:edit"
+        :attrs="{ 'data-apos-test': 'see-changes-confirm-edit' }"
+        @click="$emit('edit')"
+      />
+      <AposButton
         type="primary"
         :label="removes
           ? 'apostrophe:seeChangesRemoveConfirm'
@@ -82,7 +91,7 @@
 <script setup>
 // Asks before a restore, showing what it returns to: the older value as the
 // entry's detail reads it, or for a whole widget or item, its type and
-// title
+// title. An entry that can be edited offers its editor instead
 import {
   computed, nextTick, onMounted, ref, useId
 } from 'vue';
@@ -107,10 +116,15 @@ const props = defineProps({
   invalid: {
     type: Boolean,
     default: false
+  },
+  // Whether the entry can be edited instead
+  editable: {
+    type: Boolean,
+    default: false
   }
 });
 
-defineEmits([ 'cancel', 'restore' ]);
+defineEmits([ 'cancel', 'restore', 'edit' ]);
 
 const titleId = useId();
 const root = ref(null);

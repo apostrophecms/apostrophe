@@ -53,6 +53,7 @@
         :baseline="store.payload?.baseline"
         :on-page="onPage"
         @navigate="navigateTo"
+        @widen="modalEl?.widen(EDITOR_WIDTH)"
       />
     </template>
   </AposModal>
@@ -76,6 +77,8 @@ const SIZE = {
   height: 420
 };
 const MARGIN = 16;
+// What a rich text or area editor needs
+const EDITOR_WIDTH = 480;
 
 const modalEl = ref(null);
 const listEl = ref(null);
