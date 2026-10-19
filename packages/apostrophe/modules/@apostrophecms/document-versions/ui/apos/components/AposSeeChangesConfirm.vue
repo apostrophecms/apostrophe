@@ -139,10 +139,16 @@ const removes = computed(() => listed.value && (props.entry.row.type === 'added'
 
 const title = computed(() => {
   if (listed.value) {
-    const what = (props.entry.row.kind === 'widget') ? 'Widget' : 'Item';
-    return removes.value
-      ? `apostrophe:seeChangesRemoveAdded${what}`
-      : `apostrophe:seeChangesRestoreDeleted${what}`;
+    // the long check version because i18n lint doesn't like dynamic keys
+    const widget = props.entry.row.kind === 'widget';
+    if (removes.value) {
+      return widget
+        ? 'apostrophe:seeChangesRemoveAddedWidget'
+        : 'apostrophe:seeChangesRemoveAddedItem';
+    }
+    return widget
+      ? 'apostrophe:seeChangesRestoreDeletedWidget'
+      : 'apostrophe:seeChangesRestoreDeletedItem';
   }
   return (props.baseline === 'default')
     ? 'apostrophe:seeChangesRestoreDefault'
