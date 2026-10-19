@@ -149,8 +149,8 @@ const title = computed(() => {
     : 'apostrophe:seeChangesRestorePublished';
 });
 
-// A widget by its type's label and its title, else its text (a rich text
-// widget's plaintext), an item by its array's label and its own
+// A widget by its type's label and its title, an item by its array's label
+// and its own
 const item = computed(() => {
   if (!whole.value) {
     return null;
@@ -160,7 +160,7 @@ const item = computed(() => {
   if (row.kind === 'widget') {
     return {
       type: segment.label,
-      title: segment.title || (removes.value ? row.newText : row.oldText)
+      title: removes.value ? row.newText : row.oldText
     };
   }
   return {

@@ -214,15 +214,6 @@ function getRelatedIds(rows, ctx) {
     if (row.kind === 'relationship') {
       [ ...(row.old || []), ...(row.new || []) ].forEach(id => ids.add(id));
     }
-    if ((row.kind === 'arrayItem') || (row.kind === 'widget')) {
-      for (const field of getWholeSchema(row, ctx)) {
-        if (getKind(field, ctx) === 'relationship') {
-          [ row.old, row.new ]
-            .flatMap(holder => (holder && getFieldValue(field, holder)) || [])
-            .forEach(id => ids.add(id));
-        }
-      }
-    }
     for (const record of (row.format || [])) {
       [ record.id, record.old?.id ].filter(Boolean).forEach(id => ids.add(id));
       getLinks(record).map(getPermalinkId).filter(Boolean).forEach(id => ids.add(id));
@@ -235,9 +226,10 @@ function getRelatedIds(rows, ctx) {
  * Sets `oldText` and `newText` on each row: the text of `old` and `new`.
  *
  * - A rich text row reads as plaintext.
- * - An array item or a widget reads as its fields, one per line, each as
- *   its label and its text (`Label: text`), in schema order; a field with
- *   no text is left out. A rich text widget reads as its plaintext.
+ * - An array item reads as its title: its array's `titleField`, else its
+ *   `title` field.
+ * - A widget reads as its title (the `titleField` option of its type), a
+ *   rich text widget as its plaintext.
  * - An order row reads as its items in that order, each as `#n`, its widget
  *   type and its title. `n` is the item's position in the newer document,
  *   which tells items that read alike apart.
@@ -419,46 +411,15 @@ function rowText(row, value, ctx, titles) {
     return toPlaintext(value, ctx);
   }
   if (row.kind === 'arrayItem') {
-    return getFieldsText(row.field?.schema || [], value, ctx, titles);
+    return getItemText(row.field, value, ctx);
   }
   if (row.kind === 'widget') {
-    const manager = ctx.getWidgetManager(value.type);
-    if (manager?.getRichText) {
-      return toPlaintext(manager.getRichText(value), ctx);
-    }
-    return manager ? getFieldsText(manager.schema, value, ctx, titles) : '';
+    return getWidgetText(value, ctx);
   }
   if (row.items) {
     return value.map(id => itemText(row.items[id], ctx)).join(', ');
   }
   return row.field ? toText(row.field, value, ctx, { titles }) : '';
-}
-
-// An item's or a widget's fields that read as text, one per line, as
-// `Label: text`
-function getFieldsText(schema, holder, ctx, titles) {
-  return schema
-    .map(field => {
-      const text = toText(field, getFieldValue(field, holder), ctx, { titles });
-      const label = field.label || field.name;
-      return text && `${ctx.t ? ctx.t(label) : label}: ${text}`;
-    })
-    .filter(Boolean)
-    .join('\n');
-}
-
-// A field's stored value: the ids of a relationship
-function getFieldValue(field, holder) {
-  return field.idsStorage ? holder[field.idsStorage] : holder[field.name];
-}
-
-// The schema of a whole item or widget row
-function getWholeSchema(row, ctx) {
-  if (row.kind === 'arrayItem') {
-    return row.field?.schema || [];
-  }
-  const type = (row.new || row.old)?.type;
-  return (type && ctx.getWidgetManager(type)?.schema) || [];
 }
 
 function changeOf(part) {

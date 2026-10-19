@@ -1340,18 +1340,28 @@ module.exports = {
       // it: `{ rows, counts: { added, modified, deleted, ai } }`. `pairs` are
       // `{ older, newer, ai }`, oldest first; one pair compares two contents,
       // several read as one list (see `getConsolidatedRows`). Rows carry their
-      // text, word diff and formatting changes (see `lib/text.js`). `before`
-      // are the rows AI changed before the pairs (see `getAiRowsBefore`).
-      // Checks no permission on the contents; related documents read as `req`
-      // sees them. Empty for no pairs and for a type whose module is gone
+      // text, word diff and formatting changes (see `lib/text.js`), an array
+      // item added or deleted whole its fields as rows of their own
+      // (`fieldRows`). `before` are the rows AI changed before the pairs (see
+      // `getAiRowsBefore`). Checks no permission on the contents; related
+      // documents read as `req` sees them. Empty for no pairs and for a type
+      // whose module is gone
       async getChangeList(req, pairs, { before } = {}) {
         let rows = [];
         if (pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type)) {
           const ctx = self.getDiffContext(req, pairs.at(-1).newer);
-          rows = text.addWordDiff(await self.addChangeText(
-            req,
-            text.addFormat(self.getConsolidatedRows(req, pairs, { before }), ctx)
-          ), ctx);
+          rows = diff.addItemFields(
+            self.getConsolidatedRows(req, pairs, { before }),
+            ctx
+          );
+          const all = [ ...rows, ...rows.flatMap(row => row.fieldRows || []) ];
+          text.addWordDiff(await self.addChangeText(req, text.addFormat(all, ctx)), ctx);
+          // A field with nothing to read, an empty one or a widget without
+          // a title, is no row of the item
+          for (const row of rows.filter(row => row.fieldRows)) {
+            row.fieldRows = row.fieldRows
+              .filter(field => field.oldText || field.newText || field.images);
+          }
         }
         return {
           rows,

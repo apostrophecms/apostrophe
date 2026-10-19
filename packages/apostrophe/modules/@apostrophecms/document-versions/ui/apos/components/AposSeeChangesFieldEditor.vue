@@ -21,6 +21,7 @@
         :schema="schema"
         :model-value="value"
         :doc-id="docId"
+        :conditional-fields="conditionalFields"
         :trigger-validation="triggerValidation"
         :modifiers="[ 'micro', 'margin-none' ]"
         @update:model-value="value = $event"
@@ -58,13 +59,20 @@
 <script setup>
 // One field of the draft, edited on its own: its editor shows the value the
 // draft has now, without its label, conditions or the rest of the document.
-// An array item is edited as its fields, labelled. `save` carries the patch
+// An array item is edited as its fields, labelled, their conditions on one
+// another evaluated as the array editor does; a condition on a field outside
+// the item has no value to read here and is not met. `save` carries the patch
 // that sets the edited value and its inverse; an unchanged value closes it
 // as Cancel and Escape do
 import {
-  computed, nextTick, onMounted, ref
+  computed, inject, nextTick, onMounted, ref
 } from 'vue';
 import { klona } from 'klona';
+import {
+  evaluateExternalConditions,
+  getConditionalFields,
+  getConditionTypesObject
+} from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 import draftValue from '../lib/draft-value.js';
 
 const props = defineProps({
@@ -101,12 +109,14 @@ const props = defineProps({
 });
 
 const emit = defineEmits([ 'cancel', 'save' ]);
+const $t = inject('i18n');
 
 const root = ref(null);
 const input = ref(null);
 // `{ data, hasErrors }` as `AposSchema` emits it, once the draft is loaded
 const value = ref(null);
 const triggerValidation = ref(false);
+const externalConditions = ref(getConditionTypesObject());
 let original;
 
 const schema = computed(() => (props.item
@@ -116,9 +126,23 @@ const schema = computed(() => (props.item
     hideLabel: true
   } ]));
 
+// Read from the item as a save stores it: a field its conditions hide keeps
+// its value
+const conditionalFields = computed(() => (props.item && value.value
+  ? getConditionalFields(schema.value, {
+    ...original,
+    ...value.value.data
+  }, externalConditions.value)
+  : getConditionTypesObject()));
+
 onMounted(async () => {
   try {
-    original = await draftValue.load(props.docId, props.patchKey);
+    [ original, externalConditions.value ] = await Promise.all([
+      draftValue.load(props.docId, props.patchKey),
+      props.item
+        ? evaluateExternalConditions(schema.value, props.docId, $t)
+        : externalConditions.value
+    ]);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error(error);

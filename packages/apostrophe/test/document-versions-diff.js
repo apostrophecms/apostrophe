@@ -1585,31 +1585,60 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
-    it('should read an added or deleted array item as its fields, one per line', async function () {
+    it('should read an added or deleted array item as its title', async function () {
       const older = buildDoc();
       const newer = buildDoc();
       newer.section.rows.pop();
       assert.deepEqual(await texts(older, newer), [
-        [
-          'root.section.rows.1',
-          [
-            'Title: Title root.section.rows.1',
-            'Shout: Hello',
-            'Count: 2',
-            'Ratio: 0.5',
-            'Flag: false',
-            'Choice: One',
-            'Tags: One',
-            'When: 2026-01-01',
-            'At: 10:00:00',
-            'Link: https://example.com/',
-            'Mail: someone@example.com',
-            'Body: Body root.section.rows.1',
-            'Tint: #ff0000'
-          ].join('\n'),
-          ''
-        ]
+        [ 'root.section.rows.1', 'Title root.section.rows.1', '' ]
       ]);
+    });
+
+    it('should list the fields of an added or deleted array item as rows of their own', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.section.rows.pop();
+      const { rows } = await apos.docVersions.getChangeList(req, [ {
+        older,
+        newer
+      } ]);
+      const [ item ] = rows;
+      assert.equal(item.oldText, 'Title root.section.rows.1');
+      assert.deepEqual(item.fieldRows.map(row => [
+        row.path.slice(3).map(segment => segment.name).join('.'),
+        row.type,
+        row.oldText,
+        row.newText
+      ]), [
+        [ 'title', 'deleted', 'Title root.section.rows.1', '' ],
+        [ 'shout', 'deleted', 'Hello', '' ],
+        [ 'count', 'deleted', '2', '' ],
+        [ 'ratio', 'deleted', '0.5', '' ],
+        [ 'flag', 'deleted', 'false', '' ],
+        [ 'choice', 'deleted', 'One', '' ],
+        [ 'tags', 'deleted', 'One', '' ],
+        [ 'when', 'deleted', '2026-01-01', '' ],
+        [ 'at', 'deleted', '10:00:00', '' ],
+        [ 'link', 'deleted', 'https://example.com/', '' ],
+        [ 'mail', 'deleted', 'someone@example.com', '' ],
+        [ 'body', 'deleted', 'Body root.section.rows.1', '' ],
+        [ 'tint', 'deleted', '#ff0000', '' ],
+        [ 'content.root.section.rows.1.content.1', 'deleted', 'Rich root.section.rows.1', '' ]
+      ]);
+      assert(item.fieldRows.every(row => row.diff.length));
+
+      const { rows: [ added ] } = await apos.docVersions.getChangeList(req, [ {
+        older: newer,
+        newer: older
+      } ]);
+      assert.equal(added.type, 'added');
+      assert.deepEqual(
+        added.fieldRows.slice(0, 2).map(row => [ row.type, row.oldText, row.newText ]),
+        [
+          [ 'added', '', 'Title root.section.rows.1' ],
+          [ 'added', '', 'Hello' ]
+        ]
+      );
     });
 
     it('should label an array item by its ordinal when its title is empty', async function () {
@@ -1728,20 +1757,7 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
-    it('should read the related titles of a deleted widget among its fields', async function () {
-      const alpha = await apos.modules.topic.insert(req, { title: 'Alpha Widget' });
-      const older = buildDoc();
-      const newer = buildDoc();
-      const [ widget ] = older.section.rows[0].content.items;
-      widget.topicsIds = [ alpha.aposDocId ];
-      newer.section.rows[0].content.items.shift();
-      const [ deleted ] = (await texts(older, newer))
-        .filter(([ name ]) => name === widget._id);
-      assert(deleted[1].split('\n').includes('Topics: Alpha Widget'), deleted[1]);
-      assert.equal(deleted[2], '');
-    });
-
-    it('should read an added widget as its fields, its rich text, or nothing', async function () {
+    it('should read an added widget as its title, its rich text, or nothing', async function () {
       const older = buildDoc();
       const newer = buildDoc();
       const area = newer.section.rows[0].content;
@@ -1767,7 +1783,7 @@ describe('Document Versions diff engine', function () {
         }
       );
       assert.deepEqual(await texts(older, newer), [
-        [ 'card1', '', 'Kind: Two\nNote: Hi' ],
+        [ 'card1', '', 'Two' ],
         [ 'rich1', '', 'New words' ],
         [ 'opaque1', '', '' ]
       ]);

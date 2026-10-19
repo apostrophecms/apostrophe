@@ -94,7 +94,13 @@ function getChangeEntry(row, { key, depth }) {
   if (own) {
     segments.push(row.path[depth - 1]);
   }
-  const diff = row.diff || [];
+  // An item added or deleted whole shows each of its fields, in place of
+  // its title
+  const fields = (row.fieldRows || []).map((fieldRow, index) => getChangeEntry(fieldRow, {
+    key: `${key}.${index}`,
+    depth: row.path.length
+  }));
+  const diff = fields.length ? [] : (row.diff || []);
   const short = order ? elideItems(diff) : elide(diff);
   // Two images may share a title
   const changed = diff.some(part => part.change !== 'same') || Boolean(row.images);
@@ -129,12 +135,14 @@ function getChangeEntry(row, { key, depth }) {
     changed,
     // What changed in a rich text besides its words, a block each
     format,
+    // The entries of an item's fields, each with its own detail
+    fields,
     // The related images of each side, shown in place of their titles
     images: row.images || {},
     // Whether there is anything to expand: a row of which only the change
     // is known has no toggle, and its change type when its group's header
     // does not say it
-    detail: changed || format.length > 0,
+    detail: changed || format.length > 0 || fields.some(field => field.detail),
     text: {
       new: Boolean(row.newText),
       old: Boolean(row.oldText)

@@ -168,6 +168,9 @@ const ORDER = Symbol('order');
  *   some: the formatting that changed. Non-enumerable, like `field`.
  * @property {FormatLine[]} [formatChanges] The same for display, in the
  *   language of the admin UI, set by `addText`.
+ * @property {ChangeRow[]} [fieldRows] Array items added or deleted whole,
+ *   once `addItemFields` ran: the rows of its fields; in a change list,
+ *   those with text to show.
  * @property {{ old?: object[], new?: object[] }} [images] Relationship rows
  *   whose ids changed, set by `addText`: the related images of each side,
  *   `{ text, href, change }` each.
@@ -959,6 +962,27 @@ function countIds(doc) {
   return counts;
 }
 
+/**
+ * Sets `fieldRows` on every array item added or deleted whole: the rows of
+ * its fields, as a change of each field alone would be, below the item's
+ * path. Rows are modified in place.
+ *
+ * @param {ChangeRow[]} rows
+ * @param {DiffContext} ctx
+ * @returns {ChangeRow[]} `rows`.
+ */
+function addItemFields(rows, ctx) {
+  for (const row of rows) {
+    if ((row.kind !== 'arrayItem') || !row.field?.schema) {
+      continue;
+    }
+    const fieldRows = [];
+    walkFields(row.field.schema, row.old || {}, row.new || {}, ctx, row.path, fieldRows);
+    row.fieldRows = fieldRows;
+  }
+  return rows;
+}
+
 module.exports = {
   walk,
   annotate,
@@ -966,6 +990,7 @@ module.exports = {
   attribute,
   addFieldData,
   addRestore,
+  addItemFields,
   getRelatedIds
 };
 
