@@ -1562,6 +1562,42 @@ describe('Document Versions draft changes', function () {
         assert.equal(error.body.data.errors[0].path, 'note');
         assert.equal((await stored(draft._id)).note, 'Noted');
       });
+
+      it('should refuse a strict patch that leaves the whole document invalid', async function () {
+        // Valid in the draft: the note is required while the flag is on only
+        const { draft, rows } = await edited({
+          flag: true,
+          note: 'Noted'
+        }, draft => {
+          draft.flag = false;
+          draft.note = '';
+        });
+        const { restore } = rowAt(rows, 'flag');
+
+        const error = await apos.http.patch(`/api/v1/story/${draft._id}`, {
+          body: {
+            _patches: [ {
+              ...restore.patch,
+              _strict: true
+            } ]
+          },
+          jar
+        }).catch(error => error);
+
+        assert.equal(error.status, 400);
+        assert.equal(error.body.name, 'invalid');
+        assert.equal(error.body.data.errors[0].path, 'note');
+        assert.equal((await stored(draft._id)).flag, false);
+
+        // Not strict, the patch is checked for the flag alone and saves
+        await apos.http.patch(`/api/v1/story/${draft._id}`, {
+          body: { _patches: [ restore.patch ] },
+          jar
+        });
+        const saved = await stored(draft._id);
+        assert.equal(saved.flag, true);
+        assert.equal(saved.note, '');
+      });
     });
   });
 });

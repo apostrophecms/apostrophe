@@ -55,7 +55,7 @@
       role="alert"
       data-apos-test="see-changes-confirm-invalid"
     >
-      {{ $t('apostrophe:seeChangesRestoreInvalid') }}
+      {{ $t('apostrophe:seeChangesInvalid') }}
     </p>
     <div class="apos-see-changes-confirm__controls">
       <AposButton

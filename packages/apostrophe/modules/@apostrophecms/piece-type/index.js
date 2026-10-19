@@ -1021,6 +1021,10 @@ module.exports = {
       //
       // You can pass fetchRelationships: false to skip the check for whether
       // related documents in relationships actually exist.
+      //
+      // A patch with `_strict: true` saves only if the whole piece is then
+      // valid, as a save from its editor must be, and is refused as `invalid`
+      // otherwise.
 
       async convertPatchAndRefresh(req, input, _id, { fetchRelationships = true } = {}) {
         const keys = Object.keys(input);
@@ -1067,6 +1071,13 @@ module.exports = {
             }
             if (i === patches.length - 1) {
               if (possiblePatchedFields) {
+                if (patches.some(patch => self.apos.launder.boolean(patch._strict))) {
+                  await self.apos.schema.validateDocument(
+                    req,
+                    self.allowedSchema(req),
+                    piece
+                  );
+                }
                 await self.update(req, piece);
               }
               result = self.findOneForEditing(

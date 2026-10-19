@@ -33,7 +33,7 @@
       role="alert"
       data-apos-test="see-changes-editor-invalid"
     >
-      {{ $t('apostrophe:seeChangesEditInvalid') }}
+      {{ $t('apostrophe:seeChangesInvalid') }}
     </p>
     <div class="apos-see-changes-editor__controls">
       <AposButton

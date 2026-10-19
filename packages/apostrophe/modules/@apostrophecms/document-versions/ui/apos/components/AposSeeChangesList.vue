@@ -446,7 +446,9 @@ async function leave(id) {
 // Saved as any edit of the page is, so it can be undone, at `patchKey` or
 // the row's own. A value the server refuses as invalid is told where it
 // was entered, or by `refused` when that is not in the list; `failed`
-// follows any other refusal the user was told of
+// follows any other refusal the user was told of. Strict: the server saves
+// it only if the whole draft is then valid, since a patch alone is checked
+// for its own fields
 function save(row, {
   patch, inverse, patchKey = row.patchKey
 }, {
@@ -457,7 +459,10 @@ function save(row, {
   saving.value = true;
   invalid.value = false;
   apos.bus.$emit('context-edited', {
-    patch,
+    patch: {
+      ...patch,
+      _strict: true
+    },
     inverse,
     target: {
       docId: store.docId,
@@ -631,7 +636,7 @@ async function editWidget(entry) {
     inverse: { [row.patchKey]: widget }
   }, {
     refused() {
-      apos.notify('apostrophe:seeChangesEditInvalid', {
+      apos.notify('apostrophe:seeChangesInvalid', {
         type: 'error',
         icon: 'alert-circle-icon'
       });

@@ -2412,6 +2412,16 @@ still output the value of this field with a regular template expression.`);
         }
       },
 
+      // Throws the errors a save of the whole `doc` by `schema` would, every
+      // condition read from the document as it is, where a patch converts
+      // only the fields it names. `doc` is left as it is
+      async validateDocument(req, schema, doc) {
+        const copy = _.cloneDeep(doc);
+        await self.convert(req, schema, copy, { ...copy }, {
+          fetchRelationships: false
+        });
+      },
+
       // Given a `patch` containing mongo-style patch operators like `$push`,
       // return a subset of `schema` containing the root fields that would
       // ultimately be updated by those operations.
