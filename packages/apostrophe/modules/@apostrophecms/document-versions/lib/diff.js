@@ -44,7 +44,8 @@ const ORDER = Symbol('order');
  * @property {(type: string) => object|undefined} getWidgetManager The
  *   widget module for a widget `type` (`apos.area.getWidgetManager`), read
  *   for `schema`, `label`, `options.versionsRender`,
- *   `options.versionsRenderDeleted` and `getRichText`.
+ *   `options.versionsStandalone` (and its older name
+ *   `options.versionsRenderDeleted`) and `getRichText`.
  *   `undefined` for a type without a module.
  * @property {(doc: object, namespace: string, ...pathKeyValue: any[]) => void} setMeta
  *   `apos.doc.setMeta`, used by `annotate` to highlight top-level fields.
@@ -207,6 +208,10 @@ const ORDER = Symbol('order');
  *   or widget that was added or deleted: where a PATCH of the document finds
  *   the list it is in. `@<area _id>.items` for a widget, the area editor's
  *   own form; the array's key, as `patchKey` has it, for an array item.
+ * @property {true} [system] An item or widget whose only change is in
+ *   fields the system manages, which no editor shows (`hidden` fields, a
+ *   widget type's own `utility` fields): modified, with no detail, never
+ *   edited nor restored. Such fields are no rows of their own.
  * @property {true} [editable] Rows of `addRestore` only: the request may
  *   change the value at `patchKey`, for the order of an array the whole
  *   array, no field along the path being read only
@@ -270,7 +275,7 @@ function walk(schema, older, newer, ctx) {
  * - `_deleted: true` on a widget `newer` does not have. A clone of it is
  *   put back into the area at its older position, so it can render in
  *   place; it exists in the returned document only. A widget whose type
- *   sets the `versionsRenderDeleted` option to `false` is not put back:
+ *   does not stand alone (the `versionsStandalone` option) is not put back:
  *   the widget holding it is marked as changed instead, or, in a top-level
  *   area, the field is highlighted.
  * - `_olderVersion: <the older widget>` on a changed widget whose type sets
@@ -322,8 +327,7 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
     }
     let widgetAt = _.findLastIndex(row.path, segment => segment.widgetType);
     if (row.kind === 'widget' && row.type === 'deleted') {
-      const manager = ctx.getWidgetManager(row.path.at(-1).widgetType);
-      if (manager?.options.versionsRenderDeleted !== false) {
+      if (isStandalone(row.path.at(-1).widgetType, ctx)) {
         const area = resolve(doc, row.path.slice(0, -1));
         if (area?.items) {
           // Positions count the widgets of the types the site has
@@ -587,7 +591,8 @@ function addFieldData(schema, rows, doc, ctx) {
 
 // The deepest array item or widget along `path`, by index (-1 for none), the
 // area field holding it when it is a widget, the object fields below it that
-// the path is inside of, by index, every schema field along the path and
+// the path is inside of, by index, every schema field along the path, those
+// of them right below a widget (`heads`, the widget type's own fields) and
 // every widget along it, `{ type, area }`. `null` when a name along the path
 // is not in the schema
 function locate(schema, path, ctx) {
@@ -598,11 +603,14 @@ function locate(schema, path, ctx) {
   let objects = [];
   const along = [];
   const widgets = [];
+  const heads = [];
+  let widgetType = null;
   for (const [ i, segment ] of path.entries()) {
     const kind = parent && getKind(parent, ctx);
     if (segment.widgetType || (kind === 'array')) {
       itemAt = i;
       area = segment.widgetType ? parent : null;
+      widgetType = segment.widgetType || null;
       if (segment.widgetType) {
         widgets.push({
           type: segment.widgetType,
@@ -621,6 +629,10 @@ function locate(schema, path, ctx) {
       return null;
     }
     along.push(parent);
+    if (widgetType) {
+      heads.push(parent);
+      widgetType = null;
+    }
     if ((getKind(parent, ctx) === 'object') && (i < path.length - 1)) {
       fields = parent.schema || [];
       objects.push(i);
@@ -631,6 +643,7 @@ function locate(schema, path, ctx) {
     area,
     objects,
     fields: along,
+    heads,
     widgets
   };
 }
@@ -646,7 +659,9 @@ function locate(schema, path, ctx) {
  * are. Values are in the
  * form a save takes, each relationship as `{ _id, _fields }` entries made
  * from its stored ids. A widget type that stores data outside its schema
- * keeps it through its own `sanitize`, as it must. None when a save would
+ * keeps it through its own `sanitize`, as it must. None for a whole widget
+ * of a type that does not stand alone (the `versionsStandalone` option), nor
+ * for the order of an array. None when a save would
  * drop a widget the patch writes, at any depth: of a type the site no longer
  * has, or one its area does not allow. Rows are modified in place, after
  * `addFieldData`.
@@ -672,13 +687,19 @@ function addRestore(schema, rows, {
   older, newer, editable, canEdit, relatedId, loadable
 }, ctx) {
   for (const row of rows) {
+    // Nothing of it to show, nothing to put back
+    if (row.system) {
+      continue;
+    }
     const target = row.patchKey && locate(schema, row.path, ctx);
     if (!target || !isEditable(target)) {
       continue;
     }
     row.editable = true;
-    // The older order would take back every other change of the array
-    if (isOrder(row)) {
+    // The older order would take back every other change of the array; a
+    // widget its parent lays out together with its siblings cannot be put
+    // back or taken out alone
+    if (isOrder(row) || !isStandaloneRow(row, target)) {
       continue;
     }
     const restore = getRestore(row, target);
@@ -690,11 +711,22 @@ function addRestore(schema, rows, {
 
   // None along the path is a field the save would skip or the request may
   // not change, read only or not the request's to edit, nor a widget its
-  // area does not allow, which the save would leave out
-  function isEditable({ fields, widgets }) {
+  // area does not allow, which the save would leave out. Nor a field the
+  // system manages (`isSystemField`)
+  function isEditable({
+    fields, heads, widgets
+  }) {
     return editable.has(fields[0]?.name) &&
       !fields.some(field => field.readOnly || !canEdit(field)) &&
+      !fields.some(field => {
+        return isSystemField(field, ctx, { widget: heads.includes(field) });
+      }) &&
       widgets.every(({ type, area }) => widgetOptionsOf(area, type));
+  }
+
+  function isStandaloneRow(row, { itemAt }) {
+    const widgetType = (itemAt === row.path.length - 1) && row.path[itemAt].widgetType;
+    return !widgetType || isStandalone(widgetType, ctx);
   }
 
   // None for a field the save would skip or the request may not change
@@ -994,7 +1026,12 @@ module.exports = {
   getRelatedIds
 };
 
-function walkFields(schema, older, newer, ctx, path, rows) {
+// Walks the fields of `schema`, a widget type's own when `widget` is true.
+// A field the system manages is no row (see `isSystemField`); returns
+// whether such a field changed, here or in an object below, for the item or
+// widget holding them to show as modified when nothing else of it changed
+function walkFields(schema, older, newer, ctx, path, rows, { widget = false } = {}) {
+  let system = false;
   for (const field of schema) {
     const kind = getKind(field, ctx);
     if (kind === 'valueless') {
@@ -1007,33 +1044,74 @@ function walkFields(schema, older, newer, ctx, path, rows) {
         label: field.label || field.name
       }
     ];
-    // Whole when the value is not of its kind, or when its walk fails: a
-    // change is never lost to a failure
-    let whole = !canWalk(kind, older[field.name], newer[field.name]);
-    const mark = rows.length;
-    if (!whole) {
-      try {
-        if (kind === 'area') {
-          walkArea(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
-        } else if (kind === 'array') {
-          walkArray(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
-        } else if (kind === 'object') {
-          walkObject(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
-        } else if (kind === 'relationship') {
-          walkRelationship(field, older, newer, fieldPath, rows);
-        } else {
-          walkLeaf(field, kind, older, newer, ctx, fieldPath, rows);
-        }
-      } catch (err) {
-        rows.length = mark;
-        ctx.onError?.(err, fieldPath);
-        whole = true;
-      }
+    if (isSystemField(field, ctx, { widget })) {
+      const changes = [];
+      walkField(field, kind, older, newer, ctx, fieldPath, changes);
+      system ||= changes.length > 0;
+      continue;
     }
-    if (whole) {
-      walkWhole(field, older, newer, fieldPath, rows);
+    system = walkField(field, kind, older, newer, ctx, fieldPath, rows) || system;
+  }
+  return system;
+}
+
+// Whole when the value is not of its kind, or when its walk fails: a change
+// is never lost to a failure. Returns whether a field the system manages
+// changed in an object below
+function walkField(field, kind, older, newer, ctx, path, rows) {
+  let whole = !canWalk(kind, older[field.name], newer[field.name]);
+  const mark = rows.length;
+  let system = false;
+  if (!whole) {
+    try {
+      if (kind === 'area') {
+        walkArea(field, older[field.name], newer[field.name], ctx, path, rows);
+      } else if (kind === 'array') {
+        walkArray(field, older[field.name], newer[field.name], ctx, path, rows);
+      } else if (kind === 'object') {
+        system = walkObject(field, older[field.name], newer[field.name], ctx, path, rows);
+      } else if (kind === 'relationship') {
+        walkRelationship(field, older, newer, path, rows);
+      } else {
+        walkLeaf(field, kind, older, newer, ctx, path, rows);
+      }
+    } catch (err) {
+      rows.length = mark;
+      ctx.onError?.(err, path);
+      whole = true;
     }
   }
+  if (whole) {
+    walkWhole(field, older, newer, path, rows);
+  }
+  return system;
+}
+
+// A field the system manages, which no editor shows: a `hidden` one, or a
+// widget type's own field in its `utility` group (`widget`), such as the
+// place of a layout column in its grid. An area is edited on the page,
+// whatever its group
+function isSystemField(field, ctx, { widget = false } = {}) {
+  return (getKind(field, ctx) !== 'area') &&
+    (Boolean(field.hidden) || (widget && (field.group?.name === 'utility')));
+}
+
+// The row of an item or widget whose only change is in fields the system
+// manages: modified, with nothing to show of it
+function systemRow(path, kind, older, newer, field) {
+  const result = row(path, 'modified', kind, kind, older, newer, field);
+  result.system = true;
+  return result;
+}
+
+// Whether a widget of this type stands alone in a version: false for a type
+// whose widgets their parent lays out together (`versionsStandalone: false`,
+// or its older name `versionsRenderDeleted: false`), so that one of them is
+// neither shown deleted in place nor put back or taken out alone
+function isStandalone(widgetType, ctx) {
+  const options = ctx.getWidgetManager(widgetType)?.options || {};
+  return (options.versionsStandalone !== false) &&
+    (options.versionsRenderDeleted !== false);
 }
 
 // The walk a field takes: one of the structural types, `valueless`, or
@@ -1154,7 +1232,7 @@ function walkRelationship(field, older, newer, path, rows) {
 // An object that appears or goes is one row; otherwise its fields walk
 function walkObject(field, older, newer, ctx, path, rows) {
   if ((older == null) && (newer == null)) {
-    return;
+    return false;
   }
   if ((older == null) || (newer == null)) {
     rows.push(row(
@@ -1166,9 +1244,9 @@ function walkObject(field, older, newer, ctx, path, rows) {
       newer,
       field
     ));
-    return;
+    return false;
   }
-  walkFields(field.schema, older, newer, ctx, path, rows);
+  return walkFields(field.schema, older, newer, ctx, path, rows);
 }
 
 // Items match by `_id`; an item on one side only is one row, a matched
@@ -1205,7 +1283,11 @@ function walkArray(field, older, newer, ctx, path, rows) {
         field
       ));
     } else {
-      walkFields(field.schema, oldItem, newItem, ctx, itemPath, rows);
+      const mark = rows.length;
+      if (walkFields(field.schema, oldItem, newItem, ctx, itemPath, rows) &&
+        (rows.length === mark)) {
+        rows.push(systemRow(itemPath, 'arrayItem', oldItem, newItem, field));
+      }
     }
   }
 }
@@ -1270,19 +1352,29 @@ function knownWidgets(area, ctx) {
 // is not compared. Any other data another widget type stores outside its
 // schema is one `widget` row, and so is rich text that is no string
 function walkWidget(manager, older, newer, ctx, path, rows) {
-  walkFields(manager.schema, older, newer, ctx, path, rows);
-  if (manager.getRichText) {
-    const oldText = manager.getRichText(older) || '';
-    const newText = manager.getRichText(newer) || '';
-    if ((typeof oldText === 'string') && (typeof newText === 'string')) {
-      if (oldText !== newText) {
-        rows.push(row(path, 'modified', 'richText', 'richText', oldText, newText, null));
-      }
-      return;
-    }
+  const mark = rows.length;
+  const system = walkFields(manager.schema, older, newer, ctx, path, rows, {
+    widget: true
+  });
+  walkContent();
+  if (system && (rows.length === mark)) {
+    rows.push(systemRow(path, 'widget', older, newer, null));
   }
-  if (!_.isEqual(outsideSchema(manager, older), outsideSchema(manager, newer))) {
-    rows.push(row(path, 'modified', 'widget', 'widget', older, newer, null));
+
+  function walkContent() {
+    if (manager.getRichText) {
+      const oldText = manager.getRichText(older) || '';
+      const newText = manager.getRichText(newer) || '';
+      if ((typeof oldText === 'string') && (typeof newText === 'string')) {
+        if (oldText !== newText) {
+          rows.push(row(path, 'modified', 'richText', 'richText', oldText, newText, null));
+        }
+        return;
+      }
+    }
+    if (!_.isEqual(outsideSchema(manager, older), outsideSchema(manager, newer))) {
+      rows.push(row(path, 'modified', 'widget', 'widget', older, newer, null));
+    }
   }
 }
 

@@ -59,9 +59,16 @@ describe('Document Versions diff engine', function () {
             versionsRender: false
           }
         },
-        // Inherits `versionsRenderDeleted: false`
+        // Inherits `versionsStandalone: false`
         'loose-column-widget': {
           extend: '@apostrophecms/layout-column-widget'
+        },
+        // The option's older name
+        'legacy-cell-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            versionsRenderDeleted: false
+          }
         },
         ...modules
       }
@@ -2863,6 +2870,19 @@ describe('Document Versions diff engine', function () {
           [HIGHLIGHT]: true,
           '@apostrophecms/document-versions:ai': 'assisted'
         });
+      });
+
+      it('should take the option by its older name', function () {
+        const older = buildProject();
+        const newer = buildProject();
+        older.zone.items.push({
+          _id: 'legacy',
+          metaType: 'widget',
+          type: 'legacy-cell'
+        });
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.deepEqual(doc.zone.items.map(item => item._id), [ 'zone-text', 'zone-card' ]);
+        assert.equal(doc.aposMeta.zone[HIGHLIGHT], true);
       });
     });
 

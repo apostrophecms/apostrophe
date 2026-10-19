@@ -79,6 +79,11 @@ describe('Document Versions draft changes', function () {
           fields: {
             add: {
               caption: { type: 'string' },
+              // Kept out of every editor
+              token: {
+                type: 'string',
+                hidden: true
+              },
               // Not an editor's to change
               secret: {
                 type: 'string',
@@ -141,7 +146,8 @@ describe('Document Versions draft changes', function () {
                     '@apostrophecms/rich-text': {},
                     'story-link': {},
                     opaque: {},
-                    embed: {}
+                    embed: {},
+                    '@apostrophecms/layout': {}
                   }
                 }
               },
@@ -156,9 +162,18 @@ describe('Document Versions draft changes', function () {
                         action: 'edit',
                         type: '@apostrophecms/user'
                       }
+                    },
+                    stamp: {
+                      type: 'string',
+                      hidden: true
                     }
                   }
                 }
+              },
+              // Kept out of every editor
+              stamp: {
+                type: 'string',
+                hidden: true
               },
               _stories: {
                 type: 'relationship',
@@ -856,6 +871,7 @@ describe('Document Versions draft changes', function () {
         type: 'story-link',
         caption: 'Caption',
         secret: '',
+        token: '',
         _stories: stories
       };
     }
@@ -993,7 +1009,8 @@ describe('Document Versions draft changes', function () {
         items: [ 'one', 'two' ].map(_id => ({
           _id,
           label: _id,
-          secret: ''
+          secret: '',
+          stamp: ''
         }))
       }, draft => {
         const { inner } = draft.main.items[0];
@@ -1397,6 +1414,124 @@ describe('Document Versions draft changes', function () {
       assert.deepEqual(idsOf(main), [ 'a', 'deleted', 'holding', 'c' ]);
       assert.deepEqual(idsOf(main.items[2].inner), [ 'embed1' ]);
       assert.equal((await rowsOf(draft._id)).length, 0);
+    });
+
+    // A layout of columns as the layout widget stores it
+    function layout(_id, columns) {
+      return {
+        _id,
+        metaType: 'widget',
+        type: '@apostrophecms/layout',
+        columns: area(`${_id}-columns`, columns)
+      };
+    }
+
+    function column(_id, colstart, text) {
+      return {
+        _id,
+        metaType: 'widget',
+        type: '@apostrophecms/layout-column',
+        colstart,
+        colspan: 6,
+        rowstart: 1,
+        rowspan: 1,
+        order: 0,
+        justify: 'start',
+        content: area(`${_id}-content`, [ richText(`${_id}-text`, `<p>${text}</p>`) ])
+      };
+    }
+
+    it('should show no change of what the system manages, and a holder changed only there as modified with nothing to restore or edit', async function () {
+      const { draft: saved, rows } = await edited({
+        stamp: 'old',
+        items: [ 'a', 'b' ].map(_id => ({
+          _id,
+          label: _id,
+          secret: '',
+          stamp: 'old'
+        })),
+        main: area('main', [
+          layout('lay', [ column('one', 1, 'One'), column('two', 7, 'Two') ]),
+          {
+            ...storyLink('link', []),
+            token: 'old'
+          },
+          {
+            ...storyLink('quiet', []),
+            token: 'old'
+          }
+        ])
+      }, draft => {
+        const [ lay, link, quiet ] = draft.main.items;
+        const [ one, two ] = lay.columns.items;
+        one.colstart = 3;
+        one.justify = 'center';
+        one.content.items[0].content = '<p>One, edited</p>';
+        two.colstart = 5;
+        link.token = 'new';
+        link.caption = 'Edited';
+        quiet.token = 'new';
+        draft.items[0].stamp = 'new';
+        draft.items[1].stamp = 'new';
+        draft.items[1].label = 'b, edited';
+        draft.stamp = 'new';
+      });
+
+      assert.deepEqual(rows.map(row => namesOf(row).join('/')).sort(), [
+        'items/a',
+        'items/b/label',
+        'main/lay/columns/one/content/one-text',
+        'main/lay/columns/one/justify',
+        'main/lay/columns/two',
+        'main/link/caption',
+        'main/quiet'
+      ]);
+      const { counts } = await apos.docVersions.getDraftChanges(ann(), saved._id);
+      assert.equal(counts.modified, rows.length);
+      for (const names of [
+        [ 'items', 'a' ],
+        [ 'main', 'lay', 'columns', 'two' ],
+        [ 'main', 'quiet' ]
+      ]) {
+        const row = rowAt(rows, ...names);
+        assert.equal(row.system, true);
+        assert.equal(row.editable, undefined);
+        assert.equal(row.restore, undefined);
+        assert.equal(row.oldText, row.newText);
+      }
+      for (const names of [
+        [ 'items', 'b', 'label' ],
+        [ 'main', 'lay', 'columns', 'one', 'justify' ],
+        [ 'main', 'lay', 'columns', 'one', 'content', 'one-text' ],
+        [ 'main', 'link', 'caption' ]
+      ]) {
+        const row = rowAt(rows, ...names);
+        assert.equal(row.system, undefined);
+        assert.equal(row.editable, true);
+        assert(row.restore);
+      }
+    });
+
+    it('should not restore a column added or deleted alone, and restore a whole layout', async function () {
+      const { rows } = await edited({
+        main: area('main', [
+          layout('lay', [ column('one', 1, 'One'), column('two', 7, 'Two') ])
+        ])
+      }, draft => {
+        const [ lay ] = draft.main.items;
+        lay.columns.items = [ lay.columns.items[0], column('three', 7, 'Three') ];
+        draft.main.items.push(layout('more', [ column('four', 1, 'Four') ]));
+      });
+
+      for (const _id of [ 'two', 'three' ]) {
+        const row = rowAt(rows, 'main', 'lay', 'columns', _id);
+        assert.equal(row.kind, 'widget');
+        assert.equal(row.editable, true);
+        assert.equal(row.restore, undefined);
+      }
+      const more = rowAt(rows, 'main', 'more');
+      assert.equal(more.type, 'added');
+      assert(more.restore);
     });
 
     describe('over HTTP', function () {

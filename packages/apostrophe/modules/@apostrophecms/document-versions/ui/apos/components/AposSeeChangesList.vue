@@ -499,9 +499,11 @@ function save(row, {
 // What an entry's editor shows, `{ field, patchKey, item }`: a field's
 // value; an added array item as its fields (`item`); the whole array for
 // its order or a deleted item. Not a whole widget nor a rich text widget's
-// content. `null` when the entry has no editor
+// content, nor a field of a contextual widget other than its styles, since
+// that widget is edited on the page. `null` when the entry has no editor
 function getEdit(row) {
-  const field = row.editable && !row.widgetType && getFieldById(row.fieldId);
+  const field = row.editable && !row.widgetType && !isOnPage(row) &&
+    getFieldById(row.fieldId);
   if (!field) {
     return null;
   }
@@ -527,6 +529,18 @@ function getEdit(row) {
       patchKey: array
     }
     : null;
+}
+
+// Whether the row is inside a contextual widget, below one of its fields
+// that is not a style
+function isOnPage(row) {
+  const at = row.path.findLastIndex(segment => segment.widgetType);
+  const type = row.path[at]?.widgetType;
+  if (!type || !apos.area.widgetIsContextual[type]) {
+    return false;
+  }
+  const { stylesFields = [] } = apos.modules[apos.area.widgetManagers[type]] || {};
+  return !stylesFields.includes(row.path[at + 1]?.name);
 }
 
 // A widget modified whole or added, which its widget editor edits. Not a
