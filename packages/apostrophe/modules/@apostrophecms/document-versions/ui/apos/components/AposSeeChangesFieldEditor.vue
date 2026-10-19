@@ -58,23 +58,30 @@
 <script setup>
 // One field of the draft, edited on its own: its editor shows the value the
 // draft has now, without its label, conditions or the rest of the document.
-// `save` carries the patch that sets the edited value and its inverse; an
-// unchanged value closes it as Cancel and Escape do
+// An array item is edited as its fields, labelled. `save` carries the patch
+// that sets the edited value and its inverse; an unchanged value closes it
+// as Cancel and Escape do
 import {
   computed, nextTick, onMounted, ref
 } from 'vue';
 import { klona } from 'klona';
+import draftValue from '../lib/draft-value.js';
 
 const props = defineProps({
-  // An entry of `change-groups.js` with a `patchKey`
-  entry: {
-    type: Object,
-    required: true
-  },
-  // The schema field at the entry's `fieldId`
+  // The schema field the value is of: for an array item, the array
   field: {
     type: Object,
     required: true
+  },
+  // Where a PATCH of the draft sets the value
+  patchKey: {
+    type: String,
+    required: true
+  },
+  // Whether the value is an array item, edited as its fields
+  item: {
+    type: Boolean,
+    default: false
   },
   // The draft's `_id`
   docId: {
@@ -102,18 +109,16 @@ const value = ref(null);
 const triggerValidation = ref(false);
 let original;
 
-const schema = computed(() => [ {
-  ...props.field,
-  hideLabel: true
-} ]);
+const schema = computed(() => (props.item
+  ? props.field.schema
+  : [ {
+    ...props.field,
+    hideLabel: true
+  } ]));
 
 onMounted(async () => {
-  let doc;
   try {
-    doc = await apos.http.get(
-      `${apos.modules['@apostrophecms/doc'].action}/${props.docId}`,
-      { draft: true }
-    );
+    original = await draftValue.load(props.docId, props.patchKey);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error(error);
@@ -124,9 +129,8 @@ onMounted(async () => {
     emit('cancel');
     return;
   }
-  original = getValueAt(doc, props.entry.row.patchKey);
   value.value = {
-    data: { [props.field.name]: klona(original) },
+    data: props.item ? klona(original) : { [props.field.name]: klona(original) },
     hasErrors: false
   };
   await nextTick();
@@ -148,51 +152,22 @@ async function save() {
   if (value.value.hasErrors) {
     return;
   }
-  const edited = value.value.data[props.field.name];
+  const edited = props.item
+    ? {
+      ...original,
+      ...value.value.data
+    }
+    : value.value.data[props.field.name];
   if (JSON.stringify(edited) === JSON.stringify(original)) {
     emit('cancel');
     return;
   }
-  const { patchKey } = props.entry.row;
+  const { patchKey } = props;
   emit('save', {
     patch: { [patchKey]: edited },
-    inverse: { [patchKey]: original }
+    inverse: { [patchKey]: original },
+    patchKey
   });
-}
-
-// The value a patch key names: the field names, dotted, from the top level
-// or from the object whose `_id` follows `@`. Related documents loaded
-// with the draft are not looked into
-function getValueAt(doc, patchKey) {
-  const names = patchKey.split('.');
-  let node = names[0].startsWith('@')
-    ? findById(doc, names.shift().substring(1))
-    : doc;
-  for (const name of names) {
-    node = node?.[name];
-  }
-  return node;
-
-  function findById(node, id) {
-    if (!node || (typeof node !== 'object')) {
-      return null;
-    }
-    if (node._id === id) {
-      return node;
-    }
-    const children = Array.isArray(node)
-      ? node
-      : Object.entries(node)
-        .filter(([ key ]) => !key.startsWith('_'))
-        .map(([ , child ]) => child);
-    for (const child of children) {
-      const found = findById(child, id);
-      if (found) {
-        return found;
-      }
-    }
-    return null;
-  }
 }
 
 defineExpose({

@@ -433,12 +433,14 @@ describe('Document Versions draft changes', function () {
       assert.equal(content.fieldId, 'doc.nested.section.rows.content');
     });
 
-    it('should give no key to the order of an array', async function () {
+    it('should key the order of an array as the array itself', async function () {
       const { rows } = await apos.docVersions.getDraftChanges(ann(), draft._id);
       const order = rowAt(rows, 'section', 'rows');
 
       assert.equal(order.kind, 'array');
-      assert.equal(order.patchKey, undefined);
+      assert.equal(order.patchKey, 'section.rows');
+      assert.equal(order.fieldId, 'doc.nested.section.rows');
+      assert.equal(order.listKey, undefined);
     });
 
     it('should mark a rich text field and the words of a string', async function () {
@@ -1147,7 +1149,7 @@ describe('Document Versions draft changes', function () {
       assert.equal(rowAt(rows, 'main', 'link').restore, undefined);
     });
 
-    it('should neither restore nor edit a read only field, nor an order', async function () {
+    it('should neither restore nor edit a read only field, and edit the order of an array whole, never restore it', async function () {
       const { draft } = await edited({
         items: [ 'one', 'two' ].map(_id => ({
           _id,
@@ -1164,8 +1166,9 @@ describe('Document Versions draft changes', function () {
       assert.equal(rowAt(rows, 'locked').restore, undefined);
       assert.equal(rowAt(rows, 'locked').editable, undefined);
       assert.equal(rowAt(rows, 'items').kind, 'array');
+      assert.equal(rowAt(rows, 'items').patchKey, 'items');
+      assert.equal(rowAt(rows, 'items').editable, true);
       assert.equal(rowAt(rows, 'items').restore, undefined);
-      assert.equal(rowAt(rows, 'items').editable, undefined);
     });
 
     it('should neither restore nor edit for an editor a field the editor may not edit, and not restore a widget holding one', async function () {

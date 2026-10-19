@@ -116,11 +116,11 @@
                 </p>
               </template>
               <template
-                v-if="entry.row.restore || getEditField(entry.row)"
+                v-if="entry.row.restore || isEditable(entry.row)"
                 #actions
               >
                 <AposButton
-                  v-if="getEditField(entry.row)"
+                  v-if="isEditable(entry.row)"
                   :ref="el => setActionEl(`edit:${idOf(entry.row)}`, el)"
                   class="apos-see-changes-list__action"
                   :class="{
@@ -128,9 +128,9 @@
                   }"
                   type="quiet"
                   label="apostrophe:edit"
-                  :disabled="pending"
+                  :disabled="pending || opening"
                   :attrs="{ 'data-apos-test': 'see-changes-edit' }"
-                  @click="openEditor(entry)"
+                  @click="edit(entry)"
                 />
                 <AposButton
                   v-if="entry.row.restore"
@@ -156,10 +156,10 @@
                   :baseline="baseline?.kind"
                   :busy="saving"
                   :invalid="invalid"
-                  :editable="Boolean(getEditField(entry.row))"
+                  :editable="isEditable(entry.row)"
                   @cancel="cancel"
                   @restore="restore(entry)"
-                  @edit="openEditor(entry)"
+                  @edit="edit(entry)"
                 />
               </template>
               <template
@@ -168,8 +168,7 @@
               >
                 <AposSeeChangesFieldEditor
                   :ref="el => el && (editor = el)"
-                  :entry="entry"
-                  :field="getEditField(entry.row)"
+                  v-bind="getEdit(entry.row)"
                   :doc-id="store.docId"
                   :busy="saving"
                   :invalid="invalid"
@@ -208,7 +207,8 @@
 // header goes to that one, and so does the first toggle of an entry in a
 // group the navigator is not at. An entry that can be restored asks first,
 // then leaves the list once the restore is saved. An entry that can be
-// edited opens its field's editor in place of its detail.
+// edited opens its field's editor in place of its detail; a whole widget
+// opens its widget editor, as on the page.
 // The list scrolls on its own and is no tab stop, which Firefox makes of a
 // scroll container: its buttons are the stops, and the arrow keys scroll it
 import {
@@ -217,6 +217,7 @@ import {
 import getFieldById from 'Modules/@apostrophecms/schema/lib/getFieldById';
 import scroll from '../utils/scroll.js';
 import changeGroups from '../lib/change-groups.js';
+import draftValue from '../lib/draft-value.js';
 import locale from '../utils/locale.js';
 import { useDocVersionNavigator } from '../composables/useDocVersionNavigator.js';
 import { useSeeChangesStore } from '../stores/seeChanges.js';
@@ -268,6 +269,8 @@ const editing = ref(null);
 const editor = ref(null);
 // The entry last edited, by `idOf`, until the next save
 const edited = ref(null);
+// While a widget editor loads its widget
+const opening = ref(false);
 // The Edit and Restore buttons, by `edit:` or `restore:` and `idOf`
 const actionEls = new Map();
 // From a restore until the rows reload: the patches are exact against the
@@ -440,10 +443,15 @@ async function leave(id) {
 
 // --- Saving ---
 
-// Saved as any edit of the page is, so it can be undone. A value the server
-// refuses as invalid is told where it was entered; `failed` follows any
-// other refusal the user was told of
-function save(row, { patch, inverse }, { saved, failed }) {
+// Saved as any edit of the page is, so it can be undone, at `patchKey` or
+// the row's own. A value the server refuses as invalid is told where it
+// was entered, or by `refused` when that is not in the list; `failed`
+// follows any other refusal the user was told of
+function save(row, {
+  patch, inverse, patchKey = row.patchKey
+}, {
+  saved, failed, refused
+}) {
   edited.value = null;
   pending.value = true;
   saving.value = true;
@@ -454,7 +462,7 @@ function save(row, { patch, inverse }, { saved, failed }) {
     target: {
       docId: store.docId,
       widgetId: row.path.filter(segment => segment.widgetType).at(-1)?.name,
-      patchKey: row.patchKey
+      patchKey
     },
     onSaved(error) {
       saving.value = false;
@@ -464,7 +472,11 @@ function save(row, { patch, inverse }, { saved, failed }) {
       }
       pending.value = false;
       if ((error.body?.name === 'invalid') && error.body.data?.errors?.length) {
-        invalid.value = true;
+        if (refused) {
+          refused();
+        } else {
+          invalid.value = true;
+        }
         return;
       }
       // The context bar tells of a lost lock, and the mode ends with it
@@ -484,27 +496,72 @@ function save(row, { patch, inverse }, { saved, failed }) {
 
 // --- Edit ---
 
-// The field an entry's editor shows: that of a field's value, not of a whole
-// item or widget, nor of a rich text widget's content
-function getEditField(row) {
-  if (
-    !row.editable ||
-    row.widgetType ||
-    ![ 'leaf', 'richText', 'relationship', 'object' ].includes(row.kind)
-  ) {
+// What an entry's editor shows, `{ field, patchKey, item }`: a field's
+// value; an added array item as its fields (`item`); the whole array for
+// its order or a deleted item. Not a whole widget nor a rich text widget's
+// content. `null` when the entry has no editor
+function getEdit(row) {
+  const field = row.editable && !row.widgetType && getFieldById(row.fieldId);
+  if (!field) {
     return null;
   }
-  return getFieldById(row.fieldId);
+  if ([ 'leaf', 'richText', 'relationship', 'object' ].includes(row.kind)) {
+    return {
+      field,
+      patchKey: row.patchKey
+    };
+  }
+  if ((row.kind === 'arrayItem') && (row.type === 'added')) {
+    return {
+      field,
+      patchKey: row.patchKey,
+      item: true
+    };
+  }
+  const array = ((row.kind === 'arrayItem') && (row.type === 'deleted'))
+    ? row.listKey
+    : (row.kind === 'array') && row.patchKey;
+  return array
+    ? {
+      field,
+      patchKey: array
+    }
+    : null;
+}
+
+// A widget modified whole or added, which its widget editor edits. Not a
+// contextual one, rich text among them, which is edited on the page
+function isWidgetEditable(row) {
+  return Boolean(row.editable) &&
+    (row.kind === 'widget') &&
+    [ 'modified', 'added' ].includes(row.type) &&
+    !apos.area.widgetIsContextual[row.widgetType] &&
+    Boolean(apos.area.components.widgetEditors[row.widgetType]);
+}
+
+function isEditable(row) {
+  return isWidgetEditable(row) || Boolean(getEdit(row));
+}
+
+function edit(entry) {
+  if (isWidgetEditable(entry.row)) {
+    editWidget(entry);
+  } else {
+    openEditor(entry);
+  }
 }
 
 // The editor shows in place of the entry's detail, which opens with it
-// and stays open after a cancel. Rich text and areas need the room
+// and stays open after a cancel. Rich text, areas and an array edited in
+// place need the room
 async function openEditor(entry) {
   const id = idOf(entry.row);
   if (entry.detail) {
     expanded.add(id);
   }
-  if ([ 'richText', 'area' ].includes(getEditField(entry.row).type)) {
+  const { field, item } = getEdit(entry.row);
+  const fields = item ? field.schema : [ field ];
+  if (fields.some(({ type, inline }) => [ 'richText', 'area' ].includes(type) || inline)) {
     emit('widen');
   }
   confirming.value = null;
@@ -522,9 +579,55 @@ async function closeEditor() {
   focusAction(`edit:${id}`);
 }
 
+// The widget as the draft has it now, in its widget editor; what that
+// saves replaces it. The editor's own modal brings focus back to Edit
+async function editWidget(entry) {
+  const { row } = entry;
+  confirming.value = null;
+  editing.value = null;
+  invalid.value = false;
+  opening.value = true;
+  let widget;
+  try {
+    widget = await draftValue.load(store.docId, row.patchKey);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error);
+    apos.notify('apostrophe:error', {
+      type: 'error',
+      icon: 'alert-circle-icon'
+    });
+    return;
+  } finally {
+    opening.value = false;
+  }
+  const component = apos.area.components.widgetEditors[row.widgetType];
+  const result = await apos.modal.execute(component, {
+    modelValue: widget,
+    options: row.widgetOptions,
+    type: row.widgetType,
+    docId: store.docId,
+    areaFieldId: row.fieldId
+  });
+  if (!result || (JSON.stringify(result) === JSON.stringify(widget))) {
+    return;
+  }
+  saveEdit(entry, {
+    patch: { [row.patchKey]: result },
+    inverse: { [row.patchKey]: widget }
+  }, {
+    refused() {
+      apos.notify('apostrophe:seeChangesEditInvalid', {
+        type: 'error',
+        icon: 'alert-circle-icon'
+      });
+    }
+  });
+}
+
 // The reloaded list shows the entry with its new value, or, when the value
 // is the one it is compared with again, folds it away as a restore does
-function saveEdit(entry, change) {
+function saveEdit(entry, change, { refused } = {}) {
   const id = idOf(entry.row);
   save(entry.row, change, {
     saved() {
@@ -532,7 +635,8 @@ function saveEdit(entry, change) {
       editing.value = null;
       // Its buttons go with it
       list.value?.focus({ preventScroll: true });
-    }
+    },
+    refused
   });
 }
 

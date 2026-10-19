@@ -186,8 +186,9 @@ const ORDER = Symbol('order');
  *   dotted; below an array item, a widget or an object whose `_id` the
  *   document holds exactly once, the deepest of them, `@<its _id>.` and the
  *   field names from there. `@<_id>` alone for a whole item or widget,
- *   `@<_id>.content` for the markup of a rich text widget. None for an order
- *   row, nor where no `_id` reaches the value without ambiguity.
+ *   `@<_id>.content` for the markup of a rich text widget; the array itself
+ *   for the order of an array. None for the order of an area, nor where no
+ *   `_id` reaches the value without ambiguity.
  * @property {string} [fieldId] Rows of `addFieldData` only: the `_id` of the
  *   schema field the row belongs to; for a whole item or widget, or the
  *   markup of a rich text widget, the array or area holding it.
@@ -204,7 +205,8 @@ const ORDER = Symbol('order');
  *   the list it is in. `@<area _id>.items` for a widget, the area editor's
  *   own form; the array's key, as `patchKey` has it, for an array item.
  * @property {true} [editable] Rows of `addRestore` only: the request may
- *   change the value at `patchKey`, no field along the path being read only
+ *   change the value at `patchKey`, for the order of an array the whole
+ *   array, no field along the path being read only
  *   or beyond its permissions and no widget along it of a type its area
  *   does not allow.
  * @property {{ patch: object, inverse: object }} [restore] Rows of
@@ -503,7 +505,7 @@ function attribute(schema, pairs, rows, ctx) {
 function addFieldData(schema, rows, doc, ctx) {
   const idCounts = countIds(doc);
   for (const row of rows) {
-    if (isOrder(row)) {
+    if (row.kind === 'area') {
       continue;
     }
     const target = locate(schema, row.path, ctx);
@@ -633,11 +635,12 @@ function locate(schema, path, ctx) {
 /**
  * Adds `editable` to every row with a `patchKey` whose fields along its path
  * the request may change and whose widgets along it their areas allow, and
- * `restore` to those of them that a PATCH of the newer document can put back
- * to its older value exactly: the older value at `patchKey`; for a whole
- * item or widget added or deleted, the list operation that takes it
- * out or puts it back at its place; for a widget modified whole, what it
- * stores outside its schema, its fields left as they are. Values are in the
+ * `restore` to those of them, the order of an array aside, that a PATCH of
+ * the newer document can put back to its older value exactly: the older
+ * value at `patchKey`; for a whole item or widget added or deleted, the list
+ * operation that takes it out or puts it back at its place; for a widget
+ * modified whole, what it stores outside its schema, its fields left as they
+ * are. Values are in the
  * form a save takes, each relationship as `{ _id, _fields }` entries made
  * from its stored ids. A widget type that stores data outside its schema
  * keeps it through its own `sanitize`, as it must. None when a save would
@@ -671,6 +674,10 @@ function addRestore(schema, rows, {
       continue;
     }
     row.editable = true;
+    // The older order would take back every other change of the array
+    if (isOrder(row)) {
+      continue;
+    }
     const restore = getRestore(row, target);
     if (restore) {
       row.restore = restore;
