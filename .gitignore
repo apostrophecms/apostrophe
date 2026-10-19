@@ -10,3 +10,4 @@ coverage/
 .claude
 specs/
 scratch/
+.mcp.json
