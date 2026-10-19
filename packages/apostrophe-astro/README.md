@@ -129,7 +129,7 @@ npm install @apostrophecms/apostrophe-astro
 
 *Astro 5.x, 6.x and 7.x are supported (`astro >=5.0.0 <8.0.0`). Node.js 22.19 or newer is required.*
 
-> If you are upgrading from an earlier release of this integration, see [MIGRATION.md](./MIGRATION.md) for
+> If you are upgrading from an earlier release of this integration, see the [upgrade guide](https://apostrophecms.com/docs/guide/migration/upgrading-apostrophe-astro.html) for
 > the Astro v6/v7 notes, the deprecated `lib/` import paths, and the removal of the private Vite virtual modules.
 
 ## Security
@@ -907,7 +907,7 @@ scripts:
 * `getAposHost`, `isStaticBuild` — resolved integration state
 * `getAllStaticPaths`, `getAllUrlMetadata`, `getLocales` — see [Static builds](#static-builds)
 
-Importing these from their old `lib/` paths still works but is deprecated; see [MIGRATION.md](./MIGRATION.md) for
+Importing these from their old `lib/` paths still works but is deprecated; see the [upgrade guide](https://apostrophecms.com/docs/guide/migration/upgrading-apostrophe-astro.html) for
 the mapping.
 
 ## What about Vue, React, SvelteJS, etc.?
@@ -972,7 +972,7 @@ and so on) and the attachment files your pages reference. What gets copied is co
 > [!TIP]
 > If your project sets `security.allowedDomains` in `astro.config.mjs`, restrict it to SSR. Astro v6 and v7 read
 > request headers during prerendering, which produces a spurious warning for every page built. See
-> [MIGRATION.md](./MIGRATION.md) for the details.
+> the [upgrade guide](https://apostrophecms.com/docs/guide/migration/upgrading-apostrophe-astro.html) for the details.
 
 ## Output and logging
 
@@ -993,7 +993,7 @@ partially. Reinstall or clear the two directories above and restart the dev serv
 
 > Earlier versions of this package used private Vite virtual modules named `virtual:apostrophe-config` and
 > `virtual:apostrophe-doctypes`. They have been removed. If your project imported either of them directly, see
-> [MIGRATION.md](./MIGRATION.md).
+> the [upgrade guide](https://apostrophecms.com/docs/guide/migration/upgrading-apostrophe-astro.html).
 
 ### Widget Render Hook
 
