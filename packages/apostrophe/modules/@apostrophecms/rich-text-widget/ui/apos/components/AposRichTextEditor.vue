@@ -21,8 +21,10 @@
         v-if="editor && !isReadOnly"
         plugin-key="richTextMenu"
         class="bubble-menu"
+        :class="{ 'apos-is-detached': aposMenusRoot }"
         :tippy-options="bubbleMenuTippyOptions"
         :editor="editor"
+        @keyup="onMenuKeyup"
       >
         <AposContextMenuDialog
           menu-placement="top"
@@ -56,17 +58,13 @@
       ref="insertMenu"
       plugin-key="insertMenu"
       :class="insertMenuClasses"
-      :tippy-options="{
-        duration: 100,
-        zIndex: 999,
-        placement: 'bottom-start',
-        aria: { content: null, expanded: false }
-      }"
+      :tippy-options="insertMenuTippyOptions"
       :should-show="showFloatingMenu"
       :editor="editor"
       role="listbox"
       tabindex="0"
       @keydown="closeInsertMenu"
+      @keyup="onMenuKeyup"
     >
       <div class="apos-rich-text-insert-menu-heading">
         {{ $t('apostrophe:richTextInsertMenuHeading') }}
@@ -216,6 +214,13 @@ export default {
     aposInContext: {
       from: 'aposInContext',
       default: true
+    },
+    // Returns the element the bubble and insert menus attach to, provided
+    // where the editor sits in something that clips them, such as a
+    // scrolling window. By default they attach inside the editor
+    aposMenusRoot: {
+      from: 'aposMenusRoot',
+      default: null
     }
   },
   props: {
@@ -331,10 +336,19 @@ export default {
         // Keeps the menu inside the query container that gives `100cqw` the
         // width of the editor. Resolved when tippy mounts, not now, since
         // the ref does not exist while this is first computed
-        appendTo: () => this.$refs.menus,
+        appendTo: this.aposMenusRoot || (() => this.$refs.menus),
         maxWidth: 'none',
         duration: 100,
-        zIndex: 999,
+        zIndex: this.menusZIndex,
+        // Out of its query container, the menu is given the editor's width
+        ...this.aposMenusRoot && {
+          onShow: instance => {
+            instance.popper.style.setProperty(
+              '--apos-rich-text-menus-width',
+              `${this.$refs.menus.offsetWidth}px`
+            );
+          }
+        },
         animation: 'fade',
         inertia: true,
         placement: 'bottom',
@@ -357,6 +371,23 @@ export default {
         }
       };
     },
+    insertMenuTippyOptions() {
+      return {
+        ...this.aposMenusRoot && { appendTo: this.aposMenusRoot },
+        duration: 100,
+        zIndex: this.menusZIndex,
+        placement: 'bottom-start',
+        aria: {
+          content: null,
+          expanded: false
+        }
+      };
+    },
+    // Attached elsewhere, the menus share the modals' layer: above the
+    // window they are in, under any modal opened later
+    menusZIndex() {
+      return this.aposMenusRoot ? 2000 : 999;
+    },
     // Note that context menu class-list expects a string
     contextMenuClasses() {
       const directionClass = this.getAdminDirectionClass();
@@ -370,6 +401,7 @@ export default {
       const directionClass = this.getAdminDirectionClass();
       return {
         'apos-rich-text-insert-menu': true,
+        'apos-is-detached': !!this.aposMenusRoot,
         [directionClass]: !!directionClass
       };
     },
@@ -720,6 +752,20 @@ export default {
       }
       this.$emit('interaction');
     },
+    // A menu attached outside the editor sends its keys on from the editor,
+    // as if it were inside it, but for Escape: it closes what the menu has
+    // open and goes no further, the editor keeping focus
+    onMenuKeyup(event) {
+      if (!this.aposMenusRoot) {
+        return;
+      }
+      event.stopPropagation();
+      if (event.key === 'Escape') {
+        this.handleUIKeyup(event);
+        return;
+      }
+      this.$el.dispatchEvent(new KeyboardEvent('keyup', event));
+    },
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;
       this.activeInsertMenuComponent = false;
@@ -956,6 +1002,11 @@ export default {
       ) {
         return;
       }
+      // Attached outside the editor, the menu keeps focus until Escape is
+      // released, so that the key ends in the menu
+      if ((e.key === 'Escape') && this.aposMenusRoot) {
+        return;
+      }
       if (e.key === 'Backspace') {
         // Don't let the global remove-widget shortcut see this key
         e.preventDefault();
@@ -1042,7 +1093,14 @@ function traverseNextNode(node) {
     pointer-events: auto;
     box-sizing: border-box;
     width: fit-content;
-    max-width: calc(100cqw - 16px);
+    max-width: calc(var(--apos-rich-text-menus-width, 100cqw) - 16px);
+  }
+
+  // Attached outside of what scrolls the editor, a menu whose text was
+  // scrolled out of view leaves with it, its open popovers included
+  [data-reference-hidden] .apos-is-detached {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .apos-rich-text-toolbar.editor-menu-bubble {
