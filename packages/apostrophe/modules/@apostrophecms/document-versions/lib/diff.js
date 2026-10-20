@@ -185,7 +185,8 @@ const ORDER = Symbol('order');
  *   first, each once. Empty when no version explains the change.
  * @property {Date} [changedAt] Rows of `attribute` only: when the newest of
  *   those versions changed it, when one of them has a time.
- * @property {string} [patchKey] Rows of `addFieldData` only: where a PATCH
+ * @property {string} [patchKey] Rows of `addFieldData` only, and the
+ *   `fieldRows` of an item added whole: where a PATCH
  *   of the document sets this value. The field names from the top level,
  *   dotted; below an array item, a widget or an object whose `_id` the
  *   document holds exactly once, the deepest of them, `@<its _id>.` and the
@@ -506,7 +507,9 @@ function attribute(schema, pairs, rows, ctx) {
 /**
  * Adds to every row what an editor of its value needs: `patchKey`,
  * `fieldId`, `widgetType` and `widgetOptions` where they apply, and the
- * `markedHtml` of a `richText` field. Rows are modified in place.
+ * `markedHtml` of a `richText` field. The `fieldRows` of an array item
+ * added whole get the same, since the page renders its fields in place.
+ * Rows are modified in place.
  *
  * @param {object[]} schema The schema of the document the rows are of.
  * @param {ChangeRow[]} rows
@@ -517,7 +520,8 @@ function attribute(schema, pairs, rows, ctx) {
  */
 function addFieldData(schema, rows, doc, ctx) {
   const idCounts = countIds(doc);
-  for (const row of rows) {
+  const fieldRows = rows.flatMap(row => ((row.type === 'added') && row.fieldRows) || []);
+  for (const row of [ ...rows, ...fieldRows ]) {
     if (row.kind === 'area') {
       continue;
     }

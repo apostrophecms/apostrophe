@@ -42,7 +42,8 @@ describe('Document Versions draft changes', function () {
                 type: 'array',
                 fields: {
                   add: {
-                    label: { type: 'string' }
+                    label: { type: 'string' },
+                    text: { type: 'richText' }
                   }
                 }
               },
@@ -561,6 +562,33 @@ describe('Document Versions draft changes', function () {
     const { rows } = await apos.docVersions.getDraftChanges(req, draft._id);
 
     assert.deepEqual(rows.map(row => namesOf(row).join('/')).sort(), [ 'code', 'meta/ref', 'slug', 'title' ]);
+  });
+
+  it('should key and mark the fields of an array item added whole, not of one deleted', async function () {
+    const item = (_id, label, text) => ({
+      _id,
+      metaType: 'arrayItem',
+      label,
+      text
+    });
+    let draft = await insertPublished(apos.modules.blank, {
+      title: 'Items',
+      code: 'code',
+      meta: { ref: 'ref' },
+      items: [ item('kept', 'Kept', '<p>Kept</p>'), item('gone', 'Gone', '<p>Gone text</p>') ]
+    });
+    draft.items = [ draft.items[0], item('new', 'New label', '<p>New text</p>') ];
+    draft = await saveAs(apos.modules.blank, ann(), draft);
+
+    const { rows } = await apos.docVersions.getDraftChanges(ann(), draft._id);
+    const fieldsOf = _id => rowAt(rows, 'items', _id).fieldRows;
+    const [ label, text ] = fieldsOf('new');
+
+    assert.equal(label.patchKey, '@new.label');
+    assert.deepEqual(label.diff.map(part => part.change), [ 'added' ]);
+    assert.equal(text.patchKey, '@new.text');
+    assert.match(text.markedHtml, /^<p><ins data-apos-version-change="added">.*New text<\/ins><\/p>$/);
+    assert.equal(fieldsOf('gone').some(row => row.patchKey || row.markedHtml), false);
   });
 
   it('should key a relationship by its field name', async function () {

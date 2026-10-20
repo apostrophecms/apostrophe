@@ -27,12 +27,15 @@ export const useDocVersionMarkersStore = defineStore('docVersionMarkers', () => 
     };
   }
 
-  // The rows with a patch key are kept, by it
+  // The rows with a patch key are kept, by it, the fields of an array item
+  // added whole among them
   function setFields(graphKey, rows) {
     fields.value = {
       ...fields.value,
       [graphKey]: Object.fromEntries(
-        rows.filter(row => row.patchKey).map(row => [ row.patchKey, row ])
+        rows.flatMap(row => [ row, ...(row.fieldRows || []) ])
+          .filter(row => row.patchKey)
+          .map(row => [ row.patchKey, row ])
       )
     };
   }
