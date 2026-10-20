@@ -210,6 +210,12 @@ export default {
     aposReadOnly: {
       from: 'aposReadOnly',
       default: false
+    },
+    // False where an editor of the page's document saves only when asked,
+    // so it never edits the page in context
+    aposInContext: {
+      from: 'aposInContext',
+      default: true
     }
   },
   props: {
@@ -510,6 +516,7 @@ export default {
       return;
     }
     this.contextHistory = (this.history === 'context') &&
+      this.aposInContext &&
       !!this.docId &&
       (this.docId === window.apos.adminBar?.contextId) &&
       !this.$el.closest('[data-apos-modal]');
@@ -726,7 +733,7 @@ export default {
     async editorUpdate() {
       // Hint that we are typing, even though we're going to
       // debounce the actual updates for performance
-      if (this.docId === window.apos.adminBar.contextId) {
+      if (this.aposInContext && (this.docId === window.apos.adminBar.contextId)) {
         apos.bus.$emit('context-editing');
       }
       // Debounce updates. We have our own plumbing for

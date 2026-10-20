@@ -83,7 +83,7 @@
 // as Cancel and Escape do. A contextual widget is edited whole by its own
 // editor, as on the page
 import {
-  computed, inject, nextTick, onMounted, ref
+  computed, inject, nextTick, onMounted, provide, ref
 } from 'vue';
 import { klona } from 'klona';
 import {
@@ -138,6 +138,10 @@ const props = defineProps({
 
 const emit = defineEmits([ 'cancel', 'save' ]);
 const $t = inject('i18n');
+
+// The draft's `docId` serves the fields' data, but nothing here edits the
+// page in context: the value is saved by Update Draft only
+provide('aposInContext', false);
 
 const root = ref(null);
 const input = ref(null);
