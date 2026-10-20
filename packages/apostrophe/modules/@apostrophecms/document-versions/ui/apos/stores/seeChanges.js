@@ -7,8 +7,8 @@ import { useDocVersionMarkersStore } from './docVersionMarkers.js';
  * See Changes: the changes of the draft of the document on the page since
  * its last publication. The context bar turns the mode on and off and
  * mirrors it as `active`; this store holds what the mode shows. The widgets
- * of the page find their markers under the page's graph key, the context
- * document's `_id`.
+ * of the page find their markers, and its fields rendered in place their
+ * rows, under the page's graph key, the context document's `_id`.
  */
 export const useSeeChangesStore = defineStore('seeChanges', () => {
   const active = ref(false);
@@ -58,6 +58,7 @@ export const useSeeChangesStore = defineStore('seeChanges', () => {
     }
     widgetChanges.value = widgetChangesLib.getWidgetChanges(doc);
     markersStore.set(id, widgetChanges.value);
+    markersStore.setFields(id, rest.rows);
     docId.value = id;
     payload.value = rest;
     return true;

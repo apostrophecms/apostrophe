@@ -1173,27 +1173,12 @@ function traverseNextNode(node) {
     }
   }
 
-  // The marks of a document version: removed text struck through in red,
-  // added text underlined in green. Long words wrap as in the editor
+  // The marks of a document version. Long words wrap as in the editor
   .apos-rich-text-editor__version {
-    overflow-wrap: break-word;
+    @include apos-version-change-marks;
 
-    :deep([data-apos-version-change]) {
-      padding: 0 2px;
-      border-radius: var(--a-border-radius);
-      text-decoration-thickness: 1px;
-    }
-
-    :deep(ins[data-apos-version-change]) {
-      color: var(--a-success-dark);
-      background-color: var(--a-success-fade);
-      text-decoration-line: underline;
-    }
-
-    :deep(del[data-apos-version-change]) {
-      color: var(--a-danger-button-hover);
-      background-color: var(--a-danger-fade);
-      text-decoration-line: line-through;
+    & {
+      overflow-wrap: break-word;
     }
   }
 

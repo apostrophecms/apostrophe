@@ -179,8 +179,15 @@ export default function() {
         // What the page rendered, shown as it is in a read only view
         rendering: el.innerHTML
       });
+      // The widget graph the field belongs to, as `AposAreas` resolves it:
+      // the modal's when it owns one, the page's otherwise
+      const graphKey = el.closest('[data-apos-graph-key]')
+        ?.getAttribute('data-apos-graph-key') || apos.adminBar?.contextId || null;
+      if (graphKey) {
+        app.provide('aposGraphKey', graphKey);
+      }
       // A read only view, such as See Changes or a document version, shows
-      // the value and mounts no editor for it
+      // the value, or its change, and mounts no editor for it
       if (el.closest('[data-apos-read-only]')) {
         app.provide('aposReadOnly', true);
       }
