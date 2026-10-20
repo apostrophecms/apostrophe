@@ -1074,7 +1074,7 @@ export default {
   border-radius: var(--a-border-radius);
   background-color:
     color-mix(in srgb, var(--a-base-2) 12%, var(--a-background-primary));
-  color: var(--a-base-2);
+  color: var(--a-base-1);
   font-family: var(--a-family-default);
   font-size: calc(var(--a-type-tiny) - 1px);
   font-weight: var(--a-weight-bold);

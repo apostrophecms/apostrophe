@@ -277,6 +277,8 @@ let stopShowingEditor = () => {};
 const edited = ref(null);
 // The entry just edited, by `idOf`, which the list follows once it reloads
 let following = null;
+// Where focus goes should the reload drop the entry just edited
+let focusFallback = null;
 // While a widget editor loads its widget
 const opening = ref(false);
 // The Edit and Restore buttons, by `edit:` or `restore:` and `idOf`
@@ -400,12 +402,17 @@ watch(() => props.rows, rows => {
   now.value = Date.now();
   if (following) {
     const id = following;
+    const fallback = focusFallback;
     following = null;
+    focusFallback = null;
     nextTick(() => {
       const group = groups.value
         .find(group => group.entries.some(entry => idOf(entry.row) === id));
       if (group) {
         place(group, getEntryEl(id));
+        focusAction(`edit:${id}`, { preventScroll: true });
+      } else {
+        fallback?.focus({ preventScroll: true });
       }
     });
   }
@@ -447,8 +454,28 @@ function setActionEl(key, el) {
   }
 }
 
-function focusAction(key) {
-  actionEls.get(key)?.$el.querySelector('button')?.focus();
+function focusAction(key, options) {
+  actionEls.get(key)?.$el.querySelector('button')?.focus(options);
+}
+
+// The control that stands for an entry while its actions wait for the list
+// to reload: its toggle, or its group's header when it has nothing to expand
+function getEntryControl(el) {
+  return el.querySelector('[data-apos-test="doc-version-change-toggle"]') ||
+    el.closest('[data-apos-test="see-changes-group"]')
+      ?.querySelector('[data-apos-test="doc-version-change-group-select"]');
+}
+
+// Where focus goes when the entry `id` leaves the list: to the entry after
+// it, or before it when it was the last, so the keyboard carries on from
+// there. The list when it was the only one
+function getFocusAfter(id) {
+  const entries = [ ...(list.value?.querySelectorAll('[data-apos-see-changes-entry]') || []) ];
+  const index = entries.findIndex(el => el.dataset.aposSeeChangesEntry === id);
+  const stays = el => !leaving.has(el.dataset.aposSeeChangesEntry);
+  const next = entries.slice(index + 1).find(stays) ||
+    entries.slice(0, Math.max(index, 0)).reverse().find(stays);
+  return (next && getEntryControl(next)) || list.value;
 }
 
 // An entry's actions show while it is open, asking or editing
@@ -492,9 +519,9 @@ function restore(entry) {
 
 async function leave(id) {
   saving.value = false;
-  confirming.value = null;
   // Its buttons go with it
-  list.value?.focus({ preventScroll: true });
+  getFocusAfter(id)?.focus({ preventScroll: true });
+  confirming.value = null;
   leaving.add(id);
   await nextTick();
   gone.add(id);
@@ -756,9 +783,11 @@ function saveEdit(entry, change, { refused } = {}) {
     saved() {
       edited.value = id;
       following = id;
+      // Its Edit once the list reloads, unless the reload drops it
+      const el = getEntryEl(id);
+      focusFallback = getFocusAfter(id);
+      (el && getEntryControl(el))?.focus({ preventScroll: true });
       editing.value = null;
-      // Its buttons go with it
-      list.value?.focus({ preventScroll: true });
     },
     refused
   });
@@ -861,6 +890,8 @@ $z-index-above-headers: $z-index-default + 1;
   &__scroller {
     overflow: hidden auto;
     flex: 1 1 auto;
+    // Its end does not scroll the page on
+    overscroll-behavior: contain;
     min-height: 0;
   }
 
