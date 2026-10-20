@@ -81,14 +81,21 @@
 // unset is marked as modified as a whole. `@apostrophecms/rich-text-widget`
 // sets it: the text that changed is marked inside its `content`.
 //
+// ### `versionsStandalone`
+//
+// Defaults to true: a widget of this type stands alone in a document
+// version. Set it to `false` for a type whose widgets their parent lays out
+// together, where one of them shown or changed alone would overlap the
+// others. A deleted one is then not shown in place in the version: the
+// widget holding it is marked as modified instead, or, when there is none,
+// its top-level field. And one added, deleted or changed whole cannot be
+// restored on its own. `@apostrophecms/layout-column-widget` sets it to
+// `false`.
+//
 // ### `versionsRenderDeleted`
 //
-// Defaults to true: a widget of this type deleted in a document version is
-// shown in place in that version, marked as deleted. Set it to `false` for
-// a type whose widgets place themselves in their parent's layout, where a
-// deleted one shown in place would overlap the others. The widget holding
-// it is then marked as modified instead, or, when there is none, its
-// top-level field. `@apostrophecms/layout-column-widget` sets it to `false`.
+// Deprecated, the older name of `versionsStandalone`: `false` does the
+// same.
 //
 // ### `titleField`
 //

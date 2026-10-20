@@ -6,6 +6,7 @@
     tabindex="-1"
     :aria-labelledby="titleId"
     data-apos-test="see-changes-confirm"
+    @keyup.esc.stop="$emit('cancel')"
   >
     <p
       :id="titleId"
@@ -54,7 +55,7 @@
       role="alert"
       data-apos-test="see-changes-confirm-invalid"
     >
-      {{ $t('apostrophe:seeChangesRestoreInvalid') }}
+      {{ $t('apostrophe:seeChangesInvalid') }}
     </p>
     <div class="apos-see-changes-confirm__controls">
       <AposButton
@@ -63,6 +64,14 @@
         label="apostrophe:cancel"
         :attrs="{ 'data-apos-test': 'see-changes-confirm-cancel' }"
         @click="$emit('cancel')"
+      />
+      <AposButton
+        v-if="editable"
+        class="apos-see-changes-confirm__cancel"
+        type="quiet"
+        label="apostrophe:edit"
+        :attrs="{ 'data-apos-test': 'see-changes-confirm-edit' }"
+        @click="$emit('edit')"
       />
       <AposButton
         type="primary"
@@ -82,7 +91,7 @@
 <script setup>
 // Asks before a restore, showing what it returns to: the older value as the
 // entry's detail reads it, or for a whole widget or item, its type and
-// title
+// title. An entry that can be edited offers its editor instead
 import {
   computed, nextTick, onMounted, ref, useId
 } from 'vue';
@@ -107,10 +116,15 @@ const props = defineProps({
   invalid: {
     type: Boolean,
     default: false
+  },
+  // Whether the entry can be edited instead
+  editable: {
+    type: Boolean,
+    default: false
   }
 });
 
-defineEmits([ 'cancel', 'restore' ]);
+defineEmits([ 'cancel', 'restore', 'edit' ]);
 
 const titleId = useId();
 const root = ref(null);
@@ -125,10 +139,16 @@ const removes = computed(() => listed.value && (props.entry.row.type === 'added'
 
 const title = computed(() => {
   if (listed.value) {
-    const what = (props.entry.row.kind === 'widget') ? 'Widget' : 'Item';
-    return removes.value
-      ? `apostrophe:seeChangesRemoveAdded${what}`
-      : `apostrophe:seeChangesRestoreDeleted${what}`;
+    // the long check version because i18n lint doesn't like dynamic keys
+    const widget = props.entry.row.kind === 'widget';
+    if (removes.value) {
+      return widget
+        ? 'apostrophe:seeChangesRemoveAddedWidget'
+        : 'apostrophe:seeChangesRemoveAddedItem';
+    }
+    return widget
+      ? 'apostrophe:seeChangesRestoreDeletedWidget'
+      : 'apostrophe:seeChangesRestoreDeletedItem';
   }
   return (props.baseline === 'default')
     ? 'apostrophe:seeChangesRestoreDefault'

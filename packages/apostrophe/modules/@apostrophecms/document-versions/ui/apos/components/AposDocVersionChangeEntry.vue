@@ -84,36 +84,51 @@
       data-apos-test="doc-version-change-diff"
     >
       <div
-        v-if="entry.changed"
-        class="apos-doc-version-changes__diff-box"
+        v-for="box in boxes"
+        :key="box.key"
+        class="apos-doc-version-changes__diff-field"
+        :data-apos-test="box === entry ? null : 'doc-version-change-field'"
       >
-        <AposDocVersionChangeBlock
-          v-if="entry.layout === 'block'"
-          :key="`block-${revealed}`"
-          :entry="entry"
+        <AposDocVersionChangePath
+          v-if="box !== entry"
+          class="apos-doc-version-changes__diff-label"
+          :segments="box.segments"
+          compact
         />
-        <AposDocVersionChangeText
-          v-else
-          :key="`sides-${revealed}`"
-          :entry="entry"
+        <div
+          v-if="box.changed"
+          class="apos-doc-version-changes__diff-box"
+        >
+          <AposDocVersionChangeBlock
+            v-if="box.layout === 'block'"
+            :key="`block-${revealed}`"
+            :entry="box"
+          />
+          <AposDocVersionChangeText
+            v-else
+            :key="`sides-${revealed}`"
+            :entry="box"
+            :labels="labels"
+          />
+        </div>
+        <AposDocVersionChangeFormat
+          v-if="box.format.length"
+          :lines="box.format"
           :labels="labels"
         />
       </div>
-      <AposDocVersionChangeFormat
-        v-if="entry.format.length"
-        :lines="entry.format"
-        :labels="labels"
-      />
     </div>
   </li>
 </template>
 
 <script setup>
+import { computed } from 'vue';
+
 // An entry of a group of changes: its header, a button that expands its
 // detail when it has one, what the `meta` slot adds below it, and the detail.
 // The `actions` slot goes beside the header; the `panel` slot, when given,
 // shows in place of the detail
-defineProps({
+const props = defineProps({
   // An entry of `change-groups.js`
   entry: {
     type: Object,
@@ -142,6 +157,14 @@ defineProps({
 });
 
 defineEmits([ 'toggle' ]);
+
+// What the detail shows: the entry's own change, or each of its fields,
+// labelled, for an item added or deleted whole
+const boxes = computed(() => {
+  return props.entry.fields?.length
+    ? props.entry.fields.filter(field => field.detail)
+    : [ props.entry ];
+});
 </script>
 
 <style lang="scss" scoped>
@@ -275,6 +298,21 @@ $pad-x: $spacing-base + $spacing-half;
     flex-direction: column;
     gap: $spacing-three-quarters;
     padding: $spacing-one-quarter $pad-x $spacing-base;
+  }
+
+  // A field's label, its text and formatting lines below
+  &__diff-field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-half;
+  }
+
+  &__diff-label {
+    @include type-small;
+
+    & {
+      color: var(--a-base-2);
+    }
   }
 
   &__diff-box {

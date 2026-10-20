@@ -357,6 +357,7 @@
             :label="editLabel"
             :disabled="field.readOnly"
             :tooltip="tooltip"
+            :attrs="{ 'data-apos-test': 'array-edit' }"
             @click="edit"
           />
         </label>

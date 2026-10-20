@@ -79,6 +79,11 @@ describe('Document Versions draft changes', function () {
           fields: {
             add: {
               caption: { type: 'string' },
+              // Kept out of every editor
+              token: {
+                type: 'string',
+                hidden: true
+              },
               // Not an editor's to change
               secret: {
                 type: 'string',
@@ -141,7 +146,8 @@ describe('Document Versions draft changes', function () {
                     '@apostrophecms/rich-text': {},
                     'story-link': {},
                     opaque: {},
-                    embed: {}
+                    embed: {},
+                    '@apostrophecms/layout': {}
                   }
                 }
               },
@@ -156,9 +162,18 @@ describe('Document Versions draft changes', function () {
                         action: 'edit',
                         type: '@apostrophecms/user'
                       }
+                    },
+                    stamp: {
+                      type: 'string',
+                      hidden: true
                     }
                   }
                 }
+              },
+              // Kept out of every editor
+              stamp: {
+                type: 'string',
+                hidden: true
               },
               _stories: {
                 type: 'relationship',
@@ -433,12 +448,14 @@ describe('Document Versions draft changes', function () {
       assert.equal(content.fieldId, 'doc.nested.section.rows.content');
     });
 
-    it('should give no key to the order of an array', async function () {
+    it('should key the order of an array as the array itself', async function () {
       const { rows } = await apos.docVersions.getDraftChanges(ann(), draft._id);
       const order = rowAt(rows, 'section', 'rows');
 
       assert.equal(order.kind, 'array');
-      assert.equal(order.patchKey, undefined);
+      assert.equal(order.patchKey, 'section.rows');
+      assert.equal(order.fieldId, 'doc.nested.section.rows');
+      assert.equal(order.listKey, undefined);
     });
 
     it('should mark a rich text field and the words of a string', async function () {
@@ -854,6 +871,7 @@ describe('Document Versions draft changes', function () {
         type: 'story-link',
         caption: 'Caption',
         secret: '',
+        token: '',
         _stories: stories
       };
     }
@@ -991,7 +1009,8 @@ describe('Document Versions draft changes', function () {
         items: [ 'one', 'two' ].map(_id => ({
           _id,
           label: _id,
-          secret: ''
+          secret: '',
+          stamp: ''
         }))
       }, draft => {
         const { inner } = draft.main.items[0];
@@ -1147,7 +1166,7 @@ describe('Document Versions draft changes', function () {
       assert.equal(rowAt(rows, 'main', 'link').restore, undefined);
     });
 
-    it('should not restore a read only field, nor an order', async function () {
+    it('should neither restore nor edit a read only field, and edit the order of an array whole, never restore it', async function () {
       const { draft } = await edited({
         items: [ 'one', 'two' ].map(_id => ({
           _id,
@@ -1162,11 +1181,14 @@ describe('Document Versions draft changes', function () {
       const rows = await rowsOf(draft._id);
       assert.equal(rowAt(rows, 'locked').patchKey, 'locked');
       assert.equal(rowAt(rows, 'locked').restore, undefined);
+      assert.equal(rowAt(rows, 'locked').editable, undefined);
       assert.equal(rowAt(rows, 'items').kind, 'array');
+      assert.equal(rowAt(rows, 'items').patchKey, 'items');
+      assert.equal(rowAt(rows, 'items').editable, true);
       assert.equal(rowAt(rows, 'items').restore, undefined);
     });
 
-    it('should not restore for an editor a field the editor may not edit, nor a widget holding one', async function () {
+    it('should neither restore nor edit for an editor a field the editor may not edit, and not restore a widget holding one', async function () {
       const link = storyLink('link', []);
       link.secret = 'Secret';
       const { draft } = await edited({
@@ -1199,8 +1221,14 @@ describe('Document Versions draft changes', function () {
       for (const names of paths) {
         assert.equal(rowAt(rows, ...names).restore, undefined, names.join('/'));
         assert.ok(rowAt(admins, ...names).restore, names.join('/'));
+        assert.equal(rowAt(admins, ...names).editable, true, names.join('/'));
       }
       assert.ok(rowAt(rows, 'main', 'kept', 'caption').restore);
+      // Edited where the path allows it, whatever the value holds
+      assert.equal(rowAt(rows, 'main', 'kept', 'secret').editable, undefined);
+      assert.equal(rowAt(rows, 'items', 'item1', 'secret').editable, undefined);
+      assert.equal(rowAt(rows, 'main', 'link').editable, true);
+      assert.equal(rowAt(rows, 'main', 'kept', 'caption').editable, true);
     });
 
     it('should put the default back in a document never published', async function () {
@@ -1308,6 +1336,29 @@ describe('Document Versions draft changes', function () {
       assert.equal((await stored(draft._id)).main.items[0].inner.items[0].code, 'Kept');
     });
 
+    it('should neither restore nor edit a field of a widget its area does not allow', async function () {
+      const { draft } = await edited({
+        main: area('main1', [ storyLink('link', []) ])
+      }, () => {});
+      // Allowed by the area's options when it was written
+      const nested = caption => ({
+        ...storyLink('nested', []),
+        caption
+      });
+      await apos.doc.db.updateOne({ _id: draft._id.replace(':draft', ':published') }, {
+        $set: { 'main.items.0.inner': area('link-inner', [ nested('One') ]) }
+      });
+      await apos.doc.db.updateOne({ _id: draft._id }, {
+        $set: { 'main.items.0.inner': area('link-inner', [ nested('Two') ]) }
+      });
+
+      const rows = await rowsOf(draft._id);
+      const row = rowAt(rows, 'main', 'link', 'inner', 'nested', 'caption');
+      assert.equal(row.patchKey, '@nested.caption');
+      assert.equal(row.editable, undefined);
+      assert.equal(row.restore, undefined);
+    });
+
     it('should leave out a widget of a type the site no longer has, and never anchor on it', async function () {
       const gone = _id => ({
         _id,
@@ -1365,6 +1416,124 @@ describe('Document Versions draft changes', function () {
       assert.equal((await rowsOf(draft._id)).length, 0);
     });
 
+    // A layout of columns as the layout widget stores it
+    function layout(_id, columns) {
+      return {
+        _id,
+        metaType: 'widget',
+        type: '@apostrophecms/layout',
+        columns: area(`${_id}-columns`, columns)
+      };
+    }
+
+    function column(_id, colstart, text) {
+      return {
+        _id,
+        metaType: 'widget',
+        type: '@apostrophecms/layout-column',
+        colstart,
+        colspan: 6,
+        rowstart: 1,
+        rowspan: 1,
+        order: 0,
+        justify: 'start',
+        content: area(`${_id}-content`, [ richText(`${_id}-text`, `<p>${text}</p>`) ])
+      };
+    }
+
+    it('should show no change of what the system manages, and a holder changed only there as modified with nothing to restore or edit', async function () {
+      const { draft: saved, rows } = await edited({
+        stamp: 'old',
+        items: [ 'a', 'b' ].map(_id => ({
+          _id,
+          label: _id,
+          secret: '',
+          stamp: 'old'
+        })),
+        main: area('main', [
+          layout('lay', [ column('one', 1, 'One'), column('two', 7, 'Two') ]),
+          {
+            ...storyLink('link', []),
+            token: 'old'
+          },
+          {
+            ...storyLink('quiet', []),
+            token: 'old'
+          }
+        ])
+      }, draft => {
+        const [ lay, link, quiet ] = draft.main.items;
+        const [ one, two ] = lay.columns.items;
+        one.colstart = 3;
+        one.justify = 'center';
+        one.content.items[0].content = '<p>One, edited</p>';
+        two.colstart = 5;
+        link.token = 'new';
+        link.caption = 'Edited';
+        quiet.token = 'new';
+        draft.items[0].stamp = 'new';
+        draft.items[1].stamp = 'new';
+        draft.items[1].label = 'b, edited';
+        draft.stamp = 'new';
+      });
+
+      assert.deepEqual(rows.map(row => namesOf(row).join('/')).sort(), [
+        'items/a',
+        'items/b/label',
+        'main/lay/columns/one/content/one-text',
+        'main/lay/columns/one/justify',
+        'main/lay/columns/two',
+        'main/link/caption',
+        'main/quiet'
+      ]);
+      const { counts } = await apos.docVersions.getDraftChanges(ann(), saved._id);
+      assert.equal(counts.modified, rows.length);
+      for (const names of [
+        [ 'items', 'a' ],
+        [ 'main', 'lay', 'columns', 'two' ],
+        [ 'main', 'quiet' ]
+      ]) {
+        const row = rowAt(rows, ...names);
+        assert.equal(row.system, true);
+        assert.equal(row.editable, undefined);
+        assert.equal(row.restore, undefined);
+        assert.equal(row.oldText, row.newText);
+      }
+      for (const names of [
+        [ 'items', 'b', 'label' ],
+        [ 'main', 'lay', 'columns', 'one', 'justify' ],
+        [ 'main', 'lay', 'columns', 'one', 'content', 'one-text' ],
+        [ 'main', 'link', 'caption' ]
+      ]) {
+        const row = rowAt(rows, ...names);
+        assert.equal(row.system, undefined);
+        assert.equal(row.editable, true);
+        assert(row.restore);
+      }
+    });
+
+    it('should not restore a column added or deleted alone, and restore a whole layout', async function () {
+      const { rows } = await edited({
+        main: area('main', [
+          layout('lay', [ column('one', 1, 'One'), column('two', 7, 'Two') ])
+        ])
+      }, draft => {
+        const [ lay ] = draft.main.items;
+        lay.columns.items = [ lay.columns.items[0], column('three', 7, 'Three') ];
+        draft.main.items.push(layout('more', [ column('four', 1, 'Four') ]));
+      });
+
+      for (const _id of [ 'two', 'three' ]) {
+        const row = rowAt(rows, 'main', 'lay', 'columns', _id);
+        assert.equal(row.kind, 'widget');
+        assert.equal(row.editable, true);
+        assert.equal(row.restore, undefined);
+      }
+      const more = rowAt(rows, 'main', 'more');
+      assert.equal(more.type, 'added');
+      assert(more.restore);
+    });
+
     describe('over HTTP', function () {
       let jar;
 
@@ -1392,6 +1561,42 @@ describe('Document Versions draft changes', function () {
         assert.equal(error.body.name, 'invalid');
         assert.equal(error.body.data.errors[0].path, 'note');
         assert.equal((await stored(draft._id)).note, 'Noted');
+      });
+
+      it('should refuse a strict patch that leaves the whole document invalid', async function () {
+        // Valid in the draft: the note is required while the flag is on only
+        const { draft, rows } = await edited({
+          flag: true,
+          note: 'Noted'
+        }, draft => {
+          draft.flag = false;
+          draft.note = '';
+        });
+        const { restore } = rowAt(rows, 'flag');
+
+        const error = await apos.http.patch(`/api/v1/story/${draft._id}`, {
+          body: {
+            _patches: [ {
+              ...restore.patch,
+              _strict: true
+            } ]
+          },
+          jar
+        }).catch(error => error);
+
+        assert.equal(error.status, 400);
+        assert.equal(error.body.name, 'invalid');
+        assert.equal(error.body.data.errors[0].path, 'note');
+        assert.equal((await stored(draft._id)).flag, false);
+
+        // Not strict, the patch is checked for the flag alone and saves
+        await apos.http.patch(`/api/v1/story/${draft._id}`, {
+          body: { _patches: [ restore.patch ] },
+          jar
+        });
+        const saved = await stored(draft._id);
+        assert.equal(saved.flag, true);
+        assert.equal(saved.note, '');
       });
     });
   });

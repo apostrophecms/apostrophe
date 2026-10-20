@@ -294,6 +294,7 @@ const {
   startResizing,
   setPosition: setWindowPosition,
   constrainPosition,
+  widen,
   cleanup: cleanupDraggable
 } = useDraggableWindow({
   size,
@@ -618,6 +619,18 @@ function close() {
     emit('esc');
   }
 }
+
+// A window modal grows to `width` when it is narrower, for content that
+// needs the room
+function widenWindow(width) {
+  if (isWindowModal.value) {
+    widen(width);
+  }
+}
+
+defineExpose({
+  widen: widenWindow
+});
 </script>
 
 <style lang="scss" scoped>

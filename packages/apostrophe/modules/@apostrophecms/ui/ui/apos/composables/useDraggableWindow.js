@@ -99,6 +99,7 @@ const EDGE_DELTAS = {
  *   resetPosition: () => void;
  *   constrainPosition: () => void;
  *   constrainSize: () => void;
+ *   widen: (width: number) => void;
  *   cleanup: () => void;
  * }}
  */
@@ -530,6 +531,29 @@ export function useDraggableWindow({
     }
   }
 
+  // Grows the window to `width` when it is narrower, within its maximum and
+  // the viewport, its right edge kept where it is as far as the viewport
+  // allows. Not stored: the size the user chose comes back next time
+  function widen(width) {
+    if (!isRef(size)) {
+      return;
+    }
+    const s = unref(size);
+    const target = Math.min(clampDimension(width, minWidth, maxWidth), window.innerWidth);
+    if (!s || (s.width >= target)) {
+      return;
+    }
+    const right = position.value.left + s.width;
+    size.value = {
+      ...s,
+      width: target
+    };
+    position.value = {
+      ...position.value,
+      left: getAxisPos('x', right - target)
+    };
+  }
+
   const style = computed(() => {
     const s = unref(size);
     const p = position.value;
@@ -574,6 +598,7 @@ export function useDraggableWindow({
     resetPosition,
     constrainPosition,
     constrainSize,
+    widen,
     cleanup
   };
 }
