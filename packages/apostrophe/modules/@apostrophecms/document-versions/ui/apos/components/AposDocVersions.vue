@@ -189,6 +189,7 @@ const versionsAction = apos.modules[props.moduleName].action;
 const {
   docFields,
   widgetChanges,
+  fieldChanges,
   generation,
   show,
   fetchVersion
@@ -229,6 +230,7 @@ const {
 } = useDocVersionMarkers({
   docId,
   widgetChanges,
+  fieldChanges,
   docMeta,
   onReveal: revealChange
 });
@@ -552,9 +554,8 @@ onBeforeUnmount(() => {
   }
 
   &__body {
-    // For now. Later we may have better support for read-only areas
-    // and array fields that allows clicking in to see more information
-    // but carefully blocks editing
+    // The editors honour the read only scope, but what widgets render
+    // themselves, links, embeds and players, would still take a click
     pointer-events: none;
   }
 }

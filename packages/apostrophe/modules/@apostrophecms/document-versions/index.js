@@ -993,7 +993,8 @@ module.exports = {
       // `annotate` marks the document with the changes of the version (see
       // `getAnnotatedDoc`); a first or restored version has none. `consolidate`
       // marks the changes of the whole consolidated version `versionId` is the
-      // newest of, AI involvement included
+      // newest of, AI involvement included. With `annotate` the version also
+      // has `fields`, the changes of the fields a widget renders in place
       async getOne(req, versionId, { annotate = false, consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
         const version = await self.getEditableVersion(draftReq, versionId);
@@ -1008,10 +1009,14 @@ module.exports = {
           const { pairs } = item;
           if (pairs.length) {
             const before = await self.getAiRowsBefore(draftReq, item);
-            version.doc = self.getAnnotatedDoc(req, pairs[0].older, version.doc, {
-              rows: self.getConsolidatedRows(req, pairs, { before })
-            });
+            const rows = self.getConsolidatedRows(req, pairs, { before });
+            const stored = version.doc;
+            version.doc = self.getAnnotatedDoc(req, pairs[0].older, stored, { rows });
+            version.fields = getFieldChanges(rows, stored);
           }
+        }
+        if (annotate) {
+          version.fields ||= [];
         }
 
         // We must load relationships and areas as if we had done a regular find
@@ -1027,6 +1032,20 @@ module.exports = {
         delete version.locale;
 
         return version;
+
+        // The rows of the field types rendered in place, keyed into `doc` (see
+        // `addFieldData`), an array item's added whole among them; a string's
+        // with its word diff, a rich text field's with its marked markup
+        function getFieldChanges(rows, doc) {
+          const ctx = self.getDiffContext(req, doc);
+          diff.addFieldData(manager.schema, diff.addItemFields(rows, ctx), doc, ctx);
+          const fields = [ ...rows, ...rows.flatMap(row => row.fieldRows || []) ]
+            .filter(row => row.patchKey &&
+              self.apos.schema.fieldTypes[row.field?.type]?.wysiwyg);
+          const plain = fields.filter(row => row.kind !== 'richText');
+          text.addWordDiff(text.addText(plain, ctx), ctx);
+          return fields;
+        }
       },
       // The version record `versionId` with its stored document, `docId` and
       // `locale`, when `req` can edit the document. Throws `invalid` for a

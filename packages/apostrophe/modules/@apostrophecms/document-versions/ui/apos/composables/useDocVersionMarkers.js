@@ -7,21 +7,24 @@ import { useDocVersionMarkersStore } from '../stores/docVersionMarkers.js';
 /**
  * The change markers of the versions modal's body. The modal gets a widget
  * graph of its own, under which the markers store holds the changes of the
- * widgets of the version shown; a change outside any widget marks its
- * top-level field. A click on a widget's marker arrives over the bus,
- * since the widgets of nested areas render in apps of their own.
+ * widgets of the version shown and of the fields they render in place; a
+ * change outside any widget marks its top-level field. A click on a
+ * widget's marker arrives over the bus, since the widgets of nested areas
+ * render in apps of their own.
  *
  * @param {object} options
  * @param {string} options.docId
  * @param {import('vue').Ref<object>} options.widgetChanges
  *   The changes of the marked widgets by `_id`, see `useDocVersionView`
+ * @param {import('vue').Ref<object[]>} options.fieldChanges
+ *   The change rows of the fields rendered in place, see `useDocVersionView`
  * @param {import('vue').Ref<object>} options.docMeta
  *   The `aposMeta` of the version shown
  * @param {(target: { widgetId: string, moved: boolean }) => void} options.onReveal
  *   Called when a widget's marker asks for its changes
  */
 export function useDocVersionMarkers({
-  docId, widgetChanges, docMeta, onReveal
+  docId, widgetChanges, fieldChanges, docMeta, onReveal
 }) {
   // The modal's own widget graph: its widgets share their ids with those of
   // the page under it. Nested areas, apps of their own, find the key on the
@@ -36,6 +39,9 @@ export function useDocVersionMarkers({
   markersStore.set(graphKey, {});
   watch(widgetChanges, changes => {
     markersStore.set(graphKey, changes);
+  });
+  watch(fieldChanges, rows => {
+    markersStore.setFields(graphKey, rows);
   });
 
   // A change outside any widget marks its top-level field

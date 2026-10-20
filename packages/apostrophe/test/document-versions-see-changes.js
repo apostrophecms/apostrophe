@@ -591,6 +591,98 @@ describe('Document Versions draft changes', function () {
     assert.equal(fieldsOf('gone').some(row => row.patchKey || row.markedHtml), false);
   });
 
+  describe('the fields of an annotated version', function () {
+    async function newestVersion(draft) {
+      const [ newest ] = await apos.docVersions.find(draftReq(), {
+        docId: draft.aposDocId,
+        locale: 'en'
+      }, {
+        sort: { createdAt: -1 }
+      });
+      return newest;
+    }
+
+    it('should list the changes of the fields rendered in place, keyed and marked', async function () {
+      const item = (_id, label, text) => ({
+        _id,
+        metaType: 'arrayItem',
+        label,
+        text
+      });
+      let draft = await insertPublished(apos.modules.blank, {
+        title: 'In place',
+        code: 'code',
+        meta: { ref: 'ref' },
+        items: [ item('kept', 'Kept', '<p>Kept</p>'), item('gone', 'Gone', '<p>Gone</p>') ]
+      });
+      draft.flag = true;
+      draft.note = 'Note';
+      draft.items = [
+        item('kept', 'Kept and edited', '<p>Kept</p>'),
+        item('new', 'New label', '<p>New text</p>')
+      ];
+      draft = await saveAs(apos.modules.blank, ann(), draft);
+      const newest = await newestVersion(draft);
+
+      const { fields } = await apos.docVersions.getOne(ann(), newest._id, {
+        annotate: true
+      });
+      const plain = await apos.docVersions.getOne(ann(), newest._id);
+      const byKey = Object.fromEntries(fields.map(row => [ row.patchKey, row ]));
+
+      assert.deepEqual(Object.keys(byKey).sort(), [
+        '@kept.label',
+        '@new.label',
+        '@new.text',
+        'note'
+      ]);
+      assert.deepEqual(
+        byKey['@kept.label'].diff.map(part => [ part.text, part.change ]),
+        [ [ 'Kept ', 'same' ], [ 'and edited', 'added' ] ]
+      );
+      assert.match(byKey['@new.text'].markedHtml, /<ins data-apos-version-change="added">/);
+      assert.equal(plain.fields, undefined);
+    });
+
+    it('should key the fields of a widget from the widget, and list none for a first version', async function () {
+      let draft = await insertPublished(apos.modules.story, {
+        title: 'Widget in place',
+        main: {
+          metaType: 'area',
+          items: [ {
+            _id: 'link1',
+            metaType: 'widget',
+            type: 'story-link',
+            caption: 'Old caption'
+          } ]
+        }
+      });
+      const first = await apos.docVersions.find(draftReq(), {
+        docId: draft.aposDocId,
+        locale: 'en'
+      }, {
+        sort: { createdAt: 1 }
+      });
+      draft.main.items[0].caption = 'New caption';
+      draft = await saveAs(apos.modules.story, ann(), draft);
+      const newest = await newestVersion(draft);
+
+      const { fields } = await apos.docVersions.getOne(ann(), newest._id, {
+        annotate: true
+      });
+      const initial = await apos.docVersions.getOne(ann(), first[0]._id, {
+        annotate: true
+      });
+
+      assert.deepEqual(fields.map(row => row.patchKey), [ '@link1.caption' ]);
+      assert.deepEqual(
+        fields[0].diff.map(part => [ part.text, part.change ]),
+        [ [ 'Old', 'removed' ], [ 'New', 'added' ], [ ' caption', 'same' ] ]
+      );
+      assert.deepEqual(initial.fields, []);
+    });
+  });
+
   it('should key a relationship by its field name', async function () {
     const related = await apos.article.insert(ann(), { title: 'Related' });
     let draft = await insertPublished(apos.article, { title: 'Relating' });
