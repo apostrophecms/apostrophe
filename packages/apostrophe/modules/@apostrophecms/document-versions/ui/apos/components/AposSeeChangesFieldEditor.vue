@@ -136,7 +136,8 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits([ 'cancel', 'save' ]);
+// `ready` once the value shows
+const emit = defineEmits([ 'ready', 'cancel', 'save' ]);
 const $t = inject('i18n');
 
 // The draft's `docId` serves the fields' data, but nothing here edits the
@@ -198,6 +199,7 @@ onMounted(async () => {
     hasErrors: false
   };
   await nextTick();
+  emit('ready');
   focus();
 });
 
@@ -209,12 +211,13 @@ function getData() {
   return props.item ? klona(original) : { [props.field.name]: klona(original) };
 }
 
-// The input when it is there, the editor while the draft loads
+// The input when it is there, the editor while the draft loads. Whoever
+// shows the editor scrolls to it
 function focus() {
   const el = input.value?.querySelector(
     'input:not([type="hidden"]), textarea, select, [contenteditable="true"], button'
   );
-  (el || root.value)?.focus();
+  (el || root.value)?.focus({ preventScroll: true });
 }
 
 async function save() {

@@ -60,6 +60,7 @@
               :labels="labels"
               :revealed="revealed"
               @toggle="toggle(idOf(entry.row), groupIndex)"
+              @select="selectGroup(groupIndex)"
             >
               <template #meta>
                 <p
@@ -130,7 +131,7 @@
                   label="apostrophe:edit"
                   :disabled="pending || opening"
                   :attrs="{ 'data-apos-test': 'see-changes-edit' }"
-                  @click="edit(entry)"
+                  @click="edit(entry, groupIndex)"
                 />
                 <AposButton
                   v-if="entry.row.restore"
@@ -159,7 +160,7 @@
                   :editable="isEditable(entry.row)"
                   @cancel="cancel"
                   @restore="restore(entry)"
-                  @edit="edit(entry)"
+                  @edit="edit(entry, groupIndex)"
                 />
               </template>
               <template
@@ -172,6 +173,7 @@
                   :doc-id="store.docId"
                   :busy="saving"
                   :invalid="invalid"
+                  @ready="showEditor(group, entry)"
                   @cancel="closeEditor"
                   @save="saveEdit(entry, $event)"
                 />
@@ -204,16 +206,17 @@
 // changed it and how long ago, and its detail compares the value with the
 // published one, or with the default when the document was never published.
 // The navigator at the bottom steps through the groups; a click on a group
-// header goes to that one, and so does the first toggle of an entry in a
-// group the navigator is not at. An entry that can be restored asks first,
-// then leaves the list once the restore is saved. An entry that can be
-// edited opens its field's editor in place of its detail, a rich text
-// widget's content its rich text editor as on the page; a whole widget
-// opens its widget editor, as on the page.
+// header goes to that one, and so do the first toggle of an entry in a group
+// the navigator is not at, a click on an entry with nothing to expand and
+// Edit. An entry that can be restored asks first, then leaves the list once
+// the restore is saved. An entry that can be edited opens its field's editor
+// in place of its detail, a rich text widget's content its rich text editor
+// as on the page; a whole widget opens its widget editor, as on the page.
+// The list follows an edited group to the top.
 // The list scrolls on its own and is no tab stop, which Firefox makes of a
 // scroll container: its buttons are the stops, and the arrow keys scroll it
 import {
-  computed, nextTick, reactive, ref, useId, watch
+  computed, nextTick, onBeforeUnmount, reactive, ref, useId, watch
 } from 'vue';
 import getFieldById from 'Modules/@apostrophecms/schema/lib/getFieldById';
 import scroll from '../utils/scroll.js';
@@ -268,8 +271,12 @@ const confirm = ref(null);
 // The entry showing its field's editor, by `idOf`
 const editing = ref(null);
 const editor = ref(null);
+// Stops keeping the open editor in view
+let stopShowingEditor = () => {};
 // The entry last edited, by `idOf`, until the next save
 const edited = ref(null);
+// The entry just edited, by `idOf`, which the list follows once it reloads
+let following = null;
 // While a widget editor loads its widget
 const opening = ref(false);
 // The Edit and Restore buttons, by `edit:` or `restore:` and `idOf`
@@ -336,6 +343,41 @@ const {
   onNavigate: group => emit('navigate', group)
 });
 
+// --- Positioning ---
+
+function getEntryEl(id) {
+  return list.value?.querySelector(`[data-apos-see-changes-entry="${CSS.escape(id)}"]`);
+}
+
+// How much of the list's top the group's sticky header covers
+function getHeaderHeight(group) {
+  return getGroupEl(group.key)?.firstElementChild?.offsetHeight || 0;
+}
+
+function scrollBy(top) {
+  list.value?.scrollBy({
+    top,
+    behavior: scroll.getScrollBehavior()
+  });
+}
+
+// The group's header at the top, as a navigator step leaves it, when the
+// entry `el` fits below it with what it shows open; else the entry right
+// under the header, so it reads from its start with its group named
+function place(group, el) {
+  const section = getGroupEl(group.key);
+  if (!section || !el || !list.value) {
+    return;
+  }
+  const box = list.value.getBoundingClientRect();
+  const rect = el.getBoundingClientRect();
+  if (rect.bottom - section.getBoundingClientRect().top <= box.height) {
+    scrollToGroup(group);
+  } else {
+    scrollBy(rect.top - box.top - getHeaderHeight(group));
+  }
+}
+
 // What still shows keeps its place: the navigator follows its group, and
 // open entries and the confirmation stay open
 watch(() => props.rows, rows => {
@@ -356,15 +398,31 @@ watch(() => props.rows, rows => {
   pending.value = false;
   invalid.value = false;
   now.value = Date.now();
+  if (following) {
+    const id = following;
+    following = null;
+    nextTick(() => {
+      const group = groups.value
+        .find(group => group.entries.some(entry => idOf(entry.row) === id));
+      if (group) {
+        place(group, getEntryEl(id));
+      }
+    });
+  }
 });
+
+// Makes a group the navigator's, unless it is already
+function selectGroup(groupIndex) {
+  if (position.value !== groupIndex) {
+    select(groupIndex);
+  }
+}
 
 // An entry of another group makes that group the navigator's first; within
 // the group the navigator is at, it only opens or closes. Closing an entry
 // that asks before its restore or shows its editor closes those too
 function toggle(id, groupIndex) {
-  if (position.value !== groupIndex) {
-    select(groupIndex);
-  }
+  selectGroup(groupIndex);
   if (confirming.value === id) {
     confirming.value = null;
     invalid.value = false;
@@ -559,7 +617,8 @@ function isEditable(row) {
   return isWidgetEditable(row) || Boolean(getEdit(row));
 }
 
-function edit(entry) {
+function edit(entry, groupIndex) {
+  selectGroup(groupIndex);
   if (isWidgetEditable(entry.row)) {
     editWidget(entry);
   } else {
@@ -591,6 +650,53 @@ async function openEditor(entry) {
   await nextTick();
   editor.value?.focus();
 }
+
+// Once its value is in, the editor shows with the least scroll. Its content
+// can still grow as it renders, so it is kept in view until the user scrolls,
+// clicks or types, or it closes
+function showEditor(group, entry) {
+  stopShowingEditor();
+  const el = getEntryEl(idOf(entry.row));
+  const editorEl = document.getElementById(`${baseId}-${entry.key}`);
+  if (!el || !editorEl || !list.value) {
+    return;
+  }
+  const scroller = list.value;
+  const show = () => {
+    const box = scroller.getBoundingClientRect();
+    const top = box.top + getHeaderHeight(group);
+    const rect = editorEl.getBoundingClientRect();
+    if ((rect.top >= top) && (rect.bottom <= box.bottom)) {
+      return;
+    }
+    const entryRect = el.getBoundingClientRect();
+    const by = (entryRect.top < top) || (entryRect.height > box.bottom - top)
+      ? entryRect.top - top
+      : rect.bottom - box.bottom;
+    // Measured where the list is now, so a scroll under way is not counted twice
+    scroller.scrollTo({
+      top: scroller.scrollTop + by,
+      behavior: scroll.getScrollBehavior()
+    });
+  };
+  const observer = new ResizeObserver(show);
+  const events = [ 'wheel', 'touchstart', 'pointerdown', 'keydown' ];
+  stopShowingEditor = () => {
+    observer.disconnect();
+    for (const name of events) {
+      scroller.removeEventListener(name, stopShowingEditor, true);
+    }
+    stopShowingEditor = () => {};
+  };
+  for (const name of events) {
+    scroller.addEventListener(name, stopShowingEditor, true);
+  }
+  // Calls `show` once to begin with
+  observer.observe(editorEl);
+}
+
+watch(editing, () => stopShowingEditor());
+onBeforeUnmount(() => stopShowingEditor());
 
 async function closeEditor() {
   const id = editing.value;
@@ -653,6 +759,7 @@ function saveEdit(entry, change, { refused } = {}) {
   save(entry.row, change, {
     saved() {
       edited.value = id;
+      following = id;
       editing.value = null;
       // Its buttons go with it
       list.value?.focus({ preventScroll: true });
@@ -727,20 +834,8 @@ async function reveal(target) {
   ) || getGroupEl(group.key)?.querySelector(
     '[data-apos-test="doc-version-change-group-select"]'
   );
-  if (button && list.value) {
-    // The group's header at the top, as a navigator step leaves it. An
-    // entry too far down its group to show that way is centred instead
-    const section = getGroupEl(group.key);
-    const box = list.value.getBoundingClientRect();
-    const rect = button.getBoundingClientRect();
-    if (section && (rect.bottom - section.getBoundingClientRect().top <= box.height)) {
-      scrollToGroup(group);
-    } else {
-      list.value.scrollBy({
-        top: rect.top - box.top - (box.height / 2),
-        behavior: scroll.getScrollBehavior()
-      });
-    }
+  if (button) {
+    place(group, getEntryEl(idOf(entry.row)));
     button.focus({ preventScroll: true });
   }
   return true;
@@ -755,6 +850,9 @@ defineExpose({
 $pad-x: $spacing-base + $spacing-half;
 // The entry's chevron and the gap after it
 $chevron-x: 14px + $spacing-half;
+// The entry's label line, which its credit and its actions keep, so Edit
+// sits beside the label and Restore beside the credit
+$line-height: calc(var(--a-type-base) * var(--a-line-tall));
 // Above the groups' sticky headers
 $z-index-above-headers: $z-index-default + 1;
 
@@ -819,8 +917,17 @@ $z-index-above-headers: $z-index-default + 1;
     }
   }
 
+  // An entry with nothing to expand selects its group
+  &__entries :deep(.apos-doc-version-changes__row-main:not(button)) {
+    cursor: pointer;
+  }
+
   &__action :deep(.apos-button) {
     font-size: var(--a-type-smaller);
+  }
+
+  &__action :deep(.apos-button__label) {
+    line-height: $line-height;
   }
 
   // Under the entry's label
@@ -829,7 +936,7 @@ $z-index-above-headers: $z-index-default + 1;
     padding: 0 $pad-x $spacing-half ($pad-x + $chevron-x);
     color: var(--a-base-1);
     font-size: var(--a-type-smaller);
-    line-height: var(--a-line-base);
+    line-height: $line-height;
   }
 
   &__authors {

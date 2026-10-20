@@ -14,7 +14,9 @@
         'aria-controls': detailId,
         'data-apos-test': 'doc-version-change-toggle',
         onClick: () => $emit('toggle')
-      } : {}"
+      } : {
+        onClick: () => $emit('select')
+      }"
     >
       <chevron-right-icon
         v-if="entry.detail"
@@ -126,6 +128,7 @@ import { computed } from 'vue';
 
 // An entry of a group of changes: its header, a button that expands its
 // detail when it has one, what the `meta` slot adds below it, and the detail.
+// A click on the header of an entry with nothing to expand emits `select`.
 // The `actions` slot goes beside the header; the `panel` slot, when given,
 // shows in place of the detail
 const props = defineProps({
@@ -156,7 +159,7 @@ const props = defineProps({
   }
 });
 
-defineEmits([ 'toggle' ]);
+defineEmits([ 'toggle', 'select' ]);
 
 // What the detail shows: the entry's own change, or each of its fields,
 // labelled, for an item added or deleted whole
@@ -196,10 +199,12 @@ $pad-x: $spacing-base + $spacing-half;
     }
   }
 
+  // As far apart as the header's label and the `meta` slot's line below it
   &__row-actions {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    gap: $spacing-one-quarter;
     padding: $spacing-half $pad-x $spacing-half 0;
   }
 
