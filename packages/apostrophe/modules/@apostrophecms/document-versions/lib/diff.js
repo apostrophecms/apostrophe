@@ -200,6 +200,12 @@ const ORDER = Symbol('order');
  *   widget and the markup of a rich text widget: the widget `type`.
  * @property {object} [widgetOptions] With `widgetType`: the options the area
  *   holding the widget gives its type.
+ * @property {object} [contextual] Rows of `addFieldData` only, for a row a
+ *   contextual widget's own editor edits on the page: the widget itself and
+ *   its fields other than its styles, the nearest widget along the path
+ *   being contextual. That widget's `{ patchKey, widgetType, widgetOptions }`:
+ *   its `@<_id>`, its `type` and the options its area gives it; none when
+ *   its `_id` is not in the document exactly once.
  * @property {string|null} [markedHtml] Rows of `addFieldData` only, for a
  *   `richText` field: the newer markup with the changed text marked (see
  *   `lib/rich-text-diff.js`), `null` when the change cannot be shown that
@@ -540,11 +546,40 @@ function addFieldData(schema, rows, doc, ctx) {
       const allowed = area && ctx.getAreaWidgets?.(area.options || {});
       row.widgetOptions = allowed?.[widgetType] || {};
     }
+    const contextual = getContextual(row, target);
+    if (contextual) {
+      row.contextual = contextual;
+    }
     if ((row.kind === 'richText') && row.field) {
       row.markedHtml = getMarkedRichText(row, ctx);
     }
   }
   return rows;
+
+  // The nearest widget along the path, the row's own included, when it is
+  // contextual and the row is not one of its styles
+  function getContextual(row, { widgets }) {
+    const at = row.path.findLastIndex(segment => segment.widgetType);
+    const { type, area } = widgets.at(-1) || {};
+    const manager = (at !== -1) && ctx.getWidgetManager(type);
+    if (!manager?.options?.contextual) {
+      return;
+    }
+    const head = row.path[at + 1]?.name;
+    if (head && Object.keys(manager.styles || {}).includes(head)) {
+      return;
+    }
+    const id = row.path[at].name;
+    if (!id || (idCounts.get(id) !== 1)) {
+      return;
+    }
+    const allowed = area && ctx.getAreaWidgets?.(area.options || {});
+    return {
+      patchKey: `@${id}`,
+      widgetType: type,
+      widgetOptions: allowed?.[type] || {}
+    };
+  }
 
   // A key that reaches this value and nothing else. An `@` reference names
   // an `_id` the draft holds exactly once, or, for an item the draft no

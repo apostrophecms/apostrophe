@@ -18,17 +18,19 @@
       />
       <div
         v-else-if="widgetType"
-        class="apos-see-changes-editor__rich-text"
+        class="apos-see-changes-editor__widget"
       >
         <!--
-          No `doc-id`: with the page's, the editor would tell the context bar
-          the page is being typed in, and the window saves only on its button
+          No `doc-id`, as for an area in a modal: a contextual editor takes it
+          to edit the page in context, and the window saves only on its button
         -->
-        <AposRichTextEditor
-          :model-value="value.data"
+        <component
+          :is="widgetEditor"
+          :type="widgetType"
           :options="widgetOptions"
-          :module-options="widgetModule"
-          @update:model-value="value.data = $event"
+          :model-value="value.data"
+          :focused="true"
+          @update="value.data = $event"
         />
       </div>
       <AposSchema
@@ -78,8 +80,8 @@
 // another evaluated as the array editor does; a condition on a field outside
 // the item has no value to read here and is not met. `save` carries the patch
 // that sets the edited value and its inverse; an unchanged value closes it
-// as Cancel and Escape do. A rich text widget's content is edited by its
-// rich text editor, configured as the widget's own on the page
+// as Cancel and Escape do. A contextual widget is edited whole by its own
+// editor, as on the page
 import {
   computed, inject, nextTick, onMounted, ref
 } from 'vue';
@@ -97,8 +99,8 @@ const props = defineProps({
     type: Object,
     default: null
   },
-  // In place of `field`, the type of the rich text widget whose content the
-  // value is, and the options its area gives it
+  // In place of `field`, the type of the contextual widget the value is, and
+  // the options its area gives it
   widgetType: {
     type: String,
     default: null
@@ -147,6 +149,8 @@ let original;
 
 const widgetModule = computed(() => props.widgetType &&
   apos.modules[apos.area.widgetManagers[props.widgetType]]);
+const widgetEditor = computed(() => props.widgetType &&
+  apos.area.components.widgetEditors[props.widgetType]);
 const label = computed(() => (props.field
   ? (props.field.label || props.field.name)
   : widgetModule.value?.label));
@@ -193,10 +197,10 @@ onMounted(async () => {
   focus();
 });
 
-// The markup alone for a rich text widget, else as `AposSchema` takes it
+// The widget as it is, else as `AposSchema` takes it
 function getData() {
   if (props.widgetType) {
-    return original || '';
+    return klona(original);
   }
   return props.item ? klona(original) : { [props.field.name]: klona(original) };
 }
@@ -268,7 +272,7 @@ $pad-x: $spacing-base + $spacing-half;
   }
 
   // Boxed as a rich text field is
-  &__rich-text {
+  &__widget {
     padding: 0 $spacing-base;
     border: 1px solid var(--a-base-8);
     border-radius: var(--a-border-radius);

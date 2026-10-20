@@ -135,6 +135,24 @@ describe('Document Versions draft changes', function () {
             };
           }
         },
+        // Edited on the page by its own editor, its styles in a form
+        'headline-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Headline',
+            contextual: true
+          },
+          fields: {
+            add: {
+              heading: { type: 'string' }
+            }
+          },
+          styles: {
+            add: {
+              alignment: 'alignment'
+            }
+          }
+        },
         story: {
           extend: '@apostrophecms/piece-type',
           fields: {
@@ -147,6 +165,7 @@ describe('Document Versions draft changes', function () {
                     'story-link': {},
                     opaque: {},
                     embed: {},
+                    headline: {},
                     '@apostrophecms/layout': {}
                   }
                 }
@@ -1532,6 +1551,61 @@ describe('Document Versions draft changes', function () {
       const more = rowAt(rows, 'main', 'more');
       assert.equal(more.type, 'added');
       assert(more.restore);
+    });
+
+    it('should give the rows a contextual widget edits the widget, its styles aside', async function () {
+      const headline = (_id, heading) => ({
+        _id,
+        metaType: 'widget',
+        type: 'headline',
+        heading,
+        alignment: 'left'
+      });
+      const { rows } = await edited({
+        main: area('main', [
+          headline('head', 'Old'),
+          headline('gone', 'Gone'),
+          richText('text', '<p>Old</p>'),
+          storyLink('link', []),
+          layout('lay', [ column('one', 1, 'One') ])
+        ])
+      }, draft => {
+        const [ head, , text, link, lay ] = draft.main.items;
+        head.heading = 'New';
+        head.alignment = 'center';
+        text.content = '<p>New</p>';
+        link.caption = 'Edited';
+        lay.columns.items[0].justify = 'center';
+        lay.columns.items[0].content.items[0].content = '<p>One, edited</p>';
+        draft.main.items = [ head, text, link, lay, headline('more', 'More') ];
+      });
+
+      const contextual = (_id, type) => ({
+        patchKey: `@${_id}`,
+        widgetType: type,
+        widgetOptions: {}
+      });
+      assert.deepEqual(
+        rowAt(rows, 'main', 'head', 'heading').contextual,
+        contextual('head', 'headline')
+      );
+      assert.deepEqual(rowAt(rows, 'main', 'more').contextual, contextual('more', 'headline'));
+      assert.deepEqual(
+        rowAt(rows, 'main', 'text').contextual,
+        contextual('text', '@apostrophecms/rich-text')
+      );
+      assert.deepEqual(
+        rowAt(rows, 'main', 'lay', 'columns', 'one', 'content', 'one-text').contextual,
+        contextual('one-text', '@apostrophecms/rich-text')
+      );
+      for (const names of [
+        [ 'main', 'head', 'alignment' ],
+        [ 'main', 'gone' ],
+        [ 'main', 'link', 'caption' ],
+        [ 'main', 'lay', 'columns', 'one', 'justify' ]
+      ]) {
+        assert.equal(rowAt(rows, ...names).contextual, undefined, names.join('/'));
+      }
     });
 
     describe('over HTTP', function () {

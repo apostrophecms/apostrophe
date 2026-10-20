@@ -504,20 +504,14 @@ function save(row, {
 
 // What an entry's editor shows, `{ field, patchKey, item }`: a field's
 // value; an added array item as its fields (`item`); the whole array for
-// its order or a deleted item. A rich text widget's content instead, as
-// `{ widgetType, widgetOptions, patchKey }`. Not a whole widget, nor a
-// field of a contextual widget other than its styles, since that widget is
-// edited on the page. `null` when the entry has no editor
+// its order or a deleted item. What a contextual widget's own editor edits
+// on the page, that widget, as `{ widgetType, widgetOptions, patchKey }`.
+// Not a whole widget otherwise. `null` when the entry has no editor
 function getEdit(row) {
-  if (row.editable && row.widgetType && (row.kind === 'richText')) {
-    return {
-      widgetType: row.widgetType,
-      widgetOptions: row.widgetOptions,
-      patchKey: row.patchKey
-    };
+  if (row.editable && row.contextual) {
+    return { ...row.contextual };
   }
-  const field = row.editable && !row.widgetType && !isOnPage(row) &&
-    getFieldById(row.fieldId);
+  const field = row.editable && !row.widgetType && getFieldById(row.fieldId);
   if (!field) {
     return null;
   }
@@ -545,21 +539,9 @@ function getEdit(row) {
     : null;
 }
 
-// Whether the row is inside a contextual widget, below one of its fields
-// that is not a style
-function isOnPage(row) {
-  const at = row.path.findLastIndex(segment => segment.widgetType);
-  const type = row.path[at]?.widgetType;
-  if (!type || !apos.area.widgetIsContextual[type]) {
-    return false;
-  }
-  const { stylesFields = [] } = getWidgetModule(type) || {};
-  return !stylesFields.includes(row.path[at + 1]?.name);
-}
-
 // A widget modified whole or added, which its widget editor edits. Not a
-// contextual one, which is edited on the page, nor one whose editor would
-// show no field
+// contextual one, which its own editor edits in the entry, nor one whose
+// editor would show no field
 function isWidgetEditable(row) {
   return Boolean(row.editable) &&
     (row.kind === 'widget') &&
