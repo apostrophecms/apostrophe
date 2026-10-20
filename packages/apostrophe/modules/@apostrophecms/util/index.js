@@ -753,21 +753,43 @@ module.exports = {
       now() {
         return now();
       },
-      // Given a widget or doc, return the appropriate manager module. If the manager
-      // cannot be determined for any reason, undefined is returned.
+      // Given a doc, widget, array item or object, return the appropriate
+      // manager. If the manager cannot be determined, for instance because
+      // the type no longer exists, undefined is returned.
+      //
+      // Array items and objects must have been annotated with the _id of
+      // their field, which happens when docs are loaded or saved. See
+      // `apos.schema.annotateFieldIds`. An error is thrown if they were not.
+      //
+      // Pass `log: false` when walking content that may have no schema, such
+      // as the stored items of an array field that was since removed. Then
+      // nothing is logged or thrown, and undefined is returned for anything
+      // whose manager cannot be determined.
       getManagerOf(object, { log = true } = {}) {
         if (object.metaType === 'doc') {
           return self.apos.doc.getManager(object.type);
         } else if (object.metaType === 'widget') {
           return self.apos.area.getWidgetManager(object.type);
         } else if (object.metaType === 'arrayItem') {
-          return self.apos.schema.getArrayManager(object.scopedArrayName);
+          return self.apos.schema.getArrayManager(requireFieldId(object._arrayFieldId));
         } else if (object.metaType === 'object') {
-          return self.apos.schema.getObjectManager(object.scopedObjectName);
+          return self.apos.schema.getObjectManager(requireFieldId(object._objectFieldId));
         } else if (log) {
           self.apos.util.error(`Unsupported metaType in getManagerOf: ${object.metaType}`);
         }
         return undefined;
+
+        function requireFieldId(_id) {
+          if (!_id && log) {
+            throw new Error(
+              `This ${object.metaType} has no field id, so its schema cannot be determined.\n` +
+              'Array items and objects are annotated with one when the doc containing them\n' +
+              'is loaded or saved, or by apos.schema.annotateFieldIds(doc). Content read\n' +
+              'directly from the database must be annotated that way before rendering.'
+            );
+          }
+          return _id;
+        }
       },
       // fetch the value at the given path from the object or
       // array `o`. `path` supports dot notation like MongoDB, and

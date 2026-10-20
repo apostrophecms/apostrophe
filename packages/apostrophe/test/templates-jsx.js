@@ -362,7 +362,7 @@ describe('Templates: JSX', function() {
       sections: [
         {
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.jsx-field-test.sections',
+          _arrayFieldId: 'doc.jsx-field-test.sections',
           _id: 'jsx-field-section-1',
           _edit: edit,
           _docId: 'jsx-field-piece-1',
@@ -370,7 +370,7 @@ describe('Templates: JSX', function() {
         },
         {
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.jsx-field-test.sections',
+          _arrayFieldId: 'doc.jsx-field-test.sections',
           _id: 'jsx-field-section-2',
           _edit: edit,
           _docId: 'jsx-field-piece-1',
