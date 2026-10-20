@@ -59,7 +59,7 @@
     </p>
     <div class="apos-see-changes-confirm__controls">
       <AposButton
-        class="apos-see-changes-confirm__cancel"
+        class="apos-see-changes-confirm__quiet"
         type="quiet"
         label="apostrophe:cancel"
         :attrs="{ 'data-apos-test': 'see-changes-confirm-cancel' }"
@@ -67,7 +67,7 @@
       />
       <AposButton
         v-if="editable"
-        class="apos-see-changes-confirm__cancel"
+        class="apos-see-changes-confirm__quiet"
         type="quiet"
         label="apostrophe:edit"
         :attrs="{ 'data-apos-test': 'see-changes-confirm-edit' }"
@@ -139,7 +139,7 @@ const removes = computed(() => listed.value && (props.entry.row.type === 'added'
 
 const title = computed(() => {
   if (listed.value) {
-    // the long check version because i18n lint doesn't like dynamic keys
+    // Literal keys, which the i18n lint can find
     const widget = props.entry.row.kind === 'widget';
     if (removes.value) {
       return widget
@@ -290,7 +290,7 @@ $pad-x: $spacing-base + $spacing-half;
     border-top: 1px solid var(--a-base-8);
   }
 
-  &__cancel :deep(.apos-button) {
+  &__quiet :deep(.apos-button) {
     color: var(--a-base-2);
     font-size: var(--a-type-smaller);
   }

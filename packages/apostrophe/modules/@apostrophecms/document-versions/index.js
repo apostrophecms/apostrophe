@@ -1228,7 +1228,7 @@ module.exports = {
         }
         const draftReq = req.clone({ mode: 'draft' });
         const found = await self.getRestDocQuery(draftReq)
-          .and({ _id: id.replace(/:[\w]+$/, ':draft') })
+          .and({ _id: id.replace(/:\w+$/, ':draft') })
           .toObject();
         const manager = found && self.apos.doc.getManager(found.type);
         if (!manager || !self.hasDraftVersions(manager.options)) {

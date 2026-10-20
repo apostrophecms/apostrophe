@@ -423,10 +423,7 @@ export default {
       }
     },
     async editStyles({ widgetId, index }) {
-      if (this.readOnly) {
-        return;
-      }
-      if (this.foreign) {
+      if (this.readOnly || this.foreign) {
         return;
       }
       const widget = this.next.find(({ _id }) => _id === widgetId);

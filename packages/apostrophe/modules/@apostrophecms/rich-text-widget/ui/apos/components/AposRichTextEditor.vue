@@ -383,8 +383,9 @@ export default {
         }
       };
     },
-    // Attached elsewhere, the menus share the modals' layer: above the
-    // window they are in, under any modal opened later
+    // Attached elsewhere, the menus share the modals' layer
+    // (`$z-index-modal`): above the window they are in, under any modal
+    // opened later
     menusZIndex() {
       return this.aposMenusRoot ? 2000 : 999;
     },

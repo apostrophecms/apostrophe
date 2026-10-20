@@ -13,6 +13,7 @@
         v-if="path"
         class="apos-doc-version-changes__nav-label"
         :segments="path"
+        compact
         data-apos-test="doc-version-changes-nav-label"
       />
       <span
@@ -128,13 +129,18 @@ $pad-x: $spacing-base + $spacing-half;
     & {
       display: flex;
       flex-direction: column;
-      gap: 2px;
       min-width: 0;
+      line-height: var(--a-line-tall);
     }
   }
 
+  &__nav-label {
+    font-size: var(--a-type-large);
+    font-weight: 600;
+  }
+
   &__nav-position {
-    color: var(--a-base-2);
+    color: var(--a-base-1);
     font-size: var(--a-type-smaller);
   }
 
@@ -142,6 +148,24 @@ $pad-x: $spacing-base + $spacing-half;
     display: flex;
     flex-shrink: 0;
     gap: $spacing-half;
+  }
+
+  // Light on the bar; a disabled one fades into it
+  &__nav-buttons :deep(.apos-button) {
+    border-color: var(--a-base-8);
+    color: var(--a-base-1);
+    background-color: var(--a-background-primary);
+
+    &:hover:not([disabled]) {
+      color: var(--a-text-primary);
+      background-color: var(--a-base-10);
+    }
+
+    &[disabled] {
+      border-color: var(--a-base-9);
+      color: var(--a-base-6);
+      background-color: transparent;
+    }
   }
 }
 </style>

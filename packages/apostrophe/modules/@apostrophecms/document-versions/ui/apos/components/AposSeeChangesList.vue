@@ -202,17 +202,7 @@
 
 <script setup>
 // The changes of the draft since its last publication, a group per field
-// or widget, the group changed most recently first. Each entry names who
-// changed it and how long ago, and its detail compares the value with the
-// published one, or with the default when the document was never published.
-// The navigator at the bottom steps through the groups; a click on a group
-// header goes to that one, and so do the first toggle of an entry in a group
-// the navigator is not at, a click on an entry with nothing to expand and
-// Edit. An entry that can be restored asks first, then leaves the list once
-// the restore is saved. An entry that can be edited opens its field's editor
-// in place of its detail, a rich text widget's content its rich text editor
-// as on the page; a whole widget opens its widget editor, as on the page.
-// The list follows an edited group to the top.
+// or widget, the group changed most recently first.
 // The list scrolls on its own and is no tab stop, which Firefox makes of a
 // scroll container: its buttons are the stops, and the arrow keys scroll it
 import {
@@ -356,13 +346,6 @@ function getHeaderHeight(group) {
   return getGroupEl(group.key)?.firstElementChild?.offsetHeight || 0;
 }
 
-function scrollBy(top) {
-  list.value?.scrollBy({
-    top,
-    behavior: scroll.getScrollBehavior()
-  });
-}
-
 // The group's header at the top, as a navigator step leaves it, when the
 // entry `el` fits below it with what it shows open; else the entry right
 // under the header, so it reads from its start with its group named
@@ -376,7 +359,10 @@ function place(group, el) {
   if (rect.bottom - section.getBoundingClientRect().top <= box.height) {
     scrollToGroup(group);
   } else {
-    scrollBy(rect.top - box.top - getHeaderHeight(group));
+    list.value.scrollBy({
+      top: rect.top - box.top - getHeaderHeight(group),
+      behavior: scroll.getScrollBehavior()
+    });
   }
 }
 
@@ -461,9 +447,9 @@ function focusAction(key, options) {
 // The control that stands for an entry while its actions wait for the list
 // to reload: its toggle, or its group's header when it has nothing to expand
 function getEntryControl(el) {
-  return el.querySelector('[data-apos-test="doc-version-change-toggle"]') ||
-    el.closest('[data-apos-test="see-changes-group"]')
-      ?.querySelector('[data-apos-test="doc-version-change-group-select"]');
+  return el.querySelector(':scope > button[aria-controls]') ||
+    el.closest('.apos-see-changes-list__group')
+      ?.querySelector('.apos-doc-version-changes__group-title');
 }
 
 // Where focus goes when the entry `id` leaves the list: to the entry after
@@ -629,11 +615,8 @@ function isWidgetEditable(row) {
     [ 'modified', 'added' ].includes(row.type) &&
     !apos.area.widgetIsContextual[row.widgetType] &&
     Boolean(apos.area.components.widgetEditors[row.widgetType]) &&
-    (getWidgetModule(row.widgetType)?.schema || []).some(field => !field.hidden);
-}
-
-function getWidgetModule(type) {
-  return apos.modules[apos.area.widgetManagers[type]];
+    (apos.modules[apos.area.widgetManagers[row.widgetType]]?.schema || [])
+      .some(field => !field.hidden);
 }
 
 function isEditable(row) {
@@ -856,9 +839,7 @@ async function reveal(target) {
   // An entry with nothing to expand has no button: its group's header then
   const button = list.value?.querySelector(
     `[aria-controls="${CSS.escape(`${baseId}-${entry.key}`)}"]`
-  ) || getGroupEl(group.key)?.querySelector(
-    '[data-apos-test="doc-version-change-group-select"]'
-  );
+  ) || getGroupEl(group.key)?.querySelector('.apos-doc-version-changes__group-title');
   if (button) {
     place(group, getEntryEl(idOf(entry.row)));
     button.focus({ preventScroll: true });

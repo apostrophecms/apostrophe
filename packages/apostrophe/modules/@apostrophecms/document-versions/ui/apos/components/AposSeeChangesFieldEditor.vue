@@ -54,7 +54,7 @@
     </p>
     <div class="apos-see-changes-editor__controls">
       <AposButton
-        class="apos-see-changes-editor__cancel"
+        class="apos-see-changes-editor__quiet"
         type="quiet"
         label="apostrophe:cancel"
         :attrs="{ 'data-apos-test': 'see-changes-editor-cancel' }"
@@ -173,22 +173,17 @@ onMounted(async () => {
     emit('cancel');
     return;
   }
+  // The widget as it is, else as `AposSchema` takes it
   value.value = {
-    data: getData(),
+    data: props.widgetType
+      ? klona(original)
+      : { [props.field.name]: klona(original) },
     hasErrors: false
   };
   await nextTick();
   emit('ready');
   focus();
 });
-
-// The widget as it is, else as `AposSchema` takes it
-function getData() {
-  if (props.widgetType) {
-    return klona(original);
-  }
-  return { [props.field.name]: klona(original) };
-}
 
 // The input when it is there, the editor while the draft loads, unless the
 // input took focus itself. Whoever shows the editor scrolls to it
@@ -209,7 +204,8 @@ async function save() {
   if (value.value.hasErrors) {
     return;
   }
-  const edited = getEdited();
+  const { data } = value.value;
+  const edited = props.widgetType ? data : data[props.field.name];
   if (JSON.stringify(edited) === JSON.stringify(original)) {
     emit('cancel');
     return;
@@ -220,11 +216,6 @@ async function save() {
     inverse: { [patchKey]: original },
     patchKey
   });
-}
-
-function getEdited() {
-  const { data } = value.value;
-  return props.widgetType ? data : data[props.field.name];
 }
 
 defineExpose({
@@ -284,7 +275,7 @@ $pad-x: $spacing-base + $spacing-half;
     border-top: 1px solid var(--a-base-8);
   }
 
-  &__cancel :deep(.apos-button) {
+  &__quiet :deep(.apos-button) {
     color: var(--a-base-2);
     font-size: var(--a-type-smaller);
   }
