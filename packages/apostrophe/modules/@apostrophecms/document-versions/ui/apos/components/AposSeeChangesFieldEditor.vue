@@ -4,7 +4,7 @@
     class="apos-see-changes-editor"
     role="group"
     tabindex="-1"
-    :aria-label="$t(field.label || field.name)"
+    :aria-label="$t(label)"
     data-apos-test="see-changes-editor"
     @keyup.esc.stop="$emit('cancel')"
   >
@@ -16,6 +16,21 @@
         v-if="!value"
         class="apos-see-changes-editor__loading"
       />
+      <div
+        v-else-if="widgetType"
+        class="apos-see-changes-editor__rich-text"
+      >
+        <!--
+          No `doc-id`: with the page's, the editor would tell the context bar
+          the page is being typed in, and the window saves only on its button
+        -->
+        <AposRichTextEditor
+          :model-value="value.data"
+          :options="widgetOptions"
+          :module-options="widgetModule"
+          @update:model-value="value.data = $event"
+        />
+      </div>
       <AposSchema
         v-else
         :schema="schema"
@@ -63,7 +78,8 @@
 // another evaluated as the array editor does; a condition on a field outside
 // the item has no value to read here and is not met. `save` carries the patch
 // that sets the edited value and its inverse; an unchanged value closes it
-// as Cancel and Escape do
+// as Cancel and Escape do. A rich text widget's content is edited by its
+// rich text editor, configured as the widget's own on the page
 import {
   computed, inject, nextTick, onMounted, ref
 } from 'vue';
@@ -79,7 +95,17 @@ const props = defineProps({
   // The schema field the value is of: for an array item, the array
   field: {
     type: Object,
-    required: true
+    default: null
+  },
+  // In place of `field`, the type of the rich text widget whose content the
+  // value is, and the options its area gives it
+  widgetType: {
+    type: String,
+    default: null
+  },
+  widgetOptions: {
+    type: Object,
+    default: () => ({})
   },
   // Where a PATCH of the draft sets the value
   patchKey: {
@@ -119,6 +145,12 @@ const triggerValidation = ref(false);
 const externalConditions = ref(getConditionTypesObject());
 let original;
 
+const widgetModule = computed(() => props.widgetType &&
+  apos.modules[apos.area.widgetManagers[props.widgetType]]);
+const label = computed(() => (props.field
+  ? (props.field.label || props.field.name)
+  : widgetModule.value?.label));
+
 const schema = computed(() => (props.item
   ? props.field.schema
   : [ {
@@ -154,12 +186,20 @@ onMounted(async () => {
     return;
   }
   value.value = {
-    data: props.item ? klona(original) : { [props.field.name]: klona(original) },
+    data: getData(),
     hasErrors: false
   };
   await nextTick();
   focus();
 });
+
+// The markup alone for a rich text widget, else as `AposSchema` takes it
+function getData() {
+  if (props.widgetType) {
+    return original || '';
+  }
+  return props.item ? klona(original) : { [props.field.name]: klona(original) };
+}
 
 // The input when it is there, the editor while the draft loads
 function focus() {
@@ -176,12 +216,7 @@ async function save() {
   if (value.value.hasErrors) {
     return;
   }
-  const edited = props.item
-    ? {
-      ...original,
-      ...value.value.data
-    }
-    : value.value.data[props.field.name];
+  const edited = getEdited();
   if (JSON.stringify(edited) === JSON.stringify(original)) {
     emit('cancel');
     return;
@@ -192,6 +227,19 @@ async function save() {
     inverse: { [patchKey]: original },
     patchKey
   });
+}
+
+function getEdited() {
+  const { data } = value.value;
+  if (props.widgetType) {
+    return data;
+  }
+  return props.item
+    ? {
+      ...original,
+      ...data
+    }
+    : data[props.field.name];
 }
 
 defineExpose({
@@ -217,6 +265,18 @@ $pad-x: $spacing-base + $spacing-half;
 
   &__field {
     padding: $spacing-base;
+  }
+
+  // Boxed as a rich text field is
+  &__rich-text {
+    padding: 0 $spacing-base;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
+    background-color: var(--a-background-primary);
+
+    &:focus-within {
+      border-color: var(--a-base-2);
+    }
   }
 
   &__loading {

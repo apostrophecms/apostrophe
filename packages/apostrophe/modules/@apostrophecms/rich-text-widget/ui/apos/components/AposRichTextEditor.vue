@@ -32,6 +32,7 @@
           <div
             ref="toolbar"
             class="apos-rich-text-toolbar__inner"
+            data-apos-test="rich-text-toolbar"
           >
             <component
               :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"

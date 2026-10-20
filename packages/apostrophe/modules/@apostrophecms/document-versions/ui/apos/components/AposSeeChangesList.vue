@@ -207,7 +207,8 @@
 // header goes to that one, and so does the first toggle of an entry in a
 // group the navigator is not at. An entry that can be restored asks first,
 // then leaves the list once the restore is saved. An entry that can be
-// edited opens its field's editor in place of its detail; a whole widget
+// edited opens its field's editor in place of its detail, a rich text
+// widget's content its rich text editor as on the page; a whole widget
 // opens its widget editor, as on the page.
 // The list scrolls on its own and is no tab stop, which Firefox makes of a
 // scroll container: its buttons are the stops, and the arrow keys scroll it
@@ -503,10 +504,18 @@ function save(row, {
 
 // What an entry's editor shows, `{ field, patchKey, item }`: a field's
 // value; an added array item as its fields (`item`); the whole array for
-// its order or a deleted item. Not a whole widget nor a rich text widget's
-// content, nor a field of a contextual widget other than its styles, since
-// that widget is edited on the page. `null` when the entry has no editor
+// its order or a deleted item. A rich text widget's content instead, as
+// `{ widgetType, widgetOptions, patchKey }`. Not a whole widget, nor a
+// field of a contextual widget other than its styles, since that widget is
+// edited on the page. `null` when the entry has no editor
 function getEdit(row) {
+  if (row.editable && row.widgetType && (row.kind === 'richText')) {
+    return {
+      widgetType: row.widgetType,
+      widgetOptions: row.widgetOptions,
+      patchKey: row.patchKey
+    };
+  }
   const field = row.editable && !row.widgetType && !isOnPage(row) &&
     getFieldById(row.fieldId);
   if (!field) {
@@ -544,18 +553,24 @@ function isOnPage(row) {
   if (!type || !apos.area.widgetIsContextual[type]) {
     return false;
   }
-  const { stylesFields = [] } = apos.modules[apos.area.widgetManagers[type]] || {};
+  const { stylesFields = [] } = getWidgetModule(type) || {};
   return !stylesFields.includes(row.path[at + 1]?.name);
 }
 
 // A widget modified whole or added, which its widget editor edits. Not a
-// contextual one, rich text among them, which is edited on the page
+// contextual one, which is edited on the page, nor one whose editor would
+// show no field
 function isWidgetEditable(row) {
   return Boolean(row.editable) &&
     (row.kind === 'widget') &&
     [ 'modified', 'added' ].includes(row.type) &&
     !apos.area.widgetIsContextual[row.widgetType] &&
-    Boolean(apos.area.components.widgetEditors[row.widgetType]);
+    Boolean(apos.area.components.widgetEditors[row.widgetType]) &&
+    (getWidgetModule(row.widgetType)?.schema || []).some(field => !field.hidden);
+}
+
+function getWidgetModule(type) {
+  return apos.modules[apos.area.widgetManagers[type]];
 }
 
 function isEditable(row) {
@@ -578,9 +593,14 @@ async function openEditor(entry) {
   if (entry.detail) {
     expanded.add(id);
   }
-  const { field, item } = getEdit(entry.row);
-  const fields = item ? field.schema : [ field ];
-  if (fields.some(({ type, inline }) => [ 'richText', 'area' ].includes(type) || inline)) {
+  const {
+    field, item, widgetType
+  } = getEdit(entry.row);
+  const fields = widgetType ? [] : (item ? field.schema : [ field ]);
+  if (
+    widgetType ||
+    fields.some(({ type, inline }) => [ 'richText', 'area' ].includes(type) || inline)
+  ) {
     emit('widen');
   }
   confirming.value = null;
