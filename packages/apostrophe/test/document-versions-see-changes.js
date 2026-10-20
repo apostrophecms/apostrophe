@@ -950,6 +950,7 @@ describe('Document Versions draft changes', function () {
       await apos.page.publish(req, page);
       await wait(5);
       page.main.items = page.main.items.filter(widget => widget._id !== 'deleted');
+      page.main.items[0].content = '<p>The kept paragraph, edited.</p>';
       page.title = 'Page in See Changes, edited';
       await saveAs(apos.page, req, page);
     });
@@ -966,22 +967,74 @@ describe('Document Versions draft changes', function () {
     it('should show the draft marked with its changes, deleted widgets back in place', async function () {
       const shown = await beforeSend({
         aposEdit: '1',
-        aposSeeChanges: '1'
+        aposSeeChanges: '1',
+        aposRefresh: '1'
       });
 
       assert.deepEqual(shown.main.items.map(widget => widget._id), [ 'kept', 'deleted' ]);
       assert.equal(shown.main.items[1]._deleted, true);
+      assert.match(shown.main.items[0].content, /data-apos-version-change="added"/);
       assert.equal(shown.main._edit, true);
       assert.equal(shown.title, 'Page in See Changes, edited');
       assert.equal(typeof shown._url, 'string');
     });
 
-    it('should show the draft as it is without edit mode or the flag', async function () {
-      for (const query of [ { aposSeeChanges: '1' }, { aposEdit: '1' } ]) {
+    it('should show the draft as it is on a full page load, without edit mode or the flag', async function () {
+      for (const query of [
+        {
+          aposEdit: '1',
+          aposSeeChanges: '1'
+        },
+        {
+          aposSeeChanges: '1',
+          aposRefresh: '1'
+        },
+        {
+          aposEdit: '1',
+          aposRefresh: '1'
+        }
+      ]) {
         const shown = await beforeSend(query);
 
         assert.deepEqual(shown.main.items.map(widget => widget._id), [ 'kept' ]);
+        assert.equal(shown.main.items[0].content, '<p>The kept paragraph, edited.</p>');
       }
+    });
+
+    it('should leave the stored draft and what is loaded after it as they are', async function () {
+      const stored = () => apos.doc.db.findOne({ _id: page._id });
+      const before = await stored();
+
+      await beforeSend({
+        aposEdit: '1',
+        aposSeeChanges: '1',
+        aposRefresh: '1'
+      });
+
+      assert.deepEqual(await stored(), before);
+      const found = await apos.page.find(draftReq(), { _id: page._id }).toObject();
+      assert.deepEqual(found.main.items.map(widget => widget._id), [ 'kept' ]);
+      assert.equal(found.main.items[0].content, '<p>The kept paragraph, edited.</p>');
+      assert.equal(found.main.items[0]._olderVersion, undefined);
+      assert.equal(found.aposMeta?.title?.['@apostrophecms/schema:highlight'], undefined);
+    });
+
+    it('should leave the flag out of the URL templates build links from', async function () {
+      const req = draftReq();
+      req.url = `${page._url.replace(/^https?:\/\/[^/]+/, '')}?page=2&aposSeeChanges=1&aposRefresh=1`;
+      req.query = {
+        page: '2',
+        aposSeeChanges: '1',
+        aposRefresh: '1'
+      };
+      const html = await apos.template.renderPageForModule(
+        req,
+        'url',
+        {},
+        apos.modules['default-page']
+      );
+
+      assert.match(html, /data-url="[^"]*\?page=2"/);
     });
   });
 

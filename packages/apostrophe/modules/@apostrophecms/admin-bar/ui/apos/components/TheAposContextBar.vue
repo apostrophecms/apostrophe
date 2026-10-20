@@ -530,7 +530,9 @@ export default {
           await this.unlock();
         }
       }
-      // The refresh or navigation below shows the page without the mode
+      // The refresh or navigation below shows the page without the mode,
+      // or, when the switch fails, the refresh after it
+      const leftSeeChanges = this.seeChanges;
       await this.leaveSeeChanges({ refresh: false });
       try {
         // Returns the doc as represented in the new locale and mode
@@ -551,6 +553,9 @@ export default {
               locale
             }
           });
+          if (leftSeeChanges) {
+            await this.refresh();
+          }
           return;
         }
         window.sessionStorage.setItem('aposStateChange', Date.now());
@@ -600,6 +605,9 @@ export default {
             heading: 'apostrophe:error',
             description: 'apostrophe:unableToSwitchModes'
           });
+        }
+        if (leftSeeChanges) {
+          await this.refresh();
         }
       }
       this.rememberLastBaseContext();
@@ -868,9 +876,18 @@ export default {
         return;
       }
 
+      // Only the mode asks for the page marked with its changes, never the
+      // address bar, where a link followed in the mode can carry it
+      const params = new URLSearchParams(window.location.search);
+      let search = window.location.search;
+      if (params.has('aposSeeChanges')) {
+        params.delete('aposSeeChanges');
+        search = params.size ? `?${params}` : '';
+      }
+
       if (this.urlDiffers(doc._url)) {
         // Slug changed, change browser URL to reflect the actual url of the doc
-        doc._url = doc._url + (window.location.search || '');
+        doc._url = doc._url + search;
         history.replaceState(null, '', doc._url);
       } else {
         // No genuine slug change, e.g. the current path is just the
@@ -880,7 +897,7 @@ export default {
         // bare doc._url, otherwise any filter path segments and query
         // string driving the current view would be lost and we'd render
         // the unfiltered index instead.
-        doc._url = window.location.pathname + window.location.search;
+        doc._url = window.location.pathname + search;
       }
 
       // Versions module, awaited here so the markers exist before the areas mount
@@ -889,7 +906,7 @@ export default {
       }
 
       const qs = {
-        ...apos.http.parseQuery(window.location.search),
+        ...apos.http.parseQuery(search),
         aposRefresh: '1',
         aposMode: this.draftMode,
         ...(this.editMode

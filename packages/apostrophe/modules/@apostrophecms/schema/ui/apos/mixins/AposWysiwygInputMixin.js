@@ -180,9 +180,10 @@ export default {
     // The context bar is undoing or redoing an edit. If it is one of ours,
     // show the value it put back. The server hears about it from the context
     // bar, but the area editors holding a copy of our widget hear it from us,
-    // just as they do when the user types
+    // just as they do when the user types. A read only view leaves it to a
+    // render of the whole page, as the area editor does
     contextHistoryApplyHandler(event) {
-      if (!this.onPage || !Object.hasOwn(event.patch, this.patchKey)) {
+      if (this.readOnly || !this.onPage || !Object.hasOwn(event.patch, this.patchKey)) {
         return;
       }
       if (this.pending) {
