@@ -522,7 +522,7 @@ describe('External Front', function() {
     doc.sections = [
       {
         metaType: 'arrayItem',
-        scopedArrayName: 'doc.product.sections',
+        _arrayFieldId: 'doc.product.sections',
         _id: 'section1',
         caption: 'The first caption'
       }

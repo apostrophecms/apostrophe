@@ -660,6 +660,7 @@ module.exports = {
         async function unpackVersion(version) {
           if (version.doc !== undefined) {
             version.doc = await self.unpack(version.doc);
+            self.apos.schema.annotateFieldIds(version.doc);
           }
           return version;
         }
