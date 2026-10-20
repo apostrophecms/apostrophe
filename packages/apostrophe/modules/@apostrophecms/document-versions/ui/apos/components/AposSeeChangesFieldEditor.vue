@@ -38,7 +38,7 @@
         :schema="schema"
         :model-value="value"
         :doc-id="docId"
-        :conditional-fields="conditionalFields"
+        :display-options="displayOptions"
         :trigger-validation="triggerValidation"
         :modifiers="[ 'micro', 'margin-none' ]"
         @update:model-value="value = $event"
@@ -76,25 +76,18 @@
 <script setup>
 // One field of the draft, edited on its own: its editor shows the value the
 // draft has now, without its label, conditions or the rest of the document.
-// An array item is edited as its fields, labelled, their conditions on one
-// another evaluated as the array editor does; a condition on a field outside
-// the item has no value to read here and is not met. `save` carries the patch
+// An array can be opened on one of its items. `save` carries the patch
 // that sets the edited value and its inverse; an unchanged value closes it
 // as Cancel and Escape do. A contextual widget is edited whole by its own
 // editor, as on the page
 import {
-  computed, inject, nextTick, onMounted, provide, ref
+  computed, nextTick, onMounted, provide, ref
 } from 'vue';
 import { klona } from 'klona';
-import {
-  evaluateExternalConditions,
-  getConditionalFields,
-  getConditionTypesObject
-} from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 import draftValue from '../lib/draft-value.js';
 
 const props = defineProps({
-  // The schema field the value is of: for an array item, the array
+  // The schema field the value is of
   field: {
     type: Object,
     default: null
@@ -114,10 +107,10 @@ const props = defineProps({
     type: String,
     required: true
   },
-  // Whether the value is an array item, edited as its fields
-  item: {
-    type: Boolean,
-    default: false
+  // The `_id` of the item an array opens on
+  activeItem: {
+    type: String,
+    default: null
   },
   // The draft's `_id`
   docId: {
@@ -138,7 +131,6 @@ const props = defineProps({
 
 // `ready` once the value shows
 const emit = defineEmits([ 'ready', 'cancel', 'save' ]);
-const $t = inject('i18n');
 
 // The draft's `docId` serves the fields' data, but nothing here edits the
 // page in context: the value is saved by Update Draft only
@@ -149,7 +141,6 @@ const input = ref(null);
 // `{ data, hasErrors }` as `AposSchema` emits it, once the draft is loaded
 const value = ref(null);
 const triggerValidation = ref(false);
-const externalConditions = ref(getConditionTypesObject());
 let original;
 
 const widgetModule = computed(() => props.widgetType &&
@@ -160,30 +151,18 @@ const label = computed(() => (props.field
   ? (props.field.label || props.field.name)
   : widgetModule.value?.label));
 
-const schema = computed(() => (props.item
-  ? props.field.schema
-  : [ {
-    ...props.field,
-    hideLabel: true
-  } ]));
+const schema = computed(() => [ {
+  ...props.field,
+  hideLabel: true
+} ]);
 
-// Read from the item as a save stores it: a field its conditions hide keeps
-// its value
-const conditionalFields = computed(() => (props.item && value.value
-  ? getConditionalFields(schema.value, {
-    ...original,
-    ...value.value.data
-  }, externalConditions.value)
-  : getConditionTypesObject()));
+const displayOptions = computed(() => (props.activeItem
+  ? { activeItem: props.activeItem }
+  : {}));
 
 onMounted(async () => {
   try {
-    [ original, externalConditions.value ] = await Promise.all([
-      draftValue.load(props.docId, props.patchKey),
-      props.item
-        ? evaluateExternalConditions(schema.value, props.docId, $t)
-        : externalConditions.value
-    ]);
+    original = await draftValue.load(props.docId, props.patchKey);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error(error);
@@ -208,12 +187,15 @@ function getData() {
   if (props.widgetType) {
     return klona(original);
   }
-  return props.item ? klona(original) : { [props.field.name]: klona(original) };
+  return { [props.field.name]: klona(original) };
 }
 
-// The input when it is there, the editor while the draft loads. Whoever
-// shows the editor scrolls to it
+// The input when it is there, the editor while the draft loads, unless the
+// input took focus itself. Whoever shows the editor scrolls to it
 function focus() {
+  if (input.value?.contains(document.activeElement)) {
+    return;
+  }
   const el = input.value?.querySelector(
     'input:not([type="hidden"]), textarea, select, [contenteditable="true"], button'
   );
@@ -242,15 +224,7 @@ async function save() {
 
 function getEdited() {
   const { data } = value.value;
-  if (props.widgetType) {
-    return data;
-  }
-  return props.item
-    ? {
-      ...original,
-      ...data
-    }
-    : data[props.field.name];
+  return props.widgetType ? data : data[props.field.name];
 }
 
 defineExpose({

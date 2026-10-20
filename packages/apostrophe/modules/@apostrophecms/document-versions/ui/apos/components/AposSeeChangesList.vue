@@ -560,11 +560,11 @@ function save(row, {
 
 // --- Edit ---
 
-// What an entry's editor shows, `{ field, patchKey, item }`: a field's
-// value; an added array item as its fields (`item`); the whole array for
-// its order or a deleted item. What a contextual widget's own editor edits
-// on the page, that widget, as `{ widgetType, widgetOptions, patchKey }`.
-// Not a whole widget otherwise. `null` when the entry has no editor
+// What an entry's editor shows, `{ field, patchKey, activeItem }`: a field's
+// value; the whole array for its order, a deleted item or an added one, which
+// it opens on (`activeItem`). What a contextual widget's own editor edits on
+// the page, that widget, as `{ widgetType, widgetOptions, patchKey }`. Not a
+// whole widget otherwise. `null` when the entry has no editor
 function getEdit(row) {
   if (row.editable && row.contextual) {
     return { ...row.contextual };
@@ -579,22 +579,18 @@ function getEdit(row) {
       patchKey: row.patchKey
     };
   }
-  if ((row.kind === 'arrayItem') && (row.type === 'added')) {
-    return {
-      field,
-      patchKey: row.patchKey,
-      item: true
-    };
-  }
-  const array = ((row.kind === 'arrayItem') && (row.type === 'deleted'))
+  const isItem = (row.kind === 'arrayItem') && [ 'added', 'deleted' ].includes(row.type);
+  const array = isItem
     ? row.listKey
     : (row.kind === 'array') && row.patchKey;
-  return array
-    ? {
-      field,
-      patchKey: array
-    }
-    : null;
+  if (!array) {
+    return null;
+  }
+  return {
+    field,
+    patchKey: array,
+    ...(isItem && (row.type === 'added') && { activeItem: row.path.at(-1).name })
+  };
 }
 
 // A widget modified whole or added, which its widget editor edits. Not a
@@ -634,14 +630,8 @@ async function openEditor(entry) {
   if (entry.detail) {
     expanded.add(id);
   }
-  const {
-    field, item, widgetType
-  } = getEdit(entry.row);
-  const fields = widgetType ? [] : (item ? field.schema : [ field ]);
-  if (
-    widgetType ||
-    fields.some(({ type, inline }) => [ 'richText', 'area' ].includes(type) || inline)
-  ) {
+  const { field, widgetType } = getEdit(entry.row);
+  if (widgetType || [ 'richText', 'area' ].includes(field.type) || field.inline) {
     emit('widen');
   }
   confirming.value = null;
@@ -651,9 +641,10 @@ async function openEditor(entry) {
   editor.value?.focus();
 }
 
-// Once its value is in, the editor shows with the least scroll. Its content
-// can still grow as it renders, so it is kept in view until the user scrolls,
-// clicks or types, or it closes
+// Once its value is in, the editor shows with the least scroll, and with it
+// a control its input focused far below its start, such as the item an array
+// opens on. Its content can still grow as it renders, so it is kept in view
+// until the user scrolls, clicks or types, or it closes
 function showEditor(group, entry) {
   stopShowingEditor();
   const el = getEntryEl(idOf(entry.row));
@@ -670,9 +661,14 @@ function showEditor(group, entry) {
       return;
     }
     const entryRect = el.getBoundingClientRect();
-    const by = (entryRect.top < top) || (entryRect.height > box.bottom - top)
+    let by = (entryRect.top < top) || (entryRect.height > box.bottom - top)
       ? entryRect.top - top
       : rect.bottom - box.bottom;
+    const focused = editorEl.contains(document.activeElement) &&
+      document.activeElement.getBoundingClientRect();
+    if (focused && ((focused.top - by < top) || (focused.top - by >= box.bottom))) {
+      by = Math.min(focused.top - top, Math.max(focused.bottom - box.bottom, 0));
+    }
     // Measured where the list is now, so a scroll under way is not counted twice
     scroller.scrollTo({
       top: scroller.scrollTop + by,
