@@ -2542,13 +2542,11 @@ describe('Schemas', function() {
         {
           _id: 'clt79llm800242061v4dx9kv5',
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.article.array',
           arrayTitle: 'array title 1'
         },
         {
           _id: 'clt79llm800242061v4d47364',
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.article.array',
           arrayTitle: 'array title 2'
         }
       ]
@@ -2580,13 +2578,11 @@ describe('Schemas', function() {
         {
           _id: 'clt79llm800242061v4dx9kv5',
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.article.array',
           arrayTitle: 'array title 1 changed'
         },
         {
           _id: 'clt79llm800242061v4d47364',
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.article.array',
           arrayTitle: 'array title 2'
         }
       ]
@@ -2626,7 +2622,6 @@ describe('Schemas', function() {
         {
           _id: 'hy56r2znrs427m47e15yesfb',
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.topic.array',
           arrayRelIds: [ 'nkr88dg4lds8noal9l4vrcgv' ],
           arrayRelFields: { nkr88dg4lds8noal9l4vrcgv: {} }
         }
@@ -2634,7 +2629,6 @@ describe('Schemas', function() {
       object: {
         _id: 'tfpq5v6lwlwomuampavh6zi8',
         metaType: 'object',
-        scopedObjectName: 'doc.topic.object',
         objectRelIds: [ 'nkr88dg4lds8noal9l4vrcgv', 'az82H8dg4lds8noal9l4vazd' ],
         objectRelFields: {
           nkr88dg4lds8noal9l4vrcgv: {},
@@ -2761,7 +2755,6 @@ describe('Schemas', function() {
         {
           _id: 'hy56r2znrs427m47e15yesfb',
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.topic.array',
           arrayRelIds: [ 'nkr88dg4lds8noal9l4vrcgv' ],
           arrayRelFields: { nkr88dg4lds8noal9l4vrcgv: {} }
         }
@@ -2769,7 +2762,6 @@ describe('Schemas', function() {
       object: {
         _id: 'tfpq5v6lwlwomuampavh6zi8',
         metaType: 'object',
-        scopedObjectName: 'doc.topic.object',
         objectRelIds: [ 'nkr88dg4lds8noal9l4vrcgv', 'az82H8dg4lds8noal9l4vazd' ],
         objectRelFields: {
           nkr88dg4lds8noal9l4vrcgv: {},
@@ -3471,14 +3463,14 @@ describe('Schemas', function() {
             metaType: 'arrayItem',
             moon: 'Io',
             planet: 'Jupiter',
-            scopedArrayName: undefined
+            _arrayFieldId: undefined
           },
           {
             _id: 'Mars-Phobos',
             metaType: 'arrayItem',
             moon: 'Phobos',
             planet: 'Mars',
-            scopedArrayName: undefined
+            _arrayFieldId: undefined
           }
         ],
         object: {
@@ -3486,7 +3478,7 @@ describe('Schemas', function() {
           metaType: 'objectItem',
           moon: 'Triton',
           planet: 'Neptune',
-          scopedObjectName: undefined
+          _objectFieldId: undefined
         },
         pageId: [ home._id ],
         pageFields: {
@@ -5644,13 +5636,13 @@ describe('Schemas', function() {
               {
                 _id: 'tutu',
                 metaType: 'arrayItem',
-                scopedArrayName: undefined,
+                _arrayFieldId: undefined,
                 objectArrayString: ''
               }
             ],
             showObjectArray: false,
             metaType: 'objectItem',
-            scopedObjectName: undefined
+            _objectFieldId: undefined
           },
           showObject: true
         }
@@ -5775,20 +5767,20 @@ describe('Schemas', function() {
             {
               _id: 'root_id',
               metaType: 'arrayItem',
-              scopedArrayName: undefined,
+              _arrayFieldId: undefined,
               rootString: 'toto',
               rootArray: [
                 {
                   _id: 'root_array_id',
                   metaType: 'arrayItem',
-                  scopedArrayName: undefined,
+                  _arrayFieldId: undefined,
                   rootArrayString: 'Item 1',
                   showRootArrayString: true
                 },
                 {
                   _id: 'root_array_id2',
                   metaType: 'arrayItem',
-                  scopedArrayName: undefined,
+                  _arrayFieldId: undefined,
                   rootArrayString: '',
                   showRootArrayString: false
                 }
