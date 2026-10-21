@@ -66,12 +66,16 @@
       </ol>
     </div>
     <!--
-      A read only view shows what the page rendered, with no trail and no
-      editor
+      A read only view shows the change of the field when it has one, else
+      what the page rendered, with no trail and no editor
     -->
+    <AposDocVersionFieldChange
+      v-if="change"
+      :change="change"
+    />
     <!-- eslint-disable vue/no-v-html -->
     <div
-      v-if="aposReadOnly"
+      v-else-if="aposReadOnly"
       class="apos-wysiwyg-field__rendering"
       data-apos-test="wysiwyg-field-rendering"
       v-html="rendering"
@@ -110,9 +114,11 @@
 // Everything else is the business of the editor named by `component`, which
 // is handed the same props this component was.
 
+import { unref } from 'vue';
 import { mapState, mapActions } from 'pinia';
 import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 import { wysiwygProps } from 'Modules/@apostrophecms/schema/mixins/AposWysiwygInputMixin';
 
 // Enough to tell one field on the page from another. There is no id to hand
@@ -123,6 +129,10 @@ let next = 0;
 export default {
   name: 'AposWysiwygField',
   inject: {
+    aposGraphKey: {
+      from: 'aposGraphKey',
+      default: null
+    },
     aposReadOnly: {
       from: 'aposReadOnly',
       default: false
@@ -173,6 +183,20 @@ export default {
     ...mapState(useWidgetStore, [ 'labeled', 'hoveredField', 'focusedField' ]),
     readOnly() {
       return !!(this.aposReadOnly || this.field.readOnly);
+    },
+    // In a read only view, the change of this field that the view shows, by
+    // its patch key: the words of a string, the marked markup of rich text.
+    // `null` when it has none, or none that can be shown in place
+    change() {
+      if (!this.aposReadOnly || !this.patchKey) {
+        return null;
+      }
+      const row = useDocVersionMarkersStore()
+        .getField(unref(this.aposGraphKey), this.patchKey);
+      if (row?.kind === 'richText') {
+        return (typeof row.markedHtml === 'string') ? row : null;
+      }
+      return row?.diff?.length ? row : null;
     },
     isHovered() {
       return this.hoveredField === this.id;

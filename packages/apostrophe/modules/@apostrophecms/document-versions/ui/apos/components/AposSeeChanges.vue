@@ -61,7 +61,7 @@
 
 <script setup>
 import {
-  computed, onBeforeUnmount, onMounted, ref, watch
+  computed, onBeforeUnmount, onMounted, provide, ref, watch
 } from 'vue';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
 import changeGroups from '../lib/change-groups.js';
@@ -87,6 +87,10 @@ const widgetStore = useWidgetStore();
 
 // The checked filter options, kept when the changes reload
 const filter = ref([]);
+
+// The list clips what it scrolls: an editor's menus attach to the window
+// itself, outside of it
+provide('aposMenusRoot', () => modalEl.value.$el);
 
 const rows = computed(() => store.payload?.rows || []);
 const shown = computed(() => rows.value

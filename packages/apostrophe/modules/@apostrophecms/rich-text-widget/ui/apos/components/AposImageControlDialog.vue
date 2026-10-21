@@ -2,6 +2,7 @@
   <div
     class="apos-popover apos-image-control__dialog"
     :class="{ 'apos-has-selection': hasSelection }"
+    data-apos-test="rich-text-image-dialog"
     tabindex="0"
     @keyup.esc="onKeyup"
     @keyup.enter="onKeyup"

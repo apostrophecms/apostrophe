@@ -239,6 +239,5 @@ function getChangeEntry(row, { key, depth }) {
 export default {
   matchesFilter,
   isMarkerTarget,
-  getChangeGroups,
-  getChangeEntry
+  getChangeGroups
 };

@@ -42,7 +42,8 @@ describe('Document Versions draft changes', function () {
                 type: 'array',
                 fields: {
                   add: {
-                    label: { type: 'string' }
+                    label: { type: 'string' },
+                    text: { type: 'richText' }
                   }
                 }
               },
@@ -135,6 +136,24 @@ describe('Document Versions draft changes', function () {
             };
           }
         },
+        // Edited on the page by its own editor, its styles in a form
+        'headline-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            label: 'Headline',
+            contextual: true
+          },
+          fields: {
+            add: {
+              heading: { type: 'string' }
+            }
+          },
+          styles: {
+            add: {
+              alignment: 'alignment'
+            }
+          }
+        },
         story: {
           extend: '@apostrophecms/piece-type',
           fields: {
@@ -147,6 +166,7 @@ describe('Document Versions draft changes', function () {
                     'story-link': {},
                     opaque: {},
                     embed: {},
+                    headline: {},
                     '@apostrophecms/layout': {}
                   }
                 }
@@ -544,6 +564,125 @@ describe('Document Versions draft changes', function () {
     assert.deepEqual(rows.map(row => namesOf(row).join('/')).sort(), [ 'code', 'meta/ref', 'slug', 'title' ]);
   });
 
+  it('should key and mark the fields of an array item added whole, not of one deleted', async function () {
+    const item = (_id, label, text) => ({
+      _id,
+      metaType: 'arrayItem',
+      label,
+      text
+    });
+    let draft = await insertPublished(apos.modules.blank, {
+      title: 'Items',
+      code: 'code',
+      meta: { ref: 'ref' },
+      items: [ item('kept', 'Kept', '<p>Kept</p>'), item('gone', 'Gone', '<p>Gone text</p>') ]
+    });
+    draft.items = [ draft.items[0], item('new', 'New label', '<p>New text</p>') ];
+    draft = await saveAs(apos.modules.blank, ann(), draft);
+
+    const { rows } = await apos.docVersions.getDraftChanges(ann(), draft._id);
+    const fieldsOf = _id => rowAt(rows, 'items', _id).fieldRows;
+    const [ label, text ] = fieldsOf('new');
+
+    assert.equal(label.patchKey, '@new.label');
+    assert.deepEqual(label.diff.map(part => part.change), [ 'added' ]);
+    assert.equal(text.patchKey, '@new.text');
+    assert.match(text.markedHtml, /^<p><ins data-apos-version-change="added">.*New text<\/ins><\/p>$/);
+    assert.equal(fieldsOf('gone').some(row => row.patchKey || row.markedHtml), false);
+  });
+
+  describe('the fields of an annotated version', function () {
+    async function newestVersion(draft) {
+      const [ newest ] = await apos.docVersions.find(draftReq(), {
+        docId: draft.aposDocId,
+        locale: 'en'
+      }, {
+        sort: { createdAt: -1 }
+      });
+      return newest;
+    }
+
+    it('should list the changes of the fields rendered in place, keyed and marked', async function () {
+      const item = (_id, label, text) => ({
+        _id,
+        metaType: 'arrayItem',
+        label,
+        text
+      });
+      let draft = await insertPublished(apos.modules.blank, {
+        title: 'In place',
+        code: 'code',
+        meta: { ref: 'ref' },
+        items: [ item('kept', 'Kept', '<p>Kept</p>'), item('gone', 'Gone', '<p>Gone</p>') ]
+      });
+      draft.flag = true;
+      draft.note = 'Note';
+      draft.items = [
+        item('kept', 'Kept and edited', '<p>Kept</p>'),
+        item('new', 'New label', '<p>New text</p>')
+      ];
+      draft = await saveAs(apos.modules.blank, ann(), draft);
+      const newest = await newestVersion(draft);
+
+      const { fields } = await apos.docVersions.getOne(ann(), newest._id, {
+        annotate: true
+      });
+      const plain = await apos.docVersions.getOne(ann(), newest._id);
+      const byKey = Object.fromEntries(fields.map(row => [ row.patchKey, row ]));
+
+      assert.deepEqual(Object.keys(byKey).sort(), [
+        '@kept.label',
+        '@new.label',
+        '@new.text',
+        'note'
+      ]);
+      assert.deepEqual(
+        byKey['@kept.label'].diff.map(part => [ part.text, part.change ]),
+        [ [ 'Kept ', 'same' ], [ 'and edited', 'added' ] ]
+      );
+      assert.match(byKey['@new.text'].markedHtml, /<ins data-apos-version-change="added">/);
+      assert.equal(plain.fields, undefined);
+    });
+
+    it('should key the fields of a widget from the widget, and list none for a first version', async function () {
+      let draft = await insertPublished(apos.modules.story, {
+        title: 'Widget in place',
+        main: {
+          metaType: 'area',
+          items: [ {
+            _id: 'link1',
+            metaType: 'widget',
+            type: 'story-link',
+            caption: 'Old caption'
+          } ]
+        }
+      });
+      const first = await apos.docVersions.find(draftReq(), {
+        docId: draft.aposDocId,
+        locale: 'en'
+      }, {
+        sort: { createdAt: 1 }
+      });
+      draft.main.items[0].caption = 'New caption';
+      draft = await saveAs(apos.modules.story, ann(), draft);
+      const newest = await newestVersion(draft);
+
+      const { fields } = await apos.docVersions.getOne(ann(), newest._id, {
+        annotate: true
+      });
+      const initial = await apos.docVersions.getOne(ann(), first[0]._id, {
+        annotate: true
+      });
+
+      assert.deepEqual(fields.map(row => row.patchKey), [ '@link1.caption' ]);
+      assert.deepEqual(
+        fields[0].diff.map(part => [ part.text, part.change ]),
+        [ [ 'Old', 'removed' ], [ 'New', 'added' ], [ ' caption', 'same' ] ]
+      );
+      assert.deepEqual(initial.fields, []);
+    });
+  });
+
   it('should key a relationship by its field name', async function () {
     const related = await apos.article.insert(ann(), { title: 'Related' });
     let draft = await insertPublished(apos.article, { title: 'Relating' });
@@ -811,6 +950,7 @@ describe('Document Versions draft changes', function () {
       await apos.page.publish(req, page);
       await wait(5);
       page.main.items = page.main.items.filter(widget => widget._id !== 'deleted');
+      page.main.items[0].content = '<p>The kept paragraph, edited.</p>';
       page.title = 'Page in See Changes, edited';
       await saveAs(apos.page, req, page);
     });
@@ -827,22 +967,74 @@ describe('Document Versions draft changes', function () {
     it('should show the draft marked with its changes, deleted widgets back in place', async function () {
       const shown = await beforeSend({
         aposEdit: '1',
-        aposSeeChanges: '1'
+        aposSeeChanges: '1',
+        aposRefresh: '1'
       });
 
       assert.deepEqual(shown.main.items.map(widget => widget._id), [ 'kept', 'deleted' ]);
       assert.equal(shown.main.items[1]._deleted, true);
+      assert.match(shown.main.items[0].content, /data-apos-version-change="added"/);
       assert.equal(shown.main._edit, true);
       assert.equal(shown.title, 'Page in See Changes, edited');
       assert.equal(typeof shown._url, 'string');
     });
 
-    it('should show the draft as it is without edit mode or the flag', async function () {
-      for (const query of [ { aposSeeChanges: '1' }, { aposEdit: '1' } ]) {
+    it('should show the draft as it is on a full page load, without edit mode or the flag', async function () {
+      for (const query of [
+        {
+          aposEdit: '1',
+          aposSeeChanges: '1'
+        },
+        {
+          aposSeeChanges: '1',
+          aposRefresh: '1'
+        },
+        {
+          aposEdit: '1',
+          aposRefresh: '1'
+        }
+      ]) {
         const shown = await beforeSend(query);
 
         assert.deepEqual(shown.main.items.map(widget => widget._id), [ 'kept' ]);
+        assert.equal(shown.main.items[0].content, '<p>The kept paragraph, edited.</p>');
       }
+    });
+
+    it('should leave the stored draft and what is loaded after it as they are', async function () {
+      const stored = () => apos.doc.db.findOne({ _id: page._id });
+      const before = await stored();
+
+      await beforeSend({
+        aposEdit: '1',
+        aposSeeChanges: '1',
+        aposRefresh: '1'
+      });
+
+      assert.deepEqual(await stored(), before);
+      const found = await apos.page.find(draftReq(), { _id: page._id }).toObject();
+      assert.deepEqual(found.main.items.map(widget => widget._id), [ 'kept' ]);
+      assert.equal(found.main.items[0].content, '<p>The kept paragraph, edited.</p>');
+      assert.equal(found.main.items[0]._olderVersion, undefined);
+      assert.equal(found.aposMeta?.title?.['@apostrophecms/schema:highlight'], undefined);
+    });
+
+    it('should leave the flag out of the URL templates build links from', async function () {
+      const req = draftReq();
+      req.url = `${page._url.replace(/^https?:\/\/[^/]+/, '')}?page=2&aposSeeChanges=1&aposRefresh=1`;
+      req.query = {
+        page: '2',
+        aposSeeChanges: '1',
+        aposRefresh: '1'
+      };
+      const html = await apos.template.renderPageForModule(
+        req,
+        'url',
+        {},
+        apos.modules['default-page']
+      );
+
+      assert.match(html, /data-url="[^"]*\?page=2"/);
     });
   });
 
@@ -1532,6 +1724,61 @@ describe('Document Versions draft changes', function () {
       const more = rowAt(rows, 'main', 'more');
       assert.equal(more.type, 'added');
       assert(more.restore);
+    });
+
+    it('should give the rows a contextual widget edits the widget, its styles aside', async function () {
+      const headline = (_id, heading) => ({
+        _id,
+        metaType: 'widget',
+        type: 'headline',
+        heading,
+        alignment: 'left'
+      });
+      const { rows } = await edited({
+        main: area('main', [
+          headline('head', 'Old'),
+          headline('gone', 'Gone'),
+          richText('text', '<p>Old</p>'),
+          storyLink('link', []),
+          layout('lay', [ column('one', 1, 'One') ])
+        ])
+      }, draft => {
+        const [ head, , text, link, lay ] = draft.main.items;
+        head.heading = 'New';
+        head.alignment = 'center';
+        text.content = '<p>New</p>';
+        link.caption = 'Edited';
+        lay.columns.items[0].justify = 'center';
+        lay.columns.items[0].content.items[0].content = '<p>One, edited</p>';
+        draft.main.items = [ head, text, link, lay, headline('more', 'More') ];
+      });
+
+      const contextual = (_id, type) => ({
+        patchKey: `@${_id}`,
+        widgetType: type,
+        widgetOptions: {}
+      });
+      assert.deepEqual(
+        rowAt(rows, 'main', 'head', 'heading').contextual,
+        contextual('head', 'headline')
+      );
+      assert.deepEqual(rowAt(rows, 'main', 'more').contextual, contextual('more', 'headline'));
+      assert.deepEqual(
+        rowAt(rows, 'main', 'text').contextual,
+        contextual('text', '@apostrophecms/rich-text')
+      );
+      assert.deepEqual(
+        rowAt(rows, 'main', 'lay', 'columns', 'one', 'content', 'one-text').contextual,
+        contextual('one-text', '@apostrophecms/rich-text')
+      );
+      for (const names of [
+        [ 'main', 'head', 'alignment' ],
+        [ 'main', 'gone' ],
+        [ 'main', 'link', 'caption' ],
+        [ 'main', 'lay', 'columns', 'one', 'justify' ]
+      ]) {
+        assert.equal(rowAt(rows, ...names).contextual, undefined, names.join('/'));
+      }
     });
 
     describe('over HTTP', function () {

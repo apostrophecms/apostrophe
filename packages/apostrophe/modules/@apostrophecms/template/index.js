@@ -827,17 +827,22 @@ module.exports = {
 
         function unrefreshed(url) {
           // Including aposRefresh=1 in data.url leads to busted pages in
-          // navigation links, so strip that out. However this is invoked on
-          // every page load so do it as quickly as we can to avoid the
-          // overhead of a full parse and rebuild
-          if (!url.includes('aposRefresh=1')) {
+          // navigation links, so strip that out, and aposSeeChanges=1, which
+          // only the See Changes mode of the versions module may ask for.
+          // However this is invoked on every page load so do it as quickly as
+          // we can to avoid the overhead of a full parse and rebuild
+          return without(without(url, 'aposRefresh=1'), 'aposSeeChanges=1');
+        }
+
+        function without(url, parameter) {
+          if (!url.includes(parameter)) {
             return url;
-          } else if (url.endsWith('?aposRefresh=1')) {
-            return url.replace('?aposRefresh=1', '');
-          } else if (url.includes('?aposRefresh=1')) {
-            return url.replace('?aposRefresh=1&', '?');
+          } else if (url.endsWith(`?${parameter}`)) {
+            return url.replace(`?${parameter}`, '');
+          } else if (url.includes(`?${parameter}`)) {
+            return url.replace(`?${parameter}&`, '?');
           } else {
-            return url.replace('&aposRefresh=1', '');
+            return url.replace(`&${parameter}`, '');
           }
         }
       },

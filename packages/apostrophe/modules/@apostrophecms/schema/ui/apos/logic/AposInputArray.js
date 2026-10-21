@@ -178,6 +178,9 @@ export default {
         }
       }
     },
+    'displayOptions.activeItem'() {
+      this.openActiveItem();
+    },
     followingValues: {
       // Re-evaluate following values when the parentFollowingValues prop changes
       async handler(values) {
@@ -192,6 +195,7 @@ export default {
     if (this.isInline) {
       await this.evaluateExternalConditions();
       this.setItemsConditionalFields();
+      this.openActiveItem();
     }
   },
   methods: {
@@ -340,11 +344,23 @@ export default {
         serverError: this.serverError,
         docId: this.docId,
         parentFollowingValues: this.followingValues,
-        meta: this.arrayMeta
+        meta: this.arrayMeta,
+        activeItem: this.displayOptions.activeItem
       });
       if (result) {
         this.next = result;
       }
+    },
+    // The item `displayOptions.activeItem` names, open and focused. The array
+    // editor opens on it instead
+    openActiveItem() {
+      const item = this.isInline &&
+        this.items.find(({ _id }) => _id === this.displayOptions.activeItem);
+      if (!item) {
+        return;
+      }
+      item.open = true;
+      this.focusElement(item._id);
     },
     getNext() {
       // Next should consistently be an array.

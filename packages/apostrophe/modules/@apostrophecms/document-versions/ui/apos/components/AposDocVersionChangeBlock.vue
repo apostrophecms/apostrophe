@@ -245,7 +245,7 @@ onMounted(async () => {
   &__order-ordinal {
     flex-shrink: 0;
     min-width: 2ch;
-    color: var(--a-base-2);
+    color: var(--a-base-1);
     font-variant-numeric: tabular-nums;
     text-align: right;
   }

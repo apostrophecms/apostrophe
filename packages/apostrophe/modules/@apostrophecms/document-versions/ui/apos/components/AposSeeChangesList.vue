@@ -60,6 +60,7 @@
               :labels="labels"
               :revealed="revealed"
               @toggle="toggle(idOf(entry.row), groupIndex)"
+              @select="selectGroup(groupIndex)"
             >
               <template #meta>
                 <p
@@ -130,7 +131,7 @@
                   label="apostrophe:edit"
                   :disabled="pending || opening"
                   :attrs="{ 'data-apos-test': 'see-changes-edit' }"
-                  @click="edit(entry)"
+                  @click="edit(entry, groupIndex)"
                 />
                 <AposButton
                   v-if="entry.row.restore"
@@ -159,7 +160,7 @@
                   :editable="isEditable(entry.row)"
                   @cancel="cancel"
                   @restore="restore(entry)"
-                  @edit="edit(entry)"
+                  @edit="edit(entry, groupIndex)"
                 />
               </template>
               <template
@@ -172,6 +173,7 @@
                   :doc-id="store.docId"
                   :busy="saving"
                   :invalid="invalid"
+                  @ready="showEditor(group, entry)"
                   @cancel="closeEditor"
                   @save="saveEdit(entry, $event)"
                 />
@@ -200,19 +202,11 @@
 
 <script setup>
 // The changes of the draft since its last publication, a group per field
-// or widget, the group changed most recently first. Each entry names who
-// changed it and how long ago, and its detail compares the value with the
-// published one, or with the default when the document was never published.
-// The navigator at the bottom steps through the groups; a click on a group
-// header goes to that one, and so does the first toggle of an entry in a
-// group the navigator is not at. An entry that can be restored asks first,
-// then leaves the list once the restore is saved. An entry that can be
-// edited opens its field's editor in place of its detail; a whole widget
-// opens its widget editor, as on the page.
+// or widget, the group changed most recently first.
 // The list scrolls on its own and is no tab stop, which Firefox makes of a
 // scroll container: its buttons are the stops, and the arrow keys scroll it
 import {
-  computed, nextTick, reactive, ref, useId, watch
+  computed, nextTick, onBeforeUnmount, reactive, ref, useId, watch
 } from 'vue';
 import getFieldById from 'Modules/@apostrophecms/schema/lib/getFieldById';
 import scroll from '../utils/scroll.js';
@@ -267,8 +261,14 @@ const confirm = ref(null);
 // The entry showing its field's editor, by `idOf`
 const editing = ref(null);
 const editor = ref(null);
+// Stops keeping the open editor in view
+let stopShowingEditor = () => {};
 // The entry last edited, by `idOf`, until the next save
 const edited = ref(null);
+// The entry just edited, by `idOf`, which the list follows once it reloads
+let following = null;
+// Where focus goes should the reload drop the entry just edited
+let focusFallback = null;
 // While a widget editor loads its widget
 const opening = ref(false);
 // The Edit and Restore buttons, by `edit:` or `restore:` and `idOf`
@@ -335,6 +335,37 @@ const {
   onNavigate: group => emit('navigate', group)
 });
 
+// --- Positioning ---
+
+function getEntryEl(id) {
+  return list.value?.querySelector(`[data-apos-see-changes-entry="${CSS.escape(id)}"]`);
+}
+
+// How much of the list's top the group's sticky header covers
+function getHeaderHeight(group) {
+  return getGroupEl(group.key)?.firstElementChild?.offsetHeight || 0;
+}
+
+// The group's header at the top, as a navigator step leaves it, when the
+// entry `el` fits below it with what it shows open; else the entry right
+// under the header, so it reads from its start with its group named
+function place(group, el) {
+  const section = getGroupEl(group.key);
+  if (!section || !el || !list.value) {
+    return;
+  }
+  const box = list.value.getBoundingClientRect();
+  const rect = el.getBoundingClientRect();
+  if (rect.bottom - section.getBoundingClientRect().top <= box.height) {
+    scrollToGroup(group);
+  } else {
+    list.value.scrollBy({
+      top: rect.top - box.top - getHeaderHeight(group),
+      behavior: scroll.getScrollBehavior()
+    });
+  }
+}
+
 // What still shows keeps its place: the navigator follows its group, and
 // open entries and the confirmation stay open
 watch(() => props.rows, rows => {
@@ -355,15 +386,36 @@ watch(() => props.rows, rows => {
   pending.value = false;
   invalid.value = false;
   now.value = Date.now();
+  if (following) {
+    const id = following;
+    const fallback = focusFallback;
+    following = null;
+    focusFallback = null;
+    nextTick(() => {
+      const group = groups.value
+        .find(group => group.entries.some(entry => idOf(entry.row) === id));
+      if (group) {
+        place(group, getEntryEl(id));
+        focusAction(`edit:${id}`, { preventScroll: true });
+      } else {
+        fallback?.focus({ preventScroll: true });
+      }
+    });
+  }
 });
+
+// Makes a group the navigator's, unless it is already
+function selectGroup(groupIndex) {
+  if (position.value !== groupIndex) {
+    select(groupIndex);
+  }
+}
 
 // An entry of another group makes that group the navigator's first; within
 // the group the navigator is at, it only opens or closes. Closing an entry
 // that asks before its restore or shows its editor closes those too
 function toggle(id, groupIndex) {
-  if (position.value !== groupIndex) {
-    select(groupIndex);
-  }
+  selectGroup(groupIndex);
   if (confirming.value === id) {
     confirming.value = null;
     invalid.value = false;
@@ -388,8 +440,28 @@ function setActionEl(key, el) {
   }
 }
 
-function focusAction(key) {
-  actionEls.get(key)?.$el.querySelector('button')?.focus();
+function focusAction(key, options) {
+  actionEls.get(key)?.$el.querySelector('button')?.focus(options);
+}
+
+// The control that stands for an entry while its actions wait for the list
+// to reload: its toggle, or its group's header when it has nothing to expand
+function getEntryControl(el) {
+  return el.querySelector(':scope > button[aria-controls]') ||
+    el.closest('.apos-see-changes-list__group')
+      ?.querySelector('.apos-doc-version-changes__group-title');
+}
+
+// Where focus goes when the entry `id` leaves the list: to the entry after
+// it, or before it when it was the last, so the keyboard carries on from
+// there. The list when it was the only one
+function getFocusAfter(id) {
+  const entries = [ ...(list.value?.querySelectorAll('[data-apos-see-changes-entry]') || []) ];
+  const index = entries.findIndex(el => el.dataset.aposSeeChangesEntry === id);
+  const stays = el => !leaving.has(el.dataset.aposSeeChangesEntry);
+  const next = entries.slice(index + 1).find(stays) ||
+    entries.slice(0, Math.max(index, 0)).reverse().find(stays);
+  return (next && getEntryControl(next)) || list.value;
 }
 
 // An entry's actions show while it is open, asking or editing
@@ -433,9 +505,9 @@ function restore(entry) {
 
 async function leave(id) {
   saving.value = false;
-  confirming.value = null;
   // Its buttons go with it
-  list.value?.focus({ preventScroll: true });
+  getFocusAfter(id)?.focus({ preventScroll: true });
+  confirming.value = null;
   leaving.add(id);
   await nextTick();
   gone.add(id);
@@ -501,14 +573,16 @@ function save(row, {
 
 // --- Edit ---
 
-// What an entry's editor shows, `{ field, patchKey, item }`: a field's
-// value; an added array item as its fields (`item`); the whole array for
-// its order or a deleted item. Not a whole widget nor a rich text widget's
-// content, nor a field of a contextual widget other than its styles, since
-// that widget is edited on the page. `null` when the entry has no editor
+// What an entry's editor shows, `{ field, patchKey, activeItem }`: a field's
+// value; the whole array for its order, a deleted item or an added one, which
+// it opens on (`activeItem`). What a contextual widget's own editor edits on
+// the page, that widget, as `{ widgetType, widgetOptions, patchKey }`. Not a
+// whole widget otherwise. `null` when the entry has no editor
 function getEdit(row) {
-  const field = row.editable && !row.widgetType && !isOnPage(row) &&
-    getFieldById(row.fieldId);
+  if (row.editable && row.contextual) {
+    return { ...row.contextual };
+  }
+  const field = row.editable && !row.widgetType && getFieldById(row.fieldId);
   if (!field) {
     return null;
   }
@@ -518,51 +592,39 @@ function getEdit(row) {
       patchKey: row.patchKey
     };
   }
-  if ((row.kind === 'arrayItem') && (row.type === 'added')) {
-    return {
-      field,
-      patchKey: row.patchKey,
-      item: true
-    };
-  }
-  const array = ((row.kind === 'arrayItem') && (row.type === 'deleted'))
+  const isItem = (row.kind === 'arrayItem') && [ 'added', 'deleted' ].includes(row.type);
+  const array = isItem
     ? row.listKey
     : (row.kind === 'array') && row.patchKey;
-  return array
-    ? {
-      field,
-      patchKey: array
-    }
-    : null;
-}
-
-// Whether the row is inside a contextual widget, below one of its fields
-// that is not a style
-function isOnPage(row) {
-  const at = row.path.findLastIndex(segment => segment.widgetType);
-  const type = row.path[at]?.widgetType;
-  if (!type || !apos.area.widgetIsContextual[type]) {
-    return false;
+  if (!array) {
+    return null;
   }
-  const { stylesFields = [] } = apos.modules[apos.area.widgetManagers[type]] || {};
-  return !stylesFields.includes(row.path[at + 1]?.name);
+  return {
+    field,
+    patchKey: array,
+    ...(isItem && (row.type === 'added') && { activeItem: row.path.at(-1).name })
+  };
 }
 
 // A widget modified whole or added, which its widget editor edits. Not a
-// contextual one, rich text among them, which is edited on the page
+// contextual one, which its own editor edits in the entry, nor one whose
+// editor would show no field
 function isWidgetEditable(row) {
   return Boolean(row.editable) &&
     (row.kind === 'widget') &&
     [ 'modified', 'added' ].includes(row.type) &&
     !apos.area.widgetIsContextual[row.widgetType] &&
-    Boolean(apos.area.components.widgetEditors[row.widgetType]);
+    Boolean(apos.area.components.widgetEditors[row.widgetType]) &&
+    (apos.modules[apos.area.widgetManagers[row.widgetType]]?.schema || [])
+      .some(field => !field.hidden);
 }
 
 function isEditable(row) {
   return isWidgetEditable(row) || Boolean(getEdit(row));
 }
 
-function edit(entry) {
+function edit(entry, groupIndex) {
+  selectGroup(groupIndex);
   if (isWidgetEditable(entry.row)) {
     editWidget(entry);
   } else {
@@ -578,9 +640,8 @@ async function openEditor(entry) {
   if (entry.detail) {
     expanded.add(id);
   }
-  const { field, item } = getEdit(entry.row);
-  const fields = item ? field.schema : [ field ];
-  if (fields.some(({ type, inline }) => [ 'richText', 'area' ].includes(type) || inline)) {
+  const { field, widgetType } = getEdit(entry.row);
+  if (widgetType || [ 'richText', 'area' ].includes(field.type) || field.inline) {
     emit('widen');
   }
   confirming.value = null;
@@ -589,6 +650,59 @@ async function openEditor(entry) {
   await nextTick();
   editor.value?.focus();
 }
+
+// Once its value is in, the editor shows with the least scroll, and with it
+// a control its input focused far below its start, such as the item an array
+// opens on. Its content can still grow as it renders, so it is kept in view
+// until the user scrolls, clicks or types, or it closes
+function showEditor(group, entry) {
+  stopShowingEditor();
+  const el = getEntryEl(idOf(entry.row));
+  const editorEl = document.getElementById(`${baseId}-${entry.key}`);
+  if (!el || !editorEl || !list.value) {
+    return;
+  }
+  const scroller = list.value;
+  const show = () => {
+    const box = scroller.getBoundingClientRect();
+    const top = box.top + getHeaderHeight(group);
+    const rect = editorEl.getBoundingClientRect();
+    if ((rect.top >= top) && (rect.bottom <= box.bottom)) {
+      return;
+    }
+    const entryRect = el.getBoundingClientRect();
+    let by = (entryRect.top < top) || (entryRect.height > box.bottom - top)
+      ? entryRect.top - top
+      : rect.bottom - box.bottom;
+    const focused = editorEl.contains(document.activeElement) &&
+      document.activeElement.getBoundingClientRect();
+    if (focused && ((focused.top - by < top) || (focused.top - by >= box.bottom))) {
+      by = Math.min(focused.top - top, Math.max(focused.bottom - box.bottom, 0));
+    }
+    // Measured where the list is now, so a scroll under way is not counted twice
+    scroller.scrollTo({
+      top: scroller.scrollTop + by,
+      behavior: scroll.getScrollBehavior()
+    });
+  };
+  const observer = new ResizeObserver(show);
+  const events = [ 'wheel', 'touchstart', 'pointerdown', 'keydown' ];
+  stopShowingEditor = () => {
+    observer.disconnect();
+    for (const name of events) {
+      scroller.removeEventListener(name, stopShowingEditor, true);
+    }
+    stopShowingEditor = () => {};
+  };
+  for (const name of events) {
+    scroller.addEventListener(name, stopShowingEditor, true);
+  }
+  // Calls `show` once to begin with
+  observer.observe(editorEl);
+}
+
+watch(editing, () => stopShowingEditor());
+onBeforeUnmount(() => stopShowingEditor());
 
 async function closeEditor() {
   const id = editing.value;
@@ -651,9 +765,12 @@ function saveEdit(entry, change, { refused } = {}) {
   save(entry.row, change, {
     saved() {
       edited.value = id;
+      following = id;
+      // Its Edit once the list reloads, unless the reload drops it
+      const el = getEntryEl(id);
+      focusFallback = getFocusAfter(id);
+      (el && getEntryControl(el))?.focus({ preventScroll: true });
       editing.value = null;
-      // Its buttons go with it
-      list.value?.focus({ preventScroll: true });
     },
     refused
   });
@@ -722,23 +839,9 @@ async function reveal(target) {
   // An entry with nothing to expand has no button: its group's header then
   const button = list.value?.querySelector(
     `[aria-controls="${CSS.escape(`${baseId}-${entry.key}`)}"]`
-  ) || getGroupEl(group.key)?.querySelector(
-    '[data-apos-test="doc-version-change-group-select"]'
-  );
-  if (button && list.value) {
-    // The group's header at the top, as a navigator step leaves it. An
-    // entry too far down its group to show that way is centred instead
-    const section = getGroupEl(group.key);
-    const box = list.value.getBoundingClientRect();
-    const rect = button.getBoundingClientRect();
-    if (section && (rect.bottom - section.getBoundingClientRect().top <= box.height)) {
-      scrollToGroup(group);
-    } else {
-      list.value.scrollBy({
-        top: rect.top - box.top - (box.height / 2),
-        behavior: scroll.getScrollBehavior()
-      });
-    }
+  ) || getGroupEl(group.key)?.querySelector('.apos-doc-version-changes__group-title');
+  if (button) {
+    place(group, getEntryEl(idOf(entry.row)));
     button.focus({ preventScroll: true });
   }
   return true;
@@ -753,6 +856,9 @@ defineExpose({
 $pad-x: $spacing-base + $spacing-half;
 // The entry's chevron and the gap after it
 $chevron-x: 14px + $spacing-half;
+// The entry's label line, which its credit and its actions keep, so Edit
+// sits beside the label and Restore beside the credit
+$line-height: calc(var(--a-type-base) * var(--a-line-tall));
 // Above the groups' sticky headers
 $z-index-above-headers: $z-index-default + 1;
 
@@ -765,6 +871,8 @@ $z-index-above-headers: $z-index-default + 1;
   &__scroller {
     overflow: hidden auto;
     flex: 1 1 auto;
+    // Its end does not scroll the page on
+    overscroll-behavior: contain;
     min-height: 0;
   }
 
@@ -817,8 +925,17 @@ $z-index-above-headers: $z-index-default + 1;
     }
   }
 
+  // An entry with nothing to expand selects its group
+  &__entries :deep(.apos-doc-version-changes__row-main:not(button)) {
+    cursor: pointer;
+  }
+
   &__action :deep(.apos-button) {
     font-size: var(--a-type-smaller);
+  }
+
+  &__action :deep(.apos-button__label) {
+    line-height: $line-height;
   }
 
   // Under the entry's label
@@ -827,7 +944,7 @@ $z-index-above-headers: $z-index-default + 1;
     padding: 0 $pad-x $spacing-half ($pad-x + $chevron-x);
     color: var(--a-base-1);
     font-size: var(--a-type-smaller);
-    line-height: var(--a-line-base);
+    line-height: $line-height;
   }
 
   &__authors {

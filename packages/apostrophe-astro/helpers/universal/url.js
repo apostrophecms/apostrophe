@@ -88,7 +88,8 @@ export function buildPageUrl(aposData, pageNum) {
  *
  * If `value` is `undefined`, `null` or empty string the parameter is
  * removed from the query string. Internal Apostrophe parameters
- * (`aposRefresh`, `aposMode`, `aposEdit`) are always stripped.
+ * (`aposRefresh`, `aposMode`, `aposEdit`, `aposSeeChanges`) are always
+ * stripped.
  *
  * Typically `Astro.url` is passed as the first argument.
  *
@@ -113,6 +114,7 @@ export function aposSetQueryParameter(url, name, value) {
   newUrl.searchParams.delete('aposRefresh');
   newUrl.searchParams.delete('aposMode');
   newUrl.searchParams.delete('aposEdit');
+  newUrl.searchParams.delete('aposSeeChanges');
   if ((value == null) || (value === '')) {
     newUrl.searchParams.delete(name);
   } else {

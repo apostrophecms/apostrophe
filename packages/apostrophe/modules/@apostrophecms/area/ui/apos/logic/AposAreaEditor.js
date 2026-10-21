@@ -371,9 +371,13 @@ export default {
     },
     // The context bar is undoing or redoing an edit, and asks whoever holds
     // the content it touched to show the result. A widget that changed is
-    // rendered again, the rest of the page is left alone
+    // rendered again, the rest of the page is left alone. A read only view
+    // leaves it unclaimed, so the page is rendered again whole: what it
+    // shows can be marked with changes, and must not be handed back to the
+    // history as content
     contextHistoryApplyHandler(event) {
       if (
+        this.readOnly ||
         this.foreign ||
         !this.docId ||
         (this.docId !== window.apos.adminBar.contextId) ||
@@ -419,10 +423,7 @@ export default {
       }
     },
     async editStyles({ widgetId, index }) {
-      if (this.readOnly) {
-        return;
-      }
-      if (this.foreign) {
+      if (this.readOnly || this.foreign) {
         return;
       }
       const widget = this.next.find(({ _id }) => _id === widgetId);
@@ -581,7 +582,12 @@ export default {
         dismiss: true
       });
     },
+    // Never in a read only view: what it shows can be marked with its
+    // changes, which a paste would save as content
     async copy({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       apos.area.widgetClipboard.set(this.next[index]);
       apos.notify('Widget copied to clipboard', {
         type: 'success',

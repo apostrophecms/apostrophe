@@ -90,10 +90,11 @@ describe('aposSetQueryParameter', () => {
   });
 
   it('always strips internal Apostrophe parameters', () => {
-    const url = new URL('http://localhost/articles?aposRefresh=1&aposMode=edit&aposEdit=1');
+    const url = new URL('http://localhost/articles?aposRefresh=1&aposMode=edit&aposEdit=1&aposSeeChanges=1');
     const result = aposSetQueryParameter(url, 'page', '2');
     assert.equal(result.searchParams.get('aposRefresh'), null);
     assert.equal(result.searchParams.get('aposMode'), null);
     assert.equal(result.searchParams.get('aposEdit'), null);
+    assert.equal(result.searchParams.get('aposSeeChanges'), null);
   });
 });

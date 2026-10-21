@@ -246,9 +246,7 @@ async function reveal(target) {
   // A row with nothing to expand has no button: its group's header then
   const toggle = list.value?.querySelector(
     `[aria-controls="${CSS.escape(`${baseId}-${entry.key}`)}"]`
-  ) || getGroupEl(group.key)?.querySelector(
-    '[data-apos-test="doc-version-change-group-select"]'
-  );
+  ) || getGroupEl(group.key)?.querySelector('.apos-doc-version-changes__group-title');
   // The list alone scrolls: `scrollIntoView` would also push the sliding
   // panel around it sideways
   if (toggle && list.value) {
