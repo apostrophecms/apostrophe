@@ -74,6 +74,23 @@ module.exports = self => {
       if (!req.user) {
         throw self.apos.error('forbidden');
       }
+      // The upload, its copy in uploadfs and its extraction are kept while
+      // the user is asked to confirm the locale or the duplicates, but
+      // never once the import has failed
+      const artifacts = {};
+      try {
+        return await self.importFile(req, moduleName, artifacts);
+      } catch (error) {
+        if (artifacts.exportId) {
+          await storage.remove(artifacts.exportId);
+        } else if (req.files?.file?.path) {
+          await self.remove(req.files.file.path);
+        }
+        throw error;
+      }
+    },
+
+    async importFile(req, moduleName, artifacts) {
       const { file } = req.files || {};
       const importDraftsOnly = self.apos.launder.boolean(req.body.importDraftsOnly);
       const translate = self.apos.launder.boolean(req.body.translate);
@@ -103,10 +120,11 @@ module.exports = self => {
           }
 
           const exportId = await self.getExportId(exportPath);
+          artifacts.exportId = exportId;
           await storage.download(exportId);
           ({
             docs, attachmentsInfo = [], exportPath: artifactsPath
-          } = await format.input(exportPath));
+          } = await format.input(exportPath, { limits: self.options.importLimits }));
           await self.setExportArtifactsPath(exportId, artifactsPath);
         } else {
           if (!file) {
@@ -118,12 +136,14 @@ module.exports = self => {
             .find(format => format.allowedTypes.includes(file.type));
 
           const exportId = await self.setExportId(file.path);
+          await self.setExportOwner(exportId, req.user._id);
+          artifacts.exportId = exportId;
           exportPath = await self.getExportPath(exportId);
           await storage.upload(exportId);
 
           ({
             docs, attachmentsInfo = [], exportPath: artifactsPath
-          } = await format.input(exportPath));
+          } = await format.input(exportPath, { limits: self.options.importLimits }));
           await self.setExportArtifactsPath(exportId, artifactsPath);
         }
 
@@ -303,6 +323,11 @@ module.exports = self => {
       await self.updateJobResults(jobId, {
         failedLog: logs
       });
+      await self.setDuplicatesAnalysis(req, {
+        jobId,
+        exportId,
+        duplicatedDocs
+      });
 
       const results = {
         importDraftsOnly,
@@ -336,7 +361,7 @@ module.exports = self => {
 
     async instantiateJob(req, total, { ids, types }) {
       const jobManager = self.apos.modules['@apostrophecms/job'];
-      const job = await jobManager.start();
+      const job = await jobManager.start({ userId: req.user._id });
 
       const { noteId } = await self.apos.notify(req, 'aposImportExport:importing', {
         icon: 'database-import-icon',
@@ -524,7 +549,6 @@ module.exports = self => {
             })
             : null;
         if (replaceId) {
-          // NOTE: please update duplicatedDocs launder in overrideDuplicates
           replaceItems.push({
             aposDocId,
             title,
@@ -559,7 +583,6 @@ module.exports = self => {
         .map(({
           aposDocId, title, type, updatedAt
         }) => ({
-          // NOTE: please update duplicatedDocs launder in overrideDuplicates
           aposDocId,
           title,
           type,
@@ -922,6 +945,8 @@ module.exports = self => {
         doc.aposMode = 'draft';
       }
 
+      self.checkDocMode(req, doc, manager);
+
       if (doc.aposMode === 'published') {
         if (failedIds.includes(doc.aposDocId)) {
           throw new Error('Inserting document failed');
@@ -995,6 +1020,7 @@ module.exports = self => {
         if (!docToUpdate) {
           return;
         }
+        self.checkUpdateTarget(req, doc, docToUpdate);
         await manager.convert(_req, doc, docToUpdate, {
           presentFieldsOnly: true,
           fetchRelationships: false
@@ -1086,6 +1112,81 @@ module.exports = self => {
       return self.canImportOrExport(req, docType, 'import');
     },
 
+    // `aposMode`, `aposLocale` and `_id` all come from the imported file.
+    // Permissions are checked for the mode named by `aposMode`, while core
+    // saves the document in the mode named by its `_id`: refuse documents
+    // of localized types where they do not agree.
+    checkDocMode(req, doc, manager) {
+      if (!manager.isLocalized()) {
+        return;
+      }
+      const {
+        aposMode, aposLocale, _id
+      } = doc;
+      const [ locale, mode, ...extraLocale ] = typeof aposLocale === 'string'
+        ? aposLocale.split(':')
+        : [];
+      const valid = [ 'draft', 'published' ].includes(aposMode) &&
+        ((aposLocale === undefined) || (
+          locale && (mode === aposMode) && !extraLocale.length
+        )) &&
+        ((_id === undefined) || (
+          (aposLocale !== undefined) &&
+          (typeof doc.aposDocId === 'string') &&
+          !doc.aposDocId.includes(':') &&
+          (_id === `${doc.aposDocId}:${aposLocale}`)
+        ));
+      if (!valid) {
+        throw self.apos.error('invalid', {
+          detail: req.t('aposImportExport:errorInvalidDocMode')
+        });
+      }
+    },
+
+    // `target` is the existing document the imported `doc` is about to
+    // overwrite. Its type must be importable, judged on what the target
+    // actually is rather than on what the imported file says.
+    checkUpdateTarget(req, doc, target) {
+      const manager = self.apos.doc.getManager(doc.type);
+      const targetManager = self.apos.doc.getManager(target.type);
+      // Pages may change type, other documents may not
+      const sameType = (target.type === doc.type) ||
+        Boolean(targetManager && self.isPage(targetManager) && self.isPage(manager));
+      if (!sameType || !self.canImport(req, target.type)) {
+        throw self.apos.error('forbidden', {
+          detail: req.t('aposImportExport:errorCantImportType', { type: target.type })
+        });
+      }
+    },
+
+    // Remember the duplicates an import found, so that `overrideDuplicates`
+    // relies on them rather than on what the browser sends back
+    async setDuplicatesAnalysis(req, {
+      jobId, exportId, duplicatedDocs
+    }) {
+      await self.apos.cache.set('importDuplicates', jobId, {
+        userId: req.user?._id ?? null,
+        exportId,
+        duplicatedDocs: duplicatedDocs.map(({ aposDocId, replaceId }) => ({
+          aposDocId,
+          replaceId: replaceId || null
+        }))
+      }, 86400);
+    },
+
+    async getDuplicatesAnalysis(req, { jobId, exportId }) {
+      const analysis = jobId &&
+        await self.apos.cache.get('importDuplicates', jobId);
+      if (
+        !analysis ||
+        (analysis.userId !== (req.user?._id ?? null)) ||
+        (analysis.exportId !== exportId)
+      ) {
+        throw self.apos.error('forbidden', 'No such import in progress for this user');
+      }
+      return analysis;
+    },
+
     // `self.apos.page.isPage` does not work here since
     // the slug can be omitted in a CSV or Excel file.
     isPage(manager) {
@@ -1151,20 +1252,21 @@ module.exports = self => {
       const importDraftsOnly = self.apos.launder.boolean(req.body.importDraftsOnly);
       const translate = self.apos.launder.boolean(req.body.translate);
       const overrideLocale = self.apos.launder.boolean(req.body.overrideLocale);
-      const exportPath = await self.getExportPath(
-        self.apos.launder.string(req.body.exportId)
-      );
-      const docIds = self.apos.launder.strings(req.body.docIds);
-      const duplicatedDocs = req.body.duplicatedDocs?.map(duplicatedDoc => {
-        return {
-          aposDocId: self.apos.launder.string(duplicatedDoc.aposDocId),
-          title: self.apos.launder.string(duplicatedDoc.title),
-          type: self.apos.launder.string(duplicatedDoc.type),
-          updatedAt: self.apos.launder.date(duplicatedDoc.updatedAt),
-          replaceId: self.apos.launder.string(duplicatedDoc.replaceId)
-        };
-      }) ?? [];
       const jobId = self.apos.launder.string(req.body.jobId);
+      const requestedExportId = self.apos.launder.string(req.body.exportId);
+
+      // Only replace documents the import found duplicates for, for this
+      // user, and with the replacement it chose: the browser can only
+      // narrow down that list
+      const analysis = await self.getDuplicatesAnalysis(req, {
+        jobId,
+        exportId: requestedExportId
+      });
+      const duplicatedDocs = analysis.duplicatedDocs;
+      const docIds = self.apos.launder.strings(req.body.docIds)
+        .filter(aposDocId => duplicatedDocs.some(doc => doc.aposDocId === aposDocId));
+
+      const exportPath = await self.getExportPath(requestedExportId);
       const importedAttachments = self.apos.launder.strings(req.body.importedAttachments);
       const formatLabel = self.apos.launder.string(req.body.formatLabel);
       const failedIds = [];
@@ -1187,7 +1289,7 @@ module.exports = self => {
       await storage.download(exportId);
       const {
         docs, attachmentsInfo = [], exportPath: artifactsPath
-      } = await format.input(exportPath);
+      } = await format.input(exportPath, { limits: self.options.importLimits });
       await self.setExportArtifactsPath(exportId, artifactsPath);
 
       const filteredDocs = importDraftsOnly
@@ -1322,6 +1424,15 @@ module.exports = self => {
       return self.apos.cache.get('exportId', exportPath);
     },
 
+    // Records the `_id` of the user who uploaded the export
+    async setExportOwner(id, userId) {
+      await self.apos.cache.set('exportOwner', id, userId, 86400);
+    },
+
+    async getExportOwner(id) {
+      return self.apos.cache.get('exportOwner', id);
+    },
+
     async cleanExport(req) {
       self.debug('[import] cleaning export...');
       const exportPath = await self.getExportPath(
@@ -1331,6 +1442,10 @@ module.exports = self => {
         throw self.apos.error.invalid('no such export path');
       }
       const exportId = await self.getExportId(exportPath);
+      // Only the user who uploaded the export may discard it
+      if (await self.getExportOwner(exportId) !== req.user._id) {
+        throw self.apos.error('forbidden');
+      }
 
       const jobId = self.apos.launder.string(req.body.jobId);
       const notificationId = self.apos.launder.string(req.body.notificationId);
@@ -1338,7 +1453,10 @@ module.exports = self => {
       if (jobId) {
         const jobManager = self.apos.modules['@apostrophecms/job'];
         try {
-          const job = await jobManager.db.findOneAndUpdate({ _id: jobId }, {
+          const job = await jobManager.db.findOneAndUpdate({
+            _id: jobId,
+            userId: req.user._id
+          }, {
             $set: {
               ended: true,
               status: 'completed'

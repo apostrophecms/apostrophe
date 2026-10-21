@@ -191,6 +191,9 @@ module.exports = {
           return async function(req, res) {
             try {
               const result = await fn(req);
+              // Every document in a response, at any depth, loses the fields
+              // the user may not view (`viewPermission`)
+              self.apos.doc.removeForbiddenFieldsDeep(req, result);
 
               if (req.method === 'GET' && req.user) {
                 res.header('Cache-Control', 'no-store');

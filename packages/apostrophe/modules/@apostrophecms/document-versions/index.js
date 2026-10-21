@@ -181,9 +181,11 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
+        const manager = self.apos.doc.getManager(doc.type);
         const page = await self.getTimelinePage(req, self.getTimelineCriteria(doc), {
           before: beforeDate,
-          consolidate: self.apos.launder.boolean(req.query.consolidate)
+          consolidate: self.apos.launder.boolean(req.query.consolidate),
+          forbidden: manager && self.getForbiddenFieldNames(req, manager)
         });
         // A newest draft version is the draft; a newest publication is the
         // draft unless the draft has unpublished changes
@@ -733,6 +735,7 @@ module.exports = {
         async function unpackVersion(version) {
           if (version.doc !== undefined) {
             version.doc = await self.unpack(version.doc);
+            self.apos.schema.annotateFieldIds(version.doc);
           }
           return version;
         }
@@ -902,8 +905,15 @@ module.exports = {
       // date to start below; `next` is the `before` of the following page, `null`
       // on the last. With `consolidate`, versions that consolidate come as one
       // item (see `lib/consolidation.js`) with a `changeCount` of its own, and a
-      // page never ends in the middle of one: it reads on to complete it
-      async getTimelinePage(req, criteria, { before, consolidate } = {}) {
+      // page never ends in the middle of one: it reads on to complete it.
+      // `forbidden` are top-level field names whose changes are not counted
+      // (see `getForbiddenFieldNames`): the change counts are then computed
+      // again without them
+      async getTimelinePage(req, criteria, {
+        before,
+        consolidate,
+        forbidden
+      } = {}) {
         const limit = self.defaultLimit;
         const project = self.getRestProjection();
         const found = await self.find(
@@ -949,6 +959,9 @@ module.exports = {
         for (const item of results.filter(item => item.versionIds)) {
           item.changeCount = await countChanges(item, oldestOf.get(item._id));
         }
+        if (forbidden?.size) {
+          await recountChanges(results.filter(item => !item.versionIds));
+        }
 
         return {
           results,
@@ -966,7 +979,34 @@ module.exports = {
             return 0;
           }
           const base = previous ?? await self.findOne(req, { _id: oldest._id });
-          return self.getChangeCount(req, newest.doc, base.doc);
+          return self.getChangeCount(req, newest.doc, base.doc, { forbidden });
+        }
+
+        // The change count of single versions without the `forbidden` fields,
+        // each since the version before it, in two queries
+        async function recountChanges(items) {
+          if (!items.length) {
+            return;
+          }
+          const [ full, older ] = await Promise.all([
+            self.find(req, { _id: { $in: records.map(record => record._id) } }),
+            self.findOne(req, olderThan(criteria, records.at(-1).createdAt))
+          ]);
+          const byId = new Map(full.map(version => [ version._id, version ]));
+          const previousOf = new Map(records.map((record, i) => [
+            record._id,
+            (i + 1 < records.length) ? byId.get(records[i + 1]._id) : older
+          ]));
+          for (const item of items) {
+            const version = byId.get(item._id);
+            const previous = previousOf.get(item._id);
+            item.changeCount = (
+              version && previous && !item.restoredFrom &&
+              self.apos.doc.getManager(version.doc.type)
+            )
+              ? self.getChangeCount(req, version.doc, previous.doc, { forbidden })
+              : 0;
+          }
         }
       },
       // The sequence of `version` from it down, newest first, as projected
@@ -999,11 +1039,23 @@ module.exports = {
       // `getAnnotatedDoc`); a first or restored version has none. `consolidate`
       // marks the changes of the whole consolidated version `versionId` is the
       // newest of, AI involvement included. With `annotate` the version also
-      // has `fields`, the changes of the fields a widget renders in place
+      // has `fields`, the changes of the fields a widget renders in place.
+      // Changes to fields `req` may not view (`viewPermission`) are neither
+      // marked nor counted
       async getOne(req, versionId, { annotate = false, consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
         const version = await self.getEditableVersion(draftReq, versionId);
         const manager = self.apos.doc.getManager(version.doc.type);
+        const forbidden = manager
+          ? self.getForbiddenFieldNames(req, manager)
+          : new Set();
+
+        if (forbidden.size && !version.restoredFrom) {
+          const previous = await self.getPreviousVersion(draftReq, version);
+          version.changeCount = previous
+            ? self.getChangeCount(req, version.doc, previous.doc, { forbidden })
+            : 0;
+        }
 
         if (annotate && manager && !version.restoredFrom) {
           const item = await self.getVersionPairs(
@@ -1014,7 +1066,8 @@ module.exports = {
           const { pairs } = item;
           if (pairs.length) {
             const before = await self.getAiRowsBefore(draftReq, item);
-            const rows = self.getConsolidatedRows(req, pairs, { before });
+            const rows = self.getConsolidatedRows(req, pairs, { before })
+              .filter(row => !forbidden.has(row.path[0].name));
             const stored = version.doc;
             version.doc = self.getAnnotatedDoc(req, pairs[0].older, stored, { rows });
             version.fields = getFieldChanges(rows, stored);
@@ -1367,15 +1420,19 @@ module.exports = {
       // text, word diff and formatting changes (see `lib/text.js`), an array
       // item added or deleted whole its fields as rows of their own
       // (`fieldRows`). `before` are the rows AI changed before the pairs (see
-      // `getAiRowsBefore`). Checks no permission on the contents; related
+      // `getAiRowsBefore`). Checks no permission on the contents, except that
+      // fields `req` may not view (`viewPermission`) are left out; related
       // documents read as `req` sees them. Empty for no pairs and for a type
       // whose module is gone
       async getChangeList(req, pairs, { before } = {}) {
         let rows = [];
-        if (pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type)) {
+        const manager = pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type);
+        if (manager) {
           const ctx = self.getDiffContext(req, pairs.at(-1).newer);
+          const forbidden = self.getForbiddenFieldNames(req, manager);
           rows = diff.addItemFields(
-            self.getConsolidatedRows(req, pairs, { before }),
+            self.getConsolidatedRows(req, pairs, { before })
+              .filter(row => !forbidden.has(row.path[0].name)),
             ctx
           );
           const all = [ ...rows, ...rows.flatMap(row => row.fieldRows || []) ];
@@ -1396,6 +1453,15 @@ module.exports = {
             ai: rows.filter(row => row.ai).length
           }
         };
+      },
+      // The names of the top-level fields of `manager`'s schema that its
+      // `removeForbiddenFields` removes for `req`
+      getForbiddenFieldNames(req, manager) {
+        const probe = Object.fromEntries(
+          manager.schema.map(field => [ field.name, true ])
+        );
+        const kept = manager.removeForbiddenFields(req, { ...probe }) || {};
+        return new Set(Object.keys(probe).filter(name => !(name in kept)));
       },
       // Every change from `older` to `newer`, two stored versions of one
       // document, as rows at full depth (see `lib/diff.js`)
@@ -1471,13 +1537,17 @@ module.exports = {
       },
       // The number of changes from `previousDoc`, an unpacked version
       // content, to `doc`: the rows its change list shows. Stored as a
-      // version's `changeCount`
-      getChangeCount(req, doc, previousDoc) {
-        return self.getChangeRows(
+      // version's `changeCount`. `forbidden` are top-level field names whose
+      // changes are not counted (see `getForbiddenFieldNames`)
+      getChangeCount(req, doc, previousDoc, { forbidden } = {}) {
+        const rows = self.getChangeRows(
           req,
           previousDoc,
           self.apos.util.clonePermanent(doc)
-        ).length;
+        );
+        return forbidden?.size
+          ? rows.filter(row => !forbidden.has(row.path[0].name)).length
+          : rows.length;
       },
       // What the diff engine needs from the rest of Apostrophe. `doc`, the
       // document compared, names it in the log when the engine recovers from

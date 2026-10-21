@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-beta.14 (2026-10-14)
+
+### Fixes
+
+- Adds missing de, es, fr, it, pt-BR and sk translations for the Recently Edited manager, background styles, layout column editing, breakpoint preview, publication status and other admin UI strings, the import-export draft and AI translation options, and the AI Helper "Generate Variant" button.
+
 ## 1.0.0-beta.13 (2026-09-30)
 
 ### Changes
