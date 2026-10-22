@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import {
-  ref, computed, nextTick
+  ref, shallowRef, computed, nextTick
 } from 'vue';
 
 export const useWidgetStore = defineStore('widget', () => {
@@ -16,6 +16,10 @@ export const useWidgetStore = defineStore('widget', () => {
   const selectionAnchorId = ref(null);
   const pinnedWidgetIds = ref([]);
   const selectionGraphKey = ref(null);
+  // The modal, inline array item or page (`document`) the selection was
+  // made in. Null when the selection came from `setFocusedWidget`, which
+  // does not know it. A DOM node, so it is not made deeply reactive.
+  const selectionScope = shallowRef(null);
   // Set in the same turn a multi-selection replaces single-widget controls,
   // while focus is still inside them. The selection bar consumes it.
   const selectionToolbarFocus = ref(false);
@@ -111,6 +115,7 @@ export const useWidgetStore = defineStore('widget', () => {
       selectionAnchorId.value = null;
       pinnedWidgetIds.value = [];
       selectionGraphKey.value = null;
+      selectionScope.value = null;
       selectionToolbarFocus.value = false;
       focusedWidget.value = null;
       setFocusedArea(null);
@@ -119,6 +124,7 @@ export const useWidgetStore = defineStore('widget', () => {
     selectedWidgetIds.value = [ id ];
     selectionAnchorId.value = id;
     pinnedWidgetIds.value = [ id ];
+    selectionScope.value = null;
     focusedWidget.value = id;
     setFocusedArea(areaId);
 
@@ -131,7 +137,8 @@ export const useWidgetStore = defineStore('widget', () => {
   function setWidgetSelection(next, {
     primaryId = null,
     areaId = null,
-    graphKey = null
+    graphKey = null,
+    scope = null
   } = {}) {
     const selected = [ ...(next?.selectedWidgetIds || []) ];
     const enteringMulti = selectedWidgetIds.value.length <= 1 && selected.length > 1;
@@ -148,8 +155,14 @@ export const useWidgetStore = defineStore('widget', () => {
     pinnedWidgetIds.value = [ ...(next?.pinnedWidgetIds || []) ];
     if (!selected.length) {
       selectionGraphKey.value = null;
-    } else if (graphKey) {
-      selectionGraphKey.value = graphKey;
+      selectionScope.value = null;
+    } else {
+      if (graphKey) {
+        selectionGraphKey.value = graphKey;
+      }
+      if (scope) {
+        selectionScope.value = scope;
+      }
     }
     const primary = selected.includes(primaryId)
       ? primaryId
@@ -284,6 +297,7 @@ export const useWidgetStore = defineStore('widget', () => {
     selectionAnchorId,
     pinnedWidgetIds,
     selectionGraphKey,
+    selectionScope,
     selectionToolbarFocus,
     selectionRevision,
     hoveredWidget,

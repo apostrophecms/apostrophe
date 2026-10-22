@@ -10,6 +10,7 @@ import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
 import { contiguousRange } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
 import { notifyClipboard, runWidgetBatch } from 'Modules/@apostrophecms/area/lib/batch-widgets.js';
+import { selectionScope as scopeOf } from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
 import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { klona } from 'klona';
 
@@ -108,7 +109,8 @@ export default {
       'hoveredWidget',
       'focusedArea',
       'selectedWidgetIds',
-      'selectionGraphKey'
+      'selectionGraphKey',
+      'selectionScope'
     ]),
     isEmptySingleton() {
       return this.next.length === 0 &&
@@ -313,7 +315,14 @@ export default {
       this[name]({ index: this.focusedWidgetIndex });
     },
     ownsFocusedWidget() {
-      return this.next.some((widget) => widget._id === this.focusedWidget);
+      return this.inSelectionScope() &&
+        this.next.some((widget) => widget._id === this.focusedWidget);
+    },
+    // The page and a modal can both hold an area with the same widgets in
+    // it, as when the widget editor shows a layout's columns. Only the
+    // copy in the selection's scope takes part in a batch.
+    inSelectionScope() {
+      return !this.selectionScope || scopeOf(this.$el) === this.selectionScope;
     },
     runSelectionBatch(name) {
       const graphKey = this.selectionGraphKey || unref(this.aposGraphKey);
@@ -324,7 +333,7 @@ export default {
       });
     },
     onSelectionCollect(bag) {
-      if (this.foreign || !bag?.entries) {
+      if (this.foreign || !bag?.entries || !this.inSelectionScope()) {
         return;
       }
       const selected = new Set(this.selectedWidgetIds);
@@ -340,7 +349,7 @@ export default {
     onSelectionMutate({
       name, ids, changes
     } = {}) {
-      if (this.foreign || !ids?.length) {
+      if (this.foreign || !ids?.length || !this.inSelectionScope()) {
         return;
       }
       const idSet = new Set(ids);
@@ -1086,7 +1095,8 @@ export default {
         }, {
           primaryId: ids[ids.length - 1],
           areaId: this.areaId,
-          graphKey: unref(this.aposGraphKey)
+          graphKey: unref(this.aposGraphKey),
+          scope: scopeOf(this.$el)
         });
         await this.$nextTick();
         await this.scrollToWidget(ids[ids.length - 1]);

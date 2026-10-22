@@ -51,9 +51,9 @@ export default {
   },
   computed: {
     ...mapState(useWidgetStore, [
-      'focusedWidget',
       'selectedWidgetIds',
       'selectionGraphKey',
+      'selectionScope',
       'selectionToolbarFocus',
       'selectionRevision'
     ]),
@@ -61,10 +61,10 @@ export default {
       return this.selectedWidgetIds.length > 1;
     },
     inModal() {
-      const el = this.focusedWidget
-        ? widgetContext(this.focusedWidget)?.el
-        : null;
-      return !!el?.closest('[data-apos-modal]');
+      return !!this.scope.closest?.('[data-apos-modal]');
+    },
+    scope() {
+      return this.selectionScope || document;
     },
     graphKey() {
       return this.selectionGraphKey || window.apos.adminBar?.contextId || null;
@@ -86,7 +86,7 @@ export default {
       if (!ids.length) {
         return null;
       }
-      const contexts = ids.map((id) => widgetContext(id)).filter(Boolean);
+      const contexts = ids.map((id) => widgetContext(id, this.scope)).filter(Boolean);
       if (contexts.length !== ids.length) {
         return null;
       }
@@ -99,7 +99,7 @@ export default {
     controls() {
       const range = this.moveRange;
       const itemCount = range
-        ? (widgetContext(this.effectiveIds[0])?.itemIds.length || 0)
+        ? (widgetContext(this.effectiveIds[0], this.scope)?.itemIds.length || 0)
         : 0;
       return this.commonOperations
         .filter((operation) => {
@@ -125,7 +125,7 @@ export default {
     },
     commonOperations() {
       const lists = this.selectedWidgetIds.map((id) => {
-        return this.operationsFor(widgetContext(id)?.type);
+        return this.operationsFor(widgetContext(id, this.scope)?.type);
       });
       const allowlist = window.apos.area?.batchWidgetOperations || [
         'up',

@@ -3,14 +3,55 @@ import {
   selectionGesture
 } from './widget-selection.js';
 
+// A selection never reaches past a modal or an inline array item. Each is
+// a scope of its own, and the page is the scope of everything else.
+const SCOPE_SELECTOR = '[data-apos-modal], [data-apos-input-array-inline-item]';
+
+export function selectionScope(el) {
+  return el?.closest?.(SCOPE_SELECTOR) || document;
+}
+
+// The same widget can be on the page and in a modal at once, as in the
+// widget editor's copy of a layout's columns, so a widget is only looked
+// up in its scope.
+export function widgetElement(widgetId, scope = document) {
+  if (!widgetId || !scope) {
+    return null;
+  }
+  for (const el of scope.querySelectorAll(widgetSelector(widgetId))) {
+    if (selectionScope(el) === scope) {
+      return el;
+    }
+  }
+  return null;
+}
+
+// The scope `ids` were selected in, when the store does not know it:
+// `scope` if every one of them is there, otherwise null.
+export function scopeOfIds(ids, scope) {
+  return ids.every((id) => widgetElement(id, scope)) ? scope : null;
+}
+
+// Every layout widget module, subclasses included, names the widget type
+// of its columns.
+export function isLayoutColumn(widgetId, scope = document) {
+  const type = widgetElement(widgetId, scope)?.getAttribute('data-apos-widget-type');
+  if (!type) {
+    return false;
+  }
+  return Object.values(window.apos?.modules || {}).some((module) => {
+    return module?.columnWidgetName === type;
+  });
+}
+
 // The area and sibling ids for a widget, from the edit-mode DOM. The
 // widget's own element is not an area, so the nearest area is the one
 // that contains it, not an area nested inside it.
-export function widgetContext(widgetId) {
+export function widgetContext(widgetId, scope = document) {
   if (!widgetId || typeof document === 'undefined') {
     return null;
   }
-  const el = document.querySelector(widgetSelector(widgetId));
+  const el = widgetElement(widgetId, scope);
   if (!el) {
     return null;
   }
@@ -66,47 +107,64 @@ export function deepestWidgetId(x, y) {
   return deepest?.id || null;
 }
 
+// `el` is the element of the widget that received the event, and
+// `stateScope` is the scope the current selection was made in, if known.
+// A meta-click or shift-click in another scope is ignored.
 export function nextSelectionFromClick({
   event = null,
   widgetId = null,
+  el = null,
   fallbackAreaId = null,
-  state
+  state,
+  stateScope = null
 } = {}) {
   if (!widgetId) {
     return {
       next: applyWidgetSelection({ widgetId: null }),
       primaryId: null,
-      areaId: null
+      areaId: null,
+      scope: null
     };
   }
+  const scope = selectionScope(el);
   const gesture = multiGesture(event);
-  const id = innerWidgetId(event, widgetId);
-  const target = widgetContext(id);
-  const anchor = state.selectionAnchorId
-    ? widgetContext(state.selectionAnchorId)
-    : null;
-  const areaId = target?.areaId || fallbackAreaId;
-  const anchorAreaId = anchor?.areaId || null;
+  if (
+    gesture !== 'plain' &&
+    state.selectedWidgetIds.length &&
+    (stateScope || scopeOfIds(state.selectedWidgetIds, scope)) !== scope
+  ) {
+    return { ignored: true };
+  }
+  const id = innerWidgetId(event, widgetId, scope);
   const next = applyWidgetSelection({
     state,
     gesture,
     widgetId: id,
-    areaId,
-    anchorAreaId,
-    areaItemIds: areaId && areaId === anchorAreaId
-      ? (anchor?.itemIds || target?.itemIds || [])
-      : (target?.itemIds || [])
+    parentOf: (child) => parentWidgetId(child, scope),
+    areaOf: (child) => widgetContext(child, scope),
+    isColumn: (child) => isLayoutColumn(child, scope)
   });
+  if (next === state) {
+    return { ignored: true };
+  }
+  // The click may have selected the widget's ancestor instead.
+  const clicked = widgetElement(id, scope);
   const primaryId = next.selectedWidgetIds.includes(id)
     ? id
-    : (next.selectedWidgetIds[next.selectedWidgetIds.length - 1] || null);
-  const primaryAreaId = primaryId
-    ? (widgetContext(primaryId)?.areaId || areaId)
-    : null;
+    : (
+      next.selectedWidgetIds.find((selected) => {
+        return widgetElement(selected, scope)?.contains(clicked);
+      }) ||
+      next.selectedWidgetIds[next.selectedWidgetIds.length - 1] ||
+      null
+    );
   return {
     next,
     primaryId,
-    areaId: primaryAreaId
+    areaId: primaryId
+      ? (widgetContext(primaryId, scope)?.areaId || fallbackAreaId)
+      : null,
+    scope
   };
 }
 
@@ -126,13 +184,13 @@ export function isEditingContext(target) {
   return Boolean(target.closest('.apos-modal, [data-apos-schema-area]'));
 }
 
-// The nearest ancestor widget. Foreign widgets are not selectable, so the
-// walk continues through them to the next real parent.
-export function parentWidgetId(widgetId) {
-  let current = widgetContext(widgetId)?.el || null;
+// The nearest ancestor widget in `scope`. Foreign widgets are not
+// selectable, so the walk continues through them to the next real parent.
+export function parentWidgetId(widgetId, scope = document) {
+  let current = widgetElement(widgetId, scope);
   while (current) {
     const parent = current.parentElement?.closest('[data-apos-widget-id]');
-    if (!parent) {
+    if (!parent || selectionScope(parent) !== scope) {
       return null;
     }
     if (parent.getAttribute('data-apos-widget-foreign') !== '1') {
@@ -143,15 +201,19 @@ export function parentWidgetId(widgetId) {
   return null;
 }
 
-// Widget ids whose boxes overlap `rect`, in document order. A shared edge
-// is not an overlap. Foreign widgets are skipped: batch edits ignore them.
-export function widgetIdsInRect(rect) {
+// Widget ids in `scope` whose boxes overlap `rect`, in document order. A
+// shared edge is not an overlap. Foreign widgets are skipped: batch edits
+// ignore them.
+export function widgetIdsInRect(rect, scope = document) {
   if (typeof document === 'undefined' || !rect) {
     return [];
   }
   const boxes = [];
-  for (const el of document.querySelectorAll('[data-apos-widget-id]')) {
-    if (el.getAttribute('data-apos-widget-foreign') === '1') {
+  for (const el of scope.querySelectorAll('[data-apos-widget-id]')) {
+    if (
+      el.getAttribute('data-apos-widget-foreign') === '1' ||
+      selectionScope(el) !== scope
+    ) {
       continue;
     }
     const id = el.getAttribute('data-apos-widget-id');
@@ -220,7 +282,7 @@ function multiGesture(event) {
 // pointer, when that widget sits inside the one that received the event.
 // Labels and toolbars name a widget on purpose, and keyboard events have no
 // pointer to follow.
-function innerWidgetId(event, widgetId) {
+function innerWidgetId(event, widgetId, scope) {
   if (!event || (event.type !== 'click' && event.type !== 'mousedown')) {
     return widgetId;
   }
@@ -232,9 +294,9 @@ function innerWidgetId(event, widgetId) {
   if (!deepest || deepest === widgetId) {
     return widgetId;
   }
-  const host = widgetContext(widgetId);
-  const inner = widgetContext(deepest);
-  if (host?.el && inner?.el && host.el.contains(inner.el)) {
+  const host = widgetElement(widgetId, scope);
+  const inner = widgetElement(deepest, scope);
+  if (host && inner && host.contains(inner)) {
     return deepest;
   }
   return widgetId;

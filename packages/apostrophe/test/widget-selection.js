@@ -15,14 +15,12 @@ describe('widget selection', function() {
   it('toggles a widget on and off and resets the anchor', function() {
     const first = lib.applyWidgetSelection({
       gesture: 'plain',
-      widgetId: 'a',
-      areaId: 'area'
+      widgetId: 'a'
     });
     const added = lib.applyWidgetSelection({
       state: first,
       gesture: 'toggle',
-      widgetId: 'b',
-      areaId: 'area'
+      widgetId: 'b'
     });
     assert.deepEqual(added.selectedWidgetIds, [ 'a', 'b' ]);
     assert.equal(added.selectionAnchorId, 'b');
@@ -31,8 +29,7 @@ describe('widget selection', function() {
     const removed = lib.applyWidgetSelection({
       state: added,
       gesture: 'toggle',
-      widgetId: 'a',
-      areaId: 'area'
+      widgetId: 'a'
     });
     assert.deepEqual(removed.selectedWidgetIds, [ 'b' ]);
     assert.equal(removed.selectionAnchorId, 'b');
@@ -41,19 +38,19 @@ describe('widget selection', function() {
 
   it('selects a same-area range and shrinks it on a shorter shift-click', function() {
     const items = [ 'a', 'b', 'c', 'd', 'e' ];
+    const areaOf = () => ({
+      areaId: 'area',
+      itemIds: items
+    });
     const anchor = lib.applyWidgetSelection({
       gesture: 'plain',
-      widgetId: 'b',
-      areaId: 'area',
-      areaItemIds: items
+      widgetId: 'b'
     });
     const range = lib.applyWidgetSelection({
       state: anchor,
       gesture: 'range',
       widgetId: 'e',
-      areaId: 'area',
-      anchorAreaId: 'area',
-      areaItemIds: items
+      areaOf
     });
     assert.deepEqual(range.selectedWidgetIds, [ 'b', 'c', 'd', 'e' ]);
     assert.equal(range.selectionAnchorId, 'b');
@@ -63,31 +60,191 @@ describe('widget selection', function() {
       state: range,
       gesture: 'range',
       widgetId: 'c',
-      areaId: 'area',
-      anchorAreaId: 'area',
-      areaItemIds: items
+      areaOf
     });
     assert.deepEqual(shorter.selectedWidgetIds, [ 'b', 'c' ]);
     assert.equal(shorter.selectionAnchorId, 'b');
   });
 
-  it('treats a shift-click in another area as a plain click', function() {
-    const anchor = lib.applyWidgetSelection({
-      gesture: 'plain',
-      widgetId: 'a',
-      areaId: 'one'
+  // page
+  //   main: top-1, layout, top-2, top-3, hero
+  //     layout: col-a, col-b, col-c
+  //       col-b: deep
+  //     hero
+  //       left: h-1, h-2, h-3
+  //       right: h-4, h-5
+  //   footer: foot
+  const tree = {
+    'col-a': 'layout',
+    'col-b': 'layout',
+    'col-c': 'layout',
+    deep: 'col-b',
+    'h-1': 'hero',
+    'h-2': 'hero',
+    'h-3': 'hero',
+    'h-4': 'hero',
+    'h-5': 'hero'
+  };
+  const areas = {
+    main: [ 'top-1', 'layout', 'top-2', 'top-3', 'hero' ],
+    columns: [ 'col-a', 'col-b', 'col-c' ],
+    inner: [ 'deep' ],
+    left: [ 'h-1', 'h-2', 'h-3' ],
+    right: [ 'h-4', 'h-5' ],
+    footer: [ 'foot' ]
+  };
+  const parentOf = (id) => tree[id] || null;
+  const areaOf = (id) => {
+    const [ areaId, itemIds ] = Object.entries(areas)
+      .find(([ , ids ]) => ids.includes(id)) || [];
+    return areaId
+      ? {
+        areaId,
+        itemIds
+      }
+      : null;
+  };
+  const select = (state, gesture, widgetId) => {
+    return lib.applyWidgetSelection({
+      state,
+      gesture,
+      widgetId,
+      parentOf,
+      areaOf
     });
-    const shifted = lib.applyWidgetSelection({
-      state: anchor,
-      gesture: 'range',
-      widgetId: 'z',
-      areaId: 'two',
-      anchorAreaId: 'one',
-      areaItemIds: [ 'z' ]
+  };
+
+  it('lifts a meta-click inside a compound widget to that widget', function() {
+    const first = select(undefined, 'plain', 'top-1');
+    const added = select(first, 'toggle', 'col-b');
+    assert.deepEqual(added.selectedWidgetIds, [ 'top-1', 'layout' ]);
+    assert.equal(added.selectionAnchorId, 'layout');
+
+    const deeper = select(first, 'toggle', 'deep');
+    assert.deepEqual(deeper.selectedWidgetIds, [ 'top-1', 'layout' ]);
+  });
+
+  it('lifts a nested selection when a meta-click lands on a peer of its compound widget', function() {
+    const first = select(undefined, 'plain', 'col-a');
+    const siblings = select(first, 'toggle', 'col-c');
+    assert.deepEqual(siblings.selectedWidgetIds, [ 'col-a', 'col-c' ]);
+    const lifted = select(siblings, 'toggle', 'top-2');
+    assert.deepEqual(lifted.selectedWidgetIds, [ 'layout', 'top-2' ]);
+  });
+
+  it('selects widgets in different areas of the same parent', function() {
+    const first = select(undefined, 'plain', 'h-1');
+    const added = select(first, 'toggle', 'h-5');
+    assert.deepEqual(added.selectedWidgetIds, [ 'h-1', 'h-5' ]);
+    const lifted = select(added, 'toggle', 'top-1');
+    assert.deepEqual(lifted.selectedWidgetIds, [ 'hero', 'top-1' ]);
+  });
+
+  it('deselects a compound widget when a meta-click lands inside it', function() {
+    const first = select(undefined, 'plain', 'top-1');
+    const added = select(first, 'toggle', 'col-b');
+    const removed = select(added, 'toggle', 'col-a');
+    assert.deepEqual(removed.selectedWidgetIds, [ 'top-1' ]);
+    assert.equal(removed.selectionAnchorId, 'top-1');
+  });
+
+  it('keeps a compound widget when another selected widget still lives in it', function() {
+    const state = {
+      selectedWidgetIds: [ 'col-a', 'col-b' ],
+      selectionAnchorId: 'col-b',
+      pinnedWidgetIds: [ 'col-a', 'col-b' ]
+    };
+    const removed = select(state, 'toggle', 'col-a');
+    assert.deepEqual(removed.selectedWidgetIds, [ 'col-b' ]);
+    // Turning a nested widget off while the selection spans its parent's
+    // peers leaves the compound widget alone when col-b is still in it.
+    assert.deepEqual(
+      lib.liftToCommonParent([ 'col-a', 'col-b', 'top-2' ], {
+        parentOf,
+        removeId: 'col-a'
+      }),
+      [ 'layout', 'top-2' ]
+    );
+    assert.deepEqual(
+      lib.liftToCommonParent([ 'col-a', 'top-2' ], {
+        parentOf,
+        removeId: 'col-a'
+      }),
+      [ 'top-2' ]
+    );
+  });
+
+  it('turns off the only selected widget', function() {
+    const first = select(undefined, 'plain', 'layout');
+    const removed = select(first, 'toggle', 'deep');
+    assert.deepEqual(removed.selectedWidgetIds, []);
+    assert.equal(removed.selectionAnchorId, null);
+  });
+
+  it('fills the gaps when a shift-click spans a compound widget and its peers', function() {
+    const first = select(undefined, 'plain', 'col-b');
+    const spanned = select(first, 'range', 'top-3');
+    assert.deepEqual(spanned.selectedWidgetIds, [ 'layout', 'top-2', 'top-3' ]);
+    assert.deepEqual(spanned.pinnedWidgetIds, [ 'col-b' ]);
+
+    const inside = select(spanned, 'range', 'col-c');
+    assert.deepEqual(inside.selectedWidgetIds, [ 'col-b', 'col-c' ]);
+
+    const top = select(undefined, 'plain', 'top-1');
+    const into = select(top, 'range', 'deep');
+    assert.deepEqual(into.selectedWidgetIds, [ 'top-1', 'layout' ]);
+  });
+
+  it('fills gaps in each area separately', function() {
+    const first = select(undefined, 'plain', 'h-1');
+    const added = select(first, 'toggle', 'h-4');
+    const spanned = select(added, 'range', 'h-3');
+    assert.deepEqual(spanned.selectedWidgetIds, [ 'h-1', 'h-2', 'h-3', 'h-4' ]);
+  });
+
+  it('ignores a meta-click or shift-click on a widget from another top-level area', function() {
+    const first = select(undefined, 'plain', 'deep');
+    assert.equal(select(first, 'toggle', 'foot'), first);
+    assert.equal(select(first, 'range', 'foot'), first);
+    const top = select(undefined, 'plain', 'top-1');
+    assert.equal(select(top, 'toggle', 'foot'), top);
+    assert.equal(select(top, 'range', 'foot'), top);
+    assert.equal(
+      lib.liftToCommonParent([ 'col-a', 'foot' ], {
+        parentOf,
+        areaOf
+      }),
+      null
+    );
+  });
+
+  it('captures only widgets from one top-level area in a drag', function() {
+    const options = {
+      parentOf,
+      areaOf
+    };
+    const fromSelection = lib.addCapturedWidgets(
+      select(undefined, 'plain', 'top-1'),
+      [ 'top-3', 'hero', 'foot' ],
+      options
+    );
+    assert.deepEqual(fromSelection.selectedWidgetIds, [ 'top-1', 'top-3', 'hero' ]);
+
+    const elsewhere = lib.addCapturedWidgets(
+      select(undefined, 'plain', 'top-1'),
+      [ 'foot' ],
+      options
+    );
+    assert.deepEqual(elsewhere.selectedWidgetIds, [ 'top-1' ]);
+
+    const fromStart = lib.addCapturedWidgets(undefined, [ 'hero', 'foot' ], {
+      ...options,
+      startId: 'foot'
     });
-    assert.deepEqual(shifted.selectedWidgetIds, [ 'z' ]);
-    assert.equal(shifted.selectionAnchorId, 'z');
-    assert.deepEqual(shifted.pinnedWidgetIds, [ 'z' ]);
+    assert.deepEqual(fromStart.selectedWidgetIds, [ 'foot' ]);
+
+    const fromFirst = lib.addCapturedWidgets(undefined, [ 'top-3', 'hero', 'foot' ], options);
+    assert.deepEqual(fromFirst.selectedWidgetIds, [ 'top-3', 'hero' ]);
   });
 
   it('combines removals from several areas into one undo edit', function() {
@@ -138,36 +295,6 @@ describe('widget selection', function() {
     assert.deepEqual(combined.inverse.$push['@column-a.items'].$each, [ { _id: 'w1' } ]);
     assert.equal(combined.inverse.$push['@column-b.items'].$before, 'keep');
     assert.equal(combined.target.widgetId, 'w1');
-  });
-
-  it('keeps pinned widgets from outside the area when a shift-click changes the sibling range', function() {
-    const items = [ 'a', 'b', 'c', 'd' ];
-    const withOutside = {
-      selectedWidgetIds: [ 'a', 'child-1', 'child-2' ],
-      selectionAnchorId: 'a',
-      pinnedWidgetIds: [ 'a', 'child-1', 'child-2' ]
-    };
-
-    const ranged = lib.applyWidgetSelection({
-      state: withOutside,
-      gesture: 'range',
-      widgetId: 'c',
-      areaId: 'area',
-      anchorAreaId: 'area',
-      areaItemIds: items
-    });
-    assert.deepEqual(ranged.selectedWidgetIds, [ 'child-1', 'child-2', 'a', 'b', 'c' ]);
-    assert.deepEqual(ranged.pinnedWidgetIds, [ 'a', 'child-1', 'child-2' ]);
-
-    const shrunk = lib.applyWidgetSelection({
-      state: ranged,
-      gesture: 'range',
-      widgetId: 'a',
-      areaId: 'area',
-      anchorAreaId: 'area',
-      areaItemIds: items
-    });
-    assert.deepEqual(shrunk.selectedWidgetIds, [ 'child-1', 'child-2', 'a' ]);
   });
 
   it('drops a selected descendant when its ancestor is also selected', function() {
@@ -311,9 +438,10 @@ describe('widget selection', function() {
     assert.deepEqual(capturedParent.selectedWidgetIds, [ 'parent' ]);
     assert.equal(capturedParent.selectionAnchorId, 'parent');
 
+    // keeper is top-level, so the child is lifted to keep one parent.
     const onlyChild = lib.addCapturedWidgets(state, [ 'child' ], { parentOf });
-    assert.deepEqual(onlyChild.selectedWidgetIds, [ 'keeper', 'child' ]);
-    assert.equal(onlyChild.selectionAnchorId, 'child');
+    assert.deepEqual(onlyChild.selectedWidgetIds, [ 'keeper', 'grandparent' ]);
+    assert.equal(onlyChild.selectionAnchorId, 'grandparent');
   });
 
   it('selects one nested widget instead of the layout that contains it', function() {
@@ -341,7 +469,211 @@ describe('widget selection', function() {
       selectionAnchorId: 'grandparent',
       pinnedWidgetIds: [ 'grandparent', 'keeper' ]
     }, [ 'grandparent', 'parent', 'child' ], { parentOf });
-    assert.deepEqual(narrowed.selectedWidgetIds, [ 'keeper', 'child' ]);
-    assert.equal(narrowed.selectionAnchorId, 'child');
+    assert.deepEqual(narrowed.selectedWidgetIds, [ 'keeper', 'grandparent' ]);
+    assert.equal(narrowed.selectionAnchorId, 'grandparent');
+  });
+
+  describe('layout columns', function() {
+    // main: top, layout
+    //   layout columns: col-1, col-2 (layout columns)
+    //     col-1: g-1, g-2
+    //     col-2: g-3
+    const parents = {
+      'col-1': 'layout',
+      'col-2': 'layout',
+      'g-1': 'col-1',
+      'g-2': 'col-1',
+      'g-3': 'col-2'
+    };
+    const lists = {
+      main: [ 'top', 'layout' ],
+      columns: [ 'col-1', 'col-2' ],
+      one: [ 'g-1', 'g-2' ],
+      two: [ 'g-3' ]
+    };
+    const tree = {
+      parentOf: (id) => parents[id] || null,
+      areaOf: (id) => {
+        const [ areaId, itemIds ] = Object.entries(lists)
+          .find(([ , ids ]) => ids.includes(id)) || [];
+        return areaId
+          ? {
+            areaId,
+            itemIds
+          }
+          : null;
+      },
+      isColumn: (id) => id.startsWith('col-')
+    };
+    const choose = (state, gesture, widgetId) => {
+      return lib.applyWidgetSelection({
+        state,
+        gesture,
+        widgetId,
+        ...tree
+      });
+    };
+
+    it('selects the layout for widgets in two of its columns', function() {
+      const first = choose(undefined, 'plain', 'g-1');
+      assert.deepEqual(choose(first, 'toggle', 'g-3').selectedWidgetIds, [ 'layout' ]);
+      assert.deepEqual(choose(first, 'range', 'g-3').selectedWidgetIds, [ 'layout' ]);
+      assert.deepEqual(choose(first, 'toggle', 'g-2').selectedWidgetIds, [ 'g-1', 'g-2' ]);
+    });
+
+    it('never selects a column with a meta-click or shift-click', function() {
+      const column = choose(undefined, 'plain', 'col-1');
+      assert.deepEqual(choose(column, 'toggle', 'col-2').selectedWidgetIds, [ 'layout' ]);
+      assert.deepEqual(choose(column, 'toggle', 'top').selectedWidgetIds, [ 'layout', 'top' ]);
+      assert.deepEqual(choose(column, 'range', 'top').selectedWidgetIds, [ 'top', 'layout' ]);
+      const top = choose(undefined, 'plain', 'top');
+      assert.deepEqual(choose(top, 'toggle', 'col-2').selectedWidgetIds, [ 'top', 'layout' ]);
+    });
+
+    it('never captures a column in a drag', function() {
+      const columns = lib.addCapturedWidgets(undefined, [ 'col-1', 'col-2' ], tree);
+      assert.deepEqual(columns.selectedWidgetIds, []);
+      const across = lib.addCapturedWidgets(undefined, [ 'col-1', 'g-1', 'col-2', 'g-3' ], tree);
+      assert.deepEqual(across.selectedWidgetIds, [ 'layout' ]);
+      assert.equal(across.selectionAnchorId, 'layout');
+      const within = lib.addCapturedWidgets(undefined, [ 'col-1', 'g-1', 'g-2' ], tree);
+      assert.deepEqual(within.selectedWidgetIds, [ 'g-1', 'g-2' ]);
+    });
+  });
+
+  describe('scopes', function() {
+    const { JSDOM } = require('jsdom');
+    const widget = (id, inner = '') => {
+      return `<div data-apos-widget-id="${id}" data-apos-widget-foreign="0">${inner}</div>`;
+    };
+    const area = (id, ...widgets) => {
+      return `<div data-apos-area="${id}"><div class="apos-areas-widgets-list">${widgets.join('')}</div></div>`;
+    };
+    // The widget editor shows the layout's columns with the same ids as
+    // the page, and an inline array item, artificially inside a widget,
+    // holds an area of its own.
+    const html = `
+      <main>${area('main', widget('top-1'), widget('layout', area('columns', widget('col-a'), widget('col-b'))))}</main>
+      <section data-apos-modal id="editor">
+        ${area('columns', widget('col-a'), widget('col-b'))}
+        ${widget('holder', '<div data-apos-input-array-inline-item id="item">' + area('item-area', widget('in-item')) + '</div>')}
+      </section>`;
+    let saved;
+
+    before(function() {
+      const { window } = new JSDOM(html);
+      saved = {
+        document: global.document,
+        window: global.window,
+        CSS: global.CSS
+      };
+      global.document = window.document;
+      global.window = window;
+      window.apos = { adminBar: { editMode: true } };
+      global.CSS = { escape: (value) => value };
+    });
+
+    after(function() {
+      Object.assign(global, saved);
+    });
+
+    const byId = (id) => document.getElementById(id);
+    const click = (scope, id, extra = {}) => {
+      const el = dom.widgetElement(id, scope);
+      return {
+        el,
+        event: {
+          type: 'click',
+          target: el,
+          ...extra
+        }
+      };
+    };
+
+    it('finds the copy of a widget in the scope asked for', function() {
+      const pageCopy = dom.widgetElement('col-a', document);
+      const modalCopy = dom.widgetElement('col-a', byId('editor'));
+      assert.ok(pageCopy && modalCopy && pageCopy !== modalCopy);
+      assert.equal(dom.selectionScope(pageCopy), document);
+      assert.equal(dom.selectionScope(modalCopy), byId('editor'));
+      assert.equal(dom.parentWidgetId('col-a', document), 'layout');
+      assert.equal(dom.parentWidgetId('col-a', byId('editor')), null);
+    });
+
+    it('stops the ancestor walk at an inline array item', function() {
+      const item = byId('item');
+      assert.equal(dom.selectionScope(dom.widgetElement('in-item', item)), item);
+      assert.equal(dom.parentWidgetId('in-item', item), null);
+      assert.equal(dom.widgetElement('in-item', byId('editor')), null);
+    });
+
+    it('selects in one scope and ignores a meta-click from another', function() {
+      const editor = byId('editor');
+      const page = lib.applyWidgetSelection({
+        gesture: 'plain',
+        widgetId: 'top-1'
+      });
+      const across = click(editor, 'col-b', { metaKey: true });
+      assert.equal(dom.nextSelectionFromClick({
+        ...across,
+        widgetId: 'col-b',
+        state: page,
+        stateScope: document
+      }).ignored, true);
+
+      const first = click(editor, 'col-a');
+      const plain = dom.nextSelectionFromClick({
+        ...first,
+        widgetId: 'col-a',
+        state: page,
+        stateScope: document
+      });
+      assert.equal(plain.scope, editor);
+      assert.deepEqual(plain.next.selectedWidgetIds, [ 'col-a' ]);
+
+      const second = click(editor, 'col-b', { metaKey: true });
+      const added = dom.nextSelectionFromClick({
+        ...second,
+        widgetId: 'col-b',
+        state: plain.next,
+        stateScope: plain.scope
+      });
+      assert.deepEqual(added.next.selectedWidgetIds, [ 'col-a', 'col-b' ]);
+      assert.equal(added.scope, editor);
+    });
+
+    it('recognizes the column type of any layout widget module', function() {
+      document.body.insertAdjacentHTML('beforeend', `
+        <div data-apos-area="extra">
+          <div data-apos-widget-id="custom-col" data-apos-widget-type="my-column"></div>
+          <div data-apos-widget-id="plain" data-apos-widget-type="rich-text"></div>
+        </div>`);
+      window.apos.modules = {
+        '@apostrophecms/layout-widget': { columnWidgetName: '@apostrophecms/layout-column' },
+        'my-layout-widget': { columnWidgetName: 'my-column' }
+      };
+      assert.equal(dom.isLayoutColumn('custom-col'), true);
+      assert.equal(dom.isLayoutColumn('plain'), false);
+    });
+
+    it('works out the scope of a selection the store did not record', function() {
+      const editor = byId('editor');
+      const state = lib.applyWidgetSelection({
+        gesture: 'plain',
+        widgetId: 'top-1'
+      });
+      const into = click(editor, 'col-b', { metaKey: true });
+      assert.equal(dom.nextSelectionFromClick({
+        ...into,
+        widgetId: 'col-b',
+        state
+      }).ignored, true);
+      const page = click(document, 'layout', { metaKey: true });
+      assert.deepEqual(dom.nextSelectionFromClick({
+        ...page,
+        widgetId: 'layout',
+        state
+      }).next.selectedWidgetIds, [ 'top-1', 'layout' ]);
+    });
   });
 });

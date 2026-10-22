@@ -3,7 +3,7 @@ import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import {
   combineContextEdits, outermostIds, selectionWithout
 } from './widget-selection.js';
-import { widgetContext, widgetSelector } from './widget-selection-dom.js';
+import { widgetContext, widgetElement } from './widget-selection-dom.js';
 
 // One batch edit, coordinated from the toolbar or a keyboard shortcut.
 // Area editors answer `widget-selection-collect` with the selected widgets
@@ -16,9 +16,10 @@ export function runWidgetBatch(name, { hasAncestor } = {}) {
   const kept = new Set(outermostIds(ids, (id, ancestorId) => {
     return hasAncestor ? hasAncestor(id, ancestorId) : false;
   }));
+  const scope = useWidgetStore(pinia).selectionScope || document;
   const entries = bag.entries
     .filter((entry) => kept.has(entry.widget._id))
-    .sort(byDocumentOrder);
+    .sort((a, b) => byDocumentOrder(a, b, scope));
   if (!entries.length) {
     return;
   }
@@ -99,17 +100,18 @@ function dropRemoved(removedIds, hasAncestor) {
     : next.selectedWidgetIds[next.selectedWidgetIds.length - 1];
   store.setWidgetSelection(next, {
     primaryId,
-    areaId: widgetContext(primaryId)?.areaId || store.focusedArea,
+    areaId: widgetContext(primaryId, store.selectionScope || document)?.areaId ||
+      store.focusedArea,
     graphKey: store.selectionGraphKey
   });
 }
 
-function byDocumentOrder(a, b) {
+function byDocumentOrder(a, b, scope) {
   if (typeof document === 'undefined') {
     return a.index - b.index;
   }
-  const aEl = document.querySelector(widgetSelector(a.widget._id));
-  const bEl = document.querySelector(widgetSelector(b.widget._id));
+  const aEl = widgetElement(a.widget._id, scope);
+  const bEl = widgetElement(b.widget._id, scope);
   if (!aEl || !bEl || aEl === bEl) {
     return a.index - b.index;
   }

@@ -249,7 +249,10 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 import changeTypes from 'Modules/@apostrophecms/document-versions/lib/change-types.js';
-import { nextSelectionFromClick } from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
+import {
+  nextSelectionFromClick,
+  selectionScope as scopeOf
+} from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
 
 export default {
   name: 'AposAreaWidget',
@@ -409,7 +412,8 @@ export default {
       'labeled',
       'selectedWidgetIds',
       'selectionAnchorId',
-      'pinnedWidgetIds'
+      'pinnedWidgetIds',
+      'selectionScope'
     ]),
     ...mapState(useBreakpointPreviewStore, { breakpointPreviewMode: 'mode' }),
     adminContentDirectionClass() {
@@ -511,8 +515,15 @@ export default {
     isMulti() {
       return this.selectedWidgetIds.length > 1;
     },
+    // A copy of this widget in another scope, such as the widget editor
+    // behind which this one sits on the page, is not selected.
     isSelected() {
-      return this.selectedWidgetIds.includes(this.widget._id);
+      if (!this.selectedWidgetIds.includes(this.widget._id)) {
+        return false;
+      }
+      return !this.selectionScope ||
+        !this.mounted ||
+        scopeOf(this.$el) === this.selectionScope;
     },
     // One selected widget keeps the breadcrumb, add menus and modify
     // controls. Several selected widgets drop that chrome and wear
@@ -919,17 +930,23 @@ export default {
       const result = nextSelectionFromClick({
         event: e,
         widgetId,
+        el: this.$el,
         fallbackAreaId: this.areaId,
         state: {
           selectedWidgetIds: this.selectedWidgetIds,
           selectionAnchorId: this.selectionAnchorId,
           pinnedWidgetIds: this.pinnedWidgetIds
-        }
+        },
+        stateScope: this.selectionScope
       });
+      if (result.ignored) {
+        return;
+      }
       this.setWidgetSelection(result.next, {
         primaryId: result.primaryId,
         areaId: result.areaId,
-        graphKey: unref(this.aposGraphKey)
+        graphKey: unref(this.aposGraphKey),
+        scope: result.scope
       });
       if (e?.shiftKey || result.next.selectedWidgetIds.length > 1) {
         this.clearNativeSelection();

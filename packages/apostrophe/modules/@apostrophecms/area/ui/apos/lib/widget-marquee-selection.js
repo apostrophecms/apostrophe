@@ -2,9 +2,14 @@ import createApp, { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
 import { addCapturedWidgets } from './widget-selection.js';
 import {
+  deepestWidgetId,
   isEditingContext,
+  isLayoutColumn,
   parentWidgetId,
+  scopeOfIds,
+  selectionScope,
   widgetContext,
+  widgetElement,
   widgetIdsInRect
 } from './widget-selection-dom.js';
 
@@ -32,8 +37,14 @@ function watchEditMode() {
       return;
     }
     const store = useWidgetStore(pinia);
-    const el = widgetContext(store.focusedWidget)?.el;
-    if (el?.closest('.apos-modal, [data-apos-schema-area]')) {
+    // A selection in a modal or an inline array item outlives edit mode.
+    const scope = store.selectionScope ||
+      scopeOfIds(store.selectedWidgetIds, document);
+    if (scope !== document) {
+      return;
+    }
+    const el = widgetElement(store.focusedWidget, scope);
+    if (el?.closest('[data-apos-schema-area]')) {
       return;
     }
     if (store.selectedWidgetIds?.length) {
@@ -73,6 +84,7 @@ function createMarqueeSelect() {
       pointerId: event.pointerId,
       active: false,
       inModal: Boolean(event.target.closest?.('.apos-modal')),
+      scope: selectionScope(event.target),
       theme: event.target.closest?.('.apos-theme--primary-default') ||
         document.querySelector('.apos-theme--primary-default')
     };
@@ -98,7 +110,8 @@ function createMarqueeSelect() {
         return;
       }
       drag.active = true;
-      drag.origin = selectionSnapshot();
+      drag.origin = selectionSnapshot(drag.scope);
+      drag.startId = deepestWidgetId(drag.x, drag.y);
       window.getSelection?.().removeAllRanges();
       showBox(drag);
       try {
@@ -140,7 +153,7 @@ function createMarqueeSelect() {
     // The pointer was taken away. Put back the selection from before
     // the preview rather than keeping a rectangle that never finished.
     if (event.type === 'pointercancel') {
-      writeSelection(finished.origin);
+      writeSelection(finished.origin, finished.origin.scope);
       return;
     }
     finished.x2 = event.clientX;
@@ -164,28 +177,37 @@ function createMarqueeSelect() {
   // Recompute the net from the selection held when the drag armed, so a
   // widget added by an earlier move is dropped when the rectangle leaves it.
   function previewSelection(current) {
-    const ids = widgetIdsInRect({
-      left: current.x,
-      top: current.y,
-      right: current.x2,
-      bottom: current.y2
+    // A drag in another scope than the selection captures nothing.
+    const { scope, origin } = current;
+    const ids = origin.selectedWidgetIds.length && origin.scope !== scope
+      ? []
+      : widgetIdsInRect({
+        left: current.x,
+        top: current.y,
+        right: current.x2,
+        bottom: current.y2
+      }, scope);
+    const next = addCapturedWidgets(origin, ids, {
+      parentOf: (id) => parentWidgetId(id, scope),
+      areaOf: (id) => widgetContext(id, scope),
+      isColumn: (id) => isLayoutColumn(id, scope),
+      startId: current.startId
     });
-    const next = addCapturedWidgets(current.origin, ids, {
-      parentOf: parentWidgetId
-    });
-    writeSelection(next);
+    writeSelection(next, scope);
   }
 
-  function selectionSnapshot() {
+  function selectionSnapshot(scope) {
     const store = useWidgetStore(pinia);
+    const selectedWidgetIds = [ ...(store.selectedWidgetIds || []) ];
     return {
-      selectedWidgetIds: [ ...(store.selectedWidgetIds || []) ],
+      selectedWidgetIds,
       selectionAnchorId: store.selectionAnchorId ?? null,
-      pinnedWidgetIds: [ ...(store.pinnedWidgetIds || []) ]
+      pinnedWidgetIds: [ ...(store.pinnedWidgetIds || []) ],
+      scope: store.selectionScope || scopeOfIds(selectedWidgetIds, scope)
     };
   }
 
-  function writeSelection(next) {
+  function writeSelection(next, scope) {
     const store = useWidgetStore(pinia);
     const selected = next?.selectedWidgetIds || [];
     const current = store.selectedWidgetIds || [];
@@ -196,7 +218,7 @@ function createMarqueeSelect() {
       return;
     }
     const primaryId = next.selectionAnchorId;
-    const context = primaryId ? widgetContext(primaryId) : null;
+    const context = primaryId ? widgetContext(primaryId, scope) : null;
     const graphKey = context?.el?.closest('[data-apos-graph-key]')
       ?.getAttribute('data-apos-graph-key') ||
       apos.adminBar?.contextId ||
@@ -204,7 +226,8 @@ function createMarqueeSelect() {
     store.setWidgetSelection(next, {
       primaryId,
       areaId: context?.areaId || null,
-      graphKey
+      graphKey,
+      scope
     });
   }
 
