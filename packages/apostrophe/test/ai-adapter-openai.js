@@ -148,9 +148,11 @@ describe('AI adapter: openai', function() {
 
   it('declares the reasoning efforts per model', function() {
     const { models } = apos.ai.getAdapter('openai');
-    assert.deepEqual(models['gpt-6-luna'].reasoning, [
-      'none', 'low', 'medium', 'high', 'xhigh', 'max'
-    ]);
+    for (const model of [ 'gpt-6-luna', 'gpt-5.6-terra' ]) {
+      assert.deepEqual(models[model].reasoning, [
+        'none', 'low', 'medium', 'high', 'xhigh', 'max'
+      ]);
+    }
     // The Sol and Astra models refuse 'none'
     for (const model of [ 'gpt-6.1-sol', 'gpt-6-astra' ]) {
       assert.deepEqual(models[model].reasoning, [

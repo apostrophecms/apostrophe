@@ -66,6 +66,21 @@ describe('AI adapter: bedrock', function() {
                 models: {
                   'claude-opus-6': { maxOutputTokens: 32000 }
                 }
+              },
+              'bedrock-openai': {
+                apiKey: 'bedrock-test',
+                region: 'us-west-2',
+                profile: 'global'
+              },
+              // A vendor with no dialect of its own here, by its
+              // Bedrock id
+              mistral: {
+                adapter: 'bedrock-openai-compatible',
+                apiKey: 'bedrock-test',
+                region: 'us-east-1',
+                models: {
+                  'mistral.mistral-large-3-675b-instruct': { maxOutputTokens: 32000 }
+                }
               }
             },
             // Keep retried tests fast; the delay engine has its own suite
@@ -113,6 +128,45 @@ describe('AI adapter: bedrock', function() {
       message
     }
   });
+  // A canned Responses API body; Bedrock echoes the wire id
+  const responsesFixture = (extras = {}) => ({
+    id: 'resp_1',
+    object: 'response',
+    status: 'completed',
+    output: [ {
+      type: 'message',
+      role: 'assistant',
+      content: [ {
+        type: 'output_text',
+        text: 'a haiku'
+      } ]
+    } ],
+    model: 'global.openai.gpt-6.1-sol',
+    usage: {
+      input_tokens: 12,
+      output_tokens: 7
+    },
+    ...extras
+  });
+  // A canned Chat Completions body
+  const completionsFixture = (extras = {}) => ({
+    id: 'chatcmpl-1',
+    object: 'chat.completion',
+    choices: [ {
+      index: 0,
+      message: {
+        role: 'assistant',
+        content: 'a haiku'
+      },
+      finish_reason: 'stop'
+    } ],
+    model: 'mistral.mistral-large-3-675b-instruct-v1:0',
+    usage: {
+      prompt_tokens: 12,
+      completion_tokens: 7
+    },
+    ...extras
+  });
   // An apos.http >= 400 throw: Error with status, headers, body
   const httpError = (status, headers = {}, body) => Object.assign(
     new Error(`HTTP error ${status}`),
@@ -122,6 +176,53 @@ describe('AI adapter: bedrock', function() {
       body
     }
   );
+
+  // Thunks consumed by the stubbed apos.http.post, one per call
+  let httpScript;
+  let httpCalls;
+  let logRecords;
+  // Stub the transport, the retry pause and the logs around a block of
+  // wire tests
+  const stubWire = () => {
+    let originalPost;
+
+    before(function() {
+      originalPost = apos.http.post;
+    });
+
+    after(function() {
+      apos.http.post = originalPost;
+    });
+
+    beforeEach(function() {
+      httpScript = [];
+      httpCalls = [];
+      logRecords = [];
+      usageRecords.length = 0;
+      apos.http.post = async (url, options) => {
+        httpCalls.push({
+          url,
+          options
+        });
+        const step = httpScript.shift();
+        if (step === undefined) {
+          throw new Error('post called beyond its script');
+        }
+        return step();
+      };
+      apos.ai.pause = async () => {};
+      for (const severity of [ 'Warn', 'Error' ]) {
+        apos.ai[`log${severity}`] = (req, type, message, data) => {
+          logRecords.push({
+            severity: severity.toLowerCase(),
+            type,
+            message,
+            data
+          });
+        };
+      }
+    });
+  };
 
   describe('bedrock-anthropic', function() {
     it('composes the anthropic adapter\'s lineup, narrowed to what Bedrock serves', function() {
@@ -193,48 +294,7 @@ describe('AI adapter: bedrock', function() {
     });
 
     describe('the wire', function() {
-      // Thunks consumed by the stubbed apos.http.post, one per call
-      let httpScript;
-      let httpCalls;
-      let logRecords;
-      let originalPost;
-
-      before(function() {
-        originalPost = apos.http.post;
-      });
-
-      after(function() {
-        apos.http.post = originalPost;
-      });
-
-      beforeEach(function() {
-        httpScript = [];
-        httpCalls = [];
-        logRecords = [];
-        usageRecords.length = 0;
-        apos.http.post = async (url, options) => {
-          httpCalls.push({
-            url,
-            options
-          });
-          const step = httpScript.shift();
-          if (step === undefined) {
-            throw new Error('post called beyond its script');
-          }
-          return step();
-        };
-        apos.ai.pause = async () => {};
-        for (const severity of [ 'Warn', 'Error' ]) {
-          apos.ai[`log${severity}`] = (req, type, message, data) => {
-            logRecords.push({
-              severity: severity.toLowerCase(),
-              type,
-              message,
-              data
-            });
-          };
-        }
-      });
+      stubWire();
 
       it('calls the region\'s runtime endpoint with the vendor dialect', async function() {
         httpScript = [ () => fixture() ];
@@ -343,6 +403,150 @@ describe('AI adapter: bedrock', function() {
     });
   });
 
+  describe('bedrock-openai', function() {
+    it('composes the openai adapter\'s chat lineup, narrowed to what Bedrock serves', function() {
+      const vendor = apos.ai.getAdapter('openai');
+      const definition = apos.ai.getAdapter('bedrock-openai');
+      assert.equal(definition.label, 'OpenAI on Amazon Bedrock');
+      assert.equal(definition.envKey, 'APOS_BEDROCK_KEY');
+      assert.equal(definition.baseUrl, undefined);
+      assert.deepEqual(definition.effort, vendor.effort);
+      assert.deepEqual(definition.capabilities, {
+        ...vendor.capabilities,
+        image: false
+      });
+      // The image models are in the vendor catalog, but not served
+      assert(vendor.models['gpt-image-2']);
+      assert.deepEqual(Object.keys(definition.models), [
+        'gpt-6-luna', 'gpt-6.1-sol', 'gpt-6-astra', 'gpt-5.6-terra'
+      ]);
+      assert.deepEqual(
+        definition.models['gpt-6.1-sol'],
+        vendor.models['gpt-6.1-sol']
+      );
+    });
+
+    it('lists only the served chat models in the catalog', function() {
+      const { providers } = apos.ai.modelCatalog();
+      assert.deepEqual(Object.keys(providers['bedrock-openai'].models), [
+        'gpt-6-luna', 'gpt-6.1-sol', 'gpt-6-astra', 'gpt-5.6-terra'
+      ]);
+      assert.equal(providers['bedrock-openai'].capabilities.image, false);
+    });
+
+    it('derives the wire id from the entry\'s profile', function() {
+      const native = apos.ai.providers['bedrock-openai'].adapter;
+      assert.equal(native.wireModel('gpt-6-astra'), 'global.openai.gpt-6-astra');
+    });
+
+    describe('the wire', function() {
+      stubWire();
+
+      it('calls the region\'s Responses endpoint with the vendor dialect', async function() {
+        httpScript = [ () => responsesFixture() ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'write a haiku about cats', {
+          provider: 'bedrock-openai',
+          model: 'gpt-6.1-sol',
+          reasoning: 'high'
+        });
+        assert.equal(result.text, 'a haiku');
+        assert.equal(result.provider, 'bedrock-openai');
+
+        const [ call ] = httpCalls;
+        assert.equal(
+          call.url,
+          'https://bedrock-runtime.us-west-2.amazonaws.com/openai/v1/responses'
+        );
+        assert.deepEqual(call.options.headers, {
+          authorization: 'Bearer bedrock-test'
+        });
+        assert.equal(call.options.timeout, 600000);
+        assert.equal(call.options.body.model, 'global.openai.gpt-6.1-sol');
+        assert.equal(call.options.body.store, false);
+        assert.deepEqual(call.options.body.reasoning, { effort: 'high' });
+      });
+
+      it('reports the catalog id where Bedrock echoes the wire id, and the price settings', async function() {
+        httpScript = [ () => responsesFixture() ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p', {
+          provider: 'bedrock-openai',
+          model: 'gpt-6.1-sol'
+        });
+        assert.equal(result.model, 'gpt-6.1-sol');
+        const [ record ] = usageRecords;
+        assert.equal(record.provider, 'bedrock-openai');
+        assert.equal(record.model, 'gpt-6.1-sol');
+        assert.equal(record.wireModel, 'global.openai.gpt-6.1-sol');
+        assert.deepEqual(record.settings, {
+          region: 'us-west-2',
+          profile: 'global'
+        });
+      });
+
+      it('sends a model the catalog does not know with the profile prefix', async function() {
+        httpScript = [ () => responsesFixture({ model: 'global.openai.gpt-7' }) ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p', {
+          provider: 'bedrock-openai',
+          model: 'gpt-7'
+        });
+        assert.equal(result.model, 'gpt-7');
+        assert.equal(httpCalls[0].options.body.model, 'global.openai.gpt-7');
+      });
+    });
+  });
+
+  describe('bedrock-openai-compatible', function() {
+    it('declares no catalog, effort rows, profile or id mapping', function() {
+      const definition = apos.ai.getAdapter('bedrock-openai-compatible');
+      assert.equal(definition.label, 'OpenAI Completions on Amazon Bedrock');
+      assert.equal(definition.envKey, 'APOS_BEDROCK_KEY');
+      assert.equal(definition.baseUrl, undefined);
+      assert.equal(definition.models, undefined);
+      assert.equal(definition.effort, undefined);
+      assert.equal(definition.wireModel, undefined);
+      assert.deepEqual(Object.keys(definition.settings), [ 'region' ]);
+      assert.equal(definition.capabilities.image, false);
+      const { providers } = apos.ai.modelCatalog();
+      assert.deepEqual(Object.keys(providers.mistral.models), [
+        'mistral.mistral-large-3-675b-instruct'
+      ]);
+    });
+
+    describe('the wire', function() {
+      stubWire();
+
+      it('sends the entry\'s model id as given to the Chat Completions endpoint', async function() {
+        httpScript = [ () => completionsFixture() ];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p', {
+          provider: 'mistral',
+          model: 'mistral.mistral-large-3-675b-instruct'
+        });
+        assert.equal(result.text, 'a haiku');
+        // The requested id, whatever the response echoes
+        assert.equal(result.model, 'mistral.mistral-large-3-675b-instruct');
+
+        const [ call ] = httpCalls;
+        assert.equal(
+          call.url,
+          'https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1/chat/completions'
+        );
+        assert.deepEqual(call.options.headers, {
+          authorization: 'Bearer bedrock-test'
+        });
+        assert.equal(call.options.timeout, 600000);
+        assert.equal(call.options.body.model, 'mistral.mistral-large-3-675b-instruct');
+        // The entry's own model metadata supplied the cap
+        assert.equal(call.options.body.max_completion_tokens, 32000);
+
+        const [ record ] = usageRecords;
+        assert.equal(record.provider, 'mistral');
+        assert.equal(record.model, 'mistral.mistral-large-3-675b-instruct');
+        assert.equal(record.wireModel, undefined);
+        assert.deepEqual(record.settings, { region: 'us-east-1' });
+      });
+    });
+  });
+
   describe('boot checks', function() {
     const failsToBoot = async (options, pattern) => {
       let captured;
@@ -363,11 +567,11 @@ describe('AI adapter: bedrock', function() {
         await t.destroy(captured);
       }
     };
-    const providers = (entry) => ({
+    const providers = (entry, name = 'bedrock-anthropic') => ({
       '@apostrophecms/ai': {
         options: {
           providers: {
-            'bedrock-anthropic': {
+            [name]: {
               apiKey: 'bedrock-test',
               ...entry
             }
@@ -423,6 +627,44 @@ describe('AI adapter: bedrock', function() {
           profile: 'us'
         })
       }, /the "bedrock-anthropic" provider's "low" effort row names "claude-haiku-5-5", which is not in the "anthropicModels" option of @apostrophecms\/ai-adapter-bedrock/);
+    });
+
+    it('requires a profile on bedrock-openai', async function() {
+      await failsToBoot(
+        providers({ region: 'us-east-1' }, 'bedrock-openai'),
+        /the "bedrock-openai" provider requires a "profile"/
+      );
+    });
+
+    it('rejects a native bedrock-openai effort row naming a model Bedrock does not serve', async function() {
+      await failsToBoot({
+        '@apostrophecms/ai-adapter-bedrock': {
+          options: {
+            openaiModels: [ 'gpt-6-luna' ]
+          }
+        },
+        ...providers({
+          region: 'us-east-1',
+          profile: 'us'
+        }, 'bedrock-openai')
+      }, /the "bedrock-openai" provider's "medium" effort row names "gpt-6\.1-sol", which is not in the "openaiModels" option of @apostrophecms\/ai-adapter-bedrock/);
+    });
+
+    it('requires a region on bedrock-openai-compatible', async function() {
+      await failsToBoot(
+        providers({}, 'bedrock-openai-compatible'),
+        /the "bedrock-openai-compatible" provider requires a "region"/
+      );
+    });
+
+    it('rejects a profile on bedrock-openai-compatible, which sends ids as given', async function() {
+      await failsToBoot(
+        providers({
+          region: 'us-east-1',
+          profile: 'us'
+        }, 'bedrock-openai-compatible'),
+        /"providers\.bedrock-openai-compatible\.profile" is neither a standard entry key nor a setting of adapter "bedrock-openai-compatible"/
+      );
     });
 
     it('boots an aliased entry on a narrowed list, which gets no native rows', async function() {
