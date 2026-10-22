@@ -103,6 +103,15 @@ describe('AI engine', function() {
       });
     });
 
+    it('accepts an apiKey function', function() {
+      apos.ai.validateOptions({
+        ...valid(),
+        providers: {
+          anthropic: { apiKey: async () => 'k' }
+        }
+      });
+    });
+
     it('accepts a multi-provider configuration with partial override', function() {
       apos.ai.validateOptions({
         ...valid(),
@@ -659,6 +668,15 @@ describe('AI engine', function() {
         })));
       });
 
+      it('fails on a non-boolean usage flag in a setting declaration', async function() {
+        await failsToActivate({
+          providers: { fake: { apiKey: 'k' } }
+        }, /@apostrophecms\/ai: adapter "fake" setting "region": "usage" must be a boolean/,
+        (apos) => apos.ai.addAdapter(fakeAdapter('fake', {
+          settings: { region: { usage: 'yes' } }
+        })));
+      });
+
       it('fails on a non-string setting value', async function() {
         await failsToActivate({
           providers: {
@@ -671,25 +689,6 @@ describe('AI engine', function() {
         (apos) => apos.ai.addAdapter(fakeAdapter('fake', {
           settings: { workspaceId: {} }
         })));
-      });
-
-      it('fails on a malformed Amazon Bedrock setting', async function() {
-        await failsToActivate({
-          providers: {
-            anthropic: {
-              apiKey: 'k',
-              bedrockProfile: 'global'
-            }
-          }
-        }, /"bedrockProfile" requires "bedrockRegion"/, () => {});
-        await failsToActivate({
-          providers: {
-            openai: {
-              apiKey: 'k',
-              bedrockRegion: 'nowhere'
-            }
-          }
-        }, /"nowhere" is not an AWS region/, () => {});
       });
 
       it('fails on a routing entry referencing an unconfigured provider', async function() {

@@ -94,6 +94,12 @@ module.exports = {
               maxOutputTokens: 128000,
               reasoning: THINKING_EFFORTS
             },
+            'gpt-5.6-terra': {
+              label: 'GPT-5.6 Terra',
+              contextWindow: 1050000,
+              maxOutputTokens: 128000,
+              reasoning: REASONING_EFFORTS
+            },
             ...image.models
           },
           validate() {

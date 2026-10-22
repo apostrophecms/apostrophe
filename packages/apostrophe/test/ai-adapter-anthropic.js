@@ -9,11 +9,8 @@ describe('AI adapter: anthropic', function() {
   let adapter;
   let savedLiveKey;
   let savedWorkspaceId;
-  let savedBedrockKey;
 
   before(async function() {
-    savedBedrockKey = process.env.APOS_BEDROCK_KEY;
-    delete process.env.APOS_BEDROCK_KEY;
     // A real key or workspace in the environment would override the
     // fixture values below; keep the suite hermetic and restore at the end
     savedLiveKey = process.env.APOS_ANTHROPIC_KEY;
@@ -50,21 +47,6 @@ describe('AI adapter: anthropic', function() {
                 // The declared workspaceId setting, from config: an
                 // identity-linked multi-workspace key needs one
                 workspaceId: 'wrkspc-gw'
-              },
-              // Amazon Bedrock's runtime endpoint, which speaks the
-              // Messages dialect under /anthropic, with the minted
-              // short-lived token kind of key. Aliased, yet keeping the
-              // native routing: Bedrock serves the same models
-              bedrock: {
-                adapter: 'anthropic',
-                bedrockRegion: 'us-east-1',
-                apiKey: async () => 'bedrock-api-key-minted'
-              },
-              'bedrock-global': {
-                adapter: 'anthropic',
-                bedrockRegion: 'eu-west-1',
-                bedrockProfile: 'global',
-                apiKey: 'bedrock-api-key'
               }
             },
             // Keep retried tests fast; the delay engine has its own suite
@@ -82,9 +64,6 @@ describe('AI adapter: anthropic', function() {
     }
     if (savedWorkspaceId !== undefined) {
       process.env.APOS_ANTHROPIC_WORKSPACE_ID = savedWorkspaceId;
-    }
-    if (savedBedrockKey !== undefined) {
-      process.env.APOS_BEDROCK_KEY = savedBedrockKey;
     }
     if (apos) {
       return t.destroy(apos);
@@ -281,44 +260,6 @@ describe('AI adapter: anthropic', function() {
         reasoning: 'high'
       }));
       assert.equal(body.thinking.budget_tokens, undefined);
-    });
-
-    it('recognizes adaptive models by their Amazon Bedrock IDs', function() {
-      for (const model of [
-        'anthropic.claude-opus-5-5',
-        'us.anthropic.claude-opus-5-5',
-        'global.anthropic.claude-sonnet-5',
-        'us-gov.anthropic.claude-haiku-5-5',
-        'anthropic.claude-sonnet-5-v1:0'
-      ]) {
-        const body = adapter.buildBody(request({
-          model,
-          reasoning: 'high'
-        }));
-        assert.deepEqual(body.thinking, { type: 'adaptive' }, model);
-        assert.deepEqual(body.output_config, { effort: 'high' }, model);
-      }
-      // A Bedrock ID of a budgeted model still gets its budget
-      const body = adapter.buildBody(request({
-        model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
-        reasoning: 'low'
-      }));
-      assert.equal(body.thinking.type, 'enabled');
-    });
-
-    it('picks the Bedrock geography Claude is offered through by region', function() {
-      for (const [ region, geography ] of [
-        [ 'us-east-1', 'us' ],
-        [ 'ca-central-1', 'us' ],
-        [ 'us-gov-west-1', 'us-gov' ],
-        [ 'eu-central-1', 'eu' ],
-        [ 'ap-southeast-2', 'au' ],
-        [ 'ap-northeast-1', 'jp' ],
-        [ 'ap-south-1', 'global' ],
-        [ 'sa-east-1', 'global' ]
-      ]) {
-        assert.equal(adapter.bedrockGeography(region), geography, region);
-      }
     });
 
     it('reads which models are adaptive from the adaptiveModels option', function() {
@@ -863,51 +804,6 @@ describe('AI adapter: anthropic', function() {
       assert.equal(call.options.headers['x-api-key'], 'sk-gw');
       assert.equal(call.options.headers['anthropic-workspace-id'], 'wrkspc-gw');
       assert.equal(call.options.body.max_tokens, 64000);
-    });
-
-    it('calls Amazon Bedrock with the native routing and a minted key', async function() {
-      // Aliased, the entry still routes on the native rows
-      assert.deepEqual(
-        apos.ai.providers.bedrock.effort,
-        adapter.adapter().effort
-      );
-      httpScript = [ () => fixture(), () => fixture() ];
-      await apos.ai.generate(apos.task.getReq(), 'p', {
-        provider: 'bedrock',
-        model: 'claude-sonnet-5-5',
-        reasoning: 'medium'
-      });
-      await apos.ai.generate(apos.task.getReq(), 'p', {
-        provider: 'bedrock',
-        model: 'claude-opus-5-5'
-      });
-      const [ medium, opus ] = httpCalls;
-      assert.equal(medium.url, 'https://bedrock-runtime.us-east-1.amazonaws.com/anthropic/v1/messages');
-      assert.equal(medium.options.headers['x-api-key'], 'bedrock-api-key-minted');
-      assert.equal(medium.options.headers['anthropic-workspace-id'], undefined);
-      // The native model and its metadata, under the region's
-      // geographic inference profile
-      assert.equal(medium.options.body.model, 'us.anthropic.claude-sonnet-5-5');
-      assert.deepEqual(medium.options.body.thinking, { type: 'adaptive' });
-      assert.equal(medium.options.body.max_tokens, 64000);
-      assert.equal(opus.options.body.model, 'us.anthropic.claude-opus-5-5');
-    });
-
-    it('honors a chosen inference profile and passes Bedrock IDs through', async function() {
-      httpScript = [ () => fixture(), () => fixture() ];
-      await apos.ai.generate(apos.task.getReq(), 'p', {
-        provider: 'bedrock-global',
-        model: 'claude-haiku-5-5'
-      });
-      await apos.ai.generate(apos.task.getReq(), 'p', {
-        provider: 'bedrock-global',
-        model: 'eu.anthropic.claude-fable-5-1',
-        maxTokens: 1000
-      });
-      const [ native, bedrockId ] = httpCalls;
-      assert.equal(native.url, 'https://bedrock-runtime.eu-west-1.amazonaws.com/anthropic/v1/messages');
-      assert.equal(native.options.body.model, 'global.anthropic.claude-haiku-5-5');
-      assert.equal(bedrockId.options.body.model, 'eu.anthropic.claude-fable-5-1');
     });
 
     it('drives a tool loop end to end over the wire', async function() {

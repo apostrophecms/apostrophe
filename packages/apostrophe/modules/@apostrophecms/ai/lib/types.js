@@ -40,6 +40,11 @@
  * @property {string} provider
  * @property {string} model What answered, when the provider reports it, else
  *   the model requested.
+ * @property {string} [wireModel] The model id actually sent, when the
+ *   provider's adapter rewrites the catalog id.
+ * @property {Object<string, string>} [settings] The provider entry's settings
+ *   that change the price of a request, those its adapter declares with
+ *   `usage: true`.
  * @property {number} step The model turn within the call, 1-based; 1 for an
  *   image call.
  * @property {number} attempt The retry attempt within the step, 1-based.
@@ -355,8 +360,8 @@
  * A provider adapter: the translation between the normalized protocol above and
  * one service's dialect. Registered with addAdapter and instantiated per
  * provider entry at startup, with `provider`, `apiKey` and `baseUrl` filled in
- * from the entry. `apiKey` is always a string by the time `chat` or `image`
- * runs: an entry's key function is resolved before each request.
+ * from the entry. `apiKey` is a string whenever `chat` or `image` runs: an
+ * entry's key function is resolved before each request.
  *
  * @typedef {object} AiAdapter
  * @property {string} name The registry name. A provider entry names it with
@@ -365,12 +370,13 @@
  * @property {string} [envKey] The environment variable the key is read from
  *   unless the entry names its own.
  * @property {string} [baseUrl]
- * @property {Object<string, { envKey?: string }>} [settings] The entry keys
- *   this adapter reads beyond the standard set, each resolved from the
- *   variable its `envKey` names or from the entry — the variable wins — and
- *   assigned onto the instance beside `apiKey`. The declaration doubles as
- *   the whitelist: a non-standard entry key no setting declares fails
- *   startup.
+ * @property {Object<string, { envKey?: string, usage?: boolean }>} [settings]
+ *   The entry keys this adapter reads beyond the standard set, each resolved
+ *   from the variable its `envKey` names or from the entry — the variable
+ *   wins — and assigned onto the instance beside `apiKey`. The declaration
+ *   doubles as the whitelist: a non-standard entry key no setting declares
+ *   fails startup. A setting that changes the price of a request declares
+ *   `usage: true`, and its value is reported on every usage record.
  * @property {Object<string, boolean>} capabilities What the service offers:
  *   'text', 'tools', 'structured', 'image'. A call needing one the routed
  *   provider lacks is a clear error, never a silent re-route.
@@ -378,36 +384,19 @@
  * @property {Object<string, { model: string, reasoning?: string }>} effort The
  *   adapter's native routing rows, one per effort level. They do not apply to
  *   an aliased entry, which describes a different service.
- * @property {(settings: Object<string, string>) =>
- *   (Promise<AiAdapterConfig|void>|AiAdapterConfig|void)} [configure]
- *   Called once per provider entry at startup with the entry's resolved
- *   settings, before the key is read. When the settings select a
- *   different service than the adapter's default one — Amazon Bedrock
- *   rather than the vendor's own API, say — return what differs; each
- *   returned field replaces the adapter's own for that entry, and the
- *   entry's own config still wins over it. Unlike the adapter's native
- *   effort rows, returned rows apply to an aliased entry too.
  * @property {() => Promise<void>|void} validate Fail startup on a configuration
  *   this adapter cannot work with, a missing key above all. Required.
  * @property {(req: object, request: AiAdapterRequest) => Promise<AiTurn>} [chat]
  * @property {(req: object, request: AiImageRequest) => Promise<AiImageBatch>} [image]
+ * @property {(model: string) => string} [wireModel] The model id this entry
+ *   actually sends for a catalog id, for an adapter that rewrites ids. Pure
+ *   and derived from the entry's settings alone: it is reported beside the
+ *   catalog id on usage records and on retry and failure logs.
  * @property {(error: Error) => Error} normalizeError Map a provider or client
  *   failure onto an apos error code — the core reacts on codes alone, and only
  *   the transient one is retried. Hints may ride on `error.data`
  *   (`status`, `kind`, `retryAfter` in seconds, `requestId`); they are
  *   log-bound, so never put keys, credentials or personal data there.
- */
-
-/**
- * What an adapter's `configure` returns for one provider entry: the
- * declarations that differ for the service the entry's settings select.
- *
- * @typedef {object} AiAdapterConfig
- * @property {string} [baseUrl]
- * @property {string} [envKey]
- * @property {Object<string, boolean>} [capabilities]
- * @property {Object<string, AiModelMeta>} [models]
- * @property {Object<string, { model: string, reasoning?: string }>} [effort]
  */
 
 module.exports = {};

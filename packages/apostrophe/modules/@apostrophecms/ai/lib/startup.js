@@ -17,7 +17,8 @@ module.exports = (self) => {
     // service description over the adapter's declared data, then build
     // the effort routing table. An entry's key prefers the environment:
     // the variable named by its envKey (the entry's own over the
-    // adapter's default) overrides the configured apiKey.
+    // adapter's default) overrides the configured apiKey, which may also
+    // be a function, resolved per request.
     async activateProviders() {
       const {
         providers = {}, effort = {}, image
@@ -35,19 +36,14 @@ module.exports = (self) => {
           fail(`adapter "${adapterName}" does not implement validate()`);
         }
         const aliased = adapterName !== name;
-        const settings = self.resolveSettings(name, adapter, entry);
-        // What the entry's settings select, when the adapter's settings
-        // can pick a different service than its default one (Amazon
-        // Bedrock rather than the vendor's own API, say)
-        const configured = (adapter.configure &&
-          await adapter.configure({ ...settings })) || {};
-        const envKey = entry.envKey || configured.envKey || adapter.envKey;
+        const envKey = entry.envKey || adapter.envKey;
         const envApiKey = envKey && process.env[envKey];
+        const settings = self.resolveSettings(name, adapter, entry);
         const instance = {
           ...adapter,
           provider: name,
           apiKey: envApiKey || entry.apiKey,
-          baseUrl: entry.baseUrl || configured.baseUrl || adapter.baseUrl,
+          baseUrl: entry.baseUrl || adapter.baseUrl,
           ...settings
         };
         if (!self.mockMode) {
@@ -58,21 +54,22 @@ module.exports = (self) => {
           adapterName,
           adapter: instance,
           capabilities: {
-            ...(configured.capabilities || adapter.capabilities),
+            ...adapter.capabilities,
             ...entry.capabilities
           },
-          models: self.mergeModels(
-            configured.models || adapter.models,
-            entry.models
-          ),
+          models: self.mergeModels(adapter.models, entry.models),
+          // The settings that change a request's price, copied onto
+          // every usage record of this provider
+          usageSettings: Object.fromEntries(Object.entries(settings)
+            .filter(([ key ]) => adapter.settings[key].usage)),
           // An aliased entry describes a different service than the
-          // adapter's native one, so the native effort rows do not
-          // apply; rows `configure` returned describe the service the
-          // entry's own settings selected, so they do
-          effort: {
-            ...(configured.effort || (aliased ? {} : adapter.effort)),
-            ...entry.effort
-          }
+          // adapter's native one, so the native effort rows do not apply
+          effort: aliased
+            ? { ...entry.effort }
+            : {
+              ...adapter.effort,
+              ...entry.effort
+            }
         };
         self.validateAspects(name, self.providers[name].models);
       }
@@ -105,14 +102,16 @@ module.exports = (self) => {
         self.mockMode;
     },
     // Resolve the entry keys the entry's adapter declares beyond the
-    // standard set — its `settings` map, { key: { envKey } } — against
-    // the entry and the environment, the variable's value winning over
-    // the entry's like the api key does. The declaration is also the
-    // whitelist: an entry key that is neither standard nor declared
-    // fails the boot, so a typo dies here instead of riding silently
-    // past the provider call. Returns the resolved values; they land on
-    // the adapter instance beside apiKey and baseUrl, which is what the
-    // reserved-name check protects.
+    // standard set — its `settings` map, { key: { envKey, usage } } —
+    // against the entry and the environment, the variable's value
+    // winning over the entry's like the api key does. The declaration is
+    // also the whitelist: an entry key that is neither standard nor
+    // declared fails the boot, so a typo dies here instead of riding
+    // silently past the provider call. Returns the resolved values; they
+    // land on the adapter instance beside apiKey and baseUrl, which is
+    // what the reserved-name check protects. A setting declared with
+    // `usage: true` changes the price of a request, so its value is also
+    // reported on every usage record.
     resolveSettings(providerName, adapter, entry) {
       const settings = adapter.settings || {};
       for (const [ key, declared ] of Object.entries(settings)) {
@@ -124,6 +123,9 @@ module.exports = (self) => {
         }
         if (declared.envKey !== undefined && typeof declared.envKey !== 'string') {
           fail(`adapter "${adapter.name}" setting "${key}": "envKey" must be a string`);
+        }
+        if (declared.usage !== undefined && typeof declared.usage !== 'boolean') {
+          fail(`adapter "${adapter.name}" setting "${key}": "usage" must be a boolean`);
         }
       }
       for (const key of Object.keys(entry)) {

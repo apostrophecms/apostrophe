@@ -28,20 +28,8 @@ module.exports = {
   options: {
     alias: 'ai',
     // providers: { name: { apiKey, envKey, baseUrl, adapter, models,
-    //   effort, capabilities } }. `apiKey` is a string or an async
-    //   function returning one, called before every provider request
-    //   (retries included) so short-lived credentials stay fresh, e.g.
-    //   an Amazon Bedrock token provider. A key from the environment
-    //   wins over either
-    //
-    //   Amazon Bedrock: give the `anthropic` or `openai` entry a
-    //   `bedrockRegion` (e.g. 'us-east-1') and it calls Bedrock's
-    //   runtime endpoint with the same dialect and its own default
-    //   models and effort rows, keyed by a Bedrock API key from
-    //   APOS_BEDROCK_KEY — or, for IAM credentials, `apiKey:
-    //   getTokenProvider({ region })` from `@aws/bedrock-token-generator`.
-    //   `bedrockProfile` picks the cross-region inference profile
-    //   ('global', 'us', 'eu', ...); the default follows the region
+    //   effort, capabilities } }; `apiKey` may be an async function
+    //   returning the key, called before every request
     providers: {},
     // provider: the default provider name; inferred when only one is configured
     // effort: { default, levels: { name: { provider, model, reasoning } } }
@@ -620,28 +608,28 @@ module.exports = {
         async function runLoop() {
           for (let turns = 1; ; turns++) {
             let attempt = 0;
-            turn = await self.callAdapter(req, record, context.request, async () => {
-              attempt++;
-              const adapter = await self.keyedAdapter(record);
-              const answer = await adapter.chat(req, context.request);
-              return self.reportUsage(req, {
-                callId,
-                kind: 'chat',
-                provider,
-                step: turns,
-                attempt,
-                request: context.request
-              }, answer, () => {
-                self.validateTurn(answer);
-                // Only a 'stop' turn is the answer: tool turns run the
-                // loop with their own validation, a refusal surfaces as
-                // aiRefusal below, and a 'length' turn returns as-is —
-                // no object, the finish reason tells the caller why
-                if (canonical.schema && answer.finishReason === 'stop') {
-                  self.validateStructured(answer, canonical.validateObject);
-                }
+            turn = await self.callAdapter(
+              req, record, context.request, async (adapter) => {
+                attempt++;
+                const answer = await adapter.chat(req, context.request);
+                return self.reportUsage(req, {
+                  callId,
+                  kind: 'chat',
+                  provider,
+                  step: turns,
+                  attempt,
+                  request: context.request
+                }, answer, () => {
+                  self.validateTurn(answer);
+                  // Only a 'stop' turn is the answer: tool turns run the
+                  // loop with their own validation, a refusal surfaces as
+                  // aiRefusal below, and a 'length' turn returns as-is —
+                  // no object, the finish reason tells the caller why
+                  if (canonical.schema && answer.finishReason === 'stop') {
+                    self.validateStructured(answer, canonical.validateObject);
+                  }
+                });
               });
-            });
             usage.inputTokens += turn.usage.inputTokens;
             usage.outputTokens += turn.usage.outputTokens;
             // A share appears on the call only once a turn reported it
@@ -929,19 +917,19 @@ module.exports = {
         };
         await self.emit('beforeGenerateImage', req, context);
         let attempt = 0;
-        const result = await self.callAdapter(req, record, context.request, async () => {
-          attempt++;
-          const adapter = await self.keyedAdapter(record);
-          const batch = await adapter.image(req, context.request);
-          return self.reportUsage(req, {
-            callId,
-            kind: 'image',
-            provider,
-            step: 1,
-            attempt,
-            request: context.request
-          }, batch, () => self.validateImageResult(batch));
-        });
+        const result = await self.callAdapter(
+          req, record, context.request, async (adapter) => {
+            attempt++;
+            const batch = await adapter.image(req, context.request);
+            return self.reportUsage(req, {
+              callId,
+              kind: 'image',
+              provider,
+              step: 1,
+              attempt,
+              request: context.request
+            }, batch, () => self.validateImageResult(batch));
+          });
         // The envelope: the adapter's minimal result plus what the
         // core knows — the provider and the resolved aspect it sent;
         // the pixel size only when the adapter reported one
