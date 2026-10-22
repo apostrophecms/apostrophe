@@ -15,8 +15,6 @@ export default () => {
       const inputs = el.querySelectorAll('input[type="checkbox"]');
       const inputName = inputs[0].getAttribute('name');
       const conditionalGroups = formWidget.querySelectorAll('[data-apos-form-condition="' + inputName + '"]');
-      // TODO: Remove this logic or update the collectToSkip function to support
-      // arrays.
       if (conditionalGroups.length > 0) {
         const check = apos.aposForm.checkConditional;
 
