@@ -64,13 +64,19 @@ module.exports = {
       colspan: {
         type: 'integer'
       },
+      // For possible future compatibility, but so far
+      // multiple-widget sections address this well
       rowstart: {
         type: 'integer',
-        def: 1
+        def: 1,
+        min: 1,
+        max: 1
       },
       rowspan: {
         type: 'integer',
-        def: 1
+        def: 1,
+        min: 1,
+        max: 1
       },
       order: {
         type: 'integer'
