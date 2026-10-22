@@ -2,11 +2,12 @@
   <div class="apos-toggle__container">
     <div
       class="apos-toggle__slider"
-      :tabindex="disableFocus ? null : '0'"
-      :class="{'apos-toggle__slider--activated': !modelValue}"
-      @click="$emit('toggle')"
-      @keydown.stop.space="$emit('toggle')"
-      @keydown.stop.enter="$emit('toggle')"
+      :tabindex="disableFocus || disabled ? null : '0'"
+      :aria-disabled="disabled ? 'true' : null"
+      :class="classes"
+      @click="emitToggle"
+      @keydown.stop.space="emitToggle"
+      @keydown.stop.enter="emitToggle"
     />
   </div>
 </template>
@@ -22,6 +23,18 @@ export default {
     disableFocus: {
       type: Boolean,
       default: false
+    },
+    // Shows the state and does not change it
+    disabled: {
+      type: Boolean,
+      default: false
+    },
+    // `small` for a compact toggle, as in a menu item
+    modifiers: {
+      type: Array,
+      default() {
+        return [];
+      }
     }
   },
   emits: [ 'toggle' ],
@@ -30,7 +43,23 @@ export default {
       activated: false
     };
   },
+  computed: {
+    classes() {
+      return [
+        ...this.modifiers.map(modifier => `apos-toggle__slider--${modifier}`),
+        {
+          'apos-toggle__slider--activated': !this.modelValue,
+          'apos-toggle__slider--disabled': this.disabled
+        }
+      ];
+    }
+  },
   methods: {
+    emitToggle() {
+      if (!this.disabled) {
+        this.$emit('toggle');
+      }
+    },
     toggle() {
       this.activated = !this.activated;
     }
@@ -41,6 +70,9 @@ export default {
   $toggle-height: 13px;
   $toggle-width: $toggle-height * 1.7;
   $btn-size: $toggle-height;
+  // As high as a small icon (14px) with its padding
+  $small-toggle-height: 10px;
+  $small-toggle-width: $small-toggle-height * 1.7;
 
   .apos-toggle {
     &__slider {
@@ -71,6 +103,21 @@ export default {
       }
     }
 
+    &__slider--small {
+      width: $small-toggle-width;
+      height: $small-toggle-height;
+      padding: 2px;
+
+      &::before {
+        width: $small-toggle-height;
+        height: $small-toggle-height;
+      }
+    }
+
+    &__slider--small.apos-toggle__slider--activated::before {
+      transform: translateX(calc($small-toggle-width - $small-toggle-height));
+    }
+
     &__slider--activated {
       background-color: var(--a-primary);
 
@@ -83,6 +130,22 @@ export default {
       &::before {
         transform: translateX(calc($toggle-width - $btn-size));
       }
+    }
+
+    &__slider--disabled {
+      cursor: not-allowed;
+      background-color: var(--a-base-7);
+
+      &:focus,
+      &:hover,
+      &:active {
+        box-shadow: none;
+        outline: none;
+      }
+    }
+
+    &__slider--disabled.apos-toggle__slider--activated {
+      background-color: var(--a-base-5);
     }
   }
 </style>

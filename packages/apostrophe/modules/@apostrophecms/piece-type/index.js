@@ -275,8 +275,7 @@ module.exports = {
           }
           result.pages = query.get('totalPages');
           result.currentPage = query.get('page') || 1;
-          result.results = (await query.toArray())
-            .map(doc => self.removeForbiddenFields(req, doc));
+          result.results = await query.toArray();
           const renderAreas = req.query['render-areas'];
           const inline = renderAreas === 'inline';
           if (inline || self.apos.launder.boolean(renderAreas)) {
@@ -317,10 +316,7 @@ module.exports = {
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           await self.publicApiCheckAsync(req);
-          const doc = self.removeForbiddenFields(
-            req,
-            await self.getRestQuery(req).and({ _id }).toObject()
-          );
+          const doc = await self.getRestQuery(req).and({ _id }).toObject();
 
           if (
             self.options.cache &&
@@ -1021,6 +1017,10 @@ module.exports = {
       //
       // You can pass fetchRelationships: false to skip the check for whether
       // related documents in relationships actually exist.
+      //
+      // A patch with `_strict: true` saves only if the whole piece is then
+      // valid, as a save from its editor must be, and is refused as `invalid`
+      // otherwise.
 
       async convertPatchAndRefresh(req, input, _id, { fetchRelationships = true } = {}) {
         const keys = Object.keys(input);
@@ -1067,6 +1067,13 @@ module.exports = {
             }
             if (i === patches.length - 1) {
               if (possiblePatchedFields) {
+                if (patches.some(patch => self.apos.launder.boolean(patch._strict))) {
+                  await self.apos.schema.validateDocument(
+                    req,
+                    self.allowedSchema(req),
+                    piece
+                  );
+                }
                 await self.update(req, piece);
               }
               result = self.findOneForEditing(
@@ -1138,8 +1145,12 @@ module.exports = {
       // if you're not sure what you're doing.
       getRestQuery(req, omitPermissionCheck = false) {
         const query = self.find(req).attachments(true);
-        query.applyBuildersSafely(req.query);
-        if (!omitPermissionCheck && !self.canAccessApi(req)) {
+        const restricted = !omitPermissionCheck && !self.canAccessApi(req);
+        // Builders must not operate on fields hidden by the projection
+        query.applyBuildersSafely(req.query, {
+          publicApiProjection: restricted ? self.options.publicApiProjection : null
+        });
+        if (restricted) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({

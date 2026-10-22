@@ -35,6 +35,11 @@ export default {
     docId: {
       type: String,
       default: null
+    },
+    // The `_id` of the item to open on, else the first
+    activeItem: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'modal-result' ],
@@ -164,7 +169,8 @@ export default {
     this.modal.active = true;
     await this.evaluateExternalConditions();
     if (this.next.length) {
-      this.setCurrentDoc(this.next.at(0)._id);
+      const active = this.next.find(({ _id }) => _id === this.activeItem);
+      this.setCurrentDoc((active || this.next.at(0))._id);
     }
     if (this.serverError?.data?.errors?.length) {
       const first = this.serverError.data.errors[0];
@@ -180,6 +186,16 @@ export default {
     this.modal.triggerFocusRefresh++;
   },
   methods: {
+    // The item opened on is scrolled into view in the rail
+    async show() {
+      this.modal.showModal = true;
+      if (!this.activeItem) {
+        return;
+      }
+      await this.$nextTick();
+      this.$el.querySelector(`.apos-modal-array-items [data-id="${this.activeItem}"]`)
+        ?.scrollIntoView({ block: 'nearest' });
+    },
     setCurrentDoc(_id) {
       this.currentId = _id;
       this.currentDoc = {
@@ -246,7 +262,6 @@ export default {
         this.currentDocToCurrentItem();
         for (const item of this.next) {
           item.metaType = 'arrayItem';
-          item.scopedArrayName = this.field.scopedArrayName;
         }
         this.$emit('modal-result', this.next);
         this.modal.showModal = false;

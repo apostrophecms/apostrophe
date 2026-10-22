@@ -370,7 +370,7 @@ module.exports = {
 
             const choices = query.get('choicesResults');
             return {
-              results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
+              results: docs,
               pages: query.get('totalPages'),
               currentPage: query.get('page') || 1,
               ...choices && { choices }
@@ -461,14 +461,10 @@ module.exports = {
           await self.publicApiCheckAsync(req);
           const criteria = self.getIdCriteria(_id);
           // Normal view permissions apply (visibility, viewRole)
-          const found = await self
+          const result = await self
             .getRestQuery(req)
             .and(criteria)
             .toObject();
-          const manager = found && self.apos.doc.getManager(found.type);
-          const result = manager
-            ? manager.removeForbiddenFields(req, found)
-            : found;
 
           if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
@@ -679,6 +675,10 @@ module.exports = {
       // You may pass `_targetId` and `_position` to move the page within the
       // tree. `_position` may be `before`, `after` or `inside`. To move a page
       // into or out of the archive, set `archived` to `true` or `false`.
+      //
+      // A patch with `_strict: true` saves only if the whole page is then
+      // valid, as a save from its editor must be, and is refused as `invalid`
+      // otherwise.
       async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
@@ -1276,6 +1276,14 @@ database.`);
             }
             if (i === (patches.length - 1)) {
               if (possiblePatchedFields) {
+                if (patches.some(patch => self.apos.launder.boolean(patch._strict))) {
+                  await self.apos.schema.validateDocument(
+                    req,
+                    self.apos.doc.getManager(page.type)
+                      .allowedSchema(req, page, page._ancestors.at(-1)),
+                    page
+                  );
+                }
                 await self.update(req, page);
                 let modified;
                 if (input._targetId) {
@@ -2986,14 +2994,18 @@ database.`);
       // permission check and public API projection. You shouldn't do this
       // if you're not sure what you're doing.
       getRestQuery(req, omitPermissionCheck = false) {
+        // Minimum standard for a REST query without a public projection
+        // is being allowed to view drafts on the site
+        const restricted = !omitPermissionCheck && !self.canAccessApi(req);
         const query = self.find(req)
           .ancestors(true)
           .children(true)
           .attachments(true)
-          .applyBuildersSafely(req.query);
-        // Minimum standard for a REST query without a public projection
-        // is being allowed to view drafts on the site
-        if (!omitPermissionCheck && !self.canAccessApi(req)) {
+          // Builders must not operate on fields hidden by the projection
+          .applyBuildersSafely(req.query, {
+            publicApiProjection: restricted ? self.options.publicApiProjection : null
+          });
+        if (restricted) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -3001,11 +3013,22 @@ database.`);
             });
           } else {
             // Note that we MUST NOT honor the "project" query builder here
-            query.project({
+            const projection = {
               ...self.options.publicApiProjection,
               cacheInvalidatedAt: 1
-            });
+            };
+            query.project(projection);
             query.set('publicApiProjection', self.options.publicApiProjection);
+            // The related pages must be limited to the projection too
+            for (const name of [ 'ancestors', 'children' ]) {
+              const value = query.get(name);
+              if (value) {
+                query[name]({
+                  ...((typeof value === 'object') ? value : {}),
+                  project: projection
+                });
+              }
+            }
           }
         }
         return query;

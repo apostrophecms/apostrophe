@@ -42,7 +42,7 @@
           :key="pane.side"
           :side="pane.side"
           :icon="pane.icon"
-          :icon-title="pane.label"
+          :icon-title="labels?.[pane.side] || pane.label"
           :value-class="`apos-doc-version-changes__value--${pane.side}`"
           compact
           :data-apos-test="`doc-version-change-format-${pane.side}`"
@@ -102,6 +102,11 @@ defineProps({
   lines: {
     type: Array,
     required: true
+  },
+  // The sides' labels, `{ new, old }`, in place of a version's
+  labels: {
+    type: Object,
+    default: null
   }
 });
 </script>

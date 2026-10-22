@@ -69,6 +69,12 @@ module.exports = {
           if (!req.user) {
             throw self.apos.error('notfound');
           }
+          // Slugs are unique across all docs, so anyone choosing a slug must
+          // learn that it is taken, even by a doc they cannot view. Users who
+          // cannot edit anything have no need to know
+          if (!self.apos.permission.can(req, 'view-draft')) {
+            throw self.apos.error('forbidden');
+          }
           const slug = self.apos.launder.string(req.body.slug);
           const _id = self.apos.launder.id(req.body._id);
           const criteria = { slug };
@@ -1372,6 +1378,44 @@ module.exports = {
       getManager(type) {
         return self.managers[self.normalizeType(type)];
       },
+      // Removes the fields the user may not view (`viewPermission`) from
+      // every document found at any depth in `value`, a REST API response:
+      // documents loaded through relationships (including those in widgets,
+      // array and object fields, and nested or reverse relationships), pages
+      // in `_ancestors` and `_children`, etc. Each document is passed to the
+      // `removeForbiddenFields` method of its own type's manager. Called for
+      // every `apiRoutes` and `restApiRoutes` response. Values that are not
+      // plain objects or arrays (strings, buffers, streams...) are left
+      // alone. Modifies and returns `value`.
+      removeForbiddenFieldsDeep(req, value) {
+        const seen = new Set();
+        walk(value);
+        return value;
+        function walk(value) {
+          if (
+            !value ||
+            (typeof value !== 'object') ||
+            seen.has(value) ||
+            ArrayBuffer.isView(value) ||
+            (typeof value.pipe === 'function')
+          ) {
+            return;
+          }
+          seen.add(value);
+          if (Array.isArray(value)) {
+            for (const item of value) {
+              walk(item);
+            }
+            return;
+          }
+          if (value.metaType === 'doc') {
+            self.getManager(value.type)?.removeForbiddenFields(req, value);
+          }
+          for (const item of Object.values(value)) {
+            walk(item);
+          }
+        }
+      },
       // Moves the virtual `_explicitSave`, `_restoreVersion` and `_ai`
       // properties of a document about to be saved to `req.aposExplicitSave`,
       // `req.aposRestoreVersion` and `req.aposAi`. Called on REST write bodies
@@ -1574,7 +1618,7 @@ module.exports = {
       // }
       //
       // All properties are required except for `conditions`, `moduleName`,
-      // `modifiers` and `manuallyPublished`.
+      // `modifiers`, `manuallyPublished` and `location`.
       //
       // Context operations are universal, e.g. they are displayed by the
       // context menu no matter what the content type is, unless overridden by
@@ -1589,6 +1633,13 @@ module.exports = {
       //
       // `modal` is the name of the modal component to be opened by the
       // operation.
+      //
+      // `type` is `modal` (the default), `event` or `toggle`. An `event`
+      // operation emits its `action` on `apos.bus` instead of opening a
+      // modal. A `toggle` operation is an item that is on or off: it emits
+      // its `action` with `checked`, the state asked for, and shows the
+      // state that whatever owns it sets with `setChecked` of the
+      // `contextOperations` store.
       //
       // `label` is the menu item label to be shown when expanding the context
       // menu.
@@ -1607,6 +1658,11 @@ module.exports = {
       // An optional `manuallyPublished` boolean property is supported - if true
       // the menu will be shown only for docs which have `autopublish: false`
       // and `localized: true` options.
+      //
+      // An optional `location` property limits the operation to the menu
+      // shown in that place. The only location is `context-bar`, the menu
+      // next to "Preview" for the document being viewed on the page, never
+      // the one of an editor modal or a manager.
       //
       // `conditions` defines the circumstances under which the option should
       // be displayed. If all `conditions` are not met, the item is not
@@ -1637,8 +1693,9 @@ module.exports = {
 
         function validate ({
           action, context, type = 'modal', label, modal, conditions, if: ifProps,
-          crossLocale
+          crossLocale, location
         }) {
+          const allowedLocations = [ 'context-bar' ];
           const allowedConditions = [
             'canPublish',
             'canEdit',
@@ -1654,8 +1711,8 @@ module.exports = {
             'canShareDraft'
           ];
 
-          if (![ 'event', 'modal' ].includes(type)) {
-            throw self.apos.error('invalid', '`type` option must be `modal` (default) or `event`');
+          if (![ 'event', 'modal', 'toggle' ].includes(type)) {
+            throw self.apos.error('invalid', '`type` option must be `modal` (default), `event` or `toggle`');
           }
 
           if (!action || !context || !label || (type === 'modal' && !modal)) {
@@ -1687,6 +1744,12 @@ module.exports = {
           ) {
             throw self.apos.error(
               'invalid', 'The crossLocale property in addContextOperation must be a boolean.'
+            );
+          }
+
+          if (location !== undefined && !allowedLocations.includes(location)) {
+            throw self.apos.error(
+              'invalid', `The location property in addContextOperation must be one of these values:\n\t${allowedLocations.join('\n\t')}.`
             );
           }
         }
@@ -1721,10 +1784,10 @@ module.exports = {
                 }
               }
             } else if (field.type === 'array') {
-              if (doc[field.name]) {
+              // Content stored before the field became an array may not be one
+              if (Array.isArray(doc[field.name])) {
                 doc[field.name].forEach(item => {
                   item.metaType = 'arrayItem';
-                  item.scopedArrayName = field.scopedArrayName;
                   forSchema(field.schema, item);
                 });
               }
@@ -1732,7 +1795,6 @@ module.exports = {
               const value = doc[field.name];
               if (value) {
                 value.metaType = 'object';
-                value.scopedObjectName = field.scopedObjectName;
                 forSchema(field.schema, value);
               }
             } else if (field.type === 'relationship') {
@@ -1938,7 +2000,8 @@ module.exports = {
                 self.walkByMetaType(widget, handlers);
               }
             } else if (field.type === 'array') {
-              if (doc[field.name]) {
+              // Content stored before the field became an array may not be one
+              if (Array.isArray(doc[field.name])) {
                 doc[field.name].forEach(item => {
                   handlers.arrayItem(field, item);
                   forSchema(field.schema, item);

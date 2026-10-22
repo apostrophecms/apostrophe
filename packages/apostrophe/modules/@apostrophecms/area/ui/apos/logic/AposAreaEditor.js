@@ -20,6 +20,12 @@ export default {
     aposGraphKey: {
       from: 'aposGraphKey',
       default: null
+    },
+    // A read only view, such as See Changes or a document version: no
+    // controls are mounted
+    aposReadOnly: {
+      from: 'aposReadOnly',
+      default: false
     }
   },
   props: {
@@ -104,6 +110,11 @@ export default {
     };
   },
   computed: {
+    // Nothing changes the area in a read only view or for a read only field,
+    // the keyboard shortcuts included
+    readOnly() {
+      return !!(this.aposReadOnly || this.field?.readOnly);
+    },
     ...mapState(useWidgetStore, [
       'focusedWidget',
       'hoveredWidget',
@@ -424,9 +435,13 @@ export default {
     },
     // The context bar is undoing or redoing an edit, and asks whoever holds
     // the content it touched to show the result. A widget that changed is
-    // rendered again, the rest of the page is left alone
+    // rendered again, the rest of the page is left alone. A read only view
+    // leaves it unclaimed, so the page is rendered again whole: what it
+    // shows can be marked with changes, and must not be handed back to the
+    // history as content
     contextHistoryApplyHandler(event) {
       if (
+        this.readOnly ||
         this.foreign ||
         !this.docId ||
         (this.docId !== window.apos.adminBar.contextId) ||
@@ -472,7 +487,7 @@ export default {
       }
     },
     async editStyles({ widgetId, index }) {
-      if (this.foreign) {
+      if (this.readOnly || this.foreign) {
         return;
       }
       const widget = this.next.find(({ _id }) => _id === widgetId);
@@ -507,6 +522,9 @@ export default {
       }
     },
     async up({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       if (this.docId === window.apos.adminBar.contextId) {
         const $item = this.next[index]._id;
         const neighbor = this.next[index - 1]._id;
@@ -538,6 +556,9 @@ export default {
       ];
     },
     async down({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       if (this.docId === window.apos.adminBar.contextId) {
         const $item = this.next[index]._id;
         const neighbor = this.next[index + 1]._id;
@@ -707,6 +728,9 @@ export default {
       });
     },
     async remove({ index }, { autosave = true } = {}) {
+      if (this.readOnly) {
+        return;
+      }
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
         const widget = this.next[index];
         // Put it back next to whichever neighbor it had
@@ -749,15 +773,26 @@ export default {
       }
     },
     async cut({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       apos.area.widgetClipboard.set(this.next[index]);
       await this.remove({ index });
       notifyClipboard('cut', 1);
     },
+    // Never in a read only view: what it shows can be marked with its
+    // changes, which a paste would save as content
     async copy({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       apos.area.widgetClipboard.set(this.next[index]);
       notifyClipboard('copy', 1);
     },
     async edit({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       if (this.foreign) {
         try {
           const doc = await apos.http.get(
@@ -825,6 +860,9 @@ export default {
       }
     },
     clone({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       const widget = cloneWidget(this.next[index]);
       this.insert({
         widget,
@@ -832,6 +870,9 @@ export default {
       });
     },
     async paste({ index }) {
+      if (this.readOnly) {
+        return;
+      }
       const widgets = apos.area.widgetClipboard.getMany();
       if (!widgets.length) {
         return;
@@ -850,6 +891,9 @@ export default {
       });
     },
     async update(updated, { autosave = true, reverting = false } = {}) {
+      if (this.readOnly) {
+        return;
+      }
       // Before anything below can change it. A caller that changed the
       // widget in place rather than handing us a new one has already lost
       // the state we would need to put back, so no inverse is recorded and
@@ -894,6 +938,9 @@ export default {
       widget,
       clipboard
     }) {
+      if (this.readOnly) {
+        return;
+      }
       if (Array.isArray(clipboard)) {
         const allowed = clipboard.every((widget) => {
           return this.contextMenuOptions.menu.find((option) => {
@@ -982,6 +1029,9 @@ export default {
     async insert({
       index, widget, autosave = true
     } = {}) {
+      if (this.readOnly) {
+        return;
+      }
       if (!widget._id) {
         widget._id = createId();
       }
@@ -1033,6 +1083,9 @@ export default {
     async insertMany({
       index, widgets, autosave = true, history = true, select = 'last'
     } = {}) {
+      if (this.readOnly) {
+        return;
+      }
       if (!widgets?.length) {
         return;
       }

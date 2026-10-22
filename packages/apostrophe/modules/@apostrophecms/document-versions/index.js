@@ -44,7 +44,8 @@ module.exports = {
     label: 'apostrophe:versionLabel',
     pluralLabel: 'apostrophe:versionPluralLabel',
     components: {
-      versions: 'AposDocVersions'
+      versions: 'AposDocVersions',
+      seeChanges: 'AposSeeChanges'
     },
     // Draft saves replace the newest draft version in place until this much
     // time, in milliseconds, has passed since that version was created. Then
@@ -88,6 +89,45 @@ module.exports = {
       '@apostrophecms/doc-type:afterSave': {
         async saveVersion(req, doc) {
           await self.saveFor(req, doc, await self.canHaveVersion(req, doc));
+        }
+      },
+      '@apostrophecms/page:beforeSend': {
+        // See Changes renders the page from the draft marked with its
+        // changes since the last publication, deleted widgets back in place.
+        // Every render passes here, an external front's included. Only the
+        // schema fields are swapped, so the rest of what was loaded for the
+        // page stays. The mode renders the page by refreshing it, so a full
+        // page load is never swapped: its editors would not be read only
+        async showDraftChanges(req) {
+          if (
+            (req.query.aposSeeChanges !== '1') ||
+            !req.query.aposEdit ||
+            (req.query.aposRefresh !== '1')
+          ) {
+            return;
+          }
+          const context = req.data.piece || req.data.page;
+          if (!context?._edit || (context.aposMode !== 'draft')) {
+            return;
+          }
+          let changes;
+          try {
+            changes = await self.getDraftChanges(req, context._id, { annotate: true });
+          } catch (e) {
+            if (e.name === 'notfound') {
+              return;
+            }
+            throw e;
+          }
+          const manager = self.apos.doc.getManager(context.type);
+          const query = manager.find(req);
+          await query.finalize();
+          await query.after([ changes.doc ]);
+          for (const field of manager.schema) {
+            if (Object.hasOwn(changes.doc, field.name)) {
+              context[field.name] = changes.doc[field.name];
+            }
+          }
         }
       },
       '@apostrophecms/doc:afterAllModesDeleted': {
@@ -141,9 +181,11 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
+        const manager = self.apos.doc.getManager(doc.type);
         const page = await self.getTimelinePage(req, self.getTimelineCriteria(doc), {
           before: beforeDate,
-          consolidate: self.apos.launder.boolean(req.query.consolidate)
+          consolidate: self.apos.launder.boolean(req.query.consolidate),
+          forbidden: manager && self.getForbiddenFieldNames(req, manager)
         });
         // A newest draft version is the draft; a newest publication is the
         // draft unless the draft has unpublished changes
@@ -168,6 +210,14 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
+        // Every change of the draft of the document `docId` since its last
+        // publication (see `getDraftChanges`); `annotate=1` adds the draft
+        // marked with them
+        'draft-changes': (req) => {
+          return self.getDraftChanges(req, req.query.docId, {
+            annotate: self.apos.launder.boolean(req.query.annotate)
+          });
+        },
         // The change list of a version; with `consolidate=1`, of the consolidated
         // version it is the newest of
         ':versionId/changes': (req) => {
@@ -278,6 +328,24 @@ module.exports = {
           },
           conditions: [ 'canEdit' ]
         });
+        // See Changes, which the context bar turns on and off: the page
+        // shows the changes of its draft since the last publication.
+        // Offered for types that record versions of their drafts (see
+        // `hasDraftVersions`)
+        self.apos.doc.addContextOperation({
+          moduleName: self.__meta.name,
+          context: 'update',
+          action: 'see-changes',
+          type: 'toggle',
+          label: 'apostrophe:seeChanges',
+          location: 'context-bar',
+          hasUrl: true,
+          manuallyPublished: true,
+          moduleIf: {
+            versions: true
+          },
+          conditions: [ 'canEdit' ]
+        });
       },
       addEditorModal() {
         self.apos.modal.add(
@@ -293,7 +361,8 @@ module.exports = {
           label: self.options.label,
           pluralLabel: self.options.pluralLabel,
           components: {
-            versions: 'AposDocVersions'
+            versions: 'AposDocVersions',
+            seeChanges: self.getComponentName('seeChanges', 'AposSeeChanges')
           },
           name: self.__meta.name
         };
@@ -332,6 +401,14 @@ module.exports = {
         }
 
         return true;
+      },
+      // Whether a doc type module records versions of its drafts: it has
+      // versions, and its documents have a draft that is not published at
+      // once on every save
+      hasDraftVersions(moduleOptions) {
+        return self.hasVersions(moduleOptions) &&
+          (moduleOptions.autopublish !== true) &&
+          (moduleOptions.localized !== false);
       },
       // Whether a doc type marked `versions: false` still records its
       // publication points. A localized type published by hand keeps
@@ -658,6 +735,7 @@ module.exports = {
         async function unpackVersion(version) {
           if (version.doc !== undefined) {
             version.doc = await self.unpack(version.doc);
+            self.apos.schema.annotateFieldIds(version.doc);
           }
           return version;
         }
@@ -827,8 +905,15 @@ module.exports = {
       // date to start below; `next` is the `before` of the following page, `null`
       // on the last. With `consolidate`, versions that consolidate come as one
       // item (see `lib/consolidation.js`) with a `changeCount` of its own, and a
-      // page never ends in the middle of one: it reads on to complete it
-      async getTimelinePage(req, criteria, { before, consolidate } = {}) {
+      // page never ends in the middle of one: it reads on to complete it.
+      // `forbidden` are top-level field names whose changes are not counted
+      // (see `getForbiddenFieldNames`): the change counts are then computed
+      // again without them
+      async getTimelinePage(req, criteria, {
+        before,
+        consolidate,
+        forbidden
+      } = {}) {
         const limit = self.defaultLimit;
         const project = self.getRestProjection();
         const found = await self.find(
@@ -874,6 +959,9 @@ module.exports = {
         for (const item of results.filter(item => item.versionIds)) {
           item.changeCount = await countChanges(item, oldestOf.get(item._id));
         }
+        if (forbidden?.size) {
+          await recountChanges(results.filter(item => !item.versionIds));
+        }
 
         return {
           results,
@@ -891,7 +979,34 @@ module.exports = {
             return 0;
           }
           const base = previous ?? await self.findOne(req, { _id: oldest._id });
-          return self.getChangeCount(req, newest.doc, base.doc);
+          return self.getChangeCount(req, newest.doc, base.doc, { forbidden });
+        }
+
+        // The change count of single versions without the `forbidden` fields,
+        // each since the version before it, in two queries
+        async function recountChanges(items) {
+          if (!items.length) {
+            return;
+          }
+          const [ full, older ] = await Promise.all([
+            self.find(req, { _id: { $in: records.map(record => record._id) } }),
+            self.findOne(req, olderThan(criteria, records.at(-1).createdAt))
+          ]);
+          const byId = new Map(full.map(version => [ version._id, version ]));
+          const previousOf = new Map(records.map((record, i) => [
+            record._id,
+            (i + 1 < records.length) ? byId.get(records[i + 1]._id) : older
+          ]));
+          for (const item of items) {
+            const version = byId.get(item._id);
+            const previous = previousOf.get(item._id);
+            item.changeCount = (
+              version && previous && !item.restoredFrom &&
+              self.apos.doc.getManager(version.doc.type)
+            )
+              ? self.getChangeCount(req, version.doc, previous.doc, { forbidden })
+              : 0;
+          }
         }
       },
       // The sequence of `version` from it down, newest first, as projected
@@ -923,11 +1038,24 @@ module.exports = {
       // `annotate` marks the document with the changes of the version (see
       // `getAnnotatedDoc`); a first or restored version has none. `consolidate`
       // marks the changes of the whole consolidated version `versionId` is the
-      // newest of, AI involvement included
+      // newest of, AI involvement included. With `annotate` the version also
+      // has `fields`, the changes of the fields a widget renders in place.
+      // Changes to fields `req` may not view (`viewPermission`) are neither
+      // marked nor counted
       async getOne(req, versionId, { annotate = false, consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
         const version = await self.getEditableVersion(draftReq, versionId);
         const manager = self.apos.doc.getManager(version.doc.type);
+        const forbidden = manager
+          ? self.getForbiddenFieldNames(req, manager)
+          : new Set();
+
+        if (forbidden.size && !version.restoredFrom) {
+          const previous = await self.getPreviousVersion(draftReq, version);
+          version.changeCount = previous
+            ? self.getChangeCount(req, version.doc, previous.doc, { forbidden })
+            : 0;
+        }
 
         if (annotate && manager && !version.restoredFrom) {
           const item = await self.getVersionPairs(
@@ -938,10 +1066,15 @@ module.exports = {
           const { pairs } = item;
           if (pairs.length) {
             const before = await self.getAiRowsBefore(draftReq, item);
-            version.doc = self.getAnnotatedDoc(req, pairs[0].older, version.doc, {
-              rows: self.getConsolidatedRows(req, pairs, { before })
-            });
+            const rows = self.getConsolidatedRows(req, pairs, { before })
+              .filter(row => !forbidden.has(row.path[0].name));
+            const stored = version.doc;
+            version.doc = self.getAnnotatedDoc(req, pairs[0].older, stored, { rows });
+            version.fields = getFieldChanges(rows, stored);
           }
+        }
+        if (annotate) {
+          version.fields ||= [];
         }
 
         // We must load relationships and areas as if we had done a regular find
@@ -957,6 +1090,20 @@ module.exports = {
         delete version.locale;
 
         return version;
+
+        // The rows of the field types rendered in place, keyed into `doc` (see
+        // `addFieldData`), an array item's added whole among them; a string's
+        // with its word diff, a rich text field's with its marked markup
+        function getFieldChanges(rows, doc) {
+          const ctx = self.getDiffContext(req, doc);
+          diff.addFieldData(manager.schema, diff.addItemFields(rows, ctx), doc, ctx);
+          const fields = [ ...rows, ...rows.flatMap(row => row.fieldRows || []) ]
+            .filter(row => row.patchKey &&
+              self.apos.schema.fieldTypes[row.field?.type]?.wysiwyg);
+          const plain = fields.filter(row => row.kind !== 'richText');
+          text.addWordDiff(text.addText(plain, ctx), ctx);
+          return fields;
+        }
       },
       // The version record `versionId` with its stored document, `docId` and
       // `locale`, when `req` can edit the document. Throws `invalid` for a
@@ -1113,22 +1260,189 @@ module.exports = {
           compared: Boolean(compared.length)
         };
       },
+      // Every change of the draft of the document `docId` (its `_id` in any
+      // mode) since its last publication: `{ rows, counts, baseline, doc }`.
+      // The rows are the change list of the published document against the
+      // draft (see `getChangeList`), each changed path once, credited to the
+      // versions recorded since the publication (see `attribute` in
+      // `lib/diff.js`) and carrying what an editor of the value needs (see
+      // `addFieldData`), whether `req` may change it and the patch that
+      // restores it (see `addRestore`).
+      // A document never published is compared with a new document of its
+      // type as a save stores it; `baseline` says which, `{ kind:
+      // 'published', at }` or `{ kind: 'default' }`. `annotate` adds `doc`,
+      // the draft marked with the changes (see `getAnnotatedDoc`).
+      // Throws `invalid` for a malformed id, `notfound` when the draft does
+      // not exist, `req` cannot edit it or its type records no draft versions
+      async getDraftChanges(req, docId, { annotate = false } = {}) {
+        const id = self.apos.launder.id(docId);
+        if (!id) {
+          throw self.apos.error('invalid');
+        }
+        const draftReq = req.clone({ mode: 'draft' });
+        const found = await self.getRestDocQuery(draftReq)
+          .and({ _id: id.replace(/:\w+$/, ':draft') })
+          .toObject();
+        const manager = found && self.apos.doc.getManager(found.type);
+        if (!manager || !self.hasDraftVersions(manager.options)) {
+          throw self.apos.error('notfound');
+        }
+        const draft = self.apos.util.clonePermanent(found);
+        const criteria = self.getTimelineCriteria(draft);
+        const [ published, publication ] = await Promise.all([
+          self.apos.doc.db.findOne({ _id: draft._id.replace(/:draft$/, ':published') }),
+          self.findOne(draftReq, {
+            ...criteria,
+            mode: 'published'
+          }, {
+            project: { createdAt: 1 },
+            raw: true
+          })
+        ]);
+        // The later of the two: a publish that changed nothing records no
+        // version, and a promoted draft takes the time of the publish
+        const since = published
+          ? [ published.lastPublishedAt, publication?.createdAt ]
+            .filter(Boolean)
+            .sort((one, two) => two - one)[0]
+          : null;
+        const records = await self.find(draftReq, {
+          ...criteria,
+          ...(since && { createdAt: { $gt: since } })
+        }, {
+          sort: { createdAt: 1 }
+        });
+        const contents = [
+          published || await getEmptyDoc(),
+          ...records.map(record => record.doc),
+          draft
+        ];
+        // The last pair, the draft ahead of its newest version, has no
+        // version to credit
+        const pairs = contents.slice(1).map((newer, i) => {
+          const record = records[i];
+          return {
+            older: contents[i],
+            newer,
+            ai: Boolean(record?.ai),
+            ...(record && {
+              author: {
+                _id: record.authorId ?? null,
+                title: record.author
+              },
+              changedAt: record.updatedAt || record.createdAt
+            })
+          };
+        });
+
+        const { rows, counts } = await self.getChangeList(draftReq, pairs);
+        const ctx = self.getDiffContext(draftReq, draft);
+        diff.attribute(manager.schema, pairs, rows, ctx);
+        diff.addFieldData(manager.schema, rows, draft, ctx);
+        if (rows.some(row => row.patchKey)) {
+          const allowed = manager.allowedSchema(draftReq, found, found._ancestors?.at(-1))
+            .map(field => field.name);
+          // Both sides: a widget modified whole keeps the draft's fields
+          const ids = new Set([ contents[0], draft ].flatMap(doc => [
+            ...diff.getRelatedIds(manager.schema, doc, ctx, relatedId)
+          ]));
+          const loadable = ids.size
+            ? await self.apos.doc.find(draftReq, { _id: { $in: [ ...ids ] } })
+              .project({ _id: 1 })
+              .relationships(false)
+              .areas(false)
+              .toArray()
+            : [];
+          diff.addRestore(manager.schema, rows, {
+            older: contents[0],
+            newer: draft,
+            editable: new Set(allowed),
+            canEdit,
+            relatedId,
+            loadable: new Set(loadable.map(doc => doc._id))
+          }, ctx);
+        }
+
+        return {
+          rows,
+          counts,
+          baseline: published
+            ? {
+              kind: 'published',
+              at: published.lastPublishedAt ?? null
+            }
+            : { kind: 'default' },
+          ...(annotate && {
+            doc: self.getAnnotatedDoc(draftReq, contents[0], draft, { rows })
+          })
+        };
+
+        // A new document as a save with no input stores it, so that a field
+        // left alone is no change. A field that fails to convert, such as a
+        // required one, keeps what conversion wrote, else its initial value
+        async function getEmptyDoc() {
+          const initial = manager.newInstance();
+          const doc = { ...initial };
+          try {
+            await self.apos.schema.convert(draftReq, manager.schema, initial, doc, {
+              fetchRelationships: false
+            });
+          } catch (errors) {
+            if (!Array.isArray(errors)) {
+              throw errors;
+            }
+          }
+          return doc;
+        }
+
+        // A field's own permissions, as `allowedSchema` reads them at the top
+        // level and a widget's at its own
+        function canEdit(field) {
+          const can = ({ action, type }) => self.apos.permission
+            .can(draftReq, action, type);
+          return (!field.editPermission && !field.viewPermission) ||
+            Boolean(field.editPermission && can(field.editPermission)) ||
+            Boolean(field.viewPermission && can(field.viewPermission));
+        }
+
+        // The `_id` a save of the draft finds a related document by: its
+        // draft in the draft's locale, unless its type is not localized
+        function relatedId(field, id) {
+          return self.apos.doc.getManager(field.withType)?.isLocalized()
+            ? `${id}:${draftReq.locale}:draft`
+            : id;
+        }
+      },
       // The change list between contents of one document, as the modal shows
       // it: `{ rows, counts: { added, modified, deleted, ai } }`. `pairs` are
       // `{ older, newer, ai }`, oldest first; one pair compares two contents,
       // several read as one list (see `getConsolidatedRows`). Rows carry their
-      // text, word diff and formatting changes (see `lib/text.js`). `before`
-      // are the rows AI changed before the pairs (see `getAiRowsBefore`).
-      // Checks no permission on the contents; related documents read as `req`
-      // sees them. Empty for no pairs and for a type whose module is gone
+      // text, word diff and formatting changes (see `lib/text.js`), an array
+      // item added or deleted whole its fields as rows of their own
+      // (`fieldRows`). `before` are the rows AI changed before the pairs (see
+      // `getAiRowsBefore`). Checks no permission on the contents, except that
+      // fields `req` may not view (`viewPermission`) are left out; related
+      // documents read as `req` sees them. Empty for no pairs and for a type
+      // whose module is gone
       async getChangeList(req, pairs, { before } = {}) {
         let rows = [];
-        if (pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type)) {
+        const manager = pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type);
+        if (manager) {
           const ctx = self.getDiffContext(req, pairs.at(-1).newer);
-          rows = text.addWordDiff(await self.addChangeText(
-            req,
-            text.addFormat(self.getConsolidatedRows(req, pairs, { before }), ctx)
-          ), ctx);
+          const forbidden = self.getForbiddenFieldNames(req, manager);
+          rows = diff.addItemFields(
+            self.getConsolidatedRows(req, pairs, { before })
+              .filter(row => !forbidden.has(row.path[0].name)),
+            ctx
+          );
+          const all = [ ...rows, ...rows.flatMap(row => row.fieldRows || []) ];
+          text.addWordDiff(await self.addChangeText(req, text.addFormat(all, ctx)), ctx);
+          // A field with nothing to read, an empty one or a widget without
+          // a title, is no row of the item
+          for (const row of rows.filter(row => row.fieldRows)) {
+            row.fieldRows = row.fieldRows
+              .filter(field => field.oldText || field.newText || field.images);
+          }
         }
         return {
           rows,
@@ -1139,6 +1453,15 @@ module.exports = {
             ai: rows.filter(row => row.ai).length
           }
         };
+      },
+      // The names of the top-level fields of `manager`'s schema that its
+      // `removeForbiddenFields` removes for `req`
+      getForbiddenFieldNames(req, manager) {
+        const probe = Object.fromEntries(
+          manager.schema.map(field => [ field.name, true ])
+        );
+        const kept = manager.removeForbiddenFields(req, { ...probe }) || {};
+        return new Set(Object.keys(probe).filter(name => !(name in kept)));
       },
       // Every change from `older` to `newer`, two stored versions of one
       // document, as rows at full depth (see `lib/diff.js`)
@@ -1214,13 +1537,17 @@ module.exports = {
       },
       // The number of changes from `previousDoc`, an unpacked version
       // content, to `doc`: the rows its change list shows. Stored as a
-      // version's `changeCount`
-      getChangeCount(req, doc, previousDoc) {
-        return self.getChangeRows(
+      // version's `changeCount`. `forbidden` are top-level field names whose
+      // changes are not counted (see `getForbiddenFieldNames`)
+      getChangeCount(req, doc, previousDoc, { forbidden } = {}) {
+        const rows = self.getChangeRows(
           req,
           previousDoc,
           self.apos.util.clonePermanent(doc)
-        ).length;
+        );
+        return forbidden?.size
+          ? rows.filter(row => !forbidden.has(row.path[0].name)).length
+          : rows.length;
       },
       // What the diff engine needs from the rest of Apostrophe. `doc`, the
       // document compared, names it in the log when the engine recovers from
@@ -1247,7 +1574,8 @@ module.exports = {
             lng: self.apos.i18n.getAdminLocale(req)
           }),
           getRichTextStyles: () => self.apos.modules['@apostrophecms/rich-text-widget']
-            .options.defaultOptions.styles || []
+            .options.defaultOptions.styles || [],
+          getAreaWidgets: options => self.apos.area.getWidgets(options)
         };
       },
       // Recompute `changeCount` for every version, one timeline at a time.

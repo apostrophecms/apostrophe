@@ -1,7 +1,6 @@
 import {
   computed, inject, ref, watch
 } from 'vue';
-import { klona } from 'klona';
 import {
   evaluateExternalConditions as evaluateSchemaExternalConditions,
   getConditionalFields,
@@ -9,7 +8,7 @@ import {
 } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 
 /**
- * The tabs of the versions modal: the read-only schema of the document's
+ * The tabs of the versions modal: the schema of the document's
  * type, grouped as the document editor groups it, with the conditional
  * fields evaluated against the version shown. A tab none of whose fields
  * renders is not visible, and there are no tabs until a version is shown.
@@ -30,15 +29,9 @@ export function useDocVersionTabs({
   const $t = inject('i18n');
   const docId = doc._id;
 
-  const schema = computed(() => {
-    const fields = (moduleOptions.value.schema || [])
-      .filter(field => apos.schema.components.fields[field.type])
-      .filter(field => field.name !== 'archived');
-    return klona(fields).map(field => ({
-      ...field,
-      readOnly: true
-    }));
-  });
+  const schema = computed(() => (moduleOptions.value.schema || [])
+    .filter(field => apos.schema.components.fields[field.type])
+    .filter(field => field.name !== 'archived'));
 
   const externalConditionsResults = ref(getConditionTypesObject());
   const conditionalFields = ref(getConditionTypesObject());

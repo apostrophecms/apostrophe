@@ -173,8 +173,12 @@ export function widgetSelector(widgetId) {
 }
 
 // Multi-select and the drag net belong to editing. The page preview
-// leaves edit mode, but a modal is still an editing session.
+// leaves edit mode, but a modal is still an editing session. A read only
+// view or area field never takes part.
 export function isEditingContext(target) {
+  if (target?.closest?.('[data-apos-read-only]')) {
+    return false;
+  }
   if (typeof window !== 'undefined' && window.apos?.adminBar?.editMode) {
     return true;
   }

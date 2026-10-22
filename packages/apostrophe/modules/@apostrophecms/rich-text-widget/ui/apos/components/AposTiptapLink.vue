@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-link-control">
+  <div
+    class="apos-link-control"
+    data-apos-test="rich-text-link"
+  >
     <AposContextMenu
       ref="contextMenu"
       menu-placement="bottom-end"
@@ -12,6 +15,7 @@
       <div
         class="apos-link-control__dialog"
         :class="{ 'apos-has-selection': hasSelection }"
+        data-apos-test="rich-text-link-dialog"
       >
         <div
           v-if="hasLinkOnOpen"

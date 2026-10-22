@@ -111,3 +111,26 @@ $a-canvas-max: 1168px;
     background-color: var(--a-primary-transparent-05);
   }
 }
+
+// The marks of what changed in a document version, where the content
+// renders: removed text struck through in red, added text underlined in
+// green. For a scoped style block; the marks may be markup of `v-html`
+@mixin apos-version-change-marks() {
+  :deep([data-apos-version-change]) {
+    padding: 0 2px;
+    border-radius: var(--a-border-radius);
+    text-decoration-thickness: 1px;
+  }
+
+  :deep(ins[data-apos-version-change]) {
+    color: var(--a-success-dark);
+    background-color: var(--a-success-fade);
+    text-decoration-line: underline;
+  }
+
+  :deep(del[data-apos-version-change]) {
+    color: var(--a-danger-button-hover);
+    background-color: var(--a-danger-fade);
+    text-decoration-line: line-through;
+  }
+}

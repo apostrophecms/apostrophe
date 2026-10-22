@@ -1,5 +1,38 @@
 # Changelog
 
+## 3.7.1 (2026-10-14)
+
+### Fixes
+
+- Fix interpolation variables that were mistyped or translated in several locales, which made i18next render them as empty strings. The batch localization notifications now show the localized and skipped document counts in German, Spanish, Italian, Portuguese (Brazil) and Slovak, the minimum image size shows its dimensions in Spanish and Slovak, and the import error notifications show the file type in all translated locales. The German "Create new" command menu label no longer has the English text appended. A test now checks that bundled translations only use variables declared in `en.json`. Thanks to [Michael Lip](https://github.com/theluckystrike) for the contribution.
+- Fixes translated strings whose interpolation variables were misspelled or translated (e.g. `{{ skipcount }}`, `{{ ancho }}`, `{{ format }}`), so values like counts, image dimensions and file types now render in de, es, fr, it, pt-BR and sk. Removes two stale Slovak tag keys.
+- Adds missing de, es, fr, it, pt-BR and sk translations for the Recently Edited manager, background styles, layout column editing, breakpoint preview, publication status and other admin UI strings, the import-export draft and AI translation options, and the AI Helper "Generate Variant" button.
+
+### Security
+
+- The `clean-export` and `override-duplicates` routes did not require a login. Also, `clean-export` would discard the pending files of an import started by someone else and mark any import job as completed, without checking who owned either. Both routes now require a logged-in user. `clean-export` only acts on an import uploaded by the caller, and only ends that caller's own job. Import jobs are now recorded as belonging to the user who started them. Exposure was limited because the pending import's ID is random and only shown to the user who uploaded it, so in practice an attacker could only interfere with an import they could already identify (CWE-306, CWE-862, CWE-639, GHSA-rw26-wwfc-9wvm).
+
+  Thanks to [Liuhuo Wan](https://github.com/CoSunshine) for reporting the vulnerability.
+
+- Upgrade `csv-parse` to 7.x to address a security advisory.
+- Extracting an import archive had no limit on the size or number of the files it wrote, so a small, highly compressed archive could fill the server's disk, and a failed import left the uploaded archive, its copy in uploadfs and its partial extraction behind. Extraction now stops as soon as the archive goes over a limit on the number of entries (100,000 by default) or on the total extracted size (100 times the size of the archive, at least 64MB, by default), counted on the bytes actually written. The limits can be changed with the new `importLimits` option of the module. Everything an import uploaded or extracted is removed whenever it fails. Exploiting this required a logged-in user (CWE-400, CWE-409, CWE-459, GHSA-9g7p-m758-rp72).
+
+  Thanks to [Mufeed VH](https://github.com/mufeedvh) and [Vivek R](https://github.com/123vivekr) for reporting the vulnerability.
+
+- When continuing an import after the user confirmed which duplicates to replace, the server trusted the list of documents and replacement targets sent back by the browser, and checked the importable type against the imported file rather than against the existing document being overwritten. A logged-in user allowed to import could overwrite documents the import never offered to replace, including documents of types they may not import, and continue the import of another user. The duplicates found by the import are now remembered on the server for the user who started it, the browser can only narrow that list down, and the type of every replaced document must be importable (CWE-639, CWE-863, GHSA-jf5h-36mg-rp6x).
+
+  Thanks to [Mufeed VH](https://github.com/mufeedvh) and [Vivek R](https://github.com/123vivekr) for reporting the vulnerability.
+
+- Importing could write the published version of documents the importing user was not allowed to publish. A contributor could create or replace published content with a crafted archive, and an editor could import or update published documents of a type whose `publishRole` is `admin`. Import now refuses documents whose mode, locale and `_id` disagree. Exploiting this required a logged-in user allowed to import the type.
+
+  The rest was a gap in the core permission check, fixed there, which also covers import. A type's `publishRole` was always meant to govern its published content, but editing or creating the published version of a document did not honor it: an editor could change published documents of a type whose `publishRole` is `admin`, including through the REST API, without publishing them through the normal workflow. That was a bug and should not have been relied upon. Editing or creating a published document now requires the `publishRole`. Types with `autopublish: true`, types without a draft/published distinction, and permission checks made with a type name rather than a document are unchanged (CWE-285, CWE-863, GHSA-5m22-7pfq-vp65).
+
+  Thanks to [Mufeed VH](https://github.com/mufeedvh) and [Vivek R](https://github.com/123vivekr) for reporting the vulnerability.
+
+- Export downloads are published under the public `/uploads/exports/` URL until they expire, and their file names were built only from the site's short name, the exported type and a timestamp to the second, so anyone could guess the URL of a fresh export and download it without logging in. Export file names now include a random, unguessable id, and the type in the name is reduced to a slug so it can no longer place the file outside the exports folder. Exposure was limited: a privileged user had to have just run an export, and the download is removed after 10 minutes by default (CWE-200, CWE-330, GHSA-5gc8-frw3-3vqm).
+
+  Thanks to [tikisan_](https://github.com/tikipiya) for reporting the vulnerability.
+
 ## 3.7.0 (2026-09-30)
 
 ### Adds

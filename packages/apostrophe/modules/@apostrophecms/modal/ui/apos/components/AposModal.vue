@@ -10,7 +10,7 @@
       ref="modalEl"
       :class="classes"
       role="dialog"
-      aria-modal="true"
+      :aria-modal="modal.overlay === 'none' ? null : 'true'"
       :aria-labelledby="props.modalData.id"
       data-apos-modal
       :data-apos-graph-key="props.graphKey || undefined"
@@ -21,7 +21,7 @@
     >
       <transition :name="transitionType">
         <div
-          v-if="modal.showModal"
+          v-if="modal.showModal && (modal.overlay !== 'none')"
           :class="[
             'apos-modal__overlay',
             { [`apos-modal__overlay--${modal.overlay}`]: modal.overlay }
@@ -104,6 +104,7 @@
                     v-else-if="hasBeenLocalized && !isCrossLocale"
                     class="apos-modal__locale"
                     :locale="currentLocale"
+                    data-apos-test="modal-locale"
                   />
                   <div
                     v-if="hasSlot('primaryControls')"
@@ -270,6 +271,9 @@ const size = ref(
 );
 
 const getDefaultPosition = (origin = 'right') => {
+  if (props.modal.initialPosition) {
+    return props.modal.initialPosition;
+  }
   const adminBarHeight = window.apos?.adminBar?.height || 0;
   const windowSize = window.innerWidth;
   const spacing = 30;
@@ -290,9 +294,13 @@ const {
   startResizing,
   setPosition: setWindowPosition,
   constrainPosition,
+  widen,
   cleanup: cleanupDraggable
 } = useDraggableWindow({
   size,
+  storageKey: props.modal.storageKey || null,
+  // A window without an overlay sits beside the page, which stays in view
+  blurPage: computed(() => props.modal.overlay !== 'none'),
   getDefaultPosition: () => getDefaultPosition(props.modal.origin),
   minWidth: props.modal.minWidth || 300,
   maxWidth: props.modal.maxWidth || 800,
@@ -300,9 +308,20 @@ const {
   maxHeight: props.modal.maxHeight || null
 });
 
-// Wrap handler to only work for window modals and primary mouse button
+// A modal without an overlay leaves the page usable: the store tells such
+// modals apart from those that block the page
+watch(() => props.modal.overlay, overlay => {
+  store.updateModalData(props.modalData.id, { overlay });
+}, { immediate: true });
+
+// Wrap handler to only work for window modals and primary mouse button. A
+// window whose `dragFrom` is `header` drags from its header only, so that
+// the text of its body can be selected
 const startDragging = (e) => {
   if (e.button !== 0) {
+    return;
+  }
+  if ((props.modal.dragFrom === 'header') && !e.target.closest('.apos-modal__header')) {
     return;
   }
   const nonDraggable = nonDraggableElements.some(
@@ -372,6 +391,9 @@ const innerClasses = computed(() => {
 
   if (props.modal.type === 'window') {
     classes.push('apos-window');
+    if (props.modal.dragFrom === 'header') {
+      classes.push('apos-window--drag-header');
+    }
   };
 
   return classes;
@@ -597,6 +619,18 @@ function close() {
     emit('esc');
   }
 }
+
+// A window modal grows to `width` when it is narrower, for content that
+// needs the room
+function widenWindow(width) {
+  if (isWindowModal.value) {
+    widen(width);
+  }
+}
+
+defineExpose({
+  widen: widenWindow
+});
 </script>
 
 <style lang="scss" scoped>
@@ -689,6 +723,29 @@ function close() {
     // Default dimensions are set via inline styles from DEFAULT_WINDOW_SIZE constant
     .apos-modal__inner {
       border-radius: 10px;
+    }
+
+    .apos-modal__inner.apos-window--resizing {
+      outline: 2px solid var(--a-base-5);
+      outline-offset: -2px;
+    }
+
+    .apos-window--drag-header .apos-modal__header {
+      cursor: grab;
+      user-select: none;
+    }
+
+    .apos-modal__header__main {
+      padding: 2.5px 10px 0;
+      border-top: 1px solid var(--a-base-9);
+    }
+
+    .apos-modal__heading {
+      font-size: var(--a-type-label);
+    }
+
+    .apos-modal__controls--secondary {
+      margin-right: 10px;
     }
 
     :deep(.apos-modal__body) {

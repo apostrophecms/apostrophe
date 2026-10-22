@@ -37,6 +37,7 @@
         :doc="context"
         :published="published"
         :show-preview="false"
+        location="context-bar"
       />
       <AposButton
         v-if="canSwitchToPreviewMode && !isAutopublished"

@@ -7,9 +7,12 @@ import scroll from '../utils/scroll.js';
  * and made focusable, so a keyboard user can move into it. One target at
  * a time; `clear()` puts the previous one back as it was.
  *
- * @param {{ attribute: string }} options
+ * @param {object} options
+ * @param {string} options.attribute
+ * @param {(el: HTMLElement) => void} [options.scroll]
+ *   Brings the target into view; by default its nearest scroller centres it
  */
-export function useDocVersionTarget({ attribute }) {
+export function useDocVersionTarget({ attribute, scroll: scrollTo }) {
   let target = null;
   let addedTabindex = false;
 
@@ -37,8 +40,13 @@ export function useDocVersionTarget({ attribute }) {
       el.setAttribute('tabindex', '-1');
     }
     el.setAttribute(attribute, '');
-    // Its own scroller alone, centred on it: a smooth `scrollIntoView`
-    // is cancelled by the change list's own smooth scroll in some browsers
+    (scrollTo || centre)(el);
+    return true;
+  }
+
+  // Its own scroller alone, centred on it: a smooth `scrollIntoView`
+  // is cancelled by the change list's own smooth scroll in some browsers
+  function centre(el) {
     const scroller = getScroller(el);
     if (scroller) {
       const box = scroller.getBoundingClientRect();
@@ -48,7 +56,6 @@ export function useDocVersionTarget({ attribute }) {
         behavior: scroll.getScrollBehavior()
       });
     }
-    return true;
   }
 
   function getScroller(el) {

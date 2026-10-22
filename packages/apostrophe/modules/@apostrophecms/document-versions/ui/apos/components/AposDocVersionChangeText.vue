@@ -6,7 +6,7 @@
     :side="pane.side"
     :icon="pane.icon"
     :icon-title="pane.markLabel"
-    :kicker="pane.label"
+    :kicker="labels?.[pane.side] || pane.label"
     :value-class="{
       'apos-doc-version-changes__value--text': !entry.images[pane.side],
       'apos-doc-version-changes__value--clamped': !full && !entry.images[pane.side]
@@ -94,6 +94,11 @@ const props = defineProps({
   entry: {
     type: Object,
     required: true
+  },
+  // The sides' labels, `{ new, old }`, in place of a version's
+  labels: {
+    type: Object,
+    default: null
   }
 });
 

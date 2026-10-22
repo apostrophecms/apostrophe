@@ -13,6 +13,7 @@
         class="apos-input-wrapper"
         :class="!next.items?.length ? 'apos-is-empty' : null"
         data-apos-schema-area
+        :data-apos-read-only="field.readOnly || undefined"
       >
         <!-- We do not pass docId here because it is solely for
           contextual editing as far as the area editor is concerned. -Tom -->

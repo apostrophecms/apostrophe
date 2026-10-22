@@ -50,6 +50,41 @@ const getDateFormatter = (
   };
 };
 
+// The units a relative time is told in, largest first, in seconds
+const relativeUnits = [
+  [ 'year', 365 * 24 * 60 * 60 ],
+  [ 'month', 30 * 24 * 60 * 60 ],
+  [ 'day', 24 * 60 * 60 ],
+  [ 'hour', 60 * 60 ],
+  [ 'minute', 60 ],
+  [ 'second', 1 ]
+];
+
+// Returns a function telling how long before `now` a timestamp was, in the
+// largest whole unit: "14 days ago", "yesterday", "now"
+const getRelativeTimeFormatter = (locale = getLocale()) => {
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+
+  return (value, now = Date.now()) => {
+    const seconds = (new Date(value).getTime() - now) / 1000;
+    const [ unit, size ] = relativeUnits
+      .find(([ , size ]) => Math.abs(seconds) >= size) || relativeUnits.at(-1);
+    return format.format(Math.round(seconds / size), unit);
+  };
+};
+
+// Returns a function joining names as a list: "Ann, Bob and Cy"
+const getListFormatter = (locale = getLocale()) => {
+  const format = new Intl.ListFormat(locale, {
+    style: 'long',
+    type: 'conjunction'
+  });
+
+  return names => format.format(names);
+};
+
 export default {
-  getDateFormatter
+  getDateFormatter,
+  getRelativeTimeFormatter,
+  getListFormatter
 };

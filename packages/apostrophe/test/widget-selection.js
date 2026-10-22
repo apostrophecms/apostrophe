@@ -573,7 +573,8 @@ describe('widget selection', function() {
       <section data-apos-modal id="editor">
         ${area('columns', widget('col-a'), widget('col-b'))}
         ${widget('holder', '<div data-apos-input-array-inline-item id="item">' + area('item-area', widget('in-item')) + '</div>')}
-      </section>`;
+      </section>
+      <section data-apos-read-only>${area('versions', widget('old-1'), widget('old-2'))}</section>`;
     let saved;
 
     before(function() {
@@ -656,6 +657,23 @@ describe('widget selection', function() {
       });
       assert.deepEqual(added.next.selectedWidgetIds, [ 'col-a', 'col-b' ]);
       assert.equal(added.scope, editor);
+    });
+
+    it('treats a meta-click in a read only view as a plain click', function() {
+      const old = dom.widgetElement('old-1');
+      assert.equal(dom.isEditingContext(old), false);
+      assert.equal(dom.isEditingContext(dom.widgetElement('top-1')), true);
+      const state = lib.applyWidgetSelection({
+        gesture: 'plain',
+        widgetId: 'old-2'
+      });
+      const meta = click(document, 'old-1', { metaKey: true });
+      assert.deepEqual(dom.nextSelectionFromClick({
+        ...meta,
+        widgetId: 'old-1',
+        state,
+        stateScope: document
+      }).next.selectedWidgetIds, [ 'old-1' ]);
     });
 
     it('recognizes the column type of any layout widget module', function() {
