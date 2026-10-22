@@ -32,6 +32,8 @@ module.exports = {
     '@apostrophecms/ai-adapter-openai': {},
     '@apostrophecms/ai-adapter-openai-compatible': {},
     '@apostrophecms/ai-adapter-google': {},
+    // Composes the vendor adapters above, so it registers after them
+    '@apostrophecms/ai-adapter-bedrock': {},
     '@apostrophecms/modal': {},
     '@apostrophecms/oembed': {},
     '@apostrophecms/pager': {},
