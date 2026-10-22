@@ -76,7 +76,7 @@
               :icon-size="9"
               :modifiers="['icon-right', 'no-motion']"
               :disable-focus="!(isHovered || isFocused)"
-              @click="getFocus($event, item.id)"
+              @click="getFocus($event, item.id, item.areaId)"
             />
           </li>
           <li
@@ -840,13 +840,14 @@ export default {
       }
     },
 
-    // Ask the parent AposAreaEditor to make us focused
-    getFocus(e, widgetId) {
+    // Ask the parent AposAreaEditor to make us focused. A breadcrumb
+    // focuses an ancestor widget, so it passes the area holding that widget
+    getFocus(e, widgetId, areaId = this.areaId) {
       if (e) {
         e.stopPropagation();
       }
       this.isSuppressed = false;
-      this.setFocusedWidget(widgetId, this.areaId);
+      this.setFocusedWidget(widgetId, areaId);
     },
 
     // Our widget was hovered
@@ -926,7 +927,9 @@ export default {
         if ($parent) {
           this.breadcrumbs.list.unshift({
             id: $parent.dataset.areaWidget,
-            label: $parent.dataset.areaLabel
+            label: $parent.dataset.areaLabel,
+            areaId: apos.util.closest($parent.parentNode, '[data-apos-area]')
+              ?.dataset.aposArea
           });
           this.breadcrumbs.$lastEl = $parent;
           this.getBreadcrumbs();
