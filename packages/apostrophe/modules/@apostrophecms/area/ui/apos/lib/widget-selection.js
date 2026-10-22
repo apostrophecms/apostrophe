@@ -191,6 +191,43 @@ export function outermostIds(ids, isAncestor) {
   });
 }
 
+// The `$push` operations that put widgets removed from `items` back where
+// they were, one for each contiguous run of them. Each run is placed beside
+// a neighbor that was not removed, so they can be applied in any order.
+// `items` is the area as it was before the removal.
+export function restorePushes(items, removedIds) {
+  const removed = new Set(removedIds);
+  const pushes = [];
+  let run = null;
+  items.forEach((item, index) => {
+    if (!removed.has(item._id)) {
+      run = null;
+      return;
+    }
+    if (!run) {
+      run = {
+        $each: [],
+        first: index
+      };
+      pushes.push(run);
+    }
+    run.$each.push(item);
+    run.last = index;
+  });
+  return pushes.map(({
+    $each, first, last
+  }) => {
+    const before = items[last + 1]?._id;
+    const after = items[first - 1]?._id;
+    return {
+      $each,
+      ...before
+        ? { $before: before }
+        : (after ? { $after: after } : {})
+    };
+  });
+}
+
 // Indexes of `selectedIds` in `areaItemIds` when they are one contiguous
 // run of that area, otherwise null.
 export function contiguousRange(areaItemIds, selectedIds) {

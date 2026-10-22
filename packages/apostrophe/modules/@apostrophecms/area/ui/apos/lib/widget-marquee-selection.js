@@ -23,8 +23,30 @@ import {
 export function installWidgetMarqueeSelection() {
   createWidgetControlsMultiselect();
   createMarqueeSelect();
+  trackSelectionModifiers();
   watchEditMode();
   watchHistory();
+}
+
+// Marks the page while Shift, Command or Ctrl is held, so widget guards rise
+// above the content of their widgets and a selection gesture lands on the
+// widget. The key is held before the click, so this is in place when the
+// browser decides what the click hit.
+function trackSelectionModifiers() {
+  const root = document.documentElement;
+  const sync = (event) => {
+    root.classList.toggle(
+      'apos-widget-select-modifier',
+      !!(event.shiftKey || event.metaKey || event.ctrlKey)
+    );
+  };
+  window.addEventListener('keydown', sync, true);
+  window.addEventListener('keyup', sync, true);
+  // A key released while another window had focus is never reported
+  window.addEventListener('pointermove', sync, true);
+  window.addEventListener('blur', () => {
+    root.classList.remove('apos-widget-select-modifier');
+  });
 }
 
 // Undo and redo only change the context document's own areas on the page,

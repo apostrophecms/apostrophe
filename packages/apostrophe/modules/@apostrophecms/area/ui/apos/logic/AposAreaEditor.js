@@ -8,7 +8,7 @@ import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
-import { contiguousRange } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
+import { contiguousRange, restorePushes } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
 import { notifyClipboard, runWidgetBatch } from 'Modules/@apostrophecms/area/lib/batch-widgets.js';
 import { selectionScope as scopeOf } from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
 import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
@@ -605,34 +605,28 @@ export default {
         return null;
       }
       const removed = indexes.map((index) => klona(this.next[index]));
-      const first = indexes[0];
-      const last = indexes[indexes.length - 1];
-      const before = this.next[last + 1]?._id;
-      const after = this.next[first - 1]?._id;
       let change = null;
       if (this.docId === window.apos.adminBar.contextId) {
-        const push = {
-          $each: removed
-        };
-        if (before) {
-          push.$before = before;
-        } else if (after) {
-          push.$after = after;
-        }
+        // Widgets that were not next to each other go back into their own
+        // places, so undo is a list of patches, one for each run of them
+        const pushes = restorePushes(
+          klona(this.next),
+          removed.map((widget) => widget._id)
+        );
         change = {
           patch: {
             $pullAllById: {
               [`@${this.id}.items`]: removed.map((widget) => widget._id)
             }
           },
-          inverse: {
+          inverse: pushes.map((push) => ({
             $push: {
               [`@${this.id}.items`]: push
             }
-          },
+          })),
           target: {
             widgetId: removed[0]._id,
-            anchorId: before || after
+            anchorId: pushes[0].$before || pushes[0].$after
           }
         };
         if (emit) {

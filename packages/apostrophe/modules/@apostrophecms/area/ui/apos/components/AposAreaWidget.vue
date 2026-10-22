@@ -542,11 +542,12 @@ export default {
     showFocusedChrome() {
       return this.isFocused && !this.isMulti;
     },
-    // Raising this widget (it is the focused one, or contains it) puts
-    // its rendered content at z-index 0, under this guard. The guard has
-    // to step aside or the controls of a nested widget never receive the
-    // click. The focused widget's own guard still steps aside only while
-    // its chrome is showing.
+    // While a selection modifier is held, guards rise above the content of
+    // their widgets (see `apos-widget-select-modifier`). Raising this widget
+    // (it is the focused one, or contains it) puts its rendered content at
+    // z-index 0, under this guard, so the guard has to step aside or the
+    // controls of a nested widget never receive the click. The focused
+    // widget's own guard still steps aside only while its chrome is showing.
     guardDisabled() {
       return this.showFocusedChrome || (this.raised && !this.isFocused);
     },
@@ -943,6 +944,13 @@ export default {
     },
     // A shift-click was already applied on mouseup.
     onClick(event, widgetId) {
+      // The widget's own controls decide what is focused afterwards, as
+      // duplicate does by focusing the copy. Selecting this widget again as
+      // their click goes by would undo that.
+      if (event.target.closest?.('.apos-area-widget-controls--modify, .apos-area-widget-controls--add')) {
+        event.stopPropagation();
+        return;
+      }
       if (event.shiftKey && !this.isEditingText(event)) {
         event.stopPropagation();
         return;
@@ -1171,12 +1179,19 @@ export default {
 }
 
 .apos-area-widget-guard {
-  z-index: $z-index-default;
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+// Shift, Command or Ctrl is held: a click or drag is a selection gesture, so
+// it lands on the widget rather than on what is inside it, such as a rich
+// text editor. Otherwise content that sits above the guard, like an
+// editor or a nested area's "add" menu, takes the click directly.
+:root.apos-widget-select-modifier .apos-area-widget-guard {
+  z-index: $z-index-default;
 }
 
 .apos-area-widget-guard.apos-is-disabled {

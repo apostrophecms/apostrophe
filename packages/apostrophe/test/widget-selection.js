@@ -354,6 +354,37 @@ describe('widget selection', function() {
     assert.deepEqual(lib.multipleOperations([], checkIf), []);
   });
 
+  it('puts widgets removed from several places back where each one was', async function() {
+    const { default: applyPatch } = await import('../modules/@apostrophecms/area/ui/apos/lib/apply-patch.js');
+    const items = [ 'a', 'b', 'c', 'd', 'e', 'f' ].map((_id) => ({ _id }));
+    const ids = (list) => list.map(({ _id }) => _id);
+    const check = (removedIds) => {
+      const pushes = lib.restorePushes(items, removedIds);
+      const pulled = applyPatch('area', items, {
+        $pullAllById: { '@area.items': removedIds }
+      }).items;
+      // Each push stands on its own, in either order
+      for (const order of [ pushes, [ ...pushes ].reverse() ]) {
+        const restored = order.reduce((list, push) => {
+          return applyPatch('area', list, { $push: { '@area.items': push } }).items;
+        }, pulled);
+        assert.deepEqual(ids(restored), ids(items));
+      }
+      return pushes;
+    };
+    const apart = check([ 'a', 'c', 'd', 'f' ]);
+    assert.deepEqual(
+      apart.map((push) => ids(push.$each)),
+      [ [ 'a' ], [ 'c', 'd' ], [ 'f' ] ]
+    );
+    assert.equal(apart[0].$before, 'b');
+    assert.equal(apart[2].$after, 'e');
+    assert.equal(check([ 'b', 'c' ]).length, 1);
+    // Everything: no neighbor is left to place them by
+    const all = check(ids(items));
+    assert.deepEqual(all.map((push) => push.$before || push.$after), [ undefined ]);
+  });
+
   it('drops a selected descendant when its ancestor is also selected', function() {
     const ids = [ 'parent', 'child', 'other' ];
     const outer = lib.outermostIds(ids, (id, ancestorId) => {
