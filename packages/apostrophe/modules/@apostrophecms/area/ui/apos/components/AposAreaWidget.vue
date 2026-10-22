@@ -43,6 +43,7 @@
       @keyup.enter="onKeyup"
     >
       <div
+        v-if="!aposReadOnly"
         ref="label"
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
@@ -112,7 +113,7 @@
         />
       </div>
       <div
-        v-if="!controlsDisabled && !maxReached && !isSuppressingAddContentButtons"
+        v-if="hasControls && !maxReached && !isSuppressingAddContentButtons"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -141,7 +142,7 @@
         :class="{'apos-is-disabled': isFocused}"
       />
       <div
-        v-if="!controlsDisabled"
+        v-if="hasControls"
         ref="modifyControls"
         :style="stickyControlsStyles"
         :class="controlsClasses"
@@ -208,7 +209,7 @@
         />
       </div>
       <div
-        v-if="!controlsDisabled && !maxReached && !isSuppressingAddContentButtons"
+        v-if="hasControls && !maxReached && !isSuppressingAddContentButtons"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
@@ -252,6 +253,12 @@ export default {
     aposGraphKey: {
       from: 'aposGraphKey',
       default: null
+    },
+    // A read only view, such as See Changes or a document version: the
+    // widget and its change marker, and nothing that edits it
+    aposReadOnly: {
+      from: 'aposReadOnly',
+      default: false
     }
   },
   props: {
@@ -417,6 +424,9 @@ export default {
         ...this.contextMenuOptions,
         menuPlacement: 'top'
       };
+    },
+    hasControls() {
+      return !this.controlsDisabled && !this.aposReadOnly;
     },
     widgetIcon() {
       const natural = this.contextMenuOptions.menu
@@ -624,7 +634,7 @@ export default {
     }
 
     // Do not set up sticky controls if they are disabled
-    if (this.controlsDisabled) {
+    if (!this.hasControls) {
       return;
     }
 
@@ -1064,7 +1074,7 @@ export default {
   border-radius: var(--a-border-radius);
   background-color:
     color-mix(in srgb, var(--a-base-2) 12%, var(--a-background-primary));
-  color: var(--a-base-2);
+  color: var(--a-base-1);
   font-family: var(--a-family-default);
   font-size: calc(var(--a-type-tiny) - 1px);
   font-weight: var(--a-weight-bold);

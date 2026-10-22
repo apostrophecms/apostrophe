@@ -12,12 +12,14 @@
 export default {
   name: 'AposLabel',
   props: {
+    // An l10n key, or `{ key, ...options }` for one that interpolates
     label: {
-      type: String,
+      type: [ String, Object ],
       required: true
     },
+    // As `v-apos-tooltip` takes it: an l10n key or `{ content, localize }`
     tooltip: {
-      type: String,
+      type: [ String, Object ],
       default: null
     },
     modifiers: {

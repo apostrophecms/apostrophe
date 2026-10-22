@@ -7,8 +7,8 @@ import scroll from '../utils/scroll.js';
  * The change navigator: a position in the groups of the change list, moved
  * by its Previous and Next buttons or by a click on a group's header. A
  * step scrolls the group's header to the top of the list. `position` is
- * -1 until a group is selected; `previousButton` and `nextButton` are the
- * template refs of the two buttons.
+ * -1 until a group is selected; `nav` is the template ref of its
+ * `AposDocVersionChangeNav`.
  *
  * @param {object} options
  * @param {import('vue').Ref<object[]>} options.groups
@@ -24,8 +24,7 @@ export function useDocVersionNavigator({
 }) {
   // The index into the groups, -1 until a step selects one
   const position = ref(-1);
-  const previousButton = ref(null);
-  const nextButton = ref(null);
+  const nav = ref(null);
   const groupEls = new Map();
 
   function setGroupEl(key, el) {
@@ -79,8 +78,7 @@ export function useDocVersionNavigator({
       : position.value <= 0;
     if (atEnd) {
       await nextTick();
-      const other = delta > 0 ? previousButton : nextButton;
-      other.value?.$el.querySelector('button')?.focus();
+      nav.value?.focus(delta > 0 ? 'previous' : 'next');
     }
   }
 
@@ -97,8 +95,7 @@ export function useDocVersionNavigator({
 
   return {
     position,
-    previousButton,
-    nextButton,
+    nav,
     setGroupEl,
     getGroupEl,
     reset,

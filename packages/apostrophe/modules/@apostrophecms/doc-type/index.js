@@ -3475,6 +3475,9 @@ module.exports = {
         // to them via further queries, etc.
 
         async after(results) {
+          for (const doc of results) {
+            self.apos.schema.annotateFieldIds(doc);
+          }
           // Since "afters," in some cases, invoke query builders, we have to
           // set query._finalized to false so these invocations don't
           // throw an exception.

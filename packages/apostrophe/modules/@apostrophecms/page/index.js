@@ -675,6 +675,10 @@ module.exports = {
       // You may pass `_targetId` and `_position` to move the page within the
       // tree. `_position` may be `before`, `after` or `inside`. To move a page
       // into or out of the archive, set `archived` to `true` or `false`.
+      //
+      // A patch with `_strict: true` saves only if the whole page is then
+      // valid, as a save from its editor must be, and is refused as `invalid`
+      // otherwise.
       async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
@@ -1272,6 +1276,14 @@ database.`);
             }
             if (i === (patches.length - 1)) {
               if (possiblePatchedFields) {
+                if (patches.some(patch => self.apos.launder.boolean(patch._strict))) {
+                  await self.apos.schema.validateDocument(
+                    req,
+                    self.apos.doc.getManager(page.type)
+                      .allowedSchema(req, page, page._ancestors.at(-1)),
+                    page
+                  );
+                }
                 await self.update(req, page);
                 let modified;
                 if (input._targetId) {

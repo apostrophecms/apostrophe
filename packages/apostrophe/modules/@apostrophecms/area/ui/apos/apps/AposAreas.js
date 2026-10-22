@@ -148,7 +148,9 @@ export default function() {
         apos.bus.$off('context-history-apply', applyWhilePending);
         return;
       }
-      if (_docId !== apos.adminBar?.contextId) {
+      // Left to a render of the whole page in a read only view, as the
+      // area editor does
+      if ((_docId !== apos.adminBar?.contextId) || el.closest('[data-apos-read-only]')) {
         return;
       }
       const result = applyPatch(data._id, data.items, event.patch, {
@@ -211,6 +213,11 @@ export default function() {
       // can simply inject('aposGraphKey') and get the correct value.
       if (graphKey) {
         app.provide('aposGraphKey', graphKey);
+      }
+      // A read only view, such as See Changes or a document version: every
+      // editor below shows the content and mounts nothing that changes it
+      if (el.closest('[data-apos-read-only]')) {
+        app.provide('aposReadOnly', true);
       }
       app.mount(el);
       mountedApps.set(el, app);

@@ -12,7 +12,7 @@
       <slot
         v-if="slots.button"
         name="button"
-        :on-click="buttonClicked"
+        :on-click="slotButtonClicked"
       />
       <AposButton
         v-else
@@ -98,10 +98,10 @@
 
 <script setup>
 import {
-  ref, computed, onMounted, onBeforeUnmount, nextTick, useSlots, watch
+  ref, computed, onMounted, onBeforeUnmount, nextTick, useSlots, watch, inject
 } from 'vue';
 import {
-  computePosition, offset, shift, flip, arrow
+  computePosition, offset, shift, flip, arrow, size
 } from '@floating-ui/dom';
 import { createId } from 'apostrophe/lib/beneath.js';
 
@@ -236,6 +236,9 @@ const slots = useSlots();
 
 const isOpen = ref(false);
 const isRendered = ref(false);
+// Whether the open dropdown is in its place, which it is not when it first
+// renders: focus waits for it, or it would scroll to where it renders
+const isPlaced = ref(false);
 const placement = ref(props.menuPlacement);
 /** @type {import('vue').Ref<HTMLElement | null>}} */
 const contextMenuRef = ref(null);
@@ -254,6 +257,10 @@ const positionUpdateScheduled = ref(false);
 const modalDepth = ref(null);
 
 const modalStore = useModalStore();
+// Inside a window that attaches its editors' menus outside of it, as the
+// window does not scroll with the page: the page's scroll cannot bring a
+// dropdown into view there, so it fits the viewport and scrolls inside
+const fitsViewport = Boolean(inject('aposMenusRoot', null));
 
 const {
   onTab, runTrap, hasRunningTrap, resetTrap
@@ -268,7 +275,13 @@ const {
 
 const menuResizeObserver = new ResizeObserver((entries) => {
   for (const _entry of entries) {
-    setDropdownPosition();
+    // Fitted to the viewport, the dropdown may resize as it is placed: not
+    // while its own resize is being observed
+    if (fitsViewport) {
+      requestAnimationFrame(setDropdownPosition);
+    } else {
+      setDropdownPosition();
+    }
   }
 });
 
@@ -358,7 +371,9 @@ const { themeClass } = useAposTheme();
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
   apos.bus.$on('close-context-menus', hideContextMenu);
-  modalDepth.value = modalStore.getDepth();
+  // The layer the menu lives in: a window that leaves the page usable
+  // shares the page's layer
+  modalDepth.value = modalStore.getBlockingDepth();
 });
 
 onBeforeUnmount(() => {
@@ -377,7 +392,7 @@ function getMenuOffset() {
 }
 
 function hideWhenOtherOpen({ menuId }) {
-  if ((modalDepth.value === modalStore.getDepth()) && (props.menuId !== menuId)) {
+  if ((modalDepth.value === modalStore.getBlockingDepth()) && (props.menuId !== menuId)) {
     otherMenuOpened.value = true;
     hide();
   }
@@ -390,7 +405,7 @@ function setIconToCenterTo(el) {
 }
 
 function hideContextMenu(type) {
-  if (modalDepth.value !== modalStore.getDepth()) {
+  if (modalDepth.value !== modalStore.getBlockingDepth()) {
     return;
   }
   if (type === 'richText' && props.richTextMenu) {
@@ -409,6 +424,7 @@ async function hide(e) {
     menuResizeObserver.unobserve(dropdownContent.value);
   }
   isOpen.value = false;
+  isPlaced.value = false;
   // Clear any scheduled position updates
   positionUpdateScheduled.value = false;
   await nextTick();
@@ -439,7 +455,11 @@ async function show(e) {
   isOpen.value = true;
   await nextTick();
   emit('open', e);
-  setDropdownPosition();
+  await setDropdownPosition();
+  if (!isOpen.value) {
+    return;
+  }
+  isPlaced.value = true;
   menuResizeObserver.observe(dropdownContent.value);
 
   const positionHandler = props.teleportContent
@@ -465,9 +485,10 @@ async function show(e) {
 // Watch for dropdownContent changes and isOpen, re-run trap if needed
 watch([
   () => dropdownContent.value,
-  () => isOpen.value
-], async ([ content, open ]) => {
-  if (props.trapFocus && open && content && !hasRunningTrap.value) {
+  () => isOpen.value,
+  () => isPlaced.value
+], async ([ content, open, placed ]) => {
+  if (props.trapFocus && open && content && placed && !hasRunningTrap.value) {
     await runTrap(dropdownContent);
   }
   if ((!open || !content) && hasRunningTrap.value) {
@@ -504,6 +525,13 @@ function buttonClicked(e) {
   });
 }
 
+// A trigger of the `button` slot, stopped as the default trigger is: the
+// dropdown mounts during the click, which its click-outside would then catch
+function slotButtonClicked(e) {
+  e?.stopPropagation();
+  buttonClicked(e);
+}
+
 function setArrow(el) {
   arrowEl.value = el;
 }
@@ -521,22 +549,51 @@ async function setDropdownPosition() {
   // The proper ordering as recommended by Floating UI
   // https://floating-ui.com/docs/flip#combining-with-shift
   const middleware = [ offset(mOffset) ];
-  const flipMiddleware = flip({
-    // Always fallback to bottom when there is no placement
-    // that fits the viewport.
-    fallbackPlacements: [ 'bottom' ],
-    // Pass detectOverflow options to modify
-    // the clipping boundaries with our Admin UI top bar/Modal header
-    // in mind
-    padding: {
-      top: (window.apos.adminBar?.height || 0) + 10
+  // Pass detectOverflow options to modify
+  // the clipping boundaries with our Admin UI top bar/Modal header
+  // in mind
+  const padding = {
+    top: (window.apos.adminBar?.height || 0) + 10,
+    ...fitsViewport && { bottom: 8 }
+  };
+  const flipMiddleware = flip(fitsViewport
+    // The side with the most room, which the size below fits it to
+    ? {
+      fallbackStrategy: 'bestFit',
+      padding
     }
-  });
+    : {
+      // Always fallback to bottom when there is no placement
+      // that fits the viewport.
+      fallbackPlacements: [ 'bottom' ],
+      padding
+    });
   const shiftMiddleware = shift({ padding: 5 });
   if (props.menuPlacement.includes('-')) {
     middleware.push(flipMiddleware, shiftMiddleware);
   } else {
     middleware.push(shiftMiddleware, flipMiddleware);
+  }
+  if (fitsViewport) {
+    middleware.push(size({
+      padding,
+      apply({ availableHeight, elements }) {
+        const pane = elements.floating.querySelector('.apos-context-menu__pane');
+        if (!pane) {
+          return;
+        }
+        // What surrounds the pane, its tip included, takes its own room
+        const chrome = elements.floating.offsetHeight - pane.offsetHeight;
+        const maxHeight = `${Math.max(availableHeight - chrome, 0)}px`;
+        if (pane.style.maxHeight !== maxHeight) {
+          Object.assign(pane.style, {
+            boxSizing: 'border-box',
+            maxHeight,
+            overflowY: 'auto'
+          });
+        }
+      }
+    }));
   }
   middleware.push(arrow({
     element: arrowEl.value,
@@ -588,7 +645,7 @@ const ignoreInputTypes = [
 // is on (the source), and preventDefault() can stop the browser's
 // default focus movement.
 function onKeydownTab(event) {
-  if (!isOpen.value || modalDepth.value !== modalStore.getDepth()) {
+  if (!isOpen.value || modalDepth.value !== modalStore.getBlockingDepth()) {
     return;
   }
   if (event.target?.nodeName?.toLowerCase() === 'textarea') {
@@ -602,7 +659,7 @@ function onKeydownTab(event) {
  * @param {KeyboardEvent} event
  */
 function onKeyup(event) {
-  if (!isOpen.value || modalDepth.value !== modalStore.getDepth()) {
+  if (!isOpen.value || modalDepth.value !== modalStore.getBlockingDepth()) {
     return;
   }
 

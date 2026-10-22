@@ -83,7 +83,7 @@ export default {
     document.removeEventListener('keydown', this.keyboardShortcutListener);
   },
   methods: {
-    ...mapActions(useModalStore, [ 'getAt', 'getProperties' ]),
+    ...mapActions(useModalStore, [ 'getAt', 'getProperties', 'getBlockingDepth' ]),
     delay(resolve, ms) {
       return new Promise(() => {
         setTimeout(resolve, ms);
@@ -145,7 +145,7 @@ export default {
           }
           // In-context undo/redo must not seize Cmd/Ctrl+Z while a modal is open
           if (!shouldHandleShortcut(action, {
-            modalStackLength: this.stack.length
+            modalStackLength: this.getBlockingDepth()
           })) {
             return;
           }

@@ -44,7 +44,8 @@ const ORDER = Symbol('order');
  * @property {(type: string) => object|undefined} getWidgetManager The
  *   widget module for a widget `type` (`apos.area.getWidgetManager`), read
  *   for `schema`, `label`, `options.versionsRender`,
- *   `options.versionsRenderDeleted` and `getRichText`.
+ *   `options.versionsStandalone` (and its older name
+ *   `options.versionsRenderDeleted`) and `getRichText`.
  *   `undefined` for a type without a module.
  * @property {(doc: object, namespace: string, ...pathKeyValue: any[]) => void} setMeta
  *   `apos.doc.setMeta`, used by `annotate` to highlight top-level fields.
@@ -57,6 +58,10 @@ const ORDER = Symbol('order');
  * @property {() => object[]} [getRichTextStyles] The `styles` rich text is
  *   configured with by default, `{ tag, class, label }` each, for the names
  *   of blocks and inline styles.
+ * @property {(options: object) => Object<string, object>} [getAreaWidgets]
+ *   The widget types an area field's `options` allow, with the options of
+ *   each, groups included (`apos.area.getWidgets`). Read by `addFieldData`
+ *   and `addRestore`.
  * @property {(err: Error, path: PathSegment[]) => void} [onError] Told of
  *   every failure the engine recovered from, with the path of the field or
  *   row it happened at. The module logs them.
@@ -164,6 +169,9 @@ const ORDER = Symbol('order');
  *   some: the formatting that changed. Non-enumerable, like `field`.
  * @property {FormatLine[]} [formatChanges] The same for display, in the
  *   language of the admin UI, set by `addText`.
+ * @property {ChangeRow[]} [fieldRows] Array items added or deleted whole,
+ *   once `addItemFields` ran: the rows of its fields; in a change list,
+ *   those with text to show.
  * @property {{ old?: object[], new?: object[] }} [images] Relationship rows
  *   whose ids changed, set by `addText`: the related images of each side,
  *   `{ text, href, change }` each.
@@ -172,6 +180,53 @@ const ORDER = Symbol('order');
  *   path, one above it or one below it was saved with AI; `assisted` when it
  *   was saved without, after AI changed the path; `false` when AI never did.
  *   For an order row, the same of the versions that changed that order.
+ * @property {Array<{ _id: string|null, title: string }>} [authors] Rows of
+ *   `attribute` only: everyone whose version changed this path, oldest
+ *   first, each once. Empty when no version explains the change.
+ * @property {Date} [changedAt] Rows of `attribute` only: when the newest of
+ *   those versions changed it, when one of them has a time.
+ * @property {string} [patchKey] Rows of `addFieldData` only, and the
+ *   `fieldRows` of an item added whole: where a PATCH
+ *   of the document sets this value. The field names from the top level,
+ *   dotted; below an array item, a widget or an object whose `_id` the
+ *   document holds exactly once, the deepest of them, `@<its _id>.` and the
+ *   field names from there. `@<_id>` alone for a whole item or widget,
+ *   `@<_id>.content` for the markup of a rich text widget; the array itself
+ *   for the order of an array. None for the order of an area, nor where no
+ *   `_id` reaches the value without ambiguity.
+ * @property {string} [fieldId] Rows of `addFieldData` only: the `_id` of the
+ *   schema field the row belongs to; for a whole item or widget, or the
+ *   markup of a rich text widget, the array or area holding it.
+ * @property {string} [widgetType] Rows of `addFieldData` only, for a whole
+ *   widget and the markup of a rich text widget: the widget `type`.
+ * @property {object} [widgetOptions] With `widgetType`: the options the area
+ *   holding the widget gives its type.
+ * @property {object} [contextual] Rows of `addFieldData` only, for a row a
+ *   contextual widget's own editor edits on the page: the widget itself and
+ *   its fields other than its styles, the nearest widget along the path
+ *   being contextual. That widget's `{ patchKey, widgetType, widgetOptions }`:
+ *   its `@<_id>`, its `type` and the options its area gives it; none when
+ *   its `_id` is not in the document exactly once.
+ * @property {string|null} [markedHtml] Rows of `addFieldData` only, for a
+ *   `richText` field: the newer markup with the changed text marked (see
+ *   `lib/rich-text-diff.js`), `null` when the change cannot be shown that
+ *   way.
+ * @property {string} [listKey] Rows of `addFieldData` only, for a whole item
+ *   or widget that was added or deleted: where a PATCH of the document finds
+ *   the list it is in. `@<area _id>.items` for a widget, the area editor's
+ *   own form; the array's key, as `patchKey` has it, for an array item.
+ * @property {true} [system] An item or widget whose only change is in
+ *   fields the system manages, which no editor shows (`hidden` fields, a
+ *   widget type's own `utility` fields): modified, with no detail, never
+ *   edited nor restored. Such fields are no rows of their own.
+ * @property {true} [editable] Rows of `addRestore` only: the request may
+ *   change the value at `patchKey`, for the order of an array the whole
+ *   array, no field along the path being read only
+ *   or beyond its permissions and no widget along it of a type its area
+ *   does not allow.
+ * @property {{ patch: object, inverse: object }} [restore] Rows of
+ *   `addRestore` only: the PATCH that puts the older value back, and the
+ *   one that takes that back again. None where a patch cannot do it exactly.
  */
 
 /**
@@ -227,7 +282,7 @@ function walk(schema, older, newer, ctx) {
  * - `_deleted: true` on a widget `newer` does not have. A clone of it is
  *   put back into the area at its older position, so it can render in
  *   place; it exists in the returned document only. A widget whose type
- *   sets the `versionsRenderDeleted` option to `false` is not put back:
+ *   does not stand alone (the `versionsStandalone` option) is not put back:
  *   the widget holding it is marked as changed instead, or, in a top-level
  *   area, the field is highlighted.
  * - `_olderVersion: <the older widget>` on a changed widget whose type sets
@@ -279,11 +334,15 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
     }
     let widgetAt = _.findLastIndex(row.path, segment => segment.widgetType);
     if (row.kind === 'widget' && row.type === 'deleted') {
-      const manager = ctx.getWidgetManager(row.path.at(-1).widgetType);
-      if (manager?.options.versionsRenderDeleted !== false) {
+      if (isStandalone(row.path.at(-1).widgetType, ctx)) {
         const area = resolve(doc, row.path.slice(0, -1));
         if (area?.items) {
-          const at = Math.min(row.path.at(-1).ordinal - 1, area.items.length);
+          // Positions count the widgets of the types the site has
+          const known = knownWidgets(area, ctx);
+          const index = row.path.at(-1).ordinal - 1;
+          const at = (index < known.length)
+            ? area.items.indexOf(known[index])
+            : area.items.length;
           area.items.splice(at, 0, {
             ..._.cloneDeep(row.old),
             _deleted: true,
@@ -406,13 +465,612 @@ function consolidate(schema, pairs, ctx, { before = [] } = {}) {
   return rows;
 }
 
+/**
+ * Credits the rows of a `consolidate` of `pairs` to the versions that made
+ * them: sets `authors` and `changedAt` on every row. A version changed a
+ * row when one of its own changes is at the row's path, above it or below
+ * it, as `consolidate` relates them for `ai`. Rows are modified in place.
+ *
+ * @param {object[]} schema The schema of the documents.
+ * @param {Array<{
+ *   older: object,
+ *   newer: object,
+ *   author?: { _id: string|null, title: string },
+ *   changedAt?: Date
+ * }>} pairs The pairs the rows consolidate, oldest first, each with who
+ *   saved its `newer` and when. A pair without an `author` credits no one.
+ * @param {ChangeRow[]} rows
+ * @param {DiffContext} ctx
+ * @returns {ChangeRow[]} `rows`.
+ */
+function attribute(schema, pairs, rows, ctx) {
+  const edits = pairs.map(pair => ({
+    author: pair.author,
+    changedAt: pair.changedAt,
+    keys: walk(schema, pair.older, pair.newer, ctx).map(keyOf)
+  }));
+  for (const row of rows) {
+    const key = keyOf(row);
+    const touching = edits.filter(edit => edit.keys.some(other => isRelated(key, other)));
+    row.authors = _.uniqBy(
+      touching.map(edit => edit.author).filter(Boolean),
+      author => author._id
+    );
+    const changedAt = touching.map(edit => edit.changedAt).filter(Boolean).at(-1);
+    if (changedAt) {
+      row.changedAt = changedAt;
+    }
+  }
+  return rows;
+}
+
+/**
+ * Adds to every row what an editor of its value needs: `patchKey`,
+ * `fieldId`, `widgetType` and `widgetOptions` where they apply, and the
+ * `markedHtml` of a `richText` field. The `fieldRows` of an array item
+ * added whole get the same, since the page renders its fields in place.
+ * Rows are modified in place.
+ *
+ * @param {object[]} schema The schema of the document the rows are of.
+ * @param {ChangeRow[]} rows
+ * @param {object} doc The document the patch keys address, as stored: the
+ *   newer side of the rows.
+ * @param {DiffContext} ctx
+ * @returns {ChangeRow[]} `rows`.
+ */
+function addFieldData(schema, rows, doc, ctx) {
+  const idCounts = countIds(doc);
+  const fieldRows = rows.flatMap(row => ((row.type === 'added') && row.fieldRows) || []);
+  for (const row of [ ...rows, ...fieldRows ]) {
+    if (row.kind === 'area') {
+      continue;
+    }
+    const target = locate(schema, row.path, ctx);
+    if (!target) {
+      continue;
+    }
+    const { itemAt, area } = target;
+    const names = row.path.slice(itemAt + 1).map(segment => segment.name);
+    const patchKey = getPatchKey(row, target);
+    if (patchKey) {
+      row.patchKey = patchKey;
+    }
+    const listKey = patchKey && !names.length && (row.type !== 'modified') &&
+      getListKey(row, target);
+    if (listKey) {
+      row.listKey = listKey;
+    }
+    const widgetType = !names.length && row.path[itemAt]?.widgetType;
+    const fieldId = widgetType ? area?._id : row.field?._id;
+    if (fieldId) {
+      row.fieldId = fieldId;
+    }
+    if (widgetType) {
+      row.widgetType = widgetType;
+      const allowed = area && ctx.getAreaWidgets?.(area.options || {});
+      row.widgetOptions = allowed?.[widgetType] || {};
+    }
+    const contextual = getContextual(row, target);
+    if (contextual) {
+      row.contextual = contextual;
+    }
+    if ((row.kind === 'richText') && row.field) {
+      row.markedHtml = getMarkedRichText(row, ctx);
+    }
+  }
+  return rows;
+
+  // The nearest widget along the path, the row's own included, when it is
+  // contextual and the row is not one of its styles
+  function getContextual(row, { widgets }) {
+    const at = row.path.findLastIndex(segment => segment.widgetType);
+    const { type, area } = widgets.at(-1) || {};
+    const manager = (at !== -1) && ctx.getWidgetManager(type);
+    if (!manager?.options?.contextual) {
+      return;
+    }
+    const head = row.path[at + 1]?.name;
+    if (head && Object.keys(manager.styles || {}).includes(head)) {
+      return;
+    }
+    const id = row.path[at].name;
+    if (!id || (idCounts.get(id) !== 1)) {
+      return;
+    }
+    const allowed = area && ctx.getAreaWidgets?.(area.options || {});
+    return {
+      patchKey: `@${id}`,
+      widgetType: type,
+      widgetOptions: allowed?.[type] || {}
+    };
+  }
+
+  // A key that reaches this value and nothing else. An `@` reference names
+  // an `_id` the draft holds exactly once, or, for an item the draft no
+  // longer has, not at all, since a patch finds the first object with it.
+  // Below an object with such an `_id` the key starts there, as the field
+  // app keys the fields of an object; otherwise at the item above. None
+  // when the item's `_id` is missing or not unique
+  function getPatchKey(row, { itemAt, objects }) {
+    const namesAfter = at => row.path.slice(at + 1).map(segment => segment.name);
+    for (const at of [ ...objects ].reverse()) {
+      const id = resolve(doc, row.path.slice(0, at + 1))?._id;
+      if (id && (idCounts.get(id) === 1)) {
+        return [ `@${id}`, ...namesAfter(at) ].join('.');
+      }
+    }
+    if (itemAt === -1) {
+      return namesAfter(-1).join('.');
+    }
+    const id = row.path[itemAt].name;
+    const whole = itemAt === row.path.length - 1;
+    const expected = (whole && (row.type === 'deleted')) ? 0 : 1;
+    if (!id || ((idCounts.get(id) || 0) !== expected)) {
+      return;
+    }
+    return [
+      `@${id}`,
+      ...namesAfter(itemAt),
+      ...((whole && (row.kind === 'richText')) ? [ 'content' ] : [])
+    ].join('.');
+  }
+
+  // Where the list holding a whole item or widget is: its area by `_id`, as
+  // the area editor addresses it, or its array by the key of the array field
+  function getListKey(row, { itemAt, area }) {
+    const path = row.path.slice(0, itemAt);
+    if (!area) {
+      const target = locate(schema, path, ctx);
+      return target && getPatchKey({ path }, target);
+    }
+    const id = resolve(doc, path)?._id;
+    return (id && (idCounts.get(id) === 1)) ? `@${id}.items` : undefined;
+  }
+}
+
+// The deepest array item or widget along `path`, by index (-1 for none), the
+// area field holding it when it is a widget, the object fields below it that
+// the path is inside of, by index, every schema field along the path, those
+// of them right below a widget (`heads`, the widget type's own fields) and
+// every widget along it, `{ type, area }`. `null` when a name along the path
+// is not in the schema
+function locate(schema, path, ctx) {
+  let fields = schema;
+  let parent = null;
+  let itemAt = -1;
+  let area = null;
+  let objects = [];
+  const along = [];
+  const widgets = [];
+  const heads = [];
+  let widgetType = null;
+  for (const [ i, segment ] of path.entries()) {
+    const kind = parent && getKind(parent, ctx);
+    if (segment.widgetType || (kind === 'array')) {
+      itemAt = i;
+      area = segment.widgetType ? parent : null;
+      widgetType = segment.widgetType || null;
+      if (segment.widgetType) {
+        widgets.push({
+          type: segment.widgetType,
+          area: parent
+        });
+      }
+      fields = segment.widgetType
+        ? ctx.getWidgetManager(segment.widgetType)?.schema || []
+        : parent.schema || [];
+      parent = null;
+      objects = [];
+      continue;
+    }
+    parent = fields.find(field => field.name === segment.name);
+    if (!parent) {
+      return null;
+    }
+    along.push(parent);
+    if (widgetType) {
+      heads.push(parent);
+      widgetType = null;
+    }
+    if ((getKind(parent, ctx) === 'object') && (i < path.length - 1)) {
+      fields = parent.schema || [];
+      objects.push(i);
+    }
+  }
+  return {
+    itemAt,
+    area,
+    objects,
+    fields: along,
+    heads,
+    widgets
+  };
+}
+
+/**
+ * Adds `editable` to every row with a `patchKey` whose fields along its path
+ * the request may change and whose widgets along it their areas allow, and
+ * `restore` to those of them, the order of an array aside, that a PATCH of
+ * the newer document can put back to its older value exactly: the older
+ * value at `patchKey`; for a whole item or widget added or deleted, the list
+ * operation that takes it out or puts it back at its place; for a widget
+ * modified whole, what it stores outside its schema, its fields left as they
+ * are. Values are in the
+ * form a save takes, each relationship as `{ _id, _fields }` entries made
+ * from its stored ids. A widget type that stores data outside its schema
+ * keeps it through its own `sanitize`, as it must. None for a whole widget
+ * of a type that does not stand alone (the `versionsStandalone` option), nor
+ * for the order of an array. None when a save would
+ * drop a widget the patch writes, at any depth: of a type the site no longer
+ * has, or one its area does not allow. Rows are modified in place, after
+ * `addFieldData`.
+ *
+ * @param {object[]} schema The schema of the document the rows are of.
+ * @param {ChangeRow[]} rows
+ * @param {object} options
+ * @param {object} options.older The older document, as stored.
+ * @param {object} options.newer The newer document, as stored.
+ * @param {Set<string>} options.editable The names of the top-level fields
+ *   the request may edit.
+ * @param {(field: object) => boolean} options.canEdit Whether the request may
+ *   edit a field, at any depth, by its `editPermission` and `viewPermission`.
+ * @param {(field: object, id: string) => string} options.relatedId The `_id`
+ *   a save finds a related document by, from the `aposDocId` a relationship
+ *   stores.
+ * @param {Set<string>} options.loadable The related `_id`s of both
+ *   documents that the request can load (see `getRelatedIds`).
+ * @param {DiffContext} ctx With `getAreaWidgets`.
+ * @returns {ChangeRow[]} `rows`.
+ */
+function addRestore(schema, rows, {
+  older, newer, editable, canEdit, relatedId, loadable
+}, ctx) {
+  for (const row of rows) {
+    // Nothing of it to show, nothing to put back
+    if (row.system) {
+      continue;
+    }
+    const target = row.patchKey && locate(schema, row.path, ctx);
+    if (!target || !isEditable(target)) {
+      continue;
+    }
+    row.editable = true;
+    // The older order would take back every other change of the array; a
+    // widget its parent lays out together with its siblings cannot be put
+    // back or taken out alone
+    if (isOrder(row) || !isStandaloneRow(row, target)) {
+      continue;
+    }
+    const restore = getRestore(row, target);
+    if (restore) {
+      row.restore = restore;
+    }
+  }
+  return rows;
+
+  // None along the path is a field the save would skip or the request may
+  // not change, read only or not the request's to edit, nor a widget its
+  // area does not allow, which the save would leave out. Nor a field the
+  // system manages (`isSystemField`)
+  function isEditable({
+    fields, heads, widgets
+  }) {
+    return editable.has(fields[0]?.name) &&
+      !fields.some(field => field.readOnly || !canEdit(field)) &&
+      !fields.some(field => {
+        return isSystemField(field, ctx, { widget: heads.includes(field) });
+      }) &&
+      widgets.every(({ type, area }) => widgetOptionsOf(area, type));
+  }
+
+  function isStandaloneRow(row, { itemAt }) {
+    const widgetType = (itemAt === row.path.length - 1) && row.path[itemAt].widgetType;
+    return !widgetType || isStandalone(widgetType, ctx);
+  }
+
+  // None for a field the save would skip or the request may not change
+  // anywhere in the value; none either when a related document the restored
+  // value holds no longer loads, nor when a widget either side writes is of
+  // a type its area does not allow, since the save would leave it out. A
+  // widget of a type the site no longer has is left out by the save as by
+  // every edit, and is no change of its own
+  function getRestore(row, target) {
+    let blocked = false;
+    const onField = field => {
+      blocked ||= Boolean(field.readOnly) || !canEdit(field);
+    };
+    const onWidget = (widget, options) => {
+      blocked ||= Boolean(ctx.getWidgetManager(widget.type)) && !options;
+    };
+    const restoring = {
+      toId(field, id) {
+        const _id = relatedId(field, id);
+        blocked ||= !loadable.has(_id);
+        return _id;
+      },
+      onField,
+      onWidget
+    };
+    const undoing = {
+      toId: relatedId,
+      onField,
+      onWidget
+    };
+    const { itemAt } = target;
+    const whole = itemAt === row.path.length - 1;
+    let restore;
+    if (!whole || (row.kind === 'richText')) {
+      restore = {
+        patch: { [row.patchKey]: valueAt(older, row, target, restoring) },
+        inverse: { [row.patchKey]: valueAt(newer, row, target, undoing) }
+      };
+    } else if (row.type === 'modified') {
+      restore = getWidgetRestore(row, target, restoring, undoing);
+    } else {
+      restore = row.listKey &&
+        getListRestore(row, target, deleted => (deleted ? restoring : undoing));
+    }
+    return blocked ? undefined : restore;
+  }
+
+  // A widget modified whole changed what it stores outside its schema: that
+  // goes back, and its fields stay as they are, each a row of its own
+  function getWidgetRestore(row, { area }, restoring, undoing) {
+    const { widgetType } = row.path.at(-1);
+    const manager = ctx.getWidgetManager(widgetType);
+    const widget = resolve(newer, row.path);
+    if (!widget) {
+      return;
+    }
+    const options = widgetOptionsOf(area, widgetType);
+    const back = {
+      ..._.omit(
+        toInput(manager.schema, widget, ctx, restoring),
+        Object.keys(outsideSchema(manager, widget))
+      ),
+      ...outsideSchema(manager, resolve(older, row.path))
+    };
+    const current = toInput(manager.schema, widget, ctx, undoing);
+    restoring.onWidget(back, options);
+    undoing.onWidget(current, options);
+    return {
+      patch: { [row.patchKey]: back },
+      inverse: { [row.patchKey]: current }
+    };
+  }
+
+  // A deleted item goes back next to a neighbour the newer list still has;
+  // taking back the removal of an added one puts it next to its own
+  function getListRestore(row, {
+    itemAt, area, fields
+  }, sideOf) {
+    const id = row.path[itemAt].name;
+    const { widgetType } = row.path[itemAt];
+    const listPath = row.path.slice(0, itemAt);
+    const olderList = listOf(resolve(older, listPath), widgetType);
+    const newerList = listOf(resolve(newer, listPath), widgetType);
+    const pull = { $pullAllById: { [row.listKey]: [ id ] } };
+    const push = (item, place) => ({
+      $push: {
+        [row.listKey]: {
+          $each: [ item ],
+          ...place
+        }
+      }
+    });
+    // Both ways, so that the restore can be undone
+    const deleted = row.type === 'deleted';
+    const item = (deleted ? olderList : newerList).find(item => item?._id === id);
+    if (!item) {
+      return;
+    }
+    const itemSchema = widgetType
+      ? (ctx.getWidgetManager(widgetType)?.schema || [])
+      : (fields.at(-1)?.schema || []);
+    const side = sideOf(deleted);
+    const input = toInput(itemSchema, item, ctx, side);
+    if (widgetType) {
+      side.onWidget(input, widgetOptionsOf(area, widgetType));
+    }
+    return deleted
+      ? {
+        patch: push(input, placeOf(id, olderList, newerList)),
+        inverse: pull
+      }
+      : {
+        patch: pull,
+        inverse: push(input, placeOf(id, newerList, newerList))
+      };
+  }
+
+  function widgetOptionsOf(area, widgetType) {
+    return ctx.getAreaWidgets(area?.options || {})[widgetType];
+  }
+
+  // Before the next item of `list` that `present` has, else after the
+  // previous one, else at the same index
+  function placeOf(id, list, present) {
+    const ids = new Set(present.map(item => item?._id).filter(other => other !== id));
+    const index = list.findIndex(item => item?._id === id);
+    const next = list.slice(index + 1).find(item => ids.has(item?._id));
+    if (next) {
+      return { $before: next._id };
+    }
+    const previous = list.slice(0, index).reverse().find(item => ids.has(item?._id));
+    if (previous) {
+      return { $after: previous._id };
+    }
+    return { $position: index };
+  }
+
+  // The row's value in `doc`: its field's, taken from the object holding it,
+  // or the markup of a rich text widget. `null` for none, so that it survives
+  // the trip to the browser
+  function valueAt(doc, row, { itemAt, fields }, side) {
+    const value = (itemAt === row.path.length - 1)
+      ? resolve(doc, row.path)?.content
+      : fieldInput(fields.at(-1), resolve(doc, row.path.slice(0, -1)), ctx, side);
+    return (value === undefined) ? null : value;
+  }
+
+  // An area's widgets of the types the site has, so that no anchor is one
+  // the page does not show
+  function listOf(node, widgetType) {
+    return widgetType ? knownWidgets(node, ctx) : (Array.isArray(node) ? node : []);
+  }
+}
+
+/**
+ * The `_id`s of the documents the relationships of `doc` relate to, at any
+ * depth, as `relatedId` makes them. What `addRestore` asks to be loadable.
+ *
+ * @param {object[]} schema The schema of `doc`.
+ * @param {object} doc A document as stored.
+ * @param {DiffContext} ctx
+ * @param {(field: object, id: string) => string} relatedId See `addRestore`.
+ * @returns {Set<string>}
+ */
+function getRelatedIds(schema, doc, ctx, relatedId) {
+  const ids = new Set();
+  toInput(schema, doc, ctx, {
+    toId(field, id) {
+      const _id = relatedId(field, id);
+      ids.add(_id);
+      return _id;
+    }
+  });
+  return ids;
+}
+
+// A copy of `object` in the form a save takes, by its schema: every
+// relationship, at any depth, as the `{ _id, _fields }` entries a save reads,
+// in place of the ids and fields it stores. `side.toId` makes the `_id` of a
+// related document; `side.onField` is told of every field the copy holds,
+// `side.onWidget` of every widget in its areas, with the options its area
+// gives it
+function toInput(schema, object, ctx, side) {
+  if (!object || (typeof object !== 'object')) {
+    return object;
+  }
+  const input = { ...object };
+  for (const field of schema) {
+    if (field.idsStorage) {
+      delete input[field.idsStorage];
+      delete input[field.fieldsStorage];
+    }
+    if (_.has(object, field.name) || field.idsStorage) {
+      side.onField?.(field);
+      input[field.name] = fieldInput(field, object, ctx, side);
+    }
+  }
+  return input;
+}
+
+// The value of `field` in `holder`, as `toInput` has it
+function fieldInput(field, holder, ctx, side) {
+  const kind = getKind(field, ctx);
+  if (kind === 'relationship') {
+    const fields = holder?.[field.fieldsStorage] || {};
+    return (holder?.[field.idsStorage] || []).map(id => ({
+      _id: side.toId(field, id),
+      _fields: fields[id] || {}
+    }));
+  }
+  const value = holder?.[field.name];
+  if ((kind === 'area') && Array.isArray(value?.items)) {
+    const allowed = side.onWidget && ctx.getAreaWidgets(field.options || {});
+    return {
+      ...value,
+      items: value.items.map(widget => {
+        const input = toInput(
+          ctx.getWidgetManager(widget?.type)?.schema || [],
+          widget,
+          ctx,
+          side
+        );
+        if (allowed && input && (typeof input === 'object')) {
+          side.onWidget(input, allowed[input.type]);
+        }
+        return input;
+      })
+    };
+  }
+  if ((kind === 'array') && Array.isArray(value)) {
+    return value.map(item => toInput(field.schema || [], item, ctx, side));
+  }
+  if (kind === 'object') {
+    return toInput(field.schema || [], value, ctx, side);
+  }
+  return value;
+}
+
+// How many times each `_id` occurs inside a document, its own left out: what
+// an `@` reference of a patch is looked up among
+function countIds(doc) {
+  const counts = new Map();
+  const visit = value => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || (typeof value !== 'object')) {
+      return;
+    }
+    if (typeof value._id === 'string') {
+      counts.set(value._id, (counts.get(value._id) || 0) + 1);
+    }
+    for (const [ key, child ] of Object.entries(value)) {
+      if (key !== '_id') {
+        visit(child);
+      }
+    }
+  };
+  for (const [ key, value ] of Object.entries(doc || {})) {
+    if (key !== '_id') {
+      visit(value);
+    }
+  }
+  return counts;
+}
+
+/**
+ * Sets `fieldRows` on every array item added or deleted whole: the rows of
+ * its fields, as a change of each field alone would be, below the item's
+ * path. Rows are modified in place.
+ *
+ * @param {ChangeRow[]} rows
+ * @param {DiffContext} ctx
+ * @returns {ChangeRow[]} `rows`.
+ */
+function addItemFields(rows, ctx) {
+  for (const row of rows) {
+    if ((row.kind !== 'arrayItem') || !row.field?.schema) {
+      continue;
+    }
+    const fieldRows = [];
+    walkFields(row.field.schema, row.old || {}, row.new || {}, ctx, row.path, fieldRows);
+    row.fieldRows = fieldRows;
+  }
+  return rows;
+}
+
 module.exports = {
   walk,
   annotate,
-  consolidate
+  consolidate,
+  attribute,
+  addFieldData,
+  addRestore,
+  addItemFields,
+  getRelatedIds
 };
 
-function walkFields(schema, older, newer, ctx, path, rows) {
+// Walks the fields of `schema`, a widget type's own when `widget` is true.
+// A field the system manages is no row (see `isSystemField`); returns
+// whether such a field changed, here or in an object below, for the item or
+// widget holding them to show as modified when nothing else of it changed
+function walkFields(schema, older, newer, ctx, path, rows, { widget = false } = {}) {
+  let system = false;
   for (const field of schema) {
     const kind = getKind(field, ctx);
     if (kind === 'valueless') {
@@ -425,33 +1083,74 @@ function walkFields(schema, older, newer, ctx, path, rows) {
         label: field.label || field.name
       }
     ];
-    // Whole when the value is not of its kind, or when its walk fails: a
-    // change is never lost to a failure
-    let whole = !canWalk(kind, older[field.name], newer[field.name]);
-    const mark = rows.length;
-    if (!whole) {
-      try {
-        if (kind === 'area') {
-          walkArea(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
-        } else if (kind === 'array') {
-          walkArray(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
-        } else if (kind === 'object') {
-          walkObject(field, older[field.name], newer[field.name], ctx, fieldPath, rows);
-        } else if (kind === 'relationship') {
-          walkRelationship(field, older, newer, fieldPath, rows);
-        } else {
-          walkLeaf(field, kind, older, newer, ctx, fieldPath, rows);
-        }
-      } catch (err) {
-        rows.length = mark;
-        ctx.onError?.(err, fieldPath);
-        whole = true;
-      }
+    if (isSystemField(field, ctx, { widget })) {
+      const changes = [];
+      walkField(field, kind, older, newer, ctx, fieldPath, changes);
+      system ||= changes.length > 0;
+      continue;
     }
-    if (whole) {
-      walkWhole(field, older, newer, fieldPath, rows);
+    system = walkField(field, kind, older, newer, ctx, fieldPath, rows) || system;
+  }
+  return system;
+}
+
+// Whole when the value is not of its kind, or when its walk fails: a change
+// is never lost to a failure. Returns whether a field the system manages
+// changed in an object below
+function walkField(field, kind, older, newer, ctx, path, rows) {
+  let whole = !canWalk(kind, older[field.name], newer[field.name]);
+  const mark = rows.length;
+  let system = false;
+  if (!whole) {
+    try {
+      if (kind === 'area') {
+        walkArea(field, older[field.name], newer[field.name], ctx, path, rows);
+      } else if (kind === 'array') {
+        walkArray(field, older[field.name], newer[field.name], ctx, path, rows);
+      } else if (kind === 'object') {
+        system = walkObject(field, older[field.name], newer[field.name], ctx, path, rows);
+      } else if (kind === 'relationship') {
+        walkRelationship(field, older, newer, path, rows);
+      } else {
+        walkLeaf(field, kind, older, newer, ctx, path, rows);
+      }
+    } catch (err) {
+      rows.length = mark;
+      ctx.onError?.(err, path);
+      whole = true;
     }
   }
+  if (whole) {
+    walkWhole(field, older, newer, path, rows);
+  }
+  return system;
+}
+
+// A field the system manages, which no editor shows: a `hidden` one, or a
+// widget type's own field in its `utility` group (`widget`), such as the
+// place of a layout column in its grid. An area is edited on the page,
+// whatever its group
+function isSystemField(field, ctx, { widget = false } = {}) {
+  return (getKind(field, ctx) !== 'area') &&
+    (Boolean(field.hidden) || (widget && (field.group?.name === 'utility')));
+}
+
+// The row of an item or widget whose only change is in fields the system
+// manages: modified, with nothing to show of it
+function systemRow(path, kind, older, newer, field) {
+  const result = row(path, 'modified', kind, kind, older, newer, field);
+  result.system = true;
+  return result;
+}
+
+// Whether a widget of this type stands alone in a version: false for a type
+// whose widgets their parent lays out together (`versionsStandalone: false`,
+// or its older name `versionsRenderDeleted: false`), so that one of them is
+// neither shown deleted in place nor put back or taken out alone
+function isStandalone(widgetType, ctx) {
+  const options = ctx.getWidgetManager(widgetType)?.options || {};
+  return (options.versionsStandalone !== false) &&
+    (options.versionsRenderDeleted !== false);
 }
 
 // The walk a field takes: one of the structural types, `valueless`, or
@@ -572,7 +1271,7 @@ function walkRelationship(field, older, newer, path, rows) {
 // An object that appears or goes is one row; otherwise its fields walk
 function walkObject(field, older, newer, ctx, path, rows) {
   if ((older == null) && (newer == null)) {
-    return;
+    return false;
   }
   if ((older == null) || (newer == null)) {
     rows.push(row(
@@ -584,9 +1283,9 @@ function walkObject(field, older, newer, ctx, path, rows) {
       newer,
       field
     ));
-    return;
+    return false;
   }
-  walkFields(field.schema, older, newer, ctx, path, rows);
+  return walkFields(field.schema, older, newer, ctx, path, rows);
 }
 
 // Items match by `_id`; an item on one side only is one row, a matched
@@ -623,21 +1322,27 @@ function walkArray(field, older, newer, ctx, path, rows) {
         field
       ));
     } else {
-      walkFields(field.schema, oldItem, newItem, ctx, itemPath, rows);
+      const mark = rows.length;
+      if (walkFields(field.schema, oldItem, newItem, ctx, itemPath, rows) &&
+        (rows.length === mark)) {
+        rows.push(systemRow(itemPath, 'arrayItem', oldItem, newItem, field));
+      }
     }
   }
 }
 
 // Widgets match by `_id`, like array items; a matched pair walks the
-// widget type's schema, then its content outside the schema
+// widget type's schema, then its content outside the schema. A widget of a
+// type the site no longer has is left out, as the page and a save leave it
+// out, so that positions are the ones the page shows
 function walkArea(field, older, newer, ctx, path, rows) {
-  const entries = mergeItems(older?.items || [], newer?.items || []);
+  const entries = mergeItems(knownWidgets(older, ctx), knownWidgets(newer, ctx));
   walkOrder('area', field, entries, path, rows, (widget, ordinal) => {
     const manager = ctx.getWidgetManager(widget.type);
     return {
       ordinal,
-      label: manager?.label || widget.type,
-      title: manager?.options.titleField && text.getWidgetText(widget, ctx)
+      label: manager.label,
+      title: manager.options.titleField && text.getWidgetText(widget, ctx)
     };
   });
   for (const entry of entries) {
@@ -648,12 +1353,12 @@ function walkArea(field, older, newer, ctx, path, rows) {
     } = entry;
     const widget = newWidget || oldWidget;
     const manager = ctx.getWidgetManager(widget.type);
-    const title = manager?.options.titleField && text.getWidgetText(widget, ctx);
+    const title = manager.options.titleField && text.getWidgetText(widget, ctx);
     const widgetPath = [
       ...path,
       {
         name: widget._id,
-        label: manager?.label || widget.type,
+        label: manager.label,
         ...(title && { title }),
         ordinal,
         widgetType: widget.type
@@ -669,16 +1374,15 @@ function walkArea(field, older, newer, ctx, path, rows) {
         newWidget,
         field
       ));
-    } else if (!manager) {
-      if (!_.isEqual(oldWidget, newWidget)) {
-        rows.push(
-          row(widgetPath, 'modified', 'widget', 'widget', oldWidget, newWidget, field)
-        );
-      }
     } else {
       walkWidget(manager, oldWidget, newWidget, ctx, widgetPath, rows);
     }
   }
+}
+
+// The widgets of an area whose type the site has
+function knownWidgets(area, ctx) {
+  return (area?.items || []).filter(widget => ctx.getWidgetManager(widget?.type));
 }
 
 // Rich text lives outside the widget schema, so it is compared on its own
@@ -687,17 +1391,35 @@ function walkArea(field, older, newer, ctx, path, rows) {
 // is not compared. Any other data another widget type stores outside its
 // schema is one `widget` row, and so is rich text that is no string
 function walkWidget(manager, older, newer, ctx, path, rows) {
-  walkFields(manager.schema, older, newer, ctx, path, rows);
-  if (manager.getRichText) {
-    const oldText = manager.getRichText(older) || '';
-    const newText = manager.getRichText(newer) || '';
-    if ((typeof oldText === 'string') && (typeof newText === 'string')) {
-      if (oldText !== newText) {
-        rows.push(row(path, 'modified', 'richText', 'richText', oldText, newText, null));
+  const mark = rows.length;
+  const system = walkFields(manager.schema, older, newer, ctx, path, rows, {
+    widget: true
+  });
+  walkContent();
+  if (system && (rows.length === mark)) {
+    rows.push(systemRow(path, 'widget', older, newer, null));
+  }
+
+  function walkContent() {
+    if (manager.getRichText) {
+      const oldText = manager.getRichText(older) || '';
+      const newText = manager.getRichText(newer) || '';
+      if ((typeof oldText === 'string') && (typeof newText === 'string')) {
+        if (oldText !== newText) {
+          rows.push(row(path, 'modified', 'richText', 'richText', oldText, newText, null));
+        }
+        return;
       }
-      return;
+    }
+    if (!_.isEqual(outsideSchema(manager, older), outsideSchema(manager, newer))) {
+      rows.push(row(path, 'modified', 'widget', 'widget', older, newer, null));
     }
   }
+}
+
+// What a widget stores outside its schema, which only the widget type itself
+// reads and keeps through a save, with its own `sanitize`
+function outsideSchema(manager, widget) {
   const ignored = new Set(WIDGET_KEYS);
   for (const field of manager.schema) {
     ignored.add(field.name);
@@ -708,12 +1430,7 @@ function walkWidget(manager, older, newer, ctx, path, rows) {
       ignored.add(field.fieldsStorage);
     }
   }
-  const isContent = key => !ignored.has(key) && !key.startsWith('_');
-  const oldRest = _.pickBy(older, (value, key) => isContent(key));
-  const newRest = _.pickBy(newer, (value, key) => isContent(key));
-  if (!_.isEqual(oldRest, newRest)) {
-    rows.push(row(path, 'modified', 'widget', 'widget', older, newer, null));
-  }
+  return _.pickBy(widget, (value, key) => !ignored.has(key) && !key.startsWith('_'));
 }
 
 // The markup of a rich text widget of the annotated document, with the

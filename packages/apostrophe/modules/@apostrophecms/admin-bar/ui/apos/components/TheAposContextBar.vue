@@ -33,6 +33,7 @@
         @switch-draft-mode="switchDraftMode"
       />
       <TheAposContextModeAndSettings
+        ref="modeAndSettings"
         class="apos-admin-bar__control-group"
         :context="context"
         :published="published"
@@ -50,7 +51,7 @@
 
 <script>
 import { mapState } from 'pinia';
-import { markRaw } from 'vue';
+import { markRaw, toRaw } from 'vue';
 import { klona } from 'klona';
 import { createId } from 'apostrophe/lib/beneath.js';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
@@ -60,6 +61,11 @@ import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { isWithoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { replay, html } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
 import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
+import { useContextOperationsStore } from 'Modules/@apostrophecms/ui/stores/contextOperations.js';
+// See Changes belongs to the versions module, but its payload must load
+// before the page markup goes in, which only `refresh` can order. The points
+// marked "versions module" are the ones that could move there
+import { useSeeChangesStore } from 'Modules/@apostrophecms/document-versions/stores/seeChanges.js';
 
 // Undo history deeper than this is forgotten, oldest first
 const maxHistory = 500;
@@ -74,7 +80,10 @@ function singleValueKey(patch) {
 // The keys of an entry for the undo history, as opposed to a bare patch,
 // which is what `context-edited` was given before undo could be done
 // without replaying every edit since the page was loaded
-const entryKeys = [ 'patch', 'inverse', 'target' ];
+const entryKeys = [ 'patch', 'inverse', 'target', 'onSaved' ];
+
+// The `onSaved` callbacks of the patches waiting to be saved, by patch
+const onSavedByPatch = new WeakMap();
 
 export default {
   name: 'TheAposContextBar',
@@ -107,6 +116,10 @@ export default {
       savePromise: null,
       patchesSinceSave: [],
       editMode: false,
+      // See Changes, a mode within edit mode: the page shows the changes of
+      // the draft since its last publication. Never remembered across
+      // page loads
+      seeChanges: false,
       draftMode,
       queryDraftMode: query.aposMode,
       original: null,
@@ -201,6 +214,12 @@ export default {
     editMode(newVal) {
       window.apos.adminBar.editMode = newVal;
     },
+    seeChanges(newVal) {
+      window.apos.adminBar.seeChanges = newVal;
+      useContextOperationsStore().setChecked('see-changes', newVal);
+      // Versions module
+      useSeeChangesStore().setActive(newVal);
+    },
     contextBarActive() {
       this.$nextTick(() => {
         this.$emit('visibility-changed');
@@ -216,6 +235,8 @@ export default {
     apos.bus.$on('context-edited', this.onContextEdited);
     apos.bus.$on('context-history-record', this.onContextHistoryRecord);
     apos.bus.$on('content-changed', this.onContentChanged);
+    // Versions module: its See Changes operation
+    apos.bus.$on('see-changes', this.onSeeChanges);
 
     window.addEventListener('beforeunload', this.onBeforeUnload);
     window.addEventListener('storage', this.onStorage);
@@ -228,6 +249,7 @@ export default {
     }
     window.apos.adminBar.tabId = tabId;
     window.apos.adminBar.editMode = false;
+    window.apos.adminBar.seeChanges = false;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
     // Explicit query parameter beats our state on the previous page
     lastBaseContext.draftMode = this.queryDraftMode || lastBaseContext.draftMode;
@@ -300,6 +322,7 @@ export default {
     async onPushContext({
       doc
     }) {
+      await this.leaveSeeChanges({ refresh: false });
       if (!this.draftMode !== 'draft') {
         await this.switchDraftMode('draft');
       }
@@ -397,6 +420,7 @@ export default {
       }
     },
     async save() {
+      let saved = false;
       // More patches could get pushed during the async call to
       // send the previous batch, so keep going until we clear
       // the queue
@@ -416,21 +440,34 @@ export default {
           });
           this.context = doc;
           this.retrying = false;
+          saved = true;
+          this.settlePatches(patchesSinceSave, null);
         } catch (e) {
           if (this.isLockedError(e)) {
+            this.settlePatches([ ...patchesSinceSave, ...this.patchesSinceSave ], e);
             await this.showLockedError(e);
             return this.lockNotAvailable();
           }
           if ((e.status >= 400) && (e.status < 500)) {
             // The server refused this change and will refuse it again, so
             // retrying would spin forever with nothing to show for it. Say
-            // so, and let whatever else is waiting through
-            // eslint-disable-next-line no-console
-            console.error(e);
-            apos.notify('apostrophe:changeNotSaved', {
-              type: 'error',
-              icon: 'alert-circle-icon'
+            // so, unless whoever made every change refused does, and let
+            // whatever else is waiting through
+            const raw = patchesSinceSave.map(patch => toRaw(patch));
+            if (!raw.every(patch => onSavedByPatch.has(patch))) {
+              // eslint-disable-next-line no-console
+              console.error(e);
+              apos.notify('apostrophe:changeNotSaved', {
+                type: 'error',
+                icon: 'alert-circle-icon'
+              });
+            }
+            // Nothing to undo
+            this.patchesSinceLoaded = this.patchesSinceLoaded.filter(entry => {
+              const patch = toRaw(entry).patch;
+              return !(raw.includes(patch) && onSavedByPatch.has(patch));
             });
+            this.settlePatches(patchesSinceSave, e);
             continue;
           }
           this.patchesSinceSave = [ ...patchesSinceSave, ...this.patchesSinceSave ];
@@ -443,6 +480,20 @@ export default {
       }
       this.saving = false;
       this.saved = true;
+      // Versions module: See Changes shows the draft as saved
+      if (saved && this.seeChanges) {
+        await this.refresh({
+          scrollcheck: true
+        });
+      }
+    },
+    // Calls the `onSaved` of each patch that has one
+    settlePatches(patches, error) {
+      for (const patch of patches.map(patch => toRaw(patch))) {
+        const onSaved = onSavedByPatch.get(patch);
+        onSavedByPatch.delete(patch);
+        onSaved?.(error);
+      }
     },
     // Switch the mode to 'published' or 'draft'.
     //
@@ -479,6 +530,10 @@ export default {
           await this.unlock();
         }
       }
+      // The refresh or navigation below shows the page without the mode,
+      // or, when the switch fails, the refresh after it
+      const leftSeeChanges = this.seeChanges;
+      await this.leaveSeeChanges({ refresh: false });
       try {
         // Returns the doc as represented in the new locale and mode
         const action = window.apos.modules[doc.type].action;
@@ -498,6 +553,9 @@ export default {
               locale
             }
           });
+          if (leftSeeChanges) {
+            await this.refresh();
+          }
           return;
         }
         window.sessionStorage.setItem('aposStateChange', Date.now());
@@ -548,6 +606,9 @@ export default {
             description: 'apostrophe:unableToSwitchModes'
           });
         }
+        if (leftSeeChanges) {
+          await this.refresh();
+        }
       }
       this.rememberLastBaseContext();
     },
@@ -555,6 +616,11 @@ export default {
     // the patch to save, the patch that takes it back, and a description of
     // what was edited, so that undoing it can show the user where. See
     // `showTarget` for the properties of `target`.
+    //
+    // `onSaved(error)`, when given, is called with `null` once the patch is
+    // saved, or with the error when the server refused it or the lock was
+    // lost. A refused edit leaves the undo history, and when every patch
+    // refused has an `onSaved`, telling the user is left to them.
     //
     // A bare patch is accepted too, as it was before. Such an edit can
     // still be undone, but only the old way: by replaying every edit since
@@ -570,7 +636,7 @@ export default {
         // (`onContextHistoryRecord`), or content an editor provisioned for
         // itself. Nothing to add to the history, and nothing about to be
         // redone was overwritten
-        this.queuePatch(patch);
+        this.queuePatch(patch, payload.onSaved);
         return;
       }
       const entry = {
@@ -598,7 +664,7 @@ export default {
         this.mergeableEntryId = (entry.target?.kind === 'field') ? entry.id : null;
       }
       this.undone = [];
-      this.queuePatch(patch);
+      this.queuePatch(patch, isEntry ? payload.onSaved : null);
     },
     // What a rich text editor on the page did, as ProseMirror steps. The
     // editor saves the result by itself, see `isWithoutHistory`. Records that
@@ -671,7 +737,10 @@ export default {
       }
       return entry.patch;
     },
-    queuePatch(patch) {
+    queuePatch(patch, onSaved) {
+      if (onSaved) {
+        onSavedByPatch.set(patch, onSaved);
+      }
       this.patchesSinceSave.push(patch);
       if (!this.saving) {
         this.savePromise = this.save();
@@ -716,6 +785,9 @@ export default {
       }
     },
     async switchEditMode(editing) {
+      if (!editing) {
+        await this.leaveSeeChanges({ refresh: false });
+      }
       this.editMode = editing;
       if (editing) {
         if (!await this.lock(`${this.action}/${this.context._id}`)) {
@@ -728,6 +800,49 @@ export default {
         // a refresh.
         await this.switchDraftMode('draft');
       } else {
+        await this.refresh();
+      }
+    },
+    // The See Changes item of the context menu, see `enterSeeChanges`
+    async onSeeChanges({ checked }) {
+      if (checked) {
+        await this.enterSeeChanges();
+      } else {
+        await this.leaveSeeChanges();
+      }
+    },
+    // The page is rendered again from the draft marked with its changes
+    // since the last publication, which the See Changes store holds for
+    // the markers. Only for the context document itself, in edit mode
+    async enterSeeChanges() {
+      if (!this.editMode || this.hasCustomUi || this.seeChanges) {
+        return;
+      }
+      // The changes are those of the draft as saved
+      await this.flushSaves();
+      this.seeChanges = true;
+      this.openSeeChanges();
+      await this.refresh();
+    },
+    // The mode's window. It closes itself when the mode ends; closed by the
+    // user, it ends the mode and focus goes back to the menu that holds the
+    // See Changes item. Versions module, the focus return included
+    async openSeeChanges() {
+      const { components } = apos.modules['@apostrophecms/document-versions'];
+      await apos.modal.execute(components.seeChanges);
+      if (this.seeChanges) {
+        await this.leaveSeeChanges();
+        this.$refs.modeAndSettings?.$el.querySelector('[aria-haspopup="menu"]')?.focus();
+      }
+    },
+    async leaveSeeChanges({ refresh = true } = {}) {
+      if (!this.seeChanges) {
+        return;
+      }
+      this.seeChanges = false;
+      // Versions module
+      useSeeChangesStore().clear();
+      if (refresh) {
         await this.refresh();
       }
     },
@@ -761,9 +876,18 @@ export default {
         return;
       }
 
+      // Only the mode asks for the page marked with its changes, never the
+      // address bar, where a link followed in the mode can carry it
+      const params = new URLSearchParams(window.location.search);
+      let search = window.location.search;
+      if (params.has('aposSeeChanges')) {
+        params.delete('aposSeeChanges');
+        search = params.size ? `?${params}` : '';
+      }
+
       if (this.urlDiffers(doc._url)) {
         // Slug changed, change browser URL to reflect the actual url of the doc
-        doc._url = doc._url + (window.location.search || '');
+        doc._url = doc._url + search;
         history.replaceState(null, '', doc._url);
       } else {
         // No genuine slug change, e.g. the current path is just the
@@ -773,22 +897,32 @@ export default {
         // bare doc._url, otherwise any filter path segments and query
         // string driving the current view would be lost and we'd render
         // the unfiltered index instead.
-        doc._url = window.location.pathname + window.location.search;
+        doc._url = window.location.pathname + search;
+      }
+
+      // Versions module, awaited here so the markers exist before the areas mount
+      if (this.seeChanges && !await useSeeChangesStore().load(this.context._id)) {
+        await this.leaveSeeChanges({ refresh: false });
       }
 
       const qs = {
-        ...apos.http.parseQuery(window.location.search),
+        ...apos.http.parseQuery(search),
         aposRefresh: '1',
         aposMode: this.draftMode,
         ...(this.editMode
           ? {
             aposEdit: '1'
           }
+          : {}),
+        ...(this.seeChanges
+          ? {
+            aposSeeChanges: '1'
+          }
           : {})
       };
 
       if (doc._url) {
-        refreshable.innerHTML = await apos.http.get(doc._url, {
+        const html = await apos.http.get(doc._url, {
           qs,
           headers: {
             'Cache-Control': 'no-cache'
@@ -797,9 +931,15 @@ export default {
           busy: true,
           prefix: false
         });
+        // See Changes shows the page read only. The outer element, so that
+        // it survives a switch of the breakpoint preview, which moves the
+        // page in and out of its own body
+        document.querySelector('[data-apos-refreshable]')
+          .toggleAttribute('data-apos-read-only', this.seeChanges);
+        refreshable.innerHTML = html;
       }
 
-      if (this.editMode && (!this.original)) {
+      if (this.editMode && !this.seeChanges && (!this.original)) {
         // the first time we enter edit mode on the page, we need to
         // establish a baseline for undo/redo. Use our
         // "@ notation" PATCH feature. Sort the areas by DOM depth
@@ -908,7 +1048,8 @@ export default {
         let patch;
         if (entry.richText) {
           const richText = entry.richText;
-          const editor = editorRegistry.find(richText.instanceKey, richText.target);
+          const editor = !this.seeChanges &&
+            editorRegistry.find(richText.instanceKey, richText.target);
           if (editor) {
             // The editor shows the change and saves it, as it does typing.
             // ProseMirror scrolls to the change itself
@@ -926,6 +1067,12 @@ export default {
           };
         } else {
           patch = klona((direction === 'undo') ? entry.inverse : entry.patch);
+        }
+        if (this.seeChanges) {
+          // Versions module: nothing on the page is edited in See Changes,
+          // which renders it again once the change is saved
+          this.queuePatch(patch);
+          return true;
         }
         const removed = [];
         const shown = this.applyToPage(patch, removed);

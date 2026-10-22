@@ -59,9 +59,16 @@ describe('Document Versions diff engine', function () {
             versionsRender: false
           }
         },
-        // Inherits `versionsRenderDeleted: false`
+        // Inherits `versionsStandalone: false`
         'loose-column-widget': {
           extend: '@apostrophecms/layout-column-widget'
+        },
+        // The option's older name
+        'legacy-cell-widget': {
+          extend: '@apostrophecms/widget-type',
+          options: {
+            versionsRenderDeleted: false
+          }
         },
         ...modules
       }
@@ -585,19 +592,37 @@ describe('Document Versions diff engine', function () {
       assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
     });
 
-    it('should compare a widget of an unknown type as a whole', function () {
+    it('should leave out a widget of a type the site no longer has, as the page does', function () {
       const older = buildDoc();
       const newer = buildDoc();
-      const olderWidget = older.section.rows[0].content.items[2];
-      const widget = newer.section.rows[0].content.items[2];
-      olderWidget.type = 'gone';
-      widget.type = 'gone';
+      const { items } = newer.section.rows[0].content;
+      older.section.rows[0].content.items[2].type = 'gone';
+      items[2].type = 'gone';
+      items[2].payload.n = 3;
+      items.push({
+        _id: 'added-gone',
+        metaType: 'widget',
+        type: 'gone'
+      });
       assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
-      widget.payload.n = 3;
+    });
+
+    it('should count positions without a widget of a type the site no longer has', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      const olderItems = older.section.rows[0].content.items;
+      const newerItems = newer.section.rows[0].content.items;
+      olderItems[0].type = 'gone';
+      newerItems[0].type = 'gone';
+      // Moved past the widgets the page shows: no change of order
+      newerItems.push(newerItems.shift());
+      assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
+
+      newerItems.splice(1, 1);
       const rows = apos.docVersions.getChangeRows(req, older, newer);
-      assert.equal(rows.length, 1);
-      assert.equal(rows[0].fieldType, 'widget');
-      assert.equal(rows[0].path.at(-1).label, 'gone');
+      assert.deepEqual(rows.map(row => [ row.type, row.path.at(-1).ordinal ]), [
+        [ 'deleted', 2 ]
+      ]);
     });
 
     it('should report an object that appears or goes as one row', function () {
@@ -1079,14 +1104,14 @@ describe('Document Versions diff engine', function () {
         newer: doc => {
           doc.zone.items.push('A widget');
         },
-        rows: [ [ 'added', 'widget', 'widget', 'Zone > ' ] ]
+        rows: []
       },
       {
         name: 'a widget without a type',
         newer: doc => {
           delete doc.zone.items[1].type;
         },
-        rows: [ [ 'modified', 'widget', 'widget', 'Zone > ' ] ]
+        rows: [ [ 'deleted', 'widget', 'widget', 'Zone > Card' ] ]
       },
       {
         name: 'rich text widget content that becomes a number',
@@ -1574,6 +1599,53 @@ describe('Document Versions diff engine', function () {
       assert.deepEqual(await texts(older, newer), [
         [ 'root.section.rows.1', 'Title root.section.rows.1', '' ]
       ]);
+    });
+
+    it('should list the fields of an added or deleted array item as rows of their own', async function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      newer.section.rows.pop();
+      const { rows } = await apos.docVersions.getChangeList(req, [ {
+        older,
+        newer
+      } ]);
+      const [ item ] = rows;
+      assert.equal(item.oldText, 'Title root.section.rows.1');
+      assert.deepEqual(item.fieldRows.map(row => [
+        row.path.slice(3).map(segment => segment.name).join('.'),
+        row.type,
+        row.oldText,
+        row.newText
+      ]), [
+        [ 'title', 'deleted', 'Title root.section.rows.1', '' ],
+        [ 'shout', 'deleted', 'Hello', '' ],
+        [ 'count', 'deleted', '2', '' ],
+        [ 'ratio', 'deleted', '0.5', '' ],
+        [ 'flag', 'deleted', 'false', '' ],
+        [ 'choice', 'deleted', 'One', '' ],
+        [ 'tags', 'deleted', 'One', '' ],
+        [ 'when', 'deleted', '2026-01-01', '' ],
+        [ 'at', 'deleted', '10:00:00', '' ],
+        [ 'link', 'deleted', 'https://example.com/', '' ],
+        [ 'mail', 'deleted', 'someone@example.com', '' ],
+        [ 'body', 'deleted', 'Body root.section.rows.1', '' ],
+        [ 'tint', 'deleted', '#ff0000', '' ],
+        [ 'content.root.section.rows.1.content.1', 'deleted', 'Rich root.section.rows.1', '' ]
+      ]);
+      assert(item.fieldRows.every(row => row.diff.length));
+
+      const { rows: [ added ] } = await apos.docVersions.getChangeList(req, [ {
+        older: newer,
+        newer: older
+      } ]);
+      assert.equal(added.type, 'added');
+      assert.deepEqual(
+        added.fieldRows.slice(0, 2).map(row => [ row.type, row.oldText, row.newText ]),
+        [
+          [ 'added', '', 'Title root.section.rows.1' ],
+          [ 'added', '', 'Hello' ]
+        ]
+      );
     });
 
     it('should label an array item by its ordinal when its title is empty', async function () {
@@ -2798,6 +2870,19 @@ describe('Document Versions diff engine', function () {
           [HIGHLIGHT]: true,
           '@apostrophecms/document-versions:ai': 'assisted'
         });
+      });
+
+      it('should take the option by its older name', function () {
+        const older = buildProject();
+        const newer = buildProject();
+        older.zone.items.push({
+          _id: 'legacy',
+          metaType: 'widget',
+          type: 'legacy-cell'
+        });
+        const doc = apos.docVersions.getAnnotatedDoc(req, older, newer);
+        assert.deepEqual(doc.zone.items.map(item => item._id), [ 'zone-text', 'zone-card' ]);
+        assert.equal(doc.aposMeta.zone[HIGHLIGHT], true);
       });
     });
 

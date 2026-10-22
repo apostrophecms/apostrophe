@@ -3,6 +3,7 @@
     class="apos-rich-text-insert-menu-item"
     role="option"
     data-insert-menu-item
+    :data-apos-test="`rich-text-insert:${props.name}`"
   >
     <div class="apos-rich-text-insert-menu-icon">
       <AposIndicator

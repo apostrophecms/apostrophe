@@ -1082,7 +1082,7 @@ module.exports = (self) => {
           _id
         };
         result.metaType = 'arrayItem';
-        result.scopedArrayName = field.scopedArrayName;
+        result._arrayFieldId = field._id;
         try {
           const options = {
             fetchRelationships,
@@ -1166,14 +1166,6 @@ module.exports = (self) => {
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // Unlike the field _id, scopedArrayName is stored on every array item in
-      // the database, so it keeps its original flat form and continues to
-      // honor arrayName. Changing it would require a migration
-      const localArrayName = field.arrayName || field.name;
-      field.scopedArrayName = `${metaType}.${type}.${localArrayName}`;
-      self.arrayManagers[field.scopedArrayName] = {
-        schema: field.schema
-      };
       self.register(metaType, type, field.schema, fieldPath);
     },
     isEqual(req, field, one, two) {
@@ -1234,20 +1226,13 @@ module.exports = (self) => {
         }
       }
       result.metaType = 'objectItem';
-      result.scopedObjectName = field.scopedObjectName;
+      result._objectFieldId = field._id;
       destination[field.name] = result;
       if (errors.length) {
         throw errors;
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // Stored in the database on every object, so it keeps its original flat
-      // form and continues to honor objectName. See scopedArrayName above
-      const localObjectName = field.objectName || field.name;
-      field.scopedObjectName = `${metaType}.${type}.${localObjectName}`;
-      self.objectManagers[field.scopedObjectName] = {
-        schema: field.schema
-      };
       self.register(metaType, type, field.schema, fieldPath);
     },
     validate: function (field, options, warn, fail) {
