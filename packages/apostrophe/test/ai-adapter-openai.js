@@ -8,11 +8,8 @@ describe('AI adapter: openai', function() {
   // The adapter module instance, for unit access to the dialect methods
   let adapter;
   let savedLiveKey;
-  let savedBedrockKey;
 
   before(async function() {
-    savedBedrockKey = process.env.APOS_BEDROCK_KEY;
-    delete process.env.APOS_BEDROCK_KEY;
     // A real key in the environment would override the fixture keys
     // below (envKey); keep the suite hermetic and restore at the end
     savedLiveKey = process.env.APOS_OPENAI_KEY;
@@ -44,16 +41,6 @@ describe('AI adapter: openai', function() {
                 adapter: 'openai',
                 apiKey: 'sk-gw',
                 baseUrl: 'https://llm-gateway.example.com/openai/v1'
-              },
-              bedrock: {
-                adapter: 'openai',
-                bedrockRegion: 'us-west-2',
-                apiKey: 'bedrock-api-key'
-              },
-              'bedrock-eu': {
-                adapter: 'openai',
-                bedrockRegion: 'eu-central-1',
-                apiKey: 'bedrock-api-key'
               }
             },
             // Keep retried tests fast; the delay engine has its own suite
@@ -68,9 +55,6 @@ describe('AI adapter: openai', function() {
   after(async function() {
     if (savedLiveKey !== undefined) {
       process.env.APOS_OPENAI_KEY = savedLiveKey;
-    }
-    if (savedBedrockKey !== undefined) {
-      process.env.APOS_BEDROCK_KEY = savedBedrockKey;
     }
     if (apos) {
       return t.destroy(apos);
@@ -731,43 +715,6 @@ describe('AI adapter: openai', function() {
       assert.equal(call.url, 'https://llm-gateway.example.com/openai/v1/responses');
       assert.equal(call.options.headers.authorization, 'Bearer sk-gw');
       assert.equal(call.options.body.max_output_tokens, 128000);
-    });
-
-    it('declares Bedrock\'s own defaults on a bedrockRegion entry', function() {
-      const { bedrock } = apos.ai.modelCatalog().providers;
-      assert.deepEqual(
-        Object.keys(bedrock.models),
-        [ 'gpt-6-luna', 'gpt-5.6-terra', 'gpt-6.1-sol' ]
-      );
-      assert.equal(bedrock.capabilities.image, false);
-      assert.deepEqual(apos.ai.providers.bedrock.effort, {
-        low: { model: 'gpt-6-luna' },
-        medium: { model: 'gpt-5.6-terra' },
-        high: {
-          model: 'gpt-6.1-sol',
-          reasoning: 'high'
-        }
-      });
-    });
-
-    it('calls Amazon Bedrock under the region\'s inference profile', async function() {
-      httpScript = [ () => fixture(), () => fixture() ];
-      await apos.ai.generate(apos.task.getReq(), 'p', {
-        provider: 'bedrock',
-        model: 'gpt-5.6-terra'
-      });
-      await apos.ai.generate(apos.task.getReq(), 'p', {
-        provider: 'bedrock-eu',
-        model: 'gpt-6-luna'
-      });
-      const [ us, eu ] = httpCalls;
-      assert.equal(us.url, 'https://bedrock-runtime.us-west-2.amazonaws.com/openai/v1/responses');
-      assert.equal(us.options.headers.authorization, 'Bearer bedrock-api-key');
-      assert.equal(us.options.body.model, 'us.openai.gpt-5.6-terra');
-      assert.equal(us.options.body.max_output_tokens, 128000);
-      // Bedrock offers no European geography for OpenAI's models
-      assert.equal(eu.url, 'https://bedrock-runtime.eu-central-1.amazonaws.com/openai/v1/responses');
-      assert.equal(eu.options.body.model, 'global.openai.gpt-6-luna');
     });
 
     it('drives a reasoning tool loop end to end, replaying the reasoning item', async function() {

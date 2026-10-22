@@ -349,6 +349,9 @@ describe('AI: named providers and baseUrl', function() {
   // for every request
   describe('an apiKey function', function() {
     let minted;
+    // What the key function does on its next call
+    let mint;
+    let failuresLogged;
     const keyEnv = 'APOS_TEST_MINTED_KEY';
 
     before(async function() {
@@ -365,7 +368,7 @@ describe('AI: named providers and baseUrl', function() {
                   adapter: 'openai-compatible',
                   baseUrl,
                   envKey: keyEnv,
-                  apiKey: async () => `token-${++minted}`,
+                  apiKey: async () => mint(),
                   models: {
                     'llama-3.1-8b-instant': { maxOutputTokens: 8192 }
                   },
@@ -382,6 +385,13 @@ describe('AI: named providers and baseUrl', function() {
       // Retries need not wait or log
       apos.ai.pause = async () => {};
       apos.ai.logWarn = () => {};
+      apos.ai.logError = (req, type, message, data) => {
+        failuresLogged.push({
+          type,
+          message,
+          data
+        });
+      };
     });
 
     after(function() {
@@ -391,6 +401,8 @@ describe('AI: named providers and baseUrl', function() {
     beforeEach(function() {
       minted = 0;
       failures = 0;
+      failuresLogged = [];
+      mint = () => `token-${++minted}`;
     });
 
     it('sends a freshly resolved key with each request', async function() {
@@ -412,6 +424,44 @@ describe('AI: named providers and baseUrl', function() {
       );
     });
 
+    it('fails as forbidden without a retry when the function throws', async function() {
+      mint = () => {
+        minted++;
+        throw new Error('no credentials in the chain');
+      };
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.equal(e.name, 'forbidden');
+        assert.equal(
+          e.message,
+          'the "apiKey" function of the "minted" provider failed: no credentials in the chain'
+        );
+        return true;
+      });
+      assert.equal(minted, 1);
+      assert.equal(hits.length, 0);
+      assert.equal(failuresLogged.length, 1);
+      assert.equal(failuresLogged[0].type, 'failure');
+      assert.equal(failuresLogged[0].data.code, 'forbidden');
+      assert.equal(failuresLogged[0].data.action, 'stop');
+    });
+
+    it('fails as forbidden without a retry on a key that is not a string', async function() {
+      for (const key of [ undefined, '', 42 ]) {
+        minted = 0;
+        mint = () => {
+          minted++;
+          return key;
+        };
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+          assert.equal(e.name, 'forbidden');
+          assert.equal(e.message, 'the "apiKey" function of the "minted" provider returned no key');
+          return true;
+        });
+        assert.equal(minted, 1);
+      }
+      assert.equal(hits.length, 0);
+    });
+
     it('lets a key from the environment win over the function', async function() {
       await t.destroy(apos);
       process.env[keyEnv] = 'env-key';
@@ -425,7 +475,7 @@ describe('AI: named providers and baseUrl', function() {
                   adapter: 'openai-compatible',
                   baseUrl,
                   envKey: keyEnv,
-                  apiKey: async () => `token-${++minted}`,
+                  apiKey: async () => mint(),
                   models: {
                     'llama-3.1-8b-instant': { maxOutputTokens: 8192 }
                   },

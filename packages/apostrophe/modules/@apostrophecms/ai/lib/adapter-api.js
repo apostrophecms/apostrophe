@@ -130,42 +130,6 @@ module.exports = (self) => {
       if (!adapter.apiKey) {
         throw new Error(`the "${adapter.provider}" provider requires an apiKey`);
       }
-    },
-
-    /**
-     * The origin of Amazon Bedrock's runtime endpoint in an AWS region,
-     * for an adapter whose vendor dialect Bedrock serves. Like
-     * requireApiKey, fails startup with a plain Error on a malformed
-     * region.
-     *
-     * @param {string} region An AWS region, e.g. `us-east-1`.
-     * @returns {string} e.g. `https://bedrock-runtime.us-east-1.amazonaws.com`
-     */
-    bedrockRuntimeUrl(region) {
-      if (!/^[a-z]{2}(-gov)?-[a-z]+-\d+$/.test(region)) {
-        throw new Error(`"${region}" is not an AWS region`);
-      }
-      return `https://bedrock-runtime.${region}.amazonaws.com`;
-    },
-
-    /**
-     * A vendor model name as Amazon Bedrock's runtime endpoint takes it:
-     * prefixed with the cross-region inference profile and the vendor,
-     * e.g. `claude-sonnet-5-5` → `us.anthropic.claude-sonnet-5-5`. A name
-     * that is already a Bedrock ID or an ARN passes through, so a
-     * project may configure Bedrock IDs directly.
-     *
-     * @param {string} model The vendor's own model name.
-     * @param {{ vendor: string, profile: string }} options The vendor
-     *   segment (`anthropic`) and the inference profile (`us`, `global`).
-     * @returns {string}
-     */
-    bedrockModelId(model, { vendor, profile }) {
-      if (model.startsWith('arn:') ||
-        new RegExp(`^([a-z-]+\\.)?${vendor}\\.`).test(model)) {
-        return model;
-      }
-      return `${profile}.${vendor}.${model}`;
     }
   };
 };

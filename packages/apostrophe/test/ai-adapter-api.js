@@ -220,39 +220,4 @@ describe('AI: adapter API', function() {
       });
     });
   });
-
-  describe('Amazon Bedrock', function() {
-    it('builds the runtime origin for a region', function() {
-      assert.equal(
-        apos.ai.bedrockRuntimeUrl('us-east-1'),
-        'https://bedrock-runtime.us-east-1.amazonaws.com'
-      );
-      assert.equal(
-        apos.ai.bedrockRuntimeUrl('us-gov-west-1'),
-        'https://bedrock-runtime.us-gov-west-1.amazonaws.com'
-      );
-      assert.throws(
-        () => apos.ai.bedrockRuntimeUrl('evil.example.com/x'),
-        /is not an AWS region/
-      );
-    });
-
-    it('prefixes vendor names and passes Bedrock IDs through', function() {
-      const options = {
-        vendor: 'openai',
-        profile: 'us'
-      };
-      assert.equal(apos.ai.bedrockModelId('gpt-6.1-sol', options), 'us.openai.gpt-6.1-sol');
-      assert.equal(
-        apos.ai.bedrockModelId('global.openai.gpt-6.1-sol', options),
-        'global.openai.gpt-6.1-sol'
-      );
-      assert.equal(
-        apos.ai.bedrockModelId('openai.gpt-oss-120b-1:0', options),
-        'openai.gpt-oss-120b-1:0'
-      );
-      const arn = 'arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/abc';
-      assert.equal(apos.ai.bedrockModelId(arn, options), arn);
-    });
-  });
 });
