@@ -358,7 +358,7 @@ export default {
       });
     },
     onSelectionMutate({
-      name, ids, changes
+      name, ids, changes, clones
     } = {}) {
       if (this.foreign || !ids?.length || !this.inSelectionScope()) {
         return;
@@ -380,7 +380,10 @@ export default {
       } else if (name === 'down') {
         this.moveSelected(mine, 1);
       } else if (name === 'clone') {
-        this.cloneSelected(mine);
+        this.cloneSelected(mine, {
+          changes,
+          clones
+        });
       }
     },
     areaUpdatedHandler(area) {
@@ -708,7 +711,8 @@ export default {
       next.splice(range.first, 0, item);
       this.next = next;
     },
-    cloneSelected(widgets) {
+    // The batch reports the edit in `changes` and selects `clones`.
+    cloneSelected(widgets, { changes, clones } = {}) {
       const max = this.options.max || this.field?.max;
       if (max && (this.next.length + widgets.length > max)) {
         apos.notify('This area cannot hold more widgets', {
@@ -717,15 +721,17 @@ export default {
         });
         return;
       }
-      const clones = widgets.map((widget) => cloneWidget(widget));
       const lastIndex = Math.max(...widgets.map((widget) => {
         return this.next.findIndex((item) => item._id === widget._id);
       }));
+      const copies = widgets.map((widget) => cloneWidget(widget));
       this.insertMany({
         index: lastIndex + 1,
-        widgets: clones,
-        select: 'all'
+        widgets: copies,
+        select: false,
+        changes
       });
+      clones?.push(...copies.map((widget) => widget._id));
     },
     async remove({ index }, { autosave = true } = {}) {
       if (this.readOnly) {
@@ -1080,8 +1086,10 @@ export default {
     // asked for: `AposAreaLayoutEditor` fills a new layout with columns that
     // way, so that undo takes back the layout the user added, columns and
     // all, and redo brings it back whole
+    // `changes`, an array, collects the edit for a batch to report instead
+    // of reporting it here.
     async insertMany({
-      index, widgets, autosave = true, history = true, select = 'last'
+      index, widgets, autosave = true, history = true, select = 'last', changes = null
     } = {}) {
       if (this.readOnly) {
         return;
@@ -1104,23 +1112,30 @@ export default {
         if (index < this.next.length) {
           push.$before = this.next[index]._id;
         }
-        const report = () => this.contextEdited(
-          {
+        const change = {
+          patch: {
             $push: {
               [`@${this.id}.items`]: push
             }
           },
-          {
+          inverse: {
             $pullAllById: {
               [`@${this.id}.items`]: widgets.map(widget => widget._id)
             }
           },
-          {
+          target: {
             widgetId: widgets[0]._id,
             anchorId: this.next[index]?._id || this.next[index - 1]?._id
           }
+        };
+        const report = () => this.contextEdited(
+          change.patch,
+          change.inverse,
+          change.target
         );
-        if (history) {
+        if (Array.isArray(changes)) {
+          changes.push(change);
+        } else if (history) {
           report();
         } else {
           withoutHistory(report);

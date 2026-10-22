@@ -1,6 +1,10 @@
 import createApp, { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
-import { addCapturedWidgets, isDrag } from './widget-selection.js';
+import {
+  addCapturedWidgets,
+  isDrag,
+  selectionAfterHistory
+} from './widget-selection.js';
 import {
   deepestWidgetId,
   isEditingContext,
@@ -14,11 +18,54 @@ import {
 } from './widget-selection-dom.js';
 
 // Page-level multi-select: the controls, clearing the selection when edit
-// mode ends, and the shift-drag rectangle that adds widgets.
+// mode ends, keeping it in step with undo and redo, and the shift-drag
+// rectangle that adds widgets.
 export function installWidgetMarqueeSelection() {
   createWidgetControlsMultiselect();
   createMarqueeSelect();
   watchEditMode();
+  watchHistory();
+}
+
+// Undo and redo only change the context document's own areas on the page,
+// never a modal, so the selection they touch is the page's.
+function watchHistory() {
+  apos.bus.$on('context-history-applied', ({ target, direction } = {}) => {
+    const store = useWidgetStore(pinia);
+    const scope = store.selectionScope ||
+      scopeOfIds(store.selectedWidgetIds, document);
+    if (scope && scope !== document) {
+      return;
+    }
+    const state = {
+      selectedWidgetIds: store.selectedWidgetIds,
+      selectionAnchorId: store.selectionAnchorId,
+      pinnedWidgetIds: store.pinnedWidgetIds
+    };
+    const next = selectionAfterHistory(
+      state,
+      target?.selection?.[direction] || [],
+      (id) => !!widgetElement(id, document)
+    );
+    const selected = next.selectedWidgetIds;
+    if (
+      selected.length === state.selectedWidgetIds.length &&
+      selected.every((id, i) => id === state.selectedWidgetIds[i])
+    ) {
+      return;
+    }
+    if (!selected.length) {
+      store.setFocusedWidget(null);
+      return;
+    }
+    const primaryId = selected[selected.length - 1];
+    store.setWidgetSelection(next, {
+      primaryId,
+      areaId: widgetContext(primaryId, document)?.areaId || null,
+      graphKey: apos.adminBar?.contextId || null,
+      scope: document
+    });
+  });
 }
 
 function createWidgetControlsMultiselect() {

@@ -86,15 +86,12 @@ export default {
       if (!ids.length) {
         return null;
       }
-      const contexts = ids.map((id) => widgetContext(id, this.scope)).filter(Boolean);
-      if (contexts.length !== ids.length) {
+      // Selected widgets share an area.
+      const context = widgetContext(ids[0], this.scope);
+      if (!context) {
         return null;
       }
-      const areaId = contexts[0].areaId;
-      if (contexts.some((context) => context.areaId !== areaId)) {
-        return null;
-      }
-      return contiguousRange(contexts[0].itemIds, ids);
+      return contiguousRange(context.itemIds, ids);
     },
     controls() {
       const range = this.moveRange;

@@ -1,8 +1,7 @@
+import { nextTick } from 'vue';
 import { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
-import {
-  combineContextEdits, outermostIds, selectionWithout
-} from './widget-selection.js';
+import { outermostIds, selectionWithout } from './widget-selection.js';
 import { widgetContext, widgetElement } from './widget-selection-dom.js';
 
 // One batch edit, coordinated from the toolbar or a keyboard shortcut.
@@ -36,6 +35,10 @@ export function runWidgetBatch(name, { hasAncestor } = {}) {
     removeSelection(entryIds, hasAncestor);
     return;
   }
+  if (name === 'clone') {
+    duplicateSelection(entryIds);
+    return;
+  }
   apos.bus.$emit('widget-selection-mutate', {
     name,
     ids: entryIds
@@ -43,9 +46,22 @@ export function runWidgetBatch(name, { hasAncestor } = {}) {
   useWidgetStore(pinia).bumpSelectionRevision();
 }
 
-// One history entry for every area the removal touched, so Undo puts a
-// widget back in each column of a layout with a single command. Each area
-// still updates its own items; only the recorded edit is shared.
+// The area that holds the selection hands back its edit rather than
+// reporting it, so the history entry can also say what to select when it
+// is undone (`selection.undo`) or redone (`selection.redo`).
+function report([ edit ], selection) {
+  if (edit) {
+    apos.bus.$emit('context-edited', {
+      ...edit,
+      target: {
+        ...edit.target,
+        selection
+      }
+    });
+  }
+}
+
+// Undo puts the whole selection back, not just the first widget.
 function removeSelection(ids, hasAncestor) {
   const changes = [];
   apos.bus.$emit('widget-selection-mutate', {
@@ -53,11 +69,42 @@ function removeSelection(ids, hasAncestor) {
     ids,
     changes
   });
-  const edit = combineContextEdits(changes);
-  if (edit) {
-    apos.bus.$emit('context-edited', edit);
-  }
+  report(changes, { undo: ids });
   dropRemoved(ids, hasAncestor);
+}
+
+// The copies become the selection. Undo selects the originals again, and
+// redo the copies.
+async function duplicateSelection(ids) {
+  const changes = [];
+  const clones = [];
+  apos.bus.$emit('widget-selection-mutate', {
+    name: 'clone',
+    ids,
+    changes,
+    clones
+  });
+  report(changes, {
+    undo: ids,
+    redo: clones
+  });
+  if (!clones.length) {
+    return;
+  }
+  const store = useWidgetStore(pinia);
+  const scope = store.selectionScope || document;
+  await nextTick();
+  const primaryId = clones[clones.length - 1];
+  store.setWidgetSelection({
+    selectedWidgetIds: clones,
+    selectionAnchorId: clones[0],
+    pinnedWidgetIds: [ ...clones ]
+  }, {
+    primaryId,
+    areaId: widgetContext(primaryId, scope)?.areaId || store.focusedArea,
+    graphKey: store.selectionGraphKey,
+    scope
+  });
 }
 
 export function notifyClipboard(name, count) {

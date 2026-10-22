@@ -3,15 +3,16 @@
 // Shift-click adds a widget to the selection held at the last click that
 // was not a shift-click, then fills the gaps between siblings.
 //
-// Selected widgets always share a parent. When a click reaches into
-// another part of the tree, such as a column of a layout, the selection
-// is lifted to the nearest common ancestor: it becomes the children of
-// that ancestor that are, or contain, a selected widget.
+// Selected widgets are always siblings in one area, the one place a cut,
+// paste or duplicate can put them. When a click reaches into another part
+// of the tree, such as a column of a layout or the other area of a hero,
+// the selection is lifted to the nearest common ancestor area: it becomes
+// the widgets of that area that are, or contain, a selected widget.
 //
-// Widgets that do not descend from one top-level area, such as a widget
-// in the main area and one in the footer, cannot be selected together. A
-// meta-click or shift-click that would combine them is ignored, and
-// returns `state` itself.
+// Widgets with no common ancestor area, such as a widget in the main area
+// and one in the footer, cannot be selected together. A meta-click or
+// shift-click that would combine them is ignored, and returns `state`
+// itself.
 //
 // Layout columns are part of their layout, never selected on their own.
 // When a selection would be made of columns, it is the layout instead.
@@ -77,11 +78,11 @@ export function applyWidgetSelection({
   return replaceSelection(widgetId);
 }
 
-// The children of the nearest common ancestor of `ids` that are, or
+// The widgets of the nearest common ancestor area of `ids` that are, or
 // contain, one of `ids`. `removeId` is one of `ids` the user is turning
-// off: its child of the common ancestor is dropped, unless another of
-// `ids` outside the path to `removeId` also lives in that child. Null when
-// `ids` do not descend from one top-level area.
+// off: its widget in the common area is dropped, unless another of `ids`
+// outside the path to `removeId` also lives in that widget. Null when
+// `ids` have no common ancestor area.
 export function liftToCommonParent(ids, {
   parentOf = null,
   areaOf = null,
@@ -89,78 +90,55 @@ export function liftToCommonParent(ids, {
   removeId = null
 } = {}) {
   const list = unique(ids.filter(Boolean));
-  const paths = list.map((id) => {
-    return typeof parentOf === 'function' ? pathOf(id, parentOf) : [ id ];
-  });
-  if (typeof areaOf === 'function') {
-    const roots = new Set(paths.map((path) => areaOf(path[0])?.areaId ?? null));
-    if (roots.size > 1) {
-      return null;
-    }
-  }
   if (typeof parentOf !== 'function') {
     return list.filter((id) => id !== removeId);
   }
-  let depth = 0;
+  // From the top down, alternating: the area holding a widget, then the
+  // widget, ending with the id itself.
+  const paths = list.map((id) => {
+    return pathOf(id, parentOf).flatMap((widgetId) => {
+      return [ areaOf?.(widgetId)?.areaId ?? null, widgetId ];
+    });
+  });
+  let shared = 0;
   while (paths.every((path) => {
-    return path.length > depth && path[depth] === paths[0][depth];
+    return path.length > shared && path[shared] === paths[0][shared];
   })) {
-    depth++;
+    shared++;
   }
-  // One of the ids is the common ancestor itself, so step up a level and
-  // keep it whole.
-  if (paths.some((path) => path.length === depth)) {
-    depth--;
+  if (!shared) {
+    return null;
   }
+  // The last shared entry may be a widget, when one id holds another or
+  // they sit in different areas of one widget. Either way the common
+  // area is the one that holds it.
+  let area = (shared - 1) - ((shared - 1) % 2);
   if (typeof isColumn === 'function') {
-    while (depth > 0 && paths.some((path) => isColumn(path[depth]))) {
-      depth--;
+    while (area > 0 && paths.some((path) => isColumn(path[area + 1]))) {
+      area -= 2;
     }
   }
-  const children = paths.map((path) => path[depth]);
+  const children = paths.map((path) => path[area + 1]);
   if (!removeId) {
     return unique(children);
   }
   const removePath = paths[list.indexOf(removeId)];
-  const removeChild = removePath[depth];
-  const shared = paths.some((path, i) => {
+  const removeChild = removePath[area + 1];
+  const kept = paths.some((path, i) => {
     return children[i] === removeChild && !removePath.includes(list[i]);
   });
-  return unique(children).filter((id) => shared || id !== removeChild);
+  return unique(children).filter((id) => kept || id !== removeChild);
 }
 
-// Fill the gaps between widgets that share an area, so a shift-click
-// selects everything between the widgets it spans.
+// Fill the gaps between selected widgets, which share an area, so a
+// shift-click selects everything between the widgets it spans.
 export function fillGaps(ids, areaOf) {
-  if (typeof areaOf !== 'function') {
+  const itemIds = (ids.length && areaOf?.(ids[0])?.itemIds) || [];
+  const indexes = ids.map((id) => itemIds.indexOf(id));
+  if (!indexes.length || indexes.includes(-1)) {
     return ids;
   }
-  const areas = new Map();
-  const groups = [];
-  for (const id of ids) {
-    const area = areaOf(id);
-    if (!area?.areaId || !area.itemIds?.includes(id)) {
-      groups.push([ id ]);
-      continue;
-    }
-    if (!areas.has(area.areaId)) {
-      const group = {
-        itemIds: area.itemIds,
-        indexes: []
-      };
-      areas.set(area.areaId, group);
-      groups.push(group);
-    }
-    areas.get(area.areaId).indexes.push(area.itemIds.indexOf(id));
-  }
-  return unique(groups.flatMap((group) => {
-    if (Array.isArray(group)) {
-      return group;
-    }
-    const first = Math.min(...group.indexes);
-    const last = Math.max(...group.indexes);
-    return group.itemIds.slice(first, last + 1);
-  }));
+  return itemIds.slice(Math.min(...indexes), Math.max(...indexes) + 1);
 }
 
 // Drop removed widgets, and anything isDescendant says was inside one of
@@ -183,6 +161,25 @@ export function selectionWithout(state, removedIds = [], isDescendant = null) {
     selectionAnchorId,
     pinnedWidgetIds
   };
+}
+
+// After an undo or redo. `widgetIds` are the widgets the edit selects in
+// that direction: those on the page become the selection. Otherwise any
+// selected widget the change took off the page is dropped.
+// `isPresent(id)` is true for a widget on the page.
+export function selectionAfterHistory(state, widgetIds = [], isPresent) {
+  const restored = widgetIds.filter(isPresent);
+  if (restored.length) {
+    return {
+      selectedWidgetIds: restored,
+      selectionAnchorId: restored[0],
+      pinnedWidgetIds: [ ...restored ]
+    };
+  }
+  return selectionWithout(
+    state,
+    state.selectedWidgetIds.filter((id) => !isPresent(id))
+  );
 }
 
 // `isAncestor(id, ancestorId)` is true when ancestorId contains id.
@@ -220,49 +217,6 @@ export function contiguousRange(areaItemIds, selectedIds) {
 // Operations offered for a multi-selection: on the allowlist, present on
 // every selected widget, and not a modal. `modal` operations stay off this
 // toolbar until a batch strategy exists.
-// Several areas each report their own patch. Undo is one step when those
-// patches are one edit: `$pullAllById` and `$push` already take one entry
-// per area.
-export function combineContextEdits(edits) {
-  const list = (edits || []).filter((edit) => edit?.patch);
-  if (!list.length) {
-    return null;
-  }
-  if (list.length === 1) {
-    return list[0];
-  }
-  return {
-    patch: mergePatchOperators(list.map((edit) => edit.patch)),
-    inverse: mergePatchOperators(list.map((edit) => edit.inverse)),
-    target: list[0].target
-  };
-}
-
-function mergePatchOperators(patches) {
-  const merged = {};
-  for (const patch of patches) {
-    if (!patch) {
-      continue;
-    }
-    for (const [ key, value ] of Object.entries(patch)) {
-      if (
-        key.startsWith('$') &&
-        value &&
-        (typeof value === 'object') &&
-        !Array.isArray(value)
-      ) {
-        merged[key] = {
-          ...merged[key],
-          ...value
-        };
-      } else {
-        merged[key] = value;
-      }
-    }
-  }
-  return merged;
-}
-
 export function commonBatchOperations(operationLists, allowlist) {
   if (!operationLists.length) {
     return [];

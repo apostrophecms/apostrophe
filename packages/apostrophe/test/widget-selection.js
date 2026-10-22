@@ -132,12 +132,15 @@ describe('widget selection', function() {
     assert.deepEqual(lifted.selectedWidgetIds, [ 'layout', 'top-2' ]);
   });
 
-  it('selects widgets in different areas of the same parent', function() {
+  it('lifts widgets in two areas of one widget to that widget', function() {
     const first = select(undefined, 'plain', 'h-1');
     const added = select(first, 'toggle', 'h-5');
-    assert.deepEqual(added.selectedWidgetIds, [ 'h-1', 'h-5' ]);
-    const lifted = select(added, 'toggle', 'top-1');
-    assert.deepEqual(lifted.selectedWidgetIds, [ 'hero', 'top-1' ]);
+    assert.deepEqual(added.selectedWidgetIds, [ 'hero' ]);
+    assert.equal(added.selectionAnchorId, 'hero');
+    const withPeer = select(added, 'toggle', 'top-1');
+    assert.deepEqual(withPeer.selectedWidgetIds, [ 'hero', 'top-1' ]);
+    const siblings = select(first, 'toggle', 'h-3');
+    assert.deepEqual(siblings.selectedWidgetIds, [ 'h-1', 'h-3' ]);
   });
 
   it('deselects a compound widget when a meta-click lands inside it', function() {
@@ -195,11 +198,12 @@ describe('widget selection', function() {
     assert.deepEqual(into.selectedWidgetIds, [ 'top-1', 'layout' ]);
   });
 
-  it('fills gaps in each area separately', function() {
+  it('lifts a shift-click into the other area of a widget to that widget', function() {
     const first = select(undefined, 'plain', 'h-1');
-    const added = select(first, 'toggle', 'h-4');
-    const spanned = select(added, 'range', 'h-3');
-    assert.deepEqual(spanned.selectedWidgetIds, [ 'h-1', 'h-2', 'h-3', 'h-4' ]);
+    assert.deepEqual(select(first, 'range', 'h-3').selectedWidgetIds, [ 'h-1', 'h-2', 'h-3' ]);
+    assert.deepEqual(select(first, 'range', 'h-5').selectedWidgetIds, [ 'hero' ]);
+    const top = select(undefined, 'plain', 'top-2');
+    assert.deepEqual(select(top, 'range', 'h-4').selectedWidgetIds, [ 'top-2', 'top-3', 'hero' ]);
   });
 
   it('ignores a meta-click or shift-click on a widget from another top-level area', function() {
@@ -263,54 +267,48 @@ describe('widget selection', function() {
     }), true);
   });
 
-  it('combines removals from several areas into one undo edit', function() {
-    const combined = lib.combineContextEdits([
-      {
-        patch: {
-          $pullAllById: {
-            '@column-a.items': [ 'w1' ]
-          }
-        },
-        inverse: {
-          $push: {
-            '@column-a.items': {
-              $each: [ { _id: 'w1' } ]
-            }
-          }
-        },
-        target: {
-          widgetId: 'w1',
-          anchorId: null
-        }
-      },
-      {
-        patch: {
-          $pullAllById: {
-            '@column-b.items': [ 'w2' ]
-          }
-        },
-        inverse: {
-          $push: {
-            '@column-b.items': {
-              $each: [ { _id: 'w2' } ],
-              $before: 'keep'
-            }
-          }
-        },
-        target: {
-          widgetId: 'w2'
-        }
-      }
-    ]);
-    assert.deepEqual(combined.patch, {
-      $pullAllById: {
-        '@column-a.items': [ 'w1' ],
-        '@column-b.items': [ 'w2' ]
-      }
-    });
-    assert.deepEqual(combined.inverse.$push['@column-a.items'].$each, [ { _id: 'w1' } ]);
-    assert.equal(combined.inverse.$push['@column-b.items'].$before, 'keep');
-    assert.equal(combined.target.widgetId, 'w1');
+  it('puts a deleted selection back on undo and drops what redo takes away', function() {
+    const before = {
+      selectedWidgetIds: [ 'other' ],
+      selectionAnchorId: 'other',
+      pinnedWidgetIds: [ 'other' ]
+    };
+    const onPage = new Set([ 'a', 'b', 'other' ]);
+    const undone = lib.selectionAfterHistory(before, [ 'a', 'b' ], (id) => onPage.has(id));
+    assert.deepEqual(undone.selectedWidgetIds, [ 'a', 'b' ]);
+    assert.equal(undone.selectionAnchorId, 'a');
+    assert.deepEqual(undone.pinnedWidgetIds, [ 'a', 'b' ]);
+
+    onPage.delete('a');
+    onPage.delete('b');
+    const redone = lib.selectionAfterHistory(undone, [ 'a', 'b' ], (id) => onPage.has(id));
+    assert.deepEqual(redone.selectedWidgetIds, []);
+    assert.equal(redone.selectionAnchorId, null);
+
+    const untouched = lib.selectionAfterHistory(before, [], (id) => onPage.has(id));
+    assert.deepEqual(untouched.selectedWidgetIds, [ 'other' ]);
+  });
+
+  it('selects the originals when a duplicate is undone and the copies when it is redone', function() {
+    const onPage = new Set([ 'a', 'b', 'a-copy', 'b-copy' ]);
+    const copies = {
+      selectedWidgetIds: [ 'a-copy', 'b-copy' ],
+      selectionAnchorId: 'a-copy',
+      pinnedWidgetIds: [ 'a-copy', 'b-copy' ]
+    };
+    const selection = {
+      undo: [ 'a', 'b' ],
+      redo: [ 'a-copy', 'b-copy' ]
+    };
+    const isPresent = (id) => onPage.has(id);
+    onPage.delete('a-copy');
+    onPage.delete('b-copy');
+    const undone = lib.selectionAfterHistory(copies, selection.undo, isPresent);
+    assert.deepEqual(undone.selectedWidgetIds, [ 'a', 'b' ]);
+    onPage.add('a-copy');
+    onPage.add('b-copy');
+    const redone = lib.selectionAfterHistory(undone, selection.redo, isPresent);
+    assert.deepEqual(redone.selectedWidgetIds, [ 'a-copy', 'b-copy' ]);
   });
 
   it('drops a selected descendant when its ancestor is also selected', function() {
