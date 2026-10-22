@@ -29,6 +29,16 @@ export function emptySelection() {
   };
 }
 
+// How far the pointer may move, in pixels, before a press is a drag
+// rather than a click.
+export const DRAG_THRESHOLD = 4;
+
+export function isDrag(start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  return (dx * dx) + (dy * dy) > DRAG_THRESHOLD * DRAG_THRESHOLD;
+}
+
 export function selectionGesture(event) {
   if (!event) {
     return 'plain';
@@ -351,7 +361,7 @@ function pathOf(id, parentOf) {
   return path;
 }
 
-// A meta-drag adds the widgets inside the rectangle. Ids already selected
+// A shift-drag adds the widgets inside the rectangle. Ids already selected
 // stay selected. A drag whose rectangle hits a single widget selects that
 // widget, even when the layout around it also overlaps the rectangle.
 // When the rectangle hits more than one widget, an ancestor wins over the

@@ -247,6 +247,22 @@ describe('widget selection', function() {
     assert.deepEqual(fromFirst.selectedWidgetIds, [ 'top-3', 'hero' ]);
   });
 
+  it('tells a click from a drag by how far the pointer moved', function() {
+    const start = {
+      x: 10,
+      y: 10
+    };
+    assert.equal(lib.isDrag(start, start), false);
+    assert.equal(lib.isDrag(start, {
+      x: 10 + lib.DRAG_THRESHOLD,
+      y: 10
+    }), false);
+    assert.equal(lib.isDrag(start, {
+      x: 13,
+      y: 13
+    }), true);
+  });
+
   it('combines removals from several areas into one undo edit', function() {
     const combined = lib.combineContextEdits([
       {

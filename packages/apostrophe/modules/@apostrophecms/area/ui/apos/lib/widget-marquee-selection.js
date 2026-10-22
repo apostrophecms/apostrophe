@@ -1,6 +1,6 @@
 import createApp, { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
-import { addCapturedWidgets } from './widget-selection.js';
+import { addCapturedWidgets, isDrag } from './widget-selection.js';
 import {
   deepestWidgetId,
   isEditingContext,
@@ -14,7 +14,7 @@ import {
 } from './widget-selection-dom.js';
 
 // Page-level multi-select: the controls, clearing the selection when edit
-// mode ends, and the meta-drag rectangle that adds widgets.
+// mode ends, and the shift-drag rectangle that adds widgets.
 export function installWidgetMarqueeSelection() {
   createWidgetControlsMultiselect();
   createMarqueeSelect();
@@ -53,12 +53,11 @@ function watchEditMode() {
   });
 }
 
-// Meta-drag (or ctrl-drag) draws a rectangle and adds every widget it
-// touches. While the rectangle is on screen the selection previews the
-// net, including widgets that leave it. A drag that stays under a few
-// pixels remains a meta-click.
+// Shift-drag draws a rectangle and adds every widget it touches. While the
+// rectangle is on screen the selection previews the net, including widgets
+// that leave it. A drag that stays under a few pixels remains a
+// shift-click, which the widget applies when the button is released.
 function createMarqueeSelect() {
-  const threshold = 4;
   let drag = null;
   let box = null;
   let previewFrame = 0;
@@ -72,7 +71,7 @@ function createMarqueeSelect() {
   document.addEventListener('dragstart', onDragStart, true);
 
   function onPointerDown(event) {
-    if (event.button !== 0 || (!event.metaKey && !event.ctrlKey)) {
+    if (event.button !== 0 || !event.shiftKey) {
       return;
     }
     if (!isEditingContext(event.target) || !canStartMarquee(event.target)) {
@@ -103,10 +102,11 @@ function createMarqueeSelect() {
     if (!drag || event.pointerId !== drag.pointerId) {
       return;
     }
-    const dx = event.clientX - drag.x;
-    const dy = event.clientY - drag.y;
     if (!drag.active) {
-      if ((dx * dx) + (dy * dy) <= threshold * threshold) {
+      if (!isDrag(drag, {
+        x: event.clientX,
+        y: event.clientY
+      })) {
         return;
       }
       drag.active = true;

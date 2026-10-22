@@ -41,7 +41,7 @@
       @mouseleave="mouseleave"
       @mousedown="onMouseDown($event, widget._id)"
       @selectstart="onSelectStart"
-      @click="getFocus($event, widget._id);"
+      @click="onClick($event, widget._id)"
       @keyup.esc="onKeyup"
       @keyup.space="onKeyup"
       @keyup.enter="onKeyup"
@@ -249,6 +249,7 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph.js';
 import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 import changeTypes from 'Modules/@apostrophecms/document-versions/lib/change-types.js';
+import { isDrag } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
 import {
   nextSelectionFromClick,
   selectionScope as scopeOf
@@ -689,6 +690,7 @@ export default {
 
   },
   unmounted() {
+    window.removeEventListener('mouseup', this.onShiftMouseUp);
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
     apos.bus.$off('suppress-focused-widget-controls', this.doSuppressWidgetControls);
@@ -880,24 +882,62 @@ export default {
       }
     },
 
-    // Shift-click is our range gesture. The browser also treats it as
-    // "extend the text selection", which paints over the widget outline.
-    // Cancelling mousedown stops that selection from starting, and in
-    // current browsers it also stops the click, so the gesture is handled
-    // here. Shift-click inside a text editor is left alone.
+    // Shift-click is our range gesture, and shift-drag draws the selection
+    // rectangle. The browser also treats shift as "extend the text
+    // selection", which paints over the widget outline, so mousedown is
+    // cancelled. Whether this is a click or a drag is only known on
+    // release: a release where the button went down is a shift-click. A
+    // drag belongs to the rectangle. Shift inside a text editor is left
+    // alone.
     onMouseDown(event, widgetId) {
       if (this.isEditingText(event)) {
         return;
       }
       if (event.shiftKey) {
+        // Only the innermost widget takes the press, as getFocus would.
+        event.stopPropagation();
         event.preventDefault();
         this.clearNativeSelection();
-        this.getFocus(event, widgetId);
+        window.removeEventListener('mouseup', this.onShiftMouseUp);
+        this.shiftPress = {
+          event,
+          widgetId
+        };
+        window.addEventListener('mouseup', this.onShiftMouseUp);
         return;
       }
       if (this.isMulti) {
         this.clearNativeSelection();
       }
+    },
+    onShiftMouseUp(event) {
+      window.removeEventListener('mouseup', this.onShiftMouseUp);
+      const press = this.shiftPress;
+      this.shiftPress = null;
+      if (!press) {
+        return;
+      }
+      const moved = isDrag(
+        {
+          x: press.event.clientX,
+          y: press.event.clientY
+        },
+        {
+          x: event.clientX,
+          y: event.clientY
+        }
+      );
+      if (!moved) {
+        this.getFocus(press.event, press.widgetId);
+      }
+    },
+    // A shift-click was already applied on mouseup.
+    onClick(event, widgetId) {
+      if (event.shiftKey && !this.isEditingText(event)) {
+        event.stopPropagation();
+        return;
+      }
+      this.getFocus(event, widgetId);
     },
     onSelectStart(event) {
       if (this.isEditingText(event)) {
