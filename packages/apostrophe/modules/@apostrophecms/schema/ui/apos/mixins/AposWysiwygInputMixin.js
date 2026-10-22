@@ -45,6 +45,12 @@ export const wysiwygProps = {
 };
 
 export default {
+  inject: {
+    aposReadOnly: {
+      from: 'aposReadOnly',
+      default: false
+    }
+  },
   props: wysiwygProps,
   emits: [ 'update:modelValue', 'changed' ],
   data() {
@@ -63,7 +69,7 @@ export default {
       return !!(this.docId && (this.docId === window.apos.adminBar.contextId));
     },
     readOnly() {
-      return !!this.field.readOnly;
+      return !!(this.aposReadOnly || this.field.readOnly);
     },
     placeholder() {
       return this.$t(this.field.placeholder || this.field.label || '');
@@ -154,16 +160,6 @@ export default {
           }
         });
         this.lastSaved = this.next;
-        // The document on the server is not the only thing holding this
-        // value. Every area editor on the page keeps its own copy of the
-        // widget the field belongs to, and that copy is what copying,
-        // cutting, duplicating or opening the widget's editor works from, so
-        // it has to hear about this as well
-        apos.bus.$emit('field-edited', {
-          docId: this.docId,
-          patchKey: this.patchKey,
-          value: this.next
-        });
       }
       // The document on the server is not the only thing holding this value,
       // and in a modal it is not holding it at all. Every area editor keeps
@@ -184,9 +180,10 @@ export default {
     // The context bar is undoing or redoing an edit. If it is one of ours,
     // show the value it put back. The server hears about it from the context
     // bar, but the area editors holding a copy of our widget hear it from us,
-    // just as they do when the user types
+    // just as they do when the user types. A read only view leaves it to a
+    // render of the whole page, as the area editor does
     contextHistoryApplyHandler(event) {
-      if (!this.onPage || !Object.hasOwn(event.patch, this.patchKey)) {
+      if (this.readOnly || !this.onPage || !Object.hasOwn(event.patch, this.patchKey)) {
         return;
       }
       if (this.pending) {

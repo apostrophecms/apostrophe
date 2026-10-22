@@ -12,7 +12,7 @@
     @click="setFocusedArea(areaId, $event)"
   >
     <div
-      v-if="next.length === 0 && !foreign"
+      v-if="next.length === 0 && !foreign && !aposReadOnly"
       class="apos-empty-area"
       tabindex="0"
       @paste="paste(0)"

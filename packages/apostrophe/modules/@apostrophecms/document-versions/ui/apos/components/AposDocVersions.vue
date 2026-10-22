@@ -139,7 +139,7 @@
 
 <script setup>
 import {
-  computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch
+  computed, inject, nextTick, onBeforeUnmount, onMounted, provide, ref, watch
 } from 'vue';
 import { useInfiniteScroll } from 'Modules/@apostrophecms/ui/composables/useInfiniteScroll.js';
 import { useAdvisoryLock } from 'Modules/@apostrophecms/ui/composables/useAdvisoryLock.js';
@@ -167,6 +167,10 @@ defineEmits([ 'modal-result', 'safe-close' ]);
 
 const $t = inject('i18n');
 
+// A version is shown, never edited: every editor below shows its value and
+// mounts nothing that changes it
+provide('aposReadOnly', true);
+
 const modal = ref({
   active: false,
   type: 'overlay',
@@ -185,6 +189,7 @@ const versionsAction = apos.modules[props.moduleName].action;
 const {
   docFields,
   widgetChanges,
+  fieldChanges,
   generation,
   show,
   fetchVersion
@@ -225,6 +230,7 @@ const {
 } = useDocVersionMarkers({
   docId,
   widgetChanges,
+  fieldChanges,
   docMeta,
   onReveal: revealChange
 });
@@ -548,9 +554,8 @@ onBeforeUnmount(() => {
   }
 
   &__body {
-    // For now. Later we may have better support for read-only areas
-    // and array fields that allows clicking in to see more information
-    // but carefully blocks editing
+    // The editors honour the read only scope, but what widgets render
+    // themselves, links, embeds and players, would still take a click
     pointer-events: none;
   }
 }

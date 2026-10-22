@@ -47,6 +47,7 @@
     <div
       ref="list"
       class="apos-doc-version-changes__list"
+      tabindex="-1"
     >
       <p
         v-if="!rows.length"
@@ -70,167 +71,32 @@
         :class="{ 'apos-doc-version-changes__group--current': position === groupIndex }"
         data-apos-test="doc-version-change-group"
       >
-        <h3 class="apos-doc-version-changes__group-header">
-          <button
-            type="button"
-            class="apos-doc-version-changes__group-title"
-            :aria-current="position === groupIndex ? 'true' : undefined"
-            data-apos-test="doc-version-change-group-select"
-            @click="select(groupIndex)"
-          >
-            <AposDocVersionChangePath
-              :segments="group.path"
-            />
-            <span class="apos-sr-only">{{ `, ${$t('apostrophe:versionNavShow')}` }}</span>
-          </button>
-          <AposDocVersionChangeType :type="group.type" />
-        </h3>
+        <AposDocVersionChangeGroup
+          :group="group"
+          :current="position === groupIndex"
+          @select="select(groupIndex)"
+        />
         <ul class="apos-doc-version-changes__rows">
-          <li
+          <AposDocVersionChangeEntry
             v-for="entry in group.entries"
             :key="entry.key"
-            class="apos-doc-version-changes__row"
-            data-apos-test="doc-version-change"
-            :data-apos-change-type="entry.row.type"
-          >
-            <div class="apos-doc-version-changes__row-main">
-              <span class="apos-doc-version-changes__row-lead">
-                <AposDocVersionChangePath
-                  class="apos-doc-version-changes__row-label"
-                  :class="{
-                    'apos-doc-version-changes__row-label--meta': entry.order
-                  }"
-                  :segments="entry.segments"
-                  compact
-                  data-apos-test="doc-version-change-path"
-                />
-                <span
-                  v-if="entry.row.ai"
-                  class="apos-doc-version-changes__row-separator"
-                  aria-hidden="true"
-                >·</span>
-                <AposDocVersionAiBadge
-                  v-if="entry.row.ai"
-                  v-apos-tooltip="entry.row.ai === 'assisted'
-                    ? 'apostrophe:versionAiAssistedChangeTooltip'
-                    : 'apostrophe:versionAiChangeTooltip'"
-                  :ai="entry.row.ai"
-                  subtle
-                  :data-apos-test="entry.row.ai === 'assisted'
-                    ? 'doc-version-change-ai-assisted'
-                    : 'doc-version-change-ai'"
-                />
-              </span>
-              <span class="apos-doc-version-changes__row-aside">
-                <AposButton
-                  v-if="entry.detail"
-                  class="apos-doc-version-changes__row-toggle"
-                  type="quiet"
-                  :label="expanded.has(entry.key)
-                    ? 'apostrophe:versionCollapseChanges'
-                    : 'apostrophe:versionSeeChanges'"
-                  :attrs="{
-                    'aria-expanded': expanded.has(entry.key),
-                    'aria-controls': `${baseId}-${entry.key}`,
-                    'data-apos-test': 'doc-version-change-toggle'
-                  }"
-                  @click="toggle(entry.key)"
-                />
-                <AposDocVersionChangeType
-                  v-else-if="!entry.own"
-                  :type="entry.row.type"
-                />
-              </span>
-            </div>
-            <div
-              v-if="entry.detail && expanded.has(entry.key)"
-              :id="`${baseId}-${entry.key}`"
-              class="apos-doc-version-changes__diff"
-              data-apos-test="doc-version-change-diff"
-            >
-              <div
-                v-if="entry.changed"
-                class="apos-doc-version-changes__diff-box"
-              >
-                <AposDocVersionChangeBlock
-                  v-if="entry.layout === 'block'"
-                  :key="`block-${revealed}`"
-                  :entry="entry"
-                />
-                <AposDocVersionChangeText
-                  v-else
-                  :key="`sides-${revealed}`"
-                  :entry="entry"
-                />
-              </div>
-              <AposDocVersionChangeFormat
-                v-if="entry.format.length"
-                :lines="entry.format"
-              />
-            </div>
-          </li>
+            :entry="entry"
+            :expanded="expanded.has(entry.key)"
+            :detail-id="`${baseId}-${entry.key}`"
+            :revealed="revealed"
+            @toggle="toggle(entry.key)"
+          />
         </ul>
       </section>
     </div>
-    <nav
+    <AposDocVersionChangeNav
       v-if="groups.length"
-      class="apos-doc-version-changes__nav"
-      :aria-label="$t('apostrophe:versionNavLabel')"
-      data-apos-test="doc-version-changes-nav"
-    >
-      <div
-        class="apos-doc-version-changes__nav-status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <AposDocVersionChangePath
-          v-if="position >= 0"
-          class="apos-doc-version-changes__nav-label"
-          :segments="groups[position].path"
-          data-apos-test="doc-version-changes-nav-label"
-        />
-        <span
-          v-else
-          class="apos-doc-version-changes__nav-label"
-          data-apos-test="doc-version-changes-nav-label"
-        >{{ $t('apostrophe:versionNavLabel') }}</span>
-        <span
-          class="apos-doc-version-changes__nav-position"
-          data-apos-test="doc-version-changes-nav-position"
-        >
-          {{ $t('apostrophe:versionNavPosition', {
-            current: position + 1,
-            total: groups.length
-          }) }}
-        </span>
-      </div>
-      <div class="apos-doc-version-changes__nav-buttons">
-        <AposButton
-          ref="previousButton"
-          type="outline"
-          icon="chevron-left-icon"
-          icon-only
-          label="apostrophe:versionNavPrevious"
-          tooltip="apostrophe:versionNavPrevious"
-          :modifiers="[ 'small' ]"
-          :disabled="position <= 0"
-          :attrs="{ 'data-apos-test': 'doc-version-changes-nav-previous' }"
-          @click="step(-1)"
-        />
-        <AposButton
-          ref="nextButton"
-          type="outline"
-          icon="chevron-right-icon"
-          icon-only
-          label="apostrophe:versionNavNext"
-          tooltip="apostrophe:versionNavNext"
-          :modifiers="[ 'small' ]"
-          :disabled="position === groups.length - 1"
-          :attrs="{ 'data-apos-test': 'doc-version-changes-nav-next' }"
-          @click="step(1)"
-        />
-      </div>
-    </nav>
+      ref="nav"
+      :path="position >= 0 ? groups[position].path : null"
+      :position="position"
+      :total="groups.length"
+      @step="step"
+    />
   </section>
 </template>
 
@@ -240,6 +106,8 @@
 // runs from below its group down to the changed value. The group header
 // alone states the change type. The navigator at the bottom steps through
 // the groups the filter shows; a click on a group header goes to that one.
+// The list is no tab stop, which Firefox makes of a scroll container: its
+// buttons are the stops.
 import {
   computed, inject, nextTick, reactive, ref, useId, watch
 } from 'vue';
@@ -319,8 +187,7 @@ const groups = computed(() => changeGroups.getChangeGroups(props.rows, filter.va
 
 const {
   position,
-  previousButton,
-  nextButton,
+  nav,
   setGroupEl,
   getGroupEl,
   reset: resetNavigator,
@@ -347,7 +214,7 @@ function focus() {
 // `widgetId` (and, when it `moved`, the order of its area), or those of the
 // top-level field `field` outside any widget, `marked` as `isMarkerTarget`
 // takes it. Their rows expand alone,
-// their group becomes the navigator's, and focus goes to the row's toggle.
+// their group becomes the navigator's, and focus goes to the row's header.
 // Resolves `false` when the list has no such row
 async function reveal(target) {
   const targets = props.rows.filter(row => changeGroups.isMarkerTarget(row, target));
@@ -376,12 +243,10 @@ async function reveal(target) {
   const { group, entry } = entries.find(({ entry }) => !entry.order) || entries[0];
   select(groups.value.indexOf(group));
   await nextTick();
-  // A row with nothing to expand has no toggle: its group's header then
+  // A row with nothing to expand has no button: its group's header then
   const toggle = list.value?.querySelector(
     `[aria-controls="${CSS.escape(`${baseId}-${entry.key}`)}"]`
-  ) || getGroupEl(group.key)?.querySelector(
-    '[data-apos-test="doc-version-change-group-select"]'
-  );
+  ) || getGroupEl(group.key)?.querySelector('.apos-doc-version-changes__group-title');
   // The list alone scrolls: `scrollIntoView` would also push the sliding
   // panel around it sideways
   if (toggle && list.value) {
@@ -521,68 +386,6 @@ $pad-x: $spacing-base + $spacing-half;
     background-color: var(--a-base-10);
   }
 
-  &__group-header {
-    @include type-base;
-
-    & {
-      z-index: $z-index-default;
-      position: sticky;
-      top: 0;
-      display: flex;
-      overflow: hidden;
-      align-items: center;
-      gap: $spacing-base;
-      margin: 0;
-      padding: $spacing-three-quarters $pad-x;
-      border-bottom: 1px solid var(--a-base-7);
-      background-color: var(--a-base-9);
-    }
-
-    // Same bar as the current group; off-canvas until hover
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      width: 3px;
-      background-color: var(--a-primary);
-      transform: translateX(-100%);
-      transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
-    }
-
-    &:hover::before,
-    &:focus-within::before {
-      transform: translateX(-1px);
-    }
-  }
-
-  // The group the navigator is at
-  &__group--current &__group-header::before {
-    transform: translateX(0);
-  }
-
-  &__group-title {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 0;
-    border: 0;
-    color: inherit;
-    background: none;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-
-    &:hover {
-      text-decoration: underline;
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--a-primary);
-      outline-offset: 2px;
-    }
-  }
-
   // Its own stacking context, so nothing in a row (the buttons' layers)
   // rises above the sticky group header when it scrolls under it
   &__rows {
@@ -594,118 +397,6 @@ $pad-x: $spacing-base + $spacing-half;
       flex-direction: column;
       gap: 2px;
     }
-  }
-
-  &__row {
-    padding: $spacing-base $pad-x;
-    background-color: var(--a-background-primary);
-  }
-
-  &__row-main {
-    display: flex;
-    align-items: baseline;
-    gap: $spacing-half $spacing-base;
-  }
-
-  // The field or action, and AI's part in it right after
-  &__row-lead {
-    display: flex;
-    flex: 0 1 auto;
-    align-items: baseline;
-    gap: $spacing-one-quarter;
-    min-width: 0;
-
-    :deep(.apos-doc-version-ai-badge) {
-      flex-shrink: 0;
-    }
-  }
-
-  &__row-separator {
-    flex-shrink: 0;
-    color: var(--a-base-4);
-    font-size: var(--a-type-smaller);
-  }
-
-  &__row-label {
-    @include type-base;
-
-    & {
-      flex: 0 1 auto;
-      min-width: 0;
-      line-height: var(--a-line-tall);
-    }
-  }
-
-  &__row-label--meta :deep(.apos-doc-version-change-path__crumb--leaf) {
-    color: var(--a-base-2);
-    font-style: italic;
-  }
-
-  &__row-aside {
-    display: flex;
-    flex-shrink: 0;
-    align-items: baseline;
-    justify-content: flex-end;
-    gap: $spacing-half;
-    margin-left: auto;
-  }
-
-  &__row-toggle :deep(.apos-button) {
-    font-size: var(--a-type-smaller);
-    transform: none;
-
-    &:hover:not([disabled]),
-    &:focus:not([disabled]) {
-      transform: none;
-    }
-  }
-
-  // Each change of the row in a box of its own: the text, then each
-  // formatting line
-  &__diff {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-three-quarters;
-    margin-top: $spacing-base;
-  }
-
-  &__diff-box {
-    overflow: hidden;
-    border: 1px solid var(--a-base-8);
-    border-radius: var(--a-border-radius);
-  }
-
-  &__nav {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: space-between;
-    gap: $spacing-base;
-    padding: $spacing-base $pad-x;
-    border-top: 1px solid var(--a-base-8);
-    background-color: var(--a-base-10);
-  }
-
-  &__nav-status {
-    @include type-base;
-
-    & {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-  }
-
-  &__nav-position {
-    color: var(--a-base-2);
-    font-size: var(--a-type-smaller);
-  }
-
-  &__nav-buttons {
-    display: flex;
-    flex-shrink: 0;
-    gap: $spacing-half;
   }
 }
 </style>

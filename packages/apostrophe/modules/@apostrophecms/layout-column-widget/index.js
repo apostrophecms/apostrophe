@@ -12,9 +12,9 @@ module.exports = {
     },
     // Whether to show help text for the breakpoint visibility fields
     showBreakpointsHelp: true,
-    // A deleted column shown in a document version would overlap the
-    // columns left in the grid, so its layout is marked instead
-    versionsRenderDeleted: false
+    // A column shown deleted or restored alone in a document version would
+    // overlap the columns left in the grid
+    versionsStandalone: false
   },
   widgetOperations(self, options) {
     return {

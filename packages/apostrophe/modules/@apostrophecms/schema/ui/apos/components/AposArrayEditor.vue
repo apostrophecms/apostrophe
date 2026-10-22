@@ -4,7 +4,7 @@
     :modal="modal"
     :modal-title="modalTitle"
     @inactive="modal.active = false"
-    @show-modal="modal.showModal = true"
+    @show-modal="show"
     @esc="confirmAndCancel"
   >
     <template #secondaryControls>

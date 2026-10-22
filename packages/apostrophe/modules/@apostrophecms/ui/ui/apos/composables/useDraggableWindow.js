@@ -70,11 +70,15 @@ const EDGE_DELTAS = {
  * body class while dragging. Supports an optional corner resize handle with
  * developer-set min/max width and height. Use startResizing(e, edge) with
  * edge 'n'|'s'|'e'|'w'|'se'|'sw'|'ne'|'nw' for top, right, bottom, left handles.
+ * With `storageKey`, the position is stored after a drag, and the size too
+ * once the window has been resized. The page is blurred while dragging unless
+ * `blurPage` is false.
  *
  * @param {{
  *   size: import('vue').Ref<{ width: number; height: number }>
  *   | { width: number; height: number };
  *   storageKey?: string;
+ *   blurPage?: boolean | import('vue').Ref<boolean>;
  *   getDefaultPosition?: () => { left: number; top: number };
  *   minWidth?: number;
  *   maxWidth?: number;
@@ -95,12 +99,14 @@ const EDGE_DELTAS = {
  *   resetPosition: () => void;
  *   constrainPosition: () => void;
  *   constrainSize: () => void;
+ *   widen: (width: number) => void;
  *   cleanup: () => void;
  * }}
  */
 export function useDraggableWindow({
   size,
   storageKey = null,
+  blurPage = true,
   getDefaultPosition = null,
   minWidth = null,
   maxWidth = null,
@@ -116,6 +122,7 @@ export function useDraggableWindow({
   const dragClassApplied = ref(false);
   const resizeClassApplied = ref(false);
   const bodyDragClass = 'apos-window-is-dragging';
+  const bodyPageVisibleClass = 'apos-window-is-dragging--page-visible';
   const bodyResizeClass = 'apos-window-is-resizing';
   const offset = {
     x: 0,
@@ -152,8 +159,9 @@ export function useDraggableWindow({
     const containerSize = axis === 'x' ? window.innerWidth : window.innerHeight;
     const elSize = axis === 'x' ? s.width : s.height;
 
+    // A window larger than the viewport keeps its top left corner in view
     if (value + elSize > containerSize) {
-      return containerSize - elSize;
+      return Math.max(containerSize - elSize, 0);
     }
     return value;
   }
@@ -192,6 +200,9 @@ export function useDraggableWindow({
         DRAG_THRESHOLD
       )) {
         document.body.classList.add(bodyDragClass);
+        if (!unref(blurPage)) {
+          document.body.classList.add(bodyPageVisibleClass);
+        }
         dragClassApplied.value = true;
       }
     }
@@ -227,20 +238,29 @@ export function useDraggableWindow({
     window.removeEventListener('mousemove', drag);
     window.removeEventListener('mouseup', stopDragging);
     dragging.value = false;
-    document.body.classList.remove(bodyDragClass);
+    document.body.classList.remove(bodyDragClass, bodyPageVisibleClass);
     dragClassApplied.value = false;
     document.getSelection().removeAllRanges();
   }
 
   function stopDragging() {
     cleanupDragging();
+    store(position.value);
+  }
 
-    if (storageKey) {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(position.value));
-      } catch (err) {
-        // Ignore storage errors (e.g. private mode)
-      }
+  // Merges into what is stored, so a drag keeps a stored size
+  function store(values) {
+    if (!storageKey) {
+      return;
+    }
+    try {
+      const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      localStorage.setItem(storageKey, JSON.stringify({
+        ...stored,
+        ...values
+      }));
+    } catch (err) {
+      // Ignore storage errors (e.g. private mode)
     }
   }
 
@@ -420,6 +440,10 @@ export function useDraggableWindow({
 
   function stopResizing() {
     cleanupResizing();
+    store({
+      ...position.value,
+      ...unref(size)
+    });
   }
 
   function setPosition() {
@@ -427,7 +451,17 @@ export function useDraggableWindow({
       try {
         const stored = localStorage.getItem(storageKey);
         if (stored) {
-          const { left, top } = JSON.parse(stored);
+          const {
+            left, top, width, height
+          } = JSON.parse(stored);
+          if (isRef(size) && typeof width === 'number' && typeof height === 'number') {
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            size.value = {
+              width: clampDimension(Math.min(width, vw), minWidth, maxWidth),
+              height: clampDimension(Math.min(height, vh), minHeight, maxHeight)
+            };
+          }
           if (typeof left === 'number' && typeof top === 'number') {
             position.value = {
               left: getAxisPos('x', left),
@@ -497,6 +531,29 @@ export function useDraggableWindow({
     }
   }
 
+  // Grows the window to `width` when it is narrower, within its maximum and
+  // the viewport, its right edge kept where it is as far as the viewport
+  // allows. Not stored: the size the user chose comes back next time
+  function widen(width) {
+    if (!isRef(size)) {
+      return;
+    }
+    const s = unref(size);
+    const target = Math.min(clampDimension(width, minWidth, maxWidth), window.innerWidth);
+    if (!s || (s.width >= target)) {
+      return;
+    }
+    const right = position.value.left + s.width;
+    size.value = {
+      ...s,
+      width: target
+    };
+    position.value = {
+      ...position.value,
+      left: getAxisPos('x', right - target)
+    };
+  }
+
   const style = computed(() => {
     const s = unref(size);
     const p = position.value;
@@ -541,6 +598,7 @@ export function useDraggableWindow({
     resetPosition,
     constrainPosition,
     constrainSize,
+    widen,
     cleanup
   };
 }
