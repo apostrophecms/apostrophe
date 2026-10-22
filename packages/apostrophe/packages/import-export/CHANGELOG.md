@@ -1,0 +1,390 @@
+# Changelog
+
+## 3.7.1 (2026-10-14)
+
+### Fixes
+
+- Fix interpolation variables that were mistyped or translated in several locales, which made i18next render them as empty strings. The batch localization notifications now show the localized and skipped document counts in German, Spanish, Italian, Portuguese (Brazil) and Slovak, the minimum image size shows its dimensions in Spanish and Slovak, and the import error notifications show the file type in all translated locales. The German "Create new" command menu label no longer has the English text appended. A test now checks that bundled translations only use variables declared in `en.json`. Thanks to [Michael Lip](https://github.com/theluckystrike) for the contribution.
+- Fixes translated strings whose interpolation variables were misspelled or translated (e.g. `{{ skipcount }}`, `{{ ancho }}`, `{{ format }}`), so values like counts, image dimensions and file types now render in de, es, fr, it, pt-BR and sk. Removes two stale Slovak tag keys.
+- Adds missing de, es, fr, it, pt-BR and sk translations for the Recently Edited manager, background styles, layout column editing, breakpoint preview, publication status and other admin UI strings, the import-export draft and AI translation options, and the AI Helper "Generate Variant" button.
+
+### Security
+
+- The `clean-export` and `override-duplicates` routes did not require a login. Also, `clean-export` would discard the pending files of an import started by someone else and mark any import job as completed, without checking who owned either. Both routes now require a logged-in user. `clean-export` only acts on an import uploaded by the caller, and only ends that caller's own job. Import jobs are now recorded as belonging to the user who started them. Exposure was limited because the pending import's ID is random and only shown to the user who uploaded it, so in practice an attacker could only interfere with an import they could already identify (CWE-306, CWE-862, CWE-639, GHSA-rw26-wwfc-9wvm).
+
+  Thanks to [Liuhuo Wan](https://github.com/CoSunshine) for reporting the vulnerability.
+
+- Upgrade `csv-parse` to 7.x to address a security advisory.
+- Extracting an import archive had no limit on the size or number of the files it wrote, so a small, highly compressed archive could fill the server's disk, and a failed import left the uploaded archive, its copy in uploadfs and its partial extraction behind. Extraction now stops as soon as the archive goes over a limit on the number of entries (100,000 by default) or on the total extracted size (100 times the size of the archive, at least 64MB, by default), counted on the bytes actually written. The limits can be changed with the new `importLimits` option of the module. Everything an import uploaded or extracted is removed whenever it fails. Exploiting this required a logged-in user (CWE-400, CWE-409, CWE-459, GHSA-9g7p-m758-rp72).
+
+  Thanks to [Mufeed VH](https://github.com/mufeedvh) and [Vivek R](https://github.com/123vivekr) for reporting the vulnerability.
+
+- When continuing an import after the user confirmed which duplicates to replace, the server trusted the list of documents and replacement targets sent back by the browser, and checked the importable type against the imported file rather than against the existing document being overwritten. A logged-in user allowed to import could overwrite documents the import never offered to replace, including documents of types they may not import, and continue the import of another user. The duplicates found by the import are now remembered on the server for the user who started it, the browser can only narrow that list down, and the type of every replaced document must be importable (CWE-639, CWE-863, GHSA-jf5h-36mg-rp6x).
+
+  Thanks to [Mufeed VH](https://github.com/mufeedvh) and [Vivek R](https://github.com/123vivekr) for reporting the vulnerability.
+
+- Importing could write the published version of documents the importing user was not allowed to publish. A contributor could create or replace published content with a crafted archive, and an editor could import or update published documents of a type whose `publishRole` is `admin`. Import now refuses documents whose mode, locale and `_id` disagree. Exploiting this required a logged-in user allowed to import the type.
+
+  The rest was a gap in the core permission check, fixed there, which also covers import. A type's `publishRole` was always meant to govern its published content, but editing or creating the published version of a document did not honor it: an editor could change published documents of a type whose `publishRole` is `admin`, including through the REST API, without publishing them through the normal workflow. That was a bug and should not have been relied upon. Editing or creating a published document now requires the `publishRole`. Types with `autopublish: true`, types without a draft/published distinction, and permission checks made with a type name rather than a document are unchanged (CWE-285, CWE-863, GHSA-5m22-7pfq-vp65).
+
+  Thanks to [Mufeed VH](https://github.com/mufeedvh) and [Vivek R](https://github.com/123vivekr) for reporting the vulnerability.
+
+- Export downloads are published under the public `/uploads/exports/` URL until they expire, and their file names were built only from the site's short name, the exported type and a timestamp to the second, so anyone could guess the URL of a fresh export and download it without logging in. Export file names now include a random, unguessable id, and the type in the name is reduced to a slug so it can no longer place the file outside the exports folder. Exposure was limited: a privileged user had to have just run an export, and the download is removed after 10 minutes by default (CWE-200, CWE-330, GHSA-5gc8-frw3-3vqm).
+
+  Thanks to [tikisan_](https://github.com/tikipiya) for reporting the vulnerability.
+
+## 3.7.0 (2026-09-30)
+
+### Adds
+
+- Documents translated during an import are recorded as AI-assisted versions in Document Versions.
+
+### Changes
+
+- Diagnostics are structured events rather than raw `console` calls; task listings and reports still print as program output.
+- Corrected README code examples that would not run as written: a `const` declaration using `:` instead of `=`, two missing commas between object properties, a stray line above an unrelated example, and a pagination example referencing an undestructured variable and comparing a page object to a page number. Also fixed a misplaced backtick in the import-export format documentation.
+- Updated README links that pointed at the standalone repositories of modules since migrated into this monorepo. They now point at the corresponding extension page on apostrophecms.com.
+- Broken links in the README and `package.json` of these packages, as surfaced by their pages on the ApostropheCMS extensions site, are corrected. The license badges pointed at the retired standalone repositories, and in the case of `@apostrophecms/redirect` and `@apostrophecms/form-submission-google` at the Blog module's license rather than their own; "Give us a star on GitHub!" pointed at the archived `apostrophecms/form` and `apostrophecms/anchors` repositories; and `@apostrophecms/import-export` linked `@apostrophecms/import-export-xlsx` to its archived repository. All now resolve within the monorepo. The `@apostrophecms/form` README also linked `@apostrophecms-pro/advanced-permission` to a private repository, which 404s for anyone without access; it now links to the public extension page.
+
+  In `package.json`, `@apostrophecms/favicon` had its `repository.directory` misspelled as `packages/favison` and `@apostrophecms/import-export` had `packages/` missing from its `homepage`. `@apostrophecms/favicon`, `@apostrophecms/anchors` and `@apostrophecms/form-submission-google` were each missing a `bugs` field, so tools that need one derived it from `homepage` and produced an unusable URL. No code changes.
+
+### Fixes
+
+- The two hidden notifications used to carry the locale-differs and duplicated-docs events to the browser now dismiss themselves. Nothing ever dismissed them, so every import that hit either path left a permanent notification in the database, re-sent to the browser on every admin page load thereafter.
+- Fixed race conditions occasionally seen during import.
+
+  An expired export download that has already been removed is no longer reported as an error.
+
+- Importing a document that a handler published during the draft insert (for example a template on a type that is not autopublished) no longer fails with a duplicate `_id` error.
+
+### Security
+
+- `apos.http.bigUploadMiddleware()` now requires a logged-in user by default, and the `aposBigUpload` protocol it implements has been hardened (CWE-400, CWE-306, CWE-770, GHSA-86wm-68pq-5jwq).
+
+  The middleware accepted an optional `authorize` callback, but a route that did not supply one processed `start`, `chunk` and `end` requests from anyone. Since the protocol allocates server-side upload state and writes chunks to uploadfs before the route's own handler runs, any permission check made by the route was made too late. An unauthenticated request could create upload records, store chunk data and drive filesystem work on a site using such a route. Specifically:
+
+  - The middleware now refuses any request without `req.user` unless the route supplies its own `authorize` callback. Authorization runs before the request body is parsed, so an unauthorized request no longer reaches multer or leaves a temporary file behind. A route that genuinely accepts anonymous big uploads may pass `authorize: false` to opt out, and is then responsible for its own protection against abuse. Only `false` opts out: any other non-function value now throws at startup, so a misspelled or undefined variable cannot quietly leave a route open.
+  - The client-declared chunk count per file is now required to be a positive integer (or zero, for a zero-byte file) no greater than the new `bigUploadMaxChunks` option (default 10000, allowing a 40GB file at the client's 4MB chunk size), and the number of files may not exceed the new `bigUploadMaxFiles` option (default 10). The count drives a loop over uploadfs both when assembling a file and when cleaning it up; a declared count of `Number.MAX_SAFE_INTEGER` left cleanup running effectively forever, and because expired uploads are cleaned up at the start of every new one, one such record stalled every later upload on the site. Cleanup also bounds the chunk count and the number of files it reads back from an existing record, so a record written before this release cannot hang it.
+  - When assembling an upload fails partway through `end`, the temporary files already assembled for it are now removed rather than left behind.
+  - A failed `end` request no longer crashes the process. A request naming an upload id that does not exist sent its response and then passed `null` to the background cleanup routine, producing an unhandled rejection, which by default terminates Node. As a backstop, the middleware no longer returns a promise to Express, which ignores it; anything that rejects on the way to the route is now logged and answered with a 500.
+  - The upload id sent to `chunk` and `end` is now laundered to a string. As an object it reached the MongoDB selector as a query operator, so `aposBigUpload[id][$ne]=` selected an arbitrary upload in progress rather than the caller's own (CWE-943). Uploads additionally record the user that started them and are only readable by that same user.
+  - `start`, `chunk` and `end` now report a rejected request with its own status code (400 or 404) instead of a blanket 500, a 500 carries the underlying error and stack to the log rather than an empty event, and a refused request is logged without a stack.
+
+  In `@apostrophecms/import-export`, the `importExportImport` routes of `@apostrophecms/import-export-page` and `@apostrophecms/import-export-piece-type` now authorize the chunked upload before it is processed (CWE-400, CWE-306, GHSA-86wm-68pq-5jwq).
+
+  Both routes passed no `authorize` callback to `apos.http.bigUploadMiddleware()`, so an unauthenticated request could complete the `aposBigUpload` `start`, `chunk` and `end` steps — creating upload state, storing chunk data and assembling a temporary file — before `import()` reached its own `req.user` check and rejected the import. Each route now makes that same check up front, and unauthenticated requests are refused before any upload state exists.
+
+  The middleware in `apostrophe` itself now requires a logged-in user by default and bounds the client-declared chunk count, so this module is protected even without the explicit callback; the callback keeps the routes safe when installed alongside an older `apostrophe`.
+
+  Thanks to [Kai Zhi](https://github.com/kaizhi888) and [Bp0lr](https://github.com/bp0lr) for reporting the vulnerability, and to [Bp0lr](https://github.com/bp0lr) for contributing additional hardening.
+
+- When extracting an uploaded gzip archive, the check meant to keep tar entries inside the extraction directory only looked for a literal `../` in each entry name, so names such as `..` or `./..` still pointed outside of it. Entry paths are now resolved and must land strictly inside the extraction directory (absolute names are skipped too), and a failed write now fails the import cleanly and stops reading the archive rather than risking an unhandled error that stops the process (CWE-22, GHSA-97wv-p4xx-c7mg).
+
+  Thanks to [Arpit Jain](https://github.com/arpitjain099) for reporting the vulnerability.
+
+- When importing with a `:key` column to update existing documents, the key column's name and value were used as-is in the database query that finds the document to update. Because gzip archives are parsed with EJSON and CSV cells are JSON-parsed, a crafted file could supply a MongoDB query operator instead of a plain value (or an operator such as `$where` as the column name) and overwrite existing documents it never actually identified. Key values must now be plain strings or numbers and key column names may not start with `$` or contain `.`; rows that break these rules are reported as failed and nothing is updated or inserted for them (CWE-943, CWE-284, GHSA-jqw5-w6h3-44g6).
+
+  Thanks to [carfeii](https://github.com/carfeii) for reporting the vulnerability and proposing a fix, and to [Anisetti Chaitanya Eshwar Prasad](https://github.com/chaitanyaeshwarprasad) for independently reporting it via CSV import.
+
+## 3.6.2 (2026-07-10)
+
+### Security
+
+- Hardened the importer against MongoDB query-operator smuggling through archive metadata (CWE-943). The `aposDocs.json` / `aposAttachments.json` files inside an uploaded archive are parsed with EJSON, which revives objects such as `{ "$ne": null }` as live values. Several attacker-controlled fields — an attachment's `_id`, and a document's `aposLocale`, `parkedId` and `type` — flowed unlaundered into MongoDB selectors (`attachment.db.findOne({ _id })` and the singleton/parked-document lookups), where an object value could act as a query operator. Imported attachment `_id`, `name` and `extension` must now be plain strings, and the singleton/parked lookup selectors coerce their inputs to strings, so no operator can reach the database. The practical impact was limited (field-level operators only — no top-level `$where`/`$expr`, no authentication or privilege escalation, and the importer already owns the documents), but untrusted archive data should never reach a query unlaundered. Found during an internal security review.
+- The import routine reconstructed each imported attachment's on-disk source path by concatenating the `_id`, `name` and `extension` fields taken directly from the untrusted `aposAttachments.json` inside an uploaded archive, with no traversal check. The archive's existing zip-slip guard only validates tar entry names during extraction and did not cover this second path, which is built afterward. A `../` sequence (or absolute path) in one of those fields could point the reconstructed path outside the extraction directory, causing an arbitrary host file whose name ends in an allow-listed extension (for example `.txt`, `.csv`, `.pdf`) to be read and copied into the public uploads directory, where it was then served without authentication (CWE-22, GHSA-79qf-vqgc-7xx3). Exploiting this required an authenticated account with the contributor role or higher. Apostrophe now rejects any imported attachment whose reconstructed source path resolves outside the archive's `attachments` directory. Projects using `@apostrophecms/import-export` with untrusted contributors should upgrade promptly. Thanks to [kah-ja](https://github.com/kah-ja) and [luuhung1217](https://github.com/luuhung1217) for responsibly reporting the vulnerability.
+- Hardened archive extraction against a denial-of-service hang (CWE-835). A crafted `.tar.gz` import whose archive contained a _directory_ entry with a `../` traversal sequence in its name was correctly rejected by the zip-slip guard, but the extractor never advanced to the next tar entry for directories, so extraction never emitted `finish`, the extraction promise never resolved, and the import request/job hung indefinitely — leaving the uploaded file and a partially-extracted directory on disk. Repeated imports could exhaust connections and disk. The extractor now always drains and advances past a rejected entry regardless of its type. Reaching this requires an authenticated account permitted to import. Found during an internal security review.
+
+## 3.6.1 (2026-06-10)
+
+### Changes
+
+- 04d3053: Debug logging is now disabled by default and can be enabled by setting the `debug: true` option on the `@apostrophecms/import-export` module, or by setting the `APOS_DEBUG_IMPORT_EXPORT=1` environment variable.
+
+## 3.6.0
+
+### Changes
+
+- Add support for recently edited "Imported" action filter
+
+## 3.5.3
+
+### Security
+
+- Fixed vulnerability that allowed any user with permission to edit the global settings document, e.g. headers, footers, etc., to potentially deface the site by writing files to the public/ folder or overwrite site code accessible to the same Linux account that runs the server process. This vulnerability was not publicly disclosed prior to the release of this fix. Upgrading immediately is strongly recommended for those using the import-export module. Thanks to 0xEr3n for reporting the vulnerability and providing test cases.
+
+## 3.5.2
+
+### Adds
+
+- Support for testing with or without pro modules available (without, by default)
+
+## 3.5.1
+
+### Fixes
+
+- Fixes possible infinite loop when getting related types by storing processed widgets.
+
+## 3.5.0 (2025-11-25)
+
+### Adds
+
+- Adds failed export batch notifications.
+
+## 3.4.0 (2025-10-30)
+
+### Changes
+
+- Save import files in uploadfs. Import-export now works on projects using multiple node servers.
+
+## 3.3.1 (2025-09-03)
+
+### Fixes
+
+- CSV imports should not require a `type` column when importing pieces.
+- Removed unused `connect-multiparty` middleware, eliminating superfluous warnings.
+
+## 3.3.0 (2025-08-06)
+
+### Adds
+
+- Adds a checkbox to select and deselect all related document types in the export modal.
+
+## 3.2.1 (2025-05-14)
+
+### Fixes
+
+- Fixes the missing failed imports report modal when cancelling the import during override duplicates phase.
+- Compatible with `apostrophe` version 4.17.0 and up. Do not use 4.16.0, which was briefly incompatible with this module.
+  This version correctly handles inserts of documents before their related images in the context of the latest `apostrophe` release.
+
+## 3.2.0 (2025-04-16)
+
+### Adds
+
+- Adds support for translating content while importing via the Automatic Translation module (when available).
+- Allow page position to be adapted when importing based on slug hierarchy.
+
+### Fixes
+
+- Fix "include related documents" modal height.
+- Fixes `moduleLabel` computed.
+- Fixes missing call to `recomputeAllDocReferences` when duplicated have been overridden.
+
+### Changes
+
+- Bumbs `eslint-config-apostrophe` to `5`, fixes errors, removes unused dependencies.
+- Exports attachments by default, without treating them like related documents.
+
+## 3.1.0 (2025-03-19)
+
+### Adds
+
+- Add error reporting UI (modal) for failed imports.
+
+### Fixes
+
+- Better english wording when import succeeds.
+- Adds missing information to export and import batch operation jobs.
+
+## 3.0.0 (2025-02-19)
+
+### Changes
+
+- **Major version change:** 3.0.0 because this release is compatible only with ApostropheCMS 4.x. If you have not upgraded to ApostropheCMS 4.x, [you should do so.](https://docs.apostrophecms.org/guide/migration/upgrading-3-to-4.html#how-to-upgrade-your-project). For your ApostropheCMS 4.x project, make sure you change the dependency in `package.json` to `^3.0.0` to get this version.
+- Hide the `importDraftsOnly` checkbox for autopublished documents.
+
+### Adds
+
+- Adds a method to sort all exported documents, makes sure that parent pages come always first.
+- Uses the new big-upload feature of apostrophe to allow very large export files to be imported.
+- Handles progress notification when uploading document (before running the actual import).
+
+## 2.6.0 (2025-01-27)
+
+### Adds
+
+- Pages linked a page via the "Internal Page" option in the rich text editor are now candidates to be exported as related documents.
+- Images embedded inline in rich text widgets via the `insert: [ 'image' ]` option are now candidates to be exported as related documents.
+- Uses `moduleLabels` prop when available.
+
+### Fixes
+
+- Fixes Export modal related types slide animation. Uses `checkedTypes` when passed from parent component.
+
+## 2.5.0 (2024-11-08)
+
+### Adds
+
+- Adds a checkbox to the import modal that, when selected, imports published versions of documents from an export file **as drafts**. If a document doesn’t have a published version, it will still be imported. Setting the `importDraftsOnlyDefault: true` option selects this checkbox by default.
+
+## 2.4.2 (2024-10-31)
+
+### Adds
+
+- Adds AI-generated missing translations.
+
+## 2.4.1 (2024-10-03)
+
+### Fixes
+
+- Fixes SASS warnings.
+- Fixes a bug where related documents were not exported if they were only in one (draft or published) mode.
+- Fixes a bug where additional crops of an image were not imported properly when the image was already present on the receiving site.
+- Clean up timers on instance destroy.
+
+## Changes
+
+- Update devDependencies.
+
+## 2.4.0 (2024-09-05)
+
+### Adds
+
+- Singletons can now be imported through `contextOperations` since they have no manager modal and thus no `utilityOperation` available.
+- Pages can be exported via an Export batch operation.
+
+### Fixes
+
+- Exported related documents now contain the entire document and not only the projected fields.
+- The `related` route also returns the related types of the exported documents related documents.
+- Greatly improved performance when imports involve attachments that already exist on the target site.
+- Cropped images are imported properly.
+- Page tree relationships are maintained.
+- In general: many fixes to bring this module up to speed for use cases that involve selecting multiple documents.
+
+## 2.3.0 (2024-08-08)
+
+### Adds
+
+- Add a scrollbar to the duplicate import modal to handle too many duplicates, and fixed the "Type" column to display the correct document type. Thanks to (Borel Kuomo)(<https://github.com/borelkoumo>) for this contribution.
+
+### Fixes
+
+- Adds a method `checkDuplicates` to pre check for duplicates before importing, allows to insert attachments before documents to avoid them being stripped.
+- Uses the new method `simulateRelationshipsFromStorage` from core to simulate relationships on data from DB to be able to pass the convert,
+  also uses the new option `fetchRelationships: false` on the convert to avoid fetching relationships from the DB.
+  It prevents issues when a relationship has not been inserted yet.
+- Requires a duplicate confirmation for existing singleton documents (including parked pages), keeping their original ID's while importing (if the user chooses to do so).
+
+## 2.2.0 (2024-07-12)
+
+### Adds
+
+- Adds a `preventUpdateAssets` to the module that will not try to update already existing assets on import.
+
+## 2.1.1 (2024-06-21)
+
+### Fixes
+
+- Fix export relationship when an area has grouped widgets. Thanks to Michelin for contributing this fix.
+
+## 2.1.0 (2024-06-12)
+
+### Adds
+
+- Add the possibility to set a **key column** in your import CSV file in order to update existing pieces and pages.  
+  Thanks to this, this module reaches parity with the deprecated [`@apostrophecms/piece-type-importer`](https://github.com/apostrophecms/piece-type-importer) module.
+
+### Fixes
+
+- We can now import pieces or pages with an import file that contains just the required fields.
+
+## 2.0.0 (2024-05-15)
+
+### Changes
+
+- Corrects documentation of required permissions.
+
+### Adds
+
+- Add CSV format.
+
+### Breaking changes
+
+- This is a new major version, 2.0.0. To update to this version you must edit your `package.json` file and change the dependency to `^2.0.0` or similar.
+- The signature of the `output` function from the gzip format has changed. It no longer takes the `apos` instance and now requires a `processAttachments` callback.
+- `import` and `overrideDuplicates` functions now require `formatLabel` to be passed in `req`.
+
+## 1.4.1 (2024-03-20)
+
+### Changes
+
+- Documentation updates.
+
+### Fixes
+
+- Fixes imported data with the wrong mode because `req.mode` was always `published`, even for draft documents.
+
+## 1.4.0 (2024-03-12)
+
+### Changes
+
+- Compatible with both Apostrophe 3.x and Apostrophe 4.x (both Vue 2 and Vue 3).
+
+### Fixes
+
+- Bug fix. When a piece or a page is created, published, then unpublished, and subsequently exported and re-imported, the manager modal incorrectly showed no published version. This occurs because the `lastPublishedAt` property of the draft document was set to null upon import, misleading the representation of the document's published state. Now it retains the original document's `lastPublishedAt` value.
+
+## 1.3.0 (2024-02-21)
+
+### Changes
+
+- Requires the create and edit permissions to use the import utility operation
+
+## 1.2.1 (2024-01-24)
+
+### Security
+
+- Fixed a security issue that allowed a correctly crafted
+  HTTP request to delete arbitrary files and folders, subject to the permissions with which the Node.js
+  process was run. No user account was required to exploit this issue. All users of this module should immediately run `npm update @apostrophecms/import-export` and deploy the latest version of this module. The module has been carefully audited for similar issues and best practices have been put in place to prevent any similar issue in future.
+
+### Changes
+
+- Prefix routes and events to avoid conflicts with the old [`@apostrophecms/piece-type-importer`](https://github.com/apostrophecms/piece-type-importer) and [`@apostrophecms/piece-type-exporter`](https://github.com/apostrophecms/piece-type-exporter) modules.
+
+## 1.2.0 (2023-11-29)
+
+### Adds
+
+- Import now detects if the locale found in the exported docs is different from the current site one.
+  If the site has only one locale configured, then the docs are automatically re-written with the site locale.
+  If the site has multiple locales configured, the user is given the possibility to abort the import or re-write the docs with the site locale.  
+  Please note that this change is dependent on core changes found in 3.60.0.
+
+### Changes
+
+- Hide "Duplicates Detected." notification.
+
+## 1.1.0 (2023-11-03)
+
+### Adds
+
+- Display more information about duplicated documents.
+- Export file name more meaningful, containing project name, module name and current date and time.
+
+### Fixes
+
+- Fix progress bar going over `100%` when importing docs that are archived after being exported.
+- Adds missing dependency.
+
+## 1.0.2 (2023-10-13)
+
+### Fixes
+
+- Use `uploadfs.copyOut` to ensure success in more attachment export situations, such as debugging a multisite Assembly project
+  on a local machine where Chrome considers subdomains of `localhost` to be your machine but Node.js does not.
+- Minor refactoring for maintainability and performance.
+- Error and warning notifications stay in place until dismissed.
+
+## 1.0.1 (2023-10-12)
+
+### Fixes
+
+Move documentation images to our own hosting.
+
+## 1.0.0 (2023-10-12)
+
+### Adds
+
+Initial release.

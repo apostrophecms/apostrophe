@@ -9,13 +9,7 @@ const cheerio = require('cheerio');
 // and for editing areas.
 
 module.exports = {
-  options: {
-    alias: 'area',
-    // Native actions the multi-select toolbar may offer. A project can add
-    // a name here when a non-structural operation should join that toolbar.
-    // The button still appears only when every selected widget defines it.
-    batchWidgetOperations: [ 'up', 'down', 'remove', 'cut', 'copy', 'clone' ]
-  },
+  options: { alias: 'area' },
   commands(self) {
     return {
       add: {
@@ -1068,7 +1062,6 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
           widgetPreview,
           contextualWidgetDefaultData,
           widgetManagers,
-          batchWidgetOperations: self.options.batchWidgetOperations,
           action: self.action,
           createWidgetOperations: self.createWidgetOperations
         };
@@ -1097,6 +1090,13 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
           });
         });
       },
+      // Adds an entry to the "add content" menus of areas. `modal` is
+      // executed with `props`, plus the area's `options` and `fieldId`. It
+      // resolves to a widget to insert, or to an array of widgets, which are
+      // inserted in that order as one undo step and left selected. They are
+      // inserted as given: give them new ids (see `cloneWidget`) if they are
+      // copies of existing widgets. `ifTypesIntersect` limits the entry to
+      // areas that allow at least one of those widget types.
       addCreateWidgetOperation(operation) {
         self.createWidgetOperations.push(operation);
       }

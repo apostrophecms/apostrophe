@@ -1,0 +1,16 @@
+{
+  "label": "Príspevok na blogu",
+  "pluralLabel": "Príspevky na blogu",
+  "publishedAt": "Dátum publikovania",
+  "futureArticles": "Budúce príspevky",
+  "future": "Budúce",
+  "past": "Minulé",
+  "both": "Obe",
+  "page": "Stránka blogu",
+  "filters": "Filtre",
+  "filterAll": "Všetko",
+  "filterYear": "Rok",
+  "filterMonth": "Mesiac",
+  "filterDay": "Deň",
+  "releasedOn": "Publikované dňa"
+}

@@ -1,0 +1,21 @@
+{
+  "generateImage": "Generate Image",
+  "generateTextLabel": "Generate Text",
+  "generateTextDescription": "Generate text with AI",
+  "imagePlaceholderText": "Describe the image you want to create.",
+  "textPromptLabel": "Enter a prompt to generate text. Example: \"100 words about cheese, with subheadings\"",
+  "variations": "Variations",
+  "select": "Select",
+  "delete": "Delete",
+  "generateTextAction": "Generate",
+  "rateLimitExceeded": "Rate limit exceeded, try again later",
+  "utilityOperationLabel": "Generate an image with AI",
+  "errorMessage": "An error occurred.",
+  "generateVariant": "Generate Variant",
+  "variantPromptLabel": "How should this image be different?",
+  "variantPromptPlaceholder": "Describe how to modify the image (optional)",
+  "generationFailed": "AI generation failed. Please try again.",
+  "invalidRequest": "Invalid request, please check your prompt and try again.",
+  "contentPolicyViolation": "Content policy violation. Please try a different prompt.",
+  "serviceUnavailable": "AI service temporarily unavailable. Please try again in a moment."
+}

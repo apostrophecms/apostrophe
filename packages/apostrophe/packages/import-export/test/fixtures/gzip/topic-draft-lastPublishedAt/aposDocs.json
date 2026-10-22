@@ -1,0 +1,12 @@
+[
+  {
+    "_id": "4:en:draft",
+    "aposDocId": "4",
+    "aposLocale": "en:draft",
+    "aposMode": "draft",
+    "lastPublishedAt": "2021-01-01T00:00:00.000Z",
+    "slug": "topic1-draft",
+    "title": "topic1 DRAFT",
+    "type": "topic"
+  }
+]

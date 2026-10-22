@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "failingBeforeConstructAsync": "1.0.0",
+    "failingBeforeConstructSync": "1.0.0",
+    "failingModuleAsync": "1.0.0",
+    "failingModuleSync": "1.0.0",
+    "improveTestOriginal": "1.0.0",
+    "improveTestReplacement": "1.0.0",
+    "metadataNpm": "1.0.0",
+    "replaceTestOriginal": "1.0.0",
+    "replaceTestReplacement": "1.0.0",
+    "testBeforeConstructAsync": "1.0.0"
+  },
+  "devDependencies": {
+    "testBundle": "1.0.0",
+    "testModule": "1.0.0",
+    "testModuleFour": "1.0.0",
+    "testModuleThree": "1.0.0",
+    "testModuleTwo": "1.0.0",
+    "testOrderOfOperations": "1.0.0"
+  }
+}

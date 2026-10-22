@@ -21,6 +21,22 @@
           v-bind="control"
           @click="run(control)"
         />
+        <AposContextMenu
+          v-if="secondaryControls.length"
+          :menu="secondaryControls"
+          menu-placement="top"
+          identifier="multiselect-secondary-controls"
+          :has-tip="false"
+          :button="{
+            label: 'apostrophe:moreOptions',
+            icon: 'dots-horizontal-icon',
+            iconOnly: true,
+            type: 'group',
+            modifiers: [ 'small', 'inline' ],
+            iconSize: 16
+          }"
+          @item-clicked="run"
+        />
       </AposButtonGroup>
     </div>
   </Transition>
@@ -31,15 +47,20 @@ import { createId } from 'apostrophe/lib/beneath.js';
 import { mapState, mapActions } from 'pinia';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph';
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import {
-  commonBatchOperations,
   contiguousRange,
+  multipleOperations,
   outermostIds
 } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
 import {
   widgetContext
 } from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
-import { runWidgetBatch } from 'Modules/@apostrophecms/area/lib/batch-widgets.js';
+import {
+  collectSelection,
+  runWidgetBatch,
+  runWidgetOperation
+} from 'Modules/@apostrophecms/area/lib/batch-widgets.js';
 import { getOperationTooltip } from 'Modules/@apostrophecms/area/lib/operations.js';
 
 export default {
@@ -70,11 +91,7 @@ export default {
       return this.selectionGraphKey || window.apos.adminBar?.contextId || null;
     },
     effectiveIds() {
-      return outermostIds(this.selectedWidgetIds, (id, ancestorId) => {
-        return this.graphKey
-          ? this.hasAncestor(this.graphKey, id, ancestorId)
-          : false;
-      });
+      return outermostIds(this.selectedWidgetIds, this.hasAncestorInGraph);
     },
     moveRange() {
       // A move keeps the same ids, so this has to be read or the range
@@ -98,7 +115,8 @@ export default {
       const itemCount = range
         ? (widgetContext(this.effectiveIds[0], this.scope)?.itemIds.length || 0)
         : 0;
-      return this.commonOperations
+      return this.offeredOperations
+        .filter((operation) => !operation.secondaryLevel)
         .filter((operation) => {
           const action = operation.nativeAction || operation.name;
           if (action === 'up') {
@@ -120,19 +138,33 @@ export default {
           };
         });
     },
-    commonOperations() {
-      const lists = this.selectedWidgetIds.map((id) => {
-        return this.operationsFor(widgetContext(id, this.scope)?.type);
-      });
-      const allowlist = window.apos.area?.batchWidgetOperations || [
-        'up',
-        'down',
-        'remove',
-        'cut',
-        'copy',
-        'clone'
+    // Native operations first, then custom ones, as in the single widget
+    // controls.
+    secondaryControls() {
+      const secondary = this.offeredOperations
+        .filter((operation) => operation.secondaryLevel);
+      const native = secondary.filter((operation) => operation.nativeAction);
+      const custom = secondary.filter((operation) => !operation.nativeAction);
+      return [
+        ...native,
+        ...(native.length && custom.length) ? [ { separator: true } ] : [],
+        ...custom
       ];
-      return commonBatchOperations(lists, allowlist);
+    },
+    // Operations every selected widget offers with `multiple: true`. Read
+    // from the widgets themselves, as their `if` clauses need them.
+    offeredOperations() {
+      // Every change of selection bumps the revision, which is all that
+      // tells this computed the bus would now answer differently.
+      if (this.selectedWidgetIds.length < 2 || this.selectionRevision < 0) {
+        return [];
+      }
+      const entries = collectSelection({ hasAncestor: this.hasAncestorInGraph })
+        .map(({ widget }) => ({
+          widget,
+          operations: this.operationsFor(widget.type)
+        }));
+      return multipleOperations(entries, checkIfConditions);
     },
     buttonDefaults() {
       return {
@@ -166,19 +198,20 @@ export default {
       return window.apos.modules[manager]?.widgetOperations || [];
     },
     run(operation) {
-      if (operation.modal) {
+      if (operation.nativeAction) {
+        runWidgetBatch(operation.nativeAction, {
+          hasAncestor: this.hasAncestorInGraph
+        });
         return;
       }
-      const nativeAction = operation.nativeAction;
-      if ([ 'up', 'down', 'remove', 'cut', 'copy', 'clone' ].includes(nativeAction)) {
-        this.runBatch(nativeAction);
-        return;
-      }
-      if (operation.action) {
-        for (const id of this.effectiveIds) {
-          apos.bus.$emit(operation.action, { widgetId: id });
-        }
-      }
+      runWidgetOperation(operation, {
+        hasAncestor: this.hasAncestorInGraph
+      });
+    },
+    hasAncestorInGraph(id, ancestorId) {
+      return this.graphKey
+        ? this.hasAncestor(this.graphKey, id, ancestorId)
+        : false;
     },
     // The bar replaces the per-widget controls. If focus was in those
     // controls, put it on the first button here. Later clicks keep
@@ -194,14 +227,6 @@ export default {
           ? this.$el
           : document.querySelector('.apos-widget-controls-multiselect');
         root?.querySelector('button:not([disabled])')?.focus();
-      });
-    },
-    runBatch(name) {
-      const graphKey = this.graphKey;
-      runWidgetBatch(name, {
-        hasAncestor: (id, ancestorId) => {
-          return graphKey ? this.hasAncestor(graphKey, id, ancestorId) : false;
-        }
       });
     }
   }

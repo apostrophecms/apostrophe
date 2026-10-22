@@ -1,0 +1,247 @@
+module.exports = {
+  extend: '@apostrophecms/widget-type',
+  options: {
+    label: 'apostrophe:image',
+    className: false,
+    icon: 'image-icon',
+    dimensionAttrs: false,
+    placeholder: true,
+    initialModal: false,
+    linkWithType: [ '@apostrophecms/any-page-type' ],
+    // Should we write e.g. a reset style for the `figure` element?
+    inlineStyles: true,
+    components: {
+      widget: 'AposImageWidget'
+    }
+  },
+  widgetOperations(self, options) {
+    const {
+      relationshipEditor = 'AposImageRelationshipEditor',
+      relationshipEditorLabel = 'apostrophe:editImageAdjustments',
+      relationshipEditorIcon = 'image-edit-outline'
+    } = options.apos.image.options || {};
+    return {
+      add: {
+        adjustImage: {
+          label: relationshipEditorLabel,
+          icon: relationshipEditorIcon,
+          modal: relationshipEditor,
+          tooltip: relationshipEditorLabel,
+          if: {
+            '_image.0': {
+              $exists: true
+            }
+          }
+        }
+      }
+    };
+  },
+  // NOTE: Disabled until we are out of beta
+  // styles: {
+  //   add: {
+  //     width: 'width',
+  //     alignment: 'alignment'
+  //   }
+  // },
+  fields(self, options) {
+    const slugify = options.apos.util.slugify;
+    const linkWithType = options.linkWithType;
+    const linkWithTypeChoices = linkWithType
+      .map(type => ({
+        label: type,
+        value: type
+      }))
+      .concat([
+        {
+          label: 'apostrophe:url',
+          value: '_url'
+        }
+      ]);
+    linkWithTypeChoices.unshift({
+      label: 'apostrophe:none',
+      value: 'none'
+    });
+    const linkWithTypeFields = linkWithType.reduce((fields, type) => {
+      const name = `_${slugify(type)}`;
+      fields[name] = {
+        type: 'relationship',
+        label: type,
+        withType: type,
+        required: true,
+        max: 1,
+        if: {
+          linkTo: type
+        }
+      };
+      return fields;
+    }, {});
+    const orTypes = linkWithType.map(type => ({
+      linkTo: type
+    }));
+
+    return {
+      add: {
+        _image: {
+          type: 'relationship',
+          label: 'apostrophe:image',
+          max: 1,
+          required: true,
+          withType: '@apostrophecms/image'
+        },
+        caption: {
+          label: 'apostrophe:caption',
+          type: 'string'
+        },
+        linkTo: {
+          label: 'apostrophe:linkTo',
+          type: 'select',
+          choices: linkWithTypeChoices,
+          def: 'none'
+        },
+        ...linkWithTypeFields,
+        linkHref: {
+          label: 'apostrophe:url',
+          help: 'apostrophe:linkHrefHelp',
+          type: 'url',
+          required: true,
+          if: {
+            linkTo: '_url'
+          }
+        },
+        linkHrefTitle: {
+          label: 'apostrophe:linkTitle',
+          type: 'string',
+          if: {
+            linkTo: '_url'
+          }
+        },
+        linkTitle: {
+          label: 'apostrophe:linkTitle',
+          help: 'apostrophe:linkTitleRelHelp',
+          type: 'string',
+          if: {
+            $or: orTypes
+          }
+        },
+        linkTarget: {
+          label: 'apostrophe:linkTarget',
+          type: 'checkboxes',
+          choices: [
+            {
+              label: 'apostrophe:openLinkInNewTab',
+              value: '_blank'
+            }
+          ],
+          if: {
+            $or: orTypes.concat([
+              {
+                linkTo: '_url'
+              }
+            ])
+          }
+        }
+      }
+    };
+  },
+  init(self) {
+    self.showPlaceholder = self.options.placeholder !== false;
+    self.options.placeholder = true;
+    self.determineBestAssetUrl('placeholder');
+    self.addCleanLinkHrefMigration();
+  },
+  handlers(self) {
+    return {
+      'apostrophe:modulesRegistered': {
+        validateAndAddSchemaLabels() {
+          self.validateAndAddSchemaLabels();
+        }
+      }
+    };
+  },
+  methods(self) {
+    return {
+      // The image itself leads, when the relationship is loaded on the
+      // widget; the schema walk still covers the caption and any fields a
+      // subclass adds
+      extract(req, widget, options) {
+        const attachment = widget._image?.[0]?.attachment;
+        const items = attachment
+          ? [
+            {
+              image: { url: self.apos.attachment.url(attachment, { size: 'full' }) },
+              tags: [ 'image' ]
+            }
+          ]
+          : [];
+        return items.concat(
+          self.apos.schema.extract(req, self.schema, widget, options)
+        );
+      },
+
+      // Clear link hrefs that use dangerous URL schemes (e.g.
+      // `javascript:`) and may have been stored before the linkHref
+      // schema field was changed to `type: 'url'`. Registered per
+      // module instance so subclasses of this widget are migrated
+      // under their own widget type and migration name.
+      addCleanLinkHrefMigration() {
+        self.apos.migration.add(
+          `${self.__meta.name}:clean-naughty-link-href`,
+          async () => {
+            await self.apos.migration.eachWidget({}, async (doc, widget, dotPath) => {
+              if (widget.type !== self.name) {
+                return;
+              }
+              if (!widget.linkHref) {
+                return;
+              }
+              if (!self.apos.launder.naughtyHref(widget.linkHref)) {
+                return;
+              }
+              await self.apos.doc.db.updateOne(
+                { _id: doc._id },
+                { $set: { [`${dotPath}.linkHref`]: '' } }
+              );
+            });
+          }
+        );
+      },
+      validateAndAddSchemaLabels() {
+        const linkWithType = self.options.linkWithType;
+
+        for (const type of linkWithType) {
+          if (!self.apos.modules[type]) {
+            throw new Error(
+              `The "linkWithType" option of ${self.__meta.name} contains an invalid module "${type}"`
+            );
+          }
+
+          // Patch the schema label directly now that we have access to all modules
+          const field = self.schema.find(field => field.name === `_${self.apos.util.slugify(type)}`);
+          field.label = getLabel(type);
+
+          const choice = self.schema.find(field => field.name === 'linkTo').choices
+            .find(choice => choice.value === type);
+          choice.label = getLabel(type);
+        }
+
+        function getLabel(type) {
+          if ([ '@apostrophecms/any-page-type', '@apostrophecms/page' ].includes(type)) {
+            return 'apostrophe:page';
+          }
+          return self.apos.modules[type].options?.label ?? type;
+        }
+      }
+    };
+  },
+  extendMethods(self) {
+    return {
+      getBrowserData(_super, req) {
+        return {
+          ..._super(req),
+          showPlaceholder: self.showPlaceholder,
+          placeholderUrl: self.options.placeholderUrl
+        };
+      }
+    };
+  }
+};

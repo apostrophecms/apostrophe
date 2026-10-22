@@ -1,0 +1,21 @@
+{
+  "generateImage": "Gerar Imagem",
+  "generateTextLabel": "Gerar Texto",
+  "generateTextDescription": "Gerar texto com IA",
+  "imagePlaceholderText": "Descreva a imagem que você deseja criar.",
+  "textPromptLabel": "Digite um prompt para gerar texto. Exemplo: \"100 palavras sobre queijo, no estilo de Anthony Bourdain, com subtítulos\"",
+  "variations": "Variações",
+  "select": "Selecionar",
+  "delete": "Excluir",
+  "generateTextAction": "Gerar",
+  "rateLimitExceeded": "Limite de taxa excedido, tente novamente mais tarde",
+  "utilityOperationLabel": "Gerar uma imagem com IA",
+  "errorMessage": "Ocorreu um erro.",
+  "generateVariant": "Gerar Variante",
+  "variantPromptLabel": "Como esta imagem deve ser diferente?",
+  "variantPromptPlaceholder": "Descreva como modificar a imagem (opcional)",
+  "generationFailed": "A geração por IA falhou. Tente novamente.",
+  "invalidRequest": "Solicitação inválida. Verifique seu prompt e tente novamente.",
+  "contentPolicyViolation": "Violação da política de conteúdo. Tente um prompt diferente.",
+  "serviceUnavailable": "O serviço de IA está temporariamente indisponível. Tente novamente em alguns instantes."
+}

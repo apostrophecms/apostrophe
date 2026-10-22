@@ -1,0 +1,15 @@
+{
+  "label": "Frase Estática de i18n",
+  "pluralLabel": "Frases Estáticas de i18n",
+  "locale": "Localidade",
+  "key": "Chave",
+  "namespace": "Espaço de Nomes",
+  "valueSingular": "Singular",
+  "valuePlural": "Plural",
+  "valueZero": "Zero",
+  "valuePluralTwo": "Forma Plural Para \"dois\"",
+  "valuePluralFew": "Forma Plural Para \"poucos\"",
+  "valuePluralMany": "Forma Plural Para \"muitos\"",
+  "localeSpecificsForms": "Formas Específicas de Localidade",
+  "ifApplicableInThisLocale": "Se aplicável nesta localidade"
+}

@@ -1,0 +1,265 @@
+# Changelog
+
+## 1.17.0 (2026-10-14)
+
+### Adds
+
+- Astro now routes literal content files such as `robots.txt` and `llms.txt` to the right site in multisite projects, using the new `literalRoutesScope` option of `@apostrophecms/url`.
+
+### Fixes
+
+- Fields rendered in place with `AposField` in a widget can be edited as soon as the widget is added or saved in Astro, rather than only after the page is refreshed. Rich text fields in such a widget no longer appear as escaped markup during live preview and inline editing. Empty fields of a widget that was just saved can be selected and edited on the page right away, as they can be in a Nunjucks or JSX project.
+
+## 1.16.0 (2026-09-30)
+
+### Adds
+
+- Added the `AposField` component, which displays one schema field of a document, widget, array item or object and lets the user edit it right where it appears on the page, the way `AposArea` does for areas:
+
+  ```jsx
+  <AposField doc={page} name="title" tag="h1" class="article__headline" />
+  ```
+
+  The value is rendered by Apostrophe, so rich text arrives with its permalinks resolved and a string arrives escaped, and a field type added by a module renders as that module says. A single line string is inline: `Name: <AposField doc={person} name="name" />.` keeps its place on the line, and its full stop, when the editor arrives.
+
+  `tag` overrides the tag the field type chose, `class` is added to the classes it asks for rather than replacing them, `style` and `attrs` are passed through, `edit={false}` never offers editing, and any other prop reaches the editor as its options.
+
+  Apostrophe only sends the information for fields that ask for it, with `wysiwyg: true` on the field or the `wysiwygFields` option of the module, since it cannot tell from the data which fields a template renders in place. While developing, `AposField` writes a note to the terminal when it displays a field that did not ask, naming the field and the option to set. A field that was not annotated is still displayed, just not editable, so a page never breaks over it.
+
+### Changes
+
+- Console output carries a consistent `[apostrophe-astro]` prefix and honors `NO_COLOR`.
+- Corrected README code examples that would not run as written: a `const` declaration using `:` instead of `=`, two missing commas between object properties, a stray line above an unrelated example, and a pagination example referencing an undestructured variable and comparing a page object to a page number. Also fixed a misplaced backtick in the import-export format documentation.
+- Corrected typos and grammar in the README documentation.
+
+## 1.15.0 (2026-08-13)
+
+### Adds
+
+- `AposTemplate.astro` now forwards any additional props passed to it (beyond `aposData`) to the resolved page template component, matching the existing behavior of `AposArea` and `AposWidget`.
+
+### Fixes
+
+- Fixed a bug where redirect responses proxied through `aposProxy.js` (e.g. OAuth login callbacks) lost every header except `Location`. This affected setups where Apostrophe is only reachable through the Astro proxy (e.g. a sidecar deployment), causing the session `Set-Cookie` header from an OAuth callback redirect to be silently dropped and the login to appear to fail. Included fix to `aposResponse.js` to remove entity headers describing the body when dropping the body (e.g. redirects) which may otherwise cause strict clients to hang waiting for bytes. Thanks to [Erika](https://github.com/eri-vi-maddyie) for this fix.
+
+## 1.14.0 (2026-07-10)
+
+### Adds
+
+- In SSR mode, the integration now automatically serves _literal content_ files declared by Apostrophe modules - such as `robots.txt`, `sitemap.xml`, and `llms.txt` - by proxying them directly to Apostrophe instead of rendering them as pages. These files no longer need to be listed individually in the `proxyRoutes` option, which continues to work as before for any additional routes you wish to proxy.
+
+### Changes
+
+- Upgraded the `undici` HTTP client from v6 to v8, which requires Node.js 22.19 or newer, and fixed a connection leak in the Astro proxy where responses that are not streamed on to the browser — redirects (301/302/307/308) and bodyless responses (204/304) — now release their backend response body immediately instead of leaving it for garbage collection, which under load could hold connections open and exhaust the connection pool.
+- Replace vite-plugin-apostrophe-config and vite-plugin-apostrophe-doctype with vite/vite-plugin-apostrophe-generated-config.js, which writes real files to node_modules/.apostrophe-astro-config/ (config.js, doctypes.js)
+
+  - Register Vite aliases for apostrophe-astro-config/config and /doctypes
+  - Update all internal virtual: imports to alias specifiers
+  - Rename static build cache dir to node_modules/.apostrophe-astro-static/
+  - Add helpers/server/ (aposFetch, getAposHost, isStaticBuild)
+  - Add helpers/universal/ (URL, slug, styles, attachment helpers)
+  - Keep lib/aposPageFetch.js as the internal implementation (starter kit entrypoint only)
+  - Reduce lib/util.js, lib/aposSetQueryParameter.js, lib/static.js to deprecated shims
+  - Add MIGRATION.md
+  - Bump `undici` to ^7.x for Node.js 24+ compatibility
+  - Add `peerDependencies` declaring Astro v5, v6, and v7 support.
+  - Fix `virtual:apostrophe-config` import in `aposLiteralContentMiddleware.js` to use the generated-file module path.
+  - Drop deprecated entryPoint shim from injectRoute calls.
+
+### Fixes
+
+- Query string parameters are no longer lost when a URL with a trailing slash is normalized, so `/articles/?page=2` now renders the same content as `/articles?page=2`. Previously such URLs were redirected to the page URL alone (e.g. `/articles`), losing the query string and showing the first page. Redirects to a different origin are now always passed through to the browser.
+
+## 1.13.0 (2026-06-10)
+
+### Fixes
+
+- Adding or removing an area field from a schema no longer breaks documents on an external front such as Astro.
+- `AposArea` now renders only schema-backed areas. A missing area no longer throws, and an area orphaned by removing its field from the schema (while its content remains in the document) renders nothing instead of breaking sibling areas in edit mode. Logged-in editors get a diagnostic message in place of an orphaned area; anonymous visitors see nothing.
+- Editable documents sent to an external front now materialize empty area objects for schema area fields added after the document was created, so they can be edited in context.
+- `apos.util.getManagerOf` accepts a `{ log }` option to suppress its error log when probing objects that may not have a manager.
+
+## 1.12.0
+
+### Adds
+
+- Editors can now control the layout-widget gap through the styles system, both site-wide via a global `layoutGap` preset and per widget via a `gap` styles field. New Layout widget option `className` allows for additional CSS class names to be added to the widget Grid container.
+- Log aposResponse errors server side in the Astro process. Thanks to [Harouna Traore](https://github.com/haroun).
+
+## 1.11.0 (2026-04-15)
+
+### Adds
+
+- The `writeAttachments` step now supports per-entry base URL resolution, correctly downloading and writing pretty URL files to the appropriate output directory (e.g. `dist/files/`). A new `attachmentFilter` option (`'all'` or `'prettyOnly'`) lets you skip regular uploadfs attachments when those are served by a CDN while still including backend-served pretty URL files in the static output. Configurable via the `staticBuild.attachmentFilter` integration option or the `APOS_ATTACHMENT_FILTER` environment variable.
+
+### Changes
+
+- Refactor after core changes done to the internal layout data.
+
+## 1.10.0 (2026-03-19)
+
+### Adds
+
+- Adds support for static builds. Introduces relevant helpers.
+
+## 1.9.0 (2026-02-18)
+
+### Adds
+
+- Add RTL support for Astro applications
+
+### Fixes
+
+- Handle correctly HEAD page requests
+
+## 1.9.0-alpha.1
+
+### Adds
+
+- Add RTL support for Astro applications
+
+## 1.8.0
+
+### Adds
+
+- Add global styles and widget styles support
+- Adds `onBeforeWidgetRender` hook
+
+## 1.7.1 (2025-11-25)
+
+- Add support for `sluggo` options in the `slugify` util helper and `stripAccents` option to remove accents from characters.
+
+## 1.7.0 (2025-10-30)
+
+### Adds
+
+- Refactor `AposArea` to accept custom style, class, and attributes, but also a `widgetComponent` prop. The latter is allowing for custom widget rendering components to be used. This is particularly useful for complex widgets like the Layout widget that need to render the output in particular order/way.
+- Introduce `LayoutWidget.astro` and `LayoutColumnWidget.astro` components to be used in the project level widget mapping.
+- Adds new `AposRenderAreaForAstro` component, specifically designed to be used to implement the new `/api/apos-external-frontend/render-area` route. This allows section template library previews to work in Astro projects and also enables calling the ApostropheCMS REST APIs with `?render-area` when using Astro on the front end. See the documentation for more information on adding this route to existing projects.
+
+## 1.6.0 (2025-10-01)
+
+### Adds
+
+- Adds additional handling for the `@apostrophecms/anchors` module to the `AposWidget.astro` component
+- Adds handling for project-level widget options, as well as actually passing per-area options to widgets. Can be accessed through the `options` prop in the widget components.
+- Add support for `prependMain` and `appendMain` in the `aposData` object, allowing for custom HTML to be injected into the `<main>` sections of the layout.
+
+### Fixes
+
+- Verify that `Host` header is correctly formatted.
+
+## 1.5.2 (2025-09-09)
+
+### Fixes
+
+- Corrected the link to the astro apollo pro starter kit in the documentation.
+
+## 1.5.1 (2025-09-08)
+
+### Changes
+
+- Guide developers to our actively supported starter kits.
+
+## 1.5.0 (2025-08-06)
+
+### Adds
+
+- Add support for `prependHead`, `appendHead`, `prependBody`, and `appendBody` in the `aposData` object, allowing for custom HTML to be injected into the `<head>` and `<body>` sections of the layout.
+
+### Fixes
+
+- Handle deep schema validation errors when rendering widgets, so that a message is displayed in the widget preview instead of a crash.
+
+## 1.4.0 (2025-06-11)
+
+### Adds
+
+- Add `util` (currently containing only `slugify`) and `attachment` helpers to mimic Apostrophe's Nunjucks helpers.
+
+### Fixes
+
+- Fix duplicate function that breaks project builds.
+
+## 1.3.1 (2025-05-23)
+
+### Fixes
+
+- Fix a bug when the Astro app can crash due to live widget preview in some cases.
+
+## 1.3.0 (2025-04-16)
+
+### Adds
+
+- Add support for decoding the response body needed for some hosting added to the `aposResponse.js`.
+
+## 1.2.1 (2025-03-19)
+
+### Fixes
+
+- The `lang` attribute of the `<html>` tag now respects localization.
+
+## 1.2.0 (2025-01-27)
+
+### Changes
+
+- The configuration array for headers passed from Apostrophe to the browser has been changed from `forwardHeaders` to `includeResponseHeaders` with BC maintained.
+- A new configuration option `excludeRequestHeaders` has been added to allow exclusion of headers like `host` being sent from the browser to Apostrophe.
+- The `README.MD` has been updated with the new configuration options.
+- Clearer error messages have been added to indicate that either the backend server has not been started, or that the `APOS_EXTERNAL_FRONT_KEY` strings don't match.
+
+## 1.1.0 (2024-11-20)
+
+### Adds
+
+- Add support for automated bundles injection in Edit (apos) mode, required for supporting the new core "manifest" builds (when available).
+
+## 1.0.9 (2024-10-23)
+
+- Prevent the `Connection: Upgrade` header from breaking Astro's `fetch` calls to Apostrophe when hosted in an environment that permits websocket upgrades of existing connections.
+- Refactored redundant code for building requests with the external front key, etc.
+
+## 1.0.8 (2024-07-02)
+
+- The `renderWidget` route will no longer crash if there was an issue getting the `render-widget` route from Apostrophe (like a mandatory field missing), it will respond with a 500 only, with a log message in the console. Thanks to Michelin for contributing this fix.
+
+## 1.0.7 (2024-03-28)
+
+- Visiting the `/login` page when already logged in no longer results in
+  an undesired direct response from Apostrophe. Redirects within api routes like the login issued
+  on the Apostrophe side are now sending a redirect response as per Astro endpoints documentation.
+- Page refreshes no longer alternate between displaying the admin UI and not displaying it
+  with each refresh in certain configurations.
+- Thanks to Michelin for collaborating on the solution.
+
+## 1.0.6 (2024-03-26)
+
+- Change the way we fetch from Apostrophe by using `undici` `request` method, so as all headers are correctly forwarded. As on latest Node.js versions, headers like `Host` are no more forwarded by the regular `fetch` global method.
+
+## 1.0.5 (2024-02-07)
+
+- Compatible with Astro's `ViewTransition` feature when editing, via
+  a workaround. Since this workaround imposes a performance penalty
+  (only for editors, not the public), the `viewTransitionWorkaround`
+  option must be set to `true` to enable it.
+
+## 1.0.4 (2024-01-22)
+
+- Documentation fixes only.
+
+## 1.0.3 (2023-12-27)
+
+- Documentation typo that impacts Linux and other case sensitive systems fixed.
+
+## 1.0.2 (2023-12-22)
+
+- Fix bug causing pages to crash after refresh if widget
+  grouping is used.
+
+## 1.0.1 (2023-12-21)
+
+- Fix bug impacting two-column widgets.
+
+## 1.0.0 (2023-12-21)
+
+- Initial release.

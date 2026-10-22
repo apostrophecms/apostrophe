@@ -1,0 +1,16 @@
+{
+  "label": "Postagem do Blog",
+  "pluralLabel": "Postagens do Blog",
+  "publishedAt": "Data de Publicação",
+  "futureArticles": "Posts Futuros",
+  "future": "Futuro",
+  "past": "Passado",
+  "both": "Ambos",
+  "page": "Página do Blog",
+  "filters": "Filtros",
+  "filterAll": "Todos",
+  "filterYear": "Ano",
+  "filterMonth": "Mês",
+  "filterDay": "Dia",
+  "releasedOn": "Lançado em"
+}

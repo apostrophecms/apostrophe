@@ -4,11 +4,10 @@ import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { outermostIds, selectionWithout } from './widget-selection.js';
 import { widgetContext, widgetElement } from './widget-selection-dom.js';
 
-// One batch edit, coordinated from the toolbar or a keyboard shortcut.
-// Area editors answer `widget-selection-collect` with the selected widgets
-// they own, then `widget-selection-mutate` for the change itself. Copy and
-// cut write the clipboard here so each editor does not overwrite the others.
-export function runWidgetBatch(name, { hasAncestor } = {}) {
+// The selected widgets, outermost only, in document order. The area
+// editor that holds them answers `widget-selection-collect` with
+// `{ widget, index, widgetOptions }` entries.
+export function collectSelection({ hasAncestor } = {}) {
   const bag = { entries: [] };
   apos.bus.$emit('widget-selection-collect', bag);
   const ids = bag.entries.map((entry) => entry.widget._id);
@@ -16,9 +15,17 @@ export function runWidgetBatch(name, { hasAncestor } = {}) {
     return hasAncestor ? hasAncestor(id, ancestorId) : false;
   }));
   const scope = useWidgetStore(pinia).selectionScope || document;
-  const entries = bag.entries
+  return bag.entries
     .filter((entry) => kept.has(entry.widget._id))
     .sort((a, b) => byDocumentOrder(a, b, scope));
+}
+
+// One batch edit with a native action, coordinated from the toolbar or a
+// keyboard shortcut. Area editors answer `widget-selection-mutate` for the
+// change itself. Copy and cut write the clipboard here so each editor does
+// not overwrite the others.
+export function runWidgetBatch(name, { hasAncestor } = {}) {
+  const entries = collectSelection({ hasAncestor });
   if (!entries.length) {
     return;
   }
@@ -42,6 +49,53 @@ export function runWidgetBatch(name, { hasAncestor } = {}) {
   apos.bus.$emit('widget-selection-mutate', {
     name,
     ids: entryIds
+  });
+  useWidgetStore(pinia).bumpSelectionRevision();
+}
+
+// A widget operation with `multiple: true` and a modal or an action, run
+// on the selection. See the widget operations documentation in the
+// widget-type module for what the modal or the action receives.
+export async function runWidgetOperation(operation, { hasAncestor } = {}) {
+  const entries = collectSelection({ hasAncestor });
+  if (!entries.length) {
+    return;
+  }
+  if (operation.modal) {
+    const result = await apos.modal.execute(operation.modal, {
+      widgets: entries.map(({ widget, widgetOptions }) => ({
+        widget,
+        widgetSchema: apos.modules[apos.area.widgetManagers[widget.type]]?.schema,
+        widgetOptions
+      }))
+    });
+    if (Array.isArray(result) && result.length && !operation.ignoreResult) {
+      updateSelection(result);
+    }
+    return;
+  }
+  const action = operation.action || operation.name;
+  if (action) {
+    apos.bus.$emit(action, {
+      widgetIds: entries.map(({ widget }) => widget._id)
+    });
+  }
+}
+
+// Each widget replaces the selected widget with the same `_id`, as one
+// undo step that keeps them selected.
+function updateSelection(widgets) {
+  const changes = [];
+  const ids = widgets.map((widget) => widget._id);
+  apos.bus.$emit('widget-selection-mutate', {
+    name: 'update',
+    ids,
+    widgets,
+    changes
+  });
+  report(changes, {
+    undo: ids,
+    redo: ids
   });
   useWidgetStore(pinia).bumpSelectionRevision();
 }

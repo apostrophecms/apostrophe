@@ -1,0 +1,9 @@
+{
+  "activateGoogleSubmit": "Einreichen an Google Tabellen",
+  "googleSheetId": "Google Tabellen-ID",
+  "googleSheetIdHtmlHelp": "<a href=\"https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id\">Die ID ist in der URL der Tabelle zu finden</a>: https://docs.google.com/spreadsheets/d/<strong>spreadsheetId</strong>/edit#gid=0",
+  "googleSheetName": "Google Tabellen Blattname",
+  "googleSheetNameHelp": "Der Name des Blatt-Tabs in Ihrer Google Tabelle, wo Sie die Einreichung hinzufügen möchten. Wenn nicht angegeben, wird das erste Blatt der Tabelle verwendet.",
+  "googleSheetRetrievalError": "Fehler beim Abrufen der Google Tabelleninformationen. Bitte überprüfen Sie die Tabellen-ID und die Freigabeeinstellungen der Tabelle.",
+  "googleSheetSubmissionError": "Es gab einen Fehler beim Einreichen an Google Tabellen."
+}

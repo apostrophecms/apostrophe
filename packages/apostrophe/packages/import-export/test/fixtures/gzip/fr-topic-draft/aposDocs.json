@@ -1,0 +1,11 @@
+[
+  {
+    "_id": "4:fr:draft",
+    "aposDocId": "4",
+    "aposLocale": "fr:draft",
+    "aposMode": "draft",
+    "slug": "topic1-fr",
+    "title": "topic1 FR",
+    "type": "topic"
+  }
+]

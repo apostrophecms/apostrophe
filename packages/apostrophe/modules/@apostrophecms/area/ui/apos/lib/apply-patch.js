@@ -39,6 +39,9 @@ export default function applyPatch(areaId, items, patch, { deep = false } = {}) 
   if (patch.$move?.[itemsKey]) {
     return move(items, patch.$move[itemsKey]);
   }
+  // A patch can replace several widgets at once, as a batch edit of a
+  // multiple selection does, so every key is applied
+  let current = null;
   for (const [ key, value ] of Object.entries(patch)) {
     if (!key.startsWith('@')) {
       continue;
@@ -55,12 +58,15 @@ export default function applyPatch(areaId, items, patch, { deep = false } = {}) 
       }
       continue;
     }
-    const result = replace(items, id, path, value, deep);
+    const result = replace(current?.items || items, id, path, value, deep);
     if (result) {
-      return result;
+      current = {
+        items: result.items,
+        changed: [ ...(current?.changed || []), ...result.changed ]
+      };
     }
   }
-  return null;
+  return current;
 }
 
 function push(items, {

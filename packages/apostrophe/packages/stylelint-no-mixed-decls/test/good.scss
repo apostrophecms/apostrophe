@@ -1,0 +1,133 @@
+@mixin flat {
+  display: block;
+  clear: both;
+}
+
+@mixin scoped {
+  & {
+    font-weight: bold;
+  }
+}
+
+@mixin mixed {
+  display: block;
+  clear: both;
+
+  & {
+    font-weight: bold;
+  }
+
+  .nested {
+    font-weight: normal;
+  }
+}
+
+.a {
+  color: red;
+
+  &--bar {
+    font-weight: bold;
+  }
+
+  .nested {
+    font-weight: normal;
+  }
+
+  & {
+    font-weight: normal;
+  }
+}
+
+.b {
+  color: red;
+
+  & {
+    font-size: 20px;
+  }
+
+  & {
+    font-weight: bold;
+  }
+}
+
+.c {
+  @include flat;
+}
+
+.d {
+  @include mixed;
+}
+
+.e {
+  @include scoped
+}
+
+.f {
+  @include external;
+}
+
+.g {
+  @include flat;
+  font-size: 16px;
+}
+
+.h {
+  color: red;
+  @include flat;
+  font-size: 16px;
+  @include mixed;
+  @include scoped;
+}
+
+.i {
+  @include flat;
+  @include scoped;
+
+  & {
+    color: red;
+  }
+}
+
+.j {
+  @include flat;
+
+  & {
+    color: red;
+  }
+
+  @include scoped;
+}
+
+.k {
+  @include external;
+  font-size: 16px;
+}
+
+.l {
+  &.not-a-nested-rule {
+    font-weight: normal;
+  }
+
+  color: red;
+}
+
+// This is okay because the mixin isn't known to contain nested rules.
+.m {
+  @include external-mixin;
+
+  color: red;
+}
+
+// This is okay because nothings comes after the mixin.
+.n {
+  @include external-mixin-known-to-contain-nested-rules;
+}
+
+// This is okay because the rule that comes after the mixin is wrapped.
+.o {
+  @include external-mixin-known-to-contain-nested-rules;
+
+  & {
+    color: red;
+  }
+}

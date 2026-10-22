@@ -311,6 +311,49 @@ describe('widget selection', function() {
     assert.deepEqual(redone.selectedWidgetIds, [ 'a-copy', 'b-copy' ]);
   });
 
+  it('offers an operation for several widgets only when every one has it with multiple', function() {
+    const op = (name, extra = {}) => ({
+      name,
+      multiple: true,
+      ...extra
+    });
+    const checkIf = (widget, clause) => Object.entries(clause)
+      .every(([ key, value ]) => widget[key] === value);
+    const entries = [
+      {
+        widget: {
+          _id: 'a',
+          hasImage: true
+        },
+        operations: [ op('remove'), op('save'), op('adjust', { if: { hasImage: true } }), op('edit', { multiple: false }) ]
+      },
+      {
+        widget: {
+          _id: 'b',
+          hasImage: true
+        },
+        operations: [ op('adjust', { if: { hasImage: true } }), op('save'), op('remove'), op('edit') ]
+      }
+    ];
+    const names = (list) => list.map(({ name }) => name);
+    assert.deepEqual(names(lib.multipleOperations(entries, checkIf)), [ 'remove', 'save', 'adjust' ]);
+
+    // An operation that does not say `multiple: true` is single widget only
+    entries[1].operations[1] = {
+      name: 'save'
+    };
+    assert.deepEqual(names(lib.multipleOperations(entries, checkIf)), [ 'remove', 'adjust' ]);
+
+    // Its `if` has to pass for every widget
+    entries[1].widget.hasImage = false;
+    assert.deepEqual(names(lib.multipleOperations(entries, checkIf)), [ 'remove' ]);
+
+    // A widget type without the operation rules it out
+    entries[1].operations = [];
+    assert.deepEqual(lib.multipleOperations(entries, checkIf), []);
+    assert.deepEqual(lib.multipleOperations([], checkIf), []);
+  });
+
   it('drops a selected descendant when its ancestor is also selected', function() {
     const ids = [ 'parent', 'child', 'other' ];
     const outer = lib.outermostIds(ids, (id, ancestorId) => {

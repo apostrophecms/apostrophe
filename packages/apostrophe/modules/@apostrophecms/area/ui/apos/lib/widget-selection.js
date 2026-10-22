@@ -214,24 +214,27 @@ export function contiguousRange(areaItemIds, selectedIds) {
   };
 }
 
-// Operations offered for a multi-selection: on the allowlist, present on
-// every selected widget, and not a modal. `modal` operations stay off this
-// toolbar until a batch strategy exists.
-export function commonBatchOperations(operationLists, allowlist) {
-  if (!operationLists.length) {
+// Operations offered for a multi-selection. `entries` has one
+// `{ operations, widget }` per selected widget. An operation is offered when
+// every widget has one by that name with `multiple: true` and, when it has
+// an `if`, `checkIf(widget, operation.if)` passes for that widget. They come
+// in the first widget's order.
+export function multipleOperations(entries, checkIf) {
+  if (!entries.length) {
     return [];
   }
-  return allowlist.map((name) => {
-    const matches = operationLists.map((list) => {
-      return (list || []).find((operation) => {
-        return operation.nativeAction === name || operation.name === name;
-      });
+  const qualifies = (operation, widget) => {
+    return operation?.multiple === true &&
+      (!operation.if || checkIf(widget, operation.if));
+  };
+  return entries[0].operations.filter((operation) => {
+    return entries.every(({ operations, widget }) => {
+      return qualifies(
+        operations.find(({ name }) => name === operation.name),
+        widget
+      );
     });
-    if (matches.some((operation) => !operation || operation.modal)) {
-      return null;
-    }
-    return matches[0];
-  }).filter(Boolean);
+  });
 }
 
 function replaceSelection(widgetId) {

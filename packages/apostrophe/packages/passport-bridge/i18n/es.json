@@ -1,0 +1,8 @@
+{
+  "rejected": "Tus credenciales no fueron aceptadas, tu cuenta no está afiliada a este sitio, o existe una cuenta con el mismo nombre de usuario o dirección de correo electrónico.",
+  "logInWith": "Iniciar sesión con {{ label }}",
+  "errorHeading": "Ocurrió un error de inicio de sesión",
+  "errorSubheading": "Ocurrió un error al iniciar sesión a través de {{ label }}",
+  "contactAdministrator": "Si crees que estás viendo este mensaje por error, por favor contacta al administrador.",
+  "connectionRequest": "Conectando {{ strategyName }} a {{ site }}"
+}

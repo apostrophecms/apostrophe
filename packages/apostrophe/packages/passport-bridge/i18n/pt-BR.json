@@ -1,0 +1,8 @@
+{
+  "rejected": "Suas credenciais não foram aceitas, sua conta não está afiliada a este site, ou uma conta existente tem o mesmo nome de usuário ou endereço de e-mail.",
+  "logInWith": "Faça login com {{ label }}",
+  "errorHeading": "Ocorreu um erro ao fazer login",
+  "errorSubheading": "Ocorreu um erro ao fazer login via {{ label }}",
+  "contactAdministrator": "Se você acredita que está vendo esta mensagem por engano, entre em contato com o administrador.",
+  "connectionRequest": "Conectando {{ strategyName }} ao {{ site }}"
+}

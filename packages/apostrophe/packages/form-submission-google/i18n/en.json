@@ -1,0 +1,9 @@
+{
+  "activateGoogleSubmit": "Submit to Google Spreadsheets",
+  "googleSheetId": "Google Spreadsheet ID",
+  "googleSheetIdHtmlHelp": "<a href=\"https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id\">The ID is found in the spreadsheet URL</a>: https://docs.google.com/spreadsheets/d/<strong>spreadsheetId</strong>/edit#gid=0",
+  "googleSheetName": "Google Spreadsheet Sheet Name",
+  "googleSheetNameHelp": "The name of the sheet tab in your Google spreadsheet where you want the submission appended. If not provided, the first sheet of the spreadsheet will be used.",
+  "googleSheetRetrievalError": "Error retrieving Google Sheet information. Please check the spreadsheet ID and and spreadsheet sharing settings.",
+  "googleSheetSubmissionError": "There was an error submitting to Google Sheets."
+}

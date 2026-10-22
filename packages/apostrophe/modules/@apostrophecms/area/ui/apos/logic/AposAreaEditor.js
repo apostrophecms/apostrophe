@@ -352,13 +352,14 @@ export default {
         if (selected.has(widget._id)) {
           bag.entries.push({
             widget: klona(widget),
-            index
+            index,
+            widgetOptions: this.options.widgets?.[widget.type]
           });
         }
       });
     },
     onSelectionMutate({
-      name, ids, changes, clones
+      name, ids, changes, clones, widgets
     } = {}) {
       if (this.foreign || !ids?.length || !this.inSelectionScope()) {
         return;
@@ -384,6 +385,8 @@ export default {
           changes,
           clones
         });
+      } else if (name === 'update') {
+        this.updateSelected(widgets, changes);
       }
     },
     areaUpdatedHandler(area) {
@@ -711,14 +714,56 @@ export default {
       next.splice(range.first, 0, item);
       this.next = next;
     },
-    // The batch reports the edit in `changes` and selects `clones`.
-    cloneSelected(widgets, { changes, clones } = {}) {
+    // Replace each widget with the one in `widgets` that has its `_id`. The
+    // batch reports the edit, which `changes` collects.
+    updateSelected(widgets, changes) {
+      const patch = {};
+      const inverse = {};
+      const updates = new Map();
+      for (const updated of widgets || []) {
+        const prior = this.next.find((widget) => widget._id === updated._id);
+        if (!prior) {
+          continue;
+        }
+        updated.aposPlaceholder = false;
+        if (!updated.metaType) {
+          updated.metaType = 'widget';
+        }
+        patch[`@${updated._id}`] = updated;
+        inverse[`@${updated._id}`] = klona(prior);
+        updates.set(updated._id, updated);
+      }
+      if (!updates.size) {
+        return;
+      }
+      if (this.docId === window.apos.adminBar.contextId) {
+        changes.push({
+          patch,
+          inverse,
+          target: { widgetId: [ ...updates.keys() ][0] }
+        });
+      }
+      this.next = this.next.map((widget) => updates.get(widget._id) || widget);
+      for (const id of updates.keys()) {
+        this.edited[id] = true;
+      }
+    },
+    // Whether `count` more widgets fit in the area, telling the user when
+    // they do not.
+    roomFor(count) {
       const max = this.options.max || this.field?.max;
-      if (max && (this.next.length + widgets.length > max)) {
+      if (max && (this.next.length + count > max)) {
         apos.notify('This area cannot hold more widgets', {
           type: 'warning',
           dismiss: true
         });
+        return false;
+      }
+      return true;
+    },
+    // The batch reports the edit in `changes` and selects `clones`.
+    cloneSelected(widgets, { changes, clones } = {}) {
+      if (!this.roomFor(widgets.length)) {
         return;
       }
       const lastIndex = Math.max(...widgets.map((widget) => {
@@ -936,8 +981,9 @@ export default {
     },
     // Add a widget into an area. index is required, along
     // with one and only one of name, widget or clipboard.
-    // If widget is passed it is inserted directly. If
-    // clipboard is passed it is cloned and inserted.
+    // If widget is passed it is inserted directly; it may be an array of
+    // widgets, inserted in order as one undo step. If clipboard is passed
+    // it is cloned and inserted; it may also be an array.
     async add({
       index,
       name,
@@ -953,13 +999,24 @@ export default {
             return option.name === widget.type;
           });
         });
-        if (!allowed) {
+        if (!allowed || !this.roomFor(clipboard.length)) {
           return;
         }
         const clones = clipboard.map((widget) => cloneWidget(widget));
         return this.insertMany({
           index,
           widgets: clones,
+          select: 'all'
+        });
+      }
+      // Several widgets from a create widget operation, inserted as given
+      if (Array.isArray(widget)) {
+        if (!widget.length || !this.roomFor(widget.length)) {
+          return;
+        }
+        return this.insertMany({
+          index,
+          widgets: widget,
           select: 'all'
         });
       }

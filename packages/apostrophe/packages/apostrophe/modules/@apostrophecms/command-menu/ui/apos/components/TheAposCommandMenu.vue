@@ -1,0 +1,167 @@
+<template>
+  <div
+    :class="classes"
+  >
+    <!-- nothing for the moment -->
+  </div>
+</template>
+
+<script>
+import { mapActions, mapState } from 'pinia';
+import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import { shouldHandleShortcut } from '../lib/should-handle-shortcut.mjs';
+
+export default {
+  name: 'TheAposCommandMenu',
+  mixins: [ AposThemeMixin ],
+  props: {
+    modals: {
+      type: Object,
+      default() {
+        return {};
+      }
+    }
+  },
+  data() {
+    return {
+      previousKey: '',
+      modal: 'default'
+    };
+  },
+  computed: {
+    ...mapState(useModalStore, [ 'stack', 'getAdminDirectionClass' ]),
+    classes() {
+      const directionClass = this.getAdminDirectionClass();
+      const classes = this.themeClass;
+      classes.push('apos-command-menu');
+      if (directionClass) {
+        classes.push(directionClass);
+      }
+      return classes;
+    },
+    shortcuts() {
+      const modals = Object.values(this.modals[this.modal] || {});
+
+      return Object.fromEntries(
+        modals
+          .flatMap(group => {
+            return Object.values(group.commands)
+              .filter(command => command.shortcut)
+              .flatMap(command => {
+                return command.shortcut
+                  .split(' ')
+                  .map(shortcut => [
+                    shortcut.toUpperCase(),
+                    {
+                      ...command.action,
+                      requireWidgetFocus: command.requireWidgetFocus || false,
+                      skipOnTextSelection: command.skipOnTextSelection || false,
+                      skipInModal: command.skipInModal || false,
+                      trigger: command.trigger || 'keydown'
+                    }
+                  ]);
+              });
+          })
+      );
+    }
+  },
+  watch: {
+    stack(newStack) {
+      this.modal = this.getFirstNonShortcutModal();
+    }
+  },
+  mounted() {
+    apos.bus.$on('@apostrophecms/command-menu:open-modal', async state => {
+      await apos.modal.execute(state.name, state.props);
+    });
+
+    document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this.keyboardShortcutListener);
+  },
+  methods: {
+    ...mapActions(useModalStore, [ 'getAt', 'getProperties', 'getBlockingDepth' ]),
+    delay(resolve, ms) {
+      return new Promise(() => {
+        setTimeout(resolve, ms);
+      });
+    },
+    getModal() {
+      return this.modal;
+    },
+    getFirstNonShortcutModal(index = -1) {
+      const modal = this.getAt(index);
+      const properties = this.getProperties(modal.id);
+
+      return properties.itemName === '@apostrophecms/command-menu:shortcut'
+        ? this.getFirstNonShortcutModal(index + -1)
+        : properties.itemName || 'default';
+    },
+    hasTextSelection() {
+      const selection = window.getSelection();
+      return !!selection && !selection.isCollapsed;
+    },
+    keyboardShortcutListener(event) {
+      // Keys already handled by more specific UI must not trigger shortcuts
+      if (event.defaultPrevented) {
+        return;
+      }
+      if (event.target.nodeName !== 'INPUT' && event.target.nodeName !== 'TEXTAREA' && document.activeElement.contentEditable !== 'true') {
+        const key = [
+          [ 'ALT', event.altKey ],
+          [ 'CTRL', event.ctrlKey ],
+          [ 'META', event.metaKey ],
+          [ 'SHIFT', event.shiftKey ],
+          [ 'KEY', event.key.toUpperCase() ]
+        ]
+          .filter(([ , value ]) => value)
+          .map(([ key, value ]) => key === 'KEY' ? value : key)
+          .join('+');
+
+        const keys = this.previousKey
+          ? `${this.previousKey},${key}`
+          : key;
+
+        const action = this.shortcuts[keys] ||
+          this.shortcuts[keys.startsWith('SHIFT+')
+            ? keys.slice('SHIFT+'.length)
+            : keys];
+        if (action) {
+          if (action.requireWidgetFocus && !useWidgetStore().focusedWidget) {
+            return;
+          }
+          // A text selection wins over the shortcut, the browser
+          // performs its native action (e.g. copy the selected text)
+          if (action.skipOnTextSelection && this.hasTextSelection()) {
+            return;
+          }
+          // Handled by a native event listener (e.g. paste) when the
+          // Clipboard API is available; keydown is the legacy fallback
+          if (action.trigger === 'native' && navigator.clipboard) {
+            return;
+          }
+          // In-context undo/redo must not seize Cmd/Ctrl+Z while a modal is open
+          if (!shouldHandleShortcut(action, {
+            modalStackLength: this.getBlockingDepth()
+          })) {
+            return;
+          }
+          event.preventDefault();
+          apos.bus.$emit(action.type, action.payload);
+          return;
+        }
+
+        if (event.key.length === 1) {
+          this.previousKey = event.key.toUpperCase();
+          this.delay(() => {
+            this.previousKey = '';
+          }, 1000);
+        }
+      }
+    }
+  }
+};
+</script>

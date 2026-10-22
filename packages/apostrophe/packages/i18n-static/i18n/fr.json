@@ -1,0 +1,15 @@
+{
+  "label": "Phrase statique i18n",
+  "pluralLabel": "Phrases statiques i18n",
+  "locale": "Langue",
+  "key": "Clé",
+  "namespace": "Espace de noms",
+  "valueSingular": "Singulier",
+  "valuePlural": "Pluriel",
+  "valueZero": "Zéro",
+  "valuePluralTwo": "Forme plurielle pour \"deux\"",
+  "valuePluralFew": "Forme plurielle pour \"quelques\"",
+  "valuePluralMany": "Forme plurielle pour \"beaucoup\"",
+  "localeSpecificsForms": "Formes spécifiques à la langue",
+  "ifApplicableInThisLocale": "Si applicable dans cette langue"
+}

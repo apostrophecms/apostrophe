@@ -1,0 +1,976 @@
+<template>
+  <div class="apos-see-changes-list">
+    <div
+      ref="list"
+      class="apos-see-changes-list__scroller"
+      tabindex="-1"
+      data-apos-test="see-changes-list"
+    >
+      <p
+        v-if="!rows.length"
+        class="apos-see-changes-list__empty"
+        data-apos-test="see-changes-empty"
+      >
+        {{ $t('apostrophe:seeChangesNone') }}
+      </p>
+      <p
+        v-else-if="!groups.length"
+        class="apos-see-changes-list__empty"
+        data-apos-test="see-changes-no-match"
+      >
+        {{ $t('apostrophe:versionNoChangesMatch') }}
+      </p>
+      <TransitionGroup
+        :css="false"
+        @leave="onLeave"
+      >
+        <section
+          v-for="(group, groupIndex) in groups"
+          :key="group.key"
+          :ref="el => setGroupEl(group.key, el)"
+          class="apos-see-changes-list__group"
+          :class="{
+            'apos-see-changes-list__group--current': position === groupIndex,
+            'apos-see-changes-list__group--editing': group.entries
+              .some(entry => idOf(entry.row) === editing),
+            'apos-see-changes-list__leaving': group.entries
+              .every(entry => leaving.has(idOf(entry.row)))
+          }"
+          data-apos-test="see-changes-group"
+        >
+          <AposDocVersionChangeGroup
+            :group="group"
+            :current="position === groupIndex"
+            @select="select(groupIndex)"
+          />
+          <TransitionGroup
+            tag="ul"
+            class="apos-see-changes-list__entries"
+            :css="false"
+            @leave="onLeave"
+          >
+            <AposDocVersionChangeEntry
+              v-for="entry in group.entries"
+              :key="idOf(entry.row)"
+              :class="{ 'apos-see-changes-list__leaving': leaving.has(idOf(entry.row)) }"
+              :data-apos-see-changes-entry="idOf(entry.row)"
+              :entry="entry"
+              :expanded="expanded.has(idOf(entry.row))"
+              :detail-id="`${baseId}-${entry.key}`"
+              :labels="labels"
+              :revealed="revealed"
+              @toggle="toggle(idOf(entry.row), groupIndex)"
+              @select="selectGroup(groupIndex)"
+            >
+              <template #meta>
+                <p
+                  class="apos-see-changes-list__credit"
+                  data-apos-test="see-changes-credit"
+                >
+                  <!-- A change no version explains was made outside the editor -->
+                  <span
+                    v-if="!entry.row.authors?.length"
+                    data-apos-test="see-changes-authors"
+                  >{{ $t('apostrophe:seeChangesSystem') }}</span>
+                  <span
+                    v-else-if="entry.row.authors.length === 1"
+                    data-apos-test="see-changes-authors"
+                  >{{ entry.row.authors[0].title }}</span>
+                  <!-- The newest author, the others behind a chip -->
+                  <span
+                    v-else
+                    class="apos-see-changes-list__authors"
+                    data-apos-test="see-changes-authors"
+                  >
+                    <span aria-hidden="true">{{ entry.row.authors.at(-1).title }}</span>
+                    <AposLabel
+                      class="apos-see-changes-list__more"
+                      :label="{
+                        key: 'apostrophe:seeChangesMoreAuthors',
+                        count: entry.row.authors.length - 1
+                      }"
+                      :tooltip="{
+                        content: formatList(entry.row.authors.slice(0, -1)
+                          .map(author => author.title)),
+                        localize: false
+                      }"
+                      aria-hidden="true"
+                      data-apos-test="see-changes-more-authors"
+                    />
+                    <span
+                      class="apos-sr-only"
+                      data-apos-test="see-changes-all-authors"
+                    >
+                      {{ formatList(entry.row.authors.map(author => author.title)) }}
+                    </span>
+                  </span>
+                  <span
+                    v-if="entry.row.changedAt"
+                    aria-hidden="true"
+                  > · </span>
+                  <time
+                    v-if="entry.row.changedAt"
+                    v-apos-tooltip="formatDate(entry.row.changedAt)"
+                    :datetime="entry.row.changedAt"
+                    data-apos-test="see-changes-time"
+                  >{{ formatRelative(entry.row.changedAt, now) }}</time>
+                </p>
+              </template>
+              <template
+                v-if="entry.row.restore || isEditable(entry.row)"
+                #actions
+              >
+                <AposButton
+                  v-if="isEditable(entry.row)"
+                  :ref="el => setActionEl(`edit:${idOf(entry.row)}`, el)"
+                  class="apos-see-changes-list__action"
+                  :class="{
+                    'apos-see-changes-list__action--shown': isShown(idOf(entry.row))
+                  }"
+                  type="quiet"
+                  label="apostrophe:edit"
+                  :disabled="pending || opening"
+                  :attrs="{ 'data-apos-test': 'see-changes-edit' }"
+                  @click="edit(entry, groupIndex)"
+                />
+                <AposButton
+                  v-if="entry.row.restore"
+                  :ref="el => setActionEl(`restore:${idOf(entry.row)}`, el)"
+                  class="apos-see-changes-list__action"
+                  :class="{
+                    'apos-see-changes-list__action--shown': isShown(idOf(entry.row))
+                  }"
+                  type="quiet"
+                  label="apostrophe:restore"
+                  :disabled="pending"
+                  :attrs="{ 'data-apos-test': 'see-changes-restore' }"
+                  @click="openConfirm(entry)"
+                />
+              </template>
+              <template
+                v-if="confirming === idOf(entry.row)"
+                #panel
+              >
+                <AposSeeChangesConfirm
+                  :ref="el => el && (confirm = el)"
+                  :entry="entry"
+                  :baseline="baseline?.kind"
+                  :busy="saving"
+                  :invalid="invalid"
+                  :editable="isEditable(entry.row)"
+                  @cancel="cancel"
+                  @restore="restore(entry)"
+                  @edit="edit(entry, groupIndex)"
+                />
+              </template>
+              <template
+                v-else-if="editing === idOf(entry.row)"
+                #panel
+              >
+                <AposSeeChangesFieldEditor
+                  :ref="el => el && (editor = el)"
+                  v-bind="getEdit(entry.row)"
+                  :doc-id="store.docId"
+                  :busy="saving"
+                  :invalid="invalid"
+                  @ready="showEditor(group, entry)"
+                  @cancel="closeEditor"
+                  @save="saveEdit(entry, $event)"
+                />
+              </template>
+            </AposDocVersionChangeEntry>
+          </TransitionGroup>
+        </section>
+      </TransitionGroup>
+    </div>
+    <AposDocVersionChangeNav
+      v-if="groups.length"
+      ref="nav"
+      :path="position >= 0 ? groups[position].path : null"
+      :position="position"
+      :total="groups.length"
+      position-label="apostrophe:seeChangesPosition"
+      @step="step"
+    >
+      <span
+        v-if="!onPage"
+        class="apos-sr-only"
+      >{{ $t('apostrophe:seeChangesNotOnPage') }}</span>
+    </AposDocVersionChangeNav>
+  </div>
+</template>
+
+<script setup>
+// The changes of the draft since its last publication, a group per field
+// or widget, the group changed most recently first.
+// The list scrolls on its own and is no tab stop, which Firefox makes of a
+// scroll container: its buttons are the stops, and the arrow keys scroll it
+import {
+  computed, nextTick, onBeforeUnmount, reactive, ref, useId, watch
+} from 'vue';
+import getFieldById from 'Modules/@apostrophecms/schema/lib/getFieldById';
+import scroll from '../utils/scroll.js';
+import changeGroups from '../lib/change-groups.js';
+import draftValue from '../lib/draft-value.js';
+import locale from '../utils/locale.js';
+import { useDocVersionNavigator } from '../composables/useDocVersionNavigator.js';
+import { useSeeChangesStore } from '../stores/seeChanges.js';
+
+const props = defineProps({
+  // The rows of the `draft-changes` route
+  rows: {
+    type: Array,
+    required: true
+  },
+  // What the rows compare with, `{ kind: 'published' | 'default' }`
+  baseline: {
+    type: Object,
+    default: null
+  },
+  // The checked filter options
+  filter: {
+    type: Array,
+    default: () => []
+  },
+  // Whether the page shows the selected group
+  onPage: {
+    type: Boolean,
+    default: true
+  }
+});
+
+// `navigate` carries the group a step selected, or `null` when the
+// selection is gone; `widen` asks for the room an editor needs
+const emit = defineEmits([ 'navigate', 'update:filter', 'widen' ]);
+
+const baseId = useId();
+const list = ref(null);
+const store = useSeeChangesStore();
+const formatDate = locale.getDateFormatter();
+const formatRelative = locale.getRelativeTimeFormatter();
+const formatList = locale.getListFormatter();
+
+// Which row an entry shows, the same when the rows reload
+const idOf = row => [ row.kind, ...row.path.map(segment => segment.name) ].join('.');
+
+// The entries showing their detail, by `idOf`
+const expanded = reactive(new Set());
+// The entry asking before its restore, by `idOf`
+const confirming = ref(null);
+const confirm = ref(null);
+// The entry showing its field's editor, by `idOf`
+const editing = ref(null);
+const editor = ref(null);
+// Stops keeping the open editor in view
+let stopShowingEditor = () => {};
+// The entry last edited, by `idOf`, until the next save
+const edited = ref(null);
+// The entry just edited, by `idOf`, which the list follows once it reloads
+let following = null;
+// Where focus goes should the reload drop the entry just edited
+let focusFallback = null;
+// While a widget editor loads its widget
+const opening = ref(false);
+// The Edit and Restore buttons, by `edit:` or `restore:` and `idOf`
+const actionEls = new Map();
+// From a restore until the rows reload: the patches are exact against the
+// draft the rows were computed from
+const pending = ref(false);
+const saving = ref(false);
+// Whether the server refused the value as invalid
+const invalid = ref(false);
+// A restored entry leaves animated, then stays out until the rows reload
+const leaving = reactive(new Set());
+const gone = reactive(new Set());
+
+// Bumped by a reveal: its entries show their text as when first expanded
+const revealed = ref(0);
+// Relative times count from when the rows came in
+const now = ref(Date.now());
+
+const labels = computed(() => ({
+  new: 'apostrophe:seeChangesCurrent',
+  old: (props.baseline?.kind === 'default')
+    ? 'apostrophe:seeChangesDefaultValue'
+    : 'apostrophe:seeChangesLastPublished'
+}));
+
+// A change no version recorded yet is the newest. A version is updated in
+// place while its author keeps saving, so every path it changed takes the
+// time of the latest save: of the groups changed at that time, the one just
+// edited comes first
+const groups = computed(() => {
+  const latest = group => Math.max(
+    ...group.entries.map(entry => (entry.row.changedAt
+      ? new Date(entry.row.changedAt).getTime()
+      : Infinity))
+  );
+  const isEdited = group => group.entries.some(entry => idOf(entry.row) === edited.value);
+  const rows = props.rows.filter(row => !gone.has(idOf(row)));
+  return changeGroups.getChangeGroups(rows, props.filter)
+    .map(group => ({
+      group,
+      at: latest(group),
+      edited: isEdited(group)
+    }))
+    .sort((one, two) => (one.at === two.at
+      ? Number(two.edited) - Number(one.edited)
+      : two.at - one.at))
+    .map(({ group }) => group);
+});
+
+// --- Navigator ---
+
+const {
+  position,
+  nav,
+  setGroupEl,
+  getGroupEl,
+  select,
+  step,
+  scrollToGroup
+} = useDocVersionNavigator({
+  groups,
+  list,
+  onNavigate: group => emit('navigate', group)
+});
+
+// --- Positioning ---
+
+function getEntryEl(id) {
+  return list.value?.querySelector(`[data-apos-see-changes-entry="${CSS.escape(id)}"]`);
+}
+
+// How much of the list's top the group's sticky header covers
+function getHeaderHeight(group) {
+  return getGroupEl(group.key)?.firstElementChild?.offsetHeight || 0;
+}
+
+// The group's header at the top, as a navigator step leaves it, when the
+// entry `el` fits below it with what it shows open; else the entry right
+// under the header, so it reads from its start with its group named
+function place(group, el) {
+  const section = getGroupEl(group.key);
+  if (!section || !el || !list.value) {
+    return;
+  }
+  const box = list.value.getBoundingClientRect();
+  const rect = el.getBoundingClientRect();
+  if (rect.bottom - section.getBoundingClientRect().top <= box.height) {
+    scrollToGroup(group);
+  } else {
+    list.value.scrollBy({
+      top: rect.top - box.top - getHeaderHeight(group),
+      behavior: scroll.getScrollBehavior()
+    });
+  }
+}
+
+// What still shows keeps its place: the navigator follows its group, and
+// open entries and the confirmation stay open
+watch(() => props.rows, rows => {
+  const ids = new Set(rows.map(idOf));
+  for (const id of expanded) {
+    if (!ids.has(id)) {
+      expanded.delete(id);
+    }
+  }
+  if (!ids.has(confirming.value)) {
+    confirming.value = null;
+  }
+  if (!ids.has(editing.value)) {
+    editing.value = null;
+  }
+  leaving.clear();
+  gone.clear();
+  pending.value = false;
+  invalid.value = false;
+  now.value = Date.now();
+  if (following) {
+    const id = following;
+    const fallback = focusFallback;
+    following = null;
+    focusFallback = null;
+    nextTick(() => {
+      const group = groups.value
+        .find(group => group.entries.some(entry => idOf(entry.row) === id));
+      if (group) {
+        place(group, getEntryEl(id));
+        focusAction(`edit:${id}`, { preventScroll: true });
+      } else {
+        fallback?.focus({ preventScroll: true });
+      }
+    });
+  }
+});
+
+// Makes a group the navigator's, unless it is already
+function selectGroup(groupIndex) {
+  if (position.value !== groupIndex) {
+    select(groupIndex);
+  }
+}
+
+// An entry of another group makes that group the navigator's first; within
+// the group the navigator is at, it only opens or closes. Closing an entry
+// that asks before its restore or shows its editor closes those too
+function toggle(id, groupIndex) {
+  selectGroup(groupIndex);
+  if (confirming.value === id) {
+    confirming.value = null;
+    invalid.value = false;
+  }
+  if (editing.value === id) {
+    editing.value = null;
+  }
+  if (expanded.has(id)) {
+    expanded.delete(id);
+  } else {
+    expanded.add(id);
+  }
+}
+
+// --- Actions ---
+
+function setActionEl(key, el) {
+  if (el) {
+    actionEls.set(key, el);
+  } else {
+    actionEls.delete(key);
+  }
+}
+
+function focusAction(key, options) {
+  actionEls.get(key)?.$el.querySelector('button')?.focus(options);
+}
+
+// The control that stands for an entry while its actions wait for the list
+// to reload: its toggle, or its group's header when it has nothing to expand
+function getEntryControl(el) {
+  return el.querySelector(':scope > button[aria-controls]') ||
+    el.closest('.apos-see-changes-list__group')
+      ?.querySelector('.apos-doc-version-changes__group-title');
+}
+
+// Where focus goes when the entry `id` leaves the list: to the entry after
+// it, or before it when it was the last, so the keyboard carries on from
+// there. The list when it was the only one
+function getFocusAfter(id) {
+  const entries = [ ...(list.value?.querySelectorAll('[data-apos-see-changes-entry]') || []) ];
+  const index = entries.findIndex(el => el.dataset.aposSeeChangesEntry === id);
+  const stays = el => !leaving.has(el.dataset.aposSeeChangesEntry);
+  const next = entries.slice(index + 1).find(stays) ||
+    entries.slice(0, Math.max(index, 0)).reverse().find(stays);
+  return (next && getEntryControl(next)) || list.value;
+}
+
+// An entry's actions show while it is open, asking or editing
+function isShown(id) {
+  return expanded.has(id) || (confirming.value === id) || (editing.value === id);
+}
+
+// --- Restore ---
+
+// The question shows in place of the entry's detail, which opens with it
+// and stays open after a cancel
+async function openConfirm(entry) {
+  const id = idOf(entry.row);
+  if (entry.detail) {
+    expanded.add(id);
+  }
+  editing.value = null;
+  if (confirming.value !== id) {
+    confirming.value = id;
+    invalid.value = false;
+  }
+  await nextTick();
+  confirm.value?.focus();
+}
+
+async function cancel() {
+  const id = confirming.value;
+  confirming.value = null;
+  invalid.value = false;
+  await nextTick();
+  focusAction(`restore:${id}`);
+}
+
+function restore(entry) {
+  const id = idOf(entry.row);
+  save(entry.row, entry.row.restore, {
+    saved: () => leave(id),
+    failed: cancel
+  });
+}
+
+async function leave(id) {
+  saving.value = false;
+  // Its buttons go with it
+  getFocusAfter(id)?.focus({ preventScroll: true });
+  confirming.value = null;
+  leaving.add(id);
+  await nextTick();
+  gone.add(id);
+}
+
+// --- Saving ---
+
+// Saved as any edit of the page is, so it can be undone, at `patchKey` or
+// the row's own. A value the server refuses as invalid is told where it
+// was entered, or by `refused` when that is not in the list; `failed`
+// follows any other refusal the user was told of. Strict: the server saves
+// it only if the whole draft is then valid, since a patch alone is checked
+// for its own fields
+function save(row, {
+  patch, inverse, patchKey = row.patchKey
+}, {
+  saved, failed, refused
+}) {
+  edited.value = null;
+  pending.value = true;
+  saving.value = true;
+  invalid.value = false;
+  apos.bus.$emit('context-edited', {
+    patch: {
+      ...patch,
+      _strict: true
+    },
+    inverse,
+    target: {
+      docId: store.docId,
+      widgetId: row.path.filter(segment => segment.widgetType).at(-1)?.name,
+      patchKey
+    },
+    onSaved(error) {
+      saving.value = false;
+      if (!error) {
+        saved();
+        return;
+      }
+      pending.value = false;
+      if ((error.body?.name === 'invalid') && error.body.data?.errors?.length) {
+        if (refused) {
+          refused();
+        } else {
+          invalid.value = true;
+        }
+        return;
+      }
+      // The context bar tells of a lost lock, and the mode ends with it
+      if (error.body?.name === 'locked') {
+        return;
+      }
+      // eslint-disable-next-line no-console
+      console.error(error);
+      apos.notify('apostrophe:changeNotSaved', {
+        type: 'error',
+        icon: 'alert-circle-icon'
+      });
+      failed?.();
+    }
+  });
+}
+
+// --- Edit ---
+
+// What an entry's editor shows, `{ field, patchKey, activeItem }`: a field's
+// value; the whole array for its order, a deleted item or an added one, which
+// it opens on (`activeItem`). What a contextual widget's own editor edits on
+// the page, that widget, as `{ widgetType, widgetOptions, patchKey }`. Not a
+// whole widget otherwise. `null` when the entry has no editor
+function getEdit(row) {
+  if (row.editable && row.contextual) {
+    return { ...row.contextual };
+  }
+  const field = row.editable && !row.widgetType && getFieldById(row.fieldId);
+  if (!field) {
+    return null;
+  }
+  if ([ 'leaf', 'richText', 'relationship', 'object' ].includes(row.kind)) {
+    return {
+      field,
+      patchKey: row.patchKey
+    };
+  }
+  const isItem = (row.kind === 'arrayItem') && [ 'added', 'deleted' ].includes(row.type);
+  const array = isItem
+    ? row.listKey
+    : (row.kind === 'array') && row.patchKey;
+  if (!array) {
+    return null;
+  }
+  return {
+    field,
+    patchKey: array,
+    ...(isItem && (row.type === 'added') && { activeItem: row.path.at(-1).name })
+  };
+}
+
+// A widget modified whole or added, which its widget editor edits. Not a
+// contextual one, which its own editor edits in the entry, nor one whose
+// editor would show no field
+function isWidgetEditable(row) {
+  return Boolean(row.editable) &&
+    (row.kind === 'widget') &&
+    [ 'modified', 'added' ].includes(row.type) &&
+    !apos.area.widgetIsContextual[row.widgetType] &&
+    Boolean(apos.area.components.widgetEditors[row.widgetType]) &&
+    (apos.modules[apos.area.widgetManagers[row.widgetType]]?.schema || [])
+      .some(field => !field.hidden);
+}
+
+function isEditable(row) {
+  return isWidgetEditable(row) || Boolean(getEdit(row));
+}
+
+function edit(entry, groupIndex) {
+  selectGroup(groupIndex);
+  if (isWidgetEditable(entry.row)) {
+    editWidget(entry);
+  } else {
+    openEditor(entry);
+  }
+}
+
+// The editor shows in place of the entry's detail, which opens with it
+// and stays open after a cancel. Rich text, areas and an array edited in
+// place need the room
+async function openEditor(entry) {
+  const id = idOf(entry.row);
+  if (entry.detail) {
+    expanded.add(id);
+  }
+  const { field, widgetType } = getEdit(entry.row);
+  if (widgetType || [ 'richText', 'area' ].includes(field.type) || field.inline) {
+    emit('widen');
+  }
+  confirming.value = null;
+  invalid.value = false;
+  editing.value = id;
+  await nextTick();
+  editor.value?.focus();
+}
+
+// Once its value is in, the editor shows with the least scroll, and with it
+// a control its input focused far below its start, such as the item an array
+// opens on. Its content can still grow as it renders, so it is kept in view
+// until the user scrolls, clicks or types, or it closes
+function showEditor(group, entry) {
+  stopShowingEditor();
+  const el = getEntryEl(idOf(entry.row));
+  const editorEl = document.getElementById(`${baseId}-${entry.key}`);
+  if (!el || !editorEl || !list.value) {
+    return;
+  }
+  const scroller = list.value;
+  const show = () => {
+    const box = scroller.getBoundingClientRect();
+    const top = box.top + getHeaderHeight(group);
+    const rect = editorEl.getBoundingClientRect();
+    if ((rect.top >= top) && (rect.bottom <= box.bottom)) {
+      return;
+    }
+    const entryRect = el.getBoundingClientRect();
+    let by = (entryRect.top < top) || (entryRect.height > box.bottom - top)
+      ? entryRect.top - top
+      : rect.bottom - box.bottom;
+    const focused = editorEl.contains(document.activeElement) &&
+      document.activeElement.getBoundingClientRect();
+    if (focused && ((focused.top - by < top) || (focused.top - by >= box.bottom))) {
+      by = Math.min(focused.top - top, Math.max(focused.bottom - box.bottom, 0));
+    }
+    // Measured where the list is now, so a scroll under way is not counted twice
+    scroller.scrollTo({
+      top: scroller.scrollTop + by,
+      behavior: scroll.getScrollBehavior()
+    });
+  };
+  const observer = new ResizeObserver(show);
+  const events = [ 'wheel', 'touchstart', 'pointerdown', 'keydown' ];
+  stopShowingEditor = () => {
+    observer.disconnect();
+    for (const name of events) {
+      scroller.removeEventListener(name, stopShowingEditor, true);
+    }
+    stopShowingEditor = () => {};
+  };
+  for (const name of events) {
+    scroller.addEventListener(name, stopShowingEditor, true);
+  }
+  // Calls `show` once to begin with
+  observer.observe(editorEl);
+}
+
+watch(editing, () => stopShowingEditor());
+onBeforeUnmount(() => stopShowingEditor());
+
+async function closeEditor() {
+  const id = editing.value;
+  editing.value = null;
+  invalid.value = false;
+  await nextTick();
+  focusAction(`edit:${id}`);
+}
+
+// The widget as the draft has it now, in its widget editor; what that
+// saves replaces it. The editor's own modal brings focus back to Edit
+async function editWidget(entry) {
+  const { row } = entry;
+  confirming.value = null;
+  editing.value = null;
+  invalid.value = false;
+  opening.value = true;
+  let widget;
+  try {
+    widget = await draftValue.load(store.docId, row.patchKey);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error);
+    apos.notify('apostrophe:error', {
+      type: 'error',
+      icon: 'alert-circle-icon'
+    });
+    return;
+  } finally {
+    opening.value = false;
+  }
+  const component = apos.area.components.widgetEditors[row.widgetType];
+  const result = await apos.modal.execute(component, {
+    modelValue: widget,
+    options: row.widgetOptions,
+    type: row.widgetType,
+    docId: store.docId,
+    areaFieldId: row.fieldId
+  });
+  if (!result || (JSON.stringify(result) === JSON.stringify(widget))) {
+    return;
+  }
+  saveEdit(entry, {
+    patch: { [row.patchKey]: result },
+    inverse: { [row.patchKey]: widget }
+  }, {
+    refused() {
+      apos.notify('apostrophe:seeChangesInvalid', {
+        type: 'error',
+        icon: 'alert-circle-icon'
+      });
+    }
+  });
+}
+
+// The reloaded list shows the entry with its new value, or, when the value
+// is the one it is compared with again, folds it away as a restore does
+function saveEdit(entry, change, { refused } = {}) {
+  const id = idOf(entry.row);
+  save(entry.row, change, {
+    saved() {
+      edited.value = id;
+      following = id;
+      // Its Edit once the list reloads, unless the reload drops it
+      const el = getEntryEl(id);
+      focusFallback = getFocusAfter(id);
+      (el && getEntryControl(el))?.focus({ preventScroll: true });
+      editing.value = null;
+    },
+    refused
+  });
+}
+
+// Folds a restored entry, or its group with the last one, away, and so an
+// edited one the reload drops; anything else the list drops goes at once
+function onLeave(el, done) {
+  const editedEntry = edited.value &&
+    `[data-apos-see-changes-entry="${CSS.escape(edited.value)}"]`;
+  const folds = el.classList.contains('apos-see-changes-list__leaving') ||
+    Boolean(editedEntry && (el.matches(editedEntry) || el.querySelector(editedEntry)));
+  if (!folds || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    done();
+    return;
+  }
+  el.style.overflow = 'hidden';
+  el.animate([
+    {
+      height: `${el.offsetHeight}px`,
+      opacity: 1
+    },
+    {
+      height: '0px',
+      opacity: 0
+    }
+  ], {
+    duration: 250,
+    easing: 'cubic-bezier(0.23, 1, 0.32, 1)'
+  }).finished.then(done, done);
+}
+
+// Shows the changes behind a marker of the page: those of the widget
+// `widgetId` (and, when it `moved`, the order of its area), or those of the
+// top-level field `field` outside any widget, `marked` as `isMarkerTarget`
+// takes it. Their entries expand alone, their group becomes the
+// navigator's, and focus goes to the entry's toggle. Resolves `false` when
+// the list has no such row
+async function reveal(target) {
+  const targets = props.rows.filter(row => changeGroups.isMarkerTarget(row, target));
+  if (!targets.length) {
+    return false;
+  }
+  // A filter hiding any of them is lifted
+  if (!targets.every(row => changeGroups.matchesFilter(row, props.filter))) {
+    emit('update:filter', []);
+    // The navigator follows the new groups first, or it would read the
+    // position set below against the old ones
+    await nextTick();
+  }
+  const entries = groups.value
+    .flatMap(group => group.entries.map(entry => ({
+      group,
+      entry
+    })))
+    .filter(({ entry }) => targets.includes(entry.row));
+  expanded.clear();
+  revealed.value++;
+  for (const { entry } of entries.filter(({ entry }) => entry.detail)) {
+    expanded.add(idOf(entry.row));
+  }
+  // The widget's own group rather than its area's order
+  const { group, entry } = entries.find(({ entry }) => !entry.order) || entries[0];
+  select(groups.value.indexOf(group));
+  await nextTick();
+  // An entry with nothing to expand has no button: its group's header then
+  const button = list.value?.querySelector(
+    `[aria-controls="${CSS.escape(`${baseId}-${entry.key}`)}"]`
+  ) || getGroupEl(group.key)?.querySelector('.apos-doc-version-changes__group-title');
+  if (button) {
+    place(group, getEntryEl(idOf(entry.row)));
+    button.focus({ preventScroll: true });
+  }
+  return true;
+}
+
+defineExpose({
+  reveal
+});
+</script>
+
+<style lang="scss" scoped>
+$pad-x: $spacing-base + $spacing-half;
+// The entry's chevron and the gap after it
+$chevron-x: 14px + $spacing-half;
+// The entry's label line, which its credit and its actions keep, so Edit
+// sits beside the label and Restore beside the credit
+$line-height: calc(var(--a-type-base) * var(--a-line-tall));
+// Above the groups' sticky headers
+$z-index-above-headers: $z-index-default + 1;
+
+.apos-see-changes-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--a-background-primary);
+
+  &__scroller {
+    overflow: hidden auto;
+    flex: 1 1 auto;
+    // Its end does not scroll the page on
+    overscroll-behavior: contain;
+    min-height: 0;
+  }
+
+  &__empty {
+    @include type-base;
+
+    & {
+      margin: 0;
+      padding: $spacing-double $pad-x;
+      color: var(--a-base-2);
+      text-align: center;
+    }
+  }
+
+  &__group {
+    background-color: var(--a-base-10);
+  }
+
+  // Above the sticky header and the entries
+  &__group--current {
+    position: relative;
+
+    &::after {
+      content: '';
+      z-index: $z-index-default;
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--a-primary);
+      pointer-events: none;
+    }
+  }
+
+  // An editor's menus, such as the rich text toolbar, over the groups after
+  // it and their sticky headers
+  &__group--editing {
+    z-index: $z-index-above-headers;
+    position: relative;
+  }
+
+  // Its own stacking context, so nothing in an entry rises above the sticky
+  // group header when it scrolls under it
+  &__entries {
+    @include apos-list-reset();
+
+    & {
+      isolation: isolate;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+  }
+
+  // An entry with nothing to expand selects its group
+  &__entries :deep(.apos-doc-version-changes__row-main:not(button)) {
+    cursor: pointer;
+  }
+
+  &__action :deep(.apos-button) {
+    font-size: var(--a-type-smaller);
+  }
+
+  &__action :deep(.apos-button__label) {
+    line-height: $line-height;
+  }
+
+  // Under the entry's label
+  &__credit {
+    margin: (-$spacing-one-quarter) 0 0;
+    padding: 0 $pad-x $spacing-half ($pad-x + $chevron-x);
+    color: var(--a-base-1);
+    font-size: var(--a-type-smaller);
+    line-height: $line-height;
+  }
+
+  &__authors {
+    display: inline-flex;
+    gap: $spacing-half;
+    align-items: center;
+  }
+
+  &__more {
+    color: inherit;
+  }
+
+  // Over the label's own hover cursor, the text cursor over its text
+  &__authors &__more:hover {
+    cursor: default;
+  }
+
+  // Shown on hover and while its entry is open, which a tap does, and to the
+  // keyboard when focused
+  &__entries :deep(.apos-doc-version-changes__row:not(:hover)) {
+    .apos-see-changes-list__action:not(
+      .apos-see-changes-list__action--shown,
+      :has(:focus-visible)
+    ) {
+      opacity: 0;
+    }
+  }
+}
+</style>

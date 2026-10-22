@@ -1,0 +1,119 @@
+// Styles based on the v-tooltip example styles:
+// https://github.com/Akryum/v-tooltip/blob/83615e394c96ca491a4df04b892ae87e833beb97/demo-src/src/App.vue#L179-L303
+.apos-tooltip {
+  z-index: $z-index-notifications;
+  position: absolute;
+  display: block;
+  width: max-content;
+  max-width: 285px;
+  transition-delay: 100ms;
+
+  .apos-info {
+    max-width: 330px;
+
+    p {
+      margin-top: 0;
+      line-height: var(--a-line-tall);
+    }
+
+    ul,
+    ol {
+      padding-left: $spacing-base;
+    }
+
+    ul {
+      list-style-type: none;
+    }
+
+    ul li,
+    ol li {
+      margin-bottom: $spacing-half;
+    }
+
+    ul li::before {
+      content: "-";
+      position: relative;
+      left: -$spacing-half;
+    }
+  }
+
+  .apos-tooltip__inner {
+    @include type-small;
+
+    & {
+      z-index: $z-index-default;
+      position: relative;
+      padding: 8px 10px;
+      border-radius: 3px;
+      border-width: 0;
+      color: var(--a-text-inverted);
+      background: var(--a-background-inverted);
+    }
+  }
+
+  .apos-tooltip__arrow {
+    z-index: $z-index-base;
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 1px;
+    // Solid border style needed to work with v-apos-tooltip placement.
+    border-style: solid;
+    border-color: var(--a-background-inverted);
+    background-color: var(--a-background-inverted);
+    transform: rotate(45deg);
+  }
+
+  &[x-placement^="top"] {
+    .apos-tooltip__arrow {
+      bottom: -4px;
+    }
+  }
+
+  &[x-placement^="bottom"] {
+    .apos-tooltip__arrow {
+      top: -3px;
+    }
+  }
+
+  &[x-placement^="right"] {
+    .apos-tooltip__arrow {
+      left: -3px;
+    }
+  }
+
+  &[x-placement^="left"] {
+    .apos-tooltip__arrow {
+      right: -3px;
+    }
+  }
+
+  &[aria-hidden="true"] {
+    display: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 200ms, visibilty 200ms;
+
+    .apos-tooltip__wrapper {
+      transform: scale(0.8);
+    }
+  }
+
+  &[aria-hidden="false"] {
+    display: initial;
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 200ms;
+
+    .apos-tooltip__wrapper {
+      transform: scale(1);
+    }
+  }
+}
+
+.apos-tooltip__wrapper {
+  transition: all 200ms var(--a-transition-timing-bounce);
+  /* stylelint-disable-next-line time-min-milliseconds */
+  transition-delay: 100ms;
+  transform: scale(0.8);
+}

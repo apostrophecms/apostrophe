@@ -1,0 +1,43 @@
+{
+  "name": "@apostrophecms/cli",
+  "version": "3.7.1",
+  "description": "Commandline generator and configurator for Apostrophe CMS",
+  "main": "bin/apostrophe",
+  "scripts": {
+    "test": "npm run lint",
+    "preuninstall": "node ./scripts/remove-conf",
+    "lint": "eslint ."
+  },
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/cli",
+  "dependencies": {
+    "colors": "1.4.0",
+    "commander": "^5.1.0",
+    "common-tags": "^1.8.2",
+    "conf": "^6.2.4",
+    "create-apostrophe": "workspace:^",
+    "lodash": "^4.18.1",
+    "ora": "^5.4.1",
+    "pkginfo": "^0.4.1",
+    "prompts": "^2.4.2",
+    "semver": "^7.8.5",
+    "shelljs": "^0.10.0",
+    "sync-request": "^6.1.0",
+    "uuid": "^11.1.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "eslint-config-apostrophe": "workspace:^"
+  },
+  "preferGlobal": true,
+  "bin": {
+    "apostrophe": "bin/apostrophe",
+    "apos": "bin/apostrophe"
+  }
+}

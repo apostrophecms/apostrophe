@@ -1,0 +1,54 @@
+$apos-form-spacing: 35px;
+
+.apos-form-hidden {
+  display: none;
+}
+// TODO: refactor to remove apos-form-visible. We can't depend on the parent
+// having the right display property. `initial` could work better, but simply
+// hiding and unhiding is safer. The `hidden` HTML attribute could work as well.
+.apos-form-visible {
+  display: inherit;
+}
+
+.apos-form-input,
+.apos-form-group,
+.apos-form-fieldset {
+  .apos-modal & {
+    margin-bottom: $apos-form-spacing;
+  }
+}
+
+.apos-form-checkboxes--dropdown {
+  display: inline-block;
+}
+
+.apos-form-checkboxes-toggle {
+  width: auto;
+}
+
+.apos-form-checkboxes-toggle::after {
+  padding-left: 24px;
+  content: '▶';
+
+  .apos-form-checkboxes--dropdown.is-active & {
+    padding-left: 24px;
+    content: '▲';
+  }
+}
+
+.apos-form-checkboxes-dropdown-choices {
+  overflow: hidden;
+  width: auto;
+  height: 0;
+
+  label {
+    display: block;
+    width: auto;
+    line-height: 1.5;
+  }
+
+  .apos-form-checkboxes--dropdown.is-active & {
+    overflow: auto;
+    height: auto;
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "description": "NOTE: needed for testing, for js files to be treated as ESM",
+  "type": "module"
+}

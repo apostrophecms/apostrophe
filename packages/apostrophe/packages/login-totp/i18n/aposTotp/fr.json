@@ -1,0 +1,19 @@
+{
+  "missingSecret": "Vous devez fournir un secret d'une longueur de 10 caractères dans la configuration de votre module @apostrophecms/login.",
+  "badSecretSize": "Votre secret doit avoir 10 caractères.",
+  "invalidToken": "Code invalide, réessayez.",
+  "updateError": "Une erreur est survenue lors de la configuration de votre compte TOTP.",
+  "verify": "Vérifier",
+  "loginTitleSetup": "Activer le support d'Authenticator",
+  "loginTitle": "Entrez le code à six chiffres de votre application d'authentification.",
+  "setupText1": "Installez Google Authenticator ou une application TOTP similaire, puis",
+  "setupText2": "Scannez ce code QR",
+  "setupText3": "Ou entrez manuellement cette clé",
+  "loginText": "Puis entrez le code de vérification de votre application d'authentification",
+  "copyKey": "Copier la clé",
+  "successMessage": "Succès ! Complétez le processus de connexion...",
+  "notConfigured": "Non configuré, rafraîchissez la page de connexion pour configurer TOTP",
+  "resetTotpLabel": "Réinitialiser TOTP",
+  "resetTotpHelp": "Sélectionnez cette option et enregistrez pour réinitialiser la configuration TOTP (Google Authenticator) de l'utilisateur une fois, afin qu'il puisse la configurer à nouveau.",
+  "totpLabel": "TOTP"
+}

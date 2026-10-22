@@ -1,0 +1,37 @@
+.apos-tree__cell {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex-shrink: 2;
+  align-items: center;
+  padding: $cell-padding;
+  border-bottom: 1px solid var(--a-base-8);
+}
+
+// stylelint-disable-next-line selector-class-pattern
+.apos-tree__cell--contextMenu {
+  padding: 0;
+}
+
+// Let the title cell column grow.
+span.apos-tree__cell:first-of-type { // stylelint-disable-line selector-no-qualifying-type
+  flex-grow: 1;
+  flex-shrink: 1;
+}
+
+.apos-tree__row-data {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.apos-tree__cell__icon + .apos-tree__cell__label {
+  margin-left: 5px;
+}
+
+.apos-tree__cell[disabled='true'] {
+  color: $input-color-disabled;
+
+  &:hover {
+    cursor: not-allowed;
+  }
+}

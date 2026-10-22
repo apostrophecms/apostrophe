@@ -1,0 +1,10 @@
+{
+  "title": "Open Graph titul",
+  "titleHelp": "Názov vášho obsahu bez akejkoľvek obchodnej značky, ako je napríklad názov vašej stránky.",
+  "description": "Open Graph popis",
+  "descriptionHelp": "Stručný popis obsahu, zvyčajne 2 až 4 vety. Toto sa zobrazí pod názvom príspevku.",
+  "type": "Open Graph typ",
+  "typeHelp": "Typ média vášho obsahu. Pozrite si <a href=\"https://ogp.me/#types\" target=\"_blank\">https://ogp.me/#types</a>.",
+  "image": "Open Graph obrázok",
+  "group": "Open Graph"
+}
