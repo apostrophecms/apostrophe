@@ -1143,6 +1143,8 @@ describe('Sitemap – static build URL generation', function () {
 });
 
 describe('Sitemap – locale hostname scheme consistency', function () {
+  this.timeout(t.timeout);
+
   let apos;
 
   before(async function () {

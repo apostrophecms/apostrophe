@@ -43,6 +43,7 @@ jobs:
   setup:
     name: Impacted packages
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       # DO NOT CHANGE BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING
       # DEFAULT_BRANCH tells the detector which branch to diff against when calculating impact.
@@ -93,6 +94,7 @@ jobs:
   shared-runtime:
     name: Shared runtime
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: setup
     # The AI smoke job needs the lockfile and images even when no package is impacted
     if: needs.setup.outputs.has-packages == 'true' || inputs.ai_smoke_only == true
@@ -162,6 +164,9 @@ jobs:
       - shared-runtime
     if: needs.setup.outputs.has-packages == 'true' && inputs.ai_smoke_only != true
     runs-on: ubuntu-latest
+    # GitHub's default is 360 minutes; a hung test would otherwise burn 6 hours.
+    # Normal runs finish in about 15 minutes, the slowest job in about 22.
+    timeout-minutes: 30
     env:
       # False on fork PRs, where secrets are unavailable.
       HAS_PRO_KEY: ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY != '' }}
@@ -366,6 +371,7 @@ jobs:
     needs: shared-runtime
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Git checkout
         uses: actions/checkout@v5
