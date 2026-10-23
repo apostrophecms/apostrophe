@@ -210,16 +210,23 @@ export default {
         ...operation
       }));
     },
+    // An operation with `multiple: true` also receives `widgets` or
+    // `widgetIds`, the form it receives for a multiple selection, so it can
+    // handle one widget or several the same way.
     async handleClick({
-      modal, action, nativeAction, ignoreResult = false
+      modal, action, nativeAction, ignoreResult = false, multiple = false
     }) {
       if (modal) {
-        const result = await apos.modal.execute(modal, {
+        const entry = {
           widget: this.modelValue,
           widgetSchema: apos.modules[
             apos.area.widgetManagers[this.modelValue.type]
           ]?.schema,
           widgetOptions: this.widgetOptions
+        };
+        const result = await apos.modal.execute(modal, {
+          ...entry,
+          ...multiple && { widgets: [ entry ] }
         });
         if (result && !ignoreResult) {
           this.$emit('update', result);
@@ -228,7 +235,8 @@ export default {
       }
       const payload = {
         widgetId: this.modelValue._id,
-        index: this.index
+        index: this.index,
+        ...multiple && { widgetIds: [ this.modelValue._id ] }
       };
       if (nativeAction) {
         this.$emit('operation', {

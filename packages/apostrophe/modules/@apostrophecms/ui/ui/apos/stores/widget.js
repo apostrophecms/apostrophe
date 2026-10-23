@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import {
-  ref, computed, nextTick
+  ref, shallowRef, computed, nextTick
 } from 'vue';
 
 export const useWidgetStore = defineStore('widget', () => {
@@ -8,6 +8,24 @@ export const useWidgetStore = defineStore('widget', () => {
   const emphasizedWidgets = ref(new Set());
   const focusedWidget = ref(null);
   const focusedArea = ref(null);
+  // More than one widget. `focusedWidget` stays the primary (last clicked)
+  // so keyboard shortcuts keep working. `pinnedWidgetIds` is the selection
+  // at the last click that was not a shift-click, so a shorter range can
+  // shrink without dropping widgets that were toggled on their own.
+  const selectedWidgetIds = ref([]);
+  const selectionAnchorId = ref(null);
+  const pinnedWidgetIds = ref([]);
+  const selectionGraphKey = ref(null);
+  // The modal, inline array item or page (`document`) the selection was
+  // made in. Null when the selection came from `setFocusedWidget`, which
+  // does not know it. A DOM node, so it is not made deeply reactive.
+  const selectionScope = shallowRef(null);
+  // Set in the same turn a multi-selection replaces single-widget controls,
+  // while focus is still inside them. The selection bar consumes it.
+  const selectionToolbarFocus = ref(false);
+  // Bumped after a batch change that does not change which ids are
+  // selected, so the toolbar can re-read widget positions from the DOM.
+  const selectionRevision = ref(0);
   const hoveredWidget = ref(null);
   const hoveredNonForeignWidget = ref(null);
   // Fields edited in place, per the `{% field %}` custom tag. They wear the
@@ -21,11 +39,14 @@ export const useWidgetStore = defineStore('widget', () => {
   // the widget it belongs to, and whatever they are editing over whatever the
   // mouse is merely passing over, which is how widgets have always behaved
   const labeled = computed(() => {
+    // Several selected widgets wear the highlight only. The breadcrumb
+    // stays off all of them, and off whatever the pointer is passing over.
+    const multi = selectedWidgetIds.value.length > 1;
     const order = [
       [ 'field', focusedField.value ],
-      [ 'widget', focusedWidget.value ],
+      [ 'widget', multi ? null : focusedWidget.value ],
       [ 'field', hoveredField.value ],
-      [ 'widget', hoveredWidget.value ]
+      [ 'widget', (multi || focusedWidget.value) ? null : hoveredWidget.value ]
     ];
     const winner = order.find(([ type, id ]) => id);
     return winner
@@ -86,14 +107,77 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
+  // A single widget, or none. Also the way a batch edit that leaves one
+  // widget standing collapses back to the ordinary controls.
   async function setFocusedWidget(id, areaId, { scrollTo = false } = {}) {
+    if (!id) {
+      selectedWidgetIds.value = [];
+      selectionAnchorId.value = null;
+      pinnedWidgetIds.value = [];
+      selectionGraphKey.value = null;
+      selectionScope.value = null;
+      selectionToolbarFocus.value = false;
+      focusedWidget.value = null;
+      setFocusedArea(null);
+      return;
+    }
+    selectedWidgetIds.value = [ id ];
+    selectionAnchorId.value = id;
+    pinnedWidgetIds.value = [ id ];
+    selectionScope.value = null;
     focusedWidget.value = id;
-    setFocusedArea(id ? areaId : null);
+    setFocusedArea(areaId);
 
-    if (id && scrollTo) {
+    if (scrollTo) {
       await nextTick();
       await scrollToWidget(id);
     }
+  }
+
+  function setWidgetSelection(next, {
+    primaryId = null,
+    areaId = null,
+    graphKey = null,
+    scope = null
+  } = {}) {
+    const selected = [ ...(next?.selectedWidgetIds || []) ];
+    const enteringMulti = selectedWidgetIds.value.length <= 1 && selected.length > 1;
+    if (enteringMulti) {
+      const active = (typeof document !== 'undefined') && document.activeElement;
+      selectionToolbarFocus.value = Boolean(
+        active?.closest?.('.apos-area-widget-controls--modify')
+      );
+    }
+    selectedWidgetIds.value = selected;
+    selectionAnchorId.value = selected.includes(next?.selectionAnchorId)
+      ? next.selectionAnchorId
+      : (selected[selected.length - 1] || null);
+    pinnedWidgetIds.value = [ ...(next?.pinnedWidgetIds || []) ];
+    if (!selected.length) {
+      selectionGraphKey.value = null;
+      selectionScope.value = null;
+    } else {
+      if (graphKey) {
+        selectionGraphKey.value = graphKey;
+      }
+      if (scope) {
+        selectionScope.value = scope;
+      }
+    }
+    const primary = selected.includes(primaryId)
+      ? primaryId
+      : (selected[selected.length - 1] || null);
+    focusedWidget.value = primary;
+    setFocusedArea(primary ? areaId : null);
+    selectionRevision.value += 1;
+  }
+
+  function clearSelectionToolbarFocus() {
+    selectionToolbarFocus.value = false;
+  }
+
+  function bumpSelectionRevision() {
+    selectionRevision.value += 1;
   }
 
   async function scrollToWidget(id) {
@@ -209,6 +293,13 @@ export const useWidgetStore = defineStore('widget', () => {
     emphasizedWidgets,
     focusedWidget,
     focusedArea,
+    selectedWidgetIds,
+    selectionAnchorId,
+    pinnedWidgetIds,
+    selectionGraphKey,
+    selectionScope,
+    selectionToolbarFocus,
+    selectionRevision,
     hoveredWidget,
     hoveredNonForeignWidget,
     focusedField,
@@ -223,6 +314,9 @@ export const useWidgetStore = defineStore('widget', () => {
     clearFocusedField,
     setFocusedArea,
     setFocusedWidget,
+    setWidgetSelection,
+    clearSelectionToolbarFocus,
+    bumpSelectionRevision,
     scrollToWidget,
     isElementInView,
     scrollToElement,

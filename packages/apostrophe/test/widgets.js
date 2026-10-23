@@ -537,6 +537,51 @@ describe('Widgets', function() {
       assert.deepEqual(actual, expected);
     });
 
+    it('should accept operations that do not mention multiple, and offer the core batch operations for several widgets', function() {
+      const widget = _apos.modules['test1-widget'];
+      const legacy = {
+        label: 'Legacy',
+        icon: 'some-icon',
+        modal: 'AposSomeModal'
+      };
+      assert.doesNotThrow(() => widget.validateWidgetOperation('legacy', legacy));
+      assert.doesNotThrow(() => widget.validateWidgetOperation('legacy', {
+        ...legacy,
+        multiple: false
+      }));
+      assert.doesNotThrow(() => widget.validateWidgetOperation('several', {
+        ...legacy,
+        multiple: true
+      }));
+      const multiple = widget.widgetOperations
+        .filter(operation => operation.multiple)
+        .map(operation => operation.nativeAction);
+      assert.deepEqual(multiple, [ 'up', 'down', 'remove', 'cut', 'copy', 'clone' ]);
+    });
+
+    it('should reject an invalid multiple property', function() {
+      const widget = _apos.modules['test1-widget'];
+      const operation = {
+        label: 'Operation',
+        icon: 'some-icon',
+        modal: 'AposSomeModal'
+      };
+      assert.throws(() => widget.validateWidgetOperation('bad', {
+        ...operation,
+        multiple: 'yes'
+      }), /must be a boolean/);
+      assert.throws(() => widget.validateWidgetOperation('bad', {
+        ...operation,
+        placement: 'breadcrumb',
+        multiple: true
+      }), /cannot be multiple/);
+      assert.throws(() => widget.validateWidgetOperation('bad', {
+        ...operation,
+        type: 'menu',
+        multiple: true
+      }), /cannot be multiple/);
+    });
+
     it('should handle widget operations with custom permissions', function() {
       const operation = {
         name: 'operation',

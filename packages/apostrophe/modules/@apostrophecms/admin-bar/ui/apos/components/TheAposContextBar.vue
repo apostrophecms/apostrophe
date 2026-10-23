@@ -213,6 +213,7 @@ export default {
   watch: {
     editMode(newVal) {
       window.apos.adminBar.editMode = newVal;
+      apos.bus.$emit('admin-bar-edit-mode', newVal);
     },
     seeChanges(newVal) {
       window.apos.adminBar.seeChanges = newVal;
@@ -613,7 +614,8 @@ export default {
       this.rememberLastBaseContext();
     },
     // An edit to the context document. Accepts `{ patch, inverse, target }`:
-    // the patch to save, the patch that takes it back, and a description of
+    // the patch to save, the patch that takes it back (or a list of patches
+    // that do, applied in order), and a description of
     // what was edited, so that undoing it can show the user where. See
     // `showTarget` for the properties of `target`.
     //
@@ -1068,23 +1070,27 @@ export default {
         } else {
           patch = klona((direction === 'undo') ? entry.inverse : entry.patch);
         }
+        // An inverse can be a list of patches, applied in order
+        const patches = Array.isArray(patch) ? patch : [ patch ];
         if (this.seeChanges) {
           // Versions module: nothing on the page is edited in See Changes,
           // which renders it again once the change is saved
-          this.queuePatch(patch);
+          patches.forEach(patch => this.queuePatch(patch));
           return true;
         }
         const removed = [];
-        const shown = this.applyToPage(patch, removed);
+        const shown = patches
+          .map(patch => this.applyToPage(patch, removed))
+          .every(Boolean);
         // Putting this edit back means putting back what was just taken off
         // the page, which is not always what the edit itself added: a widget
         // can have gained content since, as a layout does when it fills
         // itself with columns
-        this.refreshRestore(
-          (direction === 'undo') ? entry.patch : entry.inverse,
-          removed
-        );
-        this.queuePatch(patch);
+        const restore = (direction === 'undo') ? entry.patch : entry.inverse;
+        for (const patch of (Array.isArray(restore) ? restore : [ restore ])) {
+          this.refreshRestore(patch, removed);
+        }
+        patches.forEach(patch => this.queuePatch(patch));
         if (shown) {
           await this.$nextTick();
           this.showTarget(entry.target);
@@ -1094,6 +1100,11 @@ export default {
           await this.flushSaves();
           await this.showWholeDocument();
         }
+        // The page shows the change, so a selection can follow it
+        apos.bus.$emit('context-history-applied', {
+          target: entry.target,
+          direction
+        });
         return true;
       } catch (e) {
         // eslint-disable-next-line no-console

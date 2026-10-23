@@ -8,6 +8,9 @@ import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
+import { contiguousRange, restorePushes } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
+import { notifyClipboard, runWidgetBatch } from 'Modules/@apostrophecms/area/lib/batch-widgets.js';
+import { selectionScope as scopeOf } from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
 import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { klona } from 'klona';
 
@@ -112,7 +115,14 @@ export default {
     readOnly() {
       return !!(this.aposReadOnly || this.field?.readOnly);
     },
-    ...mapState(useWidgetStore, [ 'focusedWidget', 'hoveredWidget', 'focusedArea' ]),
+    ...mapState(useWidgetStore, [
+      'focusedWidget',
+      'hoveredWidget',
+      'focusedArea',
+      'selectedWidgetIds',
+      'selectionGraphKey',
+      'selectionScope'
+    ]),
     isEmptySingleton() {
       return this.next.length === 0 &&
         this.options.widgets &&
@@ -224,10 +234,16 @@ export default {
     this.unbindEventListeners();
   },
   methods: {
-    ...mapActions(useWidgetStore, [ 'setFocusedArea', 'setFocusedWidget' ]),
+    ...mapActions(useWidgetStore, [
+      'setFocusedArea',
+      'setFocusedWidget',
+      'setWidgetSelection',
+      'scrollToWidget'
+    ]),
     ...mapActions(useModalStore, [ 'isOnTop' ]),
     ...mapActions(useWidgetGraphStore, {
-      storeGetAncestors: 'getAncestors'
+      storeGetAncestors: 'getAncestors',
+      storeHasAncestor: 'hasAncestor'
     }),
     bindEventListeners() {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
@@ -237,6 +253,8 @@ export default {
       apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$on('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$on('command-menu-area-remove-widget', this.handleRemove);
+      apos.bus.$on('widget-selection-collect', this.onSelectionCollect);
+      apos.bus.$on('widget-selection-mutate', this.onSelectionMutate);
       apos.bus.$on('context-history-apply', this.contextHistoryApplyHandler);
       window.addEventListener('keydown', this.focusParentEvent);
     },
@@ -248,6 +266,8 @@ export default {
       apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$off('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$off('command-menu-area-remove-widget', this.handleRemove);
+      apos.bus.$off('widget-selection-collect', this.onSelectionCollect);
+      apos.bus.$off('widget-selection-mutate', this.onSelectionMutate);
       apos.bus.$off('context-history-apply', this.contextHistoryApplyHandler);
       window.removeEventListener('keydown', this.focusParentEvent);
     },
@@ -265,37 +285,13 @@ export default {
       this.setFocusedArea(null);
     },
     handleCopy() {
-      if (
-        !this.isInsideFocusedArea() ||
-        this.isInsideContentEditable() ||
-        this.focusedWidgetIndex === -1
-      ) {
-        return;
-      }
-
-      this.copy({ index: this.focusedWidgetIndex });
+      this.runWidgetCommand('copy');
     },
     handleCut() {
-      if (
-        !this.isInsideFocusedArea() ||
-        this.isInsideContentEditable() ||
-        this.focusedWidgetIndex === -1
-      ) {
-        return;
-      }
-
-      this.cut({ index: this.focusedWidgetIndex });
+      this.runWidgetCommand('cut');
     },
     handleDuplicate() {
-      if (
-        !this.isInsideFocusedArea() ||
-        this.isInsideContentEditable() ||
-        this.focusedWidgetIndex === -1
-      ) {
-        return;
-      }
-
-      this.clone({ index: this.focusedWidgetIndex });
+      this.runWidgetCommand('clone');
     },
     handlePaste() {
       if (
@@ -309,15 +305,89 @@ export default {
       this.paste({ index: Math.max(this.focusedWidgetIndex, 0) });
     },
     handleRemove() {
-      if (
-        !this.isInsideFocusedArea() ||
-        this.isInsideContentEditable() ||
-        this.focusedWidgetIndex === -1
-      ) {
+      this.runWidgetCommand('remove');
+    },
+    // Every area editor hears the shortcut. A multi-selection runs once,
+    // from the area that owns the focused widget. A single widget runs
+    // only in the focused area. The name is both the batch and the method.
+    runWidgetCommand(name) {
+      if (this.isInsideContentEditable()) {
         return;
       }
-
-      this.remove({ index: this.focusedWidgetIndex });
+      if (this.selectedWidgetIds.length > 1) {
+        if (this.ownsFocusedWidget()) {
+          this.runSelectionBatch(name);
+        }
+        return;
+      }
+      if (!this.isInsideFocusedArea() || this.focusedWidgetIndex === -1) {
+        return;
+      }
+      this[name]({ index: this.focusedWidgetIndex });
+    },
+    ownsFocusedWidget() {
+      return this.inSelectionScope() &&
+        this.next.some((widget) => widget._id === this.focusedWidget);
+    },
+    // The page and a modal can both hold an area with the same widgets in
+    // it, as when the widget editor shows a layout's columns. Only the
+    // copy in the selection's scope takes part in a batch.
+    inSelectionScope() {
+      return !this.selectionScope || scopeOf(this.$el) === this.selectionScope;
+    },
+    runSelectionBatch(name) {
+      const graphKey = this.selectionGraphKey || unref(this.aposGraphKey);
+      runWidgetBatch(name, {
+        hasAncestor: (id, ancestorId) => {
+          return graphKey ? this.storeHasAncestor(graphKey, id, ancestorId) : false;
+        }
+      });
+    },
+    onSelectionCollect(bag) {
+      if (this.foreign || !bag?.entries || !this.inSelectionScope()) {
+        return;
+      }
+      const selected = new Set(this.selectedWidgetIds);
+      this.next.forEach((widget, index) => {
+        if (selected.has(widget._id)) {
+          bag.entries.push({
+            widget: klona(widget),
+            index,
+            widgetOptions: this.options.widgets?.[widget.type]
+          });
+        }
+      });
+    },
+    onSelectionMutate({
+      name, ids, changes, clones, widgets
+    } = {}) {
+      if (this.foreign || !ids?.length || !this.inSelectionScope()) {
+        return;
+      }
+      const idSet = new Set(ids);
+      const mine = this.next.filter((widget) => idSet.has(widget._id));
+      if (!mine.length) {
+        return;
+      }
+      if (name === 'remove') {
+        const change = this.removeSelected(mine, {
+          emit: !Array.isArray(changes)
+        });
+        if (Array.isArray(changes) && change) {
+          changes.push(change);
+        }
+      } else if (name === 'up') {
+        this.moveSelected(mine, -1);
+      } else if (name === 'down') {
+        this.moveSelected(mine, 1);
+      } else if (name === 'clone') {
+        this.cloneSelected(mine, {
+          changes,
+          clones
+        });
+      } else if (name === 'update') {
+        this.updateSelected(widgets, changes);
+      }
     },
     areaUpdatedHandler(area) {
       for (const item of this.next) {
@@ -525,6 +595,183 @@ export default {
         ...this.next.slice(index + 2)
       ];
     },
+    removeSelected(widgets, { emit = true } = {}) {
+      const idSet = new Set(widgets.map((widget) => widget._id));
+      const indexes = widgets
+        .map((widget) => this.next.findIndex((item) => item._id === widget._id))
+        .filter((index) => index !== -1)
+        .sort((a, b) => a - b);
+      if (!indexes.length) {
+        return null;
+      }
+      const removed = indexes.map((index) => klona(this.next[index]));
+      let change = null;
+      if (this.docId === window.apos.adminBar.contextId) {
+        // Widgets that were not next to each other go back into their own
+        // places, so undo is a list of patches, one for each run of them
+        const pushes = restorePushes(
+          klona(this.next),
+          removed.map((widget) => widget._id)
+        );
+        change = {
+          patch: {
+            $pullAllById: {
+              [`@${this.id}.items`]: removed.map((widget) => widget._id)
+            }
+          },
+          inverse: pushes.map((push) => ({
+            $push: {
+              [`@${this.id}.items`]: push
+            }
+          })),
+          target: {
+            widgetId: removed[0]._id,
+            anchorId: pushes[0].$before || pushes[0].$after
+          }
+        };
+        if (emit) {
+          this.contextEdited(change.patch, change.inverse, change.target);
+        }
+      }
+      this.next = this.next.filter((widget) => !idSet.has(widget._id));
+      return change;
+    },
+    moveSelected(widgets, direction) {
+      const ids = widgets.map((widget) => widget._id);
+      const range = contiguousRange(this.next.map((widget) => widget._id), ids);
+      if (!range) {
+        return;
+      }
+      if (direction < 0) {
+        if (range.first === 0) {
+          return;
+        }
+        const neighbor = this.next[range.first - 1];
+        const firstId = this.next[range.first]._id;
+        const lastId = this.next[range.last]._id;
+        if (this.docId === window.apos.adminBar.contextId) {
+          this.contextEdited(
+            {
+              $move: {
+                [`@${this.id}.items`]: {
+                  $item: neighbor._id,
+                  $after: lastId
+                }
+              }
+            },
+            {
+              $move: {
+                [`@${this.id}.items`]: {
+                  $item: neighbor._id,
+                  $before: firstId
+                }
+              }
+            },
+            { widgetId: firstId }
+          );
+        }
+        const next = [ ...this.next ];
+        const [ item ] = next.splice(range.first - 1, 1);
+        next.splice(range.last, 0, item);
+        this.next = next;
+        return;
+      }
+      if (range.last >= this.next.length - 1) {
+        return;
+      }
+      const neighbor = this.next[range.last + 1];
+      const firstId = this.next[range.first]._id;
+      const lastId = this.next[range.last]._id;
+      if (this.docId === window.apos.adminBar.contextId) {
+        this.contextEdited(
+          {
+            $move: {
+              [`@${this.id}.items`]: {
+                $item: neighbor._id,
+                $before: firstId
+              }
+            }
+          },
+          {
+            $move: {
+              [`@${this.id}.items`]: {
+                $item: neighbor._id,
+                $after: lastId
+              }
+            }
+          },
+          { widgetId: firstId }
+        );
+      }
+      const next = [ ...this.next ];
+      const [ item ] = next.splice(range.last + 1, 1);
+      next.splice(range.first, 0, item);
+      this.next = next;
+    },
+    // Replace each widget with the one in `widgets` that has its `_id`. The
+    // batch reports the edit, which `changes` collects.
+    updateSelected(widgets, changes) {
+      const patch = {};
+      const inverse = {};
+      const updates = new Map();
+      for (const updated of widgets || []) {
+        const prior = this.next.find((widget) => widget._id === updated._id);
+        if (!prior) {
+          continue;
+        }
+        updated.aposPlaceholder = false;
+        if (!updated.metaType) {
+          updated.metaType = 'widget';
+        }
+        patch[`@${updated._id}`] = updated;
+        inverse[`@${updated._id}`] = klona(prior);
+        updates.set(updated._id, updated);
+      }
+      if (!updates.size) {
+        return;
+      }
+      if (this.docId === window.apos.adminBar.contextId) {
+        changes.push({
+          patch,
+          inverse,
+          target: { widgetId: [ ...updates.keys() ][0] }
+        });
+      }
+      this.next = this.next.map((widget) => updates.get(widget._id) || widget);
+      for (const id of updates.keys()) {
+        this.edited[id] = true;
+      }
+    },
+    // Whether `count` more widgets fit in the area, telling the user when
+    // they do not.
+    roomFor(count) {
+      const max = this.options.max || this.field?.max;
+      if (max && (this.next.length + count > max)) {
+        apos.notify('This area cannot hold more widgets', {
+          type: 'warning',
+          dismiss: true
+        });
+        return false;
+      }
+      return true;
+    },
+    // The batch reports the edit in `changes` and selects `clones`.
+    cloneSelected(widgets, { changes, clones } = {}) {
+      if (!this.roomFor(widgets.length)) {
+        return;
+      }
+      const lastIndex = Math.max(...widgets.map((widget) => {
+        return this.next.findIndex((item) => item._id === widget._id);
+      }));
+      const copies = widgets.map((widget) => cloneWidget(widget));
+      this.insertMany({
+        index: lastIndex + 1,
+        widgets: copies,
+        select: false,
+        changes
+      });
+      clones?.push(...copies.map((widget) => widget._id));
+    },
     async remove({ index }, { autosave = true } = {}) {
       if (this.readOnly) {
         return;
@@ -576,11 +823,7 @@ export default {
       }
       apos.area.widgetClipboard.set(this.next[index]);
       await this.remove({ index });
-      apos.notify('Widget cut to clipboard', {
-        type: 'success',
-        icon: 'content-cut-icon',
-        dismiss: true
-      });
+      notifyClipboard('cut', 1);
     },
     // Never in a read only view: what it shows can be marked with its
     // changes, which a paste would save as content
@@ -589,11 +832,7 @@ export default {
         return;
       }
       apos.area.widgetClipboard.set(this.next[index]);
-      apos.notify('Widget copied to clipboard', {
-        type: 'success',
-        icon: 'content-copy-icon',
-        dismiss: true
-      });
+      notifyClipboard('copy', 1);
     },
     async edit({ index }) {
       if (this.readOnly) {
@@ -679,19 +918,22 @@ export default {
       if (this.readOnly) {
         return;
       }
-      const clipboard = apos.area.widgetClipboard.get();
-      if (clipboard) {
-        const widget = clipboard;
-        const allowed = this.contextMenuOptions.menu.find(
-          option => option.name === widget.type
-        );
-        if (allowed) {
-          this.add({
-            index,
-            clipboard
-          });
-        }
+      const widgets = apos.area.widgetClipboard.getMany();
+      if (!widgets.length) {
+        return;
       }
+      const allowed = widgets.every((widget) => {
+        return this.contextMenuOptions.menu.find((option) => {
+          return option.name === widget.type;
+        });
+      });
+      if (!allowed) {
+        return;
+      }
+      return this.add({
+        index,
+        clipboard: widgets.length === 1 ? widgets[0] : widgets
+      });
     },
     async update(updated, { autosave = true, reverting = false } = {}) {
       if (this.readOnly) {
@@ -733,8 +975,9 @@ export default {
     },
     // Add a widget into an area. index is required, along
     // with one and only one of name, widget or clipboard.
-    // If widget is passed it is inserted directly. If
-    // clipboard is passed it is cloned and inserted.
+    // If widget is passed it is inserted directly; it may be an array of
+    // widgets, inserted in order as one undo step. If clipboard is passed
+    // it is cloned and inserted; it may also be an array.
     async add({
       index,
       name,
@@ -743,6 +986,33 @@ export default {
     }) {
       if (this.readOnly) {
         return;
+      }
+      if (Array.isArray(clipboard)) {
+        const allowed = clipboard.every((widget) => {
+          return this.contextMenuOptions.menu.find((option) => {
+            return option.name === widget.type;
+          });
+        });
+        if (!allowed || !this.roomFor(clipboard.length)) {
+          return;
+        }
+        const clones = clipboard.map((widget) => cloneWidget(widget));
+        return this.insertMany({
+          index,
+          widgets: clones,
+          select: 'all'
+        });
+      }
+      // Several widgets from a create widget operation, inserted as given
+      if (Array.isArray(widget)) {
+        if (!widget.length || !this.roomFor(widget.length)) {
+          return;
+        }
+        return this.insertMany({
+          index,
+          widgets: widget,
+          select: 'all'
+        });
       }
       if (clipboard) {
         clipboard = cloneWidget(clipboard);
@@ -867,8 +1137,10 @@ export default {
     // asked for: `AposAreaLayoutEditor` fills a new layout with columns that
     // way, so that undo takes back the layout the user added, columns and
     // all, and redo brings it back whole
+    // `changes`, an array, collects the edit for a batch to report instead
+    // of reporting it here.
     async insertMany({
-      index, widgets, autosave = true, history = true
+      index, widgets, autosave = true, history = true, select = 'last', changes = null
     } = {}) {
       if (this.readOnly) {
         return;
@@ -891,23 +1163,30 @@ export default {
         if (index < this.next.length) {
           push.$before = this.next[index]._id;
         }
-        const report = () => this.contextEdited(
-          {
+        const change = {
+          patch: {
             $push: {
               [`@${this.id}.items`]: push
             }
           },
-          {
+          inverse: {
             $pullAllById: {
               [`@${this.id}.items`]: widgets.map(widget => widget._id)
             }
           },
-          {
+          target: {
             widgetId: widgets[0]._id,
             anchorId: this.next[index]?._id || this.next[index - 1]?._id
           }
+        };
+        const report = () => this.contextEdited(
+          change.patch,
+          change.inverse,
+          change.target
         );
-        if (history) {
+        if (Array.isArray(changes)) {
+          changes.push(change);
+        } else if (history) {
           report();
         } else {
           withoutHistory(report);
@@ -919,9 +1198,30 @@ export default {
         ...this.next.slice(index)
       ];
       // Unlike `insert`, no editor is opened: these are widgets the editor
-      // provisioned rather than widgets the user picked
-      const last = widgets[widgets.length - 1];
-      this.setFocusedWidget(last._id, this.areaId, { scrollTo: true });
+      // provisioned rather than widgets the user picked.
+      // `select: 'last'` is a layout filling in its columns. `select: 'all'`
+      // is a paste or duplicate, and leaves that set selected when there
+      // is more than one. `false` inserts without moving the selection.
+      if (select === false) {
+        return;
+      }
+      const ids = widgets.map((widget) => widget._id);
+      if (select === 'all' && ids.length >= 2) {
+        this.setWidgetSelection({
+          selectedWidgetIds: ids,
+          selectionAnchorId: ids[0],
+          pinnedWidgetIds: ids
+        }, {
+          primaryId: ids[ids.length - 1],
+          areaId: this.areaId,
+          graphKey: unref(this.aposGraphKey),
+          scope: scopeOf(this.$el)
+        });
+        await this.$nextTick();
+        await this.scrollToWidget(ids[ids.length - 1]);
+        return;
+      }
+      this.setFocusedWidget(ids[ids.length - 1], this.areaId, { scrollTo: true });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];

@@ -185,6 +185,24 @@
 // - `rawEvents`: An array of raw DOM events to listen for and emit to the parent
 // component. In effect only if no type and an action is specified. See layout
 // widget for an example. This option works only for breadcrumb operations.
+// - `multiple`: If true, the operation is also offered when several widgets
+// are selected, as long as every one of them has it and passes its `if`.
+// Selected widgets are always siblings in one area. Not supported for
+// breadcrumb-only placement or the `menu` type.
+//
+// How an operation is invoked:
+// - With `modal`, for one widget, the modal receives `widget`, `widgetSchema`
+// and `widgetOptions`, and a truthy result replaces the widget unless
+// `ignoreResult` is set. With `multiple: true` it also receives `widgets`,
+// an array of `{ widget, widgetSchema, widgetOptions }`, so the same modal
+// can handle one widget or several. For a multiple selection it receives
+// only `widgets`, in document order, and a result (unless `ignoreResult`)
+// must be an array of widgets, each replacing the selected widget with the
+// same `_id`, as one undo step.
+// - With `action`, for one widget, the action is emitted on `apos.bus` with
+// `{ widgetId, index }`, plus `widgetIds: [ widgetId ]` when `multiple` is
+// true. For a multiple selection it is emitted once with `{ widgetIds }`,
+// in document order.
 
 const _ = require('lodash');
 
@@ -268,6 +286,7 @@ module.exports = {
           icon: 'arrow-up-icon',
           tooltip: 'apostrophe:nudgeUp',
           nativeAction: 'up',
+          multiple: true,
           disabledIfProps: {
             first: true
           }
@@ -277,6 +296,7 @@ module.exports = {
           icon: 'arrow-down-icon',
           tooltip: 'apostrophe:nudgeDown',
           nativeAction: 'down',
+          multiple: true,
           disabledIfProps: {
             last: true
           }
@@ -299,12 +319,14 @@ module.exports = {
           label: 'apostrophe:remove',
           icon: 'trash-can-outline-icon',
           tooltip: 'apostrophe:delete',
-          nativeAction: 'remove'
+          nativeAction: 'remove',
+          multiple: true
         },
         cut: {
           label: 'apostrophe:cut',
           icon: 'content-cut-icon',
           nativeAction: 'cut',
+          multiple: true,
           secondaryLevel: true
 
         },
@@ -312,6 +334,7 @@ module.exports = {
           label: 'apostrophe:copy',
           icon: 'content-copy-icon',
           nativeAction: 'copy',
+          multiple: true,
           secondaryLevel: true
 
         },
@@ -319,6 +342,7 @@ module.exports = {
           label: 'apostrophe:duplicate',
           icon: 'content-duplicate-icon',
           nativeAction: 'clone',
+          multiple: true,
           disabledIfProps: {
             maxReached: true
           },
@@ -752,6 +776,16 @@ module.exports = {
         if (operation.type === 'menu' && !operation.modal) {
           throw self.apos.error('invalid',
             `widgetOperation "${name}" of type "menu" requires a modal property.`
+          );
+        }
+        if (operation.multiple !== undefined && typeof operation.multiple !== 'boolean') {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" multiple property must be a boolean if specified.`
+          );
+        }
+        if (operation.multiple && (operation.placement === 'breadcrumb' || operation.type === 'menu')) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" cannot be multiple with breadcrumb placement or the menu type.`
           );
         }
 

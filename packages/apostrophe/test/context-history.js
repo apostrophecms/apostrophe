@@ -162,6 +162,24 @@ describe('Context history', function() {
       assert.equal(original[2].title, 'C');
     });
 
+    it('replaces several widgets with one patch', async function() {
+      const applyPatch = await getApplyPatch();
+      const replaced = applyPatch(areaId, items(), {
+        '@a': {
+          _id: 'a',
+          type: 'x',
+          title: 'New A'
+        },
+        '@c': {
+          _id: 'c',
+          type: 'x',
+          title: 'New C'
+        }
+      });
+      assert.deepEqual(replaced.items.map(item => item.title), [ 'New A', 'B', 'New C' ]);
+      assert.deepEqual(replaced.changed, [ 'a', 'c' ]);
+    });
+
     it('reaches into nested areas only when asked to', async function() {
       const applyPatch = await getApplyPatch();
       const nested = [

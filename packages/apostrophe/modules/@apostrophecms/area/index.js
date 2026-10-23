@@ -1090,6 +1090,13 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
           });
         });
       },
+      // Adds an entry to the "add content" menus of areas. `modal` is
+      // executed with `props`, plus the area's `options` and `fieldId`. It
+      // resolves to a widget to insert, or to an array of widgets, which are
+      // inserted in that order as one undo step and left selected. They are
+      // inserted as given: give them new ids (see `cloneWidget`) if they are
+      // copies of existing widgets. `ifTypesIntersect` limits the entry to
+      // areas that allow at least one of those widget types.
       addCreateWidgetOperation(operation) {
         self.createWidgetOperations.push(operation);
       }

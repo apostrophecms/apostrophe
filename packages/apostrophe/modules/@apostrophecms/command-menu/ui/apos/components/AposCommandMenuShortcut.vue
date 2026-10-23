@@ -40,7 +40,7 @@
                 :aria-keyshortcuts="command.shortcut"
               >
                 <div class="apos-command-menu-shortcut-command-title">
-                  {{ getLabel(command.label) }}
+                  {{ commandLabel(commandName, command) }}
                 </div>
                 <AposCommandMenuKeyList :shortcut="command.shortcut" />
               </div>
@@ -53,6 +53,19 @@
 </template>
 
 <script>
+import { mapState } from 'pinia';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+
+// These shortcuts already act on the whole selection, or on every widget
+// on the clipboard. The registered label stays singular for one widget.
+const batchCommandLabels = {
+  '@apostrophecms/area:cut-widget': 'apostrophe:commandMenuWidgetsCut',
+  '@apostrophecms/area:copy-widget': 'apostrophe:commandMenuWidgetsCopy',
+  '@apostrophecms/area:duplicate-widget': 'apostrophe:commandMenuWidgetsDuplicate',
+  '@apostrophecms/area:remove-widget': 'apostrophe:commandMenuWidgetsRemove',
+  '@apostrophecms/area:paste-widget': 'apostrophe:commandMenuWidgetsPaste'
+};
+
 export default {
   name: 'AposCommandMenuShortcut',
   emits: [ 'safe-close' ],
@@ -70,6 +83,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(useWidgetStore, [ 'selectedWidgetIds' ]),
     hasCommands() {
       return Object.keys(this.groups).length;
     }
@@ -109,6 +123,19 @@ export default {
     },
     close() {
       this.modal.showModal = false;
+    },
+    commandLabel(commandName, command) {
+      const pluralKey = batchCommandLabels[commandName];
+      const count = commandName === '@apostrophecms/area:paste-widget'
+        ? (window.apos.area?.widgetClipboard?.getMany?.().length || 0)
+        : this.selectedWidgetIds.length;
+      if (pluralKey && count > 1) {
+        return this.getLabel({
+          key: pluralKey,
+          count
+        });
+      }
+      return this.getLabel(command.label);
     },
     getLabel(label) {
       if (typeof label === 'object' && label.key) {
