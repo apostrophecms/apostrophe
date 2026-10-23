@@ -1,5 +1,0 @@
-{
-  "captchaErr": "El sistema de verificación hCaptcha puede estar caído o mal configurado. Por favor, inténtalo de nuevo o notifica al propietario del sitio.",
-  "invalidToken": "Hubo un problema al validar tu envío de verificación hCaptcha.",
-  "missingConfig": "El token hCaptcha faltaba al verificar el inicio de sesión."
-}
