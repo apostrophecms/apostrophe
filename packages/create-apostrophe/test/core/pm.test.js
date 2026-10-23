@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import {
   detectPackageManager,
   assertSupportedPackageManager,
+  isRunnablePackageManager,
+  installsWithNpmInstead,
   SUPPORTED_PACKAGE_MANAGERS
 } from '../../src/core/pm.js';
 import { UnsupportedPackageManagerError } from '../../src/core/errors.js';
@@ -18,10 +20,11 @@ describe('core/pm', function () {
     assert.equal(detectPackageManager('bun/1.0.0 node/v20'), 'unknown');
   });
 
-  it('assertSupportedPackageManager: npm/unknown pass, others throw', function () {
+  it('assertSupportedPackageManager: npm/pnpm/unknown pass, others throw', function () {
     assert.equal(assertSupportedPackageManager('npm'), 'npm');
+    assert.equal(assertSupportedPackageManager('pnpm'), 'pnpm');
     assert.equal(assertSupportedPackageManager('unknown'), 'unknown');
-    for (const pm of [ 'pnpm', 'yarn', 'bun' ]) {
+    for (const pm of [ 'yarn', 'bun' ]) {
       assert.throws(
         () => assertSupportedPackageManager(pm),
         (err) => {
@@ -34,6 +37,23 @@ describe('core/pm', function () {
           return true;
         }
       );
+    }
+  });
+
+  it('isRunnablePackageManager mirrors the assert without throwing', function () {
+    for (const pm of [ 'npm', 'pnpm', 'unknown' ]) {
+      assert.equal(isRunnablePackageManager(pm), true, pm);
+    }
+    for (const pm of [ 'yarn', 'bun', '' ]) {
+      assert.equal(isRunnablePackageManager(pm), false, pm);
+    }
+  });
+
+  it('installsWithNpmInstead: only a known non-npm manager we let through', function () {
+    assert.equal(installsWithNpmInstead('pnpm'), true);
+    // npm is npm; unknown gets no notice; yarn is refused, not run as npm.
+    for (const pm of [ 'npm', 'unknown', 'yarn' ]) {
+      assert.equal(installsWithNpmInstead(pm), false, pm);
     }
   });
 

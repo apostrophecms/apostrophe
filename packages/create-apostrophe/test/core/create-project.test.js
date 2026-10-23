@@ -148,7 +148,40 @@ describe('core/create-project', function () {
     ]);
   });
 
-  it('preflight: pnpm → ok:false failStage:preflight unsupported_pm, no steps', async function () {
+  it('preflight: pnpm passes and the install runs as usual', async function () {
+    const {
+      events, logger, telemetry
+    } = spies();
+    const calls = [];
+    const createProject = makeCreateProject({
+      clone: fakeStandaloneClone(calls),
+      scaffold: (await import('../../src/core/steps/scaffold.js')).scaffold,
+      dbConfig: (await import('../../src/core/steps/db-config.js')).dbConfig,
+      install: async ({ packageManager }) => {
+        calls.push(`install:${packageManager}`);
+      },
+      addAdminUser: async () => {
+        calls.push('admin');
+      }
+    });
+
+    const res = await createProject(
+      baseOptions({ packageManager: 'pnpm' }),
+      {
+        telemetry,
+        logger
+      }
+    );
+
+    assert.equal(res.ok, true);
+    assert.equal(res.packageManager, 'pnpm');
+    assert.deepEqual(calls, [ 'clone', 'install:pnpm', 'admin' ]);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].name, 'install_success');
+    assert.equal(events[0].payload.packageManager, 'pnpm');
+  });
+
+  it('preflight: yarn → ok:false failStage:preflight unsupported_pm, no steps', async function () {
     const {
       events, tasks, logger, telemetry
     } = spies();
@@ -164,7 +197,7 @@ describe('core/create-project', function () {
     });
 
     const res = await createProject(
-      baseOptions({ packageManager: 'pnpm' }),
+      baseOptions({ packageManager: 'yarn' }),
       {
         telemetry,
         logger
@@ -175,7 +208,7 @@ describe('core/create-project', function () {
       ok: false,
       kitId: 'apostrophe-essentials',
       dbChoice: 'sqlite',
-      packageManager: 'pnpm',
+      packageManager: 'yarn',
       durationMs: res.durationMs,
       failStage: 'preflight',
       errorCode: 'unsupported_pm'
