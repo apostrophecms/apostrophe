@@ -2127,6 +2127,7 @@ describe('Document Versions', function () {
       const req = draftReqAs(apos, 'alice');
       const draft = await apos.article.insert(req, { title: 'First' });
       const [ first ] = await timeline(apos, draft);
+      await ageNewestVersion(apos, draft, 1000);
 
       const saved = await apos.docVersions.saveFor(req, {
         ...draft,
