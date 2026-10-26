@@ -86,8 +86,8 @@ module.exports = {
   },
   methods(self) {
     return {
-      // Add a migration function to be invoked when the
-      // @apostrophecms/migration:migrate task is invoked. Each migration is
+      // Add a migration function. Migrations run at every startup, including
+      // the @apostrophecms/migration:migrate task. Each migration is
       // only invoked once, however they will all be invoked on a brand-new
       // site, so they must check whether a change is actually needed before
       // making a change (they must be harmless to run twice).
@@ -231,9 +231,9 @@ module.exports = {
       },
       // Normally, this is called automatically for you. Any
       // doc type schema field marked with `sortify: true` automatically
-      // gets a migration implemented via this method. Just don't forget
-      // to run the `@apostrophecms/migration:migrate` task as part of
-      // your normal post-deployment process.
+      // gets a migration implemented via this method. Like all migrations,
+      // it runs at startup; running the `@apostrophecms/migration:migrate`
+      // task as a deployment step is still recommended.
       //
       // Adds a migration that takes the given field, such as `lastName`, and
       // creates a parallel `lastNameSortified` field, formatted with
@@ -273,8 +273,8 @@ module.exports = {
       async enableCollection() {
         self.db = await self.apos.db.collection('aposMigrations');
       },
-      // Perform the actual migrations. Implementation of
-      // the @apostrophecms/migration:migrate task
+      // Perform the actual migrations. Called at every startup, in every
+      // environment, including the @apostrophecms/migration:migrate task
       async migrate(options) {
         await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
           if (self.apos.skipMigration === true) {
@@ -310,9 +310,8 @@ module.exports = {
             }
           }
 
-          // In production, this event is emitted only at the end of the migrate
-          // command line task. In dev it is emitted at every startup after the
-          // automatic migration.
+          // Emitted at every startup, in every environment, unless the
+          // current task skips migrations.
           //
           // Intentionally emitted regardless of whether the site is new or not.
           //
