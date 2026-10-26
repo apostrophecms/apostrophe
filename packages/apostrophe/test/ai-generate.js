@@ -835,7 +835,7 @@ describe('AI generate', function() {
         modules: {
           'fake-adapters': {
             init(self) {
-              self.apos.ai.addAdapter(fakeAdapter('fake', {
+              const scripted = {
                 async chat(req, request) {
                   // Snapshot: the loop keeps growing request.messages
                   chatCalls.push({
@@ -864,6 +864,20 @@ describe('AI generate', function() {
                     return self.apos.error('forbidden', 'bad credentials', hints);
                   }
                   return err;
+                }
+              };
+              self.apos.ai.addAdapter(fakeAdapter('fake', scripted));
+              // A door to the same models under other ids, priced by
+              // where the request goes
+              self.apos.ai.addAdapter(fakeAdapter('gateway', {
+                ...scripted,
+                settings: {
+                  region: { usage: true },
+                  profile: { usage: true },
+                  tier: {}
+                },
+                wireModel(model) {
+                  return `${this.profile}.${model}`;
                 }
               }));
             }
@@ -906,6 +920,12 @@ describe('AI generate', function() {
                   adapter: 'fake',
                   apiKey: 'k3',
                   capabilities: { structured: false }
+                },
+                gateway: {
+                  apiKey: 'k4',
+                  region: 'eu-west-1',
+                  profile: 'eu',
+                  tier: 'flex'
                 }
               },
               // Keep retried tests fast; the delay engine has its own suite
@@ -1276,6 +1296,29 @@ describe('AI generate', function() {
         assert.equal(hook[0].data.event, 'usage');
       });
 
+      it('reports the model sent and the settings that price it', async function() {
+        chatScript = [ () => turn({ model: 'gateway-medium' }) ];
+        await apos.ai.generate(apos.task.getReq(), 'p', {
+          provider: 'gateway',
+          model: 'gateway-medium'
+        });
+        assert.equal(usageRecords.length, 1);
+        assert.equal(usageRecords[0].model, 'gateway-medium');
+        assert.equal(usageRecords[0].wireModel, 'eu.gateway-medium');
+        assert.deepEqual(usageRecords[0].settings, {
+          region: 'eu-west-1',
+          profile: 'eu'
+        });
+        // A handler editing a record leaves the provider's settings alone
+        usageRecords[0].settings.profile = 'us';
+        chatScript = [ () => turn({ model: 'gateway-medium' }) ];
+        await apos.ai.generate(apos.task.getReq(), 'p', {
+          provider: 'gateway',
+          model: 'gateway-medium'
+        });
+        assert.equal(usageRecords[1].settings.profile, 'eu');
+      });
+
       it('copies usageMetadata onto every record', async function() {
         const saved = apos.ai.options.usageMetadata;
         try {
@@ -1571,6 +1614,7 @@ describe('AI generate', function() {
         assert.equal(first.type, 'retry');
         assert.equal(first.data.provider, 'fake');
         assert.equal(first.data.model, 'fake-medium');
+        assert.equal(Object.hasOwn(first.data, 'wireModel'), false);
         assert.equal(first.data.code, 'aiRetry');
         assert.equal(first.data.status, 429);
         assert.equal(first.data.kind, 'rateLimit');
@@ -1604,6 +1648,31 @@ describe('AI generate', function() {
         assert.equal(record.data.reason, undefined);
         // The stack of the original throw, not the normalized wrapper
         assert.match(record.data.stack, /HTTP error 401/);
+      });
+
+      it('records the model sent beside the catalog id', async function() {
+        chatScript = [
+          () => {
+            throw httpError(503);
+          },
+          () => {
+            throw httpError(401);
+          }
+        ];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p', {
+          provider: 'gateway',
+          model: 'gateway-medium'
+        }), (e) => {
+          assert.equal(e.name, 'forbidden');
+          return true;
+        });
+        assert.deepEqual(
+          logRecords.map(({ type, data }) => [ type, data.model, data.wireModel ]),
+          [
+            [ 'retry', 'gateway-medium', 'eu.gateway-medium' ],
+            [ 'failure', 'gateway-medium', 'eu.gateway-medium' ]
+          ]
+        );
       });
 
       it('records exhausted attempts as the stop reason', async function() {

@@ -13,12 +13,44 @@ module.exports = (self) => {
     throw self.apos.error('aiRetry', `malformed ${what}: ${detail}`);
   }
 
+  // The adapter instance to make one request with. An entry's key may be
+  // a function minting short-lived credentials, so it is resolved per
+  // attempt and the adapter only ever sees a string. Its failure is a
+  // credential failure, not the provider's: never retried.
+  async function keyedAdapter(record) {
+    const { adapter } = record;
+    if (typeof adapter.apiKey !== 'function') {
+      return adapter;
+    }
+    let apiKey;
+    try {
+      apiKey = await adapter.apiKey();
+    } catch (e) {
+      throw self.apos.error('forbidden', `the "apiKey" function of the "${record.name}" provider failed: ${e.message}`);
+    }
+    if (typeof apiKey !== 'string' || !apiKey) {
+      throw self.apos.error('forbidden', `the "apiKey" function of the "${record.name}" provider returned no key`);
+    }
+    return {
+      ...adapter,
+      apiKey
+    };
+  }
+
+  // The model id the routed provider's adapter actually sends, when it
+  // rewrites the catalog id
+  function wireModel(provider, model) {
+    const adapter = self.providers[provider]?.adapter;
+    return adapter?.wireModel && adapter.wireModel(model);
+  }
+
   return {
     // Run one adapter call with retries, resolving with the value of
     // `call`, an async thunk performing a single adapter call and
-    // validating its response. `call` is retried whole, so response
-    // validation belongs inside it: a truncated body must travel the
-    // same retry path. Every throw is routed through the adapter's
+    // validating its response; it receives the adapter instance to call,
+    // with its key resolved for this attempt. `call` is retried whole, so
+    // response validation belongs inside it: a truncated body must travel
+    // the same retry path. Every throw is routed through the adapter's
     // required normalizeError, and only the transient code is retried —
     // the core reacts on codes alone — under the retryAttempts and
     // retryMaxElapsed budgets.
@@ -42,7 +74,7 @@ module.exports = (self) => {
       const started = Date.now();
       for (let attempt = 1; ; attempt++) {
         try {
-          return await call();
+          return await call(await keyedAdapter(record));
         } catch (e) {
           // A fired abort signal is the caller's own doing, not a
           // provider failure: no failure record, no retry
@@ -51,9 +83,11 @@ module.exports = (self) => {
           }
           const error = (e?.aposError ? e : record.adapter.normalizeError(e)) || e;
           const elapsed = Date.now() - started;
+          const wire = wireModel(record.name, request.model);
           const data = {
             provider: record.name,
             model: request.model,
+            ...(wire && { wireModel: wire }),
             code: error.name,
             status: error.data?.status,
             kind: error.data?.kind,
@@ -136,6 +170,8 @@ module.exports = (self) => {
       }
       const { request } = call;
       const usage = readableUsage(response?.usage);
+      const settings = self.providers[call.provider]?.usageSettings;
+      const wire = wireModel(call.provider, request.model);
       const missing = {
         provider: call.provider,
         model: request.model,
@@ -156,6 +192,10 @@ module.exports = (self) => {
             provider: call.provider,
             model: (typeof response.model === 'string' && response.model) ||
               request.model,
+            ...(wire && { wireModel: wire }),
+            ...(settings && Object.keys(settings).length && {
+              settings: { ...settings }
+            }),
             step: call.step,
             attempt: call.attempt,
             outcome: rejection ? 'rejected' : 'accepted',

@@ -68,7 +68,7 @@ const ENTRY_KEYS = Object.freeze([
 const RESERVED_SETTING_NAMES = Object.freeze([
   ...ENTRY_KEYS,
   'name', 'label', 'settings', 'provider',
-  'validate', 'chat', 'image', 'normalizeError'
+  'validate', 'chat', 'image', 'wireModel', 'normalizeError'
 ]);
 
 // Doc types no AI action may touch, whatever the user's own permissions:

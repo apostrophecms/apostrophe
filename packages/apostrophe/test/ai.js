@@ -103,6 +103,15 @@ describe('AI engine', function() {
       });
     });
 
+    it('accepts an apiKey function', function() {
+      apos.ai.validateOptions({
+        ...valid(),
+        providers: {
+          anthropic: { apiKey: async () => 'k' }
+        }
+      });
+    });
+
     it('accepts a multi-provider configuration with partial override', function() {
       apos.ai.validateOptions({
         ...valid(),
@@ -182,7 +191,7 @@ describe('AI engine', function() {
       rejects({
         ...valid(),
         providers: { openai: { apiKey: 42 } }
-      }, /"providers\.openai\.apiKey" must be a string/);
+      }, /"providers\.openai\.apiKey" must be a string or a function returning one/);
       rejects({
         ...valid(),
         providers: {
@@ -656,6 +665,15 @@ describe('AI engine', function() {
         }, /@apostrophecms\/ai: adapter "fake" setting "workspaceId" must be an object like \{ envKey \}/,
         (apos) => apos.ai.addAdapter(fakeAdapter('fake', {
           settings: { workspaceId: 'APOS_FAKE_WORKSPACE_ID' }
+        })));
+      });
+
+      it('fails on a non-boolean usage flag in a setting declaration', async function() {
+        await failsToActivate({
+          providers: { fake: { apiKey: 'k' } }
+        }, /@apostrophecms\/ai: adapter "fake" setting "region": "usage" must be a boolean/,
+        (apos) => apos.ai.addAdapter(fakeAdapter('fake', {
+          settings: { region: { usage: 'yes' } }
         })));
       });
 

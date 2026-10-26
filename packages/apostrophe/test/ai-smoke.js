@@ -24,7 +24,19 @@ const assert = require('assert/strict');
 // cent each.
 //
 // Model pins, so a bump is a conscious edit here rather than drift: the
-// openai row pins gpt-image-2, the google row gemini-3.1-flash-image.
+// openai row pins gpt-image-2, the google row gemini-3.1-flash-image,
+// the bedrock-openai row the served models no effort level routes, the
+// bedrock-openai-compatible row its Bedrock model id.
+//
+// The bedrock rows reach Amazon Bedrock's runtime endpoint in
+// APOS_BEDROCK_REGION (default us-east-1), through the cross-region
+// profile APOS_BEDROCK_PROFILE (default us), with a long-term Bedrock
+// API key in APOS_BEDROCK_KEY or, with APOS_BEDROCK_IAM=1, short-term
+// tokens minted per request from the ambient AWS credentials (profile,
+// role, environment).
+const bedrockRegion = process.env.APOS_BEDROCK_REGION || 'us-east-1';
+const bedrockProfile = process.env.APOS_BEDROCK_PROFILE || 'us';
+const bedrockIam = process.env.APOS_BEDROCK_IAM === '1';
 
 // Every low route reasons, so each cap leaves headroom for the reasoning
 // tokens ahead of the text
@@ -72,6 +84,75 @@ const PROVIDERS = [
       warm: 'cacheReadTokens'
     },
     cacheHitOptional: true
+  },
+  {
+    // Entries named after their adapters, so the effort-level case below
+    // exercises the vendor's shipped rows through the gateway
+    name: 'bedrock-anthropic',
+    envKey: 'APOS_BEDROCK_KEY',
+    bedrock: true,
+    maxTokens: 2000,
+    cacheShares: {
+      cold: 'cacheWriteTokens',
+      warm: 'cacheReadTokens'
+    },
+    entry: {
+      region: bedrockRegion,
+      profile: bedrockProfile
+    },
+    reports: {
+      settings: {
+        region: bedrockRegion,
+        profile: bedrockProfile
+      },
+      wirePrefix: `${bedrockProfile}.anthropic.`
+    }
+  },
+  {
+    name: 'bedrock-openai',
+    envKey: 'APOS_BEDROCK_KEY',
+    bedrock: true,
+    maxTokens: 2000,
+    cacheShares: {
+      cold: 'cacheWriteTokens',
+      warm: 'cacheReadTokens'
+    },
+    cacheHitOptional: true,
+    entry: {
+      region: bedrockRegion,
+      profile: bedrockProfile
+    },
+    reports: {
+      settings: {
+        region: bedrockRegion,
+        profile: bedrockProfile
+      },
+      wirePrefix: `${bedrockProfile}.openai.`
+    },
+    pins: [ 'gpt-6-astra', 'gpt-5.6-terra' ]
+  },
+  {
+    // Every other vendor Bedrock serves. Mistral Large 3, served
+    // in-Region and without reasoning levels; not gpt-oss, which loses
+    // its way under a non-strict response schema
+    name: 'bedrock-openai-compatible',
+    envKey: 'APOS_BEDROCK_KEY',
+    bedrock: true,
+    maxTokens: 2000,
+    entry: {
+      region: bedrockRegion,
+      models: {
+        'mistral.mistral-large-3-675b-instruct': { maxOutputTokens: 32000 }
+      },
+      effort: {
+        low: { model: 'mistral.mistral-large-3-675b-instruct' },
+        medium: { model: 'mistral.mistral-large-3-675b-instruct' }
+      }
+    },
+    // Ids go out as given, so there is no wire id to report
+    reports: {
+      settings: { region: bedrockRegion }
+    }
   }
 ];
 
@@ -79,7 +160,14 @@ const enabled = process.env.APOS_AI_SMOKE === '1';
 
 // Captured at load, before any mocked suite's hooks touch the environment
 for (const provider of PROVIDERS) {
-  provider.key = process.env[provider.envKey];
+  provider.key = provider.bedrock && bedrockIam
+    ? bedrockTokens()
+    : process.env[provider.envKey];
+}
+
+function bedrockTokens() {
+  const { getTokenProvider } = require('@aws/bedrock-token-generator');
+  return getTokenProvider({ region: bedrockRegion });
 }
 
 // A fresh definition per apostrophe instance: activation canonicalizes
@@ -112,6 +200,14 @@ function record(apos, req, result, extra = {}) {
   });
 }
 
+// What a gateway adds to a usage record, for the smoke log
+function reported(usage = {}) {
+  return {
+    ...(usage.settings && { settings: usage.settings }),
+    ...(usage.wireModel && { wireModel: usage.wireModel })
+  };
+}
+
 // One live instance per provider row: its single provider entry, the echo
 // tool, and the row's image route when it configures one. Its `usage`
 // records land in `usageRecords`, when given
@@ -138,7 +234,10 @@ function createFor(provider, usageRecords = []) {
       '@apostrophecms/ai': {
         options: {
           providers: {
-            [provider.name]: { apiKey: provider.key }
+            [provider.name]: {
+              ...provider.entry,
+              apiKey: provider.key
+            }
           },
           ...(provider.imageModel && {
             image: {
@@ -157,17 +256,27 @@ describe('AI live smoke', function() {
   this.timeout(60000);
 
   let savedMock;
+  let savedBedrockKey;
 
   before(function() {
     // A mock run would make every case below meaningless; mocha runs
     // every file in one process, so restore symmetrically
     savedMock = process.env.APOS_AI_MOCK;
     delete process.env.APOS_AI_MOCK;
+    // The environment wins over the key function, so an exported bearer
+    // key would silently stand in for the IAM tokens
+    if (bedrockIam) {
+      savedBedrockKey = process.env.APOS_BEDROCK_KEY;
+      delete process.env.APOS_BEDROCK_KEY;
+    }
   });
 
   after(function() {
     if (savedMock !== undefined) {
       process.env.APOS_AI_MOCK = savedMock;
+    }
+    if (savedBedrockKey !== undefined) {
+      process.env.APOS_BEDROCK_KEY = savedBedrockKey;
     }
   });
 
@@ -214,7 +323,10 @@ describe('AI live smoke', function() {
             cache: false
           }
         );
-        record(apos, req, result, { text: result.text.slice(0, 80) });
+        record(apos, req, result, {
+          text: result.text.slice(0, 80),
+          ...reported(usageRecords[0])
+        });
         assert(result.text.length > 0);
         assert.equal(result.finishReason, 'stop');
         assert.equal(result.provider, provider.name);
@@ -226,6 +338,63 @@ describe('AI live smoke', function() {
         assert.equal('mock' in usageRecords[0], false);
         assert.equal(usageRecords[0].outcome, 'accepted');
         assert.deepEqual(usageRecords[0].usage, result.usage);
+        if (provider.reports) {
+          // The price-changing settings and the id actually sent travel
+          // beside the catalog id the result reports
+          const { settings, wirePrefix } = provider.reports;
+          assert.deepEqual(usageRecords[0].settings, settings);
+          assert.equal(
+            usageRecords[0].wireModel,
+            wirePrefix ? `${wirePrefix}${result.model}` : undefined
+          );
+        }
+      });
+
+      it('routes every effort level to a working model', async function() {
+        if (!capabilities.text) {
+          this.skip();
+        }
+        const req = apos.task.getReq();
+        const { levels } = apos.ai.modelCatalog().effort;
+        for (const effort of Object.keys(levels)) {
+          usageRecords.length = 0;
+          const result = await apos.ai.generate(req, 'reply with the single word OK', {
+            effort,
+            maxTokens: provider.maxTokens,
+            cache: false
+          });
+          record(apos, req, result, {
+            effort,
+            text: result.text.slice(0, 20),
+            ...reported(usageRecords[0])
+          });
+          assert.equal(result.finishReason, 'stop', effort);
+          assert(result.text.length > 0, effort);
+        }
+      });
+
+      it('answers on every pinned model', async function() {
+        if (!provider.pins) {
+          this.skip();
+        }
+        const req = apos.task.getReq();
+        for (const model of provider.pins) {
+          usageRecords.length = 0;
+          const result = await apos.ai.generate(req, 'reply with the single word OK', {
+            provider: provider.name,
+            model,
+            reasoning: 'low',
+            maxTokens: provider.maxTokens,
+            cache: false
+          });
+          record(apos, req, result, {
+            text: result.text.slice(0, 20),
+            ...reported(usageRecords[0])
+          });
+          assert.equal(result.finishReason, 'stop', model);
+          assert.equal(result.model, model);
+          assert(result.text.length > 0, model);
+        }
       });
 
       it('runs a tool through the loop', async function() {

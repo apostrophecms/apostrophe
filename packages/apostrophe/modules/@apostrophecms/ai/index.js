@@ -28,7 +28,8 @@ module.exports = {
   options: {
     alias: 'ai',
     // providers: { name: { apiKey, envKey, baseUrl, adapter, models,
-    //   effort, capabilities } }
+    //   effort, capabilities } }; `apiKey` may be an async function
+    //   returning the key, called before every request
     providers: {},
     // provider: the default provider name; inferred when only one is configured
     // effort: { default, levels: { name: { provider, model, reasoning } } }
@@ -607,27 +608,28 @@ module.exports = {
         async function runLoop() {
           for (let turns = 1; ; turns++) {
             let attempt = 0;
-            turn = await self.callAdapter(req, record, context.request, async () => {
-              attempt++;
-              const answer = await record.adapter.chat(req, context.request);
-              return self.reportUsage(req, {
-                callId,
-                kind: 'chat',
-                provider,
-                step: turns,
-                attempt,
-                request: context.request
-              }, answer, () => {
-                self.validateTurn(answer);
-                // Only a 'stop' turn is the answer: tool turns run the
-                // loop with their own validation, a refusal surfaces as
-                // aiRefusal below, and a 'length' turn returns as-is —
-                // no object, the finish reason tells the caller why
-                if (canonical.schema && answer.finishReason === 'stop') {
-                  self.validateStructured(answer, canonical.validateObject);
-                }
+            turn = await self.callAdapter(
+              req, record, context.request, async (adapter) => {
+                attempt++;
+                const answer = await adapter.chat(req, context.request);
+                return self.reportUsage(req, {
+                  callId,
+                  kind: 'chat',
+                  provider,
+                  step: turns,
+                  attempt,
+                  request: context.request
+                }, answer, () => {
+                  self.validateTurn(answer);
+                  // Only a 'stop' turn is the answer: tool turns run the
+                  // loop with their own validation, a refusal surfaces as
+                  // aiRefusal below, and a 'length' turn returns as-is —
+                  // no object, the finish reason tells the caller why
+                  if (canonical.schema && answer.finishReason === 'stop') {
+                    self.validateStructured(answer, canonical.validateObject);
+                  }
+                });
               });
-            });
             usage.inputTokens += turn.usage.inputTokens;
             usage.outputTokens += turn.usage.outputTokens;
             // A share appears on the call only once a turn reported it
@@ -915,18 +917,19 @@ module.exports = {
         };
         await self.emit('beforeGenerateImage', req, context);
         let attempt = 0;
-        const result = await self.callAdapter(req, record, context.request, async () => {
-          attempt++;
-          const batch = await record.adapter.image(req, context.request);
-          return self.reportUsage(req, {
-            callId,
-            kind: 'image',
-            provider,
-            step: 1,
-            attempt,
-            request: context.request
-          }, batch, () => self.validateImageResult(batch));
-        });
+        const result = await self.callAdapter(
+          req, record, context.request, async (adapter) => {
+            attempt++;
+            const batch = await adapter.image(req, context.request);
+            return self.reportUsage(req, {
+              callId,
+              kind: 'image',
+              provider,
+              step: 1,
+              attempt,
+              request: context.request
+            }, batch, () => self.validateImageResult(batch));
+          });
         // The envelope: the adapter's minimal result plus what the
         // core knows — the provider and the resolved aspect it sent;
         // the pixel size only when the adapter reported one
