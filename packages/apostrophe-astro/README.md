@@ -198,8 +198,11 @@ export default defineConfig({
 
 This option is the base URL of your Apostrophe instance. It must contain the
 port number if testing locally and/or communicating directly with another instance
-on the same server in a small production deployment. This option can be overriden
-at runtime with the `APOS_HOST` environment variable.
+on the same server in a small production deployment. This option can be overridden
+at build time with the `APOS_HOST` environment variable. The integration reads the
+variable once, when `astro build` runs, and writes the resolved value into the build
+output. Set it in the environment that runs the build, not only on the server that
+runs the built site: changing it later has no effect until you rebuild.
 
 During development it defaults automatically to: `http://localhost:3000`
 
@@ -257,7 +260,9 @@ This option has no effect in a static build, where there is no server to proxy t
 
 A URL path prefix matching the `prefix` option of your Apostrophe backend, for example `'/my-repo'`. When omitted it
 is inferred from Astro's own `base` config, with any trailing slashes removed. This option can be overridden at
-runtime with the `APOS_PREFIX` environment variable, which takes precedence over both the option and `base`.
+build time with the `APOS_PREFIX` environment variable, which takes precedence over both the option and `base`. As
+with `APOS_HOST`, the value is written into the build output, so set it in the environment that runs `astro build`
+and rebuild after changing it.
 
 ### `staticBuild` (optional)
 

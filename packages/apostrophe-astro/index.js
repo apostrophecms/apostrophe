@@ -52,8 +52,8 @@ function csvEnv(name) {
 /**
  * @typedef {object} ApostropheIntegrationOptions
  * @property {string} aposHost - The Apostrophe backend URL
- *   (e.g. `http://localhost:3000`).  Can also be set via the
- *   `APOS_HOST` environment variable.
+ *   (e.g. `http://localhost:3000`).  Can also be set at build
+ *   time via the `APOS_HOST` environment variable.
  * @property {string} widgetsMapping - Import path to the widgets
  *   mapping module (e.g. `'./src/widgets/index.js'`).
  * @property {string} templatesMapping - Import path to the templates
@@ -75,7 +75,8 @@ function csvEnv(name) {
  * @property {string} [aposPrefix] - URL path prefix matching the
  *   Apostrophe backend `prefix` option (e.g. `'/my-repo'`).
  *   Auto-inferred from Astro's `base` config when omitted.
- *   Can also be set via the `APOS_PREFIX` environment variable.
+ *   Can also be set at build time via the `APOS_PREFIX`
+ *   environment variable.
  * @property {StaticBuildOptions} [staticBuild] - Options controlling
  *   static build behaviour (attachments, sizes, scope).
  */
