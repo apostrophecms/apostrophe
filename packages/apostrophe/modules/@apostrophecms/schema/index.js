@@ -1835,6 +1835,9 @@ module.exports = {
 
       implementPatchOperators(patch, existingPage) {
         const clonedBases = {};
+        // An `@` reference names the document's own content, never what was
+        // loaded into it, such as a related document holding the same `_id`
+        const own = { ignoreDynamicProperties: true };
         if (patch.$push) {
           append(patch.$push);
         } else if (patch.$pullAll) {
@@ -1844,7 +1847,7 @@ module.exports = {
               patch,
               key,
               _.differenceWith(
-                self.apos.util.get(patch, key) || [],
+                self.apos.util.get(patch, key, own) || [],
                 Array.isArray(val) ? val : [],
                 (a, b) => _.isEqual(a, b))
             );
@@ -1859,7 +1862,7 @@ module.exports = {
               patch,
               key,
               _.differenceWith(
-                self.apos.util.get(patch, key) || [],
+                self.apos.util.get(patch, key, own) || [],
                 Array.isArray(val) ? val : [],
                 (a, b) => a._id === b
               ));
@@ -1870,7 +1873,7 @@ module.exports = {
             if ((val == null) || (!((typeof val) === 'object'))) {
               return;
             }
-            const existing = self.apos.util.get(patch, key) || [];
+            const existing = self.apos.util.get(patch, key, own) || [];
             const index = existing.findIndex(item => item._id === val.$item);
             if (index === -1) {
               return;
@@ -1901,12 +1904,12 @@ module.exports = {
             let atReference = false;
             if (key.charAt(0) === '@') {
               atReference = key;
-              key = self.apos.util.resolveAtReference(existingPage, key);
+              key = self.apos.util.resolveAtReference(existingPage, key, own);
               if (key && patch[key.split('.')[0]]) {
                 // This base has already been cloned into the patch, or it
                 // otherwise touches this base, so we need to re-resolve
                 // the reference or indexes may be incorrect
-                key = self.apos.util.resolveAtReference(patch, atReference);
+                key = self.apos.util.resolveAtReference(patch, atReference, own);
               }
             }
             // Simple replacement with a dot path
@@ -1921,7 +1924,7 @@ module.exports = {
             cloneOriginalBase(key);
             if (val && val.$each) {
               const each = Array.isArray(val.$each) ? val.$each : [];
-              const existing = self.apos.util.get(patch, key) || [];
+              const existing = self.apos.util.get(patch, key, own) || [];
               if (!Array.isArray(existing)) {
                 throw self.apos.error('invalid', 'existing property is not an array', {
                   dotPath: key
@@ -1955,7 +1958,7 @@ module.exports = {
                 .concat(existing.slice(position));
               self.apos.util.set(patch, key, updated);
             } else {
-              const existing = self.apos.util.get(patch, key) || [];
+              const existing = self.apos.util.get(patch, key, own) || [];
               existing.push(val);
               self.apos.util.set(patch, key, existing);
             }
