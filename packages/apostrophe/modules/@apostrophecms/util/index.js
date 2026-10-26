@@ -526,7 +526,7 @@ module.exports = {
             if (val._id === _id) {
               return val;
             }
-            result = self.findNestedObjectById(val, _id);
+            result = self.findNestedObjectById(val, _id, { ignoreDynamicProperties });
             if (result) {
               return result;
             }
@@ -797,13 +797,17 @@ module.exports = {
       // sub-object within `o` with an `_id` property equal to `xyz`.
       // is found and returned, no matter how deeply nested it is.
       // Returns `undefined` if any intermediate segment is null or undefined.
-      get(o, path) {
+      // `ignoreDynamicProperties` keeps the `@xyz` search out of properties
+      // whose names begin with `_`, such as loaded relationships.
+      get(o, path, { ignoreDynamicProperties = false } = {}) {
         let i;
         path = path.split('.');
         for (i = 0; (i < path.length); i++) {
           const p = path[i];
           if ((i === 0) && (p.charAt(0) === '@')) {
-            o = self.apos.util.findNestedObjectById(o, p.substring(1));
+            o = self.apos.util.findNestedObjectById(o, p.substring(1), {
+              ignoreDynamicProperties
+            });
           } else {
             if (o == null) {
               return undefined;
@@ -820,12 +824,15 @@ module.exports = {
 
       // Returns `path` with any @ reference present resolved to a full
       // dot path. If the reference cannot be resolved the @ reference
-      // remains in the returned value.
-      resolveAtReference(o, path) {
+      // remains in the returned value. `ignoreDynamicProperties` works as
+      // it does for `get`.
+      resolveAtReference(o, path, { ignoreDynamicProperties = false } = {}) {
         path = path.split('.');
         if (path[0] && (path[0].charAt(0) === '@')) {
           const info = self.apos.util
-            .findNestedObjectAndDotPathById(o, path[0].substring(1));
+            .findNestedObjectAndDotPathById(o, path[0].substring(1), {
+              ignoreDynamicProperties
+            });
           if (!info) {
             return path.join('.');
           }
