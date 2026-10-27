@@ -28,7 +28,20 @@ npm create apostrophe@latest -- --help
 > Everything after `--` is forwarded to the installer; npm swallows args without it.
 > Run `-- --help` any time for the full flag list.
 
-Requires **Node 22+** and **npm** (pnpm and yarn aren't by this CLI yet, but they work fine with apostrophe).
+Requires **Node 22+** and **npm**, which comes with Node. The starter kits are
+npm projects, so dependencies are always installed with npm. Starting the
+installer with pnpm (`pnpm create apostrophe`) works: it says so up front,
+installs with npm, and adds `"packageManager": "npm@<version>"` to the new
+project's `package.json` so a later `pnpm install` stops with a clear message
+instead of breaking the project. yarn isn't supported yet and is refused
+before any prompt.
+
+Dependencies are installed twice in each folder. The kits ship without a
+lockfile, and npm's first install of a fresh tree isn't final: on macOS it
+drops the optional `fsevents` package (native file watching for
+`npm run dev`), and it can place a dependency where a later install would
+move it. The second run settles the tree and only takes a few seconds; if it
+fails, the install still succeeds.
 
 ## Architecture
 
@@ -123,7 +136,9 @@ Both events carry:
 - **`preflight`** - the package-manager check, before any stage ran.
 - **`clone`** - cloning the starter kit.
 - **`scaffold`** - writing project identity, secrets, and `.env`.
-- **`dependency_install`** - `npm install` (or pnpm/yarn).
+- **`dependency_install`** - `npm install` (always npm, whichever package
+  manager started the installer). Only the first run in each folder can fail
+  the stage; the second, settling run is best effort.
 - **`db_connect`** - connecting to / preparing the database.
 - **`sample_data`** - downloading and importing demo content.
 - **`admin`** - creating the admin user.
@@ -135,7 +150,9 @@ Grouped by the stage that emits them.
 
 **Preflight**
 
-- **`unsupported_pm`** - running under an unsupported package manager.
+- **`unsupported_pm`** - running under an unsupported package manager (yarn).
+  Only unattended runs report it: the guided installer refuses before it has
+  asked for telemetry consent, so nothing is sent.
 
 **clone**
 
