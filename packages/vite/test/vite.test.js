@@ -625,6 +625,37 @@ describe('@apostrophecms/vite', function () {
       }
     });
 
+    it('should resolve dependencies from where copied sources came from', function () {
+      const meta = apos.vite.currentSourceMeta;
+      const core = meta.find((entry) => entry.id === '@apostrophecms/admin-bar');
+      const project = meta.find((entry) => entry.id === '@apostrophecms/my-admin-bar');
+      const fallbacks = [
+        path.dirname(require.resolve('apostrophe/package.json')),
+        path.resolve(__dirname, '..')
+      ].map((dir) => fs.realpathSync(dir));
+      const searchDirs = (file) => apos.vite.getDepsSearchDirs(
+        path.join(apos.vite.buildRootSource, file)
+      );
+
+      // Overridden at project level: the project file is the one copied
+      assert.deepEqual(
+        searchDirs('@apostrophecms/admin-bar/src/index.js'),
+        [ fs.realpathSync(path.join(project.dirname, 'src')), ...fallbacks ]
+      );
+      // Core only
+      assert.deepEqual(
+        searchDirs('@apostrophecms/admin-bar/apos/components/TheAposAdminBar.vue'),
+        [ fs.realpathSync(path.join(core.dirname, 'apos/components')), ...fallbacks ]
+      );
+      // Generated entrypoint
+      assert.deepEqual(searchDirs('apos.js'), fallbacks);
+      // Not in the build source: the file's own directory
+      assert.deepEqual(
+        apos.vite.getDepsSearchDirs(__filename),
+        [ fs.realpathSync(__dirname), ...fallbacks ]
+      );
+    });
+
     it('shouldBuild forces a rebuild when the lock file changed', async function () {
       assert.strictEqual(
         await apos.vite.shouldBuild('apos', {

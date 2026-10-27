@@ -13,6 +13,14 @@ const vitePostcssConfig = require('./vite-postcss-config');
 // is what the human formats do with anything belonging to the entry above.
 const VITE_INDENT = '    ';
 
+function realpath(p) {
+  try {
+    return fs.realpathSync(p);
+  } catch (_) {
+    return p;
+  }
+}
+
 module.exports = (self) => {
   return {
     async initWhenReady() {
@@ -890,7 +898,7 @@ module.exports = (self) => {
      * @returns {Promise<import('vite').UserConfig>}
      */
     async getBaseViteConfig(id, options, env) {
-      return viteBaseConfig({
+      const config = viteBaseConfig({
         mode: env.mode,
         base: self.apos.asset.getAssetBaseUrl(),
         root: self.buildRoot,
@@ -899,6 +907,58 @@ module.exports = (self) => {
         sourceMaps: options.sourcemaps,
         assetOptions: self.apos.asset.options
       });
+      const deps = await import('./vite-plugin-apostrophe-deps.mjs');
+      config.plugins.push(...deps.default({
+        getSearchDirs: self.getDepsSearchDirs
+      }));
+      return config;
+    },
+
+    // Directories to resolve a bare import from when Vite could not (see
+    // `vite-plugin-apostrophe-deps.mjs`). First the importer's own real
+    // directory or, for a file in the build source, that of the original
+    // source file it was copied from. Then Apostrophe core and this module.
+    // Generated files (the entrypoint imports) have no original source and
+    // only get the last two.
+    getDepsSearchDirs(file) {
+      if (!self.depsFallbackDirs) {
+        self.depsFallbackDirs = [
+          realpath(path.dirname(require.resolve('apostrophe/package.json', {
+            paths: [ self.apos.rootDir, __dirname ]
+          }))),
+          realpath(path.join(__dirname, '..'))
+        ];
+      }
+      const rel = path.relative(self.buildRootSource, file);
+      const inBuildSource = !rel.startsWith('..') && !path.isAbsolute(rel);
+      const sourceDir = inBuildSource
+        ? self.getOriginalSourceDir(rel)
+        : realpath(path.dirname(file));
+      return sourceDir
+        ? [ ...new Set([ sourceDir, ...self.depsFallbackDirs ]) ]
+        : self.depsFallbackDirs;
+    },
+
+    // The real directory of the original file that a file in the build
+    // source (`relPath`, relative to it) was copied from, or `null`. Files of
+    // all modules in an override chain are copied into the same folder, in
+    // order, so the last module in `currentSourceMeta` that has the file
+    // wins, as in the copy.
+    getOriginalSourceDir(relPath) {
+      const rel = relPath.split(/[\\/]/).join('/');
+      const entries = self.currentSourceMeta ?? [];
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const entry = entries[i];
+        const prefix = `${entry.name}/`;
+        if (!rel.startsWith(prefix)) {
+          continue;
+        }
+        const relFile = rel.slice(prefix.length);
+        if (entry.files.some((f) => f.replaceAll('\\', '/') === relFile)) {
+          return realpath(path.dirname(path.join(entry.dirname, relFile)));
+        }
+      }
+      return null;
     },
 
     /**
