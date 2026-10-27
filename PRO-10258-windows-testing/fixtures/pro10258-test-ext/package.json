@@ -1,0 +1,10 @@
+{
+  "name": "pro10258-test-ext",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "mitt": "3.0.1",
+    "nanoevents": "9.1.0",
+    "pro10258-sass-dep": "file:../pro10258-sass-dep"
+  }
+}

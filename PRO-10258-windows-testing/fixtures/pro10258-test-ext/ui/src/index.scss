@@ -1,0 +1,3 @@
+// Sass dependency only this extension has
+@use 'pro10258-sass-dep' as dep;
+.pro10258-ext { color: dep.$color; }
