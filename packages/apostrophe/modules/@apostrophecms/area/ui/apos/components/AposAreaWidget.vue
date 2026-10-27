@@ -1293,11 +1293,13 @@ export default {
 
   // Multi-select drops the focus chrome, so the chosen widgets need a
   // mark of their own: a solid stroke and a soft halo. They do not also
-  // take the dashed highlight outline.
+  // take the dashed highlight outline. The stroke sits flush against the
+  // widget edge and covers the inner 2px of the halo, so the halo shows
+  // only outside the stroke and the edge stays crisp.
   &.apos-is-selected {
     outline: 2px solid var(--a-primary);
-    outline-offset: 1px;
-    box-shadow: 0 0 0 4px var(--a-primary-transparent-25);
+    outline-offset: 0;
+    box-shadow: 0 0 0 6px var(--a-primary-transparent-25);
   }
 
   .apos-area-widget-inner &::after {
