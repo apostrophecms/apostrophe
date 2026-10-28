@@ -56,6 +56,7 @@
   - [What about widget players?](#what-about-widget-players)
   - [`aposSetQueryParameter`: working with query parameters](#apossetqueryparameter-working-with-query-parameters)
   - [Other helper functions](#other-helper-functions)
+  - [Calling Apostrophe APIs from components and widgets](#calling-apostrophe-apis-from-components-and-widgets)
   - [What about Vue, React, SvelteJS, etc.?](#what-about-vue-react-sveltejs-etc)
   - [A note on production use](#a-note-on-production-use)
   - [Static builds](#static-builds)
@@ -903,12 +904,44 @@ scripts:
 These depend on the generated integration config and on Node internals, so do not import them from client-side
 scripts:
 
-* `aposFetch` — an authenticated fetch against your Apostrophe backend
+* `aposFetch` — a fetch against the configured Apostrophe backend (`aposHost` plus `aposPrefix`). It does not send
+  the current request's cookies or `host`, so it is not logged in and, in a multisite project, does not reach the
+  current site. Use it where there is no request, such as `getStaticPaths`; in components and widgets use
+  [`Astro.locals.aposFetch`](#calling-apostrophe-apis-from-components-and-widgets) instead
+* `createAposFetch` — creates a fetch scoped to a given request, like `Astro.locals.aposFetch`, e.g. for your own
+  endpoints or middleware
 * `getAposHost`, `isStaticBuild` — resolved integration state
 * `getAllStaticPaths`, `getAllUrlMetadata`, `getLocales` — see [Static builds](#static-builds)
 
 Importing these from their old `lib/` paths still works but is deprecated; see [MIGRATION.md](./MIGRATION.md) for
 the mapping.
+
+## Calling Apostrophe APIs from components and widgets
+
+Every Astro component, including your widget components, can call Apostrophe's APIs through `Astro.locals.aposFetch`.
+It takes the same arguments as `fetch` and is scoped to the current request:
+
+```astro
+---
+const response = await Astro.locals.aposFetch('/api/v1/article?perPage=5');
+const { results } = await response.json();
+---
+<ul>
+  {results.map((article) => <li>{article.title}</li>)}
+</ul>
+```
+
+The request reaches Apostrophe the same way the page itself does:
+
+* It carries the current request's `host`, so in a multisite project it talks to the site being viewed.
+* It carries the current request's cookies, so a logged-in editor sees what their permissions allow.
+* A path starting with `/` is prefixed with `aposPrefix` if you configured one. Only the path and query string of
+  the URL are used; the request always goes to Apostrophe.
+* `method`, `body` and `headers` passed in the second argument work as they do with `fetch`, and your headers
+  take precedence.
+
+In a static build there is no visitor request, and `Astro.locals.aposFetch` behaves like the
+[`aposFetch`](#other-helper-functions) helper.
 
 ## What about Vue, React, SvelteJS, etc.?
 
