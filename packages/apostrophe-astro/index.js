@@ -216,6 +216,12 @@ export default function apostropheIntegration(options) {
             }
           }
         });
+        // `Astro.locals.aposFetch`, scoped to the current request. Needed in
+        // both modes: prerendered pages get the unscoped `aposFetch`.
+        addMiddleware({
+          order: 'pre',
+          entrypoint: '@apostrophecms/apostrophe-astro/lib/aposFetchMiddleware.js'
+        });
         // Proxy routes are only needed for SSR — in static mode all data
         // is fetched at build time via getStaticPaths / aposPageFetch.
         if (isStaticBuild) {
@@ -251,6 +257,20 @@ export default function apostropheIntegration(options) {
         injectRoute({
           pattern: '/api/v1/@apostrophecms/area/render-widget',
           entrypoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro'
+        });
+      },
+      // Type `Astro.locals.aposFetch`, provided by aposFetchMiddleware.js
+      "astro:config:done": ({ injectTypes }) => {
+        injectTypes({
+          filename: 'locals.d.ts',
+          content: [
+            'declare namespace App {',
+            '  interface Locals {',
+            '    aposFetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;',
+            '  }',
+            '}',
+            ''
+          ].join('\n')
         });
       },
       // Write literal content entries (CSS, robots.txt, etc.) and
