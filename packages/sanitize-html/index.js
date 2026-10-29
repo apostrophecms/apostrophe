@@ -900,7 +900,7 @@ function sanitizeHtml(html, options, _fallback) {
     // is followed by a 100% syntactically valid entity or not, and escaped
     // if it is not. If this bothers you, don't set parser.decodeEntities
     // to false. (The default is true.)
-    s = s.replace(/&(?![a-zA-Z0-9#]{1,20};)/g, '&amp;') // Match ampersands not part of existing HTML entity
+    s = s.replace(/&(?![a-zA-Z0-9#]+;)/g, '&amp;') // Match ampersands not part of existing HTML entity
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
     if (quote) {
