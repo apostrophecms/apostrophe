@@ -5,13 +5,18 @@ permissions:
 env:
   # Define supported runtime versions for matrix expansion once for the workflow.
   NODE_VERSIONS_JSON: "[22,24,26]"
-  MONGODB_VERSIONS_JSON: '["7","8"]'
+  # MongoDB 8 is temporarily omitted: GitHub's Ubuntu runners now report kernel
+  # 7.0.0-*-azure, and MongoDB 8.0.34 and older refuse to start on 6.19 through
+  # 7.0.13 (SERVER-121912). Ubuntu keeps the X.Y.0 version string even when
+  # it carries the upstream fix, which MongoDB only accounts for starting in
+  # 8.0.35 (SERVER-131779). Restore "8" once the mongo:8 image is 8.0.35+.
+  MONGODB_VERSIONS_JSON: '["7","9"]'
   REDIS_VERSION: "7"
   POSTGRES_VERSION: "16"
   # AI live smoke runs once; its mongo version must be one of MONGODB_VERSIONS_JSON
   # so the image comes from the shared docker cache.
   AI_SMOKE_NODE_VERSION: "24"
-  AI_SMOKE_MONGODB_VERSION: "8"
+  AI_SMOKE_MONGODB_VERSION: "9"
 
 on:
   push:
