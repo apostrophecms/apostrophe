@@ -1650,6 +1650,16 @@ describe('sanitizeHtml', function() {
     };
     assert.equal(sanitizeHtml(textIn, sanitizeHtmlOptions), expectedResult);
   });
+  it('Should not double encode ampersands on named HTML entities longer than 20 characters if decodeEntities is false', function() {
+    assert.equal(
+      sanitizeHtml('&CounterClockwiseContourIntegral; &amp;', {
+        parser: {
+          decodeEntities: false
+        }
+      }),
+      '&CounterClockwiseContourIntegral; &amp;'
+    );
+  });
   // TODO: make this test and similar tests for entities that are not
   // strictly valid pass, at which point decodeEntities: false is safe
   // to use.
