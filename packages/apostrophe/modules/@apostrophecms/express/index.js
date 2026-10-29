@@ -701,7 +701,7 @@ module.exports = {
             ...self.sessionOptions.cookie,
             // 1 year (the limit). The value is known, we are relying
             // on SameSite (modern browsers)
-            maxAge: 31536000
+            maxAge: 365 * 24 * 60 * 60 * 1000
           });
         } else {
           // Check that the request arrived with the CSRF cookie.
