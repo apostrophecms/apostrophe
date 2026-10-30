@@ -1,5 +1,16 @@
 # create-apostrophe
 
+## 1.3.0 (2026-10-30)
+
+### Adds
+
+- `pnpm create apostrophe` now works. The starter kits are npm projects, so the installer says up front that the project will be installed with npm, which comes with Node.js, and then runs as usual. The new project's `package.json` gets a `packageManager` field naming that npm, so a habitual `pnpm install` stops with a clear message instead of converting the project and skipping native builds such as `better-sqlite3`, which would stop the site from starting. The final screen also reminds pnpm users to use npm in the project. yarn is still not supported, but is now refused before the first prompt (not after all of them) with a message saying to re-run with `npm create apostrophe@latest`. A guided install refused this way sends no telemetry, because consent has not been asked yet; unattended runs still report `unsupported_pm`.
+
+### Fixes
+
+- Telemetry for an install that stops before any stage runs (for example, an unsupported package manager) now reports `failStage` as `preflight` instead of `null`, so the field always has the same type.
+- The installer now runs `npm install` a second time in each project folder. Without a lockfile, npm's first install of a fresh project isn't final: on macOS it leaves out `fsevents`, which `npm run dev` uses for file watching, and it can place a dependency where the next install moves it. The second run settles the project so a later `npm install` makes no changes. It takes a few seconds, and if it fails the install still succeeds.
+
 ## 1.2.0 (2026-09-03)
 
 ### Fixes

@@ -43,12 +43,13 @@
  */
 
 /**
- * The stage a failed install is attributed to. `null` means the failure
- * happened in preflight (Node version / package manager), before any stage
- * ran — every step is skipped. Otherwise exactly one stage per failure.
+ * The stage a failed install is attributed to. `'preflight'` means the
+ * failure happened before any stage ran (package manager check) — every step
+ * is skipped. Otherwise exactly one stage per failure. Always a string, so
+ * the telemetry field stays single-typed.
  * @typedef {(
- *   'clone' | 'dependency_install' | 'db_connect' | 'scaffold' | 'sample_data'
- *   | 'admin' | 'unknown' | null
+ *   'preflight' | 'clone' | 'dependency_install' | 'db_connect' | 'scaffold'
+ *   | 'sample_data' | 'admin' | 'unknown'
  * )} FailStage
  */
 
@@ -109,7 +110,8 @@
  * @property {PackageManager}  packageManager Resolved value.
  * @property {number}          durationMs     `Date.now() - options.confirmedAt`.
  * @property {FailStage}       [failStage]    Present iff `ok === false`;
- *                                            `null` for a preflight failure.
+ *                                            `'preflight'` for a preflight
+ *                                            failure.
  * @property {string}          [errorCode]    Present only for known,
  *                                            allowlisted error codes.
  */
