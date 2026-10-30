@@ -65,7 +65,7 @@ export function makeCreateProject({
         return finish({
           ok: false,
           packageManager,
-          failStage: null,
+          failStage: 'preflight',
           errorCode: err.errorCode
         });
       }

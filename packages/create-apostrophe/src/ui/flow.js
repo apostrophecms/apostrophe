@@ -9,6 +9,11 @@ import * as prompts from './prompts.js';
 import { defaultDbUri } from './db-uri.js';
 import * as db from '../core/db.js';
 import { link, kitGuide } from './links.js';
+import {
+  renderPackageManagerNotice,
+  renderUnsupportedPackageManager,
+  npmOnlyReminder
+} from './package-manager.js';
 import { assertSafeShortName } from '../core/validate.js';
 import { deriveKitId, getKit } from '../core/kits.js';
 import {
@@ -58,6 +63,9 @@ let totalSteps = 6;
  * @property {Store}             store
  * @property {string}            cliVersion
  * @property {NodeJS.ProcessEnv} [env]
+ * @property {import('../index.js').PackageManager} [packageManager]
+ *   The manager that launched us, so a pnpm user is told up front that the
+ *   project will use npm.
  */
 
 /**
@@ -69,6 +77,7 @@ let totalSteps = 6;
  */
 export async function runFlow(deps) {
   render.intro('Welcome to ApostropheCMS! Let\'s set up your project.');
+  renderPackageManagerNotice(deps.packageManager);
   render.muted('Press Ctrl-C at any time to cancel.');
   /** @type {Omit<FlowAnswers, 'confirmedAt'> | undefined} */
   let defaults;
@@ -700,10 +709,15 @@ function telemetryLabel(consent, deps) {
  *
  * @param {CreateProjectResult} result
  * @param {FlowAnswers}         answers
+ * @param {{ unattended?: boolean }} [opts]  Picks the re-run command shown
+ *   for an unsupported package manager.
  */
-export function renderInstallResult(result, answers) {
+export function renderInstallResult(result, answers, { unattended = false } = {}) {
   if (result.ok) {
-    renderSuccess(answers);
+    renderSuccess(answers, result.packageManager);
+  } else if (result.errorCode === 'unsupported_pm') {
+    renderUnsupportedPackageManager(result.packageManager, { unattended });
+    render.outro('Install did not start.');
   } else {
     renderFailure(answers, result);
   }
@@ -715,14 +729,18 @@ const DEV_PORT = Object.freeze({
   standalone: 3000
 });
 
-/** @param {FlowAnswers} answers */
-function renderSuccess(answers) {
+/**
+ * @param {FlowAnswers} answers
+ * @param {string}      [packageManager]  The manager that launched us.
+ */
+function renderSuccess(answers, packageManager) {
   const port = DEV_PORT[answers.build];
   const body = [
     'Your project is ready.',
     '',
     `  cd ${answers.shortName}`,
     '  npm run dev',
+    ...npmOnlyReminder(packageManager).map((line) => `  ${line}`),
     '',
     `  Open:           http://localhost:${port}`,
     `  Login:          http://localhost:${port}/login`,

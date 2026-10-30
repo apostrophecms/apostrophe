@@ -65,13 +65,14 @@ export function readRuntime(proc = process) {
 }
 
 /**
- * FailStage enum, in array form so the validator can `.includes(null)`
- * directly against either a string or `null` (preflight).
+ * FailStage enum, in array form for the validator. Every value is a string:
+ * a preflight failure reports `'preflight'`, never `null`, so the field
+ * keeps a single type in analytics.
  * @type {ReadonlyArray<FailStage>}
  */
 export const FAIL_STAGES = Object.freeze([
-  'clone', 'dependency_install', 'db_connect', 'scaffold', 'sample_data',
-  'admin', 'unknown', null
+  'preflight', 'clone', 'dependency_install', 'db_connect', 'scaffold',
+  'sample_data', 'admin', 'unknown'
 ]);
 
 /**

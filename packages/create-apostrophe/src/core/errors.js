@@ -41,7 +41,7 @@ export class UnsupportedPackageManagerError extends Error {
     this.name = 'UnsupportedPackageManagerError';
     this.packageManager = packageManager;
     this.supported = supported;
-    // Allowlisted preflight code (telemetry: install_fail, failStage:null).
+    // Allowlisted preflight code (telemetry: install_fail, failStage:'preflight').
     this.errorCode = 'unsupported_pm';
   }
 }

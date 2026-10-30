@@ -30,9 +30,15 @@ describe('telemetry/schema — enum exports', function () {
     );
   });
 
-  it('failStages include admin + preflight null', function () {
+  it('failStages include admin + preflight', function () {
     assert.ok(FAIL_STAGES.includes('admin'));
-    assert.ok(FAIL_STAGES.includes(null));
+    assert.ok(FAIL_STAGES.includes('preflight'));
+  });
+
+  it('failStages are all strings (single-typed telemetry field)', function () {
+    for (const stage of FAIL_STAGES) {
+      assert.equal(typeof stage, 'string');
+    }
   });
 
   it('failStages include sample_data (demo-data seed import)', function () {
@@ -134,13 +140,13 @@ describe('telemetry/schema — buildPayload (fail)', function () {
     assert.equal(p.errorCode, 'seed_checksum_failed');
   });
 
-  it('accepts failStage: null (preflight)', function () {
+  it('accepts failStage: preflight', function () {
     const p = buildPayload('install_fail', {
       ...FAIL_INPUT,
-      failStage: null,
+      failStage: 'preflight',
       errorCode: 'unsupported_pm'
     });
-    assert.equal(p.failStage, null);
+    assert.equal(p.failStage, 'preflight');
     assert.equal(p.errorCode, 'unsupported_pm');
   });
 
@@ -198,6 +204,17 @@ describe('telemetry/schema — validators reject bad input', function () {
       );
     });
   }
+
+  it('rejects failStage: null on install_fail', function () {
+    assert.throws(
+      () => buildPayload('install_fail', {
+        ...VALID,
+        failStage: null,
+        errorCode: 'unsupported_pm'
+      }),
+      SchemaError
+    );
+  });
 
   it('rejects unknown failStage on install_fail', function () {
     assert.throws(
