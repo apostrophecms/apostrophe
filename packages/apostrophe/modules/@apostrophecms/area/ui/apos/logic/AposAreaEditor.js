@@ -7,7 +7,7 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { useWidgetGraphStore } from 'Modules/@apostrophecms/ui/stores/widgetGraph';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
-import applyPatch from 'Modules/@apostrophecms/area/lib/apply-patch.js';
+import applyPatch, { takePrior } from 'Modules/@apostrophecms/area/lib/apply-patch.js';
 import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
 import { klona } from 'klona';
 
@@ -97,6 +97,7 @@ export default {
         menu: this.choices
       },
       edited: {},
+      beforePreview: {},
       widgets: {}
     };
   },
@@ -505,6 +506,7 @@ export default {
       ];
     },
     async remove({ index }, { autosave = true } = {}) {
+      delete this.beforePreview[this.next[index]?._id];
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
         const widget = this.next[index];
         // Put it back next to whichever neighbor it had
@@ -656,8 +658,16 @@ export default {
       // Before anything below can change it. A caller that changed the
       // widget in place rather than handing us a new one has already lost
       // the state we would need to put back, so no inverse is recorded and
-      // the edit is undone the old way, by replaying the history
-      const prior = this.next.find(widget => widget._id === updated._id);
+      // the edit is undone the old way, by replaying the history.
+      //
+      // Live preview calls `update` with `autosave: false`, replacing the
+      // widget in `this.next` before the final save. `takePrior` keeps the
+      // widget as it was before the first preview update so the final save
+      // builds its inverse from that state.
+      const prior = takePrior(this.next, this.beforePreview, updated, {
+        autosave,
+        reverting
+      });
       const inverse = (prior && (prior !== updated))
         ? {
           [`@${updated._id}`]: klona(prior)

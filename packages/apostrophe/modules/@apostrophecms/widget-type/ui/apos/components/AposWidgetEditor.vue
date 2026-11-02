@@ -550,7 +550,7 @@ export default {
       }
     },
     updatePreview(value) {
-      if (!this.preview) {
+      if (!this.preview || this.triggerValidation || this.saving) {
         return;
       }
 
@@ -589,6 +589,7 @@ export default {
       }
     },
     removePreview() {
+      this.areaDebounceUpdate.cancel?.();
       this.emitLivePreviewEnd(this.saving ? 'save' : 'cancel');
       if (!this.preview) {
         return;
@@ -690,6 +691,7 @@ export default {
       return css;
     },
     async save() {
+      this.areaDebounceUpdate.cancel?.();
       this.triggerValidation = true;
       this.$nextTick(async () => {
         if (this.errorCount > 0) {
