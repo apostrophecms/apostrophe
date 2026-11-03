@@ -91,25 +91,47 @@ module.exports = (self) => {
       return doc && self.apos.util.clonePermanent(doc);
     },
 
-    // What to compare from: the newest record; failing that, the version
-    // history as of the target's last whole-document copy, which core stamps
-    // as `localizedAt` — inexact, since a draft version may have been saved
-    // over after it; failing that, nothing (`basis: 'none'`)
+    // What to compare from: the newest record between the two locales, in
+    // either direction — a localization fr → en leaves both copies in line
+    // just as one en → fr does, so after editing the French copy directly
+    // the way back compares from there, the halves swapped. Failing that,
+    // the version history as of the last whole-document copy between them,
+    // which core stamps on the copy as `localizedAt` — inexact, since a
+    // draft version may have been saved over after it; failing that,
+    // nothing (`basis: 'none'`).
+    //
+    // A "copy" record is no baseline: it marks a copy still untranslated
     async getBaseline(req, { source, target }) {
-      const record = await self.latestRecord({
+      const from = source.aposLocale.split(':')[0];
+      const to = target.aposLocale.split(':')[0];
+      const record = await self.recordsDb.findOne({
         aposDocId: source.aposDocId,
-        from: source.aposLocale.split(':')[0],
-        to: target.aposLocale.split(':')[0]
-      });
+        via: { $ne: 'copy' },
+        $or: [
+          {
+            from,
+            to
+          },
+          {
+            from: to,
+            to: from
+          }
+        ]
+      }, { sort: { at: -1 } });
       if (record) {
+        const forward = record.from === from;
+        const recordSource = await self.apos.docVersions.unpack(record.source);
+        const recordTarget = await self.apos.docVersions.unpack(record.target);
         return {
           basis: 'record',
           since: record.at,
-          source: await self.apos.docVersions.unpack(record.source),
-          target: await self.apos.docVersions.unpack(record.target)
+          source: forward ? recordSource : recordTarget,
+          target: forward ? recordTarget : recordSource
         };
       }
-      const since = target.localizedAt || target.createdAt;
+      // Whichever copy was made from the other; the later, if both were
+      const since = latest(target.localizedAt, source.localizedAt) ||
+        target.createdAt;
       const sourceThen = since && await self.versionAsOf(req, source, since);
       if (!sourceThen) {
         return { basis: 'none' };
@@ -218,4 +240,10 @@ function clip(text) {
   return text.length > CHANGE_TEXT_MAX_CHARS
     ? `${text.slice(0, CHANGE_TEXT_MAX_CHARS)}…`
     : text;
+}
+
+function latest(...dates) {
+  return dates
+    .filter(Boolean)
+    .sort((a, b) => b - a)[0];
 }

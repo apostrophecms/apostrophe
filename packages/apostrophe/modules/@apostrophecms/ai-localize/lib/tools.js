@@ -250,8 +250,29 @@ module.exports = (self) => {
       }
     },
 
-    toolNames() {
-      return TOOLS.map((tool) => tool.name);
+    // The tools of a pass: this module's, and the site's translation
+    // service when one is registered (see `translator`) and the pass
+    // translates
+    toolNames({ translate = true } = {}) {
+      const translator = translate ? self.translator() : null;
+      return [
+        ...TOOLS.map((tool) => tool.name),
+        ...(translator ? [ translator.name ] : [])
+      ];
+    },
+
+    // The site's translation service, when a module offers one to the
+    // agent: a tool tagged "ai-localize-translate". The agent then decides
+    // what to translate and where it goes, and leaves the wording to the
+    // service — the same one the classic Localize flow translates with.
+    // Without one, the agent translates on its own.
+    //
+    // The tool takes `{ from, to, texts: [ { text, html } ] }`, `from` and
+    // `to` being locale names and `html` true for rich text markup, and
+    // answers `{ translations: [ string ] }` in the same order. The first one
+    // registered is used
+    translator() {
+      return self.apos.ai.getTools({ tags: 'ai-localize-translate' })[0] || null;
     },
 
     // The pass a tool call belongs to, refusing a call made outside one

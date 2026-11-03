@@ -905,6 +905,7 @@
   "aiLocalizeKeepGoing": "Keep localizing",
   "aiLocalizeNewAndModifiedRelated": "New and modified content in related documents",
   "aiLocalizeOpen": "Open",
+  "aiLocalizeProgressCount": "{{ current }} of {{ total }}",
   "aiLocalizeProgressHeading": "Localizing with AI…",
   "aiLocalizeScopeAll": "All content",
   "aiLocalizeScopeHelp": "Content that hasn’t changed since it was last localized keeps its existing version in each locale, including any edits made there. Choosing All content replaces it. Documents that don’t exist yet in a locale are localized in full. New and modified content is translated with AI.",
@@ -930,8 +931,8 @@
   "aiLocalizeToolReadOutline": "Read the {{ locale }} layout",
   "aiLocalizeToolReadText": "Read the {{ locale }} text",
   "aiLocalizeToolRemoveWidget": "Removed a widget in {{ locale }}",
-  "aiLocalizeToolUpdate": "Wrote {{ count }} translation in {{ locale }}",
-  "aiLocalizeToolUpdate_plural": "Wrote {{ count }} translations in {{ locale }}",
+  "aiLocalizeToolUpdate": "Updated {{ count }} text in {{ locale }}",
+  "aiLocalizeToolUpdate_plural": "Updated {{ count }} texts in {{ locale }}",
   "aiLocalizeToolWidgetSchema": "Looked up a widget type",
   "aiLocalizeWorkingOn": "Localizing “{{ title }}” into {{ locale }}"
 }
