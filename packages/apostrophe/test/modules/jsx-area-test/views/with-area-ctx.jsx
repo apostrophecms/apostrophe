@@ -3,7 +3,7 @@ export default function (data, { Area }) {
     <main>
       <Area
         doc={data.piece}
-        name='main'
+        name="main"
         with={{
           'jsx-ctx': { tag: 'from-area-with' }
         }}
