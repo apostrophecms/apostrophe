@@ -2543,8 +2543,12 @@ still output the value of this field with a regular template expression.`);
               for (const item of (doc[field.name].items || [])) {
                 item._originalId = item._id;
                 item._id = self.apos.util.generateId();
-                const schema = self.apos.area.getWidgetManager(item.type).schema;
-                self.regenerateIds(req, schema, item);
+                const manager = self.apos.area.getWidgetManager(item.type);
+                if (!manager) {
+                  self.apos.area.warnMissingWidgetType(item.type);
+                  continue;
+                }
+                self.regenerateIds(req, manager.schema, item);
               }
             }
           }
