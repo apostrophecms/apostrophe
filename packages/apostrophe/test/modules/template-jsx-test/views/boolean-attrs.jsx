@@ -1,7 +1,7 @@
 export default function () {
   return (
     <input
-      type='checkbox'
+      type="checkbox"
       checked
       disabled={false}
       data-extra={null}

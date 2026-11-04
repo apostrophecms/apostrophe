@@ -3,7 +3,7 @@ export default function (data, { Field }) {
     <main>
       <Field
         doc={data.piece}
-        name='name'
+        name="name"
         with={{
           tag: 'h2',
           className: 'lede'

@@ -1764,6 +1764,14 @@ describe('Document Versions', function () {
     );
   }
 
+  // What a project that removed the module of `type` leaves behind: docs of
+  // a `newType` nothing manages, and the placeholder manager startup
+  // registers for it
+  async function orphan(apos, type, newType) {
+    await apos.doc.db.updateMany({ type }, { $set: { type: newType } });
+    await apos.page.compiledHandlers.apostrophe.modulesRegistered.manageOrphans();
+  }
+
   async function saveDraft(apos, req, doc, changes = {}) {
     const draft = await apos.article
       .find(req, { aposDocId: doc.aposDocId })
@@ -2901,6 +2909,24 @@ describe('Document Versions', function () {
       assert.equal(stored.archived, true);
     });
 
+    it('should skip the documents of a type whose module is gone', async function() {
+      const req = getReq(apos, { mode: 'draft' });
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await apos.article.publish(req, draft);
+      await apos.article.publish(req, await apos.article.update(req, {
+        ...draft,
+        title: 'Second'
+      }));
+      const previous = await toLegacy(apos, draft);
+      await orphan(apos, 'article', 'removed-article');
+
+      await apos.docVersions.seedPublicationPoints();
+      assert.equal(await apos.docVersions.removePreviousModeDocs(), 1);
+
+      assert.deepEqual(await timeline(apos, draft), []);
+      assert.equal(await apos.doc.db.countDocuments({ _id: previous._id }), 0);
+    });
+
     // The state a project upgrading from the `previous` mode arrives in: the
     // content live before the newest publish is a document with a
     // deduplicated slug, and the store holds nothing. Returns that document,
@@ -3455,6 +3481,30 @@ describe('Document Versions', function () {
         Object.keys(versions[0]).sort(),
         [ '_id', 'ai', 'author', 'authorId', 'changeCount', 'createdAt', 'live', 'mode' ]
       );
+    });
+
+    it('should have versions response for a type whose module is gone - GET / and GET /:id', async function() {
+      const req = getReq(apos, admin);
+      const article = await apos.article.insert(req, {
+        title: 'An article'
+      });
+      await apos.article.update(req, {
+        ...article,
+        title: 'An updated article'
+      });
+      await orphan(apos, 'article', 'removed-article');
+
+      const { results: versions } = await apos.http.get(`/api/v1/${moduleName}`, {
+        qs: { docId: article._id },
+        jar: jarAdmin
+      });
+      assert(versions.length);
+
+      const version = await apos.http.get(`/api/v1/${moduleName}/${versions[0]._id}`, {
+        qs: { annotate: '1' },
+        jar: jarAdmin
+      });
+      assert.equal(version.doc.title, 'An updated article');
     });
 
     it('should have versions response as editor - GET /', async function() {
