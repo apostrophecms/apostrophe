@@ -16,6 +16,21 @@ describe('Unmanaged types', function() {
         'gone-page': {
           extend: '@apostrophecms/page-type'
         },
+        article: {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              main: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {}
+                  }
+                }
+              }
+            }
+          }
+        },
         '@apostrophecms/page': {
           options: {
             types: [
@@ -68,39 +83,50 @@ describe('Unmanaged types', function() {
     assert.equal(home._id, tree._id);
   });
 
-  it('should regenerate the ids of an area holding a widget of an unmanaged type', function() {
-    const req = apos.task.getReq();
-    const schema = [
-      {
-        name: 'main',
-        type: 'area',
-        options: {
-          widgets: {
-            '@apostrophecms/rich-text': {}
-          }
-        }
-      }
-    ];
-    const doc = {
-      main: {
-        _id: 'area',
-        metaType: 'area',
-        items: [
-          {
-            _id: 'widget',
-            metaType: 'widget',
-            type: 'removed'
-          }
-        ]
-      }
-    };
+  it('should drop a widget of an unmanaged type when a doc is saved', async function() {
+    const article = await apos.http.post('/api/v1/article', {
+      body: {
+        title: 'An article',
+        main: area()
+      },
+      jar
+    });
 
-    apos.schema.regenerateIds(req, schema, doc);
+    assert.deepEqual(article.main.items.map(item => item.type), [ '@apostrophecms/rich-text' ]);
+  });
+
+  it('should drop a widget of an unmanaged type when a doc is copied', function() {
+    const req = apos.task.getReq();
+    const doc = { main: area() };
+
+    apos.schema.regenerateIds(req, apos.modules.article.schema, doc);
 
     assert.notEqual(doc.main._id, 'area');
-    assert.notEqual(doc.main.items[0]._id, 'widget');
-    assert.equal(doc.main.items[0]._originalId, 'widget');
+    assert.deepEqual(doc.main.items.map(item => item.type), [ '@apostrophecms/rich-text' ]);
+    assert.equal(doc.main.items[0]._originalId, 'kept');
+    assert.notEqual(doc.main.items[0]._id, 'kept');
   });
+
+  // An area holding a configured widget and one whose module is gone
+  function area() {
+    return {
+      _id: 'area',
+      metaType: 'area',
+      items: [
+        {
+          _id: 'kept',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: '<p>Kept</p>'
+        },
+        {
+          _id: 'removed',
+          metaType: 'widget',
+          type: 'removed'
+        }
+      ]
+    };
+  }
 
   // What a project that removed the module of `type` leaves behind: docs of
   // a `newType` nothing manages, and the placeholder manager startup

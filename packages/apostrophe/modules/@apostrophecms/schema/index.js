@@ -2540,14 +2540,18 @@ still output the value of this field with a regular template expression.`);
             if (doc[field.name]) {
               doc[field.name]._originalId = doc[field.name]._id;
               doc[field.name]._id = self.apos.util.generateId();
-              for (const item of (doc[field.name].items || [])) {
+              // A copy drops widgets whose type has no module, as a save does
+              doc[field.name].items = (doc[field.name].items || []).filter(item => {
+                if (!self.apos.area.getWidgetManager(item.type)) {
+                  self.apos.area.warnMissingWidgetType(item.type);
+                  return false;
+                }
+                return true;
+              });
+              for (const item of doc[field.name].items) {
                 item._originalId = item._id;
                 item._id = self.apos.util.generateId();
                 const manager = self.apos.area.getWidgetManager(item.type);
-                if (!manager) {
-                  self.apos.area.warnMissingWidgetType(item.type);
-                  continue;
-                }
                 self.regenerateIds(req, manager.schema, item);
               }
             }
