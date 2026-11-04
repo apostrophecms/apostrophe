@@ -358,7 +358,7 @@ module.exports = (self) => {
       });
     },
     isEmpty(field, value) {
-      return !value.length;
+      return (value == null) || (value === '');
     },
     validate(field, options, warn, fail) {
       if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
@@ -1019,9 +1019,12 @@ module.exports = (self) => {
         throw self.apos.error('invalid');
       }
       // Allow for ranges to go unset `min` here does not imply requirement,
-      // it is the minimum value the range UI will represent
+      // it is the minimum value the range UI will represent. No input is
+      // unset too, unless the field has a default
+      const blank = (data[field.name] == null) || (data[field.name] === '');
       if (
         typeof destination[field.name] !== 'number' ||
+        (blank && (typeof field.def !== 'number')) ||
         data[field.name] < field.min ||
         data[field.name] > field.max
       ) {
