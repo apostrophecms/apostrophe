@@ -63,4 +63,24 @@ describe('Bundle', function() {
       }
     }
   });
+
+  it('should report a missing bundle as an error with a message', async function() {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module,
+        bundles: [ 'no-such-bundle' ],
+        exit: 'throw'
+      });
+      assert.fail('startup should have failed');
+    } catch (e) {
+      assert(e instanceof Error, 'expected an Error, not a bare string');
+      assert(e.message.includes('no-such-bundle'));
+      assert(e.message.includes('package.json'));
+    } finally {
+      if (apos) {
+        await apos.destroy();
+      }
+    }
+  });
 });
