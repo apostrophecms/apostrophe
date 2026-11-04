@@ -23,7 +23,7 @@
         v-model="next"
         :for="getChoiceId(uid, choice.value)"
         :choice="choice"
-        :field="field"
+        :field="choiceField"
       />
     </template>
   </AposInputWrapper>
