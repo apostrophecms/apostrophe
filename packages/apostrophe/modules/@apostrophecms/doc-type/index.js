@@ -1155,8 +1155,13 @@ module.exports = {
                     parentNotLocalized: true
                   });
                 } else {
+                  // The peer is a draft, so look in draft mode whatever mode
+                  // the request was made in
                   const originalTarget = await actionModule
-                    .findForEditing(req, self.apos.page.getIdCriteria(lastTargetId))
+                    .findForEditing(
+                      req.clone({ mode: 'draft' }),
+                      self.apos.page.getIdCriteria(lastTargetId)
+                    )
                     .permission('view')
                     .archived(null)
                     .areas(false)

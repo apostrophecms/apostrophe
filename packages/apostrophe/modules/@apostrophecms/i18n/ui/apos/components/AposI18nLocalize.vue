@@ -1198,7 +1198,9 @@ export default {
               ? this.$t('apostrophe:parentNotLocalized')
               : e?.body?.data?.detail
                 ? this.$t(e.body.data.detail)
-                : (e?.body?.message || '');
+                // A bare error name such as "notfound" tells the editor
+                // nothing: the generic reason reads better
+                : (e?.body?.message !== e?.body?.name && e?.body?.message) || '';
           }
         }
       }
@@ -1439,6 +1441,22 @@ export default {
         };
       }
       if (run.blocked) {
+        // Related documents chosen with it wait for it too: say so, or the
+        // editor may take them for done
+        const relatedCount = new Set(run.pairs
+          .filter(({ related }) => related)
+          .map(({ docId }) => docId)).size;
+        const message = [
+          t(run.blocked.parent
+            ? 'localizingParentMessage'
+            : 'localizingParentMessageUntitled', {
+            parent: run.blocked.parent,
+            locales: this.listLabels(run.blocked.locales.map(this.localeLabel))
+          }),
+          ...(relatedCount
+            ? [ t('localizingParentRelated', { count: relatedCount }) ]
+            : [])
+        ];
         return {
           ...view,
           phase: 'stopped',
@@ -1446,12 +1464,7 @@ export default {
           card: {
             tone: 'warning',
             title: t('localizingParentTitle'),
-            message: t(run.blocked.parent
-              ? 'localizingParentMessage'
-              : 'localizingParentMessageUntitled', {
-              parent: run.blocked.parent,
-              locales: this.listLabels(run.blocked.locales.map(this.localeLabel))
-            })
+            message: message.join(' ')
           }
         };
       }
