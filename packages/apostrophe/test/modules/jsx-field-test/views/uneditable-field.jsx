@@ -1,7 +1,7 @@
 export default function (data, { Field }) {
   return (
     <main>
-      <Field doc={data.piece} name='wordCount' />
+      <Field doc={data.piece} name="wordCount" />
     </main>
   );
 }

@@ -1,7 +1,9 @@
 import globals from 'globals';
 import pluginVue from 'eslint-plugin-vue';
 import neostandard from 'neostandard';
+import pluginImportX from 'eslint-plugin-import-x';
 import { defineConfig, globalIgnores } from 'eslint/config';
+import jsxUsesVars from './rules/jsx-uses-vars.js';
 
 export default defineConfig([
   globalIgnores([
@@ -11,8 +13,17 @@ export default defineConfig([
     '**/data',
     '**/public'
   ]),
-  ...neostandard(),
+  // Since 0.14 neostandard scopes its plugins and rules to JS files, our
+  // unscoped rules below would find no `n` or `@stylistic` plugin in Vue files
+  ...neostandard({ files: [ '**/*.vue' ] }),
   ...pluginVue.configs['flat/recommended'],
+  {
+    // neostandard stopped bundling import-x in 0.14, our `import-x/*` rules
+    // below still need it
+    plugins: {
+      'import-x': pluginImportX
+    }
+  },
   {
     languageOptions: {
       parserOptions: {
@@ -213,6 +224,9 @@ export default defineConfig([
         {
           SwitchCase: 1,
           VariableDeclarator: 1,
+          // @stylistic 3+ indents continuation lines after `=`, keep the
+          // older behavior so existing code stays clean
+          assignmentOperator: 'off',
           outerIIFEBody: 1,
           MemberExpression: 1,
           FunctionDeclaration: {
@@ -340,6 +354,26 @@ export default defineConfig([
         ignoreHTMLAttributeValues: true,
         ignoreHTMLTextContents: true
       } ]
+    }
+  },
+  {
+    // Apostrophe JSX templates render on the server, there is no client
+    // reconciler and no need for `key` props
+    files: [ '**/*.jsx' ],
+    plugins: {
+      apostrophe: {
+        rules: {
+          'jsx-uses-vars': jsxUsesVars
+        }
+      }
+    },
+    rules: {
+      'apostrophe/jsx-uses-vars': 'error',
+      'neostandard/jsx-key': 'off',
+      '@stylistic/jsx-quotes': [ 'error', 'prefer-double' ],
+      // Templates and docs mix `cond ? (` and a leading `?` about evenly,
+      // there is no house style to enforce
+      '@stylistic/multiline-ternary': 'off'
     }
   },
   {
