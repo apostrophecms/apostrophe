@@ -1397,18 +1397,18 @@ export default {
     // What the Localizing step shows (see AposI18nLocalizeProgress)
     describeRun() {
       const run = this.run;
-      const t = (key, data) => this.$t(`apostrophe:${key}`, data);
+      const t = (key, data) => this.$t(key, data);
       const localeLabels = [ ...new Set(run.pairs.map(({ locale }) => locale)) ]
         .map(this.localeLabel);
       // Named when one or two, counted when more: the chips name them
       const locales = localeLabels.length > 2
-        ? t('localizingLocaleCount', { count: localeLabels.length })
+        ? t('apostrophe:localizingLocaleCount', { count: localeLabels.length })
         : this.listLabels(localeLabels);
       const main = run.pairs.find(({ related }) => !related);
       const docCount = new Set(run.pairs.map(({ docId }) => docId)).size;
       const subject = main
         ? main.title
-        : t('localizingDocuments', { count: docCount });
+        : t('apostrophe:localizingDocuments', { count: docCount });
       // Related documents already up to date are left out once it is done
       const shown = run.pairs
         .filter((pair) => !(pair.related && pair.status === 'upToDate'));
@@ -1428,20 +1428,20 @@ export default {
         return {
           ...view,
           phase: 'running',
-          heading: t('localizingHeadingRunning', {
+          heading: t('apostrophe:localizingHeadingRunning', {
             title: subject,
             locales
           }),
           phrase: {
-            text: run.phrase || t('localizingPhraseStarting'),
+            text: run.phrase || t('apostrophe:localizingPhraseStarting'),
             count: run.pairs.length > 1 && index !== -1
-              ? t('aiLocalizeProgressCount', {
+              ? t('apostrophe:aiLocalizeProgressCount', {
                 current: index + 1,
                 total: run.pairs.length
               })
               : ''
           },
-          help: t('localizingKeepOpen')
+          help: t('apostrophe:localizingKeepOpen')
         };
       }
       if (run.blocked) {
@@ -1452,22 +1452,22 @@ export default {
           .map(({ docId }) => docId)).size;
         const message = [
           t(run.blocked.parent
-            ? 'localizingParentMessage'
-            : 'localizingParentMessageUntitled', {
+            ? 'apostrophe:localizingParentMessage'
+            : 'apostrophe:localizingParentMessageUntitled', {
             parent: run.blocked.parent,
             locales: this.listLabels(run.blocked.locales.map(this.localeLabel))
           }),
           ...(relatedCount
-            ? [ t('localizingParentRelated', { count: relatedCount }) ]
+            ? [ t('apostrophe:localizingParentRelated', { count: relatedCount }) ]
             : [])
         ];
         return {
           ...view,
           phase: 'stopped',
-          heading: t('localizingHeadingNot', { title: subject }),
+          heading: t('apostrophe:localizingHeadingNot', { title: subject }),
           card: {
             tone: 'warning',
-            title: t('localizingParentTitle'),
+            title: t('apostrophe:localizingParentTitle'),
             message: message.join(' ')
           }
         };
@@ -1477,13 +1477,13 @@ export default {
         return {
           ...view,
           phase: 'stopped',
-          heading: t(partly ? 'localizingHeadingPartly' : 'localizingHeadingNot', {
+          heading: t(partly ? 'apostrophe:localizingHeadingPartly' : 'apostrophe:localizingHeadingNot', {
             title: subject
           }),
           card: {
             tone: 'info',
-            title: t('localizingCancelledTitle'),
-            message: t('localizingCancelledMessage')
+            title: t('apostrophe:localizingCancelledTitle'),
+            message: t('apostrophe:localizingCancelledMessage')
           },
           steps: shown.map((pair, index) => this.planItem(pair, index))
         };
@@ -1494,23 +1494,23 @@ export default {
           message.push(this.reason(failed[0]));
         }
         if (failed.some(({ writes }) => writes > 0)) {
-          message.push(t('localizingFailedPartial'));
+          message.push(t('apostrophe:localizingFailedPartial'));
         }
-        message.push(t(partly ? 'localizingFailedRestSaved' : 'localizingFailedNothingElse'));
+        message.push(t(partly ? 'apostrophe:localizingFailedRestSaved' : 'apostrophe:localizingFailedNothingElse'));
         return {
           ...view,
           phase: 'stopped',
-          heading: t(partly ? 'localizingHeadingPartly' : 'localizingHeadingNot', {
+          heading: t(partly ? 'apostrophe:localizingHeadingPartly' : 'apostrophe:localizingHeadingNot', {
             title: subject
           }),
           card: {
             tone: partly ? 'warning' : 'error',
             title: failed.length === 1
-              ? t('localizingFailedOne', {
+              ? t('apostrophe:localizingFailedOne', {
                 title: failed[0].title,
                 locale: this.localeLabel(failed[0].locale)
               })
-              : t('localizingFailedMany', { count: failed.length }),
+              : t('apostrophe:localizingFailedMany', { count: failed.length }),
             message: message.join(' ')
           },
           steps: shown.length > 1
@@ -1521,12 +1521,12 @@ export default {
       return {
         ...view,
         phase: 'done',
-        heading: t('localizingHeadingDone', {
+        heading: t('apostrophe:localizingHeadingDone', {
           title: subject,
           locales
         }),
         summary: this.runSummary(shown, locales),
-        elapsed: t('localizingElapsed', {
+        elapsed: t('apostrophe:localizingElapsed', {
           time: this.formatElapsed(run.endedAt - run.startedAt)
         }),
         trace: this.runTrace(shown)
@@ -1589,44 +1589,44 @@ export default {
     },
     // The one-line summary once it is done
     runSummary(shown, locales) {
-      const t = (key, data) => this.$t(`apostrophe:${key}`, data);
+      const t = (key, data) => this.$t(key, data);
       const source = this.localeLabel(this.modalData.locale);
       const main = shown.filter(({ related }) => !related);
       const related = shown.filter((pair) => pair.related && pair.status === 'done');
       const parts = [];
       if (!main.length) {
-        parts.push(t('localizingSummaryDocs', {
+        parts.push(t('apostrophe:localizingSummaryDocs', {
           count: new Set(related.map(({ docId }) => docId)).size,
           locales
         }));
       } else if (main.every(({ status }) => status === 'upToDate')) {
-        parts.push(t('localizingSummaryUpToDate', {
+        parts.push(t('apostrophe:localizingSummaryUpToDate', {
           source,
           title: main[0].title
         }));
       } else if (main.length === 1 && main[0].mode === 'update') {
         parts.push(t(main[0].translated
-          ? 'localizingSummaryChangesTranslated'
-          : 'localizingSummaryChangesCopied', {
+          ? 'apostrophe:localizingSummaryChangesTranslated'
+          : 'apostrophe:localizingSummaryChangesCopied', {
           count: main[0].changes?.count || 0,
           locale: this.localeLabel(main[0].locale),
           source
         }));
       } else if (main.every(({ mode }) => mode !== 'update')) {
         parts.push(t(main.every(({ translated }) => translated)
-          ? 'localizingSummaryFullTranslated'
-          : 'localizingSummaryFullCopied', {
+          ? 'apostrophe:localizingSummaryFullTranslated'
+          : 'apostrophe:localizingSummaryFullCopied', {
           title: main[0].title,
           locales
         }));
       } else {
-        parts.push(t('localizingSummaryMixed', {
+        parts.push(t('apostrophe:localizingSummaryMixed', {
           title: main[0].title,
           locales
         }));
       }
       if (main.length && related.length) {
-        parts.push(t('localizingSummaryRelated', {
+        parts.push(t('apostrophe:localizingSummaryRelated', {
           count: new Set(related.map(({ docId }) => docId)).size
         }));
       }
@@ -1635,7 +1635,7 @@ export default {
     // The trace under "Localized in …": for one document in one locale, each
     // stage; for more, a line each
     runTrace(shown) {
-      const t = (key, data) => this.$t(`apostrophe:${key}`, data);
+      const t = (key, data) => this.$t(key, data);
       if (shown.length !== 1) {
         return shown.map((pair, index) => ({
           id: `${index}`,
@@ -1653,7 +1653,7 @@ export default {
       if (pair.status === 'upToDate') {
         return [ {
           id: 'compare',
-          label: t('localizingTraceNoChanges', names)
+          label: t('apostrophe:localizingTraceNoChanges', names)
         } ];
       }
       const stages = [];
@@ -1661,8 +1661,8 @@ export default {
         stages.push({
           id: 'compare',
           label: pair.changes?.basis === 'none'
-            ? t('localizingTraceCompared', names)
-            : t('localizingTraceFound', {
+            ? t('apostrophe:localizingTraceCompared', names)
+            : t('apostrophe:localizingTraceFound', {
               ...names,
               count: pair.changes?.count || 0
             }),
@@ -1671,8 +1671,8 @@ export default {
         stages.push({
           id: 'write',
           label: t(pair.translated
-            ? 'localizingTraceWroteTranslated'
-            : 'localizingTraceWroteCopied', {
+            ? 'apostrophe:localizingTraceWroteTranslated'
+            : 'apostrophe:localizingTraceWroteCopied', {
             ...names,
             count: pair.texts || pair.changes?.count || 0
           }),
@@ -1683,25 +1683,25 @@ export default {
         stages.push({
           id: 'copy',
           label: t(pair.mode === 'replace'
-            ? 'localizingTraceReplaced'
-            : 'localizingTraceNew', names),
+            ? 'apostrophe:localizingTraceReplaced'
+            : 'apostrophe:localizingTraceNew', names),
           detail: pair.mode === 'replace'
-            ? t('localizingTraceReplacedDetail', names)
+            ? t('apostrophe:localizingTraceReplacedDetail', names)
             : null
         });
         stages.push({
           id: 'write',
           label: t(pair.translated
-            ? 'localizingTraceDocTranslated'
-            : 'localizingTraceDocCopied', names),
+            ? 'apostrophe:localizingTraceDocTranslated'
+            : 'apostrophe:localizingTraceDocCopied', names),
           ai: pair.translated,
           detail: pair.summary || null
         });
       }
       stages.push({
         id: 'save',
-        label: t('localizingTraceSaved', names),
-        detail: t('localizingTraceSavedDetail')
+        label: t('apostrophe:localizingTraceSaved', names),
+        detail: t('apostrophe:localizingTraceSavedDetail')
       });
       return stages;
     },
