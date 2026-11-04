@@ -43,8 +43,9 @@ module.exports = {
         // Start a run. Body: `mainId`, the document the dialog was opened
         // for, which "related documents only" leaves out of `docIds`;
         // `docIds`, every draft to localize, related ones included;
-        // `toLocales`; `overwriteRelated`, to recopy related documents that
-        // already exist rather than update them; `translateLocales`, the
+        // `toLocales`; `overwriteMain`, to replace the main document's copies
+        // whole ("All content") rather than update them; `overwriteRelated`,
+        // the same for related documents that already exist; `translateLocales`, the
         // target locales whose content is translated rather than brought
         // over in the source language as is. Returns `{ jobId, pairs }`;
         // follow it with the "ai-localize" bus event and the job module's
@@ -64,6 +65,7 @@ module.exports = {
             mainId,
             docIds,
             toLocales,
+            overwriteMain: self.apos.launder.boolean(req.body.overwriteMain),
             overwriteRelated: self.apos.launder.boolean(req.body.overwriteRelated),
             translateLocales: self.apos.launder.strings(req.body.translateLocales)
           });

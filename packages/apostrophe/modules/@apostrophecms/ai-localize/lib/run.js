@@ -34,7 +34,8 @@ module.exports = (self) => {
     // out what changed and where it belongs, and keeps what the target alone
     // has
     async startRun(req, {
-      mainId, docIds, toLocales, overwriteRelated, translateLocales = []
+      mainId, docIds, toLocales, overwriteMain, overwriteRelated,
+      translateLocales = []
     }) {
       if (!self.apos.ai.active) {
         throw self.apos.error('invalid', 'AI is not configured');
@@ -65,6 +66,7 @@ module.exports = (self) => {
         return self.work(workReq, reporting, {
           jobId: info.jobId,
           pairs,
+          overwriteMain,
           overwriteRelated,
           translateLocales
         });
@@ -79,7 +81,7 @@ module.exports = (self) => {
     },
 
     async work(req, reporting, {
-      jobId, pairs, overwriteRelated, translateLocales
+      jobId, pairs, overwriteMain, overwriteRelated, translateLocales
     }) {
       const controller = new AbortController();
       // A cancel request reaches the run through the job record, from
@@ -115,7 +117,7 @@ module.exports = (self) => {
               jobId,
               index,
               pair,
-              overwrite: pair.related && overwriteRelated,
+              overwrite: pair.related ? overwriteRelated : overwriteMain,
               translate: translateLocales.includes(pair.locale),
               signal: controller.signal
             });
@@ -185,11 +187,15 @@ module.exports = (self) => {
         });
         return {
           status: 'done',
+          mode: target ? 'replace' : 'new',
+          translated: false,
           writes: 0,
           targetId,
           ...await self.targetLink(req, targetId, pair.locale)
         };
       }
+      // "replace" when a copy that existed is replaced whole
+      const existed = Boolean(target) && !untranslated;
       if (!target || overwrite || untranslated) {
         // The copy is the starting point of a translation, not a
         // localization in itself: core's record is suppressed, and a "copy"
@@ -209,7 +215,7 @@ module.exports = (self) => {
           source: await self.storedDraft(source._id),
           target
         });
-        mode = 'new';
+        mode = existed ? 'replace' : 'new';
       }
       // The source as this pass sees it: what the record will say the
       // target now reflects
@@ -232,11 +238,24 @@ module.exports = (self) => {
           }
           return {
             status: 'upToDate',
+            mode,
+            changes: self.changeSummary(changes),
             targetId,
             ...await self.targetLink(req, targetId, pair.locale)
           };
         }
       }
+      // What the dialog says while the pass works and once it is done
+      const known = {
+        mode,
+        translated: translate,
+        ...(changes && { changes: self.changeSummary(changes) })
+      };
+      await self.publish(req, jobId, {
+        event: 'stage',
+        index,
+        ...known
+      });
       const pass = {
         sourceId: source._id,
         targetId,
@@ -244,7 +263,8 @@ module.exports = (self) => {
         targetLocale: pair.locale,
         finished: false,
         summary: '',
-        writes: 0
+        writes: 0,
+        texts: 0
       };
       const passReq = req.clone({
         mode: 'draft',
@@ -289,6 +309,11 @@ module.exports = (self) => {
             return;
           }
           const tool = self.apos.ai.getTool(event.call.name);
+          if (!event.error) {
+            pass.texts += event.call.name === 'localize_update'
+              ? Object.keys(event.call.input?.values || {}).length
+              : event.call.name === 'localize_add_widget' ? 1 : 0;
+          }
           await self.publish(req, jobId, {
             event: 'tool',
             index,
@@ -313,12 +338,14 @@ module.exports = (self) => {
       if (!pass.finished && result.finishReason === 'cancel') {
         return {
           status: 'stopped',
+          ...known,
           writes: pass.writes
         };
       }
       if (!pass.finished) {
         return {
           status: 'incomplete',
+          ...known,
           writes: pass.writes,
           message: result.text || result.finishReason
         };
@@ -333,10 +360,25 @@ module.exports = (self) => {
       });
       return {
         status: 'done',
+        ...known,
         writes: pass.writes,
+        texts: pass.texts,
         summary: pass.summary,
         targetId,
         ...await self.targetLink(req, targetId, pair.locale)
+      };
+    },
+
+    // What changed in the source, for the dialog: how many changes, and the
+    // first few as the editor would name them
+    changeSummary(changes) {
+      return {
+        basis: changes.basis,
+        count: (changes.sourceChanges?.length || 0) + (changes.omitted || 0),
+        items: (changes.sourceChanges || []).slice(0, 10).map((entry) => ({
+          change: entry.change,
+          where: entry.where
+        }))
       };
     },
 
@@ -465,9 +507,13 @@ module.exports = (self) => {
           : []),
         'Write in as few calls as you can: localize_update takes many ' +
           'addresses at once.',
-        'Before each round of tool calls, say in one short sentence, in ' +
+        'Before each round of tool calls, say what you are doing now as one ' +
+          'short progress phrase, in ' +
           `${self.languageName(req, self.apos.i18n.getAdminLocale(req))}, ` +
-          'what you are about to do; the editor sees it as progress.' +
+          'the way a status line reads: no "I", no final period, for ' +
+          'example "Finding where the new paragraph goes in French". The ' +
+          'editor sees one phrase at a time. When you call localize_finish, ' +
+          'its summary is one plain sentence on what changed in the target.' +
           (translate
             ? ' Text you write into the document is in the target locale\'s ' +
               'language.'
@@ -488,7 +534,7 @@ module.exports = (self) => {
           `${self.languageName(req, sourceLocale)}.`,
         `Target: its copy in ${self.languageName(req, targetLocale)}.`
       ];
-      if (mode === 'new') {
+      if (mode !== 'update') {
         lines.push(
           'The target is a fresh copy of the source, still entirely in the ' +
           'source language. Translate all of its text: read it with ' +
