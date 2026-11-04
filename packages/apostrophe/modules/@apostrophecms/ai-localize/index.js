@@ -54,8 +54,10 @@ module.exports = {
           if (!req.user || !self.apos.permission.can(req, 'view-draft')) {
             throw self.apos.error('forbidden');
           }
-          const mainId = self.apos.launder.id(req.body.mainId);
-          const docIds = self.apos.launder.ids(req.body.docIds);
+          // Drafts are what get localized, so published ids stand for theirs
+          const toDraft = (id) => id.replace(/:published$/, ':draft');
+          const mainId = toDraft(self.apos.launder.id(req.body.mainId));
+          const docIds = self.apos.launder.ids(req.body.docIds).map(toDraft);
           const toLocales = self.apos.launder.strings(req.body.toLocales)
             .filter((locale) => self.apos.i18n.isValidLocale(locale));
           if (!docIds.length || !toLocales.length) {

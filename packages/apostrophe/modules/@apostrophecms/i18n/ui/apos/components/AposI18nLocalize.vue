@@ -742,10 +742,14 @@ export default {
       this.setRelatedDocTypes();
     } else {
       try {
+        // Always the draft, whichever mode the editor is viewing: that is
+        // what gets localized, and its related documents come with draft
+        // ids, which the checks below look up in draft mode
         this.fullDoc = await apos.http.get(
-          `${this.action}/${this.doc._id}`,
+          `${this.action}/${this.doc._id.replace(/:published$/, ':draft')}`,
           {
-            busy: true
+            busy: true,
+            qs: { aposMode: 'draft' }
           }
         );
 

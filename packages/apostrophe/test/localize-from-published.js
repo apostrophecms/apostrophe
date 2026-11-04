@@ -38,11 +38,12 @@ describe('Localize from published mode', function() {
       }
     });
     const req = apos.task.getReq({ mode: 'draft' });
-    // The previous peer exists only in English
-    await apos.page.insert(req, '_home', 'lastChild', {
+    // The previous peer exists only in English, published there
+    const first = await apos.page.insert(req, '_home', 'lastChild', {
       title: 'First',
       type: 'default-page'
     });
+    await apos.page.publish(req, first);
     second = await apos.page.insert(req, '_home', 'lastChild', {
       title: 'Second',
       type: 'default-page'
