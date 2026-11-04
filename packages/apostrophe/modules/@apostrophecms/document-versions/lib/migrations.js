@@ -51,6 +51,15 @@ module.exports = (self) => {
         { aposMode: 'published' },
         5,
         async published => {
+          if (!self.getManager(published.type)) {
+            // Leftover content of a type whose module is gone. Its versions
+            // can't be recorded without the module; startup warns about it
+            self.logWarn('seed-publication-points-no-manager', `No manager found for ${published.type}`, {
+              docId: published._id,
+              docType: published.type
+            });
+            return;
+          }
           if (!self.isVersioned(published) && !self.isPublishedOnly(published)) {
             return;
           }
@@ -90,7 +99,7 @@ module.exports = (self) => {
       // identity restored, and the slug and other conflicting fields back
       // to the values they had while it was live
       async function asPublishedDoc(previous) {
-        const manager = self.apos.doc.getManager(previous.type);
+        const manager = self.getManager(previous.type);
         const reduplicated = manager
           ? await manager.getRevertDeduplicationSet(req, previous)
           : null;

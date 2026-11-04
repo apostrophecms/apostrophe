@@ -1075,7 +1075,9 @@ a module of that name that extends @apostrophecms/piece-type or
 @apostrophecms/page-type, or remove these documents from the
 database.`);
               self.apos.doc.managers[type] = {
-                // Do-nothing placeholder manager
+                // Do-nothing placeholder manager. `orphan` lets code that
+                // needs a real doc type module treat it as missing
+                orphan: true,
                 schema: [],
                 options: {
                   editRole: 'admin',
@@ -1087,7 +1089,10 @@ database.`);
                 },
                 isLocalized() {
                   return false;
-                }
+                },
+                // Called on every doc in a REST API response. There is no
+                // schema, so no `viewPermission` to apply
+                removeForbiddenFields(req, doc) {}
               };
             }
           }
