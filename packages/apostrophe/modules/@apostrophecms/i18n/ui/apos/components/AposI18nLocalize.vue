@@ -2299,6 +2299,9 @@ export default {
   & {
     display: flex;
     align-items: center;
+    // Its own space below, since the disclaimer that would add some is
+    // usually empty
+    margin: 0 0 $spacing-base;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--a-base-8);
   }
