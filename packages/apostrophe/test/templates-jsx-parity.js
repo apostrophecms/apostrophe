@@ -275,6 +275,7 @@ describe('Templates: JSX twins of core templates', function() {
     assert.match(jsx['anon /pieces?page=2'], /is-active/);
     assert.match(jsx['anon /login'], /<div id="apos-login">/);
     assert.match(jsx['anon /missing-page'], /^404[\s\S]*apos-not-found/);
+    assert.match(jsx['anon /'], /^200[\s\S]*class="parity-home"/);
   });
 
   it('keeps the list of outer layout blocks in step with outerLayoutBase', function() {
