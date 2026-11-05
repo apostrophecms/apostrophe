@@ -41,14 +41,14 @@ fi
 
 {
   echo "=== repeat: runs=$runs adapter=$adapter spec=$spec grep='${grep_filter}' ==="
-  echo "=== started $(date -Is) ==="
+  echo "=== started $(date +%Y-%m-%dT%H:%M:%S%z) ==="
 } | tee -a "$summary"
 
 failures=0
 for ((i = 1; i <= runs; i++)); do
   log=$(printf "%s/run-%03d.log" "$logdir" "$i")
   code=0
-  APOS_TEST_DB_PROTOCOL="$adapter" "${extra[@]}" ../../node_modules/.bin/mocha \
+  APOS_TEST_DB_PROTOCOL="$adapter" ${extra[@]+"${extra[@]}"} ../../node_modules/.bin/mocha \
     "${mocha_args[@]}" "$spec" > "$log" 2>&1 || code=$?
   if [[ "$code" -ne 0 ]]; then
     failures=$((failures + 1))
@@ -64,7 +64,7 @@ for ((i = 1; i <= runs; i++)); do
 done
 
 {
-  echo "=== finished $(date -Is): $failures/$runs runs failed ==="
+  echo "=== finished $(date +%Y-%m-%dT%H:%M:%S%z): $failures/$runs runs failed ==="
   echo "logs: $logdir"
 } | tee -a "$summary"
 
