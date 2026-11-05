@@ -678,6 +678,7 @@ async function apostrophe(options, telemetry, rootSpan, { logger }) {
     await nestedModuleSubdirs();
 
     for (const [ name, options ] of Object.entries(self.options.modules)) {
+      validateModuleName(name);
       await synth.define(name, options);
     }
 
@@ -689,6 +690,21 @@ async function apostrophe(options, telemetry, rootSpan, { logger }) {
   }
 
   // Reorder modules based on their `before` property.
+  // A slash is only meaningful in an npm-style `@namespace/name` module name.
+  // Anything else, such as `nested/stuff`, would load from a subfolder of
+  // `modules` and then draw a misleading "unused module" warning for the
+  // parent folder, so refuse it with an explanation instead.
+  function validateModuleName(name) {
+    if (name.includes('/') && !/^@[^/]+\/[^/]+$/.test(name)) {
+      throw new Error(
+        `The module name "${name}" contains a slash. Only npm-style names like ` +
+        '"@namespace/name" may contain a slash. To organize your project\'s ' +
+        'modules into subfolders, set the "nestedModuleSubdirs: true" option ' +
+        'in app.js and give each module a plain name.'
+      );
+    }
+  }
+
   async function sortModules(moduleNames) {
     // The module names that have a `before` property
     const beforeModules = [];
