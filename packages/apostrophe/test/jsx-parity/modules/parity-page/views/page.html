@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block bodyClass %}parity-page{% endblock %}
+{% block extraHtml %}data-parity="1"{% endblock %}
+{% block standardHead %}{{ super() }}<meta name="parity" content="yes">{% endblock %}
+{% block main %}
+  <h1>{{ data.page.title }}</h1>
+  {% field data.page, 'subtitle' %}
+  {% area data.page, 'main' %}
+{% endblock %}

@@ -22,6 +22,17 @@
 // entirely in Apostrophe would be a vast undertaking, but perhaps
 // you have a custom version of Nunjucks that is compatible.
 //
+// ### `jsx`: set to `true` to render Apostrophe's own templates from their
+// `.jsx` versions rather than their `.html` versions. Other templates are not
+// affected: elsewhere `.jsx` always wins over `.html` in the same folder.
+// Nunjucks templates, such as those of extensions that ship only `.html`,
+// still work and extend the JSX outer layout. Defaults to `false`, which
+// renders exactly what earlier versions rendered.
+//
+// ### `nunjucks`: set to `false` to forbid Nunjucks altogether. Implies
+// `jsx: true`. Nunjucks is never loaded, and rendering any Nunjucks template
+// throws an error naming it. Use this to confirm a project is fully JSX.
+//
 // ### `viewsFolderFallback`: specifies a folder to be checked for templates
 // if they are not found in the module that called `self.render`
 // or those it extends. This is a handy place for project-wide macro files.
@@ -72,7 +83,33 @@ module.exports = {
 
     self.envs = {};
     self.filters = {};
-    self.nunjucks = self.options.language || require('nunjucks');
+    // Nunjucks is loaded on first use, so a project that renders only JSX
+    // never loads it.
+    let nunjucks = self.options.language || null;
+    Object.defineProperty(self, 'nunjucks', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        if (!nunjucks) {
+          if (self.options.nunjucks === false) {
+            throw new Error(stripIndent`
+              Nunjucks is disabled by the nunjucks: false option of
+              @apostrophecms/template, but something tried to use it.
+            `);
+          }
+          nunjucks = require('nunjucks');
+          self.onNunjucksLoaded(nunjucks);
+        }
+        return nunjucks;
+      },
+      set(value) {
+        nunjucks = value;
+        self.onNunjucksLoaded(nunjucks);
+      }
+    });
+    if (nunjucks) {
+      self.onNunjucksLoaded(nunjucks);
+    }
     self.insertions = {};
     self.runtimeNodes = {};
 
@@ -214,6 +251,11 @@ module.exports = {
       // been correctly escaped already.
 
       safe(s) {
+        // In JSX mode, don't load Nunjucks just to mark a string safe.
+        // Nunjucks treats these as its own SafeString once it loads.
+        if (self.isJsxMode()) {
+          return new self.JsxSafeString(s);
+        }
         return new self.nunjucks.runtime.SafeString(s);
       },
 
@@ -223,7 +265,7 @@ module.exports = {
       // with its `toString` method before escaping.
 
       escapeIfNeeded(s) {
-        if (!(s instanceof self.nunjucks.runtime.SafeString)) {
+        if (!self.isSafeString(s)) {
           return self.safe(self.apos.util.escapeHtml((s == null) ? '' : s.toString()));
         } else {
           return s;
@@ -302,7 +344,11 @@ module.exports = {
       // Implements `render` and `renderString`. See their
       // documentation. async function.
 
-      async renderBody(req, type, s, data, module) {
+      //
+      // `context`, if given, holds variables for a Nunjucks template to see
+      // by name, alongside `data`, `apos` and the rest. They never replace
+      // those.
+      async renderBody(req, type, s, data, module, context) {
 
         let result;
 
@@ -324,7 +370,21 @@ module.exports = {
           }
         }
 
+        if (self.options.nunjucks === false) {
+          throw new Error(
+            `${module.__meta.name} tried to render the Nunjucks ` +
+            (type === 'file' ? `template "${s}"` : 'template string') +
+            ', but Nunjucks is disabled by the nunjucks: false option of ' +
+            '@apostrophecms/template. Supply a .jsx version of it.'
+          );
+        }
+
         const args = self.getRenderArgs(req, data, module);
+        for (const [ key, value ] of Object.entries(context || {})) {
+          if (!_.has(args, key)) {
+            args[key] = value;
+          }
+        }
 
         const env = self.getEnv(req, module);
 
@@ -342,6 +402,9 @@ module.exports = {
           })(s, args);
         } else {
           throw new Error('renderBody does not support the type ' + type);
+        }
+        if (self.isJsxLayoutCapture(result)) {
+          result = await self.renderJsxLayoutCapture(req, result, data, module);
         }
         if (process.platform === 'win32') {
           // CR/LF is a waste of space in HTML and breaks unit tests

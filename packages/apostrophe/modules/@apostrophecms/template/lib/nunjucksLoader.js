@@ -78,6 +78,17 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
       throw new Error('Module doesn\'t exist: ' + moduleName);
     }
 
+    // A JSX outer layout can't be extended by Nunjucks directly. Hand
+    // Nunjucks a stand-in that captures its blocks, so the JSX layout can
+    // render them afterwards. See `getJsxLayoutCaptureSource`.
+    const captureSrc = self.templates.getJsxLayoutCaptureSource(moduleName, modulePath);
+    if (captureSrc) {
+      return {
+        src: captureSrc,
+        path: name
+      };
+    }
+
     const dirs = self.templates.getViewFolders(self.templates.apos.modules[moduleName]);
     for (i = 0; (i < dirs.length); i++) {
       fullpath = dirs[i] + '/' + modulePath;
