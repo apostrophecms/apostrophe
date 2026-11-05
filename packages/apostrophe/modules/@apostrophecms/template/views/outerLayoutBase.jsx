@@ -35,7 +35,7 @@ export default async function ({
   const isApos = scene === 'apos';
   return (
     <>
-      {new Raw(`<!DOCTYPE html>\n<html lang="${lang}" dir="${dir}" ${extraHtmlAttrs}>`)}
+      {new Raw(`<!DOCTYPE html>\n<html lang="${escapeAttr(lang)}" dir="${escapeAttr(dir)}" ${extraHtmlAttrs}>`)}
       <head>
         {block(encoding, () => <meta charset='utf-8' />)}
         {block(startHead, () => null)}
