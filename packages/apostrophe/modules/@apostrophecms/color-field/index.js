@@ -49,7 +49,7 @@ module.exports = {
             }
           },
           isEmpty: function (field, value) {
-            return !value.length;
+            return (value == null) || (value === '');
           }
         });
       },

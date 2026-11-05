@@ -267,6 +267,8 @@ module.exports = {
         self.apos.migration.add('seed-publication-points', self.seedPublicationPoints);
         self.apos.migration.add('remove-previous-mode-docs', self.removePreviousModeDocs);
         self.apos.migration.add('set-legacy-change-counts', self.setChangeCountTask);
+        // Counts recorded while a blank value against another was a change
+        self.apos.migration.add('recount-blank-value-changes', self.setChangeCountTask);
       },
       addContextMenu() {
         self.apos.doc.addContextOperation({
@@ -1131,7 +1133,7 @@ module.exports = {
         if (!item.versions.some(version => version.ai)) {
           return [];
         }
-        const created = item.previous ? [] : getCreatedRows(item.versions[0]);
+        const created = item.previous ? [] : await getCreatedRows(item.versions[0]);
         if (!item.pairs.length || !self.getManager(previous.doc.type)) {
           return created;
         }
@@ -1140,12 +1142,12 @@ module.exports = {
 
         // Every path of `version` when it was saved with AI: its changes
         // from a new document of its type
-        function getCreatedRows(version) {
-          const manager = self.getManager(version.doc.type);
-          if (!version.ai || !manager) {
+        async function getCreatedRows(version) {
+          const { type } = version.doc;
+          if (!version.ai || !self.getManager(type)) {
             return [];
           }
-          return self.getChangeRows(req, manager.newInstance(), version.doc);
+          return self.getChangeRows(req, await self.getEmptyDoc(req, type), version.doc);
         }
       },
       // The change list of a version (see `getChangeList`) and the versions it
@@ -1298,6 +1300,25 @@ module.exports = {
         return forbidden?.size
           ? rows.filter(row => !forbidden.has(row.path[0].name)).length
           : rows.length;
+      },
+      // A new document of `type` as a save stores it: `newInstance()` leaves
+      // `null` where a save stores `[]` or `false`, so it is converted. A field
+      // that fails to convert, such as a required one, keeps what conversion
+      // wrote, else its `newInstance()` value
+      async getEmptyDoc(req, type) {
+        const manager = self.getManager(type);
+        const initial = manager.newInstance();
+        const doc = { ...initial };
+        try {
+          await self.apos.schema.convert(req, manager.schema, initial, doc, {
+            fetchRelationships: false
+          });
+        } catch (errors) {
+          if (!Array.isArray(errors)) {
+            throw errors;
+          }
+        }
+        return self.apos.util.clonePermanent(doc);
       },
       // What the diff engine needs from the rest of Apostrophe. `doc`, the
       // document compared, names it in the log when the engine recovers from
