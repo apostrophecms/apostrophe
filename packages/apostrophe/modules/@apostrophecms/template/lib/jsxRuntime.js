@@ -243,6 +243,12 @@ async function walk(node, out) {
     out.push(node.html);
     return;
   }
+  if ((typeof node === 'function') && node.aposBlock) {
+    // A block prop that wraps the layout's default markup (see
+    // `jsxLayout.js`), output by a layout that has no default to give it.
+    await walk(node(null), out);
+    return;
+  }
   if (isSafeInstance(node)) {
     out.push(node.toString());
     return;
