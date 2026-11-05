@@ -38,6 +38,14 @@ describe('Document Versions draft changes', function () {
                   value: 'one'
                 } ]
               },
+              // Read by a save, never stored
+              _now: {
+                type: 'checkboxes',
+                choices: [ {
+                  label: 'Now',
+                  value: 'true'
+                } ]
+              },
               items: {
                 type: 'array',
                 fields: {
