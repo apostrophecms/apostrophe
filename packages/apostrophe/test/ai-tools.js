@@ -233,13 +233,19 @@ describe('AI tools', function() {
           .map(tool => tool.name).sort(),
         [ 'create_page', 'find_pages' ]
       );
+      // Everything registered: this file's tools, and the ones core's own
+      // modules register (AI localization's, under its tag)
+      const coreTools = apos.ai.getTools({ tags: [ 'ai-localize' ] })
+        .map(tool => tool.name);
+      assert(coreTools.length > 0);
       assert.deepEqual(
         apos.ai.getTools().map(tool => tool.name).sort(),
         [
           'bulky', 'create_page', 'find_pages', 'forbidden_tool',
           'no_object', 'schemaless', 'send_email', 'tool_trouble',
-          'wrong_shape'
-        ]
+          'wrong_shape',
+          ...coreTools
+        ].sort()
       );
       assert.deepEqual(
         apos.ai.getTools({ tags: [ 'content' ] }).map(tool => tool.name).sort(),
