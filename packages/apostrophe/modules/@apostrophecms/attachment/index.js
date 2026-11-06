@@ -381,6 +381,34 @@ module.exports = {
       // allowed, `checkExtension` returns an array of the file extensions that
       // _are_ allowed (or an empty array if the allowed extensions are
       // unknown).
+      checkExtension(field, attachment) {
+        const groups = field.fileGroups ||
+          (field.fileGroup && [ field.fileGroup ]);
+        let extensions;
+
+        if (groups) {
+          if (!_.includes(groups, attachment.group)) {
+            extensions = [];
+            _.each(groups, function (group) {
+              const groupInfo = _.find(self.fileGroups, { name: group });
+              if (!groupInfo) {
+                return [];
+              }
+              extensions = extensions.concat(groupInfo.extensions);
+            });
+            return extensions;
+          }
+        }
+        extensions = field.extensions ||
+          (field.extension && [ field.extension ]);
+
+        if (extensions) {
+          if (!_.includes(extensions, attachment.extension)) {
+            return extensions;
+          }
+        }
+        return null;
+      },
       // Throw an `invalid` error if the attachment's file type is not
       // accepted by the field.
       assertExtensionAccepted(req, field, attachment) {
@@ -412,34 +440,6 @@ module.exports = {
           ...(doc ? { docId: doc._id } : {}),
           kept
         });
-      },
-      checkExtension(field, attachment) {
-        const groups = field.fileGroups ||
-          (field.fileGroup && [ field.fileGroup ]);
-        let extensions;
-
-        if (groups) {
-          if (!_.includes(groups, attachment.group)) {
-            extensions = [];
-            _.each(groups, function (group) {
-              const groupInfo = _.find(self.fileGroups, { name: group });
-              if (!groupInfo) {
-                return [];
-              }
-              extensions = extensions.concat(groupInfo.extensions);
-            });
-            return extensions;
-          }
-        }
-        extensions = field.extensions ||
-          (field.extension && [ field.extension ]);
-
-        if (extensions) {
-          if (!_.includes(extensions, attachment.extension)) {
-            return extensions;
-          }
-        }
-        return null;
       },
       // Insert a file as an Apostrophe attachment. The `file` object
       // should be an object with `name` and `path` properties.
