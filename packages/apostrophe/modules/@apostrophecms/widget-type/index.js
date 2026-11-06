@@ -640,6 +640,14 @@ module.exports = {
       // `options` will receive the widget-level options passed in
       // this area, including any `defaultOptions` for the widget type.
       //
+      // `drops` and `dropPath` record what conversion drops, as `convert`
+      // describes, `dropPath` being the dot path of the widget.
+      //
+      // `existing` is the widget as stored, if it is. Its fields are the
+      // starting point, so that a field the input can't set, read only or
+      // beyond this user's permissions, keeps its stored value. The input
+      // still decides every field it can set.
+      //
       // Returns a new, sanitized widget object.
       //
       // Intentionally does not accept `ancestors`, widgets must be independent
@@ -647,8 +655,22 @@ module.exports = {
       // between documents as long as they accept that widget type, so they
       // automatically establish a new context for `following`.
 
-      async sanitize(req, input, options, { fetchRelationships = true } = {}) {
-        const convertOptions = { fetchRelationships };
+      async sanitize(
+        req,
+        input,
+        options,
+        {
+          fetchRelationships = true,
+          drops,
+          dropPath,
+          existing
+        } = {}
+      ) {
+        const convertOptions = {
+          fetchRelationships,
+          drops,
+          dropPath
+        };
         if (!input || typeof input !== 'object') {
           // Do not crash
           input = {};
@@ -661,6 +683,13 @@ module.exports = {
         output.type = self.name;
         output.aposPlaceholder = self.apos.launder.boolean(input.aposPlaceholder);
         if (!output.aposPlaceholder) {
+          if (existing) {
+            for (const field of self.schema) {
+              if (_.has(existing, field.name)) {
+                output[field.name] = existing[field.name];
+              }
+            }
+          }
           const schema = self.allowedSchema(req);
           await self.apos.schema.convert(req, schema, input, output, convertOptions);
         }
