@@ -15,7 +15,16 @@ import {
   npmOnlyReminder
 } from './package-manager.js';
 import { assertSafeShortName } from '../core/validate.js';
-import { deriveKitId, getKit } from '../core/kits.js';
+import {
+  deriveKitId, getKit, STANDALONE_EQUIVALENT
+} from '../core/kits.js';
+import {
+  KIT_NODE_MAJOR, isNodeSupported, parseNodeMajor, requiredNodeMajor
+} from '../core/node-version.js';
+import {
+  renderBuildNeedsNewerNode,
+  renderUnsupportedNodeVersion
+} from './node-version.js';
 import {
   status as telemetryStatus,
   optIn as telemetryOptIn,
@@ -53,6 +62,9 @@ let totalSteps = 6;
  *   target.
  * @property {AdminAccount}   admin
  * @property {boolean}        telemetryConsent
+ * @property {boolean}        nodeRedirect  True when this Node.js is too old
+ *   for at least one build, so the build question steered the user away
+ *   from it, whatever they then picked. Reported to telemetry if they opt in.
  * @property {number}         confirmedAt  Epoch ms when the user confirmed
  *                                         the plan; the install duration
  *                                         is measured from this point.
@@ -66,6 +78,8 @@ let totalSteps = 6;
  * @property {import('../index.js').PackageManager} [packageManager]
  *   The manager that launched us, so a pnpm user is told up front that the
  *   project will use npm.
+ * @property {string} [nodeVersion] Running Node.js version; defaults to
+ *   `process.versions.node`. Builds it is too old for are refused.
  */
 
 /**
@@ -102,7 +116,9 @@ export async function runFlow(deps) {
 async function collectAnswers(deps, defaults) {
   totalSteps = willPromptForConsent(deps) ? 6 : 5;
   const shortName = await askProjectName(defaults?.shortName);
-  const build = await askBuildType(defaults?.build);
+  const { build, nodeRedirect } = await askSupportedBuildType(
+    defaults?.build, deps.nodeVersion
+  );
   const startingPoint = await askStartingPoint(defaults?.startingPoint);
   const sampleContent = startingPoint === 'demo'
     ? await askSampleContent(defaults?.sampleContent)
@@ -130,7 +146,8 @@ async function collectAnswers(deps, defaults) {
     dbReset,
     replacesData,
     admin,
-    telemetryConsent
+    telemetryConsent,
+    nodeRedirect
   };
 }
 
@@ -148,19 +165,72 @@ async function askProjectName(defaultShortName = 'my-project') {
   });
 }
 
+/** @type {ReadonlyArray<BuildType>} */
+const BUILD_TYPES = Object.freeze([ 'astro', 'standalone' ]);
+
 /**
+ * Ask the build question until the answer can run on this Node.js. The
+ * options already say which builds are too new for it; picking one anyway
+ * shows the upgrade steps and asks again. createProject's preflight repeats
+ * the check (and reports it) for callers that skip the flow.
+ *
  * @param {BuildType} [initial]
+ * @param {string} [nodeVersion] Defaults to `process.versions.node`.
+ * @returns {Promise<{ build: BuildType, nodeRedirect: boolean }>}
+ *   `nodeRedirect` is true if any build was unavailable on this Node.js,
+ *   whether or not the user tried to pick it.
+ */
+async function askSupportedBuildType(initial, nodeVersion = process.versions.node) {
+  const major = parseNodeMajor(nodeVersion);
+  /** @param {BuildType} b */
+  const tooOld = (b) => Number.isFinite(major) && major < KIT_NODE_MAJOR[b];
+  let build = await askBuildType(
+    initial ?? (tooOld('astro') ? 'standalone' : 'astro'),
+    nodeVersion,
+    tooOld
+  );
+  while (tooOld(build)) {
+    renderBuildNeedsNewerNode({
+      requiredMajor: KIT_NODE_MAJOR[build],
+      nodeVersion,
+      buildLabel: buildLabel(build)
+    });
+    build = await askBuildType('standalone', nodeVersion, tooOld);
+  }
+  return {
+    build,
+    nodeRedirect: BUILD_TYPES.some(tooOld)
+  };
+}
+
+/**
+ * A build too new for this Node.js stays selectable, but its hint says what
+ * it needs instead of recommending it.
+ *
+ * @param {BuildType} initial
+ * @param {string} nodeVersion
+ * @param {(build: BuildType) => boolean} tooOld
  * @returns {Promise<BuildType>}
  */
-async function askBuildType(initial = 'astro') {
+async function askBuildType(initial, nodeVersion, tooOld) {
+  // clack shows a hint only on the highlighted option, and the too-new build
+  // isn't highlighted by default, so say it under the question as well.
+  const title = render.stepLabel(2, totalSteps, 'How would you like to build?');
+  const warning = `Apostrophe + Astro needs Node.js ${KIT_NODE_MAJOR.astro} ` +
+    `or newer; you have ${nodeVersion}.`;
+  const message = tooOld('astro')
+    ? `${title}\n${render.dim(warning)}`
+    : title;
   return prompts.select({
-    message: render.stepLabel(2, totalSteps, 'How would you like to build?'),
+    message,
     initialValue: initial,
     options: [
       {
         value: 'astro',
         label: 'Apostrophe + Astro',
-        hint: 'recommended — Astro frontend, Apostrophe content'
+        hint: tooOld('astro')
+          ? `needs Node.js ${KIT_NODE_MAJOR.astro} or newer — you have ${nodeVersion}`
+          : 'recommended — Astro frontend, Apostrophe content'
       },
       {
         value: 'standalone',
@@ -717,6 +787,21 @@ export function renderInstallResult(result, answers, { unattended = false } = {}
     renderSuccess(answers, result.packageManager);
   } else if (result.errorCode === 'unsupported_pm') {
     renderUnsupportedPackageManager(result.packageManager, { unattended });
+    render.outro('Install did not start.');
+  } else if (result.errorCode === 'unsupported_node') {
+    const nodeVersion = process.versions.node;
+    const altId = STANDALONE_EQUIVALENT[result.kitId];
+    renderUnsupportedNodeVersion({
+      requiredMajor: requiredNodeMajor(result.kitId),
+      nodeVersion,
+      kitLabel: getKit(result.kitId).label,
+      alternative: altId && isNodeSupported(altId, nodeVersion)
+        ? {
+          kitId: altId,
+          label: getKit(altId).label
+        }
+        : undefined
+    }, { unattended });
     render.outro('Install did not start.');
   } else {
     renderFailure(answers, result);

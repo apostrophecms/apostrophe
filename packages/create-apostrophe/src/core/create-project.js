@@ -1,11 +1,16 @@
-// Headless orchestrator. Preflight (supported pm) + steps. Resolves a structured
-// CreateProjectResult and emits exactly one terminal telemetry event.
-// Never calls process.exit; expected failures resolve (ok:false),
+// Headless orchestrator. Preflight (supported pm, kit's Node floor) + steps.
+// Resolves a structured CreateProjectResult and emits exactly one terminal
+// telemetry event. Never calls process.exit; expected failures resolve (ok:false),
 // unexpected throws propagate to the caller (which converts + emits).
 
-import { getKit } from './kits.js';
+import { getKit, isKnownKit } from './kits.js';
 import { detectPackageManager, assertSupportedPackageManager } from './pm.js';
-import { StageError, UnsupportedPackageManagerError } from './errors.js';
+import { assertNodeSupported } from './node-version.js';
+import {
+  StageError,
+  UnsupportedPackageManagerError,
+  UnsupportedNodeVersionError
+} from './errors.js';
 import {
   checkConnection,
   dropDatabase,
@@ -23,10 +28,12 @@ import { importSampleData as realImportSampleData } from './steps/sample-data.js
 /**
  * Internal factory so steps can be substituted in unit tests. The public
  * {@link createProject} binds the real steps; the (options, deps) contract is
- * unchanged — the step set is not part of it.
+ * unchanged — the step set is not part of it. `nodeVersion` likewise lets
+ * tests pin the running Node.js version.
  */
 export function makeCreateProject({
-  clone, scaffold, install, dbConfig, addAdminUser, importSampleData
+  clone, scaffold, install, dbConfig, addAdminUser, importSampleData,
+  nodeVersion = process.versions.node
 }) {
   return async function createProject(options, deps) {
     const { telemetry, logger } = deps;
@@ -52,16 +59,27 @@ export function makeCreateProject({
         }
       }
       const { ok: _ok, ...payload } = result;
-      telemetry.event(ok ? 'install_success' : 'install_fail', payload);
+      telemetry.event(ok ? 'install_success' : 'install_fail', {
+        ...payload,
+        nodeRedirect: options.nodeRedirect === true
+      });
       return result;
     };
 
-    // Preflight (before any work). Node version stays a bin/ hard exit.
+    // Preflight (before any work). bin/ hard-exits below the installer's own
+    // Node floor; the kit's floor is checked here so the refusal is reported.
+    // An unknown kitId passes through to getKit() below and throws there.
     const packageManager = options.packageManager || detectPackageManager();
     try {
       assertSupportedPackageManager(packageManager);
+      if (isKnownKit(options.kitId)) {
+        assertNodeSupported(options.kitId, nodeVersion);
+      }
     } catch (err) {
-      if (err instanceof UnsupportedPackageManagerError) {
+      if (
+        err instanceof UnsupportedPackageManagerError ||
+        err instanceof UnsupportedNodeVersionError
+      ) {
         return finish({
           ok: false,
           packageManager,

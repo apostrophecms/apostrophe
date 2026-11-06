@@ -78,7 +78,7 @@ describe('telemetry/schema — buildPayload (success)', function () {
     const p = buildPayload('install_success', VALID);
     assert.deepEqual(Object.keys(p), [
       'event', 'cliVersion', 'nodeVersion', 'platform', 'kitId', 'dbChoice',
-      'packageManager', 'durationMs', 'anonymousId'
+      'packageManager', 'durationMs', 'nodeRedirect', 'anonymousId'
     ]);
     assert.equal(p.event, 'install_success');
     assert.equal(p.cliVersion, VALID.cliVersion);
@@ -253,6 +253,26 @@ describe('telemetry/schema — runtime fields', function () {
     assert.equal(p.platform, process.platform);
   });
 
+  it('nodeRedirect defaults to false and carries true through', function () {
+    assert.equal(buildPayload('install_success', VALID).nodeRedirect, false);
+    const p = buildPayload('install_fail', {
+      ...VALID,
+      nodeRedirect: true,
+      failStage: 'clone'
+    });
+    assert.equal(p.nodeRedirect, true);
+  });
+
+  it('rejects a non-boolean nodeRedirect', function () {
+    assert.throws(
+      () => buildPayload('install_success', {
+        ...VALID,
+        nodeRedirect: 'yes'
+      }),
+      /Invalid nodeRedirect/
+    );
+  });
+
   it('ignores caller-supplied nodeVersion/platform entirely', function () {
     // These describe the machine, not the user's choices — so they are read
     // from the process, never from input. Otherwise they would be two
@@ -287,20 +307,21 @@ describe('telemetry/schema — runtime fields', function () {
 });
 
 describe('telemetry/schema — allowedFields', function () {
-  it('install_success: 9 fields, no failStage/errorCode', function () {
+  it('install_success: 10 fields, no failStage/errorCode', function () {
     const f = [ ...allowedFields('install_success') ];
     assert.deepEqual(f.sort(), [
       'anonymousId', 'cliVersion', 'dbChoice', 'durationMs',
-      'event', 'kitId', 'nodeVersion', 'packageManager', 'platform'
+      'event', 'kitId', 'nodeRedirect', 'nodeVersion', 'packageManager',
+      'platform'
     ]);
   });
 
-  it('install_fail: 11 fields with failStage + errorCode', function () {
+  it('install_fail: 12 fields with failStage + errorCode', function () {
     const f = [ ...allowedFields('install_fail') ];
     assert.deepEqual(f.sort(), [
       'anonymousId', 'cliVersion', 'dbChoice', 'durationMs',
-      'errorCode', 'event', 'failStage', 'kitId', 'nodeVersion',
-      'packageManager', 'platform'
+      'errorCode', 'event', 'failStage', 'kitId', 'nodeRedirect',
+      'nodeVersion', 'packageManager', 'platform'
     ]);
   });
 

@@ -136,7 +136,8 @@ describe('core/create-project', function () {
       kitId: 'apostrophe-essentials',
       dbChoice: 'sqlite',
       packageManager: 'npm',
-      durationMs: res.durationMs
+      durationMs: res.durationMs,
+      nodeRedirect: false
     });
     assert.deepEqual(calls, [ 'clone', 'install', 'admin' ]);
     assert.deepEqual(tasks.map((t) => [ t.label, t.settled ]), [
@@ -219,6 +220,102 @@ describe('core/create-project', function () {
     assert.equal(events[0].name, 'install_fail');
     assert.equal(events[0].payload.failStage, 'preflight');
     assert.equal(events[0].payload.errorCode, 'unsupported_pm');
+  });
+
+  it('preflight: Astro kit on Node 22 → ok:false failStage:preflight unsupported_node, no steps', async function () {
+    const {
+      events, tasks, logger, telemetry
+    } = spies();
+    const calls = [];
+    const createProject = makeCreateProject({
+      clone: fakeStandaloneClone(calls),
+      scaffold: () => {
+        throw new Error('should not run');
+      },
+      dbConfig: () => {},
+      install: () => {},
+      addAdminUser: () => {},
+      nodeVersion: '22.23.3'
+    });
+
+    const res = await createProject(
+      baseOptions({ kitId: 'apostrophe-astro-demo' }),
+      {
+        telemetry,
+        logger
+      }
+    );
+
+    assert.deepEqual(res, {
+      ok: false,
+      kitId: 'apostrophe-astro-demo',
+      dbChoice: 'sqlite',
+      packageManager: 'npm',
+      durationMs: res.durationMs,
+      failStage: 'preflight',
+      errorCode: 'unsupported_node'
+    });
+    assert.equal(calls.length, 0);
+    assert.equal(tasks.length, 0);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].name, 'install_fail');
+    assert.equal(events[0].payload.failStage, 'preflight');
+    assert.equal(events[0].payload.errorCode, 'unsupported_node');
+  });
+
+  it('preflight: Standalone kit on Node 22 runs as usual', async function () {
+    const {
+      events, logger, telemetry
+    } = spies();
+    const calls = [];
+    const createProject = makeCreateProject({
+      clone: fakeStandaloneClone(calls),
+      scaffold: async ({ projectDir }) => ({
+        frontend: null,
+        appRoot: projectDir
+      }),
+      dbConfig: async () => {},
+      install: async () => {},
+      addAdminUser: async () => {},
+      nodeVersion: '22.0.0'
+    });
+
+    const res = await createProject(baseOptions(), {
+      telemetry,
+      logger
+    });
+
+    assert.equal(res.ok, true);
+    assert.equal(events[0].name, 'install_success');
+  });
+
+  it('nodeRedirect reaches the telemetry payload, not the result', async function () {
+    const {
+      events, logger, telemetry
+    } = spies();
+    const createProject = makeCreateProject({
+      clone: fakeStandaloneClone([]),
+      scaffold: async ({ projectDir }) => ({
+        frontend: null,
+        appRoot: projectDir
+      }),
+      dbConfig: async () => {},
+      install: async () => {},
+      addAdminUser: async () => {},
+      nodeVersion: '22.0.0'
+    });
+
+    const res = await createProject(
+      baseOptions({ nodeRedirect: true }),
+      {
+        telemetry,
+        logger
+      }
+    );
+
+    assert.equal(res.ok, true);
+    assert.equal('nodeRedirect' in res, false);
+    assert.equal(events[0].payload.nodeRedirect, true);
   });
 
   it('StageError details are logged for the user, never returned or emitted', async function () {

@@ -231,6 +231,7 @@ export async function runInteractive(deps = {}) {
       admin: answers.admin,
       packageManager,
       nonInteractive: false,
+      nodeRedirect: answers.nodeRedirect,
       confirmedAt: answers.confirmedAt
     },
     {

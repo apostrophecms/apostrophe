@@ -15,10 +15,11 @@ import { KIT_IDS } from '../core/kits.js';
 /**
  * Symbolic error codes. Each value corresponds to a single
  * `throw new StageError(..., { code })` site (or the preflight
- * `UnsupportedPackageManagerError`). Not a contract type — internal to
- * the schema, mirrored from grep'ing `src/core/steps/*` + `errors.js`.
+ * `UnsupportedPackageManagerError` / `UnsupportedNodeVersionError`). Not a
+ * contract type — internal to the schema, mirrored from grep'ing
+ * `src/core/steps/*` + `errors.js`.
  * @typedef {(
- *   'unsupported_pm' |
+ *   'unsupported_pm' | 'unsupported_node' |
  *   'target_exists' |
  *   'git_missing' | 'git_spawn_failed' | 'git_clone_failed' |
  *   'missing_scaffold_file' | 'scaffold_io' |
@@ -82,7 +83,7 @@ export const FAIL_STAGES = Object.freeze([
  * @type {ReadonlyArray<ErrorCode>}
  */
 export const ERROR_CODES = Object.freeze([
-  'unsupported_pm',
+  'unsupported_pm', 'unsupported_node',
   'target_exists',
   'git_missing', 'git_spawn_failed', 'git_clone_failed',
   'missing_scaffold_file', 'scaffold_io',
@@ -120,6 +121,9 @@ function isErrorCode(code) {
  * @property {DbChoice}        dbChoice
  * @property {PackageManager}  packageManager
  * @property {number}          durationMs
+ * @property {boolean}         [nodeRedirect]  True when the guided installer
+ *   steered the user away from a build this Node.js is too old for, whatever
+ *   they then picked. Defaults to `false`.
  */
 
 /**
@@ -149,7 +153,8 @@ function isErrorCode(code) {
 /**
  * The caller-supplied base plus the ambient {@link Runtime} the builder
  * attaches itself.
- * @typedef {BasePayloadInput & Runtime} BasePayload
+ * @typedef {Omit<BasePayloadInput, 'nodeRedirect'> & Runtime &
+ *   { nodeRedirect: boolean }} BasePayload
  */
 
 /**
@@ -208,6 +213,17 @@ function requireFiniteNumber(name, value) {
 }
 
 /**
+ * @param {string} name
+ * @param {unknown} value
+ * @returns {asserts value is boolean}
+ */
+function requireBoolean(name, value) {
+  if (typeof value !== 'boolean') {
+    throw new SchemaError(`Invalid ${name}: expected boolean`);
+  }
+}
+
+/**
  * @overload
  * @param {'install_success'} event
  * @param {PayloadInput} input
@@ -257,6 +273,9 @@ export function buildPayload(event, input, runtime = readRuntime()) {
   if (input.anonymousId !== undefined) {
     requireString('anonymousId', input.anonymousId);
   }
+  if (input.nodeRedirect !== undefined) {
+    requireBoolean('nodeRedirect', input.nodeRedirect);
+  }
 
   /** @type {BasePayload} */
   const base = {
@@ -267,6 +286,7 @@ export function buildPayload(event, input, runtime = readRuntime()) {
     dbChoice: input.dbChoice,
     packageManager: input.packageManager,
     durationMs: input.durationMs,
+    nodeRedirect: input.nodeRedirect === true,
     ...(input.anonymousId !== undefined
       ? { anonymousId: input.anonymousId }
       : {})
@@ -307,7 +327,7 @@ export function allowedFields(event) {
 /** @type {ReadonlyArray<keyof SuccessPayload>} */
 const SUCCESS_FIELDS = Object.freeze([
   'event', 'cliVersion', 'nodeVersion', 'platform', 'anonymousId', 'kitId',
-  'dbChoice', 'packageManager', 'durationMs'
+  'dbChoice', 'packageManager', 'durationMs', 'nodeRedirect'
 ]);
 
 /** @type {ReadonlyArray<keyof FailPayload>} */
