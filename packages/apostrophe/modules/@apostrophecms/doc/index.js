@@ -1464,6 +1464,18 @@ module.exports = {
       // is the same as the current lock holder you will receive
       // another successful response.
       //
+      // `options.family` lets a lock share the slot of another lock
+      // id of the same user, usually the browser tab that locks the
+      // page in edit mode: `lock(req, doc, chatId, { family: tabId })`.
+      // The family's own lock, and a free slot, are compatible; the
+      // lock id becomes the slot's `member` and expires on its own.
+      // While a member holds the slot the family's own lock calls
+      // still succeed and refresh only the family, so a second id of
+      // the same family is refused. `unlock` of the member hands the
+      // slot back to the family, or clears it when the family
+      // doesn't hold it. A `locked` error with `me: true` carries the
+      // holder's `lockId`.
+      //
       // This method will set the `advisoryLock` property of the
       // document both in the database and in the `doc` object
       // that you pass to it. This ensures it is present if you
@@ -1485,72 +1497,153 @@ module.exports = {
         if (!tabId) {
           throw self.apos.error('invalid', 'no tabId was passed');
         }
-        let criteria = { _id };
-        if (!options.force) {
-          criteria.$or = [
-            {
-              advisoryLock: {
-                $exists: 0
-              }
-            },
-            {
-              'advisoryLock.updatedAt': {
-                $lt: self.getAdvisoryLockExpiration()
-              }
-            },
-            {
-              'advisoryLock._id': tabId
-            }
-          ];
+        const { family, force } = options;
+        if (family === tabId) {
+          throw self.apos.error('invalid', 'a lock cannot be its own family');
         }
-        // Prevent nuisance locking by matching only
-        // documents the user can edit
-        criteria = {
-          $and: [
-            criteria,
-            self.apos.permission.criteria(req, 'edit')
+        const username = req.user && req.user.username;
+        const title = req.user && req.user.title;
+        const now = new Date();
+        const expired = { $lt: self.getAdvisoryLockExpiration() };
+        const noLiveMember = {
+          $or: [
+            { 'advisoryLock.member': { $exists: 0 } },
+            { 'advisoryLock.member.updatedAt': expired }
           ]
         };
-        doc.advisoryLock = {
-          username: req.user && req.user.username,
-          title: req.user && req.user.title,
-          _id: tabId,
-          updatedAt: new Date()
+        const free = {
+          $or: [
+            { advisoryLock: { $exists: 0 } },
+            {
+              $and: [
+                { 'advisoryLock.updatedAt': expired },
+                noLiveMember
+              ]
+            }
+          ]
         };
-        const { result } = await self.db.updateOne(criteria, {
-          $set: {
-            advisoryLock: doc.advisoryLock
+        if (!family) {
+          doc.advisoryLock = {
+            username,
+            title,
+            _id: tabId,
+            updatedAt: now
+          };
+          const takeOrRefresh = {
+            $or: [
+              free,
+              {
+                $and: [
+                  { 'advisoryLock._id': tabId },
+                  noLiveMember
+                ]
+              }
+            ]
+          };
+          if (await attempt(force ? null : takeOrRefresh, {
+            $set: {
+              advisoryLock: doc.advisoryLock
+            }
+          })) {
+            return;
           }
+          // The family's own lock while a member holds the slot
+          // refreshes the family only
+          if (!force && await attempt({
+            'advisoryLock._id': tabId,
+            'advisoryLock.username': username
+          }, {
+            $set: {
+              'advisoryLock.title': title,
+              'advisoryLock.updatedAt': now
+            }
+          })) {
+            doc.advisoryLock = (await getSlot()).advisoryLock;
+            return;
+          }
+        } else {
+          const member = {
+            _id: tabId,
+            updatedAt: now
+          };
+          // Join the family's lock, or refresh the membership
+          if (!force && await attempt({
+            'advisoryLock._id': family,
+            'advisoryLock.username': username,
+            $or: [
+              { 'advisoryLock.member._id': tabId },
+              ...noLiveMember.$or
+            ]
+          }, {
+            $set: {
+              'advisoryLock.member': member
+            }
+          })) {
+            doc.advisoryLock = (await getSlot()).advisoryLock;
+            return;
+          }
+          // A free slot: the family doesn't hold it, so releasing
+          // the member clears it
+          const slot = {
+            username,
+            title,
+            _id: family,
+            updatedAt: new Date(0),
+            member
+          };
+          if (await attempt(force ? null : free, {
+            $set: {
+              advisoryLock: slot
+            }
+          })) {
+            doc.advisoryLock = slot;
+            return;
+          }
+        }
+        const info = await getSlot();
+        if (!info) {
+          throw self.apos.error('notfound');
+        }
+        if (!info.advisoryLock) {
+          // Nobody else has a lock but you couldn't get one —
+          // must be permissions
+          throw self.apos.error('forbidden');
+        }
+        if (info.advisoryLock.username === req.user.username) {
+          const { member } = info.advisoryLock;
+          const memberAlive = member && (member.updatedAt >= expired.$lt);
+          throw self.apos.error('locked', {
+            me: true,
+            lockId: memberAlive ? member._id : info.advisoryLock._id
+          });
+        }
+        throw self.apos.error('locked', {
+          title: info.advisoryLock.title,
+          username: info.advisoryLock.username
         });
-        if (!result.nModified) {
-          const info = await self.db.findOne({
+
+        async function attempt(criteria, update) {
+          // Prevent nuisance locking by matching only
+          // documents the user can edit
+          const { result } = await self.db.updateOne({
+            $and: [
+              {
+                _id,
+                ...criteria
+              },
+              self.apos.permission.criteria(req, 'edit')
+            ]
+          }, update);
+          return result.nModified > 0;
+        }
+
+        function getSlot() {
+          return self.db.findOne({
             _id
           }, {
             projection: {
               advisoryLock: 1
             }
-          });
-          if (!info) {
-            throw self.apos.error('notfound');
-          }
-          if (!info.advisoryLock) {
-            // Nobody else has a lock but you couldn't get one —
-            // must be permissions
-            throw self.apos.error('forbidden');
-          }
-          if (!info.advisoryLock) {
-            // Nobody else has a lock but you couldn't get one —
-            // must be permissions
-            throw self.apos.error('forbidden');
-          }
-          if (info.advisoryLock.username === req.user.username) {
-            throw self.apos.error('locked', {
-              me: true
-            });
-          }
-          throw self.apos.error('locked', {
-            title: info.advisoryLock.title,
-            username: info.advisoryLock.username
           });
         }
       },
@@ -1561,6 +1654,11 @@ module.exports = {
       },
       // Release a document lock set via `lock` for a particular tabId.
       // If the lock is already gone no error occurs.
+      //
+      // A member of a family hands the slot back to the family's own
+      // lock, or clears it when the family doesn't hold it. The family
+      // releasing while a member holds the slot leaves the member in
+      // place, and the member's release then clears the slot.
       //
       // This method will unset the `advisoryLock` property of the
       // document both in the database and in the `doc` object
@@ -1579,15 +1677,48 @@ module.exports = {
         if (!tabId) {
           throw self.apos.error('invalid', 'no tabId');
         }
-        await self.db.updateOne({
-          _id: id,
-          'advisoryLock._id': tabId
-        }, {
+        const expired = { $lt: self.getAdvisoryLockExpiration() };
+        const clear = {
           $unset: {
             advisoryLock: 1
           }
-        });
+        };
+        const released = await attempt({
+          'advisoryLock._id': tabId,
+          $or: [
+            { 'advisoryLock.member': { $exists: 0 } },
+            { 'advisoryLock.member.updatedAt': expired }
+          ]
+        }, clear) ||
+          await attempt({
+            'advisoryLock.member._id': tabId,
+            'advisoryLock.updatedAt': expired
+          }, clear) ||
+          await attempt({
+            'advisoryLock.member._id': tabId
+          }, {
+            $unset: {
+              'advisoryLock.member': 1
+            }
+          });
+        if (!released) {
+          await attempt({
+            'advisoryLock._id': tabId
+          }, {
+            $set: {
+              'advisoryLock.updatedAt': new Date(0)
+            }
+          });
+        }
         delete doc.advisoryLock;
+
+        async function attempt(criteria, update) {
+          const { result } = await self.db.updateOne({
+            _id: id,
+            ...criteria
+          }, update);
+          return result.nModified > 0;
+        }
       },
       // Returns the field names necessary to build URLs
       // for typical doc types. If a query specific to a

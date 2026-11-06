@@ -979,6 +979,256 @@ describe('Pages REST', function() {
     assert(doc.title === 'Advisory Test Patched Again');
   });
 
+  describe('lock family', function() {
+    let pageId;
+    let adminReq;
+    let admin2Req;
+    let jar2;
+
+    before(async function() {
+      const page = await apos.http.post('/api/v1/@apostrophecms/page', {
+        body: {
+          slug: '/family-lock-test',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Family Lock Test'
+        },
+        jar
+      });
+      adminReq = await getDraftReq('admin');
+      admin2Req = await getDraftReq('admin2');
+      const draft = await apos.page.findOneForEditing(adminReq, {
+        aposDocId: page.aposDocId
+      });
+      pageId = draft._id;
+      jar2 = apos.http.jar();
+      await apos.http.get('/', { jar: jar2 });
+      await apos.http.post('/api/v1/@apostrophecms/login/login', {
+        body: {
+          username: 'admin2',
+          password: 'admin2',
+          session: true
+        },
+        jar: jar2
+      });
+    });
+
+    beforeEach(async function() {
+      await apos.doc.db.updateOne({ _id: pageId }, {
+        $unset: {
+          advisoryLock: 1
+        }
+      });
+    });
+
+    async function getDraftReq(username) {
+      const user = await apos.user
+        .find(apos.task.getReq(), { username })
+        .toObject();
+      return apos.task.getReq({
+        user,
+        mode: 'draft'
+      });
+    }
+
+    function pageLock(tabId, {
+      lock = true,
+      body = {},
+      userJar = jar
+    } = {}) {
+      return apos.http.patch(`/api/v1/@apostrophecms/page/${pageId}`, {
+        jar: userJar,
+        body: {
+          _advisoryLock: {
+            tabId,
+            lock
+          },
+          ...body
+        }
+      });
+    }
+
+    async function familyLock(lockId, { family = 'tab1', req = adminReq } = {}) {
+      const page = await apos.page.findOneForEditing(req, { _id: pageId });
+      await apos.doc.lock(req, page, lockId, { family });
+      return page;
+    }
+
+    function unlock(lockId) {
+      return apos.doc.unlock(adminReq, { _id: pageId }, lockId);
+    }
+
+    async function getSlot() {
+      const { advisoryLock } = await apos.doc.db.findOne({ _id: pageId });
+      return advisoryLock;
+    }
+
+    function expireMember() {
+      return apos.doc.db.updateOne({ _id: pageId }, {
+        $set: {
+          'advisoryLock.member.updatedAt': new Date(0)
+        }
+      });
+    }
+
+    async function assertRefusedToSameUser(attempt, holder) {
+      const slot = await getSlot();
+      await assert.rejects(attempt, e => {
+        const { name, data } = e.body || e;
+        assert.strictEqual(name, 'locked');
+        assert.strictEqual(data.me, true);
+        assert.strictEqual(data.lockId, holder);
+        return true;
+      });
+      assert.deepStrictEqual(await getSlot(), slot);
+    }
+
+    // A plain lock, a family lock of the other user's own browser tab,
+    // and a family lock naming this user's browser tab
+    async function assertRefusedToAnotherUser() {
+      const slot = await getSlot();
+      const attempts = [
+        () => pageLock('tab2', { userJar: jar2 }),
+        () => familyLock('chatB', {
+          family: 'tab2',
+          req: admin2Req
+        }),
+        () => familyLock('chatB', {
+          family: 'tab1',
+          req: admin2Req
+        })
+      ];
+      for (const attempt of attempts) {
+        await assert.rejects(attempt, e => {
+          const { name, data } = e.body || e;
+          assert.strictEqual(name, 'locked');
+          assert.strictEqual(data.me, undefined);
+          assert.strictEqual(data.lockId, undefined);
+          assert.strictEqual(data.username, 'admin');
+          return true;
+        });
+      }
+      assert.deepStrictEqual(await getSlot(), slot);
+    }
+
+    it('joins the page\'s lock of its family', async function() {
+      await pageLock('tab1');
+      await familyLock('chat1');
+      const slot = await getSlot();
+      assert.strictEqual(slot._id, 'tab1');
+      assert.strictEqual(slot.member._id, 'chat1');
+    });
+
+    it('lets writes passing the lock go through', async function() {
+      await pageLock('tab1');
+      await familyLock('chat1');
+      const page = await familyLock('chat1');
+      page.title = 'Written by chat1';
+      await apos.page.update(adminReq, page);
+      const saved = await apos.page.findOneForEditing(adminReq, { _id: pageId });
+      assert.strictEqual(saved.title, 'Written by chat1');
+      assert.strictEqual((await getSlot()).member._id, 'chat1');
+    });
+
+    it('refuses the same user\'s other ids with the holder\'s id', async function() {
+      await pageLock('tab1');
+      await familyLock('chat1');
+      await assertRefusedToSameUser(() => familyLock('chat2'), 'chat1');
+      await assertRefusedToSameUser(() => familyLock('chat3', { family: 'tab3' }), 'chat1');
+      await assertRefusedToSameUser(() => pageLock('tab3'), 'chat1');
+    });
+
+    it('keeps the holder when the page refreshes and saves its lock', async function() {
+      await pageLock('tab1');
+      await familyLock('chat1');
+      await pageLock('tab1');
+      const page = await pageLock('tab1', { body: { title: 'Saved by the page' } });
+      assert.strictEqual(page.title, 'Saved by the page');
+      assert.strictEqual((await getSlot()).member._id, 'chat1');
+      await assertRefusedToSameUser(() => familyLock('chat2'), 'chat1');
+    });
+
+    it('refuses another user while the page holds its lock', async function() {
+      await pageLock('tab1');
+      await assertRefusedToAnotherUser();
+    });
+
+    it('refuses another user while a member holds the page\'s lock', async function() {
+      await pageLock('tab1');
+      await familyLock('chat1');
+      await assertRefusedToAnotherUser();
+    });
+
+    it('refuses another user while a member holds a free slot', async function() {
+      await familyLock('chat1');
+      await assertRefusedToAnotherUser();
+    });
+
+    it('lets another user lock once the member and the page expired', async function() {
+      await familyLock('chat1');
+      await expireMember();
+      await familyLock('chatB', {
+        family: 'tab2',
+        req: admin2Req
+      });
+      const slot = await getSlot();
+      assert.strictEqual(slot._id, 'tab2');
+      assert.strictEqual(slot.username, 'admin2');
+      assert.strictEqual(slot.member._id, 'chatB');
+    });
+
+    it('hands the slot back to the page\'s lock on release', async function() {
+      await pageLock('tab1');
+      await familyLock('chat1');
+      await unlock('chat1');
+      const slot = await getSlot();
+      assert.strictEqual(slot._id, 'tab1');
+      assert.strictEqual(slot.member, undefined);
+      await assertRefusedToAnotherUser();
+      await familyLock('chat2');
+      assert.strictEqual((await getSlot()).member._id, 'chat2');
+    });
+
+    it('lets a holder that stopped refreshing expire while the page refreshes', async function() {
+      await pageLock('tab1');
+      await familyLock('chat1');
+      await expireMember();
+      await pageLock('tab1');
+      await familyLock('chat2');
+      assert.strictEqual((await getSlot()).member._id, 'chat2');
+    });
+
+    it('keeps the holder when the page releases, and clears the slot on its release', async function() {
+      await pageLock('tab1');
+      await familyLock('chat1');
+      await pageLock('tab1', { lock: false });
+      assert.strictEqual((await getSlot()).member._id, 'chat1');
+      await assertRefusedToAnotherUser();
+      await unlock('chat1');
+      assert.strictEqual(await getSlot(), undefined);
+    });
+
+    it('takes a free slot and clears it on release', async function() {
+      await familyLock('chat1');
+      const slot = await getSlot();
+      assert.strictEqual(slot._id, 'tab1');
+      assert.strictEqual(slot.member._id, 'chat1');
+      await unlock('chat1');
+      assert.strictEqual(await getSlot(), undefined);
+    });
+
+    it('hands the slot to the page that locked it while the holder had it', async function() {
+      await familyLock('chat1');
+      await pageLock('tab1');
+      await unlock('chat1');
+      const slot = await getSlot();
+      assert.strictEqual(slot._id, 'tab1');
+      assert.strictEqual(slot.member, undefined);
+      assert(slot.updatedAt > apos.doc.getAdvisoryLockExpiration());
+      await assertRefusedToAnotherUser();
+    });
+  });
+
   let diacriticsId;
   it('is able to make a page including diacritics', async function() {
     const body = {
