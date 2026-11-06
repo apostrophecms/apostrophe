@@ -9,7 +9,13 @@
 // writes go through the editor's own request, and `apos.ai.can` stands in
 // front of every write.
 
-// Budgets for a read, in characters of the serialized result
+const {
+  splitParts, isPartAddress, parsePartAddress, spliceParts
+} = require('./parts');
+
+// Budgets for a read, in characters of the serialized result. Reads that
+// could exceed them come in pages, and long fields in parts (see parts.js),
+// so a long document is never too much to handle, just more calls
 const TEXT_MAX_CHARS = 60000;
 const DOC_MAX_CHARS = 50000;
 const OUTLINE_MAX_CHARS = 20000;
@@ -36,7 +42,10 @@ const TOOLS = [
       '"address" localize_update takes and where it sits, in the ' +
       'editor\'s words. Rich text comes as HTML. Settings, links, images ' +
       'and other non-text values are left out. A long document comes in ' +
-      'pages: pass "next" back as "offset".',
+      'pages: pass "next" back as "offset". A long field comes in parts, ' +
+      'each with "part" and "parts" and an address ending in "#<range>" ' +
+      '(e.g. "@abc123.content#0-14"): write each part to its own address ' +
+      'with localize_update, never the whole field.',
     input: {
       type: 'object',
       properties: {
@@ -60,16 +69,22 @@ const TOOLS = [
     label: 'apostrophe:aiLocalizeToolReadOutline',
     description: 'The structure of one copy: every area with its widgets — ' +
       '_id, type, position and a short text preview. Use it to see how ' +
-      'the two copies line up, or where to add a widget.',
+      'the two copies line up, or where to add a widget. A long outline ' +
+      'comes in pages: pass "next" back as "offset".',
     input: {
       type: 'object',
       properties: {
-        copy: COPY
+        copy: COPY,
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Where to continue a paged outline'
+        }
       },
       required: [ 'copy' ],
       additionalProperties: false
     },
-    maxResultChars: OUTLINE_MAX_CHARS,
+    maxResultChars: OUTLINE_MAX_CHARS + 2000,
     tags: [ 'ai-localize' ],
     kind: 'query',
     handler: '@apostrophecms/ai-localize:readOutline'
@@ -81,7 +96,8 @@ const TOOLS = [
       'or "@<_id>" for a widget or array item wherever it sits ' +
       '("@abc123" reads it whole, "@abc123.caption" one field). For ' +
       'what localize_read_text leaves out, like a whole widget to copy ' +
-      'into the target.',
+      'into the target. For long text use localize_read_text, which ' +
+      'splits it into parts.',
     input: {
       type: 'object',
       properties: {
@@ -129,9 +145,11 @@ const TOOLS = [
     description: 'Write values into the target copy. Keys are the ' +
       'addresses localize_read_text reports — a field name, a dot path, ' +
       'or "@<_id>.field" for a field of a widget or array item — or ' +
-      '"@<_id>" alone to replace a whole widget. Send many keys in one ' +
-      'call. Rich text takes HTML: keep the markup, links and structure ' +
-      'of what you translate, changing only the words.',
+      '"@<_id>" alone to replace a whole widget. A part of a long field ' +
+      'takes the part\'s address, "#<range>" included, and replaces just ' +
+      'that part. Send many keys in one call. Rich text takes HTML: keep ' +
+      'the markup, links and structure of what you translate, changing ' +
+      'only the words.',
     input: {
       type: 'object',
       properties: {
@@ -250,6 +268,19 @@ module.exports = (self) => {
       }
     },
 
+    // How many parts a document's text comes in beyond one per field: the
+    // extra reading and writing a long document takes, which a pass's step
+    // budget makes room for
+    extraParts(req, doc) {
+      const manager = self.apos.doc.getManager(doc.type);
+      const fields = [];
+      collectText(self.apos, req, manager?.schema, doc, '', [], fields);
+      return fields.reduce(
+        (sum, entry) => sum + splitParts(entry.value, entry.format).length - 1,
+        0
+      );
+    },
+
     // The tools of a pass: this module's, and the site's translation
     // service when one is registered (see `translator`) and the pass
     // translates
@@ -330,8 +361,21 @@ module.exports = (self) => {
       const {
         doc, manager, draftReq
       } = await self.fetchCopy(req, copy);
-      const entries = [];
-      collectText(self.apos, draftReq, manager.schema, doc, '', [], entries);
+      const fields = [];
+      collectText(self.apos, draftReq, manager.schema, doc, '', [], fields);
+      const entries = fields.flatMap((entry) => {
+        const parts = splitParts(entry.value, entry.format);
+        if (parts.length === 1) {
+          return [ entry ];
+        }
+        return parts.map((part, index) => ({
+          ...entry,
+          address: `${entry.address}#${part.range}`,
+          part: index + 1,
+          parts: parts.length,
+          value: part.value
+        }));
+      });
       const page = [];
       let size = 0;
       let index = offset;
@@ -351,30 +395,60 @@ module.exports = (self) => {
       };
     },
 
-    async readOutline(req, { copy }) {
+    // Paged by item, an item being an area or one of its widgets; an area
+    // that a page break splits is repeated on the next page with
+    // "continued": true, its widgets keeping their positions
+    async readOutline(req, { copy, offset = 0 }) {
       const { doc, draftReq } = await self.fetchCopy(req, copy);
-      const areas = [];
+      const items = [];
       self.apos.area.walk(doc, (area, dotPath) => {
-        areas.push({
+        const header = {
           path: dotPath,
-          _id: area._id,
-          widgets: (area.items || []).map((item, position) => ({
-            _id: item._id,
-            type: item.type,
-            label: draftReq.t(
-              self.apos.area.getWidgetManager(item.type)?.label || item.type
-            ),
-            position,
-            preview: widgetPreview(self.apos, item)
-          }))
+          _id: area._id
+        };
+        items.push({ area: header });
+        (area.items || []).forEach((item, position) => {
+          items.push({
+            area: header,
+            widget: {
+              _id: item._id,
+              type: item.type,
+              label: draftReq.t(
+                self.apos.area.getWidgetManager(item.type)?.label || item.type
+              ),
+              position,
+              preview: widgetPreview(self.apos, item)
+            }
+          });
         });
       });
+      const areas = [];
+      let size = 0;
+      let index = offset;
+      for (; index < items.length; index++) {
+        const item = items[index];
+        size += JSON.stringify(item.widget || item.area).length;
+        if (size > OUTLINE_MAX_CHARS && areas.length) {
+          break;
+        }
+        if (areas.at(-1)?._id !== item.area._id) {
+          areas.push({
+            ...item.area,
+            ...(item.widget && { continued: true }),
+            widgets: []
+          });
+        }
+        if (item.widget) {
+          areas.at(-1).widgets.push(item.widget);
+        }
+      }
       return {
         copy,
         locale: doc.aposLocale.split(':')[0],
         type: doc.type,
         title: doc.title || '',
-        areas
+        areas,
+        ...(index < items.length && { next: index })
       };
     },
 
@@ -413,19 +487,85 @@ module.exports = (self) => {
 
     async update(req, { values }) {
       const refused = Object.keys(values)
-        .filter((key) => UNWRITABLE.includes(key.split('.')[0]));
+        .filter((key) => UNWRITABLE.includes(key.split(/[.#]/)[0]));
       if (refused.length) {
         throw self.apos.error(
           'aiToolError',
           `${refused.join(', ')} cannot be written by a localization`
         );
       }
+      // Parts of long fields, by field
+      const whole = {};
+      const parts = new Map();
+      for (const [ key, value ] of Object.entries(values)) {
+        if (!isPartAddress(key)) {
+          whole[key] = value;
+          continue;
+        }
+        const parsed = parsePartAddress(key);
+        if (!parsed) {
+          throw self.apos.error('aiToolError', `"${key}" is not a valid part address`);
+        }
+        if (typeof value !== 'string') {
+          throw self.apos.error('aiToolError', `"${key}" takes a string`);
+        }
+        if (!parts.has(parsed.address)) {
+          parts.set(parsed.address, []);
+        }
+        parts.get(parsed.address).push({
+          ...parsed,
+          text: value
+        });
+      }
+      const notes = [];
       await self.writeTarget(req, async ({
         doc, docModule, draftReq
       }) => {
-        await applyPatch(self, docModule, draftReq, doc, values);
+        const patch = { ...whole };
+        for (const [ address, writes ] of parts) {
+          if (Object.hasOwn(whole, address)) {
+            throw self.apos.error(
+              'aiToolError',
+              `"${address}" is written both whole and in parts`
+            );
+          }
+          const { value, format } = self.textAt(doc, address);
+          try {
+            const spliced = spliceParts(value, format, writes);
+            patch[address] = spliced.value;
+            notes.push(...spliced.notes.map((note) => `${address}${note}`));
+          } catch (e) {
+            throw self.apos.error('aiToolError', `${address}: ${e.message}`);
+          }
+        }
+        await applyPatch(self, docModule, draftReq, doc, patch);
       });
-      return { written: Object.keys(values).length };
+      return {
+        written: Object.keys(values).length,
+        ...(notes.length && { notes })
+      };
+    },
+
+    // The text at an address of the target, with its format as
+    // localize_read_text gives it: "html" for a rich text widget's content
+    textAt(doc, address) {
+      const path = self.apos.util.resolveAtReference(doc, address);
+      const value = valueAtPath(doc, path);
+      if (typeof value !== 'string') {
+        throw self.apos.error(
+          'aiToolError',
+          `"${address}" is not a text of the target copy`
+        );
+      }
+      const keys = path.split('.');
+      const holder = valueAtPath(doc, keys.slice(0, -1).join('.'));
+      const rich = keys.at(-1) === 'content' &&
+        holder?.metaType === 'widget' &&
+        self.apos.area.getWidgetManager(holder.type)?.getRichText;
+      return {
+        value,
+        format: rich ? 'html' : 'text'
+      };
     },
 
     async addWidget(req, {

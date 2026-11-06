@@ -232,10 +232,14 @@ function changeOf(row, req) {
       .join(' › '),
     kind: row.kind,
     ...(row.oldText && { oldText: clip(row.oldText) }),
-    ...(row.newText && { newText: clip(row.newText) })
+    ...(row.oldText?.length > CHANGE_TEXT_MAX_CHARS && { oldTextClipped: true }),
+    ...(row.newText && { newText: clip(row.newText) }),
+    ...(row.newText?.length > CHANGE_TEXT_MAX_CHARS && { newTextClipped: true })
   };
 }
 
+// A long text is cut short for the change list, and marked so: the model
+// must read it in full before writing it
 function clip(text) {
   return text.length > CHANGE_TEXT_MAX_CHARS
     ? `${text.slice(0, CHANGE_TEXT_MAX_CHARS)}…`

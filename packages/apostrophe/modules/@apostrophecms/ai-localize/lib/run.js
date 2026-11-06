@@ -287,7 +287,9 @@ module.exports = (self) => {
           })
         } ],
         tools: self.toolNames({ translate }),
-        maxSteps: self.options.maxSteps,
+        // A long document takes a read and a write per part on top of the
+        // usual budget
+        maxSteps: self.options.maxSteps + 2 * self.extraParts(req, sourceNow),
         ...(self.options.effort && { effort: self.options.effort }),
         signal,
         onMessage: async (message) => {
@@ -507,6 +509,12 @@ module.exports = (self) => {
           : []),
         'Write in as few calls as you can: localize_update takes many ' +
           'addresses at once.',
+        'A long field comes in parts, each with its own address ending in ' +
+          '"#<range>". Work through a long field part by part, writing each ' +
+          'part to its own address as you go, never the whole field at once, ' +
+          'and never skip a part: a long document is just more parts, and ' +
+          'every one of them gets done. If a write returns notes that ranges ' +
+          'moved, re-read that field before writing more of it.',
         'Before each round of tool calls, say what you are doing now as one ' +
           'short progress phrase, in ' +
           `${self.languageName(req, self.apos.i18n.getAdminLocale(req))}, ` +
@@ -564,6 +572,15 @@ module.exports = (self) => {
           lines.push(
             'These lists come from version history and may include changes ' +
             'the target already has; check before rewriting.'
+          );
+        }
+        if ([ ...changes.sourceChanges, ...changes.targetChanges ]
+          .some((change) => change.oldTextClipped || change.newTextClipped)) {
+          lines.push(
+            'A change marked oldTextClipped or newTextClipped has that text ' +
+            'cut short, ending in "…". It is there to show you where the ' +
+            'change is, never to be written: read the full text with ' +
+            'localize_read_text first.'
           );
         }
         if (changes.omitted) {

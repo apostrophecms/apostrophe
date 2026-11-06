@@ -15,7 +15,8 @@ module.exports = {
   options: {
     alias: 'aiLocalize',
     recordsCollection: 'aposAiLocalizations',
-    // Model turns one document's pass into one locale may take
+    // Model turns one document's pass into one locale may take, plus two
+    // for each extra part of a long document's text (see lib/parts.js)
     maxSteps: 40,
     // The `apos.ai` routing level the passes run on; the AI module's
     // default when unset
