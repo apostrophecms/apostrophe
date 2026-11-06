@@ -1562,6 +1562,18 @@ module.exports = {
         }
         return self.apos.util.clonePermanent(doc);
       },
+      // The rows between two stored states of one document, `before` `null`
+      // when the document did not exist. A top-level field `before` does not
+      // store, such as one added to the schema since, counts as its value in
+      // the empty document (see `getEmptyDoc`), so a save that stores its
+      // empty or default value lists no change
+      async getChangeRowsBetween(req, before, after) {
+        const empty = await self.getEmptyDoc(req, after.type);
+        return self.getChangeRows(req, {
+          ...empty,
+          ...before
+        }, after);
+      },
       // What the diff engine needs from the rest of Apostrophe. `doc`, the
       // document compared, names it in the log when the engine recovers from
       // a failure: the change is still listed, in less detail

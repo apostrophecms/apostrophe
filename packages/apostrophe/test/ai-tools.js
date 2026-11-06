@@ -569,6 +569,8 @@ describe('AI tools', function() {
     // [ [ 'before' | 'after', toolName, resultOrError ] ]
     const toolEvents = [];
     const usageRecords = [];
+    // [ toolName, req.aposAiToolCall ] per tracked handler run
+    const stamps = [];
 
     const toolCall = (id, name, input = {}) => ({
       type: 'toolCall',
@@ -602,7 +604,8 @@ describe('AI tools', function() {
       properties: {}
     };
 
-    const track = (name) => async () => {
+    const track = (name) => async (req) => {
+      stamps.push([ name, req.aposAiToolCall ]);
       log.push(`start:${name}`);
       if (readGate && name.startsWith('read')) {
         readGate.started++;
@@ -863,6 +866,7 @@ describe('AI tools', function() {
       chatCalls = [];
       log.length = 0;
       depths.length = 0;
+      stamps.length = 0;
       toolEvents.length = 0;
       usageRecords.length = 0;
       readGate = null;
@@ -1233,6 +1237,40 @@ describe('AI tools', function() {
         result.steps.map(step => step.toolCall.name),
         [ 'read_a', 'write_a', 'agent_a', 'read_b', 'write_b' ]
       );
+    });
+
+    it('stamps each handler with the call it executes', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'read_a'),
+          toolCall('c2', 'read_b'),
+          toolCall('c3', 'write_a')
+        ),
+        textTurn()
+      ];
+      await apos.ai.generate(req, 'go', {
+        tools: [ 'read_a', 'read_b', 'write_a' ]
+      });
+
+      assert.deepEqual(
+        stamps.sort(([ a ], [ b ]) => a.localeCompare(b)),
+        [
+          [ 'read_a', {
+            id: 'c1',
+            name: 'read_a'
+          } ],
+          [ 'read_b', {
+            id: 'c2',
+            name: 'read_b'
+          } ],
+          [ 'write_a', {
+            id: 'c3',
+            name: 'write_a'
+          } ]
+        ]
+      );
+      assert.equal(req.aposAiToolCall, undefined);
     });
 
     it('feeds recoverable failures back and leaves siblings unaffected', async function() {

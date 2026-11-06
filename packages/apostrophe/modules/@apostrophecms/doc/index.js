@@ -340,6 +340,37 @@ module.exports = {
     };
   },
   methods(self) {
+    // On a request marked with `req.aposSaveMarker`, an object of the
+    // caller's own, emits `afterSaveSettled` via the doc type manager once an
+    // insert or update is done, every `after*` handler included. Handlers
+    // receive `(req, doc, settled)`:
+    //
+    // - `marker`: `req.aposSaveMarker`
+    // - `before`: the stored document when this save started, `null` for an
+    //   insert
+    // - `after`: the stored document now
+    // - `toolCall`: the AI tool call that saved, `{ id, name }`, if any
+    // - `drops`: what the save flag healed in this document (see
+    //   `checkLosslessPatch` in the schema module), else `[]`
+    // - `options`: the save's options
+    //
+    // Several saves of one document in one request chain: each `before` is
+    // the previous `after`. Unmarked requests emit nothing and read nothing
+    async function emitSaveSettled(req, doc, options, before) {
+      const marker = req.aposSaveMarker;
+      if (!marker) {
+        return;
+      }
+      await self.getManager(doc.type).emit('afterSaveSettled', req, doc, {
+        marker,
+        before,
+        after: await self.db.findOne({ _id: doc._id }),
+        toolCall: req.aposAiToolCall,
+        drops: req.aposHealedDrops?.[doc._id] || [],
+        options
+      });
+    }
+
     return {
       // `pairs` is an array of arrays, each containing an old _id
       // and a new _id that should replace it.
@@ -672,6 +703,8 @@ module.exports = {
       // unique it is made unique. `beforeInsert`, `beforeSave`, `afterInsert`
       // and `afterSave` events are emitted via the appropriate doc type
       // manager, then awaited. They receive `(req, doc, options)`.
+      // On a marked request `afterSaveSettled` follows once they are all
+      // done (see `emitSaveSettled` above `methods`).
       //
       // Returns the inserted document.
       //
@@ -730,6 +763,7 @@ module.exports = {
             await m.emit('afterSave', req, doc, options);
             // TODO: Remove `afterLoad` in next major version. Deprecated.
             await m.emit('afterLoad', req, [ doc ]);
+            await emitSaveSettled(req, doc, options, null);
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return doc;
           } catch (err) {
@@ -743,7 +777,8 @@ module.exports = {
       // Updates the given document. If the slug is not
       // unique it is made unique. `beforeUpdate`, `beforeSave`,
       // `afterUpdate` and `afterSave` events are emitted
-      // via the appropriate doc type manager.
+      // via the appropriate doc type manager, then on a marked request
+      // `afterSaveSettled` (see `emitSaveSettled` above `methods`).
       //
       // The second argument must be the document itself.
       // `$set`, `$inc`, etc. are NOT available via
@@ -775,6 +810,9 @@ module.exports = {
           try {
             options = options || {};
             const m = self.getManager(doc.type);
+            const before = req.aposSaveMarker
+              ? await self.db.findOne({ _id: doc._id })
+              : null;
             await m.emit('beforeUpdate', req, doc, options);
             await m.emit('beforeSave', req, doc, options);
 
@@ -801,6 +839,7 @@ module.exports = {
             await m.emit('afterSave', req, doc, options);
             // TODO: Remove `afterLoad` in next major version. Deprecated.
             await m.emit('afterLoad', req, [ doc ]);
+            await emitSaveSettled(req, doc, options, before);
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return doc;
           } catch (err) {
