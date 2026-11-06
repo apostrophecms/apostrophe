@@ -1295,10 +1295,12 @@ module.exports = {
       /**
        * The built-in progress publisher for generateJob: deliver one stage of a
        * background run to the job owner's browser over the notification
-       * channel. Each stage is a bus notification — never rendered — whose
-       * one-shot browser-bus event "ai-generate-job" is emitted in exactly one
-       * tab, carrying { jobId, stage, ...data }:
+       * channel. Each stage is a bus notification — never rendered — for every
+       * browser tab of the owner: each tab that is polling emits the
+       * browser-bus event "ai-generate-job" once, carrying
+       * { jobId, stage, ...data }:
        * `apos.bus.$on('ai-generate-job', (data) => ...)`, filtered by jobId.
+       * A stage expires after the notification module's `carrierExpireAfter`.
        *
        * Notifications reach logged-in users only, so a req without a user _id
        * is a silent no-op — there is nobody to deliver to. A delivery failure
@@ -1317,6 +1319,7 @@ module.exports = {
         try {
           await self.apos.notification.trigger(req, {
             bus: true,
+            tab: 'every',
             event: {
               name: 'ai-generate-job',
               data: {

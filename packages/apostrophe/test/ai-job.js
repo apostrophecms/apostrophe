@@ -556,9 +556,11 @@ describe('AI generateJob', function() {
     });
     // The caller's own hook ran alongside the publisher
     assert.equal(seen.length, 1);
-    // Every stage travels as a pure bus carrier, nothing to render
+    // Every stage travels as a pure bus carrier for every browser tab,
+    // nothing to render
     for (const { options } of triggered) {
       assert.equal(options.bus, true);
+      assert.equal(options.tab, 'every');
       assert.equal(options.classes, undefined);
       assert.equal(options.dismiss, undefined);
     }
@@ -570,6 +572,31 @@ describe('AI generateJob', function() {
       }),
       5
     );
+  });
+
+  it('every stage reaches every browser tab of the owner, and none can claim it', async function() {
+    // Each stage once went to whichever tab claimed it first, so the tab
+    // that started the job could miss its own progress
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo')),
+      textTurn('all done')
+    ];
+    const { jobId } = await apos.ai.generateJob(req, 'go', { tools: [ 'echo' ] });
+    await waitForJob(jobId);
+    const stagesFor = async (tabId) => {
+      const { notifications } = await apos.notification.find(req, { tabId });
+      return notifications
+        .filter((notif) => notif.event?.data?.jobId === jobId)
+        .map((notif) => notif.event.data.stage)
+        .sort();
+    };
+    const stages = [ 'ended', 'message', 'started', 'tool', 'tool' ];
+    assert.deepEqual(await stagesFor('tab-a'), stages);
+    assert.deepEqual(await stagesFor('tab-b'), stages);
+    // A carrier for every tab is emitted as it comes, never claimed
+    const stored = await apos.notification.db.find({ userId: 'owner1' }).toArray();
+    assert(stored.every((notif) => notif.tab === 'every' && notif.event?.name === 'ai-generate-job'));
   });
 
   it('a tool stage reports the call, not its result', async function() {
