@@ -563,9 +563,22 @@ module.exports = {
         const window = new JSDOM('').window;
         const DOMPurify = createDOMPurify(window);
         DOMPurify.addHook('afterSanitizeAttributes', node => {
-          if (node.hasAttribute('xlink:href') && !node.getAttribute('xlink:href').match(/^#/)) {
-            node.remove();
+          if (!node.hasAttribute('xlink:href')) {
+            return;
           }
+          const href = node.getAttribute('xlink:href');
+          if (href.startsWith('#')) {
+            return;
+          }
+          // Design tools embed bitmaps as <image xlink:href="data:...">.
+          // Raster image data cannot run script, so keep it (#4006)
+          if (
+            (node.nodeName.toLowerCase() === 'image') &&
+            /^data:image\/(png|jpeg|gif|webp);base64,[a-z0-9+/=\s]*$/i.test(href)
+          ) {
+            return;
+          }
+          node.remove();
         });
         const dirty = await readFile(path);
         const clean = DOMPurify.sanitize(dirty, {
