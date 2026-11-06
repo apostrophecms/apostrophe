@@ -382,7 +382,8 @@ module.exports = {
       // step's text blocks become text parts. A `failed` interaction
       // throws what its `errors` say: a refusal when any of them is a
       // block, the broken-transcript error when one rejects a thought
-      // signature, otherwise a transient failure. Past that, a turn
+      // signature, a context overflow when one counts too many input
+      // tokens, otherwise a transient failure. Past that, a turn
       // that requested tools finishes as 'toolCalls' whatever its status;
       // otherwise `completed` maps to 'stop' and `incomplete` (the
       // output cap, thinking included) to 'length'. Any other status
@@ -612,7 +613,8 @@ module.exports = {
       // Map any error the transport produced to a normalized apos
       // error, the only shape the engine reacts to. A blocked
       // generation is a refusal, a generation error a transient
-      // failure and a rejected thought signature a broken transcript;
+      // failure, a rejected thought signature a broken transcript and
+      // too many input tokens a context overflow;
       // everything else takes the engine's shared status ladder. The
       // API gateway in front of the service answers an auth failure in
       // an older error shape, wrapped in an array. No request id header
@@ -672,5 +674,11 @@ function classifyError({ code, message } = {}) {
   }
   if (GENERATION_ERROR_CODES.includes(code)) {
     return [ 'aiRetry', message || code ];
+  }
+  // A request too long for the model, under whatever code the service
+  // files it: "The input token count (1632254) exceeds the maximum number
+  // of tokens allowed (1048576)."
+  if (/input token count .*exceeds the maximum number of tokens/i.test(message)) {
+    return [ 'aiContextOverflow', message ];
   }
 }

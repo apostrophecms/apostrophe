@@ -19,9 +19,10 @@ module.exports = (self) => {
     // reads: `{ system, messages, tools, maxSteps, pending,
     // pendingCalls, toolInput, schema, validateObject, effort,
     // provider, model, reasoning, maxTokens, cache, signal, onMessage,
-    // onToolCall }`, with a positional prompt string appended to
-    // `messages` as the final user turn, `tools` names resolved to
-    // their activated definitions and unset options left undefined.
+    // onToolCall, onRetry, betweenSteps }`, with a positional prompt
+    // string appended to `messages` as the final user turn, `tools`
+    // names resolved to their activated definitions and unset options
+    // left undefined.
     // `pendingCalls` is computed, not an option: the transcript's
     // trailing unanswered tool calls in model order, present only
     // under pending: 'execute' — the default refuses the shape with a
@@ -52,8 +53,8 @@ module.exports = (self) => {
       }
       const {
         system, effort, provider, model, reasoning,
-        maxTokens, cache = 'short', signal, onMessage, onToolCall,
-        pending = 'refuse', toolInput
+        maxTokens, cache = 'short', signal, onMessage, onToolCall, onRetry,
+        betweenSteps, pending = 'refuse', toolInput
       } = options;
       for (const [ name, value ] of Object.entries({
         system,
@@ -78,7 +79,9 @@ module.exports = (self) => {
       }
       for (const [ name, hook ] of Object.entries({
         onMessage,
-        onToolCall
+        onToolCall,
+        onRetry,
+        betweenSteps
       })) {
         if (hook !== undefined && typeof hook !== 'function') {
           invalid(`"${name}" must be a function`);
@@ -150,7 +153,9 @@ module.exports = (self) => {
         cache,
         signal,
         onMessage,
-        onToolCall
+        onToolCall,
+        onRetry,
+        betweenSteps
       };
 
       // The tools option → the activated definitions it names

@@ -95,7 +95,7 @@ module.exports = {
             };
           },
           normalizeError(error) {
-            return self.normalizeError(error);
+            return self.normalizeError(error, '@apostrophecms/ai-adapter-anthropic');
           }
         };
       },
@@ -146,7 +146,7 @@ module.exports = {
             };
           },
           normalizeError(error) {
-            return self.normalizeError(error);
+            return self.normalizeError(error, '@apostrophecms/ai-adapter-openai');
           }
         };
       },
@@ -187,16 +187,24 @@ module.exports = {
             };
           },
           normalizeError(error) {
-            return self.normalizeError(error);
+            return self.normalizeError(error, '@apostrophecms/ai-adapter-openai-compatible');
           }
         };
       },
       // Map any error the transport produced to a normalized apos error:
       // the engine's shared status ladder, plus Bedrock's request id
-      // header, the same for every vendor it fronts.
-      normalizeError(error) {
+      // header, the same for every vendor it fronts. A too-long request
+      // is refused in Bedrock's own shape, a top-level message ("Input is
+      // too long for requested model.", "prompt is too long: 210000
+      // tokens > 200000 maximum"), or in the vendor's, read by the
+      // dialect module named by `dialect` when one is given.
+      normalizeError(error, dialect) {
         return self.apos.ai.normalizeHttpError(error, {
-          requestIdHeader: 'x-amzn-requestid'
+          requestIdHeader: 'x-amzn-requestid',
+          contextOverflow: (error) =>
+            /input is too long for requested model|prompt is too long/i
+              .test(error?.body?.message) ||
+            Boolean(dialect && self.apos.modules[dialect].isContextOverflow(error))
         });
       }
     };

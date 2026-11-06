@@ -303,11 +303,15 @@
  *   suspended the run, in model order; present only with finishReason
  *   'input'. The transcript already carries the executed outcomes as a
  *   partial tool message.
- * @property {'stop'|'length'|'cancel'|'maxSteps'|'input'} finishReason
+ * @property {'stop'|'length'|'cancel'|'maxSteps'|'input'|'paused'} finishReason
  *   'maxSteps' whenever the step budget cut the loop, the step budget's
  *   counterpart of 'length'; 'input' when a tool handler suspended the run
- *   for outside input.
- * @property {AiUsage} usage
+ *   for outside input; 'paused' when the `betweenSteps` hook stopped it,
+ *   the transcript ending in a complete tool message a later call continues.
+ * @property {AiUsage} usage The totals of every provider response.
+ * @property {AiUsage} [lastStepUsage] The last provider response's own
+ *   counts, which measure the transcript as the provider last saw it; absent
+ *   when the call made no model turn.
  * @property {string} model What actually answered.
  * @property {string} provider
  */

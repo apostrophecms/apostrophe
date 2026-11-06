@@ -608,6 +608,49 @@ describe('AI generateJob', function() {
     ]);
   });
 
+  it('a retried provider call publishes a retry stage', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    const seen = [];
+    chatScript = [
+      () => {
+        throw apos.error('aiRetry', 'overloaded', { retryAfter: 2 });
+      },
+      textTurn('all done')
+    ];
+    const savedPause = apos.ai.pause;
+    apos.ai.pause = async () => {};
+    try {
+      const { jobId } = await apos.ai.generateJob(req, 'go', {
+        onRetry(event, meta) {
+          seen.push([ event, meta ]);
+        }
+      });
+      await waitForJob(jobId);
+
+      const events = triggered.map(({ options }) => options.event.data);
+      assert.deepEqual(events.map((data) => data.stage), [ 'started', 'retry', 'ended' ]);
+      assert.deepEqual(events[1], {
+        jobId,
+        stage: 'retry',
+        attempt: 2,
+        wait: 2,
+        step: 1
+      });
+      assert.deepEqual(seen, [ [
+        {
+          attempt: 2,
+          wait: 2,
+          step: 1
+        },
+        { jobId }
+      ] ]);
+      const job = await jobModule.db.findOne({ _id: jobId });
+      assert.equal(job.results.text, 'all done');
+    } finally {
+      apos.ai.pause = savedPause;
+    }
+  });
+
   it('a caller hook sees the whole event, the wire sees the summary', async function() {
     const req = apos.task.getReq({ user: { _id: 'owner1' } });
     const seen = [];

@@ -548,6 +548,59 @@ describe('AI adapter: openai-compatible', function() {
       assert.equal(error.data.requestId, 'req_9');
     });
 
+    it('recognizes a request too long for the model, as each host words it', function() {
+      for (const body of [
+        // OpenAI proper and hosts that copy its code
+        {
+          error: {
+            message: 'Please reduce the length of the messages or completion.',
+            type: 'invalid_request_error',
+            code: 'context_length_exceeded'
+          }
+        },
+        // OpenAI's older wording, kept by vLLM, OpenRouter and DeepSeek
+        {
+          error: {
+            message: 'This model\'s maximum context length is 32768 tokens. However, you requested 40000 tokens (36000 in the messages, 4000 in the completion). Please reduce the length of the messages or completion.',
+            type: 'invalid_request_error'
+          }
+        },
+        // Mistral
+        {
+          error: {
+            message: 'Prompt contains 40000 tokens and 0 draft tokens, too large for model with 32768 maximum context length',
+            type: 'invalid_request_error'
+          }
+        },
+        // A server that puts the error at the top level of the body
+        {
+          object: 'error',
+          message: 'This model\'s maximum context length is 4096 tokens. However, you requested 5000 tokens.',
+          type: 'BadRequestError',
+          code: 400
+        },
+        // Anthropic's OpenAI-compatible endpoint
+        {
+          error: {
+            message: 'prompt is too long: 215000 tokens > 200000 maximum',
+            type: 'invalid_request_error'
+          }
+        }
+      ]) {
+        const error = adapter.normalizeError(httpError(400, {}, body));
+        assert.equal(error.name, 'aiContextOverflow');
+        assert.equal(error.message, body.error?.message ?? body.message);
+      }
+      assert.equal(adapter.normalizeError(httpError(413)).name, 'aiContextOverflow');
+      const other = adapter.normalizeError(httpError(400, {}, {
+        error: {
+          message: '\'messages\' must contain at least one message',
+          type: 'invalid_request_error'
+        }
+      }));
+      assert.equal(other.name, 'invalid');
+    });
+
     it('parses Retry-After as seconds and as an HTTP date', function() {
       const seconds = adapter.normalizeError(httpError(429, { 'retry-after': '7' }));
       assert.equal(seconds.data.retryAfter, 7);

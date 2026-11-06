@@ -291,6 +291,61 @@ describe('AI adapter: bedrock', function() {
         assert.equal(denied.name, 'forbidden');
         assert.equal(denied.message, 'Invalid API Key format');
       });
+
+      it('recognizes a request too long for the model, in Bedrock\'s shape or the vendor\'s', function() {
+        const doors = [ 'bedrock-anthropic', 'bedrock-openai', 'bedrock-openai-compatible' ]
+          .map((name) => Object.values(apos.ai.providers)
+            .find((record) => record.adapterName === name).adapter);
+        // Bedrock's own ValidationException: the message at the top level
+        for (const message of [
+          'Input is too long for requested model.',
+          'prompt is too long: 210000 tokens > 200000 maximum'
+        ]) {
+          for (const door of doors) {
+            const error = door.normalizeError(httpError(400, {
+              'x-amzn-requestid': 'req-8',
+              'x-amzn-errortype': 'ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/'
+            }, { message }));
+            assert.equal(error.name, 'aiContextOverflow');
+            assert.equal(error.message, message);
+            assert.equal(error.data.requestId, 'req-8');
+          }
+        }
+        // Each door also reads its vendor's own shape
+        const [ anthropic, openai, compatible ] = doors;
+        const vendorShaped = [
+          [ anthropic, errorBody('invalid_request_error', 'prompt is too long: 215000 tokens > 200000 maximum') ],
+          [ openai, {
+            error: {
+              message: 'Your input exceeds the context window of this model. Please adjust your input and try again.',
+              type: 'invalid_request_error',
+              code: 'context_length_exceeded'
+            }
+          } ],
+          [ compatible, {
+            error: {
+              message: 'This model\'s maximum context length is 32768 tokens. However, you requested 40000 tokens.',
+              type: 'invalid_request_error'
+            }
+          } ]
+        ];
+        for (const [ door, body ] of vendorShaped) {
+          assert.equal(door.normalizeError(httpError(400, {}, body)).name, 'aiContextOverflow');
+        }
+        // The module's own method, with no dialect, reads Bedrock's shape only
+        assert.equal(
+          adapter.normalizeError(httpError(400, {}, { message: 'Input is too long for requested model.' })).name,
+          'aiContextOverflow'
+        );
+        assert.equal(
+          adapter.normalizeError(httpError(400, {}, vendorShaped[1][1])).name,
+          'invalid'
+        );
+        assert.equal(
+          anthropic.normalizeError(httpError(400, {}, { message: 'Malformed input request' })).name,
+          'invalid'
+        );
+      });
     });
 
     describe('the wire', function() {
