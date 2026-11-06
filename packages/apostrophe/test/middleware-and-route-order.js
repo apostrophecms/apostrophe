@@ -85,3 +85,70 @@ describe('Middleware and Route Order', function() {
     assert(!result.thirdMiddlewareRan);
   });
 });
+
+describe('Middleware "before" chains (#4060)', function() {
+
+  let apos;
+
+  this.timeout(t.timeout);
+
+  after(async function () {
+    return t.destroy(apos);
+  });
+
+  it('resolves chained "before" options transitively', async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        // Registered as c, b, a; b asks to run before c, and a before b
+        'order-c': {
+          middleware(self) {
+            return {
+              cMiddleware(req, res, next) {
+                req.order = [ ...(req.order || []), 'c' ];
+                return next();
+              }
+            };
+          },
+          apiRoutes(self) {
+            return {
+              get: {
+                order(req) {
+                  return { order: req.order || [] };
+                }
+              }
+            };
+          }
+        },
+        'order-b': {
+          middleware(self) {
+            return {
+              bMiddleware: {
+                before: 'order-c',
+                middleware(req, res, next) {
+                  req.order = [ ...(req.order || []), 'b' ];
+                  return next();
+                }
+              }
+            };
+          }
+        },
+        'order-a': {
+          middleware(self) {
+            return {
+              aMiddleware: {
+                before: 'order-b',
+                middleware(req, res, next) {
+                  req.order = [ ...(req.order || []), 'a' ];
+                  return next();
+                }
+              }
+            };
+          }
+        }
+      }
+    });
+    const result = await apos.http.get('/api/v1/order-c/order');
+    assert.deepStrictEqual(result.order, [ 'a', 'b', 'c' ]);
+  });
+});
