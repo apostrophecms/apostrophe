@@ -1,0 +1,7 @@
+{% fragment topLevelLogo() %}<span class="logo">LOGO</span>{% endfragment %}
+
+{% fragment topLevelNav() %}<nav>NAV</nav>{% endfragment %}
+
+{# A stray render outside any fragment. When this file is brought in with #}
+{# "import", its top-level output is discarded, so this must not crash. #}
+{% render topLevelLogo() %}
