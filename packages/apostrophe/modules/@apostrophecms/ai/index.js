@@ -1070,7 +1070,8 @@ module.exports = {
        * returns as soon as the job record exists, the run continues in the
        * background, and the exact object generate would have returned is stored
        * on the record as `results` (a failure stores its error instead),
-       * readable via the job module's status route.
+       * readable via the job module's status route. The job has a heartbeat,
+       * so a run whose process died reads as `abandoned` there.
        *
        * Invalid options throw here, synchronously — a job record is created
        * only for a run that can start. Tool handlers may not start jobs: a
@@ -1174,6 +1175,7 @@ module.exports = {
         };
         const returned = await jobModule.run(req, doTheWork, {
           notifications: false,
+          heartbeat: true,
           ...(req.user?._id && { userId: req.user._id }),
           ...(ttl > 0 && { expireAfter: ttl })
         });

@@ -459,6 +459,44 @@ describe('AI generateJob', function() {
     } ]);
   });
 
+  it('the job has a heartbeat', async function() {
+    const req = apos.task.getReq();
+    chatScript = [ textTurn('fast') ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'quick');
+    const job = await waitForJob(jobId);
+
+    assert(job.heartbeatAt instanceof Date);
+  });
+
+  it('a run its record reads as abandoned winds down', async function() {
+    const req = apos.task.getReq();
+    let started;
+    const startedPromise = new Promise((resolve) => {
+      started = resolve;
+    });
+    abortNotify = started;
+    chatScript = [
+      toolTurn(toolCall('c1', 'until_abort'))
+    ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'go', {
+      tools: [ 'until_abort' ]
+    });
+    await startedPromise;
+    // What every other process sees once this one stops beating
+    await jobModule.db.updateOne({ _id: jobId }, {
+      $set: { heartbeatAt: new Date(Date.now() - 3600 * 1000) }
+    });
+    const job = await waitForJob(jobId);
+
+    assert.equal(job.results.finishReason, 'cancel');
+    assert.deepEqual(job.results.steps, [ {
+      toolCall: toolCall('c1', 'until_abort'),
+      result: { sawAbort: true }
+    } ]);
+  });
+
   it('cancel mid provider call: aborts without retries, partial result preserved', async function() {
     const req = apos.task.getReq();
     chatScript = [
