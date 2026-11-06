@@ -9,7 +9,8 @@ const LINKS = Object.freeze({
   docs: 'https://docs.apostrophecms.com',
   discord: 'https://chat.apostrophecms.com',
   demoSite: 'https://demo.apostrophecms.com',
-  dbGuide: 'https://apostrophecms.com/docs/guide/choosing-a-database.html'
+  dbGuide: 'https://apostrophecms.com/docs/guide/choosing-a-database.html',
+  nodejs: 'https://nodejs.org/en/download'
 });
 
 /** Per-kit "get oriented" guides. `*-demo` and `*-demo-data` share a guide. */

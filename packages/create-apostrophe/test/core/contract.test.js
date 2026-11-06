@@ -83,6 +83,8 @@ describe('core contract — createProject', function () {
       install: async () => {},
       addAdminUser: async () => {},
       importSampleData: async () => {},
+      // Every kit runs on 24; the per-kit floor has its own tests.
+      nodeVersion: '24.0.0',
       ...extra.steps
     });
   }

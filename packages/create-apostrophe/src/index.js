@@ -44,7 +44,8 @@
 
 /**
  * The stage a failed install is attributed to. `'preflight'` means the
- * failure happened before any stage ran (package manager check) — every step
+ * failure happened before any stage ran (package manager or Node.js version
+ * check) — every step
  * is skipped. Otherwise exactly one stage per failure. Always a string, so
  * the telemetry field stays single-typed.
  * @typedef {(
@@ -93,6 +94,10 @@
  *                                              reset the DB in the sample-data
  *                                              step, not via this flag.)
  * @property {boolean}         nonInteractive   CI mode: no prompts downstream.
+ * @property {boolean}         [nodeRedirect]   The guided flow steered the
+ *                                              user away from a build this
+ *                                              Node.js is too old for.
+ *                                              Reported to telemetry only.
  * @property {number}          confirmedAt      Plan-confirmation timestamp
  *                                              (epoch ms), set by the caller.
  *                                              Source of durationMs.
@@ -129,6 +134,7 @@
  * @property {DbChoice}        dbChoice
  * @property {PackageManager}  packageManager
  * @property {number}          durationMs
+ * @property {boolean}         [nodeRedirect]
  * @property {FailStage}       [failStage]
  * @property {string}          [errorCode]
  */

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {
-  KITS, KIT_IDS, isKnownKit, getKit, deriveKitId
+  KITS, KIT_IDS, isKnownKit, getKit, deriveKitId, STANDALONE_EQUIVALENT
 } from '../../src/core/kits.js';
 
 describe('core/kits', function () {
@@ -13,6 +13,16 @@ describe('core/kits', function () {
       'apostrophe-demo-data',
       'apostrophe-essentials'
     ]);
+  });
+
+  it('every Astro kit maps to a Standalone kit with the same seed data', function () {
+    const astroIds = KIT_IDS.filter((id) => KITS[id].frontend === 'astro');
+    assert.deepEqual(Object.keys(STANDALONE_EQUIVALENT).sort(), astroIds.sort());
+    for (const [ astroId, standaloneId ] of Object.entries(STANDALONE_EQUIVALENT)) {
+      const standalone = getKit(standaloneId);
+      assert.equal(standalone.frontend, null, standaloneId);
+      assert.equal(standalone.seedData, KITS[astroId].seedData, astroId);
+    }
   });
 
   it('every entry has a clone URL, label, and consistent flags', function () {
