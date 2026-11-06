@@ -1,6 +1,7 @@
 // Implements {% component 'moduleName:componentName' with dataObject %}
 
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
+const warnOutsideRequest = require('./warn-outside-request');
 
 module.exports = function(self) {
   return {
@@ -26,6 +27,12 @@ module.exports = function(self) {
     // Do the actual work
     async run(context, name, data) {
       const req = context.ctx.__req;
+      if (!req) {
+        // See render.js: the top level of an imported template has no `req`
+        // and its output is discarded
+        warnOutsideRequest(self, 'component');
+        return '';
+      }
       if (!data) {
         data = {};
       }
