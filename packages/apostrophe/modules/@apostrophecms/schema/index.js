@@ -2381,8 +2381,10 @@ still output the value of this field with a regular template expression.`);
               if (key && patch[key.split('.')[0]]) {
                 // This base has already been cloned into the patch, or it
                 // otherwise touches this base, so we need to re-resolve
-                // the reference or indexes may be incorrect
-                key = self.apos.util.resolveAtReference(patch, atReference, own);
+                // the reference or indexes may be incorrect. Among the bases
+                // only: the value of an `@` key holds its own `_id`
+                const bases = _.omitBy(patch, (value, name) => '$@'.includes(name.charAt(0)));
+                key = self.apos.util.resolveAtReference(bases, atReference, own);
               }
             }
             // Simple replacement with a dot path
