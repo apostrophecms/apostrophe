@@ -594,6 +594,47 @@ describe('AI adapter: openai', function() {
       assert.equal(error.data.requestId, 'req_9');
     });
 
+    it('recognizes a request too long for the model', function() {
+      // The documented code, and its message from a host that drops it
+      for (const body of [
+        {
+          error: {
+            message: 'Your input exceeds the context window of this model. Please adjust your input and try again.',
+            type: 'invalid_request_error',
+            param: 'input',
+            code: 'context_length_exceeded'
+          }
+        },
+        {
+          error: {
+            message: 'Input tokens exceed the configured limit of 272000 tokens.',
+            type: 'invalid_request_error',
+            code: 'context_length_exceeded'
+          }
+        },
+        {
+          error: {
+            message: 'Your input exceeds the context window of this model. Please adjust your input and try again.',
+            type: 'invalid_request_error'
+          }
+        }
+      ]) {
+        const error = adapter.normalizeError(httpError(400, { 'x-request-id': 'req_4' }, body));
+        assert.equal(error.name, 'aiContextOverflow');
+        assert.equal(error.message, body.error.message);
+        assert.equal(error.data.requestId, 'req_4');
+      }
+      assert.equal(adapter.normalizeError(httpError(413)).name, 'aiContextOverflow');
+      const other = adapter.normalizeError(httpError(400, {}, {
+        error: {
+          message: 'Invalid value for \'reasoning.effort\'',
+          type: 'invalid_request_error',
+          code: 'invalid_value'
+        }
+      }));
+      assert.equal(other.name, 'invalid');
+    });
+
     it('parses Retry-After as seconds and as an HTTP date', function() {
       const seconds = adapter.normalizeError(httpError(429, { 'retry-after': '7' }));
       assert.equal(seconds.data.retryAfter, 7);

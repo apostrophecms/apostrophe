@@ -705,31 +705,66 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
       // an array of errors with `path` and `error` properties
       // is thrown.
       //
+      // Items that are not widgets, widgets of a type this site doesn't have
+      // and widgets this area doesn't allow are dropped. If
+      // `convertOptions.drops` is an array, each drop is recorded there as
+      // `convert` describes, `convertOptions.dropPath` being the dot path of
+      // `items`.
+      //
+      // `convertOptions.existingItems` may hold the area's stored items. A
+      // widget found there by `_id` and type keeps the stored value of every
+      // field its input can't set, such as a read only field.
+      //
       // Returns a new array of sanitized items.
       async sanitizeItems(req, items, options, convertOptions = {}) {
         options = options || {};
         const result = [];
         const errors = [];
         const widgetsOptions = self.getWidgets(options);
+        const {
+          drops,
+          dropPath,
+          existingItems,
+          ...widgetConvertOptions
+        } = convertOptions;
+        const existingById = new Map(
+          (Array.isArray(existingItems) ? existingItems : [])
+            .filter(existing => (typeof existing?._id) === 'string')
+            .map(existing => [ existing._id, existing ])
+        );
 
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
           if ((item == null) || typeof item !== 'object' || typeof item.type !== 'string') {
+            drops?.push({
+              path: `${dropPath}.${i}`,
+              reason: 'invalid'
+            });
             continue;
           }
           const manager = self.getWidgetManager(item.type);
           if (!manager) {
             self.warnMissingWidgetType(item.type);
+            drops?.push(widgetDrop(item, i, 'unknownType'));
             continue;
           }
           const widgetOptions = widgetsOptions[item.type];
           if (!widgetOptions) {
             // This widget is not specified for this area at all
+            drops?.push(widgetDrop(item, i, 'notAllowed'));
             continue;
           }
           let newItem;
           try {
-            newItem = await manager.sanitize(req, item, widgetOptions, convertOptions);
+            const existing = existingById.get(item._id);
+            newItem = await manager.sanitize(req, item, widgetOptions, {
+              ...widgetConvertOptions,
+              ...(drops && {
+                drops,
+                dropPath: `${dropPath}.${i}`
+              }),
+              existing: (existing?.type === item.type) ? existing : null
+            });
             newItem._id = self.apos.launder.id(item._id) || self.apos.util.generateId();
           } catch (e) {
             if (Array.isArray(e)) {
@@ -752,6 +787,14 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
           throw errors;
         } else {
           return result;
+        }
+        function widgetDrop(item, i, reason) {
+          return {
+            path: `${dropPath}.${i}`,
+            reason,
+            type: item.type,
+            ...(((typeof item._id) === 'string') && { _id: item._id })
+          };
         }
       },
       // Renders markup for a widget of the given `type`. The actual

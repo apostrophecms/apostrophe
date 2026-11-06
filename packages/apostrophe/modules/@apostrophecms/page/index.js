@@ -679,6 +679,13 @@ module.exports = {
       // A patch with `_strict: true` saves only if the whole page is then
       // valid, as a save from its editor must be, and is refused as `invalid`
       // otherwise.
+      //
+      // A patch with `_lossless: true` is refused as `invalid` if conversion
+      // would drop or ignore anything the patch itself supplies: a pushed
+      // widget the area doesn't allow, a relationship entry that doesn't
+      // resolve, items past an array's `limit`, a write to a read only field
+      // or to a relationship this user can't view. Stale content it touches
+      // is healed as usual, see `checkLosslessPatch`.
       async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
@@ -1337,19 +1344,30 @@ database.`);
         }, parentPage);
         // Shortcut for a patch that replaces just one widget, which spares us
         // converting the rest of the document
+        const lossless = self.apos.launder.boolean(input._lossless);
+        const drops = lossless ? [] : undefined;
+        const authored = lossless ? [] : undefined;
         const patched = await self.apos.schema.patchWidgetIfSuitable(
           req,
           allowedSchema,
           input,
           page,
-          { fetchRelationships }
+          {
+            fetchRelationships,
+            drops,
+            authored
+          }
         );
         if (!patched) {
-          self.apos.schema.implementPatchOperators(input, page);
+          self.apos.schema.implementPatchOperators(input, page, { authored });
           const schema = self.apos.schema.subsetSchemaForPatch(allowedSchema, input);
           await self.apos.schema.convert(req, schema, input, page, {
-            fetchRelationships
+            fetchRelationships,
+            drops
           });
+        }
+        if (lossless) {
+          self.apos.schema.checkLosslessPatch(req, page, drops, authored);
         }
         await manager.emit('afterConvert', req, input, page);
       },

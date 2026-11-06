@@ -8,7 +8,7 @@
 
 const Ajv = require('ajv/dist/2020').default;
 const {
-  isObject, isAbort, startupFail
+  isObject, isAbort, stepUsage, startupFail
 } = require('./lib/util');
 const { DENIED_TYPES, USAGE_SHARE_KEYS } = require('./lib/constants');
 
@@ -32,7 +32,9 @@ module.exports = {
     //   returning the key, called before every request
     providers: {},
     // provider: the default provider name; inferred when only one is configured
-    // effort: { default, levels: { name: { provider, model, reasoning } } }
+    // effort: { default, levels: { name: { provider, model, reasoning,
+    //   description } } }; `description` tells a model choosing a level
+    //   what it is for (see effortSchema)
     // image: { provider, model, aspect, quality }
     // mock: (req, request) => assistant turn, consulted only under
     //   APOS_AI_MOCK
@@ -63,6 +65,9 @@ module.exports = {
     self.providers = {};
     self.effortTable = {};
     self.tools = {};
+    // Names removeTool took out; applied again at activation, so a
+    // removal wins over a registration that comes later
+    self.removedTools = new Set();
     // getTools query caches, built once at activation: the registry is
     // static, so they never go stale, and they hold the same
     // definition objects it does, not copies.
@@ -94,6 +99,7 @@ module.exports = {
     self.apos.http.addError('aiRefusal', 422);
     self.apos.http.addError('aiToolError', 422);
     self.apos.http.addError('aiInput', 422);
+    self.apos.http.addError('aiContextOverflow', 413);
   },
   handlers(self) {
     return {
@@ -151,11 +157,13 @@ module.exports = {
        *   intersection of the provider naming rules.
        * @property {string} description Non-empty text the model chooses the
        *   tool by; treat it as part of the prompt.
-       * @property {object} input The JSON Schema (draft 2020-12) the model's
-       *   arguments must satisfy. Sent to the provider; must declare an object
-       *   root. Declared "default" values are written into the arguments the
-       *   handler receives when the model omits them; the conversation
-       *   transcript keeps the call as the model made it.
+       * @property {object|(() => object)} input The JSON Schema (draft
+       *   2020-12) the model's arguments must satisfy. Sent to the provider;
+       *   must declare an object root. Declared "default" values are written
+       *   into the arguments the handler receives when the model omits them;
+       *   the conversation transcript keeps the call as the model made it. A
+       *   function returning the schema is called once at activation, when
+       *   the effort table exists (see effortSchema).
        * @property {object} [schema] The handler result's shape as a JSON
        *   Schema (draft 2020-12) with an object root — the same format as
        *   `input`, but internal: never sent to the model. When present, every
@@ -212,6 +220,26 @@ module.exports = {
           startupFail('addTool requires a definition with a "name" of 1 to 64 letters, digits, "_" or "-", starting with a letter');
         }
         self.tools[tool.name] = tool;
+      },
+
+      /**
+       * Take a tool out of the registry, so no call and no tag selection
+       * ever sees it. A removal wins whatever the module order: a tool
+       * registered under a removed name later still never activates. A
+       * name nobody registers removes nothing. Like addTool, it must run
+       * before "apostrophe:ready".
+       *
+       * @param {string} name
+       */
+      removeTool(name) {
+        if (self.toolsActive) {
+          startupFail('tools must be removed before "apostrophe:ready"');
+        }
+        if (typeof name !== 'string' || !name) {
+          startupFail('removeTool requires a tool name');
+        }
+        self.removedTools.add(name);
+        delete self.tools[name];
       },
 
       /**
@@ -296,7 +324,7 @@ module.exports = {
        */
       modelInfo(options = {}) {
         const {
-          provider, model, reasoning, aspect, quality, ...inline
+          provider, model, reasoning, aspect, quality, description, ...inline
         } = self.resolve(options);
         const record = self.providers[provider];
         const metadata = {
@@ -361,6 +389,35 @@ module.exports = {
             levels
           },
           providers
+        };
+      },
+
+      /**
+       * The JSON Schema of a tool argument that names an effort level: a
+       * string enum of the configured levels, its description listing each
+       * level with the `description` the effort table gives it. The table is
+       * built at activation, so call this from a tool's `input` function.
+       *
+       * @param {object} [options]
+       * @param {string} [options.description] Text placed before the list
+       *   of levels.
+       * @returns {{ type: 'string', enum: string[], description: string }}
+       */
+      effortSchema({ description } = {}) {
+        const levels = Object.keys(self.effortTable);
+        // Mock mode with no providers routes nothing; the default level
+        // is the only name a call can pass
+        if (!levels.length) {
+          levels.push(self.effortDefault);
+        }
+        const lines = levels.map((level) => {
+          const text = self.effortTable[level]?.description;
+          return text ? `- ${level}: ${text}` : `- ${level}`;
+        });
+        return {
+          type: 'string',
+          enum: levels,
+          description: [ description, ...lines ].filter(Boolean).join('\n')
         };
       },
 
@@ -457,6 +514,18 @@ module.exports = {
        *   naming no registered tool never starts and is not reported. A throw
        *   stops the call, except from the end report of a handler whose own
        *   failure is already stopping it.
+       * @property {(event: object) => Promise<void>} [onRetry] Called
+       *   before each retry of a provider call with `{ attempt, wait, step }`:
+       *   the number of the attempt about to be made, the wait before it in
+       *   whole seconds and the model turn it belongs to; awaited, and a
+       *   throw stops the call.
+       * @property {(meta: object) => Promise<object|void>} [betweenSteps]
+       *   Called after each step whose tool calls all ran, before the next
+       *   model call, with `{ step, usage }`, `usage` being that step's own
+       *   (AiUsage). Returning `{ stop: true }` ends the run with
+       *   finishReason 'paused': the transcript ends in the complete tool
+       *   message, and a later call given it as `messages` continues the
+       *   work. A throw stops the call.
        */
 
       /**
@@ -514,9 +583,10 @@ module.exports = {
        * @returns {Promise<AiResult>}
        * @throws Normalized apos errors: "invalid" for bad calls, "aiRetry" when
        *   transient provider failures outlast the retry budget, "aiRefusal"
-       *   when the model refuses. A tool handler's standard-coded throw (and
-       *   any handler bug) stops the call as-is, with no trace of it in any
-       *   model-bound message.
+       *   when the model refuses, "aiContextOverflow" when the provider
+       *   refuses the request as too long for the model. A tool handler's
+       *   standard-coded throw (and any handler bug) stops the call as-is,
+       *   with no trace of it in any model-bound message.
        */
       async generate(req, stringOrOptions, options) {
         const canonical = self.normalizeGenerateOptions(stringOrOptions, options);
@@ -578,6 +648,7 @@ module.exports = {
         let pending = null;
         let suspended = null;
         let canceled = false;
+        let paused = false;
         try {
           await continuePending();
           if (!suspended && !canceled) {
@@ -600,6 +671,7 @@ module.exports = {
           object: turn?.object,
           hadTools: tools.size > 0 || Boolean(canonical.pendingCalls),
           ...(suspended && { finishReason: 'input' }),
+          ...(paused && { finishReason: 'paused' }),
           ...(canceled && { finishReason: 'cancel' })
         });
         await self.emit('afterGenerate', req, context);
@@ -629,7 +701,10 @@ module.exports = {
                     self.validateStructured(answer, canonical.validateObject);
                   }
                 });
-              });
+              }, canonical.onRetry && ((event) => canonical.onRetry({
+                ...event,
+                step: turns
+              })));
             usage.inputTokens += turn.usage.inputTokens;
             usage.outputTokens += turn.usage.outputTokens;
             // A share appears on the call only once a turn reported it
@@ -700,6 +775,18 @@ module.exports = {
             if (canonical.signal?.aborted) {
               canceled = true;
               break;
+            }
+            // The transcript ends in a complete tool message here, so
+            // a run stopped now continues from it as it stands
+            if (canonical.betweenSteps) {
+              const verdict = await canonical.betweenSteps({
+                step: turns,
+                usage: stepUsage(turn.usage)
+              });
+              if (verdict?.stop === true) {
+                paused = true;
+                break;
+              }
             }
           }
         }
@@ -951,8 +1038,8 @@ module.exports = {
 
       /**
        * What generateJob accepts on top of everything generate accepts, which
-       * is passed through untouched — `onMessage` and `onToolCall` are called
-       * with `{ jobId }` merged into their meta here.
+       * is passed through untouched — `onMessage`, `onToolCall` and `onRetry`
+       * are called with `{ jobId }` merged into their meta here.
        *
        * @typedef {object} AiJobOptions
        * @property {(error: Error|null, result: AiResult|undefined) => Promise<void>}
@@ -966,7 +1053,9 @@ module.exports = {
        *   record exists, 'message' per intermediate assistant turn with the
        *   turn as `message`, 'tool' as each tool call starts and ends —
        *   summarized, never the result itself, which the transcript carries —
-       *   and 'ended' with the record's terminal `status`
+       *   'retry' before each retry of a provider call with its `attempt`,
+       *   `wait` (seconds) and `step`, and 'ended' with the record's terminal
+       *   `status`
        *   plus the result's `finishReason` or the failure's `error`
        *   ({ name, message }). Correlate by `jobId` and read the stored result
        *   from the job's status route — the record may flip to its terminal
@@ -981,7 +1070,8 @@ module.exports = {
        * returns as soon as the job record exists, the run continues in the
        * background, and the exact object generate would have returned is stored
        * on the record as `results` (a failure stores its error instead),
-       * readable via the job module's status route.
+       * readable via the job module's status route. The job has a heartbeat,
+       * so a run whose process died reads as `abandoned` there.
        *
        * Invalid options throw here, synchronously — a job record is created
        * only for a run that can start. Tool handlers may not start jobs: a
@@ -1071,10 +1161,21 @@ module.exports = {
                 await generateOptions.onToolCall(event, { jobId });
               }
             }
+          }),
+          ...((notify || generateOptions.onRetry) && {
+            onRetry: async (event) => {
+              if (notify) {
+                await self.publishJobEvent(req, jobId, 'retry', event);
+              }
+              if (generateOptions.onRetry) {
+                await generateOptions.onRetry(event, { jobId });
+              }
+            }
           })
         };
         const returned = await jobModule.run(req, doTheWork, {
           notifications: false,
+          heartbeat: true,
           ...(req.user?._id && { userId: req.user._id }),
           ...(ttl > 0 && { expireAfter: ttl })
         });
@@ -1196,10 +1297,12 @@ module.exports = {
       /**
        * The built-in progress publisher for generateJob: deliver one stage of a
        * background run to the job owner's browser over the notification
-       * channel. Each stage is a bus notification — never rendered — whose
-       * one-shot browser-bus event "ai-generate-job" is emitted in exactly one
-       * tab, carrying { jobId, stage, ...data }:
+       * channel. Each stage is a bus notification — never rendered — for every
+       * browser tab of the owner: each tab that is polling emits the
+       * browser-bus event "ai-generate-job" once, carrying
+       * { jobId, stage, ...data }:
        * `apos.bus.$on('ai-generate-job', (data) => ...)`, filtered by jobId.
+       * A stage expires after the notification module's `carrierExpireAfter`.
        *
        * Notifications reach logged-in users only, so a req without a user _id
        * is a silent no-op — there is nobody to deliver to. A delivery failure
@@ -1207,7 +1310,7 @@ module.exports = {
        *
        * @param {object} req
        * @param {string} jobId
-       * @param {'started'|'message'|'tool'|'ended'} stage
+       * @param {'started'|'message'|'tool'|'retry'|'ended'} stage
        * @param {object} [data] The stage's payload.
        * @returns {Promise<void>}
        */
@@ -1218,6 +1321,7 @@ module.exports = {
         try {
           await self.apos.notification.trigger(req, {
             bus: true,
+            tab: 'every',
             event: {
               name: 'ai-generate-job',
               data: {

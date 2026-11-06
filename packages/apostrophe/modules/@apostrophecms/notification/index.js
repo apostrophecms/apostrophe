@@ -33,6 +33,10 @@
 // resent on every admin page load. Defaults to 86400 (one day); set it to
 // 0 to keep notifications until they are dismissed. Individual
 // notifications may override it via the `expireAfter` option of `trigger`.
+//
+// ### `carrierExpireAfter`: seconds a bus carrier with a `tab` (see
+// `trigger`) is kept. Nobody claims or dismisses those, so this expiry is
+// what removes them. Defaults to 60.
 
 const delay = require('bluebird').delay;
 
@@ -44,7 +48,8 @@ module.exports = {
     queryInterval: 1000,
     // Used only when longPolling is false
     pollingInterval: 5000,
-    expireAfter: 86400
+    expireAfter: 86400,
+    carrierExpireAfter: 60
   },
   extend: '@apostrophecms/module',
   async init(self) {
@@ -69,6 +74,12 @@ module.exports = {
     // exact notification time that the client has already seen, for
     // disambiguation.
     //
+    // `tabId` is the polling browser tab's id: it receives what was
+    // triggered for that tab besides everything else, never what was
+    // triggered for another tab.
+    // `pageStart`, the `pageStart` of the page's browser data, skips the
+    // bus carriers created before the page was rendered.
+    //
     // Waits up to 10 seconds for new notifications (long polling),
     // but then responds with an empty array to avoid proxy server timeouts.
     getAll: {
@@ -86,6 +97,13 @@ module.exports = {
           throw self.apos.error('invalid');
         }
         const seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
+        const tabId = self.apos.launder.string(req.query.tabId) || null;
+        const pageStart = req.query.pageStart
+          ? new Date(self.apos.launder.string(req.query.pageStart))
+          : null;
+        if (pageStart && isNaN(pageStart.getTime())) {
+          throw self.apos.error('invalid', '"pageStart" must be a timestamp');
+        }
         return await attempt();
 
         async function attempt() {
@@ -101,7 +119,9 @@ module.exports = {
 
           const { notifications, dismissed } = await self.find(req, {
             modifiedOnOrSince,
-            seenIds
+            seenIds,
+            tabId,
+            pageStart
           });
           if (self.options.longPolling && !notifications.length && !dismissed.length) {
             await delay(self.options.queryInterval || 1000);
@@ -235,7 +255,9 @@ module.exports = {
         return {
           action: self.action,
           longPolling: self.options.longPolling,
-          pollingInterval: self.options.pollingInterval
+          pollingInterval: self.options.pollingInterval,
+          // A page never replays the bus carriers created before it
+          pageStart: new Date()
         };
       },
       // When used server-side, call with `req` as the first argument,
@@ -283,13 +305,25 @@ module.exports = {
       //
       // `options.event`, an object with `name` and optional `data`
       // properties, is emitted on the browser bus (`apos.bus`) in exactly
-      // one tab when the notification arrives.
+      // one tab when the notification arrives (unless `options.tab` says
+      // otherwise, see below).
       //
       // If `options.bus` is set to `true`, the notification is a pure
       // message-bus carrier: it is never rendered — the browser emits its
       // `event` and dismisses it. `event` is then required, the `message`
       // argument becomes optional, and the options object may be passed in
       // its place: `apos.notify(req, { bus: true, event })`.
+      //
+      // `options.tab` says which of the user's browser tabs receive it:
+      //
+      // - absent: a notification is shown in every tab, a bus carrier is
+      //   emitted by the first tab that claims it.
+      // - `'every'`: every tab. A bus carrier is emitted by each tab once.
+      // - a browser tab id: only that tab.
+      //
+      // A bus carrier with a `tab` is never claimed or dismissed: it
+      // expires after the `carrierExpireAfter` option unless `expireAfter`
+      // is given.
       //
       // Throws an error if there is no `req.user`.
       //
@@ -323,6 +357,10 @@ module.exports = {
         if (!message && !options.bus) {
           throw self.apos.error('required');
         }
+        if (options.tab !== undefined &&
+          (typeof options.tab !== 'string' || !options.tab)) {
+          throw self.apos.error('invalid', '"tab" must be "every" or a browser tab id');
+        }
 
         req.body = req.body || {};
 
@@ -350,7 +388,9 @@ module.exports = {
 
         const expireAfter = (options.expireAfter != null)
           ? options.expireAfter
-          : self.options.expireAfter;
+          : (options.bus && options.tab)
+            ? self.options.carrierExpireAfter
+            : self.options.expireAfter;
         delete notification.expireAfter;
         if (expireAfter) {
           notification.expireAt = new Date(Date.now() + expireAfter * 1000);
@@ -442,38 +482,73 @@ module.exports = {
       // Resolves with an object with `notifications` and `dismissed`
       // properties.
       //
-      // If `options.modifiedOnOrSince` is set, notifications
-      // greater than the timestamp are sent,
-      // minus any notifications whose IDs are in `options.seenIds`.
+      // If `options.modifiedOnOrSince` is set, notifications modified
+      // after it are sent, and those modified exactly at it unless their
+      // IDs are in `options.seenIds`: several notifications may share a
+      // timestamp, and one seen at that time may be modified again (a
+      // dismissal, a progress update) while it is still the newest time.
+      // Without `seenIds`, only notifications modified after it are sent.
+      //
+      // A notification triggered for one browser tab is sent only when
+      // `options.tabId` names that tab. With `options.pageStart`, bus
+      // carriers created before it are left out; other notifications are
+      // not.
 
       async find(req, options) {
+        const since = options.modifiedOnOrSince &&
+          new Date(options.modifiedOnOrSince);
         try {
           const results = await self.db.find({
             userId: req.user._id,
-            // The database sweeps expired notifications periodically rather
-            // than instantly, and not every supported database honors expiry
-            // yet, so never send one that is still stored past its time
-            $or: [
-              { expireAt: null },
-              { expireAt: { $gt: new Date() } }
-            ],
-            ...(options.modifiedOnOrSince && {
-              updatedAt: {
-                $gt: new Date(options.modifiedOnOrSince)
-              }
-            }),
-            ...(options.seenIds && {
-              _id: {
-                $nin: options.seenIds
-              }
-            })
+            $and: [
+              // The database sweeps expired notifications periodically
+              // rather than instantly, and not every supported database
+              // honors expiry yet, so never send one that is still stored
+              // past its time
+              {
+                $or: [
+                  { expireAt: null },
+                  { expireAt: { $gt: new Date() } }
+                ]
+              },
+              ...(since
+                ? [ {
+                  $or: [
+                    { updatedAt: { $gt: since } },
+                    ...(options.seenIds?.length
+                      ? [ {
+                        updatedAt: since,
+                        _id: { $nin: options.seenIds }
+                      } ]
+                      : [])
+                  ]
+                } ]
+                : []),
+              {
+                $or: [
+                  { tab: null },
+                  { tab: 'every' },
+                  ...(options.tabId ? [ { tab: options.tabId } ] : [])
+                ]
+              },
+              ...(options.pageStart
+                ? [ {
+                  $or: [
+                    { bus: { $ne: true } },
+                    { createdAt: { $gte: new Date(options.pageStart) } }
+                  ]
+                } ]
+                : [])
+            ]
           }).sort({ createdAt: 1 }).toArray();
 
           const notifications = results.filter(result => !result.dismissed);
           const dismissed = results.filter(result => result.dismissed);
           dismissed.forEach(element => {
-            // 5-minute delay before deleting
-            setTimeout(() => self.restApiRoutes.delete(req, element._id), 300000);
+            // 5-minute delay before deleting. A cleanup, never a reason
+            // to keep the process alive
+            setTimeout(() => self.restApiRoutes.delete(req, element._id), 300000)
+              .unref();
           });
 
           return {

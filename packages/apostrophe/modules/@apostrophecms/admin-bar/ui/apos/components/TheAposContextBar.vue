@@ -53,7 +53,7 @@
 import { mapState } from 'pinia';
 import { markRaw, toRaw } from 'vue';
 import { klona } from 'klona';
-import { createId } from 'apostrophe/lib/beneath.js';
+import { getTabId } from 'Modules/@apostrophecms/ui/utils';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -242,13 +242,8 @@ export default {
     window.addEventListener('beforeunload', this.onBeforeUnload);
     window.addEventListener('storage', this.onStorage);
 
-    // sessionStorage because it is deliberately browser-tab specific
-    let tabId = sessionStorage.getItem('aposTabId');
-    if (!tabId) {
-      tabId = createId();
-      sessionStorage.setItem('aposTabId', tabId);
-    }
-    window.apos.adminBar.tabId = tabId;
+    // Kept as an alias of the ui module's tab id
+    window.apos.adminBar.tabId = getTabId();
     window.apos.adminBar.editMode = false;
     window.apos.adminBar.seeChanges = false;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');

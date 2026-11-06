@@ -264,6 +264,18 @@ describe('AI engine', function() {
           }
         }
       }, /"effort\.levels\.high\.model" must be a string/);
+      rejects({
+        ...valid(),
+        effort: {
+          levels: {
+            high: {
+              provider: 'openai',
+              model: 'gpt-5.1',
+              description: [ 'deep' ]
+            }
+          }
+        }
+      }, /"effort\.levels\.high\.description" must be a string/);
     });
 
     it('rejects a malformed image route', function() {
@@ -377,6 +389,22 @@ describe('AI engine', function() {
             init(self) {
               self.apos.ai.addAdapter(fakeAdapter('fake'));
               self.apos.ai.addAdapter(fakeAdapter('other'));
+              // Its input is built at activation, from the effort table
+              self.apos.ai.addTool({
+                name: 'delegate_research',
+                description: 'Hand a research question to a subagent.',
+                kind: 'agent',
+                input: () => ({
+                  type: 'object',
+                  properties: {
+                    effort: self.apos.ai.effortSchema({
+                      description: 'How hard the subagent thinks.'
+                    })
+                  },
+                  required: [ 'effort' ]
+                }),
+                handler: async () => ({ ok: true })
+              });
             }
           },
           '@apostrophecms/ai': {
@@ -386,7 +414,10 @@ describe('AI engine', function() {
                 fake: {
                   apiKey: 'k1',
                   effort: {
-                    medium: { model: 'fake-medium-2' }
+                    medium: {
+                      model: 'fake-medium-2',
+                      description: 'Everyday edits.'
+                    }
                   }
                 },
                 other: { apiKey: 'k2' },
@@ -412,7 +443,8 @@ describe('AI engine', function() {
                 levels: {
                   high: {
                     provider: 'other',
-                    model: 'other-large'
+                    model: 'other-large',
+                    description: 'Hard research across many documents.'
                   }
                 }
               }
@@ -448,7 +480,10 @@ describe('AI engine', function() {
       // Native entry: adapter rows with entry overrides, level by level
       assert.deepEqual(fake.effort, {
         low: { model: 'fake-small' },
-        medium: { model: 'fake-medium-2' },
+        medium: {
+          model: 'fake-medium-2',
+          description: 'Everyday edits.'
+        },
         high: {
           model: 'fake-large',
           reasoning: 'high'
@@ -482,13 +517,35 @@ describe('AI engine', function() {
         },
         medium: {
           provider: 'fake',
-          model: 'fake-medium-2'
+          model: 'fake-medium-2',
+          description: 'Everyday edits.'
         },
         high: {
           provider: 'other',
-          model: 'other-large'
+          model: 'other-large',
+          description: 'Hard research across many documents.'
         }
       });
+    });
+
+    it('describes each effort level to a tool whose argument is one', function() {
+      const tool = apos.ai.getTool('delegate_research');
+      assert.deepEqual(tool.input.properties.effort, {
+        type: 'string',
+        enum: [ 'low', 'medium', 'high' ],
+        description: 'How hard the subagent thinks.\n' +
+          '- low\n' +
+          '- medium: Everyday edits.\n' +
+          '- high: Hard research across many documents.'
+      });
+      assert.equal(tool.validateArgs({ effort: 'high' }), true);
+      assert.equal(tool.validateArgs({ effort: 'extreme' }), false);
+      // Pickers read the descriptions too; routing never carries them
+      assert.equal(
+        apos.ai.modelCatalog().effort.levels.high.description,
+        'Hard research across many documents.'
+      );
+      assert.equal(Object.hasOwn(apos.ai.modelInfo({ effort: 'high' }), 'description'), false);
     });
 
     it('panics on activation when providers exist but no default resolves', async function() {

@@ -689,6 +689,10 @@ describe('AI adapter: google', function() {
         code: 'missing_thought_signature',
         message: 'The response is missing a required thought signature.'
       } ]), 'invalid', /^Gemini rejected the replayed conversation: The response is missing/);
+      throwsAs(failed([ {
+        code: 'invalid_request',
+        message: 'The input token count (1632254) exceeds the maximum number of tokens allowed (1048576).'
+      } ]), 'aiContextOverflow', /^The input token count \(1632254\)/);
       throwsAs(failed([ { code: 'malformed_function_call' } ]), 'aiRetry', /^malformed_function_call$/);
       throwsAs(failed([ {
         code: 'api_error',
@@ -1044,6 +1048,40 @@ describe('AI adapter: google', function() {
         assert.equal(error.name, 'aiRetry');
         assert.equal(error.message, code);
       }
+    });
+
+    it('recognizes a request too long for the model, by its message', function() {
+      const message = 'The input token count (1632254) exceeds the maximum number of tokens allowed (1048576).';
+      for (const body of [
+        // The Interactions API's own shape
+        {
+          error: {
+            code: 'invalid_request',
+            message
+          }
+        },
+        // The older generateContent shape, a numeric code and a status
+        {
+          error: {
+            code: 400,
+            message,
+            status: 'INVALID_ARGUMENT'
+          }
+        }
+      ]) {
+        const error = adapter.normalizeError(httpError(400, {}, body));
+        assert.equal(error.name, 'aiContextOverflow');
+        assert.equal(error.message, message);
+        assert.equal(error.data.status, 400);
+      }
+      assert.equal(adapter.normalizeError(httpError(413)).name, 'aiContextOverflow');
+      const other = adapter.normalizeError(httpError(400, {}, {
+        error: {
+          code: 'invalid_request',
+          message: 'Invalid value at \'generation_config.max_output_tokens\''
+        }
+      }));
+      assert.equal(other.name, 'invalid');
     });
 
     it('explains a rejected thought signature, by its message or its code', function() {

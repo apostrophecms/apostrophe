@@ -359,12 +359,28 @@ module.exports = {
       // Map any error the transport produced to a normalized apos
       // error, the only shape the engine reacts to: the engine's shared
       // status ladder, plus the `x-request-id` header the dialect's
-      // hosts echo from OpenAI proper. A host that sends no such header
-      // simply carries no request id.
+      // hosts echo from OpenAI proper (a host that sends no such header
+      // simply carries no request id) and the hosts' too-long refusals.
       normalizeError(error) {
         return self.apos.ai.normalizeHttpError(error, {
-          requestIdHeader: 'x-request-id'
+          requestIdHeader: 'x-request-id',
+          contextOverflow: self.isContextOverflow
         });
+      },
+      // Whether an error body is a host refusing a request as too long
+      // for the model. Hosts word it their own way, so the documented
+      // code is read first, then the message, under `error` or at the
+      // top level as some servers send it: "This model's maximum context
+      // length is 32768 tokens" (OpenAI's older wording, vLLM, OpenRouter,
+      // DeepSeek), "too large for model with 32768 maximum context length"
+      // (Mistral), "exceeds the context window", "prompt is too long". The
+      // dialect's test, so the Bedrock door reads the same errors.
+      isContextOverflow(error) {
+        const body = error?.body || {};
+        const code = body.error?.code ?? body.code;
+        const message = body.error?.message ?? body.message;
+        return code === 'context_length_exceeded' ||
+          /context[ _]length|context window|prompt is too long/i.test(message);
       }
     };
   }

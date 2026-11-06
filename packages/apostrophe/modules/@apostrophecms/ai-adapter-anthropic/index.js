@@ -378,6 +378,9 @@ module.exports = {
             end_turn: 'stop',
             stop_sequence: 'stop',
             max_tokens: 'length',
+            // The output ran into the model's context window: cut short
+            // by a limit, like max_tokens
+            model_context_window_exceeded: 'length',
             tool_use: 'toolCalls'
           }[response.stop_reason],
           usage,
@@ -428,12 +431,25 @@ module.exports = {
       },
       // Map any error the transport produced to a normalized apos
       // error, the only shape the engine reacts to: the engine's shared
-      // status ladder, plus the one fact that is this service's own —
-      // its request id rides the `request-id` header.
+      // status ladder, plus what is this service's own — its request id
+      // rides the `request-id` header, and a too-long request is told
+      // apart by its message.
       normalizeError(error) {
         return self.apos.ai.normalizeHttpError(error, {
-          requestIdHeader: 'request-id'
+          requestIdHeader: 'request-id',
+          contextOverflow: self.isContextOverflow
         });
+      },
+      // Whether an error body is the Messages API refusing a request as
+      // too long for the model: an `invalid_request_error` whose message
+      // names the prompt's size or the context limit, as in "prompt is
+      // too long: 215000 tokens > 200000 maximum" or "input length and
+      // `max_tokens` exceed context limit: 197202 + 21333 > 200000". The
+      // dialect's test, so the Bedrock door reads the same errors.
+      isContextOverflow(error) {
+        const { type, message } = error?.body?.error || {};
+        return type === 'invalid_request_error' &&
+          /prompt is too long|exceed context limit/i.test(message);
       }
     };
   }

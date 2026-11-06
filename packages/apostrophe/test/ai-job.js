@@ -459,6 +459,44 @@ describe('AI generateJob', function() {
     } ]);
   });
 
+  it('the job has a heartbeat', async function() {
+    const req = apos.task.getReq();
+    chatScript = [ textTurn('fast') ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'quick');
+    const job = await waitForJob(jobId);
+
+    assert(job.heartbeatAt instanceof Date);
+  });
+
+  it('a run its record reads as abandoned winds down', async function() {
+    const req = apos.task.getReq();
+    let started;
+    const startedPromise = new Promise((resolve) => {
+      started = resolve;
+    });
+    abortNotify = started;
+    chatScript = [
+      toolTurn(toolCall('c1', 'until_abort'))
+    ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'go', {
+      tools: [ 'until_abort' ]
+    });
+    await startedPromise;
+    // What every other process sees once this one stops beating
+    await jobModule.db.updateOne({ _id: jobId }, {
+      $set: { heartbeatAt: new Date(Date.now() - 3600 * 1000) }
+    });
+    const job = await waitForJob(jobId);
+
+    assert.equal(job.results.finishReason, 'cancel');
+    assert.deepEqual(job.results.steps, [ {
+      toolCall: toolCall('c1', 'until_abort'),
+      result: { sawAbort: true }
+    } ]);
+  });
+
   it('cancel mid provider call: aborts without retries, partial result preserved', async function() {
     const req = apos.task.getReq();
     chatScript = [
@@ -556,9 +594,11 @@ describe('AI generateJob', function() {
     });
     // The caller's own hook ran alongside the publisher
     assert.equal(seen.length, 1);
-    // Every stage travels as a pure bus carrier, nothing to render
+    // Every stage travels as a pure bus carrier for every browser tab,
+    // nothing to render
     for (const { options } of triggered) {
       assert.equal(options.bus, true);
+      assert.equal(options.tab, 'every');
       assert.equal(options.classes, undefined);
       assert.equal(options.dismiss, undefined);
     }
@@ -570,6 +610,31 @@ describe('AI generateJob', function() {
       }),
       5
     );
+  });
+
+  it('every stage reaches every browser tab of the owner, and none can claim it', async function() {
+    // Each stage once went to whichever tab claimed it first, so the tab
+    // that started the job could miss its own progress
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo')),
+      textTurn('all done')
+    ];
+    const { jobId } = await apos.ai.generateJob(req, 'go', { tools: [ 'echo' ] });
+    await waitForJob(jobId);
+    const stagesFor = async (tabId) => {
+      const { notifications } = await apos.notification.find(req, { tabId });
+      return notifications
+        .filter((notif) => notif.event?.data?.jobId === jobId)
+        .map((notif) => notif.event.data.stage)
+        .sort();
+    };
+    const stages = [ 'ended', 'message', 'started', 'tool', 'tool' ];
+    assert.deepEqual(await stagesFor('tab-a'), stages);
+    assert.deepEqual(await stagesFor('tab-b'), stages);
+    // A carrier for every tab is emitted as it comes, never claimed
+    const stored = await apos.notification.db.find({ userId: 'owner1' }).toArray();
+    assert(stored.every((notif) => notif.tab === 'every' && notif.event?.name === 'ai-generate-job'));
   });
 
   it('a tool stage reports the call, not its result', async function() {
@@ -606,6 +671,49 @@ describe('AI generateJob', function() {
         chars: JSON.stringify({ ok: true }).length
       }
     ]);
+  });
+
+  it('a retried provider call publishes a retry stage', async function() {
+    const req = apos.task.getReq({ user: { _id: 'owner1' } });
+    const seen = [];
+    chatScript = [
+      () => {
+        throw apos.error('aiRetry', 'overloaded', { retryAfter: 2 });
+      },
+      textTurn('all done')
+    ];
+    const savedPause = apos.ai.pause;
+    apos.ai.pause = async () => {};
+    try {
+      const { jobId } = await apos.ai.generateJob(req, 'go', {
+        onRetry(event, meta) {
+          seen.push([ event, meta ]);
+        }
+      });
+      await waitForJob(jobId);
+
+      const events = triggered.map(({ options }) => options.event.data);
+      assert.deepEqual(events.map((data) => data.stage), [ 'started', 'retry', 'ended' ]);
+      assert.deepEqual(events[1], {
+        jobId,
+        stage: 'retry',
+        attempt: 2,
+        wait: 2,
+        step: 1
+      });
+      assert.deepEqual(seen, [ [
+        {
+          attempt: 2,
+          wait: 2,
+          step: 1
+        },
+        { jobId }
+      ] ]);
+      const job = await jobModule.db.findOne({ _id: jobId });
+      assert.equal(job.results.text, 'all done');
+    } finally {
+      apos.ai.pause = savedPause;
+    }
   });
 
   it('a caller hook sees the whole event, the wire sees the summary', async function() {
