@@ -69,7 +69,7 @@ fi
   echo "=== pro automatic-translation: ${specs[*]} ==="
   echo "core: $(git -C "$root" rev-parse --abbrev-ref HEAD) $(git -C "$root" rev-parse --short HEAD)"
   echo "pro:  $(git -C "$pro" rev-parse --abbrev-ref HEAD) $(git -C "$pro" rev-parse --short HEAD)"
-  echo "start: $(date -Iseconds)"
+  echo "start: $(date +%Y-%m-%dT%H:%M:%S%z)"
 } | tee "$log"
 
 cd "$pro"
