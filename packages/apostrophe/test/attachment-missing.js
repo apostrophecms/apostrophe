@@ -5,7 +5,7 @@ const path = require('path');
 
 // An attachment field whose attachment record is missing from the database
 // (#4713). Saves go through convertUpdateAndRefresh, the REST PUT path the
-// editor uses, and the assertions read the stored document back.
+// editor uses.
 describe('Attachment missing from the database', function() {
   let apos;
   this.timeout(t.timeout);
@@ -38,17 +38,6 @@ describe('Attachment missing from the database', function() {
                     file: { type: 'attachment' }
                   }
                 }
-              }
-            }
-          }
-        },
-        'pdf-file': {
-          extend: '@apostrophecms/piece-type',
-          fields: {
-            add: {
-              file: {
-                type: 'attachment',
-                extensions: [ 'pdf' ]
               }
             }
           }
@@ -113,70 +102,103 @@ describe('Attachment missing from the database', function() {
     return apos.doc.db.findOne({ _id: doc._id });
   }
 
-  async function captureWarnings(fn) {
-    const warnings = [];
-    const logWarn = apos.attachment.logWarn;
-    apos.attachment.logWarn = (...args) => warnings.push(args);
-    try {
-      await fn();
-    } finally {
-      apos.attachment.logWarn = logWarn;
-    }
-    return warnings;
+  function isInvalid(errors) {
+    return [].concat(errors).some(error => error.name === 'invalid');
   }
 
-  it('keeps a required attachment whose record is missing', async function() {
+  it('rejects saving a required attachment whose record is missing', async function() {
     const attachment = await newAttachment();
-    const stored = await insertThenEdit(
-      apos.image,
-      { attachment },
-      { title: 'Edited' },
-      { beforeEdit: () => forget(attachment) }
+    await assert.rejects(
+      insertThenEdit(
+        apos.image,
+        { attachment },
+        { title: 'Edited' },
+        { beforeEdit: () => forget(attachment) }
+      ),
+      isInvalid
     );
-    assert.strictEqual(stored.attachment?._id, attachment._id);
   });
 
-  it('saves the rest of the edit', async function() {
+  it('rejects saving an optional attachment whose record is missing', async function() {
     const attachment = await newAttachment();
-    const stored = await insertThenEdit(
-      apos.image,
-      { attachment },
-      { title: 'Edited' },
-      { beforeEdit: () => forget(attachment) }
+    await assert.rejects(
+      insertThenEdit(
+        apos.modules['optional-file'],
+        { file: attachment },
+        { title: 'Edited' },
+        { beforeEdit: () => forget(attachment) }
+      ),
+      isInvalid
     );
-    assert.strictEqual(stored.title, 'Edited');
   });
 
-  it('keeps an optional attachment whose record is missing', async function() {
+  it('rejects saving an array item attachment whose record is missing', async function() {
     const attachment = await newAttachment();
-    const stored = await insertThenEdit(
-      apos.modules['optional-file'],
-      { file: attachment },
-      { title: 'Edited' },
-      { beforeEdit: () => forget(attachment) }
+    await assert.rejects(
+      insertThenEdit(
+        apos.modules['optional-file'],
+        {
+          items: [ {
+            _id: apos.util.generateId(),
+            metaType: 'arrayItem',
+            file: attachment
+          } ]
+        },
+        { title: 'Edited' },
+        { beforeEdit: () => forget(attachment) }
+      ),
+      isInvalid
     );
-    assert.strictEqual(stored.file?._id, attachment._id);
   });
 
-  it('keeps an attachment in an array item whose record is missing', async function() {
+  it('rejects a field newly pointed at a missing attachment', async function() {
     const attachment = await newAttachment();
-    const itemId = apos.util.generateId();
-    const stored = await insertThenEdit(
-      apos.modules['optional-file'],
-      {
-        items: [ {
-          _id: itemId,
-          metaType: 'arrayItem',
-          file: attachment
-        } ]
-      },
-      { title: 'Edited' },
-      { beforeEdit: () => forget(attachment) }
+    await forget(attachment);
+    await assert.rejects(
+      insertThenEdit(
+        apos.modules['optional-file'],
+        { file: null },
+        { file: attachment }
+      ),
+      isInvalid
     );
-    assert.strictEqual(stored.items[0].file?._id, attachment._id);
   });
 
-  it('keeps a required attachment hidden by an if condition', async function() {
+  it('names the missing attachment in the error', async function() {
+    const attachment = await newAttachment();
+    await assert.rejects(
+      insertThenEdit(
+        apos.image,
+        { attachment },
+        { title: 'Edited' },
+        { beforeEdit: () => forget(attachment) }
+      ),
+      errors => [].concat(errors).some(error => error.data?.errors?.some(
+        sub => sub.message?.includes(attachment._id)
+      ) || error.message?.includes(attachment._id))
+    );
+  });
+
+  it('leaves the stored document unchanged when the save is rejected', async function() {
+    const attachment = await newAttachment();
+    const req = apos.task.getReq();
+    const doc = await apos.image.insert(req, {
+      ...apos.image.newInstance(),
+      title: 'Orphan',
+      attachment
+    });
+    await forget(attachment);
+    await assert.rejects(
+      apos.image.convertUpdateAndRefresh(req, {
+        ...doc,
+        title: 'Edited'
+      }, doc._id)
+    );
+    const stored = await apos.doc.db.findOne({ _id: doc._id });
+    assert.strictEqual(stored.title, 'Orphan');
+  });
+
+  it('saves a document whose missing attachment is hidden by an if condition', async function() {
     const attachment = await newAttachment();
     const stored = await insertThenEdit(
       apos.modules['conditional-file'],
@@ -187,18 +209,7 @@ describe('Attachment missing from the database', function() {
       { title: 'Edited' },
       { beforeEdit: () => forget(attachment) }
     );
-    assert.strictEqual(stored.file?._id, attachment._id);
-  });
-
-  it('clears a field newly pointed at a missing attachment', async function() {
-    const attachment = await newAttachment();
-    await forget(attachment);
-    const stored = await insertThenEdit(
-      apos.modules['optional-file'],
-      { file: null },
-      { file: attachment }
-    );
-    assert.strictEqual(stored.file, null);
+    assert.strictEqual(stored.title, 'Edited');
   });
 
   it('still clears the field when no attachment is sent', async function() {
@@ -209,117 +220,5 @@ describe('Attachment missing from the database', function() {
       { file: null }
     );
     assert.strictEqual(stored.file, null);
-  });
-
-  it('logs an attachment-not-found warning naming the attachment', async function() {
-    const attachment = await newAttachment();
-    const warnings = await captureWarnings(() => insertThenEdit(
-      apos.image,
-      { attachment },
-      { title: 'Edited' },
-      { beforeEdit: () => forget(attachment) }
-    ));
-    const [ , , , data ] = warnings.find(([ , type ]) => type === 'attachment-not-found') || [];
-    assert.strictEqual(data?.attachmentId, attachment._id);
-  });
-
-  it('names the document, not the array item, in the warning', async function() {
-    const attachment = await newAttachment();
-    let docId;
-    const warnings = await captureWarnings(() => insertThenEdit(
-      apos.modules['optional-file'],
-      {
-        items: [ {
-          _id: apos.util.generateId(),
-          metaType: 'arrayItem',
-          file: attachment
-        } ]
-      },
-      { title: 'Edited' },
-      {
-        beforeEdit: async (doc) => {
-          docId = doc._id;
-          await forget(attachment);
-        }
-      }
-    ));
-    const [ , , , data ] = warnings.find(([ , type ]) => type === 'attachment-not-found') || [];
-    assert.strictEqual(data?.docId, docId);
-  });
-
-  it('reports kept: true when it keeps the stored reference', async function() {
-    const attachment = await newAttachment();
-    const warnings = await captureWarnings(() => insertThenEdit(
-      apos.image,
-      { attachment },
-      { title: 'Edited' },
-      { beforeEdit: () => forget(attachment) }
-    ));
-    const [ , , , data ] = warnings.find(([ , type ]) => type === 'attachment-not-found') || [];
-    assert.strictEqual(data?.kept, true);
-  });
-
-  it('reports kept: false when it clears the field', async function() {
-    const attachment = await newAttachment();
-    await forget(attachment);
-    const warnings = await captureWarnings(() => insertThenEdit(
-      apos.modules['optional-file'],
-      { file: null },
-      { file: attachment }
-    ));
-    const [ , , , data ] = warnings.find(([ , type ]) => type === 'attachment-not-found') || [];
-    assert.strictEqual(data?.kept, false);
-  });
-
-  it('warns only once per missing attachment', async function() {
-    const attachment = await newAttachment();
-    const req = apos.task.getReq();
-    const warnings = await captureWarnings(async () => {
-      const doc = await apos.image.insert(req, {
-        ...apos.image.newInstance(),
-        title: 'Orphan',
-        attachment
-      });
-      await forget(attachment);
-      await apos.image.convertUpdateAndRefresh(req, {
-        ...doc,
-        title: 'First'
-      }, doc._id);
-      await apos.image.convertUpdateAndRefresh(req, {
-        ...doc,
-        title: 'Second'
-      }, doc._id);
-    });
-    const count = warnings.filter(([ , type ]) => type === 'attachment-not-found').length;
-    assert.strictEqual(count, 1);
-  });
-
-  it('rejects a kept attachment whose file type the field does not accept', async function() {
-    const attachment = await newAttachment();
-    await assert.rejects(
-      insertThenEdit(
-        apos.modules['pdf-file'],
-        { file: attachment },
-        { title: 'Edited' },
-        { beforeEdit: () => forget(attachment) }
-      ),
-      errors => [].concat(errors).some(error => error.name === 'invalid')
-    );
-  });
-
-  it('leaves docId out when the field is not yet on a saved document', async function() {
-    const attachment = await newAttachment();
-    await forget(attachment);
-    const pieceModule = apos.modules['optional-file'];
-    const warnings = await captureWarnings(() => pieceModule.convert(
-      apos.task.getReq(),
-      {
-        title: 'New',
-        file: attachment
-      },
-      pieceModule.newInstance()
-    ));
-    const [ , , , data ] = warnings.find(([ , type ]) => type === 'attachment-not-found') || [];
-    assert.deepStrictEqual(Object.keys(data || {}).sort(), [ 'attachmentId', 'field', 'kept' ]);
   });
 });

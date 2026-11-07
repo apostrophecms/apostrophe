@@ -287,7 +287,7 @@ module.exports = {
         return first._id === second._id &&
           _.isEqual(first.crop ?? null, second.crop ?? null);
       },
-      async convert(req, field, data, object, { ancestors = [] } = {}) {
+      async convert(req, field, data, object) {
         let info = data[field.name];
         if (typeof info !== 'object') {
           info = {};
@@ -301,26 +301,29 @@ module.exports = {
         info.crop = info.crop ? self.sanitizeCrop(info.crop) : undefined;
         const dbInfo = await self.db.findOne({ _id: info._id });
         if (!dbInfo) {
-          // The attachment record is gone (for instance, the documents were
-          // copied to a new database without aposAttachments). If the field
-          // already references this attachment, keep the stored value so an
-          // unrelated edit doesn't erase the reference; otherwise clear it.
-          // This relies on `object` holding the stored value, which is the
-          // case for documents and array items but not for widgets, which
-          // are sanitized from a new instance.
-          const kept = object[field.name]?._id === info._id;
-          self.warnAttachmentNotFound(
-            req, field, info._id, [ ...ancestors, object ], kept
+          // The attachment record is gone, for instance because the documents
+          // were copied to a new database without the aposAttachments
+          // collection. That is database corruption, so refuse the save
+          // rather than quietly erasing the reference
+          throw self.apos.error(
+            'invalid',
+            req.t('apostrophe:attachmentNotFound', { id: info._id })
           );
-          if (!kept) {
-            object[field.name] = null;
-            return;
-          }
-          self.assertExtensionAccepted(req, field, object[field.name]);
-          return;
         }
         _.assign(info, _.omit(dbInfo, 'crop'));
-        self.assertExtensionAccepted(req, field, info);
+
+        // Check if the file type is acceptable
+        const correctedExtensions = self.checkExtension(field, info);
+
+        if (correctedExtensions) {
+          const message = req.t('apostrophe:fileTypeNotAccepted', {
+            // i18next has no built-in support for interpolating an array
+            // argument
+            extensions: correctedExtensions.join(req.t('apostrophe:listJoiner')),
+            extension: dbInfo.extension
+          });
+          throw self.apos.error('invalid', message);
+        }
 
         if (info.crop) {
           if (!_.find(info.crops, info.crop)) {
@@ -408,38 +411,6 @@ module.exports = {
           }
         }
         return null;
-      },
-      // Throw an `invalid` error if the attachment's file type is not
-      // accepted by the field.
-      assertExtensionAccepted(req, field, attachment) {
-        const correctedExtensions = self.checkExtension(field, attachment);
-        if (correctedExtensions) {
-          const message = req.t('apostrophe:fileTypeNotAccepted', {
-            // i18next has no built-in support for interpolating an array
-            // argument
-            extensions: correctedExtensions.join(req.t('apostrophe:listJoiner')),
-            extension: attachment.extension
-          });
-          throw self.apos.error('invalid', message);
-        }
-      },
-      // Log an `attachment-not-found` warning, once per attachment per
-      // process, so a site missing many attachment records doesn't log on
-      // every save. `owners` is the convert ancestry, outermost first; the
-      // document id is included only when one of them is a document.
-      warnAttachmentNotFound(req, field, attachmentId, owners, kept) {
-        self.attachmentsNotFoundWarned = self.attachmentsNotFoundWarned || new Set();
-        if (self.attachmentsNotFoundWarned.has(attachmentId)) {
-          return;
-        }
-        self.attachmentsNotFoundWarned.add(attachmentId);
-        const doc = owners.find(owner => owner?.metaType === 'doc' && owner._id);
-        self.logWarn(req, 'attachment-not-found', `The attachment ${attachmentId} was not found in the database`, {
-          attachmentId,
-          field: field.aposPath || field.name,
-          ...(doc ? { docId: doc._id } : {}),
-          kept
-        });
       },
       // Insert a file as an Apostrophe attachment. The `file` object
       // should be an object with `name` and `path` properties.
