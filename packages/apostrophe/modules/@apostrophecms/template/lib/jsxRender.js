@@ -13,9 +13,15 @@
 //   `Extend` against a Nunjucks `.html` layout, the helper synthesizes a
 //   Nunjucks string that extends the target and turns each named prop
 //   into a `{% block ... %}` override.
+// * The reverse bridge, for the outer layout only: when a project supplies
+//   `outerLayout.jsx` or `refreshLayout.jsx`, Nunjucks templates that
+//   `{% extends data.outerLayout %}` render against a stand-in that
+//   captures their blocks, which are then passed as props to the JSX
+//   layout. See `getJsxLayoutCaptureSource`.
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const _ = require('lodash');
 
 const jsxLoader = require('./jsxLoader.js');
@@ -25,13 +31,90 @@ const {
 
 const TEMPLATE_EXTENSIONS = [ 'jsx', 'njk', 'html' ];
 
+// Outer layouts a project may write in JSX even though Nunjucks templates
+// extend them. Every Nunjucks page template extends one of these through
+// `data.outerLayout`.
+const JSX_LAYOUT_NAMES = [ 'outerLayout', 'refreshLayout' ];
+
+// The blocks of the stock `outerLayoutBase.html`. Blocks found in the
+// project's resolved `outerLayoutBase` are added to these at render time.
+const OUTER_LAYOUT_BLOCKS = [
+  'locale', 'direction', 'extraHtml', 'encoding', 'startHead', 'title',
+  'standardHead', 'extraHead', 'bodyClass', 'apostropheMenu',
+  'apostropheUserInterface', 'beforeMain', 'mainAnchor', 'main',
+  'afterMain', 'extraBody', 'afterAposScripts'
+];
+
+// Captured block markup is delimited with comments carrying a per-process
+// random token, so page content can't forge or end a block.
+const CAPTURE_TOKEN = crypto.randomBytes(12).toString('hex');
+const CAPTURE_LAYOUT_PREFIX = '<!--apos-jsx-layout:';
+const CAPTURE_DEFAULT = `<!--apos-jsx-default:${CAPTURE_TOKEN}-->`;
+const CAPTURE_LAYOUT_RE = new RegExp(`<!--apos-jsx-layout:(\\w+):${CAPTURE_TOKEN}-->`);
+const CAPTURE_BLOCK_RE = new RegExp(
+  `<!--apos-jsx-block:(\\w+):${CAPTURE_TOKEN}-->([\\s\\S]*?)<!--/apos-jsx-block:${CAPTURE_TOKEN}-->`,
+  'g'
+);
+
 module.exports = function(self) {
   return {
-    // Install the global JSX `require` hook and teach the runtime about
-    // Nunjucks `SafeString` instances so they pass through unescaped.
+    // Install the global JSX `require` hook. Nunjucks `SafeString` instances
+    // are taught to the runtime when Nunjucks loads, see `onNunjucksLoaded`.
     initJsx() {
       jsxLoader.install();
-      registerSafeClass(self.nunjucks.runtime.SafeString);
+      registerSafeClass(JsxSafeString);
+      // Read by `safe()` when Nunjucks is disabled.
+      self.JsxSafeString = JsxSafeString;
+    },
+
+    // Called once, when Nunjucks is first loaded (or supplied via the
+    // `language` option). Nunjucks `SafeString` instances pass through the
+    // JSX runtime unescaped.
+    //
+    // From then on a `JsxSafeString`, as `safe()` returns in JSX mode, is
+    // also an instance of the Nunjucks `SafeString`, so Nunjucks doesn't
+    // escape it either, even if it was made before Nunjucks loaded.
+    onNunjucksLoaded(nunjucks) {
+      const { SafeString } = nunjucks.runtime;
+      registerSafeClass(SafeString);
+      if (!(JsxSafeString.prototype instanceof SafeString)) {
+        Object.setPrototypeOf(JsxSafeString.prototype, SafeString.prototype);
+      }
+    },
+
+    // True if `s` was marked safe by `safe()`, whichever class that used.
+    // Never loads Nunjucks to find out.
+    isSafeString(s) {
+      if (s instanceof JsxSafeString) {
+        return true;
+      }
+      if ((self.options.nunjucks === false) || !self.nunjucksLoaded()) {
+        return false;
+      }
+      return s instanceof self.nunjucks.runtime.SafeString;
+    },
+
+    // True if Nunjucks has been loaded already.
+    nunjucksLoaded() {
+      return Boolean(require.cache[nunjucksPath()]) || Boolean(self.options.language);
+    },
+
+    // True when templates that exist in both forms in an installed module's
+    // views folder render from `.jsx`. See the `jsx` and `nunjucks` options.
+    isJsxMode() {
+      return (self.options.jsx === true) || (self.options.nunjucks === false);
+    },
+
+    // True if `dir` is a views folder of one of Apostrophe's own modules.
+    // Compared by real path, since Apostrophe may be reached through a
+    // symlink.
+    isCoreViewFolder(dir) {
+      self.coreViewFolders = self.coreViewFolders || new Map();
+      if (!self.coreViewFolders.has(dir)) {
+        const core = realpath(path.join(self.apos.selfDir, 'modules')) + path.sep;
+        self.coreViewFolders.set(dir, realpath(dir).startsWith(core));
+      }
+      return self.coreViewFolders.get(dir);
     },
 
     // Walk a module's view-folder chain and find the first file matching
@@ -74,8 +157,15 @@ module.exports = function(self) {
         ? TEMPLATE_EXTENSIONS
         : [ requestedExt ];
 
+      const jsxMode = self.isJsxMode();
       for (const dir of dirs) {
-        for (const ext of exts) {
+        // Apostrophe's own modules ship both `.html` and `.jsx` versions of
+        // their templates. Outside of JSX mode, the `.html` version wins, so
+        // projects render exactly what they always have.
+        const dirExts = (jsxMode || !exts.includes('jsx') || !self.isCoreViewFolder(dir))
+          ? exts
+          : [ ...exts.filter(ext => ext !== 'jsx'), 'jsx' ];
+        for (const ext of dirExts) {
           const fullpath = path.join(dir, `${baseName}.${ext}`);
           if (fs.existsSync(fullpath)) {
             return {
@@ -91,6 +181,97 @@ module.exports = function(self) {
         }
       }
       return null;
+    },
+
+    // Called by the Nunjucks loader for every template it loads. Returns
+    // the source of a stand-in template when `moduleName:modulePath` names
+    // an outer layout (`outerLayout` or `refreshLayout` of this module)
+    // that resolves to a `.jsx` file, otherwise `null`.
+    //
+    // Nunjucks can't extend a JSX template. The stand-in declares every
+    // block of `outerLayoutBase`, each wrapped in markers, so a Nunjucks
+    // template extending it renders to a list of its block overrides.
+    // `renderBody` then hands those to the JSX layout as props, the same
+    // props it receives when a JSX template uses `<Extend>`. A block the
+    // child doesn't override is left out, so the JSX layout's own default
+    // applies.
+    getJsxLayoutCaptureSource(moduleName, modulePath) {
+      if (moduleName !== self.__meta.name) {
+        return null;
+      }
+      const m = modulePath.match(/^(\w+)(?:\.(html|njk))?$/);
+      if (!m || !JSX_LAYOUT_NAMES.includes(m[1])) {
+        return null;
+      }
+      const layoutName = m[1];
+      const resolved = self.resolveTemplate(self, layoutName);
+      if (!resolved || resolved.kind !== 'jsx') {
+        return null;
+      }
+      const lines = [ `${CAPTURE_LAYOUT_PREFIX}${layoutName}:${CAPTURE_TOKEN}-->` ];
+      for (const block of self.getOuterLayoutBlockNames()) {
+        lines.push(
+          `<!--apos-jsx-block:${block}:${CAPTURE_TOKEN}-->` +
+          `{% block ${block} %}${CAPTURE_DEFAULT}{% endblock %}` +
+          `<!--/apos-jsx-block:${CAPTURE_TOKEN}-->`
+        );
+      }
+      return lines.join('\n');
+    },
+
+    // Names of the blocks a Nunjucks template can override when it extends
+    // the outer layout: those of the stock `outerLayoutBase.html` plus any
+    // a project-level `outerLayoutBase` override adds.
+    getOuterLayoutBlockNames() {
+      const names = new Set(OUTER_LAYOUT_BLOCKS);
+      const base = self.resolveTemplate(self, 'outerLayoutBase');
+      if (base && base.kind === 'nunjucks') {
+        const src = fs.readFileSync(base.path, 'utf8');
+        for (const match of src.matchAll(/{%-?\s*block\s+(\w+)/g)) {
+          names.add(match[1]);
+        }
+      }
+      return [ ...names ];
+    },
+
+    // True if `html` is the output of a Nunjucks template that extended a
+    // stand-in from `getJsxLayoutCaptureSource`.
+    isJsxLayoutCapture(html) {
+      return (typeof html === 'string') &&
+        html.includes(CAPTURE_LAYOUT_PREFIX) &&
+        CAPTURE_LAYOUT_RE.test(html);
+    },
+
+    // Render the JSX outer layout named in `captured` (see
+    // `getJsxLayoutCaptureSource`), passing each captured block as a prop
+    // alongside the data the Nunjucks template was rendered with.
+    async renderJsxLayoutCapture(req, captured, data, module) {
+      const layoutName = captured.match(CAPTURE_LAYOUT_RE)[1];
+      const blocks = {};
+      for (const [ , name, content ] of captured.matchAll(CAPTURE_BLOCK_RE)) {
+        if (content === CAPTURE_DEFAULT) {
+          continue;
+        }
+        blocks[name] = content.includes(CAPTURE_DEFAULT)
+          // The block called super(). Pass a function, which the layout
+          // calls with its default markup for the block: see `block` in
+          // `jsxLayout.js`.
+          ? superBlock(content.split(CAPTURE_DEFAULT))
+          : new Raw(content);
+      }
+      const resolved = self.resolveTemplate(self, layoutName);
+      if (!resolved || resolved.kind !== 'jsx') {
+        throw new Error(`The JSX layout ${layoutName}.jsx is no longer available.`);
+      }
+      const renderData = {
+        ...self.getRenderDataArgs(req, data, module),
+        ...blocks
+      };
+      // Set by `renderNunjucksWithBlocks` for the Nunjucks template's own
+      // use, not data the layout should see.
+      delete renderData.aposJsxBlocks;
+      const targetModule = self.apos.modules[resolved.moduleName];
+      return self.renderJsxTemplate(req, resolved, renderData, targetModule);
     },
 
     // Render the JSX module at `resolved.path` against `data`. Loads the
@@ -393,14 +574,17 @@ Usage: <Field doc={data.page} name='fieldName' with={{ tag: 'h2' }} />`);
         }
         // mode === 'include': render the Nunjucks template with our
         // props merged on top of ambient data, the same way a Nunjucks
-        // `{% include %}` would inherit data.
+        // `{% include %}` would inherit data. Like variables of a template
+        // calling `{% include %}`, the props are also visible by name.
         const flatProps = await self.flattenJsxProps(dataProps);
         const targetModule = self.apos.modules[resolved.moduleName];
         const data = {
           ...(ambientData || {}),
           ...flatProps
         };
-        const html = await targetModule.render(req, resolved.relativeName, data);
+        const html = await self.renderBody(
+          req, 'file', resolved.relativeName, data, targetModule, flatProps
+        );
         return new Raw(html);
       })();
     },
@@ -409,14 +593,28 @@ Usage: <Field doc={data.page} name='fieldName' with={{ tag: 'h2' }} />`);
     // become `{% block %}` overrides. The synthetic Nunjucks template
     // declares one block per prop, each emitting the matching string
     // marked safe so already-rendered HTML survives.
+    //
+    // A prop may also be a function, which receives the block's default
+    // markup, as Nunjucks `super()` would supply it, and returns the markup
+    // to use instead.
     async renderNunjucksWithBlocks(req, resolved, props, ambientData) {
       const targetModule = self.apos.modules[resolved.moduleName];
       const blocks = {};
+      const wrappers = {};
       for (const key of Object.keys(props)) {
+        // An undefined prop leaves the block alone, so a layout can forward
+        // its props unconditionally, e.g. `<Extend title={title} />`.
+        if (props[key] === undefined) {
+          continue;
+        }
+        if (typeof props[key] === 'function') {
+          wrappers[key] = props[key];
+          continue;
+        }
         const html = await flattenToHtml(props[key]);
         blocks[key] = html;
       }
-      const blockNames = Object.keys(blocks);
+      const blockNames = [ ...Object.keys(blocks), ...Object.keys(wrappers) ];
       const targetRef = `${resolved.moduleName}:${resolved.relativeName}`;
       const lines = [ `{% extends ${JSON.stringify(targetRef)} %}` ];
       for (const blockName of blockNames) {
@@ -425,6 +623,14 @@ Usage: <Field doc={data.page} name='fieldName' with={{ tag: 'h2' }} />`);
             'Template/Extend: prop names used as block overrides must be ' +
             `valid identifiers (got "${blockName}").`
           );
+        }
+        if (wrappers[blockName]) {
+          // Mark where the default lands, then hand it to the function.
+          lines.push(
+            `{% block ${blockName} %}${superStart(blockName)}{{ super() }}` +
+            `${superEnd(blockName)}{% endblock %}`
+          );
+          continue;
         }
         lines.push(
           `{% block ${blockName} %}{{ data.aposJsxBlocks[${JSON.stringify(blockName)}] | safe }}{% endblock %}`
@@ -438,7 +644,24 @@ Usage: <Field doc={data.page} name='fieldName' with={{ tag: 'h2' }} />`);
         ...(ambientData || {}),
         aposJsxBlocks: blocks
       };
-      const html = await targetModule.renderString(req, synthetic, data);
+      let html = await targetModule.renderString(req, synthetic, data);
+      for (const [ name, wrapper ] of Object.entries(wrappers)) {
+        const start = superStart(name);
+        const end = superEnd(name);
+        let from = 0;
+        let at;
+        while ((at = html.indexOf(start, from)) !== -1) {
+          const close = html.indexOf(end, at + start.length);
+          if (close === -1) {
+            break;
+          }
+          const markup = await flattenToHtml(
+            wrapper(new Raw(html.substring(at + start.length, close)))
+          );
+          html = html.substring(0, at) + markup + html.substring(close + end.length);
+          from = at + markup.length;
+        }
+      }
       return new Raw(html);
     },
 
@@ -463,6 +686,73 @@ Usage: <Field doc={data.page} name='fieldName' with={{ tag: 'h2' }} />`);
   };
 };
 
+// Marks a string as markup that must not be escaped, when Nunjucks (and its
+// own SafeString) is disabled. Behaves like a Nunjucks SafeString: it
+// converts to its string, and the JSX runtime outputs it as is.
+class JsxSafeString {
+  constructor(val) {
+    // Like a Nunjucks SafeString, an object is returned as it is: helpers
+    // such as `apos.styles.render()` rely on it.
+    if ((val !== null) && (typeof val === 'object')) {
+      return val;
+    }
+    this.val = (val == null) ? '' : String(val);
+    this.length = this.val.length;
+  }
+
+  toString() {
+    return this.val;
+  }
+
+  valueOf() {
+    return this.val;
+  }
+}
+
+// `fs.realpathSync`, for a path that may not exist.
+function realpath(p) {
+  try {
+    return fs.realpathSync(p);
+  } catch (e) {
+    return path.resolve(p);
+  }
+}
+
+let nunjucksResolved;
+function nunjucksPath() {
+  if (!nunjucksResolved) {
+    nunjucksResolved = require.resolve('nunjucks');
+  }
+  return nunjucksResolved;
+}
+
+// Markers around the default markup of a block that a JSX prop wraps, see
+// `renderNunjucksWithBlocks`.
+function superStart(name) {
+  return `<!--apos-jsx-super:${name}:${CAPTURE_TOKEN}-->`;
+}
+
+function superEnd(name) {
+  return `<!--/apos-jsx-super:${name}:${CAPTURE_TOKEN}-->`;
+}
+
+// A block prop for captured Nunjucks markup that called `super()`. `parts` is
+// that markup split where `super()` output the default. Called with the
+// layout's default for the block, it returns the markup with the default
+// in each of those places.
+//
+// A layout that outputs the prop without calling it gets the markup with
+// nothing in those places.
+function superBlock(parts) {
+  const fn = (fallback) => (async () => {
+    // The default is JSX output: a plain string in it is text, and escaped
+    const markup = await flatten(fallback);
+    return new Raw(parts.join(markup));
+  })();
+  fn.aposBlock = true;
+  return fn;
+}
+
 // Decide whether a value should be flattened by the JSX runtime before
 // being handed to Nunjucks. Arrays, Raw markers, and thenables produced
 // by our helpers all need flattening; everything else (strings, numbers,
@@ -475,6 +765,9 @@ function isJsxNode(value) {
     return true;
   }
   if (value instanceof Raw) {
+    return true;
+  }
+  if ((typeof value === 'function') && value.aposBlock) {
     return true;
   }
   if (typeof value === 'object' && typeof value.then === 'function') {

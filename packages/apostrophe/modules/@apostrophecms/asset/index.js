@@ -826,6 +826,10 @@ module.exports = {
       // The identifier should be reasonably short and must be URL-friendly. It
       // must be available both when running the asset build task and when
       // running the site.
+      //
+      // Called for every asset URL in production, so only the environment
+      // variables are read each time. The other sources can't change while
+      // the process runs, so whichever answers is remembered.
       getReleaseId() {
         const viaEnv = process.env.APOS_RELEASE_ID ||
           process.env.HEROKU_RELEASE_VERSION ||
@@ -833,6 +837,14 @@ module.exports = {
         if (viaEnv) {
           return viaEnv;
         }
+        if (!self.releaseIdFallback) {
+          self.releaseIdFallback = self.findReleaseId();
+        }
+        return self.releaseIdFallback;
+      },
+      // Implementation detail of `getReleaseId`: the release id from the
+      // `release-id` file, the path or git, or an error if there is none.
+      findReleaseId() {
         try {
           return fs.readFileSync(`${self.apos.rootDir}/release-id`, 'utf8').trim();
         } catch (e) {

@@ -1,0 +1,9 @@
+---
+"apostrophe": minor
+---
+
+Apostrophe's own templates now also ship as JSX, so a project can be JSX all the way down, without Nunjucks. Set the new `jsx: true` option of `@apostrophecms/template` to render them from their `.jsx` versions: the outer layout (`outerLayoutBase`, `outerLayout`, `refreshLayout`), `area`, the rich text, image, video, file, HTML and layout widgets, the login and password reset email templates, the 404 page, the default piece index and show pages with their pager, the search pages and the template error page. Set `nunjucks: false` instead to go further: Nunjucks is never loaded, and rendering any Nunjucks template throws an error naming it. Without either option, Apostrophe renders exactly what it rendered before: the `.html` templates are unchanged and still used.
+
+The `.jsx` versions render the same HTML as the `.html` versions, apart from whitespace between tags. Nunjucks templates still work in JSX mode, including those of extensions: a page that `{% extends data.outerLayout %}` renders through the JSX outer layout, its blocks passed as props, and a block that calls `super()` gets the JSX layout's default markup. A project can also write its own outer layout in JSX, as `outerLayout.jsx` or `refreshLayout.jsx` in `modules/@apostrophecms/template/views`, with or without the `jsx` option.
+
+JSX layouts gain `super()` too: a prop standing in for a block may be a function, which receives the block's default markup and returns the markup to use, whether the layout it extends is JSX or Nunjucks. When JSX extends a Nunjucks template, a prop passed as `undefined` now leaves that block alone, rather than replacing it with nothing. When JSX includes a Nunjucks template with `<Template>`, its props are now also visible by name in that template, as variables of an including template are to `{% include %}`.

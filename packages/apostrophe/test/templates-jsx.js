@@ -503,6 +503,15 @@ describe('Templates: JSX', function() {
     assert.doesNotMatch(result, /default title/);
   });
 
+  it('should leave a Nunjucks block alone when JSX passes undefined for it', async function() {
+    const req = apos.task.getAnonReq();
+    const result = await apos.modules['jsx-bridge-test'].render(req, 'njk-extends-undefined', {
+      pageSlug: '/test'
+    });
+    assert.match(result, /<title>default title<\/title>/);
+    assert.match(result, /<h1>defined<\/h1>/);
+  });
+
   // ---- JSX → JSX layout via Template + children ----
 
   it('should let JSX extend a JSX layout, passing children through', async function() {
