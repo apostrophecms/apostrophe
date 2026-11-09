@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const t = require('apostrophe/test-lib/util.js');
+const { output: gzip } = require('../lib/formats/gzip.js');
 const {
   getAppConfig, insertAdminUser, cleanData
 } = require('./util/index.js');
@@ -57,7 +58,7 @@ describe('#overrideDuplicates - permissions', function() {
 
   afterEach(async function() {
     await apos.doc.db.deleteMany({
-      type: { $in: [ 'guarded-piece', 'locked-piece' ] }
+      type: { $in: [ 'guarded-piece', 'locked-piece', 'nonLocalized' ] }
     });
   });
 
@@ -106,6 +107,25 @@ describe('#overrideDuplicates - permissions', function() {
       { _id: { $in: [ piece.draftId, piece.publishedId ] } },
       { $set: { title: 'live' } }
     );
+    return archive;
+  }
+
+  // Insert a piece of a type that is not localized as an admin
+  async function insertNonLocalized(title) {
+    const req = apos.task.getReq();
+    return apos.nonLocalized.insert(req, {
+      ...apos.nonLocalized.newInstance(),
+      title
+    });
+  }
+
+  async function writeArchive(docs) {
+    await fs.mkdir(tempPath, { recursive: true });
+    const archive = path.join(tempPath, `crafted-${counter++}.tar.gz`);
+    await gzip(archive, {
+      docs,
+      attachments: []
+    }, async () => {});
     return archive;
   }
 
@@ -215,5 +235,52 @@ describe('#overrideDuplicates - permissions', function() {
 
     assert.equal(await titleOf(piece.draftId), 'from archive');
     assert.equal(await titleOf(piece.publishedId), 'from archive');
+  });
+
+  it('should not let an archive replace a document of a non-localized type other than the duplicate it names', async function() {
+    const decoy = await insertNonLocalized('decoy');
+    const target = await insertNonLocalized('target');
+    const archive = await writeArchive([
+      {
+        _id: target._id,
+        aposDocId: decoy.aposDocId,
+        type: 'nonLocalized',
+        title: 'crafted',
+        slug: `crafted-${decoy.aposDocId}`,
+        visibility: 'public',
+        archived: false
+      }
+    ]);
+
+    const result = await importAs('editor', 'editor-1', archive);
+    assert.deepEqual(
+      result.duplicatedDocs.map(({ aposDocId }) => aposDocId),
+      [ decoy.aposDocId ]
+    );
+    await overrideAs('editor', 'editor-1', result);
+
+    assert.equal(await titleOf(target._id), 'target');
+    assert.equal(await titleOf(decoy._id), 'decoy');
+  });
+
+  it('should let an editor replace a document of a non-localized type', async function() {
+    const piece = await insertNonLocalized('from archive');
+    const req = apos.task.getReq({
+      body: {
+        _ids: [ piece._id ],
+        type: 'test'
+      }
+    });
+    const { url } = await importExportManager.export(req, apos.nonLocalized);
+    const fileName = path.basename(url);
+    await fs.mkdir(tempPath, { recursive: true });
+    const archive = path.join(tempPath, `export-${counter++}-${fileName}`);
+    await fs.copyFile(path.join(exportsPath, fileName), archive);
+    await apos.doc.db.updateOne({ _id: piece._id }, { $set: { title: 'live' } });
+
+    const result = await importAs('editor', 'editor-1', archive);
+    await overrideAs('editor', 'editor-1', result);
+
+    assert.equal(await titleOf(piece._id), 'from archive');
   });
 });
