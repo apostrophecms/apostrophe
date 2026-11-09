@@ -144,10 +144,15 @@ describe('#export - viewPermission', function() {
 
   it('should not export the fields a contributor may not view as CSV', async function() {
     const file = await exportAs('contributor', 'csv');
-    const csv = await fs.readFile(file, 'utf8');
+    const { docs } = await importExportManager.formats.csv.input(file);
 
-    assert.ok(csv.includes('piece'), 'the export should include the piece');
-    assert.ok(!csv.includes('hidden value'), 'the export should not include the hidden values');
+    for (const doc of [
+      ...byType(docs, 'secret-piece'),
+      ...byType(docs, 'secret-related')
+    ]) {
+      assert.equal(doc.adminNote, undefined);
+      assert.equal(doc.adminFile, undefined);
+    }
   });
 
   it('should still export those fields for an admin', async function() {
