@@ -3075,4 +3075,71 @@ describe('sanitizeHtml', function() {
       );
     });
   });
+
+  describe('GHSA-8g6g-w2rq-xcmc: SMIL attributeName with extra colons', function() {
+    // Browsers do not agree on how an `attributeName` with more than one colon
+    // is split into a prefix and a local name, and current Chrome resolves
+    // `xlink:href:x` to `xlink:href`, so no part of the name may name a URL
+    // attribute.
+    const permissive = {
+      allowedTags: false,
+      allowedAttributes: false,
+      allowedSchemes: [ 'http', 'https' ]
+    };
+    const allowlist = () => ({
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'svg', 'animate', 'set', 'text', 'rect', 'a' ]),
+      allowedAttributes: {
+        svg: [ 'xmlns', 'xmlns:xlink' ],
+        animate: [ 'href', 'attributename', 'values', 'dur', 'fill' ],
+        set: [ 'href', 'attributename', 'to', 'dur', 'fill' ],
+        a: [ 'href', 'id' ],
+        rect: [ 'width', 'height', 'fill' ],
+        text: [ 'x', 'y' ]
+      }
+    });
+    const payload = function(attributeName) {
+      return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">' +
+        '<a id="q" href="https://safe.example/ok"><rect width="200" height="80" fill="blue"></rect>' +
+        '<text x="10" y="40">click</text></a>' +
+        '<animate href="#q" attributeName="' + attributeName + '" values="javascript:alert(1)" dur="0.01s" fill="freeze"></animate>' +
+        '<set href="#q" attributeName="' + attributeName + '" to="javascript:alert(1)"></set></svg>';
+    };
+    const spellings = [
+      'xlink:href:x',
+      'xlink:href:',
+      'XLINK:HREF:X',
+      ' xlink:href:x ',
+      'foo:href:bar',
+      'a:b:href',
+      'href:x',
+      ':href',
+      'xlink: href :x',
+      'x:src:y'
+    ];
+
+    it('should drop animations whose attributeName names a URL attribute among extra colons', function() {
+      [ permissive, allowlist() ].forEach(function(options) {
+        spellings.forEach(function(attributeName) {
+          const out = sanitizeHtml(payload(attributeName), options);
+          assert.ok(!/javascript:/i.test(out), attributeName + ' must not survive: ' + out);
+          assert.ok(/href="https:\/\/safe.example\/ok"/.test(out), 'the link itself is kept: ' + out);
+        });
+      });
+    });
+
+    it('should drop an animation element whose name has extra colons', function() {
+      const out = sanitizeHtml(
+        '<svg><a href="#safe"><svg:animate:x attributeName="href" values="javascript:alert(1)"></svg:animate:x><text>x</text></a></svg>',
+        permissive
+      );
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should keep an animation of a harmless attribute with extra colons', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><rect><animate attributeName="x:fill:y" values="red;blue"></animate></rect></svg>', permissive),
+        '<svg><rect><animate attributename="x:fill:y" values="red;blue"></animate></rect></svg>'
+      );
+    });
+  });
 });
