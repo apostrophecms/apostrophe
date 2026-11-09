@@ -276,12 +276,19 @@ module.exports = {
         info._id = self.apos.launder.id(info._id);
         if (!info._id) {
           object[field.name] = null;
+          return;
         }
         info.crop = info.crop ? self.sanitizeCrop(info.crop) : undefined;
         const dbInfo = await self.db.findOne({ _id: info._id });
         if (!dbInfo) {
-          object[field.name] = null;
-          return;
+          // The attachment record is gone, for instance because the documents
+          // were copied to a new database without the aposAttachments
+          // collection. That is database corruption, so refuse the save
+          // rather than quietly erasing the reference
+          throw self.apos.error(
+            'invalid',
+            req.t('apostrophe:attachmentNotFound', { id: info._id })
+          );
         }
         _.assign(info, _.omit(dbInfo, 'crop'));
 
