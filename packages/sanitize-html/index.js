@@ -23,34 +23,6 @@ const svgAnimationTags = [
 // `href` are covered.
 const alwaysUrlAttributes = [ 'href' ];
 
-const GREATER_THAN = '>'.charCodeAt(0);
-
-// Outside SVG and MathML, `<![CDATA[` does not open a CDATA section: browsers
-// parse it as a bogus comment that ends at the first `>`. htmlparser2 reads it
-// to `]]>` in HTML content too, which hides any markup between those two points
-// from us, such as a `<noscript>` start tag that makes the browser treat what
-// follows as raw text (GHSA-2rjc-9xvg-45j7). This tokenizer ends it where a
-// browser does, while real CDATA sections in foreign content are unchanged.
-class HtmlTokenizer extends htmlparser.Tokenizer {
-  constructor(options, callbacks) {
-    super(options, callbacks);
-    this.htmlCallbacks = options.xmlMode ? null : callbacks;
-  }
-
-  // Called with each character after `<![` while it may still spell `CDATA[`.
-  // In HTML content, report a mismatch for the first one so that htmlparser2
-  // reads a bogus comment up to the next `>`. A `>` already ends that comment,
-  // so it is passed on as is.
-  stateCDATASequence(c) {
-    const inHtmlContent = this.htmlCallbacks &&
-      !this.htmlCallbacks.isInForeignContext();
-    if (inHtmlContent && c !== GREATER_THAN) {
-      c = -1;
-    }
-    super.stateCDATASequence(c);
-  }
-}
-
 // Our own diagnostics. A console-shaped `logger` option takes them instead of
 // the console; missing methods fall back to it.
 const severities = [ 'debug', 'info', 'warn', 'error' ];
@@ -205,6 +177,19 @@ function sanitizeHtml(html, options, _fallback) {
 
   options = Object.assign({}, sanitizeHtml.defaults, options);
   options.parser = Object.assign({}, htmlParserDefaults, options.parser);
+
+  // Outside SVG and MathML, browsers parse `<![CDATA[` as a bogus comment that
+  // ends at the first `>`, but htmlparser2 reads it to `]]>`, which hides any
+  // markup between those two points from us, such as a `<noscript>` start tag
+  // that makes the browser treat what follows as raw text
+  // (GHSA-2rjc-9xvg-45j7). Spelling the `[` as a character reference makes
+  // htmlparser2 read a bogus comment ending at the first `>` too. In attribute
+  // values and text the reference decodes to the same characters. A real CDATA
+  // section in SVG or MathML is read the same way, so its text is dropped or
+  // sanitized as markup rather than kept as text.
+  if (typeof html === 'string' && !options.parser.xmlMode) {
+    html = html.replaceAll('<![CDATA[', '<!&#91;CDATA[');
+  }
 
   const logger = loggerFor(options);
 
@@ -1203,8 +1188,7 @@ function sanitizeHtml(html, options, _fallback) {
 // programmatically if you wish
 
 const htmlParserDefaults = {
-  decodeEntities: true,
-  Tokenizer: HtmlTokenizer
+  decodeEntities: true
 };
 sanitizeHtml.defaults = {
   allowedTags: [

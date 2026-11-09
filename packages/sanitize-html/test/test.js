@@ -2998,17 +2998,31 @@ describe('sanitizeHtml', function() {
       );
     });
 
-    it('should still read a CDATA section in SVG content to its end', function() {
+    it('should end a CDATA section at the first > after an element that leaves SVG', function() {
       assert.strictEqual(
-        sanitizeHtml('<svg><text><![CDATA[a > <b>]]></text></svg>', { allowedTags: [ 'svg', 'text' ] }),
-        '<svg><text>a &gt; &lt;b&gt;</text></svg>'
+        sanitizeHtml('<svg><p><![CDATA[ > <style>]]><a href="https://evil.test">Reset your password</a></style>'),
+        '<p> </p>'
       );
     });
 
-    it('should still read a CDATA section in MathML content to its end', function() {
+    it('should treat a CDATA section in SVG or MathML content as a bogus comment too', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><text><![CDATA[a > <b>]]></text></svg>', { allowedTags: [ 'svg', 'text' ] }),
+        '<svg><text> ]]&gt;</text></svg>'
+      );
       assert.strictEqual(
         sanitizeHtml('<math><ms><b>x</b></ms><![CDATA[a > <b>]]></math>', { allowedTags: [ 'math', 'ms', 'b' ] }),
-        '<math><ms><b>x</b></ms>a &gt; &lt;b&gt;</math>'
+        '<math><ms><b>x</b></ms> <b>]]&gt;</b></math>'
+      );
+    });
+
+    it('should leave CDATA syntax in attribute values and RCDATA text unchanged', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p title="<![CDATA[x]]>">z</p><textarea><![CDATA[t]]></textarea>', {
+          allowedTags: [ 'p', 'textarea' ],
+          allowedAttributes: { p: [ 'title' ] }
+        }),
+        '<p title="&lt;![CDATA[x]]&gt;">z</p><textarea>&lt;![CDATA[t]]&gt;</textarea>'
       );
     });
   });
