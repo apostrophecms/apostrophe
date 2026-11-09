@@ -2848,7 +2848,7 @@ module.exports = {
               const _query = baseQuery.clone();
               // Make sure this is a legitimate builder before attempting to
               // shut it off
-              if (!_.has(query.builders, filter)) {
+              if (!Object.hasOwn(query.builders, filter)) {
                 continue;
               }
               // Make sure it would ever be accepted via a query parameter
@@ -3388,7 +3388,7 @@ module.exports = {
 
         applyBuildersSafely(params, { publicApiProjection } = {}) {
           for (let [ name, value ] of Object.entries(params)) {
-            if (!_.has(query.builders, name)) {
+            if (!Object.hasOwn(query.builders, name)) {
               continue;
             }
             if (!query.builders[name].launder) {
