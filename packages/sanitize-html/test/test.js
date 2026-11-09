@@ -2963,21 +2963,29 @@ describe('sanitizeHtml', function() {
   });
 
   describe('GHSA-2rjc-9xvg-45j7: CDATA section in HTML content hiding a nonTextTags start tag', function() {
-    // Outside SVG and MathML, browsers parse `<![CDATA[` as a bogus comment
-    // that ends at the first `>`, so a start tag after that `>` is real even if
-    // it comes before `]]>`.
+    // Browsers read `<![CDATA[` as a CDATA section only where the current
+    // element is an SVG or MathML element. Elsewhere it is a bogus comment that
+    // ends at the first `>`, so a start tag after that `>` is real even if it
+    // comes before `]]>`. Where SVG and MathML content ends also decides
+    // whether e.g. `<style>` is raw text.
+    const evil = '<a href="https://evil.test">Reset your password</a>';
+    const nonTextTags = [ 'script', 'style', 'textarea', 'option', 'noscript' ];
     const noscriptOptions = {
       allowedTags: [ 'p', 'a', 'img' ],
       allowedAttributes: {
         a: [ 'href' ],
         img: [ 'src' ]
       },
-      nonTextTags: [ 'script', 'style', 'textarea', 'option', 'noscript' ]
+      nonTextTags
     };
+
+    it('should check that the tokenizer it relies on takes effect', function() {
+      assert.strictEqual(sanitizeHtml._useHtmlTokenizer, true);
+    });
 
     it('should discard noscript content whose start tag follows a CDATA section\'s first >', function() {
       assert.strictEqual(
-        sanitizeHtml('<p>Hi</p><![CDATA[ x > <noscript>]]><a href="https://evil.test">Reset your password</a><img src="https://evil.test/beacon.gif"></noscript>', noscriptOptions),
+        sanitizeHtml('<p>Hi</p><![CDATA[ x > <noscript>]]>' + evil + '<img src="https://evil.test/beacon.gif"></noscript>', noscriptOptions),
         '<p>Hi</p> '
       );
     });
@@ -2985,7 +2993,7 @@ describe('sanitizeHtml', function() {
     it('should discard the content of default nonTextTags hidden the same way', function() {
       [ 'style', 'script', 'textarea', 'xmp' ].forEach(function(tag) {
         assert.strictEqual(
-          sanitizeHtml('<p>Hi</p><![CDATA[ x > <' + tag + '>]]><a href="https://evil.test">Reset your password</a></' + tag + '><p>after</p>'),
+          sanitizeHtml('<p>Hi</p><![CDATA[ x > <' + tag + '>]]>' + evil + '</' + tag + '><p>after</p>'),
           '<p>Hi</p> <p>after</p>'
         );
       });
@@ -2998,21 +3006,83 @@ describe('sanitizeHtml', function() {
       );
     });
 
-    it('should end a CDATA section at the first > after an element that leaves SVG', function() {
-      assert.strictEqual(
-        sanitizeHtml('<svg><p><![CDATA[ > <style>]]><a href="https://evil.test">Reset your password</a></style>'),
-        '<p> </p>'
-      );
-    });
-
-    it('should treat a CDATA section in SVG or MathML content as a bogus comment too', function() {
+    it('should still read a CDATA section in SVG or MathML content to its end', function() {
       assert.strictEqual(
         sanitizeHtml('<svg><text><![CDATA[a > <b>]]></text></svg>', { allowedTags: [ 'svg', 'text' ] }),
-        '<svg><text> ]]&gt;</text></svg>'
+        '<svg><text>a &gt; &lt;b&gt;</text></svg>'
       );
       assert.strictEqual(
         sanitizeHtml('<math><ms><b>x</b></ms><![CDATA[a > <b>]]></math>', { allowedTags: [ 'math', 'ms', 'b' ] }),
-        '<math><ms><b>x</b></ms> <b>]]&gt;</b></math>'
+        '<math><ms><b>x</b></ms>a &gt; &lt;b&gt;</math>'
+      );
+    });
+
+    it('should not let markup in an SVG CDATA section hide what follows it', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><![CDATA[ > <x title="]]><p><style>">' + evil + '</style>'),
+        ' &gt; &lt;x title="<p></p>'
+      );
+      assert.strictEqual(
+        sanitizeHtml('<svg><![CDATA[ > <!-- ]]><p><style> -->' + evil + '</style>'),
+        ' &gt; &lt;!-- <p></p>'
+      );
+    });
+
+    it('should not read markup in a CDATA section at an integration point', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><foreignObject><![CDATA[ > <b>x</b>]]></foreignObject></svg>'),
+        ''
+      );
+    });
+
+    it('should end a CDATA section at the first > once SVG or MathML content has ended', function() {
+      [
+        '<svg><p>',
+        '<svg><font color=red>',
+        '<svg></p>',
+        '<svg/>',
+        '<svg></svg>',
+        '<div><ul><svg><g></div>'
+      ].forEach(function(before) {
+        const out = sanitizeHtml(before + '<![CDATA[ > <style>]]>' + evil + '</style>');
+        assert.ok(!out.includes('evil.test'), before + ': ' + out);
+      });
+    });
+
+    it('should end a CDATA section at the first > in HTML content inside SVG or MathML', function() {
+      [
+        '<svg><foreignObject><div>',
+        '<math><annotation-xml encoding="text/html"><div>',
+        '<math><mi><span>',
+        '<table><tr><td><svg><foreignObject><td>x</td>'
+      ].forEach(function(before) {
+        const out = sanitizeHtml(before + '<![CDATA[ > <style>]]>' + evil + '</style>');
+        assert.ok(!out.includes('evil.test'), before + ': ' + out);
+      });
+    });
+
+    it('should treat raw text elements after the end of SVG content as raw text', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><p><style></p>' + evil + '</style>'),
+        '<p></p>'
+      );
+      assert.strictEqual(
+        sanitizeHtml('<svg><p><noscript></p>' + evil + '</noscript>', { nonTextTags }),
+        '<p></p>'
+      );
+    });
+
+    it('should keep discarding noscript content that begins in other discarded content', function() {
+      assert.strictEqual(
+        sanitizeHtml('<math><td><style></mi><br><mtext></mi><noscript><h1></td>' + evil, { nonTextTags }),
+        '<td></td>'
+      );
+    });
+
+    it('should discard what follows markup that browsers build different trees for', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p>a</p><svg><foreignObject><math></foreignObject><p>b</p>'),
+        '<p>a</p>'
       );
     });
 
@@ -3024,6 +3094,24 @@ describe('sanitizeHtml', function() {
         }),
         '<p title="&lt;![CDATA[x]]&gt;">z</p><textarea>&lt;![CDATA[t]]&gt;</textarea>'
       );
+    });
+
+    it('should still end a CDATA section in HTML content at the first > without its tokenizer', function() {
+      sanitizeHtml._useHtmlTokenizer = false;
+      try {
+        assert.strictEqual(
+          sanitizeHtml('<p>Hi</p><![CDATA[ x > <noscript>]]>' + evil + '</noscript>', noscriptOptions),
+          '<p>Hi</p> '
+        );
+        [ 'style', 'script', 'textarea', 'xmp' ].forEach(function(tag) {
+          assert.strictEqual(
+            sanitizeHtml('<p>Hi</p><![CDATA[ x > <' + tag + '>]]>' + evil + '</' + tag + '><p>after</p>'),
+            '<p>Hi</p> <p>after</p>'
+          );
+        });
+      } finally {
+        sanitizeHtml._useHtmlTokenizer = true;
+      }
     });
   });
 });
