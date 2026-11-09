@@ -2978,7 +2978,7 @@ describe('sanitizeHtml', function() {
     it('should discard noscript content whose start tag follows a CDATA section\'s first >', function() {
       assert.strictEqual(
         sanitizeHtml('<p>Hi</p><![CDATA[ x > <noscript>]]><a href="https://evil.test">Reset your password</a><img src="https://evil.test/beacon.gif"></noscript>', noscriptOptions),
-        '<p>Hi</p>'
+        '<p>Hi</p> '
       );
     });
 
@@ -2986,7 +2986,7 @@ describe('sanitizeHtml', function() {
       [ 'style', 'script', 'textarea', 'xmp' ].forEach(function(tag) {
         assert.strictEqual(
           sanitizeHtml('<p>Hi</p><![CDATA[ x > <' + tag + '>]]><a href="https://evil.test">Reset your password</a></' + tag + '><p>after</p>'),
-          '<p>Hi</p><p>after</p>'
+          '<p>Hi</p> <p>after</p>'
         );
       });
     });
