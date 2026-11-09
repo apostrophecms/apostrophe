@@ -2961,4 +2961,55 @@ describe('sanitizeHtml', function() {
       );
     });
   });
+
+  describe('GHSA-2rjc-9xvg-45j7: CDATA section in HTML content hiding a nonTextTags start tag', function() {
+    // Outside SVG and MathML, browsers parse `<![CDATA[` as a bogus comment
+    // that ends at the first `>`, so a start tag after that `>` is real even if
+    // it comes before `]]>`.
+    const noscriptOptions = {
+      allowedTags: [ 'p', 'a', 'img' ],
+      allowedAttributes: {
+        a: [ 'href' ],
+        img: [ 'src' ]
+      },
+      nonTextTags: [ 'script', 'style', 'textarea', 'option', 'noscript' ]
+    };
+
+    it('should discard noscript content whose start tag follows a CDATA section\'s first >', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p>Hi</p><![CDATA[ x > <noscript>]]><a href="https://evil.test">Reset your password</a><img src="https://evil.test/beacon.gif"></noscript>', noscriptOptions),
+        '<p>Hi</p>'
+      );
+    });
+
+    it('should discard the content of default nonTextTags hidden the same way', function() {
+      [ 'style', 'script', 'textarea', 'xmp' ].forEach(function(tag) {
+        assert.strictEqual(
+          sanitizeHtml('<p>Hi</p><![CDATA[ x > <' + tag + '>]]><a href="https://evil.test">Reset your password</a></' + tag + '><p>after</p>'),
+          '<p>Hi</p><p>after</p>'
+        );
+      });
+    });
+
+    it('should end a CDATA section in HTML content at the first >', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p>a<![CDATA[ x > y ]]>b</p>'),
+        '<p>a y ]]&gt;b</p>'
+      );
+    });
+
+    it('should still read a CDATA section in SVG content to its end', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><text><![CDATA[a > <b>]]></text></svg>', { allowedTags: [ 'svg', 'text' ] }),
+        '<svg><text>a &gt; &lt;b&gt;</text></svg>'
+      );
+    });
+
+    it('should still read a CDATA section in MathML content to its end', function() {
+      assert.strictEqual(
+        sanitizeHtml('<math><ms><b>x</b></ms><![CDATA[a > <b>]]></math>', { allowedTags: [ 'math', 'ms', 'b' ] }),
+        '<math><ms><b>x</b></ms>a &gt; &lt;b&gt;</math>'
+      );
+    });
+  });
 });
