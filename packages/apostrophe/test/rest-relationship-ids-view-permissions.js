@@ -25,6 +25,14 @@ describe('REST API: stored ids of a relationship field restricted by viewPermiss
           extend: '@apostrophecms/piece-type',
           fields: {
             add: {
+              secretCode: {
+                type: 'string',
+                label: 'Secret Code',
+                viewPermission: {
+                  action: 'publish',
+                  type: 'article'
+                }
+              },
               _secretNotes: {
                 type: 'relationship',
                 label: 'Secret Notes',
@@ -56,6 +64,7 @@ describe('REST API: stored ids of a relationship field restricted by viewPermiss
     article = await apos.modules.article.insert(req, {
       ...apos.modules.article.newInstance(),
       title: 'Article',
+      secretCode: 'CONFIDENTIAL-code',
       _secretNotes: [ {
         ...note,
         _fields: { remark: 'CONFIDENTIAL-remark' }
@@ -76,6 +85,7 @@ describe('REST API: stored ids of a relationship field restricted by viewPermiss
     assert.equal(doc._secretNotes, undefined);
     assert.equal(doc.secretNotesIds, undefined);
     assert.equal(doc.secretNotesFields, undefined);
+    assert.equal(doc.secretCode, undefined);
   }
 
   it('does not send the stored ids of a forbidden relationship field (GET one)', async function() {
@@ -103,6 +113,27 @@ describe('REST API: stored ids of a relationship field restricted by viewPermiss
     assert.equal(doc.secretNotesFields[note.aposDocId].remark, 'CONFIDENTIAL-remark');
   });
 
+  // Only the REST APIs and rendering remove these fields: server-side code
+  // running as such a user gets them, and saving the document keeps them
+  it('keeps the fields when server-side code fetches and saves the document as a user who may not view them', async function() {
+    const req = apos.task.getReq({
+      role: 'contributor',
+      mode: 'draft'
+    });
+    const doc = await apos.modules.article
+      .find(req, { aposDocId: article.aposDocId })
+      .toObject();
+    assert.equal(doc.secretCode, 'CONFIDENTIAL-code');
+    assert.deepEqual(doc.secretNotesIds, [ note.aposDocId ]);
+    doc.title = 'Article, edited by code';
+    await apos.modules.article.update(req, doc);
+    const stored = await apos.doc.db.findOne({ _id: doc._id });
+    assert.equal(stored.title, 'Article, edited by code');
+    assert.equal(stored.secretCode, 'CONFIDENTIAL-code');
+    assert.deepEqual(stored.secretNotesIds, [ note.aposDocId ]);
+    assert.equal(stored.secretNotesFields[note.aposDocId].remark, 'CONFIDENTIAL-remark');
+  });
+
   it('keeps the stored relationship when a user who may not view it saves the document', async function() {
     const draftId = article._id.replace(':published', ':draft');
     const doc = await apos.http.get(`/api/v1/article/${draftId}`, {
@@ -118,6 +149,7 @@ describe('REST API: stored ids of a relationship field restricted by viewPermiss
     });
     const stored = await apos.doc.db.findOne({ _id: draftId });
     assert.equal(stored.title, 'Article, edited');
+    assert.equal(stored.secretCode, 'CONFIDENTIAL-code');
     assert.deepEqual(stored.secretNotesIds, [ note.aposDocId ]);
     assert.equal(stored.secretNotesFields[note.aposDocId].remark, 'CONFIDENTIAL-remark');
   });
