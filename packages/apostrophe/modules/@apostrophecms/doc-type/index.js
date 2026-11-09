@@ -1584,6 +1584,13 @@ module.exports = {
 
         forbiddenSchemaFields.forEach(field => {
           delete doc[field.name];
+          // A relationship field's stored ids and relationship fields
+          if (field.idsStorage) {
+            delete doc[field.idsStorage];
+          }
+          if (field.fieldsStorage) {
+            delete doc[field.fieldsStorage];
+          }
         });
 
         return doc;

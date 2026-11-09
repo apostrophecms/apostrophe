@@ -47,8 +47,19 @@ describe('#export - viewPermission', function() {
               _related: {
                 type: 'relationship',
                 withType: 'secret-related'
+              },
+              _adminRelated: {
+                type: 'relationship',
+                withType: 'secret-linked',
+                viewPermission: adminOnly
               }
             }
+          }
+        },
+        'secret-linked': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'secretLinked'
           }
         },
         'secret-related': {
@@ -84,12 +95,17 @@ describe('#export - viewPermission', function() {
       title: 'related',
       adminNote: 'related hidden value'
     });
+    const linked = await apos.secretLinked.insert(req, {
+      ...apos.secretLinked.newInstance(),
+      title: 'linked'
+    });
     piece = await apos.secretPiece.insert(req, {
       ...apos.secretPiece.newInstance(),
       title: 'piece',
       adminNote: 'piece hidden value',
       adminFile: attachment,
-      _related: [ related ]
+      _related: [ related ],
+      _adminRelated: [ linked ]
     });
   });
 
@@ -106,7 +122,7 @@ describe('#export - viewPermission', function() {
       body: {
         _ids: [ piece._id ],
         type: 'test',
-        relatedTypes: [ 'secret-related' ],
+        relatedTypes: [ 'secret-related', 'secret-linked' ],
         formatName
       }
     });
@@ -155,13 +171,25 @@ describe('#export - viewPermission', function() {
     }
   });
 
+  it('should not export a relationship a contributor may not view, nor the documents it links to', async function() {
+    const { docs } = await exportGzipAs('contributor');
+
+    for (const doc of byType(docs, 'secret-piece')) {
+      assert.equal(doc.adminRelatedIds, undefined);
+      assert.equal(doc.adminRelatedFields, undefined);
+    }
+    assert.deepEqual(docs.filter(doc => doc.type === 'secret-linked'), []);
+  });
+
   it('should still export those fields for an admin', async function() {
     const { docs, attachments } = await exportGzipAs('admin');
 
     for (const doc of byType(docs, 'secret-piece')) {
       assert.equal(doc.adminNote, 'piece hidden value');
       assert.equal(doc.adminFile._id, attachment._id);
+      assert.equal(doc.adminRelatedIds.length, 1);
     }
+    byType(docs, 'secret-linked');
     for (const doc of byType(docs, 'secret-related')) {
       assert.equal(doc.adminNote, 'related hidden value');
     }
