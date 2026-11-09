@@ -102,7 +102,10 @@
                     choices: [
                       {
                         value: 'onlyNew',
-                        label: 'apostrophe:aiLocalizeScopeNew'
+                        label: 'apostrophe:aiLocalizeScopeNew',
+                        // The AI agent decides what changed and where it
+                        // goes, translating or not
+                        help: 'apostrophe:automaticTranslationAiHint'
                       },
                       {
                         value: 'all',
@@ -251,6 +254,9 @@
                         label: aiMode
                           ? 'apostrophe:aiLocalizeNewAndModifiedRelated'
                           : 'apostrophe:localizeNewRelated',
+                        help: aiMode
+                          ? 'apostrophe:automaticTranslationAiHint'
+                          : null
                       },
                       {
                         value: 'localizeAllRelatedAndOverwriteExisting',
@@ -2338,12 +2344,12 @@ export default {
 
 .apos-wizard__translation {
   margin-top: 30px;
+}
 
-  // "Uses AI…" under the checkbox, in a gray that meets WCAG contrast
-  :deep(.apos-choice-label-text--help) {
-    margin-top: 4px;
-    color: var(--a-base-1);
-  }
+// "Uses AI…" under an option, in a gray that meets WCAG contrast
+.apos-i18n-localize :deep(.apos-choice-label-text--help) {
+  margin: 4px 0 0;
+  color: var(--a-base-1);
 }
 
 .apos-wizard__translation-title {
@@ -2389,7 +2395,7 @@ export default {
 // Each question's description, and the note after its options, in a gray
 // that meets WCAG contrast
 .apos-wizard__step-select-content {
-  :deep(.apos-field__help) {
+  :deep(.apos-field__help:not(.apos-choice-label-text--help)) {
     margin: 4px 0 10px;
     color: var(--a-base-1);
     line-height: var(--a-line-tall);
