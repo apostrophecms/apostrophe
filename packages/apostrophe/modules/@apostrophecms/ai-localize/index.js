@@ -1,4 +1,4 @@
-// AI localization: the "Only new and modified content" choice of the
+// AI localization: the "New and modified content only" choice of the
 // Localize dialog. Instead of copying a document over its existing copies
 // in other locales, an AI agent brings each copy up to date with what
 // changed since its last localization and translates it, keeping work done
