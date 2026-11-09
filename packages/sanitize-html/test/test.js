@@ -2963,10 +2963,11 @@ describe('sanitizeHtml', function() {
   });
 
   describe('GHSA-6wrv-5cp6-h3c5: markup in allowed style content', function() {
-    // htmlparser2 and browsers do not always agree on whether a <style> is an
-    // HTML raw-text element or a foreign (SVG/MathML) element whose content is
-    // markup, so no `<` in style content may reach the output where it could
-    // open a tag.
+    // htmlparser2 and browsers do not always agree on whether a <style> inside
+    // svg or math is an HTML raw-text element or a foreign (SVG/MathML)
+    // element whose content is markup, so no `<` in the content of such a
+    // style may reach the output where it could open a tag. Stylesheets
+    // outside svg and math are left alone.
     const mathOptions = {
       allowedTags: [ 'math', 'annotation-xml', 'style' ],
       allowVulnerableTags: true
@@ -2990,13 +2991,32 @@ describe('sanitizeHtml', function() {
       );
     });
 
-    it('should keep the meaning of < in a stylesheet', function() {
+    it('should not emit a tag from style content inside a discarded svg or math', function() {
+      [ 'svg', 'math' ].forEach(function(tag) {
+        assert.strictEqual(
+          sanitizeHtml('<' + tag + '><style>&lt;/style&gt;&lt;img src=x onerror=alert(1)&gt;</style></' + tag + '>', {
+            allowedTags: [ 'style' ],
+            allowVulnerableTags: true
+          }),
+          '<style>\\3c /style>\\3c img src=x onerror=alert(1)></style>'
+        );
+      });
+    });
+
+    it('should keep the meaning of < in a stylesheet inside svg', function() {
       assert.strictEqual(
-        sanitizeHtml('<style>a > b::before { content: "<"; }</style>', {
+        sanitizeHtml('<svg><style>a > b::before { content: "<"; }</style></svg>', svgOptions),
+        '<svg><style>a > b::before { content: "\\3c "; }</style></svg>'
+      );
+    });
+
+    it('should leave a stylesheet outside svg and math unchanged', function() {
+      assert.strictEqual(
+        sanitizeHtml('<style><!-- a > b::before { content: "<"; } --></style>', {
           allowedTags: [ 'style' ],
           allowVulnerableTags: true
         }),
-        '<style>a > b::before { content: "\\3c "; }</style>'
+        '<style><!-- a > b::before { content: "<"; } --></style>'
       );
     });
 
