@@ -374,6 +374,9 @@ module.exports = {
         const piece = await self.findOneForEditing(req, {
           _id
         });
+        if (!piece) {
+          throw self.apos.error('notfound');
+        }
         return self.delete(req, piece);
       },
       // fetchRelationships can be set to false when utilizing this code
