@@ -1347,6 +1347,29 @@ describe('Schemas', function() {
     assert(result.rating === 0);
   });
 
+  it('should leave a range field without a default unset when no value is given', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'range',
+          name: 'rating',
+          label: 'Rating',
+          min: 0,
+          max: 5
+        }
+      ]
+    });
+    const req = apos.task.getReq();
+    for (const input of [ {}, { rating: null }, { rating: '' } ]) {
+      const result = {};
+      await apos.schema.convert(req, schema, input, result);
+      assert.equal(result.rating, null);
+    }
+    const result = {};
+    await apos.schema.convert(req, schema, { rating: 0 }, result);
+    assert.equal(result.rating, 0);
+  });
+
   it('should set the range field value to null when a value below the min threshold is given', async function() {
     const schema = apos.schema.compose({
       addFields: [

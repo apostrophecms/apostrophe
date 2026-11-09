@@ -284,6 +284,34 @@ describe('Document Versions diff engine', function () {
       assert.deepEqual(apos.docVersions.getChangeRows(req, older, newer), []);
     });
 
+    it('should take two empty values for the same, not false for empty', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      delete older.subtitle;
+      older.tags = null;
+      newer.tags = [];
+      older.body = '<p></p>';
+      newer.body = '';
+      older.section.body = null;
+      newer.section.body = '';
+      delete older.flag;
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [ row.type, row.path.map(segment => segment.name).join('/') ]), [
+        [ 'added', 'flag' ]
+      ]);
+    });
+
+    it('should list a change between two values its type does not expect', function () {
+      const older = buildDoc();
+      const newer = buildDoc();
+      older.subtitle = 5;
+      newer.subtitle = 6;
+      const rows = apos.docVersions.getChangeRows(req, older, newer);
+      assert.deepEqual(rows.map(row => [ row.type, row.path.map(segment => segment.name).join('/') ]), [
+        [ 'modified', 'subtitle' ]
+      ]);
+    });
+
     it('should report a relationship by its ids, in order', function () {
       const older = buildDoc();
       const newer = buildDoc();
@@ -1037,7 +1065,7 @@ describe('Document Versions diff engine', function () {
         older: doc => {
           doc.tagline = { text: 'Built to last' };
         },
-        rows: [ [ 'added', 'tagline', 'leaf', 'Tagline' ] ]
+        rows: [ [ 'modified', 'tagline', 'leaf', 'Tagline' ] ]
       },
       {
         name: 'relationship ids that were a string',

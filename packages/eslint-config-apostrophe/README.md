@@ -1,12 +1,24 @@
 An ESLint configuration for ApostropheCMS core and officials modules.
 
-Add the following to your `.eslintrc` file to use in your project:
+It works with ESLint 9 and 10 and Node.js 22.13 or later. Add it to your project's `eslint.config.js`:
 
 ```javascript
-{
-  "extends": "apostrophe"
-}
+import apostrophe from 'eslint-config-apostrophe';
+import { defineConfig } from 'eslint/config';
+
+export default defineConfig([
+  apostrophe
+]);
 ```
+
+## JSX templates
+
+Server-side JSX templates (`.jsx`) are linted with the conventions of the Apostrophe JSX guide:
+
+- Attributes use double quotes: `<div className="card">`.
+- Mapped elements don't need a `key` prop, since templates render on the server with no client reconciler.
+- A multi-line ternary may put `?` and `:` at the end or the start of a line.
+- Components referenced only in JSX count as used, while a component that is never used is still reported.
 
 ## Strict configuration
 
@@ -26,7 +38,7 @@ console.log(`${moduleName}:${name}`);
 
 ## Contributing
 
-Edit `eslint.config.js`, then run `npm run eslint` to lint this package with the updated configuration.
+Edit `eslint.config.js`, then run `pnpm test`. It lints this package with the updated configuration, then runs the tests in `test/`, which check sample code against both ESLint 9 and 10.
 
 ## Changelog
 

@@ -296,12 +296,19 @@ module.exports = {
         info._id = self.apos.launder.id(info._id);
         if (!info._id) {
           object[field.name] = null;
+          return;
         }
         info.crop = info.crop ? self.sanitizeCrop(info.crop) : undefined;
         const dbInfo = await self.db.findOne({ _id: info._id });
         if (!dbInfo) {
-          object[field.name] = null;
-          return;
+          // The attachment record is gone, for instance because the documents
+          // were copied to a new database without the aposAttachments
+          // collection. That is database corruption, so refuse the save
+          // rather than quietly erasing the reference
+          throw self.apos.error(
+            'invalid',
+            req.t('apostrophe:attachmentNotFound', { id: info._id })
+          );
         }
         _.assign(info, _.omit(dbInfo, 'crop'));
 
@@ -563,9 +570,22 @@ module.exports = {
         const window = new JSDOM('').window;
         const DOMPurify = createDOMPurify(window);
         DOMPurify.addHook('afterSanitizeAttributes', node => {
-          if (node.hasAttribute('xlink:href') && !node.getAttribute('xlink:href').match(/^#/)) {
-            node.remove();
+          if (!node.hasAttribute('xlink:href')) {
+            return;
           }
+          const href = node.getAttribute('xlink:href');
+          if (href.startsWith('#')) {
+            return;
+          }
+          // Design tools embed bitmaps as <image xlink:href="data:...">.
+          // Raster image data cannot run script, so keep it (#4006)
+          if (
+            (node.nodeName.toLowerCase() === 'image') &&
+            /^data:image\/(png|jpeg|gif|webp);base64,[a-z0-9+/=\s]*$/i.test(href)
+          ) {
+            return;
+          }
+          node.remove();
         });
         const dirty = await readFile(path);
         const clean = DOMPurify.sanitize(dirty, {

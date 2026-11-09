@@ -23,7 +23,7 @@ mkdir -p "$logdir"
 log="$logdir/form-$adapter.log"
 : > "$log"
 
-echo "=== $adapter form tests ($(date -Is)) grep='${grep_filter}' ===" | tee -a "$log"
+echo "=== $adapter form tests ($(date +%Y-%m-%dT%H:%M:%S%z)) grep='${grep_filter}' ===" | tee -a "$log"
 
 cd "$root/packages/form"
 
@@ -37,7 +37,7 @@ if [[ -n "$grep_filter" ]]; then
   mocha_args+=(--grep "$grep_filter")
 fi
 
-APOS_TEST_DB_PROTOCOL="$adapter" "${extra[@]}" ../../node_modules/.bin/mocha "${mocha_args[@]}" >> "$log" 2>&1
+APOS_TEST_DB_PROTOCOL="$adapter" ${extra[@]+"${extra[@]}"} ../../node_modules/.bin/mocha "${mocha_args[@]}" >> "$log" 2>&1
 code=$?
 
 echo "=== exit=$code ===" | tee -a "$log"

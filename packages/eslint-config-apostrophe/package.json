@@ -10,11 +10,13 @@
     "./*": "./*"
   },
   "engines": {
-    "node": ">=16"
+    "node": "^22.13.0 || >=24"
   },
   "type": "module",
   "scripts": {
-    "eslint": "eslint ."
+    "eslint": "eslint .",
+    "mocha": "mocha",
+    "test": "pnpm run eslint && pnpm run mocha"
   },
   "repository": {
     "type": "git",
@@ -28,12 +30,18 @@
     "url": "https://github.com/apostrophecms/eslint-config-apostrophe/issues"
   },
   "dependencies": {
+    "eslint-plugin-import-x": "^4.17.1",
     "eslint-plugin-vue": "^10.10.0",
-    "globals": "^16.5.0",
-    "neostandard": "^0.12.2"
+    "globals": "^17.9.0",
+    "neostandard": "^0.14.1"
+  },
+  "peerDependencies": {
+    "eslint": "^9.22.0 || ^10.0.0"
   },
   "devDependencies": {
-    "eslint": "^9.39.5"
+    "eslint": "^10.14.0",
+    "eslint-9": "npm:eslint@^9.39.5",
+    "mocha": "^12.0.3"
   },
   "apostropheTestConfig": {
     "requiresMongo": false

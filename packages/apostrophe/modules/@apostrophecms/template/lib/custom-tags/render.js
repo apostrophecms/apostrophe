@@ -1,4 +1,5 @@
 const util = require('util');
+const warnOutsideRequest = require('./warn-outside-request');
 
 module.exports = (self) => {
   // Create the render input object, used to parse the fragment source
@@ -85,6 +86,13 @@ module.exports = (self) => {
 
   // `run` factory for `render` and `rendercall`
   const runRenderFactory = (hasBody = false) => async function run(context, ...rest) {
+    if (!context.ctx.__req) {
+      // Nunjucks runs the top level of a template brought in with `import`
+      // in an empty context and discards its output, so there is nothing
+      // to render into and no `req` to render with
+      warnOutsideRequest(self, 'render');
+      return '';
+    }
     try {
       // A `noop` function for `rendercaller`
       let rendercaller = () => '';

@@ -1,6 +1,6 @@
 export default function (data, { Widget }) {
   return (
-    <section class='wrapper'>
+    <section class="wrapper">
       <Widget
         widget={data.widget}
         with={{

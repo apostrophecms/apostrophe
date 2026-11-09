@@ -910,9 +910,19 @@ module.exports = {
             routes: _routes.filter(route => !route.before)
           });
         }
+        // The labeled list entry each item belongs to, so that items placed
+        // "before" a module can follow that module's items wherever they
+        // were moved
+        const owners = new Map();
         for (const name of Object.keys(self.apos.modules)) {
           const middleware = self.apos.modules[name].middleware || {};
           const _routes = self.apos.modules[name]._routes;
+          for (const item of Object.values(middleware)) {
+            owners.set(item, `middleware:${name}`);
+          }
+          for (const item of _routes) {
+            owners.set(item, `routes:${name}`);
+          }
           for (const item of [ ...Object.values(middleware), ..._routes ]) {
             if (item.before) {
               let fullBeforeName = item.before;
@@ -936,9 +946,28 @@ module.exports = {
           }
         }
 
-        self.finalModuleMiddlewareAndRoutes = labeledList
-          .map(item => (item.prepending || []).concat(item.middleware || item.routes))
-          .flat();
+        // Emit each entry's own items in order, preceded by the items that
+        // asked to come "before" it. When such an item itself belongs to a
+        // module that others asked to precede, those items come first, so
+        // chains of "before" resolve transitively (#4060)
+        const byName = new Map(labeledList.map(entry => [ entry.name, entry ]));
+        const prepended = new Set();
+        const final = [];
+        const emitPrepending = (entry) => {
+          if (!entry || prepended.has(entry)) {
+            return;
+          }
+          prepended.add(entry);
+          for (const item of entry.prepending || []) {
+            emitPrepending(byName.get(owners.get(item)));
+            final.push(item);
+          }
+        };
+        for (const entry of labeledList) {
+          emitPrepending(entry);
+          final.push(...(entry.middleware || entry.routes));
+        }
+        self.finalModuleMiddlewareAndRoutes = final;
       },
       createCacheOnDemand() {
         const { enableCacheOnDemand = true } = self.options;
