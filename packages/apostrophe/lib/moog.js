@@ -165,7 +165,11 @@ module.exports = function(options) {
     };
 
     for (const step of steps) {
-      Object.assign(options, step.options || {});
+      // Copy nested plain objects and arrays so that a module mutating
+      // `self.options` cannot change the definition shared with its base
+      // class and sibling subclasses. Functions and class instances are
+      // kept by reference
+      Object.assign(options, cloneOptions(step.options || {}));
     }
 
     let cascades = [];
@@ -538,6 +542,17 @@ module.exports = function(options) {
       that,
       steps
     };
+  }
+
+  // Deep-copy plain objects and arrays, keeping anything else (functions,
+  // class instances, dates and so on) by reference
+  function cloneOptions(options) {
+    return _.cloneDeepWith(options, value => {
+      if (_.isPlainObject(value) || Array.isArray(value)) {
+        return undefined;
+      }
+      return value;
+    });
   }
 
 };
