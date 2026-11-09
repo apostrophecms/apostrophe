@@ -113,7 +113,7 @@ This is assuming you are interacting with the ApostropheCMS repositories on the 
 3. Once you've completed your code changes, `git add` and `git commit` them locally. Then run the `pnpm changeset` command as described in [MONOREPO.md](./MONOREPO.md) to generate "changesets," which will be merged into the changelog later. Please do not directly edit the `CHANGELOG.md` file.
 4. Push all of your changes to your repo. Navigating to your GitHub repository page you will see a banner for creating a PR. Click on the "Contribute" and then "Open a pull request" buttons.
 5. This will bring up a PR page. There are a number of sections to be filled out. Please read carefully and make selections where needed. Following this checklist is very helpful when our team reviews your request. If you need help, just ask!
-6. Finally, it is best to let a team member know in the [#contribution channel](https://discord.gg/KjrWVhgwg) on our Discord that you have submitted a PR. You can also find our contact addresses on our GitHub pages. We don't get automatic notifications from community-submitted PRs. We will see it in the queue eventually, notifying us will just speed up the process.
+6. Finally, it is best to let a team member know in the [#contribution channel](https://chat.apostrophecms.com) on our Discord that you have submitted a PR. You can also find our contact addresses on our GitHub pages. We don't get automatic notifications from community-submitted PRs. We will see it in the queue eventually, notifying us will just speed up the process.
    
 #### **What to expect next**
 
