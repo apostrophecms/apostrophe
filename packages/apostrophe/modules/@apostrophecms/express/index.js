@@ -359,7 +359,7 @@ module.exports = {
         if (!key) {
           return next();
         }
-        if (_.has(self.options.apiKeys && self.options.apiKeys, key)) {
+        if (self.options.apiKeys && Object.hasOwn(self.options.apiKeys, key)) {
           const info = self.options.apiKeys[key];
           if (info.role === 'admin') {
             taskReq = self.apos.task.getReq();
