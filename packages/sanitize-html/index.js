@@ -668,12 +668,20 @@ function sanitizeHtml(html, options, _fallback) {
 
       if (options.disallowedTagsMode === 'completelyDiscard' && !tagAllowed(tag)) {
         text = '';
-      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && ((tag === 'script') || (tag === 'style'))) {
-        // htmlparser2 gives us these as-is. Escaping them ruins the content. Allowing
+      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && tag === 'script') {
+        // htmlparser2 gives us this as-is. Escaping it ruins the content. Allowing
         // script tags is, by definition, game over for XSS protection, so if that's
-        // your concern, don't allow them. The same is essentially true for style tags
-        // which have their own collection of XSS vectors.
+        // your concern, don't allow them.
         result += text;
+      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && tag === 'style') {
+        // Style tags have their own collection of XSS vectors, but their content
+        // must at least not become markup. A browser may parse a <style> as an
+        // SVG or MathML element whose content is markup where htmlparser2 saw an
+        // HTML raw-text element (e.g. inside <annotation-xml>), or htmlparser2
+        // may have decoded `&lt;` in such an element's content, so a `<` could
+        // open a tag. Write it as a CSS escape instead, which means the same in
+        // a stylesheet and is plain text in markup (GHSA-6wrv-5cp6-h3c5).
+        result += text.replace(/</g, '\\3c ');
       } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
         // <textarea> and <xmp> hold text that must not be re-emitted verbatim:
         // if a raw `<` survives into the output it can reopen a tag when the
