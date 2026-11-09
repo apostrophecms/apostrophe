@@ -385,6 +385,14 @@ module.exports = {
         if (!req.token) {
           return next();
         }
+        // The token can come from the query string, where qs
+        // syntax can turn it into an object or array
+        if (typeof req.token !== 'string') {
+          return res.status(401).send({
+            name: 'invalid',
+            message: 'bearer token invalid'
+          });
+        }
         try {
           const userId = await getBearer();
           if (userId) {
