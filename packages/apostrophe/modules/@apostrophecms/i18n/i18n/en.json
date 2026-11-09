@@ -46,6 +46,7 @@
   "assetWebpackConfigWarning": "In the module {{ module }}, your webpack config is incorrect. It must be an object and should contain only the properties: {{ properties }}.",
   "at": "at",
   "attachment": "Attachment",
+  "attachmentNotFound": "The attachment {{ id }} was not found in the database. Its record is missing and must be restored before this document can be saved.",
   "automaticTranslationCheckbox": "Translate text content",
   "automaticTranslationCheckboxHelp": "",
   "automaticTranslationDisclaimer": "",
