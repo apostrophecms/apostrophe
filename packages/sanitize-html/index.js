@@ -18,8 +18,8 @@ const svgAnimationTags = [
   'animate', 'animatecolor', 'animatemotion', 'animatetransform', 'set'
 ];
 // Attribute names that always name a URL sink, whatever
-// `allowedSchemesAppliedToAttributes` has been narrowed to. A namespace prefix
-// is ignored when matching, so `xlink:href` and any other prefixed spelling of
+// `allowedSchemesAppliedToAttributes` has been narrowed to. Each colon-separated
+// part of a name is matched, so `xlink:href` and any other prefixed spelling of
 // `href` are covered.
 const alwaysUrlAttributes = [ 'href' ];
 
@@ -1017,29 +1017,32 @@ function sanitizeHtml(html, options, _fallback) {
   // that are not URL sinks, such as `fill` or `opacity`, are unaffected.
   function animatesUrlAttribute(name, attribs) {
     // In an XML serialization a prefixed name such as `svg:animate` is the same
-    // element as `animate`, so match on the local name (GHSA-374f-7chj-9948).
-    if (svgAnimationTags.indexOf(localPart(name)) === -1) {
+    // element as `animate`, so match on the parts of the name
+    // (GHSA-374f-7chj-9948).
+    if (!nameParts(name).some(part => svgAnimationTags.includes(part))) {
       return false;
     }
     const schemeCheckedAttributes = options.allowedSchemesAppliedToAttributes || [];
     return Object.keys(attribs || {}).some(function(attributeName) {
-      if (localPart(attributeName) !== 'attributename') {
+      if (!nameParts(attributeName).includes('attributename')) {
         return false;
       }
       const target = (attribs[attributeName] || '').trim().toLowerCase();
-      // The target may be namespace prefixed (`xlink:href`). Which prefixes are
-      // in scope depends on the document, so consider the local name too.
-      const localName = target.slice(target.lastIndexOf(':') + 1);
-      return alwaysUrlAttributes.indexOf(localName) !== -1 ||
-        schemeCheckedAttributes.indexOf(target) !== -1 ||
-        schemeCheckedAttributes.indexOf(localName) !== -1;
+      // The target may be namespace prefixed (`xlink:href`), and which prefixes
+      // are in scope depends on the document. Browsers also differ in how they
+      // split a name with more than one colon: current Chrome resolves
+      // `xlink:href:x` to `xlink:href` (GHSA-8g6g-w2rq-xcmc). So consider the
+      // full name and every part of it.
+      return schemeCheckedAttributes.includes(target) ||
+        nameParts(target).some(part => alwaysUrlAttributes.includes(part) ||
+          schemeCheckedAttributes.includes(part));
     });
   }
 
-  // Lowercased name with any namespace prefix removed.
-  function localPart(name) {
-    const lower = name.toLowerCase();
-    return lower.slice(lower.lastIndexOf(':') + 1);
+  // The lowercased parts of a name between colons, any of which a browser may
+  // take as its local name.
+  function nameParts(name) {
+    return name.toLowerCase().split(':').map(part => part.trim());
   }
 
   function parseUrl(value) {
