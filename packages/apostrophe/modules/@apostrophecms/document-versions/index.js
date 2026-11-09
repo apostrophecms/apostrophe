@@ -1279,13 +1279,18 @@ module.exports = {
       // restores it (see `addRestore`).
       // A document never published is compared with a new document of its
       // type as a save stores it; `baseline` says which, `{ kind:
-      // 'published', at }` or `{ kind: 'default' }`. `annotate` adds `doc`,
-      // the draft marked with the changes (see `getAnnotatedDoc`).
+      // 'published', at }` or `{ kind: 'default' }`. `since`, the `_id` of a
+      // version of the document in its locale, compares with that version
+      // instead, crediting the versions recorded after it: `{ kind:
+      // 'version', versionId, at }`. `annotate` adds `doc`, the draft marked
+      // with the changes (see `getAnnotatedDoc`).
       // Throws `invalid` for a malformed id, `notfound` when the draft does
-      // not exist, `req` cannot edit it or its type records no draft versions
-      async getDraftChanges(req, docId, { annotate = false } = {}) {
+      // not exist, `req` cannot edit it, its type records no draft versions
+      // or `since` is no version of it
+      async getDraftChanges(req, docId, { annotate = false, since = null } = {}) {
         const id = self.apos.launder.id(docId);
-        if (!id) {
+        const versionId = since && self.apos.launder.id(since);
+        if (!id || (since && !versionId)) {
           throw self.apos.error('invalid');
         }
         const draftReq = req.clone({ mode: 'draft' });
@@ -1298,31 +1303,19 @@ module.exports = {
         }
         const draft = self.apos.util.clonePermanent(found);
         const criteria = self.getTimelineCriteria(draft);
-        const [ published, publication ] = await Promise.all([
-          self.apos.doc.db.findOne({ _id: draft._id.replace(/:draft$/, ':published') }),
-          self.findOne(draftReq, {
-            ...criteria,
-            mode: 'published'
-          }, {
-            project: { createdAt: 1 },
-            raw: true
-          })
-        ]);
-        // The later of the two: a publish that changed nothing records no
-        // version, and a promoted draft takes the time of the publish
-        const since = published
-          ? [ published.lastPublishedAt, publication?.createdAt ]
-            .filter(Boolean)
-            .sort((one, two) => two - one)[0]
-          : null;
+        const {
+          older, after, baseline
+        } = versionId
+          ? await getVersionBaseline()
+          : await getPublicationBaseline();
         const records = await self.find(draftReq, {
           ...criteria,
-          ...(since && { createdAt: { $gt: since } })
+          ...(after && { createdAt: { $gt: after } })
         }, {
           sort: { createdAt: 1 }
         });
         const contents = [
-          published || await self.getEmptyDoc(draftReq, found.type),
+          older,
           ...records.map(record => record.doc),
           draft
         ];
@@ -1366,16 +1359,62 @@ module.exports = {
         return {
           rows,
           counts,
-          baseline: published
-            ? {
-              kind: 'published',
-              at: published.lastPublishedAt ?? null
-            }
-            : { kind: 'default' },
+          baseline,
           ...(annotate && {
             doc: self.getAnnotatedDoc(draftReq, contents[0], draft, { rows })
           })
         };
+
+        // The version `since` names, and the versions after it
+        async function getVersionBaseline() {
+          const version = await self.findOne(draftReq, {
+            ...criteria,
+            _id: versionId
+          });
+          if (!version) {
+            throw self.apos.error('notfound');
+          }
+          return {
+            older: version.doc,
+            after: version.createdAt,
+            baseline: {
+              kind: 'version',
+              versionId: version._id,
+              at: version.updatedAt || version.createdAt
+            }
+          };
+        }
+
+        // The published document, and the versions since it was published
+        async function getPublicationBaseline() {
+          const [ published, publication ] = await Promise.all([
+            self.apos.doc.db.findOne({ _id: draft._id.replace(/:draft$/, ':published') }),
+            self.findOne(draftReq, {
+              ...criteria,
+              mode: 'published'
+            }, {
+              project: { createdAt: 1 },
+              raw: true
+            })
+          ]);
+          // The later of the two: a publish that changed nothing records no
+          // version, and a promoted draft takes the time of the publish
+          const after = published
+            ? [ published.lastPublishedAt, publication?.createdAt ]
+              .filter(Boolean)
+              .sort((one, two) => two - one)[0]
+            : null;
+          return {
+            older: published || await self.getEmptyDoc(draftReq, found.type),
+            after,
+            baseline: published
+              ? {
+                kind: 'published',
+                at: published.lastPublishedAt ?? null
+              }
+              : { kind: 'default' }
+          };
+        }
       },
       // What `addRestore` and `check` of `lib/diff.js` need to know of `req`
       // for `doc`, a document as `req` finds it in its mode:

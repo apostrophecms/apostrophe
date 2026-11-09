@@ -71,6 +71,7 @@ module.exports = {
     '@apostrophecms/recently-edited': {},
     '@apostrophecms/command-menu': {},
     '@apostrophecms/translation': {},
-    '@apostrophecms/document-versions': {}
+    '@apostrophecms/document-versions': {},
+    '@apostrophecms/harness': {}
   }
 };

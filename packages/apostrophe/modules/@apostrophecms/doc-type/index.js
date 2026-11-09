@@ -658,6 +658,11 @@ module.exports = {
         }
         return schema;
       },
+      // The schema AI tools read and write this type through. All fields by
+      // default; override to keep fields away from AI. Treat it as read-only
+      getAiSchema(req) {
+        return self.schema;
+      },
       composeSchema() {
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),

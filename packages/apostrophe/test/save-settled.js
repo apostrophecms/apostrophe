@@ -62,6 +62,16 @@ describe('Save settled', function() {
               afterSave: {
                 // Changes the document after it is written, as a save
                 // handler may
+                // Saves the document again from its own save
+                async nest(req, doc) {
+                  if (doc.body !== 'nest me') {
+                    return;
+                  }
+                  await self.update(req, {
+                    ...doc,
+                    body: 'nested'
+                  });
+                },
                 async stamp(req, doc) {
                   if (doc.body !== 'stamp me') {
                     return;
@@ -220,6 +230,18 @@ describe('Save settled', function() {
       assert.equal(first.before.body, 'original');
       assert.deepEqual(second.before, first.after);
       assert.equal(second.after.body, 'second');
+    });
+
+    it('settles a save of the document from its own handlers with that save', async function() {
+      const article = await given({ body: 'plain' });
+      await updateArticle(marked(), article._id, { body: 'nest me' });
+      const events = eventsFor(article._id);
+      assert.equal(events.length, 1);
+      assert.equal(events[0].before.body, 'plain');
+      assert.equal(events[0].after.body, 'nested');
+      // The next save starts where it ended
+      await updateArticle(marked(), article._id, { body: 'again' });
+      assert.equal(eventsFor(article._id).length, 2);
     });
 
     it('gets the tool call that saved', async function() {

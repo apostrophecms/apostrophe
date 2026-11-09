@@ -720,6 +720,13 @@ module.exports = {
         });
       },
 
+      // The schema AI tools read and write this widget type through. All
+      // fields by default; override to keep fields away from AI. Treat it as
+      // read-only
+      getAiSchema(req) {
+        return self.schema;
+      },
+
       addSearchTexts(widget, texts) {
         self.apos.schema.indexFields(self.schema, widget, texts);
       },

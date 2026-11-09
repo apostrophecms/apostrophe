@@ -520,6 +520,46 @@ describe('Document Versions draft changes', function () {
       assert.equal(deleted._changedWithAi, 'assisted');
       assert.equal(doc.aposMeta.title['@apostrophecms/document-versions:ai'], 'changed');
     });
+
+    it('should compare a version with the draft, crediting those after', async function () {
+      const [ byAnn ] = records;
+      const { rows, baseline } = await apos.docVersions
+        .getDraftChanges(ann(), draft._id, { since: byAnn._id });
+
+      assert.deepEqual(baseline, {
+        kind: 'version',
+        versionId: byAnn._id,
+        at: byAnn.updatedAt || byAnn.createdAt
+      });
+      assert.equal(rowAt(rows, ...row0, 'title'), undefined);
+      assert.equal(rowAt(rows, ...row0, 'body'), undefined);
+      const title = rowAt(rows, 'title');
+      assert.equal(title.old, 'Ann title');
+      assert.equal(title.new, 'Bob title');
+      assert.deepEqual(authorsOf(title), [ 'bob' ]);
+      assert.equal(title.ai, 'changed');
+      assert.ok(rowAt(rows, 'section', 'title').patchKey);
+    });
+
+    it('should list only what changed ahead of the newest version since it', async function () {
+      const { rows } = await apos.docVersions.getDraftChanges(ann(), draft._id, {
+        since: records.at(-1)._id
+      });
+
+      assert.deepEqual(rows.map(row => namesOf(row).join('/')), [ 'count' ]);
+      assert.deepEqual(rows[0].authors, []);
+    });
+
+    it('should refuse a version that is not of this document, and a malformed one', async function () {
+      await assert.rejects(
+        apos.docVersions.getDraftChanges(ann(), draft._id, { since: 'nosuchversion' }),
+        { name: 'notfound' }
+      );
+      await assert.rejects(
+        apos.docVersions.getDraftChanges(ann(), draft._id, { since: '<bad>' }),
+        { name: 'invalid' }
+      );
+    });
   });
 
   it('should credit no one when no version was recorded since the publication', async function () {
