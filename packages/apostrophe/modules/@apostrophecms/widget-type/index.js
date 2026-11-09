@@ -207,7 +207,7 @@
 const _ = require('lodash');
 
 module.exports = {
-  cascades: [ 'fields', 'styles', 'widgetOperations' ],
+  cascades: [ 'fields', 'shadowFields', 'styles', 'widgetOperations' ],
   options: {
     neverLoadSelf: true,
     initialModal: true,
@@ -434,6 +434,20 @@ module.exports = {
             throw new Error('Widget type ' + self.name + ': the field name ' + field.name + ' is forbidden');
           }
         });
+        // The data the widget keeps outside its schema, described as fields
+        // for those who read widgets (see `getAiSchema`). Information only:
+        // nothing converts, sanitizes or saves through it, and data it
+        // doesn't describe stays the widget's own
+        self.shadowSchema = self.apos.schema.fieldsToArray(
+          `Module ${self.__meta.name} (shadowFields)`,
+          self.shadowFields
+        );
+        for (const field of self.shadowSchema) {
+          if (forbiddenFields.includes(field.name) ||
+            self.schema.some(({ name }) => name === field.name)) {
+            throw new Error(`Widget type ${self.name}: the shadow field name ${field.name} is forbidden or already a field`);
+          }
+        }
       },
 
       composeWidgetOperations() {
@@ -720,11 +734,11 @@ module.exports = {
         });
       },
 
-      // The schema AI tools read and write this widget type through. All
-      // fields by default; override to keep fields away from AI. Treat it as
-      // read-only
+      // The schema AI tools read and write this widget type through: its
+      // shadow fields, then its fields. Extend it and filter `_super(req)` to
+      // keep fields away from AI. Treat it as read-only
       getAiSchema(req) {
-        return self.schema;
+        return [ ...self.shadowSchema, ...self.schema ];
       },
 
       addSearchTexts(widget, texts) {

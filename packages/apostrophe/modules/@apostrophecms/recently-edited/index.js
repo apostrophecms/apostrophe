@@ -6,6 +6,8 @@
 module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
+    // Owns no documents: it lists other types' documents
+    virtual: true,
     alias: 'recentlyEdited',
     label: 'apostrophe:recentlyEdited',
     pluralLabel: 'apostrophe:recentlyEditedDocuments',
@@ -164,70 +166,26 @@ module.exports = {
     return {
       'apostrophe:modulesRegistered': {
         detectManagedTypes() {
-          const internalExcludeTypes = [
-            self.__meta.name,
-            '@apostrophecms/submitted-draft',
-            '@apostrophecms/archive-page'
-          ];
-
-          const userExcludeTypes = self.options.excludeTypes || [];
-          const excludeSet = new Set([
-            ...internalExcludeTypes,
-            ...userExcludeTypes
-          ]);
-
-          const managers = Object.values(self.apos.doc.managers);
-          self.managedTypes = managers
-            .filter(manager => {
-              if (!manager.__meta) {
-                return false;
-              }
-              const name = manager.__meta.name;
-              if (excludeSet.has(name)) {
-                return false;
-              }
-              if (!manager.isLocalized?.()) {
-                return false;
-              }
-              // Only concrete types: piece types and page types.
-              // Excludes abstract bases like any-doc-type,
-              // any-page-type, polymorphic-type.
-              const isPiece = self.apos.instanceOf(
-                manager, '@apostrophecms/piece-type'
-              );
-              const isPage = self.apos.instanceOf(
-                manager, '@apostrophecms/page-type'
-              );
-              if (!isPiece && !isPage) {
-                return false;
-              }
-              return true;
-            })
-            .map(manager => ({
-              name: manager.__meta.name,
-              label: manager.options.label || manager.__meta.name,
-              pluralLabel: manager.options.pluralLabel ||
-                manager.options.label ||
-                manager.__meta.name
-            }));
+          const excluded = self.options.excludeTypes || [];
+          const managers = self.apos.doc.getContentTypes()
+            .filter(manager => manager.isLocalized() &&
+              !excluded.includes(manager.__meta.name));
+          self.managedTypes = managers.map(manager => ({
+            name: manager.__meta.name,
+            label: manager.options.label || manager.__meta.name,
+            pluralLabel: manager.options.pluralLabel ||
+              manager.options.label ||
+              manager.__meta.name
+          }));
           self.managedTypeNames = self.managedTypes.map(t => t.name);
 
           // Cache page and piece type names for virtual group filters.
-          const managedManagersByName = Object.fromEntries(
-            managers
-              .filter(m => m.__meta && self.managedTypeNames.includes(m.__meta.name))
-              .map(m => [ m.__meta.name, m ])
-          );
-          self.managedPageTypeNames = self.managedTypeNames.filter(
-            name => self.apos.instanceOf(
-              managedManagersByName[name], '@apostrophecms/page-type'
-            )
-          );
-          self.managedPieceTypeNames = self.managedTypeNames.filter(
-            name => self.apos.instanceOf(
-              managedManagersByName[name], '@apostrophecms/piece-type'
-            )
-          );
+          self.managedPageTypeNames = managers
+            .filter(manager => self.apos.instanceOf(manager, '@apostrophecms/page-type'))
+            .map(manager => manager.__meta.name);
+          self.managedPieceTypeNames = managers
+            .filter(manager => self.apos.instanceOf(manager, '@apostrophecms/piece-type'))
+            .map(manager => manager.__meta.name);
         }
       }
     };

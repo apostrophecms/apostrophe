@@ -45,7 +45,7 @@ module.exports = (self) => {
       for (const [ _id, patches ] of byId) {
         let found = null;
         try {
-          found = await self.findForWrite(req, _id);
+          found = await self.findDraft(req, _id);
           written.push(await writeOne(found, patches));
         } catch (e) {
           // Conversion throws its field errors as an array
@@ -131,9 +131,11 @@ module.exports = (self) => {
       }
     },
 
-    // The draft a write targets, `{ doc, manager, draftReq }`, `draftReq`
-    // in the document's locale. Throws `notfound` when `req` can't see it
-    async findForWrite(req, _id) {
+    // The draft a read or write targets, `{ doc, manager, draftReq }`,
+    // `draftReq` in the document's locale. `_id` names the document in any
+    // mode, or by `aposDocId` in the locale of `req`. Throws `notfound` when
+    // `req` can't see it
+    async findDraft(req, _id) {
       const id = self.apos.launder.id(_id);
       const [ aposDocId, locale ] = id.split(':');
       if (!aposDocId || (locale && !self.apos.i18n.locales[locale])) {
@@ -160,12 +162,21 @@ module.exports = (self) => {
       };
     },
 
+    // How documents of `type` go live: `drafts` (an editor publishes the
+    // draft), `autopublish` (published on save) or `noDrafts` (saved live)
+    getPublishing(type) {
+      const manager = self.apos.doc.getManager(type);
+      if (!manager?.isLocalized()) {
+        return 'noDrafts';
+      }
+      return manager.options.autopublish ? 'autopublish' : 'drafts';
+    },
+
     // Where a write of `type` lands: `{ published, notice }`, the notice
     // being the sentence the model repeats. Live for a type that publishes
     // on save or has no drafts
     getPublishState(type) {
-      const manager = self.apos.doc.getManager(type);
-      const live = Boolean(manager?.options.autopublish) || !manager?.isLocalized();
+      const live = self.getPublishing(type) !== 'drafts';
       return {
         published: live,
         notice: live ? LIVE_NOTICE : DRAFT_NOTICE

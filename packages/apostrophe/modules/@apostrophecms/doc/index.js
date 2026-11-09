@@ -1457,6 +1457,24 @@ module.exports = {
       getManager(type) {
         return self.managers[self.normalizeType(type)];
       },
+      // The content types: the managers of the page and piece types whose
+      // documents editors and AI work with, in registration order. Leaves
+      // out virtual types, which own no documents of their own (`virtual:
+      // true`, such as the recently edited manager and the archive page),
+      // and the placeholders for types in the database without a module.
+      // `kind` is `page` or `piece` for one kind only
+      getContentTypes({ kind } = {}) {
+        const bases = {
+          page: '@apostrophecms/page-type',
+          piece: '@apostrophecms/piece-type'
+        };
+        if (kind && !bases[kind]) {
+          throw self.apos.error('invalid', `kind must be "page" or "piece", not "${kind}"`);
+        }
+        const wanted = kind ? [ bases[kind] ] : Object.values(bases);
+        return Object.values(self.managers).filter(manager => !manager.options.virtual &&
+          wanted.some(base => self.apos.instanceOf(manager, base)));
+      },
       // Removes the fields the user may not view (`viewPermission`) from
       // every document found at any depth in `value`, a REST API response:
       // documents loaded through relationships (including those in widgets,

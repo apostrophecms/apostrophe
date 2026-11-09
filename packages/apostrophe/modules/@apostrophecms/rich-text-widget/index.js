@@ -11,6 +11,14 @@ const util = require('util');
 module.exports = {
   extend: '@apostrophecms/widget-type',
   cascades: [ 'linkFields' ],
+  // The markup, kept outside the schema and edited in place
+  shadowFields: {
+    add: {
+      content: {
+        type: 'richText'
+      }
+    }
+  },
   linkFields(self, options) {
     const linkWithType = (Array.isArray(options.linkWithType)
       ? options.linkWithType

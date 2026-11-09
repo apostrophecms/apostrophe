@@ -13,14 +13,13 @@ const DOORS = {
   }
 };
 
-// The harness's own tools; every one is tagged `content`
-const TOOLS = [];
+const readTools = require('./read-tools');
 
 module.exports = (self) => {
   return {
-    // Registers the harness's tools on the engine
+    // Registers the harness's tools on the engine, each tagged `content`
     addTools() {
-      for (const tool of TOOLS) {
+      for (const tool of readTools(self)) {
         self.apos.ai.addTool({
           ...tool,
           tags: [ 'content', ...(tool.tags || []) ]

@@ -1,0 +1,253 @@
+// The read tools' definitions. Values an argument can only take (types,
+// locales) are listed when the engine activates its tools, once every module
+// has registered its types.
+
+// Read budgets, in characters of the serialized result. A read bounded by
+// content can be read in parts (paths, offsets, a deeper root), and its
+// budget is measured on real content. A read bounded by configuration
+// (types, schemas, guidance) only has a guard against a bug or a hostile
+// configuration
+const BUDGETS = {
+  search: 8000,
+  document: 40000,
+  tree: 16000,
+  references: 12000,
+  configuration: 100000
+};
+
+module.exports = (self) => {
+  const handler = name => `@apostrophecms/harness:${name}`;
+  const id = description => ({
+    type: 'string',
+    minLength: 1,
+    description
+  });
+  // The `locale` argument, only in a project with several locales
+  const locale = description => {
+    const names = self.getLocaleNames();
+    return (names.length > 1)
+      ? {
+        locale: {
+          type: 'string',
+          enum: names,
+          description
+        }
+      }
+      : {};
+  };
+  const typeNames = () => [
+    ...new Set([ ...self.getDocTypeNames(), ...self.getWidgetTypeNames() ])
+  ].sort();
+
+  return [
+    {
+      name: 'search_content',
+      description: 'Find documents by text, by type, or both, in one locale. The source of ' +
+        'every document id. Without "query", lists the type newest first.',
+      input: () => ({
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            minLength: 1,
+            description: 'Words to search for'
+          },
+          type: {
+            type: 'string',
+            enum: self.getDocTypeNames()
+          },
+          ...locale('The locale to search; the current one when omitted'),
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 25,
+            default: 10
+          },
+          offset: {
+            type: 'integer',
+            minimum: 0,
+            default: 0,
+            description: 'Results to skip: the "next" of the previous search'
+          }
+        },
+        additionalProperties: false
+      }),
+      maxResultChars: BUDGETS.search,
+      kind: 'query',
+      handler: handler('searchContent')
+    },
+    {
+      name: 'get_document',
+      description: 'Read one document, in its locale. "outline": every area with its ' +
+        'widgets (id, type, text preview, size) and every other field with its size, ' +
+        'and its value when short. "properties": the values at "paths". "versions": its ' +
+        'version history, newest first.',
+      input: {
+        type: 'object',
+        properties: {
+          _id: id('A document id'),
+          view: {
+            type: 'string',
+            enum: [ 'outline', 'properties', 'versions' ],
+            default: 'outline'
+          },
+          paths: {
+            type: 'array',
+            items: {
+              type: 'string',
+              minLength: 1
+            },
+            minItems: 1,
+            maxItems: 20,
+            description: '"properties": the values to read, by field name, dot path or ' +
+              '"@<id>" path ("@<widget id>.title"); required. "outline": only these ' +
+              'areas or widgets ("main", "@<widget id>")'
+          },
+          before: {
+            type: 'string',
+            description: 'For "versions": the "next" of the previous versions read'
+          }
+        },
+        required: [ '_id' ],
+        additionalProperties: false
+      },
+      maxResultChars: BUDGETS.document,
+      kind: 'query',
+      handler: handler('getDocument')
+    },
+    {
+      name: 'list_types',
+      description: 'The page, piece and widget types with their labels; for doc types, ' +
+        'how they go live ("drafts": an editor publishes, "autopublish": live on save, ' +
+        '"noDrafts": always live), and for piece types the slugs of the pages listing them.',
+      input: {
+        type: 'object',
+        properties: {},
+        additionalProperties: false
+      },
+      maxResultChars: BUDGETS.configuration,
+      kind: 'query',
+      handler: handler('listTypes')
+    },
+    {
+      name: 'get_schema',
+      description: 'The fields of doc and widget types, one line per field, with a ' +
+        'legend of the format. A conditional field\'s own fields are folded; read them ' +
+        'with "fields".',
+      input: () => ({
+        type: 'object',
+        properties: {
+          types: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: typeNames()
+            },
+            minItems: 1,
+            maxItems: 10
+          },
+          fields: {
+            type: 'array',
+            items: {
+              type: 'string',
+              minLength: 1
+            },
+            minItems: 1,
+            maxItems: 10,
+            description: 'Folded fields to read in full, by dot path of field names ' +
+              '("seo", "items.details"); one type only'
+          }
+        },
+        required: [ 'types' ],
+        additionalProperties: false
+      }),
+      maxResultChars: BUDGETS.configuration,
+      kind: 'query',
+      handler: handler('getSchema')
+    },
+    {
+      name: 'get_guidance',
+      description: 'How to use types the instructions mark "(aiHow)": their guidance, ' +
+        'to read before working with them.',
+      input: () => {
+        const types = typeNames().filter(type => self.getTypeOptions(type)?.aiHow);
+        return {
+          type: 'object',
+          properties: {
+            types: {
+              type: 'array',
+              items: {
+                type: 'string',
+                ...(types.length && { enum: types })
+              },
+              minItems: 1,
+              maxItems: 10
+            }
+          },
+          required: [ 'types' ],
+          additionalProperties: false
+        };
+      },
+      maxResultChars: BUDGETS.configuration,
+      kind: 'query',
+      handler: handler('getGuidance')
+    },
+    {
+      name: 'get_page_tree',
+      description: 'The page tree in tree order: each page with its id, title, slug, type, ' +
+        'level, parent and number of children. Starts at the home page or at "root"; ' +
+        'when "truncated", read on from a deeper root.',
+      input: () => ({
+        type: 'object',
+        properties: {
+          root: {
+            type: 'string',
+            minLength: 1,
+            description: 'A page id or slug ("/services") to start from'
+          },
+          depth: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 5,
+            default: 2,
+            description: 'Levels below the start'
+          },
+          ...locale('The locale of the tree, when "root" is not an id; the current one ' +
+            'when omitted')
+        },
+        additionalProperties: false
+      }),
+      maxResultChars: BUDGETS.tree,
+      kind: 'query',
+      handler: handler('getPageTree')
+    },
+    {
+      name: 'find_references',
+      description: 'Documents that point at a document through a relationship ("where is ' +
+        'this image used"), with the paths where each holds it, and their total.',
+      input: {
+        type: 'object',
+        properties: {
+          _id: id('The id of the document pointed at'),
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 50,
+            default: 50
+          },
+          offset: {
+            type: 'integer',
+            minimum: 0,
+            default: 0,
+            description: 'Documents to skip: the "next" of the previous read'
+          }
+        },
+        required: [ '_id' ],
+        additionalProperties: false
+      },
+      maxResultChars: BUDGETS.references,
+      kind: 'query',
+      handler: handler('findReferences')
+    }
+  ];
+};

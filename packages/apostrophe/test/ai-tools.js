@@ -12,6 +12,14 @@ describe('AI tools', function() {
     apos = await t.create({
       root: module,
       modules: {
+        // The registry below is the engine's alone
+        '@apostrophecms/harness': {
+          extendMethods() {
+            return {
+              addTools() {}
+            };
+          }
+        },
         'tool-handlers': {
           init(self) {
             // Removed before the tool-overrides module registers it

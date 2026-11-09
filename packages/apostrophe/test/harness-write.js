@@ -235,11 +235,15 @@ describe('Harness: doors, the write path and guards', function () {
   describe('doors', function () {
     it('should select the harness tools for both doors, and each door its own', function () {
       const names = door => apos.harness.getDoorTools(door).map(tool => tool.name);
+      const test = door => names(door).filter(name => name.startsWith('t_'));
+      const harness = door => names(door).filter(name => !name.startsWith('t_'));
 
-      assert.deepEqual(names('assistant'), [
+      assert.deepEqual(test('assistant'), [
         't_assistant', 't_browser', 't_content', 't_write'
       ]);
-      assert.deepEqual(names('mcp'), [ 't_content', 't_mcp', 't_write' ]);
+      assert.deepEqual(test('mcp'), [ 't_content', 't_mcp', 't_write' ]);
+      assert(harness('mcp').includes('search_content'));
+      assert.deepEqual(harness('assistant'), harness('mcp'));
     });
 
     it('should leave out a removed tool everywhere', function () {
@@ -273,7 +277,7 @@ describe('Harness: doors, the write path and guards', function () {
         '@apostrophecms/harness:list-tools',
         { door: 'mcp' }
       ));
-      assert.match(printed, /^# mcp: 3 tools, definitions \d+ characters/);
+      assert.match(printed, /^# mcp: \d+ tools, definitions \d+ characters/);
       assert.match(printed, /## t_content \[action\] content, definition \d+ characters/);
       assert.match(printed, /- type: string \(one of [^)]*harness-article/);
       assert.equal(printed.includes('t_browser'), false);

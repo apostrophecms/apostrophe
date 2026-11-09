@@ -73,6 +73,100 @@ describe('Rich Text Widget', function () {
     assert(attributes.a.includes('target'));
   });
 
+  it('should describe its markup as a shadow field, outside its schema', async function () {
+    apos = await t.create({
+      root: module,
+      modules: {}
+    });
+
+    const richText = apos.modules['@apostrophecms/rich-text-widget'];
+
+    assert.deepEqual(
+      richText.shadowSchema.map(({ name, type }) => ({
+        name,
+        type
+      })),
+      [ {
+        name: 'content',
+        type: 'richText'
+      } ]
+    );
+    assert.equal(richText.schema.some(field => field.name === 'content'), false);
+    assert.equal(richText.getAiSchema(apos.task.getReq())[0], richText.shadowSchema[0]);
+  });
+
+  it('should let any widget type describe the data it keeps outside its schema', async function () {
+    apos = await t.create({
+      root: module,
+      modules: {
+        'counter-widget': {
+          extend: '@apostrophecms/widget-type',
+          fields: {
+            add: {
+              title: { type: 'string' }
+            }
+          },
+          shadowFields: {
+            add: {
+              total: { type: 'integer' },
+              steps: {
+                type: 'array',
+                fields: {
+                  add: {
+                    label: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const counter = apos.modules['counter-widget'];
+
+    assert.deepEqual(
+      counter.getAiSchema(apos.task.getReq()).map(field => field.name),
+      [ 'total', 'steps', 'title' ]
+    );
+    assert.deepEqual(counter.shadowSchema[1].schema.map(field => field.name), [ 'label' ]);
+    // Validated like a schema: labels are supplied
+    assert.equal(counter.shadowSchema[0].label, 'Total');
+    assert.deepEqual(counter.schema.map(field => field.name), [ 'title' ]);
+  });
+
+  it('should refuse a shadow field named like one of its fields', async function () {
+    let captured;
+    try {
+      await assert.rejects(t.create({
+        root: module,
+        exit: 'throw',
+        modules: {
+          'capture-apos': {
+            init(self) {
+              captured = self.apos;
+            }
+          },
+          'twice-widget': {
+            extend: '@apostrophecms/widget-type',
+            fields: {
+              add: {
+                code: { type: 'string' }
+              }
+            },
+            shadowFields: {
+              add: {
+                code: { type: 'string' }
+              }
+            }
+          }
+        }
+      }), /shadow field name code/);
+    } finally {
+      apos = captured;
+    }
+  });
+
   it('should support link schema management and html attributes', async function () {
     apos = await t.create({
       root: module,

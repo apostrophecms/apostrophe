@@ -2674,6 +2674,10 @@ still output the value of this field with a regular template expression.`);
             type: 'widget type',
             subtype: type
           });
+          self.validate(manager.shadowSchema, {
+            type: 'widget type shadow fields',
+            subtype: type
+          });
         });
       },
 

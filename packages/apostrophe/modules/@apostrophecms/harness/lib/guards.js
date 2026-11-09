@@ -95,7 +95,8 @@ module.exports = (self) => {
     /**
      * A document as AI reads it: only the fields of its type's AI-facing
      * schema; in areas, only widgets of types the area allows that still
-     * have a module, each with its own schema's fields; arrays and objects
+     * have a module, each with its own AI-facing schema's fields (shadow
+     * fields included, such as rich text's `content`); arrays and objects
      * followed down; relationships as `{ _id, title }`.
      *
      * @param {object} req
@@ -159,12 +160,13 @@ module.exports = (self) => {
       }
     },
 
-    // The doc types AI may work with, for tool definitions
+    // The doc types AI may work with, for tool definitions: the content
+    // types (see `apos.doc.getContentTypes`) without the denied ones
     getDocTypeNames() {
       const denied = self.apos.ai.getDeniedTypes();
-      return Object.keys(self.apos.doc.managers)
+      return self.apos.doc.getContentTypes()
+        .map(manager => manager.__meta.name)
         .filter(name => !denied.includes(name))
-        .filter(name => !name.startsWith('@apostrophecms/any-'))
         .sort();
     },
 

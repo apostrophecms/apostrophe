@@ -48,6 +48,8 @@ module.exports = {
       ...require('./lib/write')(self),
       ...require('./lib/guards')(self),
       ...require('./lib/change-log')(self),
+      ...require('./lib/read')(self),
+      ...require('./lib/schema-read')(self),
       ...require('./lib/tools')(self)
     };
   }
