@@ -3003,6 +3003,16 @@ describe('sanitizeHtml', function() {
       });
     });
 
+    it('should not emit a tag from style content inside a tag transformed into svg', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><style><img src=x onerror=alert(1)></style></div>', {
+          ...svgOptions,
+          transformTags: { div: 'svg' }
+        }),
+        '<svg><style>\\3c img src=x onerror=alert(1)></style></svg>'
+      );
+    });
+
     it('should keep the meaning of < in a stylesheet inside svg', function() {
       assert.strictEqual(
         sanitizeHtml('<svg><style>a > b::before { content: "<"; }</style></svg>', svgOptions),

@@ -675,13 +675,16 @@ function sanitizeHtml(html, options, _fallback) {
         result += text;
       } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && tag === 'style') {
         // Style tags have their own collection of XSS vectors, but their content
-        // must at least not become markup. A browser may parse a <style> as an
-        // SVG or MathML element whose content is markup where htmlparser2 saw an
-        // HTML raw-text element (e.g. inside <annotation-xml>), or htmlparser2
-        // may have decoded `&lt;` in such an element's content, so a `<` could
-        // open a tag. Write it as a CSS escape instead, which means the same in
-        // a stylesheet and is plain text in markup (GHSA-6wrv-5cp6-h3c5).
-        result += text.replace(/</g, '\\3c ');
+        // must at least not become markup. Inside svg or math (allowed or not),
+        // a browser may parse a <style> as an SVG or MathML element whose
+        // content is markup where htmlparser2 saw an HTML raw-text element
+        // (e.g. inside <annotation-xml>), or htmlparser2 may have decoded `&lt;`
+        // in its content, so a `<` could open a tag. There, write it as a CSS
+        // escape, which means the same in a stylesheet and is plain text in
+        // markup (GHSA-6wrv-5cp6-h3c5).
+        result += stack.some(frame => frame.tag === 'svg' || frame.tag === 'math')
+          ? text.replace(/</g, '\\3c ')
+          : text;
       } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
         // <textarea> and <xmp> hold text that must not be re-emitted verbatim:
         // if a raw `<` survives into the output it can reopen a tag when the
