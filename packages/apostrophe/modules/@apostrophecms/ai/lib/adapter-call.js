@@ -70,7 +70,11 @@ module.exports = (self) => {
     // the stack of the original throw) — with enough context to tell a
     // rate limit from an overload, a timeout or bad config from the one
     // record.
-    async callAdapter(req, record, request, call) {
+    //
+    // `onRetry`, when given, is awaited before each retry wait with
+    // `{ attempt, wait }`: the number of the attempt about to be made
+    // and the wait before it, in whole seconds. Its throw stops the call.
+    async callAdapter(req, record, request, call, onRetry = null) {
       const started = Date.now();
       for (let attempt = 1; ; attempt++) {
         try {
@@ -132,6 +136,12 @@ module.exports = (self) => {
             action: 'retry',
             delay
           });
+          if (onRetry) {
+            await onRetry({
+              attempt: attempt + 1,
+              wait: Math.ceil(delay / 1000)
+            });
+          }
           await self.pause(delay);
         }
       }

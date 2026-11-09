@@ -1348,27 +1348,18 @@ module.exports = {
         const ctx = self.getDiffContext(draftReq, draft);
         diff.attribute(manager.schema, pairs, rows, ctx);
         diff.addFieldData(manager.schema, rows, draft, ctx);
-        if (rows.some(row => row.patchKey)) {
-          const allowed = manager.allowedSchema(draftReq, found, found._ancestors?.at(-1))
-            .map(field => field.name);
+        // The order of an area has no `patchKey` and can be restored
+        if (rows.some(row => row.patchKey || (row.kind === 'area'))) {
           // Both sides: a widget modified whole keeps the draft's fields
-          const ids = new Set([ contents[0], draft ].flatMap(doc => [
-            ...diff.getRelatedIds(manager.schema, doc, ctx, relatedId)
-          ]));
-          const loadable = ids.size
-            ? await self.apos.doc.find(draftReq, { _id: { $in: [ ...ids ] } })
-              .project({ _id: 1 })
-              .relationships(false)
-              .areas(false)
-              .toArray()
-            : [];
+          const options = await self.getRestoreOptions(draftReq, found, relatedId => {
+            return new Set([ contents[0], draft ].flatMap(doc => [
+              ...diff.getRelatedIds(manager.schema, doc, ctx, relatedId)
+            ]));
+          });
           diff.addRestore(manager.schema, rows, {
             older: contents[0],
             newer: draft,
-            editable: new Set(allowed),
-            canEdit,
-            relatedId,
-            loadable: new Set(loadable.map(doc => doc._id))
+            ...options
           }, ctx);
         }
 
@@ -1385,25 +1376,44 @@ module.exports = {
             doc: self.getAnnotatedDoc(draftReq, contents[0], draft, { rows })
           })
         };
+      },
+      // What `addRestore` and `check` of `lib/diff.js` need to know of `req`
+      // for `doc`, a document as `req` finds it in its mode:
+      // `{ editable, canEdit, relatedId, loadable }`. `collect(relatedId)`
+      // returns the related `_id`s whose loading the restores depend on
+      async getRestoreOptions(req, doc, collect) {
+        const manager = self.getManager(doc.type);
+        const editable = manager.allowedSchema(req, doc, doc._ancestors?.at(-1))
+          .map(field => field.name);
+        const ids = collect(relatedId);
+        const loadable = ids.size
+          ? await self.apos.doc.find(req, { _id: { $in: [ ...ids ] } })
+            .project({ _id: 1 })
+            .relationships(false)
+            .areas(false)
+            .toArray()
+          : [];
+        return {
+          editable: new Set(editable),
+          canEdit,
+          relatedId,
+          loadable: new Set(loadable.map(related => related._id))
+        };
 
-        // A new document as a save with no input stores it, so that a field
-        // left alone is no change. A field that fails to convert, such as a
-        // required one, keeps what conversion wrote, else its initial value
         // A field's own permissions, as `allowedSchema` reads them at the top
         // level and a widget's at its own
         function canEdit(field) {
-          const can = ({ action, type }) => self.apos.permission
-            .can(draftReq, action, type);
+          const can = ({ action, type }) => self.apos.permission.can(req, action, type);
           return (!field.editPermission && !field.viewPermission) ||
             Boolean(field.editPermission && can(field.editPermission)) ||
             Boolean(field.viewPermission && can(field.viewPermission));
         }
 
-        // The `_id` a save of the draft finds a related document by: its
-        // draft in the draft's locale, unless its type is not localized
+        // The `_id` a save finds a related document by: its version in the
+        // mode and locale of `req`, unless its type is not localized
         function relatedId(field, id) {
           return self.getManager(field.withType)?.isLocalized()
-            ? `${id}:${draftReq.locale}:draft`
+            ? `${id}:${req.locale}:${req.mode}`
             : id;
         }
       },
@@ -1561,6 +1571,56 @@ module.exports = {
           }
         }
         return self.apos.util.clonePermanent(doc);
+      },
+      // The rows between two stored states of one document, as a change log
+      // keeps them to check later (see `record` in `lib/diff.js`), `before`
+      // `null` when the document did not exist. A top-level field either
+      // side does not store, such as one added to the schema since, counts
+      // as its value in the empty document (see `getEmptyDoc`), so a save
+      // that stores its empty or default value lists no change
+      async getChangeRowsBetween(req, before, after) {
+        // In the locale and mode of the document, whatever `req` is in
+        const [ locale, mode ] = (after.aposLocale || '').split(':');
+        const docReq = locale
+          ? req.clone({
+            locale,
+            mode
+          })
+          : req;
+        const empty = await self.getEmptyDoc(docReq, after.type);
+        const manager = self.getManager(after.type);
+        return diff.record(manager.schema, {
+          ...empty,
+          ...before
+        }, {
+          ...empty,
+          ...after
+        }, self.getDiffContext(docReq, after));
+      },
+      // Checks rows of `getChangeRowsBetween` against `doc`, the document as
+      // stored now, and makes the patch that puts each back for the user of
+      // `req`, in the locale and mode of `doc` whatever `req` is in:
+      // `{ outcome, reason?, restore? }` per row, `outcome` one of `clean`,
+      // `reverted`, `edited`, `gone` and `unrestorable` (see `check` in
+      // `lib/diff.js`). `doc` `null` when it no longer exists
+      async checkChangeRows(req, doc, rows) {
+        if (!doc || doc.archived) {
+          return rows.map(() => ({ outcome: 'gone' }));
+        }
+        const [ locale, mode ] = (doc.aposLocale || '').split(':');
+        const docReq = locale
+          ? req.clone({
+            locale,
+            mode
+          })
+          : req;
+        const manager = self.getManager(doc.type);
+        const ctx = self.getDiffContext(docReq, doc);
+        const options = await self.getRestoreOptions(docReq, doc, relatedId => new Set([
+          ...diff.getRelatedIds(manager.schema, doc, ctx, relatedId),
+          ...diff.getRowRelatedIds(manager.schema, rows, ctx, relatedId)
+        ]));
+        return diff.check(manager.schema, rows, doc, options, ctx);
       },
       // What the diff engine needs from the rest of Apostrophe. `doc`, the
       // document compared, names it in the log when the engine recovers from

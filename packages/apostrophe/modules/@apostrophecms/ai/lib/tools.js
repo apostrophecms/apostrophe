@@ -117,7 +117,9 @@ module.exports = (self) => {
     // copy a handler may act on. The calling run's `callId`, taken from
     // `context`, is stamped beside it (`aposAiCallId`), so a nested
     // generate reports it as its parent on its `usage` records; it is
-    // not part of `_context`.
+    // not part of `_context`. Each handler gets its own clone, stamped
+    // with the call it executes (`aposAiToolCall: { id, name }`), so a
+    // document it saves knows the tool call that saved it.
     //
     // `onToolCall`, the caller's per-call progress hook, is awaited
     // around each handler that runs — a call naming no registered tool
@@ -191,8 +193,14 @@ module.exports = (self) => {
         await self.emit('beforeToolCall', req, payload);
         await report({ phase: 'start' });
         try {
+          const callReq = handlerReq.clone({
+            aposAiToolCall: {
+              id: call.id,
+              name: call.name
+            }
+          });
           payload.result = await self.executeToolCall(
-            handlerReq, tool, call, handlerContext
+            callReq, tool, call, handlerContext
           );
           outcomes[index] = {
             toolCall: call,

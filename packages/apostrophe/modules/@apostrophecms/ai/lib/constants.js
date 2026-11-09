@@ -47,7 +47,7 @@ const PENDING_POLICIES = Object.freeze([ 'refuse', 'execute' ]);
 const GENERATE_OPTIONS = Object.freeze([
   'system', 'messages', 'tools', 'maxSteps', 'pending', 'toolInput',
   'schema', 'effort', 'provider', 'model', 'reasoning', 'maxTokens',
-  'cache', 'signal', 'onMessage', 'onToolCall'
+  'cache', 'signal', 'onMessage', 'onToolCall', 'onRetry', 'betweenSteps'
 ]);
 
 // The options generateImage accepts

@@ -1,9 +1,12 @@
+import { getTabId } from './tab-id.js';
+
 export {
   debounceAsync,
   // BC alias
   debounceAsync as debounce,
   throttle,
-  asyncTaskQueue
+  asyncTaskQueue,
+  getTabId
 };
 
 // Debounce the async function "fn". For synchronous functions, use

@@ -278,6 +278,14 @@ describe('AI generate', function() {
         () => apos.ai.normalizeGenerateOptions('p', { onToolCall: 'tell me' }),
         /"onToolCall" must be a function/
       );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { onRetry: true }),
+        /"onRetry" must be a function/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { betweenSteps: 'stop' }),
+        /"betweenSteps" must be a function/
+      );
     });
 
     it('defaults cache to short and honors an explicit false', function() {
@@ -994,6 +1002,10 @@ describe('AI generate', function() {
           inputTokens: 12,
           outputTokens: 7
         },
+        lastStepUsage: {
+          inputTokens: 12,
+          outputTokens: 7
+        },
         model: 'fake-medium',
         provider: 'fake'
       });
@@ -1675,6 +1687,84 @@ describe('AI generate', function() {
         );
       });
 
+      it('reports each retry to onRetry with the attempt and the wait', async function() {
+        chatScript = [
+          () => {
+            const e = httpError(429);
+            e.retryAfter = 3;
+            throw e;
+          },
+          () => {
+            const e = httpError(503);
+            e.retryAfter = 1.5;
+            throw e;
+          },
+          () => turn()
+        ];
+        const retries = [];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p', {
+          onRetry: async (event) => {
+            // Reported before the wait starts
+            assert.equal(waits.length, retries.length);
+            retries.push(event);
+          }
+        });
+        assert.equal(result.text, 'a haiku');
+        assert.deepEqual(retries, [
+          {
+            attempt: 2,
+            wait: 3,
+            step: 1
+          },
+          {
+            attempt: 3,
+            wait: 2,
+            step: 1
+          }
+        ]);
+        assert.deepEqual(waits, [ 3000, 1500 ]);
+      });
+
+      it('stops the call when onRetry throws', async function() {
+        chatScript = [
+          () => {
+            throw httpError(429);
+          },
+          () => turn()
+        ];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p', {
+          onRetry: async () => {
+            throw new Error('panel gone');
+          }
+        }), /panel gone/);
+        assert.equal(chatCalls.length, 1);
+        assert.deepEqual(waits, []);
+      });
+
+      it('never retries a context overflow', async function() {
+        chatScript = [
+          () => {
+            throw apos.error('aiContextOverflow', 'prompt is too long', { status: 400 });
+          },
+          () => turn()
+        ];
+        const retries = [];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p', {
+          onRetry: async (event) => retries.push(event)
+        }), (e) => {
+          assert.equal(e.name, 'aiContextOverflow');
+          assert.equal(e.message, 'prompt is too long');
+          return true;
+        });
+        assert.equal(chatCalls.length, 1);
+        assert.deepEqual(waits, []);
+        assert.deepEqual(retries, []);
+        assert.deepEqual(
+          logRecords.map(({ type, data }) => [ type, data.code, data.action ]),
+          [ [ 'failure', 'aiContextOverflow', 'stop' ] ]
+        );
+      });
+
       it('records exhausted attempts as the stop reason', async function() {
         const saved = apos.ai.options.retryAttempts;
         try {
@@ -1796,6 +1886,10 @@ describe('AI generate', function() {
           ],
           finishReason: 'stop',
           usage: {
+            inputTokens: 6,
+            outputTokens: 8
+          },
+          lastStepUsage: {
             inputTokens: 6,
             outputTokens: 8
           },

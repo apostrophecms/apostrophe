@@ -551,6 +551,7 @@ describe('AI adapter: anthropic', function() {
         [ 'end_turn', 'stop' ],
         [ 'stop_sequence', 'stop' ],
         [ 'max_tokens', 'length' ],
+        [ 'model_context_window_exceeded', 'length' ],
         [ 'tool_use', 'toolCalls' ],
         // Unknown reasons yield none: the engine treats the turn as
         // malformed and retries, never a truncated success
@@ -656,7 +657,9 @@ describe('AI adapter: anthropic', function() {
         [ 401, 'forbidden', undefined ],
         [ 403, 'forbidden', undefined ],
         [ 404, 'notfound', undefined ],
-        [ 400, 'invalid', undefined ]
+        [ 400, 'invalid', undefined ],
+        // request_too_large, by bytes: shortening the request is the fix
+        [ 413, 'aiContextOverflow', undefined ]
       ]) {
         const error = adapter.normalizeError(httpError(status));
         assert.equal(error.name, code);
@@ -677,6 +680,34 @@ describe('AI adapter: anthropic', function() {
       }));
       assert.equal(error.message, 'invalid x-api-key');
       assert.equal(error.data.requestId, 'req_9');
+    });
+
+    it('recognizes a request too long for the model', function() {
+      for (const message of [
+        'prompt is too long: 215000 tokens > 200000 maximum',
+        'input length and `max_tokens` exceed context limit: 197202 + 21333 > 200000, decrease input length or `max_tokens` and try again'
+      ]) {
+        const error = adapter.normalizeError(httpError(400, { 'request-id': 'req_7' }, {
+          type: 'error',
+          error: {
+            type: 'invalid_request_error',
+            message
+          },
+          request_id: 'req_7'
+        }));
+        assert.equal(error.name, 'aiContextOverflow');
+        assert.equal(error.message, message);
+        assert.equal(error.data.status, 400);
+        assert.equal(error.data.requestId, 'req_7');
+      }
+      const other = adapter.normalizeError(httpError(400, {}, {
+        type: 'error',
+        error: {
+          type: 'invalid_request_error',
+          message: 'max_tokens: Field required'
+        }
+      }));
+      assert.equal(other.name, 'invalid');
     });
 
     it('parses Retry-After as seconds and as an HTTP date', function() {
@@ -1060,6 +1091,26 @@ describe('AI adapter: anthropic', function() {
         logRecords.map((record) => [ record.type, record.data.code ]),
         [ [ 'failure', 'forbidden' ] ]
       );
+    });
+
+    it('never retries a request too long for the model', async function() {
+      httpScript = [
+        () => {
+          throw httpError(400, {}, {
+            type: 'error',
+            error: {
+              type: 'invalid_request_error',
+              message: 'prompt is too long: 215000 tokens > 200000 maximum'
+            }
+          });
+        },
+        () => fixture()
+      ];
+      await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p'), (e) => {
+        assert.equal(e.name, 'aiContextOverflow');
+        return true;
+      });
+      assert.equal(httpCalls.length, 1);
     });
 
     it('surfaces an in-flight refusal as the refusal error', async function() {

@@ -14,6 +14,19 @@ describe('AI tools', function() {
       modules: {
         'tool-handlers': {
           init(self) {
+            // Removed before the tool-overrides module registers it
+            self.apos.ai.removeTool('late_tool');
+            // Removed by the tool-overrides module, which inits later
+            self.apos.ai.addTool({
+              name: 'doomed',
+              description: 'Registered, then removed.',
+              tags: [ 'content' ],
+              input: {
+                type: 'object',
+                properties: {}
+              },
+              handler: async () => ({ ok: true })
+            });
             self.apos.ai.addTool({
               name: 'find_pages',
               description: 'Search pages. Use when the user asks about existing content.',
@@ -160,6 +173,19 @@ describe('AI tools', function() {
         },
         'tool-overrides': {
           init(self) {
+            self.apos.ai.removeTool('doomed');
+            self.apos.ai.addTool({
+              name: 'late_tool',
+              description: 'Registered after its removal.',
+              tags: [ 'content' ],
+              input: {
+                type: 'object',
+                properties: {}
+              },
+              handler: async () => ({ ok: true })
+            });
+            // Nobody registers it: removes nothing
+            self.apos.ai.removeTool('never_registered');
             self.apos.ai.addTool({
               name: 'send_email',
               label: 'Send an email',
@@ -262,11 +288,33 @@ describe('AI tools', function() {
       });
     });
 
+    it('leaves a removed tool out of every selection, whatever the module order', async function() {
+      for (const name of [ 'doomed', 'late_tool', 'never_registered' ]) {
+        assert.equal(apos.ai.hasTool(name), false);
+        assert.equal(apos.ai.getTool(name), undefined);
+        assert(!apos.ai.getTools().some((tool) => tool.name === name));
+        assert(!apos.ai.getTools({ tags: 'content' }).some((tool) => tool.name === name));
+      }
+      await assert.rejects(
+        apos.ai.generate(apos.task.getReq(), 'p', { tools: [ 'doomed' ] }),
+        (e) => {
+          assert.equal(e.name, 'invalid');
+          assert.match(e.message, /doomed/);
+          return true;
+        }
+      );
+    });
+
     it('is frozen after startup', function() {
       assert.throws(
         () => apos.ai.addTool({ name: 'too_late' }),
         /tools must be registered before "apostrophe:ready"/
       );
+      assert.throws(
+        () => apos.ai.removeTool('find_pages'),
+        /tools must be removed before "apostrophe:ready"/
+      );
+      assert.equal(apos.ai.hasTool('find_pages'), true);
     });
   });
 
@@ -569,6 +617,8 @@ describe('AI tools', function() {
     // [ [ 'before' | 'after', toolName, resultOrError ] ]
     const toolEvents = [];
     const usageRecords = [];
+    // [ toolName, req.aposAiToolCall ] per tracked handler run
+    const stamps = [];
 
     const toolCall = (id, name, input = {}) => ({
       type: 'toolCall',
@@ -602,7 +652,8 @@ describe('AI tools', function() {
       properties: {}
     };
 
-    const track = (name) => async () => {
+    const track = (name) => async (req) => {
+      stamps.push([ name, req.aposAiToolCall ]);
       log.push(`start:${name}`);
       if (readGate && name.startsWith('read')) {
         readGate.started++;
@@ -863,6 +914,7 @@ describe('AI tools', function() {
       chatCalls = [];
       log.length = 0;
       depths.length = 0;
+      stamps.length = 0;
       toolEvents.length = 0;
       usageRecords.length = 0;
       readGate = null;
@@ -886,6 +938,11 @@ describe('AI tools', function() {
       assert.deepEqual(result.usage, {
         inputTokens: 30,
         outputTokens: 8
+      });
+      // The final answer's own counts, beside the totals
+      assert.deepEqual(result.lastStepUsage, {
+        inputTokens: 20,
+        outputTokens: 3
       });
       assert.deepEqual(result.messages.map(message => message.role),
         [ 'user', 'assistant', 'tool', 'assistant' ]);
@@ -1235,6 +1292,40 @@ describe('AI tools', function() {
       );
     });
 
+    it('stamps each handler with the call it executes', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(
+          toolCall('c1', 'read_a'),
+          toolCall('c2', 'read_b'),
+          toolCall('c3', 'write_a')
+        ),
+        textTurn()
+      ];
+      await apos.ai.generate(req, 'go', {
+        tools: [ 'read_a', 'read_b', 'write_a' ]
+      });
+
+      assert.deepEqual(
+        stamps.sort(([ a ], [ b ]) => a.localeCompare(b)),
+        [
+          [ 'read_a', {
+            id: 'c1',
+            name: 'read_a'
+          } ],
+          [ 'read_b', {
+            id: 'c2',
+            name: 'read_b'
+          } ],
+          [ 'write_a', {
+            id: 'c3',
+            name: 'write_a'
+          } ]
+        ]
+      );
+      assert.equal(req.aposAiToolCall, undefined);
+    });
+
     it('feeds recoverable failures back and leaves siblings unaffected', async function() {
       const req = apos.task.getReq();
       chatScript = [
@@ -1396,6 +1487,124 @@ describe('AI tools', function() {
         chatCalls.at(-1).messages.map(message => message.role),
         [ 'user', 'assistant', 'tool' ]
       );
+    });
+
+    it('betweenSteps pauses a run that a later run continues to completion', async function() {
+      const req = apos.task.getReq();
+      // Each step reports its own size, the transcript growing
+      const sized = (step, inputTokens, cacheReadTokens) => () => ({
+        ...step(),
+        usage: {
+          inputTokens,
+          outputTokens: 4,
+          ...(cacheReadTokens !== undefined && { cacheReadTokens })
+        }
+      });
+      chatScript = [
+        sized(toolTurn(toolCall('c1', 'echo', { value: 'one' })), 100),
+        sized(toolTurn(toolCall('c2', 'echo', { value: 'two' })), 180, 90)
+      ];
+      const seen = [];
+      const first = await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        betweenSteps: async (meta) => {
+          // The step's tool results are already in the transcript
+          assert.deepEqual(log, seen.map(() => 'start:echo').concat('start:echo'));
+          seen.push(meta);
+          return meta.usage.inputTokens > 150 ? { stop: true } : undefined;
+        }
+      });
+
+      assert.equal(first.finishReason, 'paused');
+      assert.deepEqual(seen, [
+        {
+          step: 1,
+          usage: {
+            inputTokens: 100,
+            outputTokens: 4
+          }
+        },
+        {
+          step: 2,
+          usage: {
+            inputTokens: 180,
+            outputTokens: 4,
+            cacheReadTokens: 90
+          }
+        }
+      ]);
+      assert.deepEqual(first.lastStepUsage, {
+        inputTokens: 180,
+        outputTokens: 4,
+        cacheReadTokens: 90
+      });
+      assert.deepEqual(first.usage, {
+        inputTokens: 280,
+        outputTokens: 8,
+        cacheReadTokens: 90
+      });
+      // Both batches ran; nothing is left unexecuted
+      assert.deepEqual(first.steps.map((step) => step.toolCall.id), [ 'c1', 'c2' ]);
+      assert.equal(first.toolCalls, undefined);
+      assert.equal(chatCalls.length, 2);
+      assert.deepEqual(first.messages.map(message => message.role),
+        [ 'user', 'assistant', 'tool', 'assistant', 'tool' ]);
+
+      chatScript = [ textTurn('finished') ];
+      const second = await apos.ai.generate(req, {
+        messages: first.messages,
+        tools: [ 'echo' ]
+      });
+      assert.equal(second.finishReason, 'stop');
+      assert.equal(second.text, 'finished');
+      assert.deepEqual(
+        chatCalls.at(-1).messages.map(message => message.role),
+        [ 'user', 'assistant', 'tool', 'assistant', 'tool' ]
+      );
+    });
+
+    it('betweenSteps runs only where another model call would follow', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'one' })),
+        toolTurn(toolCall('c2', 'echo', { value: 'two' }))
+      ];
+      const steps = [];
+      const spent = await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        maxSteps: 2,
+        betweenSteps: async ({ step }) => {
+          steps.push(step);
+        }
+      });
+      // The second step's calls are left pending: no model call follows
+      assert.equal(spent.finishReason, 'maxSteps');
+      assert.deepEqual(steps, [ 1 ]);
+
+      chatScript = [ textTurn('plain') ];
+      const plain = await apos.ai.generate(req, 'hi', {
+        tools: [ 'echo' ],
+        betweenSteps: async ({ step }) => {
+          steps.push(step);
+        }
+      });
+      assert.equal(plain.finishReason, 'stop');
+      assert.deepEqual(steps, [ 1 ]);
+    });
+
+    it('a throwing betweenSteps stops the call', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'one' })),
+        textTurn('never')
+      ];
+      await assert.rejects(apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        betweenSteps: async () => {
+          throw new Error('summary store down');
+        }
+      }), /summary store down/);
+      assert.equal(chatCalls.length, 1);
     });
 
     it('a suspending action stops the batch and the run ends with the ask', async function() {
@@ -1656,6 +1865,8 @@ describe('AI tools', function() {
       assert.equal(chatCalls.length, 0);
       assert.deepEqual(again.messages.at(-1).content.map(part => part.toolCallId),
         [ 'c1' ]);
+      // No model turn, so no last step to measure
+      assert.equal(Object.hasOwn(again, 'lastStepUsage'), false);
     });
 
     it('a continuation missing the tool feeds the unknown-tool error back', async function() {

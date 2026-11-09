@@ -158,6 +158,30 @@ describe('Patch by @ reference', function() {
     ]);
   });
 
+  it('should replace several objects of one field in one patch, as a batch edit of widgets does', async function() {
+    const page = await get(await insert('Batch', [ 'One', 'Two', 'Three' ].map(richText)));
+    const [ one, , three ] = page.main.items;
+    await apos.http.patch(draftUrl(page), {
+      body: {
+        [`@${one._id}`]: {
+          ...one,
+          content: '<p>One, edited</p>'
+        },
+        [`@${three._id}`]: {
+          ...three,
+          content: '<p>Three, edited</p>'
+        }
+      },
+      jar
+    });
+
+    assert.deepEqual(contents(await get(page)), [
+      '<p>One, edited</p>',
+      '<p>Two</p>',
+      '<p>Three, edited</p>'
+    ]);
+  });
+
   it('should duplicate a widget that relates to another page, keeping the other widgets', async function() {
     const other = await insert('Other', [ richText('Elsewhere') ]);
     const page = await duplicateAfterAnEdit(other);

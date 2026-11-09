@@ -174,6 +174,9 @@ module.exports = (self) => {
     // regardless of registration order. The registry is frozen
     // afterwards.
     activateTools() {
+      for (const name of self.removedTools) {
+        delete self.tools[name];
+      }
       for (const [ name, tool ] of Object.entries(self.tools)) {
         self.tools[name] = activate(tool, `tool "${name}"`);
       }
@@ -203,12 +206,15 @@ module.exports = (self) => {
           tool.tags.some(tag => typeof tag !== 'string' || !tag))) {
           fail(`${name}: "tags" must be an array of tag strings`);
         }
-        if (!isObject(tool.input) || tool.input.type !== 'object') {
+        const input = typeof tool.input === 'function'
+          ? tool.input()
+          : tool.input;
+        if (!isObject(input) || input.type !== 'object') {
           fail(`${name}: "input" must be a JSON Schema with an object root`);
         }
         let validateArgs;
         try {
-          validateArgs = self.ajvArgs.compile(tool.input);
+          validateArgs = self.ajvArgs.compile(input);
         } catch (e) {
           fail(`${name}: "input" is not a valid JSON Schema: ${e.message}`);
         }
@@ -236,7 +242,7 @@ module.exports = (self) => {
           label: tool.label || startCase(tool.name),
           description: tool.description,
           tags: tool.tags || [],
-          input: tool.input,
+          input,
           validateArgs,
           schema: tool.schema,
           validateResult,
@@ -328,6 +334,7 @@ module.exports = (self) => {
           fail(`"${name}.model" must be a string`);
         }
         checkString(row.reasoning, `${name}.reasoning`);
+        checkString(row.description, `${name}.description`);
       };
 
       const {

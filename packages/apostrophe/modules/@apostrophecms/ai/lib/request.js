@@ -2,6 +2,8 @@
 // protocol: routing resolution, the adapter request built from a
 // canonical options object, and the result envelope on the way back.
 
+const { stepUsage } = require('./util');
+
 module.exports = (self) => {
   function invalid(message) {
     throw self.apos.error('invalid', message);
@@ -149,6 +151,9 @@ module.exports = (self) => {
         finishReason: finishReason ||
           (pending ? 'maxSteps' : turn.finishReason),
         usage,
+        // The last response's own count: the size of the transcript
+        // as the provider last saw it
+        ...(turn && { lastStepUsage: stepUsage(turn.usage) }),
         model: turn?.model || context.request.model,
         provider: context.provider
       };

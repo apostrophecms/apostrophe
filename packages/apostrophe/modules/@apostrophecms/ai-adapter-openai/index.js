@@ -362,12 +362,24 @@ module.exports = {
       },
       // Map any error the transport produced to a normalized apos
       // error, the only shape the engine reacts to: the engine's shared
-      // status ladder, plus the one fact that is this service's own —
-      // its request id rides the `x-request-id` header.
+      // status ladder, plus what is this service's own — its request id
+      // rides the `x-request-id` header, and a too-long request has its
+      // own error code.
       normalizeError(error) {
         return self.apos.ai.normalizeHttpError(error, {
-          requestIdHeader: 'x-request-id'
+          requestIdHeader: 'x-request-id',
+          contextOverflow: self.isContextOverflow
         });
+      },
+      // Whether an error body is the Responses API refusing a request as
+      // too long for the model: the `context_length_exceeded` code, or
+      // its message ("Your input exceeds the context window of this
+      // model") from a host that drops the code. The dialect's test, so
+      // the Bedrock door reads the same errors.
+      isContextOverflow(error) {
+        const { code, message } = error?.body?.error || {};
+        return code === 'context_length_exceeded' ||
+          /exceeds the context window/i.test(message);
       }
     };
   }

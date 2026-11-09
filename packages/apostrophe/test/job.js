@@ -1,4 +1,5 @@
 const { strict: assert } = require('node:assert');
+const { mock } = require('node:test');
 const t = require('../test-lib/test.js');
 
 const testDbProtocol = process.env.APOS_TEST_DB_PROTOCOL || 'mongodb';
@@ -614,6 +615,257 @@ describe('Job module', function() {
     });
   });
 
+  describe('heartbeat and abandonment', function() {
+    const longAgo = () => new Date(Date.now() - 3600 * 1000);
+
+    afterEach(function() {
+      mock.timers.reset();
+    });
+
+    it('start: a heartbeat job is stamped at start and beats every heartbeatInterval', async function() {
+      mock.timers.enable({ apis: [ 'setInterval' ] });
+      const job = await jobModule.start({ heartbeat: true });
+      const started = await jobModule.db.findOne({ _id: job._id });
+      await jobModule.db.updateOne({ _id: job._id }, {
+        $set: { heartbeatAt: longAgo() }
+      });
+
+      mock.timers.tick(jobModule.options.heartbeatInterval - 1);
+      await delay(100);
+      const before = await jobModule.db.findOne({ _id: job._id });
+      mock.timers.tick(1);
+      const beaten = await waitForBeat(job._id);
+
+      const actual = {
+        stamped: started.heartbeatAt.getTime() === started.startedAt.getTime(),
+        interval: jobModule.options.heartbeatInterval,
+        beforeInterval: before.heartbeatAt.getTime() < Date.now() - 60000,
+        afterInterval: beaten.heartbeatAt.getTime() > Date.now() - 60000
+      };
+      const expected = {
+        stamped: true,
+        interval: 10000,
+        beforeInterval: true,
+        afterInterval: true
+      };
+
+      assert.deepEqual(actual, expected);
+      await jobModule.end(job, true);
+    });
+
+    it('end: the beat stops', async function() {
+      mock.timers.enable({ apis: [ 'setInterval' ] });
+      const job = await jobModule.start({ heartbeat: true });
+      await jobModule.end(job, true);
+      // Reopened by hand, so only a live timer could stamp it
+      await jobModule.db.updateOne({ _id: job._id }, {
+        $set: {
+          ended: false,
+          heartbeatAt: longAgo()
+        }
+      });
+
+      mock.timers.tick(jobModule.options.heartbeatInterval * 3);
+      await delay(100);
+      const found = await jobModule.db.findOne({ _id: job._id });
+
+      assert(found.heartbeatAt.getTime() < Date.now() - 60000);
+    });
+
+    it('the beat stops itself once the record is ended or gone without end', async function() {
+      mock.timers.enable({ apis: [ 'setInterval' ] });
+      const endedJob = await jobModule.start({ heartbeat: true });
+      const goneJob = await jobModule.start({ heartbeat: true });
+      // What another process or the record's expiry does; `end` is never
+      // called here
+      await jobModule.db.updateOne({ _id: endedJob._id }, {
+        $set: { ended: true }
+      });
+      await jobModule.db.deleteMany({ _id: goneJob._id });
+
+      mock.timers.tick(jobModule.options.heartbeatInterval);
+      const deadline = Date.now() + 10000;
+      while (jobModule.heartbeats.has(endedJob.heartbeat) ||
+        jobModule.heartbeats.has(goneJob.heartbeat)) {
+        if (Date.now() > deadline) {
+          throw new Error('Timed out waiting for the beats to stop');
+        }
+        await delay(25);
+      }
+      await jobModule.db.updateOne({ _id: endedJob._id }, {
+        $set: {
+          ended: false,
+          heartbeatAt: longAgo()
+        }
+      });
+      mock.timers.tick(jobModule.options.heartbeatInterval * 3);
+      await delay(100);
+      const found = await jobModule.db.findOne({ _id: endedJob._id });
+
+      assert(found.heartbeatAt.getTime() < Date.now() - 60000);
+    });
+
+    it('the beat stops itself once beats have failed for longer than abandonAfter', async function() {
+      mock.timers.enable({
+        apis: [ 'setInterval', 'Date' ],
+        now: Date.now()
+      });
+      const job = await jobModule.start({ heartbeat: true });
+      const realUpdateOne = jobModule.db.updateOne;
+      const realError = apos.util.error;
+      let failing = true;
+      jobModule.db.updateOne = function(filter, update, ...rest) {
+        if (failing && update.$set?.heartbeatAt) {
+          return Promise.reject(new Error('database unreachable'));
+        }
+        return realUpdateOne.call(this, filter, update, ...rest);
+      };
+      apos.util.error = () => {};
+      const beatOnce = async () => {
+        mock.timers.tick(jobModule.options.heartbeatInterval);
+        await delay(50);
+      };
+
+      try {
+        // Five failures, one success, then six failures: never longer
+        // than abandonAfter since the last success
+        for (let i = 0; i < 5; i++) {
+          await beatOnce();
+        }
+        failing = false;
+        await beatOnce();
+        failing = true;
+        for (let i = 0; i < 6; i++) {
+          await beatOnce();
+        }
+        const afterSix = jobModule.heartbeats.has(job.heartbeat);
+        await beatOnce();
+        const afterSeven = jobModule.heartbeats.has(job.heartbeat);
+
+        assert.deepEqual({
+          afterSix,
+          afterSeven
+        }, {
+          afterSix: true,
+          afterSeven: false
+        });
+      } finally {
+        jobModule.db.updateOne = realUpdateOne;
+        apos.util.error = realError;
+        await jobModule.end(job, true);
+      }
+    });
+
+    it('isAbandoned: a running heartbeat job is abandoned after abandonAfter without a beat', async function() {
+      const job = await jobModule.start({ heartbeat: true });
+      const at = async (ms) => {
+        await jobModule.db.updateOne({ _id: job._id }, {
+          $set: { heartbeatAt: new Date(Date.now() - ms) }
+        });
+        return jobModule.isAbandoned(await jobModule.db.findOne({ _id: job._id }));
+      };
+
+      const actual = {
+        abandonAfter: jobModule.options.abandonAfter,
+        fresh: await at(0),
+        justInside: await at(55000),
+        justPast: await at(65000)
+      };
+      await jobModule.end(job, true);
+      actual.ended = jobModule.isAbandoned(await jobModule.db.findOne({ _id: job._id }));
+      const expected = {
+        abandonAfter: 60000,
+        fresh: false,
+        justInside: false,
+        justPast: true,
+        ended: false
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('getOne: an abandoned job reads as abandoned, a beating one as running', async function() {
+      const beating = await jobModule.start({
+        userId: admin._id,
+        heartbeat: true
+      });
+      const gone = await jobModule.start({
+        userId: admin._id,
+        heartbeat: true
+      });
+      await jobModule.db.updateOne({ _id: gone._id }, {
+        $set: { heartbeatAt: longAgo() }
+      });
+
+      const read = async (job) => (await apos.http.get(
+        `/api/v1/@apostrophecms/job/${job._id}`,
+        { jar }
+      )).status;
+      const actual = {
+        beating: await read(beating),
+        gone: await read(gone),
+        stored: (await jobModule.db.findOne({ _id: gone._id })).status
+      };
+      const expected = {
+        beating: 'running',
+        gone: 'abandoned',
+        stored: 'running'
+      };
+
+      assert.deepEqual(actual, expected);
+      await jobModule.end(beating, true);
+      await jobModule.end(gone, true);
+    });
+
+    it('run: isCanceling reports true once the job reads as abandoned', async function() {
+      const req = apos.task.getReq();
+      const observed = [];
+
+      const { jobId } = await jobModule.run(req, async function(_req, reporting, info) {
+        observed.push(await reporting.isCanceling());
+        await jobModule.db.updateOne({ _id: info.jobId }, {
+          $set: { heartbeatAt: longAgo() }
+        });
+        observed.push(await reporting.isCanceling());
+      }, {
+        notifications: false,
+        heartbeat: true
+      });
+      await waitForEnded(jobId);
+
+      assert.deepEqual(observed, [ false, true ]);
+    });
+
+    it('a standard job has no heartbeat and never reads as abandoned', async function() {
+      const req = apos.task.getReq();
+      const observed = [];
+
+      const { jobId } = await jobModule.run(req, async function(_req, reporting, info) {
+        // Long started: a heartbeat job this old without a beat would
+        // be abandoned
+        await jobModule.db.updateOne({ _id: info.jobId }, {
+          $set: {
+            when: longAgo(),
+            startedAt: longAgo()
+          }
+        });
+        const found = await jobModule.db.findOne({ _id: info.jobId });
+        observed.push(found.heartbeatAt, jobModule.isAbandoned(found));
+        observed.push(await reporting.isCanceling());
+        observed.push((await apos.http.get(
+          `/api/v1/@apostrophecms/job/${info.jobId}`,
+          { jar }
+        )).status);
+      }, {
+        notifications: false
+      });
+      const job = await waitForEnded(jobId);
+
+      assert.deepEqual(observed, [ undefined, false, false, 'running' ]);
+      assert.equal(job.status, 'completed');
+    });
+  });
+
   function padInteger (i, places) {
     let s = i + '';
     while (s.length < places) {
@@ -686,6 +938,21 @@ describe('Job module', function() {
     }
 
     return notifications;
+  }
+
+  async function waitForBeat(jobId, deadline = Date.now() + 10000) {
+    const job = await jobModule.db.findOne({ _id: jobId });
+
+    if (job.heartbeatAt.getTime() < Date.now() - 60000) {
+      if (Date.now() > deadline) {
+        throw new Error(`Timed out waiting for job ${jobId} to beat`);
+      }
+      await delay(50);
+
+      return waitForBeat(jobId, deadline);
+    }
+
+    return job;
   }
 
   async function waitForEnded(jobId, deadline = Date.now() + 10000) {
