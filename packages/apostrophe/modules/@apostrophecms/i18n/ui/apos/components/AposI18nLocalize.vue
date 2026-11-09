@@ -2,7 +2,9 @@
   <AposModal
     class="apos-wizard apos-i18n-localize"
     :class="{
-      'apos-wizard-busy': wizard.busy,
+      // Busy until mounted() has loaded the document, too: nothing on the
+      // first step can be acted on before then
+      'apos-wizard-busy': wizard.busy || !loaded,
       'apos-i18n-localize--progress': run.started
     }"
     :modal="modal"
@@ -76,6 +78,7 @@
                   :field="{
                     name: 'to-localize',
                     label: 'apostrophe:selectContentToLocalize',
+                    help: 'apostrophe:selectContentToLocalizeHelp',
                     choices: toLocalizeChoices
                   }"
                 />
@@ -95,6 +98,7 @@
                   :field="{
                     name: 'localize-scope',
                     label: 'apostrophe:aiLocalizeScopeLabel',
+                    help: 'apostrophe:aiLocalizeScopeFieldHelp',
                     choices: [
                       {
                         value: 'onlyNew',
@@ -279,7 +283,11 @@
                 class="apos-wizard__translation"
               >
                 <p class="apos-wizard__translation-title">
-                  <AposTranslationIndicator :size="18" />
+                  <AposAiIndicator v-if="translationUsesAi" />
+                  <AposTranslationIndicator
+                    v-else
+                    :size="18"
+                  />
                   <span class="apos-wizard__translation-title-text">
                     {{ $t('apostrophe:automaticTranslationSettings') }}
                   </span>
@@ -296,6 +304,9 @@
                   :choice="{
                     value: wizard.values.translateContent.data,
                     label: $t('apostrophe:automaticTranslationCheckbox'),
+                    help: translationUsesAi
+                      ? 'apostrophe:automaticTranslationAiHint'
+                      : null,
                     htmlHelp: $t('apostrophe:automaticTranslationCheckboxHelp')
                   }"
                   data-apos-test="localizationTranslationCheck"
@@ -352,7 +363,7 @@
             :attrs="{'data-apos-focus-priority': true}"
             type="primary"
             label="apostrophe:localizeContent"
-            :disabled="!complete() || wizard.busy"
+            :disabled="!complete() || wizard.busy || !loaded"
             @click="submit"
           />
           <AposButton
@@ -361,7 +372,7 @@
             type="primary"
             icon="arrow-right-icon"
             :modifiers="['icon-right']"
-            :disabled="!complete() || wizard.busy"
+            :disabled="!complete() || wizard.busy || !loaded"
             :icon-size="12"
             label="apostrophe:next"
             @click="goToNext()"
@@ -531,6 +542,11 @@ export default {
       // interest in new docs
       allRelatedDocs: [],
       allRelatedDocsKnown: false,
+      // Set once mounted() has loaded the document
+      loaded: false,
+      // Set once fullDoc is the full document, relationships included,
+      // rather than the `doc` prop it starts as
+      fullDocLoaded: false,
       docTypesSeen: [],
       relatedDocTypes: [],
       searchField: {
@@ -610,6 +626,13 @@ export default {
     },
     aiMode() {
       return this.aiScopeAvailable && this.wizard.values.scope.data === 'onlyNew';
+    },
+    // Whether translating means AI: the AI agent does the work, or the
+    // automatic translation service is the one built on AI ("llm"), rather
+    // than a translation service like DeepL or Google
+    translationUsesAi() {
+      return this.aiMode || this.aiFullCopy ||
+        this.wizard.values.translateProvider.data === 'llm';
     },
     // Translation is offered whenever something can do it: the automatic
     // translation module, or AI, which also translates a whole document when
@@ -739,6 +762,7 @@ export default {
     if (this.isBatchMode) {
       this.wizard.step = this.visibleStepNames[0];
       this.wizard.busy = false;
+      this.loaded = true;
       this.setRelatedDocTypes();
     } else {
       try {
@@ -752,6 +776,7 @@ export default {
             qs: { aposMode: 'draft' }
           }
         );
+        this.fullDocLoaded = true;
 
         const docs = await apos.http.get(
           `${this.action}/${this.fullDoc._id}/locales`,
@@ -768,6 +793,7 @@ export default {
       } finally {
         this.wizard.step = this.visibleStepNames[0];
         this.wizard.busy = false;
+        this.loaded = true;
       }
     }
   },
@@ -1127,6 +1153,18 @@ export default {
       // Related documents that were already up to date go unmentioned
       const localized = this.run.pairs.filter(({ status, related }) =>
         status === 'done' || (status === 'upToDate' && !related));
+      // Opened for one locale and it arrived: go there. Arriving on the
+      // localized document says it worked, so there is no notification, whose
+      // button would only lead where the editor already is (the classic flow
+      // never managed to show one either: the navigation cut it off)
+      const arrived = this.targetLocale && this.shouldRedirect &&
+        localized.some((pair) => !pair.related &&
+          pair.locale === this.targetLocale.name);
+      if (arrived) {
+        this.modal.showModal = false;
+        this.$emit('modal-result', true);
+        return this.openLocale(this.targetLocale.name);
+      }
       await this.notifyLocalized(localized.map((pair) => ({
         locale: { name: pair.locale },
         doc: {
@@ -1141,12 +1179,6 @@ export default {
       })));
       this.modal.showModal = false;
       this.$emit('modal-result', true);
-      const arrived = this.targetLocale && this.shouldRedirect &&
-        localized.some((pair) => !pair.related &&
-          pair.locale === this.targetLocale.name);
-      if (arrived) {
-        await this.openLocale(this.targetLocale.name);
-      }
     },
     // The classic way: core copies each document whole into each locale,
     // translated by the automatic translation module when that was asked for
@@ -1914,12 +1946,22 @@ export default {
       }
     },
     async updateRelatedDocs() {
-      if (this.wizard.values.toLocalize.data === 'thisDoc') {
+      // Not before the full document is loaded (mounted() calls this once it
+      // is): the `doc` prop fullDoc starts as may lack its relationships,
+      // and finding none would rule out related documents for good
+      if (!this.fullDocLoaded || this.wizard.values.toLocalize.data === 'thisDoc') {
         return;
       }
+      // Calls overlap as the editor changes settings; only the latest one's
+      // findings count, whatever order they finish in
+      const call = (this.relatedDocsCall = (this.relatedDocsCall || 0) + 1);
       const status = this.wizard.busy;
       this.wizard.busy = true;
       let relatedDocs = await this.getRelatedDocs(this.fullDoc);
+      if (call !== this.relatedDocsCall) {
+        this.wizard.busy = status;
+        return;
+      }
       this.allRelatedDocs = relatedDocs;
       this.allRelatedDocsKnown = true;
       if (
@@ -1945,6 +1987,10 @@ export default {
         }
         // New documents only
         relatedDocs = relatedDocs.filter(doc => unlocalizedIds.has(doc._id));
+      }
+      if (call !== this.relatedDocsCall) {
+        this.wizard.busy = status;
+        return;
       }
       this.relatedDocs = relatedDocs;
       this.wizard.busy = status;
@@ -2111,7 +2157,7 @@ export default {
 }
 
 :deep(.apos-field--to-localize) {
-  margin-bottom: $spacing-triple;
+  margin-bottom: 0;
 }
 
 .apos-wizard__help-text {
@@ -2119,7 +2165,8 @@ export default {
   padding-left: 20px;
   line-height: 1.25;
   font-weight: 400;
-  color: var(--a-base-3);
+  // Readable gray: --a-base-3 fails WCAG contrast at this size
+  color: var(--a-base-1);
 
   :deep(.material-design-icon) {
     position: relative;
@@ -2291,6 +2338,12 @@ export default {
 
 .apos-wizard__translation {
   margin-top: 30px;
+
+  // "Uses AI…" under the checkbox, in a gray that meets WCAG contrast
+  :deep(.apos-choice-label-text--help) {
+    margin-top: 4px;
+    color: var(--a-base-1);
+  }
 }
 
 .apos-wizard__translation-title {
@@ -2325,8 +2378,26 @@ export default {
   margin-top: 20px;
 }
 
+// The second question on Select Content, set off from the first by a
+// divider in the color of the field group dividers
 .apos-wizard__scope--below {
-  margin-top: $spacing-triple;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--a-base-8);
+}
+
+// Each question's description, and the note after its options, in a gray
+// that meets WCAG contrast
+.apos-wizard__step-select-content {
+  :deep(.apos-field__help) {
+    margin: 4px 0 10px;
+    color: var(--a-base-1);
+    line-height: var(--a-line-tall);
+  }
+
+  .apos-wizard__help-text {
+    margin-top: 12px;
+  }
 }
 
 // The progress view grows as it runs: bound the modal's row so the body

@@ -15,7 +15,9 @@ const {
 
 // Budgets for a read, in characters of the serialized result. Reads that
 // could exceed them come in pages, and long fields in parts (see parts.js),
-// so a long document is never too much to handle, just more calls
+// so a long document is never too much to handle, just more calls. The
+// module's `textPageChars` and `outlinePageChars` options can only lower the
+// page sizes below these
 const TEXT_MAX_CHARS = 60000;
 const DOC_MAX_CHARS = 50000;
 const OUTLINE_MAX_CHARS = 20000;
@@ -276,9 +278,14 @@ module.exports = (self) => {
       const fields = [];
       collectText(self.apos, req, manager?.schema, doc, '', [], fields);
       return fields.reduce(
-        (sum, entry) => sum + splitParts(entry.value, entry.format).length - 1,
+        (sum, entry) => sum + self.splitParts(entry).length - 1,
         0
       );
+    },
+
+    // One text entry of localize_read_text in parts, at the configured size
+    splitParts(entry) {
+      return splitParts(entry.value, entry.format, self.options.partMaxChars);
     },
 
     // The tools of a pass: this module's, and the site's translation
@@ -364,7 +371,7 @@ module.exports = (self) => {
       const fields = [];
       collectText(self.apos, draftReq, manager.schema, doc, '', [], fields);
       const entries = fields.flatMap((entry) => {
-        const parts = splitParts(entry.value, entry.format);
+        const parts = self.splitParts(entry);
         if (parts.length === 1) {
           return [ entry ];
         }
@@ -381,7 +388,7 @@ module.exports = (self) => {
       let index = offset;
       for (; index < entries.length; index++) {
         size += JSON.stringify(entries[index]).length;
-        if (size > TEXT_MAX_CHARS && page.length) {
+        if (size > Math.min(self.options.textPageChars, TEXT_MAX_CHARS) && page.length) {
           break;
         }
         page.push(entries[index]);
@@ -425,10 +432,11 @@ module.exports = (self) => {
       const areas = [];
       let size = 0;
       let index = offset;
+      const budget = Math.min(self.options.outlinePageChars, OUTLINE_MAX_CHARS);
       for (; index < items.length; index++) {
         const item = items[index];
         size += JSON.stringify(item.widget || item.area).length;
-        if (size > OUTLINE_MAX_CHARS && areas.length) {
+        if (size > budget && areas.length) {
           break;
         }
         if (areas.at(-1)?._id !== item.area._id) {

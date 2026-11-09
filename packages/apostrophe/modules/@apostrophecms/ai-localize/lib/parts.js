@@ -29,10 +29,11 @@ module.exports = {
   spliceParts
 };
 
-// The parts of a value, in order: [ { range, value } ]. A value short enough
-// comes back as one part with a null range
-function splitParts(value, format) {
-  if (value.length <= PART_MAX_CHARS) {
+// The parts of a value, in order: [ { range, value } ], each aiming to stay
+// under `max` characters. A value short enough comes back as one part with a
+// null range
+function splitParts(value, format, max = PART_MAX_CHARS) {
+  if (value.length <= max) {
     return [ {
       range: null,
       value
@@ -72,12 +73,12 @@ function splitParts(value, format) {
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
       const length = block.end - block.start;
-      if (length > PART_MAX_CHARS && block.children?.blocks.length > 1) {
+      if (length > max && block.children?.blocks.length > 1) {
         flush(i - 1);
         collect(block.children, [ ...path, i ]);
         continue;
       }
-      if (first !== null && block.end - blocks[first].start > PART_MAX_CHARS) {
+      if (first !== null && block.end - blocks[first].start > max) {
         flush(i - 1);
       }
       if (first === null) {

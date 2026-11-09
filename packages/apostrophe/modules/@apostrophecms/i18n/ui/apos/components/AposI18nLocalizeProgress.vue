@@ -9,7 +9,14 @@
         :key="locale"
         class="apos-localizing__locale"
       >
-        <span class="apos-localizing__chip">{{ locale }}</span>
+        <!-- The same chip as Confirm Settings, so it doesn't change size or
+             color from one step to the next -->
+        <AposButton
+          type="primary"
+          :modifiers="[ 'small' ]"
+          :label="locale"
+          :disabled="true"
+        />
       </li>
     </ul>
     <div>
@@ -61,17 +68,11 @@
             <span>
               {{ item.label }}<span class="apos-sr-only">, {{ $t(statusLabels[item.status]) }}</span>
             </span>
-            <span
+            <AposAiIndicator
               v-if="item.ai && item.status === 'done'"
-              class="apos-localizing__ai apos-localizing__ai--small"
-              :aria-label="$t('apostrophe:localizingWithAi')"
-            >
-              <svg
-                class="apos-localizing__ai-spark"
-                :viewBox="sparkViewBox"
-                aria-hidden="true"
-              ><path :d="sparkPath" /></svg>
-            </span>
+              small
+              label="apostrophe:localizingWithAi"
+            />
           </li>
         </ol>
       </template>
@@ -148,17 +149,11 @@
                 @click="stage.detail && (openStages[stage.id] = !openStages[stage.id])"
               >
                 <span class="apos-localizing__trace-label">{{ stage.label }}</span>
-                <span
+                <AposAiIndicator
                   v-if="stage.ai"
-                  class="apos-localizing__ai apos-localizing__ai--small"
-                  :aria-label="$t('apostrophe:localizingWithAi')"
-                >
-                  <svg
-                    class="apos-localizing__ai-spark"
-                    :viewBox="sparkViewBox"
-                    aria-hidden="true"
-                  ><path :d="sparkPath" /></svg>
-                </span>
+                  small
+                  label="apostrophe:localizingWithAi"
+                />
                 <svg
                   v-if="stage.detail"
                   class="apos-localizing__chevron"
@@ -236,10 +231,7 @@ export default {
         skipped: 'apostrophe:localizingStatusSkipped',
         pending: 'apostrophe:localizingStatusNotRun'
       },
-      chevronPath: 'M6 9l6 6 6-6',
-      // The four-point AI sparkle, drawn centered in its box
-      sparkPath: 'M12 2.5c.36 2.86 1.02 4.84 2.09 5.9C15.16 9.48 17.14 10.14 20 10.5c-2.86.36-4.84 1.02-5.91 2.09C13.02 13.66 12.36 15.64 12 18.5c-.36-2.86-1.02-4.84-2.09-5.91C8.84 11.52 6.86 10.86 4 10.5c2.86-.36 4.84-1.02 5.91-2.1C10.98 7.34 11.64 5.36 12 2.5Z',
-      sparkViewBox: '0 -1.5 24 24'
+      chevronPath: 'M6 9l6 6 6-6'
     };
   },
   watch: {
@@ -274,17 +266,6 @@ export default {
   &:not(:last-of-type) {
     margin-right: 5px;
   }
-}
-
-.apos-localizing__chip {
-  display: inline-block;
-  padding: 6px 10px;
-  border-radius: var(--a-border-radius);
-  background-color: var(--a-primary);
-  color: var(--a-white);
-  font-size: var(--a-type-small);
-  letter-spacing: var(--a-letter-base);
-  line-height: 1;
 }
 
 // The settings steps' group heading, in a gray readable at 12px
@@ -483,28 +464,6 @@ export default {
   font-size: var(--a-type-base);
   letter-spacing: var(--a-letter-base);
   line-height: var(--a-line-tall);
-}
-
-// The AI mark: the sparkle in the primary color on a disc
-.apos-localizing__ai {
-  position: relative;
-  display: inline-flex;
-  box-sizing: border-box;
-  flex: 0 0 20px;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--a-base-8);
-  color: var(--a-primary);
-  background: var(--a-background-primary);
-  border-radius: 999px;
-}
-
-.apos-localizing__ai-spark {
-  width: 13px;
-  height: 13px;
-  fill: currentcolor;
 }
 
 .apos-localizing__message {

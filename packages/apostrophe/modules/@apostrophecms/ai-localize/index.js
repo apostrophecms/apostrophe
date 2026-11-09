@@ -18,6 +18,13 @@ module.exports = {
     // Model turns one document's pass into one locale may take, plus two
     // for each extra part of a long document's text (see lib/parts.js)
     maxSteps: 40,
+    // Characters a part of a long text field aims to stay under
+    partMaxChars: 8000,
+    // Characters of one page of localize_read_text and of
+    // localize_read_outline. Lowering these, and partMaxChars, is how tests
+    // exercise long documents with short ones
+    textPageChars: 60000,
+    outlinePageChars: 20000,
     // The `apos.ai` routing level the passes run on; the AI module's
     // default when unset
     effort: null,
