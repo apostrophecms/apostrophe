@@ -1,7 +1,8 @@
 // Regression tests for GHSA-x77x-88mc-36vg: the `dynamicChoices` parameter of
-// the piece type REST API must not reveal the choices of a filter to the
-// public API, or to a user who may not view the filtered field
-// (`viewPermission`), just like the `choices` and `counts` query builders.
+// the piece type REST API must not reveal the choices of a filter on a field
+// excluded from `publicApiProjection` to the public API, or to a user who may
+// not view the filtered field (`viewPermission`), just like the `choices` and
+// `counts` query builders.
 
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
@@ -21,7 +22,8 @@ describe('Pieces: dynamicChoices permissions (GHSA-x77x-88mc-36vg)', function() 
           options: {
             publicApiProjection: {
               title: 1,
-              slug: 1
+              slug: 1,
+              score: 1
             }
           },
           filters: {
@@ -99,10 +101,14 @@ describe('Pieces: dynamicChoices permissions (GHSA-x77x-88mc-36vg)', function() 
     });
   }
 
-  it('does not run filter choices methods for the public API', async function() {
-    const result = await getChoices(null, [ 'secretCategory', 'score', 'other' ]);
-    assert.equal(result.choices, undefined);
+  it('sends the public API only the choices of fields in publicApiProjection', async function() {
+    const result = await getChoices(null, [ 'secretCategory', 'score' ]);
+    assert.equal(result.choices.secretCategory, undefined);
     assert.ok(!JSON.stringify(result).includes('CONFIDENTIAL'));
+    assert.deepEqual(result.choices.score, [ {
+      label: 'High',
+      value: 'high'
+    } ]);
   });
 
   it('does not send the choices of a filter on a field the user may not view', async function() {
