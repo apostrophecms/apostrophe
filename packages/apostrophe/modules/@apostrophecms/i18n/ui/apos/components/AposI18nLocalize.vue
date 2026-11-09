@@ -63,8 +63,10 @@
             v-if="run.started"
             :view="localizingView"
           />
+          <!-- Not before the document and its related documents are known,
+               so no question appears and then moves or goes away -->
           <form
-            v-else
+            v-else-if="loaded"
             class="apos-wizard__form"
             @submit.prevent
           >
@@ -656,8 +658,13 @@ export default {
     localizingView() {
       return this.describeRun();
     },
+    // Ask about related documents only once there are some to ask about.
+    // Asking while they are still being looked for showed the question and
+    // then took it away, visibly so on a slower server, for a document with
+    // none. Batch mode always asks: it doesn't look them up per document
     hasRelatedChoice() {
-      return !this.allRelatedDocsKnown || this.allRelatedDocs.length > 0;
+      return this.isBatchMode ||
+        (this.allRelatedDocsKnown && this.allRelatedDocs.length > 0);
     },
     action() {
       return this.doc.slug.startsWith('/')
