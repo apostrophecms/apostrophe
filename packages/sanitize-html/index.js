@@ -178,6 +178,19 @@ function sanitizeHtml(html, options, _fallback) {
   options = Object.assign({}, sanitizeHtml.defaults, options);
   options.parser = Object.assign({}, htmlParserDefaults, options.parser);
 
+  // Outside SVG and MathML, browsers parse `<![CDATA[` as a bogus comment that
+  // ends at the first `>`, but htmlparser2 reads it to `]]>`, which hides any
+  // markup between those two points from us, such as a `<noscript>` start tag
+  // that makes the browser treat what follows as raw text
+  // (GHSA-2rjc-9xvg-45j7). Spelling the `[` as a character reference makes
+  // htmlparser2 read a bogus comment ending at the first `>` too. In attribute
+  // values and text the reference decodes to the same characters. A real CDATA
+  // section in SVG or MathML is read the same way, so its text is dropped or
+  // sanitized as markup rather than kept as text.
+  if (typeof html === 'string' && !options.parser.xmlMode) {
+    html = html.replaceAll('<![CDATA[', '<!&#91;CDATA[');
+  }
+
   const logger = loggerFor(options);
 
   const tagAllowed = function (name) {
