@@ -246,4 +246,43 @@ describe('AI helper images', function() {
     assert.equal(removed.status, 200);
     assert.equal(await apos.image.aiHelperImages.findOne({ _id: image._id }), null);
   });
+
+  describe('rich text', function() {
+    let originalGenerateText;
+
+    before(function() {
+      const aiHelper = apos.modules['@apostrophecms/ai-helper'];
+      originalGenerateText = aiHelper.generateText;
+      aiHelper.generateText = async () => ({
+        content: '# Title\n\nIntro\n\n## Section\n\nBody\n'
+      });
+    });
+
+    after(function() {
+      apos.modules['@apostrophecms/ai-helper'].generateText = originalGenerateText;
+    });
+
+    function write(headingLevels) {
+      return apos.http.post('/api/v1/@apostrophecms/rich-text-widget/ai-helper', {
+        jar: jars.editor,
+        body: {
+          prompt: 'Write about cats',
+          headingLevels
+        }
+      });
+    }
+
+    it('should map headings to the levels the widget offers', async function() {
+      const { html } = await write([ 2, 3 ]);
+      assert.match(html, /<h2[^>]*>Title<\/h2>/);
+      assert.match(html, /<h3[^>]*>Section<\/h3>/);
+    });
+
+    it('should ignore heading levels that are not valid HTML heading levels', async function() {
+      const { html } = await write([ '1000000', '7', '0', '-1', 'x' ]);
+      assert(html.length < 1000);
+      assert.doesNotMatch(html, /#/);
+      assert.doesNotMatch(html, /<h\d/);
+    });
+  });
 });
