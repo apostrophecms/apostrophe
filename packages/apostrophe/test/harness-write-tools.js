@@ -47,7 +47,10 @@ describe('Harness: write tools and get_changes', function () {
                   }
                 }
               },
-              summary: { type: 'string' }
+              summary: {
+                type: 'string',
+                aiHow: 'Write it from the content, or leave it empty and say so.'
+              }
             }
           }
         },
@@ -267,6 +270,7 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal(page.slug, '/about-us');
       assert.equal(page.locale, 'en');
       assert.equal(page.published, false);
+      assert.equal(page.unfilled, undefined);
       assert.match(result.notice, /draft/);
       const draft = await findDraft(page._id);
       assert.equal(draft.summary, 'Who we are and what we do.');
@@ -277,6 +281,19 @@ describe('Harness: write tools and get_changes', function () {
         docId: draft.aposDocId
       });
       assert.equal(version.ai, true);
+    });
+
+    it('should give the aiHow of every field with one it left empty', async function () {
+      const result = await run('create_page', {
+        type: 'tools-page',
+        title: 'Events',
+        target: '/'
+      });
+
+      assert.deepEqual(result.written[0].unfilled, [ {
+        field: 'summary',
+        aiHow: 'Write it from the content, or leave it empty and say so.'
+      } ]);
     });
 
     it('should create a page under a parent named by id, in its locale', async function () {
@@ -1015,6 +1032,54 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal(added.before, undefined);
       assert.equal(added.after.heading, 'Added');
       assert.equal('secret' in added.after, false);
+      assert.deepEqual(added.place, {
+        area: 'main',
+        after: text._id
+      });
+    });
+
+    it('should give an added widget\'s place as add_widgets takes it', async function () {
+      const kept = richText('Kept');
+      const article = await insertArticle({ main: area([ kept ]) });
+      const draft = await apos.modules['tools-article'].findOneForEditing(
+        userReq(),
+        { _id: article._id }
+      );
+      await apos.modules['tools-article'].publish(userReq(), draft);
+      const first = await run('add_widgets', {
+        _id: article._id,
+        area: 'main',
+        position: 0,
+        widgets: [ {
+          type: 'tools-card',
+          heading: 'First'
+        } ]
+      });
+      const second = await run('add_widgets', {
+        _id: article._id,
+        area: 'main',
+        after: kept._id,
+        widgets: [ {
+          type: 'tools-card',
+          heading: 'Second'
+        } ]
+      });
+
+      const { rows } = await run('get_changes', { _id: article._id });
+
+      const places = Object.fromEntries(rows
+        .filter(row => row.change === 'added')
+        .map(row => [ row.path, row.place ]));
+      assert.deepEqual(places, {
+        [`@${first.written[0].widgets[0]._id}`]: {
+          area: 'main',
+          position: 0
+        },
+        [`@${second.written[0].widgets[0]._id}`]: {
+          area: 'main',
+          after: kept._id
+        }
+      });
     });
 
     it('should list since a version only what changed after it', async function () {

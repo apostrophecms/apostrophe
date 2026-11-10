@@ -151,7 +151,7 @@ describe('Harness: guidance and language', function () {
       assert.match(baseLines[0], /^You work on the content of this ApostropheCMS site/);
       assert(base.includes('never by id'));
       assert(base.includes('"notice"'));
-      assert.match(baseLines.at(-1), /^Reply in the language the user writes in.+ English\.$/);
+      assert.match(baseLines.at(-1), /^Reply in the language the user writes in.+ English, without remarking on it\.$/);
       assert.equal(site, 'Write in a warm, plain tone.');
       assert.deepEqual(types.split('\n'), [
         'When to use each type. A type marked "(aiHow)" has rules for working with it: ' +
@@ -212,7 +212,7 @@ describe('Harness: guidance and language', function () {
 
       assert.match(
         instructions,
-        /\nReply in the language the user writes in, even when the content or what they paste is in another\. A message with no language of its own \(only "ok", only pasted text\) gets a reply in French\.\n/
+        /\nReply in the language the user writes in, even when the content or what they paste is in another\. A message with no language of its own \(only "ok", only quoted text\) gets a reply in French, without remarking on it\.\n/
       );
     });
   });

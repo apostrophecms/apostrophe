@@ -219,6 +219,14 @@ module.exports = (self) => {
         const saved = await manager.find(draftReq, { _id: doc._id })
           .relationships(false)
           .toObject() || doc;
+        // A field's aiHow reaches the model with the schema read, which a
+        // create can skip: the fields with one left empty carry it here
+        const unfilled = schema
+          .filter(field => field.aiHow?.trim() && isEmpty(saved[field.name]))
+          .map(field => ({
+            field: field.name,
+            aiHow: field.aiHow.trim()
+          }));
         return {
           _id: saved._id,
           title: saved.title,
@@ -227,6 +235,7 @@ module.exports = (self) => {
           slug: saved.slug,
           ...(saved._url && { url: saved._url }),
           ...self.getPublishState(saved.type),
+          ...(unfilled.length && { unfilled }),
           doc: saved
         };
       }
@@ -377,4 +386,13 @@ function getRefusal(self, e) {
     ? self.apos.error('invalid', { errors: e })
     : e;
   return REFUSALS.has(error?.name) ? self.describeRefusal(error) : null;
+}
+
+// A value a create left empty: nothing, an empty string or list, an area
+// without widgets
+function isEmpty(value) {
+  return (value == null) ||
+    (value === '') ||
+    (Array.isArray(value) && !value.length) ||
+    ((value.metaType === 'area') && !value.items?.length);
 }

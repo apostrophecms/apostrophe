@@ -48,7 +48,8 @@ module.exports = (self) => {
         const locale = self.apos.i18n.getAdminLocale(req);
         return 'Reply in the language the user writes in, even when the content or what ' +
           'they paste is in another. A message with no language of its own (only "ok", ' +
-          `only pasted text) gets a reply in ${getLanguageName(locale)}.`;
+          `only quoted text) gets a reply in ${getLanguageName(locale)}, ` +
+          'without remarking on it.';
       }
 
       // One line per type with guidance: `type: aiWhen`, marked `(aiHow)`

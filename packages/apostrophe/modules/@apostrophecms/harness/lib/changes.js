@@ -178,12 +178,42 @@ module.exports = (self) => {
         if ((row.kind === 'widget') && (row.type === 'modified')) {
           return renderOutside(row, found, meta);
         }
+        const place = (row.kind === 'widget') && (row.type === 'added') && getPlace(row);
         return [ {
           path: key,
           change,
           ...values(project(row.old, found, row), project(row.new, found, row)),
+          ...(place && { place }),
           ...meta
         } ];
+      }
+
+      // Where an added widget is in the draft, as add_widgets takes it: the
+      // area, and the widget before it or the first position. None when it
+      // is no longer in the draft
+      function getPlace(row) {
+        const widgetId = row.path.at(-1).name;
+        let items = null;
+        self.apos.doc.walk(doc, (object, key, value) => {
+          if (!items && (value?.metaType === 'area') &&
+            value.items?.some(item => item?._id === widgetId)) {
+            items = value.items;
+          }
+        });
+        const area = items && locate(row.path.slice(0, -1))?.key;
+        if (!area) {
+          return null;
+        }
+        const index = items.findIndex(item => item._id === widgetId);
+        return index
+          ? {
+            area,
+            after: items[index - 1]._id
+          }
+          : {
+            area,
+            position: 0
+          };
       }
 
       // A widget whose data outside its schema changed: a row for each of

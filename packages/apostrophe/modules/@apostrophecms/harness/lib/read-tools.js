@@ -235,7 +235,8 @@ module.exports = (self) => {
       name: 'get_changes',
       description: 'What changed in one document since its last publication, since a ' +
         'version, or in one request. Each row: "path", usable as an update_document key, ' +
-        'the change, the values before and after, who, when and the AI mark.',
+        'the change, the values before and after, who, when and the AI mark. An added ' +
+        'widget\'s "place" is its area and spot as add_widgets takes them.',
       input: {
         type: 'object',
         properties: {
