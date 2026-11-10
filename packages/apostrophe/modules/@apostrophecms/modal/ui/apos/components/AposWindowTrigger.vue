@@ -27,6 +27,7 @@
     >
       <span
         class="apos-window-trigger__disc"
+        data-apos-test="window-trigger-disc"
         aria-hidden="true"
       />
       <AposIndicator
