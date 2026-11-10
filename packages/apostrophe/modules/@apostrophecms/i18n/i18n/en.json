@@ -984,7 +984,7 @@
   "aiLocalizeNewAndModifiedRelated": "New and modified content in related documents",
   "aiLocalizeProgressCount": "{{ current }} of {{ total }}",
   "aiLocalizeScopeAll": "All content",
-  "aiLocalizeScopeHelp": "Selecting \"All Content\" will replace and possibly re-translate all content in the document(s) in each selected locale, including edits made there.",
+  "aiLocalizeScopeHelp": "Selecting \"All Content\" will replace all content in the document(s) in each selected locale, including edits made there.",
   "aiLocalizeScopeFieldHelp": "Choose how existing localized content should be handled.",
   "aiLocalizeScopeLabel": "Content to update",
   "aiLocalizeScopeNew": "New and modified content only",
