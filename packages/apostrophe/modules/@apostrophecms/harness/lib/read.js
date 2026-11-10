@@ -3,7 +3,8 @@
 // names the locale it read.
 
 const PREVIEW_CHARS = 80;
-// Room a tree read keeps for what wraps its pages
+// Characters of the page tree's result budget kept for the result's fields
+// other than `pages` (`locale`, `truncated`)
 const TREE_HEADROOM = 200;
 
 module.exports = (self) => {
@@ -331,6 +332,7 @@ module.exports = (self) => {
         throw self.apos.error('aiToolError', 'Read "fields" of one type at a time.');
       }
       const legend = new Set();
+      const markup = new Map();
       const lines = [];
       for (const type of types) {
         const doc = self.apos.doc.getManager(type);
@@ -339,18 +341,20 @@ module.exports = (self) => {
           const kind = self.apos.instanceOf(doc, '@apostrophecms/page-type') ? 'page' : 'piece';
           lines.push(`# ${type} (${kind})`, ...await self.renderSchema(req, doc, {
             legend,
+            markup,
             fields
           }));
         }
         if (widget) {
           lines.push(`# ${type} (widget)`, ...await self.renderSchema(req, widget, {
             legend,
+            markup,
             fields
           }));
         }
       }
       return {
-        legend: self.getSchemaLegend(legend),
+        legend: self.getSchemaLegend(legend, markup),
         schema: lines.join('\n')
       };
     },
@@ -395,7 +399,7 @@ module.exports = (self) => {
           : `No home page the user can read in the locale ${readReq.locale}.`);
       }
       const allowed = self.getDocTypeNames();
-      // Rows stop where the tool's budget would
+      // Pages are added while the result stays within the tool's budget
       const room = self.apos.ai.getTool('get_page_tree').maxResultChars - TREE_HEADROOM;
       const pages = [];
       let size = 0;

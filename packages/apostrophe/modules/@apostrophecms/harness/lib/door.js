@@ -1,12 +1,12 @@
 // The door context of a request.
 //
 // A door (the assistant, the MCP server) calls `withDoor` once per request
-// and passes the request it returns to `apos.ai.generate`; every tool
+// and passes the `req` it returns to `apos.ai.generate`; every tool
 // handler runs on a clone of it, so each write finds who is asking without
 // anything in the tool arguments. A write without a door context, from a
 // plain `generate` call, is not recorded in the change log.
 
-const DOOR_KEYS = [ 'door', 'lockId', 'family', 'chat', 'request', 'model', 'revert' ];
+const DOOR_KEYS = [ 'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert' ];
 
 module.exports = (self) => {
   return {
@@ -21,14 +21,14 @@ module.exports = (self) => {
      *   locks with: the chat's id, or one per MCP connection.
      * @param {string} [context.family] The lock family, the browser tab whose
      *   page lock the request's writes share.
-     * @param {string} context.request The id of the request, the change log
+     * @param {string} context.requestId The id of the request, the change log
      *   entries' key.
      * @param {string} [context.chat] The id of the chat, for the assistant.
      * @param {{ provider: string, model: string }} [context.model] The model
      *   the request runs on.
      * @param {boolean} [context.revert] The request reverts earlier changes:
      *   its saves are the user's own, not AI's.
-     * @returns {object} The request clone.
+     * @returns {object} The `req` clone.
      */
     withDoor(req, context) {
       const unknown = Object.keys(context || {})
@@ -37,12 +37,12 @@ module.exports = (self) => {
         throw self.apos.error('invalid', `unknown door context keys: ${unknown.join(', ')}`);
       }
       const {
-        door, lockId, family, chat, request, model, revert
+        door, lockId, family, chat, requestId, model, revert
       } = context;
       for (const [ name, value ] of Object.entries({
         door,
         lockId,
-        request
+        requestId
       })) {
         if (typeof value !== 'string' || !value) {
           throw self.apos.error('invalid', `the door context needs "${name}"`);
@@ -70,7 +70,7 @@ module.exports = (self) => {
         aposHarnessDoor: Object.freeze({
           door,
           lockId,
-          request,
+          requestId,
           ...(family && { family }),
           ...(chat && { chat }),
           ...(revert && { revert }),

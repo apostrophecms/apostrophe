@@ -1,8 +1,6 @@
 // The schema read: a type's fields as AI reads them, one compact line per
 // field, top-level fields under the editor's groups.
 
-const RICH_TEXT = '@apostrophecms/rich-text';
-
 // Value shapes the model can't tell from a field type's name, given once
 // per read for the types it contains
 const LEGEND = {
@@ -13,9 +11,11 @@ const LEGEND = {
     'field takes when a new item omits it.',
   style: 'style: the CSS property the field sets, and its unit; "style class": it ' +
     'adds a class instead.',
-  area: 'area: the widget types it accepts, in [ ]; a widget listed with "html" keeps ' +
-    'only the markup named there.',
-  html: 'html: rich text markup.',
+  area: 'area: the widget types it accepts, in [ ]; "html A" after one names the ' +
+    'markup a save keeps in it.',
+  html: 'html: rich text markup. "html A" names the markup a save keeps, listed as ' +
+    '"markup A" below; a save removes any other tag. Attributes and inline styles ' +
+    'are not listed.',
   relationship: 'relationship → type: an array of {"_id"} of documents of that type, ' +
     'found with search_content.',
   box: 'box: {"top", "right", "bottom", "left"}, integers in the field\'s unit, null ' +
@@ -24,7 +24,7 @@ const LEGEND = {
     'custom property name ("--brand-blue"); any other value is stored empty.',
   range: 'range: a number within its bounds, a multiple of its step.',
   folded: 'folded: a conditional field\'s own fields are left out; read them with ' +
-    'get_schema "fields", by dot path of field names ("seo.author"), one type at a time.'
+    'get_schema "fields", by dot path of field names ("details.author"), one type at a time.'
 };
 
 const OPERATORS = {
@@ -52,11 +52,16 @@ module.exports = (self) => {
      * @param {object} [options]
      * @param {Set<string>} [options.legend] Collects the legend entries the
      *   lines need (see `getSchemaLegend`).
+     * @param {Map<string, string>} [options.markup] Collects the markup sets
+     *   the lines name, each to be listed once in the legend: the name of
+     *   each set by its list of markup.
      * @param {string[]} [options.fields] Dot paths of field names to read in
      *   full instead of the whole schema.
      * @returns {Promise<string[]>}
      */
-    async renderSchema(req, manager, { legend = new Set(), fields } = {}) {
+    async renderSchema(req, manager, {
+      legend = new Set(), markup = new Map(), fields
+    } = {}) {
       const schema = self.getAiSchemaOf(req, manager);
       if (fields) {
         const lines = [];
@@ -152,6 +157,13 @@ module.exports = (self) => {
       }
 
       async function renderType(field) {
+        // A field type that keeps only some markup, as rich text does
+        const fieldType = self.apos.schema.fieldTypes[field.type];
+        if (fieldType?.getSanitizeHtmlOptions) {
+          legend.add('html');
+          const name = getMarkupName(fieldType.getSanitizeHtmlOptions(field));
+          return name ? `html ${name}` : 'html';
+        }
         const bounds = [
           (field.min !== undefined) && `min ${field.min}`,
           (field.max !== undefined) && `max ${field.max}`
@@ -162,11 +174,11 @@ module.exports = (self) => {
             const widgets = Object.entries(self.apos.area.getWidgets(field.options || {}))
               .filter(([ type ]) => self.apos.area.getWidgetManager(type))
               .map(([ type, options ]) => {
-                if (type !== RICH_TEXT) {
-                  return type;
-                }
-                legend.add('html');
-                return `${type}${getMarkup(options)}`;
+                // A widget type that keeps only some markup, as rich text does
+                const manager = self.apos.area.getWidgetManager(type);
+                const name = manager.getSanitizeHtmlOptions &&
+                  getMarkupName(manager.getSanitizeHtmlOptions(options));
+                return name ? `${type} html ${name}` : type;
               });
             return [
               `area [${widgets.join(', ')}]`,
@@ -178,9 +190,6 @@ module.exports = (self) => {
             legend.add('relationship');
             return [ `relationship → ${field.withType}`, ...bounds ]
               .filter(Boolean).join(', ');
-          case 'richText':
-            legend.add('html');
-            return `html${getMarkup(field.options)}`;
           case 'range':
             legend.add('range');
             return [
@@ -227,28 +236,40 @@ module.exports = (self) => {
           : null;
       }
 
-      // ` (p, br, strong, …, p.lead)`: the markup a rich text editor with
-      // these options keeps, its styles' classes as `tag.class`
-      function getMarkup(options = {}) {
-        const manager = self.apos.area.getWidgetManager(RICH_TEXT);
-        const combined = manager.combineOptions(options);
-        const classes = (combined.styles || [])
-          .filter(style => style.class)
-          .map(style => `${style.tag}.${style.class}`);
-        const markup = [ ...manager.toolbarToAllowedTags(combined), ...classes ];
-        return ` (${[ ...new Set(markup) ].join(', ')})`;
+      // The name of the markup sanitize-html `options` keep (`p, br, strong,
+      // p.lead`: tags, then classes as `tag.class`), added to `markup` the
+      // first time; `null` when they keep any tag
+      function getMarkupName(options) {
+        if (!Array.isArray(options.allowedTags)) {
+          return null;
+        }
+        legend.add('html');
+        const classes = Object.entries(options.allowedClasses || {})
+          .flatMap(([ tag, names ]) => [ names ].flat().map(name => `${tag}.${name}`));
+        const list = [ ...new Set([ ...options.allowedTags, ...classes ]) ].join(', ');
+        if (!markup.has(list)) {
+          markup.set(list, getName(markup.size));
+        }
+        return markup.get(list);
       }
     },
 
-    // The legend lines for the entries `renderSchema` collected
-    getSchemaLegend(legend) {
+    // The legend lines for the entries and markup sets `renderSchema`
+    // collected
+    getSchemaLegend(legend, markup = new Map()) {
       return [
         LEGEND.intro,
-        ...Object.keys(LEGEND).filter(key => legend.has(key)).map(key => LEGEND[key])
+        ...Object.keys(LEGEND).filter(key => legend.has(key)).map(key => LEGEND[key]),
+        ...[ ...markup ].map(([ list, name ]) => `markup ${name}: ${list}`)
       ].join('\n');
     }
   };
 };
+
+// A markup set's name by its number: A to Z, then A27, A28…
+function getName(index) {
+  return (index < 26) ? String.fromCharCode(65 + index) : `A${index + 1}`;
+}
 
 // `a=x and (b>=2 or c in [d, e])` for a MongoDB-style condition
 function formatCondition(clause) {

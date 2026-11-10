@@ -16,25 +16,9 @@ const BUDGETS = {
 };
 
 module.exports = (self) => {
-  const handler = name => `@apostrophecms/harness:${name}`;
-  const id = description => ({
-    type: 'string',
-    minLength: 1,
-    description
-  });
-  // The `locale` argument, only in a project with several locales
-  const locale = description => {
-    const names = self.getLocaleNames();
-    return (names.length > 1)
-      ? {
-        locale: {
-          type: 'string',
-          enum: names,
-          description
-        }
-      }
-      : {};
-  };
+  const {
+    handler, id, locale
+  } = require('./tool-args')(self);
   const typeNames = () => [
     ...new Set([ ...self.getDocTypeNames(), ...self.getWidgetTypeNames() ])
   ].sort();
@@ -155,7 +139,7 @@ module.exports = (self) => {
             minItems: 1,
             maxItems: 10,
             description: 'Folded fields to read in full, by dot path of field names ' +
-              '("seo", "items.details"); one type only'
+              '("details", "items.details"); one type only'
           }
         },
         required: [ 'types' ],
@@ -248,6 +232,36 @@ module.exports = (self) => {
       maxResultChars: BUDGETS.references,
       kind: 'query',
       handler: handler('findReferences')
+    },
+    {
+      name: 'get_changes',
+      description: 'What changed in one document since its last publication, since a ' +
+        'version, or in one request. Each row: "path", usable as an update_document key, ' +
+        'the change, the values before and after, who, when and the AI mark.',
+      input: {
+        type: 'object',
+        properties: {
+          _id: id('A document id'),
+          since: {
+            type: 'string',
+            minLength: 1,
+            default: 'publication',
+            description: '"publication", or a versionId of get_document\'s versions'
+          },
+          requestId: id('A request\'s id: only the changes it made, instead of "since"'),
+          offset: {
+            type: 'integer',
+            minimum: 0,
+            default: 0,
+            description: 'Rows to skip: the "next" of the previous read'
+          }
+        },
+        required: [ '_id' ],
+        additionalProperties: false
+      },
+      maxResultChars: BUDGETS.document,
+      kind: 'query',
+      handler: handler('getChanges')
     }
   ];
 };

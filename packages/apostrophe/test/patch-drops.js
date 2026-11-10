@@ -777,6 +777,42 @@ describe('Patch drops', function() {
 
   });
 
+  describe('converting a new document', function() {
+
+    it('records what conversion drops when given drops, and drops it quietly otherwise', async function() {
+      const req = apos.task.getReq();
+      const input = () => ({
+        title: 'New product',
+        summary: 'Summary',
+        main: {
+          metaType: 'area',
+          items: [ richText('kept'), html('<b>refused</b>') ]
+        }
+      });
+      const drops = [];
+      const recorded = apos.product.newInstance();
+      const quiet = apos.product.newInstance();
+
+      await apos.product.convert(req, input(), recorded, { drops });
+      await apos.product.convert(req, input(), quiet);
+
+      assert.deepEqual(drops.map(({ path, reason }) => ({
+        path,
+        reason
+      })), [ {
+        path: 'main.items.1',
+        reason: 'notAllowed'
+      } ]);
+      for (const product of [ recorded, quiet ]) {
+        assert.deepEqual(
+          product.main.items.map(item => item.type),
+          [ '@apostrophecms/rich-text' ]
+        );
+      }
+    });
+
+  });
+
   describe('read only widget fields', function() {
 
     it('keep their stored value when a patch pushes into the area', async function() {

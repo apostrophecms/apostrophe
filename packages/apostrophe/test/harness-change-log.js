@@ -102,7 +102,7 @@ describe('Harness: the change log', function () {
       lockId: 'chat-1',
       family: 'tab-1',
       chat: 'chat-1',
-      request: apos.util.generateId(),
+      requestId: apos.util.generateId(),
       model: {
         provider: 'mock',
         model: 'scripted'
@@ -121,7 +121,7 @@ describe('Harness: the change log', function () {
 
   function entriesOf(req) {
     return apos.harness.changes
-      .find({ request: apos.harness.getDoor(req).request })
+      .find({ requestId: apos.harness.getDoor(req).requestId })
       .sort({
         at: 1,
         sequence: 1
@@ -238,7 +238,7 @@ describe('Harness: the change log', function () {
     const marked = req.clone({
       aposSaveMarker: {
         door: 'assistant',
-        request: apos.harness.getDoor(req).request
+        requestId: apos.harness.getDoor(req).requestId
       }
     });
     const article = await apos.modules['log-article'].insert(marked, {

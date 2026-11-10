@@ -12,7 +12,7 @@ module.exports = (self) => {
       self.changes = await self.apos.db.collection('aposAiChanges');
       // The fold's own key, and a request's entries
       await self.changes.createIndex({
-        request: 1,
+        requestId: 1,
         docId: 1,
         sequence: 1
       }, { unique: true });
@@ -42,14 +42,14 @@ module.exports = (self) => {
      * because someone else saved in between, starts a new entry, so no
      * other save is ever recorded as the request's.
      *
-     * @param {object} req The saving request.
+     * @param {object} req The `req` of the save.
      * @param {object} settled The `afterSaveSettled` payload.
      */
     async recordChange(req, {
       marker, before, after, toolCall, drops
     }) {
       const open = await self.changes.findOne({
-        request: marker.request,
+        requestId: marker.requestId,
         docId: after._id
       }, {
         sort: { sequence: -1 }
@@ -83,7 +83,7 @@ module.exports = (self) => {
       await self.changes.insertOne({
         _id: self.apos.util.generateId(),
         schemaVersion: SCHEMA_VERSION,
-        request: marker.request,
+        requestId: marker.requestId,
         sequence: (open?.sequence || 0) + 1,
         door: marker.door,
         chat: marker.chat || null,
@@ -145,7 +145,7 @@ module.exports = (self) => {
      * their rows from then on. The door calls it once the request is over,
      * however it ended.
      *
-     * @param {object} req A request carrying the door context (`withDoor`).
+     * @param {object} req A `req` carrying the door context (`withDoor`).
      */
     async endRequest(req) {
       const door = self.getDoor(req);
@@ -153,7 +153,7 @@ module.exports = (self) => {
         return;
       }
       await self.changes.updateMany({
-        request: door.request,
+        requestId: door.requestId,
         head: { $exists: true }
       }, {
         $unset: {

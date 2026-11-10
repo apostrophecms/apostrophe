@@ -211,7 +211,7 @@ describe('Harness: doors, the write path and guards', function () {
       door: 'assistant',
       lockId: 'chat-1',
       family: 'tab-1',
-      request: 'request-1',
+      requestId: 'request-1',
       ...context
     });
   }
@@ -301,7 +301,7 @@ describe('Harness: doors, the write path and guards', function () {
         door: 'assistant',
         lockId: 'chat-1',
         family: 'tab-1',
-        request: 'request-1',
+        requestId: 'request-1',
         chat: 'chat-1',
         model: {
           provider: 'p',
@@ -314,7 +314,7 @@ describe('Harness: doors, the write path and guards', function () {
     it('should refuse an incomplete or unknown context', function () {
       const req = userReq('ann');
       assert.throws(() => door(req, { lockId: '' }), { name: 'invalid' });
-      assert.throws(() => door(req, { request: undefined }), { name: 'invalid' });
+      assert.throws(() => door(req, { requestId: undefined }), { name: 'invalid' });
       assert.throws(() => door(req, { family: 'chat-1' }), { name: 'invalid' });
       assert.throws(() => door(req, { model: 'm' }), { name: 'invalid' });
       assert.throws(() => door(req, { tab: 'x' }), { name: 'invalid' });
@@ -340,7 +340,7 @@ describe('Harness: doors, the write path and guards', function () {
       assert.equal(settled.length, 1);
       assert.deepEqual(settled[0].marker, {
         door: 'assistant',
-        request: 'request-1',
+        requestId: 'request-1',
         chat: 'chat-1',
         model: {
           provider: 'p',
@@ -617,8 +617,8 @@ describe('Harness: doors, the write path and guards', function () {
   });
 
   describe('guards', function () {
-    it('should author a new widget whole and replace every id the model sent', function () {
-      const { widget, ids } = apos.harness.authorWidget(userReq('ann'), {
+    it('should make a new widget whole and replace every id the model sent', function () {
+      const { widget, ids } = apos.harness.newWidget(userReq('ann'), {
         _id: 'model-widget',
         type: 'harness-card',
         heading: 'Heading',
@@ -634,7 +634,7 @@ describe('Harness: doors, the write path and guards', function () {
           _id: 'model-link',
           label: 'Link'
         } ],
-        _related: [ { _id: 'related-id' } ]
+        _related: [ 'related-id:fr:published' ]
       });
 
       const sent = [ 'model-widget', 'model-area', 'model-rich-text', 'model-link' ];
@@ -652,12 +652,13 @@ describe('Harness: doors, the write path and guards', function () {
       assert.equal(widget.kicker, 'News');
       assert.equal(widget.metaType, 'widget');
       assert.equal(widget.body.metaType, 'area');
-      assert.deepEqual(widget._related, [ { _id: 'related-id' } ]);
+      // Read in any locale or mode, written as the draft in the request's
+      assert.deepEqual(widget._related, [ { _id: 'related-id:en:draft' } ]);
       assert.equal('secret' in widget, false);
     });
 
     it('should keep the own id of a widget replaced in place', function () {
-      const { widget } = apos.harness.authorWidget(userReq('ann'), {
+      const { widget } = apos.harness.newWidget(userReq('ann'), {
         _id: 'model-widget',
         type: 'harness-card'
       }, { _id: 'kept' });
@@ -666,14 +667,14 @@ describe('Harness: doors, the write path and guards', function () {
 
     it('should refuse a widget type without a module', function () {
       assert.throws(
-        () => apos.harness.authorWidget(userReq('ann'), { type: 'nope' }),
+        () => apos.harness.newWidget(userReq('ann'), { type: 'nope' }),
         { name: 'invalid' }
       );
     });
 
     it('should save the ids it assigned', async function () {
       const article = await insertArticle();
-      const { widget, ids } = apos.harness.authorWidget(userReq('ann'), {
+      const { widget, ids } = apos.harness.newWidget(userReq('ann'), {
         type: 'harness-card',
         heading: 'Pushed',
         body: {

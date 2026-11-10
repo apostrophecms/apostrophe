@@ -26,7 +26,7 @@ module.exports = {
       '@apostrophecms/doc-type:afterSaveSettled': {
         async recordChange(req, doc, settled) {
           const { marker } = settled;
-          if ((typeof marker?.door !== 'string') || (typeof marker.request !== 'string')) {
+          if ((typeof marker?.door !== 'string') || (typeof marker.requestId !== 'string')) {
             return;
           }
           // Doors write drafts: a published copy changes by being published,
@@ -49,6 +49,8 @@ module.exports = {
       ...require('./lib/guards')(self),
       ...require('./lib/change-log')(self),
       ...require('./lib/read')(self),
+      ...require('./lib/edit')(self),
+      ...require('./lib/changes')(self),
       ...require('./lib/schema-read')(self),
       ...require('./lib/tools')(self)
     };

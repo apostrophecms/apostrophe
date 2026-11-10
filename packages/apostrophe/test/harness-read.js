@@ -36,6 +36,30 @@ describe('Harness: read tools and the schema read', function () {
         'read-secret': {
           extend: '@apostrophecms/piece-type'
         },
+        // Inline rich text, with the same options on a piece and a widget
+        'read-note': {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              text: {
+                type: 'richText',
+                options: { toolbar: [ 'italic' ] }
+              }
+            }
+          }
+        },
+        'read-quote-widget': {
+          extend: '@apostrophecms/widget-type',
+          fields: {
+            add: {
+              text: {
+                type: 'richText',
+                options: { toolbar: [ 'italic' ] }
+              },
+              credit: { type: 'richText' }
+            }
+          }
+        },
         'read-setting': {
           extend: '@apostrophecms/piece-type',
           options: {
@@ -622,9 +646,9 @@ describe('Harness: read tools and the schema read', function () {
       const { schema } = await run('get_schema', { types: [ 'read-article' ] });
       const lines = schema.split('\n');
 
-      assert.match(
+      assert.equal(
         lines[5],
-        /^main: area \[read-hero, @apostrophecms\/rich-text \(br, p, [^)]+\), @apostrophecms\/image\]$/
+        'main: area [read-hero, @apostrophecms/rich-text html A, @apostrophecms/image]'
       );
       assert.deepEqual([ ...lines.slice(0, 5), ...lines.slice(6) ], [
         '# read-article (piece)',
@@ -655,20 +679,23 @@ describe('Harness: read tools and the schema read', function () {
       const { schema, legend } = await run('get_schema', { types: [ 'read-hero' ] });
       const lines = schema.split('\n');
 
-      assert.match(lines[7], /^ {2}body: area \[@apostrophecms\/rich-text \(br, p, [^)]+\)\]$/);
-      assert.deepEqual([ ...lines.slice(0, 7), ...lines.slice(8) ], [
+      assert.deepEqual(lines, [
         '# read-hero (widget)',
         '## basics',
         'heading: string, required, help "The heading help"',
-        'content: area [@apostrophecms/rich-text (br, p, b, strong, a, p.lead)], max 2',
+        'content: area [@apostrophecms/rich-text html A], max 2',
         '_image: relationship → @apostrophecms/image, max 1',
         'items: array',
         '  label: string',
+        '  body: area [@apostrophecms/rich-text html B]',
         '## styles',
         'padding: style padding, px, box, min 0',
         'width: style width, %, range 0–100, step 10, default 100'
       ]);
       assert.equal(schema.includes('The heading label'), false);
+      // Each set of markup a save keeps, listed once
+      assert(legend.includes('\nmarkup A: br, p, b, strong, a, p.lead'));
+      assert.match(legend, /\nmarkup B: br, p, [^\n]+$/);
       for (const entry of [ 'style:', 'area:', 'html:', 'relationship →', 'box:', 'range:' ]) {
         assert(legend.includes(`\n${entry}`), entry);
       }
@@ -707,13 +734,28 @@ describe('Harness: read tools and the schema read', function () {
     });
 
     it('should give rich text its content line, and several types in one read', async function () {
-      const { schema } = await run('get_schema', {
+      const { schema, legend } = await run('get_schema', {
         types: [ '@apostrophecms/rich-text', '@apostrophecms/image' ]
       });
 
-      assert.match(schema, /^# @apostrophecms\/rich-text \(widget\)\ncontent: html \(br, p, /);
+      assert.match(schema, /^# @apostrophecms\/rich-text \(widget\)\ncontent: html A\n/);
+      assert.match(legend, /\nmarkup A: br, p, /);
       assert.match(schema, /\n# @apostrophecms\/image \(piece\)\n/);
       assert.match(schema, /\n# @apostrophecms\/image \(widget\)\n/);
+    });
+
+    it('should name the markup an inline rich text field keeps, each set once', async function () {
+      const { schema, legend } = await run('get_schema', {
+        types: [ 'read-note', 'read-quote' ]
+      });
+      const lines = schema.split('\n');
+
+      assert(lines.includes('text: html A'));
+      assert.equal(lines.filter(line => line === 'text: html A').length, 2);
+      assert(lines.includes('credit: html B'));
+      assert(legend.includes('\nmarkup A: br, p, i, em'));
+      assert.match(legend, /\nmarkup B: br, p, /);
+      assert.equal(legend.includes('markup C'), false);
     });
 
     it('should send help in the language of the admin UI', async function () {
@@ -869,7 +911,7 @@ describe('Harness: read tools and the schema read', function () {
   it('should give every read tool a result budget', function () {
     for (const name of [
       'search_content', 'get_document', 'list_types', 'get_schema',
-      'get_guidance', 'get_page_tree', 'find_references'
+      'get_guidance', 'get_page_tree', 'find_references', 'get_changes'
     ]) {
       const tool = apos.ai.getTool(name);
       assert.equal(tool.kind, 'query', name);

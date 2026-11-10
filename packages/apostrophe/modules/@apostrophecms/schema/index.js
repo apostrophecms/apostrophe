@@ -2153,7 +2153,7 @@ still output the value of this field with a regular template expression.`);
       // `schema` must be the document's allowed schema, i.e. what the caller
       // would otherwise pass to `subsetSchemaForPatch`.
       //
-      // `drops` and `authored` are recorded as `convert` and
+      // `drops` and `patchPaths` are recorded as `convert` and
       // `implementPatchOperators` would record them.
       //
       // Returns `false` if the patch is not that simple case, or if any part
@@ -2169,7 +2169,7 @@ still output the value of this field with a regular template expression.`);
         {
           fetchRelationships = true,
           drops,
-          authored
+          patchPaths
         } = {}
       ) {
         const keys = Object.keys(patch)
@@ -2265,7 +2265,7 @@ still output the value of this field with a regular template expression.`);
         }
         area.items[index] = widget;
         drops?.push(...widgetDrops);
-        authored?.push(found.dotPath);
+        patchPaths?.push(found.dotPath);
         return true;
         function ownerSchemaOf(owner) {
           const manager = self.apos.util.getManagerOf(owner, { log: false });
@@ -2296,19 +2296,19 @@ still output the value of this field with a regular template expression.`);
       // `$position`, `$before` or `$after` has an invalid value the insertion
       // takes place at the end of the existing array.
       //
-      // If `authored` is an array, the dot path in `patch` of everything the
+      // If `patchPaths` is an array, the dot path in `patch` of everything the
       // patch itself supplies is pushed to it: each pushed item, each value
       // set by dot path or `@` reference, and each top level property. What
       // lies beneath those paths is the patch's own, the rest was copied from
       // `existingPage`.
 
-      implementPatchOperators(patch, existingPage, { authored } = {}) {
+      implementPatchOperators(patch, existingPage, { patchPaths } = {}) {
         const clonedBases = {};
         // An `@` reference names the document's own content, never what was
         // loaded into it, such as a related document holding the same `_id`
         const own = { ignoreDynamicProperties: true };
         // Before any base is copied in from `existingPage`
-        authored?.push(...Object.keys(patch).filter(key => {
+        patchPaths?.push(...Object.keys(patch).filter(key => {
           return !'$@'.includes(key.charAt(0)) && !key.includes('.');
         }));
         if (patch.$push) {
@@ -2391,7 +2391,7 @@ still output the value of this field with a regular template expression.`);
             if (atReference || (key.indexOf('.') !== -1)) {
               cloneOriginalBase(key);
               self.apos.util.set(patch, key, val);
-              authored?.push(key);
+              patchPaths?.push(key);
             }
           }
         });
@@ -2433,19 +2433,19 @@ still output the value of this field with a regular template expression.`);
                 .concat(each)
                 .concat(existing.slice(position));
               self.apos.util.set(patch, key, updated);
-              if (authored) {
+              if (patchPaths) {
                 const path = self.apos.util.resolveAtReference(patch, key, own);
                 for (let i = 0; i < each.length; i++) {
-                  authored.push(`${path}.${position + i}`);
+                  patchPaths.push(`${path}.${position + i}`);
                 }
               }
             } else {
               const existing = self.apos.util.get(patch, key, own) || [];
               existing.push(val);
               self.apos.util.set(patch, key, existing);
-              if (authored) {
+              if (patchPaths) {
                 const path = self.apos.util.resolveAtReference(patch, key, own);
-                authored.push(`${path}.${existing.length - 1}`);
+                patchPaths.push(`${path}.${existing.length - 1}`);
               }
             }
           });
@@ -2486,12 +2486,12 @@ still output the value of this field with a regular template expression.`);
 
       // For a patch flagged `_lossless`, called by `applyPatch` once it is
       // converted, with what `convert` dropped and the paths the patch
-      // authored. A drop that overlaps the patch's own content, lying within
+      // sets (`patchPaths`). A drop that overlaps the patch's own content, lying within
       // it or holding some of it, refuses the patch as `invalid`, naming each
       // such drop. The other drops healed stale content, as any save does,
       // and are kept in `req.aposHealedDrops` by document `_id`.
-      checkLosslessPatch(req, doc, drops, authored) {
-        const own = drops.filter(drop => authored.some(path => {
+      checkLosslessPatch(req, doc, drops, patchPaths) {
+        const own = drops.filter(drop => patchPaths.some(path => {
           return (drop.path === path) ||
             drop.path.startsWith(`${path}.`) ||
             path.startsWith(`${drop.path}.`);

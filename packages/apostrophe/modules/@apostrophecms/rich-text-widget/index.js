@@ -881,10 +881,13 @@ module.exports = {
       // widget, so that both permit exactly the same markup for a given
       // configuration
       sanitizeRichText(html, options = {}) {
-        return self.sanitizeHtml(
-          html || '',
-          self.optionsToSanitizeHtml(self.combineOptions(options))
-        );
+        return self.sanitizeHtml(html || '', self.getSanitizeHtmlOptions(options));
+      },
+
+      // The sanitize-html options rich text with the given per-instance rich
+      // text options is saved with: the markup it keeps
+      getSanitizeHtmlOptions(options = {}) {
+        return self.optionsToSanitizeHtml(self.combineOptions(options));
       },
 
       // Returns the `aposDocId`s of all of the permalinks found in the given
