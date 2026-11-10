@@ -154,6 +154,13 @@ module.exports = (self) => {
       return Object.keys(self.apos.area.widgetManagers).sort();
     },
 
+    // The doc and widget types AI may work with, in one list
+    getTypeNames() {
+      return [
+        ...new Set([ ...self.getDocTypeNames(), ...self.getWidgetTypeNames() ])
+      ].sort();
+    },
+
     // The locales of the project, for tool definitions
     getLocaleNames() {
       return Object.keys(self.apos.i18n.locales);

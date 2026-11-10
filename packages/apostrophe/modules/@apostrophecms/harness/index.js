@@ -8,7 +8,8 @@
 // `apos.ai.generate`, set by `withDoor`. Every write goes through
 // `writeDocuments`: draft mode, the AI permission check, the lock, the
 // type's own patch with nothing silently lost, marked as AI's. A door's
-// saves land in the change log, `aposAiChanges`.
+// saves land in the change log, `aposAiChanges`. A door sends the
+// instructions `getInstructions` assembles.
 
 module.exports = {
   options: {
@@ -23,6 +24,29 @@ module.exports = {
   },
   handlers(self) {
     return {
+      'apostrophe:modulesRegistered': {
+        // Guidance is static text sent to the model as is: a string, or
+        // nothing
+        validateGuidance() {
+          const options = [
+            [ self, [ 'guidance' ] ],
+            ...[
+              ...Object.values(self.apos.doc.managers),
+              ...Object.values(self.apos.area.widgetManagers)
+            ].map(manager => [ manager, [ 'aiWhen', 'aiHow' ] ])
+          ];
+          for (const [ module, names ] of options) {
+            for (const name of names) {
+              const value = module.options[name];
+              if ((value != null) && (typeof value !== 'string')) {
+                throw new Error(
+                  `The "${module.__meta.name}" module's ${name} option must be a string.`
+                );
+              }
+            }
+          }
+        }
+      },
       '@apostrophecms/doc-type:afterSaveSettled': {
         async recordChange(req, doc, settled) {
           const { marker } = settled;
@@ -52,6 +76,7 @@ module.exports = {
       ...require('./lib/edit')(self),
       ...require('./lib/changes')(self),
       ...require('./lib/schema-read')(self),
+      ...require('./lib/guidance')(self),
       ...require('./lib/tools')(self)
     };
   }

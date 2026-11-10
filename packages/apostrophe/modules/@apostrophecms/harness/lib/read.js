@@ -333,6 +333,7 @@ module.exports = (self) => {
       }
       const legend = new Set();
       const markup = new Map();
+      const fieldTypes = new Set();
       const lines = [];
       for (const type of types) {
         const doc = self.apos.doc.getManager(type);
@@ -342,6 +343,7 @@ module.exports = (self) => {
           lines.push(`# ${type} (${kind})`, ...await self.renderSchema(req, doc, {
             legend,
             markup,
+            fieldTypes,
             fields
           }));
         }
@@ -349,12 +351,13 @@ module.exports = (self) => {
           lines.push(`# ${type} (widget)`, ...await self.renderSchema(req, widget, {
             legend,
             markup,
+            fieldTypes,
             fields
           }));
         }
       }
       return {
-        legend: self.getSchemaLegend(legend, markup),
+        legend: self.getSchemaLegend(legend, markup, fieldTypes),
         schema: lines.join('\n')
       };
     },

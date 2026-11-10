@@ -24,7 +24,9 @@ const LEGEND = {
     'custom property name ("--brand-blue"); any other value is stored empty.',
   range: 'range: a number within its bounds, a multiple of its step.',
   folded: 'folded: a conditional field\'s own fields are left out; read them with ' +
-    'get_schema "fields", by dot path of field names ("details.author"), one type at a time.'
+    'get_schema "fields", by dot path of field names ("details.author"), one type at a time.',
+  aiHow: 'aiHow: the site\'s rules for filling a field; "aiHow for" a field type gives ' +
+    'the rules for every field of that type.'
 };
 
 const OPERATORS = {
@@ -55,12 +57,14 @@ module.exports = (self) => {
      * @param {Map<string, string>} [options.markup] Collects the markup sets
      *   the lines name, each to be listed once in the legend: the name of
      *   each set by its list of markup.
+     * @param {Set<string>} [options.fieldTypes] Collects the field types
+     *   with an `aiHow` the lines show, each given once in the legend.
      * @param {string[]} [options.fields] Dot paths of field names to read in
      *   full instead of the whole schema.
      * @returns {Promise<string[]>}
      */
     async renderSchema(req, manager, {
-      legend = new Set(), markup = new Map(), fields
+      legend = new Set(), markup = new Map(), fieldTypes = new Set(), fields
     } = {}) {
       const schema = self.getAiSchemaOf(req, manager);
       if (fields) {
@@ -129,12 +133,22 @@ module.exports = (self) => {
         if (field.type !== 'area') {
           parts.push(formatDefault(field.def));
         }
-        const help = field.help
-          ? self.translate(req, field.help)
-          : field.htmlHelp &&
-            self.apos.util.htmlToPlaintext(self.translate(req, field.htmlHelp));
-        if (help?.trim()) {
-          parts.push(`help ${JSON.stringify(help.trim())}`);
+        // A field's own aiHow replaces its help, written for editors
+        if (field.aiHow?.trim()) {
+          legend.add('aiHow');
+          parts.push(`aiHow ${JSON.stringify(field.aiHow.trim())}`);
+        } else {
+          const help = field.help
+            ? self.translate(req, field.help)
+            : field.htmlHelp &&
+              self.apos.util.htmlToPlaintext(self.translate(req, field.htmlHelp));
+          if (help?.trim()) {
+            parts.push(`help ${JSON.stringify(help.trim())}`);
+          }
+        }
+        if (self.apos.schema.fieldTypes[field.type]?.aiHow?.trim()) {
+          legend.add('aiHow');
+          fieldTypes.add(field.type);
         }
         const lines = [ `${indent}${name}: ${parts.filter(Boolean).join(', ')}` ];
         for (const child of folded ? [] : nested) {
@@ -254,12 +268,15 @@ module.exports = (self) => {
       }
     },
 
-    // The legend lines for the entries and markup sets `renderSchema`
-    // collected
-    getSchemaLegend(legend, markup = new Map()) {
+    // The legend lines for the entries, markup sets and field types
+    // `renderSchema` collected
+    getSchemaLegend(legend, markup = new Map(), fieldTypes = new Set()) {
       return [
         LEGEND.intro,
         ...Object.keys(LEGEND).filter(key => legend.has(key)).map(key => LEGEND[key]),
+        ...[ ...fieldTypes ].map(type => {
+          return `aiHow for ${type} fields: ${self.apos.schema.fieldTypes[type].aiHow.trim()}`;
+        }),
         ...[ ...markup ].map(([ list, name ]) => `markup ${name}: ${list}`)
       ].join('\n');
     }

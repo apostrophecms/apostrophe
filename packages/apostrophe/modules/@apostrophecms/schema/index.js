@@ -1565,8 +1565,17 @@ module.exports = {
       // ```
       //
       // Note that areas are *always* indexed.
+      //
+      // ### `aiHow`
+      //
+      // Optional. How AI should fill every field of this type: static text,
+      // sent to the model as is (never an i18n key) with the schema of a
+      // type that has such a field. A field's own `aiHow` adds to it.
 
       addFieldType(type) {
+        if ((type.aiHow != null) && (typeof type.aiHow !== 'string')) {
+          throw new Error(`The "${type.name}" field type's aiHow must be a string.`);
+        }
         let fieldType = type;
         if (type.extend) {
           // Allow a field type to extend another field type and merge
@@ -1978,6 +1987,10 @@ still output the value of this field with a regular template expression.`);
         }
         if (field.hidden && field.hidden !== true && field.hidden !== false) {
           fail(`hidden must be a boolean, "${field.hidden}" provided.`);
+        }
+        // How AI should fill the field, sent to the model as is
+        if ((field.aiHow != null) && (typeof field.aiHow !== 'string')) {
+          fail('aiHow must be a string.');
         }
         if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
           fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);

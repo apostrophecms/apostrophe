@@ -19,9 +19,6 @@ module.exports = (self) => {
   const {
     handler, id, locale
   } = require('./tool-args')(self);
-  const typeNames = () => [
-    ...new Set([ ...self.getDocTypeNames(), ...self.getWidgetTypeNames() ])
-  ].sort();
 
   return [
     {
@@ -125,7 +122,7 @@ module.exports = (self) => {
             type: 'array',
             items: {
               type: 'string',
-              enum: typeNames()
+              enum: self.getTypeNames()
             },
             minItems: 1,
             maxItems: 10
@@ -154,7 +151,8 @@ module.exports = (self) => {
       description: 'How to use types the instructions mark "(aiHow)": their guidance, ' +
         'to read before working with them.',
       input: () => {
-        const types = typeNames().filter(type => self.getTypeOptions(type)?.aiHow);
+        const types = self.getTypeNames()
+          .filter(type => self.getTypeOptions(type).aiHow?.trim());
         return {
           type: 'object',
           properties: {

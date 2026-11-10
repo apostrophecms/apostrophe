@@ -26,6 +26,20 @@ module.exports = (self) => {
         // eslint-disable-next-line no-console
         console.log(lines.join('\n'));
       }
+    },
+    'print-instructions': {
+      usage: 'Print the instructions every door sends the model, with their size.\n' +
+        'Usage: node app @apostrophecms/harness:print-instructions\n' +
+        'Each door adds its own sections after them.',
+      task() {
+        const instructions = self.getInstructions(self.apos.task.getReq());
+        // eslint-disable-next-line no-console
+        console.log([
+          `# Instructions: ${instructions.length} characters, before each door's own sections`,
+          '',
+          instructions
+        ].join('\n'));
+      }
     }
   };
 };
