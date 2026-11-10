@@ -23,6 +23,7 @@ module.exports = (self) => {
   return [
     {
       name: 'search_content',
+      label: 'apostrophe:aiToolSearchContent',
       description: 'Find documents by text, by type, or both, in one locale. The source of ' +
         'every document id. Without "query", lists the type newest first.',
       input: () => ({
@@ -59,6 +60,7 @@ module.exports = (self) => {
     },
     {
       name: 'get_document',
+      label: 'apostrophe:aiToolGetDocument',
       description: 'Read one document, in its locale. "outline": every area with its ' +
         'widgets (id, type, text preview, size) and every other field with its size, ' +
         'and its value when short. "properties": the values at "paths". "versions": its ' +
@@ -98,6 +100,7 @@ module.exports = (self) => {
     },
     {
       name: 'list_types',
+      label: 'apostrophe:aiToolListTypes',
       description: 'The page, piece and widget types with their labels; for doc types, ' +
         'how they go live ("drafts": an editor publishes, "autopublish": live on save, ' +
         '"noDrafts": always live), and for piece types the slugs of the pages listing them.',
@@ -112,6 +115,7 @@ module.exports = (self) => {
     },
     {
       name: 'get_schema',
+      label: 'apostrophe:aiToolGetSchema',
       description: 'The fields of doc and widget types, one line per field, with a ' +
         'legend of the format. A conditional field\'s own fields are folded; read them ' +
         'with "fields".',
@@ -148,6 +152,7 @@ module.exports = (self) => {
     },
     {
       name: 'get_guidance',
+      label: 'apostrophe:aiToolGetGuidance',
       description: 'How to use types the instructions mark "(aiHow)": their guidance, ' +
         'to read before working with them.',
       input: () => {
@@ -176,6 +181,7 @@ module.exports = (self) => {
     },
     {
       name: 'get_page_tree',
+      label: 'apostrophe:aiToolGetPageTree',
       description: 'The page tree in tree order: each page with its id, title, slug, type, ' +
         'level, parent and number of children. Starts at the home page or at "root"; ' +
         'when "truncated", read on from a deeper root.',
@@ -205,6 +211,7 @@ module.exports = (self) => {
     },
     {
       name: 'find_references',
+      label: 'apostrophe:aiToolFindReferences',
       description: 'Documents that point at a document through a relationship ("where is ' +
         'this image used"), with the paths where each holds it, and their total.',
       input: {
@@ -233,6 +240,7 @@ module.exports = (self) => {
     },
     {
       name: 'get_changes',
+      label: 'apostrophe:aiToolGetChanges',
       description: 'What changed in one document since its last publication, since a ' +
         'version, or in one request. Each row: "path", usable as an update_document key, ' +
         'the change, the values before and after, who, when and the AI mark. An added ' +

@@ -31,6 +31,7 @@ module.exports = (self) => {
   return [
     {
       name: 'create_page',
+      label: 'apostrophe:aiToolCreatePage',
       description: 'Create a page at "position" from "target": its first or last child, ' +
         'or the page before or after it.',
       input: () => ({
@@ -63,6 +64,7 @@ module.exports = (self) => {
     },
     {
       name: 'create_piece',
+      label: 'apostrophe:aiToolCreatePiece',
       description: 'Create a piece, a document outside the page tree.',
       input: () => ({
         type: 'object',
@@ -86,6 +88,7 @@ module.exports = (self) => {
     },
     {
       name: 'update_document',
+      label: 'apostrophe:aiToolUpdateDocument',
       description: 'Change fields of one or more documents. Keys of "values": a field ' +
         'name, a dot path through objects, "@<id>" to replace a widget, array item or ' +
         'object whole, or "@<id>.<field>". Relationships take lists of ids. A key naming ' +
@@ -119,6 +122,7 @@ module.exports = (self) => {
     },
     {
       name: 'add_widgets',
+      label: 'apostrophe:aiToolAddWidgets',
       description: 'Add new widgets to an area, at the end unless a place is given. Each ' +
         'widget: "type" and its fields, nested areas as { "items": [widgets] }. Never ' +
         'send ids; the result returns the new ones.',
@@ -152,6 +156,7 @@ module.exports = (self) => {
     },
     {
       name: 'move_widgets',
+      label: 'apostrophe:aiToolMoveWidgets',
       description: 'Move widgets of one document, content and ids kept, in the order ' +
         'given, to an area of it, the same or another; at the end unless a place is given.',
       input: {
@@ -170,6 +175,7 @@ module.exports = (self) => {
     },
     {
       name: 'remove_widgets',
+      label: 'apostrophe:aiToolRemoveWidgets',
       description: 'Remove widgets from one document.',
       input: {
         type: 'object',

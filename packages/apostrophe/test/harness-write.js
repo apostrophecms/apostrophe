@@ -246,6 +246,18 @@ describe('Harness: doors, the write path and guards', function () {
       assert.deepEqual(harness('assistant'), harness('mcp'));
     });
 
+    it('should give every harness tool a label the admin UI translates', function () {
+      const keys = require('../modules/@apostrophecms/i18n/i18n/en.json');
+      const tools = apos.harness.getDoorTools('mcp')
+        .filter(tool => !tool.name.startsWith('t_'));
+      assert(tools.length);
+      for (const { name, label } of tools) {
+        const [ namespace, key ] = label.split(':');
+        assert.equal(namespace, 'apostrophe', name);
+        assert(keys[key], name);
+      }
+    });
+
     it('should leave out a removed tool everywhere', function () {
       for (const door of apos.harness.getDoorNames()) {
         assert.equal(

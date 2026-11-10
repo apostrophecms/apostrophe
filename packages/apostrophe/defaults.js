@@ -72,6 +72,7 @@ module.exports = {
     '@apostrophecms/command-menu': {},
     '@apostrophecms/translation': {},
     '@apostrophecms/document-versions': {},
-    '@apostrophecms/harness': {}
+    '@apostrophecms/harness': {},
+    '@apostrophecms/assistant': {}
   }
 };

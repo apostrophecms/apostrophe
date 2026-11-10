@@ -161,6 +161,21 @@ module.exports = (self) => {
           head: 1
         }
       });
+    },
+
+    /**
+     * Deletes the change log entries of a chat, for the assistant's delete
+     * of that chat. Only the user's own entries: a chat's writes run as its
+     * owner.
+     *
+     * @param {object} req
+     * @param {string} chat The chat's id.
+     */
+    async deleteChatChanges(req, chat) {
+      await self.changes.deleteMany({
+        chat,
+        userId: req.user._id
+      });
     }
   };
 };
