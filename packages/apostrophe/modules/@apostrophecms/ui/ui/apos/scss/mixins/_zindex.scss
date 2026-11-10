@@ -19,5 +19,7 @@ $z-index-area-schema-ui: 1005;
 $z-index-modal: 2000;
 // The same toolbar when the selection is inside a modal.
 $z-index-widget-selection-modal: 2001;
+// Windows stacked above every modal, and window triggers.
+$z-index-window-top: 2002;
 $z-index-notifications: 2003;
 $z-index-busy: 2004;

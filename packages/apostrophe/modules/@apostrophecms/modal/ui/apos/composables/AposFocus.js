@@ -1,6 +1,19 @@
 import { ref } from 'vue';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
+// Focusable elements inside a modal
+export const focusableSelector = [
+  '[tabindex]',
+  '[href]',
+  'input',
+  'select',
+  'textarea',
+  'button',
+  '[data-apos-focus-priority]'
+]
+  .map(s => `${s}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden]):not(.apos-sr-only)`)
+  .join(', ');
+
 export function useAposFocus() {
   const elementsToFocus = ref([]);
   const focusedElement = ref(null);
@@ -14,6 +27,8 @@ export function useAposFocus() {
     activeModalElementsToFocus: modalStore.activeModal?.elementsToFocus,
     activeModalFocusedElement: modalStore.activeModal?.focusedElement,
     cycleElementsToFocus,
+    cycleAcrossGroups,
+    getStackedFocusGroups,
     focusLastModalFocusedElement,
     storeFocusedElement,
     focusElement,
@@ -92,6 +107,49 @@ export function useAposFocus() {
       // Add focus for the first focusable element
       focus(e, firstElementToFocus);
     }
+  }
+
+  // The Tab groups of a modal that traps focus while windows stacked above
+  // every modal, or window triggers, are shown: the modal first, then each of
+  // them in page order. Null when nothing above it can take focus
+  function getStackedFocusGroups(trapEl) {
+    const above = [ ...document.querySelectorAll('[data-apos-stacking="top"]') ]
+      .map(getTabbableElements)
+      .filter(group => group.length);
+    if (!above.length) {
+      return null;
+    }
+    return [ getTabbableElements(trapEl), ...above ];
+  }
+
+  // Tab from the last element of a group goes to the first of the next,
+  // Shift+Tab from the first to the last of the previous, wrapping around;
+  // within a group the browser's own order applies
+  /**
+   * @param {KeyboardEvent} e event
+   * @param {HTMLElement[][]} groups
+   * @returns {void}
+   */
+  function cycleAcrossGroups(e, groups) {
+    const active = document.activeElement;
+    const index = groups.findIndex(group => group.includes(active));
+    if (index === -1) {
+      return;
+    }
+    const group = groups[index];
+    const edge = e.shiftKey ? group[0] : group.at(-1);
+    if (active !== edge) {
+      return;
+    }
+    const step = e.shiftKey ? -1 : 1;
+    const next = groups.at((index + step) % groups.length);
+    (e.shiftKey ? next.at(-1) : next[0]).focus();
+    e.preventDefault();
+  }
+
+  function getTabbableElements(rootEl) {
+    return [ ...rootEl.querySelectorAll(focusableSelector) ]
+      .filter(el => el.offsetParent !== null && !el.closest('[inert]'));
   }
 
   /**
