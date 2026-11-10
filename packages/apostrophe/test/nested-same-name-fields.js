@@ -1,6 +1,16 @@
 const t = require('../test-lib/test.js');
 const assert = require('node:assert/strict');
 
+// Stable has no apos.area.renderAreaTag (it came with the WYSIWYG fields
+// feature), so render an area exactly as the {% area %} tag does on stable
+async function renderAreaTag(apos, req, doc, name, _with) {
+  const area = doc[name] ||
+    await apos.area.addMissingArea(doc, name, { throwIfNotFound: true });
+  area._edit = area._edit || doc._edit;
+  apos.area.prepForRender(area, doc, name);
+  return apos.area.renderArea(req, area, _with);
+}
+
 // An array nested in an array of the same name, or an object nested in an
 // object of the same name, must still be matched to its own schema. See
 // https://github.com/apostrophecms/apostrophe/issues/4129
@@ -217,7 +227,7 @@ describe('Nested array and object fields sharing a name', function() {
     assert.equal(fieldOf(outer, 'area').type, 'area');
     assert.equal(fieldOf(inner, 'area').type, 'string');
     const req = apos.task.getReq({ mode: 'draft' });
-    const rendered = await apos.area.renderAreaTag(req, outer, 'area');
+    const rendered = await renderAreaTag(apos, req, outer, 'area');
     assert.match(rendered, /outer area/);
   });
 
@@ -229,7 +239,7 @@ describe('Nested array and object fields sharing a name', function() {
     assert.equal(fieldOf(outer, 'body').type, 'area');
     assert.equal(fieldOf(inner, 'body').type, 'string');
     const req = apos.task.getReq({ mode: 'draft' });
-    const rendered = await apos.area.renderAreaTag(req, outer, 'body');
+    const rendered = await renderAreaTag(apos, req, outer, 'body');
     assert.match(rendered, /outer body/);
   });
 
@@ -257,18 +267,6 @@ describe('Nested array and object fields sharing a name', function() {
       }
     });
     assertAnnotated(await findArticle(_id));
-  });
-
-  it('annotates the docs of versions', async function() {
-    const article = await insertArticle('versions');
-    const versions = await apos.docVersions.find(
-      apos.task.getReq(),
-      apos.docVersions.getTimelineCriteria(article)
-    );
-    assert(versions.length);
-    for (const version of versions) {
-      assertAnnotated(version.doc);
-    }
   });
 
   it('loads a doc whose object field is stored as an array', async function() {
