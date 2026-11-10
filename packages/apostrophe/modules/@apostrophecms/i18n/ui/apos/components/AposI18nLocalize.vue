@@ -2305,20 +2305,19 @@ export default {
   }
 }
 
+// Section heading, in the style of the field labels on Select Content
+// ("Documents to include", "Content to update")
 .apos-wizard__field-group-heading {
-  @include type-base;
+  @include type-label;
 
   & {
-    margin-bottom: $spacing-base;
-    padding-bottom: $spacing-base;
-    border-bottom: 1px solid var(--a-base-8);
-    color: var(--a-base-3);
+    margin: 0 0 $spacing-base;
   }
 }
 
 .apos-wizard__field-group-heading__info {
   position: relative;
-  top: 3px;
+  top: 2px;
 }
 
 .apos-wizard__step-2 {
