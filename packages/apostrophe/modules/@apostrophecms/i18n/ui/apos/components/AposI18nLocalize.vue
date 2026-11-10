@@ -2413,9 +2413,11 @@ export default {
   }
 }
 
-// The progress view grows as it runs: bound the modal's row so the body
-// scrolls on its own and the footer with the Done button stays in view
-.apos-i18n-localize--progress :deep(.apos-modal__main) {
+// Bound the modal's row so each column's body scrolls on its own and the
+// footer (Cancel, Back, Next, Localize Content, Done) stays in view on every
+// step, when the content is taller than the window, as the progress view
+// becomes while it runs
+.apos-i18n-localize :deep(.apos-modal__main) {
   grid-template-rows: minmax(0, 1fr);
 }
 </style>
