@@ -3,7 +3,7 @@
 // harness's tools and guidance, through the `assistant` door.
 //
 // Off by default. Unless `enabled` is set and the AI engine is active, it
-// adds no routes and creates no collections.
+// adds no routes, no halo and no browser data, and creates no collections.
 //
 // A chat runs one request at a time; chats run in parallel. The browser tab
 // that sends a request owns it: only that browser tab answers the request's
@@ -32,11 +32,19 @@ module.exports = {
     // Whether the reply footer names the vendor and model
     modelDisplay: false
   },
+  icons: {
+    'creation-icon': 'Creation',
+    'chat-outline-icon': 'ChatOutline',
+    'arrow-up-icon': 'ArrowUp',
+    'pencil-outline-icon': 'PencilOutline',
+    'trash-can-outline-icon': 'TrashCanOutline'
+  },
   init(self) {
     self.validateOptions();
     // Set once the AI engine is active too
     self.active = false;
     self.askKinds = {};
+    self.enableBrowserData();
   },
   handlers(self) {
     return {
@@ -51,6 +59,11 @@ module.exports = {
           await self.ensureCollections();
           await self.loadMarkdown();
           self.active = true;
+          self.apos.modal.addTrigger('assistant', {
+            componentName: 'AposAssistant',
+            label: 'apostrophe:assistantOpen',
+            icon: 'creation-icon'
+          });
         }
       }
     };
@@ -83,36 +96,36 @@ module.exports = {
           chat: await self.createChat(req)
         })),
         'chat/:_id/send': route(async (req) => ({
-          request: await self.send(req, req.params._id, {
+          request: self.renderRequest(await self.send(req, req.params._id, {
             message: req.body.message,
             screen: req.body.screen
-          })
+          }))
         })),
         'chat/:_id/answer': route(async (req) => ({
-          request: await self.answer(req, req.params._id, {
+          request: self.renderRequest(await self.answer(req, req.params._id, {
             tabId: req.body.tabId,
             callId: req.body.callId,
             answer: req.body.answer
-          })
+          }))
         })),
         'chat/:_id/skip': route(async (req) => ({
-          request: await self.skip(req, req.params._id, {
+          request: self.renderRequest(await self.skip(req, req.params._id, {
             tabId: req.body.tabId
-          })
+          }))
         })),
         'chat/:_id/continue-here': route(async (req) => ({
-          request: await self.continueHere(req, req.params._id, {
+          request: self.renderRequest(await self.continueHere(req, req.params._id, {
             tabId: req.body.tabId
-          })
+          }))
         })),
         'chat/:_id/stop': route(async (req) => ({
-          request: await self.stop(req, req.params._id)
+          request: self.renderRequest(await self.stop(req, req.params._id))
         })),
         'chat/:_id/retry': route(async (req) => ({
-          request: await self.retry(req, req.params._id, {
+          request: self.renderRequest(await self.retry(req, req.params._id, {
             requestId: req.body.requestId,
             screen: req.body.screen
-          })
+          }))
         })),
         visibility: route(async (req) => {
           await self.setVisible(req, {
@@ -159,7 +172,18 @@ module.exports = {
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
       ...require('./lib/events')(self),
-      ...require('./lib/markdown')(self)
+      ...require('./lib/markdown')(self),
+      // Only once active: a site without the assistant sends nothing of it
+      getBrowserData(req) {
+        if (!self.active) {
+          return null;
+        }
+        return {
+          action: self.action,
+          usageDisplay: self.options.usageDisplay,
+          modelDisplay: self.options.modelDisplay
+        };
+      }
     };
   }
 };

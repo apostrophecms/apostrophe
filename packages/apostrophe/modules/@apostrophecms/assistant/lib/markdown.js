@@ -60,14 +60,22 @@ module.exports = (self) => {
 
     /**
      * A request as the panel reads it: each assistant message with text
-     * gets its rendered `html` beside the raw content. Never stored.
+     * gets its rendered `html` beside the raw content, and the vendor and
+     * model are left out unless `modelDisplay` is set. Never stored.
      *
      * @param {object} request
      * @returns {object}
      */
     renderRequest(request) {
+      const {
+        provider, model, ...rest
+      } = request;
       return {
-        ...request,
+        ...rest,
+        ...(self.options.modelDisplay && {
+          provider,
+          model
+        }),
         messages: (request.messages || []).map((message) => {
           if (message.role !== 'assistant') {
             return message;

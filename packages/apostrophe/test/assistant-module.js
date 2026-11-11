@@ -2,8 +2,8 @@ const assert = require('assert').strict;
 const t = require('../test-lib/test.js');
 
 // The assistant is off by default: unless it is enabled and the AI engine
-// is active, it adds no routes and creates no collections. Its options are
-// checked at startup.
+// is active, it adds no routes, no halo and no browser data, and creates no
+// collections. Its options are checked at startup.
 
 const COLLECTIONS = [ 'aposChats', 'aposChatRequests' ];
 
@@ -14,7 +14,7 @@ describe('Assistant: module and options', function () {
     delete process.env.APOS_AI_MOCK;
   });
 
-  it('adds no routes or collections when not enabled', async function () {
+  it('adds nothing when not enabled', async function () {
     process.env.APOS_AI_MOCK = '1';
     await withApos({}, async (apos) => {
       assert.equal(apos.assistant.active, false);
@@ -22,7 +22,7 @@ describe('Assistant: module and options', function () {
     });
   });
 
-  it('adds no routes or collections when enabled with no active AI engine', async function () {
+  it('adds nothing when enabled with no active AI engine', async function () {
     await withApos({ enabled: true }, async (apos) => {
       assert.equal(apos.ai.active, false);
       assert.equal(apos.assistant.active, false);
@@ -41,6 +41,51 @@ describe('Assistant: module and options', function () {
       for (const name of COLLECTIONS) {
         assert(names.includes(name), name);
       }
+    });
+  });
+
+  it('shows the halo and sends its browser data to editors only once active', async function () {
+    process.env.APOS_AI_MOCK = '1';
+    await withApos({ enabled: true }, async (apos) => {
+      const triggers = apos.modal.triggers.filter(trigger => trigger.name === 'assistant');
+      assert.equal(triggers.length, 1);
+      assert.equal(triggers[0].componentName, 'AposAssistant');
+      const data = await apos.template.getBodyData(apos.task.getReq());
+      assert(data.modules['@apostrophecms/modal'].triggers
+        .some(trigger => trigger.name === 'assistant'));
+      assert.deepEqual(data.modules['@apostrophecms/assistant'], {
+        action: '/api/v1/@apostrophecms/assistant',
+        usageDisplay: 'tokens',
+        modelDisplay: false,
+        alias: 'assistant'
+      });
+      const anonymous = await apos.template.getBodyData(apos.task.getAnonReq());
+      assert.equal(anonymous.modules['@apostrophecms/modal'], undefined);
+      assert.equal(anonymous.modules['@apostrophecms/assistant'], undefined);
+    });
+  });
+
+  it('leaves the vendor and model out of the requests it sends unless modelDisplay is set', async function () {
+    process.env.APOS_AI_MOCK = '1';
+    const request = {
+      _id: 'r1',
+      provider: 'fake',
+      model: 'fake-large',
+      messages: []
+    };
+    await withApos({ enabled: true }, (apos) => {
+      const rendered = apos.assistant.renderRequest(request);
+      assert.equal(rendered._id, 'r1');
+      assert.equal('provider' in rendered, false);
+      assert.equal('model' in rendered, false);
+    });
+    await withApos({
+      enabled: true,
+      modelDisplay: true
+    }, (apos) => {
+      const rendered = apos.assistant.renderRequest(request);
+      assert.equal(rendered.provider, 'fake');
+      assert.equal(rendered.model, 'fake-large');
     });
   });
 
@@ -122,6 +167,9 @@ async function assertAbsent(apos) {
     { status: 404 }
   );
   assert.equal(apos.assistant.chats, undefined);
+  assert(!apos.modal.triggers.some(trigger => trigger.name === 'assistant'));
+  const data = await apos.template.getBodyData(apos.task.getReq());
+  assert.equal(data.modules['@apostrophecms/assistant'], undefined);
   const names = await getCollectionNames(apos);
   for (const name of COLLECTIONS) {
     assert(!names.includes(name), name);
