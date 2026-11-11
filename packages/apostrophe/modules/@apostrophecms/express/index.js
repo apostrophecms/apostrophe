@@ -118,6 +118,18 @@
 // automatically receive this protection via the csrf middleware, which
 // rejects requests in which the cookie is not present.
 //
+// Same-site but cross-origin requests, such as those from a sibling
+// subdomain, are also rejected when the browser identifies them
+// via the `Sec-Fetch-Site` header. If a separate frontend on another
+// origin of the same site legitimately makes unsafe requests with the
+// user's cookies, list its origin in the `allowedOrigins` subproperty:
+//
+// ```javascript
+// csrf: {
+//   allowedOrigins: [ 'https://www.example.com' ]
+// }
+// ```
+//
 // If the request was made with a valid api key or bearer token it
 // bypasses this check.
 //
@@ -347,7 +359,7 @@ module.exports = {
         if (!key) {
           return next();
         }
-        if (_.has(self.options.apiKeys && self.options.apiKeys, key)) {
+        if (self.options.apiKeys && Object.hasOwn(self.options.apiKeys, key)) {
           const info = self.options.apiKeys[key];
           if (info.role === 'admin') {
             taskReq = self.apos.task.getReq();
@@ -384,6 +396,14 @@ module.exports = {
       async bearerTokens(req, res, next) {
         if (!req.token) {
           return next();
+        }
+        // The token can come from the query string, where qs
+        // syntax can turn it into an object or array
+        if (typeof req.token !== 'string') {
+          return res.status(401).send({
+            name: 'invalid',
+            message: 'bearer token invalid'
+          });
         }
         try {
           const userId = await getBearer();
@@ -658,6 +678,8 @@ module.exports = {
         // make it conveniently available to the assets module when it
         // picks a few properties from apos to boot that up
         self.apos.csrfCookieName = (self.options.csrf && self.options.csrf.name) || self.apos.shortName + '.csrf';
+        self.csrfAllowedOrigins = (self.options.csrf?.allowedOrigins || [])
+          .map(origin => new URL(origin).origin);
         self.compileCsrfExceptions();
       },
 
@@ -708,7 +730,19 @@ module.exports = {
           // This isn't meant to be a unique code that no one could guess,
           // but rather a check that the request from the same origin,
           // as cross-origin requests cannot set cookies on our origin at all.
-          if (req.cookies[self.apos.csrfCookieName] !== 'csrf') {
+          //
+          // That does not hold for a cross-origin page on the same site, such
+          // as a sibling subdomain, so also reject requests the browser
+          // reports as coming from another origin. Non-browser clients
+          // do not send Sec-Fetch-Site.
+          const site = req.headers['sec-fetch-site'];
+          if (
+            (req.cookies[self.apos.csrfCookieName] !== 'csrf') ||
+            (
+              ((site === 'same-site') || (site === 'cross-site')) &&
+              !self.csrfAllowedOrigins.includes(req.headers.origin)
+            )
+          ) {
             res.statusCode = 403;
             return res.send({
               name: 'forbidden',

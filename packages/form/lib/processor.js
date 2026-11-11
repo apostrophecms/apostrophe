@@ -74,7 +74,8 @@ module.exports = function (self) {
           areas.push(area);
         });
 
-        const conditionals = {};
+        // No prototype, since condition names and values are used as keys
+        const conditionals = Object.create(null);
         const skipFields = [];
 
         // Populate the conditionals object fully to clear disabled values
@@ -181,7 +182,7 @@ module.exports = function (self) {
     matchesName(str, name) {
       return str.startsWith(name) && str.match(/.+-\d+$/);
     },
-    trackConditionals(conditionals = {}, widget) {
+    trackConditionals(conditionals = Object.create(null), widget) {
       const conditionName = widget.conditionName;
       const conditionValue = widget.conditionValue;
 
@@ -189,7 +190,7 @@ module.exports = function (self) {
         return;
       }
 
-      conditionals[conditionName] = conditionals[conditionName] || {};
+      conditionals[conditionName] = conditionals[conditionName] || Object.create(null);
 
       conditionals[conditionName][conditionValue] =
       conditionals[conditionName][conditionValue] || [];

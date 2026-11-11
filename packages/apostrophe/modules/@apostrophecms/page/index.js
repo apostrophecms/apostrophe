@@ -643,6 +643,7 @@ module.exports = {
           }
 
           self.enforceParkedProperties(req, page, input);
+          self.removeFieldsRevealedByTypeChange(req, page, manager);
 
           await manager.convert(req, input, page);
           await self.update(req, page);
@@ -1317,6 +1318,7 @@ database.`);
         if (!manager) {
           throw self.apos.error('invalid');
         }
+        self.removeFieldsRevealedByTypeChange(req, page, manager);
         const parentPage = page._ancestors.length &&
           page._ancestors[page._ancestors.length - 1];
         const allowedSchema = manager.allowedSchema(req, {
@@ -1340,6 +1342,31 @@ database.`);
           });
         }
         await manager.emit('afterConvert', req, input, page);
+      },
+      // Called before `page` is converted to the page type of `manager` for
+      // `req`. If that changes its type, removes the fields its current type
+      // hides from the user (see `viewPermission`) that the new type would not
+      // hide, so that changing the type cannot reveal them
+      removeFieldsRevealedByTypeChange(req, page, manager) {
+        const oldManager = self.apos.doc.getManager(page.type);
+        if (
+          !oldManager ||
+          oldManager.orphan ||
+          (manager === oldManager) ||
+          !self.apos.instanceOf(manager, '@apostrophecms/page-type')
+        ) {
+          return;
+        }
+        const visibleBefore = oldManager.removeForbiddenFields(req, { ...page });
+        const visibleAfter = manager.removeForbiddenFields(req, {
+          ...page,
+          type: manager.name
+        });
+        for (const name of Object.keys(page)) {
+          if (!Object.hasOwn(visibleBefore, name) && Object.hasOwn(visibleAfter, name)) {
+            delete page[name];
+          }
+        }
       },
       // True delete. Will throw an error if the page
       // has descendants

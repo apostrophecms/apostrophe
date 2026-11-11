@@ -132,8 +132,10 @@ module.exports = {
           return true;
         }
 
+        // A user who cannot view a type cannot edit or publish it either
+
         function canEdit() {
-          if (checkRoleConfig('editRole')) {
+          if (checkRoleConfig('viewRole') || checkRoleConfig('editRole')) {
             return false;
           }
           if (mode === 'draft') {
@@ -150,7 +152,7 @@ module.exports = {
         }
 
         function canPublish() {
-          if (checkRoleConfig('publishRole')) {
+          if (checkRoleConfig('viewRole') || checkRoleConfig('publishRole')) {
             return false;
           }
           return role === 'editor';
@@ -174,15 +176,13 @@ module.exports = {
           return {};
         }
 
-        const restrictedViewTypes = Object.keys(self.apos.doc.managers)
-          .filter(name =>
-            ranks[self.apos.doc.getManager(name).options.viewRole] > rankOf(role));
-        const restrictedEditTypes = Object.keys(self.apos.doc.managers)
-          .filter(name =>
-            ranks[self.apos.doc.getManager(name).options.editRole] > rankOf(role));
-        const restrictedPublishTypes = Object.keys(self.apos.doc.managers)
-          .filter(name =>
-            ranks[self.apos.doc.getManager(name).options.publishRole] > rankOf(role));
+        // A user who cannot view a type cannot edit or publish it either
+        const restrictedTypes = (...permRoles) => Object.keys(self.apos.doc.managers)
+          .filter(name => permRoles.some(permRole =>
+            ranks[self.apos.doc.getManager(name).options[permRole]] > rankOf(role)));
+        const restrictedViewTypes = restrictedTypes('viewRole');
+        const restrictedEditTypes = restrictedTypes('viewRole', 'editRole');
+        const restrictedPublishTypes = restrictedTypes('viewRole', 'publishRole');
         // Editing their published docs is publishing them
         const restrictedPublishedEditTypes = restrictedPublishTypes
           .filter(name => restrictsPublishedEdits(self.apos.doc.getManager(name)));
