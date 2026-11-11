@@ -536,8 +536,11 @@ export default {
         .filter(image => (!!image && !image.__placeholder));
 
       if (Array.isArray(imgIds) && imgIds.length) {
-        const checked = this.checked.concat(imgIds);
-        this.checked = checked.slice(0, this.relationshipField?.max || checked.length);
+        // New uploads take priority over the existing selection when
+        // there is no room for both
+        const max = this.relationshipField?.max || Infinity;
+        const kept = this.checked.slice(0, Math.max(max - imgIds.length, 0));
+        this.checked = kept.concat(imgIds).slice(0, max);
 
         // If we're currently editing one, don't interrupt that by replacing it.
         if (!this.editing && imgIds.length === 1) {

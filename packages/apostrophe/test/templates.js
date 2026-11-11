@@ -505,4 +505,12 @@ describe('Templates', function() {
     assert(result.includes('Modify / Delete'));
   });
 
+  it('should ignore a render at the top level of an imported template', async function() {
+    const req = apos.task.getReq();
+    const result = await apos.modules['fragment-all'].renderPage(req, 'import-top-level');
+    assert(result.includes('<nav>NAV</nav>'));
+    // Top-level output of an imported template is discarded by Nunjucks
+    assert(!result.includes('LOGO'));
+  });
+
 });

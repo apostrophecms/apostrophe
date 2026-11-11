@@ -118,6 +118,18 @@
 // automatically receive this protection via the csrf middleware, which
 // rejects requests in which the cookie is not present.
 //
+// Same-site but cross-origin requests, such as those from a sibling
+// subdomain, are also rejected when the browser identifies them
+// via the `Sec-Fetch-Site` header. If a separate frontend on another
+// origin of the same site legitimately makes unsafe requests with the
+// user's cookies, list its origin in the `allowedOrigins` subproperty:
+//
+// ```javascript
+// csrf: {
+//   allowedOrigins: [ 'https://www.example.com' ]
+// }
+// ```
+//
 // If the request was made with a valid api key or bearer token it
 // bypasses this check.
 //
@@ -344,7 +356,7 @@ module.exports = {
         if (!key) {
           return next();
         }
-        if (_.has(self.options.apiKeys && self.options.apiKeys, key)) {
+        if (self.options.apiKeys && Object.hasOwn(self.options.apiKeys, key)) {
           const info = self.options.apiKeys[key];
           if (info.role === 'admin') {
             taskReq = self.apos.task.getReq();
@@ -381,6 +393,14 @@ module.exports = {
       async bearerTokens(req, res, next) {
         if (!req.token) {
           return next();
+        }
+        // The token can come from the query string, where qs
+        // syntax can turn it into an object or array
+        if (typeof req.token !== 'string') {
+          return res.status(401).send({
+            name: 'invalid',
+            message: 'bearer token invalid'
+          });
         }
         try {
           const userId = await getBearer();
@@ -655,6 +675,8 @@ module.exports = {
         // make it conveniently available to the assets module when it
         // picks a few properties from apos to boot that up
         self.apos.csrfCookieName = (self.options.csrf && self.options.csrf.name) || self.apos.shortName + '.csrf';
+        self.csrfAllowedOrigins = (self.options.csrf?.allowedOrigins || [])
+          .map(origin => new URL(origin).origin);
         self.compileCsrfExceptions();
       },
 
@@ -698,14 +720,26 @@ module.exports = {
             ...self.sessionOptions.cookie,
             // 1 year (the limit). The value is known, we are relying
             // on SameSite (modern browsers)
-            maxAge: 31536000
+            maxAge: 365 * 24 * 60 * 60 * 1000
           });
         } else {
           // Check that the request arrived with the CSRF cookie.
           // This isn't meant to be a unique code that no one could guess,
           // but rather a check that the request from the same origin,
           // as cross-origin requests cannot set cookies on our origin at all.
-          if (req.cookies[self.apos.csrfCookieName] !== 'csrf') {
+          //
+          // That does not hold for a cross-origin page on the same site, such
+          // as a sibling subdomain, so also reject requests the browser
+          // reports as coming from another origin. Non-browser clients
+          // do not send Sec-Fetch-Site.
+          const site = req.headers['sec-fetch-site'];
+          if (
+            (req.cookies[self.apos.csrfCookieName] !== 'csrf') ||
+            (
+              ((site === 'same-site') || (site === 'cross-site')) &&
+              !self.csrfAllowedOrigins.includes(req.headers.origin)
+            )
+          ) {
             res.statusCode = 403;
             return res.send({
               name: 'forbidden',
@@ -832,9 +866,19 @@ module.exports = {
             routes: _routes.filter(route => !route.before)
           });
         }
+        // The labeled list entry each item belongs to, so that items placed
+        // "before" a module can follow that module's items wherever they
+        // were moved
+        const owners = new Map();
         for (const name of Object.keys(self.apos.modules)) {
           const middleware = self.apos.modules[name].middleware || {};
           const _routes = self.apos.modules[name]._routes;
+          for (const item of Object.values(middleware)) {
+            owners.set(item, `middleware:${name}`);
+          }
+          for (const item of _routes) {
+            owners.set(item, `routes:${name}`);
+          }
           for (const item of [ ...Object.values(middleware), ..._routes ]) {
             if (item.before) {
               let fullBeforeName = item.before;
@@ -858,9 +902,28 @@ module.exports = {
           }
         }
 
-        self.finalModuleMiddlewareAndRoutes = labeledList
-          .map(item => (item.prepending || []).concat(item.middleware || item.routes))
-          .flat();
+        // Emit each entry's own items in order, preceded by the items that
+        // asked to come "before" it. When such an item itself belongs to a
+        // module that others asked to precede, those items come first, so
+        // chains of "before" resolve transitively (#4060)
+        const byName = new Map(labeledList.map(entry => [ entry.name, entry ]));
+        const prepended = new Set();
+        const final = [];
+        const emitPrepending = (entry) => {
+          if (!entry || prepended.has(entry)) {
+            return;
+          }
+          prepended.add(entry);
+          for (const item of entry.prepending || []) {
+            emitPrepending(byName.get(owners.get(item)));
+            final.push(item);
+          }
+        };
+        for (const entry of labeledList) {
+          emitPrepending(entry);
+          final.push(...(entry.middleware || entry.routes));
+        }
+        self.finalModuleMiddlewareAndRoutes = final;
       },
       createCacheOnDemand() {
         const { enableCacheOnDemand = true } = self.options;

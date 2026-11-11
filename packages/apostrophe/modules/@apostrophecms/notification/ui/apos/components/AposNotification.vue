@@ -68,6 +68,7 @@ import {
 import Close from '@apostrophecms/vue-material-design-icons/Close.vue';
 import { useNotificationStore } from 'Modules/@apostrophecms/ui/stores/notification.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal.js';
+import { isLongMessage } from '../lib/notification.js';
 
 const props = defineProps({
   notification: {
@@ -113,13 +114,7 @@ const classList = computed(() => {
     classes.push('apos-notification--progress');
   }
 
-  // long notifications look funky, but reading the label's length doesn't
-  // account for html. Throw the string into a fake element to get its text
-  // content
-  const div = document.createElement('div');
-  div.innerHTML = localize(props.notification.message);
-  const textContent = div.textContent || div.innerText || '';
-  if (textContent.length > 160) {
+  if (isLongMessage(localize(props.notification.message))) {
     classes.push('apos-notification--long');
   }
 

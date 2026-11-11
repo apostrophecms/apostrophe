@@ -1620,6 +1620,13 @@ module.exports = {
 
         forbiddenSchemaFields.forEach(field => {
           delete doc[field.name];
+          // A relationship field's stored ids and relationship fields
+          if (field.idsStorage) {
+            delete doc[field.idsStorage];
+          }
+          if (field.fieldsStorage) {
+            delete doc[field.fieldsStorage];
+          }
         });
 
         return doc;
@@ -2883,7 +2890,7 @@ module.exports = {
               const _query = baseQuery.clone();
               // Make sure this is a legitimate builder before attempting to
               // shut it off
-              if (!_.has(query.builders, filter)) {
+              if (!Object.hasOwn(query.builders, filter)) {
                 continue;
               }
               // Make sure it would ever be accepted via a query parameter
@@ -3423,7 +3430,7 @@ module.exports = {
 
         applyBuildersSafely(params, { publicApiProjection } = {}) {
           for (let [ name, value ] of Object.entries(params)) {
-            if (!_.has(query.builders, name)) {
+            if (!Object.hasOwn(query.builders, name)) {
               continue;
             }
             if (!query.builders[name].launder) {
@@ -3510,6 +3517,9 @@ module.exports = {
         // to them via further queries, etc.
 
         async after(results) {
+          for (const doc of results) {
+            self.apos.schema.annotateFieldIds(doc);
+          }
           // Since "afters," in some cases, invoke query builders, we have to
           // set query._finalized to false so these invocations don't
           // throw an exception.

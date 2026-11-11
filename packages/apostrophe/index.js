@@ -750,6 +750,9 @@ async function apostrophe(options, telemetry, rootSpan) {
               "apostrophe-" prefix. It is reserved.
             `
           );
+        } else if (Object.keys(self.modules).some(moduleName => moduleName.startsWith(`${name}/`))) {
+          // The folder is part of a module name with a slash, such as
+          // `nested/stuff`, which is warned about separately
         } else {
           warn('orphan-modules', `You have a ${self.localModules}/${name} folder, but that module is not activated in app.js\nand it is not a base class of any other active module. Right now that code doesn't do anything.`);
         }
@@ -779,6 +782,21 @@ async function apostrophe(options, telemetry, rootSpan) {
 
             If you get this warning for your own original module, do not use the
             "apostrophe-" prefix. It is reserved.
+          `
+        );
+      }
+      // A slash is only meaningful in an npm-style `@namespace/name`. Other
+      // slashes happen to load the module from a subfolder of `modules`, and
+      // projects rely on that, so warn rather than refuse (#2646)
+      if (name.includes('/') && !/^@[^/]+\/[^/]+$/.test(name)) {
+        self.util.warnDevOnce(
+          'module-name-slashes',
+          stripIndent`
+            You have configured a module named ${name}.
+            Only npm-style names like @namespace/name should contain a slash.
+            To organize your project's modules into subfolders, set the
+            nestedModuleSubdirs: true option in app.js and give each module
+            a plain name.
           `
         );
       }

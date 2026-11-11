@@ -74,7 +74,8 @@ module.exports = function (self) {
           areas.push(area);
         });
 
-        const conditionals = {};
+        // No prototype, since condition names and values are used as keys
+        const conditionals = Object.create(null);
         const skipFields = [];
 
         // Populate the conditionals object fully to clear disabled values
@@ -181,7 +182,7 @@ module.exports = function (self) {
     matchesName(str, name) {
       return str.startsWith(name) && str.match(/.+-\d+$/);
     },
-    trackConditionals(conditionals = {}, widget) {
+    trackConditionals(conditionals = Object.create(null), widget) {
       const conditionName = widget.conditionName;
       const conditionValue = widget.conditionValue;
 
@@ -189,13 +190,19 @@ module.exports = function (self) {
         return;
       }
 
-      conditionals[conditionName] = conditionals[conditionName] || {};
+      conditionals[conditionName] = conditionals[conditionName] || Object.create(null);
 
       conditionals[conditionName][conditionValue] =
       conditionals[conditionName][conditionValue] || [];
 
-      widget.contents.items.forEach(item => {
-        conditionals[conditionName][conditionValue].push(item.fieldName);
+      // Walk nested areas too, so fields inside a group in the conditional
+      // are skipped along with it.
+      self.apos.area.walk({ contents: widget.contents }, function(area) {
+        for (const item of area.items || []) {
+          if (item.fieldName) {
+            conditionals[conditionName][conditionValue].push(item.fieldName);
+          }
+        }
       });
 
       // If there aren't any fields in the conditional group, don't bother
@@ -220,9 +227,14 @@ module.exports = function (self) {
         return val;
       };
 
+      // A checkboxes field submits an array: the condition matches when any
+      // checked value does.
+      const matches = (answer, value) => (Array.isArray(answer) ? answer : [ answer ])
+        .some(item => normalize(item) === normalize(value));
+
       for (const name in conditionals) {
         for (const value in conditionals[name]) {
-          if (normalize(input[name]) !== normalize(value)) {
+          if (!matches(input[name], value)) {
             conditionals[name][value].forEach(field => skipFields.push(field));
           }
         }

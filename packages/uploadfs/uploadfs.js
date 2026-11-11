@@ -338,7 +338,9 @@ function Uploadfs() {
     }
 
     let originalDone = false;
-    const copyOriginal = options.copyOriginal !== false;
+    // Both may be set once in `init` and overridden per call
+    const copyOriginal = (options.copyOriginal ?? self.options.copyOriginal) !== false;
+    const orientOriginals = (options.orientOriginals ?? self.options.orientOriginals) !== false;
     let originalPath;
 
     async.series(
@@ -384,7 +386,7 @@ function Uploadfs() {
           // in directly
           if (
             !copyOriginal ||
-            options.orientOriginals !== false ||
+            orientOriginals ||
             options.crop
           ) {
             return callback(null);

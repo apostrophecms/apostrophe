@@ -591,6 +591,77 @@ describe('Utils', async function() {
       assert.strictEqual(error.name, 'invalid');
     });
 
+    it('implementPatchOperators should set through an @ reference in the document, not in a loaded relationship', function() {
+      const patch = { '@text.content': 'Patched' };
+      apos.schema.implementPatchOperators(patch, withLoadedCopy());
+
+      const [ link, columns ] = patch.main.items;
+      assert.equal(columns.one.items[0].content, 'Patched');
+      assert.equal(link._related[0].main.items[0].one.items[0].content, 'Copy');
+    });
+
+    it('implementPatchOperators should push into the area of an @ reference in the document, not in a loaded relationship', function() {
+      const patch = {
+        $push: {
+          '@inner.items': {
+            $each: [ {
+              _id: 'added',
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              content: 'Added'
+            } ],
+            $before: 'text'
+          }
+        }
+      };
+      apos.schema.implementPatchOperators(patch, withLoadedCopy());
+
+      const [ link, columns ] = patch.main.items;
+      assert.deepEqual(columns.one.items.map(item => item.content), [ 'Added', 'Own' ]);
+      assert.equal(link._related[0].main.items[0].one.items.length, 1);
+    });
+
+    it('implementPatchOperators should push into the area of an @ reference, not a copy of it loaded in the pushed widget', function() {
+      // The pushed widget relates to the page it is pushed into, loaded
+      // with an older copy of the area
+      const page = withLoadedCopy();
+      const patch = {
+        $push: {
+          '@main.items': {
+            $each: [ {
+              _id: 'link-copy',
+              metaType: 'widget',
+              type: 'link',
+              _related: [ {
+                _id: 'page',
+                main: {
+                  _id: 'main',
+                  metaType: 'area',
+                  items: []
+                }
+              } ]
+            } ]
+          }
+        }
+      };
+      apos.schema.implementPatchOperators(patch, page);
+
+      assert.deepEqual(
+        patch.main.items.map(item => item._id),
+        [ 'link', 'columns', 'link-copy' ]
+      );
+    });
+
+    it('implementPatchOperators should refuse an @ reference only a loaded relationship holds', function() {
+      assert.throws(
+        () => apos.schema.implementPatchOperators(
+          { '@text.content': 'Patched' },
+          withLoadedCopy({ text: false })
+        ),
+        { name: 'invalid' }
+      );
+    });
+
     it('should slugify', function () {
       // Basic
       assert.equal(
@@ -1121,4 +1192,49 @@ function wait(delay) {
 async function AsyncErrFn(num, time = 50) {
   await wait();
   throw new Error('async error');
+}
+
+// The first widget has loaded a related document holding the same `_id`s,
+// as a copy of the document does. Relationships load ahead of whatever
+// comes after them, so a search that looks inside them meets the copy first
+function withLoadedCopy({ text = true } = {}) {
+  const columns = content => ({
+    _id: 'columns',
+    metaType: 'widget',
+    type: 'columns',
+    one: {
+      _id: 'inner',
+      metaType: 'area',
+      items: content
+        ? [ {
+          _id: 'text',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content
+        } ]
+        : []
+    }
+  });
+  return {
+    main: {
+      _id: 'main',
+      metaType: 'area',
+      items: [
+        {
+          _id: 'link',
+          metaType: 'widget',
+          type: 'link',
+          _related: [ {
+            _id: 'copy',
+            main: {
+              _id: 'copy-main',
+              metaType: 'area',
+              items: [ columns('Copy') ]
+            }
+          } ]
+        },
+        columns(text && 'Own')
+      ]
+    }
+  };
 }

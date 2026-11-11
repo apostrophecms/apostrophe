@@ -9,6 +9,17 @@ export default {
       ? this.modelValue.data
       : [];
   },
+  computed: {
+    // `hideLabel` hides the field's label. A lone choice stands for that
+    // label, so it hides too; with several, each choice keeps its own
+    choiceField() {
+      if (!this.field.hideLabel || this.choices.length < 2) {
+        return this.field;
+      }
+      const { hideLabel, ...field } = this.field;
+      return field;
+    }
+  },
   methods: {
     getChoiceId(uid, value) {
       return (uid + String(value)).replace(/[\s"'.]/g, '');
