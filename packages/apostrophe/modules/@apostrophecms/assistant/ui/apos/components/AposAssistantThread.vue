@@ -15,21 +15,25 @@
       </p>
     </div>
     <AposAssistantRequest
-      v-for="request in requests"
-      :key="request._id"
-      :request="request"
+      v-for="message in messages"
+      ref="items"
+      :key="message._id"
+      :request="message.request"
+      :retried="message.retried"
+      :latest="message.request === requests.at(-1)"
     />
   </div>
 </template>
 
 <script setup>
 import {
-  computed, nextTick, onMounted, ref, watch
+  computed, nextTick, onBeforeUnmount, onMounted, ref, watch
 } from 'vue';
 import { useAssistantStore } from '../stores/assistant.js';
 
-// One chat's requests, oldest first. The thread follows new content while
-// the editor reads its end, and stays where they scrolled to otherwise
+// One chat's messages, oldest first, each pinned at the top while the
+// editor reads what came of it. The thread follows new content while the
+// editor reads its end, and stays where they scrolled to otherwise
 const props = defineProps({
   // A chat id, or the new chat's
   chatId: {
@@ -43,27 +47,72 @@ const END_SLACK = 40;
 
 const store = useAssistantStore();
 const root = ref(null);
+const items = ref([]);
 let atEnd = true;
+let frame = null;
 
 const requests = computed(() => store.requests[props.chatId] || []);
 
+// A retry runs under the message it repeats: each message shows its latest
+// request
+const messages = computed(() => {
+  const list = [];
+  const byRequest = new Map();
+  for (const request of requests.value) {
+    const message = request.retryOf && byRequest.get(request.retryOf);
+    if (message) {
+      message.request = request;
+      message.retried = true;
+    } else {
+      list.push({
+        _id: request._id,
+        request,
+        retried: false
+      });
+    }
+    byRequest.set(request._id, message || list.at(-1));
+  }
+  return list;
+});
+
 onMounted(scrollToEnd);
+onBeforeUnmount(() => cancelAnimationFrame(frame));
 
 watch(() => [ requests.value, store.progress ], async () => {
   if (atEnd) {
     await scrollToEnd();
   }
+  await nextTick();
+  markPinned();
 }, { deep: true });
 
 function onScroll() {
   const el = root.value;
   atEnd = el.scrollHeight - el.scrollTop - el.clientHeight < END_SLACK;
+  cancelAnimationFrame(frame);
+  frame = requestAnimationFrame(markPinned);
 }
 
 async function scrollToEnd() {
   await nextTick();
   if (root.value) {
     root.value.scrollTop = root.value.scrollHeight;
+    markPinned();
+  }
+}
+
+// A message is pinned once the spot it sits in when not pinned has
+// scrolled above the thread's top
+function markPinned() {
+  const el = root.value;
+  if (!el) {
+    return;
+  }
+  const top = el.getBoundingClientRect().top;
+  for (const item of items.value) {
+    const sentinel = item.$el.firstElementChild;
+    const pin = sentinel.nextElementSibling;
+    pin.dataset.stuck = String(sentinel.getBoundingClientRect().top < top + 2);
   }
 }
 </script>

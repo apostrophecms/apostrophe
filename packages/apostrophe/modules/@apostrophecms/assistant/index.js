@@ -37,7 +37,9 @@ module.exports = {
     'chat-outline-icon': 'ChatOutline',
     'arrow-up-icon': 'ArrowUp',
     'pencil-outline-icon': 'PencilOutline',
-    'trash-can-outline-icon': 'TrashCanOutline'
+    'trash-can-outline-icon': 'TrashCanOutline',
+    'stop-icon': 'Stop',
+    'check-icon': 'Check'
   },
   init(self) {
     self.validateOptions();
@@ -173,6 +175,7 @@ module.exports = {
       ...require('./lib/reconcile')(self),
       ...require('./lib/events')(self),
       ...require('./lib/markdown')(self),
+      ...require('./lib/render')(self),
       // Only once active: a site without the assistant sends nothing of it
       getBrowserData(req) {
         if (!self.active) {

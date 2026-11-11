@@ -114,7 +114,8 @@ module.exports = (self) => {
     /**
      * Sends a failed request's message again, as a new request on the
      * screen the browser tab reports now. The failed request stays as it
-     * is, and is never replayed.
+     * is, and is never replayed. Only a chat's latest request is retried,
+     * so a retry always follows the message it repeats.
      *
      * @param {object} req
      * @param {string} chatId
@@ -126,8 +127,18 @@ module.exports = (self) => {
     async retry(req, chatId, { requestId, screen } = {}) {
       const chat = await self.getChat(req, chatId);
       const failed = await self.getRequest(req, self.apos.launder.id(requestId));
-      if ((failed.chatId !== chat._id) || (failed.status !== 'failed')) {
-        throw self.apos.error('invalid', 'only a failed request of this chat can be retried');
+      const [ latest ] = await self.requests
+        .find({
+          chatId: chat._id,
+          ownerId: chat.ownerId
+        })
+        .project({ _id: 1 })
+        .sort({ sequence: -1 })
+        .limit(1)
+        .toArray();
+      if ((failed.chatId !== chat._id) || (failed.status !== 'failed') ||
+        (latest?._id !== failed._id)) {
+        throw self.apos.error('invalid', 'only the latest request of this chat can be retried, once it failed');
       }
       return self.send(req, chat._id, {
         message: failed.message,

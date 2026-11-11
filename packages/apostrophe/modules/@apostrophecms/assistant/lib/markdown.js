@@ -56,43 +56,6 @@ module.exports = (self) => {
       }
       return self.apos.modules['@apostrophecms/rich-text-widget']
         .sanitizeHtml(self.markdown.parse(text), SANITIZE);
-    },
-
-    /**
-     * A request as the panel reads it: each assistant message with text
-     * gets its rendered `html` beside the raw content, and the vendor and
-     * model are left out unless `modelDisplay` is set. Never stored.
-     *
-     * @param {object} request
-     * @returns {object}
-     */
-    renderRequest(request) {
-      const {
-        provider, model, ...rest
-      } = request;
-      return {
-        ...rest,
-        ...(self.options.modelDisplay && {
-          provider,
-          model
-        }),
-        messages: (request.messages || []).map((message) => {
-          if (message.role !== 'assistant') {
-            return message;
-          }
-          const text = (message.content || [])
-            .filter(part => part.type === 'text')
-            .map(part => part.text)
-            .join('')
-            .trim();
-          return text
-            ? {
-              ...message,
-              html: self.renderMarkdown(text)
-            }
-            : message;
-        })
-      };
     }
   };
 };

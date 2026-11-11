@@ -618,6 +618,24 @@ describe('Assistant: following a request', function () {
       assert.equal((await apos.assistant.getRequest(req, failed._id)).status, 'failed');
     });
 
+    it('retries only the chat\'s latest request', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      script = () => {
+        throw apos.error('aiRefusal', 'the provider refused');
+      };
+      const failed = await runToEnd(req, chat, 'tab-1', 'Hello');
+      assert.equal(failed.status, 'failed');
+      script = null;
+      await runToEnd(req, chat, 'tab-1', 'Something else');
+
+      await assert.rejects(apos.assistant.retry(req, chat._id, {
+        requestId: failed._id,
+        screen: { tabId: 'tab-1' }
+      }), { name: 'invalid' });
+      assert.equal((await apos.assistant.getChatRequests(req, chat._id)).length, 2);
+    });
+
     it('tells every browser tab the provider is retrying, as the run goes on', async function () {
       const req = userReq(editor);
       const chat = await apos.assistant.createChat(req);
@@ -992,6 +1010,56 @@ describe('Assistant: following a request', function () {
       // Never stored
       const stored = await apos.assistant.getRequest(req, requests[0]._id);
       assert(!stored.messages.some(message => message.html));
+    });
+
+    it('lists the steps with their labels, and the documents a lock kept', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const other = await t.createAdmin(apos, { username: 'other' });
+      const draft = await findDraft(note);
+      await apos.doc.lock(userReq(other), draft, 'other-tab');
+      const long = 'x'.repeat(5000);
+      script = sequence([
+        {
+          content: [
+            toolCall('t_look'),
+            toolCall('t_where'),
+            toolCall('update_document', {
+              targets: [ {
+                _id: note._id,
+                values: { title: long }
+              } ]
+            })
+          ],
+          finishReason: 'toolCalls',
+          usage: usage()
+        },
+        { text: 'It is locked.' }
+      ]);
+      try {
+        await runToEnd(req, chat, 'tab-1', 'Rename the note');
+      } finally {
+        await apos.doc.unlock(userReq(other), draft, 'other-tab');
+      }
+
+      const jar = await t.loginAs(apos, 'editor');
+      const { requests } = await apos.http.get(`/api/v1/@apostrophecms/assistant/chat/${chat._id}`, { jar });
+      const [ request ] = requests;
+      assert.deepEqual(request.steps.map(step => [ step.name, step.label ]), [
+        [ 't_look', 'Looking around' ],
+        [ 't_where', 'T Where' ],
+        [ 'update_document', 'apostrophe:aiToolUpdateDocument' ]
+      ]);
+      const [ look, where, update ] = request.steps;
+      assert.deepEqual(JSON.parse(look.output), { ok: true });
+      assert.deepEqual(JSON.parse(where.output), { locale: 'en' });
+      // A trail, not a reader: long arguments are cut
+      assert(update.input.length < 2100);
+      assert(update.input.endsWith('…'));
+      assert.deepEqual(request.locked, [ {
+        _id: draft._id,
+        title: 'A note'
+      } ]);
     });
   });
 

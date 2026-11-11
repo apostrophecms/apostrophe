@@ -115,9 +115,11 @@ function getPosition() {
     overflow: hidden;
   }
 
+  // A grid item: a step's code never widens the window
   .apos-assistant__body {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     min-height: 0;
     height: 100%;
   }

@@ -21,16 +21,20 @@
         @keydown.enter="onEnter"
       />
       <div class="apos-assistant-composer__actions">
+        <!-- One button, Send or Stop, so focus stays on it when it turns -->
         <button
-          type="submit"
+          :type="stopShown ? 'button' : 'submit'"
           class="apos-assistant-composer__send"
-          :disabled="!canSend"
-          :aria-label="$t('apostrophe:assistantSend')"
-          data-apos-test="assistant-send"
+          :disabled="!stopShown && !canSend"
+          :aria-disabled="(stopShown && stopping) ? 'true' : null"
+          :aria-label="$t(stopShown ? 'apostrophe:assistantStop' : 'apostrophe:assistantSend')"
+          :title="stopShown ? $t('apostrophe:assistantStop') : null"
+          :data-apos-test="stopShown ? 'assistant-stop' : 'assistant-send'"
+          @click="stopShown && stop()"
         >
           <AposIndicator
-            icon="arrow-up-icon"
-            :icon-size="14"
+            :icon="stopShown ? 'stop-icon' : 'arrow-up-icon'"
+            :icon-size="stopShown ? 12 : 14"
           />
         </button>
       </div>
@@ -65,6 +69,10 @@ const owner = computed(() => store.getOwner(chat.value));
 const canSend = computed(() => !sending.value &&
   !!draft.value.trim() &&
   (owner.value === 'none'));
+// While the chat runs, an empty composer stops it, in any browser tab
+const running = computed(() => [ 'running', 'stopping' ].includes(chat.value?.openRequest?.status));
+const stopping = computed(() => chat.value?.openRequest?.status === 'stopping');
+const stopShown = computed(() => running.value && !draft.value.trim());
 
 // A refused send says why; a chat running in another browser tab says it
 // can only be followed here
@@ -113,6 +121,12 @@ async function send() {
     await store.send(props.chatId);
   } finally {
     sending.value = false;
+  }
+}
+
+function stop() {
+  if (!stopping.value) {
+    store.stop(props.chatId);
   }
 }
 
@@ -200,11 +214,12 @@ async function resize() {
       transition: background-color 200ms, color 200ms;
     }
 
-    &:hover:not(:disabled) {
+    &:hover:not(:disabled, [aria-disabled]) {
       background-color: var(--a-primary-dark-10);
     }
 
-    &:disabled {
+    &:disabled,
+    &[aria-disabled] {
       color: var(--a-base-5);
       background-color: var(--a-base-9);
       cursor: default;

@@ -32,8 +32,9 @@ export const useAssistantStore = defineStore('assistant', () => {
   const drafts = ref({});
   // Why the last send of a chat tab was refused: `{ title, text }`
   const refusals = ref({});
-  // What a running request is doing now, by request id: `{ label }`.
-  // Progress is never stored, so a reload starts without it
+  // What a running request is doing now, by request id: `{ label }`, or
+  // `{ retrying: true }` while the provider call is retried. Progress is
+  // never stored, so a reload starts without it
   const progress = ref({});
 
   let started = false;
@@ -135,6 +136,8 @@ export const useAssistantStore = defineStore('assistant', () => {
       progress.value[requestId] = { label: event.label || null };
     } else if (stage === 'message') {
       progress.value[requestId] = { label: null };
+    } else if (stage === 'retry') {
+      progress.value[requestId] = { retrying: true };
     }
   }
 
@@ -353,6 +356,51 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
   }
 
+  /**
+   * Stops the chat's running request. Any browser tab may stop it; a stop
+   * the server refuses means the view was stale, and reading the records
+   * again shows what is true now.
+   *
+   * @param {string} id
+   */
+  async function stop(id) {
+    try {
+      await apos.http.post(`${getAction()}/chat/${id}/stop`, { body: {} });
+    } catch (e) {
+      // Not running any more, or deleted: the records say which
+      if (![ 404, 409 ].includes(e.status)) {
+        report(e);
+      }
+    }
+    await loadChats();
+    await loadChat(id);
+  }
+
+  /**
+   * Sends the chat's failed latest request again, as a new request. A
+   * refusal says why on the chat tab, as a refused send does.
+   *
+   * @param {string} id
+   * @param {string} requestId
+   */
+  async function retry(id, requestId) {
+    delete refusals.value[id];
+    try {
+      await apos.http.post(`${getAction()}/chat/${id}/retry`, {
+        body: {
+          requestId,
+          screen: getScreen()
+        }
+      });
+    } catch (e) {
+      refuse(id, e);
+    }
+    await loadChats();
+    if (getChat(id)) {
+      await loadChat(id);
+    }
+  }
+
   function refuse(id, e) {
     const reason = e.body?.data?.reason;
     if (reason === 'otherBrowserTab') {
@@ -457,6 +505,8 @@ export const useAssistantStore = defineStore('assistant', () => {
     rename,
     remove,
     send,
+    stop,
+    retry,
     setDraft
   };
 });

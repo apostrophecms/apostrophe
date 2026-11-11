@@ -59,7 +59,9 @@ const emit = defineEmits([ 'action' ]);
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin: 0 28px -20px;
+    // 8px inside the composer's edges, as the prototype's dock sits;
+    // the composer tucks 20px over its bottom
+    margin: 0 8px -20px;
     padding: 4px 10px 36px;
     border: 1px solid color-mix(in srgb, var(--a-primary) 25%, transparent);
     border-bottom: none;
