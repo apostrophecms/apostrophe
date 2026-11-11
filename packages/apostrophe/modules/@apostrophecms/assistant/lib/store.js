@@ -12,6 +12,7 @@
 // Raised when a record's shape changes; a migration upgrades older records
 const SCHEMA_VERSION = 1;
 const TITLE_MAX = 60;
+const USAGE_BATCH = 100;
 
 module.exports = (self) => {
   return {
@@ -54,6 +55,7 @@ module.exports = (self) => {
         updatedAt: now
       };
       await self.chats.insertOne(chat);
+      await self.publish(req, chat._id, 'chat');
       return chat;
     },
 
@@ -114,6 +116,7 @@ module.exports = (self) => {
           updatedAt: new Date()
         }
       });
+      await self.publish(req, chat._id, 'chat');
       return self.getChat(req, chat._id);
     },
 
@@ -152,6 +155,7 @@ module.exports = (self) => {
         _id: chat._id,
         ownerId: chat.ownerId
       });
+      await self.publish(req, chat._id, 'chat', { deleted: true });
     },
 
     /**
@@ -180,8 +184,69 @@ module.exports = (self) => {
       return `${space > 0 ? cut.slice(0, space) : cut}…`;
     },
 
+    /**
+     * How often each tool was called across every stored request, every
+     * owner's: the tools the assistant door sends, then any no longer
+     * registered that a stored transcript called. Most used first.
+     *
+     * @returns {Promise<{ requests: number, tools: Array<{ name: string,
+     *   requests: number, calls: number, retired: boolean }> }>}
+     */
+    async getToolUsage() {
+      const registered = self.apos.harness.getDoorTools('assistant').map(tool => tool.name);
+      const usage = new Map(registered.map(name => [ name, {
+        name,
+        requests: 0,
+        calls: 0,
+        retired: false
+      } ]));
+      let requests = 0;
+      let after = null;
+      for (;;) {
+        const batch = await self.requests
+          .find(after ? { _id: { $gt: after } } : {})
+          .project({ messages: 1 })
+          .sort({ _id: 1 })
+          .limit(USAGE_BATCH)
+          .toArray();
+        for (const request of batch) {
+          requests++;
+          const seen = new Set();
+          for (const message of request.messages || []) {
+            for (const part of Array.isArray(message.content) ? message.content : []) {
+              if (part.type !== 'toolCall') {
+                continue;
+              }
+              if (!usage.has(part.name)) {
+                usage.set(part.name, {
+                  name: part.name,
+                  requests: 0,
+                  calls: 0,
+                  retired: true
+                });
+              }
+              usage.get(part.name).calls++;
+              seen.add(part.name);
+            }
+          }
+          for (const name of seen) {
+            usage.get(name).requests++;
+          }
+        }
+        if (batch.length < USAGE_BATCH) {
+          break;
+        }
+        after = batch.at(-1)._id;
+      }
+      return {
+        requests,
+        tools: [ ...usage.values() ].sort((one, two) => (two.requests - one.requests) ||
+          (two.calls - one.calls) || one.name.localeCompare(two.name))
+      };
+    },
+
     newRequest(chat, {
-      _id, sequence, tabId, message
+      _id, sequence, tabId, message, screen, retryOf
     }) {
       const now = new Date();
       return {
@@ -192,6 +257,8 @@ module.exports = (self) => {
         sequence,
         tabId,
         message,
+        screen,
+        ...(retryOf && { retryOf }),
         status: 'running',
         messages: [],
         asks: null,

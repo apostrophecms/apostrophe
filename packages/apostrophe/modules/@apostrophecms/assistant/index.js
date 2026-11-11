@@ -9,6 +9,9 @@
 // that sends a request owns it: only that browser tab answers the request's
 // asks, and the editor's other browser tabs show it read-only. An idle chat
 // belongs to no browser tab.
+//
+// The records are the truth: the browser reads them, and hears of every
+// change through the `assistant-chat` bus event (see lib/events.js).
 
 module.exports = {
   options: {
@@ -46,6 +49,7 @@ module.exports = {
           }
           self.validateEffortOptions();
           await self.ensureCollections();
+          await self.loadMarkdown();
           self.active = true;
         }
       }
@@ -57,13 +61,22 @@ module.exports = {
     }
     return {
       get: {
-        chat: route(async (req) => ({
-          chats: await self.listChats(req)
-        })),
-        'chat/:_id': route(async (req) => ({
-          chat: await self.getChat(req, req.params._id),
-          requests: await self.getChatRequests(req, req.params._id)
-        }))
+        chat: route(async (req) => {
+          const chats = [];
+          for (const chat of await self.listChats(req)) {
+            chats.push(await self.reconcileChat(req, chat));
+          }
+          return { chats };
+        }),
+        'chat/:_id': route(async (req) => {
+          const found = await self.getChat(req, req.params._id);
+          const chat = await self.reconcileChat(req, found);
+          const requests = await self.getChatRequests(req, chat._id);
+          return {
+            chat,
+            requests: requests.map(self.renderRequest)
+          };
+        })
       },
       post: {
         chat: route(async (req) => ({
@@ -91,7 +104,23 @@ module.exports = {
           request: await self.continueHere(req, req.params._id, {
             tabId: req.body.tabId
           })
-        }))
+        })),
+        'chat/:_id/stop': route(async (req) => ({
+          request: await self.stop(req, req.params._id)
+        })),
+        'chat/:_id/retry': route(async (req) => ({
+          request: await self.retry(req, req.params._id, {
+            requestId: req.body.requestId,
+            screen: req.body.screen
+          })
+        })),
+        visibility: route(async (req) => {
+          await self.setVisible(req, {
+            tabId: req.body.tabId,
+            visible: req.body.visible
+          });
+          return {};
+        })
       },
       patch: {
         'chat/:_id': route(async (req) => ({
@@ -118,12 +147,19 @@ module.exports = {
       };
     }
   },
+  tasks(self) {
+    return require('./lib/tasks')(self);
+  },
   methods(self) {
     return {
       ...require('./lib/options')(self),
       ...require('./lib/store')(self),
       ...require('./lib/run')(self),
-      ...require('./lib/asks')(self)
+      ...require('./lib/asks')(self),
+      ...require('./lib/screen')(self),
+      ...require('./lib/reconcile')(self),
+      ...require('./lib/events')(self),
+      ...require('./lib/markdown')(self)
     };
   }
 };

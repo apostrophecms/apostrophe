@@ -59,8 +59,14 @@ module.exports = (self) => {
           status: 'running',
           asks: null,
           updatedAt: new Date()
+        },
+        // The earlier run's job is over; this run's is stored by `startRun`
+        $unset: {
+          jobId: 1,
+          prior: 1
         }
       });
+      await self.publishRequest(req, request);
       try {
         const transcript = await self.getTranscript(chat, request);
         await self.startRun(req, chat, request, {
@@ -111,6 +117,7 @@ module.exports = (self) => {
         }
       });
       await self.closeRequest(req, chat, request);
+      await self.publishRequest(req, request);
       return self.getRequest(req, request._id);
     },
 
@@ -139,6 +146,7 @@ module.exports = (self) => {
           updatedAt: new Date()
         }
       });
+      await self.publishRequest(req, request);
       return self.getRequest(req, request._id);
     },
 

@@ -30,52 +30,45 @@ module.exports = (self) => {
      * Sends a message to a chat: stores the request and starts its run.
      * Refused while the chat has an open request, with the reason
      * (`requestOpen`, or `otherBrowserTab` when another browser tab owns
-     * it). The browser tab named by the screen owns the request.
+     * it). The browser tab named by the screen owns the request; the
+     * screen is verified and stored on the request.
      *
      * @param {object} req
      * @param {string} chatId
      * @param {object} input
      * @param {string} input.message
-     * @param {{ tabId: string }} input.screen
+     * @param {object} input.screen The screen contract; `tabId` is
+     *   required.
+     * @param {string} [input.retryOf] The failed request this one retries.
      * @returns {Promise<object>} The request record.
      */
-    async send(req, chatId, { message, screen } = {}) {
+    async send(req, chatId, {
+      message, screen, retryOf
+    } = {}) {
       const text = self.apos.launder.string(message).trim();
       if (!text) {
         throw self.apos.error('invalid', 'the message is empty');
       }
-      const tabId = self.launderTabId(screen?.tabId);
+      const verified = await self.verifyScreen(req, screen);
+      const { tabId } = verified;
       const _id = self.apos.launder.id(chatId);
       const requestId = self.apos.util.generateId();
-      const { matchedCount } = await self.chats.updateOne({
-        _id,
-        ownerId: self.getOwnerId(req),
-        openRequest: null,
-        deleting: { $ne: true }
-      }, {
-        $set: {
-          openRequest: {
-            _id: requestId,
-            tabId,
-            status: 'running'
-          },
-          updatedAt: new Date()
-        },
-        $inc: { requestCount: 1 }
-      });
-      const claimed = await self.getChat(req, _id);
-      if (!matchedCount) {
-        throw self.getRefusal(claimed, { tabId });
-      }
+      const claimed = await claim();
       const request = self.newRequest(claimed, {
         _id: requestId,
         sequence: claimed.requestCount,
         tabId,
-        message: text
+        message: text,
+        screen: verified,
+        retryOf
       });
       try {
         await self.requests.insertOne(request);
+        await self.publishRequest(req, request);
         const title = await self.setFirstTitle(claimed, text);
+        if (title) {
+          await self.publish(req, claimed._id, 'chat');
+        }
         const transcript = await self.getTranscript(claimed, request);
         await self.startRun(req, claimed, request, {
           messages: [ ...transcript, self.getUserMessage(request) ],
@@ -87,6 +80,111 @@ module.exports = (self) => {
         throw e;
       }
       return self.getRequest(req, request._id);
+
+      // The chat's one request at a time. A refusal is checked against a
+      // request left behind by a process that died, once
+      async function claim(reconciled = false) {
+        const { matchedCount } = await self.chats.updateOne({
+          _id,
+          ownerId: self.getOwnerId(req),
+          openRequest: null,
+          deleting: { $ne: true }
+        }, {
+          $set: {
+            openRequest: {
+              _id: requestId,
+              tabId,
+              status: 'running'
+            },
+            updatedAt: new Date()
+          },
+          $inc: { requestCount: 1 }
+        });
+        const chat = await self.getChat(req, _id);
+        if (matchedCount) {
+          return chat;
+        }
+        if (!reconciled && !(await self.reconcileChat(req, chat)).openRequest) {
+          return claim(true);
+        }
+        throw self.getRefusal(chat, { tabId });
+      }
+    },
+
+    /**
+     * Sends a failed request's message again, as a new request on the
+     * screen the browser tab reports now. The failed request stays as it
+     * is, and is never replayed.
+     *
+     * @param {object} req
+     * @param {string} chatId
+     * @param {object} input
+     * @param {string} input.requestId The failed request.
+     * @param {object} input.screen
+     * @returns {Promise<object>} The new request record.
+     */
+    async retry(req, chatId, { requestId, screen } = {}) {
+      const chat = await self.getChat(req, chatId);
+      const failed = await self.getRequest(req, self.apos.launder.id(requestId));
+      if ((failed.chatId !== chat._id) || (failed.status !== 'failed')) {
+        throw self.apos.error('invalid', 'only a failed request of this chat can be retried');
+      }
+      return self.send(req, chat._id, {
+        message: failed.message,
+        screen,
+        retryOf: failed._id
+      });
+    },
+
+    /**
+     * Stops a chat's running request: the request reads `stopping` until
+     * its run winds down and ends `stopped`. Any browser tab of the owner
+     * may stop it. Refused with `notRunning` when no request runs (a
+     * request waiting for an answer is skipped instead).
+     *
+     * @param {object} req
+     * @param {string} chatId
+     * @returns {Promise<object>} The request record.
+     */
+    async stop(req, chatId) {
+      const chat = await self.reconcileChat(req, await self.getChat(req, chatId));
+      const open = chat.openRequest;
+      const { matchedCount } = open
+        ? await self.chats.updateOne({
+          _id: chat._id,
+          ownerId: chat.ownerId,
+          'openRequest._id': open._id,
+          'openRequest.status': { $in: [ 'running', 'stopping' ] }
+        }, {
+          $set: {
+            'openRequest.status': 'stopping',
+            updatedAt: new Date()
+          }
+        })
+        : { matchedCount: 0 };
+      if (!matchedCount) {
+        throw self.getRefusal(await self.getChat(req, chat._id), { running: true });
+      }
+      const { matchedCount: changed } = await self.requests.updateOne({
+        _id: open._id,
+        ownerId: chat.ownerId,
+        status: 'running'
+      }, {
+        $set: {
+          status: 'stopping',
+          updatedAt: new Date()
+        }
+      });
+      const request = await self.getRequest(req, open._id);
+      // A run whose job id isn't stored yet is stopped by `startRun`
+      // once it is
+      if (request.jobId) {
+        await self.apos.modules['@apostrophecms/job'].requestCancel(request.jobId);
+      }
+      if (changed) {
+        await self.publishRequest(req, request);
+      }
+      return request;
     },
 
     // The transcript a request continues: the stored slices of the chat's
@@ -172,7 +270,11 @@ module.exports = (self) => {
     }) {
       const { effort } = self.options;
       const model = self.getModel();
-      const doorReq = self.apos.harness.withDoor(req, {
+      // Every run of a request works in the locale it was sent in, an
+      // answer from another locale included
+      const doorReq = self.apos.harness.withDoor(req.clone({
+        locale: request.screen.locale
+      }), {
         door: DOOR,
         lockId: chat._id,
         family: request.tabId,
@@ -180,16 +282,23 @@ module.exports = (self) => {
         requestId: request._id,
         ...(model && { model })
       });
+      const tools = self.apos.harness.getDoorTools(DOOR);
+      // The run's progress goes out as the assistant's own events, each
+      // change only once it is stored (see events.js)
       const { jobId } = await self.apos.ai.generateJob(doorReq, {
-        system: self.apos.harness.getInstructions(doorReq),
+        system: self.apos.harness.getInstructions(doorReq, [
+          self.getScreenSection(request.screen)
+        ]),
         messages,
-        tools: self.apos.harness.getDoorTools(DOOR).map(tool => tool.name),
+        tools: tools.map(tool => tool.name),
         maxSteps: self.options.maxSteps,
         ...(effort && { effort }),
         ...(toolInput && {
           pending: 'execute',
           toolInput
         }),
+        notify: false,
+        ...self.getProgressHooks(doorReq, request, tools),
         onEnd: async (error, result) => {
           await self.endRun(doorReq, chat, request, {
             error,
@@ -201,34 +310,56 @@ module.exports = (self) => {
           }
         }
       });
-      // The run may have ended already: the job id is its own field
+      // The run may have ended already: the job id is its own field.
+      // `prior` lets a run whose end was never stored be ended from its job
       await self.requests.updateOne({
         _id: request._id,
         ownerId: request.ownerId
       }, {
-        $set: { jobId }
+        $set: {
+          jobId,
+          prior
+        }
       });
+      const stored = await self.requests.findOne({
+        _id: request._id,
+        ownerId: request.ownerId
+      }, { projection: { status: 1 } });
+      // Stopped before its job id was stored
+      if (stored?.status === 'stopping') {
+        await self.apos.modules['@apostrophecms/job'].requestCancel(jobId);
+      }
     },
 
     /**
      * Stores the end of a run on its request: what the run added to the
      * transcript, the usage, the outcome. A run that suspended leaves the
-     * request waiting for an answer, its asks on the record; any other end
-     * frees the chat for the next request and ends the request in the
-     * harness.
+     * request waiting for an answer, its asks on the record, unless it was
+     * stopped meanwhile; any other end frees the chat for the next request
+     * and ends the request in the harness. A request already ended (by
+     * `reconcileChat`) is left as it is.
      *
      * @param {object} req The run's `req`.
      * @param {object} chat
      * @param {object} request The request as it was when the run started.
      * @param {object} end
-     * @param {Error} [end.error] Why the run failed.
+     * @param {Error|object} [end.error] Why the run failed: an error, or
+     *   one stored as `{ name, message }`.
      * @param {object} [end.result] The run's `generate` result.
      * @param {number} [end.prior] How much of the result's transcript the
      *   request continued from.
      */
-    async endRun(req, chat, request, {
-      error, result, prior
-    }) {
+    async endRun(req, chat, request, end) {
+      const {
+        error, result, prior
+      } = end;
+      const current = await self.requests.findOne({
+        _id: request._id,
+        ownerId: request.ownerId
+      }, { projection: { status: 1 } });
+      if (![ 'running', 'stopping' ].includes(current?.status)) {
+        return;
+      }
       const now = new Date();
       const status = getStatus();
       const set = {
@@ -260,10 +391,15 @@ module.exports = (self) => {
             : null
         });
       }
-      await self.requests.updateOne({
+      const { matchedCount } = await self.requests.updateOne({
         _id: request._id,
-        ownerId: request.ownerId
+        ownerId: request.ownerId,
+        status: current.status
       }, { $set: set });
+      if (!matchedCount) {
+        // Stopped or ended meanwhile: read it again
+        return self.endRun(req, chat, request, end);
+      }
       if (status === 'waiting') {
         await self.chats.updateOne({
           _id: chat._id,
@@ -271,18 +407,23 @@ module.exports = (self) => {
         }, {
           $set: { 'openRequest.status': 'waiting' }
         });
-        return;
+      } else {
+        await self.closeRequest(req, chat, request);
       }
-      await self.closeRequest(req, chat, request);
+      await self.publishRequest(req, request);
 
       function getStatus() {
         if (error) {
           return 'failed';
         }
-        if (result.finishReason === 'input') {
-          return 'waiting';
+        if (result.finishReason === 'cancel') {
+          return 'stopped';
         }
-        return (result.finishReason === 'cancel') ? 'stopped' : 'completed';
+        // Suspended as a stop arrived: the asks are never answered
+        if (result.finishReason === 'input') {
+          return (current.status === 'stopping') ? 'stopped' : 'waiting';
+        }
+        return 'completed';
       }
     },
 
@@ -346,13 +487,16 @@ module.exports = (self) => {
         if (!title) {
           return;
         }
-        await self.chats.updateOne({
+        const { matchedCount } = await self.chats.updateOne({
           _id: chat._id,
           ownerId: chat.ownerId,
           title: firstTitle
         }, {
           $set: { title }
         });
+        if (matchedCount) {
+          await self.publish(req, chat._id, 'chat');
+        }
       } catch (e) {
         self.logError(req, 'chat-title', e.message, {
           chatId: chat._id,
@@ -388,21 +532,27 @@ module.exports = (self) => {
      * is now: the browser tab may show a state that has moved on. The
      * reason is the error's `reason`: `requestOpen` (a request is open),
      * `otherBrowserTab` (another browser tab owns it), `notWaiting` (no ask
-     * waits for an answer).
+     * waits for an answer), `notRunning` (no request runs).
      *
      * @param {object} chat
      * @param {object} [options]
      * @param {string} [options.tabId] The browser tab that asked.
      * @param {boolean} [options.waiting] The move needs a waiting ask.
+     * @param {boolean} [options.running] The move needs a running request.
      * @returns {Error}
      */
-    getRefusal(chat, { tabId, waiting } = {}) {
+    getRefusal(chat, {
+      tabId, waiting, running
+    } = {}) {
       const open = chat.openRequest;
       if (chat.deleting) {
         return self.apos.error('notfound');
       }
       if (waiting && (open?.status !== 'waiting')) {
         return refuse('notWaiting', 'no question waits for an answer in this chat');
+      }
+      if (running && ![ 'running', 'stopping' ].includes(open?.status)) {
+        return refuse('notRunning', 'no request is running in this chat');
       }
       if (open && tabId && (open.tabId !== tabId)) {
         return refuse('otherBrowserTab', 'the request is running in another browser tab');

@@ -101,6 +101,7 @@
     "klona": "^2.0.6",
     "launder": "workspace:^",
     "lodash": "^4.18.1",
+    "marked": "^18.1.2",
     "mini-css-extract-plugin": "^1.6.2",
     "minimatch": "^3.1.5",
     "mkdirp": "^0.5.6",
