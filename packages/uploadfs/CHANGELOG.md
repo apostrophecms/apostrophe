@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.26.4 (2026-11-11)
+
+### Fixes
+
+- The `orientOriginals` and `copyOriginal` options now take effect when passed to `init`, as documented, instead of only when passed to each `copyImageIn` call. In Apostrophe this means `orientOriginals: false` in the `uploadfs` option of `@apostrophecms/uploadfs` stores uploaded originals unchanged. A value passed to `copyImageIn` still takes precedence.
+
 ## 1.26.3 (2026-10-14)
 
 ### Security

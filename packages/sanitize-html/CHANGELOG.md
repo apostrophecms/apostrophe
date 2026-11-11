@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.17.10 (2026-11-11)
+
+### Fixes
+
+- With `parser.decodeEntities: false`, named entities longer than 20 characters, such as `&CounterClockwiseContourIntegral;`, are no longer double-encoded. Thanks to [Kenny](https://github.com/weizenspreu) for the contribution.
+
+### Security
+
+- Outside SVG and MathML, browsers parse `<![CDATA[` as a bogus comment that ends at the first `>`, but the underlying parser read it all the way to `]]>`. Markup between those two points was hidden from sanitize-html, so a start tag for one of the `nonTextTags` (such as `noscript`, `style`, `script`, `textarea` or `xmp`) placed there was not seen, and content the browser would keep inert inside that element was emitted as live markup. Only tags, attributes and URL schemes permitted by the allowlist could be emitted this way. A `<![CDATA[` section now always ends at the first `>`, as it does in HTML content in a browser. As a result, the text of a real CDATA section inside SVG or MathML is now dropped or sanitized as markup instead of being kept as text, and the literal sequence `<![CDATA[` inside an allowed `script` or `style` element is written as `<!&#91;CDATA[` (CWE-79, CWE-436, GHSA-2rjc-9xvg-45j7).
+
+  Thanks to [Oscar Rodríguez](https://github.com/Ramiin) for reporting the vulnerability.
+
+- The check that drops SVG animation elements (`animate`, `animateColor`, `animateMotion`, `animateTransform`, `set`) when they retarget a URL attribute such as `href` took only the part of `attributeName` after its last colon as the target. Browsers split a name with more than one colon differently, and current Chrome resolves a spelling such as `xlink:href:x` to `xlink:href`, so the animation was kept and could retarget a link to a `javascript:` URL after sanitization. Every colon-separated part of `attributeName`, and of the element name, is now matched. The default configuration is not affected: it only applies when animation elements are allowed together with `attributeName` and an animation value attribute such as `values` or `to` (CWE-79, CWE-184, GHSA-8g6g-w2rq-xcmc).
+
+  Thanks to [Zachariah Mithani](https://github.com/zachariah-mithani) for reporting the vulnerability.
+
+- When `style` was allowed, the content of a `<style>` element inside `svg` or `math` could be emitted as live markup, even when `svg` and `math` themselves were not allowed. The underlying parser and browsers do not always agree on whether such a `<style>` is an HTML element, whose content is raw CSS text, or an SVG/MathML element, whose content is markup: for example a `<style>` inside MathML `annotation-xml` without an HTML `encoding` is a MathML element to a browser but raw text to the parser, and inside `svg` or `math` the parser decodes `&lt;` in its content. Because sanitize-html emitted style content as is, markup that the allowlist never permitted, including event handler attributes, could reach the browser. Inside `svg` or `math`, a `<` in style content is now written as the equivalent CSS escape `\3c `, which means the same in a stylesheet and cannot open a tag. Other stylesheets are unchanged. Exposure is limited: `style` is not allowed by default, it is one of the `vulnerableTags` that sanitize-html warns about unless `allowVulnerableTags` is set, and allowing it already permits CSS-based attacks (CWE-79, GHSA-6wrv-5cp6-h3c5).
+
+  Thanks to [Ali Mustafa](https://github.com/rz1027) for reporting the vulnerability.
+
 ## 2.17.9 (2026-10-14)
 
 ### Changes

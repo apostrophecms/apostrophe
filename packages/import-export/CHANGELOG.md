@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.6.5 (2026-11-11)
+
+### Fixes
+
+- When a document can't be imported because a field is invalid, such as an attachment whose record does not exist on this site (CSV and Excel exports can't carry files), the import report now says which field failed and why, instead of an empty message.
+
+### Security
+
+- Exports included the fields the exporting user may not view (`viewPermission`), in the exported documents and in the related documents exported with them, whatever the format (including the xlsx format of `@apostrophecms/import-export-xlsx`), along with the files of such attachment fields. Export now removes them before writing the file, the same way REST API responses do. In addition, for a relationship field the user may not view, REST API responses and exports included its stored ids and relationship fields (`<name>Ids` and `<name>Fields`), revealing which documents it links to, and exports included the documents it links to. These are now removed too. Saving a document never loses these fields. Exporting requires permission to edit the exported documents and to view the related ones, and only affects sites that use `viewPermission` (CWE-200, CWE-862, GHSA-p3m7-jjv4-357v).
+
+  Thanks to [Santh](https://github.com/santhreal) for reporting the vulnerability.
+
+- For types that are not localized (`localized: false`), import did not check that an archive document's `_id` matched its `aposDocId`. The duplicate shown to the user for confirmation is found by `aposDocId` while the document actually overwritten is found by `_id`, so confirming the replacement of one document could overwrite a different document of the same type. Such documents are now refused, as they already were for localized types. The overwrite was still subject to the importing user's permission to edit the document actually overwritten, so the main risk was importing an untrusted archive (CWE-20, CWE-639, GHSA-44gw-rrq5-fm92).
+
+  Thanks to [nokddubal](https://github.com/nokddubal) for reporting the vulnerability.
+
 ## 3.6.4 (2026-10-14)
 
 ### Fixes
@@ -31,7 +47,7 @@
 
 - Export downloads are published under the public `/uploads/exports/` URL until they expire, and their file names were built only from the site's short name, the exported type and a timestamp to the second, so anyone could guess the URL of a fresh export and download it without logging in. Export file names now include a random, unguessable id, and the type in the name is reduced to a slug so it can no longer place the file outside the exports folder. Exposure was limited: a privileged user had to have just run an export, and the download is removed after 10 minutes by default (CWE-200, CWE-330, GHSA-5gc8-frw3-3vqm).
 
-  Thanks to [tikisan_](https://github.com/tikipiya) for reporting the vulnerability.
+  Thanks to [tikisan\_](https://github.com/tikipiya) for reporting the vulnerability.
 
 ## 3.6.3 (2026-09-30)
 
