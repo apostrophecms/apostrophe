@@ -1100,12 +1100,22 @@ module.exports = self => {
       return self.canImportOrExport(req, docType, 'import');
     },
 
-    // `aposMode`, `aposLocale` and `_id` all come from the imported file.
-    // Permissions are checked for the mode named by `aposMode`, while core
-    // saves the document in the mode named by its `_id`: refuse documents
-    // of localized types where they do not agree.
+    // `aposMode`, `aposLocale`, `aposDocId` and `_id` all come from the
+    // imported file. Duplicates are found by `aposDocId` while the document
+    // overwritten is found by `_id`, and permissions are checked for the mode
+    // named by `aposMode` while core saves the document in the mode named by
+    // its `_id`: refuse documents where they do not agree.
     checkDocMode(req, doc, manager) {
+      const invalid = () => self.apos.error('invalid', {
+        detail: req.t('aposImportExport:errorInvalidDocMode')
+      });
       if (!manager.isLocalized()) {
+        if (
+          (doc._id !== undefined) &&
+          ((typeof doc.aposDocId !== 'string') || (doc._id !== doc.aposDocId))
+        ) {
+          throw invalid();
+        }
         return;
       }
       const {
@@ -1125,9 +1135,7 @@ module.exports = self => {
           (_id === `${doc.aposDocId}:${aposLocale}`)
         ));
       if (!valid) {
-        throw self.apos.error('invalid', {
-          detail: req.t('aposImportExport:errorInvalidDocMode')
-        });
+        throw invalid();
       }
     },
 
