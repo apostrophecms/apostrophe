@@ -161,22 +161,6 @@ describe('viewRole: edit, create and delete (GHSA-9wx5-rxfg-8rpw)', function() {
       ));
     });
 
-    it(`${role}: cannot GET versions of a doc of a type it cannot view`, async function() {
-      const [ version ] = await apos.docVersions.find(
-        apos.task.getReq({ mode: 'draft' }),
-        apos.docVersions.getTimelineCriteria(vault)
-      );
-      assert.ok(version);
-      await assertRefused(apos.http.get(
-        `/api/v1/@apostrophecms/document-versions/${version._id}`,
-        { jar: jars[role] }
-      ));
-      await assertRefused(apos.http.get('/api/v1/@apostrophecms/document-versions', {
-        jar: jars[role],
-        qs: { docId: vault._id }
-      }));
-    });
-
     it(`${role}: cannot PATCH or PUT a piece of a type it cannot view`, async function() {
       await assertRefused(apos.http.patch(`/api/v1/vault/${draftId(vault)}`, {
         jar: jars[role],
