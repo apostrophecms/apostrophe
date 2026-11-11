@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.18.1 (2026-11-11)
+
+### Fixes
+
+- The development warning for an `<AposField />` with no editing information names an array item or object by its field id, as Apostrophe no longer sends `scopedArrayName` or `scopedObjectName`.
+- The README no longer says that `APOS_HOST` and `APOS_PREFIX` override the `aposHost` and `aposPrefix` options "at runtime". Both variables are read once, when `astro build` runs, and the resolved values are written into the build output, so they must be set in the build environment and a change requires a rebuild. The README and the JSDoc for the integration options now say so. No code changes.
+
+### Security
+
+- CSRF protection relied on `SameSite=Lax` cookies, which browsers also send on requests from other origins of the same site, such as a sibling subdomain. A page on another subdomain of the same registrable domain could therefore submit unsafe requests as a logged-in user. Unsafe requests that the browser marks as coming from another origin (via the `Sec-Fetch-Site` header) are now rejected. Exploitation required the attacker to control a page on a sibling subdomain, and normal permission checks still applied. Non-browser clients, API keys, bearer tokens and `csrfExceptions` are unaffected. If a separate frontend on another origin of the same site legitimately makes unsafe requests with the user's session cookie, list its origin in the new `allowedOrigins` subproperty of the `csrf` option of `@apostrophecms/express`. Server-side `Astro.locals.aposFetch` calls in `@apostrophecms/apostrophe-astro` no longer forward the `Sec-Fetch-*` headers of the page request (CWE-352, GHSA-3fm4-523m-gcr5).
+
+  Thanks to [goku](https://github.com/Ka7arotto) for reporting the vulnerability.
+
 ## 1.18.0 (2026-10-28)
 
 ### Adds
