@@ -605,6 +605,21 @@ module.exports = self => {
       };
     },
 
+    // Why a document could not be imported, for the report. Schema
+    // validation throws an array of field errors, which have no message of
+    // their own, so name each field with its error
+    getErrorDetail(req, error) {
+      if (error?.data?.detail) {
+        return error.data.detail;
+      }
+      const message = Array.isArray(error)
+        ? describeFieldErrors(error)
+        : error?.message;
+      return req.t('aposImportExport:errorInsertingDocument', {
+        message: message || req.t('aposImportExport:errorUnknown')
+      });
+    },
+
     async insertDocs(req, {
       docs, reporting, duplicatedIds, duplicatedDocs, failedIds, failedLog,
       importDraftsOnly, translate
@@ -639,10 +654,7 @@ module.exports = self => {
               type: doc.type,
               title: doc.title,
               aposLocale: doc.aposLocale,
-              detail: error.data?.detail || req.t(
-                'aposImportExport:errorInsertingDocument',
-                { message: error.message }
-              )
+              detail: self.getErrorDetail(req, error)
             };
             self.apos.util.error(error);
           }
@@ -673,10 +685,7 @@ module.exports = self => {
             type: cloned.type,
             title: cloned.title,
             aposLocale: cloned.aposLocale,
-            detail: error.data?.detail || req.t(
-              'aposImportExport:errorInsertingDocument',
-              { message: error.message }
-            )
+            detail: self.getErrorDetail(req, error)
           };
           self.apos.util.error(error);
         }
@@ -1366,10 +1375,7 @@ module.exports = self => {
               type: doc.type,
               title: doc.title,
               aposLocale: doc.aposLocale,
-              detail: err.data?.detail || req.t(
-                'aposImportExport:errorInsertingDocument',
-                { message: err.message }
-              )
+              detail: self.getErrorDetail(req, err)
             };
           }
           self.apos.util.error(err);
@@ -1637,3 +1643,18 @@ module.exports = self => {
     }
   };
 };
+
+function describeFieldErrors(errors, prefix = '') {
+  return errors
+    .map(error => {
+      const fieldPath = [ prefix, error.path ].filter(Boolean).join('.');
+      if (Array.isArray(error.data?.errors) && error.data.errors.length) {
+        return describeFieldErrors(error.data.errors, fieldPath);
+      }
+      const message = (error.message && (error.message !== error.name))
+        ? error.message
+        : error.name;
+      return fieldPath ? `${fieldPath}: ${message}` : message;
+    })
+    .join('; ');
+}
