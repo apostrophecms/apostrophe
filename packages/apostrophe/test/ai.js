@@ -1161,6 +1161,25 @@ describe('AI engine', function() {
       assert.equal(apos.permission.can(admin, 'edit', '@apostrophecms/user'), true);
     });
 
+    it('denies the types getDeniedTypes returns, as a project extends it', function() {
+      const original = apos.ai.getDeniedTypes;
+      const admin = apos.task.getReq();
+      try {
+        apos.ai.getDeniedTypes = () => [
+          ...original().filter(type => type !== '@apostrophecms/user'),
+          '@apostrophecms/any-page-type'
+        ];
+        assert.equal(apos.ai.can(admin, 'edit', '@apostrophecms/any-page-type'), false);
+        assert.equal(apos.ai.can(admin, 'edit', '@apostrophecms/user'), true);
+      } finally {
+        apos.ai.getDeniedTypes = original;
+      }
+      assert.deepEqual(apos.ai.getDeniedTypes(), [
+        '@apostrophecms/user',
+        '@apostrophecms-pro/advanced-permission-group'
+      ]);
+    });
+
     it('denies without consulting apos.permission.can at all', function() {
       const original = apos.permission.can;
       let calls = 0;

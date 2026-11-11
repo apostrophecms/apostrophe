@@ -24,12 +24,18 @@ module.exports = {
         seoTitle: {
           label: 'aposSeo:title',
           type: 'string',
-          htmlHelp: 'aposSeo:titleHtmlHelp'
+          htmlHelp: 'aposSeo:titleHtmlHelp',
+          aiHow: 'On a page or piece you create, write it from the content: what the ' +
+            'page offers, in under 60 characters. When there is too little content to ' +
+            'describe, leave it empty and tell the user why.'
         },
         seoDescription: {
           label: 'aposSeo:description',
           type: 'string',
-          htmlHelp: 'aposSeo:descriptionHtmlHelp'
+          htmlHelp: 'aposSeo:descriptionHtmlHelp',
+          aiHow: 'On a page or piece you create, write it from the content: a summary ' +
+            'for search results, 155 to 160 characters. When there is too little content ' +
+            'to describe, leave it empty and tell the user why.'
         },
         seoRobots: {
           label: 'aposSeo:robots',

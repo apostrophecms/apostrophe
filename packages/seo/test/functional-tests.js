@@ -587,6 +587,29 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
       assert(html.includes('<html'), 'Should return valid HTML');
     });
   });
+
+  describe('Guidance for AI', function () {
+    it('should tell AI how to fill the meta title and description in the schema read', async function () {
+      const req = apos.task.getReq();
+
+      const { schema, legend } = await apos.harness.getSchema(req, {
+        types: [ 'default-page' ]
+      });
+      const lines = schema.split('\n');
+      const line = name => lines.find(line => line.startsWith(`${name}: `));
+
+      // The aiHow replaces the help written for editors
+      assert.match(
+        line('seoTitle'),
+        /^seoTitle: string, aiHow "On a page or piece you create, write it from the content: [^"]+ tell the user why\."$/
+      );
+      assert.match(
+        line('seoDescription'),
+        /^seoDescription: string, aiHow "On a page or piece you create, write it from the content: [^"]+ tell the user why\."$/
+      );
+      assert(legend.includes('\naiHow: '));
+    });
+  });
 });
 
 function getAppConfig() {

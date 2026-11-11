@@ -265,6 +265,10 @@ module.exports = (self) => {
     extract(req, field, value) {
       return richTextManager().isEmptyRichText(value) ? [] : [ { text: value } ];
     },
+    // The sanitize-html options the field is saved with: the markup it keeps
+    getSanitizeHtmlOptions(field) {
+      return richTextManager().getSanitizeHtmlOptions(field.options || {});
+    },
     convert(req, field, data, destination) {
       const manager = richTextManager();
       const content = manager.sanitizeRichText(

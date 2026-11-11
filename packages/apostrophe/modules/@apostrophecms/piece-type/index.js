@@ -1121,7 +1121,7 @@ module.exports = {
         // converting the rest of the document
         const lossless = self.apos.launder.boolean(input._lossless);
         const drops = lossless ? [] : undefined;
-        const authored = lossless ? [] : undefined;
+        const patchPaths = lossless ? [] : undefined;
         const patched = await self.apos.schema.patchWidgetIfSuitable(
           req,
           allowedSchema,
@@ -1130,11 +1130,11 @@ module.exports = {
           {
             fetchRelationships,
             drops,
-            authored
+            patchPaths
           }
         );
         if (!patched) {
-          self.apos.schema.implementPatchOperators(input, piece, { authored });
+          self.apos.schema.implementPatchOperators(input, piece, { patchPaths });
           const schema = self.apos.schema.subsetSchemaForPatch(
             allowedSchema,
             input
@@ -1145,7 +1145,7 @@ module.exports = {
           });
         }
         if (lossless) {
-          self.apos.schema.checkLosslessPatch(req, piece, drops, authored);
+          self.apos.schema.checkLosslessPatch(req, piece, drops, patchPaths);
         }
         await self.emit('afterConvert', req, input, piece);
       },

@@ -658,6 +658,11 @@ module.exports = {
         }
         return schema;
       },
+      // The schema AI tools read and write this type through. All fields by
+      // default; override to keep fields away from AI. Treat it as read-only
+      getAiSchema(req) {
+        return self.schema;
+      },
       composeSchema() {
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
@@ -803,6 +808,9 @@ module.exports = {
       // in `input`. This overrides `presentFieldsOnly` as long as the fields
       // in question exist in the doc being copied. Also, the _id of the copied
       // doc is copied to the `copyOfId` property of doc.
+      //
+      // If `options.drops` is an array, what conversion leaves out of `input`
+      // is recorded in it (see the schema module's `convert`).
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
@@ -832,7 +840,8 @@ module.exports = {
           };
         }
         const convertOptions = {
-          fetchRelationships: options.fetchRelationships !== false
+          fetchRelationships: options.fetchRelationships !== false,
+          drops: options.drops
         };
         await self.apos.schema.convert(req, schema, input, doc, convertOptions);
 

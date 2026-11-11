@@ -14,6 +14,8 @@
       :aria-labelledby="props.modalData.id"
       data-apos-modal
       :data-apos-graph-key="props.graphKey || undefined"
+      :data-apos-stacking="modal.stacking || undefined"
+      :data-apos-ignore-unfocus="isWindowModal ? 'true' : undefined"
       tabindex="0"
       @focus.capture="captureFocus"
       @keydown.tab="onKeydownTab"
@@ -168,12 +170,14 @@
 import {
   ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots, useTemplateRef
 } from 'vue';
-import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
+import { useAposFocus, focusableSelector } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useDraggableWindow } from 'Modules/@apostrophecms/ui/composables/useDraggableWindow.js';
 
 const {
   cycleElementsToFocus,
+  cycleAcrossGroups,
+  getStackedFocusGroups,
   focusElement,
   focusLastModalFocusedElement,
   storeFocusedElement,
@@ -218,22 +222,6 @@ const nonDraggableElements = [
   '.apos-input-color__sample-picker',
   '.apos-input-array-inline-table'
 ];
-
-// Selector for focusable elements inside the modal. Used both at trap setup
-// and on every Tab keydown to refresh the cycle list, so that elements that
-// became disabled/hidden (e.g. Save when validation fails) or newly visible
-// are reflected.
-const focusableSelector = [
-  '[tabindex]',
-  '[href]',
-  'input',
-  'select',
-  'textarea',
-  'button',
-  '[data-apos-focus-priority]'
-]
-  .map(s => `${s}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden]):not(.apos-sr-only)`)
-  .join(', ');
 
 const resizeSides = [
   {
@@ -308,10 +296,13 @@ const {
   maxHeight: props.modal.maxHeight || null
 });
 
-// A modal without an overlay leaves the page usable: the store tells such
-// modals apart from those that block the page
+// A modal without an overlay leaves the page usable, and a window with
+// `stacking: 'top'` stays above every modal: the store tells them apart
 watch(() => props.modal.overlay, overlay => {
   store.updateModalData(props.modalData.id, { overlay });
+}, { immediate: true });
+watch(() => props.modal.stacking, stacking => {
+  store.updateModalData(props.modalData.id, { stacking });
 }, { immediate: true });
 
 // Wrap handler to only work for window modals and primary mouse button. A
@@ -345,9 +336,17 @@ const transitionType = computed(() => {
   return 'slide-left';
 });
 
+// A window above every modal never takes focus from the modal under it
 const shouldTrapFocus = computed(() => {
+  if (props.modal.stacking === 'top') {
+    return false;
+  }
   return props.modal.trapFocus || props.modal.trapFocus === undefined;
 });
+
+watch(shouldTrapFocus, trapsFocus => {
+  store.updateModalData(props.modalData.id, { trapsFocus });
+}, { immediate: true });
 
 const triggerFocusRefresh = computed(() => {
   return props.modal.triggerFocusRefresh;
@@ -372,6 +371,9 @@ const classes = computed(() => {
       classes.push('apos-modal--origin-right');
     }
     classes.push('apos-modal--full-height');
+  }
+  if (props.modal.stacking) {
+    classes.push(`apos-modal--stacking-${props.modal.stacking}`);
   }
   if (props.modal.busy) {
     classes.push('apos-modal--busy');
@@ -532,6 +534,12 @@ function onKeydownTab(event) {
   if (event.target?.nodeName?.toLowerCase() === 'textarea') {
     return;
   }
+  // Windows above every modal and window triggers join the cycle
+  const groups = getStackedFocusGroups(modalEl.value);
+  if (groups) {
+    cycleAcrossGroups(event, groups);
+    return;
+  }
   // Skip visually hidden elements when cycling — but only here, not in
   // trapFocus. Initial focus runs while `renderingElements` is still true,
   // which puts the content under display:none and makes every candidate's
@@ -614,8 +622,7 @@ async function trapFocus() {
 }
 
 function close() {
-  const activeModalId = store.activeModal?.id;
-  if (activeModalId === props.modalData.id) {
+  if (store.isOnTop(modalEl.value)) {
     emit('esc');
   }
 }
@@ -717,6 +724,10 @@ defineExpose({
       opacity: 0;
       transform: scale(0.95);
     }
+  }
+
+  .apos-modal--stacking-top .apos-modal__inner {
+    z-index: $z-index-window-top;
   }
 
   .apos-modal--window {

@@ -4,11 +4,27 @@ import { createId } from 'apostrophe/lib/beneath.js';
 
 export const useModalStore = defineStore('modal', () => {
   const stack = ref([]);
-  const activeId = ref(null);
 
+  // The modal the editor works in: the last one opened, leaving out windows
+  // stacked above every modal
   const activeModal = computed(() => {
-    return stack.value.find(modal => activeId.value === modal.id);
+    return stack.value.findLast(modal => !isStackedOnTop(modal));
   });
+  const activeId = computed(() => activeModal.value?.id || null);
+
+  // The corner of each window trigger, by trigger name
+  const triggerCorners = ref({});
+
+  function getTriggerCorner(name) {
+    return triggerCorners.value[name] || null;
+  }
+
+  function setTriggerCorner(name, corner) {
+    triggerCorners.value = {
+      ...triggerCorners.value,
+      [name]: corner
+    };
+  }
 
   const hasChooserModal = computed(() => {
     return stack.value.some(modal =>
@@ -29,8 +45,15 @@ export const useModalStore = defineStore('modal', () => {
     modal.resolve(modal.result);
     apos.bus.$emit('modal-resolved', modal);
     stack.value = stack.value.filter(modal => id !== modal.id);
-    const current = getAt(-1);
-    activeId.value = current.id || null;
+  }
+
+  function isStackedOnTop(modal) {
+    return modal.stacking === 'top';
+  }
+
+  // Windows stacked above every modal, in the order they were opened
+  function getStackedOnTop() {
+    return stack.value.filter(isStackedOnTop);
   }
 
   function getActiveLocale() {
@@ -100,15 +123,17 @@ export const useModalStore = defineStore('modal', () => {
     return stack.value.filter(modal => modal.overlay !== 'none').length;
   }
 
+  // Windows stacked above every modal are left out
   function getAt(index) {
-    const last = stack.value.length - 1;
+    const layered = stack.value.filter(modal => !isStackedOnTop(modal));
+    const last = layered.length - 1;
     const target = index < 0
       ? last + 1 + index
-      : index > stack.value.length
+      : index > layered.length
         ? last
         : index;
 
-    return stack.value[target] || {};
+    return layered[target] || {};
   }
 
   function getProperties(id) {
@@ -151,7 +176,6 @@ export const useModalStore = defineStore('modal', () => {
           : modalLocale !== apos.i18n.locale
       };
 
-      activeId.value = item.id;
       stack.value.push(item);
       apos.bus.$emit('modal-launched', item);
     });
@@ -258,11 +282,15 @@ export const useModalStore = defineStore('modal', () => {
   }
 
   // Returns the depth of el in the modal stack, where higher numbers
-  // are higher in the stack ("on top"). Returns -1 if el is not
-  // in any modal. If el is not in the DOM -1 is always returned
+  // are higher in the stack ("on top"). Windows stacked above every modal
+  // come after all others, and so do window triggers. Returns -1 if el is
+  // not in any modal. If el is not in the DOM -1 is always returned
   function getDepthOf(el) {
     if (!el.isConnected) {
       return -1;
+    }
+    if (el.closest('[data-apos-window-trigger]')) {
+      return stack.value.length * 2;
     }
     if (!el.matches('[data-apos-modal]')) {
       el = el.closest('[data-apos-modal]') || document;
@@ -270,11 +298,22 @@ export const useModalStore = defineStore('modal', () => {
     if (el === document) {
       return -1;
     }
-    return stack.value.findIndex(modal => modal.modalEl === el);
+    const index = stack.value.findIndex(modal => modal.modalEl === el);
+    return (index > -1) && isStackedOnTop(stack.value[index])
+      ? stack.value.length + index
+      : index;
   }
 
+  // A window stacked above every modal is on top for its own events, and
+  // never takes that from the modal under it
   function isOnTop(el) {
-    const top = stack.value.at(-1)?.modalEl;
+    const own = el.closest?.('[data-apos-modal]');
+    const stacked = own && stack.value
+      .some(modal => modal.modalEl === own && isStackedOnTop(modal));
+    if (stacked) {
+      return true;
+    }
+    const top = activeModal.value?.modalEl;
 
     return (top && getDepthOf(el) === getDepthOf(top)) || false;
   }
@@ -295,6 +334,9 @@ export const useModalStore = defineStore('modal', () => {
     getAt,
     getDepth,
     getBlockingDepth,
+    getStackedOnTop,
+    getTriggerCorner,
+    setTriggerCorner,
     getProperties,
     execute,
     updateModalData,

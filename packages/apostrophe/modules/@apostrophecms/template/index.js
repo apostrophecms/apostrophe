@@ -37,6 +37,14 @@ const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const voidElements = require('void-elements');
 const safeJsonForScript = require('../../../lib/safe-json-script');
 
+// Guidance for AI, on type modules and schema fields, is for the model
+// only: body data never carries it to the browser
+const AI_GUIDANCE_KEYS = [ 'aiWhen', 'aiHow' ];
+
+function withoutAiGuidance(key, value) {
+  return AI_GUIDANCE_KEYS.includes(key) ? undefined : value;
+}
+
 module.exports = {
   options: { alias: 'template' },
   customTags(self) {
@@ -732,7 +740,9 @@ module.exports = {
           const aposBodyData = await self.getBodyData(req);
           span.setAttribute(telemetry.Attributes.SCENE, aposBodyData.scene);
 
-          self.addBodyDataAttribute(req, { apos: JSON.stringify(aposBodyData) });
+          self.addBodyDataAttribute(req, {
+            apos: JSON.stringify(aposBodyData, withoutAiGuidance)
+          });
 
           // Always the last call; signifies we're done initializing the
           // page as far as the core is concerned; a lovely time for other
@@ -1307,7 +1317,10 @@ module.exports = {
             req
           });
         }
-        data.aposBodyData = await self.getBodyData(req);
+        // A copy, since schemas in it are the live ones
+        data.aposBodyData = JSON.parse(
+          JSON.stringify(await self.getBodyData(req), withoutAiGuidance)
+        );
         // Already contains module name too
         data.template = template;
         // For simple cases (not piece pages and the like)

@@ -431,8 +431,9 @@ module.exports = {
        * here, centrally, without touching a single handler. It can only ever
        * be as restrictive as `apos.permission.can` or more, never looser.
        *
-       * Denied doc types are refused unconditionally, for every action and
-       * whether named as a type string or passed as a document.
+       * Denied doc types (see getDeniedTypes) are refused unconditionally,
+       * for every action and whether named as a type string or passed as a
+       * document.
        *
        * @param {object} req
        * @param {...*} args As `apos.permission.can`: action, docOrType, mode.
@@ -441,10 +442,21 @@ module.exports = {
       can(req, ...args) {
         const docOrType = args[1];
         const type = isObject(docOrType) ? docOrType.type : docOrType;
-        if (DENIED_TYPES.includes(type)) {
+        if (self.getDeniedTypes().includes(type)) {
           return false;
         }
         return self.apos.permission.can(req, ...args);
+      },
+
+      /**
+       * The doc types AI may never read or write, whatever the user's
+       * permissions: users and permission groups. A project extends this
+       * method to add its own types or to filter out core's.
+       *
+       * @returns {string[]}
+       */
+      getDeniedTypes() {
+        return [ ...DENIED_TYPES ];
       },
 
       /**

@@ -355,7 +355,10 @@ module.exports = {
     // - `options`: the save's options
     //
     // Several saves of one document in one request chain: each `before` is
-    // the previous `after`. Unmarked requests emit nothing and read nothing
+    // the previous `after`. A save of the document from the handlers of a
+    // save of it (an archive deduplicating the slug) is part of that save:
+    // it reads and emits nothing of its own. Unmarked requests emit nothing
+    // and read nothing
     async function emitSaveSettled(req, doc, options, before) {
       const marker = req.aposSaveMarker;
       if (!marker) {
@@ -369,6 +372,26 @@ module.exports = {
         drops: req.aposHealedDrops?.[doc._id] || [],
         options
       });
+    }
+
+    // Whether a save of the document `_id` on `req` is one that settles:
+    // the request is marked and no save of the document is under way on it.
+    // Such a save is under way until `endSettling`
+    function startSettling(req, _id) {
+      if (!req.aposSaveMarker) {
+        return false;
+      }
+      // Shared with the clones its handlers make
+      req.aposSettling ||= new Set();
+      if (req.aposSettling.has(_id)) {
+        return false;
+      }
+      req.aposSettling.add(_id);
+      return true;
+    }
+
+    function endSettling(req, _id) {
+      req.aposSettling.delete(_id);
     }
 
     return {
@@ -734,6 +757,7 @@ module.exports = {
           span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
           span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'insert');
 
+          let settles = false;
           try {
             options = options || {};
             const m = self.getManager(doc.type);
@@ -759,17 +783,25 @@ module.exports = {
               }
             }, span, {});
 
+            settles = startSettling(req, doc._id);
             await m.emit('afterInsert', req, doc, options);
             await m.emit('afterSave', req, doc, options);
             // TODO: Remove `afterLoad` in next major version. Deprecated.
             await m.emit('afterLoad', req, [ doc ]);
-            await emitSaveSettled(req, doc, options, null);
+            if (settles) {
+              endSettling(req, doc._id);
+              settles = false;
+              await emitSaveSettled(req, doc, options, null);
+            }
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return doc;
           } catch (err) {
             telemetry.handleError(span, err);
             throw err;
           } finally {
+            if (settles) {
+              endSettling(req, doc._id);
+            }
             span.end();
           }
         });
@@ -807,10 +839,11 @@ module.exports = {
           span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
           span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'update');
 
+          let settles = startSettling(req, doc._id);
           try {
             options = options || {};
             const m = self.getManager(doc.type);
-            const before = req.aposSaveMarker
+            const before = settles
               ? await self.db.findOne({ _id: doc._id })
               : null;
             await m.emit('beforeUpdate', req, doc, options);
@@ -839,13 +872,20 @@ module.exports = {
             await m.emit('afterSave', req, doc, options);
             // TODO: Remove `afterLoad` in next major version. Deprecated.
             await m.emit('afterLoad', req, [ doc ]);
-            await emitSaveSettled(req, doc, options, before);
+            if (settles) {
+              endSettling(req, doc._id);
+              settles = false;
+              await emitSaveSettled(req, doc, options, before);
+            }
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return doc;
           } catch (err) {
             telemetry.handleError(span, err);
             throw err;
           } finally {
+            if (settles) {
+              endSettling(req, doc._id);
+            }
             span.end();
           }
         });
@@ -1417,6 +1457,24 @@ module.exports = {
       getManager(type) {
         return self.managers[self.normalizeType(type)];
       },
+      // The content types: the managers of the page and piece types whose
+      // documents editors and AI work with, in registration order. Leaves
+      // out virtual types, which own no documents of their own (`virtual:
+      // true`, such as the recently edited manager and the archive page),
+      // and the placeholders for types in the database without a module.
+      // `kind` is `page` or `piece` for one kind only
+      getContentTypes({ kind } = {}) {
+        const bases = {
+          page: '@apostrophecms/page-type',
+          piece: '@apostrophecms/piece-type'
+        };
+        if (kind && !bases[kind]) {
+          throw self.apos.error('invalid', `kind must be "page" or "piece", not "${kind}"`);
+        }
+        const wanted = kind ? [ bases[kind] ] : Object.values(bases);
+        return Object.values(self.managers).filter(manager => !manager.options.virtual &&
+          wanted.some(base => self.apos.instanceOf(manager, base)));
+      },
       // Removes the fields the user may not view (`viewPermission`) from
       // every document found at any depth in `value`, a REST API response:
       // documents loaded through relationships (including those in widgets,
@@ -1673,7 +1731,9 @@ module.exports = {
               self.apos.permission.criteria(req, 'edit')
             ]
           }, update);
-          return result.nModified > 0;
+          // Matched, not modified: a refresh in the same millisecond
+          // writes the timestamp already stored
+          return result.n > 0;
         }
 
         function getSlot() {

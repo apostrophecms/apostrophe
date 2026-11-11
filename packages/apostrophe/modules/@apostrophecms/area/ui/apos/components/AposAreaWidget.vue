@@ -1032,15 +1032,19 @@ export default {
       }
     },
     unfocus(event) {
-      if (event.target.closest('[data-apos-ignore-unfocus="true"]')) {
+      // The path as dispatched: a control that re-renders away during the
+      // click still counts as inside its container
+      const path = event.composedPath();
+      const inside = selector => path.some(el => el.matches?.(selector));
+      if (inside('[data-apos-ignore-unfocus="true"]')) {
         return;
       }
       // Another widget handles its own click. Clearing here would drop a
       // widget that was just added to the selection.
-      if (event.target.closest('[data-apos-widget-id]')) {
+      if (inside('[data-apos-widget-id]')) {
         return;
       }
-      if (!this.$el.contains(event.target)) {
+      if (!path.includes(this.$el)) {
         this.removeClickOutsideListener();
 
         this.setFocusedWidget(null, null);
