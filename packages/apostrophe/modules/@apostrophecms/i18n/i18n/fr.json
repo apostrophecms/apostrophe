@@ -53,7 +53,7 @@
   "automaticTranslationErrorNoProvider": "Fournisseur de traduction non trouvé. La page \"{{ title }}\" n'a pas été traduite.",
   "automaticTranslationErrorTargets": "Cibles de traduction mal formatées.",
   "automaticTranslationLngCheckNoProvider": "Fournisseur de traduction non trouvé.",
-  "automaticTranslationSettings": "Traduction automatique",
+  "automaticTranslationSettings": "Traduction intelligente",
   "automaticTranslationSourceErrMsg": "La langue actuelle <strong>{{ source }}</strong> n'est pas appropriée pour la traduction. La traduction sera ignorée.",
   "automaticTranslationTargetErrMsg": "Impossible de trouver une langue appropriée pour la langue <strong>{{ targets }}</strong>. La traduction sera ignorée pour cette langue.",
   "automaticTranslationTargetErrMsg_plural": "Impossible de trouver une langue appropriée pour les langues <strong>{{ targets }}</strong>. La traduction sera ignorée pour ces langues.",

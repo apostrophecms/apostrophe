@@ -53,7 +53,7 @@
   "automaticTranslationErrorNoProvider": "Übersetzungsanbieter nicht gefunden. Seite \"{{ title }}\" wurde nicht übersetzt.",
   "automaticTranslationErrorTargets": "Schlecht formatierte Übersetzungsziele.",
   "automaticTranslationLngCheckNoProvider": "Übersetzungsanbieter nicht gefunden.",
-  "automaticTranslationSettings": "Automatische Übersetzung",
+  "automaticTranslationSettings": "Intelligente Übersetzung",
   "automaticTranslationSourceErrMsg": "Die aktuelle Sprache <strong>{{ source }}</strong> ist nicht für die Übersetzung geeignet. Die Übersetzung wird übersprungen.",
   "automaticTranslationTargetErrMsg": "Kann keine geeignete Sprache für die Sprache <strong>{{ targets }}</strong> finden. Die Übersetzung wird für diese Sprache übersprungen.",
   "automaticTranslationTargetErrMsg_plural": "Kann keine geeignete Sprache für die Sprachen <strong>{{ targets }}</strong> finden. Die Übersetzung wird für diese Sprachen übersprungen.",

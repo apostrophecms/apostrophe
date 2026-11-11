@@ -55,7 +55,7 @@
   "automaticTranslationErrorNoProvider": "Translation provider not found. Page \"{{ title }}\" was not translated.",
   "automaticTranslationErrorTargets": "Badly formatted translation targets.",
   "automaticTranslationLngCheckNoProvider": "Translation provider not found.",
-  "automaticTranslationSettings": "Automatic translation",
+  "automaticTranslationSettings": "Smart translation",
   "automaticTranslationSourceErrMsg": "The current locale <strong>{{ source }}</strong> is not suitable for translation. Translation will be skipped.",
   "automaticTranslationTargetErrMsg": "Could not find a suitable language for the locale <strong>{{ targets }}</strong>. Translation will be skipped for this locale.",
   "automaticTranslationTargetErrMsg_plural": "Could not find a suitable language for the locales <strong>{{ targets }}</strong>. Translation will be skipped for these locales.",

@@ -54,7 +54,7 @@
   "automaticTranslationErrorNoProvider": "Poskytovateľ prekladu nebol nájdený. Stránka \"{{ title }}\" nebola preložená.",
   "automaticTranslationErrorTargets": "Nesprávne naformátované ciele prekladu.",
   "automaticTranslationLngCheckNoProvider": "Poskytovateľ prekladu nebol nájdený.",
-  "automaticTranslationSettings": "Automatický preklad",
+  "automaticTranslationSettings": "Inteligentný preklad",
   "automaticTranslationSourceErrMsg": "Aktuálna lokalita <strong>{{ source }}</strong> nie je vhodná na preklad. Preklad bude preskočený.",
   "automaticTranslationTargetErrMsg": "Nepodarilo sa nájsť vhodný jazyk pre lokalitu <strong>{{ targets }}</strong>. Preklad bude pre túto lokalitu preskočený.",
   "automaticTranslationTargetErrMsg_1": "Nepodarilo sa nájsť vhodný jazyk pre lokality <strong>{{ targets }}</strong>. Preklad bude pre tieto lokality preskočený.",
