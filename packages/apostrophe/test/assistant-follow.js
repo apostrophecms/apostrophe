@@ -1076,11 +1076,7 @@ describe('Assistant: following a request', function () {
       };
       script = sequence([ toolTurn('t_look', input), { text: 'Done.' } ]);
       const first = await runToEnd(req, chat, 'tab-1', 'Hello');
-      let job;
-      await waitFor(async () => {
-        job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: first.jobId });
-        return job.ended;
-      });
+      const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: first.jobId });
       assert.equal(job.status, 'completed');
       assert.deepEqual(first.messages, job.results.messages);
       assert.deepEqual(first.messages[1].content[0].input, input);
@@ -1100,12 +1096,7 @@ describe('Assistant: following a request', function () {
         throw apos.error('aiRefusal', 'no');
       };
       const failed = await runToEnd(req, chat, 'tab-1', 'Hello');
-      // The job ends once the run's own end is stored
-      let job;
-      await waitFor(async () => {
-        job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: failed.jobId });
-        return job.ended;
-      });
+      const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: failed.jobId });
       assert.equal(job.status, 'failed');
       assert.equal(failed.messages.length, 0);
     });
@@ -1206,16 +1197,24 @@ describe('Assistant: following a request', function () {
     return (await apos.assistant.getChatRequests(req, chat._id)).at(-1);
   }
 
-  // The chat's latest request once its run has ended (or waits)
+  // The chat's latest request once its run has ended (or waits), and the
+  // run's end handler with it: the last events are published then
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
       request = await latest(req, chat);
       const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
       return request && ![ 'running', 'stopping' ].includes(request.status) &&
-        ((open === null) || (open.status === 'waiting'));
+        ((open === null) || (open.status === 'waiting')) &&
+        await jobEnded(request.jobId);
     });
     return request;
+
+    // A job ends only after its run's end handler
+    async function jobEnded(jobId) {
+      const job = jobId && await apos.modules['@apostrophecms/job'].db.findOne({ _id: jobId });
+      return !job || job.ended;
+    }
   }
 
   // The statuses a request was published with, in order

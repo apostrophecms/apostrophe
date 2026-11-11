@@ -220,10 +220,7 @@ describe('Assistant: chats and the run', function () {
         return generate(...args);
       };
       try {
-        const request = await runToEnd(req, chat, 'tab-1', '  Rewrite   the intro\nof the about page ');
-        // The job ends once its end is stored and the chat named
-        await waitFor(async () => (await apos.modules['@apostrophecms/job'].db
-          .findOne({ _id: request.jobId }))?.ended);
+        await runToEnd(req, chat, 'tab-1', '  Rewrite   the intro\nof the about page ');
       } finally {
         apos.ai.generate = generate;
       }
@@ -261,8 +258,7 @@ describe('Assistant: chats and the run', function () {
           : { text: 'Done.' });
         const chat = await apos.assistant.createChat(req);
         await runToEnd(req, chat, 'tab-1', 'Plan the spring launch page');
-        await waitFor(async () => (await apos.assistant.getChat(req, chat._id)).title ===
-          'Spring launch');
+        assert.equal((await apos.assistant.getChat(req, chat._id)).title, 'Spring launch');
         const titleCall = calls.find(call => call.schema);
         assert.equal(titleCall.model, 'fake-small');
 
@@ -274,7 +270,7 @@ describe('Assistant: chats and the run', function () {
         await apos.assistant.renameChat(req, renamed._id, 'My summer');
         gate.release();
         await waitForEnd(req, renamed);
-        await waitFor(() => calls.filter(call => call.schema).length === 2);
+        assert.equal(calls.filter(call => call.schema).length, 2);
         assert.equal((await apos.assistant.getChat(req, renamed._id)).title, 'My summer');
       } finally {
         apos.assistant.options.titleEffort = 'none';
@@ -696,7 +692,8 @@ describe('Assistant: chats and the run', function () {
     return waitForEnd(req, chat);
   }
 
-  // The chat's latest request once its run has ended (or waits)
+  // The chat's latest request once its run has ended (or waits), and the
+  // run's end handler with it
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
@@ -704,9 +701,16 @@ describe('Assistant: chats and the run', function () {
       request = requests.at(-1);
       const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
       return request && (request.status !== 'running') &&
-        ((open === null) || (open.status === 'waiting'));
+        ((open === null) || (open.status === 'waiting')) &&
+        await jobEnded(request.jobId);
     });
     return request;
+
+    // A job ends only after its run's end handler
+    async function jobEnded(jobId) {
+      const job = jobId && await apos.modules['@apostrophecms/job'].db.findOne({ _id: jobId });
+      return !job || job.ended;
+    }
   }
 
   // Holds every model call until released; `waiting` counts the held ones
