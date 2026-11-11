@@ -3,6 +3,7 @@
     :data-apos-test="chooserTestId"
     :modal="modal"
     :modal-data="modalData"
+    :screen="screen"
     modal-title="apostrophe:managePages"
     @esc="confirmAndCancel"
     @inactive="modal.active = false"

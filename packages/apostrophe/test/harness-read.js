@@ -360,11 +360,14 @@ describe('Harness: read tools and the schema read', function () {
       const result = await run('search_content', { query: 'launch' });
 
       assert.equal(result.locale, 'en');
+      assert.equal(result.total, 1);
       assert.deepEqual(result.results, [ {
         _id: article._id,
         type: 'read-article',
         title: 'Launch news',
-        slug: 'launch-news'
+        slug: 'launch-news',
+        updatedAt: article.updatedAt,
+        lastPublishedAt: null
       } ]);
     });
 
@@ -414,6 +417,104 @@ describe('Harness: read tools and the schema read', function () {
 
     it('should ask for words or a type', async function () {
       await assert.rejects(run('search_content', {}), { name: 'aiToolError' });
+    });
+  });
+
+  describe('search_content counts and dates', function () {
+    // Published long ago, published lately, never published but updated last
+    const dates = {
+      'Old note': {
+        updatedAt: new Date('2026-01-03'),
+        lastPublishedAt: new Date('2026-01-02')
+      },
+      'Fresh note': {
+        updatedAt: new Date('2026-03-02'),
+        lastPublishedAt: new Date('2026-03-01')
+      },
+      'Draft note': {
+        updatedAt: new Date('2026-05-01')
+      }
+    };
+
+    before(async function () {
+      const req = userReq();
+      for (const [ title, { updatedAt, lastPublishedAt } ] of Object.entries(dates)) {
+        const note = await apos.modules['read-note'].insert(req, { title });
+        if (lastPublishedAt) {
+          await apos.modules['read-note'].publish(req, note);
+        }
+        await apos.doc.db.updateOne({ _id: note._id }, {
+          $set: {
+            updatedAt,
+            lastPublishedAt: lastPublishedAt || null
+          }
+        });
+      }
+      await apos.modules['read-setting'].insert(req, { title: 'Site note' });
+    });
+
+    it('should count every match, not only the page', async function () {
+      const result = await run('search_content', {
+        type: 'read-note',
+        limit: 1
+      });
+
+      assert.equal(result.total, 3);
+      assert.equal(result.results.length, 1);
+      assert.equal(result.next, 1);
+    });
+
+    it('should date each result, a never published one with a null publish date', async function () {
+      const result = await run('search_content', { type: 'read-note' });
+
+      assert.deepEqual(
+        result.results.map(({
+          title, updatedAt, lastPublishedAt
+        }) => [
+          title,
+          updatedAt,
+          lastPublishedAt
+        ]),
+        [
+          [ 'Draft note', dates['Draft note'].updatedAt, null ],
+          [ 'Fresh note', dates['Fresh note'].updatedAt, dates['Fresh note'].lastPublishedAt ],
+          [ 'Old note', dates['Old note'].updatedAt, dates['Old note'].lastPublishedAt ]
+        ]
+      );
+    });
+
+    it('should sort by the last publication, never published last', async function () {
+      const result = await run('search_content', {
+        type: 'read-note',
+        sort: 'lastPublishedAt'
+      });
+
+      assert.deepEqual(
+        result.results.map(doc => doc.title),
+        [ 'Fresh note', 'Old note', 'Draft note' ]
+      );
+    });
+
+    it('should sort a text search when asked', async function () {
+      const result = await run('search_content', {
+        query: 'note',
+        type: 'read-note',
+        sort: 'updatedAt'
+      });
+
+      assert.equal(result.total, 3);
+      assert.deepEqual(
+        result.results.map(doc => doc.title),
+        [ 'Draft note', 'Fresh note', 'Old note' ]
+      );
+    });
+
+    it('should not give a publish date to a type without drafts', async function () {
+      const result = await run('search_content', { type: 'read-setting' });
+
+      assert.equal(result.total, 1);
+      assert(result.results[0].updatedAt instanceof Date);
+      assert.equal('lastPublishedAt' in result.results[0], false);
     });
   });
 

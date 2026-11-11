@@ -74,6 +74,19 @@ export default {
     };
   },
   computed: {
+    // Every page type is in the tree, so it names no type of its own
+    screen() {
+      const { autocomplete } = this.queryExtras;
+      return {
+        docType: this.relationshipField?.withType || null,
+        field: this.relationshipField?.name || null,
+        selection: [ ...this.checked ],
+        filters: {
+          ...this.filterValues,
+          ...(autocomplete && { search: autocomplete })
+        }
+      };
+    },
     /**
      * Extends the AposDocsManagerMixin's isModified method to check for
      * existing updates in the queue.

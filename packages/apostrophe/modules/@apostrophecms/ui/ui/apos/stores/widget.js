@@ -31,6 +31,9 @@ export const useWidgetStore = defineStore('widget', () => {
   // Fields edited in place, per the `{% field %}` custom tag. They wear the
   // same breadcrumb trail a widget does, so they take their turn here
   const focusedField = ref(null);
+  // What the focused field edits: `{ docId, name }`, `name` being its patch
+  // key (`title`, `@widgetId.title`) and `docId` null in a modal
+  const focusedFieldTarget = ref(null);
   const hoveredField = ref(null);
 
   // The one thing on the page that wears a breadcrumb trail, since two labels
@@ -97,13 +100,15 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
-  function setFocusedField(id) {
+  function setFocusedField(id, target = null) {
     focusedField.value = id;
+    focusedFieldTarget.value = target;
   }
 
   function clearFocusedField(id) {
     if (focusedField.value === id) {
       focusedField.value = null;
+      focusedFieldTarget.value = null;
     }
   }
 
@@ -303,6 +308,7 @@ export const useWidgetStore = defineStore('widget', () => {
     hoveredWidget,
     hoveredNonForeignWidget,
     focusedField,
+    focusedFieldTarget,
     hoveredField,
     labeled,
     addEmphasizedWidget,

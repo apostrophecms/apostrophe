@@ -249,7 +249,10 @@ export default {
     },
 
     focus() {
-      this.setFocusedField(this.id);
+      this.setFocusedField(this.id, {
+        docId: this.docId,
+        name: this.patchKey || this.field.name
+      });
       this.adjust();
     },
 

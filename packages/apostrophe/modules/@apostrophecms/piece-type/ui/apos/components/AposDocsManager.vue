@@ -5,6 +5,7 @@
     :modal="modal"
     :modal-title="modalTitle"
     :modal-data="modalData"
+    :screen="screen"
     @esc="confirmAndCancel"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -183,6 +184,8 @@ export default {
       totalPages: 1,
       currentPage: 1,
       filterValues: {},
+      // The words the list is searched for, empty when it isn't
+      searchTerm: '',
       queryExtras: {
         viewContext: this.relationshipField ? 'relationship' : 'manage'
       },
@@ -196,6 +199,17 @@ export default {
     };
   },
   computed: {
+    screen() {
+      return {
+        docType: this.moduleName,
+        field: this.relationshipField?.name || null,
+        selection: [ ...this.checked ],
+        filters: {
+          ...this.filterValues,
+          ...(this.searchTerm && { search: this.searchTerm })
+        }
+      };
+    },
     ...mapState(useModalStore, [ 'activeModal' ]),
     moduleOptions() {
       return window.apos.modules[this.moduleName];
@@ -394,6 +408,8 @@ export default {
 
       this.holdQueries = true;
 
+      // Without the search, which only `search` applies
+      this.searchTerm = '';
       const {
         currentPage, pages, results, choices
       } = await this.requestPieces(this.currentPage);
@@ -450,16 +466,20 @@ export default {
 
       return {
         pieces,
-        total
+        total,
+        query
       };
     },
-    async search({ pieces, total }) {
+    async search({
+      pieces, total, query
+    }) {
       // Most probably due to empty/invalid query.
       if (!pieces) {
         return;
       }
 
       this.currentPage = 1;
+      this.searchTerm = query || '';
 
       this.setPieces(pieces);
       this.setAllPiecesSelection({

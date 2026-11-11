@@ -225,9 +225,10 @@ describe('Assistant: following a request', function () {
           }
         ],
         selection: {
+          // The area is named from the document, never by the browser
           docId: note._id,
-          areaId: draft.body._id,
-          widgetIds: [ one._id, 'no-such-widget', two._id ]
+          areaId: 'forged-area',
+          widgetIds: [ 'no-such-widget', one._id, two._id ]
         },
         field: {
           docId: 'no-such-doc',
@@ -287,8 +288,7 @@ describe('Assistant: following a request', function () {
         document: { _id: 'no-such-doc' },
         selection: {
           docId: note._id,
-          areaId: one._id,
-          widgetIds: [ one._id ]
+          widgetIds: [ 'no-such-widget' ]
         }
       });
       // The request's locale, whatever the browser says
@@ -343,6 +343,120 @@ describe('Assistant: following a request', function () {
       const system = calls.at(-1).system;
       assert.equal(system.split('Current screen').length, 2);
       assert(system.includes('{"url":"/","locale":"en","editing":false}'));
+    });
+
+    it('keeps a field of a widget or array item by its patch key, and a chooser\'s field', async function () {
+      const req = userReq(editor);
+      const draft = await findDraft(note);
+      const [ one ] = draft.body.items;
+      const screen = name => ({
+        tabId: 'tab-1',
+        modals: [
+          {
+            kind: 'editor',
+            docId: note._id
+          },
+          {
+            // Chooses for the editor below it: no document of its own
+            kind: 'chooser',
+            docType: 'assistant-note',
+            field: '_related',
+            selection: [ note._id ]
+          }
+        ],
+        field: {
+          docId: note._id,
+          name
+        }
+      });
+
+      const widget = await apos.assistant.verifyScreen(req, screen(`@${one._id}.content`));
+      const item = await apos.assistant.verifyScreen(req, screen(`@${draft.links[0]._id}.label`));
+      const unknown = await apos.assistant.verifyScreen(req, screen('@no-such-widget.content'));
+      const bare = await apos.assistant.verifyScreen(req, screen(`@${one._id}`));
+
+      assert.deepEqual(widget.field, {
+        docId: draft._id,
+        name: `@${one._id}.content`
+      });
+      assert.equal(item.field.name, `@${draft.links[0]._id}.label`);
+      assert.equal(unknown.field, null);
+      assert.equal(bare.field, null);
+      assert.deepEqual(widget.modals[1], {
+        kind: 'chooser',
+        docType: 'assistant-note',
+        field: '_related',
+        selection: [ draft._id ]
+      });
+    });
+
+    it('tells the model what changed on the screen since its last reply', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const draft = await findDraft(note);
+      const onNote = {
+        tabId: 'tab-1',
+        url: '/notes/a-note',
+        document: { _id: note._id }
+      };
+      // The run's call, not the one naming the chat
+      const userMessage = () => calls
+        .findLast(call => call.system?.includes('Current screen'))
+        .messages.findLast(message => message.role === 'user')
+        .content.map(part => part.text);
+
+      await apos.assistant.send(req, chat._id, {
+        message: 'First',
+        screen: onNote
+      });
+      await waitForEnd(req, chat);
+      const first = userMessage();
+      await apos.assistant.send(req, chat._id, {
+        message: 'Second',
+        screen: {
+          ...onNote,
+          editing: true,
+          modals: [ {
+            kind: 'editor',
+            docId: note._id
+          } ]
+        }
+      });
+      await waitForEnd(req, chat);
+      const second = userMessage();
+      await apos.assistant.send(req, chat._id, {
+        message: 'Third',
+        screen: {
+          ...onNote,
+          editing: true,
+          modals: [ {
+            kind: 'editor',
+            docId: note._id
+          } ]
+        }
+      });
+      await waitForEnd(req, chat);
+      const third = userMessage();
+
+      // Nothing came before the first, nothing changed before the third
+      assert.equal(first.length, 2);
+      assert.equal(third.length, 2);
+      assert.equal(second.length, 3);
+      const [ intro, json ] = second[1].split(': ');
+      assert.equal(intro, 'Since your last reply the screen changed, [before, now]');
+      assert.deepEqual(JSON.parse(json), {
+        editing: [ false, true ],
+        modals: [ [], [ {
+          kind: 'editor',
+          docId: draft._id,
+          title: 'A note',
+          locale: 'en',
+          docType: 'assistant-note'
+        } ] ]
+      });
+      // Kept with the message, so the transcript tells it again in order
+      const stored = (await apos.assistant.getChatRequests(req, chat._id))[1];
+      assert.equal(stored.messages[0].content[1].text, second[1]);
     });
 
     it('stores whether a browser tab is visible on the open requests it owns', async function () {

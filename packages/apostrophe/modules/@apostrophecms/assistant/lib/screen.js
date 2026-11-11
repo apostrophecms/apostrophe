@@ -19,6 +19,11 @@ const MAX_ROWS = 100;
 const MAX_FILTERS = 20;
 const NAME = /^[A-Za-z_][\w.:@/-]{0,99}$/;
 
+// What a change line compares, in the order it names them
+const COMPARED = [ 'url', 'locale', 'mode', 'editing', 'view', 'document', 'modals',
+  'selection', 'field' ];
+const CHANGES_INTRO = 'Since your last reply the screen changed, [before, now]:';
+
 const SCREEN_INTRO = 'Current screen, true as of this message: where the user is now. It ' +
   'supersedes anything earlier in the conversation, since the user moves around on their ' +
   'own between messages: a place you sent them to earlier is not where they are unless ' +
@@ -68,8 +73,8 @@ module.exports = (self) => {
       }
       verified.selection = await getSelection(screen.selection);
       const field = await findDoc(screen.field?.docId);
-      const name = getName(screen.field?.name);
-      if (field && name) {
+      const name = field && getFieldName(screen.field?.name, field);
+      if (name) {
         verified.field = {
           docId: field.doc._id,
           name
@@ -126,8 +131,9 @@ module.exports = (self) => {
         if (found && (found.ids.get(modal.itemId) === 'arrayItem')) {
           verified.itemId = modal.itemId;
         }
+        // A chooser's field belongs to the editor below it
         const field = getName(modal.field);
-        if (found && field) {
+        if (field) {
           verified.field = field;
         }
         if (Array.isArray(modal.selection)) {
@@ -138,6 +144,19 @@ module.exports = (self) => {
           verified.filters = filters;
         }
         return verified;
+      }
+
+      // A field's patch key: `name` for a field of the document,
+      // `@<_id>.name` for a field of a widget or array item in it
+      function getFieldName(name, found) {
+        if ((typeof name !== 'string') || !name.startsWith('@')) {
+          return getName(name);
+        }
+        const [ _id, ...path ] = name.slice(1).split('.');
+        return ([ 'widget', 'arrayItem' ].includes(found.ids.get(_id)) &&
+          getName(path.join('.')))
+          ? name
+          : null;
       }
 
       // A document's own locale, none for a type that isn't localized
@@ -166,23 +185,22 @@ module.exports = (self) => {
         return verified;
       }
 
-      // The widgets selected on the page, siblings in one area: kept when
-      // the area is in the document and has at least one of them
+      // The widgets selected, siblings in one area: the area holding the
+      // first of them that is in the document, which names it (the browser
+      // knows only its area editor), and the selected widgets in it
       async function getSelection(selection) {
         const found = await findDoc(selection?.docId);
-        if (!found || (found.ids.get(selection.areaId) !== 'area')) {
+        const given = Array.isArray(selection?.widgetIds) ? selection.widgetIds : [];
+        const areaOf = _id => [ ...found.areas ].find(([ , items ]) => items.has(_id));
+        const [ areaId, area ] = (found && given.map(areaOf).find(Boolean)) || [];
+        if (!area) {
           return null;
         }
-        const area = found.areas.get(selection.areaId);
-        const widgetIds = (Array.isArray(selection.widgetIds) ? selection.widgetIds : [])
-          .filter(_id => area.has(_id));
-        return widgetIds.length
-          ? {
-            docId: found.doc._id,
-            areaId: selection.areaId,
-            widgetIds
-          }
-          : null;
+        return {
+          docId: found.doc._id,
+          areaId,
+          widgetIds: given.filter(_id => area.has(_id))
+        };
       }
     },
 
@@ -209,6 +227,45 @@ module.exports = (self) => {
         shown[key] = value;
       }
       return `${SCREEN_INTRO}\n${JSON.stringify(shown)}`;
+    },
+
+    /**
+     * What changed on the screen since the model's last reply: the screen
+     * of the chat's latest request before `sequence` that the transcript
+     * keeps (a failed request has no reply), compared with `screen`. One
+     * line, empty when nothing changed or nothing came before.
+     *
+     * @param {object} chat
+     * @param {number} sequence The new request's.
+     * @param {object} screen The new request's, verified.
+     * @returns {Promise<string>}
+     */
+    async getScreenChanges(chat, sequence, screen) {
+      const [ last ] = await self.requests
+        .find({
+          chatId: chat._id,
+          ownerId: chat.ownerId,
+          sequence: { $lt: sequence },
+          status: { $ne: 'failed' }
+        })
+        .project({ screen: 1 })
+        .sort({ sequence: -1 })
+        .limit(1)
+        .toArray();
+      if (!last?.screen) {
+        return '';
+      }
+      const changed = {};
+      for (const key of COMPARED) {
+        const before = last.screen[key] ?? null;
+        const now = screen[key] ?? null;
+        if (JSON.stringify(before) !== JSON.stringify(now)) {
+          changed[key] = [ before, now ];
+        }
+      }
+      return Object.keys(changed).length
+        ? `${CHANGES_INTRO} ${JSON.stringify(changed)}`
+        : '';
     },
 
     /**

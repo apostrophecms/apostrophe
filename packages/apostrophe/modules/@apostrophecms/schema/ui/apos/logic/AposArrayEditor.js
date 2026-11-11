@@ -76,6 +76,15 @@ export default {
     };
   },
   computed: {
+    // The document is given by a document editor only: in a widget editor it
+    // is the editor's below this one
+    screen() {
+      return {
+        docId: this.docId || null,
+        field: this.field.name,
+        itemId: this.currentId || null
+      };
+    },
     moduleOptions() {
       return window.apos.schema || {};
     },

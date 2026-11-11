@@ -1,7 +1,10 @@
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { modalKinds } from 'Modules/@apostrophecms/ui/utils';
 
 export default function() {
+  // Core apps run first, so every project app may register kinds
+  apos.modal.kinds = modalKinds;
   const component = apos.vueComponents.TheAposModals;
   const el = document.querySelector('#apos-modals');
   if (!el) {

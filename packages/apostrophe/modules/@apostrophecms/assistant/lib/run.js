@@ -63,6 +63,14 @@ module.exports = (self) => {
         retryOf
       });
       try {
+        const screenChanges = await self.getScreenChanges(
+          claimed,
+          request.sequence,
+          verified
+        );
+        if (screenChanges) {
+          request.screenChanges = screenChanges;
+        }
         await self.requests.insertOne(request);
         await self.publishRequest(req, request);
         const title = await self.setFirstTitle(claimed, text);
@@ -222,7 +230,8 @@ module.exports = (self) => {
     },
 
     // A request's message as the model reads it, after a line naming the
-    // request, the id `get_changes` reads a request's changes by
+    // request, the id `get_changes` reads a request's changes by, and what
+    // changed on the screen since the model's last reply
     getUserMessage(request) {
       return {
         role: 'user',
@@ -231,6 +240,12 @@ module.exports = (self) => {
             type: 'text',
             text: `Request id: ${request._id}`
           },
+          ...(request.screenChanges
+            ? [ {
+              type: 'text',
+              text: request.screenChanges
+            } ]
+            : []),
           {
             type: 'text',
             text: request.message

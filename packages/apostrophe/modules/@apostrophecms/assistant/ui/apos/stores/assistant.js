@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { getTabId } from 'Modules/@apostrophecms/ui/utils';
+import { useScreen } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
 
 /**
  * The assistant's chats as this browser tab sees them. The records on the
@@ -20,6 +21,7 @@ const STORAGE_KEY = 'aposAssistantTabs';
 const LOAD_DELAY = 50;
 
 export const useAssistantStore = defineStore('assistant', () => {
+  const { getScreen } = useScreen();
   // The editor's chats, newest first
   const chats = ref([]);
   const loaded = ref(false);
@@ -436,20 +438,6 @@ export const useAssistantStore = defineStore('assistant', () => {
   function setDraft(id, text) {
     drafts.value[id] = text;
     delete refusals.value[id];
-  }
-
-  // The part of the screen the admin bar knows
-  function getScreen() {
-    const { adminBar } = apos;
-    const context = adminBar?.context;
-    return {
-      tabId: getTabId(),
-      visible: document.visibilityState !== 'hidden',
-      url: `${window.location.pathname}${window.location.search}`,
-      mode: context?.aposMode || null,
-      editing: adminBar?.editMode === true,
-      document: context?._id ? { _id: context._id } : null
-    };
   }
 
   function restoreTabs() {

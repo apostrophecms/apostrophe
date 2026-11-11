@@ -10,7 +10,7 @@ const TREE_HEADROOM = 200;
 module.exports = (self) => {
   return {
     async searchContent(req, {
-      query, type, locale, limit, offset
+      query, type, locale, sort, limit, offset
     }) {
       if (!query && !type) {
         throw self.apos.error('aiToolError', 'Give a "query", a "type", or both.');
@@ -22,7 +22,13 @@ module.exports = (self) => {
       let cursor = self.apos.doc.find(readReq, {
         type: type || { $in: self.getDocTypeNames() }
       });
-      cursor = query ? cursor.search(query) : cursor.sort({ updatedAt: -1 });
+      if (query) {
+        cursor = cursor.search(query);
+      }
+      if (sort || !query) {
+        cursor = cursor.sort({ [sort || 'updatedAt']: -1 });
+      }
+      const total = await cursor.toCount();
       const page = await cursor
         .project({
           _id: 1,
@@ -44,13 +50,19 @@ module.exports = (self) => {
       }
       return {
         locale: readReq.locale,
+        total,
         results: self.apos.util.orderById(found.map(doc => doc._id), docs)
           .map(doc => ({
             _id: doc._id,
             type: doc.type,
             title: doc.title,
             ...(doc.slug && { slug: doc.slug }),
-            ...(doc._url && { url: doc._url })
+            ...(doc._url && { url: doc._url }),
+            updatedAt: doc.updatedAt,
+            // A type without drafts is never published, it is live
+            ...(self.apos.doc.getManager(doc.type).isLocalized() && {
+              lastPublishedAt: doc.lastPublishedAt || null
+            })
           })),
         ...((page.length > limit) && { next: offset + limit })
       };

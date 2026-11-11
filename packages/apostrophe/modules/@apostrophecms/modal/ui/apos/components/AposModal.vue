@@ -200,6 +200,14 @@ const props = defineProps({
   graphKey: {
     type: String,
     default: null
+  },
+  // What the modal shows, for the screen (see `useScreen`): `docId` and
+  // `docType` of the document it works on, and as they apply `widgetId`,
+  // `field`, `itemId`, `selection` (checked rows) and `filters`. Only the
+  // modal knows where it really holds them, so it reports them here
+  screen: {
+    type: Object,
+    default: null
   }
 });
 
@@ -304,6 +312,18 @@ watch(() => props.modal.overlay, overlay => {
 watch(() => props.modal.stacking, stacking => {
   store.updateModalData(props.modalData.id, { stacking });
 }, { immediate: true });
+// Every report is a new object: only a change of value rewrites the stack
+let reportedScreen;
+watch(() => props.screen, screen => {
+  const json = JSON.stringify(screen ?? null);
+  if (json !== reportedScreen) {
+    reportedScreen = json;
+    store.updateModalData(props.modalData.id, { screen: screen ?? null });
+  }
+}, {
+  immediate: true,
+  deep: true
+});
 
 // Wrap handler to only work for window modals and primary mouse button. A
 // window whose `dragFrom` is `header` drags from its header only, so that

@@ -25,7 +25,9 @@ module.exports = (self) => {
       name: 'search_content',
       label: 'apostrophe:aiToolSearchContent',
       description: 'Find documents by text, by type, or both, in one locale. The source of ' +
-        'every document id. Without "query", lists the type newest first.',
+        'every document id. Returns "total", the count of every match, and each ' +
+        'result\'s "updatedAt" and "lastPublishedAt" (null: never published). Ordered ' +
+        'by "sort", else a "query" by relevance and a type listing by "updatedAt".',
       input: () => ({
         type: 'object',
         properties: {
@@ -39,6 +41,11 @@ module.exports = (self) => {
             enum: self.getDocTypeNames()
           },
           ...locale('The locale to search; the current one when omitted'),
+          sort: {
+            type: 'string',
+            enum: [ 'updatedAt', 'lastPublishedAt' ],
+            description: 'Newest first; never published documents last'
+          },
           limit: {
             type: 'integer',
             minimum: 1,

@@ -5,6 +5,7 @@
     :modal-title="modalTitle"
     :modal-data="modalData"
     :graph-key="graphKey"
+    :screen="screen"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -330,6 +331,13 @@ export default {
       return this.modalData?.id && this.currentId
         ? `${this.modalData.id}:${this.currentId}`
         : null;
+    },
+    // A new document has no id until the editor saves and closes
+    screen() {
+      return {
+        docId: this.currentId || null,
+        docType: this.docType
+      };
     },
     saveLabel() {
       if (this.restoreOnly) {

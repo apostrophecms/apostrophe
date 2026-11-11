@@ -3,6 +3,7 @@
     class="apos-widget-editor"
     :modal="modal"
     :modal-title="editLabel"
+    :screen="screen"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -191,6 +192,16 @@ export default {
     };
   },
   computed: {
+    // The document is the area's, given by the opener on the page only: in
+    // a modal it is the editor's below this one. A new widget has no id
+    // until the area inserts it
+    screen() {
+      return {
+        docId: this.$attrs.docId || null,
+        widgetId: this.id || null,
+        field: this.areaFieldId?.split('.').pop() || null
+      };
+    },
     changeDisplayIcon() {
       const name = this.isDisplayWindow ? this.modal.origin || 'right' : 'window';
       return `dock-${name}-icon`;
