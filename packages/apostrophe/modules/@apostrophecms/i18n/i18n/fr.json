@@ -882,7 +882,7 @@
   "aiLocalizeNewAndModifiedRelated": "Contenu nouveau et modifié des documents associés",
   "aiLocalizeProgressCount": "{{ current }} sur {{ total }}",
   "aiLocalizeScopeAll": "Tout le contenu",
-  "aiLocalizeScopeHelp": "Choisir « Tout le contenu » remplacera tout le contenu dans chaque langue, y compris les modifications faites dans ces langues.",
+  "aiLocalizeScopeHelp": "Choisir « Tout le contenu » remplacera tout le contenu des documents dans chaque langue sélectionnée, y compris les modifications faites dans ces langues.",
   "aiLocalizeScopeFieldHelp": "Choisissez comment traiter le contenu déjà localisé.",
   "aiLocalizeScopeLabel": "Contenu à mettre à jour",
   "aiLocalizeScopeNew": "Uniquement le contenu nouveau et modifié",

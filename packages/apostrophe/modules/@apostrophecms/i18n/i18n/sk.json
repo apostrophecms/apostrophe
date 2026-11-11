@@ -910,7 +910,7 @@
   "aiLocalizeNewAndModifiedRelated": "Nový a upravený obsah v súvisiacich dokumentoch",
   "aiLocalizeProgressCount": "{{ current }} z {{ total }}",
   "aiLocalizeScopeAll": "Celý obsah",
-  "aiLocalizeScopeHelp": "Výber možnosti „Celý obsah“ nahradí všetok obsah v každej jazykovej mutácii vrátane úprav, ktoré sa v nej urobili.",
+  "aiLocalizeScopeHelp": "Výber možnosti „Celý obsah“ nahradí všetok obsah dokumentov v každej vybranej jazykovej mutácii vrátane úprav, ktoré sa v nej urobili.",
   "aiLocalizeScopeFieldHelp": "Vyberte, ako naložiť s už lokalizovaným obsahom.",
   "aiLocalizeScopeLabel": "Obsah na aktualizáciu",
   "aiLocalizeScopeNew": "Iba nový a upravený obsah",
