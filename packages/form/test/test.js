@@ -984,4 +984,143 @@ describe('Forms module', function () {
     assert(uploadRegex.test(doc.data.DogPhoto[1]));
   });
 
+  describe('field and condition names that match Object.prototype properties', function () {
+    let jar;
+    let prototypeSnapshot;
+
+    // Undo any damage to Object.prototype so a failure here can't break
+    // the rest of the process
+    function restorePrototype() {
+      for (const key of Reflect.ownKeys(Object.prototype)) {
+        if (!Object.hasOwn(prototypeSnapshot, key)) {
+          delete Object.prototype[key];
+        }
+      }
+      for (const key of Reflect.ownKeys(prototypeSnapshot)) {
+        // eslint-disable-next-line no-extend-native
+        Object.defineProperty(Object.prototype, key, prototypeSnapshot[key]);
+      }
+    }
+
+    before(async function () {
+      prototypeSnapshot = Object.getOwnPropertyDescriptors(Object.prototype);
+      jar = apos.http.jar();
+      // Pick up the CSRF cookie as an anonymous visitor
+      await apos.http.get('/', { jar });
+    });
+
+    afterEach(function () {
+      restorePrototype();
+    });
+
+    async function insertForm(slug, items) {
+      const _id = `${slug}:en:published`;
+      await apos.doc.db.insertOne({
+        _id,
+        aposDocId: slug,
+        aposLocale: 'en:published',
+        aposMode: 'published',
+        archived: false,
+        visibility: 'public',
+        type: '@apostrophecms/form',
+        title: slug,
+        slug,
+        contents: {
+          _id: `${slug}Contents`,
+          metaType: 'area',
+          items
+        }
+      });
+      return _id;
+    }
+
+    it('does not modify Object.prototype when a submitted form has a "__proto__" conditional', async function () {
+      const _id = await insertForm('proto-conditional-form', [
+        {
+          _id: 'protoConditionalEmpty',
+          type: '@apostrophecms/form-conditional',
+          conditionName: '__proto__',
+          conditionValue: 'toString',
+          contents: {
+            _id: 'protoConditionalEmptyArea',
+            metaType: 'area',
+            items: []
+          }
+        },
+        {
+          _id: 'protoConditionalField',
+          type: '@apostrophecms/form-conditional',
+          conditionName: '__proto__',
+          conditionValue: 'aposPolluted',
+          contents: {
+            _id: 'protoConditionalFieldArea',
+            metaType: 'area',
+            items: [
+              {
+                _id: 'protoConditionalText',
+                type: '@apostrophecms/form-text-field',
+                fieldLabel: 'Hidden',
+                fieldName: 'hidden'
+              }
+            ]
+          }
+        }
+      ]);
+
+      try {
+        await apos.http.post('/api/v1/@apostrophecms/form/submit', {
+          body: {
+            data: JSON.stringify({ _id })
+          },
+          jar
+        });
+      } catch (e) {
+        // Only the state of Object.prototype matters here
+      }
+      const toString = Object.prototype.toString;
+      const polluted = Object.hasOwn(Object.prototype, 'aposPolluted');
+      restorePrototype();
+      assert.equal(toString, prototypeSnapshot.toString.value);
+      assert.equal(polluted, false);
+    });
+
+    it('stores files for a file field whose name matches an Object.prototype property', async function () {
+      const _id = await insertForm('constructor-file-form', [
+        {
+          _id: 'constructorFileField',
+          type: '@apostrophecms/form-file-field',
+          fieldLabel: 'Constructor',
+          fieldName: 'constructor'
+        },
+        {
+          _id: 'constructorNameField',
+          type: '@apostrophecms/form-text-field',
+          fieldLabel: 'Name',
+          fieldName: 'name'
+        }
+      ]);
+
+      const formData = new FormData();
+      formData.append('data', JSON.stringify({
+        _id,
+        name: 'Constructor upload',
+        constructor: 'files-pending'
+      }));
+      formData.append(
+        'constructor-1',
+        fs.createReadStream(path.join(__dirname, '/lib/upload_tests/upload-test.txt'))
+      );
+      await apos.http.post('/api/v1/@apostrophecms/form/submit', {
+        body: formData,
+        jar
+      });
+
+      const doc = await apos.db.collection('aposFormSubmissions').findOne({
+        'data.name': 'Constructor upload'
+      });
+      assert(doc);
+      assert.equal(doc.data.constructor.length, 1);
+      assert.match(doc.data.constructor[0], /^\/uploads\/attachments\/\w+-upload-test\.txt$/);
+    });
+  });
 });
