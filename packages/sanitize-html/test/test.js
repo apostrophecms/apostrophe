@@ -2935,4 +2935,69 @@ describe('sanitizeHtml', function() {
       );
     });
   });
+
+  describe('GHSA-2rjc-9xvg-45j7: CDATA section in HTML content hiding a nonTextTags start tag', function() {
+    // Outside SVG and MathML, browsers parse `<![CDATA[` as a bogus comment
+    // that ends at the first `>`, so a start tag after that `>` is real even if
+    // it comes before `]]>`.
+    const noscriptOptions = {
+      allowedTags: [ 'p', 'a', 'img' ],
+      allowedAttributes: {
+        a: [ 'href' ],
+        img: [ 'src' ]
+      },
+      nonTextTags: [ 'script', 'style', 'textarea', 'option', 'noscript' ]
+    };
+
+    it('should discard noscript content whose start tag follows a CDATA section\'s first >', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p>Hi</p><![CDATA[ x > <noscript>]]><a href="https://evil.test">Reset your password</a><img src="https://evil.test/beacon.gif"></noscript>', noscriptOptions),
+        '<p>Hi</p> '
+      );
+    });
+
+    it('should discard the content of default nonTextTags hidden the same way', function() {
+      [ 'style', 'script', 'textarea', 'xmp' ].forEach(function(tag) {
+        assert.strictEqual(
+          sanitizeHtml('<p>Hi</p><![CDATA[ x > <' + tag + '>]]><a href="https://evil.test">Reset your password</a></' + tag + '><p>after</p>'),
+          '<p>Hi</p> <p>after</p>'
+        );
+      });
+    });
+
+    it('should end a CDATA section in HTML content at the first >', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p>a<![CDATA[ x > y ]]>b</p>'),
+        '<p>a y ]]&gt;b</p>'
+      );
+    });
+
+    it('should end a CDATA section at the first > after an element that leaves SVG', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><p><![CDATA[ > <style>]]><a href="https://evil.test">Reset your password</a></style>'),
+        '<p> </p>'
+      );
+    });
+
+    it('should treat a CDATA section in SVG or MathML content as a bogus comment too', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><text><![CDATA[a > <b>]]></text></svg>', { allowedTags: [ 'svg', 'text' ] }),
+        '<svg><text> ]]&gt;</text></svg>'
+      );
+      assert.strictEqual(
+        sanitizeHtml('<math><ms><b>x</b></ms><![CDATA[a > <b>]]></math>', { allowedTags: [ 'math', 'ms', 'b' ] }),
+        '<math><ms><b>x</b></ms> <b>]]&gt;</b></math>'
+      );
+    });
+
+    it('should leave CDATA syntax in attribute values and RCDATA text unchanged', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p title="<![CDATA[x]]>">z</p><textarea><![CDATA[t]]></textarea>', {
+          allowedTags: [ 'p', 'textarea' ],
+          allowedAttributes: { p: [ 'title' ] }
+        }),
+        '<p title="&lt;![CDATA[x]]&gt;">z</p><textarea>&lt;![CDATA[t]]&gt;</textarea>'
+      );
+    });
+  });
 });
