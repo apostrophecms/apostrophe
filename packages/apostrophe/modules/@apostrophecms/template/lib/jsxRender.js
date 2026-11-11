@@ -20,7 +20,7 @@ const _ = require('lodash');
 
 const jsxLoader = require('./jsxLoader.js');
 const {
-  Raw, flatten, registerSafeClass
+  Raw, flatten, registerSafeClass, escapeAttr
 } = require('./jsxRuntime.js');
 
 const TEMPLATE_EXTENSIONS = [ 'jsx', 'njk', 'html' ];
@@ -386,14 +386,13 @@ module.exports = function(self) {
 
     // Invoke a Nunjucks template via `extends` so that JSX-supplied props
     // become `{% block %}` overrides. The synthetic Nunjucks template
-    // declares one block per prop, each emitting the matching string
-    // marked safe so already-rendered HTML survives.
+    // declares one block per prop, each emitting the prop's markup (see
+    // `blockToHtml`) marked safe so it is not escaped a second time.
     async renderNunjucksWithBlocks(req, resolved, props, ambientData) {
       const targetModule = self.apos.modules[resolved.moduleName];
       const blocks = {};
       for (const key of Object.keys(props)) {
-        const html = await flattenToHtml(props[key]);
-        blocks[key] = html;
+        blocks[key] = await self.blockToHtml(props[key]);
       }
       const blockNames = Object.keys(blocks);
       const targetRef = `${resolved.moduleName}:${resolved.relativeName}`;
@@ -419,6 +418,39 @@ module.exports = function(self) {
       };
       const html = await targetModule.renderString(req, synthetic, data);
       return new Raw(html);
+    },
+
+    // The markup for `value`, a prop standing in for a Nunjucks block. As
+    // everywhere in JSX, a string is text: it is escaped, as Nunjucks escapes
+    // `{{ value }}`, quotes included since some blocks sit in attribute
+    // values. Markup arrives as a JSX element or fragment, or as a string
+    // marked with `apos.template.safe()`. A plain object is written as
+    // attributes, for blocks inside a tag such as `extraHtml`:
+    // `{ 'data-theme': 'dark', hidden: true }`. An attribute whose value is
+    // `false` or `null` is left out.
+    async blockToHtml(value) {
+      if (value == null || value === false) {
+        return '';
+      }
+      if (isJsxNode(value) || (value instanceof self.nunjucks.runtime.SafeString)) {
+        return flatten(value);
+      }
+      if (_.isPlainObject(value)) {
+        const attributes = [];
+        for (const [ name, attributeValue ] of Object.entries(value)) {
+          if (!/^[A-Za-z_:][\w:.-]*$/.test(name)) {
+            throw new Error(`"${name}" is not a valid attribute name.`);
+          }
+          if ((attributeValue == null) || (attributeValue === false)) {
+            continue;
+          }
+          attributes.push((attributeValue === true)
+            ? name
+            : `${name}="${escapeBlockText(attributeValue)}"`);
+        }
+        return attributes.join(' ');
+      }
+      return escapeBlockText(value);
     },
 
     // Walk a props object, flattening any JSX node values to HTML strings
@@ -462,17 +494,8 @@ function isJsxNode(value) {
   return false;
 }
 
-// Convenience wrapper used when a JSX-supplied prop becomes a Nunjucks
-// block override: regardless of input type, produce the final HTML string
-// that the synthesized template will emit via the `safe` filter.
-async function flattenToHtml(value) {
-  if (value == null || value === false) {
-    return '';
-  }
-  if (isJsxNode(value)) {
-    return await flatten(value);
-  }
-  return String(value);
+function escapeBlockText(value) {
+  return escapeAttr(value).replace(/'/g, '&#39;');
 }
 
 // Annotate exceptions thrown out of a JSX template with the file path so
