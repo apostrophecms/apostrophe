@@ -258,7 +258,14 @@ module.exports = {
         async (req) => {
           await self.publicApiCheckAsync(req);
           const query = self.getRestQuery(req);
-          const dynamicChoices = self.apos.launder.strings(req.query.dynamicChoices);
+          // Like the `choices` builder, dynamic filter choices respect
+          // `publicApiProjection` and `viewPermission`
+          const publicApiProjection = query.get('publicApiProjection');
+          const dynamicChoices = self.apos.launder.strings(req.query.dynamicChoices)
+            .filter(name => (
+              self.choicesFieldAllowedByProjection(name, publicApiProjection) &&
+              self.choicesFieldAllowedByViewPermission(req, name)
+            ));
 
           if (!query.get('perPage')) {
             query.perPage(
