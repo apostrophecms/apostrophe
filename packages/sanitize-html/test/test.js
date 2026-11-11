@@ -3000,4 +3000,83 @@ describe('sanitizeHtml', function() {
       );
     });
   });
+
+  describe('GHSA-6wrv-5cp6-h3c5: markup in allowed style content', function() {
+    // htmlparser2 and browsers do not always agree on whether a <style> inside
+    // svg or math is an HTML raw-text element or a foreign (SVG/MathML)
+    // element whose content is markup, so no `<` in the content of such a
+    // style may reach the output where it could open a tag. Stylesheets
+    // outside svg and math are left alone.
+    const mathOptions = {
+      allowedTags: [ 'math', 'annotation-xml', 'style' ],
+      allowVulnerableTags: true
+    };
+    const svgOptions = {
+      allowedTags: [ 'svg', 'style' ],
+      allowVulnerableTags: true
+    };
+
+    it('should not emit a tag from style content inside annotation-xml', function() {
+      assert.strictEqual(
+        sanitizeHtml('<math><annotation-xml><style><img src=x onerror=alert(1)></style></annotation-xml></math>', mathOptions),
+        '<math><annotation-xml><style>\\3c img src=x onerror=alert(1)></style></annotation-xml></math>'
+      );
+    });
+
+    it('should not emit a tag from entity-encoded style content inside svg', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><style>&lt;img src=x onerror=alert(1)&gt;</style></svg>', svgOptions),
+        '<svg><style>\\3c img src=x onerror=alert(1)></style></svg>'
+      );
+    });
+
+    it('should not emit a tag from style content inside a discarded svg or math', function() {
+      [ 'svg', 'math' ].forEach(function(tag) {
+        assert.strictEqual(
+          sanitizeHtml('<' + tag + '><style>&lt;/style&gt;&lt;img src=x onerror=alert(1)&gt;</style></' + tag + '>', {
+            allowedTags: [ 'style' ],
+            allowVulnerableTags: true
+          }),
+          '<style>\\3c /style>\\3c img src=x onerror=alert(1)></style>'
+        );
+      });
+    });
+
+    it('should not emit a tag from style content inside a tag transformed into svg', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><style><img src=x onerror=alert(1)></style></div>', {
+          ...svgOptions,
+          transformTags: { div: 'svg' }
+        }),
+        '<svg><style>\\3c img src=x onerror=alert(1)></style></svg>'
+      );
+    });
+
+    it('should keep the meaning of < in a stylesheet inside svg', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><style>a > b::before { content: "<"; }</style></svg>', svgOptions),
+        '<svg><style>a > b::before { content: "\\3c "; }</style></svg>'
+      );
+    });
+
+    it('should leave a stylesheet outside svg and math unchanged', function() {
+      assert.strictEqual(
+        sanitizeHtml('<style><!-- a > b::before { content: "<"; } --></style>', {
+          allowedTags: [ 'style' ],
+          allowVulnerableTags: true
+        }),
+        '<style><!-- a > b::before { content: "<"; } --></style>'
+      );
+    });
+
+    it('should leave style content without < unchanged', function() {
+      assert.strictEqual(
+        sanitizeHtml('<style>.a > .b { color: red; background: url("x.png?a=1&b=2"); }</style>', {
+          allowedTags: [ 'style' ],
+          allowVulnerableTags: true
+        }),
+        '<style>.a > .b { color: red; background: url("x.png?a=1&b=2"); }</style>'
+      );
+    });
+  });
 });
