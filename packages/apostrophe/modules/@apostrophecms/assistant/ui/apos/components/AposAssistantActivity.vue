@@ -65,8 +65,9 @@ const emit = defineEmits([ 'action' ]);
 </script>
 
 <style lang="scss" scoped>
+  // The theme's red, darkened to read at 4.5:1 on the error tone
   .apos-assistant-activity {
-    --apos-assistant-activity-action: var(--a-danger);
+    --apos-assistant-activity-action: color-mix(in srgb, var(--a-danger) 80%, var(--a-black));
 
     & {
       display: flex;

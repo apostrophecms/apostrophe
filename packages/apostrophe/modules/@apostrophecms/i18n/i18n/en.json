@@ -104,6 +104,7 @@
   "assistantRetried": "Retried after an error.",
   "assistantRetry": "Retry",
   "assistantRetrying": "Retrying...",
+  "assistantRunning": "Running",
   "assistantSeconds": "{{ seconds }}s",
   "assistantSend": "Send",
   "assistantStepArguments": "Arguments",

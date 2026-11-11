@@ -1,14 +1,24 @@
 <template>
   <span
     class="apos-assistant-thinking"
-    aria-hidden="true"
+    :role="label ? 'img' : null"
+    :aria-label="label || null"
+    :aria-hidden="label ? null : 'true'"
+    data-apos-test="assistant-thinking"
   >
     <span /><span /><span /><span />
   </span>
 </template>
 
 <script setup>
-// The thinking mark: four cells pulsing out of step while a request runs
+// The thinking mark: four cells pulsing out of step while a request runs.
+// Where it is the only sign of that, it carries a label
+defineProps({
+  label: {
+    type: String,
+    default: null
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -50,10 +60,11 @@
     }
   }
 
+  // Still, the cells keep 3:1 against the panel's backgrounds
   /* stylelint-disable-next-line media-feature-name-allowed-list */
   @media (prefers-reduced-motion: reduce) {
     .apos-assistant-thinking span {
-      opacity: 0.45;
+      opacity: 0.65;
       animation: none;
     }
   }

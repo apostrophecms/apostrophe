@@ -74,7 +74,11 @@
                 />
               </button>
             </div>
-            <pre class="apos-assistant-steps__code"><code>{{ block.text }}</code></pre>
+            <!-- Scrolls, so the keyboard can reach it -->
+            <pre
+              class="apos-assistant-steps__code"
+              tabindex="0"
+            ><code>{{ block.text }}</code></pre>
           </div>
         </div>
       </li>
@@ -307,6 +311,11 @@ async function copy(stepId, block) {
       line-height: 1.45;
       white-space: pre;
       tab-size: 2;
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-primary);
+      outline-offset: -1px;
     }
   }
 </style>

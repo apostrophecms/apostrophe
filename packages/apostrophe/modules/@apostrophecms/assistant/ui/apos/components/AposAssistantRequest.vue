@@ -542,7 +542,7 @@ async function onAction(name) {
     & {
       margin: -4px 0 0;
       padding: 0 2px;
-      color: var(--a-base-4);
+      color: var(--a-base-2);
     }
   }
 

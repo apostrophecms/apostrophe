@@ -22,7 +22,10 @@
           :aria-current="tab.active ? 'true' : undefined"
           @click="store.activate(tab.id)"
         >
-          <AposAssistantThinking v-if="tab.thinking" />
+          <AposAssistantThinking
+            v-if="tab.thinking"
+            :label="$t('apostrophe:assistantRunning')"
+          />
           <AposIndicator
             v-else
             class="apos-assistant-tabs__icon"
