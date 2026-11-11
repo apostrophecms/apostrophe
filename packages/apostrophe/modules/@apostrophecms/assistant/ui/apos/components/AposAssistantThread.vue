@@ -29,11 +29,13 @@
 import {
   computed, nextTick, onBeforeUnmount, onMounted, ref, watch
 } from 'vue';
+import { getTabId } from 'Modules/@apostrophecms/ui/utils';
 import { useAssistantStore } from '../stores/assistant.js';
 
 // One chat's messages, oldest first, each pinned at the top while the
-// editor reads what came of it. The thread follows new content while the
-// editor reads its end, and stays where they scrolled to otherwise
+// editor reads what came of it. The thread follows its end until the
+// editor scrolls up to read, and again once they scroll back down to it;
+// a message of their own always takes them to the end
 const props = defineProps({
   // A chat id, or the new chat's
   chatId: {
@@ -42,14 +44,17 @@ const props = defineProps({
   }
 });
 
-// How close to the end still counts as reading the end
+// How close to the end counts as back at it, scrolling down
 const END_SLACK = 40;
 
 const store = useAssistantStore();
 const root = ref(null);
 const items = ref([]);
-let atEnd = true;
+let following = true;
+let lastTop = 0;
 let frame = null;
+let resizing = null;
+const known = new Set();
 
 const requests = computed(() => store.requests[props.chatId] || []);
 
@@ -75,20 +80,61 @@ const messages = computed(() => {
   return list;
 });
 
-onMounted(scrollToEnd);
-onBeforeUnmount(() => cancelAnimationFrame(frame));
+onMounted(() => {
+  for (const request of requests.value) {
+    known.add(request._id);
+  }
+  scrollToEnd();
+  // Less room (a dock over the composer) keeps the end in view
+  resizing = new ResizeObserver(() => {
+    if (following) {
+      scrollToEnd();
+    }
+  });
+  resizing.observe(root.value);
+});
+
+onBeforeUnmount(() => {
+  cancelAnimationFrame(frame);
+  resizing?.disconnect();
+});
 
 watch(() => [ requests.value, store.progress ], async () => {
-  if (atEnd) {
+  if (sentHere()) {
+    following = true;
+  }
+  if (following) {
     await scrollToEnd();
   }
   await nextTick();
   markPinned();
 }, { deep: true });
 
+// Whether a request this browser tab sent (a message or a retry) has just
+// appeared
+function sentHere() {
+  let sent = false;
+  for (const request of requests.value) {
+    if (!known.has(request._id)) {
+      known.add(request._id);
+      sent = sent || (request.tabId === getTabId());
+    }
+  }
+  return sent;
+}
+
+// Up and away from the end is the editor reading. A shrinking thread can
+// move it up too, but leaves it at the end
 function onScroll() {
   const el = root.value;
-  atEnd = el.scrollHeight - el.scrollTop - el.clientHeight < END_SLACK;
+  const top = el.scrollTop;
+  const fromEnd = el.scrollHeight - top - el.clientHeight;
+  if ((top < lastTop) && (fromEnd > 1)) {
+    following = false;
+  } else if ((top > lastTop) && (fromEnd < END_SLACK)) {
+    following = true;
+  }
+  lastTop = top;
   cancelAnimationFrame(frame);
   frame = requestAnimationFrame(markPinned);
 }
