@@ -499,11 +499,13 @@ module.exports = {
       },
 
       // Index the object's fields for participation in Apostrophe search unless
-      // `searchable: false` is set for the field in question
+      // `searchable: false` is set for the field in question. Fields with a
+      // `viewPermission` are never indexed, since the search texts are
+      // visible to, and searchable by, users who may not view those fields
 
       indexFields(schema, object, texts) {
         _.each(schema, function (field) {
-          if (field.searchable === false) {
+          if ((field.searchable === false) || field.viewPermission) {
             return;
           }
           const fieldType = self.fieldTypes[field.type];
