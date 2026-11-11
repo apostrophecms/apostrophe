@@ -127,7 +127,8 @@ module.exports = self => {
 
     // Get docs via their manager in order to populate them
     // so that we can retrieve their relationships IDs later,
-    // and to let the manager handle permissions.
+    // and to let the manager handle permissions. The fields the user
+    // may not view are removed, as they are from REST API responses.
     async getDocs(req, docsIds, manager, reporting) {
       // For BC, used to accept hasRelatedTypes as third param
       if (arguments.length === 5) {
@@ -180,7 +181,10 @@ module.exports = self => {
         });
       }
 
-      return docs.filter(doc => self.canExport(req, doc.type));
+      return self.apos.doc.removeForbiddenFieldsDeep(
+        req,
+        docs.filter(doc => self.canExport(req, doc.type))
+      );
     },
 
     // Add the published version ID next to each draft ID,
@@ -458,6 +462,7 @@ module.exports = self => {
         .areas(false)
         .locale(null)
         .toArray();
+      self.apos.doc.removeForbiddenFieldsDeep(req, foundRelated);
 
       for (const related of foundRelated) {
         const alreadyAdded = storedData.some(({ _id }) => _id === related._id);
